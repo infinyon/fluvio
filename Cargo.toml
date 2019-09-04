@@ -1,0 +1,32 @@
+[workspace]
+members = [
+    "cli",
+    "future-aio",
+    "future-helper",
+    "api/internal-api",
+    "k8-client",
+    "k8-config",
+    "k8-diff",
+    "kf-protocol",
+    "kf-protocol/kf-protocol-dump",
+    "kf-protocol/kf-protocol-build",
+    "kf-socket",
+    "kf-service",
+    "k8-metadata",
+    "metadata",
+    "api/sc-api",
+    "sc-server",
+    "api/spu-api",
+    "spu-server",
+    "storage",
+    "test-helper",
+    "types",
+    "utils"
+]
+
+# profile to make image sizer smaller
+# comment out for now
+#[profile.release]
+#lto = true
+#codegen-units = 1
+#incremental = false

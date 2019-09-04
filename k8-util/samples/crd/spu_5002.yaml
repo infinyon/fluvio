@@ -1,0 +1,15 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: Spu
+metadata:
+  name: "custom-spu-2"
+spec:
+  spuId: 5002
+  spuType: "Custom"
+  publicEndpoint:
+    port: 9007
+    host: fluvio.local.test
+    encryption: PLAINTEXT
+  privateEndpoint: 
+    port: 9008
+    host: fluvio.local.test
+    encryption: PLAINTEXT

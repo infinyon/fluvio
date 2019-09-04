@@ -1,0 +1,44 @@
+{
+    "apiKey": 3,
+    "type": "request",
+    "name": "MetadataRequest",
+    "validVersions": "0-8",
+    "fields": [
+        {
+            "name": "Topics",
+            "type": "[]MetadataRequestTopic",
+            "versions": "0+",
+            "nullableVersions": "1+",
+            "about": "The topics to fetch metadata for.",
+            "fields": [
+                {
+                    "name": "Name",
+                    "type": "string",
+                    "versions": "0+",
+                    "entityType": "topicName",
+                    "about": "The topic name."
+                }
+            ]
+        },
+        {
+            "name": "AllowAutoTopicCreation",
+            "type": "bool",
+            "versions": "4+",
+            "default": "true",
+            "ignorable": false,
+            "about": "If this is true, the broker may auto-create topics that we requested which do not already exist, if it is configured to do so."
+        },
+        {
+            "name": "IncludeClusterAuthorizedOperations",
+            "type": "bool",
+            "versions": "8+",
+            "about": "Whether to include cluster authorized operations."
+        },
+        {
+            "name": "IncludeTopicAuthorizedOperations",
+            "type": "bool",
+            "versions": "8+",
+            "about": "Whether to include topic authorized operations."
+        }
+    ]
+}

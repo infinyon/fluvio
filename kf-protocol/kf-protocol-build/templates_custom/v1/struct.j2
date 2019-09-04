@@ -1,0 +1,35 @@
+{%- set structure_where_clause = "" -%}
+{%- set clause_content = "where R: Encoder + Decoder + Default + Debug" -%}
+
+{# Request Handling (special case) #}
+{%- if structure_name == "KfFetchRequest<R>" -%}
+    {%- set add_phantom_data = true -%}
+    {%- set structure_where_clause = clause_content -%}
+{%- endif -%}
+
+{# Response Handling (special case) #}
+{%- if structure_name == "KfFetchResponse<R>" -%}
+    {% set structure_where_clause = clause_content -%}
+{%- endif -%}
+
+{# Translate Stucture Name #}
+{%- if structure_name == "FetchableTopicResponse" -%}
+    {%- set structure_name = "FetchableTopicResponse<R>" -%}
+    {%- set structure_where_clause = clause_content -%}
+{%- elif structure_name == "FetchablePartitionResponse" -%}
+    {%- set structure_name = "FetchablePartitionResponse<R>" -%}
+    {%- set structure_where_clause = clause_content -%}
+{%- endif -%}
+
+
+{# Generate Structure #}
+#[derive(Encode,Decode,KfDefault,Debug)]
+pub struct {{structure_name}} {{structure_where_clause}} {   
+    {% for field in fields -%} 
+        {% include "field.j2" -%}
+    {% endfor -%}
+
+    {%- if add_phantom_data %}
+        pub data: PhantomData<R>,
+    {%- endif %}    
+}

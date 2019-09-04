@@ -1,0 +1,23 @@
+[package]
+edition = "2018"
+name = "future-helper"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+description = "friendly wrapper around rust future and tokio"
+
+[features]
+fixture = ["async-test-derive"]
+
+[dependencies]
+log = "0.4.8"
+tokio_1 = { version = "0.1.18", package = "tokio"}
+bytes = "0.4.12"
+futures-preview = { version = "0.3.0-alpha.17", features = ["compat"] }
+futures_1 = { version = "0.1.25", package = "futures" }
+pin-utils = "0.1.0-alpha.4"
+async-test-derive = { path = "async-test-derive", optional = true }
+
+
+[dev-dependencies]
+lazy_static = "1.2.0"
+utils = { path= "../utils"}

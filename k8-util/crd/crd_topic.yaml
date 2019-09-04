@@ -1,0 +1,68 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: topics.fluvio.infinyon.com
+spec:
+  group: fluvio.infinyon.com
+  version: v1
+  names:
+    kind: Topic
+    plural: topics
+    singular: topic
+  scope: Namespaced
+  subresources:
+      status: {}
+  additionalPrinterColumns:
+      - name: Partitions
+        type: integer
+        description: Parition count
+        JSONPath: .spec.partitions
+      - name: Replications
+        type: integer
+        description: Replication Count
+        JSONPath: .spec.replicationFactor
+      - name: Status
+        type: string
+        description: Topic Status
+        JSONPath: .status.resolution
+
+  validation:
+   # openAPIV3Schema is the schema for validating custom objects.
+    openAPIV3Schema:
+      type: object
+      required: ["spec"]
+      properties:
+        spec:
+          type: object
+          properties:
+            partitions:
+              type: integer
+              minimum: 1
+              maximum: 5000
+            replicationFactor:
+              type: integer
+              minimum: 1
+              maximum: 5000
+            ignoreRackAssignment:
+              type: boolean
+            customReplicaAssignment:
+              type: array
+              items:
+                required:
+                - partition
+                properties:
+                  partition:
+                    type: object
+                    required:
+                    - id
+                    - replicas
+                    properties:
+                      id:
+                        type: integer
+                        minimum: 0
+                      replicas:
+                        type: array
+                        items:
+                          type: integer
+                          minimum: 0                        
+

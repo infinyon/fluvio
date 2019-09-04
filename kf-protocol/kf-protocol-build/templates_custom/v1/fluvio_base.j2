@@ -1,0 +1,20 @@
+{# Set Request (request_name) variable #}
+{%- set request_name = request.name -%}
+{%- set request_trait = "" -%}
+{%- set request_trait_clause = "" -%}
+
+{%- if request.name == "KfFetchRequest" -%}
+    {%- set request_name = "KfFetchRequest<R>" -%}
+    {%- set request_trait = "<R>" -%}
+    {%- set request_trait_clause = " where R: Debug + Decoder + Encoder " -%}
+{%- endif -%}
+
+{# Set Response (response_name) variable #}
+{%- set response_name = response.name -%}
+{%- if response.name == "KfFetchResponse" -%}
+    {%- set response_name = "KfFetchResponse<R>" -%}
+{%- endif -%}
+
+{# Generate Code #}
+{% include "header.j2" %}
+{% include "content.j2" %}

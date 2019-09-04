@@ -1,0 +1,19 @@
+{
+    "storage": {
+        "logDir": "/tmp/fluvio",
+        "size": "2Gi"
+    },
+    "replication": {
+        "inSyncReplicaMin ": 5
+    },
+    "env": [
+        {
+            "name": "ENV-VAR1",
+            "value": "one"
+        },
+        {
+            "name": "ENV-VAR2",
+            "value": "two"
+        }
+    ]
+}

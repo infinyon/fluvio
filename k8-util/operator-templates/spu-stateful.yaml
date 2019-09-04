@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: group1
+spec:
+  selector:
+    matchLabels:
+      app: spu
+      group: group1
+  serviceName: group1
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: spu
+        group: group1
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: spu
+        image: fluvio/spu:0.1
+        ports:
+        - name: public
+          containerPort: 9005
+        - name: private
+          containerPort: 9006
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/fluvio/data
+        env:
+        - name: SPU
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: FLV_SC_PRIVATE_HOST
+          value:  flv-sc-internal.default.svc.cluster.local
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: fluvio-spu
+      resources:
+        requests:
+          storage: 1Gi
+

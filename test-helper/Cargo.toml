@@ -1,0 +1,19 @@
+[package]
+name = "flv-integration-test"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[dependencies]
+log = "0.4.6"
+bytes = "0.4.12"
+futures-preview = { version = "0.3.0-alpha.17" }
+future-helper = { path = "../future-helper" }
+kf-protocol = { path = "../kf-protocol"}
+kf-socket = {path = "../kf-socket"}
+kf-service = { path = "../kf-service"}
+internal-api = { path = "../api/internal-api"}
+types = { path= "../types"}
+utils = { path= "../utils"}
+metadata = { path = "../metadata" }
+future-aio = { path = "../future-aio"}

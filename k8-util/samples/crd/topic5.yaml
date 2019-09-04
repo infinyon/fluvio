@@ -1,0 +1,7 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: Topic
+metadata:
+  name: topic5
+spec:
+  partitions: 1
+  replicationFactor: 2

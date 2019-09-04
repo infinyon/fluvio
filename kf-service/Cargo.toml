@@ -1,0 +1,19 @@
+[package]
+edition = "2018"
+name = "kf-service"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+
+[dependencies]
+log = "0.4.6"
+futures-preview = { version = "0.3.0-alpha.17", features = ["nightly","async-await"] }
+pin-utils = "0.1.0-alpha.4"
+kf-protocol = { path = "../kf-protocol"}
+future-helper = { path = "../future-helper" }
+future-aio = { path = "../future-aio"}
+kf-socket = { path = "../kf-socket"}
+types = { path = "../types"}
+
+[dev-dependencies]
+future-helper = { path = "../future-helper", features = ["fixture"] }
+utils = { path= "../utils"}

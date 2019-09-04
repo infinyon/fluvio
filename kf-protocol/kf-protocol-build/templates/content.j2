@@ -1,0 +1,34 @@
+
+// -----------------------------------
+// {{request_name}}
+// -----------------------------------
+
+{% set structure_name = request_name -%}
+{% set fields = request.fields -%}
+{% include "struct.j2" %}
+
+{% for structure in request.structures -%}
+    {% set structure_name = structure.name -%}
+    {% set fields = structure.fields -%}
+    {% include "struct.j2" %}
+{% endfor %}
+
+// -----------------------------------
+// {{response_name}}
+// -----------------------------------
+
+{% set structure_name = response_name -%}
+{% set fields = response.fields -%}
+{% include "struct.j2" %}
+
+{% for structure in response.structures -%} 
+    {% set structure_name = structure.name -%}
+    {% set fields = structure.fields -%}
+    {% include "struct.j2" %}
+{% endfor %}
+
+// -----------------------------------
+// Implementation - {{request_name}}
+// -----------------------------------
+
+ {% include "impl_request.j2" %}

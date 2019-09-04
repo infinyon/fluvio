@@ -1,0 +1,27 @@
+[package]
+name = "kf-socket"
+version = "0.1.0-alpha.1"
+edition = "2018"
+authors = ["fluvio.io"]
+
+[[bin]]
+name = "file_send"
+path = "src/bin/file_send.rs"
+doc = false
+required-features = ["cli"]
+
+
+
+[dependencies]
+log = "0.4.6"
+futures-preview = { version = "0.3.0-alpha.17" }
+pin-utils = "0.1.0-alpha.4"
+chashmap = "2.2.0"
+kf-protocol = { path = "../kf-protocol"}
+future-aio = { path = "../future-aio"}
+future-helper = { path = "../future-helper" }
+
+
+[dev-dependencies]
+utils = { path = "../utils", features = ["fixture"]}
+future-helper = { path = "../future-helper", features = ["fixture"] }

@@ -1,0 +1,33 @@
+// -----------------------------------
+// {{request.name}}
+// -----------------------------------
+
+{{ request.annotation }}
+struct {{request.name}} 
+{% set structure_name = request.name -%}
+{   
+    {% for field in request.fields -%} 
+        {% include "field.j2" -%}
+    {% endfor %}
+}
+
+{% for structure in request.structures -%}
+    {% set structure_name = structure.name -%}
+    {% include "structure.j2" %}
+{% endfor %}
+
+// -----------------------------------
+// {{response.name}}
+// -----------------------------------
+
+struct {{response.name}} 
+{% set structure_name = response.name -%}
+{   
+    {% for field in response.fields -%}
+        {% include "field.j2" -%}
+    {% endfor %}  
+}
+{% for structure in response.structures -%} 
+    {% set structure_name = structure.name -%}
+    {% include "structure.j2" %}
+{% endfor %}

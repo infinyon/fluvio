@@ -1,0 +1,35 @@
+{# Translate Field Values #}
+{%- set field_name = field.name -%}
+{%- if field.name == "error_code" and field.value == "i16" -%}
+    {%- set field_value = "ErrorCode" -%}
+{%- elif field.name == "isolation_level" and field.value == "i8" -%}
+    {%- set field_value = "Isolation" -%}
+{%- elif field.name == "records" and field.value == "Option<Vec<u8>>" -%}
+    {%- set field_value = "R" -%}
+{%- elif field.name == "metadata" and field.value == "Vec<u8>" -%}
+    {%- set field_value = "ProtocolMetadata" -%}
+{%- elif field.name == "assignment" and field.value == "Vec<u8>" -%}
+    {%- set field_value = "GroupAssignment" -%}
+{%- elif field.name == "topics" and field.value == "Vec<FetchableTopicResponse>" -%}
+    {%- set field_value = "Vec<FetchableTopicResponse<R>>"  -%}
+{%- elif field.name == "partitions" and field.value == "Vec<FetchablePartitionResponse>" -%}
+    {%- set field_value = "Vec<FetchablePartitionResponse<R>>"  -%}
+{%- elif field.name == "topics" and field.value == "Vec<TopicProduceData>" -%}
+    {%- set field_value = " Vec<TopicProduceData<R>>"  -%}
+{%- elif field.name == "partitions" and field.value == "Vec<PartitionProduceData>" -%}
+    {%- set field_value = " Vec<PartitionProduceData<R>>"  -%}
+{%- else -%}
+    {%- set field_value = field.value -%}
+{%- endif -%}
+
+{# Generate Field #}
+{%if field.comment %}
+    {{field.comment}}
+{%- endif %}
+{%- if field.annotation %}
+    {%- include "field_annotation.j2" -%}
+    pub {{ field_name }}: {{ field_value }},
+{% else %}
+    pub {{ field_name }}: {{ field_value }},
+{%- endif -%}
+

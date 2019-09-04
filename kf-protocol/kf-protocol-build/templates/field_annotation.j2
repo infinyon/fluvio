@@ -1,0 +1,17 @@
+#[fluvio_kf(
+    {%- if field.annotation.min_version -%}
+        min_version = {{field.annotation.min_version}},
+    {%- endif -%}
+
+    {%- if field.annotation.max_version -%}
+        max_version = {{field.annotation.max_version}},
+    {%- endif -%}
+
+    {%- if field.annotation.ignorable -%}
+        ignorable,
+    {%- endif -%}
+
+    {%- if false -%}
+        default = "{{field.annotation.default}}",
+    {%- endif -%}
+)]

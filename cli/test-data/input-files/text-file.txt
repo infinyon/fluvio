@@ -1,0 +1,4 @@
+Lorem Ipsum is simply dummy text.
+Lorem Ipsum has been the industry's standard since 1500's.
+It has survived over five centuries.
+Still here today.

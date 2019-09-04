@@ -1,0 +1,15 @@
+[package]
+name = "kf-protocol-derive"
+version = "0.1.0-alpha.1"
+edition = "2018"
+authors = ["fluvio.io"]
+
+[lib]
+proc-macro = true
+doctest = false
+
+[dependencies]
+proc-macro2 = "0.4.30"
+quote = "0.6.12"
+syn = { version = "0.15.34", features = ["extra-traits"] }
+log = "0.4.6"

@@ -1,0 +1,6 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: SpuGroup
+metadata:
+  name: "group3"
+spec:
+  replicas: 3

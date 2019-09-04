@@ -1,0 +1,19 @@
+[package]
+name = "kf-protocol-transport"
+edition = "2018"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+
+
+[dependencies]
+log = "0.4.6"
+bytes = "0.4.12"
+tokio-codec = "0.1.1"
+kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
+
+
+[dev-dependencies]
+future-helper = { path = "../../future-helper", features = ["fixture"] }
+futures-preview = { version = "0.3.0-alpha.17" }
+future-aio = { path = "../../future-aio"}
+utils = { path= "../../utils"}

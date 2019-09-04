@@ -1,0 +1,12 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: Topic
+metadata:
+  name: topic5
+spec:
+  customReplicaAssignment:
+    - partition:
+        id: 0
+        replicas: [5001, 5002]
+    - partition:
+        id: 1
+        replicas: [5002, 5003]

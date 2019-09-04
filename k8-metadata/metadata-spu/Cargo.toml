@@ -1,0 +1,13 @@
+[package]
+edition = "2018"
+name = "metadata-spu"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+
+
+[dependencies]
+log = "0.4.6"
+types = { path = "../../types"}
+serde = { version ="1.0.82", features = ['derive'] }
+serde_json = "1.0.39"
+metadata-core = { path = "../metadata-core"}

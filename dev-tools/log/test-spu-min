@@ -1,0 +1,3 @@
+#!/bin/sh
+ARG1=${1}
+RUST_LOG=spu_server=trace,future_helper=error,tokio_reactor=error cargo test "$ARG1"

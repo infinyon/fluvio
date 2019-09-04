@@ -1,0 +1,33 @@
+version = "1.0"
+
+[spu]
+id = 5050
+rack = "rack-1"
+
+[servers]
+
+[servers.public]
+host = "127.0.0.1"
+port = 5555
+
+[servers.private]
+host = "127.0.0.1"
+port = 5556
+
+[controller]
+host = "127.0.0.1"
+port = 5554
+retry_timeout_ms = 2000
+
+[configurations]
+
+[configurations.replication]
+min_in_sync_replicas = 3
+
+[configurations.log]
+base_dir = "/tmp/data_streams"
+size = "2Gi"
+index_max_bytes = 888888
+index_max_interval_bytes = 2222
+segment_max_bytes = 9999999
+

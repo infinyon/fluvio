@@ -1,0 +1,9 @@
+impl {{request_trait}}Request for {{request_name}}{{request_trait_clause}}{
+    const API_KEY: u16 = {{request.annotation.api_key}};
+
+    const MIN_API_VERSION: i16 = {{request.annotation.min_api_version}};
+    const MAX_API_VERSION: i16 = {{request.annotation.max_api_version}};
+    const DEFAULT_API_VERSION: i16 = {{request.annotation.max_api_version}};
+
+    type Response = {{response_name}};
+}

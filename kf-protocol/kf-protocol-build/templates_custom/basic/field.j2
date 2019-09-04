@@ -1,0 +1,6 @@
+{% if field.annotation %}
+    {{ field.annotation }}
+    {{ field.name }}: {{ field.value }},
+{% else -%}
+    {{ field.name }}: {{ field.value }},
+{%- endif -%}

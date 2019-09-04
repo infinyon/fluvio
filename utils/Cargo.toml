@@ -1,0 +1,17 @@
+[package]
+name = "utils"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[features]
+default = []
+fixture = []
+
+[dependencies]
+env_logger = "0.6.2"
+regex = "1.2.1"
+log = "0.4.6"
+rand = "0.7.0"
+chrono = { version = "0.4.7"}
+types = { path= "../types"}

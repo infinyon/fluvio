@@ -1,0 +1,1 @@
+RUST_LOG=sc_server=trace,k8_config=debug,k8_client=debug,tokio_reactor=error target/debug/sc-server

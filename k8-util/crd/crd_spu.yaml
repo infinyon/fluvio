@@ -1,0 +1,83 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: spus.fluvio.infinyon.com
+spec:
+  group: fluvio.infinyon.com
+  version: v1
+  names:
+    kind: Spu
+    plural: spus
+    singular: spu
+  scope: Namespaced
+  additionalPrinterColumns:
+  - name: ID
+    type: integer
+    description: Spu ID
+    JSONPath: .spec.spuId
+  - name: Status
+    type: string
+    description: Spu Status
+    JSONPath: .status.resolution
+  - name: Type
+    type: string
+    description: Spu Type
+    JSONPath: .spec.spuType
+  - name: Public Port
+    type: integer
+    description: Spu Type
+    JSONPath: .spec.publicEndpoint.port
+  - name: Private Port
+    type: integer
+    description: Spu Type
+    JSONPath: .spec.privateEndpoint.port
+  subresources:
+      status: {}
+  validation:
+    openAPIV3Schema:
+      required: ["spec"]
+      type: object
+      properties:
+        spec:
+          required: ["spuId", "publicEndpoint", "privateEndpoint"]
+          type: object
+          properties:
+            spuId:
+              type: integer
+            spuType:
+              type: string
+              enum:
+                - Custom
+                - Managed              
+            rack:
+              type: string
+            publicEndpoint:
+              type: object
+              required: ["host"]
+              properties:
+                host:
+                  type: string
+                port:
+                  minimum: 1
+                  maximum: 65535
+                  type: integer
+                encryption:
+                  type: string
+                  enum:
+                    - PLAINTEXT
+                    - SSL
+            privateEndpoint:
+              required: ["host"]
+              type: object
+              properties:
+                host:
+                  type: string
+                port:
+                  minimum: 1
+                  maximum: 65535
+                  type: integer
+                encryption:
+                  type: string
+                  enum:
+                    - PLAINTEXT
+                    - SSL

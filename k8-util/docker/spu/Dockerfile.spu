@@ -1,0 +1,4 @@
+FROM alpine:3.10
+
+COPY    spu-server  /fluvio/spu-server
+CMD ["/fluvio/spu-server"]

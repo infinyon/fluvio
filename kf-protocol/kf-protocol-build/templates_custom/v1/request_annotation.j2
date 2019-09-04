@@ -1,0 +1,5 @@
+#[fluvio_kf(
+    min_api_version = {{request.annotation.min_api_version}},
+    max_api_version = {{request.annotation.max_api_version}},
+    api_key = {{request.annotation.api_key}},
+    response = "{{response_name}}" )]

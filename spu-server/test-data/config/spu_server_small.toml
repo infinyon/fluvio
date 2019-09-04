@@ -1,0 +1,9 @@
+version = "1.0"
+
+[spu]
+id = 12
+token_name = "121212"
+
+[controller]
+host = "1.1.1.1"
+port = 2323

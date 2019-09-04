@@ -1,0 +1,17 @@
+[package]
+name = "kf-protocol"
+edition = "2018"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+
+
+[dependencies]
+log = "0.4.6"
+kf-protocol-core = { path = "kf-protocol-core" }
+kf-protocol-api = { path = "kf-protocol-api"}
+kf-protocol-derive = { path = "kf-protocol-derive"}
+kf-protocol-transport = { path = "kf-protocol-transport"}
+kf-protocol-message = { path = "kf-protocol-message"}
+
+[dev-dependencies]
+utils = { path= "../utils"}

@@ -1,0 +1,24 @@
+[package]
+name = "future-aio"
+version = "0.1.0-alpha.1"
+edition = "2018"
+authors = ["fluvio.io"]
+
+
+[dependencies]
+log = "0.4.8"
+nix = "0.15.0"
+bytes = "0.4.12"
+tokio_1 = { version = "0.1.18", package = "tokio" }
+tokio-threadpool-1 = { version = "0.1.13", package = "tokio-threadpool" }
+memmap = "0.7.0"
+futures-preview = { version = "0.3.0-alpha.17" }
+future-helper = { path = "../future-helper"}
+futures_1 = { version = "0.1.25", package = "futures" }
+pin-utils = "0.1.0-alpha.4"
+
+
+[dev-dependencies]
+future-helper = { path = "../future-helper", features=["fixture"]}
+num_cpus = { version = "1.10.1" }
+utils = { path= "../utils", features= ["fixture"]}

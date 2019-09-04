@@ -1,0 +1,224 @@
+{
+    "request": {
+        "name": "KfMetadataRequest",
+        "annotation": {
+            "api_key": 3,
+            "min_api_version": 0,
+            "max_api_version": 8
+        },
+        "fields": [
+            {
+                "name": "topics",
+                "value": "Option<Vec<MetadataRequestTopic>>",
+                "comment": "/// The topics to fetch metadata for.\n"
+            },
+            {
+                "name": "allow_auto_topic_creation",
+                "value": "bool",
+                "comment": "/// If this is true, the broker may auto-create topics that we requested which do not already\n/// exist, if it is configured to do so.\n",
+                "annotation": {
+                    "min_version": 4,
+                    "default": "true"
+                }
+            },
+            {
+                "name": "include_cluster_authorized_operations",
+                "value": "bool",
+                "comment": "/// Whether to include cluster authorized operations.\n",
+                "annotation": {
+                    "min_version": 8
+                }
+            },
+            {
+                "name": "include_topic_authorized_operations",
+                "value": "bool",
+                "comment": "/// Whether to include topic authorized operations.\n",
+                "annotation": {
+                    "min_version": 8
+                }
+            }
+        ],
+        "structures": [
+            {
+                "name": "MetadataRequestTopic",
+                "fields": [
+                    {
+                        "name": "name",
+                        "value": "String",
+                        "comment": "/// The topic name.\n"
+                    }
+                ]
+            }
+        ]
+    },
+    "response": {
+        "name": "KfMetadataResponse",
+        "fields": [
+            {
+                "name": "throttle_time_ms",
+                "value": "i32",
+                "comment": "/// The duration in milliseconds for which the request was throttled due to a quota violation,\n/// or zero if the request did not violate any quota.\n",
+                "annotation": {
+                    "min_version": 3
+                }
+            },
+            {
+                "name": "brokers",
+                "value": "Vec<MetadataResponseBroker>",
+                "comment": "/// Each broker in the response.\n"
+            },
+            {
+                "name": "cluster_id",
+                "value": "Option<String>",
+                "comment": "/// The cluster ID that responding broker belongs to.\n",
+                "annotation": {
+                    "min_version": 2,
+                    "ignorable": true,
+                    "default": "null"
+                }
+            },
+            {
+                "name": "controller_id",
+                "value": "i32",
+                "comment": "/// The ID of the controller broker.\n",
+                "annotation": {
+                    "min_version": 1,
+                    "ignorable": true,
+                    "default": "-1"
+                }
+            },
+            {
+                "name": "topics",
+                "value": "Vec<MetadataResponseTopic>",
+                "comment": "/// Each topic in the response.\n"
+            },
+            {
+                "name": "cluster_authorized_operations",
+                "value": "i32",
+                "comment": "/// 32-bit bitfield to represent authorized operations for this cluster.\n",
+                "annotation": {
+                    "min_version": 8
+                }
+            }
+        ],
+        "structures": [
+            {
+                "name": "MetadataResponseBroker",
+                "fields": [
+                    {
+                        "name": "broker_id",
+                        "value": "i32",
+                        "comment": "/// The broker ID.\n"
+                    },
+                    {
+                        "name": "host",
+                        "value": "String",
+                        "comment": "/// The broker hostname.\n"
+                    },
+                    {
+                        "name": "port",
+                        "value": "i32",
+                        "comment": "/// The broker port.\n"
+                    },
+                    {
+                        "name": "rack",
+                        "value": "Option<String>",
+                        "comment": "/// The rack of the broker, or null if it has not been assigned to a rack.\n",
+                        "annotation": {
+                            "min_version": 1,
+                            "ignorable": true,
+                            "default": "null"
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "MetadataResponseTopic",
+                "fields": [
+                    {
+                        "name": "error_code",
+                        "value": "i16",
+                        "comment": "/// The topic error, or 0 if there was no error.\n"
+                    },
+                    {
+                        "name": "topic_name",
+                        "value": "String",
+                        "comment": "/// The topic name.\n"
+                    },
+                    {
+                        "name": "is_internal",
+                        "value": "bool",
+                        "comment": "/// True if the topic is internal.\n",
+                        "annotation": {
+                            "min_version": 1,
+                            "ignorable": true,
+                            "default": "false"
+                        }
+                    },
+                    {
+                        "name": "partitions",
+                        "value": "Vec<MetadataResponsePartition>",
+                        "comment": "/// Each partition in the topic.\n"
+                    },
+                    {
+                        "name": "topic_authorized_operations",
+                        "value": "i32",
+                        "comment": "/// 32-bit bitfield to represent authorized operations for this topic.\n",
+                        "annotation": {
+                            "min_version": 8
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "MetadataResponsePartition",
+                "fields": [
+                    {
+                        "name": "error_code",
+                        "value": "i16",
+                        "comment": "/// The partition error, or 0 if there was no error.\n"
+                    },
+                    {
+                        "name": "partition_index",
+                        "value": "i32",
+                        "comment": "/// The partition index.\n"
+                    },
+                    {
+                        "name": "leader_id",
+                        "value": "i32",
+                        "comment": "/// The ID of the leader broker.\n"
+                    },
+                    {
+                        "name": "leader_epoch",
+                        "value": "i32",
+                        "comment": "/// The leader epoch of this partition.\n",
+                        "annotation": {
+                            "min_version": 7,
+                            "ignorable": true,
+                            "default": "-1"
+                        }
+                    },
+                    {
+                        "name": "replica_nodes",
+                        "value": "Vec<i32>",
+                        "comment": "/// The set of all nodes that host this partition.\n"
+                    },
+                    {
+                        "name": "isr_nodes",
+                        "value": "Vec<i32>",
+                        "comment": "/// The set of nodes that are in sync with the leader for this partition.\n"
+                    },
+                    {
+                        "name": "offline_replicas",
+                        "value": "Vec<i32>",
+                        "comment": "/// The set of offline replicas of this partition.\n",
+                        "annotation": {
+                            "min_version": 5,
+                            "ignorable": true
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

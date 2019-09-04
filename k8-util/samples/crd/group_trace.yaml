@@ -1,0 +1,12 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: SpuGroup
+metadata:
+  name: "group2"
+spec:
+  replicas: 2
+  minId: 11
+  template:
+    spec:
+      env:
+        - name: "RUST_LOG"
+          value: "spu_server=trace"

@@ -1,0 +1,48 @@
+{%- set structure_where_clause = "" -%}
+{%- set clause_content = "where R: Encoder + Decoder + Default + Debug" -%}
+
+{# Structure Name - augment with <R> #}
+{%- 
+    if  structure_name == "FetchableTopicResponse" or
+        structure_name == "FetchablePartitionResponse" or
+        structure_name == "TopicProduceData" or
+        structure_name == "PartitionProduceData" 
+-%}
+    {%- set structure_name = structure_name ~ "<R>" -%}
+{%- endif -%}
+
+{# Structure Header - augment with Where clause #}
+{%- 
+    if  structure_name == "KfFetchRequest<R>" or
+        structure_name == "KfProduceRequest<R>" or
+        structure_name == "KfFetchResponse<R>" or
+        structure_name == "FetchableTopicResponse<R>" or        
+        structure_name == "FetchablePartitionResponse<R>" or
+        structure_name == "TopicProduceData<R>" or
+        structure_name == "PartitionProduceData<R>" 
+-%}
+    {%- set structure_where_clause = clause_content -%}
+{%- endif -%}
+
+{# Fields - add PhantomData #}
+{%- 
+    if  structure_name == "KfFetchRequest<R>" or
+        structure_name == "KfProduceRequest<R>" or
+        structure_name == "KfFetchResponse<R>" or
+        structure_name == "FetchableTopicResponse<R>" or        
+        structure_name == "TopicProduceData<R>"
+-%}
+    {%- set add_phantom_data = true -%}
+{%- endif -%}
+
+{# Generate Structure #}
+#[derive(Encode,Decode,KfDefault,Debug)]
+pub struct {{structure_name}} {{structure_where_clause}} {   
+    {% for field in fields -%} 
+        {% include "field.j2" -%}
+    {% endfor -%}
+
+    {%- if add_phantom_data %}
+        pub data: PhantomData<R>,
+    {%- endif %}    
+}

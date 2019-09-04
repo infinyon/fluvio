@@ -1,0 +1,25 @@
+{
+    "partitions": [
+        {
+            "id": 0,
+            "replicas": [
+                1,
+                2
+            ]
+        },
+        {
+            "id": 1,
+            "replicas": [
+                2,
+                3
+            ]
+        },
+        {
+            "id": 2,
+            "replicas": [
+                3,
+                1
+            ]
+        }
+    ]
+}

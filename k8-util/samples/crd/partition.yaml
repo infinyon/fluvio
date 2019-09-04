@@ -1,0 +1,7 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: Partition
+metadata:
+  name: test
+spec:
+  leader: 1
+  replicas: [2,4]

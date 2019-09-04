@@ -1,0 +1,161 @@
+request: FetchRequest(
+    RequestMessage {
+        header: RequestHeader {
+            api_key: Fetch,
+            api_version: 7,
+            correlation_id: 9,
+            client_id: "consumer-1"
+        },
+        request: FetchRequest {
+            replica_id: -1,
+            max_wait_time: 500,
+            min_bytes: 1,
+            max_bytes: 52428800,
+            isolation_level: 0,
+            session_id: 0,
+            session_epoch: 0,
+            topics: [
+                TopicRequest {
+                    topic: "test",
+                    partitions: [
+                        PartitionRequest {
+                            partition: 0,
+                            fetch_request: 0,
+                            log_start_offset: -1,
+                            partition_max_bytes: 4503599627370496
+                        }
+                    ]
+                }
+            ],
+            forgotten_topics: []
+        },
+        data: PhantomData
+    }
+)
+response ResponseMessage {
+    correlation_id: 9,
+    response: FetchResponse {
+        throttle_time_ms: 0,
+        error_code: 0,
+        session_id: 190659252,
+        responses: [
+            FetchTopicResponse {
+                topic: "test",
+                partition_responses: [
+                    PartitionResponse {
+                        header: PartitionHeader {
+                            partition: 0,
+                            error_code: 0,
+                            high_watermark: 7,
+                            last_stable_offset: -1,
+                            log_start_offset: 0,
+                            aborted_transactions: []
+                        },
+                        record: RecordSet {
+                            length: 457,
+                            batches: [
+                                DefaultBatch {
+                                    base_offset: 0,
+                                    length: 101,
+                                    header: BatchHeader {
+                                        partition_leader_epoch: 0,
+                                        magic: 2,
+                                        crc: -401493314,
+                                        attributes: 0,
+                                        last_offset_delta: 1,
+                                        first_timestamp: 1552430401926,
+                                        max_time_stamp: 1552430402393,
+                                        producer_id: -1,
+                                        producer_epoch: -1,
+                                        first_sequence: -1
+                                    },
+                                    records: [
+                                        "quick brown fox jump over the lazy",
+                                        "dog"
+                                    ]
+                                },
+                                DefaultBatch {
+                                    base_offset: 2,
+                                    length: 75,
+                                    header: BatchHeader {
+                                        partition_leader_epoch: 0,
+                                        magic: 2,
+                                        crc: -256726549,
+                                        attributes: 0,
+                                        last_offset_delta: 0,
+                                        first_timestamp: 1552430418228,
+                                        max_time_stamp: 1552430418228,
+                                        producer_id: -1,
+                                        producer_epoch: -1,
+                                        first_sequence: -1
+                                    },
+                                    records: [
+                                        "in addition to text"
+                                    ]
+                                },
+                                DefaultBatch {
+                                    base_offset: 3,
+                                    length: 65,
+                                    header: BatchHeader {
+                                        partition_leader_epoch: 0,
+                                        magic: 2,
+                                        crc: -1540681629,
+                                        attributes: 0,
+                                        last_offset_delta: 0,
+                                        first_timestamp: 1552430427082,
+                                        max_time_stamp: 1552430427082,
+                                        producer_id: -1,
+                                        producer_epoch: -1,
+                                        first_sequence: -1
+                                    },
+                                    records: [
+                                        "lwkwwkeee"
+                                    ]
+                                },
+                                DefaultBatch {
+                                    base_offset: 4,
+                                    length: 94,
+                                    header: BatchHeader {
+                                        partition_leader_epoch: 0,
+                                        magic: 2,
+                                        crc: -816240605,
+                                        attributes: 0,
+                                        last_offset_delta: 1,
+                                        first_timestamp: 1552430434148,
+                                        max_time_stamp: 1552430434945,
+                                        producer_id: -1,
+                                        producer_epoch: -1,
+                                        first_sequence: -1
+                                    },
+                                    records: [
+                                        "alwke fekejfek fjiefje",
+                                        "ekfjekfe"
+                                    ]
+                                },
+                                DefaultBatch {
+                                    base_offset: 6,
+                                    length: 62,
+                                    header: BatchHeader {
+                                        partition_leader_epoch: 0,
+                                        magic: 2,
+                                        crc: 954585130,
+                                        attributes: 0,
+                                        last_offset_delta: 0,
+                                        first_timestamp: 1552430435666,
+                                        max_time_stamp: 1552430435666,
+                                        producer_id: -1,
+                                        producer_epoch: -1,
+                                        first_sequence: -1
+                                    },
+                                    records: [
+                                        "jfeeie"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

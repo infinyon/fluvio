@@ -1,0 +1,14 @@
+[package]
+name = "kf-protocol-core"
+edition = "2018"
+version = "0.1.0-alpha.1"
+authors = ["fluvio.io"]
+
+
+[dependencies]
+bytes = "0.4.12"
+log = "0.4.6"
+num-traits = "0.2.6"
+num-derive = "0.2.4"
+utils = { path= "../../utils"}
+serde = { version ="1.0.82", features = ['derive'] }

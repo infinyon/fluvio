@@ -1,0 +1,7 @@
+apiVersion: "fluvio.infinyon.com/v1"
+kind: SpuGroup
+metadata:
+  name: "group1"
+spec:
+  replicas: 1
+  minId:  10
