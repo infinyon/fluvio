@@ -4,7 +4,7 @@
 
 Welcome to the Fluvio project!
 
-Fluvio is a cloud-native platform for data in motion, built from the ground up to run on top of Kubernetes.  
+Fluvio is a cloud-native platform for data-in-motion, built from the ground up to run on Kubernetes.  
 It brings centralized control to connect, transform, and distribute real-time data across the organization.
 
 The repository contains all the code necessary to run the Fluvio platform: Services, APIs, and the CLI.  
