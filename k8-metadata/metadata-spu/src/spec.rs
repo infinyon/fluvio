@@ -25,7 +25,7 @@ impl Spec for SpuSpec {
 #[serde(rename_all = "camelCase")]
 pub struct SpuSpec {
     pub spu_id: i32,
-    pub public_endpoint: Endpoint,
+    pub public_endpoint: IngressPort,
     pub private_endpoint: Endpoint,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -39,6 +39,20 @@ pub struct SpuSpec {
 pub enum SpuType {
     Managed,
     Custom,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
+#[serde(rename_all = "camelCase",default)]
+pub struct IngressPort {
+    pub port: u16,
+    pub ingress: Vec<IngressAddr>,
+    pub encryption: EncryptionEnum,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
+pub struct IngressAddr {
+    pub hostname: Option<String>,
+    pub ip: Option<String>
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]

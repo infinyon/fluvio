@@ -2128,7 +2128,7 @@ dependencies = [
 
 [[package]]
 name = "sc-server"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chashmap 2.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2302,7 +2302,7 @@ dependencies = [
 
 [[package]]
 name = "spu-server"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "chashmap 2.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2691,6 +2691,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "types"
 version = "0.1.0-alpha.1"
+dependencies = [
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "ucd-trie"

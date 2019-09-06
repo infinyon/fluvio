@@ -68,7 +68,7 @@ impl<W> PartitionController<W>
         }
     }
 
-    pub fn lrs_sendr(&self) -> Sender<UpdateLrsRequest> {
+    pub fn lrs_sender(&self) -> Sender<UpdateLrsRequest> {
         self.lrs_sender.clone()
     }
 

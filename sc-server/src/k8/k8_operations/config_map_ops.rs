@@ -10,7 +10,7 @@ use log::{debug, trace};
 use k8_metadata::core::metadata::InputK8Obj;
 use k8_metadata::core::metadata::InputObjectMeta;
 use k8_metadata::core::Spec;
-use k8_client::ConfigMapSpec;
+use k8_client::config_map::ConfigMapSpec;
 
 
 use crate::k8::SharedK8Client;

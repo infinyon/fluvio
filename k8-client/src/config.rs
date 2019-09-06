@@ -102,22 +102,27 @@ fn build_client_cert_connector(kube_config: &KubeConfig) -> Result<HttpsConnecto
     let user = kube_config.current_user().unwrap();
 
     // get certs for client-certificate
-    let client_certs = retrieve_cert_from_file(&user.user.client_certificate)?;
-    debug!("client certs: {:#?}",client_certs);
-    let mut private_keys = retrieve_private_key(&user.user.client_key)?;
+    if let Some(client_certificate) = &user.user.client_certificate {
+        let client_certs = retrieve_cert_from_file(&client_certificate)?;
+        debug!("client certs: {:#?}",client_certs);
+        let mut private_keys = retrieve_private_key(user.user.client_key.as_ref().expect("client key expected"))?;
 
-    if private_keys.len() == 0 {
-        return Err(IoError::new(
-            ErrorKind::InvalidData,
-            "private key not founded"
-        ))
+        if private_keys.len() == 0 {
+            return Err(IoError::new(
+                ErrorKind::InvalidData,
+                "private key not founded"
+            ))
+        }
+
+        debug!("retrieved client certs from kubeconfig");
+        tls.set_single_client_cert(client_certs, private_keys.remove(0));
+        tls.dangerous()
+            .set_certificate_verifier(Arc::new(NoVerifier {}));
+        Ok(HttpsConnector::from((http, tls)))
+    } else {
+        Err(IoError::new(ErrorKind::InvalidInput,"no certificate founded".to_owned()))
     }
-
-    debug!("retrieved client certs from kubeconfig");
-    tls.set_single_client_cert(client_certs, private_keys.remove(0));
-    tls.dangerous()
-        .set_certificate_verifier(Arc::new(NoVerifier {}));
-    Ok(HttpsConnector::from((http, tls)))
+    
 }
 
 fn build_token_connector(pod: &PodConfig) -> Result<HttpsConnector<HttpConnector>, IoError> { 

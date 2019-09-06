@@ -1,13 +1,8 @@
 mod spec;
 mod status;
 
-pub use self::spec::SpuSpec;
-pub use self::spec::SpuType;
-pub use self::spec::Endpoint;
-pub use self::spec::EncryptionEnum;
-
-pub use self::status::SpuStatus;
-pub use self::status::SpuStatusResolution;
+pub use self::spec::*;
+pub use self::status::*;
 
 use metadata_core::Crd;
 use metadata_core::CrdNames;

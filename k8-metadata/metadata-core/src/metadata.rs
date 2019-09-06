@@ -27,10 +27,10 @@ pub trait LabelProvider: Sized {
     fn set_label_map(self, labels: HashMap<String,String>) -> Self;
 
     /// helper for setting list of labels
-    fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
+    fn set_labels<T: ToString>(self, labels: Vec<(T, T)>) -> Self {
         let mut label_map = HashMap::new();
         for (key, value) in labels {
-            label_map.insert(key.into(), value.into());
+            label_map.insert(key.to_string(), value.to_string());
         }
         self.set_label_map(label_map)
     }

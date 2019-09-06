@@ -10,7 +10,7 @@ use kf_protocol::api::{RequestMessage, ResponseMessage};
 use kf_protocol::api::FlvErrorCode;
 
 use k8_metadata::core::metadata::ObjectMeta;
-use metadata::spu::{SpuSpec, Endpoint, SpuType};
+use metadata::spu::{SpuSpec, Endpoint, SpuType,IngressPort };
 
 use sc_api::FlvResponseMessage;
 use sc_api::spu::{FlvCreateCustomSpusRequest, FlvCreateCustomSpusResponse};
@@ -47,7 +47,7 @@ pub async fn handle_create_custom_spus_request(
         }
 
         // process custom-spu request
-        let result = process_custom_spu_request(ctx, &custom_spu_req).await;
+        let result = process_custom_spu_request(ctx, custom_spu_req).await;
         results.push(result);
     }
 
@@ -83,32 +83,30 @@ fn validate_custom_spu_request(
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 async fn process_custom_spu_request(
     ctx: &PublicContext,
-    custom_spu_req: &FlvCreateCustomSpuRequest,
+    custom_spu_req: FlvCreateCustomSpuRequest,
 ) -> FlvResponseMessage {
-    let name = &custom_spu_req.name;
+    let name = custom_spu_req.name.clone();
 
     if let Err(err) = create_custom_spu(ctx, custom_spu_req).await {
         let error = Some(err.to_string());
-        FlvResponseMessage::new(name.clone(), FlvErrorCode::SpuError, error)
+        FlvResponseMessage::new(name, FlvErrorCode::SpuError, error)
     } else {
-        FlvResponseMessage::new_ok(name.clone())
+        FlvResponseMessage::new_ok(name)
     }
 }
 
 async fn create_custom_spu(
     ctx: &PublicContext,
-    spu_req: &FlvCreateCustomSpuRequest,
+    spu_req: FlvCreateCustomSpuRequest,
 ) -> Result<(), ScServerError> {
     let meta = ObjectMeta::new(spu_req.name.clone(), ctx.namespace.clone());
-    let public_ep =
-        Endpoint::from_port_host(spu_req.public_server.port, &spu_req.public_server.host);
-    let private_ep =
-        Endpoint::from_port_host(spu_req.private_server.port, &spu_req.private_server.host);
+    let public_endpoint = IngressPort::from_port_host(spu_req.public_server.port, spu_req.public_server.host);
+    let private_endpoint = Endpoint::from_port_host(spu_req.private_server.port, spu_req.private_server.host);
     let spu_spec = SpuSpec {
         id: spu_req.id,
         spu_type: SpuType::Custom,
-        public_endpoint: public_ep,
-        private_endpoint: private_ep,
+        public_endpoint,
+        private_endpoint,
         rack: spu_req.rack.clone(),
     };
     let kv_ctx = KvContext::default().with_ctx(meta);

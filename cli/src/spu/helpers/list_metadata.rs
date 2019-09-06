@@ -59,7 +59,7 @@ pub enum SpuResolution {
 // Convert from FLV to SPU Metadata
 // -----------------------------------
 
-pub fn flv_response_to_spu_metadata(flv_spus: &Vec<FlvFetchSpuResponse>) -> Vec<ScSpuMetadata> {
+pub fn flv_response_to_spu_metadata(flv_spus: Vec<FlvFetchSpuResponse>) -> Vec<ScSpuMetadata> {
     let mut sc_spus: Vec<ScSpuMetadata> = vec![];
     for flv_spu in flv_spus {
         sc_spus.push(ScSpuMetadata::new(flv_spu));
@@ -67,20 +67,20 @@ pub fn flv_response_to_spu_metadata(flv_spus: &Vec<FlvFetchSpuResponse>) -> Vec<
     sc_spus
 }
 
-// -----------------------------------
-// Implementation
-// -----------------------------------
+
 impl ScSpuMetadata {
-    pub fn new(fetch_spu_resp: &FlvFetchSpuResponse) -> Self {
+    pub fn new(fetch_spu_resp: FlvFetchSpuResponse) -> Self {
+
+        let (f_spu,f_error_code,f_name) = (fetch_spu_resp.spu,fetch_spu_resp.error_code,fetch_spu_resp.name);
         // if spu is present, convert it
-        let spu = if let Some(fetched_spu) = &fetch_spu_resp.spu {
-            Some(Spu::new(&fetch_spu_resp.name, fetched_spu))
+        let spu = if let Some(fetched_spu) = f_spu {
+            Some(Spu::new(f_name.clone(), fetched_spu))
         } else {
             None
         };
 
         // if error is present, convert it
-        let error = if fetch_spu_resp.error_code.is_error() {
+        let error = if f_error_code.is_error() {
             Some(fetch_spu_resp.error_code)
         } else {
             None
@@ -88,7 +88,7 @@ impl ScSpuMetadata {
 
         // spu metadata with all parameters converted
         ScSpuMetadata {
-            name: fetch_spu_resp.name.clone(),
+            name: f_name,
             error: error,
             spu: spu,
         }
@@ -96,17 +96,16 @@ impl ScSpuMetadata {
 }
 
 impl Spu {
-    pub fn new(spu_name: &String, fetched_spu: &FlvFetchSpu) -> Self {
-        let public_ep = &fetched_spu.public_ep;
-        let private_ep = &fetched_spu.private_ep;
+    pub fn new(spu_name: String, fetched_spu: FlvFetchSpu) -> Self {
+        let (public_eps,private_ep) = (fetched_spu.public_ep,fetched_spu.private_ep);
 
         Spu {
             id: fetched_spu.id,
             name: spu_name.clone(),
             spu_type: SpuType::new(&fetched_spu.spu_type),
 
-            public_server: Endpoint::new(&public_ep.host, &public_ep.port),
-            private_server: Endpoint::new(&private_ep.host, &private_ep.port),
+            public_server: Endpoint::new(public_eps.host,public_eps.port),
+            private_server: Endpoint::new(private_ep.host, private_ep.port),
 
             rack: fetched_spu.rack.clone(),
             status: SpuResolution::new(&fetched_spu.resolution),

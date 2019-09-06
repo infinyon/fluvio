@@ -11,7 +11,7 @@ use std::io::ErrorKind;
 
 use types::socket_helpers::ServerAddress;
 use types::SpuId;
-use metadata::spu::{Endpoint, SpuSpec, SpuStatus};
+use metadata::spu::{Endpoint, SpuSpec, SpuStatus,IngressPort};
 use k8_metadata::core::Spec as K8Spec;
 use k8_metadata::core::metadata::K8Obj;
 use k8_metadata::spu::SpuSpec as K8SpuSpec;
@@ -52,7 +52,7 @@ impl SpuKV {
     //
     // Accessors
     //
-    pub fn id(&self) -> &i32 {
+    pub fn id(&self) -> &SpuId {
         &self.spec.id
     }
 
@@ -74,7 +74,7 @@ impl SpuKV {
         }
     }
 
-    pub fn public_endpoint(&self) -> &Endpoint {
+    pub fn public_endpoint(&self) -> &IngressPort {
         &self.spec.public_endpoint
     }
 
@@ -113,12 +113,12 @@ impl SpuKV {
         }
     }
 
-    pub fn set_public_endpoint(&mut self, public_ep: &Endpoint) {
-        self.spec.public_endpoint = public_ep.clone();
+    pub fn set_public_endpoint(&mut self, public_ep: IngressPort) {
+        self.spec.public_endpoint = public_ep;
     }
 
-    pub fn set_private_endpoint(&mut self, private_ep: &Endpoint) {
-        self.spec.private_endpoint = private_ep.clone();
+    pub fn set_private_endpoint(&mut self, private_ep: Endpoint) {
+        self.spec.private_endpoint = private_ep;
     }
 }
 
@@ -161,10 +161,10 @@ impl SpuLocalStore {
                     spu.set_rack(other_spu.rack());
                 }
                 if spu.public_endpoint() != other_spu.public_endpoint() {
-                    spu.set_public_endpoint(other_spu.public_endpoint());
+                    spu.set_public_endpoint(other_spu.public_endpoint().clone());
                 }
                 if spu.private_endpoint() != other_spu.private_endpoint() {
-                    spu.set_private_endpoint(other_spu.private_endpoint());
+                    spu.set_private_endpoint(other_spu.private_endpoint().clone());
                 }
                 spu.set_ctx(other_spu.kv_ctx());
 

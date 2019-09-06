@@ -5,7 +5,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: fluvio-spu
+  storageClassName: gp2
   resources:
     requests:
       storage: 1Gi

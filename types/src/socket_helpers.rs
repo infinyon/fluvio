@@ -7,6 +7,9 @@ use std::net::ToSocketAddrs;
 use std::net::Ipv4Addr;
 use std::net::IpAddr;
 
+use log::debug;
+use log::error;
+
 //
 // Structures
 //
@@ -65,15 +68,31 @@ pub fn host_port_to_socket_addr(host: &str, port: u16) -> Result<SocketAddr, IoE
 
 /// convert string to socket addr
 pub fn string_to_socket_addr(addr_string: &str) -> Result<SocketAddr, IoError> {
-    let mut addrs_iter = addr_string.to_socket_addrs()?;
-    let addr = addrs_iter.next();
-    match addr {
-        Some(addr) => Ok(addr),
-        None => Err(IoError::new(
-            ErrorKind::InvalidInput,
-            format!("host/port cannot be resolved {}", addr_string).as_str(),
-        )),
+    debug!("resolving host: {}",addr_string);
+    match addr_string.to_socket_addrs() {
+        Err(err) => {
+            error!("error resolving addr: {} {}",addr_string,err);
+            Err(err)
+        },
+        Ok(mut addrs_iter) => {
+            match addrs_iter.next() {
+                Some(addr) => {
+                    debug!("resolved: {}",addr);
+                    Ok(addr)
+                },
+                None => {
+                    error!("error resolving addr: {}",addr_string);
+                    Err(IoError::new(
+                        ErrorKind::InvalidInput,
+                        format!("host/port cannot be resolved {}", addr_string).as_str(),
+                    ))
+                }
+            }
+        }
+    
     }
+
+
 }
 
 #[derive(Debug, PartialEq, Clone)]

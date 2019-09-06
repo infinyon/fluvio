@@ -1,5 +1,5 @@
 NAME = infinyon/fluvio-spu
-TAG = 0.1-alpha
+TAG = 0.2.0-alpha.1
 BIN_DIR = ../../../target/x86_64-unknown-linux-musl/$(BIN_NAME)
 
 all: push

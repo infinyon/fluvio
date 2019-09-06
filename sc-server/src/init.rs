@@ -5,7 +5,6 @@
 //! and receivers.
 //!
 use std::sync::Arc;
-use log::info;
 
 use future_helper::run;
 
@@ -26,7 +25,9 @@ use crate::services::PubliApiServer;
 use crate::k8::K8WSUpdateService;
 use crate::k8::new_shared;
 use crate::k8::K8AllChangeDispatcher;
-use crate::k8::operator::run_spg_operator;
+use crate::k8::operator::run_k8_operators;
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop() {
     // parse configuration (program exits on error)
@@ -50,8 +51,8 @@ pub fn main_loop() {
         let _public_shutdown = public_server.run();
         let _private_shutdown = internal_server.run();
 
-        println!("Streaming Coordinator started successfully");
-        info!("SC started successfully")
+        println!("Streaming Coordinator Version: {} started successfully",VERSION);
+       
     });
 
 }
@@ -79,7 +80,7 @@ pub fn create_core_services<W,D>(local_stores: ShareLocalStores,ws_service: W,ws
         spu_lc_channel,
         ws_service.clone());
 
-    let partiton_controller = PartitionController::new(
+    let partition_controller = PartitionController::new(
         local_stores.clone(),
         shared_conn_manager.clone(),
         partition_channel,
@@ -91,7 +92,7 @@ pub fn create_core_services<W,D>(local_stores: ShareLocalStores,ws_service: W,ws
         local_stores.clone(),
         shared_conn_manager,
         spu_controller.conn_sender(),
-        partiton_controller.lrs_sendr()
+        partition_controller.lrs_sender()
     );
 
     spu_controller.run();
@@ -105,7 +106,7 @@ pub fn create_core_services<W,D>(local_stores: ShareLocalStores,ws_service: W,ws
     topic_controller.run();
 
     
-    partiton_controller.run();
+    partition_controller.run();
 
 
     (local_stores,private_server)
@@ -116,7 +117,7 @@ pub fn create_core_services<W,D>(local_stores: ShareLocalStores,ws_service: W,ws
 fn create_k8_services(metadata: ShareLocalStores, k8_ws: K8WSUpdateService,namespace: String) -> PubliApiServer {
    
     // k8 operators
-    run_spg_operator(k8_ws.own_client(),namespace.clone(),metadata.owned_spus());
+    run_k8_operators(k8_ws.clone(),namespace.clone(),metadata.owned_spus());
     
     create_public_server(metadata.clone(),k8_ws,namespace)
 

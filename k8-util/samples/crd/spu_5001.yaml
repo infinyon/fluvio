@@ -7,7 +7,8 @@ spec:
   spuType: "Custom"
   publicEndpoint:
     port: 9005
-    host: fluvio.local.test
+    ingress:
+      - hostname: fluvio.local.test
     encryption: PLAINTEXT
   privateEndpoint: 
     port: 9006

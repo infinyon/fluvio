@@ -73,9 +73,9 @@ fn sc_opt_to_sc_config(opt: ScOpt) -> Result<(ScConfig,K8Config), ScServerError>
     if let Some(bind_public) = opt.bind_public {
 
         let addr = string_to_socket_addr(&bind_public).map_err(
-            |_| IoError::new(
+            |err| IoError::new(
                 ErrorKind::InvalidInput,
-                format!("Expected <host:port>, found '{}'", bind_public),
+                format!("problem resolving public bind {}'", err),
             ))?;
        
         sc_config.public_endpoint = addr.into();

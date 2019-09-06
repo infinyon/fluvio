@@ -4,7 +4,7 @@ use serde::Serialize;
 use k8_metadata::core::metadata::LabelSelector;
 use k8_metadata::core::metadata::TemplateSpec;
 
-use crate::PodSpec;
+use crate::pod::PodSpec;
 
 
 use k8_metadata::core::Crd;

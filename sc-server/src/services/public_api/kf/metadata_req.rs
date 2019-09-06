@@ -77,19 +77,19 @@ fn make_kf_topic_response(name: &Name, topics: &TopicLocalStore) -> MetadataResp
 
 /// Convert online SPUs to Kafka Brokers
 fn flv_online_spus_to_kf_brokers(online_spus: &Vec<SpuKV>) -> Vec<MetadataResponseBroker> {
-    let mut spu_metadata: Vec<MetadataResponseBroker> = Vec::default();
-
-    for online_spu in online_spus {
+    
+    online_spus.iter().map(|online_spu| {
         let public_ep = online_spu.public_endpoint();
-        spu_metadata.push(MetadataResponseBroker {
+        
+        MetadataResponseBroker {
             node_id: *online_spu.id(),
-            host: public_ep.host.clone(),
+            host: public_ep.host_string(),
             port: public_ep.port as i32,
             rack: online_spu.rack_clone(),
-        });
-    }
+        }
 
-    spu_metadata
+    }).collect()
+   
 }
 
 /// Encode all partitions for a topic in Kf format.

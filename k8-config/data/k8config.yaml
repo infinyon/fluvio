@@ -22,3 +22,6 @@ users:
   user:
     client-certificate: /Users/test/.minikube/client.crt
     client-key: /Users/test/.minikube/client.key
+- name: testuser
+  user:
+    exec: dummy

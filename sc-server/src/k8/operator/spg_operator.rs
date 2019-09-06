@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 
 use futures::stream::StreamExt;
 use log::debug;
@@ -5,7 +6,7 @@ use log::error;
 use log::info;
 use log::trace;
 use log::warn;
-use std::collections::HashMap;
+
 
 use future_helper::spawn;
 use k8_client::ClientError;
@@ -13,24 +14,27 @@ use k8_metadata::core::metadata::InputK8Obj;
 use k8_metadata::core::metadata::InputObjectMeta;
 use k8_metadata::core::metadata::K8Watch;
 use k8_client::ApplyResult;
-use k8_client::ServiceSpec;
-use k8_client::ExternalTrafficPolicy;
-use k8_client::LoadBalancerType;
-use k8_client::ServicePort;
-use k8_client::ServiceStatus;
+use k8_client::service::ServiceSpec;
+use k8_client::service::ExternalTrafficPolicy;
+use k8_client::service::LoadBalancerType;
+use k8_client::service::ServicePort;
+use k8_client::service::ServiceStatus;
 use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::spg::SpuGroupStatus;
 use k8_metadata::spg::SpuEndpointTemplate;
 use k8_metadata::core::Spec;
 use k8_metadata::spu::SpuSpec as K8SpuSpec;
 use k8_metadata::spu::SpuType as K8SpuType;
+use k8_metadata::spu::IngressPort as K8IngressPort;
 use k8_metadata::spu::Endpoint as K8Endpoint;
+use k8_metadata::core::metadata::LabelProvider;
 use types::defaults::SPU_PUBLIC_PORT;
 use types::defaults::SPU_DEFAULT_NAME;
 use types::SpuId;
 
 use crate::k8::SharedK8Client;
 use crate::core::spus::SharedSpuLocalStore;
+
 
 use super::convert_cluster_to_statefulset;
 use super::generate_service;
@@ -61,7 +65,7 @@ impl SpgOperator {
 
         let mut spg_stream = self.client.watch_stream_since::<SpuGroupSpec>(&self.namespace, None);
 
-        info!("start cluster operation with namespace: {}",self.namespace);
+        info!("starting spg operator with namespace: {}",self.namespace);
         while let Some(result) = spg_stream.next().await {
             match result {
                 Ok(events) => {
@@ -71,7 +75,7 @@ impl SpgOperator {
             }
         }
 
-        debug!("cluster dispatch finished");
+        debug!("spg operator finished");
     }
 
 
@@ -81,7 +85,7 @@ impl SpgOperator {
                 Ok(watch_event) => {
                     let result = self.process_event(watch_event).await;
                     match result {
-                        Err(err) => error!("error proessing event: {}", err),
+                        Err(err) => error!("error processing k8 spu event: {}", err),
                         _ => {}
                     }
                 }
@@ -116,6 +120,7 @@ impl SpgOperator {
 
         let spg_spec = &spu_group.spec;
 
+        // ensure we don't have conflict with existing spu group
         if let Some(conflict_id) = spu_group.is_conflict_with(&self.spu_store) {
             
             warn!("spg group: {} is conflict with existing id: {}",spg_name,conflict_id);
@@ -140,15 +145,19 @@ impl SpgOperator {
                 }
             }
             
-
-            // ensure we have service for statefulset
-            if let Err(err) = self.apply_statefulset_service(&spu_group, spg_spec, &spg_name).await {
-                error!("cluster '{}': error applying services: {}", spg_name, err);
+            // ensure we have headless service for statefulset
+            match self.apply_statefulset_service(&spu_group, spg_spec, &spg_name).await {
+                Ok(svc_name) =>  {
+                    if let Err(err) = self.apply_stateful_set(&spu_group, spg_spec, &spg_name,svc_name).await {
+                        error!("cluster '{}': error applying stateful sets: {}", spg_name, err);
+                    }   
+                },
+                Err(err) => {
+                     error!("cluster '{}': error applying spg services: {}", spg_name, err);
+                }
             }
+            
 
-            if let Err(err) = self.apply_stateful_set(&spu_group, spg_spec, &spg_name).await {
-                error!("cluster '{}': error applying stateful sets: {}", spg_name, err);
-            }
             if let Err(err) = self.apply_spus(&spu_group, spg_spec, &spg_name).await {
                 error!("cluster '{}': error applying spus: {}", spg_name, err);
             }
@@ -166,9 +175,10 @@ impl SpgOperator {
         spu_group: &SpuGroupObj,
         spg_spec: &SpuGroupSpec,
         spg_name: &str,
+        spg_svc_name: String,
     ) -> Result<(), ClientError> {
        
-        let input_stateful = convert_cluster_to_statefulset(spg_spec,&spu_group.metadata,spg_name,&self.namespace);
+        let input_stateful = convert_cluster_to_statefulset(spg_spec,&spu_group.metadata,spg_name,spg_svc_name,&self.namespace);
           
         debug!(
             "cluster '{}': apply statefulset '{}' changes",
@@ -192,7 +202,6 @@ impl SpgOperator {
 
         let replicas = spg_spec.replicas;
 
-        // for each spu, we generate SPU,Extenal servic4qes
         for i in 0..replicas {     
             let spu_id = match self.compute_spu_id(spg_spec.min_id(), i) {
                 Ok(id) => id,
@@ -208,13 +217,13 @@ impl SpgOperator {
             if let Err(err) = self.apply_spu_load_balancers(
                 spg_obj, 
                 spg_spec,
-                &spu_name).await {
+                &spu_name
+            ).await {
                 error!("error trying to create load balancer for spu: {}",err);
             }
             
             self.apply_spu(spg_obj, spg_spec, spg_name, &spu_name, i, spu_id).await;
-                
-            
+
         }
 
         Ok(())
@@ -247,18 +256,20 @@ impl SpgOperator {
             ep.clone()
         } else {
             SpuEndpointTemplate::default_public()
-        };        
-
+        };   
+        
+        let full_group_name = format!("flv-spg-{}",group_name);
+        let full_spu_name = format!("flv-spg-{}",spu_name);
         let spu_spec = K8SpuSpec {
             spu_id: spu_id,
             spu_type: Some(K8SpuType::Managed),
-            public_endpoint: K8Endpoint {
-                host: format!("{}.{}.svc.cluster.local", spu_name, k8_namespace),
+            public_endpoint: K8IngressPort {
                 port: spu_public_ep.port,
                 encryption: spu_public_ep.encryption,
+                ingress: vec![]
             },
             private_endpoint: K8Endpoint {
-                host: format!("{}.{}",spu_name,group_name),
+                host: format!("{}.{}",full_spu_name,full_group_name),
                 port: spu_private_ep.port,
                 encryption: spu_private_ep.encryption,
             },
@@ -288,12 +299,13 @@ impl SpgOperator {
 
 
 
-    /// create external load balancer for each SPU
+    /// Apply external svc for each SPU
+    /// This is owned by group svc
     async fn apply_spu_load_balancers(
         &self,
         spg_obj: &SpuGroupObj,
         spg_spec: &SpuGroupSpec,
-        spg_name: &str,
+        spu_name: &str,
     ) -> Result<ApplyResult<ServiceSpec,ServiceStatus>, ClientError> {
         let metadata = &spg_obj.metadata;
 
@@ -305,7 +317,8 @@ impl SpgOperator {
         public_port.target_port = Some(public_port.port);
 
         let mut selector = HashMap::new();
-        selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), spg_name.to_owned());
+        let pod_name = format!("flv-spg-{}",spu_name);
+        selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), pod_name);
 
         let service_spec = ServiceSpec {
             r#type: Some(LoadBalancerType::LoadBalancer),
@@ -317,32 +330,39 @@ impl SpgOperator {
         
         let owner_ref = metadata.make_owner_reference::<ServiceSpec>();
 
+        let svc_name = format!("flv-spu-{}",spu_name);
+
         let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),
             kind: ServiceSpec::kind(),
             metadata: InputObjectMeta {
-                name: spg_name.to_owned(),
+                name: svc_name,
                 namespace: metadata.namespace().to_string(),
                 owner_references: vec![owner_ref],
                 ..Default::default()
-            },
+            }.set_labels(
+                vec![
+                    ("fluvio.io/spu-name",spu_name),
+                ]
+            ),
             spec: service_spec,
             ..Default::default()
         };
 
-        debug!("spu '{}': enable external services", spg_name);
+        debug!("spu '{}': enable external services", spu_name);
 
         self.client.apply(input_service).await  
     }
 
 
-
+    /// Apply service for statefulsets/group
+    /// returns name of the statefulset svc
     async fn apply_statefulset_service(
         &self,
         spg_obj: &SpuGroupObj,
         spg_spec: &SpuGroupSpec,
         spg_name: &str,
-    ) -> Result<(), ClientError> {
+    ) -> Result<String, ClientError> {
         
         let service_name = spg_name.to_owned();
         let service_spec  = generate_service(spg_spec,spg_name);
@@ -353,12 +373,13 @@ impl SpgOperator {
         labels.insert("app".to_owned(), SPU_DEFAULT_NAME.to_owned());
         labels.insert("group".to_owned(),spg_name.to_owned());
 
+        let svc_name = format!("flv-spg-{}",spg_name);
 
         let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),
             kind: ServiceSpec::kind(),
             metadata: InputObjectMeta {
-                name: service_name.clone(),
+                name: svc_name.clone(),
                 namespace: metadata.namespace().to_string(),
                 labels,
                 owner_references: vec![owner_ref],
@@ -376,7 +397,7 @@ impl SpgOperator {
 
         self.client.apply(input_service).await?;
 
-        Ok(())
+        Ok(svc_name)
     }
 
     /// compute spu id with min_id as base

@@ -80,6 +80,7 @@ impl ProfileConfig {
 
     /// retrieve target server
     pub fn target_server(&self) -> Result<TargetServer, CliError> {
+
         if let Some(sc_server) = self.sc_addr {
             Ok(TargetServer::Sc(sc_server.clone()))
         } else if let Some(spu_server) = self.spu_addr {

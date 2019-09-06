@@ -15,6 +15,7 @@ use std::path::PathBuf;
 
 use log::debug;
 use log::error;
+use log::info;
 
 // defaults values
 use types::defaults::{SPU_PUBLIC_HOSTNAME, SPU_PUBLIC_PORT};
@@ -180,14 +181,20 @@ impl SpuConfig {
                 
                 // try get special env SPU which has form of {}-{id} when in as in-cluster config
                 if let Ok(spu_name) = env::var("SPU_INDEX") {
-                    debug!("extracting SPU from: {}",spu_name);
+                    info!("extracting SPU from: {}",spu_name);
                     let spu_tokens: Vec<&str> = spu_name.split('-').collect();
                     if spu_tokens.len() < 2 {
                         error!("SPU is invalid format. bailing out");
                     } else {
-                        let spu_token = spu_tokens[1];
-                        let id: SpuId = spu_token.parse().expect("spu id should be integer");
-                        debug!("found SPU INDEX ID: {}",id);
+                        let spu_token = spu_tokens[spu_tokens.len()-1];
+                        let id: SpuId = match spu_token.parse() {
+                            Ok(id) => id,
+                            Err(err) => {
+                                error!("invalid spu id: {}. terminating it",err);
+                                std::process::exit(-1);
+                            }
+                        };
+                        info!("found SPU INDEX ID: {}",id);
 
                         // now we get SPU_MIN which tells min
                         let spu_min_var = env::var("SPU_MIN").unwrap_or("0".to_owned());

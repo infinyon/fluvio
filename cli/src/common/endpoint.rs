@@ -14,10 +14,10 @@ pub struct Endpoint {
 }
 
 impl Endpoint {
-    pub fn new(host: &String, port: &u16) -> Self {
-        Endpoint {
-            host: host.clone(),
-            port: *port,
+    pub fn new(host: String, port: u16) -> Self {
+        Self {
+            host: host,
+            port: port,
         }
     }
 }

@@ -59,10 +59,10 @@ impl K8WSUpdateService {
         &self,
         value: KVObject<S>,
     ) -> Result<(), ScServerError>  
-         where S: Spec + Debug,
+         where S: Spec + Debug + Into<<S as Spec>::K8Spec>,
              S::Status: Debug + PartialEq,
              S::Key: Display + Debug ,
-            <S as Spec>::K8Spec: Debug + From<S>  + Default + DeserializeOwned + Serialize + Clone ,
+            <S as Spec>::K8Spec: Debug + Default + DeserializeOwned + Serialize + Clone ,
             <<S as Spec>::K8Spec as K8Spec>::Status: Default + Debug + DeserializeOwned + Serialize + Clone
 
     {
@@ -145,7 +145,7 @@ impl K8WSUpdateService {
     }
 
     /// update both spec and status
-    async fn update_spec<S>(
+    pub async fn update_spec<S>(
         &self,
         value: KVObject<S>,
     ) -> Result<(), ScServerError> 
@@ -194,10 +194,10 @@ impl K8WSUpdateService {
     async fn inner_process<S>(&self,action: WSAction<S>) -> Result<(), ScServerError> 
 
         where 
-            S: Spec + Debug, 
+            S: Spec + Debug + Into<<S as Spec>::K8Spec>,
             S::Key: Display + Debug ,
             S::Status: Debug + PartialEq + Display,
-            <S as Spec>::K8Spec: From<S> + Clone + Debug + Default + Serialize + DeserializeOwned ,
+            <S as Spec>::K8Spec:  Clone + Debug + Default + Serialize + DeserializeOwned ,
             <<S as Spec>::K8Spec as K8Spec>::Status: From<S::Status> + Clone + Default + Debug + Serialize + DeserializeOwned
 
     {

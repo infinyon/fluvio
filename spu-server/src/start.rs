@@ -1,4 +1,3 @@
-use log::info;
 use log::debug;
 
 use future_helper::run;
@@ -16,11 +15,14 @@ use crate::controllers::sc::ScDispatcher;
 
 type FileReplicaContext = GlobalContext<FileReplica>;
 
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 pub fn main_loop() {
     // parse configuration (program exits on error)
     let spu_config = process_spu_cli_or_exit();
 
-    info!(
+    println!(
         "starting {}-spu services (id:{})",
         spu_config.type_label(),
         spu_config.id
@@ -34,6 +36,9 @@ pub fn main_loop() {
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
     });
+
+    println!("SPU Version: {} started successfully",VERSION);
+
 }
 
 /// create server and spin up services, but don't run server

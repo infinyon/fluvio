@@ -19,13 +19,15 @@ pub struct Cluster {
 #[serde(rename_all = "kebab-case")]
 pub struct ClusterDetail {
     pub insecure_skip_tls_verify: Option<bool>,
-    pub certificate_authority: String,
+    pub certificate_authority: Option<String>,
+    pub certificate_authority_data: Option<String>,
     pub server: String,
 }
 
 impl ClusterDetail {
-    pub fn ca(&self) -> IoResult<String> {
-        read_to_string(&self.certificate_authority)
+    pub fn ca(&self) -> Option<IoResult<String>> {
+
+        self.certificate_authority.as_ref().map(|ca| read_to_string(ca))
     }
 }
 
@@ -62,8 +64,8 @@ pub struct User {
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct UserDetail {
-    pub client_certificate: String,
-    pub client_key: String
+    pub client_certificate: Option<String>,
+    pub client_key: Option<String>
 }
 
 
@@ -133,7 +135,7 @@ mod test {
         assert_eq!(config.clusters.len(),1);
         let cluster = &config.clusters[0].cluster;
         assert_eq!(cluster.server,"https://192.168.0.0:8443");
-        assert_eq!(cluster.certificate_authority,"/Users/test/.minikube/ca.crt");
+        assert_eq!(cluster.certificate_authority,Some("/Users/test/.minikube/ca.crt".to_owned()));
         assert_eq!(config.contexts.len(),2);
         let ctx = &config.contexts[0].context;
         assert_eq!(ctx.cluster,"minikube");

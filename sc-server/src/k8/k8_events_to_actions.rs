@@ -35,7 +35,7 @@ pub fn k8_events_to_metadata_actions<S>(
     local_store: &LocalStore<S>,
 ) -> Result<Actions<LSChange<S>>, ScServerError> 
     where 
-        S: Spec + PartialEq, 
+        S: Spec + PartialEq + Debug, 
         S::Status: Status + PartialEq + Debug , 
         S::K8Spec: Debug, 
         S::Key: Clone + Ord  + Debug + Display
@@ -120,7 +120,8 @@ pub fn k8_event_stream_to_metadata_actions<S>(
     local_store: &LocalStore<S>
 ) -> Actions<LSChange<S>> 
     where 
-        S: Spec + Debug + PartialEq, 
+        S: Spec + Debug + PartialEq + Debug,
+        <S as Spec>::K8Spec: Debug,
         S::Key: Debug + Display + Clone,
         S::Status: Debug + PartialEq   
 {
@@ -233,9 +234,17 @@ pub fn k8_event_stream_to_metadata_actions<S>(
 ///
 fn k8_obj_to_kv_obj<S>(k8_obj: K8Obj<S::K8Spec,<S::K8Spec as K8Spec>::Status>) -> Result<KVObject<S>,ScServerError> 
      where 
-        S: Spec
+        S: Spec + Debug,
+         <S as Spec>::K8Spec: Debug
+
 {
-    S::convert_from_k8(k8_obj).map_err(|err| err.into())      
+    trace!("converting k8: {:#?}",k8_obj.spec);
+    S::convert_from_k8(k8_obj)
+        .map(|val| {
+            trace!("converted val: {:#?}",val.spec);
+            val
+        })
+        .map_err(|err| err.into())
 }
 
 

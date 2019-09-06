@@ -1,8 +1,8 @@
 TOOLCHAIN = "./rust-toolchain"
 RUSTV = $(shell cat ${TOOLCHAIN})
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
-CARGO_BUILD=build
-BIN_NAME=debug
+CARGO_BUILD=build --release
+BIN_NAME=release
 PUSH=push
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
@@ -36,11 +36,9 @@ release_cli_linux:
 
 
 # create docker images for release
-release_image:	CARGO_BUILD=build --release
 release_image:	PUSH=push_release
-release_image:	BIN_NAME=release
 
-debug_image:	linux-spu-server spu_image linux-sc-server sc_image
+minikube_image:	linux-spu-server spu_image linux-sc-server sc_image
 release_image:	linux-spu-server spu_image spu_image linux-sc-server sc_image
 
 

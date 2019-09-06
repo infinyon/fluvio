@@ -1,6 +1,7 @@
 mod spg_operator;
 mod conversion;
 mod spg_group;
+mod svc_operator;
 
 use metadata::spu::SpuSpec; 
 use metadata::topic::TopicSpec;
@@ -14,7 +15,9 @@ use crate::core::spus::K8SpuChangeDispatcher;
 use crate::core::spus::SharedSpuLocalStore;
 use crate::core::partitions::K8PartitionChangeDispatcher;
 use crate::core::topics::K8TopicChangeDispatcher;
+use crate::k8::K8WSUpdateService;
 use spg_operator::SpgOperator;
+use svc_operator::SvcOperator;
 
 use self::conversion::convert_cluster_to_statefulset;
 use self::conversion::generate_service;
@@ -65,11 +68,12 @@ impl WSChangeDispatcher for K8AllChangeDispatcher {
 
 
 
-pub fn run_spg_operator(
-    client: SharedK8Client,
+pub fn run_k8_operators(
+    k8_ws: K8WSUpdateService,
     namespace: String,
     spu_store: SharedSpuLocalStore
 ) {
-    SpgOperator::new(client,namespace,spu_store).run();
+    SpgOperator::new(k8_ws.own_client(),namespace.clone(),spu_store.clone()).run();
+    SvcOperator::new(k8_ws,namespace,spu_store).run();
 }
 

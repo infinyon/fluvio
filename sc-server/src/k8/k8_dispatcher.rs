@@ -115,7 +115,7 @@ impl <S>K8ClusterStateDispatcher<S>
             select! {
                 
                 _ = (sleep(Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC))).fuse() => {
-                    debug!("timer fired - kickoff SC reconcillation");
+                    debug!("timer fired - kickoff SC reconciliation");
                     break;
                 },
 

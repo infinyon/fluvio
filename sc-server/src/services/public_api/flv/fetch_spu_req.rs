@@ -53,7 +53,7 @@ pub async fn handle_fetch_spu_request(
 }
 
 /// Encode Spus metadata into SPU FLV response
-pub fn spu_store_metadata_to_spu_response(name: &String, spu: &SpuKV) -> FlvFetchSpuResponse {
+pub fn spu_store_metadata_to_spu_response(name: &str, spu: &SpuKV) -> FlvFetchSpuResponse {
     let public_ep = spu.public_endpoint();
     let private_ep = spu.private_endpoint();
     let flv_spu_type = match spu.spec().spu_type {
@@ -70,7 +70,7 @@ pub fn spu_store_metadata_to_spu_response(name: &String, spu: &SpuKV) -> FlvFetc
         id: *spu.id(),
         spu_type: flv_spu_type,
         public_ep: FlvEndPointMetadata {
-            host: public_ep.host.clone(),
+            host: public_ep.host_string(),
             port: public_ep.port,
         },
         private_ep: FlvEndPointMetadata {
@@ -83,7 +83,7 @@ pub fn spu_store_metadata_to_spu_response(name: &String, spu: &SpuKV) -> FlvFetc
 
     FlvFetchSpuResponse {
         error_code: FlvErrorCode::None,
-        name: name.clone(),
+        name: name.to_owned(),
         spu: Some(flv_spu),
     }
 }

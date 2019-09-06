@@ -23,11 +23,13 @@ spec:
     type: string
     description: Spu Type
     JSONPath: .spec.spuType
-  - name: Public Port
-    type: integer
-    description: Spu Type
-    JSONPath: .spec.publicEndpoint.port
-  - name: Private Port
+  - name: Public Host
+    type: string
+    JSONPath: .spec.publicEndpoint
+  - name: Private Host
+    type: string
+    JSONPath: .spec.privateEndpoint.host
+  - name: Port
     type: integer
     description: Spu Type
     JSONPath: .spec.privateEndpoint.port
@@ -53,10 +55,15 @@ spec:
               type: string
             publicEndpoint:
               type: object
-              required: ["host"]
+              required: ["port"]
               properties:
-                host:
-                  type: string
+                ingres:
+                  type: array
+                  properties:
+                    ip:
+                      type: string
+                    hostname:
+                      type: string
                 port:
                   minimum: 1
                   maximum: 65535

@@ -74,9 +74,9 @@ pub struct ServicePort {
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase",default)]
 pub struct ServiceStatus {
-    ingress: Option<Vec<LoadBalancerIngress>>
+    pub load_balancer: LoadBalancerStatus
 }
 
 impl Status for ServiceStatus{}
@@ -93,6 +93,12 @@ pub enum LoadBalancerType {
     ClusterIP,
     NodePort,
     LoadBalancer
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+#[serde(rename_all = "camelCase",default)]
+pub struct LoadBalancerStatus {
+    pub ingress: Vec<LoadBalancerIngress>
 }
 
 

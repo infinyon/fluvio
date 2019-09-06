@@ -1,4 +1,4 @@
-/// convert clust spec to statefulset for input
+/// convert spu group spec to statefulset for input
 use std::collections::HashMap;
 
 use k8_metadata::core::metadata::InputK8Obj;
@@ -8,18 +8,19 @@ use k8_metadata::core::metadata::ObjectMeta;
 use k8_metadata::core::metadata::TemplateMeta;
 use k8_metadata::core::metadata::LabelSelector;
 use k8_metadata::core::metadata::TemplateSpec;
+use k8_client::pod::ContainerSpec;
+use k8_client::pod::ContainerPortSpec;
+use k8_client::pod::PodSpec;
+use k8_client::pod::VolumeMount;
+use k8_client::stateful::ResourceRequirements;
+use k8_client::stateful::VolumeRequest;
+use k8_client::stateful::PersistentVolumeClaim;
+use k8_client::stateful::StatefulSetSpec;
+use k8_client::stateful::VolumeAccessMode;
+use k8_client::service::ServiceSpec;
+use k8_client::service::ServicePort;
 use k8_metadata::core::metadata::LabelProvider;
-use k8_client::StatefulSetSpec;
-use k8_client::VolumeAccessMode;
-use k8_client::ContainerSpec;
-use k8_client::ContainerPortSpec;
-use k8_client::PodSpec;
-use k8_client::VolumeMount;
-use k8_client::ResourceRequirements;
-use k8_client::VolumeRequest;
-use k8_client::PersistentVolumeClaim;
-use k8_client::ServiceSpec;
-use k8_client::ServicePort;
+
 use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::core::Spec;
 use types::defaults::SPU_DEFAULT_NAME;
@@ -30,17 +31,20 @@ use types::defaults::IMAGE_NAME;
 use types::defaults::FLV_LOG_BASE_DIR;
 use types::defaults::FLV_LOG_SIZE;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 /// convert SpuGroup to Statefulset
 pub fn convert_cluster_to_statefulset(
         group_spec: &SpuGroupSpec,
         metadata: &ObjectMeta,
         group_name: &str,
+        group_svc_name: String,
         namespace: &str) 
     -> InputK8Obj<StatefulSetSpec>
 {
 
-    let statefulset_name = group_name.to_owned();
-    let spec  = generate_stateful(group_spec, group_name,namespace);
+    let statefulset_name = format!("flv-spg-{}",group_name);
+    let spec  = generate_stateful(group_spec, group_name,group_svc_name,namespace);
     let owner_ref = metadata.make_owner_reference::<SpuGroupSpec>();
     
     InputK8Obj {
@@ -59,7 +63,11 @@ pub fn convert_cluster_to_statefulset(
 }
 
 /// generate statefulset spec from cluster spec
-fn generate_stateful(spg_spec: &SpuGroupSpec,name: &str,namespace: &str) -> StatefulSetSpec {
+fn generate_stateful(
+    spg_spec: &SpuGroupSpec,
+    name: &str,
+    group_svc_name: String,
+    namespace: &str) -> StatefulSetSpec {
 
     let replicas = spg_spec.replicas;
     let spg_template = &spg_spec.template.spec;
@@ -98,7 +106,7 @@ fn generate_stateful(spg_spec: &SpuGroupSpec,name: &str,namespace: &str) -> Stat
             termination_grace_period_seconds: Some(10),
             containers: vec![ContainerSpec {
                 name: SPU_DEFAULT_NAME.to_owned(),
-                image: Some(format!("{}:0.1-alpha", IMAGE_NAME)),
+                image: Some(format!("{}:{}",IMAGE_NAME,VERSION)),
                 ports: vec![public_port, private_port],
                 volume_mounts: vec![VolumeMount {
                     name: "data".to_owned(),
@@ -123,7 +131,7 @@ fn generate_stateful(spg_spec: &SpuGroupSpec,name: &str,namespace: &str) -> Stat
 
     StatefulSetSpec {
         replicas: Some(replicas),
-        service_name: name.to_owned(),
+        service_name: group_svc_name,
         selector: LabelSelector::new_labels(vec![
             ("app", SPU_DEFAULT_NAME),
             ("group",name)

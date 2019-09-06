@@ -8,7 +8,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
-use log::trace;
+use log::debug;
 use types::socket_helpers::host_port_to_socket_addr;
 
 use kf_protocol::message::KfApiVersions;
@@ -37,7 +37,7 @@ pub async fn find_broker_leader_for_topic_partition<'a>(
                     // traverse brokers and find leader
                     for broker in brokers {
                         if broker.node_id == leader_id {
-                            trace!("broker {}/{} is leader", broker.host, broker.port);
+                            debug!("broker {}/{} is leader", broker.host, broker.port);
                             return host_port_to_socket_addr(&broker.host, broker.port as u16)
                                 .map_err(|err| err.into());
                         }

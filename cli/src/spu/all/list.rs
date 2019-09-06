@@ -87,7 +87,7 @@ fn fetch_and_list_all_spus(
     list_spu_cfg: &ListSpusConfig,
 ) -> Result<(), CliError> {
     let flv_spus = query_spu_list_metadata(server_addr, false)?;
-    let sc_spus = flv_response_to_spu_metadata(&flv_spus);
+    let sc_spus = flv_response_to_spu_metadata(flv_spus);
 
     // format and dump to screen
     format_spu_response_output(sc_spus, &list_spu_cfg.output)

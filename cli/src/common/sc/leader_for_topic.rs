@@ -8,7 +8,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
-use log::trace;
+use log::debug;
 
 use types::socket_helpers::host_port_to_socket_addr;
 
@@ -35,7 +35,7 @@ pub async fn find_spu_leader_for_topic_partition<'a>(
         return Err(CliError::IoError(IoError::new(
             ErrorKind::InvalidData,
             format!(
-                "topic-composition, expected 1 topic, found {}",
+                "topic error: expected 1 topic, found {}",
                 topics_resp.len()
             ),
         )));
@@ -47,7 +47,7 @@ pub async fn find_spu_leader_for_topic_partition<'a>(
         return Err(CliError::IoError(IoError::new(
             ErrorKind::InvalidData,
             format!(
-                "topic-composition topic error: {}",
+                "topic error: {}",
                 topic_resp.error_code.to_sentence()
             ),
         )));
@@ -84,8 +84,13 @@ pub async fn find_spu_leader_for_topic_partition<'a>(
                     let host = &spu_resp.host;
                     let port = &spu_resp.port;
 
-                    trace!("spu {}/{}: is leader", host, port);
-                    return host_port_to_socket_addr(host, *port).map_err(|err| err.into());
+                    debug!("spu {}/{}: is leader", host, port);
+                    return host_port_to_socket_addr(host, *port)
+                        .map(|addr| {
+                            debug!("resolved spu leader: {}",addr);
+                            addr
+                        })
+                        .map_err(|err| err.into())
                 }
             }
         }

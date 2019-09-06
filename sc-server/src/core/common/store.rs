@@ -107,6 +107,19 @@ where
         }
     }
 
+    /// get copy of the spec ref by key
+    pub fn spec<K: ?Sized>(&self, key: &K) -> Option<S> 
+        where S::Key: Borrow<K>,
+            K: Ord
+    {
+        match self.inner_store().read().get(key) {
+            Some(value) => Some(value.spec.clone()),
+            None => None,
+        }
+    }
+
+
+
     pub fn find_and_do<K,F>(&self, key: &K, mut func: F) -> Option<()>
         where
             F: FnMut(&'_ KVObject<S>),

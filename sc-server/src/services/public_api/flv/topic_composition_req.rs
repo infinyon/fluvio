@@ -1,5 +1,7 @@
-use log::{trace, debug};
 use std::io::Error;
+
+use log::debug;
+use log::warn;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 use sc_api::topic::FlvTopicCompositionRequest;
@@ -19,7 +21,7 @@ pub async fn handle_topic_composition_request(
     let mut spu_ids = vec![];
 
     debug!(
-        "topic-composition, encode topics '{:?}'",
+        "request topics '{:#?}'",
         request.request.topic_names
     );
 
@@ -98,10 +100,14 @@ pub async fn handle_topic_composition_request(
                 spus.push(spu);
             } else {
                 // update spu with metadata and save
-                let public_ep = spu_metadata.public_endpoint();
-                spu.host = public_ep.host.clone();
-                spu.port = public_ep.port;
-
+                let ingress = spu_metadata.public_endpoint();
+                if let Some(host) = ingress.host() {
+                    spu.host = host;
+                    spu.port = ingress.port;
+                } else {
+                    warn!("no public host founded for spu: {}, ingress: {:#?}",spu_id,ingress);
+                }
+               
                 spus.push(spu);
             }
         } else {
@@ -111,11 +117,10 @@ pub async fn handle_topic_composition_request(
         }
     }
 
-    // update reponse
     topic_comp_resp.topics = topics;
     topic_comp_resp.spus = spus;
 
-    trace!("topic-composition resp {:#?}", topic_comp_resp);
+    debug!("topic-composition resp {:#?}", topic_comp_resp);
 
     Ok(request.new_response(topic_comp_resp))
 }

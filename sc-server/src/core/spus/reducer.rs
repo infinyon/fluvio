@@ -97,7 +97,7 @@ impl SpuReducer {
             ConnectionRequest::Spu(
                 SpuSpecChange::Add(spu.spec().clone())));
 
-        // always set to offlie status
+        // always set to offline status
         if !spu.status.is_offline() {
              spu.status.set_offline();
             actions.spus.push(WSAction::UpdateStatus(spu));
