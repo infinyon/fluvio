@@ -1,3 +1,6 @@
 #!/bin/bash
-minikube start  --kubernetes-version v1.13.7
-# minikube start --kubernetes-version v1.13.7-v 10
+#
+# Maximum version supported by EKS
+# https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+minikube start  --kubernetes-version v1.14.7
+
