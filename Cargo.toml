@@ -9,7 +9,7 @@ members = [
     "k8-diff",
     "kf-protocol",
     "kf-protocol/kf-protocol-dump",
-    "kf-protocol/kf-protocol-build",
+#    "kf-protocol/kf-protocol-build",
     "kf-socket",
     "kf-service",
     "k8-metadata",

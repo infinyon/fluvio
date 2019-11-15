@@ -41,7 +41,7 @@ pub struct PartitionController<W> {
 }
 
 impl<W> PartitionController<W>
-     where W: WSUpdateService + Send + 'static 
+     where W: WSUpdateService + Send + Sync + 'static 
 {
 
     pub fn new(

@@ -396,7 +396,7 @@ impl SpuLocalStore {
     }
 
     // Returns a list of rack inter-leaved spus [0, 4, 5, 1, 3, 2]
-    pub fn online_spus_in_rack(rack_map: &Vec<(String, Vec<i32>)>) -> Vec<(i32)> {
+    pub fn online_spus_in_rack(rack_map: &Vec<(String, Vec<i32>)>) -> Vec<i32> {
         let mut spus = vec![];
         let row_max = rack_map.len();
         let col_max = rack_map.iter().map(|(_, list)| list.len()).max().unwrap();

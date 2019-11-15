@@ -13,7 +13,7 @@ use futures::io::AsyncWrite;
 use futures::sink::Sink;
 use futures::ready;
 use futures::Future;
-use futures::Poll;
+use std::task::Poll;
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
 

@@ -98,12 +98,30 @@ kubectl create -f k8-util/samples/crd/spu_5002.yaml
 kubectl create -f k8-util/samples/crd/spu_5003.yaml 
 ```
 
+## Starting SC
+```
+./dev-tools/log/debug-spu-min 5001 9005 9006
+```
+
 ## Starting custom SPU
 ```
 ./dev-tools/log/debug-spu-min 5001 9005 9006
 ./dev-tools/log/debug-spu-min 5002 9007 9008
 ./dev-tools/log/debug-spu-min 5003 9009 9010
 ```
+
+## Running CLI
+
+To connect with local SC, use "--sc" parameter as shown below.
+Please refer to fluvio web site for CLI operation.
+
+Get SPU
+
+```
+ fluvio spu list --sc 127.0.0.1:9003
+```
+
+
 
 
 

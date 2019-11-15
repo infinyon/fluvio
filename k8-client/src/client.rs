@@ -121,7 +121,7 @@ impl K8Client {
         let helper = K8AuthHelper::new(config);
         match helper.build_https_connector()  {
             Ok(https) => {
-                let hyper_client = Client::builder().build::<_, (Body)>(https);
+                let hyper_client = Client::builder().build::<_,Body>(https);
                 let host = helper.config.api_path().to_owned();
                 
                 Ok(Self {
