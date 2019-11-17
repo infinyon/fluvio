@@ -226,9 +226,9 @@ pub mod test {
 
         // expecting error
         assert!(result.is_err());
-        assert_eq!(
-            format!("{}", result.unwrap_err()),
-            "missing field `port` for key `sc`"
+        assert!(
+            format!("{}", result.unwrap_err()).contains(
+                "missing field `port` for key `sc`")
         );
     }
 

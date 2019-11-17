@@ -1,7 +1,7 @@
 [package]
 name = "kf-protocol-transport"
 edition = "2018"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 authors = ["fluvio.io"]
 
 
@@ -14,6 +14,6 @@ kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
 
 [dev-dependencies]
 future-helper = { path = "../../future-helper", features = ["fixture"] }
-futures-preview = { version = "0.3.0-alpha.17" }
+futures = { version = "0.3.1" }
 future-aio = { path = "../../future-aio"}
 utils = { path= "../../utils"}

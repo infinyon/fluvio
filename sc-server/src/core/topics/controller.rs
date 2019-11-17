@@ -36,7 +36,7 @@ pub struct TopicController<W> {
 impl <W>TopicController<W> 
 
  where
-        W: WSUpdateService + Send + 'static
+        W: WSUpdateService + Send + Sync + 'static
        
 {
 

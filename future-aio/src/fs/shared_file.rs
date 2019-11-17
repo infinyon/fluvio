@@ -10,7 +10,7 @@ use log::trace;
 
 use futures::io::AsyncRead;
 
-use futures::Poll;
+use std::task::Poll;
 use futures::Future;
 use pin_utils::unsafe_unpinned;
 use pin_utils::pin_mut;

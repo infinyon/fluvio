@@ -43,7 +43,7 @@ pub struct SpuController<W> {
 impl <W>SpuController<W>
 
  where
-        W: WSUpdateService + Send + 'static
+        W: WSUpdateService + Send + Sync + 'static
        
 {
    

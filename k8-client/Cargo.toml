@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "k8-client"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 authors = ["fluvio.io"]
 
 [features]
@@ -14,7 +14,7 @@ log = "0.4.6"
 bytes = "0.4.12"
 http = "0.1.16"
 hyper = "0.12.33"
-futures-preview = { version = "0.3.0-alpha.17", features = ["compat"]}
+futures = { version = "0.3.1", features = ["compat"]}
 pin-utils = "0.1.0-alpha.4"
 rustls = { version = "0.15.2", features = ["dangerous_configuration"] }
 webpki = "0.19"
