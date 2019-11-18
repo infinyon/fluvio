@@ -6,15 +6,14 @@ use std::task::Poll;
 
 use bytes::Bytes;
 use futures::stream::Stream;
-use hyper::body::Chunk;
-use hyper::error::Error as HyperError;
+
 use log::error;
 use log::trace;
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
 use std::mem;
 
-type ChunkList = Vec<Result<Vec<u8>, HyperError>>;
+//type ChunkList = Vec<Result<Vec<u8>, HyperError>>;
 
 pub struct WatchStream<S>
 where

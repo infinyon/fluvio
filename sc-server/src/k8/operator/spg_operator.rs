@@ -6,6 +6,7 @@ use log::error;
 use log::info;
 use log::trace;
 use log::warn;
+use pin_utils::pin_mut;
 
 
 use future_helper::spawn;
@@ -58,12 +59,13 @@ impl SpgOperator {
     }
 
     pub fn run(self) {
-        spawn(self.inner_run())
+        spawn(self.inner_run());
     }
 
     async fn inner_run(self)  {
 
-        let mut spg_stream = self.client.watch_stream_since::<SpuGroupSpec>(&self.namespace, None);
+        let spg_stream = self.client.watch_stream_since::<SpuGroupSpec>(&self.namespace, None);
+        pin_mut!(spg_stream);
 
         info!("starting spg operator with namespace: {}",self.namespace);
         while let Some(result) = spg_stream.next().await {

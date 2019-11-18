@@ -5,6 +5,7 @@ use log::error;
 use log::info;
 use log::trace;
 use futures::stream::StreamExt;
+use pin_utils::pin_mut;
 
 use future_helper::spawn;
 use k8_client::ClientError;
@@ -44,13 +45,14 @@ impl SvcOperator {
     }
 
     pub fn run(self) {
-        spawn(self.inner_run())
+        spawn(self.inner_run());
     }
 
 
      async fn inner_run(self)  {
 
-        let mut svc_stream = self.k8_ws.client().watch_stream_since::<ServiceSpec>(&self.namespace, None);
+        let svc_stream = self.k8_ws.client().watch_stream_since::<ServiceSpec>(&self.namespace, None);
+        pin_mut!(svc_stream);
 
         info!("starting svc operator with namespace: {}",self.namespace);
         while let Some(result) = svc_stream.next().await {

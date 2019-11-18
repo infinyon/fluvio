@@ -7,39 +7,41 @@ use std::os::unix::io::AsRawFd;
 
 use log::trace;
 use log::debug;
+use bytes::Bytes;
 
 use futures::sink::SinkExt;
-
+use futures::stream::SplitSink;
 
 use future_aio::ZeroCopyWrite;
 use future_aio::BytesMut;
-use future_aio::net::TcpStreamSplitSink;
 use kf_protocol::Version;
 use kf_protocol::Encoder as KfEncoder;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::transport::KfCodec;
+use futures_codec::Framed;
 
+use future_aio::net::AsyncTcpStream;
 use crate::KfSocketError;
 use crate::FileWrite;
 use crate::StoreValue;
 
 #[derive(Debug)]
 pub struct KfSink{
-    inner: TcpStreamSplitSink<KfCodec>,
+    inner: SplitSink<Framed<AsyncTcpStream,KfCodec>,Bytes>,
     fd: RawFd
 }
 
 impl KfSink {
 
-    pub fn new(inner: TcpStreamSplitSink<KfCodec>, fd: RawFd) -> Self {
+    pub fn new(inner: SplitSink<Framed<AsyncTcpStream,KfCodec>,Bytes>, fd: RawFd) -> Self {
         KfSink {
             fd,
             inner
         }
     }
 
-    pub fn get_mut_tcp_sink(&mut self) -> &mut TcpStreamSplitSink<KfCodec>{
+    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitSink<Framed<AsyncTcpStream,KfCodec>,Bytes>{
         &mut self.inner
     }
 
@@ -183,6 +185,7 @@ mod tests {
 
     use future_helper::test_async;
     use future_helper::sleep;
+    use future_aio::fs::file_util;
     use future_aio::fs::AsyncFile;
     use future_aio::ZeroCopyWrite;
     use future_aio::net::AsyncTcpListener;
@@ -205,7 +208,7 @@ mod tests {
 
     async fn test_server(addr: SocketAddr) -> Result<(),KfSocketError> {
 
-        let listener = AsyncTcpListener::bind(&addr)?;
+        let listener = AsyncTcpListener::bind(&addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
         let incoming_stream = incoming.next().await;
@@ -232,7 +235,7 @@ mod tests {
         // send out file
         debug!("sending out file contents");
         let test_file_path = temp_dir().join("socket_zero_copy");
-        let data_file = AsyncFile::open(test_file_path).await?;
+        let data_file = file_util::open(test_file_path).await?;
         let fslice = data_file.as_slice(0,None).await?;
         socket.get_mut_sink().zero_copy_write(&fslice).await?;
      
@@ -270,7 +273,7 @@ mod tests {
         let test_file_path = temp_dir().join("socket_zero_copy");
         ensure_clean_file(&test_file_path);
         debug!("creating test file: {:#?}",test_file_path);
-        let mut file = AsyncFile::create(&test_file_path).await?;
+        let mut file = file_util::create(&test_file_path).await?;
         let mut out = vec![];
         let msg = "world".to_owned();
         msg.encode(&mut out,0)?;

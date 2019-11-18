@@ -7,7 +7,7 @@ pub use error::ConfigError;
 pub use config::KubeConfig;
 pub use pod::PodConfig;
 
-use log::info;
+use log::debug;
 
 #[derive(Debug)]
 pub struct KubeContext {
@@ -31,22 +31,21 @@ impl Default for K8Config {
 impl K8Config {
     pub fn load() -> Result<Self,ConfigError> {
         if let Some(pod_config) = PodConfig::load() {
-            info!("found pod config: {:#?}",pod_config);
+            debug!("found pod config: {:#?}",pod_config);
             Ok(K8Config::Pod(pod_config))
         } else {
-            info!("no pod config is found. trying to read kubeconfig");
+            debug!("no pod config is found. trying to read kubeconfig");
             let config =  KubeConfig::from_home()?;
-            info!("kube config: {:#?}",config);
+            debug!("kube config: {:#?}",config);
             // check if we have current cluster
             
             if let Some(current_cluster) = config.current_cluster() {
-                let ctx = config.current_context().unwrap();
-                let k8contxt = KubeContext {
+                let ctx = config.current_context().expect("current context should exists");
+                Ok(K8Config::KubeConfig(KubeContext {
                     namespace: ctx.context.namespace().to_owned(),
                     api_path: current_cluster.cluster.server.clone(),
                     config
-                };
-                Ok(K8Config::KubeConfig(k8contxt))
+                }))
             } else {
                 Err(ConfigError::NoCurrentContext)
             }

@@ -1,6 +1,6 @@
 [package]
 name = "k8-dderive"
-version = "0.2.0-alpha.1"
+version = "0.2.1"
 edition = "2018"
 authors = ["fluvio.io"]
 

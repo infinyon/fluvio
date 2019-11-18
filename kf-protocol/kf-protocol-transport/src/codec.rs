@@ -5,13 +5,13 @@ use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
 use log::trace;
-use tokio_codec::Decoder;
-use tokio_codec::Encoder;
+use futures_codec::Decoder;
+use futures_codec::Encoder;
 
 use kf_protocol::Decoder as KDecoder;
 
 #[derive(Debug, Default)]
-pub struct KfCodec(());
+pub struct KfCodec{}
 
 impl Decoder for KfCodec {
     type Item = BytesMut;
@@ -73,10 +73,10 @@ mod test {
     use futures::future::join;
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
+    use futures_codec::Framed;
 
     use future_aio::net::AsyncTcpListener;
     use future_aio::net::AsyncTcpStream;
-    use future_aio::net::TcpStreamSplit;
     use future_helper::sleep;
     use future_helper::test_async;
     use kf_protocol::Decoder as KDecoder;
@@ -99,14 +99,14 @@ mod test {
 
         let server_ft = async {
             debug!("server: binding");
-            let listener = AsyncTcpListener::bind(&addr)?;
+            let listener = AsyncTcpListener::bind(&addr).await?;
             debug!("server: successfully binding. waiting for incoming");
             let mut incoming = listener.incoming();
             while let Some(stream) = incoming.next().await {
                 debug!("server: got connection from client");
                 let tcp_stream = stream?;
-                let split: TcpStreamSplit<KfCodec> = tcp_stream.split();
-                let mut sink = split.sink();
+                let framed = Framed::new(tcp_stream,KfCodec{});
+                let (mut sink,_) = framed.split();
                 let data: Vec<u8> = vec![0x1, 0x02, 0x03, 0x04, 0x5];
                 debug!("data len: {}", data.len());
                 let mut buf = vec![];
@@ -117,7 +117,7 @@ mod test {
                 debug!("server: client final buf len: {}", out.len());
                 assert_eq!(out.len(), 9); //  4(array len)+ 5 bytes
 
-                // need to explicity send out len
+                // need to send out len
                 let len = out.len() as i32;
                 let mut len_buf = vec![];
                 len.encode(&mut len_buf,0)?;
@@ -145,8 +145,8 @@ mod test {
             debug!("client: trying to connect");
             let tcp_stream = AsyncTcpStream::connect(&addr).await?;
             debug!("client: got connection. waiting");
-            let split: TcpStreamSplit<KfCodec> = tcp_stream.split();
-            let mut stream = split.stream();
+            let framed = Framed::new(tcp_stream,KfCodec{});
+            let (_,mut stream) = framed.split();
             if let Some(value) = stream.next().await {
                 debug!("client :received first value from server");
                 let mut bytes = value?;

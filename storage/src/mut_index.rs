@@ -8,8 +8,10 @@ use std::slice;
 use std::pin::Pin;
 use std::task::Context;
 use std::task::Poll;
+use std::task::Waker;
+use std::sync::Arc;
+use std::sync::RwLock;
 
-use futures::future::Future;
 use futures::sink::Sink;
 use libc::c_void;
 use log::debug;
@@ -19,25 +21,31 @@ use pin_utils::pin_mut;
 use pin_utils::unsafe_unpinned;
 
 
-use future_aio::fs::AsyncFile;
+use future_aio::fs::File;
+use future_helper::spawn_blocking;
 use future_aio::fs::MemoryMappedMutFile;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
 
 use crate::util::generate_file_name;
-use crate::util::log_path_get_offset;
-use crate::util::OffsetError;
 use crate::ConfigOption;
 use crate::index::lookup_entry;
 use crate::index::Index;
 use crate::index::OffsetPosition;
+
 
 /// size of the memory mapped isze
 const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 
 pub const EXTENSION: &str = "index";
 
-unsafe impl Sync for MutLogIndex {}
+
+enum LogIndexState {
+    Ready,
+    Dirty,
+    Flushing(Waker)
+}
+
 
 /// Segment index
 ///
@@ -47,11 +55,14 @@ unsafe impl Sync for MutLogIndex {}
 ///
 /// For active segment, index can grow
 /// For non active, it is fixed
+/// we maintain state in the lock to handle waker
 
 // implement index file
 pub struct MutLogIndex {
     mmap: MemoryMappedMutFile,
-    file: AsyncFile,
+    state: Arc<RwLock<LogIndexState>>,
+    file: File,
+    base_offset: Offset,
     bytes_delta: Size,
     pos: Size,
     option: ConfigOption,
@@ -60,37 +71,42 @@ pub struct MutLogIndex {
 
 // const MEM_SIZE: u64 = 1024 * 1024 * 10; //10 MBs
 
+unsafe impl Sync for MutLogIndex {}
 unsafe impl Send for MutLogIndex {}
 
 impl MutLogIndex {
     unsafe_unpinned!(mmap: MemoryMappedMutFile);
     unsafe_unpinned!(pos: Size);
     unsafe_unpinned!(bytes_delta: Size);
+    unsafe_unpinned!(state: Arc<RwLock<LogIndexState>>);
 
     pub async fn create(base_offset: Offset, option: &ConfigOption) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
-        // create new memory file and
         if option.index_max_bytes == 0 {
             return Err(IoError::new(ErrorKind::InvalidInput, "index max bytes must be greater than 0"));
         }
 
         debug!("creating index mm at: {:#?}", index_file_path);
-        let (mut m_file, file) = MemoryMappedMutFile::create(
+        let ( m_file, file) = MemoryMappedMutFile::create(
             &index_file_path,
             option.index_max_bytes as u64
         ).await?;
 
-        let b_slices: &[u8] = m_file.get_mut_mem_file();
-        let ptr = unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) };
+        let ptr = {
+            let b_slices: &[u8] = &m_file.mut_inner();
+            unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) }
+        };
 
         Ok(MutLogIndex {
             mmap: m_file,
+            state: Arc::new(RwLock::new(LogIndexState::Ready)),
             file,
             pos: 0,
             bytes_delta: 0,
             option: option.to_owned(),
             ptr,
+            base_offset
         })
     }
 
@@ -104,23 +120,28 @@ impl MutLogIndex {
 
        
         // make sure it is log file
-        let (mut m_file, file) = MemoryMappedMutFile::create(
+        let (m_file, file) = MemoryMappedMutFile::create(
             &index_file_path,
             option.index_max_bytes as u64
         ).await?;
 
-        let b_slices: &[u8] = m_file.get_mut_mem_file();
-        let ptr = unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) };
+        
+        let ptr = {
+            let b_slices: &[u8] = &m_file.mut_inner();
+            unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) }
+        };
 
         trace!("opening mut index at: {:#?}, pos: {}", index_file_path,0);
-
+      
         let mut index = MutLogIndex {
             mmap: m_file,
+            state: Arc::new(RwLock::new(LogIndexState::Ready)),
             file,
             pos: 0,
             bytes_delta: 0,
             option: option.to_owned(),
             ptr,
+            base_offset
         };
 
         index.update_pos()?;
@@ -150,8 +171,8 @@ impl MutLogIndex {
 
    
     #[allow(dead_code)]
-    pub fn get_base_offset(&self) -> Result<Offset, OffsetError> {
-        log_path_get_offset(&self.file.get_path())
+    pub fn get_base_offset(&self) -> Offset {
+        self.base_offset
     }
 
     /// recalculate the 
@@ -169,9 +190,7 @@ impl MutLogIndex {
         }
 
         Err(IoError::new(ErrorKind::InvalidData, "empty slot was not found"))
-
     }
-
 }
 
 impl Index for MutLogIndex {
@@ -218,12 +237,28 @@ impl Sink<(Size,Size,Size)> for MutLogIndex {
     type Error = IoError;
 
     fn poll_ready(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(())) // mem file is always ready
+        match *self.state.read().unwrap() {
+            LogIndexState::Ready => {
+                trace!("poll ready: write state is ready => ready");
+                Poll::Ready(Ok(()))
+            },
+            _ => {
+                trace!("poll ready: write state is flushing => pending");
+                Poll::Pending
+            }
+        }
     }
 
     fn start_send(mut self: Pin<&mut Self>, item: (Size,Size,Size)) -> Result<(), Self::Error> {
       
+        
         trace!("index start: {:#?}",item);
+
+        let mut write_state = self.as_mut().state().write().unwrap();
+        *write_state = LogIndexState::Dirty;
+        drop(write_state);
+        trace!("set mode to dirty");  
+
         let batch_size = item.2;
 
         let bytes_delta = self.bytes_delta;
@@ -244,16 +279,61 @@ impl Sink<(Size,Size,Size)> for MutLogIndex {
             this[pos] = (item.0,item.1).to_be();
             trace!("index successfully written: {:#?} at: {}", item,pos);
         } else {
-            error!("index position: {} is greater than max entries: {}, ignorring",pos,max_entries);
+            error!("index position: {} is greater than max entries: {}, ignoring",pos,max_entries);
         }
-      
+
+              
         Ok(())
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        let ft = self.mmap().flush_ft();
-        pin_mut!(ft);
-        ft.poll(cx)
+    fn poll_flush(mut self: Pin<&mut Self>, ctx: &mut Context) -> Poll<Result<(), Self::Error>> {
+        
+        trace!("poll flush");
+
+        // return early if state is ready or pending if still flushing
+        match *self.state.read().unwrap() {
+            LogIndexState::Ready => {
+                trace!("flushing finished. returning ok");
+                return Poll::Ready(Ok(()));
+            }
+            LogIndexState::Flushing(_) => {
+                trace!("flushing is still pending, returning pending");
+                return Poll::Pending;
+            },
+            _ => {}
+        }
+
+        // state is dirty. need to schedule flush and store state with waker
+        let mut write_state = self.as_mut().state().write().unwrap();
+        *write_state = LogIndexState::Flushing(ctx.waker().clone());
+        drop(write_state);
+        trace!("state is dirty, scheduling mmap flush");
+
+        // clone state an mmap so it can be passed to spawn blocking
+        let state_clone = self.as_ref().state.clone();
+        let mmap = self.as_mut().mmap().inner_map();
+        
+        spawn_blocking(move || {
+            let lock = mmap.write().unwrap();
+            let _ = lock.flush();
+            drop(lock);
+            trace!("done flushing");
+            let mut state_lock = state_clone.write().unwrap();
+            let prev_state = std::mem::replace(&mut *state_lock, LogIndexState::Ready);
+            drop(state_lock);
+            match prev_state {
+                LogIndexState::Flushing(waker) => {
+                    trace!("waking up");
+                    waker.wake();
+                },
+                _ => {
+                    trace!("invalid state waking up");
+                }
+            }
+            trace!("update state back to ready");
+        });
+        
+        Poll::Pending
     }
 
     fn poll_close(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Result<(), Self::Error>> {
@@ -290,12 +370,12 @@ mod tests {
 
         let mut index_sink = MutLogIndex::create(121, &option).await?;
 
+
         index_sink.send((5, 200,70)).await?;      // this will be ignored
         index_sink.send((10, 100,70)).await?;     // this will be written since batch size 70 is greater than 50
 
         assert_eq!(index_sink.pos,1);
 
-        
         let mut f = File::open(&test_file)?;
         let mut buffer = vec![0; 32];
         f.read(&mut buffer)?;
@@ -316,8 +396,7 @@ mod tests {
 
         let index_sink = MutLogIndex::open(121, &option).await?;
         assert_eq!(index_sink.pos,1);
-    
-    
+
         Ok(())
     }
 

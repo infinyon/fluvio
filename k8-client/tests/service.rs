@@ -1,33 +1,35 @@
 #[cfg(feature = "k8")]
 #[cfg(not(feature = "k8_stream"))]
-mod integratino_tests {
+mod integration_tests {
 
-    use lazy_static::lazy_static;
+    use std::collections::HashMap;
+
     use log::debug;
+    use log::info;
     use rand::distributions::Alphanumeric;
     use rand::{thread_rng, Rng};
-    use std::collections::HashMap;
+ 
 
     use future_helper::test_async;
     use k8_client::fixture::TEST_NS;
     use k8_client::ClientError;
-    use k8_client::InputK8Obj;
-    use k8_client::InputMetadata;
+    use k8_metadata::core::metadata::InputK8Obj;
+    use k8_metadata::core::metadata::InputObjectMeta;
     use k8_client::K8Client;
-    use k8_client::ServicePort;
-    use k8_client::ServiceSpec;
-    use k8_client::ServiceStatus;
+    use k8_client::service::ServicePort;
+    use k8_client::service::ServiceSpec;
+    use k8_client::service::ServiceStatus;
     use k8_metadata::core::Spec;
 
     use types::defaults::SPU_DEFAULT_NAME;
 
-    // way to get static lifetime which is requirmeent for cluster
-    lazy_static! {
-        static ref K8CLIENT: K8Client = K8Client::new(None).expect("cluster not intialized");
+   
+    fn create_client() -> K8Client {
+        K8Client::default().expect("cluster not initialized")
     }
 
-    fn new_service() -> InputK8Obj<ServiceSpec, ServiceStatus> {
-        let mut rng = thread_rng();
+    fn new_service() -> InputK8Obj<ServiceSpec> {
+        let rng = thread_rng();
         let rname: String = rng.sample_iter(&Alphanumeric).take(5).collect();
         let name = format!("test{}", rname);
 
@@ -46,17 +48,17 @@ mod integratino_tests {
             ..Default::default()
         };
 
-        let new_item: InputK8Obj<ServiceSpec, ServiceStatus> = InputK8Obj {
+        let new_item: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),
             kind: ServiceSpec::kind(),
-            metadata: InputMetadata {
+            metadata: InputObjectMeta {
                 name: name.to_lowercase(),
-                labels: Some(labels),
+                labels,
                 namespace: TEST_NS.to_string(),
                 ..Default::default()
             },
-            spec: Some(service_spec),
-            status: None,
+            spec: service_spec,
+            ..Default::default()
         };
 
         new_item
@@ -66,11 +68,15 @@ mod integratino_tests {
     async fn test_client_create_and_delete_service() -> Result<(), ClientError> {
         let new_item = new_service();
         debug!("item: {:#?}", &new_item);
-        let item = K8CLIENT.create_item::<ServiceSpec, ServiceStatus>(&new_item).await?;
+        let client = create_client();
+        let item = client.create_item::<ServiceSpec>(new_item).await?;
         debug!("deleting: {:#?}", item);
-        K8CLIENT.delete_item::<ServiceSpec>(&new_item.metadata).await?;
+        let input_metadata: InputObjectMeta = item.metadata.into();
+        client.delete_item::<ServiceSpec,_>(&input_metadata).await?;
         assert!(true, "passed");
         Ok(())
     }
+
+
 
 }

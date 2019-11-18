@@ -8,7 +8,7 @@ use structopt::StructOpt;
 use futures::stream::StreamExt;
 
 
-use future_aio::fs::AsyncFile;
+use future_aio::fs::file_util;
 use future_helper::run_block_on;
 
 use storage::DefaultFileBatchStream;
@@ -53,7 +53,7 @@ pub(crate) struct LogOpt{
 
 async fn print_logs(path: PathBuf) -> Result<(),IoError> {
 
-    let file = AsyncFile::open(path).await?;
+    let file = file_util::open(path).await?;
 
     let mut batch_stream = DefaultFileBatchStream::new(file);
 

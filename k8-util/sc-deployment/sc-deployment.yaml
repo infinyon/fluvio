@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: flv-sc
-      image: infinyon/fluvio-sc:0.2.0-alpha.1
+      image: infinyon/fluvio-sc:0.2.1
       imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 9003

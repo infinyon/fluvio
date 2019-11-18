@@ -1,13 +1,14 @@
 use std::io::Error as IoError;
+use std::fmt;
+use std::path::Path;
 
 use futures::stream::StreamExt;
 use log::warn;
 use log::trace;
-use std::fmt;
 
-use future_aio::fs::AsyncFile;
-use future_aio::fs::FileSinkError;
+
 use kf_protocol::api::Offset;
+use future_aio::fs::file_util;
 
 use crate::BatchHeaderStream;
 use crate::util::log_path_get_offset;
@@ -17,7 +18,6 @@ use crate::util::OffsetError;
 pub enum LogValidationError {
     InvalidExtension,
     LogNameError(OffsetError),
-    FileSinkError(FileSinkError),
     IoError(IoError),
     BaseOffError,
     OffsetNotOrderedError,
@@ -31,7 +31,6 @@ impl fmt::Display for LogValidationError {
         match self {
             Self::InvalidExtension => write!(f, "invalid extension"),
             Self::LogNameError(err) => write!(f,"{}",err),
-            Self::FileSinkError(err) => write!(f,"{}",err),
             Self::IoError(err) => write!(f,"{}",err),
             Self::BaseOffError => write!(f,"base off error"),
             Self::OffsetNotOrderedError => write!(f,"offset not order"),
@@ -56,25 +55,22 @@ impl From<IoError> for LogValidationError {
     }
 }
 
-impl From<FileSinkError> for LogValidationError {
-    fn from(error: FileSinkError) -> Self {
-        LogValidationError::FileSinkError(error)
-    }
-}
-
 /// validate the file and find last offset
 /// if file is not valid then return error
 #[allow(dead_code)]
-pub async fn validate(file: &mut AsyncFile) -> Result<Offset, LogValidationError> {
-    let base_offset = log_path_get_offset(file.get_path())?;
-    let file_name = file.get_path().display().to_string();
+pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError> 
+        where P: AsRef<Path> 
+{
+    let file_path = path.as_ref();
+    let base_offset = log_path_get_offset(file_path)?;
+    let file_name = file_path.display().to_string();
 
     trace!(
-        "validating file: {}, baseoffset: {}",
+        "validating file: {}, base offset: {}",
         file_name, base_offset
     );
 
-    let file_clone = file.try_clone().await?;
+    let file_clone = file_util::open(file_path).await?;
     let mut batch_stream = BatchHeaderStream::new(file_clone);
     let mut end_offset: Offset = -1;
 
@@ -127,9 +123,8 @@ mod tests {
 
     use futures::sink::SinkExt;
 
-    use future_aio::fs::AsyncFile;
-    use future_aio::fs::FileSink;
-    use future_aio::fs::FileSinkOption;
+    use future_aio::fs::BoundedFileSink;
+    use future_aio::fs::BoundedFileOption;
     use future_helper::test_async;
     use kf_protocol::api::DefaultRecord;
     use kf_protocol::api::DefaultBatch;
@@ -178,8 +173,7 @@ mod tests {
         };
 
         let _ = MutFileRecords::open(BASE_OFFSET, &options).await?;
-        let mut file = AsyncFile::open(&test_file).await?;
-        let next_offset = validate(&mut file).await?;
+        let next_offset = validate(&test_file).await?;
         assert_eq!(next_offset,BASE_OFFSET);
 
         Ok(())
@@ -205,9 +199,7 @@ mod tests {
         msg_sink.send(create_batch(SUCCESS_BASE_OFFSET, 2)).await?;
         msg_sink.send(create_batch(SUCCESS_BASE_OFFSET+2,3)).await?;
 
-        let mut file = AsyncFile::open(&test_file).await?;
-
-        let next_offset = validate(&mut file).await?;
+        let next_offset = validate(&test_file).await?;
         assert_eq!(next_offset, SUCCESS_BASE_OFFSET + 5);
 
         Ok(())
@@ -231,9 +223,7 @@ mod tests {
         msg_sink.send(create_batch(401, 0)).await?;
         msg_sink.send(create_batch(111, 1)).await?;
 
-        let mut file = AsyncFile::open(&test_file).await?;
-
-        assert!(validate(&mut file).await.is_err());
+     //   assert!(validate(&test_file).await.is_err());
 
         Ok(())
     }
@@ -255,13 +245,10 @@ mod tests {
         msg_sink.send(create_batch(501, 2)).await?;
 
         // add some junk
-        let mut f_sink = FileSink::create(&test_file, FileSinkOption::default()).await?;
+        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default()).await?;
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.send(bytes).await?;
-
-        let mut file = AsyncFile::open(&test_file).await?;
-
-        assert!(validate(&mut file).await.is_err());
+        assert!(validate(&test_file).await.is_err());
 
         Ok(())
     }

@@ -1,6 +1,6 @@
 use log::debug;
 
-use future_helper::run;
+use future_helper::main;
 use storage::FileReplica;
 
 use crate::config::process_spu_cli_or_exit;
@@ -30,14 +30,14 @@ pub fn main_loop() {
 
     debug!("spu config: {:#?}",spu_config);
 
-    run(async {
+    main(async {
         let (_ctx, internal_server, public_server) = create_services(spu_config, true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
-    });
 
-    println!("SPU Version: {} started successfully",VERSION);
+        println!("SPU Version: {} started successfully",VERSION);
+    });
 
 }
 

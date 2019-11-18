@@ -1,17 +1,18 @@
 [package]
 name = "future-aio"
-version = "0.2.0-alpha.1"
+version = "0.2.1"
 edition = "2018"
 authors = ["fluvio.io"]
 
 
 [dependencies]
 log = "0.4.8"
-nix = "0.15.0"
+nix = "0.16.0"
 bytes = "0.4.12"
-tokio_1 = { version = "0.1.18", package = "tokio" }
-tokio-threadpool-1 = { version = "0.1.13", package = "tokio-threadpool" }
 memmap = "0.7.0"
+async-trait = "0.1.18"
+async-std = { version = "1.2.0", features = ["default","unstable"] }
+futures_codec = "0.3.1"
 futures = { version = "0.3.1"  }
 future-helper = { path = "../future-helper"}
 futures_1 = { version = "0.1.25", package = "futures" }

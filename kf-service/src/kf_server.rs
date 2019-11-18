@@ -92,7 +92,7 @@ where
     
     pub async fn run_shutdown(self,shutdown_signal: Receiver<bool>) {
 
-        match AsyncTcpListener::bind(&self.addr) {
+        match AsyncTcpListener::bind(&self.addr).await {
             Ok(listener) => {
 
                 info!("starting event loop for: {}", &self.addr);
@@ -155,8 +155,8 @@ where
                     let service = self.service.clone();
 
                     let ft = async move {
-                        trace!("incoming connection {}",stream);
 
+                        trace!("incoming connection {:#?}",stream);
                         let socket: KfSocket = stream.into();
 
                         if let Err(err) = service.respond(context.clone(),socket).await {

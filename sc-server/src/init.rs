@@ -6,7 +6,7 @@
 //!
 use std::sync::Arc;
 
-use future_helper::run;
+use future_helper::main;
 
 use crate::conn_manager::ConnManager;
 
@@ -34,7 +34,7 @@ pub fn main_loop() {
     let (sc_config,k8_config) = parse_cli_or_exit();
 
 
-    run( async move {
+    main( async move {
 
          // init k8 service
         let k8_client = new_shared(k8_config);
@@ -47,10 +47,11 @@ pub fn main_loop() {
         let (metadata,internal_server) =  create_core_services(local_stores,k8_ws_service.clone(),&mut k8_dispatcher);
         let public_server =  create_k8_services(metadata,k8_ws_service,namespace);
 
-        k8_dispatcher.run();
+        
         let _public_shutdown = public_server.run();
         let _private_shutdown = internal_server.run();
 
+        k8_dispatcher.run();
         println!("Streaming Coordinator Version: {} started successfully",VERSION);
        
     });

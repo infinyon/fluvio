@@ -1,6 +1,6 @@
 #![feature(generators)]
 
-mod backflow;
+
 mod error;
 mod pooling;
 mod socket;

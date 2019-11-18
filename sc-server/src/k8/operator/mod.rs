@@ -47,7 +47,6 @@ impl K8AllChangeDispatcher {
         self.partition.run();
     }
 
-
 }
 
 

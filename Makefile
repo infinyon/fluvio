@@ -6,7 +6,7 @@ BIN_NAME=release
 PUSH=push
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
-GITHUB_TAG=0.2.0-alpha
+GITHUB_TAG=0.2.1
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
@@ -119,6 +119,9 @@ build-internal-test:
 	cd internal-api;cargo test --no-run	
 
 		
+build-k8client:
+	cd k8-client;cargo build
+
 test-spu:
 	cd spu-server;cargo test
 
@@ -163,5 +166,9 @@ test-k8client:
 
 test-k8config:
 	cd k8-config;cargo test
+
+test-kf-protocol:
+	cd kf-protocol;cargo test
+
 
 .PHONY:	test-helper teste-aio test-kfsocket test-kfservice test-k8client test-k8config

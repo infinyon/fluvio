@@ -86,8 +86,7 @@ mod tests {
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
 
-    use future_aio::fs::AsyncFile;
-    use future_helper::test_async;
+    use future_aio::fs::file_util;
 
     use crate::fixture::create_batch;
     use crate::fixture::create_batch_with_producer;
@@ -109,7 +108,7 @@ mod tests {
         }
     }
 
-    #[test_async]
+    //#[test_async]
     async fn test_decode_batch_header_simple() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         ensure_clean_file(&test_file);
@@ -120,7 +119,7 @@ mod tests {
 
         msg_sink.send(create_batch()).await.expect("send batch");
 
-        let mut file = AsyncFile::open(&test_file).await.expect("open test file");
+        let mut file = file_util::open(&test_file).await.expect("open test file");
 
         let batch_res = BatchHeaderPos::from(&mut file, 0).await.expect("open header");
 
@@ -136,7 +135,7 @@ mod tests {
 
     const TEST_FILE_NAME2: &str = "00000000000000000201.log"; // for offset 200
 
-    #[test_async]
+    //#[test_async]
     async fn test_decode_batch_header_multiple() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME2);
         ensure_clean_file(&test_file);
@@ -148,7 +147,7 @@ mod tests {
         msg_sink.send(create_batch()).await?;
         msg_sink.send(create_batch_with_producer(25, 2)).await?;
 
-        let file = AsyncFile::open(&test_file).await?;
+        let file = file_util::open(&test_file).await?;
 
         let mut stream = BatchHeaderStream::new(file);
 

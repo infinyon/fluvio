@@ -136,7 +136,7 @@ pub(crate) mod test {
         id: u16,
     ) -> Result<(), KfSocketError> {
         debug!("server: {}-{} ready to bind", socket_addr, id);
-        let listener = AsyncTcpListener::bind(&socket_addr)?;
+        let listener = AsyncTcpListener::bind(&socket_addr).await?;
         debug!(
             "server: {}-{} successfully binding. waiting for incoming",
             socket_addr, id

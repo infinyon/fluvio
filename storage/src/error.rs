@@ -3,7 +3,7 @@ use std::io::Error as IoError;
 use std::fmt;
 
 use kf_protocol::api::DefaultBatch;
-use future_aio::fs::FileSinkError;
+use future_aio::fs::BoundedFileSinkError;
 use future_aio::SendFileError;
 use kf_socket::KfSocketError;
 
@@ -42,11 +42,11 @@ impl From<IoError> for StorageError {
     }
 }
 
-impl From<FileSinkError> for StorageError {
-    fn from(error: FileSinkError) -> Self {
+impl From<BoundedFileSinkError> for StorageError {
+    fn from(error: BoundedFileSinkError) -> Self {
         match error {
-            FileSinkError::IoError(err) => StorageError::IoError(err),
-            FileSinkError::MaxLenReached => panic!("no auto conversion for file sink error"),
+            BoundedFileSinkError::IoError(err) => StorageError::IoError(err),
+            BoundedFileSinkError::MaxLenReached => panic!("no auto conversion for file sink error"),
         }
     }
 }

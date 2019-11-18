@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "k8-client"
-version = "0.2.0-alpha.1"
+version = "0.2.1"
 authors = ["fluvio.io"]
 
 [features]
@@ -13,12 +13,11 @@ k8_stream = ["k8"]
 log = "0.4.6"
 bytes = "0.4.12"
 http = "0.1.16"
-hyper = "0.12.33"
-futures = { version = "0.3.1", features = ["compat"]}
+futures = { version = "0.3.1"}
+isahc = { version = "0.8.1", features = ["json","static-curl"]}
+curl = { version = "0.4.25", features = ["mesalink"]}
+openssl-sys = { version = "0.9.43", features = ["vendored"] }
 pin-utils = "0.1.0-alpha.4"
-rustls = { version = "0.15.2", features = ["dangerous_configuration"] }
-webpki = "0.19"
-hyper-rustls = "0.16.1"
 serde = { version ="1.0.98", features = ['derive'] }
 serde_json = "1.0.40"
 serde_qs = "0.5.0"
@@ -31,6 +30,5 @@ types = { path = "../types"}
 [dev-dependencies]
 rand = "0.7.0"
 k8-fixtures = { path = "k8-fixtures" }
-lazy_static = "1.3.0"
 future-helper = { path = "../future-helper", features=["fixture"]}
 utils = { path = "../utils", features=["fixture"]}

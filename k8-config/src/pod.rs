@@ -13,7 +13,6 @@ const API_SERVER: &'static str = "https://kubernetes.default.svc";
 /// Configuration as Pod
 #[derive(Debug, Default, Clone)]
 pub struct PodConfig {
-    pub ca: String,
     pub namespace: String,
     pub token: String,
 }
@@ -30,12 +29,10 @@ impl PodConfig {
             return None;
         }
 
-        let ca = read_file("ca.crt")?;
         let namespace = read_file("namespace")?;
         let token = read_file("token")?;
 
         Some(Self {
-            ca,
             namespace,
             token,
         })
@@ -44,6 +41,12 @@ impl PodConfig {
     pub fn api_path(&self) -> &'static str {
         API_SERVER
     }
+
+    /// path to CA certificate
+    pub fn ca_path(&self) -> String {
+        format!("{}/{}", BASE_DIR, "ca.crt")
+    }
+
 }
 
 // read file

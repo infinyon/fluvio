@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use log::debug;
 use futures::stream::StreamExt;
-use futures::sink::SinkExt;
 use futures::future::join;
 
 use future_helper::test_async;
@@ -114,7 +113,7 @@ async fn handle_response<'a>(socket: &'a mut KfSocket,replica: &'a FileReplica) 
     let replica = setup_replica().await?;
 
     debug!("set up the replica");
-    let listener = AsyncTcpListener::bind(&addr)?;
+    let listener = AsyncTcpListener::bind(&addr).await?;
     debug!("server is running");
     let mut incoming = listener.incoming();
     let incoming_stream = incoming.next().await;

@@ -170,6 +170,7 @@ mod test {
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::DefaultRecord;
     use kf_protocol::message::fetch::DefaultKfFetchRequest;
+    use future_aio::fs::file_util;
     use future_aio::fs::AsyncFile;
     use future_aio::net::AsyncTcpListener;
     use utils::fixture::ensure_clean_file;
@@ -200,7 +201,7 @@ mod test {
         let test_file_path = temp_dir().join("batch_fetch");
         ensure_clean_file(&test_file_path);
         debug!("creating test file: {:#?}", test_file_path);
-        let mut file = AsyncFile::create(&test_file_path).await?;
+        let mut file = file_util::create(&test_file_path).await?;
         let batch = create_batches(2);
         let bytes = batch.as_bytes(0)?;
         file.write_all(bytes.as_ref()).await?;
@@ -208,7 +209,7 @@ mod test {
     }
 
     async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
-        let listener = AsyncTcpListener::bind(&addr)?;
+        let listener = AsyncTcpListener::bind(&addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
         let incoming_stream = incoming.next().await;
@@ -226,7 +227,7 @@ mod test {
 
         let test_file_path = temp_dir().join("batch_fetch");
         debug!("opening file test file: {:#?}", test_file_path);
-        let file = AsyncFile::open(&test_file_path).await?;
+        let file = file_util::open(&test_file_path).await?;
 
         let mut response = FileFetchResponse::default();
         let mut topic_response = FileTopicResponse::default();

@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::fmt::Debug;
 use std::fmt::Display;
 
+use pin_utils::pin_mut;
 use futures::future::FutureExt;
 use futures::channel::mpsc::Sender;
 use futures::select;
@@ -94,6 +95,7 @@ impl <S>K8ClusterStateDispatcher<S>
     /// Kubernetes Dispatcher Event Loop
     ///
     async fn inner_loop(&mut self) {
+
         let mut resume_stream: Option<String> = None;
        
         // retrieve all items from K8 store first
@@ -104,11 +106,14 @@ impl <S>K8ClusterStateDispatcher<S>
             Err(err) => error!("cannot retrieve K8 store objects: {}", err),
         };
 
+        let client = self.client.clone();
+
         // create watch streams
-        let mut k8_stream = self
-            .client
+        let k8_stream = client
             .watch_stream_since::<S::K8Spec>(&self.namespace, resume_stream)
-            .fuse();        
+            .fuse(); 
+            
+        pin_mut!(k8_stream);
         
         trace!("starting watch stream for: {}",S::LABEL);
         loop {

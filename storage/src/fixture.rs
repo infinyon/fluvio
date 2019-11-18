@@ -91,7 +91,6 @@ mod pin_tests  {
         let counter = Counter { total: 20};
         pin_mut!(counter);      // works with future that requires unpin
         assert_eq!(counter.get_total(),20);
-
     }
 
      #[test]

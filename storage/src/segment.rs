@@ -8,10 +8,8 @@ use std::task::Poll;
 use futures::sink::Sink;
 use futures::stream::StreamExt;
 use futures::ready;
-use futures::Future;
 use log::debug;
 use log::trace;
-use pin_utils::pin_mut;
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
 
@@ -19,6 +17,7 @@ use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
 use future_aio::fs::AsyncFileSlice;
+use future_aio::fs::file_util;
 
 use crate::BatchHeaderStream;
 use crate::mut_index::MutLogIndex;
@@ -119,14 +118,16 @@ impl <I,L> Segment<I,L>
         start_pos: Size,
     ) -> Result<BatchHeaderStream, StorageError> {
         trace!("opening batch headere stream at: {}", start_pos);
-        let file = self.msg_log.get_file().read_clone().await?;
+        let file = file_util::open(self.msg_log.get_path()).await?;
         BatchHeaderStream::new_with_pos(file, start_pos).await
     }
 
     
     #[allow(dead_code)]
     pub async fn open_default_batch_stream(&self) -> Result<DefaultFileBatchStream,StorageError> {
-        let file = self.msg_log.get_file().read_clone().await?;
+        let file_path = self.msg_log.get_path();
+        debug!("opening batch stream: {:#?}",file_path);
+        let file = file_util::open(file_path).await?;
         Ok(DefaultFileBatchStream::new(file))
     }
 
@@ -297,26 +298,15 @@ impl Segment<MutLogIndex,MutFileRecords> {
         Ok(())
     }
 
+    // shrink index
     async fn shrink_index(&mut self) -> Result<(),IoError> {
         self.index.shrink().await
     }
 
-    /*
-    // do modification under 'a lifetime so we do multiple mutations
-    #[allow(dead_code)]
-    fn update_send(self, mut batch: DefaultRecordBatch) -> Result<(), StorageError> {
-        batch.set_base_offset(self.current_offset);
-        Ok(())
-    }
-    */
 
-    // use poll rather than future to make it easier to call from other poll
-    // otherwise you get complex lifetime issue
-
-    pub fn poll_roll_over(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), IoError>> {
-        let ft = self.shrink_index();
-        pin_mut!(ft);
-        ft.poll(cx)
+    // perform any action during roll over
+    pub async fn roll_over(&mut self) -> Result<(),IoError> {
+        self.index.shrink().await
     }
 
 
@@ -453,6 +443,7 @@ mod tests {
         let mut seg_sink = MutableSegment::create(base_offset, &option).await?;
 
         assert_eq!(seg_sink.get_end_offset(),20);
+        // producer 100, records = 1
         seg_sink.send(create_batch_with_producer(100,1)).await?;
         assert_eq!(seg_sink.get_end_offset(),21);
 

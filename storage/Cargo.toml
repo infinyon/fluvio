@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "storage"
-version = "0.2.0-alpha.1"
+version = "0.2.1"
 authors = ["fluvio.io"]
 
 [[bin]]
@@ -17,6 +17,7 @@ libc = "0.2.58"
 bytes = "0.4.12"
 futures = { version = "0.3.1" }
 pin-utils = "0.1.0-alpha.4"
+async-trait = "0.1.18"
 structopt = { version = "0.2.14", optional = true}
 serde = { version ="1.0.82", features = ['derive'] }
 future-aio = { path = "../future-aio"}

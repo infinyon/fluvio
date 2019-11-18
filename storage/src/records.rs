@@ -1,11 +1,15 @@
 
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::path::PathBuf;
+use std::path::Path;
 
 use log::debug;
-use future_aio::fs::AsyncFile;
-use future_aio::fs::AsyncFileSlice;
 
+use future_aio::fs::File;
+use future_aio::fs::file_util;
+use future_aio::fs::AsyncFileSlice;
+use future_aio::fs::AsyncFile;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
 
@@ -18,12 +22,14 @@ use crate::StorageError;
 
 pub(crate) const MESSAGE_LOG_EXTENSION: &'static str = "log";
 
-/// Records stored in the file
+
 pub(crate) trait FileRecords {
 
     fn get_base_offset(&self) -> Offset;
 
-    fn get_file(&self) -> &AsyncFile;
+    fn get_file(&self) -> &File;
+
+    fn get_path(&self) -> &Path;
 
     /// as file slice from position
     fn as_file_slice(&self, start: Size) -> Result<AsyncFileSlice,IoError>;
@@ -34,7 +40,8 @@ pub(crate) trait FileRecords {
 
 pub struct FileRecordsSlice {
     base_offset: Offset,
-    file: AsyncFile,
+    file: File,
+    path: PathBuf,
     len: u64
 }
 
@@ -47,14 +54,14 @@ impl FileRecordsSlice {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
         debug!("opening commit log at: {}", log_path.display());
 
-        let file = AsyncFile::open(log_path).await?;
-
+        let file = file_util::open(&log_path).await?;
         let metadata = file.metadata().await?;
         let len = metadata.len();
 
         Ok(FileRecordsSlice {
             base_offset,
             file,
+            path: log_path,
             len
         })
     }
@@ -65,7 +72,7 @@ impl FileRecordsSlice {
 
     #[allow(dead_code)]
     pub async fn validate(&mut self) -> Result<Offset, LogValidationError> {
-        validate(&mut self.file).await
+        validate(&self.path).await
     }
 }
 
@@ -75,8 +82,12 @@ impl FileRecords for FileRecordsSlice {
         self.base_offset
     }
 
-    fn get_file(&self) -> &AsyncFile {
+    fn get_file(&self) -> &File {
         &self.file
+    }
+
+    fn get_path(&self) -> &Path {
+        &self.path
     }
 
     

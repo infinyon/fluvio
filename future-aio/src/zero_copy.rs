@@ -4,27 +4,16 @@ use std::fmt;
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use std::pin::Pin;
-use std::task::Context;
 
-use futures::Future;
-use std::task::Poll;
-use pin_utils::pin_mut;
 use nix::sys::sendfile::sendfile;
 use nix::Error as NixError;
+use async_std::task::spawn_blocking;
+use async_std::net::TcpStream;
+use async_trait::async_trait;
+
 
 use crate::fs::AsyncFileSlice;
-use crate::asyncify;
 
-/// zero copy write
-pub trait ZeroCopyWrite {
-    fn zero_copy_write<'a>(&'a mut self, source: &'a AsyncFileSlice) -> ZeroCopyFuture<'a, Self> {
-        ZeroCopyFuture {
-            source,
-            writer: self,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum SendFileError {
@@ -53,117 +42,130 @@ impl From<NixError> for SendFileError {
     }
 }
 
-/// similar to Writeall
-#[allow(dead_code)]
-pub struct ZeroCopyFuture<'a, W: ?Sized + 'a> {
-    writer: &'a mut W,
-    source: &'a AsyncFileSlice,
-}
 
-impl<'a, W> ZeroCopyFuture<'a, W> {
-    #[allow(dead_code)]
-    pub fn new(writer: &'a mut W, source: &'a AsyncFileSlice) -> ZeroCopyFuture<'a, W> {
-        ZeroCopyFuture { writer, source }
-    }
-}
 
-impl<W> Future for ZeroCopyFuture<'_, W>
-where
-    W: ?Sized + AsRawFd,
-{
-    type Output = Result<usize, SendFileError>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<usize, SendFileError>> {
-        let size = self.source.len();
-        let target_fd = self.writer.as_raw_fd();
-        let source_fd = self.source.as_raw_fd();
+/// zero copy write
+#[async_trait]
+pub trait ZeroCopyWrite: AsRawFd {
 
+    async fn zero_copy_write(&mut self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
+        
+        let size = source.len();
+        let target_fd = self.as_raw_fd();
+        let source_fd = source.fd();
+
+        
         #[cfg(target_os = "linux")]
-        let ft = asyncify(move || {
-            let mut offset = self.source.position() as i64;
-            sendfile(target_fd, source_fd, Some(&mut offset), size as usize)
-                .map_err(|err| err.into())
-        });
+        let ft = {
+            let mut offset = source.position() as i64;
+            spawn_blocking(move || {
+                sendfile(target_fd, source_fd, Some(&mut offset), size as usize)
+                    .map_err(|err| err.into())
+            })
+        };
 
         #[cfg(target_os = "macos")]
-        let ft = asyncify(move || {
-            let offset = self.source.position();
-            log::trace!(
-                "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                source_fd,
-                offset,
-                size,
-                target_fd
-            );
-            let (res, len) = sendfile(
-                source_fd,
-                target_fd,
-                offset as i64,
-                Some(size as i64),
-                None,
-                None,
-            );
-            match res {
-                Ok(_) => {
-                    log::trace!("mac zero copy bytes transferred: {}", len);
-                    Ok(len as usize)
+        let ft = {
+            let offset = source.position();
+            spawn_blocking(move || {
+                log::trace!(
+                    "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
+                    source_fd,
+                    offset,
+                    size,
+                    target_fd
+                );
+                let (res, len) = sendfile(
+                    source_fd,
+                    target_fd,
+                    offset as i64,
+                    Some(size as i64),
+                    None,
+                    None,
+                );
+                match res {
+                    Ok(_) => {
+                        log::trace!("mac zero copy bytes transferred: {}", len);
+                        Ok(len as usize)
+                    }
+                    Err(err) => {
+                        log::error!("error sendfile: {}",err);
+                        Err(err.into())
+                    }
                 }
-                Err(err) => Err(err.into()),
-            }
-        });
+            })
+        };
+        
 
-        pin_mut!(ft);
-        ft.poll(cx)
+        ft.await
     }
 }
+
+#[async_trait]
+impl ZeroCopyWrite for TcpStream{}
+
 
 #[cfg(test)]
 mod tests {
 
-    use std::net::TcpListener;
     use std::net::SocketAddr;
-    use std::io::Error;
-    use std::thread;
     use std::time;
-    use std::io::Read;
 
     use log::debug;
-    use future_helper::test_async;
 
+    use futures::stream::StreamExt;
+    use async_std::prelude::*;
+    use async_std::net::TcpStream;
+    use async_std::net::TcpListener;
+
+    use future_helper::test_async;
+    use futures::future::join;
+    use future_helper::sleep;
+
+    use crate::fs::file_util;
+    use crate::ZeroCopyWrite;
     use crate::fs::AsyncFile;
-    use crate::net::AsyncTcpStream;
-    use super::ZeroCopyWrite;
     use super::SendFileError;
 
     #[test_async]
-    async fn test_copy() -> Result<(), SendFileError> {
-        let handle = thread::spawn(move || {
-            let listener = TcpListener::bind("127.0.0.1:9999")?;
+    async fn test_zero_copy_from_fs_to_socket() -> Result<(), SendFileError> {
 
-            for st_res in listener.incoming() {
-                let mut stream = st_res?;
+
+        // spawn tcp client and check contents
+        let server = async {
+            let listener = TcpListener::bind("127.0.0.1:9999").await?;
+            debug!("server: listening");
+            let mut incoming = listener.incoming();
+            if let Some(stream) = incoming.next().await {
                 debug!("server: got connection. waiting");
+                let mut tcp_stream = stream?;
                 let mut buf = [0; 30];
-                let len = stream.read(&mut buf)?;
+                let len = tcp_stream.read(&mut buf).await?;
                 assert_eq!(len, 30);
-                return Ok(()) as Result<(), Error>;
+            } else {
+                assert!(false,"client should connect");
             }
-            Ok(()) as Result<(), Error>
-        });
+            Ok(()) as Result<(), SendFileError>
+        };
 
-        // test data
-        let file = AsyncFile::open("test-data/apirequest.bin").await?;
-        thread::sleep(time::Duration::from_millis(100)); // give time for server to come up
-        let addr = "127.0.0.1:9999".parse::<SocketAddr>().expect("parse");
+        let client = async {
+            let file = file_util::open("test-data/apirequest.bin").await?;
+            sleep(time::Duration::from_millis(100)).await;
+            let addr = "127.0.0.1:9999".parse::<SocketAddr>().expect("parse");
+            debug!("client: file loaded");
+            let mut stream = TcpStream::connect(&addr).await?;
+            debug!("client: connected to server");
+            let f_slice = file.as_slice(0, None).await?;
+            debug!("client: send back file using zero copy");
+            stream.zero_copy_write(&f_slice).await?;
+            
+            Ok(()) as Result<(), SendFileError>
+        };
 
-        let mut stream = AsyncTcpStream::connect(&addr).await?;
-
-        let fslice = file.as_slice(0, None).await?;
-        stream.zero_copy_write(&fslice).await?;
-        match handle.join() {
-            Err(_) => assert!(false, "thread not finished"),
-            _ => (),
-        }
+        // read file and zero copy to tcp stream
+        
+        let _rt = join(client,server).await;
         Ok(())
     }
 }

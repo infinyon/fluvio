@@ -1,14 +1,14 @@
 [package]
 name = "kf-protocol-transport"
 edition = "2018"
-version = "0.2.0-alpha.1"
+version = "0.2.1"
 authors = ["fluvio.io"]
 
 
 [dependencies]
 log = "0.4.6"
 bytes = "0.4.12"
-tokio-codec = "0.1.1"
+futures_codec = "0.3.1"
 kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
 
 

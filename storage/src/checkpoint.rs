@@ -8,10 +8,14 @@ use bytes::Buf;
 use bytes::BufMut;
 use futures::io::AsyncReadExt;
 use futures::io::AsyncWriteExt;
+use futures::io::AsyncSeekExt;
 use log::debug;
 use log::trace;
 
-use future_aio::fs::AsyncFile;
+
+use future_aio::fs::File;
+use future_aio::fs::metadata;
+use future_aio::fs::file_util;
 
 use crate::ConfigOption;
 
@@ -62,7 +66,7 @@ impl ReadToBuf for i64 {
 pub struct CheckPoint<T> {
     option: ConfigOption,
     offset: T,
-    file: AsyncFile,
+    file: File,
 }
 
 impl<T> CheckPoint<T>
@@ -70,17 +74,17 @@ where
     T: Display + ReadToBuf + Clone + Sized + 'static,
 {
     
-    pub async fn create<'a>(
-        option: &'a ConfigOption,
-        name: &'a str,
+    pub async fn create(
+        option: &ConfigOption,
+        name: &str,
         initial_offset: T,
     ) -> Result<Self, IoError> {
         let checkpoint_path = option.base_dir.join(name);
 
-        match AsyncFile::get_metadata(&checkpoint_path).await {
+        match metadata(&checkpoint_path).await {
             Ok(_) => {
                 trace!("checkpoint {:#?} exists, reading", checkpoint_path);
-                let file = AsyncFile::open_read_write(&checkpoint_path).await?;
+                let file = file_util::open_read_write(&checkpoint_path).await?;
                 let mut checkpoint = CheckPoint {
                     option: option.to_owned(),
                     file,
@@ -94,8 +98,8 @@ where
                     "no existing creating checkpoint {:#?}, creating",
                     checkpoint_path
                 );
-                let file = AsyncFile::open_read_write(&checkpoint_path).await?;
-                trace!("file created: {}",file);
+                let file = file_util::open_read_write(&checkpoint_path).await?;
+                trace!("file created: {:#?}",checkpoint_path);
                 let mut checkpoint = CheckPoint {
                     option: option.to_owned(),
                     file,

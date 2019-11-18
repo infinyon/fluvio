@@ -9,12 +9,14 @@ use std::os::unix::io::AsRawFd;
 
 use log::trace;
 use futures::Future;
+use futures::stream::StreamExt;
 use pin_utils::unsafe_pinned;
+use futures_codec::Framed;
 
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-
+use kf_protocol::transport::KfCodec;
 
 use future_aio::net::AsyncTcpStream;
 
@@ -94,7 +96,8 @@ impl KfSocket {
 impl From<AsyncTcpStream> for KfSocket {
     fn from(tcp_stream: AsyncTcpStream) -> Self {
         let fd = tcp_stream.as_raw_fd();
-        let (sink, stream) = tcp_stream.split().as_tuple();
+        let framed = Framed::new(tcp_stream,KfCodec{});
+        let (sink, stream) = framed.split();
         KfSocket {
             sink: KfSink::new(sink, fd),
             stream: stream.into(),

@@ -121,7 +121,13 @@ Get SPU
  fluvio spu list --sc 127.0.0.1:9003
 ```
 
+## Setting up for Kubernetes local development
 
+Run following script to allow host docker to access minikube docker.  Without it, you can't upload image to minikube.
+
+```
+./dev-tools/minikube-docker.sh 
+```
 
 
 

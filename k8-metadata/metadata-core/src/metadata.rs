@@ -386,6 +386,21 @@ impl <S> K8Obj<S,S::Status>
             ..Default::default()
         }
     }
+}
+
+impl <S> K8Obj<S,S::Status>
+    where S: Spec + Default + Clone,
+{
+
+    pub fn as_input(&self) -> InputK8Obj<S> {
+        K8SpecObj {
+            api_version: self.api_version.clone(),
+            kind: self.kind.clone(),
+            metadata: self.metadata.as_input(),
+            spec: self.spec.clone(),
+            ..Default::default()
+        }
+    }
 
 }
 
@@ -428,6 +443,23 @@ pub struct UpdateK8ObjStatus<S,P> {
     pub metadata: UpdateItemMeta,
     pub status: P,
     pub data: PhantomData<S>
+}
+
+
+impl <S>UpdateK8ObjStatus<S,S::Status> 
+    where S: Spec + Default,
+        S::Status: Default
+{
+
+    pub fn new(status: S::Status, metadata: UpdateItemMeta) -> Self {
+        Self {
+            api_version: S::api_version(),
+            kind: S::kind(),
+            metadata,
+            status,
+            ..Default::default()
+        }
+    }
 }
 
 

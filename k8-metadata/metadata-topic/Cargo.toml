@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "metadata-topic"
-version = "0.2.0-alpha.1"
+version = "0.2.1"
 authors = ["fluvio.io"]
 
 

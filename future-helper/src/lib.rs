@@ -8,50 +8,38 @@ mod util;
 pub use async_test_derive::test_async;
 
 pub use util::sleep;
+pub use async_std::task::JoinHandle;
 
-pub mod tk {
-    pub use tokio_1::runtime::Runtime;
-    pub use tokio_1::spawn;
-    pub use tokio_1::net::TcpStream as TkTcpStream;
-    pub use tokio_1::net::TcpListener as TkTcpListner;
-}
+use std::future::Future;
 
-
-use futures_1::Future as Future01;
-use futures::future::Future;
-use futures::future::FutureExt;
-use futures::future::TryFutureExt;
+use async_std::task;
 use log::trace;
-use log::error;
 
 
-/// run tokio loop, pass runtime as parameter to closure
-/// this differ from tokio run which uses global spawn
+/// run future and wait forever
+/// this is typically used in the server
 pub fn run<F>(spawn_closure: F)
 where
     F: Future<Output = ()> + Send + 'static 
-{
-    #[cfg(feature = "tokio2")] {
-        match tk::Runtime::new() {
-            Ok(rt) => {
-                rt.spawn(spawn_closure);
-                rt.shutdown_on_idle();
-            },
-            Err(err) => error!("can't create runtime: {}",err)
-        }
-    }
+{   
+    task::block_on(spawn_closure);
+}
 
-    #[cfg(not(feature = "tokio2"))]
-    match tk::Runtime::new() {
-        Ok(mut rt) => {
-            rt.spawn(futures_1::lazy(|| {
-                spawn(spawn_closure);
-                Ok(())
-            }));
-            rt.shutdown_on_idle().wait().unwrap();
-        },
-        Err(err) => error!("can't create runtime: {}",err)
-    }  
+/// run future and wait forever
+/// this is typically used in the server
+pub fn main<F>(spawn_closure: F)
+where
+    F: Future<Output = ()> + Send + 'static 
+{   
+    use std::time::Duration;
+
+    task::block_on(async{
+        spawn_closure.await;
+        // do infinite loop for now
+        loop {
+            sleep(Duration::from_secs(3600)).await;
+        }
+    });
 }
 
 /// use new future API
@@ -77,59 +65,36 @@ pub trait FutureHelper {
 }
 
 
-#[cfg(not(feature = "tokio2"))]
-pub fn spawn1<F>(future: F)
-where
-    F: Future<Output = Result<(), ()>> + Send + 'static,
-{
-    tk::spawn(future.boxed().compat());
-}
 
 
-pub fn spawn<F>(future: F)
+pub fn spawn<F>(future: F) -> JoinHandle<()>
 where
     F: Future<Output = ()> + 'static + Send, 
 {
     trace!("spawning future");
-
-    #[cfg(feature = "tokio2")]
-    tk::spawn(future);
-
-    #[cfg(not(feature = "tokio2"))]
-    spawn1(async {
-        future.await;
-        Ok(()) as Result<(),()>
-    });
-     
+    task::spawn(future)
 }
 
-
-/// create new executor and block until futures is completed
-#[cfg(not(feature = "tokio2"))]
-pub fn run_block_on<F,R,E>(f:F) -> Result<R,E>
-    where
-        R: Send + 'static,
-        E: Send + 'static,
-        F: Send + 'static + Future<Output = Result<R,E>>
+pub fn spawn_blocking<F, T>(future: F) -> JoinHandle<T>
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static
 {
-    tk::Runtime::new().unwrap().block_on(Box::pin(f).compat())  
+    trace!("spawning blocking");
+    task::spawn_blocking(future)
 }
+
 
 
 /// run block for i/o bounded futures
 /// this is work around tokio runtime issue
- #[cfg(feature = "tokio2")]
+
 pub fn run_block_on<F>(f:F) -> F::Output
     where
         F: Send + 'static + Future,
         F::Output: Send + std::fmt::Debug
 {
-    let (tx, rx) = tokio_2::sync::oneshot::channel();
-    let rt = tokio_2::runtime::Runtime::new().unwrap();
-    rt.spawn(async move {
-        tx.send(f.await).unwrap();
-    });
-    rt.block_on(rx).unwrap()
+    task::block_on(f)
 } 
 
 
@@ -145,7 +110,6 @@ mod test {
     use super::run;
     use super::spawn;
 
-
     #[test]
     fn test_spawn3() {
         lazy_static! {
@@ -160,10 +124,77 @@ mod test {
         };
 
         run(async {
-            spawn(ft);
+            let join_handle = spawn(ft);
+            join_handle.await;
         });
 
         assert_eq!(*COUNTER.lock().unwrap(), 10);
     }
+
+    /*
+    // this is sample code to show how to keep test goging
+    //#[test]
+    fn test_sleep() {
+       
+
+        let ft = async {
+            for _ in 0..100 {
+                println!("sleeping");
+                super::sleep(time::Duration::from_millis(1000)).await;
+            }
+           
+        };
+
+        run(async {
+            let join_handle = spawn(ft);
+            join_handle.await;
+        });
+    
+    }
+    */
+
+    /*
+    use std::future::Future;
+    use std::task::Context;
+    use std::task::Poll;
+    use std::pin::Pin;
+    use std::io;
+
+
+    use async_std::task::spawn_blocking;
+
+    struct BlockingFuture {
+    }
+
+    impl Future for BlockingFuture {
+
+        type Output = io::Result<()>;
+
+        fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<io::Result<()>> {
+            
+            println!("start poll");
+            
+            spawn_blocking(move || { 
+                println!("start sleeping");
+                thread::sleep(time::Duration::from_millis(100));
+                println!("wake up from sleeping");
+            });
+            
+            Poll::Pending
+        }
+
+    }
+
+    //#[test]
+    fn test_block_spawning() {
+
+        run(async {
+            let block = BlockingFuture{};
+            block.await;
+        });        
+
+    }
+    */
+
 
 }

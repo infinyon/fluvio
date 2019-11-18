@@ -2,11 +2,12 @@ use std::io;
 use std::pin::Pin;
 use std::mem::replace;
 use std::task::Context;
+use std::task::Poll;
 
 use futures::io::AsyncWrite;
-use std::task::Poll;
 use futures::ready;
 use futures::future::Future;
+use async_std::fs::File;
 
 /// Derived from future io Writeall,
 /// Instead of buf restricted to[u8], it supports asref
@@ -57,3 +58,6 @@ pub trait AsyncWrite2: AsyncWrite + Unpin {
         WriteBufAll::new(self, buf)
     }
 }
+
+
+impl AsyncWrite2 for File{}

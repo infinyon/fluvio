@@ -31,6 +31,10 @@ impl AsyncFileSlice {
         self.len
     }
 
+    pub fn fd(&self) -> RawFd {
+        self.fd
+    }
+
 
 }
 
