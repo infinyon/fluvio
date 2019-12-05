@@ -63,31 +63,13 @@ It is recommended to use custom SPU instead of managed SPU which allow SPU to ru
 
 Due to limitation of third party library, we need to apply DNS name for minikube cluster.
 
-This requires 2 steps.
-
-- Add host entry ```minikubeCA``` in your /etc/hosts file.
-- Add Kube config context to use host-based configuration
-
-### Add minikubeCA entry
-
-First find IP address of the minikube
-```minikube ip```
-
-then paste output to ```/etc/hosts```.  You probably need to perform as sudo
-
-The host name must be ```minikubeCA``` as shown below
-
-```192.168.64.9    minikubeCA```
-
-### Set up custom context
-
-Here we set up new context use hostname for minikube.
+Following script adds DNS entry ```minikubeCA``` to your /etc/hosts file.
+It also create new context ```mycube``` which uses ```minikubeCA``` for API server.
 
 ```
-kubectl config set-cluster mycube --server=https://minikubeCA:8443 --certificate-authority=.minikube/ca.crt
-kubectl config set-context mycube --user=minikube --cluster=mycube
-kubectl config use-context mycube
+./dev-tools/minikube-mycube.sh
 ```
+
 
 ## Registering Custom SPU
 
@@ -128,6 +110,8 @@ Run following script to allow host docker to access minikube docker.  Without it
 ```
 ./dev-tools/minikube-docker.sh 
 ```
+
+
 
 
 
