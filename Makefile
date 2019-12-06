@@ -106,69 +106,72 @@ delete_release:
 
 
 build-sc-test:
-	cd sc-server;cargo test --no-run
+	cd src/sc-server;cargo test --no-run
 			
 			
 build-spu-test:
-	cd spu-server;cargo test --no-run
+	cd src/spu-server;cargo test --no-run
 
 build-storage-test:
-	cd storage;cargo test --no-run
+	cd src/storage;cargo test --no-run
 
 build-internal-test:
-	cd internal-api;cargo test --no-run	
+	cd src/internal-api;cargo test --no-run	
 
 		
 build-k8client:
-	cd k8-client;cargo build
+	cd src/k8-client;cargo build
 
 test-spu:
-	cd spu-server;cargo test
+	cd src/spu-server;cargo test
 
 test-spu-offset:
-	cd spu-server;RUST_LOG=spu_server=trace cargo test flv_offset_fetch_test	
+	cd src/spu-server;RUST_LOG=spu_server=trace cargo test flv_offset_fetch_test	
 
 test-sc-connection:
-	cd sc-server;RUST_LOG=sc_server=trace cargo test connection_test
+	cd src/sc-server;RUST_LOG=sc_server=trace cargo test connection_test
 
 test-sc-partition:
-	cd sc-server;RUST_LOG=sc_server=trace cargo test partition_test
+	cd src/sc-server;RUST_LOG=sc_server=trace cargo test partition_test
 
 test-sc-controller:
-	cd sc-server; cargo test test_controller_basic		
+	cd src/sc-server; cargo test test_controller_basic		
 
 test-sc:
-	cd sc-server;cargo test		
+	cd src/sc-server;cargo test		
 
 test-storage:
-	cd storage;cargo test
+	cd src/storage;cargo test
 
 test-internal-api:
-	cd api/internal-api;cargo test
+	cd src/api/internal-api;cargo test
 
 test-cli:
-	cd cli;cargo test
+	cd src/cli;cargo test
 
 test-helper:
-	cd future-helper;cargo test
+	cd src/future-helper;cargo test
 
 test-aio:
-	cd future-aio;cargo test
+	cd src/future-aio;cargo test
 
 test-kfsocket:
-	cd kf-socket;cargo test
+	cd src/kf-socket;cargo test
 
 test-kfservice:
-	cd kf-service;cargo test
+	cd src/kf-service;cargo test
 
 test-k8client:
-	cd k8-client;cargo test
+	cd src/k8-client;cargo test
 
 test-k8config:
-	cd k8-config;cargo test
+	cd src/k8-config;cargo test
 
 test-kf-protocol:
-	cd kf-protocol;cargo test
+	cd src/kf-protocol;cargo test
+
+test-client:
+	cd src/client;cargo test
 
 
 .PHONY:	test-helper teste-aio test-kfsocket test-kfservice test-k8client test-k8config

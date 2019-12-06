@@ -1,0 +1,12 @@
+[package]
+name = "k8-config"
+version = "0.2.1"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[dependencies]
+log = "0.4.8"
+dirs = "2.0.2"
+serde = { version ="1.0.103", features = ['derive'] }
+serde_yaml = "0.8.9"
+

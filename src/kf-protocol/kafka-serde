@@ -1,0 +1,26 @@
+[package]
+name = "kf-protocol"
+edition = "2018"
+version = "0.2.1"
+authors = ["fluvio.io"]
+
+[[bin]]
+name = "kafka-dump"
+path = "src/bin/kafka-dump.rs"
+required-features = ["cli"]
+
+[features]
+cli = ["clap"]
+serde_parser = ["serde"]
+
+[dependencies]
+bytes = "0.4.12"
+log = "0.4.8"
+serde = { version ="1.0.103", features = ['derive'], optional = true }
+kafka-derive = { path = "kafka-derive" }
+
+clap = { version = "2.32.0", optional = true }
+
+[dev-dependencies]
+rand = "0.7.2"
+pretty_env_logger = "0.2.5"

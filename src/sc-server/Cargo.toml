@@ -1,0 +1,44 @@
+[package]
+name = "sc-server"
+edition = "2018"
+version = "0.2.1"
+authors = ["fluvio.io"]
+default-run = "sc-server"
+
+
+[[bin]]
+name = "sc-server"
+path = "src/main.rs"
+doc = false
+
+
+[dependencies]
+rand = "0.7.2"
+log = "0.4.8"
+toml = "0.5.5"
+serde = { version ="1.0.103", features = ['derive'] }
+futures = { version = "0.3.1" }
+pin-utils = "0.1.0-alpha.4"
+chashmap = "2.2.0"
+structopt = "0.3.5"
+base64 = "0.11.0"
+regex = "1.3.1"
+async-trait = "0.1.21"
+types = { path = "../types"}
+utils = { path = "../utils"}
+future-helper = { path = "../future-helper" }
+k8-client = { path = "../k8-client"}
+kf-protocol = { path = "../kf-protocol"}
+kf-socket = {path = "../kf-socket"}
+kf-service = { path = "../kf-service"}
+internal-api = { path = "../api/internal-api"}
+k8-metadata = { path = "../k8-metadata"}
+k8-config = { path = "../k8-config"}
+metadata = { path = "../metadata"}
+sc-api = { path = "../api/sc-api"}
+
+[dev-dependencies]
+future-helper = { path = "../future-helper", features=["fixture"]}
+future-aio = { path = "../future-aio"}
+k8-fixtures = { path = "../k8-client/k8-fixtures" }
+utils = { path = "../utils", features=["fixture"]}

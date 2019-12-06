@@ -1,0 +1,11 @@
+[package]
+name = "k8-diff"
+edition = "2018"
+version = "0.2.1"
+authors = ["fluvio.io"]
+
+
+[dependencies]
+log = "0.4.8"
+serde = "1.0.103"
+serde_json = "1.0.40"

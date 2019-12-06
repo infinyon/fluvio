@@ -82,7 +82,7 @@ kubectl create -f k8-util/samples/crd/spu_5003.yaml
 
 ## Starting SC
 ```
-./dev-tools/log/debug-spu-min 5001 9005 9006
+./dev-tools/log/debug-sc-min
 ```
 
 ## Starting custom SPU

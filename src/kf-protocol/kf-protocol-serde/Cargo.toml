@@ -1,0 +1,20 @@
+[package]
+name = "kf-protocol"
+edition = "2018"
+version = "0.2.1"
+authors = ["fluvio.io"]
+
+[[bin]]
+name = "kafka-dump"
+path = "src/bin/kafka-dump.rs"
+required-features = ["cli"]
+
+[features]
+#cli = ["clap"]
+#serde_parser = ["serde"]
+
+[dependencies]
+log = "0.4.8"
+kf-protocol-core = { path = "kf-protocol-core" }
+
+#clap = { version = "2.32.0", optional = true }

@@ -1,0 +1,41 @@
+[package]
+name = "spu-server"
+edition = "2018"
+version = "0.2.1"
+authors = ["fluvio.io"]
+
+
+[[bin]]
+name = "spu-server"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+log = "0.4.8"
+bytes = "0.4.12"
+structopt = "0.3.5"
+toml = "0.5.5"
+futures = { version = "0.3.1" }
+async-trait = "0.1.21"
+serde_yaml =  "0.8.8"
+serde = { version ="1.0.103", features = ['derive'] }
+chrono = { version = "0.4.6", features = ["serde"] }
+chashmap = "2.2.0"
+pin-utils = "0.1.0-alpha.4"
+regex = "1.3.1"
+future-helper = { path = "../future-helper" }
+kf-protocol = { path = "../kf-protocol"}
+kf-socket = {path = "../kf-socket"}
+kf-service = { path = "../kf-service"}
+k8-client = { path = "../k8-client"}
+internal-api = { path = "../api/internal-api"}
+spu-api = { path = "../api/spu-api"}
+types = { path= "../types"}
+utils = { path= "../utils"}
+metadata = { path = "../metadata" }
+future-aio = { path = "../future-aio"}
+storage = { path = "../storage"}
+
+[dev-dependencies]
+future-helper = { path = "../future-helper", features = ["fixture"] }
+utils = { path = "../utils", features=["fixture"]}

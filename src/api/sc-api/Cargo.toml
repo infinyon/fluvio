@@ -1,0 +1,14 @@
+[package]
+name = "sc-api"
+version = "0.2.1"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[dependencies]
+log = "0.4.8"
+kf-protocol = { path = "../../kf-protocol"}
+metadata = { path = "../../metadata"}
+utils = { path= "../../utils"}
+types = { path= "../../types"}
+serde = { version ="1.0.103", features = ['derive'] }
+k8-metadata = { path = "../../k8-metadata"}
