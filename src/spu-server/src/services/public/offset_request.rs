@@ -8,9 +8,9 @@ use spu_api::offsets::FlvFetchOffsetsRequest;
 use spu_api::offsets::FetchOffsetTopicResponse;
 use spu_api::offsets::FlvFetchOffsetsResponse;
 use spu_api::offsets::FetchOffsetPartitionResponse;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 use kf_protocol::api::FlvErrorCode;
-use storage::ReplicaStorage;
+use flv_storage::ReplicaStorage;
 
 use crate::core::DefaultSharedGlobalContext;
 

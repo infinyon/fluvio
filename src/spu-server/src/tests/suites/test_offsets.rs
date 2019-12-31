@@ -3,9 +3,9 @@ use std::sync::Arc;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-use future_helper::test_async;
+use flv_future_core::test_async;
 use kf_socket::KfSocketError;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 use kf_protocol::api::RequestMessage;
 use spu_api::offsets::FlvFetchOffsetsRequest;
 use spu_api::offsets::FetchOffsetTopic;

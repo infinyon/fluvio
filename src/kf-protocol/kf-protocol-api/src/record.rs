@@ -8,8 +8,10 @@ use std::io::ErrorKind;
 use log::trace;
 use content_inspector::{ContentType, inspect};
 
+
 use kf_protocol::bytes::Buf;
 use kf_protocol::bytes::BufMut;
+use kf_protocol::bytes::BufExt;
 
 use kf_protocol::Decoder;
 use kf_protocol::DecoderVarInt;

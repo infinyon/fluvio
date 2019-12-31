@@ -1,23 +1,32 @@
 use std::fmt;
-
-use kf_socket::KfSocketError;
 use std::io::Error as IoError;
+
+use fluvio_client::ClientError;
+use kf_socket::KfSocketError;
+
 
 #[derive(Debug)]
 pub enum CliError {
     IoError(IoError),
     KfSocketError(KfSocketError),
+    ClientError(ClientError)
 }
 
 impl From<IoError> for CliError {
     fn from(error: IoError) -> Self {
-        CliError::IoError(error)
+        Self::IoError(error)
     }
 }
 
 impl From<KfSocketError> for CliError {
     fn from(error: KfSocketError) -> Self {
-        CliError::KfSocketError(error)
+        Self::KfSocketError(error)
+    }
+}
+
+impl From<ClientError> for CliError {
+    fn from(error: ClientError) -> Self {
+        Self::ClientError(error)
     }
 }
 
@@ -26,6 +35,7 @@ impl fmt::Display for CliError {
         match self {
             CliError::IoError(err) => write!(f, "{}", err),
             CliError::KfSocketError(err) => write!(f, "{}", err),
+            CliError::ClientError(err) => write!(f,"{}",err)
         }
     }
 }

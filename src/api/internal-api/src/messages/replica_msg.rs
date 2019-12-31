@@ -10,12 +10,11 @@
 //!
 use std::fmt;
 
-
 use kf_protocol::derive::{Decode, Encode};
 
 use types::SpuId;
 
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 
 use super::MsgType;
 use super::Message;
@@ -31,19 +30,15 @@ pub struct ReplicaMsgs {
     pub messages: Vec<ReplicaMsg>,
 }
 
-
-
 impl fmt::Display for ReplicaMsgs {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"[")?;
+        write!(f, "[")?;
         for replica in &self.messages {
-             write!(f,"{},",replica)?;
+            write!(f, "{},", replica)?;
         }
-        write!(f,"]")
-       
+        write!(f, "]")
     }
 }
-
 
 // -----------------------------------
 // ReplicaMsgs
@@ -61,8 +56,6 @@ impl ReplicaMsgs {
     }
 }
 
-
-
 #[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
 pub struct Replica {
     pub id: ReplicaKey,
@@ -70,17 +63,15 @@ pub struct Replica {
     pub replicas: Vec<SpuId>,
 }
 
-
 impl fmt::Display for Replica {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{} leader: {} replicas: [",self.id,self.leader)?;
+        write!(f, "{} leader: {} replicas: [", self.id, self.leader)?;
         for replica in &self.replicas {
-            write!(f,"{},",replica)?;
+            write!(f, "{},", replica)?;
         }
-        write!(f,"]")
+        write!(f, "]")
     }
 }
-
 
 // -----------------------------------
 // ReplicaMsg

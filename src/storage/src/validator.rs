@@ -6,9 +6,8 @@ use futures::stream::StreamExt;
 use log::warn;
 use log::trace;
 
-
 use kf_protocol::api::Offset;
-use future_aio::fs::file_util;
+use flv_future_aio::fs::file_util;
 
 use crate::BatchHeaderStream;
 use crate::util::log_path_get_offset;
@@ -22,26 +21,22 @@ pub enum LogValidationError {
     BaseOffError,
     OffsetNotOrderedError,
     NoBatches,
-    ExistingBatch
+    ExistingBatch,
 }
-
 
 impl fmt::Display for LogValidationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::InvalidExtension => write!(f, "invalid extension"),
-            Self::LogNameError(err) => write!(f,"{}",err),
-            Self::IoError(err) => write!(f,"{}",err),
-            Self::BaseOffError => write!(f,"base off error"),
-            Self::OffsetNotOrderedError => write!(f,"offset not order"),
-            Self::NoBatches => write!(f,"no batches"),
-            Self::ExistingBatch => write!(f,"batch exist")
+            Self::LogNameError(err) => write!(f, "{}", err),
+            Self::IoError(err) => write!(f, "{}", err),
+            Self::BaseOffError => write!(f, "base off error"),
+            Self::OffsetNotOrderedError => write!(f, "offset not order"),
+            Self::NoBatches => write!(f, "no batches"),
+            Self::ExistingBatch => write!(f, "batch exist"),
         }
     }
 }
-
-
-
 
 impl From<OffsetError> for LogValidationError {
     fn from(error: OffsetError) -> Self {
@@ -58,8 +53,9 @@ impl From<IoError> for LogValidationError {
 /// validate the file and find last offset
 /// if file is not valid then return error
 #[allow(dead_code)]
-pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError> 
-        where P: AsRef<Path> 
+pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
+where
+    P: AsRef<Path>,
 {
     let file_path = path.as_ref();
     let base_offset = log_path_get_offset(file_path)?;
@@ -67,7 +63,8 @@ pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
 
     trace!(
         "validating file: {}, base offset: {}",
-        file_name, base_offset
+        file_name,
+        base_offset
     );
 
     let file_clone = file_util::open(file_path).await?;
@@ -81,7 +78,8 @@ pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
 
         trace!(
             "found batch base: {} offset delta: {}",
-            batch_base_offset, offset_delta
+            batch_base_offset,
+            offset_delta
         );
 
         if batch_base_offset < base_offset {
@@ -109,10 +107,10 @@ pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
 
     if end_offset == -1 {
         trace!("no batch found, returning last offset delta 0");
-        return Ok(base_offset)
+        return Ok(base_offset);
     }
 
-    trace!("end offset: {}",end_offset);
+    trace!("end offset: {}", end_offset);
     Ok(end_offset + 1)
 }
 
@@ -121,11 +119,11 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use futures::sink::SinkExt;
+    use futures::io::AsyncWriteExt;
 
-    use future_aio::fs::BoundedFileSink;
-    use future_aio::fs::BoundedFileOption;
-    use future_helper::test_async;
+    use flv_future_aio::fs::BoundedFileSink;
+    use flv_future_aio::fs::BoundedFileOption;
+    use flv_future_core::test_async;
     use kf_protocol::api::DefaultRecord;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Offset;
@@ -137,7 +135,6 @@ mod tests {
     use super::validate;
     use crate::StorageError;
 
-   
     const PRODUCER: i64 = 33;
 
     pub fn create_batch(base_offset: Offset, records: u16) -> DefaultBatch {
@@ -147,14 +144,12 @@ mod tests {
         header.magic = 2;
         header.producer_id = PRODUCER;
         header.producer_epoch = -1;
-     
         for _ in 0..records {
             let mut record = DefaultRecord::default();
             let bytes: Vec<u8> = vec![10, 20];
             record.value = Some(bytes).into();
             batches.add_record(record);
         }
-    
         batches
     }
 
@@ -174,14 +169,13 @@ mod tests {
 
         let _ = MutFileRecords::open(BASE_OFFSET, &options).await?;
         let next_offset = validate(&test_file).await?;
-        assert_eq!(next_offset,BASE_OFFSET);
+        assert_eq!(next_offset, BASE_OFFSET);
 
         Ok(())
     }
 
     const TEST_FILE_SUCCESS_NAME: &str = "00000000000000000601.log"; // for offset 301
     const SUCCESS_BASE_OFFSET: Offset = 601;
-    
 
     #[test_async]
     async fn test_validate_success() -> Result<(), StorageError> {
@@ -197,7 +191,9 @@ mod tests {
         let mut msg_sink = MutFileRecords::create(SUCCESS_BASE_OFFSET, &options).await?;
 
         msg_sink.send(create_batch(SUCCESS_BASE_OFFSET, 2)).await?;
-        msg_sink.send(create_batch(SUCCESS_BASE_OFFSET+2,3)).await?;
+        msg_sink
+            .send(create_batch(SUCCESS_BASE_OFFSET + 2, 3))
+            .await?;
 
         let next_offset = validate(&test_file).await?;
         assert_eq!(next_offset, SUCCESS_BASE_OFFSET + 5);
@@ -223,7 +219,7 @@ mod tests {
         msg_sink.send(create_batch(401, 0)).await?;
         msg_sink.send(create_batch(111, 1)).await?;
 
-     //   assert!(validate(&test_file).await.is_err());
+        //   assert!(validate(&test_file).await.is_err());
 
         Ok(())
     }
@@ -241,16 +237,16 @@ mod tests {
             ..Default::default()
         };
 
-        let mut msg_sink = MutFileRecords::create(501, &options).await?;
-        msg_sink.send(create_batch(501, 2)).await?;
+        let mut msg_sink = MutFileRecords::create(501, &options).await.expect("record created");
+        msg_sink.send(create_batch(501, 2)).await.expect("create batch");
 
         // add some junk
-        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default()).await?;
+        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default()).await.expect("open batch file");
         let bytes = vec![0x01, 0x02, 0x03];
-        f_sink.send(bytes).await?;
+        f_sink.write_all(&bytes).await.expect("write some junk");
+        f_sink.flush().await.expect("flush");
         assert!(validate(&test_file).await.is_err());
 
         Ok(())
     }
-
 }

@@ -16,7 +16,7 @@ use log::error;
 use log::trace;
 
 use types::SpuId;
-use future_helper::spawn;
+use flv_future_core::spawn;
 use internal_api::InternalApiRequest;
 use internal_api::InternalApiResponse;
 use internal_api::InternalKafkaApiEnum;
@@ -93,7 +93,6 @@ impl SpuStreams {
                         spu_id,
                         follower_info.ack_count
                     );
-
                 } else {
                     error!(
                         "fetch stream: got ack from follower doesn't exist anymore: {}, finishing",
@@ -187,10 +186,10 @@ mod test {
     use log::debug;
 
     use types::SpuId;
-    use future_aio::net::AsyncTcpListener;
-    use future_aio::net::AsyncTcpStream;
-    use future_helper::sleep;
-    use future_helper::test_async;
+    use flv_future_aio::net::AsyncTcpListener;
+    use flv_future_aio::net::AsyncTcpStream;
+    use flv_future_core::sleep;
+    use flv_future_core::test_async;
 
     use super::SpuStreams;
     use crate::KfTcpStreamSplit;
@@ -252,5 +251,4 @@ mod test {
 
         Ok(())
     }
-
 }

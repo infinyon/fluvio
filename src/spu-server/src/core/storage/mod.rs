@@ -1,7 +1,7 @@
-use storage::ConfigOption;
-use storage::FileReplica;
-use storage::StorageError;
-use metadata::partition::ReplicaKey;
+use flv_storage::ConfigOption;
+use flv_storage::FileReplica;
+use flv_storage::StorageError;
+use flv_metadata::partition::ReplicaKey;
 use types::SpuId;
 
 fn default_config(spu_id: SpuId, config: &ConfigOption) -> ConfigOption {

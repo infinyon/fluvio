@@ -15,6 +15,8 @@ pub use self::encoder::EncoderVarInt;
 pub mod bytes {
     pub use bytes::Buf;
     pub use bytes::BufMut;
+    pub use bytes::buf::ext::BufExt;
+    pub use bytes::buf::ext::BufMutExt;
 }
 
 pub type Version = i16;

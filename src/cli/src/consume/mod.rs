@@ -1,18 +1,49 @@
 mod cli;
-mod flv;
-mod kf;
 mod logs_output;
+mod fetch_log_loop;
+mod consume_hdlr;
 
+
+use consume_hdlr::ConsumeOutputType;
 pub use cli::ConsumeLogOpt;
 pub use cli::ConsumeLogConfig;
-pub use cli::process_consume_log;
+use fetch_log_loop::fetch_log_loop;
 
-pub use kf::kf_consume_log_from_topic;
-pub use kf::kf_consume_log_from_topic_partition;
+use logs_output::process_fetch_topic_response;
 
-pub use flv::sc_consume_log_from_topic;
-pub use flv::sc_consume_log_from_topic_partition;
-pub use flv::spu_consume_log_from_topic_partition;
 
-pub use logs_output::ReponseLogParams;
-pub use logs_output::process_fetch_topic_reponse;
+pub use process::process_consume_log;
+
+mod process {
+
+    use log::debug;
+
+    use crate::profile::ReplicaLeaderTarget;
+    use crate::CliError;
+    use crate::Terminal;
+
+    use super::ConsumeLogOpt;
+    use super::fetch_log_loop;
+
+    /// Process Consume log cli request
+    pub async fn process_consume_log<O>(out: std::sync::Arc<O>,opt: ConsumeLogOpt) -> Result<String, CliError> 
+        where O: Terminal
+    {
+
+        let (target_server, cfg) = opt.validate()?;
+
+        debug!("spu  leader consume config: {:#?}",cfg);
+
+        (match target_server.connect(&cfg.topic,cfg.partition).await? {
+            ReplicaLeaderTarget::Kf(leader) => {
+                fetch_log_loop(out,leader,cfg).await
+            },
+            ReplicaLeaderTarget::Spu(leader) => {
+                fetch_log_loop(out,leader,cfg).await?;
+                debug!("finished fetch loop");
+                Ok(())
+            }
+        }).map(|_| format!(""))
+        
+    }
+}

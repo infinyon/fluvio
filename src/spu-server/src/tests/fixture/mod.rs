@@ -12,7 +12,7 @@ use std::sync::Arc;
 use futures::Future;
 
 use kf_socket::KfSocketError;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 
 /// Customize System Test
 pub trait SpuTest: Sized {

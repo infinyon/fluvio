@@ -3,7 +3,6 @@
 //!
 //! Defines supported APIs and provides Request fuctionality
 //!
-use std::net::SocketAddr;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fs::read_to_string;
@@ -15,10 +14,11 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use kf_protocol::api::Request;
-use future_helper::run_block_on;
+use fluvio_client::Client;
 
 use crate::error::CliError;
-use crate::common::connect_and_send_request;
+use crate::Terminal;
+use crate::t_println;
 
 // -----------------------------------
 // Request Api
@@ -49,27 +49,34 @@ arg_enum! {
 // -----------------------------------
 
 /// Parse from file and return Request object
-pub fn parse_request_from_file<P, R>(file_path: P) -> Result<R, CliError>
+pub async fn parse_and_pretty_from_file<P,R,O>(out: std::sync::Arc<O>,client: &mut Client<String>,file_path: P) -> Result<(), CliError>
 where
     P: AsRef<Path>,
-    R: DeserializeOwned,
+    R: DeserializeOwned + Request,
+    R::Response: Serialize,
+    O: Terminal
 {
     let file_str: String = read_to_string(file_path)?;
-    let list_offset_req: R = serde_json::from_str(&file_str)
+    let request: R = serde_json::from_str(&file_str)
         .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
-    Ok(list_offset_req)
+    
+    pretty_pretty_spu(out,client,request).await
 }
 
 // Connect to Kafka Controller and process request
-pub fn send_request_to_server<R>(server_addr: SocketAddr, request: R) -> Result<(), CliError>
+async fn pretty_pretty_spu<O,R>(out: std::sync::Arc<O>,client: &mut Client<String>, request: R) -> Result<(), CliError>
 where
-    R: Request + Send + Sync + 'static,
-    R::Response: Send + Sync + Serialize,
+    R: Request,
+    R::Response: Serialize,
+    O: Terminal
 {
     // Send request without a version number, max_version will be used
-    let response = run_block_on(connect_and_send_request(server_addr, request, None))?;
+
+    let response = client.send_receive(request).await?;
     let result = to_string_pretty(&response)
         .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
-    println!("{}", result);
+    t_println!(out,"{}", result);
     Ok(())
 }
+
+

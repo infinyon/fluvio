@@ -133,7 +133,7 @@ mod tests {
     use futures::io::AsyncReadExt;
     use futures::io::AsyncWriteExt;
     use async_std::io::prelude::SeekExt;
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use utils::fixture::ensure_clean_file;
     use super::AsyncFile;
     use super::file_util;

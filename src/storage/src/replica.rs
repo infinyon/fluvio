@@ -1,13 +1,13 @@
 use std::io::Error as IoError;
 use std::mem;
 
-use futures::SinkExt;
+
 use log::debug;
 use log::trace;
 use log::error;
 
 
-use future_aio::fs::create_dir_all;
+use flv_future_aio::fs::create_dir_all;
 use kf_protocol::api::ErrorCode;
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
@@ -263,7 +263,7 @@ impl FileReplica {
                     Ok(slice) => {
                         match slice {
                             Some(slice) => {
-                                debug!("retrieved slice: {:#?}",slice);
+                                debug!("retrieved record slice fd: {}, position: {}, len{}",slice.fd(),slice.position(),slice.len());
                                 response.set_slice(slice);
                             },
                             None => {
@@ -329,7 +329,7 @@ mod tests {
     use std::fs::metadata;
     use std::io::Cursor;
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Offset;
     use kf_protocol::Decoder;
@@ -382,7 +382,7 @@ mod tests {
 
     #[test_async]
     async fn test_replica_simple() -> Result<(), StorageError> {
-        let option = base_option("testsimple");
+        let option = base_option("test_simple");
         let mut replica = FileReplica::create("test", 0, START_OFFSET, &option).await.expect("test replica");
 
         assert_eq!(replica.get_log_start_offset(),START_OFFSET);
@@ -430,7 +430,7 @@ mod tests {
         Ok(())
     }
 
-    const TEST_UNCOMMIT_DIR: &str = "testuncommitted";
+    const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
 
     #[test_async]
     async fn test_uncommited_fetch() -> Result<(), StorageError> {
@@ -474,7 +474,7 @@ mod tests {
         Ok(())
     }
 
-    const TEST_OFFSET_DIR: &str = "testoffset";
+    const TEST_OFFSET_DIR: &str = "test_offset";
 
     #[test_async]
     async fn test_replica_end_offset() -> Result<(), StorageError> {
@@ -545,7 +545,7 @@ mod tests {
     }
 
 
-    const TEST_COMMIT_DIR: &str = "testcommit";
+    const TEST_COMMIT_DIR: &str = "test_commit";
   
     #[test_async]
     async fn test_replica_commit() -> Result<(), StorageError> {
@@ -572,7 +572,7 @@ mod tests {
 
 
     
-    const TEST_COMMIT_FETCH_DIR: &str = "testcommitt_fetch";
+    const TEST_COMMIT_FETCH_DIR: &str = "test_commit_fetch";
 
     /// test fetch only committed records
     #[test_async]
@@ -613,6 +613,17 @@ mod tests {
 
         Ok(())
     }
-    
+
+    /*
+    use kf_protocol::api::DefaultRecord;
+    fn create_batch_with_text(text: &str) -> DefaultBatch {
+
+        let record = text.as_bytes().to_vec();
+        let record_msg: DefaultRecord = record.into();
+        let mut batch = DefaultBatch::default();
+        batch.records.push(record_msg);
+        batch
+    }
+    */
 
 }

@@ -16,6 +16,7 @@ utils = { path= "../../utils"}
 kf-protocol-derive = { path = "../kf-protocol-derive" }
 kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
 kf-protocol-api = { path = "../kf-protocol-api"}
+types = { path = "../../types"}
 
 #[build-dependencies]
 #kf-protocol-build = { path = "../kf-protocol-build"}

@@ -33,6 +33,8 @@ pub struct KfListOffsetRequest {
     pub topics: Vec<ListOffsetTopic>,
 }
 
+
+
 #[derive(Encode, Decode, Serialize, Deserialize, KfDefault, Debug)]
 pub struct ListOffsetTopic {
     /// The topic name.
@@ -69,6 +71,10 @@ pub struct KfListOffsetResponse {
     /// Each topic in the response.
     pub topics: Vec<ListOffsetTopicResponse>,
 }
+
+
+
+
 
 #[derive(Encode, Decode, Serialize, Deserialize, KfDefault, Debug)]
 pub struct ListOffsetTopicResponse {

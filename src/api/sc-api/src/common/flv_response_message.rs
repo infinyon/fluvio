@@ -7,6 +7,8 @@ use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::FlvErrorCode;
 
+use crate::ApiError;
+
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvResponseMessage {
     pub name: String,
@@ -15,6 +17,7 @@ pub struct FlvResponseMessage {
 }
 
 impl FlvResponseMessage {
+
     pub fn new_ok(name: String) -> Self {
         FlvResponseMessage {
             name: name,
@@ -32,6 +35,15 @@ impl FlvResponseMessage {
     }
 
     pub fn is_error(&self) -> bool {
-        self.error_code != FlvErrorCode::None
+        self.error_code.is_error()
     }
+
+    pub fn as_result(self) -> Result<(),ApiError> {
+        if self.error_code.is_ok() {
+            Ok(())
+        } else {
+            Err(ApiError::Code(self.error_code,self.error_message))
+        }
+    }
+
 }

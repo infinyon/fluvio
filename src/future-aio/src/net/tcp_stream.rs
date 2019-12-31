@@ -23,14 +23,14 @@ mod tests {
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
     use futures::future::join;
-    use future_helper::sleep;
+    use flv_future_core::sleep;
     use log::debug;
     use futures_codec::BytesCodec;
     use futures_codec::Framed;
     use async_std::prelude::*;
 
-    use future_helper::test_async;
-    use future_helper::spawn;
+    use flv_future_core::test_async;
+    use flv_future_core::spawn;
 
     use super::AsyncTcpListener;
     use super::AsyncTcpStream;

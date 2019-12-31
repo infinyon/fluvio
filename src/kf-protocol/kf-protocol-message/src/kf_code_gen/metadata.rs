@@ -9,7 +9,7 @@ use kf_protocol_api::Request;
 use kf_protocol_derive::Decode;
 use kf_protocol_derive::Encode;
 use kf_protocol_derive::KfDefault;
-
+use types::socket_helpers::ServerAddress;
 // -----------------------------------
 // KfMetadataRequest
 // -----------------------------------
@@ -71,6 +71,12 @@ pub struct MetadataResponseBroker {
     /// The rack of the broker, or null if it has not been assigned to a rack.
     #[fluvio_kf(min_version = 1, ignorable)]
     pub rack: Option<String>,
+}
+
+impl MetadataResponseBroker {
+    pub fn into(&self) -> ServerAddress {
+        ServerAddress::new(self.host.clone(),self.port as u16)
+    }
 }
 
 #[derive(Encode, Decode, Serialize, Deserialize, KfDefault, Debug)]

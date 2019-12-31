@@ -4,21 +4,26 @@
 //! CLI tree to generate Create Custom SPUs
 //!
 
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::convert::TryFrom;
 
 use structopt::StructOpt;
+
+
 use types::socket_helpers::ServerAddress;
 
 use crate::error::CliError;
-use crate::profile::{ProfileConfig, TargetServer};
+use crate::profile::ScConfig;
 
-use super::helpers::proc_create::process_sc_create_custom_spu;
 
-// -----------------------------------
-// CLI Options
-// -----------------------------------
+#[derive(Debug)]
+pub struct CreateCustomSpuConfig {
+    pub id: i32,
+    pub name: String,
+    pub public_server: ServerAddress,
+    pub private_server: ServerAddress,
+    pub rack: Option<String>,
+}
+
 
 #[derive(Debug, StructOpt)]
 pub struct CreateCustomSpuOpt {
@@ -51,51 +56,45 @@ pub struct CreateCustomSpuOpt {
     profile: Option<String>,
 }
 
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
+impl CreateCustomSpuOpt {
 
-#[derive(Debug)]
-pub struct CreateCustomSpuConfig {
-    pub id: i32,
-    pub name: String,
-    pub public_server: ServerAddress,
-    pub private_server: ServerAddress,
-    pub rack: Option<String>,
+    /// Validate cli options. Generate target-server and create custom spu config.
+    fn validate(self) -> Result<(ScConfig, CreateCustomSpuConfig), CliError> {
+        // profile specific configurations (target server)
+        let target_server = ScConfig::new(self.sc, self.profile)?;
+     
+
+        // create custom spu config
+        let cfg = CreateCustomSpuConfig {
+            id: self.id,
+            name: self.name.unwrap_or(format!("custom-spu-{}", self.id)),
+            public_server: TryFrom::try_from(self.public_server)?,
+            private_server: TryFrom::try_from(self.private_server)?,
+            rack: self.rack.clone(),
+        };
+
+        // return server separately from config
+        Ok((target_server, cfg))
+    }
+
+
 }
+
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub fn process_create_custom_spu(opt: CreateCustomSpuOpt) -> Result<(), CliError> {
-    let (target_server, create_custom_spu_cfg) = parse_opt(opt)?;
+pub async fn process_create_custom_spu(opt: CreateCustomSpuOpt) -> Result<(), CliError> {
 
-    match target_server {
-        TargetServer::Sc(server_addr) => {
-            process_sc_create_custom_spu(server_addr, create_custom_spu_cfg)
-        }
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!("invalid sc server {:?}", target_server),
-        ))),
-    }
-}
+    let (target_server, cfg) = opt.validate()?;
 
-/// Validate cli options. Generate target-server and create custom spu config.
-fn parse_opt(opt: CreateCustomSpuOpt) -> Result<(TargetServer, CreateCustomSpuConfig), CliError> {
-    // profile specific configurations (target server)
-    let profile_config = ProfileConfig::new(&opt.sc, &None, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
+    let mut sc = target_server.connect().await?;
 
-    // create custom spu config
-    let cfg = CreateCustomSpuConfig {
-        id: opt.id,
-        name: opt.name.unwrap_or(format!("custom-spu-{}", opt.id)),
-        public_server: TryFrom::try_from(&opt.public_server)?,
-        private_server: TryFrom::try_from(&opt.private_server)?,
-        rack: opt.rack.clone(),
-    };
-
-    // return server separately from config
-    Ok((target_server, cfg))
+    sc.create_custom_spu(
+        cfg.id,
+        cfg.name,
+        cfg.public_server,
+        cfg.private_server,
+        cfg.rack
+    ).await.map_err(|err| err.into())
 }

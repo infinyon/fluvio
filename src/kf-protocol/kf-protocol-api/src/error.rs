@@ -269,6 +269,14 @@ impl Default for ErrorCode {
 }
 
 impl ErrorCode {
+
+    pub fn is_ok(&self) -> bool {
+        match self {
+            Self::None => true,
+            _ => false
+        }
+    }
+
     pub fn to_string(&self) -> String {
         match self {
             ErrorCode::None => "Ok".to_owned(),

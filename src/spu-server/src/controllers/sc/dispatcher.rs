@@ -2,8 +2,6 @@ use std::time::Duration;
 use std::process;
 use std::io::Error as IoError;
 use std::sync::Arc;
-use std::net::SocketAddr;
-use std::convert::TryInto;
 
 use log::info;
 use log::trace;
@@ -20,8 +18,8 @@ use futures::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
 
-use future_helper::spawn;
-use future_helper::sleep;
+use flv_future_core::spawn;
+use flv_future_core::sleep;
 use internal_api::InternalSpuApi;
 use internal_api::InternalSpuRequest;
 use internal_api::RegisterSpuRequest;
@@ -33,8 +31,8 @@ use kf_protocol::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use kf_socket::ExclusiveKfSink;
-use storage::FileReplica;
-use metadata::partition::ReplicaKey;
+use flv_storage::FileReplica;
+use flv_metadata::partition::ReplicaKey;
 use types::log_on_err;
 use utils::actions::Actions;
 
@@ -214,20 +212,18 @@ impl ScDispatcher<FileReplica> {
     /// or if we received termination message
     async fn create_socket_to_sc(&mut self) -> Option<KfSocket> {
         let spu_id = self.ctx.local_spu_id();
-        let sc_endpoint = self.ctx.config().sc_endpoint();
+        let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
          debug!("trying to resolve sc endpoint: {}",sc_endpoint);
-        let addr: SocketAddr = sc_endpoint.clone().try_into().expect("sc endpoint should be resolving");
-        debug!("sc endpoint resolved to: {}",addr);
-
+       
         let wait_interval = self.ctx.config().sc_retry_ms;
         loop {
             trace!(
                 "trying to create socket to sc: {:#?} for spu: {}",
-                addr,
+                sc_endpoint,
                 spu_id
             );
-            let connect_future = KfSocket::connect(&addr);
+            let connect_future = KfSocket::connect(&sc_endpoint);
 
             select! {
                 socket_res = connect_future.fuse() => {

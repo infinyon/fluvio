@@ -21,23 +21,20 @@ use crate::SPG_API;
 use super::SpuGroupStatus;
 
 impl Spec for SpuGroupSpec {
-
     type Status = SpuGroupStatus;
-    
     fn metadata() -> &'static Crd {
         &SPG_API
     }
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
-#[serde(rename_all = "camelCase",default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct SpuGroupSpec {
     pub template: TemplateSpec<SpuTemplate>,
     pub replicas: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub min_id:  Option<i32>,
+    pub min_id: Option<i32>,
 }
-
 
 impl SpuGroupSpec {
     pub fn min_id(&self) -> i32 {
@@ -45,9 +42,8 @@ impl SpuGroupSpec {
     }
 }
 
-
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
-#[serde(rename_all = "camelCase",default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct SpuTemplate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rack: Option<String>,
@@ -62,20 +58,15 @@ pub struct SpuTemplate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<StorageConfig>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub env: Vec<Env>
+    pub env: Vec<Env>,
 }
 
-
-
-
-#[derive(Deserialize, Serialize, Default,Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Default, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpuEndpointTemplate {
     pub port: u16,
     pub encryption: EncryptionEnum,
 }
-
-
 
 impl SpuEndpointTemplate {
     pub fn new(port: u16) -> Self {
@@ -100,8 +91,6 @@ impl SpuEndpointTemplate {
     }
 }
 
-
-
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ControllerEndPoint {
@@ -110,26 +99,20 @@ pub struct ControllerEndPoint {
     pub encryption: EncryptionEnum,
 }
 
-
-
-
-
 #[derive(Deserialize, Default, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ReplicationConfig {
     pub in_sync_replica_min: Option<u16>,
 }
 
-
-#[derive(Deserialize,Serialize, Debug, Default,Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub log_dir: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub size: Option<String>
+    pub size: Option<String>,
 }
-
 
 impl StorageConfig {
     pub fn log_dir(&self) -> String {
@@ -140,4 +123,3 @@ impl StorageConfig {
         self.size.clone().unwrap_or("1Gi".to_owned())
     }
 }
-

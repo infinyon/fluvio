@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use bytes::Buf;
 use bytes::BufMut;
+use bytes::buf::ext::BufExt;
 use log::trace;
 
 use crate::Version;
@@ -14,24 +15,26 @@ use super::varint::varint_decode;
 
 // trait for encoding and decoding using Kafka Protocol
 pub trait Decoder: Sized + Default {
-    
     /// decode Kafka compliant protocol values from buf
-    fn decode_from<T>(src: &mut T,version: Version) -> Result<Self, Error> 
-        where T: Buf,
-            Self: Default
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
+    where
+        T: Buf,
+        Self: Default,
     {
         let mut decoder = Self::default();
-        decoder.decode(src,version)?;
+        decoder.decode(src, version)?;
         Ok(decoder)
     }
 
-
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error> where T: Buf;
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf;
 }
 
 pub trait DecoderVarInt {
-
-    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error> where T: Buf;
+    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error>
+    where
+        T: Buf;
 }
 
 impl<M> Decoder for Vec<M>
@@ -43,7 +46,7 @@ where
         T: Buf,
     {
         let mut len: i32 = 0;
-        len.decode(src,version)?;
+        len.decode(src, version)?;
 
         trace!("decoding Vec len:{}", len);
 
@@ -52,35 +55,36 @@ where
             return Ok(());
         }
 
-        decode_vec(len,self,src,version)?;
+        decode_vec(len, self, src, version)?;
 
         Ok(())
     }
 }
 
-fn decode_vec<T,M>(len: i32,item: &mut Vec<M>,src: &mut T, version: Version) -> Result<(),Error> 
-    where T:Buf, M:Default + Decoder {
-
+fn decode_vec<T, M>(len: i32, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
+where
+    T: Buf,
+    M: Default + Decoder,
+{
     for _ in 0..len {
         let mut value = <M>::default();
-        value.decode(src,version)?;
+        value.decode(src, version)?;
         item.push(value);
     }
 
     Ok(())
-       
 }
 
-impl<M> Decoder for Option<Vec<M>> 
-
- where M: Default + Decoder {
-
+impl<M> Decoder for Option<Vec<M>>
+where
+    M: Default + Decoder,
+{
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         let mut len: i32 = 0;
-        len.decode(src,version)?;
+        len.decode(src, version)?;
 
         trace!("decoding Vec len:{}", len);
 
@@ -91,13 +95,10 @@ impl<M> Decoder for Option<Vec<M>>
 
         let mut item: Vec<M> = vec![];
 
-        decode_vec(len,&mut item,src,version)?;
+        decode_vec(len, &mut item, src, version)?;
         *self = Some(item);
-    
         Ok(())
     }
-
-
 }
 
 impl<M> Decoder for Option<M>
@@ -109,10 +110,10 @@ where
         T: Buf,
     {
         let mut some = false;
-        some.decode(src,version)?;
+        some.decode(src, version)?;
         if some {
             let mut value = <M>::default();
-            value.decode(src,version)?;
+            value.decode(src, version)?;
             *self = Some(value)
         } else {
             *self = None
@@ -120,8 +121,6 @@ where
         Ok(())
     }
 }
-
-
 
 impl<M> Decoder for PhantomData<M>
 where
@@ -145,14 +144,14 @@ where
         T: Buf,
     {
         let mut len: u16 = 0;
-        len.decode(src,version)?;
+        len.decode(src, version)?;
 
         let mut map: BTreeMap<K, V> = BTreeMap::new();
         for _i in 0..len {
             let mut key = K::default();
-            key.decode(src,version)?;
+            key.decode(src, version)?;
             let mut value = V::default();
-            value.decode(src,version)?;
+            value.decode(src, version)?;
             map.insert(key, value);
         }
 
@@ -162,7 +161,7 @@ where
 }
 
 impl Decoder for bool {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
@@ -187,7 +186,7 @@ impl Decoder for bool {
 }
 
 impl Decoder for i8 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
@@ -204,7 +203,7 @@ impl Decoder for i8 {
 }
 
 impl Decoder for u8 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
@@ -221,35 +220,35 @@ impl Decoder for u8 {
 }
 
 impl Decoder for i16 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         if src.remaining() < 2 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read i16"));
         }
-        let value = src.get_i16_be();
+        let value = src.get_i16();
         *self = value;
         Ok(())
     }
 }
 
 impl Decoder for u16 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         if src.remaining() < 2 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read u16"));
         }
-        let value = src.get_u16_be();
+        let value = src.get_u16();
         *self = value;
         Ok(())
     }
 }
 
 impl Decoder for Option<u16> {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
@@ -271,21 +270,21 @@ impl Decoder for Option<u16> {
                 "can't read Option<u16>",
             ));
         }
-        let value = src.get_u16_be();
+        let value = src.get_u16();
         *self = Some(value);
         Ok(())
     }
 }
 
 impl Decoder for i32 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         if src.remaining() < 4 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read i32"));
         }
-        let value = src.get_i32_be();
+        let value = src.get_i32();
         trace!("i32: {:#x} => {}", &value, &value);
         *self = value;
         Ok(())
@@ -293,14 +292,14 @@ impl Decoder for i32 {
 }
 
 impl Decoder for u32 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         if src.remaining() < 4 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read u32"));
         }
-        let value = src.get_u32_be();
+        let value = src.get_u32();
         trace!("u32: {:#x} => {}", &value, &value);
         *self = value;
         Ok(())
@@ -308,14 +307,14 @@ impl Decoder for u32 {
 }
 
 impl Decoder for i64 {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         if src.remaining() < 4 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read i64"));
         }
-        let value = src.get_i64_be();
+        let value = src.get_i64();
         trace!("i64: {:#x} => {}", &value, &value);
         *self = value;
         Ok(())
@@ -334,13 +333,12 @@ impl DecoderVarInt for i64 {
 }
 
 impl Decoder for Option<String> {
-    fn decode<T>(&mut self, src: &mut T,version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         let mut len: i16 = 0;
-        len.decode(src,version)?;
-       
+        len.decode(src, version)?;
         if len < 0 {
             *self = None;
             return Ok(());
@@ -350,13 +348,16 @@ impl Decoder for Option<String> {
             *self = Some(String::default());
         }
 
-        let value = decode_string(len,src)?;
+        let value = decode_string(len, src)?;
         *self = Some(value);
         Ok(())
     }
 }
 
-fn decode_string<T>(len: i16,src: &mut T) -> Result<String,Error>  where T:Buf{
+fn decode_string<T>(len: i16, src: &mut T) -> Result<String, Error>
+where
+    T: Buf,
+{
     let mut value = String::default();
     let read_size = src.take(len as usize).reader().read_to_string(&mut value)?;
 
@@ -367,7 +368,7 @@ fn decode_string<T>(len: i16,src: &mut T) -> Result<String,Error>  where T:Buf{
 }
 
 impl Decoder for String {
-    fn decode<T>(&mut self, src: &mut T,_version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
@@ -377,26 +378,24 @@ impl Decoder for String {
                 "can't read string length",
             ));
         }
-        let len = src.get_i16_be();
+        let len = src.get_i16();
         if len <= 0 {
             return Ok(());
         }
 
-        let value = decode_string(len,src)?;
+        let value = decode_string(len, src)?;
         *self = value;
         Ok(())
     }
 }
 
-
 impl Decoder for Vec<u8> {
-
-    fn decode<T>(&mut self, src: &mut T,version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
-         let mut len: i32 = 0;
-        len.decode(src,version)?;
+        let mut len: i32 = 0;
+        len.decode(src, version)?;
 
         trace!("decoding Vec len:{}", len);
 
@@ -406,10 +405,7 @@ impl Decoder for Vec<u8> {
         }
 
         if src.remaining() < len as usize {
-            return Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                "not enought bytes",
-            ));
+            return Err(Error::new(ErrorKind::UnexpectedEof, "not enought bytes"));
         }
 
         let mut buf = src.take(len as usize);
@@ -426,7 +422,6 @@ impl Decoder for Vec<u8> {
         }
 
         Ok(())
-
     }
 }
 
@@ -463,7 +458,6 @@ fn decode_option_vec_u<T>(array: &mut Option<Vec<u8>>, src: &mut T, len: isize) 
 where
     T: Buf,
 {
-
     if len < 0 {
         *array = None;
         return Ok(());
@@ -511,7 +505,6 @@ mod test {
     use crate::Decoder;
     use crate::DecoderVarInt;
     use crate::Version;
-    
     use bytes::Buf;
     use std::io::Cursor;
     use std::io::Error;
@@ -520,7 +513,7 @@ mod test {
     fn test_decode_i18_not_enough() {
         let data = []; // no values
         let mut value: i8 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -529,7 +522,7 @@ mod test {
         let data = [0x12];
 
         let mut value: i8 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 18);
     }
@@ -538,7 +531,7 @@ mod test {
     fn test_decode_u18_not_enough() {
         let data = []; // no values
         let mut value: u8 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -547,7 +540,7 @@ mod test {
         let data = [0x12];
 
         let mut value: u8 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 18);
     }
@@ -557,7 +550,7 @@ mod test {
         let data = [0x11]; // only one value
 
         let mut value: i16 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -566,7 +559,7 @@ mod test {
         let data = [0x00, 0x05];
 
         let mut value: i16 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 5);
     }
@@ -576,7 +569,7 @@ mod test {
         let data = [0x11]; // only one value
 
         let mut value: i16 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -585,7 +578,7 @@ mod test {
         let data = [0x00, 0x05];
 
         let mut value: u16 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 5);
     }
@@ -595,7 +588,7 @@ mod test {
         let data = [0x00];
 
         let mut value: Option<u16> = None;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, None);
     }
@@ -605,7 +598,7 @@ mod test {
         let data = [0x01, 0x00, 0x10];
 
         let mut value: Option<u16> = None;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, Some(16));
     }
@@ -615,7 +608,7 @@ mod test {
         let data = [0x11, 0x11, 0x00]; // still need one more
 
         let mut value: i32 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -624,7 +617,7 @@ mod test {
         let data = [0x00, 0x00, 0x00, 0x10];
 
         let mut value: i32 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 16);
     }
@@ -634,7 +627,7 @@ mod test {
         let data = [0x00, 0x00, 0x00, 0x01];
 
         let mut value: i32 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 1);
     }
@@ -644,7 +637,7 @@ mod test {
         let data = [0x11, 0x11, 0x00]; // still need one more
 
         let mut value: i64 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -653,7 +646,7 @@ mod test {
         let data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20];
 
         let mut value: i64 = 0;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, 32);
     }
@@ -663,7 +656,7 @@ mod test {
         let data = [0x11]; // doesn't have right bytes
 
         let mut value = String::from("");
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -672,7 +665,7 @@ mod test {
         let data = [0x00, 0x0a, 0x63]; // len and string doesn't match
 
         let mut value = String::from("");
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -681,7 +674,7 @@ mod test {
         let data = [0xff, 0xff]; // len and string doesn't match
 
         let mut value: Option<String> = Some(String::from("test"));
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert!(value.is_none());
     }
@@ -691,7 +684,7 @@ mod test {
         let data = [0x00, 0x02, 0x77, 0x6f]; // len and string doesn't match
 
         let mut value: Option<String> = None;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert!(value.is_some());
         assert_eq!(value.unwrap(), "wo");
@@ -701,7 +694,7 @@ mod test {
     fn test_decode_string_existing_value() {
         let src = [0x0, 0x7, 0x30, 0x2e, 0x30, 0x2e, 0x30, 0x2e, 0x30];
         let mut decode_target = "123".to_string();
-        let result = decode_target.decode(&mut Cursor::new(&src),0);
+        let result = decode_target.decode(&mut Cursor::new(&src), 0);
         assert!(result.is_ok());
         assert_eq!(decode_target, "0.0.0.0".to_string());
     }
@@ -713,7 +706,7 @@ mod test {
         ];
 
         let mut value = String::from("");
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, "consumer-1");
     }
@@ -723,7 +716,7 @@ mod test {
         let data = []; // no values
 
         let mut value: bool = false;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -732,7 +725,7 @@ mod test {
         let data = [0x1];
 
         let mut value: bool = false;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, true);
     }
@@ -742,7 +735,7 @@ mod test {
         let data = [0x23]; // not bool
 
         let mut value: bool = false;
-        let result = value.decode(&mut Cursor::new(&data),0);
+        let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
 
@@ -752,7 +745,7 @@ mod test {
         let data = [0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74];
 
         let mut values: Vec<String> = Vec::new();
-        let result = values.decode(&mut Cursor::new(&data),0);
+        let result = values.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(values.len(), 1);
         let first_str = &values[0];
@@ -815,17 +808,17 @@ mod test {
     #[derive(Default)]
     struct TestRecord {
         value: i8,
-        value2: i8
+        value2: i8,
     }
 
     impl Decoder for TestRecord {
-        fn decode<T>(&mut self, src: &mut T,version: Version) -> Result<(), Error>
+        fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
         where
             T: Buf,
         {
-            self.value.decode(src,0)?;
+            self.value.decode(src, 0)?;
             if version > 1 {
-                self.value2.decode(src,0)?;
+                self.value2.decode(src, 0)?;
             }
             Ok(())
         }
@@ -836,18 +829,16 @@ mod test {
         let data = [0x06];
 
         // v1
-        let result = TestRecord::decode_from(&mut Cursor::new(&data),0);
+        let result = TestRecord::decode_from(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         let record = result.unwrap();
         assert_eq!(record.value, 6);
         assert_eq!(record.value2, 0);
 
         // v2
-        let data2 = [0x06,0x09];
-        let record2 = TestRecord::decode_from(&mut Cursor::new(&data2),2).expect("decode");
+        let data2 = [0x06, 0x09];
+        let record2 = TestRecord::decode_from(&mut Cursor::new(&data2), 2).expect("decode");
         assert_eq!(record2.value, 6);
         assert_eq!(record2.value2, 9);
-
     }
-
 }

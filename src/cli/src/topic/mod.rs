@@ -1,8 +1,9 @@
-mod helpers;
+
 mod create;
 mod delete;
 mod describe;
 mod list;
+mod helpers;
 
 use structopt::StructOpt;
 
@@ -15,6 +16,8 @@ use create::process_create_topic;
 use delete::process_delete_topic;
 use describe::process_describe_topics;
 use list::process_list_topics;
+
+use crate::Terminal;
 
 use super::CliError;
 
@@ -54,11 +57,13 @@ pub enum TopicOpt {
     List(ListTopicsOpt),
 }
 
-pub(crate) fn process_topic(topic_opt: TopicOpt) -> Result<(), CliError> {
+pub(crate) async fn process_topic<O>(out: std::sync::Arc<O>,topic_opt: TopicOpt) -> Result<String, CliError>
+    where O: Terminal
+{
     match topic_opt {
-        TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt),
-        TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt),
-        TopicOpt::Describe(describe_topics_opt) => process_describe_topics(describe_topics_opt),
-        TopicOpt::List(list_topics_opt) => process_list_topics(list_topics_opt),
+        TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await,
+        TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await,
+        TopicOpt::Describe(describe_topics_opt) => process_describe_topics(out,describe_topics_opt).await,
+        TopicOpt::List(list_topics_opt) => process_list_topics(out,list_topics_opt).await
     }
 }

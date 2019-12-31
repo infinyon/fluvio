@@ -14,17 +14,16 @@ use metadata_core::Status;
 #[serde(rename_all = "camelCase")]
 pub struct SpuGroupStatus {
     pub resolution: SpuGroupStatusResolution,
-    pub reason: Option<String>
+    pub reason: Option<String>,
 }
 
 impl Status for SpuGroupStatus {}
 
 impl SpuGroupStatus {
-
     pub fn invalid(reason: String) -> Self {
         Self {
             resolution: SpuGroupStatusResolution::Invalid,
-            reason: Some(reason)
+            reason: Some(reason),
         }
     }
 
@@ -33,19 +32,18 @@ impl SpuGroupStatus {
             resolution: SpuGroupStatusResolution::Reserved,
             ..Default::default()
         }
-    } 
+    }
 
     pub fn is_already_valid(&self) -> bool {
         self.resolution == SpuGroupStatusResolution::Reserved
     }
-
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub enum SpuGroupStatusResolution {
     Init,
     Invalid,
-    Reserved
+    Reserved,
 }
 
 impl Default for SpuGroupStatusResolution {
@@ -54,15 +52,12 @@ impl Default for SpuGroupStatusResolution {
     }
 }
 
-
 impl fmt::Display for SpuGroupStatusResolution {
-   
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Init => write!(f,"Init"),
-            Self::Invalid => write!(f,"Invalid"),
-            Self::Reserved =>  write!(f,"Reserved")
+            Self::Init => write!(f, "Init"),
+            Self::Invalid => write!(f, "Invalid"),
+            Self::Reserved => write!(f, "Reserved"),
         }
     }
 }
-

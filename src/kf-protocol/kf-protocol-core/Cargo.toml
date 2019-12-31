@@ -6,7 +6,7 @@ authors = ["fluvio.io"]
 
 
 [dependencies]
-bytes = "0.4.12"
+bytes = "0.5.3"
 log = "0.4.8"
 num-traits = "0.2.6"
 num-derive = "0.2.4"

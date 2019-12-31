@@ -1,22 +1,18 @@
-use std::pin::Pin;
+
 use std::io::Error as IoError;
-use std::task::Context;
-use std::task::Poll;
 use std::path::PathBuf;
 use std::path::Path;
 
-use futures::sink::Sink;
+
 use log::debug;
 use log::trace;
-use pin_utils::pin_mut;
-use pin_utils::unsafe_pinned;
+use futures::io::AsyncWriteExt;
 
-
-use future_aio::fs::File;
-use future_aio::fs::AsyncFileSlice;
-use future_aio::fs::BoundedFileSink;
-use future_aio::fs::BoundedFileOption;
-use future_aio::fs::BoundedFileSinkError;
+use flv_future_aio::fs::File;
+use flv_future_aio::fs::AsyncFileSlice;
+use flv_future_aio::fs::BoundedFileSink;
+use flv_future_aio::fs::BoundedFileOption;
+use flv_future_aio::fs::BoundedFileSinkError;
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
@@ -35,13 +31,16 @@ pub const MESSAGE_LOG_EXTENSION: &'static str = "log";
 /// Can append new batch to file
 pub struct MutFileRecords {
     base_offset: Offset,
-    item_last_offset_delta: Size,         
-    f_sink: BoundedFileSink<Vec<u8>>,
-    path: PathBuf
+    item_last_offset_delta: Size,
+    f_sink: BoundedFileSink,
+    path: PathBuf,
 }
 
+
+impl Unpin for MutFileRecords {}
+
+
 impl MutFileRecords {
-    unsafe_pinned!(f_sink: BoundedFileSink<Vec<u8>>);
 
     pub async fn create(
         base_offset: Offset,
@@ -93,18 +92,32 @@ impl MutFileRecords {
         self.f_sink.get_current_len() as Size
     }
 
-    pub fn get_pending_batch_len(&self) -> Size {
-        self.f_sink.get_pending_len() as Size
-    }
-
 
     pub fn get_item_last_offset_delta(&self) -> Size {
         self.item_last_offset_delta
     }
 
-    
-    
-    
+    pub async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
+
+        trace!("start sending using batch {:#?}", item.get_header());
+        self.item_last_offset_delta = item.get_last_offset_delta();
+        let mut buffer: Vec<u8> = vec![];
+        item.encode(&mut buffer, 0)?;
+        trace!("start sending finally {} bytes", buffer.len());
+        if self.f_sink.can_be_appended(buffer.len() as u64) {
+            self.f_sink.write_all(&buffer).await?;
+            // for now, we flush for every send
+            self.f_sink.flush().await.map_err(|err|err.into())
+        } else {
+            Err(StorageError::NoRoom(item))
+        }
+    }
+
+    #[allow(unused)]
+    pub async fn flush(&mut self) -> Result<(),IoError> {
+        self.f_sink.flush().await
+    }
+
 }
 
 impl FileRecords for MutFileRecords {
@@ -121,71 +134,23 @@ impl FileRecords for MutFileRecords {
         &self.path
     }
 
-    
-    fn as_file_slice(&self, start: Size) -> Result<AsyncFileSlice,IoError> {
-        self.f_sink.slice_from(start as u64, self.f_sink.get_current_len() - start as u64)
+    fn as_file_slice(&self, start: Size) -> Result<AsyncFileSlice, IoError> {
+        self.f_sink
+            .slice_from(start as u64, self.f_sink.get_current_len() - start as u64)
     }
 
-
-    fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice,IoError> {
+    fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice, IoError> {
         self.f_sink.slice_from(start as u64, len as u64)
-    }
-    
-}
-
-impl Unpin for MutFileRecords {}
-
-impl Sink<DefaultBatch> for MutFileRecords {
-    type Error = StorageError;
-
-    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        trace!("poll ready");
-        self.f_sink().poll_ready(cx).map_err(|err| err.into())
-    }
-
-    fn start_send(mut self: Pin<&mut Self>, item: DefaultBatch) -> Result<(), Self::Error> {
-        trace!("start sending using batch {:#?}", item.get_header());
-        self.item_last_offset_delta = item.get_last_offset_delta();
-        let mut buffer: Vec<u8> = vec![];
-        item.encode(&mut buffer,0)?;
-        let sink = &mut self.as_mut().f_sink();
-        pin_mut!(sink);
-        trace!("start sending finally {} bytes", buffer.len());
-        match sink.start_send(buffer) {
-            Ok(_) => Ok(()),
-            Err(err) => match err {
-                BoundedFileSinkError::MaxLenReached => Err(StorageError::NoRoom(item)),
-                _ => Err(err.into()),
-            },
-        }
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        /*
-        let f_sink = self.as_mut().f_sink();
-        let flush_poll: Poll<Result<(), Self::Error>> = f_sink.poll_flush(cx).map_err(|err| err.into());
-        ready!(flush_poll)?;
-        debug!("flushed log with pos: {}", self.get_pos());
-        Poll::Ready(Ok(()))
-        */
-        trace!("poll flush");
-        self.f_sink().poll_flush(cx).map_err(|err| err.into())
-    }
-
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        trace!("poll close");
-        self.f_sink().poll_close(cx).map_err(|err| err.into())
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use futures::sink::SinkExt;
     use std::env::temp_dir;
     use std::io::Cursor;
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::Decoder;
 
@@ -212,29 +177,25 @@ mod tests {
 
         msg_sink.send(create_batch()).await?;
 
-    
         let bytes = read_bytes_from_file(&test_file)?;
         assert_eq!(bytes.len(), 79, "should be 70 bytes");
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes),0)?;
+        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records.len(), 2);
         let mut records = batch.records;
-        assert_eq!(records.len(),2);
+        assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
-        assert_eq!(record1.value.inner_value(),Some(vec![10, 20]));
+        assert_eq!(record1.value.inner_value(), Some(vec![10, 20]));
         let record2 = records.remove(0);
-        assert_eq!(record2.value.inner_value(),Some(vec![10, 20]));
+        assert_eq!(record2.value.inner_value(), Some(vec![10, 20]));
 
-        
         msg_sink.send(create_batch()).await?;
         let bytes = read_bytes_from_file(&test_file)?;
         assert_eq!(bytes.len(), 158, "should be 158 bytes");
 
         let old_msg_sink = MutFileRecords::open(100, &options).await?;
         assert_eq!(old_msg_sink.get_base_offset(), 100);
-        
         Ok(())
     }
-
 }

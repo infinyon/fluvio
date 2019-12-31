@@ -156,6 +156,7 @@ impl RequestHeader {
         self.client_id = client_id.into();
         self
     }
+    
 }
 
 impl From<&RequestHeader> for i32 {

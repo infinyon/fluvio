@@ -14,7 +14,7 @@ pub struct PartitionStatus {
     pub resolution: PartitionResolution,
     pub leader: ReplicaStatus,
     pub replicas: Vec<ReplicaStatus>,
-    pub lsr: u32
+    pub lsr: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
@@ -22,17 +22,15 @@ pub struct PartitionStatus {
 pub struct ReplicaStatus {
     pub spu: i32,
     pub hw: i64,
-    pub leo: i64
+    pub leo: i64,
 }
-
-
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum PartitionResolution {
-    Offline,                    // no leader
-    Online,                     // leader is available
+    Offline, // no leader
+    Online,  // leader is available
     LeaderOffline,
-    ElectionLeaderFound
+    ElectionLeaderFound,
 }
 
 impl Default for PartitionResolution {
@@ -41,6 +39,4 @@ impl Default for PartitionResolution {
     }
 }
 
-
-
-impl Status for PartitionStatus{}
+impl Status for PartitionStatus {}

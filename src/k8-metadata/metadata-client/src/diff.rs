@@ -1,18 +1,13 @@
-
 use serde::Serialize;
 
 use metadata_core::Crd;
 use metadata_core::metadata::K8Obj;
 
-
-
-
 #[derive(Debug)]
-pub enum ApplyResult<S,P>
-{
+pub enum ApplyResult<S, P> {
     None,
-    Created(K8Obj<S,P>),
-    Patched(K8Obj<S,P>)
+    Created(K8Obj<S, P>),
+    Patched(K8Obj<S, P>),
 }
 
 #[allow(dead_code)]

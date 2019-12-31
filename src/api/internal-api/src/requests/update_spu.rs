@@ -4,11 +4,10 @@ use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use types::SpuId;
-use metadata::spu::SpuSpec;
+use flv_metadata::spu::SpuSpec;
 
 use crate::InternalSpuApi;
 use crate::messages::SpuMsg;
-
 
 /// Changes to Spu specs
 #[derive(Decode, Encode, Debug, Default)]
@@ -21,13 +20,9 @@ impl Request for UpdateSpuRequest {
     type Response = UpdateSpuResponse;
 }
 
-
 impl UpdateSpuRequest {
-
     pub fn new(spus: Vec<SpuMsg>) -> Self {
-        Self {
-            spus
-        }
+        Self { spus }
     }
 
     pub fn spus_ref(&self) -> &Vec<SpuMsg> {
@@ -46,7 +41,6 @@ impl UpdateSpuRequest {
         res
     }
 
-
     pub fn add<S>(mut self, spu: S) -> Self
     where
         S: Into<SpuMsg>,
@@ -54,10 +48,7 @@ impl UpdateSpuRequest {
         self.spus.push(spu.into());
         self
     }
-
 }
-
-
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct UpdateSpuResponse {}

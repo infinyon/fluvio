@@ -2,7 +2,7 @@ use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
 use kf_protocol::api::Offset;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 
 use super::KfLeaderPeerApiEnum;
 

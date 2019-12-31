@@ -23,6 +23,8 @@ use kf_protocol::message::offset::KfOffsetFetchRequest;
 
 use crate::advanced::RequestApi;
 use crate::error::CliError;
+use crate::Terminal;
+use crate::t_println;
 
 #[derive(Debug, StructOpt)]
 pub struct GenerateTemplateOpt {
@@ -41,7 +43,9 @@ pub struct GenerateTemplateOpt {
 // -----------------------------------
 
 /// Parse request API and generate template
-pub fn process_generate_template(opt: GenerateTemplateOpt) -> Result<(), CliError> {
+pub fn process_generate_template<O>(out: std::sync::Arc<O>,opt: GenerateTemplateOpt) -> Result<(), CliError> 
+    where O: Terminal
+{
     let json = match opt.request {
         RequestApi::ApiVersions => serde_json::to_string_pretty(&KfApiVersionsRequest::default()),
         RequestApi::ListOffset => serde_json::to_string_pretty(&KfListOffsetRequest::default()),
@@ -63,7 +67,7 @@ pub fn process_generate_template(opt: GenerateTemplateOpt) -> Result<(), CliErro
     };
 
     let result = json.map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
-    println!("{}", result);
+    t_println!(out,"{}", result);
 
     Ok(())
 }

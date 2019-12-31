@@ -4,16 +4,13 @@ use std::fmt;
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-
 use nix::sys::sendfile::sendfile;
 use nix::Error as NixError;
 use async_std::task::spawn_blocking;
 use async_std::net::TcpStream;
 use async_trait::async_trait;
 
-
 use crate::fs::AsyncFileSlice;
-
 
 #[derive(Debug)]
 pub enum SendFileError {
@@ -42,20 +39,14 @@ impl From<NixError> for SendFileError {
     }
 }
 
-
-
-
 /// zero copy write
 #[async_trait]
 pub trait ZeroCopyWrite: AsRawFd {
-
     async fn zero_copy_write(&mut self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
-        
         let size = source.len();
         let target_fd = self.as_raw_fd();
         let source_fd = source.fd();
 
-        
         #[cfg(target_os = "linux")]
         let ft = {
             let mut offset = source.position() as i64;
@@ -90,21 +81,19 @@ pub trait ZeroCopyWrite: AsRawFd {
                         Ok(len as usize)
                     }
                     Err(err) => {
-                        log::error!("error sendfile: {}",err);
+                        log::error!("error sendfile: {}", err);
                         Err(err.into())
                     }
                 }
             })
         };
-        
 
         ft.await
     }
 }
 
 #[async_trait]
-impl ZeroCopyWrite for TcpStream{}
-
+impl ZeroCopyWrite for TcpStream {}
 
 #[cfg(test)]
 mod tests {
@@ -119,9 +108,9 @@ mod tests {
     use async_std::net::TcpStream;
     use async_std::net::TcpListener;
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use futures::future::join;
-    use future_helper::sleep;
+    use flv_future_core::sleep;
 
     use crate::fs::file_util;
     use crate::ZeroCopyWrite;
@@ -130,8 +119,6 @@ mod tests {
 
     #[test_async]
     async fn test_zero_copy_from_fs_to_socket() -> Result<(), SendFileError> {
-
-
         // spawn tcp client and check contents
         let server = async {
             let listener = TcpListener::bind("127.0.0.1:9999").await?;
@@ -144,7 +131,7 @@ mod tests {
                 let len = tcp_stream.read(&mut buf).await?;
                 assert_eq!(len, 30);
             } else {
-                assert!(false,"client should connect");
+                assert!(false, "client should connect");
             }
             Ok(()) as Result<(), SendFileError>
         };
@@ -159,13 +146,12 @@ mod tests {
             let f_slice = file.as_slice(0, None).await?;
             debug!("client: send back file using zero copy");
             stream.zero_copy_write(&f_slice).await?;
-            
             Ok(()) as Result<(), SendFileError>
         };
 
         // read file and zero copy to tcp stream
-        
-        let _rt = join(client,server).await;
+
+        let _rt = join(client, server).await;
         Ok(())
     }
 }

@@ -3,15 +3,21 @@
 //!
 //! CLI tree to generate Delete Managed SPU Groups
 //!
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-
 use structopt::StructOpt;
 
 use crate::error::CliError;
-use crate::profile::{ProfileConfig, TargetServer};
+use crate::profile::ScConfig;
 
-use super::helpers::proc_delete::process_delete_spu_group;
+
+
+// -----------------------------------
+//  Parsed Config
+// -----------------------------------
+
+#[derive(Debug)]
+pub struct DeleteManagedSpuGroupConfig {
+    pub name: String,
+}
 
 // -----------------------------------
 // CLI Options
@@ -32,43 +38,37 @@ pub struct DeleteManagedSpuGroupOpt {
     profile: Option<String>,
 }
 
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
+impl DeleteManagedSpuGroupOpt {
 
-#[derive(Debug)]
-pub struct DeleteManagedSpuGroupConfig {
-    pub name: String,
+
+    /// Validate cli options. Generate target-server and delete spu group configuration.
+    fn validate(self) -> Result<(ScConfig, DeleteManagedSpuGroupConfig), CliError> {
+
+        let target_server = ScConfig::new(self.sc, self.profile)?;
+
+        let delete_spu_group_cfg = DeleteManagedSpuGroupConfig { name: self.name };
+
+        // return server separately from config
+        Ok((target_server, delete_spu_group_cfg))
+    }
+
+
 }
+
+
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process delete custom-spu cli request
-pub fn process_delete_managed_spu_group(opt: DeleteManagedSpuGroupOpt) -> Result<(), CliError> {
-    let (target_server, delete_spu_group_cfg) = parse_opt(opt)?;
+pub async fn process_delete_managed_spu_group(opt: DeleteManagedSpuGroupOpt) -> Result<(), CliError> {
+    
+    let (target_server, delete_spu_group_cfg) = opt.validate()?;
 
-    match target_server {
-        TargetServer::Sc(server_addr) => {
-            process_delete_spu_group(server_addr, delete_spu_group_cfg)
-        }
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!("invalid sc server {:?}", target_server),
-        ))),
-    }
+    let mut sc = target_server.connect().await?;
+
+    sc.delete_group(&delete_spu_group_cfg.name).await.map_err(|err| err.into())
+
 }
 
-/// Validate cli options. Generate target-server and delete spu group configuration.
-fn parse_opt(
-    opt: DeleteManagedSpuGroupOpt,
-) -> Result<(TargetServer, DeleteManagedSpuGroupConfig), CliError> {
-    // profile specific configurations (target server)
-    let profile_config = ProfileConfig::new(&opt.sc, &None, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
-    let delete_spu_group_cfg = DeleteManagedSpuGroupConfig { name: opt.name };
-
-    // return server separately from config
-    Ok((target_server, delete_spu_group_cfg))
-}

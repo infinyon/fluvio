@@ -85,14 +85,9 @@ where
 }
 
 
-
-/// run block for i/o bounded futures
-/// this is work around tokio runtime issue
-
-pub fn run_block_on<F>(f:F) -> F::Output
-    where
-        F: Send + 'static + Future,
-        F::Output: Send + std::fmt::Debug
+/// same as async async std block on
+pub fn run_block_on<F,T>(f:F) -> T
+    where F: Future<Output = T>
 {
     task::block_on(f)
 } 

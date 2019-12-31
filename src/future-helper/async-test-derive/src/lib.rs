@@ -20,8 +20,6 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[test]
         fn #out_fn_iden()  {
 
-            use future_helper::FutureHelper;
-
             utils::init_logger();
           
             #input
@@ -30,7 +28,7 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 #name().await
             };
 
-            if let Err(err) = future_helper::run_block_on(ft) {
+            if let Err(err) = flv_future_core::run_block_on(ft) {
                 assert!(false,"error: {:?}",err);
             }            
             

@@ -18,9 +18,7 @@ use super::AuthTokenStatus;
 // -----------------------------------
 
 impl Spec for AuthTokenSpec {
-
     type Status = AuthTokenStatus;
-    
     fn metadata() -> &'static Crd {
         &AUTH_TOKEN_API
     }
@@ -56,4 +54,3 @@ impl AuthTokenSpec {
         }
     }
 }
-

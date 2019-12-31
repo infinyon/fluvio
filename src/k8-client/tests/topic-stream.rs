@@ -3,7 +3,7 @@ mod integration_tests {
 
     use log::debug;
     use futures::stream::StreamExt;
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use k8_client::fixture::TEST_NS;
     use k8_client::ClientError;
     use k8_client::K8Client;
@@ -18,7 +18,6 @@ mod integration_tests {
     // print first 10 topics of topic stream, this should be only run as part of indiv test
     #[test_async]
     async fn test_client_print_stream() -> Result<(), ClientError> {
-
         let client = create_client();
         let mut stream = client.watch_stream_now::<TopicSpec>(TEST_NS.to_owned());
         let mut count: u16 = 0;
@@ -27,7 +26,7 @@ mod integration_tests {
             match stream.next().await {
                 Some(topic) => {
                     count = count + 1;
-                    debug!("topic event: {} {:#?}", count,topic);
+                    debug!("topic event: {} {:#?}", count, topic);
                 }
                 _ => {
                     end = true;
@@ -56,5 +55,4 @@ mod integration_tests {
         Ok(())
     }
     */
-
 }

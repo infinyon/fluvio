@@ -47,7 +47,7 @@ use types::defaults::FLV_LOG_SEGMENT_MAX_BYTES;
 use types::SpuId;
 use types::socket_helpers::ServerAddress;
 use types::socket_helpers::server_to_socket_addr;
-use storage::ConfigOption;
+use flv_storage::ConfigOption;
 
 use super::{SpuOpt, SpuConfigFile};
 

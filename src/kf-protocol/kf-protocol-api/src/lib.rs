@@ -51,3 +51,15 @@ macro_rules! api_decode {
         Ok($api::$req(RequestMessage::new($header, request)))
     }};
 }
+
+/// Offset information about Partition
+pub trait PartitionOffset {
+
+    /// last offset that was committed
+    fn last_stable_offset(&self) -> i64;
+
+    // beginning offset for the partition
+    fn start_offset(&self) -> i64;
+
+
+}

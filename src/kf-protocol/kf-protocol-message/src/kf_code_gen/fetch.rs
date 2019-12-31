@@ -135,6 +135,29 @@ where
     pub data: PhantomData<R>,
 }
 
+impl <R>KfFetchResponse<R> 
+    where R: Encoder + Decoder + Default + Debug {
+
+    pub fn find_partition(self,topic: &str,partition: i32) -> Option<FetchablePartitionResponse<R>> {
+
+        for topic_res in self.topics {
+            if topic_res.name == topic {
+                for partition_res in topic_res.partitions {
+                    if partition_res.partition_index == partition {
+                        return Some(partition_res);
+                    }
+                }
+            }
+        }
+    
+        None
+    
+    }
+        
+
+}
+
+
 #[derive(Encode, Decode, Serialize, Deserialize, KfDefault, Debug)]
 pub struct FetchableTopicResponse<R>
 where

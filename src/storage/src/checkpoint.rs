@@ -12,10 +12,9 @@ use futures::io::AsyncSeekExt;
 use log::debug;
 use log::trace;
 
-
-use future_aio::fs::File;
-use future_aio::fs::metadata;
-use future_aio::fs::file_util;
+use flv_future_aio::fs::File;
+use flv_future_aio::fs::metadata;
+use flv_future_aio::fs::file_util;
 
 use crate::ConfigOption;
 
@@ -34,14 +33,14 @@ impl ReadToBuf for u64 {
     where
         B: Buf,
     {
-        buf.get_u64_be()
+        buf.get_u64()
     }
 
     fn write_to<B>(&mut self, buf: &mut B)
     where
         B: BufMut,
     {
-        buf.put_u64_be(*self);
+        buf.put_u64(*self);
     }
 }
 
@@ -50,14 +49,14 @@ impl ReadToBuf for i64 {
     where
         B: Buf,
     {
-        buf.get_i64_be()
+        buf.get_i64()
     }
 
     fn write_to<B>(&mut self, buf: &mut B)
     where
         B: BufMut,
     {
-        buf.put_i64_be(*self);
+        buf.put_i64(*self);
     }
 }
 
@@ -73,7 +72,6 @@ impl<T> CheckPoint<T>
 where
     T: Display + ReadToBuf + Clone + Sized + 'static,
 {
-    
     pub async fn create(
         option: &ConfigOption,
         name: &str,
@@ -99,7 +97,7 @@ where
                     checkpoint_path
                 );
                 let file = file_util::open_read_write(&checkpoint_path).await?;
-                trace!("file created: {:#?}",checkpoint_path);
+                trace!("file created: {:#?}", checkpoint_path);
                 let mut checkpoint = CheckPoint {
                     option: option.to_owned(),
                     file,
@@ -119,12 +117,18 @@ where
     async fn read(&mut self) -> Result<(), IoError> {
         self.file.seek(SeekFrom::Start(0)).await?;
         let mut contents = Vec::new();
-        self.file.read_to_end(&mut contents).await.expect("reading to end");
+        self.file
+            .read_to_end(&mut contents)
+            .await
+            .expect("reading to end");
 
         if contents.len() != 8 {
             return Err(IoError::new(
                 ErrorKind::InvalidData,
-                format!("there should be exact 8 bytes but {} bytes available ",contents.len()),
+                format!(
+                    "there should be exact 8 bytes but {} bytes available ",
+                    contents.len()
+                ),
             ));
         }
 
@@ -140,6 +144,7 @@ where
         self.offset = pos;
         self.offset.write_to(&mut contents);
         self.file.write_all(&contents).await?;
+        self.file.flush().await?;
         Ok(())
     }
 }
@@ -150,7 +155,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Error as IoError;
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
 
     use super::CheckPoint;
     use crate::fixture::ensure_clean_file;
@@ -161,12 +166,13 @@ mod tests {
         let test_file = temp_dir().join("test.chk");
         ensure_clean_file(&test_file);
 
-
         let option = ConfigOption {
             base_dir: temp_dir(),
             ..Default::default()
         };
-        let mut ck: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0).await.expect("create");
+        let mut ck: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0)
+            .await
+            .expect("create");
         let _ = ck.read().await.expect("do initial read");
         assert_eq!(*ck.get_offset(), 0);
         ck.write(10).await.expect("first write");
@@ -174,12 +180,14 @@ mod tests {
 
         drop(ck);
 
-        
-        let mut ck2: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0).await.expect("restore");
+        let mut ck2: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0)
+            .await
+            .expect("restore");
         ck2.read().await?;
         assert_eq!(*ck2.get_offset(), 40);
-        ck2.write(20).await.expect("write aft er reading should work");
-        
+        ck2.write(20)
+            .await
+            .expect("write aft er reading should work");
         Ok(())
     }
 }

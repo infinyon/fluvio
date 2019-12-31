@@ -20,11 +20,11 @@ pub struct TopicStatus {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub enum TopicStatusResolution {
-    Init,                       // initial state
-    Pending,                    // waiting for resources (spus)
-    InsufficientResources,    // out of sync with partition/replication_factor
-    InvalidConfig,              // invalid configuration
-    Provisioned,                // spu allocated
+    Init,                  // initial state
+    Pending,               // waiting for resources (spus)
+    InsufficientResources, // out of sync with partition/replication_factor
+    InvalidConfig,         // invalid configuration
+    Provisioned,           // spu allocated
 }
 
 impl Default for TopicStatusResolution {
@@ -33,6 +33,4 @@ impl Default for TopicStatusResolution {
     }
 }
 
-
-impl Status for TopicStatus{}
-
+impl Status for TopicStatus {}

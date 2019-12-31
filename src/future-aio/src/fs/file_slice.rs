@@ -6,7 +6,7 @@ use std::os::unix::io::RawFd;
 
 /// Slice of the file
 /// This works only on raw fd
-#[derive(Default,Debug)]
+#[derive(Default,Debug,Clone)]
 pub struct AsyncFileSlice {
     fd: RawFd,
     position: u64,

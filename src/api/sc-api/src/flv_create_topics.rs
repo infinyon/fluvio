@@ -8,7 +8,7 @@
 use kf_protocol::api::Request;
 use kf_protocol::derive::{Decode, Encode};
 
-use metadata::topic::TopicSpec as TopicConfigMetadata;
+use flv_metadata::topic::TopicSpec as TopicConfigMetadata;
 
 use crate::FlvResponseMessage;
 use crate::ScApiKey;

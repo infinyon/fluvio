@@ -1,13 +1,10 @@
-
 use internal_api::messages::Replica;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 
 use crate::core::Spec;
 use crate::core::LocalStore;
 
-
 impl Spec for Replica {
-
     const LABEL: &'static str = "Replica";
 
     type Key = ReplicaKey;
@@ -22,4 +19,3 @@ impl Spec for Replica {
 }
 
 pub type ReplicaStore = LocalStore<Replica>;
-

@@ -7,7 +7,7 @@ mod integration_tests {
     use rand::distributions::Alphanumeric;
     use rand::{thread_rng, Rng};
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use k8_client::fixture::TEST_NS;
     use k8_metadata::client::ApplyResult;
     use k8_client::ClientError;
@@ -40,7 +40,7 @@ mod integration_tests {
         let new_item: InputK8Obj<TopicSpec> = InputK8Obj {
             api_version: TopicSpec::api_version(),
             kind: TopicSpec::kind(),
-            metadata: InputObjectMeta::named(name.to_lowercase(),TEST_NS.to_owned()),
+            metadata: InputObjectMeta::named(name.to_lowercase(), TEST_NS.to_owned()),
             spec: topic_spec,
             ..Default::default()
         };
@@ -51,7 +51,6 @@ mod integration_tests {
     /// get topics.  this assumes there exists topic named "topic1"
     #[test_async]
     async fn test_client_get_topics() -> Result<(), ClientError> {
-
         let client = create_client();
         let topics = client.retrieve_items::<TopicSpec>(TEST_NS).await?;
         assert!(topics.items.len() > 0);
@@ -63,38 +62,35 @@ mod integration_tests {
         Ok(())
     }
 
-
     /// get specific topic named topic1.  this assumes there exists topic named "topic1"
     #[test_async]
     async fn test_client_get_single_topic() -> Result<(), ClientError> {
-
         let client = create_client();
-        let topic: K8Obj<TopicSpec, TopicStatus> =
-            client.retrieve_item(&InputObjectMeta::named("topic1", TEST_NS)).await?;
+        let topic: K8Obj<TopicSpec, TopicStatus> = client
+            .retrieve_item(&InputObjectMeta::named("topic1", TEST_NS))
+            .await?;
         assert_eq!(topic.kind, "Topic");
         assert_eq!(topic.metadata.name, "topic1");
-        assert_eq!(topic.spec.partitions,Some(1));
+        assert_eq!(topic.spec.partitions, Some(1));
 
         Ok(())
     }
 
-    
     /// create and delete topic
     #[test_async]
     async fn test_client_create_and_delete_topic() -> Result<(), ClientError> {
-
         let new_item = new_topic();
-        debug!("creating and delete topic:  {}",new_item.metadata.name);
+        debug!("creating and delete topic:  {}", new_item.metadata.name);
         let client = create_client();
         let created_item = client.create_item::<TopicSpec>(new_item).await?;
-        client.delete_item::<TopicSpec,_>(&created_item.metadata.as_input()).await?;
-        
+        client
+            .delete_item::<TopicSpec, _>(&created_item.metadata.as_input())
+            .await?;
         Ok(())
     }
 
     #[test_async]
     async fn test_client_create_update_status() -> Result<(), ClientError> {
-
         let new_item = new_topic();
         let client = create_client();
         let topic = client.create_item::<TopicSpec>(new_item).await?;
@@ -106,17 +102,18 @@ mod integration_tests {
             ..Default::default()
         };
 
-
-        let update_status = UpdateK8ObjStatus::new(status,topic.metadata.as_update());
+        let update_status = UpdateK8ObjStatus::new(status, topic.metadata.as_update());
         client.update_status::<TopicSpec>(&update_status).await?;
 
-        let exist_topic: K8Obj<TopicSpec, TopicStatus> = 
+        let exist_topic: K8Obj<TopicSpec, TopicStatus> =
             client.retrieve_item(&topic.metadata.as_input()).await?;
 
         let test_status = exist_topic.status.expect("status should exists");
-        assert_eq!(test_status.resolution,TopicStatusResolution::Init);
+        assert_eq!(test_status.resolution, TopicStatusResolution::Init);
 
-        client.delete_item::<TopicSpec,_>(&exist_topic.metadata.as_input()).await?;
+        client
+            .delete_item::<TopicSpec, _>(&exist_topic.metadata.as_input())
+            .await?;
 
         Ok(())
     }
@@ -128,8 +125,6 @@ mod integration_tests {
         Ok(())
     }
 
-    
-    
     #[test_async]
     async fn test_client_apply_topic() -> Result<(), ClientError> {
         let topic = new_topic();
@@ -138,7 +133,9 @@ mod integration_tests {
             ApplyResult::Created(new_topic) => {
                 assert!(true, "created");
                 // check to ensure item exists
-                client.exists::<TopicSpec,_>(&new_topic.metadata.as_input()).await?;
+                client
+                    .exists::<TopicSpec, _>(&new_topic.metadata.as_input())
+                    .await?;
                 let mut update_topic = new_topic.as_input();
                 update_topic.spec.partitions = Some(5);
                 match client.apply(update_topic).await? {
@@ -147,11 +144,13 @@ mod integration_tests {
                     ApplyResult::Patched(_) => {
                         let patch_item: K8Obj<TopicSpec, TopicStatus> =
                             client.retrieve_item(&new_topic.metadata.as_input()).await?;
-                        assert_eq!(patch_item.spec.partitions,Some(5));
+                        assert_eq!(patch_item.spec.partitions, Some(5));
                     }
                 }
 
-                client.delete_item::<TopicSpec,_>(&new_topic.metadata.as_input()).await?;
+                client
+                    .delete_item::<TopicSpec, _>(&new_topic.metadata.as_input())
+                    .await?;
             }
             _ => {
                 assert!(false, "expected created");
@@ -160,6 +159,4 @@ mod integration_tests {
 
         Ok(())
     }
-    
-
 }

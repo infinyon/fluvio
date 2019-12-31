@@ -12,7 +12,7 @@ use log::debug;
 use log::trace;
 use pin_utils::unsafe_unpinned;
 
-use future_aio::fs::MemoryMappedFile;
+use flv_future_aio::fs::MemoryMappedFile;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
 
@@ -28,35 +28,31 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 pub const EXTENSION: &str = "index";
 
 pub(crate) trait Index {
-
-    fn find_offset(&self, relative_offset: Size) -> Option<(Size,Size)>;
+    fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)>;
 
     fn len(&self) -> Size;
-    
     fn entries(&self) -> Size {
         self.len() / INDEX_ENTRY_SIZE
     }
-
 }
 
 pub trait OffsetPosition: Sized {
     /// convert to be endian
     fn to_be(self) -> Self;
 
-    fn offset(&self) -> Size;  
+    fn offset(&self) -> Size;
 
-    fn position(&self) -> Size;  
+    fn position(&self) -> Size;
 }
 
-
-impl OffsetPosition for (Size,Size)  {
+impl OffsetPosition for (Size, Size) {
     fn to_be(self) -> Self {
-        let (offset,pos) = self;
-        (offset.to_be(),pos.to_be())
+        let (offset, pos) = self;
+        (offset.to_be(), pos.to_be())
     }
 
     #[inline(always)]
-     fn offset(&self) -> Size {
+    fn offset(&self) -> Size {
         self.0.to_be()
     }
 
@@ -64,11 +60,7 @@ impl OffsetPosition for (Size,Size)  {
     fn position(&self) -> Size {
         self.1.to_be()
     }
-
 }
-
-
- 
 
 /// Segment index
 ///
@@ -104,10 +96,8 @@ impl LogIndex {
 
         debug!("opening index mm at: {:#?}", index_file_path);
         // make sure it is log file
-        let (m_file, file) = MemoryMappedFile::open(
-            index_file_path,
-            INDEX_ENTRY_SIZE as u64
-        ).await?;
+        let (m_file, file) =
+            MemoryMappedFile::open(index_file_path, INDEX_ENTRY_SIZE as u64).await?;
 
         let len = (file.metadata().await?).len();
 
@@ -119,7 +109,6 @@ impl LogIndex {
                 "index file should not exceed u32",
             ));
         }
-        
         let ptr = {
             let b_slices: &[u8] = &m_file.inner();
             unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) }
@@ -147,20 +136,18 @@ impl LogIndex {
         let mut option = ConfigOption::default();
         option.base_dir = path_ref.parent().unwrap().to_path_buf();
 
-        LogIndex::open_from_offset(base_offset, &option).await.map_err(|err| err.into())
+        LogIndex::open_from_offset(base_offset, &option)
+            .await
+            .map_err(|err| err.into())
     }
-
-   
 
     #[inline]
     pub fn ptr(&self) -> *const (Size, Size) {
         self.ptr as *const (Size, Size)
     }
-
 }
 
 impl Index for LogIndex {
-
     fn find_offset(&self, offset: Size) -> Option<(Size, Size)> {
         lookup_entry(self, offset).map(|idx| self[idx])
     }
@@ -168,7 +155,6 @@ impl Index for LogIndex {
     fn len(&self) -> Size {
         self.len
     }
-
 }
 
 impl Deref for LogIndex {
@@ -182,10 +168,13 @@ impl Deref for LogIndex {
 
 /// find the index of the offset that matches
 pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usize> {
-
     let first_entry = offsets[0];
     if offset < first_entry.offset() {
-        trace!("offset: {} is less than: first: {}", offset, first_entry.offset());
+        trace!(
+            "offset: {} is less than: first: {}",
+            offset,
+            first_entry.offset()
+        );
         return None;
     }
 
@@ -252,17 +241,12 @@ mod tests {
 
         let mut mut_index = MutLogIndex::create(921, &option).await?;
 
-        
-
         mut_index.send((5, 16, 70)).await?;
         mut_index.send((10, 100, 70)).await?;
 
-        
         mut_index.shrink().await?;
 
-        
         let log_index = LogIndex::open_from_offset(921, &option).await?;
-        
         let offset1 = log_index[0];
         assert_eq!(offset1.offset(), 5);
         assert_eq!(offset1.position(), 16);
@@ -270,7 +254,6 @@ mod tests {
         let offset2 = log_index[1];
         assert_eq!(offset2.offset(), 10);
         assert_eq!(offset2.position(), 100);
-        
 
         Ok(())
     }
@@ -293,13 +276,10 @@ mod tests {
 
         mut_index.shrink().await?;
 
-        
         let log_index = LogIndex::open_from_offset(922, &option).await?;
         assert_eq!(log_index.find_offset(600), Ok(1));
         assert_eq!(log_index.find_offset(2000), Ok(3));
-        
         Ok(())
     }
     */
-
 }

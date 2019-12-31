@@ -1,7 +1,7 @@
 mod create;
 mod list;
 mod delete;
-mod helpers;
+
 
 use structopt::StructOpt;
 
@@ -15,6 +15,7 @@ use list::ListCustomSpusOpt;
 use list::process_list_custom_spus;
 
 use crate::error::CliError;
+use crate::Terminal;
 
 #[derive(Debug, StructOpt)]
 pub enum CustomSpuOpt {
@@ -43,10 +44,10 @@ pub enum CustomSpuOpt {
     List(ListCustomSpusOpt),
 }
 
-pub(crate) fn process_custom_spu(custom_spu_opt: CustomSpuOpt) -> Result<(), CliError> {
-    match custom_spu_opt {
-        CustomSpuOpt::Create(custom_spu_opt) => process_create_custom_spu(custom_spu_opt),
-        CustomSpuOpt::Delete(custom_spu_opt) => process_delete_custom_spu(custom_spu_opt),
-        CustomSpuOpt::List(custom_spu_opt) => process_list_custom_spus(custom_spu_opt),
-    }
+pub(crate) async fn process_custom_spu<O: Terminal>(out: std::sync::Arc<O>,custom_spu_opt: CustomSpuOpt) -> Result<String, CliError> {
+    (match custom_spu_opt {
+        CustomSpuOpt::Create(custom_spu_opt) => process_create_custom_spu(custom_spu_opt).await,
+        CustomSpuOpt::Delete(custom_spu_opt) => process_delete_custom_spu(custom_spu_opt).await,
+        CustomSpuOpt::List(custom_spu_opt) => process_list_custom_spus(out,custom_spu_opt).await,
+    }).map(|_| format!(""))
 }

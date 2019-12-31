@@ -48,7 +48,29 @@ pub mod topic {
     pub use crate::flv_fetch_topics::*;
     pub use crate::flv_topic_composition::*;
 
-    pub use metadata::topic::TopicSpec as FlvTopicSpecMetadata;
-    pub use metadata::topic::PartitionMap as FlvTopicPartitionMap;
-    pub use metadata::topic::TopicResolution as FlvTopicResolution;
+    pub use flv_metadata::topic::TopicSpec as FlvTopicSpecMetadata;
+    pub use flv_metadata::topic::PartitionMap as FlvTopicPartitionMap;
+    pub use flv_metadata::topic::TopicResolution as FlvTopicResolution;
+}
+
+/// Error from api call
+#[derive(Debug)]
+pub enum ApiError {
+    Code(kf_protocol::api::FlvErrorCode, Option<String>),
+    NoResourceFounded(String),
+}
+
+impl std::fmt::Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Code(code, msg_opt) => {
+                if let Some(msg) = msg_opt {
+                    write!(f, "{:#?} {}", code, msg)
+                } else {
+                    write!(f, "{:#?}", code)
+                }
+            }
+            Self::NoResourceFounded(msg) => write!(f, "no resource founded {}", msg),
+        }
+    }
 }

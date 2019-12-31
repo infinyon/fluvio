@@ -1,5 +1,5 @@
 [package]
-name = "metadata"
+name = "flv-metadata"
 edition = "2018"
 version = "0.2.1"
 authors = ["fluvio.io"]

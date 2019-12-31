@@ -10,9 +10,9 @@ use request_api::RequestApi;
 
 pub use generate::process_generate_template;
 pub use run::process_run_request;
-pub use request_api::send_request_to_server;
-pub use request_api::parse_request_from_file;
+use request_api::parse_and_pretty_from_file;
 
+use crate::Terminal;
 use crate::error::CliError;
 
 #[derive(Debug, StructOpt)]
@@ -34,9 +34,11 @@ pub enum AdvancedOpt {
     Run(RunRequestOpt),
 }
 
-pub fn process_advanced(opt: AdvancedOpt) -> Result<(), CliError> {
-    match opt {
-        AdvancedOpt::Generate(generate_opt) => process_generate_template(generate_opt),
-        AdvancedOpt::Run(run_opt) => process_run_request(run_opt),
-    }
+pub async fn process_advanced<O>(out: std::sync::Arc<O>,opt: AdvancedOpt) -> Result<String, CliError>
+    where O: Terminal
+{
+    (match opt {
+        AdvancedOpt::Generate(generate_opt) => process_generate_template(out,generate_opt),
+        AdvancedOpt::Run(run_opt) => process_run_request(out,run_opt).await
+    }).map(|_| format!(""))
 }

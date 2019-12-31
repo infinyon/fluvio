@@ -4,10 +4,9 @@ use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 
-
 use crate::InternalScKey;
-use metadata::partition::ReplicaKey;
-use metadata::partition::ReplicaStatus;
+use flv_metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaStatus;
 
 /// Live Replica Status
 /// First lrs is leader by convention but should not be relied upon
@@ -15,24 +14,21 @@ use metadata::partition::ReplicaStatus;
 pub struct UpdateLrsRequest {
     pub id: ReplicaKey,
     pub leader: ReplicaStatus,
-    pub replicas: Vec<ReplicaStatus>
+    pub replicas: Vec<ReplicaStatus>,
 }
-
 
 impl fmt::Display for UpdateLrsRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"LrsUpdate {}",self.id)       
+        write!(f, "LrsUpdate {}", self.id)
     }
 }
 
-
-
 impl UpdateLrsRequest {
-    pub fn new(id: ReplicaKey,leader: ReplicaStatus, replicas: Vec<ReplicaStatus>) -> Self {
+    pub fn new(id: ReplicaKey, leader: ReplicaStatus, replicas: Vec<ReplicaStatus>) -> Self {
         Self {
             id,
             leader,
-            replicas
+            replicas,
         }
     }
 }
@@ -44,5 +40,3 @@ impl Request for UpdateLrsRequest {
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct UpdateLrsResponse {}
-
-

@@ -1,7 +1,7 @@
 use log::debug;
 
-use future_helper::main;
-use storage::FileReplica;
+use flv_future_core::main;
+use flv_storage::FileReplica;
 
 use crate::config::process_spu_cli_or_exit;
 use crate::config::SpuConfig;
@@ -15,7 +15,6 @@ use crate::controllers::sc::ScDispatcher;
 
 type FileReplicaContext = GlobalContext<FileReplica>;
 
-
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop() {
@@ -28,7 +27,7 @@ pub fn main_loop() {
         spu_config.id
     );
 
-    debug!("spu config: {:#?}",spu_config);
+    debug!("spu config: {:#?}", spu_config);
 
     main(async {
         let (_ctx, internal_server, public_server) = create_services(spu_config, true, true);
@@ -36,9 +35,8 @@ pub fn main_loop() {
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
 
-        println!("SPU Version: {} started successfully",VERSION);
+        println!("SPU Version: {} started successfully", VERSION);
     });
-
 }
 
 /// create server and spin up services, but don't run server
@@ -68,9 +66,7 @@ pub fn create_services(
         None
     };
 
-  
     let sc_dispatcher = ScDispatcher::new(ctx.clone());
- 
     sc_dispatcher.run();
 
     (ctx, internal_server, public_server)

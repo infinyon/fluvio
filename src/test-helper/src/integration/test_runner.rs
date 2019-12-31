@@ -10,7 +10,7 @@ use futures::channel::mpsc::channel;
 use futures::channel::mpsc::Sender;
 use futures::SinkExt;
 
-use future_helper::sleep;
+use flv_future_core::sleep;
 use kf_socket::KfSocketError;
 use kf_socket::KfSocket;
 use kf_protocol::api::Offset;
@@ -30,64 +30,55 @@ use internal_api::messages::UpdateAllSpusMsg;
 use internal_api::messages::UpdateAllSpusContent;
 use internal_api::messages::Replica;
 use internal_api::UpdateSpuRequest;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 use types::SpuId;
-use metadata::spu::SpuSpec;
-use metadata::spu::Endpoint;
+use flv_metadata::spu::SpuSpec;
+use flv_metadata::spu::Endpoint;
 
 use super::TestGenerator;
 use super::SpuServer;
 use super::FlvSystemTest;
 
-pub struct SpuTestRunner<T> where T: FlvSystemTest {
+pub struct SpuTestRunner<T>
+where
+    T: FlvSystemTest,
+{
     client_id: String,
     servers: Vec<<<T as FlvSystemTest>::EnvGenerator as TestGenerator>::SpuServer>,
-    senders: Vec<Sender<bool>> 
+    senders: Vec<Sender<bool>>,
 }
 
-impl <T>SpuTestRunner<T> where T: FlvSystemTest,
-        <<T as FlvSystemTest>::EnvGenerator as TestGenerator>::SpuServer: From<SpuSpec>
+impl<T> SpuTestRunner<T>
+where
+    T: FlvSystemTest,
+    <<T as FlvSystemTest>::EnvGenerator as TestGenerator>::SpuServer: From<SpuSpec>,
 {
-
-
-    pub async fn run(client_id: String, config: T) -> Result<(),KfSocketError>  {
-
+    pub async fn run(client_id: String, config: T) -> Result<(), KfSocketError> {
         let generator = config.env_configuration();
 
         let mut servers = vec![];
         let mut futures = vec![];
         let mut senders = vec![];
-      
-    
         for i in 0..config.followers() + 1 {
             let spu = generator.create_spu(i as u16);
-            let (sender,receiver) = channel::<bool>(1);
+            let (sender, receiver) = channel::<bool>(1);
             let server = generator.create_server(&spu)?;
             futures.push(server.run_shutdown(receiver));
             senders.push(sender);
-          
             servers.push(spu.into());
         }
 
-        
         let runner = SpuTestRunner {
             client_id,
             servers,
-            senders
+            senders,
         };
-    
 
-        join(
-            runner.run_test(config),
-            join_all(futures)
-        )
-        .await;
-    
+        join(runner.run_test(config), join_all(futures)).await;
         Ok(())
     }
 
-    async fn run_test(self,config: T)  {
-
+    async fn run_test(self, config: T) {
         //  wait until controller start up
         sleep(Duration::from_millis(10)).await.expect("panic");
 
@@ -97,21 +88,15 @@ impl <T>SpuTestRunner<T> where T: FlvSystemTest,
 
     // terminating server
     async fn terminate_server(&mut self) {
-         // terminate servers
+        // terminate servers
         for i in 0..self.servers.len() {
             let server = &self.servers[i];
             let sender = &mut self.senders[i];
 
-            debug!("terminating server: {}",server.id());
-            sender
-                .send(true)
-                .await
-                .expect("shutdown should work");
-
+            debug!("terminating server: {}", server.id());
+            sender.send(true).await.expect("shutdown should work");
         }
-       
     }
-
 
     pub fn leader(&self) -> &<<T as FlvSystemTest>::EnvGenerator as TestGenerator>::SpuServer {
         &self.servers[0]
@@ -122,16 +107,14 @@ impl <T>SpuTestRunner<T> where T: FlvSystemTest,
     }
 
     pub fn followers_count(&self) -> usize {
-        self.servers.len() -1
+        self.servers.len() - 1
     }
 
-    pub fn follower_spec(&self,index: usize) -> &SpuSpec {
-        self.servers[index+1].spec()
+    pub fn follower_spec(&self, index: usize) -> &SpuSpec {
+        self.servers[index + 1].spec()
     }
-
 
     pub fn spu_metadata(&self) -> UpdateAllSpusContent {
-
         let mut spu_metadata = UpdateAllSpusContent::default();
 
         for server in &self.servers {
@@ -142,34 +125,38 @@ impl <T>SpuTestRunner<T> where T: FlvSystemTest,
     }
 
     pub fn replica_ids(&self) -> Vec<SpuId> {
-        self.servers.iter().map(|follower| follower.spec().id).collect()
-    } 
+        self.servers
+            .iter()
+            .map(|follower| follower.spec().id)
+            .collect()
+    }
 
-    pub fn replica_metadata(&self,replica: &ReplicaKey) -> Replica {
-
+    pub fn replica_metadata(&self, replica: &ReplicaKey) -> Replica {
         let leader_id = self.leader_spec().id;
 
         Replica {
             replica: replica.clone(),
             leader: leader_id,
-            live_replicas: self.replica_ids()
+            live_replicas: self.replica_ids(),
         }
     }
 
-    
-    pub async fn send_metadata_to_all<'a>(&'a self,replica: &'a ReplicaKey) -> Result<(),KfSocketError> {
+    pub async fn send_metadata_to_all<'a>(
+        &'a self,
+        replica: &'a ReplicaKey,
+    ) -> Result<(), KfSocketError> {
+        let spu_metadata = self
+            .spu_metadata()
+            .add_replica(self.replica_metadata(replica));
 
-        let spu_metadata = self.spu_metadata().add_replica(self.replica_metadata(replica));
-        
         for server in &self.servers {
             let spu_id = server.spec().id;
             let _spu_req_msg = RequestMessage::new_request(UpdateSpuRequest::encode_request(
-                    UpdateAllSpusMsg::with_content(spu_id,spu_metadata.clone()),
-                ))
-                .set_client_id(self.client_id.clone());
-            trace!("sending spu metadata to server: {}",spu_id);
-           // send_to_endpoint(server.private_endpoint(),&spu_req_msg).await;
-           
+                UpdateAllSpusMsg::with_content(spu_id, spu_metadata.clone()),
+            ))
+            .set_client_id(self.client_id.clone());
+            trace!("sending spu metadata to server: {}", spu_id);
+            // send_to_endpoint(server.private_endpoint(),&spu_req_msg).await;
         }
 
         debug!("sleeping to allow controllers to catch up with messages");
@@ -178,11 +165,15 @@ impl <T>SpuTestRunner<T> where T: FlvSystemTest,
 
         Ok(())
     }
-    
 
-
-    pub fn create_producer_msg<S>(&self,msg: S, topic: S,partition: i32) -> RequestMessage<DefaultKfProduceRequest> 
-        where S: Into<String>
+    pub fn create_producer_msg<S>(
+        &self,
+        msg: S,
+        topic: S,
+        partition: i32,
+    ) -> RequestMessage<DefaultKfProduceRequest>
+    where
+        S: Into<String>,
     {
         let msg_string: String = msg.into();
         let record: DefaultRecord = msg_string.into();
@@ -201,8 +192,14 @@ impl <T>SpuTestRunner<T> where T: FlvSystemTest,
         RequestMessage::new_request(req).set_client_id(self.client_id.clone())
     }
 
-    pub fn create_fetch_request<S>(&self,offset: Offset, topic: S, partition: i32 ) -> RequestMessage<DefaultKfFetchRequest> 
-        where S: Into<String>
+    pub fn create_fetch_request<S>(
+        &self,
+        offset: Offset,
+        topic: S,
+        partition: i32,
+    ) -> RequestMessage<DefaultKfFetchRequest>
+    where
+        S: Into<String>,
     {
         let mut request: DefaultKfFetchRequest = KfFetchRequest::default();
         let mut part_request = FetchPartition::default();
@@ -217,13 +214,15 @@ impl <T>SpuTestRunner<T> where T: FlvSystemTest,
 
         RequestMessage::new_request(request).set_client_id("test_client")
     }
-
-
-
 }
 
 #[allow(dead_code)]
-pub async fn send_to_endpoint<'a,R>(endpoint: &'a Endpoint, req_msg: &'a RequestMessage<R>) -> Result<(), KfSocketError> where R: Request,
+pub async fn send_to_endpoint<'a, R>(
+    endpoint: &'a Endpoint,
+    req_msg: &'a RequestMessage<R>,
+) -> Result<(), KfSocketError>
+where
+    R: Request,
 {
     debug!(
         "client: trying to connect to private endpoint: {:#?}",

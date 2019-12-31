@@ -1,4 +1,3 @@
-
 use std::io::Error as IoError;
 use std::task::Context;
 use std::task::Poll;
@@ -23,60 +22,50 @@ pub type BatchHeaderStream = FileBatchStream<FileEmptyRecords>;
 
 pub type BatchHeaderPos = FileBatchPos<FileEmptyRecords>;
 
-
-#[derive(Default,Debug)]
-pub struct FileEmptyRecords {
-
-}
+#[derive(Default, Debug)]
+pub struct FileEmptyRecords {}
 
 impl BatchRecords for FileEmptyRecords {
-
-     fn remainder_bytes(&self,_remainder: usize ) -> usize {
+    fn remainder_bytes(&self, _remainder: usize) -> usize {
         0
     }
 }
 
 // nothing to decode for header
-impl Decoder for FileEmptyRecords   {
-
-    fn decode<T>(&mut self, _src: &mut T,_version:  Version) -> Result<(), IoError> where T: Buf,
+impl Decoder for FileEmptyRecords {
+    fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), IoError>
+    where
+        T: Buf,
     {
         Ok(())
     }
 }
 
-
 // nothing to do decode for header
-impl Encoder for FileEmptyRecords   {
-
-    fn write_size(&self,_versio: Version) -> usize {
+impl Encoder for FileEmptyRecords {
+    fn write_size(&self, _versio: Version) -> usize {
         0
     }
 
-    fn encode<T>(&self, _dest: &mut T,_version: Version) -> Result<(), IoError> where T: BufMut
+    fn encode<T>(&self, _dest: &mut T, _version: Version) -> Result<(), IoError>
+    where
+        T: BufMut,
     {
         Ok(())
     }
 }
-
 
 /// need to create separate implemention of batch stream
 /// for specific implemetnation due to problem with compiler
 impl Stream for FileBatchStream<FileEmptyRecords> {
-
-    type Item = BatchHeaderPos; 
+    type Item = BatchHeaderPos;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-
         let ft = self.inner_next();
         pin_mut!(ft);
         ft.poll(cx)
-
     }
-
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -86,7 +75,7 @@ mod tests {
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
 
-    use future_aio::fs::file_util;
+    use flv_future_aio::fs::file_util;
 
     use crate::fixture::create_batch;
     use crate::fixture::create_batch_with_producer;
@@ -115,13 +104,17 @@ mod tests {
 
         let options = default_option();
 
-        let mut msg_sink = MutFileRecords::create(200, &options).await.expect("create sink");
+        let mut msg_sink = MutFileRecords::create(200, &options)
+            .await
+            .expect("create sink");
 
         msg_sink.send(create_batch()).await.expect("send batch");
 
         let mut file = file_util::open(&test_file).await.expect("open test file");
 
-        let batch_res = BatchHeaderPos::from(&mut file, 0).await.expect("open header");
+        let batch_res = BatchHeaderPos::from(&mut file, 0)
+            .await
+            .expect("open header");
 
         if let Some(batch) = batch_res {
             let header = batch.get_batch().get_header();
@@ -161,5 +154,4 @@ mod tests {
 
         Ok(())
     }
-
 }

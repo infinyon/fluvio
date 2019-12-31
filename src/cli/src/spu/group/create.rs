@@ -4,18 +4,17 @@
 //! CLI tree to generate Create Managed SPU Groups
 //!
 
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-
 use log::debug;
 use structopt::StructOpt;
 
 use sc_api::spu::FlvCreateSpuGroupRequest;
+
 use crate::error::CliError;
-use crate::profile::{ProfileConfig, TargetServer};
+use crate::profile::ScConfig;
+
 
 use super::helpers::group_config::GroupConfig;
-use super::helpers::proc_create::process_create_spu_group;
+
 
 // -----------------------------------
 // CLI Options
@@ -55,44 +54,44 @@ pub struct CreateManagedSpuGroupOpt {
     profile: Option<String>,
 }
 
+impl CreateManagedSpuGroupOpt {
+
+
+    /// Validate cli options. Generate target-server and create spu group config.
+    fn validate(self) -> Result<(ScConfig, FlvCreateSpuGroupRequest), CliError> {
+
+        let target_server = ScConfig::new(self.sc, self.profile)?;
+
+        let grp_config = self.storage.map(|storage| GroupConfig::with_storage(storage));
+
+        let group = FlvCreateSpuGroupRequest {
+            name: self.name,
+            replicas: self.replicas,
+            min_id: self.min_id,
+            config: grp_config.map(|cf| cf.into()).unwrap_or_default(),
+            rack: self.rack
+        };
+        
+        // return server separately from config
+
+        Ok((target_server, group))
+    }
+
+}
+
+
+
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub fn process_create_managed_spu_group(opt: CreateManagedSpuGroupOpt) -> Result<(), CliError> {
-    let (target_server, create_spu_group_cfg) = parse_opt(opt)?;
+pub async fn process_create_managed_spu_group(opt: CreateManagedSpuGroupOpt) -> Result<(), CliError> {
+
+
+    let (target_server, create_spu_group_cfg) = opt.validate()?;
 
     debug!("{:#?}", create_spu_group_cfg);
 
-    match target_server {
-        TargetServer::Sc(server_addr) => {
-            process_create_spu_group(server_addr, create_spu_group_cfg)
-        }
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!("invalid sc server {:?}", target_server),
-        ))),
-    }
-}
+    let mut sc = target_server.connect().await?;
 
-/// Validate cli options. Generate target-server and create spu group config.
-fn parse_opt(
-    opt: CreateManagedSpuGroupOpt,
-) -> Result<(TargetServer, FlvCreateSpuGroupRequest), CliError> {
-    // profile specific configurations (target server)
-    let profile_config = ProfileConfig::new(&opt.sc, &None, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
-
-    let grp_config = opt.storage.map(|storage| GroupConfig::with_storage(storage));
-
-    let group = FlvCreateSpuGroupRequest {
-        name: opt.name,
-        replicas: opt.replicas,
-        min_id: opt.min_id,
-        config: grp_config.map(|cf| cf.into()).unwrap_or_default(),
-        rack: opt.rack
-    };
-    
-    // return server separately from config
-
-    Ok((target_server, group))
+    sc.create_group(create_spu_group_cfg).await.map_err(|err| err.into())
 }

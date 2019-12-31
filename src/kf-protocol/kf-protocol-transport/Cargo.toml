@@ -7,13 +7,13 @@ authors = ["fluvio.io"]
 
 [dependencies]
 log = "0.4.8"
-bytes = "0.4.12"
-futures_codec = "0.3.1"
+bytes = "0.5.3"
+futures_codec = "0.3.4"
+flv-future-aio = { path = "../../future-aio"}
 kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
 
 
 [dev-dependencies]
-future-helper = { path = "../../future-helper", features = ["fixture"] }
+flv-future-core = { path = "../../future-helper", features = ["fixture"] }
 futures = { version = "0.3.1" }
-future-aio = { path = "../../future-aio"}
 utils = { path= "../../utils"}

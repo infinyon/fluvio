@@ -19,7 +19,7 @@ use futures::io::AsyncSeekExt;
 use pin_utils::unsafe_pinned;
 
 
-use future_aio::fs::File;
+use flv_future_aio::fs::File;
 use kf_protocol::api::Batch;
 use kf_protocol::api::BatchRecords;
 use kf_protocol::api::DefaultBatchRecords;
@@ -296,10 +296,9 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use futures::sink::SinkExt;
     use futures::stream::StreamExt;
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
  
     use crate::ConfigOption;
     use crate::StorageError;

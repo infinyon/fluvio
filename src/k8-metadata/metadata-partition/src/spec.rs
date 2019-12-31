@@ -13,9 +13,7 @@ use serde::Serialize;
 use super::PartitionStatus;
 
 impl Spec for PartitionSpec {
-
     type Status = PartitionStatus;
-    
     fn metadata() -> &'static Crd {
         &PARTITION_API
     }
@@ -29,10 +27,7 @@ pub struct PartitionSpec {
 }
 
 impl PartitionSpec {
-    pub fn new(leader: i32,replicas: Vec<i32>) -> Self {
-        PartitionSpec { 
-            leader,
-            replicas
-        }
+    pub fn new(leader: i32, replicas: Vec<i32>) -> Self {
+        PartitionSpec { leader, replicas }
     }
 }

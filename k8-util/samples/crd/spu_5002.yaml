@@ -8,9 +8,9 @@ spec:
   publicEndpoint:
     port: 9007
     ingress:
-      - hostname: fluvio.local.test
+      - hostname: localhost
     encryption: PLAINTEXT
   privateEndpoint: 
     port: 9008
-    host: fluvio.local.test
+    host: localhost
     encryption: PLAINTEXT

@@ -48,18 +48,14 @@ use futures::sink::SinkExt;
 use futures::select;
 use futures::future::join_all;
 use futures::future::join;
-use future_helper::run_block_on;
-use future_helper::sleep;
+use flv_future_core::run_block_on;
+use flv_future_core::sleep;
 
 use crate::error::CliError;
-use crate::common::Connection;
-use crate::common::kf_get_api_versions;
-use crate::common::query_kf_metadata;
-use crate::common::kf_lookup_version;
 use crate::profile::ProfileConfig;
 
 use crate::consume::ConsumeLogConfig;
-use crate::consume::ReponseLogParams;
+use crate::consume::ResponseLogParams;
 
 use super::query::TopicPartitionParam;
 use super::query::LeaderParam;
@@ -81,7 +77,7 @@ use super::kf_fetch_log_loop::kf_fetch_log_loop;
 pub fn kf_consume_log_from_topic(
     server_addr: SocketAddr,
     cfg: ConsumeLogConfig,
-    response_paramss: ReponseLogParams,
+    response_paramss: ResponseLogParams,
 ) -> Result<(), CliError> {
     run_block_on(process_consume_log_from_topic_all(
         server_addr,
@@ -96,13 +92,13 @@ pub fn kf_consume_log_from_topic(
 ///  * Request metadata
 ///  * Fetch group coordinator
 /// Step 2: Create loop for Group keep-alives
-/// Step 3: Create loop for continous log fetch
+/// Step 3: Create loop for continuous log fetch
 async fn process_consume_log_from_topic_all(
-    kf_ctrl_addr: SocketAddr,
+    kf_ctrl_addr: String,
     cfg: ConsumeLogConfig,
-    response_params: ReponseLogParams,
+    response_params: ResponseLogParams,
 ) -> Result<(), CliError> {
-    let mut brk_conn = Connection::new(&kf_ctrl_addr).await?;
+    let mut brk_conn = Connection::new(kf_ctrl_addr.clone()).await?;
     let bkr_vers = kf_get_api_versions(&mut brk_conn).await?;
     debug!("consume topic '{}'", cfg.topic);
 
@@ -120,7 +116,7 @@ async fn process_consume_log_from_topic_all(
     let coordinator_addr = group_coordinator_to_socket_addr(&grp_coordinator)?;
 
     // create connection to the group coordinator
-    let mut gc_conn = Connection::new(&coordinator_addr).await?;
+    let mut gc_conn = Connection::new(coordinator_addr.clone()).await?;
     let gc_vers = kf_get_api_versions(&mut gc_conn).await?;
 
     // join group coordinator (to get member id)
@@ -171,7 +167,7 @@ async fn group_and_fetch_log_futures(
     max_bytes: i32,
     from_beginning: bool,
     tp_param: TopicPartitionParam,
-    response_params: ReponseLogParams,
+    response_params: ResponseLogParams,
 ) -> Result<(), CliError> {
     let mut send_channels = vec![];
     let mut fetch_log_futures = vec![];
@@ -381,7 +377,7 @@ fn metadata_to_all_topic_partition_params(
 /// Parse group coordinator response and generate Server Address
 fn group_coordinator_to_socket_addr(
     coordinator_resp: &KfFindCoordinatorResponse,
-) -> Result<SocketAddr, CliError> {
+) -> Result<String, CliError> {
     if coordinator_resp.error_code != KfErrorCode::None {
         return Err(CliError::IoError(IoError::new(
             ErrorKind::InvalidData,

@@ -10,12 +10,27 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use crate::error::CliError;
-use crate::profile::{ProfileConfig, TargetServer};
+use fluvio_client::SpuController;
+use fluvio_client::query_params::ReplicaConfig;
+use fluvio_client::query_params::Partitions;
 
-use super::helpers::Partitions;
-use super::helpers::process_sc_create_topic;
-use super::helpers::process_kf_create_topic;
+use crate::error::CliError;
+use crate::profile::SpuControllerConfig;
+use crate::profile::SpuControllerTarget;
+
+
+// -----------------------------------
+//  Parsed Config
+// -----------------------------------
+
+#[derive(Debug)]
+pub struct CreateTopicConfig {
+    pub topic: String,
+    pub replica: ReplicaConfig,
+    pub validate_only: bool,
+}
+
+
 
 // -----------------------------------
 // CLI Options
@@ -86,92 +101,85 @@ pub struct CreateTopicOpt {
     profile: Option<String>,
 }
 
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
 
-#[derive(Debug)]
-pub struct CreateTopicConfig {
-    pub name: String,
-    pub replica: ReplicaConfig,
-    pub validate_only: bool,
+impl CreateTopicOpt {
+
+
+
+    /// Ensure all parameters are valid for computed replication
+    fn parse_computed_replica(&self) -> ReplicaConfig {
+        ReplicaConfig::Computed(
+            self.partitions.unwrap_or(-1),
+            self.replication.unwrap_or(-1),
+            self.ignore_rack_assigment,
+        )
+    }
+
+
+    /// Ensure all parameters are valid for computed replication
+    fn parse_assigned_replica(&self) -> Result<ReplicaConfig, CliError> {
+
+        if let Some(replica_assign_file) = &self.replica_assignment {
+            match Partitions::file_decode(replica_assign_file) {
+                Ok(partitions) => Ok(ReplicaConfig::Assigned(partitions)),
+                Err(err) => Err(CliError::IoError(IoError::new(
+                    ErrorKind::InvalidInput,
+                    format!(
+                        "cannot parse replica assignment file {:?}: {}",
+                        replica_assign_file, err
+                    ),
+                ))),
+            }
+        } else {
+            Err(CliError::IoError(IoError::new(
+                ErrorKind::InvalidInput,
+                "cannot find replica assignment file",
+            )))
+        }
+    }
+
+    /// Validate cli options. Generate target-server and create-topic configuration.
+    fn validate(self) -> Result<(SpuControllerConfig, CreateTopicConfig), CliError> {
+
+    
+        // topic specific configurations
+        let replica_config = if self.partitions.is_some() {
+            self.parse_computed_replica()
+        } else {
+            self.parse_assigned_replica()?
+        };
+
+        let create_topic_cfg = CreateTopicConfig {
+            topic: self.topic,
+            replica: replica_config,
+            validate_only: self.validate_only,
+        };
+
+        let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
+
+        // return server separately from config
+        Ok((target_server, create_topic_cfg))
+    }
+
 }
 
-#[derive(Debug)]
-pub enum ReplicaConfig {
-    // replica assignment
-    Assigned(Partitions),
-
-    // partitions, replication, ignore_rack_assignment
-    Computed(i32, i16, bool),
-}
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process create topic cli request
-pub fn process_create_topic(opt: CreateTopicOpt) -> Result<(), CliError> {
-    let (target_server, create_topic_cfg) = parse_opt(opt)?;
+pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String,CliError> {
+    
+    let (target_server, cfg ) = opt.validate()?;
 
-    match target_server {
-        TargetServer::Kf(server_addr) => process_kf_create_topic(server_addr, create_topic_cfg),
-        TargetServer::Sc(server_addr) => process_sc_create_topic(server_addr, create_topic_cfg),
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!("invalid target server {:?}", target_server),
-        ))),
-    }
+    (match target_server.connect().await? {
+        SpuControllerTarget::Kf(mut client) => client.create_topic(cfg.topic,cfg.replica,cfg.validate_only).await,
+        SpuControllerTarget::Sc(mut client) => client.create_topic(cfg.topic,cfg.replica,cfg.validate_only).await
+    })
+        .map(| topic_name | format!("topic \"{}\" created",topic_name))
+        .map_err(|err| err.into())
 }
 
-/// Validate cli options. Generate target-server and create-topic configuration.
-fn parse_opt(opt: CreateTopicOpt) -> Result<(TargetServer, CreateTopicConfig), CliError> {
-    // profile specific configurations (target server)
-    let profile_config = ProfileConfig::new(&opt.sc, &opt.kf, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
 
-    // topic specific configurations
-    let replica_config = if opt.partitions.is_some() {
-        parse_computed_replica(&opt)?
-    } else {
-        parse_assigned_replica(&opt)?
-    };
-    let create_topic_cfg = CreateTopicConfig {
-        name: opt.topic,
-        replica: replica_config,
-        validate_only: opt.validate_only,
-    };
 
-    // return server separately from config
-    Ok((target_server, create_topic_cfg))
-}
-
-/// Ensure all parameters are valid for computed replication
-fn parse_computed_replica(opt: &CreateTopicOpt) -> Result<ReplicaConfig, CliError> {
-    Ok(ReplicaConfig::Computed(
-        opt.partitions.unwrap_or(-1),
-        opt.replication.unwrap_or(-1),
-        opt.ignore_rack_assigment,
-    ))
-}
-
-/// Ensure all parameters are valid for computed replication
-fn parse_assigned_replica(opt: &CreateTopicOpt) -> Result<ReplicaConfig, CliError> {
-    if let Some(replica_assign_file) = &opt.replica_assignment {
-        match Partitions::file_decode(replica_assign_file) {
-            Ok(partitions) => Ok(ReplicaConfig::Assigned(partitions)),
-            Err(err) => Err(CliError::IoError(IoError::new(
-                ErrorKind::InvalidInput,
-                format!(
-                    "cannot parse replica assignment file {:?}: {}",
-                    replica_assign_file, err
-                ),
-            ))),
-        }
-    } else {
-        Err(CliError::IoError(IoError::new(
-            ErrorKind::InvalidInput,
-            "cannot find replica assignment file",
-        )))
-    }
-}

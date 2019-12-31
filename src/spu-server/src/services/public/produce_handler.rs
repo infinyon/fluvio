@@ -11,10 +11,9 @@ use kf_protocol::message::produce::TopicProduceResponse;
 use kf_protocol::message::produce::PartitionProduceResponse;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
-
 
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultKfProduceRequest>,
@@ -42,12 +41,10 @@ pub async fn handle_produce_request(
             let mut partition_response = PartitionProduceResponse::default();
             partition_response.partition_index = rep_id.partition;
 
-            match ctx.leaders_state().send_records(
-                &rep_id,
-                partition_request.records,
-                true,
-            )
-            .await
+            match ctx
+                .leaders_state()
+                .send_records(&rep_id, partition_request.records, true)
+                .await
             {
                 Ok(found_flag) => {
                     if found_flag {

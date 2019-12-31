@@ -3,16 +3,13 @@
 //      >>> define what each element of SPU is used for
 //
 
-
-use metadata::spu::SpuSpec;
+use flv_metadata::spu::SpuSpec;
 use types::SpuId;
 
 use crate::core::Spec;
 use crate::core::LocalStore;
 
-
 impl Spec for SpuSpec {
-
     const LABEL: &'static str = "SPU";
 
     type Key = SpuId;
@@ -24,18 +21,13 @@ impl Spec for SpuSpec {
     fn key_owned(&self) -> Self::Key {
         self.id
     }
-
-
 }
 
 pub type SpuLocalStore = LocalStore<SpuSpec>;
-   
 
 impl SpuLocalStore {
-
-
     #[cfg(test)]
-    pub fn indexed_by_id(&self) -> std::collections::BTreeMap<SpuId,SpuSpec> {
+    pub fn indexed_by_id(&self) -> std::collections::BTreeMap<SpuId, SpuSpec> {
         let mut map: std::collections::BTreeMap<SpuId, SpuSpec> = std::collections::BTreeMap::new();
 
         for spu in self.inner_store().read().values() {
@@ -45,15 +37,13 @@ impl SpuLocalStore {
         map
     }
 
-
     #[cfg(test)]
-    pub fn bulk_add(self,spus: Vec<i32>) -> Self {
+    pub fn bulk_add(self, spus: Vec<i32>) -> Self {
         for id in spus {
             self.insert(id.into());
         }
         self
     }
-
 }
 
 // -----------------------------------
@@ -68,13 +58,7 @@ pub mod test {
 
     #[test]
     fn test_indexed_by_id() {
-       
-        let spus = SpuLocalStore::default()
-            .bulk_add(vec![
-                5000,
-                5001,
-                5002,
-            ]);
+        let spus = SpuLocalStore::default().bulk_add(vec![5000, 5001, 5002]);
 
         // run test
         let indexed_spus = spus.indexed_by_id();
@@ -90,13 +74,7 @@ pub mod test {
 
     #[test]
     fn test_peer_spu_routines() {
-      
-        let spus = SpuLocalStore::default()
-            .bulk_add(vec![
-                5000,
-                5001,
-                5002
-            ]);
+        let spus = SpuLocalStore::default().bulk_add(vec![5000, 5001, 5002]);
 
         let spu_5000 = spus.spec(&5000).unwrap();
         let spu_5001 = spus.spec(&5001).unwrap();
@@ -108,7 +86,7 @@ pub mod test {
 
         // test >> names()
         let names = spus.all_keys();
-        assert_eq!(names, vec![5000,5001,5002]);
+        assert_eq!(names, vec![5000, 5001, 5002]);
 
         // test >> all_spus()
         let all_spus = spus.all_values();
@@ -117,8 +95,6 @@ pub mod test {
         assert_eq!(all_spus[1], spu_5001);
         assert_eq!(all_spus[2], spu_5002);
 
-
-
         // test >> delete()
         spus.delete(&5001);
         let remaining_spus = spus.all_values();
@@ -126,5 +102,4 @@ pub mod test {
         assert_eq!(remaining_spus[0], spu_5000);
         assert_eq!(remaining_spus[1], spu_5002);
     }
-
 }

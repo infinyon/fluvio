@@ -1,4 +1,3 @@
-
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
@@ -6,13 +5,12 @@ use std::path::Path;
 
 use log::debug;
 
-use future_aio::fs::File;
-use future_aio::fs::file_util;
-use future_aio::fs::AsyncFileSlice;
-use future_aio::fs::AsyncFile;
+use flv_future_aio::fs::File;
+use flv_future_aio::fs::file_util;
+use flv_future_aio::fs::AsyncFileSlice;
+use flv_future_aio::fs::AsyncFile;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
-
 
 use crate::util::generate_file_name;
 use crate::validator::validate;
@@ -22,9 +20,7 @@ use crate::StorageError;
 
 pub(crate) const MESSAGE_LOG_EXTENSION: &'static str = "log";
 
-
 pub(crate) trait FileRecords {
-
     fn get_base_offset(&self) -> Offset;
 
     fn get_file(&self) -> &File;
@@ -32,21 +28,19 @@ pub(crate) trait FileRecords {
     fn get_path(&self) -> &Path;
 
     /// as file slice from position
-    fn as_file_slice(&self, start: Size) -> Result<AsyncFileSlice,IoError>;
+    fn as_file_slice(&self, start: Size) -> Result<AsyncFileSlice, IoError>;
 
-    fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice,IoError>;
-
+    fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice, IoError>;
 }
 
 pub struct FileRecordsSlice {
     base_offset: Offset,
     file: File,
     path: PathBuf,
-    len: u64
+    len: u64,
 }
 
 impl FileRecordsSlice {
- 
     pub async fn open(
         base_offset: Offset,
         option: &ConfigOption,
@@ -62,7 +56,7 @@ impl FileRecordsSlice {
             base_offset,
             file,
             path: log_path,
-            len
+            len,
         })
     }
 
@@ -77,7 +71,6 @@ impl FileRecordsSlice {
 }
 
 impl FileRecords for FileRecordsSlice {
-
     fn get_base_offset(&self) -> Offset {
         self.base_offset
     }
@@ -90,23 +83,23 @@ impl FileRecords for FileRecordsSlice {
         &self.path
     }
 
-    
-    fn as_file_slice(&self, start_pos: Size) -> Result<AsyncFileSlice,IoError> {
-        Ok(self.file.raw_slice(start_pos as u64 ,self.len - start_pos as u64))
+    fn as_file_slice(&self, start_pos: Size) -> Result<AsyncFileSlice, IoError> {
+        Ok(self
+            .file
+            .raw_slice(start_pos as u64, self.len - start_pos as u64))
     }
 
-    fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice,IoError> {
+    fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice, IoError> {
         if len as u64 > self.len {
-            Err(IoError::new(ErrorKind::UnexpectedEof,"len is smaller than actual len"))
+            Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "len is smaller than actual len",
+            ))
         } else {
-            Ok(self.file.raw_slice(start as u64 ,len as u64))
+            Ok(self.file.raw_slice(start as u64, len as u64))
         }
-      
     }
-    
-
 }
 
 // message log doesn't have circular structure
 impl Unpin for FileRecordsSlice {}
-

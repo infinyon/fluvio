@@ -6,8 +6,7 @@
 
 use structopt::StructOpt;
 use std::path::PathBuf;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
+
 
 use kf_protocol::message::offset::KfListOffsetRequest;
 use kf_protocol::message::api_versions::KfApiVersionsRequest;
@@ -25,10 +24,11 @@ use kf_protocol::message::offset::KfOffsetFetchRequest;
 
 use crate::error::CliError;
 
-use crate::profile::{ProfileConfig, TargetServer};
+use crate::profile::KfConfig;
 use crate::advanced::RequestApi;
-use crate::advanced::send_request_to_server;
-use crate::advanced::parse_request_from_file;
+use crate::Terminal;
+
+use super::parse_and_pretty_from_file;
 
 // -----------------------------------
 // CLI Options
@@ -63,95 +63,38 @@ pub struct RunRequestOpt {
     pub profile: Option<String>,
 }
 
+macro_rules! pretty_send {
+    ($out:expr,$r:ident,$client:ident,$file:ident) => {
+        parse_and_pretty_from_file::<PathBuf,$r,_>($out,&mut $client,$file)
+    };
+}
+
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Parse CLI, build server address, run request & display result
-pub fn process_run_request(opt: RunRequestOpt) -> Result<(), CliError> {
-    let profile_config = ProfileConfig::new(&None, &opt.kf, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
-    let server_addr = match target_server {
-        TargetServer::Kf(server_addr) => server_addr,
-        TargetServer::Sc(server_addr) => server_addr,
-        _ => {
-            return Err(CliError::IoError(IoError::new(
-                ErrorKind::Other,
-                format!("invalid Kafka server {:?}", target_server),
-            )))
-        }
-    };
+pub async fn process_run_request<O>(out: std::sync::Arc<O>,opt: RunRequestOpt) -> Result<(), CliError> 
+    where O: Terminal
+{
+    let kf_config = KfConfig::new(opt.kf, opt.profile)?;
+    let mut kf_server = kf_config.connect().await?;
+    let mut client = kf_server.mut_client();
+    let file = opt.details_file.to_path_buf();
 
-    // process file based on request type
     match opt.request {
-        RequestApi::ApiVersions => {
-            let req =
-                parse_request_from_file::<PathBuf, KfApiVersionsRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::ListOffset => {
-            let req =
-                parse_request_from_file::<PathBuf, KfListOffsetRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::Metadata => {
-            let req =
-                parse_request_from_file::<PathBuf, KfMetadataRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::LeaderAndIsr => {
-            let req = parse_request_from_file::<PathBuf, KfLeaderAndIsrRequest>(
-                opt.details_file.clone(),
-            )?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::FindCoordinator => {
-            let req = parse_request_from_file::<PathBuf, KfFindCoordinatorRequest>(
-                opt.details_file.clone(),
-            )?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::JoinGroup => {
-            let req =
-                parse_request_from_file::<PathBuf, KfJoinGroupRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::SyncGroup => {
-            let req =
-                parse_request_from_file::<PathBuf, KfSyncGroupRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::LeaveGroup => {
-            let req =
-                parse_request_from_file::<PathBuf, KfLeaveGroupRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::DescribeGroups => {
-            let req = parse_request_from_file::<PathBuf, KfDescribeGroupsRequest>(
-                opt.details_file.clone(),
-            )?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::ListGroups => {
-            let req =
-                parse_request_from_file::<PathBuf, KfListGroupsRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::DeleteGroups => {
-            let req = parse_request_from_file::<PathBuf, KfDeleteGroupsRequest>(
-                opt.details_file.clone(),
-            )?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::Heartbeat => {
-            let req =
-                parse_request_from_file::<PathBuf, KfHeartbeatRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
-        RequestApi::OffsetFetch => {
-            let req =
-                parse_request_from_file::<PathBuf, KfOffsetFetchRequest>(opt.details_file.clone())?;
-            send_request_to_server(server_addr, req)
-        }
+        RequestApi::ApiVersions => pretty_send!(out,KfApiVersionsRequest,client,file).await,
+        RequestApi::ListOffset => pretty_send!(out,KfListOffsetRequest,client,file).await,
+        RequestApi::Metadata => pretty_send!(out,KfMetadataRequest,client,file).await,
+        RequestApi::LeaderAndIsr => pretty_send!(out,KfLeaderAndIsrRequest,client,file).await,
+        RequestApi::FindCoordinator => pretty_send!(out,KfFindCoordinatorRequest,client,file).await,
+        RequestApi::JoinGroup => pretty_send!(out,KfJoinGroupRequest,client,file).await,
+        RequestApi::SyncGroup => pretty_send!(out,KfSyncGroupRequest,client,file).await,
+        RequestApi::LeaveGroup => pretty_send!(out,KfLeaveGroupRequest,client,file).await,
+        RequestApi::DescribeGroups => pretty_send!(out,KfDescribeGroupsRequest,client,file).await,
+        RequestApi::ListGroups => pretty_send!(out,KfListGroupsRequest,client,file).await,
+        RequestApi::DeleteGroups => pretty_send!(out,KfDeleteGroupsRequest,client,file).await,
+        RequestApi::Heartbeat => pretty_send!(out,KfHeartbeatRequest,client,file).await,
+        RequestApi::OffsetFetch => pretty_send!(out,KfOffsetFetchRequest,client,file).await
     }
 }

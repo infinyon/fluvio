@@ -9,6 +9,7 @@ use kf_protocol::derive::{Decode, Encode};
 
 use crate::FlvResponseMessage;
 use crate::ScApiKey;
+use crate::ApiError;
 
 use super::spu::FlvEndPointMetadata;
 
@@ -21,6 +22,15 @@ pub struct FlvCreateCustomSpusRequest {
     /// A list of one or more custom spus to be created.
     pub custom_spus: Vec<FlvCreateCustomSpuRequest>,
 }
+
+
+impl Request for FlvCreateCustomSpusRequest {
+    const API_KEY: u16 = ScApiKey::FlvCreateCustomSpus as u16;
+    const DEFAULT_API_VERSION: i16 = 1;
+    type Response = FlvCreateCustomSpusResponse;
+}
+
+
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvCreateCustomSpuRequest {
@@ -50,12 +60,18 @@ pub struct FlvCreateCustomSpusResponse {
     pub results: Vec<FlvResponseMessage>,
 }
 
-// -----------------------------------
-// Implementation - FlvCreateCustomSpusRequest
-// -----------------------------------
+impl FlvCreateCustomSpusResponse {
 
-impl Request for FlvCreateCustomSpusRequest {
-    const API_KEY: u16 = ScApiKey::FlvCreateCustomSpus as u16;
-    const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvCreateCustomSpusResponse;
+    /// validate and extract a single response
+    pub fn validate(self, name: &str) -> Result<(),ApiError> {
+
+        if let Some(item) = self.results.into_iter().find(|m| m.name == name) {
+            item.as_result()
+        } else {
+            Err(ApiError::NoResourceFounded(name.to_owned()))
+        }
+        
+
+    }
+
 }

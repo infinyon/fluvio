@@ -4,7 +4,7 @@ macro_rules! assert_async_block {
     ($ft_exp:expr) => {{
           
         let ft = $ft_exp;
-        match future_helper::run_block_on(ft)  {
+        match flv_future_core::run_block_on(ft)  {
             Ok(_) => log::debug!("finished run"),
             Err(err) => assert!(false,"error {:?}",err)
         }
@@ -29,7 +29,7 @@ mod test {
     use crate::test_async;
     
     // fake future helper so that this can be resolved in this crate
-    mod future_helper {
+    mod flv_future_core {
         pub use crate::run_block_on;
         pub use crate::FutureHelper;
         pub use crate::assert_async_block;

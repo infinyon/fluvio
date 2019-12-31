@@ -13,6 +13,8 @@ pub use kf_protocol_core::Version;
 pub mod bytes {
     pub use kf_protocol_core::bytes::Buf;
     pub use kf_protocol_core::bytes::BufMut;
+    pub use kf_protocol_core::bytes::BufExt;
+    pub use kf_protocol_core::bytes::BufMutExt;
 }
 
 pub mod api  {

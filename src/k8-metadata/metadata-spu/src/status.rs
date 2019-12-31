@@ -12,7 +12,7 @@ use metadata_core::Status;
 // Data Structures
 // -----------------------------------
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Default,Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct SpuStatus {
     pub resolution: SpuStatusResolution,
 }
@@ -21,7 +21,7 @@ pub struct SpuStatus {
 pub enum SpuStatusResolution {
     Online,
     Offline,
-    Init
+    Init,
 }
 
 impl Default for SpuStatusResolution {
@@ -30,4 +30,4 @@ impl Default for SpuStatusResolution {
     }
 }
 
-impl Status for SpuStatus{}
+impl Status for SpuStatus {}

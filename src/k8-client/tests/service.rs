@@ -7,9 +7,8 @@ mod integration_tests {
     use log::debug;
     use rand::distributions::Alphanumeric;
     use rand::{thread_rng, Rng};
- 
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
     use k8_client::fixture::TEST_NS;
     use k8_client::ClientError;
     use k8_metadata::core::metadata::InputK8Obj;
@@ -21,7 +20,6 @@ mod integration_tests {
     use k8_metadata::client::MetadataClient;
     use types::defaults::SPU_DEFAULT_NAME;
 
-   
     fn create_client() -> K8Client {
         K8Client::default().expect("cluster not initialized")
     }
@@ -70,11 +68,10 @@ mod integration_tests {
         let item = client.create_item::<ServiceSpec>(new_item).await?;
         debug!("deleting: {:#?}", item);
         let input_metadata: InputObjectMeta = item.metadata.into();
-        client.delete_item::<ServiceSpec,_>(&input_metadata).await?;
+        client
+            .delete_item::<ServiceSpec, _>(&input_metadata)
+            .await?;
         assert!(true, "passed");
         Ok(())
     }
-
-
-
 }

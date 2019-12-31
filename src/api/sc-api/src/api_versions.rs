@@ -13,6 +13,16 @@ use crate::ScApiKey;
 
 pub type ApiVersions = Vec<ApiVersionKey>;
 
+/// Given an API key, it returns max_version. None if not found
+pub fn lookup_version(api_key: ScApiKey, versions: &ApiVersions) -> Option<i16> {
+    for version in versions {
+        if version.api_key == api_key as i16 {
+            return Some(version.max_version);
+        }
+    }
+    None
+}
+
 // -----------------------------------
 // ApiVersionsRequest
 // -----------------------------------

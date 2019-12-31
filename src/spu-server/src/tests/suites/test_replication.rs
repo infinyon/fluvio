@@ -5,11 +5,11 @@ use log::debug;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-use future_helper::test_async;
-use future_helper::sleep;
+use flv_future_core::test_async;
+use flv_future_core::sleep;
 use kf_socket::KfSocketError;
-use metadata::partition::ReplicaKey;
-use storage::ReplicaStorage;
+use flv_metadata::partition::ReplicaKey;
+use flv_storage::ReplicaStorage;
 
 use crate::tests::fixture::TestGenerator;
 use crate::tests::fixture::SpuTest;

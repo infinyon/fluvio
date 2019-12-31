@@ -75,7 +75,7 @@ impl<T> Actions<T> {
         self.0.pop_front()
     }
 
-    #[cfg(feature = "fixture")]
+
     pub fn count(&self) -> usize {
         self.0.len()
     }

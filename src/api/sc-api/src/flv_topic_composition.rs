@@ -7,6 +7,8 @@ use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::FlvErrorCode;
+use types::SpuId;
+use types::socket_helpers::ServerAddress;
 
 use crate::ScApiKey;
 
@@ -27,14 +29,15 @@ pub struct FlvTopicCompositionRequest {
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvTopicCompositionResponse {
     /// The topics requested
-    pub topics: Vec<FetchTopicReponse>,
+    pub topics: Vec<FetchTopicResponse>,
 
     /// The SPUs associated with replica assignment of the topics
-    pub spus: Vec<FetchSpuReponse>,
+    pub spus: Vec<FetchSpuResponse>,
 }
 
+
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FetchTopicReponse {
+pub struct FetchTopicResponse {
     /// The error code, None for no errors
     pub error_code: FlvErrorCode,
 
@@ -64,18 +67,25 @@ pub struct FetchPartitionResponse {
 }
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FetchSpuReponse {
+pub struct FetchSpuResponse {
     /// The error code, None for no errors
     pub error_code: FlvErrorCode,
 
     /// The spu ID.
-    pub spu_id: i32,
+    pub spu_id: SpuId,
 
     /// The spu public hostname.
     pub host: String,
 
     /// The spu public port.
     pub port: u16,
+}
+
+impl FetchSpuResponse {
+
+    pub fn into(&self) -> ServerAddress {
+        ServerAddress::new(self.host.clone(),self.port)
+    }  
 }
 
 // -----------------------------------

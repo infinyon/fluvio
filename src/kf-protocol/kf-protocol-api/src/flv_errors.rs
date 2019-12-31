@@ -45,6 +45,14 @@ impl Default for FlvErrorCode {
 }
 
 impl FlvErrorCode {
+
+    pub fn is_ok(&self) -> bool {
+        match self {
+            Self::None => true,
+            _ => false
+        }
+    }
+
     pub fn to_sentence(&self) -> String {
         match self {
             FlvErrorCode::None => "".to_owned(),
@@ -53,10 +61,7 @@ impl FlvErrorCode {
     }
 
     pub fn is_error(&self) -> bool {
-        match self {
-            FlvErrorCode::None => false,
-            _ => true,
-        }
+        !self.is_ok()
     }
 }
 

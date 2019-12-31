@@ -4,23 +4,20 @@ use std::net::SocketAddr;
 use log::debug;
 use futures::channel::mpsc::Sender;
 
-
 use kf_socket::KfSocketError;
 use kf_socket::KfSocket;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use types::SpuId;
-use metadata::spu::SpuSpec;
+use flv_metadata::spu::SpuSpec;
 
 use super::mock_sc::SharedScContext;
-
 
 pub struct SpuServer(SpuSpec);
 
 impl SpuServer {
-
-    pub fn new(spec:SpuSpec) -> Self {
+    pub fn new(spec: SpuSpec) -> Self {
         Self(spec)
     }
 
@@ -33,7 +30,12 @@ impl SpuServer {
     }
 
     #[allow(dead_code)]
-    pub async fn send_to_internal_server<'a,R>(&'a self, req_msg: &'a RequestMessage<R>) -> Result<(), KfSocketError> where R: Request,
+    pub async fn send_to_internal_server<'a, R>(
+        &'a self,
+        req_msg: &'a RequestMessage<R>,
+    ) -> Result<(), KfSocketError>
+    where
+        R: Request,
     {
         debug!(
             "client: trying to connect to private endpoint: {:#?}",
@@ -41,13 +43,19 @@ impl SpuServer {
         );
         let socket: SocketAddr = (&self.spec().private_endpoint).try_into()?;
         let mut socket = KfSocket::connect(&socket).await?;
-        debug!("connected to internal endpoint {:#?}", self.spec().private_endpoint);
+        debug!(
+            "connected to internal endpoint {:#?}",
+            self.spec().private_endpoint
+        );
         let res_msg = socket.send(&req_msg).await?;
         debug!("response: {:#?}", res_msg);
         Ok(())
     }
 
-    pub async fn send_to_public_server<'a,R>(&'a self, req_msg: &'a RequestMessage<R>) -> Result<ResponseMessage<R::Response>, KfSocketError>
+    pub async fn send_to_public_server<'a, R>(
+        &'a self,
+        req_msg: &'a RequestMessage<R>,
+    ) -> Result<ResponseMessage<R::Response>, KfSocketError>
     where
         R: Request,
     {
@@ -57,13 +65,14 @@ impl SpuServer {
         );
         let socket: SocketAddr = (&self.spec().public_endpoint).try_into()?;
         let mut socket = KfSocket::connect(&socket).await?;
-        debug!("connected to public end point {:#?}", self.spec().public_endpoint);
+        debug!(
+            "connected to public end point {:#?}",
+            self.spec().public_endpoint
+        );
         let res_msg = socket.send(&req_msg).await?;
         debug!("response: {:#?}", res_msg);
         Ok(res_msg)
     }
-
-
 }
 
 impl From<SpuSpec> for SpuServer {
@@ -72,8 +81,7 @@ impl From<SpuSpec> for SpuServer {
     }
 }
 
-
 struct ScServerCtx {
     ctx: SharedScContext,
-    sender: Sender<bool>
+    sender: Sender<bool>,
 }

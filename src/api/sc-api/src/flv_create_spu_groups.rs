@@ -9,6 +9,7 @@ use kf_protocol::derive::{Decode, Encode};
 
 use crate::FlvResponseMessage;
 use crate::ScApiKey;
+use crate::ApiError;
 
 // -----------------------------------
 // FlvCreateSpuGroupsRequest
@@ -19,6 +20,15 @@ pub struct FlvCreateSpuGroupsRequest {
     /// A list of one or more spu groups to be created.
     pub spu_groups: Vec<FlvCreateSpuGroupRequest>,
 }
+
+impl Request for FlvCreateSpuGroupsRequest {
+    const API_KEY: u16 = ScApiKey::FlvCreateSpuGroups as u16;
+    const DEFAULT_API_VERSION: i16 = 1;
+    type Response = FlvCreateSpuGroupsResponse;
+}
+
+
+
 
 // quick way to convert a single group into groups requests
 impl From<FlvCreateSpuGroupRequest> for FlvCreateSpuGroupsRequest {
@@ -83,12 +93,20 @@ pub struct FlvCreateSpuGroupsResponse {
     pub results: Vec<FlvResponseMessage>,
 }
 
-// -----------------------------------
-// Implementation - FlvCreateSpuGroupsRequest
-// -----------------------------------
 
-impl Request for FlvCreateSpuGroupsRequest {
-    const API_KEY: u16 = ScApiKey::FlvCreateSpuGroups as u16;
-    const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvCreateSpuGroupsResponse;
+
+impl FlvCreateSpuGroupsResponse {
+
+    /// validate and extract a single response
+    pub fn validate(self) -> Result<(),ApiError> {
+
+        // ? what is name, so just find first item
+        if let Some(item) = self.results.into_iter().find(|_| true ) {
+            item.as_result()
+        } else {
+            Err(ApiError::NoResourceFounded("custom spu".to_owned()))
+        }
+        
+    }
 }
+

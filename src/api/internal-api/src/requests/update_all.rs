@@ -3,19 +3,18 @@ use std::collections::BTreeMap;
 use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use metadata::partition::ReplicaKey;
-use metadata::spu::SpuSpec;
+use flv_metadata::partition::ReplicaKey;
+use flv_metadata::spu::SpuSpec;
 use types::SpuId;
 
 use crate::InternalSpuApi;
 use crate::messages::Replica;
 
-
 /// All specs.  Listener can use this to sync their own metadata store.
 #[derive(Decode, Encode, Debug, Default)]
 pub struct UpdateAllRequest {
     pub spus: Vec<SpuSpec>,
-    pub replicas: Vec<Replica>
+    pub replicas: Vec<Replica>,
 }
 
 impl Request for UpdateAllRequest {
@@ -24,17 +23,13 @@ impl Request for UpdateAllRequest {
 }
 
 impl UpdateAllRequest {
-
     pub fn new(spus: Vec<SpuSpec>, replicas: Vec<Replica>) -> Self {
-        Self {
-            spus,
-            replicas
-        }
+        Self { spus, replicas }
     }
 
     /// Used when only SPU spec changes
     pub fn new_with_spu(spus: Vec<SpuSpec>) -> Self {
-        Self::new(spus,vec![])
+        Self::new(spus, vec![])
     }
 
     pub fn spus_ref(&self) -> &Vec<SpuSpec> {
@@ -73,15 +68,12 @@ impl UpdateAllRequest {
         self
     }
 
-
-
     pub fn mut_add_spu<S>(&mut self, spu: S)
     where
         S: Into<SpuSpec>,
     {
         self.spus.push(spu.into());
     }
-
 
     pub fn add_replica<R>(mut self, replica: R) -> Self
     where
@@ -98,8 +90,6 @@ impl UpdateAllRequest {
         self.replicas.push(replica.into());
     }
 }
-
-
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct UpdateAllResponse {}

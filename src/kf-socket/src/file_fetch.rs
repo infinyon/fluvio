@@ -3,9 +3,9 @@ use std::fmt;
 
 use log::trace;
 
-use future_aio::fs::AsyncFileSlice;
-use future_aio::BufMut;
-use future_aio::BytesMut;
+use flv_future_aio::fs::AsyncFileSlice;
+use flv_future_aio::BufMut;
+use flv_future_aio::BytesMut;
 use kf_protocol::Version;
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;
@@ -27,14 +27,11 @@ pub struct KfFileRecordSet(AsyncFileSlice);
 
 pub type KfFileFetchRequest = KfFetchRequest<KfFileRecordSet>;
 
-
-
 impl fmt::Display for KfFileRecordSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"pos: {} len: {}",self.position(),self.len())
+        write!(f, "pos: {} len: {}", self.position(), self.len())
     }
 }
-
 
 impl KfFileRecordSet {
     pub fn position(&self) -> u64 {
@@ -45,8 +42,8 @@ impl KfFileRecordSet {
         self.0.len() as usize
     }
 
-    pub fn raw_slice(&self) -> &AsyncFileSlice {
-        &self.0
+    pub fn raw_slice(&self) -> AsyncFileSlice {
+        self.0.clone()
     }
 }
 
@@ -79,27 +76,27 @@ impl Decoder for KfFileRecordSet {
 }
 
 impl FileWrite for KfFileRecordSet {
-    fn file_encode<'a: 'b, 'b>(
-        &'a self,
+    fn file_encode(
+        &self,
         dest: &mut BytesMut,
-        data: &'b mut Vec<StoreValue<'a>>,
+        data: &mut Vec<StoreValue>,
         version: Version,
     ) -> Result<(), IoError> {
         let len: i32 = self.len() as i32;
         trace!("KfFileRecordSet encoding file slice len: {}", len);
         len.encode(dest, version)?;
-        let bytes = dest.take().freeze();
+        let bytes = dest.split_to(dest.len()).freeze();
         data.push(StoreValue::Bytes(bytes));
-        data.push(StoreValue::FileSlice(&self.raw_slice()));
+        data.push(StoreValue::FileSlice(self.raw_slice()));
         Ok(())
     }
 }
 
 impl FileWrite for FileFetchResponse {
-    fn file_encode<'a: 'b, 'b>(
-        &'a self,
+    fn file_encode(
+        &self,
         src: &mut BytesMut,
-        data: &'b mut Vec<StoreValue<'a>>,
+        data: &mut Vec<StoreValue>,
         version: Version,
     ) -> Result<(), IoError> {
         trace!("file encoding FileFetchResponse");
@@ -116,10 +113,10 @@ impl FileWrite for FileFetchResponse {
 }
 
 impl FileWrite for FileTopicResponse {
-    fn file_encode<'a: 'b, 'b>(
-        &'a self,
+    fn file_encode(
+        &self,
         src: &mut BytesMut,
-        data: &'b mut Vec<StoreValue<'a>>,
+        data: &mut Vec<StoreValue>,
         version: Version,
     ) -> Result<(), IoError> {
         trace!("file encoding fetch topic response");
@@ -130,10 +127,10 @@ impl FileWrite for FileTopicResponse {
 }
 
 impl FileWrite for FilePartitionResponse {
-    fn file_encode<'a: 'b, 'b>(
-        &'a self,
+    fn file_encode(
+        &self,
         src: &mut BytesMut,
-        data: &'b mut Vec<StoreValue<'a>>,
+        data: &mut Vec<StoreValue>,
         version: Version,
     ) -> Result<(), IoError> {
         trace!("file encoding fetch partition response");
@@ -161,8 +158,8 @@ mod test {
     use futures::future::join;
     use futures::stream::StreamExt;
 
-    use future_helper::test_async;
-    use future_helper::sleep;
+    use flv_future_core::test_async;
+    use flv_future_core::sleep;
     use kf_protocol::Encoder;
     use kf_protocol::api::Request;
     use kf_protocol::api::ResponseMessage;
@@ -170,9 +167,9 @@ mod test {
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::DefaultRecord;
     use kf_protocol::message::fetch::DefaultKfFetchRequest;
-    use future_aio::fs::file_util;
-    use future_aio::fs::AsyncFile;
-    use future_aio::net::AsyncTcpListener;
+    use flv_future_aio::fs::file_util;
+    use flv_future_aio::fs::AsyncFile;
+    use flv_future_aio::net::AsyncTcpListener;
     use utils::fixture::ensure_clean_file;
     use crate::KfSocket;
     use crate::KfSocketError;
@@ -239,7 +236,7 @@ mod test {
         let resp_msg = ResponseMessage::new(10, response);
 
         debug!(
-            "res msg write size: {}",
+            "response message write size: {}",
             resp_msg.write_size(KfFileFetchRequest::DEFAULT_API_VERSION)
         );
 
@@ -275,6 +272,7 @@ mod test {
         Ok(())
     }
 
+    /// test server where it is sending out file copy
     #[test_async]
     async fn test_save_fetch() -> Result<(), KfSocketError> {
         // create fetch and save

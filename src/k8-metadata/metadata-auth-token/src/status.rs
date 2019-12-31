@@ -8,8 +8,6 @@ use serde::Serialize;
 
 use metadata_core::Status;
 
-
-
 // -----------------------------------
 // Data Structures
 // -----------------------------------
@@ -28,4 +26,4 @@ pub enum TokenResolution {
     Invalid, // inactive
 }
 
-impl Status for AuthTokenStatus{}
+impl Status for AuthTokenStatus {}

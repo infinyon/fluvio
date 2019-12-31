@@ -3,16 +3,27 @@
 //!
 //! CLI tree to generate Delete Topics
 //!
-use std::io::Error as IoError;
-use std::io::ErrorKind;
+
 
 use structopt::StructOpt;
 
-use crate::error::CliError;
-use crate::profile::{ProfileConfig, TargetServer};
+use fluvio_client::SpuController;
 
-use super::helpers::process_sc_delete_topic;
-use super::helpers::process_kf_delete_topic;
+use crate::error::CliError;
+use crate::profile::SpuControllerConfig;
+use crate::profile::SpuControllerTarget;
+
+
+
+// -----------------------------------
+//  Parsed Config
+// -----------------------------------
+
+#[derive(Debug)]
+pub struct DeleteTopicConfig {
+    pub name: String,
+}
+
 
 // -----------------------------------
 // CLI Options
@@ -42,40 +53,36 @@ pub struct DeleteTopicOpt {
     profile: Option<String>,
 }
 
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
+impl DeleteTopicOpt {
 
-#[derive(Debug)]
-pub struct DeleteTopicConfig {
-    pub name: String,
+
+    /// Validate cli options. Generate target-server and delete-topic configuration.
+    fn validate(self) -> Result<(SpuControllerConfig, DeleteTopicConfig), CliError> {
+
+        // profile specific configurations (target server)
+        let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
+        let delete_topic_cfg = DeleteTopicConfig { name: self.topic };
+
+        // return server separately from config
+        Ok((target_server, delete_topic_cfg))
+    }
+
 }
+
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process delete topic cli request
-pub fn process_delete_topic(opt: DeleteTopicOpt) -> Result<(), CliError> {
-    let (target_server, delete_topic_cfg) = parse_opt(opt)?;
+pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliError> {
+    let (target_server, cfg) = opt.validate()?;
 
-    match target_server {
-        TargetServer::Kf(server_addr) => process_kf_delete_topic(server_addr, delete_topic_cfg),
-        TargetServer::Sc(server_addr) => process_sc_delete_topic(server_addr, delete_topic_cfg),
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!("Invalid Target Server Server {:?}", target_server),
-        ))),
-    }
+    (match target_server.connect().await? {
+        SpuControllerTarget::Kf(mut client) => client.delete_topic(&cfg.name).await,
+        SpuControllerTarget::Sc(mut client) => client.delete_topic(&cfg.name).await
+    })
+        .map(| topic_name | format!("topic \"{}\" deleted",topic_name))
+        .map_err(|err| err.into())
 }
 
-/// Validate cli options. Generate target-server and delete-topic configuration.
-fn parse_opt(opt: DeleteTopicOpt) -> Result<(TargetServer, DeleteTopicConfig), CliError> {
-    // profile specific configurations (target server)
-    let profile_config = ProfileConfig::new(&opt.sc, &opt.kf, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
-    let delete_topic_cfg = DeleteTopicConfig { name: opt.topic };
-
-    // return server separately from config
-    Ok((target_server, delete_topic_cfg))
-}

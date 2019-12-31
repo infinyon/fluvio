@@ -122,6 +122,7 @@ build-internal-test:
 build-k8client:
 	cd src/k8-client;cargo build
 
+
 test-spu:
 	cd src/spu-server;cargo test
 
@@ -138,7 +139,11 @@ test-sc-controller:
 	cd src/sc-server; cargo test test_controller_basic		
 
 test-sc:
-	cd src/sc-server;cargo test		
+	cd src/sc-core;cargo test	
+
+
+test-sc-k8:
+	cd src/sc-k8;cargo test
 
 test-storage:
 	cd src/storage;cargo test
@@ -163,6 +168,9 @@ test-kfservice:
 
 test-k8client:
 	cd src/k8-client;cargo test
+
+test-k8metadata:
+	cd src/k8-metadata;cargo test	
 
 test-k8config:
 	cd src/k8-config;cargo test

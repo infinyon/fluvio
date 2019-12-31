@@ -10,11 +10,11 @@ futures = { version = "0.3.1", features = ["async-await"] }
 async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
 kf-protocol = { path = "../kf-protocol"}
-future-helper = { path = "../future-helper" }
-future-aio = { path = "../future-aio"}
+flv-future-core = { path = "../future-helper" }
+flv-future-aio = { path = "../future-aio"}
 kf-socket = { path = "../kf-socket"}
 types = { path = "../types"}
 
 [dev-dependencies]
-future-helper = { path = "../future-helper", features = ["fixture"] }
+flv-future-core = { path = "../future-helper", features = ["fixture"] }
 utils = { path= "../utils"}

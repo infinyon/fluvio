@@ -3,17 +3,31 @@
 //!
 //! CLI to describe Topics and their corresponding Partitions
 //!
-use std::io::Error as IoError;
-use std::io::ErrorKind;
+
 
 use structopt::StructOpt;
 
 use crate::error::CliError;
-use crate::common::OutputType;
-use crate::profile::{ProfileConfig, TargetServer};
+use crate::OutputType;
+use crate::profile::SpuControllerConfig;
+use crate::profile::SpuControllerTarget;
+use crate::Terminal;
 
-use super::helpers::process_sc_describe_topics;
-use super::helpers::process_kf_describe_topics;
+
+use super::helpers::describe_kf_topics;
+use super::helpers::describe_sc_topics;
+
+// -----------------------------------
+//  Parsed Config
+// -----------------------------------
+
+#[derive(Debug)]
+pub struct DescribeTopicsConfig {
+    pub topic_names: Vec<String>,
+    pub output: OutputType,
+}
+
+
 
 // -----------------------------------
 // CLI Options
@@ -52,49 +66,46 @@ pub struct DescribeTopicsOpt {
     output: Option<OutputType>,
 }
 
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
+impl DescribeTopicsOpt {
 
-#[derive(Debug)]
-pub struct DescribeTopicsConfig {
-    pub topic_names: Vec<String>,
-    pub output: OutputType,
+    /// Validate cli options and generate config
+    fn validate(self) -> Result<(SpuControllerConfig, DescribeTopicsConfig), CliError> {
+
+        let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
+
+        // transfer config parameters
+        let describe_topics_cfg = DescribeTopicsConfig {
+            output: self.output.unwrap_or(OutputType::default()),
+            topic_names: self.topics,
+        };
+
+        // return server separately from topic result
+        Ok((target_server, describe_topics_cfg))
+    }
 }
+
+
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process describe topic cli request
-pub fn process_describe_topics(opt: DescribeTopicsOpt) -> Result<(), CliError> {
-    let (target_server, describe_topics_cfg) = parse_opt(opt)?;
+pub async fn process_describe_topics<O>(out: std::sync::Arc<O>,opt: DescribeTopicsOpt) -> Result<String, CliError> 
+    where O: Terminal
+{
 
-    match target_server {
-        TargetServer::Kf(server_addr) => {
-            process_kf_describe_topics(server_addr, &describe_topics_cfg)
-        }
-        TargetServer::Sc(server_addr) => {
-            process_sc_describe_topics(server_addr, &describe_topics_cfg)
-        }
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!("invalid target server {:?}", target_server),
-        ))),
-    }
+    let (target_server, cfg) = opt.validate()?;
+
+    (match target_server.connect().await? {
+        SpuControllerTarget::Kf(client) => describe_kf_topics(client, cfg.topic_names,cfg.output,out).await,
+        SpuControllerTarget::Sc(client) => describe_sc_topics(client, cfg.topic_names,cfg.output,out).await
+    })
+        .map(|_| format!(""))
+        .map_err(|err| err.into())
 }
 
-/// Validate cli options and generate config
-fn parse_opt(opt: DescribeTopicsOpt) -> Result<(TargetServer, DescribeTopicsConfig), CliError> {
-    let profile_config = ProfileConfig::new(&opt.sc, &opt.kf, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
 
-    // transfer config parameters
-    let describe_topics_cfg = DescribeTopicsConfig {
-        output: opt.output.unwrap_or(OutputType::default()),
-        topic_names: opt.topics,
-    };
 
-    // return server separately from topic result
-    Ok((target_server, describe_topics_cfg))
-}
+
+// Query Kafka server for T

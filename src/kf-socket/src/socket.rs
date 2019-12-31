@@ -1,4 +1,3 @@
-
 use std::fmt::Display;
 
 #[cfg(unix)]
@@ -8,13 +7,13 @@ use log::trace;
 use futures::stream::StreamExt;
 use futures_codec::Framed;
 
-use future_aio::net::ToSocketAddrs;
+use flv_future_aio::net::ToSocketAddrs;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::transport::KfCodec;
 
-use future_aio::net::AsyncTcpStream;
+use flv_future_aio::net::AsyncTcpStream;
 
 use crate::KfSink;
 use crate::KfStream;
@@ -42,14 +41,14 @@ impl KfSocket {
 
     /// create socket from establishing connection to server
     pub async fn connect<A>(addr: A) -> Result<KfSocket, KfSocketError>
-        where A: ToSocketAddrs + Display
+    where
+        A: ToSocketAddrs + Display,
     {
         trace!("trying to connect to server at: {}", addr);
         let tcp_stream = AsyncTcpStream::connect(addr).await?;
         Ok(tcp_stream.into())
     }
 
-    
     pub fn split(self) -> (KfSink, KfStream) {
         (self.sink, self.stream)
     }
@@ -72,12 +71,12 @@ impl KfSocket {
     }
 
     /// as client, send request and wait for reply from server
-    pub async fn send<'a,R>(
-        &'a mut self,
-        req_msg: &'a RequestMessage<R>,
+    pub async fn send<R>(
+        &mut self,
+        req_msg: &RequestMessage<R>,
     ) -> Result<ResponseMessage<R::Response>, KfSocketError>
     where
-        R: Request
+        R: Request,
     {
         self.sink.send_request(&req_msg).await?;
 
@@ -88,7 +87,7 @@ impl KfSocket {
 impl From<AsyncTcpStream> for KfSocket {
     fn from(tcp_stream: AsyncTcpStream) -> Self {
         let fd = tcp_stream.as_raw_fd();
-        let framed = Framed::new(tcp_stream,KfCodec{});
+        let framed = Framed::new(tcp_stream, KfCodec {});
         let (sink, stream) = framed.split();
         KfSocket {
             sink: KfSink::new(sink, fd),
@@ -98,9 +97,9 @@ impl From<AsyncTcpStream> for KfSocket {
     }
 }
 
-impl From<(KfSink,KfStream)> for KfSocket {
-    fn from(pair: (KfSink,KfStream)) -> Self {
-        let (sink,stream) = pair;
-        KfSocket::new(sink,stream)
+impl From<(KfSink, KfStream)> for KfSocket {
+    fn from(pair: (KfSink, KfStream)) -> Self {
+        let (sink, stream) = pair;
+        KfSocket::new(sink, stream)
     }
 }

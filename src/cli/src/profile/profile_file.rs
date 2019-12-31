@@ -7,7 +7,6 @@ use std::env;
 use std::fs::read_to_string;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
 use dirs::home_dir;
@@ -15,33 +14,29 @@ use serde::Deserialize;
 
 use types::defaults::{CLI_CONFIG_PATH, CLI_DEFAULT_PROFILE, CLI_PROFILES_DIR};
 use types::defaults::{CONFIG_FILE_EXTENTION, FLV_FLUVIO_HOME};
+use types::socket_helpers::ServerAddress;
 
-use super::config::ProfileConfig;
+use super::ProfileConfig;
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct ProfileFile {
     pub version: String,
-    sc: Option<TargetScGroup>,
-    spu: Option<TargetSpuGroup>,
-    kf: Option<TargetKfGroup>,
+    sc: Option<TargetAddr>,
+    spu: Option<TargetAddr>,
+    kf: Option<TargetAddr>,
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-struct TargetScGroup {
+struct TargetAddr {
     pub host: String,
     pub port: u16,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
-struct TargetSpuGroup {
-    pub host: String,
-    pub port: u16,
-}
 
-#[derive(Debug, PartialEq, Deserialize)]
-struct TargetKfGroup {
-    pub host: String,
-    pub port: u16,
+impl Into<ServerAddress> for TargetAddr {
+    fn into(self) -> ServerAddress {
+        ServerAddress::new(self.host,self.port)
+    }
 }
 
 // ---------------------------------------
@@ -56,58 +51,18 @@ impl ProfileFile {
             .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))
     }
 
-    // converts profile file into a profile configuation
-    pub fn to_config(&self) -> Result<ProfileConfig, IoError> {
-        let sc_addr = if let Some(ref sc) = &self.sc {
-            Some(
-                format!("{}:{}", sc.host, sc.port)
-                    .parse::<SocketAddr>()
-                    .map_err(|err| {
-                        IoError::new(
-                            ErrorKind::InvalidInput,
-                            format!("invalid streaming controller {}", err),
-                        )
-                    })?,
-            )
-        } else {
-            None
-        };
+    
+}
 
-        let spu_addr = if let Some(ref spu) = &self.spu {
-            Some(
-                format!("{}:{}", spu.host, spu.port)
-                    .parse::<SocketAddr>()
-                    .map_err(|err| {
-                        IoError::new(
-                            ErrorKind::InvalidInput,
-                            format!("invalid target_spu {}", err),
-                        )
-                    })?,
-            )
-        } else {
-            None
-        };
+impl From<ProfileFile> for ProfileConfig {
 
-        let kf_addr = if let Some(ref kf) = &self.kf {
-            Some(
-                format!("{}:{}", kf.host, kf.port)
-                    .parse::<SocketAddr>()
-                    .map_err(|err| {
-                        IoError::new(
-                            ErrorKind::InvalidInput,
-                            format!("invalid target_kf {}", err),
-                        )
-                    })?,
-            )
-        } else {
-            None
-        };
+    fn from(file: ProfileFile) -> ProfileConfig {
 
-        Ok(ProfileConfig {
-            sc_addr,
-            spu_addr,
-            kf_addr,
-        })
+        Self {
+            sc_addr: file.sc.map(|addr| addr.into()),
+            spu_addr: file.spu.map(|addr| addr.into()),
+            kf_addr: file.kf.map( |addr| addr.into())
+        }
     }
 }
 
@@ -183,15 +138,15 @@ pub mod test {
         // compare with expected result
         let expected = ProfileFile {
             version: "1.0".to_owned(),
-            sc: Some(TargetScGroup {
+            sc: Some(TargetAddr {
                 host: "127.0.0.1".to_owned(),
                 port: 9033,
             }),
-            spu: Some(TargetSpuGroup {
+            spu: Some(TargetAddr {
                 host: "127.0.0.1".to_owned(),
                 port: 9034,
             }),
-            kf: Some(TargetKfGroup {
+            kf: Some(TargetAddr {
                 host: "127.0.0.1".to_owned(),
                 port: 9093,
             }),

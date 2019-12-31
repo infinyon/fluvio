@@ -27,59 +27,59 @@ pub enum ClientError {
 
 impl From<IoError> for ClientError {
     fn from(error: IoError) -> Self {
-        ClientError::IoError(error)
+        Self::IoError(error)
     }
 }
 
 impl From<http::Error> for ClientError {
     fn from(error: http::Error) -> Self {
-        ClientError::HttpError(error)
+        Self::HttpError(error)
     }
 }
 
 impl From<env::VarError> for ClientError {
     fn from(error: env::VarError) -> Self {
-        ClientError::EnvError(error)
+        Self::EnvError(error)
     }
 }
 
 
 impl From<serde_json::Error> for ClientError {
-    fn from(error: serde_json::Error) -> ClientError {
-        ClientError::JsonError(error)
+    fn from(error: serde_json::Error) -> Self {
+        Self::JsonError(error)
     }
 }
 
 impl From<DiffError> for ClientError {
     fn from(error: DiffError) -> Self {
-        ClientError::DiffError(error)
+        Self::DiffError(error)
     }
 }
 
 impl From<HttpError> for ClientError {
     fn from(error: HttpError) -> Self {
-        ClientError::HttpClientError(error)
+        Self::HttpClientError(error)
     }
 }
 
 impl From<ConfigError> for ClientError {
     fn from(error: ConfigError) -> Self {
-        ClientError::K8ConfigError(error)
+        Self::K8ConfigError(error)
     }
 }
 
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ClientError::IoError(err) => write!(f, "{}", err),
-            ClientError::HttpError(err) => write!(f, "{}", err),
-            ClientError::EnvError(err) => write!(f, "{}", err),
-            ClientError::JsonError(err) => write!(f, "{}", err),
-            ClientError::NotFound => write!(f, "not found"),
-            ClientError::DiffError(err) => write!(f, "{:#?}", err),
-            ClientError::PatchError => write!(f, "patch error"),
-            ClientError::HttpClientError(err) => write!(f,"{}",err),
-            ClientError::K8ConfigError(err) => write!(f,"{}",err)
+            Self::IoError(err) => write!(f, "{}", err),
+            Self::HttpError(err) => write!(f, "{}", err),
+            Self::EnvError(err) => write!(f, "{}", err),
+            Self::JsonError(err) => write!(f, "{}", err),
+            Self::NotFound => write!(f, "not found"),
+            Self::DiffError(err) => write!(f, "{:#?}", err),
+            Self::PatchError => write!(f, "patch error"),
+            Self::HttpClientError(err) => write!(f,"{}",err),
+            Self::K8ConfigError(err) => write!(f,"{}",err)
         }
     }
 }

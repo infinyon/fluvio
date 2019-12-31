@@ -13,16 +13,15 @@ use futures::channel::mpsc::Receiver;
 use futures::channel::mpsc::Sender;
 use futures::channel::mpsc::channel;
 
-
 use log::error;
 use log::info;
 use log::trace;
 use log::warn;
 use async_trait::async_trait;
 
-use future_aio::net::AsyncTcpListener;
-use future_aio::net::AsyncTcpStream;
-use future_helper::spawn;
+use flv_future_aio::net::AsyncTcpListener;
+use flv_future_aio::net::AsyncTcpStream;
+use flv_future_core::spawn;
 use kf_protocol::api::KfRequestMessage;
 use kf_protocol::Decoder as KfDecoder;
 use kf_socket::KfSocket;
@@ -38,8 +37,11 @@ pub trait KfService {
     type Context;
 
     /// respond to request
-    async fn respond(self: Arc<Self>, context: Self::Context,socket: KfSocket) -> Result<(),KfSocketError> ;
-
+    async fn respond(
+        self: Arc<Self>,
+        context: Self::Context,
+        socket: KfSocket,
+    ) -> Result<(), KfSocketError>;
 }
 
 /// Transform Service into Futures 01
@@ -48,29 +50,23 @@ pub struct KfApiServer<R, A, C, S> {
     api: PhantomData<A>,
     context: C,
     service: Arc<S>,
-    addr: SocketAddr
+    addr: SocketAddr,
 }
 
 impl<R, A, C, S> KfApiServer<R, A, C, S>
 where
     C: Clone,
 {
-    pub fn new(addr: SocketAddr, context: C,service: S) -> Self {
-
+    pub fn new(addr: SocketAddr, context: C, service: S) -> Self {
         KfApiServer {
             req: PhantomData,
             api: PhantomData,
             service: Arc::new(service),
             context,
-            addr
+            addr,
         }
     }
-
 }
-
-
-
-
 
 impl<R, A, C, S> KfApiServer<R, A, C, S>
 where
@@ -79,26 +75,20 @@ where
     A: Send + KfDecoder + Debug + 'static,
     S: KfService<Request = R, Context = C> + Send + 'static + Sync,
 {
-
     pub fn run(self) -> Sender<bool> {
-
-        let (sender ,receiver) = channel::<bool>(1);
+        let (sender, receiver) = channel::<bool>(1);
 
         spawn(self.run_shutdown(receiver));
 
         sender
     }
 
-    
-    pub async fn run_shutdown(self,shutdown_signal: Receiver<bool>) {
-
+    pub async fn run_shutdown(self, shutdown_signal: Receiver<bool>) {
         match AsyncTcpListener::bind(&self.addr).await {
             Ok(listener) => {
-
                 info!("starting event loop for: {}", &self.addr);
-                self.event_loop(listener,shutdown_signal).await;
-
-            },
+                self.event_loop(listener, shutdown_signal).await;
+            }
             Err(err) => {
                 print_cli_err!(err);
                 process::exit(0x0100);
@@ -106,10 +96,7 @@ where
         }
     }
 
-
-
-    async fn event_loop(self,listener: AsyncTcpListener,mut shutdown_signal: Receiver<bool>) {
-        
+    async fn event_loop(self, listener: AsyncTcpListener, mut shutdown_signal: Receiver<bool>) {
         let addr = self.addr;
 
         let mut incoming = listener.incoming();
@@ -119,14 +106,12 @@ where
         let mut done = false;
 
         while !done {
-
             trace!("waiting for client connection...");
 
             select! {
                 incoming = incoming.next().fuse() => {
                      self.server_incoming(incoming)
                 },
-                
                 shutdown = shutdown_signal.next()  => {
                     trace!("shutdown signal received");
                     if let Some(flag) = shutdown {
@@ -135,32 +120,27 @@ where
                     } else {
                         trace!("no shutdown value, ignoring");
                     }
-                    
                 }
-                
-            }            
+
+            }
         }
 
         info!("server terminating");
     }
 
-
-    fn server_incoming(&self, incoming: Option<Result<AsyncTcpStream,IoError>>) {
-
+    fn server_incoming(&self, incoming: Option<Result<AsyncTcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
                 Ok(stream) => {
-
                     let context = self.context.clone();
                     let service = self.service.clone();
 
                     let ft = async move {
-
-                        trace!("incoming connection {:#?}",stream);
+                        trace!("incoming connection {:#?}", stream);
                         let socket: KfSocket = stream.into();
 
-                        if let Err(err) = service.respond(context.clone(),socket).await {
-                               error!("error handling stream: {}", err);
+                        if let Err(err) = service.respond(context.clone(), socket).await {
+                            error!("error handling stream: {}", err);
                         }
                     };
 
@@ -171,11 +151,9 @@ where
                 }
             }
         } else {
-             trace!("no stream value, ignoring");
+            trace!("no stream value, ignoring");
         }
-
     }
-    
 }
 
 #[cfg(test)]
@@ -193,8 +171,8 @@ mod test {
     use log::debug;
     use log::trace;
 
-    use future_helper::sleep;
-    use future_helper::test_async;
+    use flv_future_core::sleep;
+    use flv_future_core::test_async;
 
     use kf_protocol::api::RequestMessage;
     use kf_socket::KfSocket;
@@ -214,20 +192,21 @@ mod test {
     ) -> KfApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> {
         let ctx = Arc::new(TestContext::new());
         let server: KfApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> =
-            KfApiServer::new(addr, ctx,TestService::new());
+            KfApiServer::new(addr, ctx, TestService::new());
 
         server
     }
 
-
     async fn create_client(addr: SocketAddr) -> Result<KfSocket, KfSocketError> {
-     
         debug!("client wait for 1 second for 2nd server to come up");
         sleep(Duration::from_millis(100)).await;
         KfSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: SocketAddr,mut shutdown: Sender<bool>) -> Result<(), KfSocketError> {
+    async fn test_client(
+        addr: SocketAddr,
+        mut shutdown: Sender<bool>,
+    ) -> Result<(), KfSocketError> {
         let mut socket = create_client(addr).await?;
 
         let request = EchoRequest::new("hello".to_owned());
@@ -243,7 +222,7 @@ mod test {
         trace!("received 2nd reply from server: {:#?}", reply2);
         assert_eq!(reply2.response.msg, "hello2");
 
-        shutdown.send(true).await.expect("shutdown should succeed");     // shutdown server
+        shutdown.send(true).await.expect("shutdown should succeed"); // shutdown server
         Ok(())
     }
 
@@ -253,15 +232,13 @@ mod test {
         // care about creating tcp stream
 
         let socket_addr = "127.0.0.1:30001".parse::<SocketAddr>().expect("parse");
-     
-        let (sender,receiver) = channel::<bool>(1);
 
+        let (sender, receiver) = channel::<bool>(1);
         let server = create_server(socket_addr.clone());
-        let client_ft1 = test_client(socket_addr.clone(),sender);
+        let client_ft1 = test_client(socket_addr.clone(), sender);
 
-        let _r = join(client_ft1,server.run_shutdown(receiver)).await;
+        let _r = join(client_ft1, server.run_shutdown(receiver)).await;
 
         Ok(())
     }
-
 }

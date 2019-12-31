@@ -30,7 +30,7 @@ pub(crate) use crate::segment::SegmentSlice;
 
 use kf_protocol::api::ErrorCode;
 use kf_protocol::api::Offset;
-use future_aio::fs::AsyncFileSlice;
+use flv_future_aio::fs::AsyncFileSlice;
 use kf_socket::FilePartitionResponse;
 
 pub trait Captures<'a> {}

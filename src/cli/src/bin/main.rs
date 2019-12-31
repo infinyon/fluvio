@@ -6,7 +6,12 @@ use types::print_cli_err;
 fn main() {
     utils::init_logger();
 
-    if let Err(err) = run_cli() {
-        print_cli_err!(err);
+    match run_cli() {
+        Ok(output) => {
+            if output.len() > 0 {
+                println!("{}",output)
+            }
+        },
+        Err(err) =>  print_cli_err!(err)
     }
 }

@@ -2,9 +2,14 @@
 //! # Root CLI
 //!
 //! CLI configurations at the top of the tree
-//!
+
+use std::sync::Arc;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
+
+use flv_future_core::run_block_on;
+
+use crate::CliError;
 
 use super::consume::process_consume_log;
 use super::produce::process_produce_record;
@@ -22,7 +27,6 @@ use super::spu::all::SpuOpt;
 use super::spu::custom::CustomSpuOpt;
 use super::spu::group::SpuGroupOpt;
 
-use super::CliError;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -107,14 +111,50 @@ enum Root {
     Advanced(AdvancedOpt),
 }
 
-pub fn run_cli() -> Result<(), CliError> {
-    match Root::from_args() {
-        Root::Consume(consume) => process_consume_log(consume),
-        Root::Produce(produce) => process_produce_record(produce),
-        Root::SPU(spu) => process_spu(spu),
-        Root::SPUGroup(spu_group) => process_spu_group(spu_group),
-        Root::CustomSPU(custom_spu) => process_custom_spu(custom_spu),
-        Root::Topic(topic) => process_topic(topic),
-        Root::Advanced(advanced) => process_advanced(advanced),
+pub fn run_cli() -> Result<String, CliError> {
+
+    run_block_on(async move{
+
+        let terminal = Arc::new(PrintTerminal::new());
+        
+        match Root::from_args() {
+            Root::Consume(consume) => process_consume_log(terminal.clone(),consume).await,
+            Root::Produce(produce) => process_produce_record(terminal.clone(),produce).await,
+            Root::SPU(spu) => process_spu(terminal.clone(),spu).await,
+            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(),spu_group).await,
+            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(),custom_spu).await,
+            Root::Topic(topic) => process_topic(terminal.clone(),topic).await,
+            Root::Advanced(advanced) => process_advanced(terminal.clone(),advanced).await,
+        }
+    })
+}
+
+
+use crate::Terminal;
+
+
+struct PrintTerminal {
+}
+
+
+impl PrintTerminal {
+    fn new() -> Self {
+        Self{}
     }
 }
+
+
+impl Terminal for PrintTerminal {
+
+    fn print(&self,msg: &str) {
+        print!("{}",msg);
+    }
+
+    fn println(&self,msg: &str){
+        println!("{}",msg);
+
+    }
+
+}
+
+

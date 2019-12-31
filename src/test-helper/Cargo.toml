@@ -6,14 +6,14 @@ edition = "2018"
 
 [dependencies]
 log = "0.4.8"
-bytes = "0.4.12"
+bytes = "0.5.3"
 futures = { version = "0.3.1" }
-future-helper = { path = "../future-helper" }
+flv-future-core = { path = "../future-helper" }
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../api/internal-api"}
 types = { path= "../types"}
 utils = { path= "../utils"}
-metadata = { path = "../metadata" }
-future-aio = { path = "../future-aio"}
+flv-metadata = { path = "../metadata" }
+flv-future-aio = { path = "../future-aio"}

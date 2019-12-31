@@ -19,16 +19,26 @@ pub struct ServerAddress {
     pub port: u16,
 }
 
+impl ServerAddress {
+
+    pub fn new<S>(host: S,port: u16) -> Self where S: Into<String>{
+        Self {
+            host: host.into(),
+            port
+        }
+    }
+}
+
 impl fmt::Display for ServerAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.host, self.port)
     }
 }
 
-impl TryFrom<&String> for ServerAddress {
+impl TryFrom<String> for ServerAddress {
     type Error = IoError;
 
-    fn try_from(host_port: &String) -> Result<Self, Self::Error> {
+    fn try_from(host_port: String) -> Result<Self, Self::Error> {
         let v: Vec<&str> = host_port.split(':').collect();
 
         if v.len() != 2 {

@@ -1,15 +1,13 @@
-
 use std::io::Error as IoError;
 use std::fmt;
 
 use kf_protocol::api::DefaultBatch;
-use future_aio::fs::BoundedFileSinkError;
-use future_aio::SendFileError;
+use flv_future_aio::fs::BoundedFileSinkError;
+use flv_future_aio::SendFileError;
 use kf_socket::KfSocketError;
 
 use crate::util::OffsetError;
 use crate::validator::LogValidationError;
-
 
 #[derive(Debug)]
 pub enum StorageError {
@@ -18,23 +16,21 @@ pub enum StorageError {
     OffsetError(OffsetError),
     LogValidationError(LogValidationError),
     SendFileError(SendFileError),
-    SocketError(KfSocketError)
+    SocketError(KfSocketError),
 }
-
 
 impl fmt::Display for StorageError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::IoError(err) => write!(f, "{}",err),
+            Self::IoError(err) => write!(f, "{}", err),
             Self::NoRoom(batch) => write!(f, "No room {:#?}", batch),
-            Self::OffsetError(err) => write!(f,"{}",err),
-            Self::LogValidationError(err) => write!(f,"{}",err),
-            Self::SocketError(err) => write!(f,"{}",err),
-            Self::SendFileError(err) => write!(f,"{}",err),
+            Self::OffsetError(err) => write!(f, "{}", err),
+            Self::LogValidationError(err) => write!(f, "{}", err),
+            Self::SocketError(err) => write!(f, "{}", err),
+            Self::SendFileError(err) => write!(f, "{}", err),
         }
     }
 }
-
 
 impl From<IoError> for StorageError {
     fn from(error: IoError) -> Self {

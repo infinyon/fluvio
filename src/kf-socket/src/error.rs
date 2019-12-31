@@ -1,13 +1,11 @@
-
 use std::fmt;
 use std::io::Error as IoError;
-use future_aio::SendFileError;
-
+use flv_future_aio::SendFileError;
 
 #[derive(Debug)]
 pub enum KfSocketError {
     IoError(IoError),
-    SendFileError(SendFileError)
+    SendFileError(SendFileError),
 }
 
 impl From<IoError> for KfSocketError {
@@ -26,7 +24,7 @@ impl fmt::Display for KfSocketError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             KfSocketError::IoError(err) => write!(f, "{}", err),
-            KfSocketError::SendFileError(err) => write!(f,"{:#?}",err)
+            KfSocketError::SendFileError(err) => write!(f, "{:#?}", err),
         }
     }
 }

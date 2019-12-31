@@ -152,7 +152,7 @@ mod tests {
     use std::io::Error as IoError;
     use std::io::Read;
 
-    use future_helper::test_async;
+    use flv_future_core::test_async;
 
     use super::MemoryMappedMutFile;
     use utils::fixture::ensure_clean_file;

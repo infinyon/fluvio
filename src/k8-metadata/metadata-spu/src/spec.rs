@@ -13,9 +13,7 @@ use serde::Serialize;
 use super::SpuStatus;
 
 impl Spec for SpuSpec {
-
     type Status = SpuStatus;
-    
     fn metadata() -> &'static Crd {
         &SPU_API
     }
@@ -42,7 +40,7 @@ pub enum SpuType {
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
-#[serde(rename_all = "camelCase",default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct IngressPort {
     pub port: u16,
     pub ingress: Vec<IngressAddr>,
@@ -52,7 +50,7 @@ pub struct IngressPort {
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct IngressAddr {
     pub hostname: Option<String>,
-    pub ip: Option<String>
+    pub ip: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]

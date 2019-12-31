@@ -3,23 +3,24 @@
 //!
 //! CLI tree and processing to list Custom SPUs
 //!
-use std::net::SocketAddr;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-
 use structopt::StructOpt;
 
-use crate::error::CliError;
-use crate::common::OutputType;
-use crate::profile::{ProfileConfig, TargetServer};
 
-use crate::spu::helpers::query_spu_list_metadata;
+use crate::error::CliError;
+use crate::profile::ScConfig;
+use crate::Terminal;
+use crate::OutputType;
+
 use crate::spu::helpers::format_spu_response_output;
 use crate::spu::helpers::flv_response_to_spu_metadata;
 
-// -----------------------------------
-// CLI Options
-// -----------------------------------
+
+
+#[derive(Debug)]
+pub struct ListCustomSpusConfig {
+    pub output: OutputType,
+}
+
 
 #[derive(Debug, StructOpt)]
 pub struct ListCustomSpusOpt {
@@ -41,56 +42,39 @@ pub struct ListCustomSpusOpt {
     output: Option<OutputType>,
 }
 
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
+impl ListCustomSpusOpt {
 
-#[derive(Debug)]
-pub struct ListCustomSpusConfig {
-    pub output: OutputType,
+        /// Validate cli options and generate config
+    fn validate(self) -> Result<(ScConfig, ListCustomSpusConfig), CliError> {
+
+        let target_server = ScConfig::new(self.sc, self.profile)?;
+
+        // transfer config parameters
+        let list_custom_spu_cfg = ListCustomSpusConfig {
+            output: self.output.unwrap_or(OutputType::default()),
+        };
+
+        // return server separately from topic result
+        Ok((target_server, list_custom_spu_cfg))
+    }
+
 }
 
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
 
 /// Process list spus cli request
-pub fn process_list_custom_spus(opt: ListCustomSpusOpt) -> Result<(), CliError> {
-    let (target_server, list_custom_spu_cfg) = parse_opt(opt)?;
+pub async fn process_list_custom_spus<O>(out: std::sync::Arc<O>,opt: ListCustomSpusOpt) -> Result<(), CliError> 
+    where O: Terminal
+{
 
-    match target_server {
-        TargetServer::Sc(server_addr) => {
-            fetch_and_list_custom_spus(server_addr, &list_custom_spu_cfg)
-        }
-        _ => Err(CliError::IoError(IoError::new(
-            ErrorKind::Other,
-            "Invalid SC server configuration",
-        ))),
-    }
-}
+    let (target_server, list_custom_spu_cfg) = opt.validate()?;
 
-/// Validate cli options and generate config
-fn parse_opt(opt: ListCustomSpusOpt) -> Result<(TargetServer, ListCustomSpusConfig), CliError> {
-    let profile_config = ProfileConfig::new(&opt.sc, &None, &opt.profile)?;
-    let target_server = profile_config.target_server()?;
+    let mut sc = target_server.connect().await?;
 
-    // transfer config parameters
-    let list_custom_spu_cfg = ListCustomSpusConfig {
-        output: opt.output.unwrap_or(OutputType::default()),
-    };
+    let flv_spus = sc.list_spu(true).await?;
 
-    // return server separately from topic result
-    Ok((target_server, list_custom_spu_cfg))
-}
-
-// Fetch custom SPUs and output in desired format
-fn fetch_and_list_custom_spus(
-    server_addr: SocketAddr,
-    list_custom_spu_cfg: &ListCustomSpusConfig,
-) -> Result<(), CliError> {
-    let flv_spus = query_spu_list_metadata(server_addr, true)?;
     let sc_spus = flv_response_to_spu_metadata(flv_spus);
 
     // format and dump to screen
-    format_spu_response_output(sc_spus, &list_custom_spu_cfg.output)
+    format_spu_response_output(out,sc_spus, list_custom_spu_cfg.output)?;
+    Ok(())
 }

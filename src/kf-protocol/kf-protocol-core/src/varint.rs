@@ -19,7 +19,7 @@ pub fn varint_decode<T>(buf: &mut T) -> Result<(i64,usize),Error> where T:Buf {
 
     loop {
         if buf.remaining() == 0 {
-            return Err(Error::new(ErrorKind::UnexpectedEof,"no more bytes left"));
+            return Err(Error::new(ErrorKind::UnexpectedEof,"varint decoding no more bytes left"));
         }
 
         let b = buf.get_u8();
@@ -45,15 +45,15 @@ pub fn variant_encode<T>(buf: &mut T,num: i64) -> Result<(),Error> where T:BufMu
     while (v & 0xffffff80) != 0  {
         let b: u8 = (( v & 0x7f) | 0x80) as u8;
         if buf.remaining_mut() == 0 {
-             return Err(Error::new(ErrorKind::UnexpectedEof,"no more bytes left"));
+             return Err(Error::new(ErrorKind::UnexpectedEof,"varint encoding no more bytes left"));
         }
         buf.put_u8(b);
         v >>= 7;
     }
     if buf.remaining_mut() == 0 {
-        return Err(Error::new(ErrorKind::UnexpectedEof,"no more bytes left"));
+        return Err(Error::new(ErrorKind::UnexpectedEof,"varint encoding no more bytes left"));
     }
-    buf.put(v as u8);
+    buf.put_u8(v as u8);
     Ok(())
 }
 

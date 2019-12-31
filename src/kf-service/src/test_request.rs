@@ -2,8 +2,6 @@ use std::sync::Arc;
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
-use futures::future::BoxFuture;
-use futures::future::FutureExt;
 use async_trait::async_trait;
 
 use kf_protocol::api::KfRequestMessage;
@@ -151,7 +149,7 @@ impl KfService for TestService {
     type Request = TestApiRequest;
    
 
-    async fn respond(self: Arc<Self>, context: Self::Context,socket: KfSocket) -> Result<(),KfSocketError>
+    async fn respond(self: Arc<Self>, _context: Self::Context,socket: KfSocket) -> Result<(),KfSocketError>
     {
        
         let (mut sink,mut stream) = socket.split();

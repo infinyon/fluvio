@@ -104,6 +104,7 @@ where
         T: BufMut,
     {
         let len = self.write_size(version) as i32;
+        debug!("encoding kf response: {} version: {}, len: {}", std::any::type_name::<P>(),version, len);
         len.encode(out,version)?;
         self.correlation_id.encode(out,version)?;
         self.response.encode(out,version)?;

@@ -1,4 +1,5 @@
 mod kf_code_gen;
+mod kf_handler;
 
 pub mod fetch_handler;
 pub mod produce_handler;

@@ -4,7 +4,6 @@ use std::hash::Hash;
 use std::net::ToSocketAddrs;
 use std::sync::RwLock;
 
-
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
 use log::trace;
@@ -36,17 +35,16 @@ where
     }
 
     pub fn insert_socket(&self, id: T, socket: KfSocket) {
-        trace!("inserting connection: {:#?}, returning",id);
+        trace!("inserting connection: {:#?}, returning", id);
         let mut ids = self.ids.write().expect("id lock must always lock");
         ids.insert(id.clone(), true);
-        self.clients.insert(id.clone(),socket);
+        self.clients.insert(id.clone(), socket);
     }
 
     /// get valid client.  return only client which is not stale
-    pub fn get_socket(&self, id: &T) -> Option<WriteGuard<'_,T,KfSocket>>
-    {
+    pub fn get_socket(&self, id: &T) -> Option<WriteGuard<'_, T, KfSocket>> {
         if let Some(client) = self.clients.get_mut(id) {
-            trace!("got existing connection: {:#?}, returning",id);
+            trace!("got existing connection: {:#?}, returning", id);
             if client.is_stale() {
                 trace!("connection is stale, do not return");
                 None
@@ -54,7 +52,7 @@ where
                 Some(client)
             }
         } else {
-            trace!("no existing connection: {:#?}, returning",id);
+            trace!("no existing connection: {:#?}, returning", id);
             None
         }
     }
@@ -68,7 +66,7 @@ where
     /// make connection where id can be used as address
     pub async fn make_connection(&self, id: T) -> Result<(), KfSocketError> {
         let addr = id.clone();
-        self.make_connection_with_addr(id,&addr).await
+        self.make_connection_with_addr(id, &addr).await
     }
 }
 
@@ -78,33 +76,40 @@ where
     KfSocket: Sync,
 {
     /// make connection with addres as separate parameter
-    pub async fn make_connection_with_addr<'a,A>(&'a self, id: T,addr: &'a A) -> Result<(), KfSocketError> 
-        where A: ToSocketAddrs + Debug 
+    pub async fn make_connection_with_addr<'a, A>(
+        &'a self,
+        id: T,
+        addr: &'a A,
+    ) -> Result<(), KfSocketError>
+    where
+        A: ToSocketAddrs + Debug,
     {
-        trace!("creating new connection: {:#?}",addr);
+        trace!("creating new connection: {:#?}", addr);
         let mut socket_address = addr.to_socket_addrs()?;
-        let socket_addr  =socket_address.next().unwrap();
+        let socket_addr = socket_address.next().unwrap();
         let client = KfSocket::connect(&socket_addr).await?;
         trace!("got connection to server: {:#?}", &id);
-        self.insert_socket(id.clone(),client);
-        trace!("finish connection to server: {:#?}",&id);
+        self.insert_socket(id.clone(), client);
+        trace!("finish connection to server: {:#?}", &id);
         Ok(())
     }
 
     /// get existing socket connection or make new one
-    pub async fn get_or_make<'a,A>(&'a self, id: T,addr: &'a A) -> Result<Option<WriteGuard<'a,T,KfSocket>>, KfSocketError> 
-         where A: ToSocketAddrs + Debug 
+    pub async fn get_or_make<'a, A>(
+        &'a self,
+        id: T,
+        addr: &'a A,
+    ) -> Result<Option<WriteGuard<'a, T, KfSocket>>, KfSocketError>
+    where
+        A: ToSocketAddrs + Debug,
     {
-
         if let Some(socket) = self.get_socket(&id) {
             return Ok(Some(socket));
         }
 
-        self.make_connection_with_addr(id.clone(),addr).await?;
+        self.make_connection_with_addr(id.clone(), addr).await?;
 
         Ok(self.get_socket(&id))
-
-
     }
 }
 
@@ -119,9 +124,9 @@ pub(crate) mod test {
     use log::debug;
     use log::error;
 
-    use future_aio::net::AsyncTcpListener;
-    use future_helper::sleep;
-    use future_helper::test_async;
+    use flv_future_aio::net::AsyncTcpListener;
+    use flv_future_core::sleep;
+    use flv_future_core::test_async;
 
     use super::KfSocket;
     use super::KfSocketError;
@@ -151,11 +156,9 @@ pub(crate) mod test {
             let stream = stream?;
             let mut socket: KfSocket = stream.into();
 
-            let msg: RequestMessage<EchoRequest> = RequestMessage::new_request(
-                EchoRequest {
-                    msg: "Hello".to_owned(),
-                }
-            );
+            let msg: RequestMessage<EchoRequest> = RequestMessage::new_request(EchoRequest {
+                msg: "Hello".to_owned(),
+            });
 
             socket.get_mut_sink().send_request(&msg).await?;
             debug!("server: {}-{} finish send echo", socket_addr, id);
@@ -169,7 +172,6 @@ pub(crate) mod test {
             "server: {}-{} sleeping for 100ms  to give client chances",
             socket_addr, id
         );
-        
         debug!("server: {}-{} server loop ended", socket_addr, id);
         Ok(())
     }
@@ -202,8 +204,8 @@ pub(crate) mod test {
         client_pool.make_connection(addr.clone()).await?;
 
         if let Some(mut client_socket) = client_pool.get_socket(&addr) {
-            debug!("client: {}-{} got socket from server",&addr,id);
-        // create new scope, so we limit mut borrow
+            debug!("client: {}-{} got socket from server", &addr, id);
+            // create new scope, so we limit mut borrow
             {
                 let mut req_stream = client_socket.get_mut_stream().request_stream();
                 debug!(
@@ -213,8 +215,6 @@ pub(crate) mod test {
                 let next = req_stream.next().await;
                 if let Some(result) = next {
                     let req_msg: RequestMessage<EchoRequest> = result?;
-                   
-                    
                     debug!(
                         "client: {}-{} message {} from server",
                         &addr, id, req_msg.request.msg
@@ -229,9 +229,6 @@ pub(crate) mod test {
                     let next2 = req_stream.next().await;
                     assert!(next2.is_none(), "next2 should be none");
                     debug!("client: {}-{} 2nd wait finished", &addr, id);
-                    
-                       
-                    
                 }
             }
 
@@ -244,15 +241,18 @@ pub(crate) mod test {
     }
 
     async fn test_client(client_pool: &TestPooling, addr: String) -> Result<(), KfSocketError> {
-        client_check(client_pool, addr.clone(), 0).await.expect("should finished");
+        client_check(client_pool, addr.clone(), 0)
+            .await
+            .expect("should finished");
         debug!("client wait for 1 second for 2nd server to come up");
         sleep(Duration::from_millis(1000)).await;
-        client_check(client_pool, addr.clone(), 1).await.expect("should be finished");
+        client_check(client_pool, addr.clone(), 1)
+            .await
+            .expect("should be finished");
         Ok(())
     }
-    
     #[test_async]
-    async fn test_pool() -> Result<(),KfSocketError> {
+    async fn test_pool() -> Result<(), KfSocketError> {
         let count = 1;
 
         // create fake server, anything will do since we only
@@ -267,9 +267,7 @@ pub(crate) mod test {
         let client_ft1 = test_client(&client_pool, addr1);
         let client_ft2 = test_client(&client_pool, addr2);
 
-        let _fr = join(join(client_ft1,client_ft2),join(server_ft1,server_ft2)).await;
-       
+        let _fr = join(join(client_ft1, client_ft2), join(server_ft1, server_ft2)).await;
         Ok(())
     }
-
 }

@@ -11,9 +11,9 @@ use log::warn;
 use log::trace;
 use log::error;
 
-use metadata::partition::ReplicaKey;
+use flv_metadata::partition::ReplicaKey;
 use kf_protocol::api::DefaultRecords;
-use storage::FileReplica;
+use flv_storage::FileReplica;
 use kf_socket::FilePartitionResponse;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
@@ -32,20 +32,19 @@ pub type SharedReplicaLeadersState<S> = Arc<ReplicaLeadersState<S>>;
 #[derive(Debug)]
 pub struct ReplicaLeadersState<S> {
     replicas: CHashMap<ReplicaKey, LeaderReplicaState<S>>,
-    mailboxes: SimpleConcurrentBTreeMap<ReplicaKey, Sender<LeaderReplicaControllerCommand>>
+    mailboxes: SimpleConcurrentBTreeMap<ReplicaKey, Sender<LeaderReplicaControllerCommand>>,
 }
 
 impl<S> Default for ReplicaLeadersState<S> {
     fn default() -> Self {
         ReplicaLeadersState {
             replicas: CHashMap::default(),
-            mailboxes: SimpleConcurrentBTreeMap::new()
+            mailboxes: SimpleConcurrentBTreeMap::new(),
         }
     }
 }
 
 impl<S> ReplicaLeadersState<S> {
-
     pub fn new_shared() -> Arc<ReplicaLeadersState<S>> {
         Arc::new(Self::default())
     }
@@ -68,7 +67,6 @@ impl<S> ReplicaLeadersState<S> {
         self.replicas.get_mut(key)
     }
 
-  
     pub fn insert_replica(
         &self,
         key: ReplicaKey,
@@ -85,25 +83,20 @@ impl<S> ReplicaLeadersState<S> {
 
     /// remove leader replica
     /// we also remove mailbox and close it's channel which will terminated the controller
-    pub fn remove_replica(
-        &self,
-        key: &ReplicaKey
-    ) -> Option<LeaderReplicaState<S>> {
+    pub fn remove_replica(&self, key: &ReplicaKey) -> Option<LeaderReplicaState<S>> {
         if let Some(replica) = self.replicas.remove(key) {
             if let Some(mut mailbox) = self.mailboxes.write().remove(key) {
-                debug!("closing old leader mailbox: {}",key);
+                debug!("closing old leader mailbox: {}", key);
                 mailbox.close_channel();
             } else {
-                error!("no mailbox found for removing: {}",key);
+                error!("no mailbox found for removing: {}", key);
             }
             Some(replica)
         } else {
-            error!("leader replica: {} is not founded",key);
+            error!("leader replica: {} is not founded", key);
             None
         }
     }
-
-    
 
     pub async fn send_message(
         &self,
@@ -124,7 +117,6 @@ impl<S> ReplicaLeadersState<S> {
         }
     }
 
-
     #[allow(dead_code)]
     pub fn mailbox(&self, key: &ReplicaKey) -> Option<Sender<LeaderReplicaControllerCommand>> {
         self.mailboxes
@@ -134,9 +126,7 @@ impl<S> ReplicaLeadersState<S> {
     }
 }
 
-
 impl ReplicaLeadersState<FileReplica> {
-
     /// write records to response
     ///
     /// # Arguments
@@ -151,7 +141,7 @@ impl ReplicaLeadersState<FileReplica> {
         rep_id: &ReplicaKey,
         offset: Offset,
         isolation: Isolation,
-        response: &mut FilePartitionResponse
+        response: &mut FilePartitionResponse,
     ) {
         if let Some(leader_replica) = self.get_replica(rep_id) {
             leader_replica
@@ -163,7 +153,6 @@ impl ReplicaLeadersState<FileReplica> {
         }
     }
 
-
     /// write new record anod notify the leader replica controller
     /// TODO: may replica should be moved it's own map
     pub async fn send_records(
@@ -172,17 +161,13 @@ impl ReplicaLeadersState<FileReplica> {
         records: DefaultRecords,
         update_highwatermark: bool,
     ) -> Result<bool, InternalServerError> {
-        
         if let Some(mut leader_replica) = self.get_mut_replica(rep_id) {
             leader_replica
                 .send_records(records, update_highwatermark)
                 .await?;
-            self.send_message(
-                rep_id,
-                LeaderReplicaControllerCommand::EndOffsetUpdated,
-            )
-            .await
-            .map_err(|err| err.into())
+            self.send_message(rep_id, LeaderReplicaControllerCommand::EndOffsetUpdated)
+                .await
+                .map_err(|err| err.into())
         } else {
             warn!("no replica is found: {}", rep_id);
             Ok(false)
@@ -208,7 +193,6 @@ impl <'a,S>From<ReadGuard<'a,ReplicaKey, LeaderReplicaState<S>>> for ReadableLea
 }
 */
 
-
 #[cfg(test)]
 mod test_channel {
 
@@ -221,8 +205,8 @@ mod test_channel {
     use futures::SinkExt;
     use futures::StreamExt;
 
-    use future_helper::sleep;
-    use future_helper::test_async;
+    use flv_future_core::sleep;
+    use flv_future_core::test_async;
 
     async fn receiver_tst(mut receiver: Receiver<u16>) {
         // sleep to let sender send messages
@@ -256,5 +240,4 @@ mod test_channel {
 
         Ok(())
     }
-
 }

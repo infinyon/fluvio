@@ -2,7 +2,7 @@
 //! # Fluvio SC - output processing
 //!
 //! Format SPU Group response based on output type
-//!
+
 use prettytable::Row;
 use prettytable::row;
 use prettytable::Cell;
@@ -16,8 +16,10 @@ use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::spg::SpuGroupStatus;
 
 use crate::error::CliError;
-use crate::common::OutputType;
-use crate::common::{EncoderOutputHandler, TableOutputHandler};
+use crate::output::OutputType;
+use crate::TableOutputHandler;
+use crate::Terminal;
+use crate::t_println;
 
 
 
@@ -58,8 +60,7 @@ impl SpuGroupRow  {
 
 
 
-#[derive(Debug)]
-struct ListSpuGroups(Vec<SpuGroupRow>);
+type ListSpuGroups = Vec<SpuGroupRow>;
 
 
 
@@ -68,17 +69,17 @@ struct ListSpuGroups(Vec<SpuGroupRow>);
 // -----------------------------------
 
 /// Format SPU Group based on output type
-pub fn spu_group_response_to_output(
+pub fn spu_group_response_to_output<O: Terminal>(
+    out: std::sync::Arc<O>,
     spu_groups: FlvFetchSpuGroupsResponse,
-    output_type: &OutputType,
+    output_type: OutputType,
 ) -> Result<(), CliError> {
 
     let groups = spu_groups.spu_groups;
 
     // TODO: display error output
 
-    let list_spu_groups = ListSpuGroups(
-        groups
+    let list_spu_groups: Vec<SpuGroupRow> = groups
             .into_iter()
             .map(|g| {
                let  (name,spec,status) = g.into();
@@ -87,22 +88,16 @@ pub fn spu_group_response_to_output(
                     spec,
                     status
                 }
-            }).collect()
-    );
+            }).collect();
 
     debug!("groups: {:#?}",list_spu_groups);
 
-    // expecting array with one or more elements
-    if list_spu_groups.0.len() > 0 {
-        if output_type.is_table() {
-            list_spu_groups.display_table(false);
-        } else {
-            list_spu_groups.display_encoding(output_type)?;
-        }
+    if list_spu_groups.len() > 0 {
+        out.render_list(&list_spu_groups,output_type)
     } else {
-        println!("No spu groups found");
+        t_println!(out,"no groups");
+        Ok(())
     }
-    Ok(())
 }
 
 
@@ -110,6 +105,8 @@ pub fn spu_group_response_to_output(
 // Output Handlers
 // -----------------------------------
 impl TableOutputHandler for ListSpuGroups{
+
+
     /// table header implementation
     fn header(&self) -> Row {
         row![
@@ -124,14 +121,13 @@ impl TableOutputHandler for ListSpuGroups{
 
     /// return errors in string format
     fn errors(&self) -> Vec<String> {
-        self.0.iter().map(|_g| "".to_owned()).collect()
+        self.iter().map(|_g| "".to_owned()).collect()
     }
 
     /// table content implementation
     fn content(&self) -> Vec<Row> {
 
-        self.0
-            .iter()
+        self.iter()
             .map( |r| {
                 Row::new(
                     vec![
@@ -149,14 +145,3 @@ impl TableOutputHandler for ListSpuGroups{
     }
 }
 
-
-
-impl EncoderOutputHandler for ListSpuGroups {
-    /// serializable data type
-    type DataType = Vec<SpuGroupRow>;
-
-    /// serializable data to be encoded
-    fn data(&self) -> &Vec<SpuGroupRow> {
-        &self.0
-    }
-}

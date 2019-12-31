@@ -15,7 +15,7 @@ pub use self::spus::SpuLocalStore;
 pub use self::replica::SharedReplicaLocalStore;
 
 use std::sync::Arc;
-use ::storage::FileReplica;
+use ::flv_storage::FileReplica;
 use kf_socket::SinkPool;
 use types::SpuId;
 use crate::config::SpuConfig;

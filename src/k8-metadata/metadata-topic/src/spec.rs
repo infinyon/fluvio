@@ -17,9 +17,7 @@ use super::TopicStatus;
 // -----------------------------------
 
 impl Spec for TopicSpec {
-
     type Status = TopicStatus;
-    
     fn metadata() -> &'static Crd {
         &TOPIC_API
     }
@@ -93,4 +91,3 @@ impl Partition {
         self.partition.replicas.len() as i32
     }
 }
-

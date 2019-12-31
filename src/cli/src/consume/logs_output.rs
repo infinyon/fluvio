@@ -4,63 +4,56 @@
 //! Connects to server and fetches logs
 //!
 
-use std::io::{self, Write};
-
+use log::debug;
 use serde_json;
 use serde_json::Value;
-use types::print_cli_err;
+
 
 use kf_protocol::api::DefaultRecords;
-use kf_protocol::message::fetch::DefaultKfFetchResponse;
 use kf_protocol::message::fetch::FetchablePartitionResponse;
 
 use crate::error::CliError;
-use crate::common::ConsumeOutputType;
 use crate::common::{bytes_to_hex_dump, hex_dump_separator};
+use crate::Terminal;
+use crate::t_println;
+use crate::t_print_cli_err;
 
-/// Consume log configuration parameters
-#[derive(Debug, Clone)]
-pub struct ReponseLogParams {
-    pub output: ConsumeOutputType,
-    pub suppress: bool,
-}
+
+use super::ConsumeLogConfig;
+use super::ConsumeOutputType;
 
 /// Process fetch topic response based on output type
-pub fn process_fetch_topic_reponse(
-    response: &DefaultKfFetchResponse,
-    params: &ReponseLogParams,
-) -> Result<(), CliError> {
-    // validate topic
-    for topic_res in &response.topics {
-        // ensure response topic has partitions
-        if topic_res.partitions.len() == 0 {
-            let err = format!("topic '{}' has no partitions", topic_res.name);
-            print_cli_err!(err);
-            continue;
-        }
+pub async fn process_fetch_topic_response<O>(
+    out: std::sync::Arc<O>,
+    topic: &str,
+    response: FetchablePartitionResponse<DefaultRecords>,
+    config: &ConsumeLogConfig,
+) -> Result<(), CliError> 
+    where O: Terminal
+{
+    
+    let partition_res = vec![response];
 
-        // parse records based on output type
-        let partitions_res = &topic_res.partitions;
-        match params.output {
-            ConsumeOutputType::json => {
-                let records =
-                    generate_json_records(&topic_res.name, partitions_res, params.suppress);
-                print_json_records(&records);
-            }
-            ConsumeOutputType::text => {
-                print_text_records(&topic_res.name, partitions_res, params.suppress);
-            }
-            ConsumeOutputType::binary => {
-                print_binary_records(&topic_res.name, partitions_res);
-            }
-            ConsumeOutputType::dynamic => {
-                print_dynamic_records(&topic_res.name, partitions_res);
-            }
-            ConsumeOutputType::raw => {
-                print_raw_records(&topic_res.name, partitions_res);
-            }
+    match config.output {
+        ConsumeOutputType::json => {
+            let records =
+                generate_json_records(out.clone(),topic, &partition_res, config.suppress_unknown);
+            print_json_records(out,&records);
+        }
+        ConsumeOutputType::text => {
+            print_text_records(out,topic, &partition_res, config.suppress_unknown);
+        }
+        ConsumeOutputType::binary => {
+            print_binary_records(out,topic,&partition_res);
+        }
+        ConsumeOutputType::dynamic => {
+            print_dynamic_records(out,topic,&partition_res);
+        }
+        ConsumeOutputType::raw => {
+            print_raw_records(out,topic,&partition_res);
         }
     }
+    
 
     Ok(())
 }
@@ -70,16 +63,19 @@ pub fn process_fetch_topic_reponse(
 // -----------------------------------
 
 /// parse message and generate log records
-pub fn generate_json_records<'a>(
-    topic_name: &String,
+pub fn generate_json_records<O>(
+    out: std::sync::Arc<O>,
+    topic_name: &str,
     response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
     suppress: bool,
-) -> Vec<Value> {
+) -> Vec<Value> 
+    where O: Terminal
+{
     let mut json_records: Vec<Value> = vec![];
 
     for r_partition in response_partitions {
         if let Some(err) = error_in_header(topic_name, r_partition) {
-            print_cli_err!(err);
+            t_print_cli_err!(out,err);
             continue;
         }
 
@@ -119,8 +115,8 @@ pub fn partition_to_json_records(
 }
 
 /// Print json records to screen
-fn print_json_records(records: &Vec<Value>) {
-    println!("{},", serde_json::to_string_pretty(&records).unwrap());
+fn print_json_records<O>(out:  std::sync::Arc<O>,records: &Vec<Value>) where O: Terminal{
+    t_println!(out,"{},", serde_json::to_string_pretty(&records).unwrap());
 }
 
 // -----------------------------------
@@ -128,14 +124,19 @@ fn print_json_records(records: &Vec<Value>) {
 // -----------------------------------
 
 /// Print records in text format
-pub fn print_text_records(
-    topic_name: &String,
+pub fn print_text_records<O>(
+    out: std::sync::Arc<O>,
+    topic_name: &str,
     response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
     suppress: bool,
-) {
+)
+    where O: Terminal
+{
+    debug!("processing text record: {:#?}",response_partitions);
+
     for r_partition in response_partitions {
         if let Some(err) = error_in_header(topic_name, r_partition) {
-            print_cli_err!(err);
+            t_print_cli_err!(out,err);
             continue;
         }
 
@@ -144,10 +145,10 @@ pub fn print_text_records(
                 if record.get_value().inner_value_ref().is_some() {
                     if record.get_value().is_binary() {
                         if !suppress {
-                            println!("{}", record.get_value().describe());
+                            t_println!(out,"{}", record.get_value().describe());
                         }
                     } else {
-                        println!("{}", record.get_value());
+                        t_println!(out,"{}", record.get_value());
                     }
                 }
             }
@@ -160,15 +161,18 @@ pub fn print_text_records(
 // -----------------------------------
 
 /// parse message and generate partition records
-pub fn print_binary_records(
-    topic_name: &String,
+pub fn print_binary_records<O>(
+    out: std::sync::Arc<O>,
+    topic_name: &str,
     response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
-) {
+)
+    where O: Terminal
+{
     let mut printed = false;
     for r_partition in response_partitions {
         if let Some(err) = error_in_header(topic_name, r_partition) {
-            println!("{}", hex_dump_separator());
-            print_cli_err!(err);
+            t_println!(out,"{}", hex_dump_separator());
+            t_print_cli_err!(out,err);
             printed = true;
             continue;
         }
@@ -176,15 +180,15 @@ pub fn print_binary_records(
         for batch in &r_partition.records.batches {
             for record in &batch.records {
                 if let Some(batch_record) = record.get_value().inner_value_ref() {
-                    println!("{}", hex_dump_separator());
-                    println!("{}", bytes_to_hex_dump(&batch_record));
+                    t_println!(out,"{}", hex_dump_separator());
+                    t_println!(out,"{}", bytes_to_hex_dump(&batch_record));
                     printed = true;
                 }
             }
         }
     }
     if printed {
-        println!("{}", hex_dump_separator());
+        t_println!(out,"{}", hex_dump_separator());
     }
 }
 
@@ -193,13 +197,16 @@ pub fn print_binary_records(
 // -----------------------------------
 
 /// Print records based on their type
-pub fn print_dynamic_records(
-    topic_name: &String,
+pub fn print_dynamic_records<O>(
+    out: std::sync::Arc<O>,
+    topic_name: &str,
     response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
-) {
+) 
+    where O: Terminal
+{
     for r_partition in response_partitions {
         if let Some(err) = error_in_header(topic_name, r_partition) {
-            print_cli_err!(err);
+            t_print_cli_err!(out,err);
             continue;
         }
 
@@ -207,11 +214,11 @@ pub fn print_dynamic_records(
             for record in &batch.records {
                 if let Some(batch_record) = record.get_value().inner_value_ref() {
                     if record.get_value().is_binary() {
-                        println!("{}", hex_dump_separator());
-                        println!("{}", bytes_to_hex_dump(&batch_record));
-                        println!("{}", hex_dump_separator());
+                        t_println!(out,"{}", hex_dump_separator());
+                        t_println!(out,"{}", bytes_to_hex_dump(&batch_record));
+                        t_println!(out,"{}", hex_dump_separator());
                     } else {
-                        println!("{}", record.get_value());
+                        t_println!(out,"{}", record.get_value());
                     }
                 }
             }
@@ -224,20 +231,24 @@ pub fn print_dynamic_records(
 // -----------------------------------
 
 /// Print records in raw format
-pub fn print_raw_records(
-    topic_name: &String,
+pub fn print_raw_records<O>(
+    out: std::sync::Arc<O>,
+    topic_name: &str,
     response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
-) {
+) 
+    where O: Terminal
+{
     for r_partition in response_partitions {
         if let Some(err) = error_in_header(topic_name, r_partition) {
-            print_cli_err!(err);
+            t_print_cli_err!(out,err);
             continue;
         }
 
         for batch in &r_partition.records.batches {
             for record in &batch.records {
                 if let Some(value) = record.get_value().inner_value_ref() {
-                    let _ = io::stdout().write(value);
+                    let str_value = std::str::from_utf8(value).unwrap();
+                    t_println!(out,"{}",str_value);
                 }
             }
         }
@@ -250,7 +261,7 @@ pub fn print_raw_records(
 
 /// If header has error, format and return
 pub fn error_in_header(
-    topic_name: &String,
+    topic_name: &str,
     r_partition: &FetchablePartitionResponse<DefaultRecords>,
 ) -> Option<String> {
     if r_partition.error_code.is_error() {

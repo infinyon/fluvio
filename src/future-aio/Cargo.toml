@@ -1,5 +1,5 @@
 [package]
-name = "future-aio"
+name = "flv-future-aio"
 version = "0.2.1"
 edition = "2018"
 authors = ["fluvio.io"]
@@ -8,18 +8,18 @@ authors = ["fluvio.io"]
 [dependencies]
 log = "0.4.8"
 nix = "0.16.0"
-bytes = "0.4.12"
+bytes = "0.5.3"
 memmap = "0.7.0"
 async-trait = "0.1.21"
-async-std = { version = "1.2.0", features = ["default","unstable"] }
-futures_codec = "0.3.1"
+async-std = { version = "1.4.0", features = ["default","unstable"] }
+futures_codec = "0.3.4"
 futures = { version = "0.3.1"  }
-future-helper = { path = "../future-helper"}
+flv-future-core = { path = "../future-helper"}
 futures_1 = { version = "0.1.25", package = "futures" }
 pin-utils = "0.1.0-alpha.4"
 
 
 [dev-dependencies]
-future-helper = { path = "../future-helper", features=["fixture"]}
+flv-future-core = { path = "../future-helper", features=["fixture"]}
 num_cpus = { version = "1.10.1" }
 utils = { path= "../utils", features= ["fixture"]}
