@@ -72,7 +72,6 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use futures::sink::SinkExt;
     use futures::stream::StreamExt;
 
     use flv_future_aio::fs::file_util;

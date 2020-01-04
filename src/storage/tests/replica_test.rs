@@ -10,6 +10,7 @@ use futures::future::join;
 
 use flv_future_core::test_async;
 use flv_future_core::sleep;
+use flv_future_aio::net::AsyncTcpListener;
 use kf_protocol::message::fetch::FetchPartition;
 use kf_protocol::message::fetch::FetchableTopic;
 use kf_protocol::api::RequestMessage;
@@ -17,16 +18,13 @@ use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::DefaultRecord;
 use kf_protocol::message::fetch::DefaultKfFetchRequest;
 use kf_protocol::api::Offset;
-use flv_future_aio::net::AsyncTcpListener;
+use kf_protocol::fs::FileFetchResponse;
+use kf_protocol::fs::KfFileFetchRequest;
+use kf_protocol::fs::FilePartitionResponse;
+use kf_protocol::fs::FileTopicResponse;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
-
 use utils::fixture::ensure_clean_dir;
-
-use kf_socket::FileFetchResponse;
-use kf_socket::KfFileFetchRequest;
-use kf_socket::FilePartitionResponse;
-use kf_socket::FileTopicResponse;
 use flv_storage::StorageError;
 use flv_storage::FileReplica;
 use flv_storage::ConfigOption;

@@ -335,7 +335,7 @@ mod tests {
     use kf_protocol::Decoder;
     use kf_protocol::Encoder;
     use kf_protocol::api::ErrorCode;
-    use kf_socket::FilePartitionResponse;
+    use kf_protocol::fs::FilePartitionResponse;
     use kf_protocol::api::DefaultRecords;
     
     use super::FileReplica;
