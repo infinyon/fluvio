@@ -18,12 +18,14 @@ use kf_protocol::Encoder as KfEncoder;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::transport::KfCodec;
+use kf_protocol::fs::FileWrite;
+use kf_protocol::fs::StoreValue;
 use futures_codec::Framed;
 
 use flv_future_aio::net::AsyncTcpStream;
 use crate::KfSocketError;
-use crate::FileWrite;
-use crate::StoreValue;
+
+
 
 #[derive(Debug)]
 pub struct KfSink {

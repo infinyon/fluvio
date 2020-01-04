@@ -6,13 +6,11 @@
 
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::time::Duration;
-use std::sync::RwLock;
-use std::sync::Arc;
 
 use log::debug;
+use futures::stream::StreamExt;
 
-use flv_future_core::sleep;
+use kf_protocol::api::Isolation;
 use kf_protocol::api::PartitionOffset;
 use fluvio_client::ReplicaLeader;
 
@@ -39,10 +37,6 @@ where
     let topic = leader.topic().to_owned();
     debug!("starting fetch loop: {:#?}", opt);
 
-    // let (sender, mut receiver) = mpsc::channel::<bool>(5);
-    let end = Arc::new(RwLock::new(false));
-
-    let _end2 = end.clone();
     // attach sender to Ctrl-C event handler
     if let Err(err) = ctrlc::set_handler(move || {
         debug!("detected control c, setting end");
@@ -56,53 +50,28 @@ where
 
     // list offsets
     let offsets = leader.fetch_offsets().await?;
-    let last_offset = offsets.last_stable_offset();
-
-    let mut current_offset = if opt.from_beginning {
+  
+    let initial_offset = if opt.from_beginning {
         offsets.start_offset()
     } else {
         offsets.last_stable_offset()
     };
 
-    debug!("entering loop");
+    debug!("fetching log with starting offset: {}",initial_offset);
 
-    loop {
-        debug!("fetching with offset: {}", current_offset);
+    let mut log_stream = leader.fetch_logs(initial_offset, opt.max_bytes,Isolation::ReadCommitted);
 
-        let fetch_logs_res = leader.fetch_logs(current_offset, opt.max_bytes).await?;
+    while let Some(record) = log_stream.next().await {
 
-        current_offset = fetch_logs_res.last_stable_offset;
+        process_fetch_topic_response(out.clone(), &topic, record, &opt).await?;
 
-        debug!("fetching last offset: {} and response", last_offset);
-
-        // process logs response
-
-        process_fetch_topic_response(out.clone(), &topic, fetch_logs_res, &opt).await?;
-        let read_lock = end.read().unwrap();
-        if *read_lock {
-            debug!("detected end by ctrl-c, exiting loop");
-            break;
-        }
-
-        /*
-        if !opt.continuous {
-            if last_offset > last_offset {
-                debug!("finishing fetch loop");
-                break;
-            }
-        }
-        */
-
-        
         if !opt.continuous {
             debug!("finishing fetch loop");
             break;
         }
-        
 
-        debug!("sleeping 200 ms between next fetch");
-        sleep(Duration::from_millis(200)).await;
     }
+    
 
     debug!("fetch loop exited");
     Ok(())

@@ -4,18 +4,20 @@ use kf_socket::KfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
 use flv_metadata::partition::ReplicaKey;
-use kf_socket::FileFetchResponse;
-use kf_socket::KfFileFetchRequest;
-use kf_socket::FilePartitionResponse;
-use kf_socket::FileTopicResponse;
+use kf_protocol::fs::FileFetchResponse;
+use kf_protocol::fs::KfFileFetchRequest;
+use kf_protocol::fs::FilePartitionResponse;
+use kf_protocol::fs::FileTopicResponse;
 
 use crate::core::DefaultSharedGlobalContext;
 
+/// handle kafka fetch request
 pub async fn handle_fetch_request(
     request: RequestMessage<KfFileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
     sink: &mut KfSink,
 ) -> Result<(), KfSocketError> {
+
     let (header, fetch_request) = request.get_header_request();
     let mut fetch_response = FileFetchResponse::default();
 

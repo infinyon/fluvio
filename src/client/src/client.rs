@@ -87,8 +87,8 @@ where
         &mut self.socket
     }
 
-    /// send and wait for reply
-    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    /// send request only
+    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>,KfSocketError>
     where
         R: Request,
     {
@@ -100,10 +100,20 @@ where
 
         let req_msg = self.new_request(request, self.lookup_version(R::API_KEY));
 
+        self.socket.get_mut_sink().send_request(&req_msg)
+            .await?;
+        Ok(req_msg)
+    }
+
+    /// send and wait for reply
+    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    where
+        R: Request,
+    {
+        let req_message = self.send_request(request).await?;
+
         // send request & save response
-        self.socket
-            .send(&req_msg)
-            .await
+        self.socket.get_mut_stream().next_response(&req_message).await
             .map(|res_msg| res_msg.response)
     }
 }

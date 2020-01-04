@@ -11,10 +11,12 @@ use kf_service::api_loop;
 use spu_api::SpuApiKey;
 use spu_api::PublicRequest;
 
+
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
 use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
+use super::cf_handler::CfHandler;
 use super::local_spu_request::handle_spu_request;
 use super::offset_request::handle_offset_request;
 
@@ -75,7 +77,15 @@ impl KfService for PublicService {
                 handle_offset_request(request,context.clone()),
                 sink,
                 "handling offset fetch request"
-            )
+            ),
+            PublicRequest::FileFlvContinuousFetchRequest(request) => {
+
+                drop(api_stream);
+                CfHandler::handle_continuous_fetch_request(request,context.clone(),sink,stream).await?;
+                break;
+
+            }
+              
         );
 
         Ok(())

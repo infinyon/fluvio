@@ -42,7 +42,7 @@ pub async fn process_fetch_topic_response<O>(
         }
         ConsumeOutputType::text => {
             print_text_records(out,topic, &partition_res, config.suppress_unknown);
-        }
+        },
         ConsumeOutputType::binary => {
             print_binary_records(out,topic,&partition_res);
         }
@@ -168,6 +168,7 @@ pub fn print_binary_records<O>(
 )
     where O: Terminal
 {
+    debug!("printing out binary records: {} records: {}",topic_name,response_partitions.len());
     let mut printed = false;
     for r_partition in response_partitions {
         if let Some(err) = error_in_header(topic_name, r_partition) {
@@ -177,6 +178,7 @@ pub fn print_binary_records<O>(
             continue;
         }
 
+        
         for batch in &r_partition.records.batches {
             for record in &batch.records {
                 if let Some(batch_record) = record.get_value().inner_value_ref() {

@@ -131,8 +131,7 @@ where
     pub session_id: i32,
 
     /// The response topics.
-    pub topics: Vec<FetchableTopicResponse<R>>,
-    pub data: PhantomData<R>,
+    pub topics: Vec<FetchableTopicResponse<R>>
 }
 
 impl <R>KfFetchResponse<R> 
@@ -173,8 +172,8 @@ where
 
 #[derive(Encode, Decode, Serialize, Deserialize, KfDefault, Debug)]
 pub struct FetchablePartitionResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
+    where
+        R: Encoder + Decoder + Default + Debug,
 {
     /// The partiiton index.
     pub partition_index: i32,
@@ -219,8 +218,7 @@ pub struct AbortedTransaction {
 // -----------------------------------
 
 impl<R> Request for KfFetchRequest<R>
-where
-    R: Debug + Decoder + Encoder,
+    where R: Debug + Decoder + Encoder
 {
     const API_KEY: u16 = 1;
 

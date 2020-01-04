@@ -51,7 +51,7 @@ impl ReplicaStorage for FileReplica {
     }
 
 
-    /// offset mark that beggining of uncommitted
+    /// offset mark that beginning of uncommitted
     fn get_leo(&self) -> Offset {
         self.active_segment.get_end_offset()
     }

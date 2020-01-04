@@ -3,11 +3,11 @@ use std::io::Error as IoError;
 use log::trace;
 
 use flv_future_aio::BytesMut;
-use kf_protocol::Encoder;
-use kf_protocol::Version;
-use kf_protocol::message::produce::KfProduceRequest;
-use kf_protocol::message::produce::TopicProduceData;
-use kf_protocol::message::produce::PartitionProduceData;
+use kf_protocol_core::Encoder;
+use kf_protocol_core::Version;
+use kf_protocol_message::produce::KfProduceRequest;
+use kf_protocol_message::produce::TopicProduceData;
+use kf_protocol_message::produce::PartitionProduceData;
 
 use crate::FileWrite;
 use crate::StoreValue;

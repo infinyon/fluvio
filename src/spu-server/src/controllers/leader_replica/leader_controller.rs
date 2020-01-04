@@ -6,6 +6,7 @@ use log::trace;
 use log::warn;
 use futures::channel::mpsc::Receiver;
 use futures::future::FutureExt;
+use futures::future::join3;
 use futures::future::join;
 use futures::select;
 use futures::stream::StreamExt;
@@ -16,8 +17,10 @@ use flv_metadata::partition::ReplicaKey;
 use flv_storage::FileReplica;
 use types::SpuId;
 use kf_socket::ExclusiveKfSink;
+use flv_future_aio::sync::Sender;
 
 use crate::core::SharedSpuSinks;
+use crate::core::OffsetUpdateEvent;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
@@ -36,9 +39,11 @@ pub struct ReplicaLeaderController<S> {
     leaders_state: SharedReplicaLeadersState<S>,
     follower_sinks: SharedSpuSinks,
     sc_sink: Arc<ExclusiveKfSink>,
+    offset_sender: Sender<OffsetUpdateEvent>
 }
 
 impl<S> ReplicaLeaderController<S> {
+
     pub fn new(
         local_spu: SpuId,
         id: ReplicaKey,
@@ -46,6 +51,7 @@ impl<S> ReplicaLeaderController<S> {
         leaders_state: SharedReplicaLeadersState<S>,
         follower_sinks: SharedSpuSinks,
         sc_sink: Arc<ExclusiveKfSink>,
+        offset_sender: Sender<OffsetUpdateEvent>
     ) -> Self {
         Self {
             local_spu,
@@ -54,6 +60,7 @@ impl<S> ReplicaLeaderController<S> {
             leaders_state,
             follower_sinks,
             sc_sink,
+            offset_sender
         }
     }
 }
@@ -82,7 +89,7 @@ impl ReplicaLeaderController<FileReplica> {
                         match command {
                             LeaderReplicaControllerCommand::EndOffsetUpdated => {
                                 trace!("leader replica endoffset has updated, update the follower if need to be");
-                                join(self.send_status_to_sc(),self.sync_followers()).await;
+                                join3(self.send_status_to_sc(),self.sync_followers(),self.update_offset_to_clients()).await;
                             },
 
                             LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
@@ -149,5 +156,23 @@ impl ReplicaLeaderController<FileReplica> {
         } else {
             warn!("no replica is found: {} for send status back", self.id);
         }
+    }
+
+    /// update the clients that we have offset changed
+    async fn update_offset_to_clients(&self) {
+
+        if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
+            let event = OffsetUpdateEvent {
+                hw: leader_replica.hw(),
+                leo: leader_replica.leo(),
+                replica_id: self.id.clone()
+            };
+
+            self.offset_sender.send(event).await;
+            
+        } else {
+            warn!("no replica is found: {} for offset update", self.id);
+        }
+
     }
 }

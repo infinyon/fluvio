@@ -1,17 +1,31 @@
+use core::pin::Pin;
+use core::task::Poll;
+use core::task::Context;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt::Display;
 
+use log::error;
+use log::debug;
+use futures::stream::Stream;
+use futures::stream::BoxStream;
+use futures::stream::StreamExt;
+use futures::future::FutureExt;
+use futures::stream::empty;
 use async_trait::async_trait;
 
 use flv_future_aio::net::ToSocketAddrs;
 use types::socket_helpers::ServerAddress;
 
 use kf_socket::KfSocketError;
+use kf_protocol::api::Isolation;
+use kf_protocol::api::DefaultRecords;
+use kf_protocol::message::fetch::FetchablePartitionResponse;
+use spu_api::fetch::DefaultFlvContinuousFetchRequest;
 use spu_api::offsets::{FlvFetchOffsetsRequest};
 use spu_api::offsets::FetchOffsetPartitionResponse;
-
 use spu_api::spus::{FlvFetchLocalSpuRequest, FlvFetchLocalSpuResponse};
+
 
 use crate::ClientError;
 use crate::Client;
@@ -82,6 +96,7 @@ impl SpuLeader {
 
 #[async_trait]
 impl ReplicaLeader for SpuLeader {
+
     type OffsetPartitionResponse = FetchOffsetPartitionResponse;
 
     fn config(&self) -> &LeaderConfig {
@@ -114,4 +129,75 @@ impl ReplicaLeader for SpuLeader {
             .into()),
         }
     }
+
+    /// stream of partition response
+    fn fetch_logs<'a>(
+        &'a mut  self,
+        offset: i64,
+        max_bytes: i32,
+        isolation: Isolation
+    ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>>  {
+
+        debug!(
+            "starting continuous fetch logs '{}' ({}) partition to {}",
+            self.topic(),
+            self.partition(),
+            self.addr()
+        );
+
+        let request = DefaultFlvContinuousFetchRequest {
+            topic: self.topic().to_owned(),
+            partition: self.partition(),
+            fetch_offset: offset,
+            max_bytes,
+            isolation,
+            ..Default::default()
+        };
+
+        let log_stream_ft = async move {
+
+            match self.client().send_request(request).await {
+                Ok(req_msg) => 
+                    self.client.mut_socket().get_mut_stream().response_stream::<DefaultFlvContinuousFetchRequest>(req_msg)
+                        .map(|response| response.partition)
+                        .left_stream(),
+                Err(err) => {
+                    error!("error retrieving continuous fetch log: {}",err);
+                    empty().right_stream()
+                }
+            }
+            
+        };
+
+        log_stream_ft.flatten_stream().boxed()
+        
+        
+    }
+
+
 }
+
+
+
+pub struct FetchStream(SpuLeader);
+
+impl FetchStream {
+
+    
+
+}
+
+impl Stream for FetchStream
+{
+
+    type Item = FetchablePartitionResponse<DefaultRecords>;
+
+    fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+       Poll::Ready(None)
+    }
+
+}
+
+
+
+

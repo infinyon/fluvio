@@ -13,16 +13,16 @@ use super::KfSPUPeerApiEnum;
 use super::fetch_stream::handle_fetch_stream_request;
 use crate::core::DefaultSharedGlobalContext;
 
-pub struct SpunternalService {}
+pub struct InternalService {}
 
-impl SpunternalService {
+impl InternalService {
     pub fn new() -> Self {
         Self {}
     }
 }
 
 #[async_trait]
-impl KfService for SpunternalService {
+impl KfService for InternalService {
 
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
@@ -44,7 +44,7 @@ impl KfService for SpunternalService {
                 drop(api_stream);
                 let orig_socket: KfSocket  = (sink,stream).into();
                 handle_fetch_stream_request(request, context, orig_socket).await?;
-                return Ok(());
+                break;
 
             }
         );

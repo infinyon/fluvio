@@ -14,7 +14,8 @@ pub enum SpuApiKey {
 
     // Fluvio
     FlvFetchLocalSpu = 1001,
-    FlvFetchOffsets = 1002
+    FlvFetchOffsets = 1002,
+    FlvContinuousFetch = 1003
 }
 
 impl Default for SpuApiKey {

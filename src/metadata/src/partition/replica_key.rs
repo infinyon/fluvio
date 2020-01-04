@@ -27,6 +27,10 @@ impl ReplicaKey {
             partition: partition.into(),
         }
     }
+
+    pub fn split(self) -> (String,i32) {
+        (self.topic,self.partition)
+    }
 }
 
 impl std::fmt::Display for ReplicaKey {

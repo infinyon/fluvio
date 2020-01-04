@@ -12,6 +12,7 @@ kf-protocol-api = { path = "kf-protocol-api"}
 kf-protocol-derive = { path = "kf-protocol-derive"}
 kf-protocol-transport = { path = "kf-protocol-transport"}
 kf-protocol-message = { path = "kf-protocol-message"}
+kf-protocol-fs = { path = "kf-protocol-fs"}
 
 [dev-dependencies]
 utils = { path= "../utils"}

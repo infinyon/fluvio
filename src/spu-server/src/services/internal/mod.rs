@@ -7,7 +7,7 @@ use log::info;
 use std::net::SocketAddr;
 
 use kf_service::KfApiServer;
-use service_impl::SpunternalService;
+use service_impl::InternalService;
 
 use crate::core::DefaultSharedGlobalContext;
 
@@ -20,12 +20,12 @@ pub(crate) type InternalApiServer = KfApiServer<
         SpuPeerRequest,
         KfSPUPeerApiEnum,
         DefaultSharedGlobalContext,
-        SpunternalService>;
+        InternalService>;
 
 // start server
 pub fn create_internal_server(addr: SocketAddr, ctx: DefaultSharedGlobalContext) -> InternalApiServer
  {
     info!("starting SPU: {} at internal service at: {}", ctx.local_spu_id(),addr);
 
-    KfApiServer::new(addr, ctx, SpunternalService::new())
+    KfApiServer::new(addr, ctx, InternalService::new())
 }

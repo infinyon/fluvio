@@ -1,0 +1,23 @@
+[package]
+name = "kf-protocol-fs"
+version = "0.2.1"
+edition = "2018"
+authors = ["fluvio.io"]
+
+[[bin]]
+name = "file_send"
+path = "src/bin/file_send.rs"
+doc = false
+required-features = ["cli"]
+
+
+
+[dependencies]
+log = "0.4.8"
+bytes = "0.5.3"
+futures = { version = "0.3.1" }
+flv-future-aio = { path = "../../future-aio"}
+flv-future-core = { path = "../../future-helper" }
+kf-protocol-core = { path = "../kf-protocol-core"}
+kf-protocol-message = { path = "../kf-protocol-message"}
+kf-protocol-api = { path = "../kf-protocol-api"}

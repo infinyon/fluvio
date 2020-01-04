@@ -31,7 +31,7 @@ pub(crate) use crate::segment::SegmentSlice;
 use kf_protocol::api::ErrorCode;
 use kf_protocol::api::Offset;
 use flv_future_aio::fs::AsyncFileSlice;
-use kf_socket::FilePartitionResponse;
+use kf_protocol::fs::FilePartitionResponse;
 
 pub trait Captures<'a> {}
 impl<'a, T: ?Sized> Captures<'a> for T {}
@@ -79,10 +79,10 @@ impl SlicePartitionResponse for FilePartitionResponse {
 
 pub trait ReplicaStorage   {
 
-    /// committed offset
+    /// high water mark offset (records that has been replicated)
     fn get_hw(&self) -> Offset;
 
-    /// offset mark that beggining of uncommitted
+    /// log end offset ( records that has been stored)
     fn get_leo(&self) -> Offset;
 
 }

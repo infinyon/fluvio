@@ -1,6 +1,7 @@
 #![feature(generators)]
 
 pub mod fs;
+pub mod sync;
 
 
 mod write;

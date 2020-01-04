@@ -105,7 +105,7 @@ impl ScDispatcher<FileReplica> {
                     }
                 }
 
-                // continously process updates from and send back status to SC
+                // continuously process updates from and send back status to SC
                 match self.sc_request_loop(socket).await {
                     Ok(_) => {}
                     Err(err) => warn!("error, connecting to sc: {:#?}", err),
@@ -479,7 +479,8 @@ impl ScDispatcher<FileReplica> {
             receiver,
             self.ctx.leader_state_owned(),
             self.ctx.followers_sink_owned(),
-            shared_sc_sink
+            shared_sc_sink,
+            self.ctx.offset_channel().sender()
         );
         leader_controller.run();
 

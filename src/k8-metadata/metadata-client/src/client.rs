@@ -181,6 +181,7 @@ pub trait MetadataClient: Send + Sync {
         K8Watch<S, S::Status>: DeserializeOwned,
         S: Spec + Debug + Send + 'static,
         S::Status: Debug + Send;
+
     fn watch_stream_now<S>(
         &self,
         ns: String,
@@ -192,11 +193,9 @@ pub trait MetadataClient: Send + Sync {
         S::Status: Debug + Send,
     {
         let ft_stream = async move {
-            let namespace = ns.as_ref();
-            let items_ft = self.retrieve_items(namespace);
-            let item_now_result = items_ft.await;
 
-            match item_now_result {
+            let namespace = ns.as_ref();          
+            match self.retrieve_items(namespace).await {
                 Ok(item_now_list) => {
                     let resource_version = item_now_list.metadata.resource_version;
 

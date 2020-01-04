@@ -55,9 +55,9 @@ impl KfStream {
     }
 
     /// as client, get next response from server
-    pub async fn next_response<'a, R>(
-        &'a mut self,
-        req_msg: &'a RequestMessage<R>,
+    pub async fn next_response<R>(
+        &mut self,
+        req_msg: &RequestMessage<R>,
     ) -> Result<ResponseMessage<R::Response>, KfSocketError>
     where
         R: Request,
@@ -104,6 +104,7 @@ impl KfStream {
         })
     }
 
+
     pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, KfSocketError>>
     where
         R: KfRequestMessage<ApiKey = A>,
@@ -111,6 +112,37 @@ impl KfStream {
     {
         let mut stream = self.api_stream();
         stream.next().await
+    }
+
+    pub fn response_stream<'a,R>(
+        &'a mut self,
+        req_msg: RequestMessage<R>) 
+    -> impl Stream<Item = R::Response> + 'a
+        where R: Request
+    {
+        let version = req_msg.header.api_version();
+        (&mut self.0).filter_map(move |req_bytes| async move {
+
+            match req_bytes {
+                Ok(mut bytes) => {
+                    match ResponseMessage::decode_from(&mut bytes,version) {
+                        Ok(res_msg) => {
+                            trace!("receive response: {:#?}", &res_msg);
+                            Some(res_msg.response)
+                        },
+                        Err(err) => {
+                            error!("error decoding response: {:?}",err);
+                            None
+                        }
+                    }
+                },
+                Err(err) => {
+                    error!("error receiving response: {:?}", err);
+                    None
+                }
+            }
+           
+        })
     }
 }
 

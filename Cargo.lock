@@ -1208,6 +1208,7 @@ dependencies = [
  "kf-protocol-api",
  "kf-protocol-core",
  "kf-protocol-derive",
+ "kf-protocol-fs",
  "kf-protocol-message",
  "kf-protocol-transport",
  "log",
@@ -1260,6 +1261,20 @@ dependencies = [
  "log",
  "structopt 0.3.5",
  "utils",
+]
+
+[[package]]
+name = "kf-protocol-fs"
+version = "0.2.1"
+dependencies = [
+ "bytes 0.5.3",
+ "flv-future-aio",
+ "flv-future-core",
+ "futures 0.3.1",
+ "kf-protocol-api",
+ "kf-protocol-core",
+ "kf-protocol-message",
+ "log",
 ]
 
 [[package]]
@@ -2295,8 +2310,8 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 name = "spu-api"
 version = "0.2.1"
 dependencies = [
+ "flv-future-aio",
  "kf-protocol",
- "kf-socket",
  "log",
  "serde",
  "utils",

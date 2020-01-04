@@ -15,9 +15,9 @@ use kf_protocol::derive::Encode;
 use kf_protocol::api::DefaultRecords;
 use kf_protocol::api::Request;
 use kf_protocol::api::ErrorCode;
-use kf_socket::KfFileRecordSet;
-use kf_socket::StoreValue;
-use kf_socket::FileWrite;
+use kf_protocol::fs::KfFileRecordSet;
+use kf_protocol::fs::StoreValue;
+use kf_protocol::fs::FileWrite;
 use flv_storage::SlicePartitionResponse;
 use flv_future_aio::fs::AsyncFileSlice;
 

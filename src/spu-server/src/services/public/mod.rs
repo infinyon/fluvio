@@ -4,6 +4,7 @@ mod produce_handler;
 mod fetch_handler;
 mod local_spu_request;
 mod offset_request;
+mod cf_handler;
 
 use log::info;
 use std::net::SocketAddr;

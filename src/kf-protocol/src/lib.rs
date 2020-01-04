@@ -28,3 +28,7 @@ pub mod transport {
 pub mod message {
     pub use kf_protocol_message::*;
 }
+
+pub mod fs {
+    pub use kf_protocol_fs::*;
+}

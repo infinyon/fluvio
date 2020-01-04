@@ -3,6 +3,7 @@ mod public_api;
 mod api_versions;
 mod flv_fetch_offset;
 mod flv_fetch_local_spu;
+mod flv_continuous_fetch;
 
 pub use self::api_key::SpuApiKey;
 pub use self::public_api::PublicRequest;
@@ -21,4 +22,8 @@ pub mod spus {
 
 pub mod offsets {
     pub use crate::flv_fetch_offset::*;
+}
+
+pub mod fetch {
+    pub use crate::flv_continuous_fetch::*;
 }

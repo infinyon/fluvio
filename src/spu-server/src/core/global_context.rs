@@ -10,6 +10,7 @@ use kf_socket::SharedSinkPool;
 use kf_socket::SinkPool;
 use types::SpuId;
 use flv_storage::ReplicaStorage;
+use flv_future_aio::sync::Channel;
 
 use crate::config::SpuConfig;
 use crate::controllers::leader_replica::SharedReplicaLeadersState;
@@ -21,6 +22,7 @@ use super::SharedReplicaLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
+use super::OffsetUpdateEvent;
 
 #[derive(Debug)]
 pub struct GlobalContext<S> {
@@ -30,6 +32,7 @@ pub struct GlobalContext<S> {
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     follower_sinks: SharedSinkPool<SpuId>,
+    offset_channel: Channel<OffsetUpdateEvent>
 }
 
 // -----------------------------------
@@ -45,6 +48,7 @@ where
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
+
         GlobalContext {
             spu_localstore: SpuLocalStore::new_shared(),
             replica_localstore: ReplicaStore::new_shared(),
@@ -52,6 +56,7 @@ where
             follower_sinks: SinkPool::new_shared(),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
+            offset_channel: Channel::new(100)
         }
     }
 
@@ -101,5 +106,9 @@ where
 
     pub fn config_owned(&self) -> SharedSpuConfig {
         self.config.clone()
+    }
+
+    pub fn offset_channel(&self) -> &Channel<OffsetUpdateEvent> {
+        &self.offset_channel
     }
 }

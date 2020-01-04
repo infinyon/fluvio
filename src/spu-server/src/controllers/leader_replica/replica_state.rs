@@ -71,7 +71,7 @@ impl From<(Offset, Offset)> for FollowerReplicaInfo {
     }
 }
 
-/// Leader Replica state
+/// Maintain state for Leader replica
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     replica_id: ReplicaKey,
@@ -342,17 +342,21 @@ impl LeaderReplicaState<FileReplica> {
         }
     }
 
+    /// read records into partition response
+    /// return hw and leo
     pub async fn read_records<P>(
         &self,
         offset: Offset,
         isolation: Isolation,
         partition_response: &mut P,
-    ) where
+    ) -> (Offset,Offset) where
         P: SlicePartitionResponse,
     {
         self.storage
             .read_records_with_isolation(offset, isolation, partition_response)
-            .await
+            .await;
+
+        (self.hw(),self.leo())
     }
 
     pub async fn send_records(

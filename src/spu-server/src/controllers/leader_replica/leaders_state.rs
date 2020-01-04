@@ -14,7 +14,7 @@ use log::error;
 use flv_metadata::partition::ReplicaKey;
 use kf_protocol::api::DefaultRecords;
 use flv_storage::FileReplica;
-use kf_socket::FilePartitionResponse;
+use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
 use kf_protocol::api::ErrorCode;
@@ -98,6 +98,7 @@ impl<S> ReplicaLeadersState<S> {
         }
     }
 
+    /// send message to leader controller
     pub async fn send_message(
         &self,
         replica: &ReplicaKey,
@@ -127,6 +128,7 @@ impl<S> ReplicaLeadersState<S> {
 }
 
 impl ReplicaLeadersState<FileReplica> {
+
     /// write records to response
     ///
     /// # Arguments
@@ -136,34 +138,37 @@ impl ReplicaLeadersState<FileReplica> {
     /// * `offset` - starting offset
     /// * `isolation` - isolation
     /// * `partition_response` - response
+    /// return associated hw, leo
     pub async fn read_records(
         &self,
         rep_id: &ReplicaKey,
         offset: Offset,
         isolation: Isolation,
         response: &mut FilePartitionResponse,
-    ) {
+    ) -> Option<(Offset,Offset)> {
+
         if let Some(leader_replica) = self.get_replica(rep_id) {
-            leader_replica
+            Some(leader_replica
                 .read_records(offset, isolation, response)
-                .await;
+                .await)
         } else {
             warn!("no replica is found: {}", rep_id);
             response.error_code = ErrorCode::NotLeaderForPartition;
+            None
         }
     }
 
-    /// write new record anod notify the leader replica controller
+    /// write new record and notify the leader replica controller
     /// TODO: may replica should be moved it's own map
     pub async fn send_records(
         &self,
         rep_id: &ReplicaKey,
         records: DefaultRecords,
-        update_highwatermark: bool,
+        update_hw: bool,
     ) -> Result<bool, InternalServerError> {
         if let Some(mut leader_replica) = self.get_mut_replica(rep_id) {
             leader_replica
-                .send_records(records, update_highwatermark)
+                .send_records(records, update_hw)
                 .await?;
             self.send_message(rep_id, LeaderReplicaControllerCommand::EndOffsetUpdated)
                 .await

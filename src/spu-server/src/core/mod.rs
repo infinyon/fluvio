@@ -24,3 +24,20 @@ pub type SharedGlobalContext<S> = Arc<GlobalContext<S>>;
 pub type DefaultSharedGlobalContext = SharedGlobalContext<FileReplica>;
 pub type SharedSpuSinks = Arc<SinkPool<SpuId>>;
 pub type SharedSpuConfig = Arc<SpuConfig>;
+
+pub use event::OffsetUpdateEvent;
+
+
+mod event {
+
+    use kf_protocol::api::Offset;
+    use flv_metadata::partition::ReplicaKey;
+
+        /// used for communicating change in offset for any replica
+    #[derive(Debug)]
+    pub struct OffsetUpdateEvent {
+        pub replica_id: ReplicaKey,
+        pub leo: Offset,            
+        pub hw: Offset             
+    }
+}

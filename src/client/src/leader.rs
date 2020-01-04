@@ -4,28 +4,24 @@ use std::io::ErrorKind;
 use log::debug;
 use log::trace;
 use async_trait::async_trait;
+use futures::stream::BoxStream;
 
 use types::socket_helpers::ServerAddress;
 use kf_protocol::message::fetch::FetchablePartitionResponse;
 use kf_protocol::api::DefaultRecords;
 use kf_protocol::api::PartitionOffset;
-use kf_protocol::message::fetch::DefaultKfFetchRequest;
-use kf_protocol::message::fetch::FetchPartition;
-use kf_protocol::message::fetch::FetchableTopic;
+use kf_protocol::api::Isolation;
 use kf_protocol::message::produce::DefaultKfProduceRequest;
 use kf_protocol::message::produce::DefaultKfPartitionRequest;
 use kf_protocol::message::produce::DefaultKfTopicRequest;
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::DefaultRecord;
-use kf_protocol::api::Isolation;
-use kf_protocol::api::ErrorCode as KfErrorCode;
-use kf_socket::KfSocketError;
+
+
 
 use crate::LeaderConfig;
 use crate::ClientError;
 use crate::Client;
-
-
 
 
 /// features for Replica Leader (topic,partition)
@@ -60,73 +56,13 @@ pub trait ReplicaLeader: Send + Sync {
      // fetch offsets for 
     async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError >;
 
-    /// Fetch log records from a target server
-    async fn fetch_logs(
-        &mut self,
+    /// stream of partition response
+    fn fetch_logs<'a>(
+        &'a mut self,
         offset: i64,
         max_bytes: i32,
-    ) -> Result<FetchablePartitionResponse<DefaultRecords>, KfSocketError> {
-
-        let topic_request = FetchableTopic {
-            name: self.topic().to_owned(),
-            fetch_partitions: vec![
-                FetchPartition {
-                    partition_index: self.partition(),
-                    current_leader_epoch:  -1,
-                    fetch_offset: offset,
-                    log_start_offset: -1,
-                    max_bytes
-                }]};
-
-        let request = DefaultKfFetchRequest {
-            replica_id: -1,
-            max_wait: 500,
-            min_bytes: 1,
-            max_bytes,
-            isolation_level: Isolation::ReadCommitted,
-            session_id: 0,
-            epoch: -1,
-            topics: vec![topic_request],
-            ..Default::default()
-        };
-        
-
-        debug!(
-            "fetch logs '{}' ({}) partition to {}",
-            self.topic(),
-            self.partition(),
-            self.addr()
-        );
-
-        trace!("fetch logs req {:#?}", request);
-
-        let response = self.client().send_receive(request).await?;
-
-
-        if response.error_code != KfErrorCode::None {
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                format!("fetch: {}", response.error_code.to_sentence())
-            ).into());
-        }
-
-        match response.find_partition(self.topic(),self.partition()) {
-            None => Err(IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("no topic: {}, partition: {} founded",self.topic(),self.partition())
-                ).into()),
-            Some(partition_response) => {
-                if partition_response.error_code != KfErrorCode::None {
-                    return Err(IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("fetch: {}", partition_response.error_code.to_sentence())
-                    ).into());
-                }
-                Ok(partition_response)
-            }
-        }
-        
-    }
+        isolation: Isolation
+    ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>>;
 
     /// Sends record to a target server (Kf, SPU, or SC)
     async fn send_record(
