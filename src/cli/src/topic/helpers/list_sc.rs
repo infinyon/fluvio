@@ -10,8 +10,8 @@ use prettytable::cell;
 
 use log::debug;
 
-use fluvio_client::ScClient;
-use fluvio_client::SpuController;
+use flv_client::ScClient;
+use flv_client::SpuController;
 
 use crate::error::CliError;
 use crate::OutputType;
@@ -20,7 +20,6 @@ use crate::Terminal;
 use crate::t_println;
 
 use super::topic_metadata_sc::ScTopicMetadata;
-
 
 type ListTopics = Vec<ScTopicMetadata>;
 
@@ -33,14 +32,17 @@ pub async fn list_sc_topics<O>(
     out: std::sync::Arc<O>,
     mut client: ScClient<String>,
     output_type: OutputType,
-) -> Result<(), CliError> 
-    where O: Terminal
+) -> Result<(), CliError>
+where
+    O: Terminal,
 {
-
     let topics = client.topic_metadata(None).await?;
-    let list_topics: Vec<ScTopicMetadata> = topics.into_iter().map(|t| ScTopicMetadata::new(t)).collect();
-    debug!("topics retrieved: {:#?}",list_topics);
-    format_response_output(out,list_topics, output_type)
+    let list_topics: Vec<ScTopicMetadata> = topics
+        .into_iter()
+        .map(|t| ScTopicMetadata::new(t))
+        .collect();
+    debug!("topics retrieved: {:#?}", list_topics);
+    format_response_output(out, list_topics, output_type)
 }
 
 /// Process server based on output type
@@ -49,12 +51,13 @@ fn format_response_output<O>(
     list_topics: ListTopics,
     output_type: OutputType,
 ) -> Result<(), CliError>
-    where O: Terminal
- {
+where
+    O: Terminal,
+{
     if list_topics.len() > 0 {
-        out.render_list(&list_topics,output_type)
+        out.render_list(&list_topics, output_type)
     } else {
-        t_println!(out,"No topics found");
+        t_println!(out, "No topics found");
         Ok(())
     }
 }
@@ -63,7 +66,6 @@ fn format_response_output<O>(
 // Output Handlers
 // -----------------------------------
 impl TableOutputHandler for ListTopics {
-
     /// table header implementation
     fn header(&self) -> Row {
         row![

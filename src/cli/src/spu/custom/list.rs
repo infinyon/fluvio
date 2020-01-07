@@ -6,8 +6,10 @@
 use structopt::StructOpt;
 
 
+use flv_client::profile::ScConfig;
+
 use crate::error::CliError;
-use crate::profile::ScConfig;
+
 use crate::Terminal;
 use crate::OutputType;
 

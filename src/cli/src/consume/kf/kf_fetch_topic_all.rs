@@ -52,7 +52,7 @@ use flv_future_core::run_block_on;
 use flv_future_core::sleep;
 
 use crate::error::CliError;
-use crate::profile::ProfileConfig;
+use flv_client::profile::ProfileConfig;
 
 use crate::consume::ConsumeLogConfig;
 use crate::consume::ResponseLogParams;

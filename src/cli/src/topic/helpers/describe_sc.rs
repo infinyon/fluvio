@@ -11,8 +11,8 @@ use prettytable::Row;
 use prettytable::cell;
 use prettytable::row;
 
-use fluvio_client::ScClient;
-use fluvio_client::SpuController;
+use flv_client::ScClient;
+use flv_client::SpuController;
 
 use crate::OutputType;
 use crate::error::CliError;

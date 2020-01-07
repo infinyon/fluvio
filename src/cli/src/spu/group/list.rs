@@ -7,7 +7,7 @@ use structopt::StructOpt;
 
 use crate::output::OutputType;
 use crate::error::CliError;
-use crate::profile::ScConfig;
+use flv_client::profile::ScConfig;
 use crate::Terminal;
 
 use super::helpers::list_output::spu_group_response_to_output;

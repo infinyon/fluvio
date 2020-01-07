@@ -4,18 +4,15 @@
 //! CLI command for Consume operation
 //!
 
-
 use structopt::StructOpt;
 
 use kf_protocol::api::Offset;
 use kf_protocol::api::MAX_BYTES;
 
 use crate::error::CliError;
-use crate::profile::ReplicaLeaderConfig;
-
+use flv_client::profile::ReplicaLeaderConfig;
 
 use super::ConsumeOutputType;
-
 
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
@@ -83,18 +80,11 @@ pub struct ConsumeLogOpt {
     output: Option<ConsumeOutputType>,
 }
 
-
 impl ConsumeLogOpt {
-
     /// validate the configuration and generate target server and config which can be used
     pub fn validate(self) -> Result<(ReplicaLeaderConfig, ConsumeLogConfig), CliError> {
-
         // profile specific configurations (target server)
-        let target_server = ReplicaLeaderConfig::new(
-            self.sc,
-            self.spu,
-            self.kf,
-            self.profile)?;
+        let target_server = ReplicaLeaderConfig::new(self.sc, self.spu, self.kf, self.profile)?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
 
         // consume log specific configurations
@@ -114,8 +104,6 @@ impl ConsumeLogOpt {
         Ok((target_server, consume_log_cfg))
     }
 }
-
-
 
 /// Consume log configuration parameters
 #[derive(Debug)]

@@ -4,15 +4,13 @@
 //! CLI to describe Topics and their corresponding Partitions
 //!
 
-
 use structopt::StructOpt;
 
 use crate::error::CliError;
 use crate::OutputType;
-use crate::profile::SpuControllerConfig;
-use crate::profile::SpuControllerTarget;
+use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTarget;
 use crate::Terminal;
-
 
 use super::helpers::describe_kf_topics;
 use super::helpers::describe_sc_topics;
@@ -26,8 +24,6 @@ pub struct DescribeTopicsConfig {
     pub topic_names: Vec<String>,
     pub output: OutputType,
 }
-
-
 
 // -----------------------------------
 // CLI Options
@@ -67,10 +63,8 @@ pub struct DescribeTopicsOpt {
 }
 
 impl DescribeTopicsOpt {
-
     /// Validate cli options and generate config
     fn validate(self) -> Result<(SpuControllerConfig, DescribeTopicsConfig), CliError> {
-
         let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
 
         // transfer config parameters
@@ -84,28 +78,30 @@ impl DescribeTopicsOpt {
     }
 }
 
-
-
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process describe topic cli request
-pub async fn process_describe_topics<O>(out: std::sync::Arc<O>,opt: DescribeTopicsOpt) -> Result<String, CliError> 
-    where O: Terminal
+pub async fn process_describe_topics<O>(
+    out: std::sync::Arc<O>,
+    opt: DescribeTopicsOpt,
+) -> Result<String, CliError>
+where
+    O: Terminal,
 {
-
     let (target_server, cfg) = opt.validate()?;
 
     (match target_server.connect().await? {
-        SpuControllerTarget::Kf(client) => describe_kf_topics(client, cfg.topic_names,cfg.output,out).await,
-        SpuControllerTarget::Sc(client) => describe_sc_topics(client, cfg.topic_names,cfg.output,out).await
+        SpuControllerTarget::Kf(client) => {
+            describe_kf_topics(client, cfg.topic_names, cfg.output, out).await
+        }
+        SpuControllerTarget::Sc(client) => {
+            describe_sc_topics(client, cfg.topic_names, cfg.output, out).await
+        }
     })
-        .map(|_| format!(""))
-        .map_err(|err| err.into())
+    .map(|_| format!(""))
+    .map_err(|err| err.into())
 }
-
-
-
 
 // Query Kafka server for T

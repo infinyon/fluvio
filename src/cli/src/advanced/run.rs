@@ -7,7 +7,6 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
 
-
 use kf_protocol::message::offset::KfListOffsetRequest;
 use kf_protocol::message::api_versions::KfApiVersionsRequest;
 use kf_protocol::message::group::KfListGroupsRequest;
@@ -24,7 +23,7 @@ use kf_protocol::message::offset::KfOffsetFetchRequest;
 
 use crate::error::CliError;
 
-use crate::profile::KfConfig;
+use flv_client::profile::KfConfig;
 use crate::advanced::RequestApi;
 use crate::Terminal;
 
@@ -65,7 +64,7 @@ pub struct RunRequestOpt {
 
 macro_rules! pretty_send {
     ($out:expr,$r:ident,$client:ident,$file:ident) => {
-        parse_and_pretty_from_file::<PathBuf,$r,_>($out,&mut $client,$file)
+        parse_and_pretty_from_file::<PathBuf, $r, _>($out, &mut $client, $file)
     };
 }
 
@@ -74,8 +73,12 @@ macro_rules! pretty_send {
 // -----------------------------------
 
 /// Parse CLI, build server address, run request & display result
-pub async fn process_run_request<O>(out: std::sync::Arc<O>,opt: RunRequestOpt) -> Result<(), CliError> 
-    where O: Terminal
+pub async fn process_run_request<O>(
+    out: std::sync::Arc<O>,
+    opt: RunRequestOpt,
+) -> Result<(), CliError>
+where
+    O: Terminal,
 {
     let kf_config = KfConfig::new(opt.kf, opt.profile)?;
     let mut kf_server = kf_config.connect().await?;
@@ -83,18 +86,22 @@ pub async fn process_run_request<O>(out: std::sync::Arc<O>,opt: RunRequestOpt) -
     let file = opt.details_file.to_path_buf();
 
     match opt.request {
-        RequestApi::ApiVersions => pretty_send!(out,KfApiVersionsRequest,client,file).await,
-        RequestApi::ListOffset => pretty_send!(out,KfListOffsetRequest,client,file).await,
-        RequestApi::Metadata => pretty_send!(out,KfMetadataRequest,client,file).await,
-        RequestApi::LeaderAndIsr => pretty_send!(out,KfLeaderAndIsrRequest,client,file).await,
-        RequestApi::FindCoordinator => pretty_send!(out,KfFindCoordinatorRequest,client,file).await,
-        RequestApi::JoinGroup => pretty_send!(out,KfJoinGroupRequest,client,file).await,
-        RequestApi::SyncGroup => pretty_send!(out,KfSyncGroupRequest,client,file).await,
-        RequestApi::LeaveGroup => pretty_send!(out,KfLeaveGroupRequest,client,file).await,
-        RequestApi::DescribeGroups => pretty_send!(out,KfDescribeGroupsRequest,client,file).await,
-        RequestApi::ListGroups => pretty_send!(out,KfListGroupsRequest,client,file).await,
-        RequestApi::DeleteGroups => pretty_send!(out,KfDeleteGroupsRequest,client,file).await,
-        RequestApi::Heartbeat => pretty_send!(out,KfHeartbeatRequest,client,file).await,
-        RequestApi::OffsetFetch => pretty_send!(out,KfOffsetFetchRequest,client,file).await
+        RequestApi::ApiVersions => pretty_send!(out, KfApiVersionsRequest, client, file).await,
+        RequestApi::ListOffset => pretty_send!(out, KfListOffsetRequest, client, file).await,
+        RequestApi::Metadata => pretty_send!(out, KfMetadataRequest, client, file).await,
+        RequestApi::LeaderAndIsr => pretty_send!(out, KfLeaderAndIsrRequest, client, file).await,
+        RequestApi::FindCoordinator => {
+            pretty_send!(out, KfFindCoordinatorRequest, client, file).await
+        }
+        RequestApi::JoinGroup => pretty_send!(out, KfJoinGroupRequest, client, file).await,
+        RequestApi::SyncGroup => pretty_send!(out, KfSyncGroupRequest, client, file).await,
+        RequestApi::LeaveGroup => pretty_send!(out, KfLeaveGroupRequest, client, file).await,
+        RequestApi::DescribeGroups => {
+            pretty_send!(out, KfDescribeGroupsRequest, client, file).await
+        }
+        RequestApi::ListGroups => pretty_send!(out, KfListGroupsRequest, client, file).await,
+        RequestApi::DeleteGroups => pretty_send!(out, KfDeleteGroupsRequest, client, file).await,
+        RequestApi::Heartbeat => pretty_send!(out, KfHeartbeatRequest, client, file).await,
+        RequestApi::OffsetFetch => pretty_send!(out, KfOffsetFetchRequest, client, file).await,
     }
 }

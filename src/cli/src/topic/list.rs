@@ -10,8 +10,8 @@ use log::debug;
 
 use crate::error::CliError;
 use crate::OutputType;
-use crate::profile::SpuControllerConfig;
-use crate::profile::SpuControllerTarget;
+use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTarget;
 use crate::Terminal;
 
 use super::helpers::list_kf_topics;

@@ -10,11 +10,9 @@ use structopt::StructOpt;
 use sc_api::spu::FlvCreateSpuGroupRequest;
 
 use crate::error::CliError;
-use crate::profile::ScConfig;
-
+use flv_client::profile::ScConfig;
 
 use super::helpers::group_config::GroupConfig;
-
 
 // -----------------------------------
 // CLI Options
@@ -42,12 +40,9 @@ pub struct CreateManagedSpuGroupOpt {
     #[structopt(short = "s", long = "size", value_name = "string")]
     storage: Option<String>,
 
-
-
     /// Address of Streaming Controller
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
-
 
     /// Profile name
     #[structopt(short = "P", long = "profile")]
@@ -55,43 +50,40 @@ pub struct CreateManagedSpuGroupOpt {
 }
 
 impl CreateManagedSpuGroupOpt {
-
-
     /// Validate cli options. Generate target-server and create spu group config.
     fn validate(self) -> Result<(ScConfig, FlvCreateSpuGroupRequest), CliError> {
-
         let target_server = ScConfig::new(self.sc, self.profile)?;
 
-        let grp_config = self.storage.map(|storage| GroupConfig::with_storage(storage));
+        let grp_config = self
+            .storage
+            .map(|storage| GroupConfig::with_storage(storage));
 
         let group = FlvCreateSpuGroupRequest {
             name: self.name,
             replicas: self.replicas,
             min_id: self.min_id,
             config: grp_config.map(|cf| cf.into()).unwrap_or_default(),
-            rack: self.rack
+            rack: self.rack,
         };
-        
         // return server separately from config
 
         Ok((target_server, group))
     }
-
 }
-
-
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_create_managed_spu_group(opt: CreateManagedSpuGroupOpt) -> Result<(), CliError> {
-
-
+pub async fn process_create_managed_spu_group(
+    opt: CreateManagedSpuGroupOpt,
+) -> Result<(), CliError> {
     let (target_server, create_spu_group_cfg) = opt.validate()?;
 
     debug!("{:#?}", create_spu_group_cfg);
 
     let mut sc = target_server.connect().await?;
 
-    sc.create_group(create_spu_group_cfg).await.map_err(|err| err.into())
+    sc.create_group(create_spu_group_cfg)
+        .await
+        .map_err(|err| err.into())
 }

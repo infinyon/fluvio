@@ -5,6 +5,7 @@ mod sc;
 mod kf;
 mod spu_controller;
 mod leader;
+pub mod profile;
 pub mod query_params;
 
 pub use client::ClientConfig;

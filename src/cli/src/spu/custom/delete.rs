@@ -9,9 +9,10 @@ use std::io::ErrorKind;
 use structopt::StructOpt;
 
 use sc_api::spu::FlvCustomSpu;
+use flv_client::profile::ScConfig;
 
 use crate::error::CliError;
-use crate::profile::ScConfig;
+
 
 
 // -----------------------------------

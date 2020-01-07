@@ -10,14 +10,13 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use fluvio_client::SpuController;
-use fluvio_client::query_params::ReplicaConfig;
-use fluvio_client::query_params::Partitions;
+use flv_client::SpuController;
+use flv_client::query_params::ReplicaConfig;
+use flv_client::query_params::Partitions;
 
 use crate::error::CliError;
-use crate::profile::SpuControllerConfig;
-use crate::profile::SpuControllerTarget;
-
+use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTarget;
 
 // -----------------------------------
 //  Parsed Config
@@ -29,8 +28,6 @@ pub struct CreateTopicConfig {
     pub replica: ReplicaConfig,
     pub validate_only: bool,
 }
-
-
 
 // -----------------------------------
 // CLI Options
@@ -101,11 +98,7 @@ pub struct CreateTopicOpt {
     profile: Option<String>,
 }
 
-
 impl CreateTopicOpt {
-
-
-
     /// Ensure all parameters are valid for computed replication
     fn parse_computed_replica(&self) -> ReplicaConfig {
         ReplicaConfig::Computed(
@@ -115,10 +108,8 @@ impl CreateTopicOpt {
         )
     }
 
-
     /// Ensure all parameters are valid for computed replication
     fn parse_assigned_replica(&self) -> Result<ReplicaConfig, CliError> {
-
         if let Some(replica_assign_file) = &self.replica_assignment {
             match Partitions::file_decode(replica_assign_file) {
                 Ok(partitions) => Ok(ReplicaConfig::Assigned(partitions)),
@@ -140,8 +131,6 @@ impl CreateTopicOpt {
 
     /// Validate cli options. Generate target-server and create-topic configuration.
     fn validate(self) -> Result<(SpuControllerConfig, CreateTopicConfig), CliError> {
-
-    
         // topic specific configurations
         let replica_config = if self.partitions.is_some() {
             self.parse_computed_replica()
@@ -160,26 +149,28 @@ impl CreateTopicOpt {
         // return server separately from config
         Ok((target_server, create_topic_cfg))
     }
-
 }
-
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process create topic cli request
-pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String,CliError> {
-    
-    let (target_server, cfg ) = opt.validate()?;
+pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliError> {
+    let (target_server, cfg) = opt.validate()?;
 
     (match target_server.connect().await? {
-        SpuControllerTarget::Kf(mut client) => client.create_topic(cfg.topic,cfg.replica,cfg.validate_only).await,
-        SpuControllerTarget::Sc(mut client) => client.create_topic(cfg.topic,cfg.replica,cfg.validate_only).await
+        SpuControllerTarget::Kf(mut client) => {
+            client
+                .create_topic(cfg.topic, cfg.replica, cfg.validate_only)
+                .await
+        }
+        SpuControllerTarget::Sc(mut client) => {
+            client
+                .create_topic(cfg.topic, cfg.replica, cfg.validate_only)
+                .await
+        }
     })
-        .map(| topic_name | format!("topic \"{}\" created",topic_name))
-        .map_err(|err| err.into())
+    .map(|topic_name| format!("topic \"{}\" created", topic_name))
+    .map_err(|err| err.into())
 }
-
-
-

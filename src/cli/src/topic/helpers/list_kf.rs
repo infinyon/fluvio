@@ -4,24 +4,20 @@
 //! Communicates with Kafka Controller to retrieve all Topics
 //!
 
-
 use serde::Serialize;
 use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
 
-use fluvio_client::SpuController;
-use fluvio_client::KfClient;
+use flv_client::SpuController;
+use flv_client::KfClient;
 
 use crate::error::CliError;
 use crate::OutputType;
 use crate::TableOutputHandler;
 use crate::Terminal;
 
-
 use super::topic_metadata_kf::KfTopicMetadata;
-
-
 
 #[derive(Serialize, Debug)]
 struct ListTopics {
@@ -37,14 +33,17 @@ pub async fn list_kf_topics<O>(
     out: std::sync::Arc<O>,
     mut client: KfClient<String>,
     output_type: OutputType,
-) -> Result<(), CliError> 
-    where O: Terminal
+) -> Result<(), CliError>
+where
+    O: Terminal,
 {
-
     let topics = client.topic_metadata(None).await?;
-    let wrapper_topics: Vec<KfTopicMetadata> = topics.into_iter().map(|t| KfTopicMetadata::new(t)).collect();
+    let wrapper_topics: Vec<KfTopicMetadata> = topics
+        .into_iter()
+        .map(|t| KfTopicMetadata::new(t))
+        .collect();
 
-    out.describe_objects(&wrapper_topics,output_type)
+    out.describe_objects(&wrapper_topics, output_type)
 }
 
 // -----------------------------------

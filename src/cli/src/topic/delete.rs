@@ -4,16 +4,13 @@
 //! CLI tree to generate Delete Topics
 //!
 
-
 use structopt::StructOpt;
 
-use fluvio_client::SpuController;
+use flv_client::SpuController;
 
 use crate::error::CliError;
-use crate::profile::SpuControllerConfig;
-use crate::profile::SpuControllerTarget;
-
-
+use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTarget;
 
 // -----------------------------------
 //  Parsed Config
@@ -23,7 +20,6 @@ use crate::profile::SpuControllerTarget;
 pub struct DeleteTopicConfig {
     pub name: String,
 }
-
 
 // -----------------------------------
 // CLI Options
@@ -54,11 +50,8 @@ pub struct DeleteTopicOpt {
 }
 
 impl DeleteTopicOpt {
-
-
     /// Validate cli options. Generate target-server and delete-topic configuration.
     fn validate(self) -> Result<(SpuControllerConfig, DeleteTopicConfig), CliError> {
-
         // profile specific configurations (target server)
         let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
         let delete_topic_cfg = DeleteTopicConfig { name: self.topic };
@@ -66,9 +59,7 @@ impl DeleteTopicOpt {
         // return server separately from config
         Ok((target_server, delete_topic_cfg))
     }
-
 }
-
 
 // -----------------------------------
 //  CLI Processing
@@ -80,9 +71,8 @@ pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliErro
 
     (match target_server.connect().await? {
         SpuControllerTarget::Kf(mut client) => client.delete_topic(&cfg.name).await,
-        SpuControllerTarget::Sc(mut client) => client.delete_topic(&cfg.name).await
+        SpuControllerTarget::Sc(mut client) => client.delete_topic(&cfg.name).await,
     })
-        .map(| topic_name | format!("topic \"{}\" deleted",topic_name))
-        .map_err(|err| err.into())
+    .map(|topic_name| format!("topic \"{}\" deleted", topic_name))
+    .map_err(|err| err.into())
 }
-

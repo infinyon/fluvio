@@ -5,7 +5,6 @@ mod common;
 mod error;
 mod consume;
 mod produce;
-mod profile;
 mod root_cli;
 mod spu;
 mod topic;

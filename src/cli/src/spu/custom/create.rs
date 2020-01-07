@@ -8,12 +8,10 @@ use std::convert::TryFrom;
 
 use structopt::StructOpt;
 
-
 use types::socket_helpers::ServerAddress;
 
 use crate::error::CliError;
-use crate::profile::ScConfig;
-
+use flv_client::profile::ScConfig;
 
 #[derive(Debug)]
 pub struct CreateCustomSpuConfig {
@@ -23,7 +21,6 @@ pub struct CreateCustomSpuConfig {
     pub private_server: ServerAddress,
     pub rack: Option<String>,
 }
-
 
 #[derive(Debug, StructOpt)]
 pub struct CreateCustomSpuOpt {
@@ -57,12 +54,10 @@ pub struct CreateCustomSpuOpt {
 }
 
 impl CreateCustomSpuOpt {
-
     /// Validate cli options. Generate target-server and create custom spu config.
     fn validate(self) -> Result<(ScConfig, CreateCustomSpuConfig), CliError> {
         // profile specific configurations (target server)
         let target_server = ScConfig::new(self.sc, self.profile)?;
-     
 
         // create custom spu config
         let cfg = CreateCustomSpuConfig {
@@ -76,16 +71,12 @@ impl CreateCustomSpuOpt {
         // return server separately from config
         Ok((target_server, cfg))
     }
-
-
 }
-
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 pub async fn process_create_custom_spu(opt: CreateCustomSpuOpt) -> Result<(), CliError> {
-
     let (target_server, cfg) = opt.validate()?;
 
     let mut sc = target_server.connect().await?;
@@ -95,6 +86,8 @@ pub async fn process_create_custom_spu(opt: CreateCustomSpuOpt) -> Result<(), Cl
         cfg.name,
         cfg.public_server,
         cfg.private_server,
-        cfg.rack
-    ).await.map_err(|err| err.into())
+        cfg.rack,
+    )
+    .await
+    .map_err(|err| err.into())
 }

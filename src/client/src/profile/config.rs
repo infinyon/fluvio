@@ -8,17 +8,17 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::convert::TryInto;
 
-use fluvio_client::ClientConfig;
-use fluvio_client::ScClient;
-use fluvio_client::KfClient;
-use fluvio_client::SpuController;
-use fluvio_client::SpuLeader;
-use fluvio_client::LeaderConfig;
-use fluvio_client::KfLeader;
-use fluvio_client::ClientError;
 use types::socket_helpers::ServerAddress;
 
-use crate::CliError;
+use crate::ClientConfig;
+use crate::ScClient;
+use crate::KfClient;
+use crate::SpuController;
+use crate::SpuLeader;
+use crate::LeaderConfig;
+use crate::KfLeader;
+use crate::ClientError;
+
 
 use super::profile_file::build_cli_profile_file_path;
 use super::profile_file::ProfileFile;
@@ -28,10 +28,8 @@ pub type CliClientConfig = ClientConfig<String>;
 const CLIENT_ID: &'static str = "fluvio_cli";
 
 fn addr_client_config(addr: ServerAddress) -> CliClientConfig {
-    ClientConfig::new(addr.to_string())
-        .client_id(CLIENT_ID)
+    ClientConfig::new(addr.to_string()).client_id(CLIENT_ID)
 }
-
 
 pub enum ReplicaLeaderTarget {
     Spu(SpuLeader),
@@ -45,21 +43,15 @@ pub enum ReplicaLeaderConfig {
     Kf(ServerAddress),
 }
 
-
 impl ReplicaLeaderConfig {
-
     pub fn new(
         sc_host_port: Option<String>,
         spu_host_port: Option<String>,
         kf_host_port: Option<String>,
-        profile_name: Option<String>) -> Result<Self,CliError> 
-    {
-
-        let profile = ProfileConfig::new_with_spu(
-            sc_host_port,
-            spu_host_port,
-            kf_host_port,
-            profile_name)?;
+        profile_name: Option<String>,
+    ) -> Result<Self, ClientError> {
+        let profile =
+            ProfileConfig::new_with_spu(sc_host_port, spu_host_port, kf_host_port, profile_name)?;
 
         if let Some(sc_server) = profile.sc_addr {
             Ok(Self::Sc(sc_server))
@@ -68,46 +60,48 @@ impl ReplicaLeaderConfig {
         } else if let Some(kf_server) = profile.kf_addr {
             Ok(Self::Kf(kf_server))
         } else {
-            Err(CliError::IoError(IoError::new(
+            Err(ClientError::IoError(IoError::new(
                 ErrorKind::Other,
                 "replica server configuration missing",
             )))
         }
     }
 
-    pub async fn connect(self, topic: &str, partition: i32) -> Result<ReplicaLeaderTarget,ClientError> {
-
+    pub async fn connect(
+        self,
+        topic: &str,
+        partition: i32,
+    ) -> Result<ReplicaLeaderTarget, ClientError> {
         match self {
             Self::Kf(addr) => {
                 let mut kf_client = KfClient::connect(addr_client_config(addr)).await?;
-                kf_client.find_leader_for_topic_partition(topic,partition).await
+                kf_client
+                    .find_leader_for_topic_partition(topic, partition)
+                    .await
                     .map(|leader| ReplicaLeaderTarget::Kf(leader))
-            },
+            }
             Self::Sc(addr) => {
                 let mut sc_client = ScClient::connect(addr_client_config(addr)).await?;
-                sc_client.find_leader_for_topic_partition(topic,partition).await
-                    .map(|leader | ReplicaLeaderTarget::Spu(leader))
-            },
+                sc_client
+                    .find_leader_for_topic_partition(topic, partition)
+                    .await
+                    .map(|leader| ReplicaLeaderTarget::Spu(leader))
+            }
             Self::Spu(addr) => {
-                let leader_config = LeaderConfig::new(
-                    addr,
-                    topic.to_owned(),
-                    partition)
-                .client_id(CLIENT_ID);
-                SpuLeader::connect(leader_config).await
+                let leader_config =
+                    LeaderConfig::new(addr, topic.to_owned(), partition).client_id(CLIENT_ID);
+                SpuLeader::connect(leader_config)
+                    .await
                     .map(|leader| ReplicaLeaderTarget::Spu(leader))
             }
         }
     }
-
 }
-
 
 pub enum SpuControllerTarget {
     Sc(ScClient<String>),
-    Kf(KfClient<String>)
+    Kf(KfClient<String>),
 }
-
 
 #[derive(Debug)]
 pub enum SpuControllerConfig {
@@ -115,44 +109,34 @@ pub enum SpuControllerConfig {
     Kf(ServerAddress),
 }
 
-
 impl SpuControllerConfig {
-
-    
     pub fn new(
         sc_host_port: Option<String>,
         kf_host_port: Option<String>,
-        profile_name: Option<String>) -> Result<Self,CliError> 
-    {
-
-        let profile = ProfileConfig::new(
-            sc_host_port,
-            kf_host_port,
-            profile_name)?;
+        profile_name: Option<String>,
+    ) -> Result<Self, ClientError> {
+        let profile = ProfileConfig::new(sc_host_port, kf_host_port, profile_name)?;
 
         if let Some(sc_server) = profile.sc_addr {
             Ok(Self::Sc(sc_server))
         } else if let Some(kf_server) = profile.kf_addr {
             Ok(Self::Kf(kf_server))
         } else {
-            Err(CliError::IoError(IoError::new(
+            Err(ClientError::IoError(IoError::new(
                 ErrorKind::Other,
                 "controller server configuration missing",
             )))
         }
     }
 
-    pub async fn connect(self) -> Result<SpuControllerTarget,ClientError> {
-
+    pub async fn connect(self) -> Result<SpuControllerTarget, ClientError> {
         match self {
-            Self::Kf(addr) => {
-                KfClient::connect(addr_client_config(addr)).await
-                    .map(|leader| SpuControllerTarget::Kf(leader))
-            },
-            Self::Sc(addr) => {
-                ScClient::connect(addr_client_config(addr)).await
-                    .map(|leader | SpuControllerTarget::Sc(leader))
-            }
+            Self::Kf(addr) => KfClient::connect(addr_client_config(addr))
+                .await
+                .map(|leader| SpuControllerTarget::Kf(leader)),
+            Self::Sc(addr) => ScClient::connect(addr_client_config(addr))
+                .await
+                .map(|leader| SpuControllerTarget::Sc(leader)),
         }
     }
 }
@@ -161,71 +145,45 @@ impl SpuControllerConfig {
 pub struct ScConfig(ServerAddress);
 
 impl ScConfig {
-
-    
-    pub fn new(
-        host_port: Option<String>,
-        profile_name: Option<String>) -> Result<Self,CliError> 
-    {
-
-        let profile = ProfileConfig::new(
-            host_port,
-            None,
-            profile_name)?;
+    pub fn new(host_port: Option<String>, profile_name: Option<String>) -> Result<Self, ClientError> {
+        let profile = ProfileConfig::new(host_port, None, profile_name)?;
 
         if let Some(sc_addr) = profile.sc_addr {
             Ok(Self(sc_addr))
         } else {
-            Err(CliError::IoError(IoError::new(
+            Err(ClientError::IoError(IoError::new(
                 ErrorKind::Other,
                 "Sc server configuration missing",
             )))
         }
     }
 
-    pub async fn connect(self) -> Result<ScClient<String>,ClientError> {
-
+    pub async fn connect(self) -> Result<ScClient<String>, ClientError> {
         ScClient::connect(addr_client_config(self.0)).await
-
     }
 }
-
 
 /// Configure Kafka using either manual address or profile
 pub struct KfConfig(ServerAddress);
 
 impl KfConfig {
-
-    
-    pub fn new(
-        host_port: Option<String>,
-        profile_name: Option<String>) -> Result<Self,CliError> 
-    {
-
-        let profile = ProfileConfig::new(
-            None,
-            host_port,
-            profile_name)?;
+    pub fn new(host_port: Option<String>, profile_name: Option<String>) -> Result<Self, ClientError> {
+        let profile = ProfileConfig::new(None, host_port, profile_name)?;
 
         if let Some(kf_addr) = profile.kf_addr {
             Ok(Self(kf_addr))
         } else {
-            Err(CliError::IoError(IoError::new(
+            Err(ClientError::IoError(IoError::new(
                 ErrorKind::Other,
                 "Kf server configuration missing",
             )))
         }
     }
 
-    pub async fn connect(self) -> Result<KfClient<String>,ClientError> {
-
+    pub async fn connect(self) -> Result<KfClient<String>, ClientError> {
         KfClient::connect(addr_client_config(self.0)).await
-
     }
 }
-
-
-    
 
 /// Profile parameters
 #[derive(Default, Debug, PartialEq)]
@@ -235,20 +193,17 @@ pub struct ProfileConfig {
     pub kf_addr: Option<ServerAddress>,
 }
 
-
 // -----------------------------------
 // Implementation
 // -----------------------------------
 
 impl ProfileConfig {
-
     /// generate config from cli parameter where we could have one of the config
     pub fn from_cli(
         sc_host_port: Option<String>,
         spu_host_port: Option<String>,
         kf_host_port: Option<String>,
-    ) -> Result<Self, CliError> {
-
+    ) -> Result<Self, ClientError> {
         let mut config = ProfileConfig::default();
 
         if let Some(host_port) = sc_host_port {
@@ -276,7 +231,7 @@ impl ProfileConfig {
         sc_host_port: Option<String>,
         kf_host_port: Option<String>,
         profile_name: Option<String>,
-    ) -> Result<Self, CliError> {
+    ) -> Result<Self, ClientError> {
         ProfileConfig::new_with_spu(sc_host_port, None, kf_host_port, profile_name)
     }
 
@@ -286,9 +241,9 @@ impl ProfileConfig {
         spu_host_port: Option<String>,
         kf_host_port: Option<String>,
         profile_name: Option<String>,
-    ) -> Result<Self, CliError> {
+    ) -> Result<Self, ClientError> {
         // build profile config from cli parameters
-        let cli_config = Self::from_cli(sc_host_port,spu_host_port,kf_host_port)?;
+        let cli_config = Self::from_cli(sc_host_port, spu_host_port, kf_host_port)?;
 
         // if server is configured from cli, do not load profile (as it impacts precedence)
         let profile_config = if cli_config.valid_servers_or_error().is_ok() {
@@ -311,14 +266,13 @@ impl ProfileConfig {
     }
 
     /// convert my self into target server
-    
 
     /// ensure there is at least one server.
-    fn valid_servers_or_error(&self) -> Result<(), CliError> {
+    fn valid_servers_or_error(&self) -> Result<(), ClientError> {
         if self.sc_addr.is_some() || self.spu_addr.is_some() || self.kf_addr.is_some() {
             Ok(())
         } else {
-            Err(CliError::IoError(IoError::new(
+            Err(ClientError::IoError(IoError::new(
                 ErrorKind::Other,
                 "no sc address or spu address is provided",
             )))
@@ -354,6 +308,4 @@ impl ProfileConfig {
             Ok(ProfileConfig::default())
         }
     }
-
 }
-

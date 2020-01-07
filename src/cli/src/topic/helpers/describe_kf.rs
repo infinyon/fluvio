@@ -11,8 +11,8 @@ use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
 
-use fluvio_client::SpuController;
-use fluvio_client::KfClient;
+use flv_client::SpuController;
+use flv_client::KfClient;
 
 use crate::OutputType;
 use crate::error::CliError;
@@ -20,37 +20,32 @@ use crate::DescribeObjectHandler;
 use crate::{KeyValOutputHandler, TableOutputHandler};
 use crate::Terminal;
 
-
 use super::KfTopicMetadata;
-
-
 
 // Connect to Kafka Controller and query server for topic
 pub async fn describe_kf_topics<O>(
     mut client: KfClient<String>,
     topics: Vec<String>,
     output_type: OutputType,
-    out: std::sync::Arc<O>
+    out: std::sync::Arc<O>,
 ) -> Result<(), CliError>
-    where O: Terminal
+where
+    O: Terminal,
 {
-    let topic_args = if topics.len() > 0 {
-        Some(topics)
-    } else {
-        None
-    };
+    let topic_args = if topics.len() > 0 { Some(topics) } else { None };
 
     // query none for empty topic_names array
     let topics = client.topic_metadata(topic_args).await?;
 
-    let wrapper_topics: Vec<KfTopicMetadata> = topics.into_iter().map(|t| KfTopicMetadata::new(t)).collect();
+    let wrapper_topics: Vec<KfTopicMetadata> = topics
+        .into_iter()
+        .map(|t| KfTopicMetadata::new(t))
+        .collect();
 
-    out.describe_objects(&wrapper_topics,output_type)
+    out.describe_objects(&wrapper_topics, output_type)
 }
 
-
 impl DescribeObjectHandler for KfTopicMetadata {
-
     fn label() -> &'static str {
         "topic"
     }
@@ -118,7 +113,6 @@ impl TableOutputHandler for KfTopicMetadata {
         rows
     }
 }
-
 
 impl KeyValOutputHandler for KfTopicMetadata {
     /// key value hash map implementation

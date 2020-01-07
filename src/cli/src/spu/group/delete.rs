@@ -6,9 +6,7 @@
 use structopt::StructOpt;
 
 use crate::error::CliError;
-use crate::profile::ScConfig;
-
-
+use flv_client::profile::ScConfig;
 
 // -----------------------------------
 //  Parsed Config
@@ -39,11 +37,8 @@ pub struct DeleteManagedSpuGroupOpt {
 }
 
 impl DeleteManagedSpuGroupOpt {
-
-
     /// Validate cli options. Generate target-server and delete spu group configuration.
     fn validate(self) -> Result<(ScConfig, DeleteManagedSpuGroupConfig), CliError> {
-
         let target_server = ScConfig::new(self.sc, self.profile)?;
 
         let delete_spu_group_cfg = DeleteManagedSpuGroupConfig { name: self.name };
@@ -51,24 +46,21 @@ impl DeleteManagedSpuGroupOpt {
         // return server separately from config
         Ok((target_server, delete_spu_group_cfg))
     }
-
-
 }
-
-
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process delete custom-spu cli request
-pub async fn process_delete_managed_spu_group(opt: DeleteManagedSpuGroupOpt) -> Result<(), CliError> {
-    
+pub async fn process_delete_managed_spu_group(
+    opt: DeleteManagedSpuGroupOpt,
+) -> Result<(), CliError> {
     let (target_server, delete_spu_group_cfg) = opt.validate()?;
 
     let mut sc = target_server.connect().await?;
 
-    sc.delete_group(&delete_spu_group_cfg.name).await.map_err(|err| err.into())
-
+    sc.delete_group(&delete_spu_group_cfg.name)
+        .await
+        .map_err(|err| err.into())
 }
-

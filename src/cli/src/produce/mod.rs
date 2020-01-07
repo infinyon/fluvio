@@ -18,9 +18,9 @@ mod produce {
     use flv_future_aio::io::BufReader;
     use flv_future_aio::io::BufReadExt;
     use types::{print_cli_err, print_cli_ok};
-    use fluvio_client::ReplicaLeader;
+    use flv_client::ReplicaLeader;
 
-    use crate::profile::ReplicaLeaderTarget;
+    use flv_client::profile::ReplicaLeaderTarget;
     use crate::CliError;
     use crate::Terminal;
     use crate::t_println;

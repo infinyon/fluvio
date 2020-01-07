@@ -13,7 +13,6 @@ doc = false
 
 [dependencies]
 log = "0.4.8"
-dirs = "1.0.2"
 bytes = "0.5.3"
 structopt = { version = "0.2.14", default-features = false }
 toml = "0.5.5"
@@ -35,5 +34,5 @@ kf-socket = { path = "../kf-socket" }
 k8-metadata = { path = "../k8-metadata"}
 sc-api = { path = "../api/sc-api"}
 spu-api = { path = "../api/spu-api"}
-fluvio-client = { path = "../client"}
+flv-client = { path = "../client"}
 

@@ -551,8 +551,7 @@ dependencies = [
  "async-trait",
  "bytes 0.5.3",
  "ctrlc",
- "dirs 1.0.5",
- "fluvio-client",
+ "flv-client",
  "flv-future-aio",
  "flv-future-core",
  "futures 0.3.1",
@@ -575,10 +574,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-client"
+name = "flv-client"
 version = "0.2.1"
 dependencies = [
  "async-trait",
+ "dirs 1.0.5",
  "flv-future-aio",
  "flv-future-core",
  "futures 0.3.1",
@@ -590,6 +590,7 @@ dependencies = [
  "serde",
  "serde_json",
  "spu-api",
+ "toml",
  "types",
 ]
 

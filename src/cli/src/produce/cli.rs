@@ -4,15 +4,12 @@
 //! CLI command for Produce operation
 //!
 
-
 use std::path::PathBuf;
 
 use structopt::StructOpt;
 
 use crate::error::CliError;
-use crate::profile::ReplicaLeaderConfig;
-
-
+use flv_client::profile::ReplicaLeaderConfig;
 
 // -----------------------------------
 //  Parsed Config
@@ -26,7 +23,6 @@ pub struct ProduceLogConfig {
     pub continuous: bool,
     pub records_form_file: Option<FileRecord>,
 }
-
 
 #[derive(Debug)]
 pub enum FileRecord {
@@ -100,17 +96,9 @@ pub struct ProduceLogOpt {
 }
 
 impl ProduceLogOpt {
-
-
     /// Validate cli options. Generate target-server and produce log configuration.
     pub fn validate(self) -> Result<(ReplicaLeaderConfig, ProduceLogConfig), CliError> {
-
-        let target_server = ReplicaLeaderConfig::new(
-            self.sc,
-            self.spu,
-            self.kf,
-            self.profile)?;
-
+        let target_server = ReplicaLeaderConfig::new(self.sc, self.spu, self.kf, self.profile)?;
 
         // generate file record
         let records_from_file = if let Some(record_per_line) = self.record_per_line {
@@ -126,12 +114,10 @@ impl ProduceLogOpt {
             topic: self.topic,
             partition: self.partition,
             records_form_file: records_from_file,
-            continuous: self.continuous
+            continuous: self.continuous,
         };
 
         // return server separately from config
         Ok((target_server, produce_log_cfg))
     }
 }
-
-

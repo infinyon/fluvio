@@ -8,11 +8,10 @@ use structopt::StructOpt;
 
 use crate::error::CliError;
 use crate::OutputType;
-use crate::profile::ScConfig;
+use flv_client::profile::ScConfig;
 use crate::Terminal;
 use crate::spu::helpers::format_spu_response_output;
 use crate::spu::helpers::flv_response_to_spu_metadata;
-
 
 #[derive(Debug)]
 pub struct ListSpusConfig {
@@ -40,11 +39,8 @@ pub struct ListSpusOpt {
 }
 
 impl ListSpusOpt {
-
-
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ScConfig, ListSpusConfig), CliError> {
-
         let target_server = ScConfig::new(self.sc, self.profile)?;
 
         // transfer config parameters
@@ -55,31 +51,25 @@ impl ListSpusOpt {
         // return server separately from topic result
         Ok((target_server, list_spu_cfg))
     }
-
-
 }
-
-
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
 
 /// Process list spus cli request
-pub async fn process_list_spus<O>(out: std::sync::Arc<O>,opt: ListSpusOpt) -> Result<(), CliError> 
-    where O: Terminal
+pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> Result<(), CliError>
+where
+    O: Terminal,
 {
-
     let (target_server, list_spu_cfg) = opt.validate()?;
 
     let mut sc = target_server.connect().await?;
 
     let flv_spus = sc.list_spu(false).await?;
-    
     let sc_spus = flv_response_to_spu_metadata(flv_spus);
 
     // format and dump to screen
-    format_spu_response_output(out,sc_spus, list_spu_cfg.output)?;
+    format_spu_response_output(out, sc_spus, list_spu_cfg.output)?;
     Ok(())
 }
-

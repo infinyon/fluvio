@@ -1,5 +1,5 @@
 [package]
-name = "fluvio-client"
+name = "flv-client"
 version = "0.2.1"
 edition = "2018"
 authors = ["fluvio.io"]
@@ -12,6 +12,8 @@ categories = ["stream", "fluvio", "client","stateful"]
 [dependencies]
 log = "0.4.8"
 rand = "0.7.2"
+dirs = "1.0.2"
+toml = "0.5.5"
 futures = { version = "0.3.1", features = ['async-await'] }
 async-trait = "0.1.21"
 serde = { version ="1.0.103", features = ['derive'] }
