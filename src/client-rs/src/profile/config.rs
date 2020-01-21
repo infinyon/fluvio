@@ -8,6 +8,8 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::convert::TryInto;
 
+use log::debug;
+
 use types::socket_helpers::ServerAddress;
 
 use crate::ClientConfig;
@@ -50,8 +52,9 @@ impl ReplicaLeaderConfig {
         kf_host_port: Option<String>,
         profile_name: Option<String>,
     ) -> Result<Self, ClientError> {
-        let profile =
-            ProfileConfig::new_with_spu(sc_host_port, spu_host_port, kf_host_port, profile_name)?;
+
+
+        let profile = ProfileConfig::new_with_spu(sc_host_port, spu_host_port, kf_host_port, profile_name)?;
 
         if let Some(sc_server) = profile.sc_addr {
             Ok(Self::Sc(sc_server))
@@ -204,6 +207,7 @@ impl ProfileConfig {
         spu_host_port: Option<String>,
         kf_host_port: Option<String>,
     ) -> Result<Self, ClientError> {
+
         let mut config = ProfileConfig::default();
 
         if let Some(host_port) = sc_host_port {
@@ -220,8 +224,6 @@ impl ProfileConfig {
             let address: ServerAddress = host_port.try_into()?;
             config.kf_addr = Some(address);
         }
-
-        config.valid_servers_or_error()?;
 
         Ok(config)
     }
@@ -242,13 +244,21 @@ impl ProfileConfig {
         kf_host_port: Option<String>,
         profile_name: Option<String>,
     ) -> Result<Self, ClientError> {
+
+        debug!("looking up spu using sc: {:#?}, spu: {:#?}, kf: {:#?}, profile: {:#?}",
+            sc_host_port,
+            spu_host_port,
+            kf_host_port,
+            profile_name);
+
         // build profile config from cli parameters
         let cli_config = Self::from_cli(sc_host_port, spu_host_port, kf_host_port)?;
 
-        // if server is configured from cli, do not load profile (as it impacts precedence)
         let profile_config = if cli_config.valid_servers_or_error().is_ok() {
+            debug!("one server address is found");
             cli_config
         } else {
+            debug!("no server address found, looking from profile");
             // build profile config from profile file
             let mut file_config = match profile_name {
                 Some(profile) => ProfileConfig::config_from_custom_profile(profile)?,

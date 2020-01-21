@@ -698,6 +698,7 @@ impl ReplicaLeader for KfLeader
 /// Implement simple polling stream for kafka
 /// it just iterates with simple delay
 pub struct FetchStream {
+    #[allow(unused)]
     leader: KfLeader
 }
 
