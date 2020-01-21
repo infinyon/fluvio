@@ -63,12 +63,20 @@ It is recommended to use custom SPU instead of managed SPU which allow SPU to ru
 
 Due to limitation of third party library, we need to apply DNS name for minikube cluster.
 
-Following script adds DNS entry ```minikubeCA``` to your /etc/hosts file.
-It also create new context ```mycube``` which uses ```minikubeCA``` for API server.
+First ensure minikube is set up by the following [instruction](https://www.fluvio.io/docs/getting-started/minikube/).
+
+When creating a new minikube cluster,  please specify kubernetes version 1.14x to ensure maximum compatibility as shown below: 
+
+```minikube start  --kubernetes-version v1.14.9```
+
+After cluster is created, run follow script below to allow connect to local minikube cluster:
 
 ```
 ./dev-tools/minikube-mycube.sh
 ```
+
+This script adds DNS entry ```minikubeCA``` to your /etc/hosts file.
+It also create and switch to new context ```mycube``` which uses ```minikubeCA``` for API server.
 
 
 ## Registering Custom SPU
