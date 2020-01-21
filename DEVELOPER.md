@@ -67,7 +67,9 @@ First ensure minikube is set up by the following [instruction](https://www.fluvi
 
 When creating a new minikube cluster,  please specify kubernetes version 1.14x to ensure maximum compatibility as shown below: 
 
-```minikube start  --kubernetes-version v1.14.9```
+```
+minikube start  --kubernetes-version v1.14.9
+```
 
 After cluster is created, run follow script below to allow connect to local minikube cluster:
 
@@ -78,6 +80,12 @@ After cluster is created, run follow script below to allow connect to local mini
 This script adds DNS entry ```minikubeCA``` to your /etc/hosts file.
 It also create and switch to new context ```mycube``` which uses ```minikubeCA``` for API server.
 
+## Set up Fluvio CRD
+
+Run script below to install CRD for Fluvio:
+```
+./k8-util/install.sh
+```
 
 ## Registering Custom SPU
 
