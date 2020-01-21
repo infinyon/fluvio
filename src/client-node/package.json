@@ -2,7 +2,7 @@
     "name": "flv-node",
     "version": "0.1.0",
     "description": "Fluvio Nodejs binding",
-    "main": "lib/index.js",
+    "main": "dylib/index.node",
     "author": "fluvio.i",
     "license": "ISC",
     "dependencies": {},
