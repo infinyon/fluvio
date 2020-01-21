@@ -1,9 +1,12 @@
 {
-    "name": "hello",
+    "name": "flv-node",
     "version": "0.1.0",
-    "description": "",
+    "description": "Fluvio Nodejs binding",
     "main": "lib/index.js",
     "author": "fluvio.i",
     "license": "ISC",
-    "dependencies": {}
+    "dependencies": {},
+    "scripts": {
+        "install": "nj-cli build"
+     }
 }
