@@ -15,7 +15,7 @@ rand = "0.7.2"
 dirs = "1.0.2"
 toml = "0.5.5"
 futures = { version = "0.3.1", features = ['async-await'] }
-async-trait = "0.1.21"
+async-trait = "0.1.22"
 serde = { version ="1.0.103", features = ['derive'] }
 serde_json = "1.0.39"
 flv-future-core = { path = "../future-helper" }

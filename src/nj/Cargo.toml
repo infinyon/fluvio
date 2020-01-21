@@ -1,0 +1,15 @@
+[package]
+name = "nj"
+version = "0.1.0"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[features]
+default = ["node"]
+node = ["nj-sys","nj-core"]
+build = ["nj-build"]
+
+[dependencies]
+nj-sys = { path = "nj-sys", optional = true }
+nj-core = { path = "nj-core", optional = true  }
+nj-build = { path = "nj-build", optional = true }

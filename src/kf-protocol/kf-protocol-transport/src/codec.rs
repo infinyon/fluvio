@@ -1,7 +1,6 @@
 use std::io::Cursor;
 use std::io::Error as IoError;
 
-use log::debug;
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
@@ -37,7 +36,7 @@ impl Decoder for KfCodec {
             let mut src = Cursor::new(&*bytes);
             let mut packet_len: i32 = 0;
             packet_len.decode(&mut src, 0)?;
-            debug!("KCodec Decoder: raw: {}, message size: {}", len, packet_len);
+            trace!("KCodec Decoder: raw: {}, message size: {}", len, packet_len);
             if (packet_len + 4) as usize <= len {
                 trace!(
                     "KCodec Decoder: all packets are in buffer len: {} ",
@@ -47,7 +46,7 @@ impl Decoder for KfCodec {
                 bytes.truncate(0);
                 Ok(Some(rest))
             } else {
-                debug!(
+                trace!(
                     "KCodec Decoder buffer len: {} is less than packet+4: {}, waiting",
                     len,
                     packet_len + 4
@@ -55,7 +54,7 @@ impl Decoder for KfCodec {
                 Ok(None)
             }
         } else {
-            debug!("KCodec Decoder received raw bytes len: {} less than 4 not enough for size", len);
+            trace!("KCodec Decoder received raw bytes len: {} less than 4 not enough for size", len);
             Ok(None)
         }
     }

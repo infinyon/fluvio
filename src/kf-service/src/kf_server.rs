@@ -16,6 +16,7 @@ use futures::channel::mpsc::channel;
 use log::error;
 use log::info;
 use log::trace;
+use log::debug;
 use log::warn;
 use async_trait::async_trait;
 
@@ -136,7 +137,7 @@ where
                     let service = self.service.clone();
 
                     let ft = async move {
-                        trace!("incoming connection {:#?}", stream);
+                        debug!("new connection from {}", stream.peer_addr().map(|addr| addr.to_string()).unwrap_or("".to_owned()));
                         let socket: KfSocket = stream.into();
 
                         if let Err(err) = service.respond(context.clone(), socket).await {

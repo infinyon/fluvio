@@ -3,6 +3,10 @@
 pub use async_std::sync::Sender;
 pub use async_std::sync::Receiver;
 pub use inner::Channel;
+pub use async_std::sync::RwLock;
+pub use async_std::sync::RwLockReadGuard;
+pub use async_std::sync::RwLockWriteGuard;
+
 
 mod inner {
 

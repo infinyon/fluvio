@@ -8,91 +8,73 @@ mod util;
 pub use async_test_derive::test_async;
 
 pub use util::sleep;
-pub use async_std::task::JoinHandle;
+pub use task::*;
 
-use std::future::Future;
-
-use async_std::task;
-use log::trace;
+mod task {
 
 
-/// run future and wait forever
-/// this is typically used in the server
-pub fn run<F>(spawn_closure: F)
-where
-    F: Future<Output = ()> + Send + 'static 
-{   
-    task::block_on(spawn_closure);
-}
+    use std::future::Future;
 
-/// run future and wait forever
-/// this is typically used in the server
-pub fn main<F>(spawn_closure: F)
-where
-    F: Future<Output = ()> + Send + 'static 
-{   
-    use std::time::Duration;
+    use async_std::task::JoinHandle;
+    use async_std::task;
+    use log::trace;
 
-    task::block_on(async{
-        spawn_closure.await;
-        // do infinite loop for now
-        loop {
-            sleep(Duration::from_secs(3600)).await;
-        }
-    });
-}
+    use super::sleep;
 
-/// use new future API
-pub trait FutureHelper {
-    /// block until closure is completed
-    fn block_on_ft3<F, R, E>(&mut self, f: F) -> Result<R, E>
+    /// run future and wait forever
+    /// this is typically used in the server
+    pub fn run<F>(spawn_closure: F)
     where
-        R: Send + 'static,
-        E: Send + 'static,
-        F: Send + 'static + Future<Output = Result<R, E>>;
+        F: Future<Output = ()> + Send + 'static 
+    {   
+        task::block_on(spawn_closure);
+}
 
-    fn block_on_all_ft3<F, R, E>(self, f: F) -> Result<R, E>
+    /// run future and wait forever
+    /// this is typically used in the server
+    pub fn main<F>(spawn_closure: F)
     where
-        R: Send + 'static,
-        E: Send + 'static,
-        F: Send + 'static + Future<Output = Result<R, E>>;
+        F: Future<Output = ()> + Send + 'static 
+    {   
+        use std::time::Duration;
+
+        task::block_on(async{
+            spawn_closure.await;
+            // do infinite loop for now
+            loop {
+                sleep(Duration::from_secs(3600)).await;
+            }
+        });
+    }
 
 
-    /// spawn closure
-    fn spawn3<F>(&mut self, future: F) -> &mut Self
+    pub fn spawn<F,T>(future: F) -> JoinHandle<T>
     where
-        F: Future<Output = Result<(), ()>> + Send + 'static;
+        F: Future<Output = T> + 'static + Send, 
+        T: Send + 'static
+    {
+        trace!("spawning future");
+        task::spawn(future)
+    }
+
+    pub fn spawn_blocking<F, T>(future: F) -> JoinHandle<T>
+    where
+        F: FnOnce() -> T + Send + 'static,
+        T: Send + 'static
+    {
+        trace!("spawning blocking");
+        task::spawn_blocking(future)
+    }
+
+
+    /// same as async async std block on
+    pub fn run_block_on<F,T>(f:F) -> T
+        where F: Future<Output = T>
+    {
+        task::block_on(f)
+    } 
+
 }
-
-
-
-
-pub fn spawn<F>(future: F) -> JoinHandle<()>
-where
-    F: Future<Output = ()> + 'static + Send, 
-{
-    trace!("spawning future");
-    task::spawn(future)
-}
-
-pub fn spawn_blocking<F, T>(future: F) -> JoinHandle<T>
-where
-    F: FnOnce() -> T + Send + 'static,
-    T: Send + 'static
-{
-    trace!("spawning blocking");
-    task::spawn_blocking(future)
-}
-
-
-/// same as async async std block on
-pub fn run_block_on<F,T>(f:F) -> T
-    where F: Future<Output = T>
-{
-    task::block_on(f)
-} 
-
-
 
 #[cfg(test)]
 mod test {

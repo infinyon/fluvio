@@ -4,7 +4,6 @@ use std::fmt;
 use std::fmt::Display;
 
 use log::trace;
-use log::debug;
 
 use kf_protocol::bytes::Buf;
 use kf_protocol::bytes::BufMut;
@@ -145,7 +144,7 @@ where
         T: BufMut,
     {
         let len = self.write_size(version) as i32;
-        debug!("encoding kf request: {} version: {}, len: {}", std::any::type_name::<R>(),version,len);
+        trace!("encoding kf request: {} version: {}, len: {}", std::any::type_name::<R>(),version,len);
         len.encode(out, version)?;
 
         trace!("encoding request header: {:#?}", &self.header);

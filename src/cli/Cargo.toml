@@ -34,5 +34,5 @@ kf-socket = { path = "../kf-socket" }
 k8-metadata = { path = "../k8-metadata"}
 sc-api = { path = "../api/sc-api"}
 spu-api = { path = "../api/spu-api"}
-flv-client = { path = "../client"}
+flv-client = { path = "../client-rs"}
 

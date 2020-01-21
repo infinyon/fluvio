@@ -512,6 +512,7 @@ impl KfLeader {
     }
 
      /// fetch logs
+     #[allow(unused)]
      async fn fetch_logs_inner(
         &mut self,
         offset: i64,

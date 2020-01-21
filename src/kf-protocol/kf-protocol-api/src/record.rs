@@ -281,6 +281,10 @@ where
     pub fn get_value(&self) -> &B {
         &self.value
     }
+
+    pub fn value(self) -> B {
+        self.value
+    }
 }
 
 impl<B> Debug for Record<B>

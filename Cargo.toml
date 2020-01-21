@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "src/cli",
-    "src/client",
+    "src/client-rs",
+    "src/client-node",
     "src/future-aio",
     "src/future-helper",
     "src/api/internal-api",
@@ -23,7 +24,8 @@ members = [
     "src/storage",
     "src/test-helper",
     "src/types",
-    "src/utils"
+    "src/utils",
+    "src/nj"
 ]
 
 # profile to make image sizer smaller

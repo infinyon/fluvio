@@ -45,6 +45,12 @@ impl<A> ScClient<A> {
     }
 }
 
+impl<A> ScClient<A> {
+    pub fn inner(&self) -> &Client<A> {
+        &self.0
+    }
+}
+
 impl<A> ScClient<A>
 where
     A: ToSocketAddrs + Display,

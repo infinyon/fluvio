@@ -1,1 +1,1 @@
-RUST_LOG=sc_core=trace,k8_config=debug,k8_client=debug,tokio_reactor=error target/debug/sc-k8
+RUST_LOG=sc_core=trace,k8_config=debug,k8_client=debug,tokio_reactor=error target/debug/flv-sc-k8

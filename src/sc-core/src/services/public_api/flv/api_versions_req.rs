@@ -1,5 +1,5 @@
 use std::io::Error;
-use log::debug;
+use log::trace;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
@@ -48,7 +48,7 @@ pub async fn handle_api_versions_request(
         FlvFetchSpusRequest::DEFAULT_API_VERSION,
     ));
 
-    debug!("flv api versions response");
+    trace!("flv api versions response: {:#?}",response);
 
     Ok(request.new_response(response))
 }

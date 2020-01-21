@@ -1,0 +1,12 @@
+[package]
+name = "nj-cli"
+version = "0.1.0"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[workspace]
+
+[dependencies]
+log = "0.4.8"
+structopt = { version = "0.2.14", default-features = false }
+cargo_metadata = "0.9.1"

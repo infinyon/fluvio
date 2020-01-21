@@ -31,7 +31,6 @@ mod test {
     // fake future helper so that this can be resolved in this crate
     mod flv_future_core {
         pub use crate::run_block_on;
-        pub use crate::FutureHelper;
         pub use crate::assert_async_block;
     }
     

@@ -1,0 +1,16 @@
+[package]
+name = "nj-example-function"
+version = "0.0.1"
+authors = ["fluvio.io"]
+edition = "2018"
+
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+nj = { path = "../.."}
+
+[build-dependencies]
+nj = { path = "../../", features = ["build"] }
