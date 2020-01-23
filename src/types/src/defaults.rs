@@ -1,5 +1,4 @@
 pub const PRODUCT_NAME: &'static str = "fluvio";
-pub const IMAGE_NAME: &'static str = "infinyon/fluvio-spu";
 
 // SPU/SC Server Path
 pub const SERVER_CONFIG_BASE_PATH: &'static str = "/etc";

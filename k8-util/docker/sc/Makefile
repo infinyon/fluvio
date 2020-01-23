@@ -1,27 +1,20 @@
-NAME = infinyon/fluvio-sc
-TAG = 0.2.1
+NAME = $(REGISTRY)/fluvio-sc
+TAG = $(VERSION)
 BIN_DIR = ../../../target/x86_64-unknown-linux-musl/$(BIN_NAME)
 
-all:	push
+all:	build
 
 
 copy_binaries:
 	mkdir -p target
-	cp	${BIN_DIR}/sc-server target
+	cp	${BIN_DIR}/sc-k8-server target
 
 build:	copy_binaries
 	docker build -f Dockerfile.sc  -t $(NAME):$(TAG)  ./target
 	
-push_registry:
-	docker tag $(NAME):$(TAG) localhost:5000/$(NAME):$(TAG)
-	docker push localhost:5000/$(NAME):$(TAG)
-
-pull_minikube:
-	eval $$(minikube docker-env); \
-	docker pull localhost:5000/$(NAME):$(TAG); \
-	docker tag localhost:5000/$(NAME):$(TAG) $(NAME):$(TAG)
-
-push:	push_registry pull_minikube
-
-push_release:	build
+push:	build
 	docker push $(NAME):$(TAG)
+
+minikube:	push
+	eval $$(minikube docker-env); \
+	docker pull $(NAME):$(TAG);

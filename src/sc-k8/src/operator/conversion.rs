@@ -27,11 +27,13 @@ use types::defaults::SPU_DEFAULT_NAME;
 use types::defaults::SPU_PUBLIC_PORT;
 use types::defaults::SPU_PRIVATE_PORT;
 use types::defaults::PRODUCT_NAME;
-use types::defaults::IMAGE_NAME;
 use types::defaults::FLV_LOG_BASE_DIR;
 use types::defaults::FLV_LOG_SIZE;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+fn find_spu_image() -> String {
+    std::env::var("SPU_IMAGE").expect("SPU IMAGE must be passed as env")
+}
 
 /// convert SpuGroup to Statefulset
 pub fn convert_cluster_to_statefulset(
@@ -106,7 +108,7 @@ fn generate_stateful(
             termination_grace_period_seconds: Some(10),
             containers: vec![ContainerSpec {
                 name: SPU_DEFAULT_NAME.to_owned(),
-                image: Some(format!("{}:{}",IMAGE_NAME,VERSION)),
+                image: Some(find_spu_image()),
                 ports: vec![public_port, private_port],
                 volume_mounts: vec![VolumeMount {
                     name: "data".to_owned(),

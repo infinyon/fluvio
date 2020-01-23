@@ -7,10 +7,12 @@ metadata:
 spec:
   containers:
     - name: flv-sc
-      image: infinyon/fluvio-sc:0.2.1
+      image: {{ .Values.registry }}/fluvio-sc:{{ .Values.fluvioVersion }}
       imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 9003
       env:
         - name: RUST_LOG
-          value: sc_server=info
+          value: {{ .Values.scLog }}
+        - name:  SPU_IMAGE
+          value: {{ .Values.registry }}/fluvio-spu:{{ .Values.fluvioVersion }}

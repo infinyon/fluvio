@@ -1,5 +1,5 @@
 FROM scratch
 
-COPY    sc-server  /fluvio/sc-server
+COPY    sc-k8-server  /fluvio/sc-k8-server
 
-CMD ["/fluvio/sc-server"]
+CMD ["/fluvio/sc-k8-server"]

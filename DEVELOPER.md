@@ -124,13 +124,42 @@ Get SPU
  fluvio spu list --sc 127.0.0.1:9003
 ```
 
-## Setting up for Kubernetes local development
+## Deploying docker images to minikube
 
+Steps are:
+* First make sure to shut down sc and custom spu servers.
+* Delete Custom SPU and topics.
+* Make sure docker is running
+  
 Run following script to allow host docker to access minikube docker.  Without it, you can't upload image to minikube.
 
 ```
 ./dev-tools/minikube-docker.sh 
 ```
+
+Ensure you have setup tunnel so can access SC and SPU from your machine:
+```
+sudo ./k8-util/minikube-tunnel.sh
+```
+
+Create Docker images locally:
+```
+make minikube_image
+```
+
+## Helm Install
+
+Install helm
+```
+brew install helm
+```
+
+Deploy docker images
+```
+./k8-utils/deploy.sh
+```
+
+## Release
 
 
 

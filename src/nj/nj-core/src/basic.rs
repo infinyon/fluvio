@@ -81,7 +81,7 @@ impl JsEnv {
 
     pub fn create_double(&self,value: f64) -> Result<napi_value,NjError> {
 
-        let mut result: napi_value = ptr::null_mut();
+        let mut result = ptr::null_mut();
         napi_call_result!(
             crate::sys::napi_create_double(
                 self.0,
@@ -94,7 +94,7 @@ impl JsEnv {
 
     pub fn create_int64(&self,value: i64) -> Result<napi_value,NjError> {
 
-        let mut result: napi_value = ptr::null_mut();
+        let mut result = ptr::null_mut();
         napi_call_result!(
             crate::sys::napi_create_int64(
                 self.0,
@@ -107,7 +107,7 @@ impl JsEnv {
 
     pub fn create_int32(&self,value: i32) -> Result<napi_value,NjError> {
 
-        let mut result: napi_value = ptr::null_mut();
+        let mut result = ptr::null_mut();
         napi_call_result!(
             crate::sys::napi_create_int32(
                 self.0,

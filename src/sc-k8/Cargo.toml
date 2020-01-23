@@ -4,6 +4,10 @@ edition = "2018"
 version = "0.2.1"
 authors = ["fluvio.io"]
 
+[[bin]]
+name = "sc-k8-server"
+path = "src/main.rs"
+doc = false
 
 [dependencies]
 rand = "0.7.2"

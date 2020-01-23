@@ -1,12 +1,14 @@
+VERSION := $(shell cat VERSION)
 TOOLCHAIN = "./rust-toolchain"
 RUSTV = $(shell cat ${TOOLCHAIN})
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
 CARGO_BUILD=build --release
 BIN_NAME=release
-PUSH=push
+MAKE_CMD=build
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
 GITHUB_TAG=0.2.1
+DOCKER_REGISTRY=infinyon
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
@@ -34,27 +36,40 @@ release_cli_linux:
 	cd /tmp;tar -czvf cli-${TARGET_LINUX}-release.tar.gz $(CLI_BUILD)_${TARGET_LINUX};rm -rf $(CLI_BUILD)_${TARGET_LINUX}
 
 
+all_image:	linux-spu-server spu_image linux-sc-server sc_image
 
 # create docker images for release
-release_image:	PUSH=push_release
+release_image:	MAKE_CMD=push_release
+release_image:	all_image
 
-minikube_image:	linux-spu-server spu_image linux-sc-server sc_image
-release_image:	linux-spu-server spu_image spu_image linux-sc-server sc_image
+develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
+develop_image: 	all_image
+
+local_image:	develop_image
+local_image:	DOCKER_REGISTRY=localhost:5000/infinyon
+
+minikube_image:	local_image
+minikube_image:	MAKE_CMD=minikube
 
 
+aws_dev_image:	develop_image
+aws_dev_image:	MAKE_CMD=push
+aws_dev_image:	DOCKER_REGISTRY=$(AWS_ECR)
 
-linux-sc-server:
-	cargo $(CARGO_BUILD) --bin sc-server  --target ${TARGET_LINUX}
+linux-sc-server:	install_musl
+	cargo $(CARGO_BUILD) --bin sc-k8-server  --target ${TARGET_LINUX}
 
-linux-spu-server:
+linux-spu-server:	install_musl
 	cargo $(CARGO_BUILD) --bin spu-server  --target ${TARGET_LINUX}
 
 
-spu_image:	install_musl linux-spu-server
-	make build BIN_NAME=$(BIN_NAME) $(PUSH) -C k8-util/docker/spu
+spu_image:	 linux-spu-server
+	echo "Building SPU image with version: ${VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
 
 sc_image:	install_musl linux-spu-server
-	make build BIN_NAME=$(BIN_NAME) $(PUSH) -C k8-util/docker/sc
+	echo "Building SC image with version: ${VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
 	
 
 cargo_cache_dir:
