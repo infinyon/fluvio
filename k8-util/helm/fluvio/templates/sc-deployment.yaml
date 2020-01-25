@@ -5,10 +5,11 @@ metadata:
   labels:
     app: flv-sc
 spec:
+  serviceAccountName: {{ .Values.serviceAccount.name }}
   containers:
     - name: flv-sc
       image: {{ .Values.registry }}/fluvio-sc:{{ .Values.fluvioVersion }}
-      imagePullPolicy: IfNotPresent
+      imagePullPolicy: {{ .Values.imagePolicy }}
       ports:
         - containerPort: 9003
       env:

@@ -3,6 +3,7 @@ use std::env;
 use std::fmt;
 
 use http;
+use http::header::InvalidHeaderValue;
 use isahc::Error as HttpError;
 
 use k8_diff::DiffError;
@@ -16,6 +17,7 @@ use k8_metadata::client::MetadataClientError;
 pub enum ClientError {
     IoError(IoError),
     HttpError(http::Error),
+    InvalidHttpHeader(InvalidHeaderValue),
     EnvError(env::VarError),
     JsonError(serde_json::Error),
     DiffError(DiffError),
@@ -23,6 +25,12 @@ pub enum ClientError {
     K8ConfigError(ConfigError),
     PatchError,
     NotFound,
+}
+
+impl From<InvalidHeaderValue> for ClientError {
+    fn from(error: InvalidHeaderValue) -> Self {
+        Self::InvalidHttpHeader(error)
+    }
 }
 
 impl From<IoError> for ClientError {
@@ -79,7 +87,8 @@ impl fmt::Display for ClientError {
             Self::DiffError(err) => write!(f, "{:#?}", err),
             Self::PatchError => write!(f, "patch error"),
             Self::HttpClientError(err) => write!(f,"{}",err),
-            Self::K8ConfigError(err) => write!(f,"{}",err)
+            Self::K8ConfigError(err) => write!(f,"{}",err),
+            Self::InvalidHttpHeader(err) => write!(f,"{}",err)
         }
     }
 }

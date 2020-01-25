@@ -63,6 +63,14 @@ impl K8HttpClientBuilder {
 
         builder.build().map_err(|err| err.into())
     }
+
+    /// get any additional auth token that is required
+    pub fn token(&self) -> Option<String> {
+        match &self.0 {
+            K8Config::Pod(pod) =>  Some(pod.token.to_owned()),
+            _ => None
+        }
+    }
 }
 
 /// Configure builder if we are out of cluster, 

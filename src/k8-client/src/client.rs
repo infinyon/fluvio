@@ -17,8 +17,9 @@ use http::Uri;
 use http::status::StatusCode;
 use http::header::ACCEPT;
 use http::header::CONTENT_TYPE;
+use http::header::AUTHORIZATION;
+use http::header::HeaderValue;
 use isahc::prelude::*;
-use isahc::ResponseFuture;
 use isahc::HttpClient;
 
 use k8_metadata::core::Spec;
@@ -46,84 +47,6 @@ use crate::K8HttpClientBuilder;
 
 
 
-/// handle request. this is async function
-async fn handle_request<T>(
-    response_future: ResponseFuture<'_>
-) -> Result<T, ClientError>
-where
-    T: DeserializeOwned,
-{
-
-    let mut resp = response_future.await?;
-
-    let status = resp.status();
-    debug!("response status: {:#?}", status);
-
-    if status == StatusCode::NOT_FOUND {
-        return Err(ClientError::NotFound);
-    }
-
-    /*
-    let text = resp.text()?;
-    trace!("text: {}",text);
-   
-    serde_json::from_str(&text).map_err(|err| err.into())
-    */
-    resp.json().map_err(|err| err.into())
-}
-
-/// return stream of chunks, chunk is a bytes that are stream thru http channel
-fn stream_of_chunks<S>(client: &HttpClient, uri: Uri) -> impl Stream< Item = Vec<u8>> + '_
-where
-    K8Watch<S, S::Status>: DeserializeOwned,
-    S: Spec + Debug,
-    S::Status: Debug,
-{
-    debug!("streaming: {}", uri);
-   
-    let ft = async move {
-        match client.get_async(uri).await {
-            Ok(response) => {
-                trace!("res status: {}", response.status());
-                trace!("res header: {:#?}", response.headers());
-                BodyStream::new(response.into_body())
-            },
-            Err(err) => {
-                error!("error getting streaming: {}",err);
-                BodyStream::empty()
-            }
-        }
-       
-    };
-
-    ft.flatten_stream()
-}
-
-fn stream<S>(client: &HttpClient, uri: Uri) -> impl Stream<Item = TokenStreamResult<S,S::Status,ClientError>> + '_ 
-    where
-        K8Watch<S, S::Status>: DeserializeOwned,
-        S: Spec + Debug + 'static,
-        S::Status: Debug
-{
-    
-    stream_of_chunks(client,uri).map(|chunk| {   
-
-        trace!("decoding raw stream : {}", String::from_utf8_lossy(&chunk).to_string());
-
-        let result: Result<K8Watch<S, S::Status>, serde_json::Error> = 
-            serde_json::from_slice(&chunk).map_err(|err| {
-                error!("parsing error: {}", err);
-                err
-            });
-        Ok(vec![match result {
-            Ok(obj) => {
-                trace!("de serialized: {:#?}", obj);
-                Ok(obj)
-            }
-            Err(err) => Err(err.into()),
-        }])
-    })
-}
 
 
 
@@ -132,7 +55,8 @@ fn stream<S>(client: &HttpClient, uri: Uri) -> impl Stream<Item = TokenStreamRes
 #[derive(Debug)]
 pub struct K8Client {
     client: HttpClient,
-    host: String
+    host: String,
+    token: Option<String>
 }
 
 
@@ -152,10 +76,13 @@ impl K8Client {
         let helper = K8HttpClientBuilder::new(config);
         let client = helper.build()?;
         let host = helper.config().api_path().to_owned();
+        let token = helper.token();
+        debug!("using k8 token: {:#?}",token);
         Ok(
             Self {
                 client,
-                host
+                host,
+                token
             }
         )
     }
@@ -164,7 +91,117 @@ impl K8Client {
     fn hostname(&self) -> &str {
         &self.host
     }
+
+    fn finish_request<B>(&self,request: &mut Request<B>) -> Result<(),ClientError>
+        where B: Into<Body>
+    {
+        if let Some(ref token) = self.token {
+            let full_token = format!("Bearer {}",token);
+            request.headers_mut().insert(AUTHORIZATION,HeaderValue::from_str(&full_token)?);
+        }
+        Ok(())
+    }
+
+    /// handle request. this is async function
+    async fn handle_request<B,T>(
+        &self,
+        mut request: Request<B>
+    ) -> Result<T, ClientError>
+    where
+        T: DeserializeOwned,
+        B: Into<Body>
+    {
+        self.finish_request(&mut request)?;
+        
+        let mut resp = self.client.send_async(request).await?;
+
+        let status = resp.status();
+        debug!("response status: {:#?}", status);
+
+        if status == StatusCode::NOT_FOUND {
+            return Err(ClientError::NotFound);
+        }
+
+        /*
+        let text = resp.text()?;
+        trace!("text: {}",text);
     
+        serde_json::from_str(&text).map_err(|err| err.into())
+        */
+        resp.json().map_err(|err| err.into())
+    }
+
+
+    /// return stream of chunks, chunk is a bytes that are stream thru http channel
+    fn stream_of_chunks<S>(&self,uri: Uri) -> impl Stream< Item = Vec<u8>> + '_
+    where
+        K8Watch<S, S::Status>: DeserializeOwned,
+        S: Spec + Debug,
+        S::Status: Debug,
+    {
+        debug!("streaming: {}", uri);
+
+
+        let ft = async move {
+
+            let mut request = match http::Request::get(uri).body(Body::empty()) {
+                Ok(req) => req,
+                Err(err) =>  {
+                    error!("error uri err: {}",err);
+                    return BodyStream::empty();
+                }
+            };
+
+            if let Err(err) = self.finish_request(&mut request) {
+                error!("error finish request: {}",err);
+                return  BodyStream::empty()
+            };
+
+            match self.client.send_async(request).await {
+                Ok(response) => {
+                    trace!("res status: {}", response.status());
+                    trace!("res header: {:#?}", response.headers());
+                    BodyStream::new(response.into_body())
+                },
+                Err(err) => {
+                    error!("error getting streaming: {}",err);
+                    BodyStream::empty()
+                }
+            }
+        
+        };
+
+        ft.flatten_stream()
+    }
+
+
+    fn stream<S>(&self, uri: Uri) -> impl Stream<Item = TokenStreamResult<S,S::Status,ClientError>> + '_ 
+    where
+        K8Watch<S, S::Status>: DeserializeOwned,
+        S: Spec + Debug + 'static,
+        S::Status: Debug
+    {
+
+        self.stream_of_chunks(uri).map(|chunk| {   
+
+            trace!("decoding raw stream : {}", String::from_utf8_lossy(&chunk).to_string());
+
+            let result: Result<K8Watch<S, S::Status>, serde_json::Error> = 
+                serde_json::from_slice(&chunk).map_err(|err| {
+                    error!("parsing error: {}", err);
+                    error!("error raw stream {}", String::from_utf8_lossy(&chunk).to_string());
+                    err
+                });
+            Ok(vec![match result {
+                Ok(obj) => {
+                    trace!("de serialized: {:#?}", obj);
+                    Ok(obj)
+                }
+                Err(err) => Err(err.into()),
+            }])
+        })
+    }
+
 }
 
 
@@ -188,8 +225,7 @@ impl MetadataClient for K8Client {
         let uri = metadata.item_uri(self.hostname());
         debug!("retrieving item: {}", uri);
 
-        let req = self.client.get_async(uri);
-        handle_request(req).await
+        self.handle_request(http::Request::get(uri).body(Body::empty())?).await
     }
 
     async fn retrieve_items<S>(
@@ -204,8 +240,7 @@ impl MetadataClient for K8Client {
 
         debug!("retrieving items: {}", uri);
 
-        let req = self.client.get_async(uri);
-        handle_request(req).await
+        self.handle_request(http::Request::get(uri).body(Body::empty())?).await
     }
 
     async fn delete_item<S,M>(
@@ -219,8 +254,7 @@ impl MetadataClient for K8Client {
         let uri = metadata.item_uri(self.hostname());
         debug!("delete item on url: {}", uri);
 
-        let req = self.client.delete_async(uri);
-        handle_request(req).await
+        self.handle_request(http::Request::delete(uri).body(Body::empty())?).await
     }
 
     /// create new object
@@ -249,9 +283,7 @@ impl MetadataClient for K8Client {
             .header(CONTENT_TYPE,"application/json")
             .body(bytes)?;
 
-        let req = self.client.send_async(request);
-
-        handle_request(req).await
+        self.handle_request(request).await
     }
 
     /// update status
@@ -285,9 +317,7 @@ impl MetadataClient for K8Client {
             .header(CONTENT_TYPE,"application/json")
             .body(bytes)?;
 
-        let req = self.client.send_async(request);
-
-        handle_request(req).await
+        self.handle_request(request).await
     }
 
     /// patch existing with spec
@@ -319,8 +349,7 @@ impl MetadataClient for K8Client {
             )
             .body(bytes)?;
 
-        let req = self.client.send_async(request);
-        handle_request(req).await
+        self.handle_request(request).await
     }
 
 
@@ -344,7 +373,7 @@ impl MetadataClient for K8Client {
             ..Default::default()
         };
         let uri = items_uri::<S>(self.hostname(), namespace, Some(&opt));
-        stream(&self.client,uri).boxed()
+        self.stream(uri).boxed()
     }
     
 }

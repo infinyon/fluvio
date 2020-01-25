@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.serviceAccount.name }}
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+    - pods
+    - services
+    - statefulsets.apps
+    - persistentvolumeclaims
+    - persistentvolumes
+    - replicasets
+    - deployments
+  verbs: ["*"]
+- apiGroups:  ["apps"]
+  resources:  ["*"]
+  verbs: ["*"]
+- apiGroups: ["fluvio.infinyon.com"]
+  resources: ["*"]
+  verbs: ["*"]

@@ -212,7 +212,7 @@ pub fn k8_event_stream_to_metadata_actions<S,E>(
                     }
                 }
             },
-            Err(err) => error!("invalid AuthToken stream token: {} ... (exiting)", err),
+            Err(err) => error!("Problem parsing {} event: {} ... (exiting)", S::LABEL,err),
         }
         
     }

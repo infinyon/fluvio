@@ -7,7 +7,7 @@ BIN_NAME=release
 MAKE_CMD=build
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
-GITHUB_TAG=0.2.1
+GITHUB_TAG=$(VERSION)
 DOCKER_REGISTRY=infinyon
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
@@ -39,11 +39,13 @@ release_cli_linux:
 all_image:	linux-spu-server spu_image linux-sc-server sc_image
 
 # create docker images for release
-release_image:	MAKE_CMD=push_release
+release_image:	MAKE_CMD=push
 release_image:	all_image
 
 develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
 develop_image: 	all_image
+develop_image:	CARGO_BUILD=build
+develop_image:	BIN_NAME=debug
 
 local_image:	develop_image
 local_image:	DOCKER_REGISTRY=localhost:5000/infinyon
