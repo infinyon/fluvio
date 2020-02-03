@@ -9,6 +9,7 @@ NS=default
 TEST_LOG_LEVEL=debug
 TEST_NS=default
 TEST_NAME=fluviotest
+FLUVIO_VERSION=$(VERSION)
 CHART_REPO=../../../infinyon.github.io
 
 dry-run:
@@ -19,7 +20,7 @@ dry-run-aws:
 
 install:
 	helm install $(NAME) ./fluvio -n $(NS) \
-		--set fluvioVersion=$(GIT_VERSION) \
+		--set fluvioVersion=$(FLUVIO_VERSION) \
 		--set registry=$(REGISTRY)	\
 		--set cloud=$(CLOUD) \
 		--set scLog=$(SC_LOG) \
@@ -30,11 +31,15 @@ test-install:	IMAGE_POLICY=Always
 test-install:	install
 test-install:	NAME=$(TEST_NAME)
 test-install:	NS=$(TEST_NS)
-test-install:	VERSION=$(GIT_VERSION)
+test-install:	FLUVIO_VERSION=$(GIT_VERSION)
 
-install_minikube:	REGISTRY=localhost:5000/infinyon
-install_minikube:	test-install
+install_mk_test:	REGISTRY=localhost:5000/infinyon
+install_mk_test:	test-install
+install_mk_test:	CLOUD=minikube
+
+
 install_minikube:	CLOUD=minikube
+install_minikube:	install
 
 test_aws_install:	CLOUD=aws
 test_aws_install:	REGISTRY=$(AWS_ECR)

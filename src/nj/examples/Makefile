@@ -1,17 +1,17 @@
 
-test: test-function test-async-cb test-cb test-wrapper test-promise
+test: test-function test-cb test-class test-promise
 
 test-function:
-	cd example-function;make test
+	cd function;make test
 
 test-async-cb:
-	cd example-async-cb;make test
+	cd async-cb;make test
 
 test-cb:
-	cd example-cb;make test
+	cd cb;make test
 
 test-promise:
-	cd example-promise;make test
+	cd promise;make test
 
-test-wrapper:
-	cd example-wrapper;make test	
+test-class:
+	cd class;make test	

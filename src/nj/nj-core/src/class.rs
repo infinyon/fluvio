@@ -10,9 +10,9 @@ use crate::val::JsEnv;
 use crate::val::JsExports;
 use crate::val::JsCallback;
 use crate::NjError;
+use crate::IntoJs;
 use crate::PropertiesBuilder;
-use crate::result_to_napi;
-use crate::ToJsValue;
+
 
 pub struct JSObjectWrapper<T> {
     wrapper: napi_ref,
@@ -52,10 +52,9 @@ pub trait JSClass: Sized {
 
     const CLASS_NAME: &'static str;
 
-    const CONSTRUCTOR_ARG_COUNT: usize;     // size of the constructor argument count
 
     // create rust object from argument
-    fn create_from_js(js_cb: &JsCallback) -> Result<Self,NjError>;
+    fn create_from_js(js_env: &JsEnv, cb: napi_callback_info) -> Result<(Self,JsCallback),NjError>;
 
     fn set_constructor(constructor: napi_ref);
 
@@ -70,7 +69,7 @@ pub trait JSClass: Sized {
     }
 
     /// given instance, return my object
-    fn unwrap(js_env: &JsEnv, instance: napi_value) -> Result<&mut Self,NjError> {
+    fn unwrap(js_env: &JsEnv, instance: napi_value) -> Result<&'static mut Self,NjError> {
         Ok(js_env.unwrap::<JSObjectWrapper<Self>>(instance)?.mut_inner())
     }
 
@@ -101,31 +100,32 @@ pub trait JSClass: Sized {
     /// For example:  new Car(...)
     extern "C" fn js_new(env: napi_env , info: napi_callback_info ) -> napi_value {
 
-        debug!("Class constructor called: {:#?}",std::any::type_name::<Self>());
         let js_env = JsEnv::new(env);
-        let target = result_to_napi!(js_env.get_new_target(info),&js_env);
 
-        if target == ptr::null_mut() {
-            return NjError::NoPlainConstructor.to_js(&js_env)
+        let result: Result<napi_value,NjError> = (|| {
 
-        } else {
-            debug!("invoked as constructor");
-            // Invoked as constructor: `new MyObject(...)`
-            let js_cb = result_to_napi!(js_env.get_cb_info(info,Self::CONSTRUCTOR_ARG_COUNT),&js_env);
+            debug!("Class constructor called: {:#?}",std::any::type_name::<Self>());
+           
+            let target = js_env.get_new_target(info)?;
+    
+            if target == ptr::null_mut() {
+                
+                Err(NjError::NoPlainConstructor)
+            } else {
+                debug!("invoked as constructor");  
+    
+                let (rust_obj,js_cb) = Self::create_from_js(&js_env,info)?;
+                let my_obj = JSObjectWrapper {
+                        inner: rust_obj,
+                        wrapper: ptr::null_mut()
+                    };
+    
+                my_obj.wrap(&js_env,js_cb)
+            }
+        })();
 
-            let my_obj =  match Self::create_from_js(&js_cb) {
-                Ok(inner) => JSObjectWrapper {
-                    inner,
-                    wrapper: ptr::null_mut()
-                },
-                Err(err) => {
-                    debug!("error creating js new: {}",err);
-                    return err.to_js(&js_env)
-                }
-            };
-
-            result_to_napi!(my_obj.wrap(&js_env,js_cb),&js_env)
-        }
+        result.to_js(&js_env)
+       
     }
 
     /*
@@ -142,7 +142,7 @@ pub trait JSClass: Sized {
         _finalize_hint: *mut ::std::os::raw::c_void
     ) {
 
-        println!("my object finalize");
+        debug!("my object finalize");
         unsafe {
             let ptr: *mut JSObjectWrapper<Self> = finalize_data as *mut JSObjectWrapper<Self>;
             let _rust = Box::from_raw(ptr);

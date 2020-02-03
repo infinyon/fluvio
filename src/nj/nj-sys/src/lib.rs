@@ -7,6 +7,8 @@ mod binding;
 pub use binding::*;
 
 unsafe impl Sync for binding::napi_module{}
+
+
 //unsafe impl Send for binding::napi_deferred {}
 
 pub type raw_pt =  *mut ::std::os::raw::c_void;

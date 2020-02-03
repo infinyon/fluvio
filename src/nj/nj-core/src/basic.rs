@@ -34,7 +34,14 @@ impl From<napi_value> for JsNapiValue {
     }
 }
 
+#[derive(Clone,Debug)]
 pub struct JsEnv(napi_env);
+
+impl From<napi_env> for JsEnv {
+    fn from(env: napi_env) -> Self {
+        Self(env)
+    }
+}
 
 impl JsEnv {
 
@@ -50,7 +57,7 @@ impl JsEnv {
     pub fn create_string_utf8(&self,r_string: &str)  -> Result<napi_value,NjError> {
 
         use nj_sys::napi_create_string_utf8;
-
+        
         let mut js_value = ptr::null_mut();
         napi_call_result!(
             napi_create_string_utf8(
@@ -274,7 +281,7 @@ impl JsEnv {
         Ok(result)
     }
 
-    pub fn unwrap<T>(&self,js_this: napi_value) -> Result<&mut T,NjError> {
+    pub fn unwrap<T>(&self,js_this: napi_value) -> Result<&'static mut T,NjError> {
 
         let mut result: *mut ::std::os::raw::c_void = ptr::null_mut();
         napi_call_result!(
@@ -390,7 +397,7 @@ impl JsEnv {
             )
         )?;
 
-        Ok(tsfn.into())
+        Ok(crate::ThreadSafeFunction::new(self.0,tsfn))
 
     }
 
@@ -490,15 +497,21 @@ impl JSValue for String {
 
 }
 
-
+#[derive(Clone)]
 pub struct JsCallback {
     env:  JsEnv,
     this: napi_value,
     args: Vec<napi_value>
 }
    
+unsafe impl Send for JsCallback{}
+unsafe impl Sync for JsCallback{}
 
 impl JsCallback  {
+
+    pub fn env(&self) -> &JsEnv {
+        &self.env
+    }
 
     pub fn args(&self,index: usize) -> napi_value {
         self.args[index]
@@ -535,6 +548,7 @@ impl JsCallback  {
             ))?;
 
         if  valuetype != T::JS_TYPE {
+            debug!("value type is: {} but should be: {}",valuetype,T::JS_TYPE);
             return Err(NjError::InvalidType)
         }
 
@@ -558,7 +572,7 @@ impl JsCallback  {
     }
 
 
-    pub fn unwrap<T>(&self) -> Result<&mut T,NjError>  {
+    pub fn unwrap<T>(&self) -> Result<&'static mut T,NjError>  {
         Ok(self.env.unwrap::<JSObjectWrapper<T>>(self.this())?.mut_inner())
     }
 
@@ -624,7 +638,31 @@ impl JsExports {
 }
 
 
+pub struct JsCallbackFunction {
+    ctx: napi_value,
+    js_func: napi_value
+}
 
 
 
+impl JSValue for JsCallbackFunction {
+    
+    const JS_TYPE: u32 = crate::sys::napi_valuetype_napi_function;
+
+    fn convert_to_rust(env: &JsEnv,js_value: napi_value) -> Result<Self,NjError> {
+        
+        let ctx = env.get_global()?;
+        Ok(Self {
+            ctx,
+            js_func: js_value
+        })
+    }
+}
+
+impl JsCallbackFunction {
+
+    pub fn call(&self, argv: Vec<napi_value>, env: &JsEnv) -> Result<napi_value,NjError> {
+        env.call_function(self.ctx, self.js_func,argv)
+    }
+}
 

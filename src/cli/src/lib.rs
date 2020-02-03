@@ -1,5 +1,5 @@
 
-#![type_length_limit="1087268"]
+#![type_length_limit="1101663"]
 
 mod common;
 mod error;

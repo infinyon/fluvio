@@ -5,6 +5,7 @@ mod property;
 mod class;
 mod worker;
 mod convert;
+mod module;
 
 pub use thread_fn::ThreadSafeFunction;
 pub use error::NjError;
@@ -13,13 +14,21 @@ pub use property::Property;
 pub use property::PropertiesBuilder;
 pub use class::JSClass;
 pub use worker::create_promise;
-pub use convert::ToJsValue;
+pub use worker::JsFuture;
+pub use convert::IntoJs;
+pub use convert::TryIntoJs;
 pub use ctor::ctor;
+pub use module::submit_property;
+pub use module::submit_register_callback;
 
 use class::JSObjectWrapper;
 
 pub mod sys {
     pub use nj_sys::*;
+}
+
+pub mod future {
+    pub use flv_future_core::spawn;
 }
 
 pub mod val {
@@ -51,6 +60,7 @@ macro_rules! napi_call_assert {
 /// used only in this crate
 #[macro_export]
 macro_rules! napi_call_result {
+
     ($napi_expr:expr) =>  {
         {
             let status = unsafe { $napi_expr };
@@ -59,7 +69,7 @@ macro_rules! napi_call_result {
             } else { 
                 let nj_status: crate::NapiStatus = status.into();
                 log::error!("error executing napi call {:#?}",nj_status);
-                Err(crate::NjError::NapiCall(nj_status))
+                Err(NjError::NapiCall(nj_status))
             }
         }
     }
@@ -68,12 +78,12 @@ macro_rules! napi_call_result {
 /// convert result into napi value if ok otherwise convert to error
 #[macro_export]
 macro_rules! result_to_napi {
-    ($result:expr,$js_env:expr) =>  {
+    ($result:expr) =>  {
         
         match $result {
             Ok(val) => val,
             Err(err) => {
-                return err.to_js($js_env);
+                return err.into()
             }
         }
         
@@ -121,51 +131,18 @@ macro_rules! c_str {
     }
 }
 
+#[macro_export]
+macro_rules! method {
+    ($name:literal,$rs_method:expr) =>  {
+        {
+            nj::core::Property::new($name).method($rs_method)
+        }
+    }
+}
+
+
+
 pub fn init_logger() {
     utils::init_logger();
 }
-
-mod init_module {
-
-
-    #[macro_export]
-    macro_rules! register_module {
-    
-        ($name:literal,$reg_fn:ident) => { 
-                
-            #[nj::core::ctor]
-            fn init_module() {
-
-                use nj::core::c_str;
-                use nj::core::sys::NAPI_VERSION;
-                use nj::core::sys::napi_module;
-
-                extern "C" {
-                    pub fn napi_module_register(mod_: *mut napi_module);
-                }
-
-                static mut _module: napi_module  = napi_module {
-                    nm_version: NAPI_VERSION as i32,
-                    nm_flags: 0,
-                    nm_filename: c_str!("lib.rs").as_ptr() as *const i8,
-                    nm_register_func: Some($reg_fn),
-                    nm_modname:  c_str!($name).as_ptr() as *const i8,
-                    nm_priv: ptr::null_mut(),
-                    reserved: [ptr::null_mut(),ptr::null_mut(),ptr::null_mut(),ptr::null_mut()]
-                };
-
-                unsafe {
-                    napi_module_register(&mut _module);
-                }
-
-                nj::core::init_logger();
-
-            }
-            
-        }
-    }
-
-    
-}
-
 

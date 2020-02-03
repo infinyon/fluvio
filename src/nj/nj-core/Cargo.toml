@@ -4,10 +4,14 @@ version = "0.1.0"
 authors = ["fluvio.io"]
 edition = "2018"
 
+[lib]
+test = false
+
 [dependencies]
 log = "0.4.8"
 ctor = "0.1.12"
 libc = "0.2.66"
+inventory = "0.1.5"
 async-trait = "0.1.22"
 futures = { version = "0.3.1" }
 utils = { path = "../../utils"}

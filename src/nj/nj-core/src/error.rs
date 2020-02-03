@@ -1,30 +1,45 @@
 
 use std::fmt;
 use std::ptr;
-use std::io::Error as IoError;
 use std::string::FromUtf8Error;
 
 use crate::sys::napi_status;
 use crate::sys::napi_value;
-use crate::ToJsValue;
 use crate::val::JsEnv;
+use crate::IntoJs;
+
 
 #[derive(Debug)]
 pub enum NjError {
     NapiCall(NapiStatus),
     InvalidArgCount(usize,usize),
     InvalidArgIndex(usize,usize),
-    IoError(IoError),
     InvalidType,
     NoPlainConstructor,
-    Utf8Error(FromUtf8Error)
+    Utf8Error(FromUtf8Error),
+    Other(String)
 }
 
-impl From<IoError> for NjError {
-    fn from(error: IoError) -> Self {
-        Self::IoError(error)
+impl IntoJs for NjError {
+
+    fn to_js(self, js_env: &JsEnv) -> napi_value {
+        let msg = self.to_string();
+        js_env.throw_type_error(&msg);
+        ptr::null_mut()
     }
 }
+
+impl IntoJs for Result<napi_value,NjError> {
+    
+    fn to_js(self, js_env: &JsEnv) -> napi_value {
+        
+        match self {
+            Ok(napi_val) => napi_val,
+            Err(err) => err.to_js(js_env)
+        }
+    }
+}
+
 
 impl From<FromUtf8Error> for NjError {
     fn from(error: FromUtf8Error) -> Self {
@@ -33,19 +48,28 @@ impl From<FromUtf8Error> for NjError {
 }
 
 
+impl From<NapiStatus> for NjError {
+    fn from(status: NapiStatus) -> Self {
+        Self::NapiCall(status)
+    }
+}
+
+
 impl fmt::Display for NjError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::NapiCall(status) => write!(f,"napi call failed {:#?}",status),
-            Self::IoError(err) => write!(f, "{}", err),
             Self::InvalidType => write!(f,"invalid type"),
             Self::Utf8Error(err) => write!(f,"ut8 error: {}",err),
             Self::InvalidArgIndex(index,len) => write!(f,"attempt to access arg: {} out of len: {}",index,len),
             Self::InvalidArgCount(actual_count,expected_count) => write!(f,"{} args expected but {} is present",expected_count,actual_count),
-            Self::NoPlainConstructor => write!(f,"Plain constructor not supported yet")
+            Self::NoPlainConstructor => write!(f,"Plain constructor not supported yet"),
+            Self::Other(msg) => write!(f,"{}",msg)
         }
     }
 }
+
+
 
 #[derive(Debug,PartialEq)]
 pub enum NapiStatus {
@@ -106,12 +130,3 @@ impl From<napi_status> for NapiStatus {
 
 } 
 
-impl ToJsValue for NjError {
-
-    fn to_js(self, js_env: &JsEnv) -> napi_value {
-        let msg = self.to_string();
-        js_env.throw_type_error(&msg);
-        ptr::null_mut()
-    }
-
-}

@@ -1,5 +1,5 @@
 [package]
-name = "nj-example-wrapper"
+name = "nj-example-class"
 version = "0.0.1"
 authors = ["fluvio.io"]
 edition = "2018"
@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 nj = { path = "../.."}
+flv-future-core = { path = "../../../future-helper" }
 
 [build-dependencies]
 nj = { path = "../../", features = ["build"] }

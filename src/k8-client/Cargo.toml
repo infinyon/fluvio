@@ -30,6 +30,5 @@ types = { path = "../types"}
 
 [dev-dependencies]
 rand = "0.7.2"
-k8-fixtures = { path = "k8-fixtures" }
 flv-future-core = { path = "../future-helper", features=["fixture"]}
 utils = { path = "../utils", features=["fixture"]}

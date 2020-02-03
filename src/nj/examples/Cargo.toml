@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "example-async-cb",
-    "example-cb",
-    "example-function",
-    "example-promise",
-    "example-wrapper",
+    "class",
+    "function",
+    "cb",
+    "promise",
+    "async-cb"
 ]

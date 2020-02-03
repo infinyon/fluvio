@@ -8,7 +8,7 @@ authors = ["fluvio.io"]
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "0.4.24"
-quote = "0.6.10"
-syn = { version = "0.15.23", features = ["full"] }
+proc-macro2 = "1.0"
+quote = "1.0.2"
+syn = { version = "1.0.14", features = ["full"] }
 log = "0.4.8"

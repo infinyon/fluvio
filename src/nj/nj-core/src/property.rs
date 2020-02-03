@@ -6,6 +6,7 @@ use crate::sys::napi_property_attributes_napi_default;
 use crate::sys::napi_callback_raw;
 use crate::sys::napi_callback;
 
+#[derive(Debug,Clone)]
 pub struct Property {
     name: CString,
     method: napi_callback,
@@ -66,6 +67,10 @@ impl PropertiesBuilder {
        self.0.push(property);
        self
     }
+
+    pub fn mut_add(&mut self, property: Property) {
+        self.0.push(property);
+     }
 
     // define into env
     pub fn as_raw_properties(&self) ->  Vec<napi_property_descriptor> {

@@ -1,5 +1,6 @@
 #![feature(generators)]
 #![recursion_limit = "256"]
+#![type_length_limit="1101663"]
 
 mod error;
 mod start;
