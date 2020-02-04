@@ -15,10 +15,10 @@ test = false
 [dependencies]
 log = "0.4.8"
 futures = { version = "0.3.1", features = ['async-await'] }
-flv-future-core = { path = "../future-helper" }
-flv-future-aio = { path = "../future-aio"}
+flv-future-core = { version = "0.1.0" }
+flv-future-aio = { version = "0.1.0" }
 kf-protocol = { path = "../kf-protocol"}
 types = { path = "../types"}
 flv-client = { path = "../client-rs" }
-nj = { path = "../nj"}
+node-bindgen = { version = "0.1.0" }
 

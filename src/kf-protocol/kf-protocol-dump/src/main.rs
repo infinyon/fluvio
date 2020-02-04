@@ -45,7 +45,8 @@ pub(crate) fn dump_file(opt: DumpOpt) -> Result<(), IoError> {
 }
 
 fn main() -> Result<(), IoError> {
-    utils::init_logger();
+    
+    flv_util::init_logger();
 
     let opt = DumpOpt::from_args();
     dump_file(opt)

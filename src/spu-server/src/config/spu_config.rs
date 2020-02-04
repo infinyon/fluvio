@@ -748,7 +748,7 @@ pub mod test {
 
     #[test]
     fn test_get_spu_config_overwite_config_file() {
-        utils::init_logger();
+        flv_util::init_logger();
 
         let spu_opt = SpuOpt {
             id: Some(9898),

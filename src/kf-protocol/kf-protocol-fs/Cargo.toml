@@ -16,8 +16,8 @@ required-features = ["cli"]
 log = "0.4.8"
 bytes = "0.5.3"
 futures = { version = "0.3.1" }
-flv-future-aio = { path = "../../future-aio"}
-flv-future-core = { path = "../../future-helper" }
+flv-future-aio = { version = "0.1.0" }
+flv-future-core = {  version = "0.1.0" }
 kf-protocol-core = { path = "../kf-protocol-core"}
 kf-protocol-message = { path = "../kf-protocol-message"}
 kf-protocol-api = { path = "../kf-protocol-api"}

@@ -9,4 +9,4 @@ log = "0.4.8"
 utils = { path= "../../utils"}
 serde = { version ="1.0.103", features = ['derive'] }
 kf-protocol = { path = "../../kf-protocol"}
-flv-future-aio = { path = "../../future-aio"}
+flv-future-aio = { version = "0.1.0" }

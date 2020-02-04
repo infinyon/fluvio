@@ -17,7 +17,8 @@ structopt = "0.3.5"
 futures = { version = "0.3.1" }
 types = { path = "../types"}
 utils = { path = "../utils"}
-flv-future-core = { path = "../future-helper" }
+flv-future-core = { version = "0.1.0" }
+flv-util = { version = "0.1.0"}
 k8-metadata = { path = "../k8-metadata"}
 flv-sc-core = { path = "../sc-core"}
 k8-config = { path = "../k8-config"}

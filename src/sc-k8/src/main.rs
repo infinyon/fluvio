@@ -25,7 +25,8 @@ pub use init::main_k8_loop;
 
 
 fn main() {
-    utils::init_logger();
+    
+    flv_util::init_logger();
 
     main_k8_loop();
 }

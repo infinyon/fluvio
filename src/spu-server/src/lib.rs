@@ -16,6 +16,6 @@ use start::main_loop;
 use self::error::InternalServerError;
 
 pub fn start_main() {
-    utils::init_logger();
+    flv_util::init_logger();
     main_loop();
 }

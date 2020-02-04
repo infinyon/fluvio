@@ -175,7 +175,7 @@ test-helper:
 	cd src/future-helper;cargo test
 
 test-aio:
-	cd src/future-aio;cargo test
+	cd src/flv-future-aio = { version = "0.1.0" };cargo test
 
 test-kfsocket:
 	cd src/kf-socket;cargo test

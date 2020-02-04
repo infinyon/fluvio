@@ -415,7 +415,7 @@ mod test {
 
     #[test]
     fn test_follower_update() {
-        utils::init_logger();
+        flv_util::init_logger();
         let mock_replica = MockReplica::new(20, 10); // eof, hw
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
@@ -456,7 +456,7 @@ mod test {
 
     #[test]
     fn test_leader_update() {
-        utils::init_logger();
+        flv_util::init_logger();
         let mock_replica = MockReplica::new(20, 10); // eof, hw
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state

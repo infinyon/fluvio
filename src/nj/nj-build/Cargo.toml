@@ -1,5 +1,0 @@
-[package]
-name = "nj-build"
-version = "0.1.0"
-authors = ["fluvio.io"]
-edition = "2018"

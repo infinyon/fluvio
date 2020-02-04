@@ -24,7 +24,7 @@ use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::fs::FileTopicResponse;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
-use utils::fixture::ensure_clean_dir;
+use flv_util::fixture::ensure_clean_dir;
 use flv_storage::StorageError;
 use flv_storage::FileReplica;
 use flv_storage::ConfigOption;

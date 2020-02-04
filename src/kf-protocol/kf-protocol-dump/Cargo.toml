@@ -13,4 +13,4 @@ kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
 kf-protocol-api = { path = "../kf-protocol-api", package = "kf-protocol-api" }
 kf-protocol-message = { path = "../kf-protocol-message", package = "kf-protocol-message" }
 
-utils = { path= "../../utils"}
+flv-util = { version = "0.1.0" }

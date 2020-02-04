@@ -19,7 +19,7 @@ struct TestRecord {
 #[test]
 fn test_encode_version() {
 
-    utils::init_logger();
+    flv_util::init_logger();
     let mut record = TestRecord::default();
     record.value2 = 10;
     record.value3 = 5;

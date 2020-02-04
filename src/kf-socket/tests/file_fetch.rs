@@ -29,7 +29,7 @@ use kf_protocol::fs::KfFileFetchRequest;
 use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::fs::FileTopicResponse;
 
-use utils::fixture::ensure_clean_file;
+use flv_util::fixture::ensure_clean_file;
 use kf_socket::KfSocket;
 
 

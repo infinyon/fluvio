@@ -3,8 +3,6 @@ members = [
     "src/cli",
     "src/client-rs",
     "src/client-node",
-    "src/future-aio",
-    "src/future-helper",
     "src/api/internal-api",
     "src/k8-client",
     "src/k8-config",
@@ -24,8 +22,7 @@ members = [
     "src/storage",
     "src/test-helper",
     "src/types",
-    "src/utils",
-    "src/nj"
+    "src/utils"
 ]
 
 # profile to make image sizer smaller

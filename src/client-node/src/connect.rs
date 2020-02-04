@@ -1,7 +1,7 @@
 // implement connect workflow
 
 use flv_client::profile::ScConfig;
-use nj::derive::node_bindgen;
+use node_bindgen::derive::node_bindgen;
 use flv_client::ClientError;
 
 use crate::ScClientWrapper;
