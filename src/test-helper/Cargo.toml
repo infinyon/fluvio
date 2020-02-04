@@ -13,7 +13,7 @@ kf-protocol = { path = "../kf-protocol"}
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../api/internal-api"}
-types = { path= "../types"}
+types = { path ="../types", package = "flv-types"}
 utils = { path= "../utils"}
 flv-metadata = { path = "../metadata" }
 flv-future-aio = { version = "0.1.0" }

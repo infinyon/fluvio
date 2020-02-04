@@ -8,4 +8,4 @@ edition = "2018"
 log = "0.4.8"
 kf-protocol = { path = "../../kf-protocol"}
 flv-metadata = { path = "../../metadata"}
-types = { path= "../../types"}
+types = { path ="../../types", package = "flv-types"}

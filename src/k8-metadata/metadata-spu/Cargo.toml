@@ -7,7 +7,7 @@ authors = ["fluvio.io"]
 
 [dependencies]
 log = "0.4.8"
-types = { path = "../../types"}
+types = { path ="../../types", package = "flv-types"}
 serde = { version ="1.0.103", features = ['derive'] }
 serde_json = "1.0.39"
 metadata-core = { path = "../metadata-core"}

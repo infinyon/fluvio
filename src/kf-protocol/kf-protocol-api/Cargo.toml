@@ -1,9 +1,12 @@
 [package]
 name = "kf-protocol-api"
 edition = "2018"
-version = "0.2.1"
-authors = ["fluvio.io"]
-
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Rust kafka protocol API definitions"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
 
 
 [dependencies]
@@ -12,8 +15,7 @@ crc32c = "0.4.0"
 content_inspector = "0.2.4"
 serde = { version ="1.0.103", features = ['derive'] }
 paste = "0.1.5"
-utils = { path= "../../utils"}
-kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
-kf-protocol-derive = { path = "../kf-protocol-derive" }
-
+kf-protocol = { version = "0.1.0", path = "../kf-protocol-core", package = "kf-protocol-core" }
+kf-protocol-derive = { version = "0.1.0", path = "../kf-protocol-derive" }
+flv-util = { version = "0.1.1"}
 

@@ -8,7 +8,7 @@ use std::fmt;
 
 use flv_metadata::spu::SpuSpec;
 
-use utils::actions::Actions;
+use flv_util::actions::Actions;
 
 
 use crate::core::common::WSAction;

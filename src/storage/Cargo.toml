@@ -25,7 +25,7 @@ kf-protocol = { path = "../kf-protocol"}
 kf-socket = { path = "../kf-socket"}
 flv-future-core = { version = "0.1.0" }
 utils = { path= "../utils", optional = false }
-types = { path= "../types"}
+types = { path ="../types", package = "flv-types"}
 
 
 [dev-dependencies]

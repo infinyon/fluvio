@@ -26,7 +26,7 @@ k8-metadata = { path = "../k8-metadata"}
 flv-future-core = { version = "0.1.0" }
 k8-diff = { path = "../k8-diff"}
 k8-config = { path = "../k8-config"}
-types = { path = "../types"}
+types = { path ="../types", package = "flv-types"}
 
 [dev-dependencies]
 rand = "0.7.2"

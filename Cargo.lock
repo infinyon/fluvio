@@ -619,6 +619,7 @@ dependencies = [
  "flv-client",
  "flv-future-aio",
  "flv-future-core",
+ "flv-types",
  "flv-util",
  "futures 0.3.2",
  "k8-metadata",
@@ -635,7 +636,6 @@ dependencies = [
  "spu-api",
  "structopt 0.2.18",
  "toml",
- "types",
  "utils",
 ]
 
@@ -647,6 +647,7 @@ dependencies = [
  "dirs 1.0.5",
  "flv-future-aio",
  "flv-future-core",
+ "flv-types",
  "futures 0.3.2",
  "kf-protocol",
  "kf-socket",
@@ -657,7 +658,6 @@ dependencies = [
  "serde_json",
  "spu-api",
  "toml",
- "types",
 ]
 
 [[package]]
@@ -701,13 +701,13 @@ dependencies = [
  "flv-future-aio",
  "flv-future-core",
  "flv-metadata",
+ "flv-types",
  "futures 0.3.2",
  "internal-api",
  "kf-protocol",
  "kf-service",
  "kf-socket",
  "log",
- "types",
  "utils",
 ]
 
@@ -715,10 +715,10 @@ dependencies = [
 name = "flv-metadata"
 version = "0.2.1"
 dependencies = [
+ "flv-types",
  "k8-metadata",
  "kf-protocol",
  "log",
- "types",
 ]
 
 [[package]]
@@ -728,11 +728,11 @@ dependencies = [
  "flv-client",
  "flv-future-aio",
  "flv-future-core",
+ "flv-types",
  "futures 0.3.2",
  "kf-protocol",
  "log",
  "node-bindgen",
- "types",
 ]
 
 [[package]]
@@ -745,6 +745,8 @@ dependencies = [
  "flv-future-aio",
  "flv-future-core",
  "flv-metadata",
+ "flv-types",
+ "flv-util",
  "futures 0.3.2",
  "internal-api",
  "k8-fixtures",
@@ -758,7 +760,6 @@ dependencies = [
  "sc-api",
  "serde",
  "toml",
- "types",
  "utils",
 ]
 
@@ -769,6 +770,7 @@ dependencies = [
  "flv-future-core",
  "flv-metadata",
  "flv-sc-core",
+ "flv-types",
  "flv-util",
  "futures 0.3.2",
  "k8-client",
@@ -778,7 +780,6 @@ dependencies = [
  "rand 0.7.3",
  "structopt 0.3.9",
  "toml",
- "types",
  "utils",
 ]
 
@@ -794,6 +795,7 @@ dependencies = [
  "flv-future-core",
  "flv-metadata",
  "flv-storage",
+ "flv-types",
  "flv-util",
  "futures 0.3.2",
  "internal-api",
@@ -809,7 +811,6 @@ dependencies = [
  "spu-api",
  "structopt 0.3.9",
  "toml",
- "types",
  "utils",
 ]
 
@@ -821,6 +822,7 @@ dependencies = [
  "bytes 0.5.4",
  "flv-future-aio",
  "flv-future-core",
+ "flv-types",
  "flv-util",
  "futures 0.3.2",
  "kf-protocol",
@@ -830,15 +832,21 @@ dependencies = [
  "pin-utils",
  "serde",
  "structopt 0.3.9",
- "types",
  "utils",
 ]
 
 [[package]]
-name = "flv-util"
+name = "flv-types"
 version = "0.1.0"
+dependencies = [
+ "log",
+]
+
+[[package]]
+name = "flv-util"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9209e7d0e91f89e21e3900f06f5bc19385ffa1c224c6727ec57f0985f0d8feb8"
+checksum = "63dfd9a699e5b73d0163b7abd4019c0e37c7293c68b822dfb12cae2ca753703d"
 dependencies = [
  "chrono",
  "env_logger 0.6.2",
@@ -1144,9 +1152,9 @@ name = "internal-api"
 version = "0.2.1"
 dependencies = [
  "flv-metadata",
+ "flv-types",
  "kf-protocol",
  "log",
- "types",
 ]
 
 [[package]]
@@ -1227,6 +1235,7 @@ dependencies = [
  "bytes 0.5.4",
  "curl",
  "flv-future-core",
+ "flv-types",
  "futures 0.3.2",
  "http",
  "isahc",
@@ -1240,7 +1249,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.5.2",
- "types",
  "utils",
 ]
 
@@ -1301,7 +1309,7 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "flv-util",
  "kf-protocol-api",
@@ -1315,33 +1323,32 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-api"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "content_inspector",
  "crc32c",
+ "flv-util",
  "kf-protocol-core",
  "kf-protocol-derive",
  "log",
  "paste",
  "serde",
- "utils",
 ]
 
 [[package]]
 name = "kf-protocol-core"
-version = "0.2.1"
+version = "0.1.1"
 dependencies = [
  "bytes 0.5.4",
  "log",
  "num-derive",
  "num-traits",
  "serde",
- "utils",
 ]
 
 [[package]]
 name = "kf-protocol-derive"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "log",
  "proc-macro2 0.4.30",
@@ -1363,7 +1370,7 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-fs"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "bytes 0.5.4",
  "flv-future-aio",
@@ -1377,23 +1384,22 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-message"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "content_inspector",
  "crc32c",
+ "flv-types",
  "kf-protocol-api",
  "kf-protocol-core",
  "kf-protocol-derive",
  "log",
  "paste",
  "serde",
- "types",
- "utils",
 ]
 
 [[package]]
 name = "kf-protocol-transport"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "bytes 0.5.4",
  "flv-future-aio",
@@ -1412,13 +1418,13 @@ dependencies = [
  "async-trait",
  "flv-future-aio",
  "flv-future-core",
+ "flv-types",
  "flv-util",
  "futures 0.3.2",
  "kf-protocol",
  "kf-socket",
  "log",
  "pin-utils",
- "types",
 ]
 
 [[package]]
@@ -1592,6 +1598,7 @@ version = "0.2.1"
 dependencies = [
  "async-trait",
  "flv-future-core",
+ "flv-types",
  "futures 0.3.2",
  "k8-diff",
  "log",
@@ -1600,7 +1607,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.5.2",
- "types",
 ]
 
 [[package]]
@@ -1628,6 +1634,7 @@ dependencies = [
 name = "metadata-spg"
 version = "0.2.1"
 dependencies = [
+ "flv-types",
  "log",
  "metadata-core",
  "metadata-spu",
@@ -1635,18 +1642,17 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serde_qs 0.4.6",
- "types",
 ]
 
 [[package]]
 name = "metadata-spu"
 version = "0.2.1"
 dependencies = [
+ "flv-types",
  "log",
  "metadata-core",
  "serde",
  "serde_json",
- "types",
 ]
 
 [[package]]
@@ -2353,11 +2359,11 @@ name = "sc-api"
 version = "0.2.1"
 dependencies = [
  "flv-metadata",
+ "flv-types",
  "k8-metadata",
  "kf-protocol",
  "log",
  "serde",
- "types",
  "utils",
 ]
 
@@ -2860,13 +2866,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e604eb7b43c06650e854be16a2a03155743d3752dd1c943f6829e26b7a36e382"
 
 [[package]]
-name = "types"
-version = "0.2.1"
-dependencies = [
- "log",
-]
-
-[[package]]
 name = "unicode-segmentation"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2906,10 +2905,10 @@ checksum = "60369ef7a31de49bcb3f6ca728d4ba7300d9a1658f94c727d4cab8c8d9f4aece"
 name = "utils"
 version = "0.2.1"
 dependencies = [
+ "flv-types",
  "log",
  "rand 0.7.3",
  "regex",
- "types",
 ]
 
 [[package]]

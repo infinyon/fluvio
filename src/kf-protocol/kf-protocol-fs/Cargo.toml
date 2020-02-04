@@ -1,8 +1,12 @@
 [package]
 name = "kf-protocol-fs"
-version = "0.2.1"
+version = "0.1.0"
 edition = "2018"
-authors = ["fluvio.io"]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "zero copy file semantics for kafka protocol"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
 
 [[bin]]
 name = "file_send"
@@ -18,6 +22,6 @@ bytes = "0.5.3"
 futures = { version = "0.3.1" }
 flv-future-aio = { version = "0.1.0" }
 flv-future-core = {  version = "0.1.0" }
-kf-protocol-core = { path = "../kf-protocol-core"}
-kf-protocol-message = { path = "../kf-protocol-message"}
-kf-protocol-api = { path = "../kf-protocol-api"}
+kf-protocol-core = { version = "0.1.0", path = "../kf-protocol-core"}
+kf-protocol-message = { version = "0.1.0", path = "../kf-protocol-message"}
+kf-protocol-api = { version = "0.1.0", path = "../kf-protocol-api"}

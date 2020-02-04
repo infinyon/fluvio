@@ -1,7 +1,6 @@
-# kf-protocol-derive
+# kf-protocol-core
 
-Procedure macro to encode/decode rust structure/enum using kafka protocol
-
+Core trait for for encoding and decoding kafka protocol.
 
 ## License
 

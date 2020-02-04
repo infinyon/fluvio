@@ -5,7 +5,7 @@ use std::borrow::Borrow;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use utils::SimpleConcurrentBTreeMap;
+use flv_util::SimpleConcurrentBTreeMap;
 
 use crate::core::Spec;
 

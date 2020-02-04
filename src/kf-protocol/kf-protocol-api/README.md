@@ -1,7 +1,6 @@
-# kf-protocol-derive
+# kf-protocol-api
 
-Procedure macro to encode/decode rust structure/enum using kafka protocol
-
+API wrapper for kafka protocol.
 
 ## License
 

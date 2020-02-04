@@ -34,7 +34,7 @@ use kf_socket::ExclusiveKfSink;
 use flv_storage::FileReplica;
 use flv_metadata::partition::ReplicaKey;
 use types::log_on_err;
-use utils::actions::Actions;
+use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;

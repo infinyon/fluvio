@@ -11,7 +11,7 @@ serde = "1.0.76"
 serde_derive = "1.0.76"
 serde_json = "1.0.27"
 serde_qs = "0.4.1"
-types = { path = "../../types"}
+types = { path ="../../types", package = "flv-types"}
 metadata-core = { path = "../metadata-core"}
 metadata-spu = { path = "../metadata-spu"}
 

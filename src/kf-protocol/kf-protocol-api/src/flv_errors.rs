@@ -4,8 +4,8 @@
 //! Error code definitions described here.
 //!
 use serde::Serialize;
-use utils::string_helper::upper_cammel_case_to_sentence;
 
+use flv_util::string_helper::upper_cammel_case_to_sentence;
 use kf_protocol_derive::Encode;
 use kf_protocol_derive::Decode;
 

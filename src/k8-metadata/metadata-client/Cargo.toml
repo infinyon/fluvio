@@ -16,6 +16,6 @@ serde_qs = "0.5.0"
 async-trait = "0.1.21"
 flv-future-core = { version = "0.1.0" }
 k8-diff = { path = "../../k8-diff"}
-types = { path = "../../types"}
+types = { path ="../../types", package = "flv-types"}
 metadata-core = { path = "../metadata-core"}
 

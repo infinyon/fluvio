@@ -1,16 +1,19 @@
 [package]
 name = "kf-protocol-transport"
 edition = "2018"
-version = "0.2.1"
-authors = ["fluvio.io"]
-
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Transport frame encoder and decoder for Kakfa protocol"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
 
 [dependencies]
 log = "0.4.8"
 bytes = "0.5.3"
 futures_codec = "0.3.4"
 flv-future-aio = { version = "0.1.0" }
-kf-protocol = { path = "../kf-protocol-core", package = "kf-protocol-core" }
+kf-protocol = { version = "0.1.0", path = "../kf-protocol-core", package = "kf-protocol-core" }
 
 [dev-dependencies]
 flv-future-core = { version = "0.1.0", features = ["fixture"] }

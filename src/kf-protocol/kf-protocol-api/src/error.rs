@@ -1,4 +1,4 @@
-use utils::string_helper::upper_cammel_case_to_sentence;
+use flv_util::string_helper::upper_cammel_case_to_sentence;
 use serde::{Serialize, Deserialize};
 
 use kf_protocol_derive::Decode;

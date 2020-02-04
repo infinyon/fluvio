@@ -392,7 +392,7 @@ impl ElectionPolicy for SimplePolicy {
 
 #[cfg(test)]
 pub mod test {
-    use utils::actions::Actions;
+    use flv_util::actions::Actions;
 
     use super::PartitionReducer;
     use super::PartitionChangeRequest;

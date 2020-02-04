@@ -18,7 +18,7 @@ use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
 use kf_protocol::api::ErrorCode;
-use utils::SimpleConcurrentBTreeMap;
+use flv_util::SimpleConcurrentBTreeMap;
 
 use crate::InternalServerError;
 

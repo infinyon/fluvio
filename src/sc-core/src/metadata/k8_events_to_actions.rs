@@ -9,7 +9,7 @@ use std::fmt::Display;
 use log::{error, trace};
 use log::warn;
 use log::debug;
-use utils::actions::Actions;
+use flv_util::actions::Actions;
 use k8_metadata::core::metadata::K8List;
 use k8_metadata::core::metadata::K8Obj;
 use k8_metadata::core::metadata::K8Watch;

@@ -1,18 +1,21 @@
 [package]
 name = "kf-protocol"
 edition = "2018"
-version = "0.2.1"
-authors = ["fluvio.io"]
-
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Native Rust implementation of kafka protocol"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
 
 [dependencies]
 log = "0.4.8"
-kf-protocol-core = { path = "kf-protocol-core" }
-kf-protocol-api = { path = "kf-protocol-api"}
-kf-protocol-derive = { path = "kf-protocol-derive"}
-kf-protocol-transport = { path = "kf-protocol-transport"}
-kf-protocol-message = { path = "kf-protocol-message"}
-kf-protocol-fs = { path = "kf-protocol-fs"}
+kf-protocol-core = { version = "0.1.0", path = "kf-protocol-core" }
+kf-protocol-api = { version = "0.1.0", path = "kf-protocol-api"}
+kf-protocol-derive = { version = "0.1.0", path = "kf-protocol-derive"}
+kf-protocol-transport = { version = "0.1.0", path = "kf-protocol-transport"}
+kf-protocol-message = { version = "0.1.0", path = "kf-protocol-message"}
+kf-protocol-fs = { version = "0.1.0", path = "kf-protocol-fs"}
 
 [dev-dependencies]
 flv-util = { version = "0.1.0 "}

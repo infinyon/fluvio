@@ -1,7 +1,6 @@
-# kf-protocol-derive
+# kf-protocol-fs
 
-Procedure macro to encode/decode rust structure/enum using kafka protocol
-
+Adds zero memory copy transfer over kafka protocol
 
 ## License
 

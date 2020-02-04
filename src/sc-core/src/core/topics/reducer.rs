@@ -271,7 +271,7 @@ impl TopicReducer {
 mod test2 {
     use flv_metadata::topic::{TopicResolution, TopicStatus};
     use flv_metadata::topic::PENDING_REASON;
-    use utils::actions::Actions;
+    use flv_util::actions::Actions;
 
     use super::TopicReducer;
     use super::TopicChangeRequest;

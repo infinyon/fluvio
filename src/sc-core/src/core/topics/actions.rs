@@ -5,7 +5,7 @@
 //!
 use std::fmt;
 
-use utils::actions::Actions;
+use flv_util::actions::Actions;
 
 use crate::core::partitions::PartitionWSAction;
 use crate::core::spus::SpuLSChange;

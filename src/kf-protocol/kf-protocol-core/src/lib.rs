@@ -4,7 +4,6 @@ mod decoder;
 mod encoder;
 mod varint;
 mod zerocopy;
-// mod buffer;
 
 pub use self::decoder::Decoder;
 pub use self::decoder::DecoderVarInt;

@@ -1,7 +1,6 @@
-# kf-protocol-derive
+# kf-protocol-transport
 
-Procedure macro to encode/decode rust structure/enum using kafka protocol
-
+Transport frame encoder and decoder for Kakfa protocol
 
 ## License
 

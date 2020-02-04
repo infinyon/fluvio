@@ -12,7 +12,7 @@ use futures::select;
 use futures::stream::StreamExt;
 
 use flv_future_core::spawn;
-use utils::actions::Actions;
+use flv_util::actions::Actions;
 use flv_metadata::spu::SpuSpec;
 use types::log_on_err;
 

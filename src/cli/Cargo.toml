@@ -29,7 +29,7 @@ flv-future-core = { version = "0.1.0" }
 flv-future-aio = { version = "0.1.0" }
 flv-util = { version = "0.1.0"}
 utils = { path= "../utils"}
-types = { path ="../types"}
+types = { path ="../types", package = "flv-types"}
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = { path = "../kf-socket" }
 k8-metadata = { path = "../k8-metadata"}

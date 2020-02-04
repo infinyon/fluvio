@@ -14,8 +14,8 @@ use internal_api::messages::Message;
 use internal_api::messages::MsgType;
 use kf_protocol::{Decoder, Encoder};
 
-use utils::actions::Actions;
-use utils::SimpleConcurrentBTreeMap;
+use flv_util::actions::Actions;
+use flv_util::SimpleConcurrentBTreeMap;
 
 pub trait Spec {
     const LABEL: &'static str;

@@ -1,7 +1,7 @@
 use futures::channel::mpsc::Receiver;
 use async_trait::async_trait;
 
-use utils::actions::Actions;
+use flv_util::actions::Actions;
 use flv_metadata::spu::SpuSpec;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::partition::PartitionSpec;
