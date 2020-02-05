@@ -590,6 +590,8 @@ dependencies = [
  "async-trait",
  "bytes 0.5.4",
  "ctrlc",
+ "flv-api-sc",
+ "flv-api-spu",
  "flv-client",
  "flv-future-aio",
  "flv-future-core",
@@ -603,22 +605,44 @@ dependencies = [
  "prettytable-rs",
  "rand 0.7.3",
  "regex",
- "sc-api",
  "serde",
  "serde_json",
  "serde_yaml",
- "spu-api",
  "structopt 0.2.18",
  "toml",
  "utils",
 ]
 
 [[package]]
+name = "flv-api-sc"
+version = "0.1.0"
+dependencies = [
+ "flv-metadata",
+ "flv-types",
+ "k8-flv-metadata",
+ "kf-protocol",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "flv-api-spu"
+version = "0.1.0"
+dependencies = [
+ "flv-future-aio",
+ "kf-protocol",
+ "log",
+ "serde",
+]
+
+[[package]]
 name = "flv-client"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "dirs 1.0.5",
+ "flv-api-sc",
+ "flv-api-spu",
  "flv-future-aio",
  "flv-future-core",
  "flv-types",
@@ -627,10 +651,8 @@ dependencies = [
  "kf-socket",
  "log",
  "rand 0.7.3",
- "sc-api",
  "serde",
  "serde_json",
- "spu-api",
  "toml",
 ]
 
@@ -732,7 +754,7 @@ dependencies = [
 
 [[package]]
 name = "flv-metadata"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
  "flv-types",
  "k8-flv-metadata",
@@ -761,6 +783,7 @@ dependencies = [
  "async-trait",
  "base64 0.11.0",
  "chashmap",
+ "flv-api-sc",
  "flv-future-aio",
  "flv-future-core",
  "flv-metadata",
@@ -776,7 +799,6 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "regex",
- "sc-api",
  "serde",
  "toml",
  "utils",
@@ -810,6 +832,7 @@ dependencies = [
  "bytes 0.5.4",
  "chashmap",
  "chrono",
+ "flv-api-spu",
  "flv-future-aio",
  "flv-future-core",
  "flv-metadata",
@@ -826,7 +849,6 @@ dependencies = [
  "regex",
  "serde",
  "serde_yaml",
- "spu-api",
  "structopt 0.3.9",
  "toml",
  "utils",
@@ -2252,19 +2274,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sc-api"
-version = "0.2.1"
-dependencies = [
- "flv-metadata",
- "flv-types",
- "k8-flv-metadata",
- "kf-protocol",
- "log",
- "serde",
- "utils",
-]
-
-[[package]]
 name = "schannel"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2434,17 +2443,6 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
-
-[[package]]
-name = "spu-api"
-version = "0.2.1"
-dependencies = [
- "flv-future-aio",
- "kf-protocol",
- "log",
- "serde",
- "utils",
-]
 
 [[package]]
 name = "stable_deref_trait"

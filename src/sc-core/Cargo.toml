@@ -25,7 +25,7 @@ kf-service = { path = "../kf-service"}
 internal-api = { path = "../api/internal-api"}
 k8-flv-metadata = { version = "0.1.0", path = "../k8-metadata"}
 flv-metadata = { path = "../metadata"}
-sc-api = { path = "../api/sc-api"}
+sc-api = { version = "0.1.0", path = "../api/sc-api", package = "flv-api-sc"}
 
 [dev-dependencies]
 flv-future-core = { version = "0.1.0", features=["fixture"]}

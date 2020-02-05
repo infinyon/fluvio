@@ -33,7 +33,7 @@ types = { path ="../types", package = "flv-types"}
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = { path = "../kf-socket" }
 k8-flv-metadata = { path = "../k8-metadata"}
-sc-api = { path = "../api/sc-api"}
-spu-api = { path = "../api/spu-api"}
+sc-api = { path = "../api/sc-api", version = "0.1.0", package = "flv-api-sc"}
+spu-api = { path = "../api/spu-api", version = "0.1.0", package = "flv-api-spu"}
 flv-client = { path = "../client-rs"}
 

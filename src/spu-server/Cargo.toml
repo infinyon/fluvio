@@ -29,7 +29,7 @@ kf-protocol = { path = "../kf-protocol"}
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../api/internal-api"}
-spu-api = { path = "../api/spu-api"}
+spu-api = { path = "../api/spu-api", version = "0.1.0", package = "flv-api-spu"}
 types = { path ="../types", package = "flv-types"}
 utils = { path= "../utils"}
 flv-metadata = { path = "../metadata" }

@@ -1,13 +1,12 @@
 [package]
 name = "flv-client"
-version = "0.2.1"
+version = "0.1.0"
 edition = "2018"
-authors = ["fluvio.io"]
 license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
-homepage = "fluvio.io"
-description = "Client for Fluvio"
-categories = ["stream", "fluvio", "client","stateful"]
+description = "Fluvio rust client"
+
 
 [dependencies]
 log = "0.4.8"
@@ -23,6 +22,5 @@ flv-future-aio = { version = "0.1.0" }
 kf-protocol = { version = "0.1.0", path = "../kf-protocol"}
 types = { version = "0.1.0", path ="../types", package = "flv-types"}
 kf-socket = { version = "0.1.0", path = "../kf-socket" }
-sc-api = { path = "../api/sc-api"}
-spu-api = { path = "../api/spu-api"}
-
+sc-api = { path = "../api/sc-api", version = "0.1.0", package = "flv-api-sc"}
+spu-api = { path = "../api/spu-api",version = "0.1.0", package = "flv-api-spu"}

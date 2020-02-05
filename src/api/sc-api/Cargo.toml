@@ -1,14 +1,17 @@
 [package]
-name = "sc-api"
-version = "0.2.1"
-authors = ["fluvio.io"]
+name = "flv-api-sc"
+version = "0.1.0"
 edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio API for SC"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+
 
 [dependencies]
 log = "0.4.8"
 kf-protocol = { version = "0.1.0", path = "../../kf-protocol"}
-flv-metadata = { path = "../../metadata"}
-utils = { path= "../../utils"}
-types = { path ="../../types", package = "flv-types"}
+flv-metadata = { version = "0.1.0", path = "../../metadata"}
+types = { version = "0.1.0", path ="../../types", package = "flv-types"}
 serde = { version ="1.0.103", features = ['derive'] }
-k8-flv-metadata = { path = "../../k8-metadata"}
+k8-flv-metadata = { version = "0.1.0", path = "../../k8-metadata"}
