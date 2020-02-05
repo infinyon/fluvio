@@ -9,8 +9,8 @@ use std::io::Error;
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 use kf_protocol::api::FlvErrorCode;
 
-use k8_metadata::core::metadata::ObjectMeta;
-use k8_metadata::client::MetadataClient;
+use k8_metadata::metadata::ObjectMeta;
+use k8_metadata_client::MetadataClient;
 use flv_metadata::spu::{SpuSpec, Endpoint, SpuType, IngressPort};
 
 use sc_api::FlvResponseMessage;

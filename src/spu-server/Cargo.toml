@@ -28,7 +28,6 @@ flv-util = { version = "0.1.1" }
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
-k8-client = { path = "../k8-client"}
 internal-api = { path = "../api/internal-api"}
 spu-api = { path = "../api/spu-api"}
 types = { path ="../types", package = "flv-types"}

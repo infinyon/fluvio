@@ -10,8 +10,8 @@ use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::spg::SpuGroupStatus;
 use k8_metadata::spg::SpuGroupStatusResolution;
 use k8_metadata::spg::SpuTemplate;
-use k8_metadata::core::metadata::TemplateSpec;
-use k8_metadata::core::metadata::K8Obj;
+use k8_metadata::metadata::TemplateSpec;
+use k8_metadata::metadata::K8Obj;
 use k8_metadata::spg::StorageConfig;
 
 use crate::ScApiKey;

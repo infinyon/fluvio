@@ -1,16 +1,6 @@
-# kf-protocol
+# flv-k8-topic
 
-Provide TCP socket wrapper using kafka protocol
-
-# build kafka send utility
-
-build kafka-send utilty
-
-```cargo build --all-features```
-
-invoking kafka-send utility to send api request sample data
-
-```../target/debug/kafka-send data/apirequest.bin```
+Fluvio Topic for K8
 
 ## License
 

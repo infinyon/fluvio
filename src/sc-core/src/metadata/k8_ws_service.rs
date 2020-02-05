@@ -17,14 +17,14 @@ use async_trait::async_trait;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::partition::PartitionSpec;
 use flv_metadata::spu::SpuSpec;
-use k8_metadata::core::metadata::InputK8Obj;
+use k8_metadata::metadata::InputK8Obj;
 
 use types::log_on_err;
 
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::core::metadata::UpdateK8ObjStatus;
-use k8_metadata::client::MetadataClient;
-use k8_metadata::client::SharedClient;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata::metadata::UpdateK8ObjStatus;
+use k8_metadata_client::MetadataClient;
+use k8_metadata_client::SharedClient;
 
 use crate::ScServerError;
 use crate::core::Spec;

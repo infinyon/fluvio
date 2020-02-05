@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use metadata_core::Status;
+use k8_obj_metadata::Status;
 
 // -----------------------------------
 // Data Structures

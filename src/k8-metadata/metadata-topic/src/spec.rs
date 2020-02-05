@@ -3,8 +3,8 @@
 //!
 //! Interface to the Topic metadata spec in K8 key value store
 //!
-use metadata_core::Crd;
-use metadata_core::Spec;
+use k8_obj_metadata::Crd;
+use k8_obj_metadata::Spec;
 use serde::Deserialize;
 use serde::Serialize;
 

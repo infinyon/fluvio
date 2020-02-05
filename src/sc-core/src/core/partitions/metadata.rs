@@ -12,8 +12,8 @@ use flv_metadata::partition::ReplicaKey;
 use flv_metadata::partition::{PartitionSpec, PartitionStatus};
 use flv_metadata::topic::TopicSpec;
 use k8_metadata::partition::PartitionSpec as K8PartitionSpec;
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::core::metadata::K8Obj;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata::metadata::K8Obj;
 use types::SpuId;
 
 use crate::core::common::LocalStore;

@@ -1,18 +1,22 @@
 [package]
-name = "k8-metadata"
-version = "0.2.1"
-authors = ["fluvio.io"]
+name = "k8-flv-metadata"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
+description = "Kubernets metadata objects for fluvio"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
 
 [lib]
 name = "k8_metadata"
 
 [dependencies]
 log = "0.4.8"
-metadata-core = { path = "metadata-core"}
-metadata-auth-token = { path = "metadata-auth-token"}
-metadata-topic = { path = "metadata-topic"}
-metadata-spu = { path = "metadata-spu"}
-metadata-partition = { path = "metadata-partition"}
-metadata-spg = { path = "metadata-spg"}
-metadata-client = { path = "metadata-client"}
+
+k8-obj-metadata = { version = "0.1.0"}
+k8-obj-core = { version = "0.1.0"}
+k8-obj-app = { version = "0.1.0" }
+flv-k8-topic = { version = "0.1.0", path = "metadata-topic"}
+flv-k8-spu = { version = "0.1.0", path = "metadata-spu"}
+flv-k8-partition = { version = "0.1.0", path = "metadata-partition"}
+flv-k8-spg = { version = "0.1.0", path = "metadata-spg"}

@@ -24,11 +24,11 @@ use flv_util::actions::Actions;
 use types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
 use flv_future_core::spawn;
 use flv_future_core::sleep;
-use k8_metadata::core::metadata::K8List;
-use k8_metadata::core::metadata::K8Watch;
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::client::MetadataClient;
-use k8_metadata::client::SharedClient;
+use k8_metadata::metadata::K8List;
+use k8_metadata::metadata::K8Watch;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata_client::MetadataClient;
+use k8_metadata_client::SharedClient;
 
 use crate::core::common::new_channel;
 use crate::core::common::LocalStore;

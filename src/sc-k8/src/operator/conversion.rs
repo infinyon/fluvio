@@ -1,28 +1,28 @@
 /// convert spu group spec to statefulset for input
 use std::collections::HashMap;
 
-use k8_metadata::core::metadata::InputK8Obj;
-use k8_metadata::core::metadata::InputObjectMeta;
-use k8_metadata::core::metadata::Env;
-use k8_metadata::core::metadata::ObjectMeta;
-use k8_metadata::core::metadata::TemplateMeta;
-use k8_metadata::core::metadata::LabelSelector;
-use k8_metadata::core::metadata::TemplateSpec;
-use k8_client::pod::ContainerSpec;
-use k8_client::pod::ContainerPortSpec;
-use k8_client::pod::PodSpec;
-use k8_client::pod::VolumeMount;
-use k8_client::stateful::ResourceRequirements;
-use k8_client::stateful::VolumeRequest;
-use k8_client::stateful::PersistentVolumeClaim;
-use k8_client::stateful::StatefulSetSpec;
-use k8_client::stateful::VolumeAccessMode;
-use k8_client::service::ServiceSpec;
-use k8_client::service::ServicePort;
-use k8_metadata::core::metadata::LabelProvider;
-
+use k8_metadata::metadata::InputK8Obj;
+use k8_metadata::metadata::InputObjectMeta;
+use k8_metadata::metadata::Env;
+use k8_metadata::metadata::Spec;
+use k8_metadata::metadata::ObjectMeta;
+use k8_metadata::metadata::TemplateMeta;
+use k8_metadata::metadata::LabelSelector;
+use k8_metadata::metadata::TemplateSpec;
+use k8_metadata::metadata::LabelProvider;
+use k8_metadata::core::pod::ContainerSpec;
+use k8_metadata::core::pod::ContainerPortSpec;
+use k8_metadata::core::pod::PodSpec;
+use k8_metadata::core::pod::VolumeMount;
+use k8_metadata::core::service::ServiceSpec;
+use k8_metadata::core::service::ServicePort;
+use k8_metadata::app::stateful::ResourceRequirements;
+use k8_metadata::app::stateful::VolumeRequest;
+use k8_metadata::app::stateful::PersistentVolumeClaim;
+use k8_metadata::app::stateful::StatefulSetSpec;
+use k8_metadata::app::stateful::VolumeAccessMode;
 use k8_metadata::spg::SpuGroupSpec;
-use k8_metadata::core::Spec;
+
 use types::defaults::SPU_DEFAULT_NAME;
 use types::defaults::SPU_PUBLIC_PORT;
 use types::defaults::SPU_PRIVATE_PORT;

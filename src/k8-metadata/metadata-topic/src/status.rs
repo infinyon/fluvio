@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use serde::Serialize;
 
-use metadata_core::Status;
+use k8_obj_metadata::Status;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 #[serde(rename_all = "camelCase")]

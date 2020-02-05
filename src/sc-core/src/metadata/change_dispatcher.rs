@@ -1,8 +1,8 @@
 use flv_metadata::spu::SpuSpec;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::partition::PartitionSpec;
-use k8_metadata::client::MetadataClient;
-use k8_metadata::client::SharedClient;
+use k8_metadata_client::MetadataClient;
+use k8_metadata_client::SharedClient;
 
 use crate::core::WSChangeDispatcher;
 use crate::core::WSChangeChannel;

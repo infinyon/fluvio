@@ -13,7 +13,7 @@ use sc_api::{FlvResponseMessage};
 use sc_api::spu::{FlvDeleteCustomSpusRequest, FlvDeleteCustomSpusResponse};
 use sc_api::spu::FlvCustomSpu;
 use k8_metadata::spu::SpuSpec as K8SpuSpec;
-use k8_metadata::client::MetadataClient;
+use k8_metadata_client::MetadataClient;
 
 use crate::core::spus::SpuKV;
 use super::PublicContext;

@@ -4,7 +4,7 @@
 //! Key/Value Contexts are required by KV store for modifications and owner_references.
 //! Controller treats these objects as opaque cookies which are converted to Metadata by
 //! the KV client.
-use k8_metadata::core::metadata::ObjectMeta;
+use k8_metadata::metadata::ObjectMeta;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct KvContext {

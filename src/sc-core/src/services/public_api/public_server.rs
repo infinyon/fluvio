@@ -18,7 +18,7 @@ use kf_socket::KfSocketError;
 use kf_service::KfService;
 use sc_api::PublicRequest;
 use sc_api::ScApiKey;
-use k8_metadata::client::MetadataClient;
+use k8_metadata_client::MetadataClient;
 
 use super::api::handle_api_versions_request;
 use super::api::handle_kf_metadata_request;

@@ -13,8 +13,8 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::core::metadata::K8Obj;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata::metadata::K8Obj;
 
 
 use crate::core::common::KVObject;

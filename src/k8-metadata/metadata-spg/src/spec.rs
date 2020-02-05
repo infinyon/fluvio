@@ -6,12 +6,12 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use metadata_core::Crd;
-use metadata_core::Spec;
+use k8_obj_metadata::Crd;
+use k8_obj_metadata::Spec;
 
-use metadata_core::metadata::Env;
-use metadata_core::metadata::TemplateSpec;
-use metadata_spu::EncryptionEnum;
+use k8_obj_metadata::Env;
+use k8_obj_metadata::TemplateSpec;
+use flv_k8_spu::EncryptionEnum;
 
 use types::defaults::SPU_PUBLIC_PORT;
 use types::defaults::SPU_PRIVATE_PORT;

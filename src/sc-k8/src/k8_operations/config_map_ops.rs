@@ -7,11 +7,11 @@ use std::collections::BTreeMap;
 
 use log::{debug, trace};
 
-use k8_metadata::core::metadata::InputK8Obj;
-use k8_metadata::core::metadata::InputObjectMeta;
-use k8_metadata::core::Spec;
-use k8_metadata::client::MetadataClient;
-use k8_client::config_map::ConfigMapSpec;
+use k8_metadata::metadata::InputK8Obj;
+use k8_metadata::metadata::InputObjectMeta;
+use k8_metadata::metadata::Spec;
+use k8_metadata::core::config_map::ConfigMapSpec;
+use k8_client::metadata::MetadataClient;
 
 use crate::SharedK8Client;
 use crate::ScK8Error;

@@ -4,8 +4,11 @@
 //! Interface to the SPU metadata spec in K8 key value store
 //!
 use crate::SPU_API;
-use metadata_core::Crd;
-use metadata_core::Spec;
+use k8_obj_metadata::Crd;
+use k8_obj_metadata::Spec;
+use k8_obj_core::pod::ContainerPortSpec;
+use k8_obj_core::service::ServicePort;
+
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -80,6 +83,29 @@ impl Endpoint {
         }
     }
 }
+
+
+impl From<&Endpoint> for ContainerPortSpec {
+    fn from(end_point: &Endpoint) -> Self {
+        ContainerPortSpec {
+            container_port: end_point.port,
+            ..Default::default()
+        }
+    }
+}
+
+
+
+impl From<&Endpoint> for ServicePort {
+    fn from(end_point: &Endpoint) -> Self {
+        ServicePort {
+            port: end_point.port,
+            ..Default::default()
+        }
+    }
+}
+
+
 
 // -----------------------------------
 // Implementation - EncryptionEnum

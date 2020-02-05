@@ -15,12 +15,12 @@ log = "0.4.8"
 toml = "0.5.5"
 structopt = "0.3.5"
 futures = { version = "0.3.1" }
+k8-client = { version = "0.2.1"}
 types = { path ="../types", package = "flv-types"}
 utils = { path = "../utils"}
 flv-future-core = { version = "0.1.0" }
 flv-util = { version = "0.1.0"}
-k8-metadata = { path = "../k8-metadata"}
+k8-flv-metadata = { path = "../k8-metadata"}
 flv-sc-core = { path = "../sc-core"}
-k8-config = { path = "../k8-config"}
-k8-client = { path = "../k8-client"}
+k8-config = { version = "0.1.0" }
 flv-metadata = { path = "../metadata"}

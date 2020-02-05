@@ -12,8 +12,8 @@ use std::io::ErrorKind;
 use types::socket_helpers::ServerAddress;
 use types::SpuId;
 use flv_metadata::spu::{Endpoint, SpuSpec, SpuStatus, IngressPort};
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::core::metadata::K8Obj;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata::metadata::K8Obj;
 use k8_metadata::spu::SpuSpec as K8SpuSpec;
 use internal_api::messages::SpuMsg;
 

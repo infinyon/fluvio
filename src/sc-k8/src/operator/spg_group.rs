@@ -1,4 +1,4 @@
-use k8_metadata::core::metadata::K8Obj;
+use k8_metadata::metadata::K8Obj;
 use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::spg::SpuGroupStatus;
 use types::SpuId;

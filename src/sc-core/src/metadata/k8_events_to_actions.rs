@@ -10,12 +10,12 @@ use log::{error, trace};
 use log::warn;
 use log::debug;
 use flv_util::actions::Actions;
-use k8_metadata::core::metadata::K8List;
-use k8_metadata::core::metadata::K8Obj;
-use k8_metadata::core::metadata::K8Watch;
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::client::TokenStreamResult;
-use k8_metadata::client::MetadataClientError;
+use k8_metadata::metadata::K8List;
+use k8_metadata::metadata::K8Obj;
+use k8_metadata::metadata::K8Watch;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata_client::TokenStreamResult;
+use k8_metadata_client::MetadataClientError;
 
 
 use crate::core::common::KVObject;
@@ -256,11 +256,11 @@ pub mod test {
     use k8_metadata::topic::TopicSpec as K8TopicSpec;
     use k8_metadata::topic::TopicStatus as K8TopicStatus;
     use k8_metadata::topic::TopicStatusResolution as K8topicStatusResolution;
-    use k8_metadata::core::metadata::K8List;
-    use k8_metadata::core::metadata::K8Obj;
-    use k8_metadata::core::metadata::K8Watch;
-    use k8_metadata::client::as_token_stream_result;
-    use k8_metadata::client::DoNothingError;
+    use k8_metadata::metadata::K8List;
+    use k8_metadata::metadata::K8Obj;
+    use k8_metadata::metadata::K8Watch;
+    use k8_metadata_client::as_token_stream_result;
+    use k8_metadata_client::DoNothingError;
     
     //use k8_metadata::core::metadata::K8Watch;
     //use k8_metadata::core::Spec as K8Spec;

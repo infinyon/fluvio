@@ -37,11 +37,11 @@ use sc_api::PublicRequest;
 use sc_api::ScApiKey;
 use kf_service::KfApiServer;
 use public_server::PublicService;
-use k8_metadata::core::metadata::InputObjectMeta;
-use k8_metadata::core::metadata::InputK8Obj;
-use k8_metadata::core::metadata::K8List;
-use k8_metadata::core::Spec as K8Spec;
-use k8_metadata::client::MetadataClient;
+use k8_metadata::metadata::InputObjectMeta;
+use k8_metadata::metadata::InputK8Obj;
+use k8_metadata::metadata::K8List;
+use k8_metadata::metadata::Spec as K8Spec;
+use k8_metadata_client::MetadataClient;
 
 use crate::core::ShareLocalStores;
 use crate::metadata::K8WSUpdateService;

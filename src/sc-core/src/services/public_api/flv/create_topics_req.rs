@@ -16,8 +16,8 @@ use log::{debug, trace};
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 use kf_protocol::api::FlvErrorCode;
 
-use k8_metadata::core::metadata::ObjectMeta;
-use k8_metadata::client::MetadataClient;
+use k8_metadata::metadata::ObjectMeta;
+use k8_metadata_client::MetadataClient;
 
 use sc_api::FlvResponseMessage;
 use sc_api::topic::{FlvCreateTopicsRequest, FlvCreateTopicsResponse};

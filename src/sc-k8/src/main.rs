@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use k8_client::K8Client;
 use k8_client::ClientError;
-use k8_metadata::client::TokenStreamResult as OrigTokenStreamResult;
+use k8_client::metadata::TokenStreamResult as OrigTokenStreamResult;
 use k8_config::K8Config;
 
 

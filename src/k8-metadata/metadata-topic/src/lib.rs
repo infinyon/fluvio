@@ -7,10 +7,10 @@ pub use self::spec::Partition;
 pub use self::status::TopicStatus;
 pub use self::status::TopicStatusResolution;
 
-use metadata_core::Crd;
-use metadata_core::CrdNames;
-use metadata_core::GROUP;
-use metadata_core::V1;
+use k8_obj_metadata::Crd;
+use k8_obj_metadata::CrdNames;
+use k8_obj_metadata::GROUP;
+use k8_obj_metadata::V1;
 
 const TOPIC_API: Crd = Crd {
     group: GROUP,

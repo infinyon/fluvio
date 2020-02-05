@@ -12,7 +12,7 @@ use kf_protocol::api::FlvErrorCode;
 use sc_api::{FlvResponseMessage};
 use sc_api::topic::{FlvDeleteTopicsRequest, FlvDeleteTopicsResponse};
 use k8_metadata::topic::TopicSpec as K8TopicSpec;
-use k8_metadata::client::MetadataClient;
+use k8_metadata_client::MetadataClient;
 
 use super::PublicContext;
 

@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use metadata_core::Status;
+use k8_obj_metadata::Status;
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]

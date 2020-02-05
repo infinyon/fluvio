@@ -6,8 +6,8 @@
 //!
 use std::sync::Arc;
 
-use k8_metadata::client::SharedClient;
-use k8_metadata::client::MetadataClient;
+use k8_metadata_client::SharedClient;
+use k8_metadata_client::MetadataClient;
 
 use crate::conn_manager::ConnManager;
 

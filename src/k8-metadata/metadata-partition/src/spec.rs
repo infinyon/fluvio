@@ -4,8 +4,8 @@
 //! Interface to the Partition metadata spec in K8 key value store
 //!
 use crate::PARTITION_API;
-use metadata_core::Crd;
-use metadata_core::Spec;
+use k8_obj_metadata::Crd;
+use k8_obj_metadata::Spec;
 
 use serde::Deserialize;
 use serde::Serialize;

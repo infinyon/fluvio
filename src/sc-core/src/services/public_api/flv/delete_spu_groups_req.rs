@@ -8,7 +8,7 @@ use log::{debug, trace};
 use std::io::Error;
 
 use k8_metadata::spg::SpuGroupSpec;
-use k8_metadata::client::MetadataClient;
+use k8_metadata_client::MetadataClient;
 use kf_protocol::api::FlvErrorCode;
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 use sc_api::{FlvResponseMessage};

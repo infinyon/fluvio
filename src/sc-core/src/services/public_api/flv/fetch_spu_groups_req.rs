@@ -5,7 +5,7 @@ use kf_protocol::api::FlvErrorCode;
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 
 use k8_metadata::spg::{SpuGroupSpec};
-use k8_metadata::client::MetadataClient;
+use k8_metadata_client::MetadataClient;
 
 use sc_api::spu::{FlvFetchSpuGroupsRequest, FlvFetchSpuGroupsResponse};
 use sc_api::FlvResponseMessage;
