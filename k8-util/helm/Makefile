@@ -73,5 +73,10 @@ add_repo:
 	 helm repo add fluvio https://infinyon.github.io/charts
 	 helm repo update
 
-install_repo_minikube:
+install_repo_minikube_prod:
 	helm install fluvio/fluvio --generate-name --set cloud=minikube
+
+
+install_repo_minikube_test: SC_LOG="kf\=$(TEST_LOG_LEVEL)\,sc\=$(TEST_LOG_LEVEL)\,flv\=$(TEST_LOG_LEVEL)\,k8\=$(TEST_LOG_LEVEL)"
+install_repo_minikube_test:
+	helm install fluvio/fluvio --generate-name --set cloud=minikube --set scLog=$(SC_LOG)

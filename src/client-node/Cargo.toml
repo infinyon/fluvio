@@ -1,12 +1,12 @@
 [package]
 name = "flv-node-client"
-version = "0.2.1"
+version = "0.1.0"
 edition = "2018"
-authors = ["fluvio.io"]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 license = "Apache-2.0"
 repository = "https://github.com/infinyon/fluvio"
-homepage = "fluvio.io"
-description = "Node Client for Fluvio"
+description = "Node JS Client for Fluvio"
+readme = "REAMD.md"
 
 [lib]
 crate-type = ["cdylib"]
@@ -17,8 +17,8 @@ log = "0.4.8"
 futures = { version = "0.3.1", features = ['async-await'] }
 flv-future-core = { version = "0.1.0" }
 flv-future-aio = { version = "0.1.0" }
-kf-protocol = { version = "0.1.0", path = "../kf-protocol"}
-types = { version = "0.1.0", path ="../types", package = "flv-types"}
-flv-client = { path = "../client-rs" }
+kf-protocol = { version = "0.1.0"}
+types = { version = "0.1.0", package = "flv-types"}
+flv-client = { version = "0.1.0" }
 node-bindgen = { version = "0.1.0" }
 

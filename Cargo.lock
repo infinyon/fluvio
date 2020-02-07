@@ -590,17 +590,17 @@ dependencies = [
  "async-trait",
  "bytes 0.5.4",
  "ctrlc",
- "flv-api-sc",
- "flv-api-spu",
- "flv-client",
+ "flv-api-sc 0.1.0",
+ "flv-api-spu 0.1.0",
+ "flv-client 0.1.0",
  "flv-future-aio",
  "flv-future-core",
- "flv-types",
+ "flv-types 0.1.0",
  "flv-util",
  "futures",
- "k8-flv-metadata",
- "kf-protocol",
- "kf-socket",
+ "k8-flv-metadata 0.1.0",
+ "kf-protocol 0.1.0",
+ "kf-socket 0.1.0",
  "log",
  "prettytable-rs",
  "rand 0.7.3",
@@ -617,10 +617,24 @@ dependencies = [
 name = "flv-api-sc"
 version = "0.1.0"
 dependencies = [
- "flv-metadata",
- "flv-types",
- "k8-flv-metadata",
- "kf-protocol",
+ "flv-metadata 0.1.0",
+ "flv-types 0.1.0",
+ "k8-flv-metadata 0.1.0",
+ "kf-protocol 0.1.0",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "flv-api-sc"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "580b22ec3189b2d82680fa6a8fcf7cb7d8e52a6bb5de420c9c46e8d08c431f37"
+dependencies = [
+ "flv-metadata 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-types 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-flv-metadata 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "serde",
 ]
@@ -630,7 +644,19 @@ name = "flv-api-spu"
 version = "0.1.0"
 dependencies = [
  "flv-future-aio",
- "kf-protocol",
+ "kf-protocol 0.1.0",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "flv-api-spu"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3da2e538dd080652659ee27b5cbd5628d33add9ac2d5f54effcb2c106b8a5183"
+dependencies = [
+ "flv-future-aio",
+ "kf-protocol 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "serde",
 ]
@@ -641,14 +667,37 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "dirs 1.0.5",
- "flv-api-sc",
- "flv-api-spu",
+ "flv-api-sc 0.1.0",
+ "flv-api-spu 0.1.0",
  "flv-future-aio",
  "flv-future-core",
- "flv-types",
+ "flv-types 0.1.0",
  "futures",
- "kf-protocol",
- "kf-socket",
+ "kf-protocol 0.1.0",
+ "kf-socket 0.1.0",
+ "log",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
+name = "flv-client"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6cad66038cd0efde9b3080014dfa24e6ca10cbb9d3c19902541e34b041d65cd1"
+dependencies = [
+ "async-trait",
+ "dirs 1.0.5",
+ "flv-api-sc 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-api-spu 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-future-aio",
+ "flv-future-core",
+ "flv-types 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures",
+ "kf-protocol 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-socket 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "rand 0.7.3",
  "serde",
@@ -696,13 +745,13 @@ dependencies = [
  "bytes 0.5.4",
  "flv-future-aio",
  "flv-future-core",
- "flv-metadata",
- "flv-types",
+ "flv-metadata 0.1.0",
+ "flv-types 0.1.0",
  "futures",
  "internal-api",
- "kf-protocol",
+ "kf-protocol 0.1.0",
  "kf-service",
- "kf-socket",
+ "kf-socket 0.1.0",
  "log",
  "utils",
 ]
@@ -718,11 +767,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "flv-k8-partition"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "797037fce6cec53cb3955a6c9b014005c95f0fdf375000ea45198752c36598ad"
+dependencies = [
+ "k8-obj-metadata",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "flv-k8-spg"
 version = "0.1.0"
 dependencies = [
- "flv-k8-spu",
- "flv-types",
+ "flv-k8-spu 0.1.0",
+ "flv-types 0.1.0",
+ "k8-obj-metadata",
+ "log",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_qs 0.4.6",
+]
+
+[[package]]
+name = "flv-k8-spg"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "098c1370464579ba44d3efb165d272a9d56b11c4e363056d2b76bf68615fbee5"
+dependencies = [
+ "flv-k8-spu 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-types 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "k8-obj-metadata",
  "log",
  "serde",
@@ -743,8 +820,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "flv-k8-spu"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35a5657abbc37add871056f27e214010d3fe97ebc64ce745809a35075f2b76f2"
+dependencies = [
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "flv-k8-topic"
 version = "0.1.0"
+dependencies = [
+ "k8-obj-metadata",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "flv-k8-topic"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a5cc141a5e552ba83feadf504d479fbc8071e1c6b32fb12927dcefd0efc8837"
 dependencies = [
  "k8-obj-metadata",
  "log",
@@ -756,22 +858,34 @@ dependencies = [
 name = "flv-metadata"
 version = "0.1.0"
 dependencies = [
- "flv-types",
- "k8-flv-metadata",
- "kf-protocol",
+ "flv-types 0.1.0",
+ "k8-flv-metadata 0.1.0",
+ "kf-protocol 0.1.0",
+ "log",
+]
+
+[[package]]
+name = "flv-metadata"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5511871c1a177ce813fccee47309a9fe37416cb88e61344f2542f3dd30acce51"
+dependencies = [
+ "flv-types 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-flv-metadata 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
 ]
 
 [[package]]
 name = "flv-node-client"
-version = "0.2.1"
+version = "0.1.0"
 dependencies = [
- "flv-client",
+ "flv-client 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "flv-future-aio",
  "flv-future-core",
- "flv-types",
+ "flv-types 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
- "kf-protocol",
+ "kf-protocol 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "node-bindgen",
 ]
@@ -783,19 +897,19 @@ dependencies = [
  "async-trait",
  "base64 0.11.0",
  "chashmap",
- "flv-api-sc",
+ "flv-api-sc 0.1.0",
  "flv-future-aio",
  "flv-future-core",
- "flv-metadata",
- "flv-types",
+ "flv-metadata 0.1.0",
+ "flv-types 0.1.0",
  "flv-util",
  "futures",
  "internal-api",
- "k8-flv-metadata",
+ "k8-flv-metadata 0.1.0",
  "k8-metadata-client",
- "kf-protocol",
+ "kf-protocol 0.1.0",
  "kf-service",
- "kf-socket",
+ "kf-socket 0.1.0",
  "log",
  "rand 0.7.3",
  "regex",
@@ -809,14 +923,14 @@ name = "flv-sc-k8"
 version = "0.2.1"
 dependencies = [
  "flv-future-core",
- "flv-metadata",
+ "flv-metadata 0.1.0",
  "flv-sc-core",
- "flv-types",
+ "flv-types 0.1.0",
  "flv-util",
  "futures",
  "k8-client",
  "k8-config",
- "k8-flv-metadata",
+ "k8-flv-metadata 0.1.0",
  "log",
  "rand 0.7.3",
  "structopt 0.3.9",
@@ -832,18 +946,18 @@ dependencies = [
  "bytes 0.5.4",
  "chashmap",
  "chrono",
- "flv-api-spu",
+ "flv-api-spu 0.1.0",
  "flv-future-aio",
  "flv-future-core",
- "flv-metadata",
+ "flv-metadata 0.1.0",
  "flv-storage",
- "flv-types",
+ "flv-types 0.1.0",
  "flv-util",
  "futures",
  "internal-api",
- "kf-protocol",
+ "kf-protocol 0.1.0",
  "kf-service",
- "kf-socket",
+ "kf-socket 0.1.0",
  "log",
  "pin-utils",
  "regex",
@@ -862,11 +976,11 @@ dependencies = [
  "bytes 0.5.4",
  "flv-future-aio",
  "flv-future-core",
- "flv-types",
+ "flv-types 0.1.0",
  "flv-util",
  "futures",
- "kf-protocol",
- "kf-socket",
+ "kf-protocol 0.1.0",
+ "kf-socket 0.1.0",
  "libc",
  "log",
  "pin-utils",
@@ -878,6 +992,15 @@ dependencies = [
 [[package]]
 name = "flv-types"
 version = "0.1.0"
+dependencies = [
+ "log",
+]
+
+[[package]]
+name = "flv-types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ce7895f1fe9bafe078c544280f299813ba9e9fd1e4e392d5e53238d1b0d37a0"
 dependencies = [
  "log",
 ]
@@ -1100,9 +1223,9 @@ dependencies = [
 name = "internal-api"
 version = "0.2.1"
 dependencies = [
- "flv-metadata",
- "flv-types",
- "kf-protocol",
+ "flv-metadata 0.1.0",
+ "flv-types 0.1.0",
+ "kf-protocol 0.1.0",
  "log",
 ]
 
@@ -1178,9 +1301,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b14ffda2f126e1b30995a86458ddb945adb2fdc51c82f39b70ab053b04050e85"
+checksum = "4477c2f126bd32b05318f6830eab13ff088c2409f40a8d5de990ef15d06b337b"
 dependencies = [
  "async-trait",
  "bytes 0.5.4",
@@ -1229,10 +1352,26 @@ dependencies = [
 name = "k8-flv-metadata"
 version = "0.1.0"
 dependencies = [
- "flv-k8-partition",
- "flv-k8-spg",
- "flv-k8-spu",
- "flv-k8-topic",
+ "flv-k8-partition 0.1.0",
+ "flv-k8-spg 0.1.0",
+ "flv-k8-spu 0.1.0",
+ "flv-k8-topic 0.1.0",
+ "k8-obj-app",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "log",
+]
+
+[[package]]
+name = "k8-flv-metadata"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73e1388a03a5315e6ec0e7d0dec27824ad47dd1650eaab79266dc849e16b2e42"
+dependencies = [
+ "flv-k8-partition 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-k8-spg 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-k8-spu 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-k8-topic 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
@@ -1314,12 +1453,27 @@ name = "kf-protocol"
 version = "0.1.0"
 dependencies = [
  "flv-util",
- "kf-protocol-api",
- "kf-protocol-core",
- "kf-protocol-derive",
- "kf-protocol-fs",
- "kf-protocol-message",
- "kf-protocol-transport",
+ "kf-protocol-api 0.1.0",
+ "kf-protocol-core 0.1.1",
+ "kf-protocol-derive 0.1.0",
+ "kf-protocol-fs 0.1.0",
+ "kf-protocol-message 0.1.0",
+ "kf-protocol-transport 0.1.0",
+ "log",
+]
+
+[[package]]
+name = "kf-protocol"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77264abed45772acde55368bce17d9d660c655e526df4df9c9dd100096e3b1b7"
+dependencies = [
+ "kf-protocol-api 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-derive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-fs 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-message 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-transport 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
 ]
 
@@ -1330,8 +1484,24 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "flv-util",
- "kf-protocol-core",
- "kf-protocol-derive",
+ "kf-protocol-core 0.1.1",
+ "kf-protocol-derive 0.1.0",
+ "log",
+ "paste",
+ "serde",
+]
+
+[[package]]
+name = "kf-protocol-api"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9d2e0580cdcadf4be7c75abe9f74f4ac011abddfc9561f493eb21d25086d82b"
+dependencies = [
+ "content_inspector",
+ "crc32c",
+ "flv-util",
+ "kf-protocol-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-derive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "paste",
  "serde",
@@ -1340,6 +1510,19 @@ dependencies = [
 [[package]]
 name = "kf-protocol-core"
 version = "0.1.1"
+dependencies = [
+ "bytes 0.5.4",
+ "log",
+ "num-derive",
+ "num-traits",
+ "serde",
+]
+
+[[package]]
+name = "kf-protocol-core"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7a367cbbc374f8dd72a30700b642afda74653582194f2c67dd4f281c1b30c03"
 dependencies = [
  "bytes 0.5.4",
  "log",
@@ -1359,13 +1542,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "kf-protocol-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49cadc543a9fa88ccc26f7fad99484a3ac395c2dd8ec225eb78b784db17424cd"
+dependencies = [
+ "log",
+ "proc-macro2 0.4.30",
+ "quote 0.6.13",
+ "syn 0.15.44",
+]
+
+[[package]]
 name = "kf-protocol-dump"
 version = "0.2.1"
 dependencies = [
  "flv-util",
- "kf-protocol-api",
- "kf-protocol-core",
- "kf-protocol-message",
+ "kf-protocol-api 0.1.0",
+ "kf-protocol-core 0.1.1",
+ "kf-protocol-message 0.1.0",
  "log",
  "structopt 0.3.9",
 ]
@@ -1378,9 +1573,25 @@ dependencies = [
  "flv-future-aio",
  "flv-future-core",
  "futures",
- "kf-protocol-api",
- "kf-protocol-core",
- "kf-protocol-message",
+ "kf-protocol-api 0.1.0",
+ "kf-protocol-core 0.1.1",
+ "kf-protocol-message 0.1.0",
+ "log",
+]
+
+[[package]]
+name = "kf-protocol-fs"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2783b46ca2c377ab9ad7f3c456dab358e2137748a97cab73f742ddbc760886a7"
+dependencies = [
+ "bytes 0.5.4",
+ "flv-future-aio",
+ "flv-future-core",
+ "futures",
+ "kf-protocol-api 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-message 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
 ]
 
@@ -1390,10 +1601,27 @@ version = "0.1.0"
 dependencies = [
  "content_inspector",
  "crc32c",
- "flv-types",
- "kf-protocol-api",
- "kf-protocol-core",
- "kf-protocol-derive",
+ "flv-types 0.1.0",
+ "kf-protocol-api 0.1.0",
+ "kf-protocol-core 0.1.1",
+ "kf-protocol-derive 0.1.0",
+ "log",
+ "paste",
+ "serde",
+]
+
+[[package]]
+name = "kf-protocol-message"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a132495493dd46b3712d8e2fa853379dad588e667983788617f69fde31f6908e"
+dependencies = [
+ "content_inspector",
+ "crc32c",
+ "flv-types 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-api 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kf-protocol-derive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "paste",
  "serde",
@@ -1409,7 +1637,20 @@ dependencies = [
  "flv-util",
  "futures",
  "futures_codec",
- "kf-protocol-core",
+ "kf-protocol-core 0.1.1",
+ "log",
+]
+
+[[package]]
+name = "kf-protocol-transport"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b1df3d364a9a40106c26e75bd972ef068dd9cff8f06bab6c7f5ff32fe4ade1c"
+dependencies = [
+ "bytes 0.5.4",
+ "flv-future-aio",
+ "futures_codec",
+ "kf-protocol-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
 ]
 
@@ -1420,11 +1661,11 @@ dependencies = [
  "async-trait",
  "flv-future-aio",
  "flv-future-core",
- "flv-types",
+ "flv-types 0.1.0",
  "flv-util",
  "futures",
- "kf-protocol",
- "kf-socket",
+ "kf-protocol 0.1.0",
+ "kf-socket 0.1.0",
  "log",
  "pin-utils",
 ]
@@ -1440,7 +1681,24 @@ dependencies = [
  "flv-util",
  "futures",
  "futures_codec",
- "kf-protocol",
+ "kf-protocol 0.1.0",
+ "log",
+ "pin-utils",
+]
+
+[[package]]
+name = "kf-socket"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f453a04ae4a2e5d732155e1d3652593a4e79ab8168696e0792f87a2d8c0848a8"
+dependencies = [
+ "bytes 0.5.4",
+ "chashmap",
+ "flv-future-aio",
+ "flv-future-core",
+ "futures",
+ "futures_codec",
+ "kf-protocol 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "pin-utils",
 ]
@@ -2653,7 +2911,7 @@ checksum = "60369ef7a31de49bcb3f6ca728d4ba7300d9a1658f94c727d4cab8c8d9f4aece"
 name = "utils"
 version = "0.2.1"
 dependencies = [
- "flv-types",
+ "flv-types 0.1.0",
  "log",
  "rand 0.7.3",
  "regex",

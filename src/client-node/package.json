@@ -1,12 +1,23 @@
 {
-    "name": "flv-node",
-    "version": "0.1.0",
-    "description": "Fluvio Nodejs binding",
-    "main": "dylib/index.node",
-    "author": "fluvio.i",
-    "license": "ISC",
+    "name": "@fluvio/client",
+    "version": "0.1.2",
+    "description": "Node.js binding for Fluvio distributed stream",
+    "keywords": [
+        "fluvio",
+        "kafka",
+        "stream",
+        "client"
+    ],
+    "main": "dist/index.node",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/infinyon/fluvio.git"
+    },
+    "homepage": "https://fluvio.io",
+    "author": "team@fluvio.io",
+    "license": "Apache-2.0",
     "dependencies": {},
     "scripts": {
         "install": "nj-cli build"
-     }
+    }
 }
