@@ -16,7 +16,7 @@ use structopt::StructOpt;
 
 use types::print_cli_err;
 use types::socket_helpers::string_to_socket_addr;
-use k8_config::K8Config;
+use k8_client::K8Config;
 use flv_sc_core::config::ScConfig;
 
 use crate::ScK8Error;

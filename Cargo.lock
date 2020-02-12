@@ -929,7 +929,6 @@ dependencies = [
  "flv-util",
  "futures",
  "k8-client",
- "k8-config",
  "k8-flv-metadata 0.1.0",
  "log",
  "rand 0.7.3",
@@ -1301,9 +1300,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4477c2f126bd32b05318f6830eab13ff088c2409f40a8d5de990ef15d06b337b"
+checksum = "07d4dac9a8402558200592c0f582934ef88f3c76308c2f379a3a74a4301e0ea8"
 dependencies = [
  "async-trait",
  "bytes 0.5.4",

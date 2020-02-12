@@ -28,12 +28,12 @@ use k8_metadata::spu::Endpoint as K8Endpoint;
 use k8_metadata::metadata::LabelProvider;
 use k8_client::metadata::MetadataClient;
 use k8_client::metadata::ApplyResult;
+use k8_client::SharedK8Client;
 use types::defaults::SPU_PUBLIC_PORT;
 use types::defaults::SPU_DEFAULT_NAME;
 use types::SpuId;
 use flv_sc_core::core::spus::SharedSpuLocalStore;
 
-use crate::SharedK8Client;
 
 use super::convert_cluster_to_statefulset;
 use super::generate_service;
