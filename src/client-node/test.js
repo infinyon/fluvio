@@ -21,30 +21,19 @@ addon.connect("localhost:9003").then( sc => {
     
     sc.replica("test1",0).then( leader => {
         
-        /*
-        leader.produce("new message").then( len => {
-            console.log("message send");
-        });
-        */
-     //   leader.includeMetadata = true;
-     
-     try {
-       // leader.consume("earliest",emitter.emit.bind(emitter));
-        // leader.consume("latest",emitter.emit.bind(emitter));
-        //leader.consume(2,emitter.emit.bind(emitter));
-        leader.consume( {
-                    offset: "earliest",
-                    includeMetadata: true,
-                    type: 'text',
-                    isolation: 'readCommitted'
-                },
-            emitter.emit.bind(emitter)
-         );
-     } catch(ex) {
-         console.log(ex);
-     }
-       
-       
+        try {
+
+            leader.consume( {
+                        offset: "earliest",
+                        includeMetadata: true,
+                        type: 'text',
+                        isolation: 'readCommitted'
+                    },
+                emitter.emit.bind(emitter)
+            );
+        } catch(ex) {
+            console.log(ex);
+        } 
     })
 })
 .catch((err) => console.log(err));

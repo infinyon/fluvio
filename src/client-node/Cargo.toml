@@ -1,6 +1,6 @@
 [package]
 name = "flv-node-client"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 license = "Apache-2.0"
