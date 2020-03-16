@@ -19,8 +19,8 @@ use std::io::Error as IoError;
 
 use log::trace;
 
-use flv_future_aio::Bytes;
-use flv_future_aio::BytesMut;
+use flv_future_aio::bytes::Bytes;
+use flv_future_aio::bytes::BytesMut;
 use flv_future_aio::fs::AsyncFileSlice;
 use kf_protocol_core::Version;
 use kf_protocol_api::Request;

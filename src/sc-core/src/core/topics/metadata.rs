@@ -51,7 +51,7 @@ impl Spec for TopicSpec
 
 
 /// convert kubernetes objects into KV vbalue
-    fn convert_from_k8(k8_topic: K8Obj<K8TopicSpec,K8TopicStatus>) -> 
+    fn convert_from_k8(k8_topic: K8Obj<K8TopicSpec>) -> 
             Result<KVObject<Self>,IoError> 
 
     {
@@ -63,10 +63,7 @@ impl Spec for TopicSpec
         let topic_spec = create_computed_topic_spec_from_k8_spec(&k8_topic.spec);
 
         // topic status is optional
-        let topic_status = match &k8_topic.status {
-            Some(k8_status) => create_topic_status_from_k8_spec(k8_status),
-            None => TopicStatus::default(),
-        };
+        let topic_status = create_topic_status_from_k8_spec(&k8_topic.status);
 
         let ctx = KvContext::default().with_ctx(k8_topic.metadata.clone());
         Ok(

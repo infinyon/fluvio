@@ -31,7 +31,7 @@ pub trait Spec: Default + Clone {
     type Key: Ord + Clone + ToString;
 
     // convert kubernetes objects into KV value
-    fn convert_from_k8(k8_obj: K8Obj<Self::K8Spec,<Self::K8Spec as K8Spec>::Status>) -> 
+    fn convert_from_k8(k8_obj: K8Obj<Self::K8Spec>) -> 
            Result<KVObject<Self>,IoError>;
 
             

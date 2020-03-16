@@ -7,7 +7,7 @@ use log::warn;
 use log::trace;
 
 use kf_protocol::api::Offset;
-use flv_future_aio::fs::file_util;
+use flv_future_aio::fs::util as file_util;
 
 use crate::BatchHeaderStream;
 use crate::util::log_path_get_offset;
@@ -123,7 +123,7 @@ mod tests {
 
     use flv_future_aio::fs::BoundedFileSink;
     use flv_future_aio::fs::BoundedFileOption;
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
     use kf_protocol::api::DefaultRecord;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Offset;

@@ -18,8 +18,8 @@ use futures::FutureExt;
 use futures::select;
 use futures::sink::SinkExt;
 
-use flv_future_core::spawn;
-use flv_future_core::sleep;
+use flv_future_aio::task::spawn;
+use flv_future_aio::timer::sleep;
 use internal_api::InternalSpuApi;
 use internal_api::InternalSpuRequest;
 use internal_api::RegisterSpuRequest;

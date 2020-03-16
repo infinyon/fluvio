@@ -18,10 +18,16 @@ Then, you must enable nightly toolchain:
 rustup toolchain install nightly
 ```
 
-And enable globally
+And enable nightly as default
 ```
 rustup default nightly
 ```
+
+Finally, install build tool
+```
+cargo install nj-cli
+```
+
 
 ### Install NPM package
 

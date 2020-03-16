@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 
 use log::trace;
 
-use flv_future_aio::BytesMut;
+use flv_future_aio::bytes::BytesMut;
 use kf_protocol_core::Encoder;
 use kf_protocol_core::Version;
 use kf_protocol_message::produce::KfProduceRequest;

@@ -124,9 +124,9 @@ pub(crate) mod test {
     use log::debug;
     use log::error;
 
-    use flv_future_aio::net::AsyncTcpListener;
-    use flv_future_core::sleep;
-    use flv_future_core::test_async;
+    use flv_future_aio::net::TcpListener;
+    use flv_future_aio::timer::sleep;
+    use flv_future_aio::test_async;
 
     use super::KfSocket;
     use super::KfSocketError;
@@ -141,7 +141,7 @@ pub(crate) mod test {
         id: u16,
     ) -> Result<(), KfSocketError> {
         debug!("server: {}-{} ready to bind", socket_addr, id);
-        let listener = AsyncTcpListener::bind(&socket_addr).await?;
+        let listener = TcpListener::bind(&socket_addr).await?;
         debug!(
             "server: {}-{} successfully binding. waiting for incoming",
             socket_addr, id

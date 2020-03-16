@@ -1,6 +1,6 @@
 [package]
 name = "kf-socket"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper using kafka protocol"
@@ -19,15 +19,14 @@ required-features = ["cli"]
 [dependencies]
 log = "0.4.8"
 bytes = "0.5.3"
-futures = { version = "0.3.1" }
+futures = { version = "0.3.4" }
 pin-utils = "0.1.0-alpha.4"
 chashmap = "2.2.0"
 futures_codec = "0.3.1"
-kf-protocol = { version = "0.1.0", path = "../kf-protocol"}
-flv-future-aio = { version = "0.1.0" }
-flv-future-core = { version = "0.1.0" }
+kf-protocol = { version = "1.0.0", path = "../kf-protocol"}
+flv-future-aio = { version = "1.0.0" }
 
 
 [dev-dependencies]
 flv-util = { version = "0.1.0", features = ["fixture"]}
-flv-future-core = { version = "0.1.0", features = ["fixture"] }
+flv-future-aio = { version = "1.0.0", features = ["fixture"] }

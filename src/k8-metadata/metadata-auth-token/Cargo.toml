@@ -1,6 +1,6 @@
 [package]
 name = "metadata-auth-token"
-version = "0.2.1"
+version = "1.0.0"
 authors = ["fluvio.io"]
 edition = "2018"
 

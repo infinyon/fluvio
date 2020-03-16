@@ -298,7 +298,7 @@ mod tests {
 
     use futures::stream::StreamExt;
 
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
  
     use crate::ConfigOption;
     use crate::StorageError;

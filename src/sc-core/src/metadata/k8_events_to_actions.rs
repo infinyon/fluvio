@@ -13,7 +13,6 @@ use flv_util::actions::Actions;
 use k8_metadata::metadata::K8List;
 use k8_metadata::metadata::K8Obj;
 use k8_metadata::metadata::K8Watch;
-use k8_metadata::metadata::Spec as K8Spec;
 use k8_metadata_client::TokenStreamResult;
 use k8_metadata_client::MetadataClientError;
 
@@ -31,7 +30,7 @@ use crate::ScServerError;
 /// 
 ///
 pub fn k8_events_to_metadata_actions<S>(
-    k8_tokens: K8List<S::K8Spec,<S::K8Spec as K8Spec>::Status>,
+    k8_tokens: K8List<S::K8Spec>,
     local_store: &LocalStore<S>,
 ) -> Actions<LSChange<S>> 
     where 
@@ -116,7 +115,7 @@ pub fn k8_events_to_metadata_actions<S>(
 /// Translates K8 events into metadata action.
 ///
 pub fn k8_event_stream_to_metadata_actions<S,E>(
-    stream: TokenStreamResult<S::K8Spec,<S::K8Spec as K8Spec>::Status,E>,
+    stream: TokenStreamResult<S::K8Spec,E>,
     local_store: &LocalStore<S>
 ) -> Actions<LSChange<S>> 
     where 
@@ -233,7 +232,7 @@ pub fn k8_event_stream_to_metadata_actions<S,E>(
 ///
 /// Translates K8 object into Sc AuthToken metadata
 ///
-fn k8_obj_to_kv_obj<S>(k8_obj: K8Obj<S::K8Spec,<S::K8Spec as K8Spec>::Status>) -> Result<KVObject<S>,ScServerError> 
+fn k8_obj_to_kv_obj<S>(k8_obj: K8Obj<S::K8Spec>) -> Result<KVObject<S>,ScServerError> 
      where 
         S: Spec + Debug,
          <S as Spec>::K8Spec: Debug
@@ -272,9 +271,9 @@ pub mod test {
     use super::k8_obj_to_kv_obj;
    
 
-    type TopicList = K8List<K8TopicSpec,K8TopicStatus>;
-    type K8Topic = K8Obj<K8TopicSpec,K8TopicStatus>;
-    type K8TopicWatch = K8Watch<K8TopicSpec,K8TopicStatus>;
+    type TopicList = K8List<K8TopicSpec>;
+    type K8Topic = K8Obj<K8TopicSpec>;
+    type K8TopicWatch = K8Watch<K8TopicSpec>;
 
 
 

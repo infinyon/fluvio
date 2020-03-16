@@ -329,7 +329,7 @@ mod tests {
     use std::fs::metadata;
     use std::io::Cursor;
 
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Offset;
     use kf_protocol::Decoder;

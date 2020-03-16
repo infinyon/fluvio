@@ -10,7 +10,7 @@ use kf_protocol::api::Offset;
 use kf_protocol::api::MAX_BYTES;
 
 use crate::error::CliError;
-use flv_client::profile::ReplicaLeaderConfig;
+use flv_client::profile::ServerTarget;
 
 use super::ConsumeOutputType;
 
@@ -82,9 +82,9 @@ pub struct ConsumeLogOpt {
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
-    pub fn validate(self) -> Result<(ReplicaLeaderConfig, ConsumeLogConfig), CliError> {
+    pub fn validate(self) -> Result<(ServerTarget, ConsumeLogConfig), CliError> {
         // profile specific configurations (target server)
-        let target_server = ReplicaLeaderConfig::new(self.sc, self.spu, self.kf, self.profile)?;
+        let target_server = ServerTarget::new(self.sc, self.spu, self.kf, self.profile)?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
 
         // consume log specific configurations

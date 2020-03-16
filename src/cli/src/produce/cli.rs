@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::error::CliError;
-use flv_client::profile::ReplicaLeaderConfig;
+use flv_client::profile::ServerTarget;
 
 // -----------------------------------
 //  Parsed Config
@@ -97,8 +97,8 @@ pub struct ProduceLogOpt {
 
 impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
-    pub fn validate(self) -> Result<(ReplicaLeaderConfig, ProduceLogConfig), CliError> {
-        let target_server = ReplicaLeaderConfig::new(self.sc, self.spu, self.kf, self.profile)?;
+    pub fn validate(self) -> Result<(ServerTarget, ProduceLogConfig), CliError> {
+        let target_server = ServerTarget::new(self.sc, self.spu, self.kf, self.profile)?;
 
         // generate file record
         let records_from_file = if let Some(record_per_line) = self.record_per_line {

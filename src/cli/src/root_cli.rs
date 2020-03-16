@@ -7,7 +7,7 @@ use std::sync::Arc;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
-use flv_future_core::run_block_on;
+use flv_future_aio::task::run_block_on;
 
 use crate::CliError;
 

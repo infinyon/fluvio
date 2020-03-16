@@ -12,7 +12,6 @@ use flv_metadata::partition::ReplicaKey;
 use flv_metadata::partition::{PartitionSpec, PartitionStatus};
 use flv_metadata::topic::TopicSpec;
 use k8_metadata::partition::PartitionSpec as K8PartitionSpec;
-use k8_metadata::metadata::Spec as K8Spec;
 use k8_metadata::metadata::K8Obj;
 use types::SpuId;
 
@@ -30,7 +29,7 @@ impl Spec for PartitionSpec {
     type Owner = TopicSpec;
 
     fn convert_from_k8(
-        k8_obj: K8Obj<Self::K8Spec, <Self::K8Spec as K8Spec>::Status>,
+        k8_obj: K8Obj<Self::K8Spec>,
     ) -> Result<KVObject<Self>, IoError> {
         default_convert_from_k8(k8_obj)
     }

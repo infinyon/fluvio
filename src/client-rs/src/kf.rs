@@ -58,12 +58,15 @@ use crate::ClientError;
 use crate::ClientConfig;
 use crate::Client;
 use crate::SpuController;
-use crate::LeaderConfig;
+use crate::ReplicaLeaderConfig;
 use crate::ReplicaLeader;
+use crate::FetchLogOption;
+use crate::FetchOffset;
 use crate::query_params::LeaderParam;
 use crate::query_params::TopicPartitionParam;
 use crate::query_params::FetchLogsParam;
 use crate::query_params::ReplicaConfig;
+
 
 pub struct KfClient<A>(Client<A>);
 
@@ -339,7 +342,7 @@ impl <A>SpuController for KfClient<A>
     type TopicMetadata = MetadataResponseTopic;
 
     /// Find address of the Broker leader for a topic/partition
-    async fn find_leader_for_topic_partition(
+    async fn find_replica_for_topic_partition(
         &mut self,
         topic: &str,
         partition: i32,
@@ -361,7 +364,7 @@ impl <A>SpuController for KfClient<A>
                         for broker in brokers {
                             if broker.node_id == leader_id {
                                 debug!("broker {}/{} is leader", broker.host, broker.port);
-                                let config = LeaderConfig::new(broker.into(),topic.to_owned(),partition)
+                                let config = ReplicaLeaderConfig::new(broker.into(),topic.to_owned(),partition)
                                         .spu_id(leader_id)
                                         .client_id(self.0.client_id());
                                 return KfLeader::connect(config).await
@@ -497,13 +500,13 @@ impl <A>SpuController for KfClient<A>
 
 pub struct KfLeader {
     client: Client<String>,
-    config: LeaderConfig
+    config: ReplicaLeaderConfig
 }
 
 impl KfLeader {
 
 
-    pub async fn connect(config: LeaderConfig) -> Result<Self,ClientError> {
+    pub async fn connect(config: ReplicaLeaderConfig) -> Result<Self,ClientError> {
         let inner_client = Client::connect(config.as_client_config()).await?;
         Ok(Self {
             client: inner_client,
@@ -589,7 +592,7 @@ impl ReplicaLeader for KfLeader
 
     type OffsetPartitionResponse = ListOffsetPartitionResponse;
 
-    fn config(&self) -> &LeaderConfig {
+    fn config(&self) -> &ReplicaLeaderConfig {
         &self.config
     }
 
@@ -630,9 +633,8 @@ impl ReplicaLeader for KfLeader
      /// Fetch log records from a target server
     fn fetch_logs<'a>(
         &'a mut self,
-        _offset: i64,
-        _max_bytes: i32,
-        _isolation: Isolation
+        _offset: FetchOffset,
+        _config: FetchLogOption
     ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>> {
 
         empty().boxed()

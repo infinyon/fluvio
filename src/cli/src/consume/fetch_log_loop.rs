@@ -10,9 +10,9 @@ use std::io::ErrorKind;
 use log::debug;
 use futures::stream::StreamExt;
 
-use kf_protocol::api::Isolation;
-use kf_protocol::api::PartitionOffset;
 use flv_client::ReplicaLeader;
+use flv_client::FetchLogOption;
+use flv_client::FetchOffset;
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -49,16 +49,19 @@ where
     }
 
     // list offsets
-    let offsets = leader.fetch_offsets().await?;
     let initial_offset = if opt.from_beginning {
-        offsets.start_offset()
+        FetchOffset::Earliest
     } else {
-        offsets.last_stable_offset()
+       FetchOffset::Latest
     };
 
-    debug!("fetching log with starting offset: {}", initial_offset);
 
-    let mut log_stream = leader.fetch_logs(initial_offset, opt.max_bytes, Isolation::ReadCommitted);
+    let fetch_option = FetchLogOption {
+        max_bytes: opt.max_bytes,
+        ..Default::default()
+    };
+
+    let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);
 
     while let Some(record) = log_stream.next().await {
         process_fetch_topic_response(out.clone(), &topic, record, &opt).await?;

@@ -1,6 +1,6 @@
 [package]
 name = "flv-api-spu"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
@@ -10,5 +10,5 @@ license = "Apache-2.0"
 [dependencies]
 log = "0.4.8"
 serde = { version ="1.0.103", features = ['derive'] }
-kf-protocol = { version = "0.1.0", path = "../../kf-protocol"}
-flv-future-aio = { version = "0.1.0" }
+flv-future-aio = { version = "1.0.0" }
+kf-protocol = { version = "1.0.0", path = "../../kf-protocol"}

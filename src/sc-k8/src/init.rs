@@ -5,7 +5,7 @@
 //! and receivers.
 //!
 
-use flv_future_core::main;
+use flv_future_aio::task::main;
 
 use k8_client::new_shared;
 use flv_sc_core::start_main_loop;
@@ -15,8 +15,7 @@ use crate::operator::run_k8_operators;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn main_k8_loop() {
-    println!("starting sc server with k8");
-
+   
     // parse configuration (program exits on error)
     let (sc_config, k8_config) = parse_cli_or_exit();
 

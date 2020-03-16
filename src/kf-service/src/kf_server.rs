@@ -20,9 +20,9 @@ use log::debug;
 use log::warn;
 use async_trait::async_trait;
 
-use flv_future_aio::net::AsyncTcpListener;
-use flv_future_aio::net::AsyncTcpStream;
-use flv_future_core::spawn;
+use flv_future_aio::net::TcpListener;
+use flv_future_aio::net::TcpStream;
+use flv_future_aio::task::spawn;
 use kf_protocol::api::KfRequestMessage;
 use kf_protocol::Decoder as KfDecoder;
 use kf_socket::KfSocket;
@@ -85,7 +85,7 @@ where
     }
 
     pub async fn run_shutdown(self, shutdown_signal: Receiver<bool>) {
-        match AsyncTcpListener::bind(&self.addr).await {
+        match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
                 info!("starting event loop for: {}", &self.addr);
                 self.event_loop(listener, shutdown_signal).await;
@@ -97,7 +97,7 @@ where
         }
     }
 
-    async fn event_loop(self, listener: AsyncTcpListener, mut shutdown_signal: Receiver<bool>) {
+    async fn event_loop(self, listener: TcpListener, mut shutdown_signal: Receiver<bool>) {
         let addr = self.addr;
 
         let mut incoming = listener.incoming();
@@ -129,7 +129,7 @@ where
         info!("server terminating");
     }
 
-    fn server_incoming(&self, incoming: Option<Result<AsyncTcpStream, IoError>>) {
+    fn server_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
                 Ok(stream) => {
@@ -172,8 +172,8 @@ mod test {
     use log::debug;
     use log::trace;
 
-    use flv_future_core::sleep;
-    use flv_future_core::test_async;
+    use flv_future_aio::timer::sleep;
+    use flv_future_aio::test_async;
 
     use kf_protocol::api::RequestMessage;
     use kf_socket::KfSocket;

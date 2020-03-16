@@ -32,9 +32,9 @@ use kf_socket::KfSocketError;
 use crate::ClientError;
 use crate::Client;
 use crate::ClientConfig;
-use crate::LeaderConfig;
+use crate::ReplicaLeaderConfig;
 use crate::SpuController;
-use crate::SpuLeader;
+use crate::SpuReplicaLeader;
 use crate::query_params::ReplicaConfig;
 
 pub struct ScClient<A>(Client<A>);
@@ -160,11 +160,11 @@ impl<A> SpuController for ScClient<A>
 where
     A: ToSocketAddrs + Display + Send + Sync,
 {
-    type Leader = SpuLeader;
+    type Leader = SpuReplicaLeader;
 
     type TopicMetadata = FlvFetchTopicResponse;
-    /// Find address of the SPU leader for a topic/partition
-    async fn find_leader_for_topic_partition(
+    /// Connect to replica leader for a topic/partition
+    async fn find_replica_for_topic_partition(
         &mut self,
         topic: &str,
         partition: i32,
@@ -221,10 +221,10 @@ where
                         debug!("spu {}/{}: is leader", spu_resp.host, spu_resp.port);
 
                         let leader_config =
-                            LeaderConfig::new(spu_resp.into(), topic.to_owned(), partition)
+                            ReplicaLeaderConfig::new(spu_resp.into(), topic.to_owned(), partition)
                                 .spu_id(leader_id)
                                 .client_id(self.0.client_id());
-                        return SpuLeader::connect(leader_config).await;
+                        return SpuReplicaLeader::connect(leader_config).await;
                     }
                 }
             }

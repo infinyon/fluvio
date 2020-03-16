@@ -1,19 +1,21 @@
 [package]
 name = "flv-integration-test"
-version = "0.2.1"
+version = "1.0.0"
 authors = ["fluvio.io"]
 edition = "2018"
 
 [dependencies]
 log = "0.4.8"
 bytes = "0.5.3"
-futures = { version = "0.3.1" }
-flv-future-core = { version = "0.1.0" }
+futures = { version = "0.3.4" }
+structopt = "0.3.5"
+k8-client = { version = "1.0.0"}
+flv-future-aio = { version = "1.0.0", features=["fixture"]}
+k8-metadata-client = { version = "1.0.0"}
+k8-obj-metadata = { version = "1.0.0"}
+flv-client = { path = "../client-rs"}
 kf-protocol = { path = "../kf-protocol"}
-kf-socket = {path = "../kf-socket"}
-kf-service = { path = "../kf-service"}
-internal-api = { path = "../api/internal-api"}
 types = { path ="../types", package = "flv-types"}
 utils = { path= "../utils"}
 flv-metadata = { path = "../metadata" }
-flv-future-aio = { version = "0.1.0" }
+k8-flv-metadata = { path = "../k8-metadata"}

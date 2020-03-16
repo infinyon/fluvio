@@ -22,14 +22,16 @@ members = [
     "src/utils"
 ]
 
-#[patch.crates-io]
-#k8-client = { path = "../k8-api/src/k8-client" }
-#k8-metadata-client = { path = "../k8-api/src/k8-metadata-client"}
-#k8-obj-core = { path = "../k8-api/src/k8-obj-core"}
-#k8-obj-app = { path = "../k8-api/src/k8-obj-app"}
-#k8-obj-metadata = { path = "../k8-api/src/k8-obj-metadata"}
+##[patch.crates-io]
+##k8-client = { path = "../k8-api/src/k8-client" }
+##k8-metadata-client = { path = "../k8-api/src/k8-metadata-client"}
+##k8-obj-core = { path = "../k8-api/src/k8-obj-core"}
+##k8-obj-app = { path = "../k8-api/src/k8-obj-app"}
+##k8-obj-metadata = { path = "../k8-api/src/k8-obj-metadata"}
 #k8-config = { path = "../k8-api/src/k8-config"}
 #k8-diff = { path = "../k8-api/src/k8-diff"}
+##flv-future-aio = { path = "../flv-future/src/future-aio"}
+##node-bindgen = { path = "../node-bindgen"}
 
 # profile to make image sizer smaller
 # comment out for now

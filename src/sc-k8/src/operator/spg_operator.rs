@@ -7,7 +7,7 @@ use log::trace;
 use log::warn;
 use futures::stream::StreamExt;
 
-use flv_future_core::spawn;
+use flv_future_aio::task::spawn;
 use k8_client::ClientError;
 use k8_metadata::metadata::InputK8Obj;
 use k8_metadata::metadata::InputObjectMeta;
@@ -16,7 +16,6 @@ use k8_metadata::core::service::ServiceSpec;
 use k8_metadata::core::service::ExternalTrafficPolicy;
 use k8_metadata::core::service::LoadBalancerType;
 use k8_metadata::core::service::ServicePort;
-use k8_metadata::core::service::ServiceStatus;
 use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::spg::SpuGroupStatus;
 use k8_metadata::spg::SpuEndpointTemplate;
@@ -62,7 +61,7 @@ impl SpgOperator {
     async fn inner_run(self) {
         let mut spg_stream = self
             .client
-            .watch_stream_since::<SpuGroupSpec>(&self.namespace, None);
+            .watch_stream_since::<SpuGroupSpec,_>(self.namespace.clone(), None);
 
         info!("starting spg operator with namespace: {}", self.namespace);
         while let Some(result) = spg_stream.next().await {
@@ -79,7 +78,7 @@ impl SpgOperator {
 
     async fn dispatch_events(
         &self,
-        events: Vec<Result<K8Watch<SpuGroupSpec, SpuGroupStatus>, ClientError>>,
+        events: Vec<Result<K8Watch<SpuGroupSpec>, ClientError>>,
     ) {
         for event_r in events {
             match event_r {
@@ -97,7 +96,7 @@ impl SpgOperator {
 
     async fn process_event(
         &self,
-        event: K8Watch<SpuGroupSpec, SpuGroupStatus>,
+        event: K8Watch<SpuGroupSpec>,
     ) -> Result<(), ClientError> {
         trace!("watch event: {:#?}", event);
         match event {
@@ -304,7 +303,7 @@ impl SpgOperator {
         spg_obj: &SpuGroupObj,
         spg_spec: &SpuGroupSpec,
         spu_name: &str,
-    ) -> Result<ApplyResult<ServiceSpec, ServiceStatus>, ClientError> {
+    ) -> Result<ApplyResult<ServiceSpec>, ClientError> {
         let metadata = &spg_obj.metadata;
 
         let spu_template = &spg_spec.template.spec;

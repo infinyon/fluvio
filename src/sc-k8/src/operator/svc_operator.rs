@@ -4,13 +4,12 @@ use log::info;
 use log::trace;
 use futures::stream::StreamExt;
 
-use flv_future_core::spawn;
+use flv_future_aio::task::spawn;
 use k8_client::ClientError;
 use k8_client::K8Client;
 use k8_metadata::metadata::K8Watch;
 use k8_metadata::metadata::K8Obj;
 use k8_metadata::core::service::ServiceSpec;
-use k8_metadata::core::service::ServiceStatus;
 use k8_metadata::core::service::LoadBalancerIngress;
 use k8_client::metadata::MetadataClient;
 use flv_metadata::spu::IngressAddr;
@@ -49,7 +48,7 @@ impl SvcOperator {
         let mut svc_stream = self
             .k8_ws
             .client()
-            .watch_stream_since::<ServiceSpec>(&self.namespace, None);
+            .watch_stream_since::<ServiceSpec,_>(self.namespace.clone(), None);
 
         info!("starting svc operator with namespace: {}", self.namespace);
         while let Some(result) = svc_stream.next().await {
@@ -66,7 +65,7 @@ impl SvcOperator {
 
     async fn dispatch_events(
         &self,
-        events: Vec<Result<K8Watch<ServiceSpec, ServiceStatus>, ClientError>>,
+        events: Vec<Result<K8Watch<ServiceSpec>, ClientError>>,
     ) {
         for event_r in events {
             match event_r {
@@ -84,7 +83,7 @@ impl SvcOperator {
 
     async fn process_event(
         &self,
-        event: K8Watch<ServiceSpec, ServiceStatus>,
+        event: K8Watch<ServiceSpec>,
     ) -> Result<(), ScK8Error> {
         trace!("watch event: {:#?}", event);
         match event {
@@ -105,7 +104,7 @@ impl SvcOperator {
 
     async fn apply_svc_changes(
         &self,
-        svc_obj: K8Obj<ServiceSpec, ServiceStatus>,
+        svc_obj: K8Obj<ServiceSpec>,
     ) -> Result<(), ScK8Error> {
         debug!("svc spec: {:#?}", svc_obj);
 
@@ -115,12 +114,12 @@ impl SvcOperator {
                     "found spu: {} to update ingress from external load balancer ",
                     spu_id
                 );
-                if let Some(status) = svc_obj.status {
-                    let ingresses = status.load_balancer.ingress;
+                
+                    let ingresses = svc_obj.status.load_balancer.ingress;
                     old_value.spec.public_endpoint.ingress =
                         ingresses.into_iter().map(|addr| convert(addr)).collect();
                     self.k8_ws.update_spec(old_value).await?;
-                }
+            
             }
         }
         Ok(())

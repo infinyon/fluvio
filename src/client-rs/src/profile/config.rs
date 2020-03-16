@@ -16,8 +16,8 @@ use crate::ClientConfig;
 use crate::ScClient;
 use crate::KfClient;
 use crate::SpuController;
-use crate::SpuLeader;
-use crate::LeaderConfig;
+use crate::SpuReplicaLeader;
+use crate::ReplicaLeaderConfig;
 use crate::KfLeader;
 use crate::ClientError;
 
@@ -33,19 +33,21 @@ fn addr_client_config(addr: ServerAddress) -> CliClientConfig {
     ClientConfig::new(addr.to_string()).client_id(CLIENT_ID)
 }
 
+/// actual replica leader
 pub enum ReplicaLeaderTarget {
-    Spu(SpuLeader),
+    Spu(SpuReplicaLeader),
     Kf(KfLeader),
 }
 
+/// can target sc,spu or kf
 #[derive(Debug)]
-pub enum ReplicaLeaderConfig {
+pub enum ServerTarget {
     Sc(ServerAddress),
     Spu(ServerAddress),
     Kf(ServerAddress),
 }
 
-impl ReplicaLeaderConfig {
+impl ServerTarget {
     pub fn new(
         sc_host_port: Option<String>,
         spu_host_port: Option<String>,
@@ -79,21 +81,21 @@ impl ReplicaLeaderConfig {
             Self::Kf(addr) => {
                 let mut kf_client = KfClient::connect(addr_client_config(addr)).await?;
                 kf_client
-                    .find_leader_for_topic_partition(topic, partition)
+                    .find_replica_for_topic_partition(topic, partition)
                     .await
                     .map(|leader| ReplicaLeaderTarget::Kf(leader))
             }
             Self::Sc(addr) => {
                 let mut sc_client = ScClient::connect(addr_client_config(addr)).await?;
                 sc_client
-                    .find_leader_for_topic_partition(topic, partition)
+                    .find_replica_for_topic_partition(topic, partition)
                     .await
                     .map(|leader| ReplicaLeaderTarget::Spu(leader))
             }
             Self::Spu(addr) => {
                 let leader_config =
-                    LeaderConfig::new(addr, topic.to_owned(), partition).client_id(CLIENT_ID);
-                SpuLeader::connect(leader_config)
+                    ReplicaLeaderConfig::new(addr, topic.to_owned(), partition).client_id(CLIENT_ID);
+                SpuReplicaLeader::connect(leader_config)
                     .await
                     .map(|leader| ReplicaLeaderTarget::Spu(leader))
             }

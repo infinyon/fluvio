@@ -6,6 +6,7 @@
 use crate::SPU_API;
 use k8_obj_metadata::Crd;
 use k8_obj_metadata::Spec;
+use k8_obj_metadata::DefaultHeader;
 use k8_obj_core::pod::ContainerPortSpec;
 use k8_obj_core::service::ServicePort;
 
@@ -16,7 +17,10 @@ use serde::Serialize;
 use super::SpuStatus;
 
 impl Spec for SpuSpec {
+
     type Status = SpuStatus;
+    type Header = DefaultHeader;
+    
     fn metadata() -> &'static Crd {
         &SPU_API
     }

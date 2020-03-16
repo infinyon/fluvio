@@ -124,7 +124,7 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
     use kf_protocol::api::Offset;
 
     use crate::fixture::ensure_new_dir;

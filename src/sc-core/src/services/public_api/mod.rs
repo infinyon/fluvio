@@ -151,14 +151,14 @@ impl <C>PublicContext<C>
      /// retrieve all items in the namespace
      pub async fn retrieve_items<S>(
           &self
-     ) -> Result<K8List<S,S::Status>, C::MetadataClientError>
+     ) -> Result<K8List<S>, C::MetadataClientError>
      where
           S: K8Spec,
-           K8List<S,S::Status>: DeserializeOwned,
+           K8List<S>: DeserializeOwned,
      {
         
           let client = self.k8_ws.client();
-          client.retrieve_items::<S>(&self.namespace).await
+          client.retrieve_items::<S,_>(self.namespace.clone()).await
      }
 
 

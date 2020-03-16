@@ -12,7 +12,7 @@ pub trait SpuController
     type Leader: ReplicaLeader;
     type TopicMetadata;
 
-    async fn find_leader_for_topic_partition(
+    async fn find_replica_for_topic_partition(
         &mut self,
         topic: &str,
         partition: i32,

@@ -4,8 +4,8 @@ use std::fmt;
 use log::trace;
 
 use flv_future_aio::fs::AsyncFileSlice;
-use flv_future_aio::BufMut;
-use flv_future_aio::BytesMut;
+use flv_future_aio::bytes::BufMut;
+use flv_future_aio::bytes::BytesMut;
 use kf_protocol_core::Version;
 use kf_protocol_core::Encoder;
 use kf_protocol_core::Decoder;

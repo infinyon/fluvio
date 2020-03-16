@@ -22,8 +22,8 @@ use serde::de::DeserializeOwned;
 
 use flv_util::actions::Actions;
 use types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
-use flv_future_core::spawn;
-use flv_future_core::sleep;
+use flv_future_aio::task::spawn;
+use flv_future_aio::timer::sleep;
 use k8_metadata::metadata::K8List;
 use k8_metadata::metadata::K8Watch;
 use k8_metadata::metadata::Spec as K8Spec;
@@ -58,8 +58,8 @@ where
     S: Spec + PartialEq + Debug + Sync + Send + 'static,
     S::Status: PartialEq + Debug + Sync + Send + 'static,
     S::Key: Display + Debug + Clone + Sync + Send + 'static,
-    K8Watch<S::K8Spec, <<S as Spec>::K8Spec as K8Spec>::Status>: DeserializeOwned,
-    K8List<S::K8Spec, <<S as Spec>::K8Spec as K8Spec>::Status>: DeserializeOwned,
+    K8Watch<S::K8Spec>: DeserializeOwned,
+    K8List<S::K8Spec>: DeserializeOwned,
     S::K8Spec: Debug + Sync + Send + 'static,
     <<S as Spec>::K8Spec as K8Spec>::Status: Debug + Sync + Send + 'static,
     C: MetadataClient + 'static,
@@ -107,7 +107,7 @@ where
 
         // create watch streams
         let mut k8_stream = client
-            .watch_stream_since::<S::K8Spec>(&self.namespace, resume_stream)
+            . watch_stream_since::<S::K8Spec,_>(self.namespace.clone(), resume_stream)
             .fuse();
 
         trace!("starting watch stream for: {}", S::LABEL);
@@ -148,7 +148,7 @@ where
     async fn retrieve_all_k8_items(&mut self) -> Result<String, C::MetadataClientError> {
         let k8_objects = self
             .client
-            .retrieve_items::<S::K8Spec>(&self.namespace)
+            .retrieve_items::<S::K8Spec,_>(self.namespace.clone())
             .await?;
 
         self.process_retrieved_items(k8_objects).await
@@ -159,7 +159,7 @@ where
     ///
     async fn process_retrieved_items(
         &mut self,
-        k8_items: K8List<S::K8Spec, <<S as Spec>::K8Spec as K8Spec>::Status>,
+        k8_items: K8List<S::K8Spec>,
     ) -> Result<String, C::MetadataClientError> {
         let version = k8_items.metadata.resource_version.clone();
 

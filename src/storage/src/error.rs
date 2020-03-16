@@ -3,7 +3,7 @@ use std::fmt;
 
 use kf_protocol::api::DefaultBatch;
 use flv_future_aio::fs::BoundedFileSinkError;
-use flv_future_aio::SendFileError;
+use flv_future_aio::zero_copy::SendFileError;
 use kf_socket::KfSocketError;
 
 use crate::util::OffsetError;

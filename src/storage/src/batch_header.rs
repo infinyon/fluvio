@@ -74,7 +74,7 @@ mod tests {
 
     use futures::stream::StreamExt;
 
-    use flv_future_aio::fs::file_util;
+    use flv_future_aio::fs::util as file_util;
 
     use crate::fixture::create_batch;
     use crate::fixture::create_batch_with_producer;

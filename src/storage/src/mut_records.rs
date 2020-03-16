@@ -150,7 +150,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Cursor;
 
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::Decoder;
 

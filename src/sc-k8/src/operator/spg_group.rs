@@ -1,11 +1,10 @@
 use k8_metadata::metadata::K8Obj;
 use k8_metadata::spg::SpuGroupSpec;
-use k8_metadata::spg::SpuGroupStatus;
 use types::SpuId;
 
 use flv_sc_core::core::spus::SpuLocalStore;
 
-pub type SpuGroupObj = K8Obj<SpuGroupSpec, SpuGroupStatus>;
+pub type SpuGroupObj = K8Obj<SpuGroupSpec>;
 
 /// need for adding SPG extensions
 pub trait SpuValidation {
@@ -16,10 +15,7 @@ pub trait SpuValidation {
 impl SpuValidation for SpuGroupObj {
     /// check if I am already been validated
     fn is_already_valid(&self) -> bool {
-        self.status
-            .as_ref()
-            .map(|status| status.is_already_valid())
-            .unwrap_or(false)
+        self.status.is_already_valid()
     }
 
     /// check if my group's id is conflict with my spu local store

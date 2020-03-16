@@ -68,7 +68,7 @@ First ensure minikube is set up by the following [instruction](https://www.fluvi
 When creating a new minikube cluster,  please specify kubernetes version 1.14x to ensure maximum compatibility as shown below: 
 
 ```
-minikube start  --kubernetes-version v1.14.9
+minikube start
 ```
 
 After cluster is created, run following script to setup your local environment:
@@ -84,17 +84,27 @@ This script performs the following tasks:
 * points the API server to ```minikubeCA```
 
 
-## Set up Fluvio CRD
+## Installing Fluvio system chart
 
-Run script below to install Fluvio CRDs to your cluster:
+Before you begin, Make sure to install [Helm](https://helm.sh/docs/intro/install/) client appropriate for your environment.  Currently only helm version 3.0+ is supported.  
 
+Then add fluvio helm repo:
 ```
-./k8-util/install.sh
+helm repo add fluvio https://infinyon.github.io/charts
+helm repo update
 ```
+
+Install Fluvio system charts which install storage driver and CRD:
+```
+helm install fluvio-sys fluvio/fluvio-sys  --set cloud=minikube
+```
+
 
 ## Registering Custom SPU
 
-In order to run custom spu, we must register them.  To register 3 SPU:
+To run development SPU (custom) from your laptop, you must register them.  
+
+To register 3 SPU:
 ```
 kubectl create -f k8-util/samples/crd/spu_5001.yaml 
 kubectl create -f k8-util/samples/crd/spu_5002.yaml 
@@ -158,6 +168,27 @@ Deploy docker images
 ```
 ./k8-utils/deploy.sh
 ```
+
+## Running integration test
+
+Please ensure Fluvio system chart has been installed.
+
+First, build all targets
+
+```
+cargo build
+```
+
+Run end to end integration test with a single SPU
+```
+./target/debug/flv-integration-test
+```
+
+Run end to end integration test with a multiple SPU.  For example, with 2 SPU
+```
+./target/debug/flv-integration-test -r 2
+```
+
 
 ## Release
 

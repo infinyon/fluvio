@@ -14,7 +14,7 @@ use log::trace;
 
 use flv_future_aio::fs::File;
 use flv_future_aio::fs::metadata;
-use flv_future_aio::fs::file_util;
+use flv_future_aio::fs::util;
 
 use crate::ConfigOption;
 
@@ -82,7 +82,7 @@ where
         match metadata(&checkpoint_path).await {
             Ok(_) => {
                 trace!("checkpoint {:#?} exists, reading", checkpoint_path);
-                let file = file_util::open_read_write(&checkpoint_path).await?;
+                let file = util::open_read_write(&checkpoint_path).await?;
                 let mut checkpoint = CheckPoint {
                     option: option.to_owned(),
                     file,
@@ -96,7 +96,7 @@ where
                     "no existing creating checkpoint {:#?}, creating",
                     checkpoint_path
                 );
-                let file = file_util::open_read_write(&checkpoint_path).await?;
+                let file = util::open_read_write(&checkpoint_path).await?;
                 trace!("file created: {:#?}", checkpoint_path);
                 let mut checkpoint = CheckPoint {
                     option: option.to_owned(),
@@ -155,7 +155,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Error as IoError;
 
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
 
     use super::CheckPoint;
     use crate::fixture::ensure_clean_file;

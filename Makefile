@@ -13,6 +13,13 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 
+build:
+	cargo build
+
+integration-test:	build
+	RUST_LOG=flv_integration=debug ./target/debug/flv-integration-test
+
+
 run-all-unit-test:
 	cargo test --all
 
@@ -199,4 +206,6 @@ test-client:
 	cd src/client;cargo test
 
 
-.PHONY:	test-helper teste-aio test-kfsocket test-kfservice test-k8client test-k8config
+
+
+.PHONY:	build test-helper teste-aio test-kfsocket test-kfservice test-k8client test-k8config integration-test

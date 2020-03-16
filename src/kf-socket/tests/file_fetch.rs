@@ -11,11 +11,11 @@ use futures::io::AsyncWriteExt;
 use futures::future::join;
 use futures::stream::StreamExt;
 
-use flv_future_core::test_async;
-use flv_future_core::sleep;
-use flv_future_aio::fs::file_util;
+use flv_future_aio::test_async;
+use flv_future_aio::timer::sleep;
+use flv_future_aio::fs::util as file_util;
 use flv_future_aio::fs::AsyncFile;
-use flv_future_aio::net::AsyncTcpListener;
+use flv_future_aio::net::TcpListener;
 use kf_protocol::Encoder;
 use kf_protocol::api::Request;
 use kf_protocol::api::ResponseMessage;
@@ -61,7 +61,7 @@ async fn setup_batch_file() -> Result<(), IoError> {
 }
 
 async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
-    let listener = AsyncTcpListener::bind(&addr).await?;
+    let listener = TcpListener::bind(&addr).await?;
     debug!("server is running");
     let mut incoming = listener.incoming();
     let incoming_stream = incoming.next().await;

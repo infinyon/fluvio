@@ -10,7 +10,7 @@ use futures::stream::StreamExt;
 use futures::stream::SplitStream;
 use futures_codec::Framed;
 
-use flv_future_aio::net::AsyncTcpStream;
+use flv_future_aio::net::TcpStream;
 use kf_protocol::api::Request;
 use kf_protocol::transport::KfCodec;
 use kf_protocol::Decoder as KfDecoder;
@@ -21,10 +21,10 @@ use kf_protocol::api::KfRequestMessage;
 use crate::KfSocketError;
 
 #[derive(Debug)]
-pub struct KfStream(SplitStream<Framed<AsyncTcpStream, KfCodec>>);
+pub struct KfStream(SplitStream<Framed<TcpStream, KfCodec>>);
 
 impl KfStream {
-    pub fn get_mut_tcp_stream(&mut self) -> &mut SplitStream<Framed<AsyncTcpStream, KfCodec>> {
+    pub fn get_mut_tcp_stream(&mut self) -> &mut SplitStream<Framed<TcpStream, KfCodec>> {
         &mut self.0
     }
 
@@ -146,8 +146,8 @@ impl KfStream {
     }
 }
 
-impl From<SplitStream<Framed<AsyncTcpStream, KfCodec>>> for KfStream {
-    fn from(stream: SplitStream<Framed<AsyncTcpStream, KfCodec>>) -> Self {
+impl From<SplitStream<Framed<TcpStream, KfCodec>>> for KfStream {
+    fn from(stream: SplitStream<Framed<TcpStream, KfCodec>>) -> Self {
         KfStream(stream)
     }
 }

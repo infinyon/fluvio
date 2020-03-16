@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.2.1"
+version = "1.0.0"
 edition = "2018"
 authors = ["fluvio.io"]
 
@@ -24,16 +24,15 @@ serde_yaml =  "0.8.8"
 async-trait = "0.1.21"
 ctrlc = "3.1.3"
 regex = "1.3.1"
-futures = { version = "0.3.1", features = ['async-await'] }
-flv-future-core = { version = "0.1.0" }
-flv-future-aio = { version = "0.1.0" }
+futures = { version = "0.3.4", features = ['async-await'] }
+flv-future-aio = { version = "1.0.0" }
 flv-util = { version = "0.1.0"}
 utils = { path= "../utils"}
 types = { path ="../types", package = "flv-types"}
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = { path = "../kf-socket" }
 k8-flv-metadata = { path = "../k8-metadata"}
-sc-api = { path = "../api/sc-api", version = "0.1.0", package = "flv-api-sc"}
-spu-api = { path = "../api/spu-api", version = "0.1.0", package = "flv-api-spu"}
+sc-api = { path = "../api/sc-api", package = "flv-api-sc"}
+spu-api = { path = "../api/spu-api", package = "flv-api-spu"}
 flv-client = { path = "../client-rs"}
 

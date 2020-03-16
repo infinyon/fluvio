@@ -12,7 +12,6 @@ use std::io::ErrorKind;
 use types::socket_helpers::ServerAddress;
 use types::SpuId;
 use flv_metadata::spu::{Endpoint, SpuSpec, SpuStatus, IngressPort};
-use k8_metadata::metadata::Spec as K8Spec;
 use k8_metadata::metadata::K8Obj;
 use k8_metadata::spu::SpuSpec as K8SpuSpec;
 use internal_api::messages::SpuMsg;
@@ -31,7 +30,7 @@ impl Spec for SpuSpec {
     type Owner = SpuSpec;
 
     fn convert_from_k8(
-        k8_obj: K8Obj<Self::K8Spec, <Self::K8Spec as K8Spec>::Status>,
+        k8_obj: K8Obj<Self::K8Spec>,
     ) -> Result<KVObject<Self>, IoError> {
         default_convert_from_k8(k8_obj)
     }

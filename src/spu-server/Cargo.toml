@@ -23,19 +23,18 @@ chrono = { version = "0.4.6", features = ["serde"] }
 chashmap = "2.2.0"
 pin-utils = "0.1.0-alpha.4"
 regex = "1.3.1"
-flv-future-core = { version = "0.1.0" }
+flv-future-aio = { version = "1.0.0" }
 flv-util = { version = "0.1.1" }
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../api/internal-api"}
-spu-api = { path = "../api/spu-api", version = "0.1.0", package = "flv-api-spu"}
+spu-api = { path = "../api/spu-api",  package = "flv-api-spu"}
 types = { path ="../types", package = "flv-types"}
 utils = { path= "../utils"}
 flv-metadata = { path = "../metadata" }
-flv-future-aio = { version = "0.1.0" }
 flv-storage = { path = "../storage"}
 
 [dev-dependencies]
-flv-future-core = { version = "0.1.0", features = ["fixture"] }
+flv-future-aio = { version = "1.0.0", features = ["fixture"] }
 utils = { path = "../utils", features=["fixture"]}

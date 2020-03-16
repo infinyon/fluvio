@@ -11,8 +11,8 @@ use bytes::Bytes;
 use futures::sink::SinkExt;
 use futures::stream::SplitSink;
 
-use flv_future_aio::ZeroCopyWrite;
-use flv_future_aio::BytesMut;
+use flv_future_aio::zero_copy::ZeroCopyWrite;
+use flv_future_aio::bytes::BytesMut;
 use kf_protocol::Version;
 use kf_protocol::Encoder as KfEncoder;
 use kf_protocol::api::RequestMessage;
@@ -22,23 +22,23 @@ use kf_protocol::fs::FileWrite;
 use kf_protocol::fs::StoreValue;
 use futures_codec::Framed;
 
-use flv_future_aio::net::AsyncTcpStream;
+use flv_future_aio::net::TcpStream;
 use crate::KfSocketError;
 
 
 
 #[derive(Debug)]
 pub struct KfSink {
-    inner: SplitSink<Framed<AsyncTcpStream, KfCodec>, Bytes>,
+    inner: SplitSink<Framed<TcpStream, KfCodec>, Bytes>,
     fd: RawFd,
 }
 
 impl KfSink {
-    pub fn new(inner: SplitSink<Framed<AsyncTcpStream, KfCodec>, Bytes>, fd: RawFd) -> Self {
+    pub fn new(inner: SplitSink<Framed<TcpStream, KfCodec>, Bytes>, fd: RawFd) -> Self {
         KfSink { fd, inner }
     }
 
-    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitSink<Framed<AsyncTcpStream, KfCodec>, Bytes> {
+    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitSink<Framed<TcpStream, KfCodec>, Bytes> {
         &mut self.inner
     }
 
@@ -158,13 +158,13 @@ mod tests {
     use futures::io::AsyncWriteExt;
     use futures::sink::SinkExt;
 
-    use flv_future_core::test_async;
-    use flv_future_core::sleep;
-    use flv_future_aio::fs::file_util;
+    use flv_future_aio::test_async;
+    use flv_future_aio::timer::sleep;
+    use flv_future_aio::fs::util;
     use flv_future_aio::fs::AsyncFile;
-    use flv_future_aio::ZeroCopyWrite;
-    use flv_future_aio::net::AsyncTcpListener;
-    use flv_future_aio::Bytes;
+    use flv_future_aio::zero_copy::ZeroCopyWrite;
+    use flv_future_aio::net::TcpListener;
+    use flv_future_aio::bytes::Bytes;
     use kf_protocol::Decoder;
     use kf_protocol::Encoder;
     use crate::KfSocket;
@@ -183,7 +183,7 @@ mod tests {
     }
 
     async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
-        let listener = AsyncTcpListener::bind(&addr).await?;
+        let listener = TcpListener::bind(&addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
         let incoming_stream = incoming.next().await;
@@ -210,7 +210,7 @@ mod tests {
         // send out file
         debug!("sending out file contents");
         let test_file_path = temp_dir().join("socket_zero_copy");
-        let data_file = file_util::open(test_file_path).await?;
+        let data_file = util::open(test_file_path).await?;
         let fslice = data_file.as_slice(0, None).await?;
         socket.get_mut_sink().zero_copy_write(&fslice).await?;
 
@@ -245,7 +245,7 @@ mod tests {
         let test_file_path = temp_dir().join("socket_zero_copy");
         ensure_clean_file(&test_file_path);
         debug!("creating test file: {:#?}", test_file_path);
-        let mut file = file_util::create(&test_file_path).await?;
+        let mut file = util::create(&test_file_path).await?;
         let mut out = vec![];
         let msg = "world".to_owned();
         msg.encode(&mut out, 0)?;

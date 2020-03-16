@@ -13,7 +13,7 @@ use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::transport::KfCodec;
 
-use flv_future_aio::net::AsyncTcpStream;
+use flv_future_aio::net::TcpStream;
 
 use crate::KfSink;
 use crate::KfStream;
@@ -45,7 +45,7 @@ impl KfSocket {
         A: ToSocketAddrs + Display,
     {
         trace!("trying to connect to server at: {}", addr);
-        let tcp_stream = AsyncTcpStream::connect(addr).await?;
+        let tcp_stream = TcpStream::connect(addr).await?;
         Ok(tcp_stream.into())
     }
 
@@ -84,8 +84,8 @@ impl KfSocket {
     }
 }
 
-impl From<AsyncTcpStream> for KfSocket {
-    fn from(tcp_stream: AsyncTcpStream) -> Self {
+impl From<TcpStream> for KfSocket {
+    fn from(tcp_stream: TcpStream) -> Self {
         let fd = tcp_stream.as_raw_fd();
         let framed = Framed::new(tcp_stream, KfCodec {});
         let (sink, stream) = framed.split();

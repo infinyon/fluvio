@@ -247,7 +247,7 @@ mod tests {
     use std::io::Error as IoError;
     use std::io::Read;
    
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
 
     use super::MutLogIndex;
     use crate::index::Index;

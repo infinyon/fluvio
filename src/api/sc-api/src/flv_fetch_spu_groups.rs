@@ -93,11 +93,11 @@ impl Into<(String,SpuGroupSpec,SpuGroupStatus)> for FlvFetchSpuGroup {
 }
 
 
-impl From<K8Obj<SpuGroupSpec,SpuGroupStatus>> for FlvFetchSpuGroup {
+impl From<K8Obj<SpuGroupSpec>> for FlvFetchSpuGroup {
 
-    fn from(item: K8Obj<SpuGroupSpec,SpuGroupStatus>) -> Self {
+    fn from(item: K8Obj<SpuGroupSpec>) -> Self {
 
-        let (name,spec,status) = (item.metadata.name,item.spec,item.status.unwrap_or_default());
+        let (name,spec,status) = (item.metadata.name,item.spec,item.status);
         let min_id = spec.min_id();
         let (replicas,template) = (spec.replicas,spec.template.spec);
         let (rack,storage) = (template.rack,template.storage.unwrap_or_default());

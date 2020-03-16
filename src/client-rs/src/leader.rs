@@ -16,40 +16,63 @@ use kf_protocol::message::produce::DefaultKfPartitionRequest;
 use kf_protocol::message::produce::DefaultKfTopicRequest;
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::DefaultRecord;
+use kf_protocol::api::MAX_BYTES;
 
 
 
-use crate::LeaderConfig;
+use crate::ReplicaLeaderConfig;
 use crate::ClientError;
 use crate::Client;
 
+#[derive(Clone)]
+pub struct FetchLogOption {
+    pub max_bytes: i32,
+    pub isolation: Isolation,
+}
 
-/// features for Replica Leader (topic,partition)
+impl Default for FetchLogOption {
+    fn default() -> Self {
+        Self {
+            max_bytes: MAX_BYTES,
+            isolation: Isolation::default()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum FetchOffset {
+    Earliest,
+    Latest,
+    Offset(i64)
+}
+
+
+
+/// Replica Leader (topic,partition)
 #[async_trait]
 pub trait ReplicaLeader: Send + Sync {
 
     type OffsetPartitionResponse: PartitionOffset;
 
-    
-    fn config(&self) -> &LeaderConfig;
+    fn config(&self) -> &ReplicaLeaderConfig;
 
     fn client(&mut self) -> &mut Client<String>;
 
 
     fn topic(&self) -> &str {
-        &self.config().topic
+        &self.config().topic()
     }
 
     fn partition(&self) -> i32 {
-        self.config().partition
+        self.config().partition()
     }
     
     fn client_id(&self) -> &str {
-        &self.config().client_id
+        self.config().get_client_id()
     }
 
     fn addr(&self) -> &ServerAddress {
-        &self.config().addr
+        self.config().addr()
     }
 
 
@@ -59,9 +82,8 @@ pub trait ReplicaLeader: Send + Sync {
     /// stream of partition response
     fn fetch_logs<'a>(
         &'a mut self,
-        offset: i64,
-        max_bytes: i32,
-        isolation: Isolation
+        offset: FetchOffset,
+        config: FetchLogOption
     ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>>;
 
     /// Sends record to a target server (Kf, SPU, or SC)

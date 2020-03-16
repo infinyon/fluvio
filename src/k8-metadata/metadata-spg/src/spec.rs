@@ -8,6 +8,7 @@ use serde::Serialize;
 
 use k8_obj_metadata::Crd;
 use k8_obj_metadata::Spec;
+use k8_obj_metadata::DefaultHeader;
 
 use k8_obj_metadata::Env;
 use k8_obj_metadata::TemplateSpec;
@@ -21,7 +22,9 @@ use crate::SPG_API;
 use super::SpuGroupStatus;
 
 impl Spec for SpuGroupSpec {
+
     type Status = SpuGroupStatus;
+    type Header = DefaultHeader;
     fn metadata() -> &'static Crd {
         &SPG_API
     }

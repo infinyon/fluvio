@@ -11,13 +11,13 @@ use futures::future::join;
 use futures::select;
 use futures::stream::StreamExt;
 
-use flv_future_core::spawn;
-use flv_future_core::sleep;
+use flv_future_aio::task::spawn;
+use flv_future_aio::timer::sleep;
 use flv_metadata::partition::ReplicaKey;
 use flv_storage::FileReplica;
 use types::SpuId;
 use kf_socket::ExclusiveKfSink;
-use flv_future_aio::sync::Sender;
+use flv_future_aio::sync::mpsc::Sender;
 
 use crate::core::SharedSpuSinks;
 use crate::core::OffsetUpdateEvent;

@@ -87,10 +87,10 @@ mod test {
     use futures::stream::StreamExt;
     use futures_codec::Framed;
 
-    use flv_future_aio::net::AsyncTcpListener;
-    use flv_future_aio::net::AsyncTcpStream;
-    use flv_future_core::sleep;
-    use flv_future_core::test_async;
+    use flv_future_aio::net::TcpListener;
+    use flv_future_aio::net::TcpStream;
+    use flv_future_aio::timer::sleep;
+    use flv_future_aio::test_async;
     use kf_protocol::Decoder as KDecoder;
     use kf_protocol::Encoder as KEncoder;
     use log::debug;
@@ -105,7 +105,7 @@ mod test {
 
         let server_ft = async {
             debug!("server: binding");
-            let listener = AsyncTcpListener::bind(&addr).await?;
+            let listener = TcpListener::bind(&addr).await?;
             debug!("server: successfully binding. waiting for incoming");
             let mut incoming = listener.incoming();
             while let Some(stream) = incoming.next().await {
@@ -139,7 +139,7 @@ mod test {
                 // sleep for 100 ms to give client time
                 debug!("wait for 50 ms to give receiver change to process");
                 */
-                flv_future_core::sleep(time::Duration::from_millis(50)).await;
+                flv_future_aio::timer::sleep(time::Duration::from_millis(50)).await;
                 debug!("finishing. terminating server");
                 return Ok(()) as Result<(), Error>;
             }
@@ -151,7 +151,7 @@ mod test {
             debug!("client: sleep to give server chance to come up");
             sleep(time::Duration::from_millis(100)).await;
             debug!("client: trying to connect");
-            let tcp_stream = AsyncTcpStream::connect(&addr).await?;
+            let tcp_stream = TcpStream::connect(&addr).await?;
             debug!("client: got connection. waiting");
             let framed = Framed::new(tcp_stream, KfCodec {});
             let (_, mut stream) = framed.split();

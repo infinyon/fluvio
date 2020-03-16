@@ -12,6 +12,7 @@ use std::io::ErrorKind;
 use std::net::SocketAddr;
 use std::env;
 use std::path::PathBuf;
+use std::fs::remove_dir_all;
 
 use log::debug;
 use log::error;
@@ -88,6 +89,12 @@ impl Log {
             self.index_max_interval_bytes, 
             self.segment_max_bytes
         )     
+    }
+
+    /// remove all logs in the base directory, this is usually done in the test
+    pub fn reset_base_dir(&self) -> Result<(),IoError> {
+
+        remove_dir_all(&self.base_dir)
     }
 }
 
@@ -755,7 +762,7 @@ pub mod test {
             public_server: Some("1.1.1.1:8888".to_owned()),
             private_server: Some("2.2.2.2:9999".to_owned()),
             sc_server: Some("3.3.3.3:5555".to_owned()),
-            config_file: None,
+            ..Default::default()
         };
 
         let file = PathBuf::from("./test-data/config/spu_server.toml");

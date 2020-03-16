@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 
 use log::trace;
 
-use flv_future_aio::BytesMut;
+use flv_future_aio::bytes::BytesMut;
 use kf_protocol::Version;
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;

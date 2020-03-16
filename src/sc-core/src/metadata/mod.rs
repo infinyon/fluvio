@@ -26,7 +26,7 @@ pub use k8_dispatcher::K8ClusterStateDispatcher;
 pub use change_dispatcher::K8AllChangeDispatcher;
 
 
-pub fn default_convert_from_k8<S>(k8_obj: K8Obj<S::K8Spec,<S::K8Spec as K8Spec>::Status>) -> 
+pub fn default_convert_from_k8<S>(k8_obj: K8Obj<S::K8Spec>) -> 
             Result<KVObject<S>,IoError>
 
     where
@@ -43,12 +43,8 @@ pub fn default_convert_from_k8<S>(k8_obj: K8Obj<S::K8Spec,<S::K8Spec as K8Spec>:
                 
                 // convert K8 Spec/Status into Metadata Spec/Status
                 let local_spec = k8_obj.spec.into();
-                let local_status = if let Some(status) = k8_obj.status {
-                    status.into()
-                } else {
-                    <S::Status>::default()
-                };
-
+                let local_status = k8_obj.status.into();
+                
                 // grab KV ctx and create AuthToken
                 let ctx = KvContext::default().with_ctx(k8_obj.metadata);
                 let loca_kv = KVObject::new(key,local_spec, local_status).with_kv_ctx(ctx);

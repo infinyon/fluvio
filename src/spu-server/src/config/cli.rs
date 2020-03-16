@@ -9,6 +9,9 @@ use std::process;
 use std::path::PathBuf;
 
 use log::trace;
+use log::debug;
+use log::warn;
+use log::info;
 use structopt::StructOpt;
 
 use types::print_cli_err;
@@ -40,6 +43,10 @@ pub struct SpuOpt {
     #[structopt(short = "f", long = "conf", value_name = "file")]
     /// Configuration file
     pub config_file: Option<PathBuf>,
+
+    /// Reset base directory 
+    #[structopt(short,long)]
+    pub reset: bool
 }
 
 /// Run SPU Cli and return SPU configuration. Errors are consider fatal
@@ -58,6 +65,8 @@ pub fn process_spu_cli_or_exit() -> SpuConfig {
 pub fn get_spu_config() -> Result<SpuConfig, IoError> {
     let cfg = SpuOpt::from_args();
 
+    let reset = cfg.reset;
+
     // generate config from file from user-file or default (if exists)
     let spu_config_file = match &cfg.config_file {
         Some(cfg_file) => Some(SpuConfigFile::from_file(&cfg_file)?),
@@ -66,5 +75,15 @@ pub fn get_spu_config() -> Result<SpuConfig, IoError> {
 
     trace!("spu cli: {:#?}, file: {:#?}",cfg,spu_config_file);
     // send config file and cli parameters to generate final config.
-    SpuConfig::new_from_all(cfg, spu_config_file)
+    let config = SpuConfig::new_from_all(cfg, spu_config_file)?;
+    debug!("config: {:#?}",config);
+
+    if reset {
+        warn!("reset base directory: {:#?}",config.log.base_dir);
+        if let Err(err) =  config.log.reset_base_dir() {
+            info!("unable to reset base directory: {}",err);
+        }
+    }
+
+    Ok(config)
 }

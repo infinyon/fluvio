@@ -5,6 +5,8 @@
 //!
 use k8_obj_metadata::Crd;
 use k8_obj_metadata::Spec;
+use k8_obj_metadata::DefaultHeader;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -17,7 +19,10 @@ use super::TopicStatus;
 // -----------------------------------
 
 impl Spec for TopicSpec {
+
     type Status = TopicStatus;
+    type Header = DefaultHeader;
+    
     fn metadata() -> &'static Crd {
         &TOPIC_API
     }

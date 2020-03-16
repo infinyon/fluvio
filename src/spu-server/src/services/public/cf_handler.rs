@@ -86,15 +86,16 @@ impl CfHandler {
 
             select! {
                 offset_event = receiver.next() => {
-
                     if let Some(offset_event) = offset_event {
-                        if offset_event.replica_id == self.replica {
 
+                        debug!("received offset event: {:#?}",offset_event);
+                        if offset_event.replica_id == self.replica {
                             // depends on isolation, we need to keep track different offset
                             let update_offset = match self.isolation {
                                 Isolation::ReadCommitted => offset_event.hw,
                                 Isolation::ReadUncommitted => offset_event.leo
                             };
+                            debug!("update offset: {}",update_offset);
                             if update_offset != current_offset {
                                 debug!("cf handler updated offset replica: {} offset: {} diff from prev: {}",self.replica,update_offset,current_offset);
                                 if let Some(offset) = self.send_back_records(current_offset).await? {
@@ -105,9 +106,10 @@ impl CfHandler {
                                     break;
                                 }
                             } else {
-                                trace!("no changed in offset: {} offset: {} ignoring",self.replica,update_offset);
+                                debug!("no changed in offset: {} offset: {} ignoring",self.replica,update_offset);
                             }
-                           
+                        } else {
+                            debug!("ignoring event because replica does not match");
                         }
                     }
             

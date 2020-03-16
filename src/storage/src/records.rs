@@ -6,7 +6,7 @@ use std::path::Path;
 use log::debug;
 
 use flv_future_aio::fs::File;
-use flv_future_aio::fs::file_util;
+use flv_future_aio::fs::util as file_util;
 use flv_future_aio::fs::AsyncFileSlice;
 use flv_future_aio::fs::AsyncFile;
 use kf_protocol::api::Offset;

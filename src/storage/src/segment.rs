@@ -12,7 +12,7 @@ use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
 use flv_future_aio::fs::AsyncFileSlice;
-use flv_future_aio::fs::file_util;
+use flv_future_aio::fs::util as file_util;
 
 use crate::BatchHeaderStream;
 use crate::mut_index::MutLogIndex;
@@ -361,7 +361,7 @@ mod tests {
     use std::io::Cursor;
     use std::path::PathBuf;
 
-    use flv_future_core::test_async;
+    use flv_future_aio::test_async;
 
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Size;

@@ -8,9 +8,9 @@ use log::debug;
 use futures::stream::StreamExt;
 use futures::future::join;
 
-use flv_future_core::test_async;
-use flv_future_core::sleep;
-use flv_future_aio::net::AsyncTcpListener;
+use flv_future_aio::test_async;
+use flv_future_aio::timer::sleep;
+use flv_future_aio::net::TcpListener;
 use kf_protocol::message::fetch::FetchPartition;
 use kf_protocol::message::fetch::FetchableTopic;
 use kf_protocol::api::RequestMessage;
@@ -115,12 +115,12 @@ async fn test_server(addr: SocketAddr) -> Result<(), StorageError> {
     let replica = setup_replica().await?;
 
     debug!("set up the replica");
-    let listener = AsyncTcpListener::bind(&addr).await?;
+    let listener = TcpListener::bind(&addr).await?;
     debug!("server is running");
     let mut incoming = listener.incoming();
 
     // listen 2 times
-    for i in 0..2 {
+    for i in 0u16..2 {
         debug!("server: waiting for client {}", i);
         let incoming_stream = incoming.next().await;
         debug!("server: got connection from client");

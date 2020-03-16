@@ -54,9 +54,9 @@ mod tests {
     use futures::stream::StreamExt;
     use futures::future::join;
 
-    use flv_future_core::test_async;
-    use flv_future_core::sleep;
-    use flv_future_aio::net::AsyncTcpListener;
+    use flv_future_aio::test_async;
+    use flv_future_aio::timer::sleep;
+    use flv_future_aio::net::TcpListener;
     use kf_protocol::api::RequestMessage;
     use crate::KfSocket;
     use crate::KfSocketError;
@@ -69,7 +69,7 @@ mod tests {
     async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
         let sink_pool: SinkPool<u16> = SinkPool::new();
 
-        let listener = AsyncTcpListener::bind(&addr).await?;
+        let listener = TcpListener::bind(&addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
         let incoming_stream = incoming.next().await;

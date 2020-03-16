@@ -13,7 +13,7 @@ use futures::stream::StreamExt;
 use types::log_on_err;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::spu::SpuSpec;
-use flv_future_core::spawn;
+use flv_future_aio::task::spawn;
 
 use crate::core::WSUpdateService;
 use crate::core::WSChangeChannel;

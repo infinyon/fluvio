@@ -14,7 +14,7 @@ use futures::channel::mpsc::channel;
 use types::log_on_err;
 use flv_metadata::partition::PartitionSpec;
 use flv_metadata::spu::SpuSpec;
-use flv_future_core::spawn;
+use flv_future_aio::task::spawn;
 use internal_api::UpdateLrsRequest;
 
 use crate::core::WSUpdateService;

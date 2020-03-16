@@ -1,6 +1,6 @@
 [package]
 name = "flv-node-client"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 license = "Apache-2.0"
@@ -14,11 +14,11 @@ test = false
 
 [dependencies]
 log = "0.4.8"
-futures = { version = "0.3.1", features = ['async-await'] }
-flv-future-core = { version = "0.1.0" }
-flv-future-aio = { version = "0.1.0" }
-kf-protocol = { version = "0.1.0"}
-types = { version = "0.1.0", package = "flv-types"}
-flv-client = { version = "0.1.0" }
-node-bindgen = { version = "0.1.0" }
+futures = { version = "0.3.4", features = ['async-await'] }
+flv-future-aio = { version = "1.0.0" }
+node-bindgen = { version = "1.0.0" }
+kf-protocol = { path = "../kf-protocol"}
+types = { path = "../types", package = "flv-types"}
+flv-client = { path = "../client-rs"}
+
 
