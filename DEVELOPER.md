@@ -190,12 +190,19 @@ Run end to end integration test with a multiple SPU.  For example, with 2 SPU
 ```
 
 
-## Release
+## Release Process
 
-
-
-
-
+* Create and switch to release branch
+* Ensure integration tests passes
+* Bump up VERSION and related crates
+* Release docker image: ```make release_image```
+* Bump up helm version same as VERSION in the helm/fluvio-core/Chart.yaml
+* Generates charts: ```make helm_package```
+* Commit and Push chart repo: infinyon.github.io/charts
+* Commit and merged/rebase release branch into master
+* Generates github releases:
+  * ```make create_release```
+  * ```make upload_release```
 
 
 

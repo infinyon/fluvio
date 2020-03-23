@@ -125,6 +125,10 @@ delete_release:
 	--repo ${GITHUB_REPO} \
 	--tag ${GITHUB_TAG}
 
+# helm targets
+helm_package:
+	cd k8-util/helm; make package-core
+
 
 ## Helper targets to compile specific crate
 

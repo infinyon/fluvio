@@ -42,6 +42,10 @@ impl KfSink {
         &mut self.inner
     }
 
+    pub fn id(&self) -> RawFd {
+        self.fd
+    }
+
     /// as client, send request to server
     pub async fn send_request<R>(
         &mut self,

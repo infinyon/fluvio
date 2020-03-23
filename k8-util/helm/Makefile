@@ -1,4 +1,5 @@
-VERSION := $(shell cat ../../VERSION)
+MAKE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+VERSION := $(shell cat $(MAKE_DIR)/../../VERSION)
 GIT_VERSION=$(shell git log -1 --pretty=format:"%H")
 REGISTRY=infinyon
 CLOUD=minikube
@@ -73,6 +74,7 @@ uninstall:
 
 
 package-core:	cleanup
+	echo "Installing $(VERSION) core helm package"
 	helm package ./fluvio-core
 	mv fluvio-core-$(VERSION).tgz $(CHART_REPO)/charts
 	cd $(CHART_REPO); helm repo index charts

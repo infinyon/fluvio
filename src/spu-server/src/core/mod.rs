@@ -34,7 +34,7 @@ mod event {
     use flv_metadata::partition::ReplicaKey;
 
         /// used for communicating change in offset for any replica
-    #[derive(Debug)]
+    #[derive(Debug,Clone)]
     pub struct OffsetUpdateEvent {
         pub replica_id: ReplicaKey,
         pub leo: Offset,            

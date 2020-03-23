@@ -10,7 +10,7 @@ use kf_socket::SharedSinkPool;
 use kf_socket::SinkPool;
 use types::SpuId;
 use flv_storage::ReplicaStorage;
-use flv_future_aio::sync::Channel;
+use flv_future_aio::sync::broadcast::Channel;
 
 use crate::config::SpuConfig;
 use crate::controllers::leader_replica::SharedReplicaLeadersState;

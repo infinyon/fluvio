@@ -1,3 +1,4 @@
+use std::fmt;
 
 use internal_api::messages::Replica;
 use kf_protocol::api::Offset;
@@ -40,5 +41,11 @@ impl From<(SpuId,Offset,Offset)> for FollowerOffsetUpdate {
             leo: value.1,
             hw: value.2
         }
+    }
+}
+
+impl fmt::Display for FollowerOffsetUpdate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "follower: {}, leo: {}, hw: {}",self.follower_id,self.leo,self.hw)
     }
 }

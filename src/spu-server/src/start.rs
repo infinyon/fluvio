@@ -1,5 +1,3 @@
-use log::debug;
-
 use flv_future_aio::task::main;
 use flv_storage::FileReplica;
 
@@ -27,7 +25,6 @@ pub fn main_loop() {
         spu_config.id
     );
 
-    debug!("spu config: {:#?}", spu_config);
 
     main(async {
         let (_ctx, internal_server, public_server) = create_services(spu_config, true, true);

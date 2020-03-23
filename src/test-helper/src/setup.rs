@@ -3,8 +3,13 @@
 use std::time::Duration;
 use std::process::Child;
 use std::process::Command;
+use std::process::Stdio;
+use std::fs::remove_dir_all;
+use std::fs::File;
+
 
 use log::debug;
+use log::error;
 
 use flv_future_aio::timer::sleep;
 use k8_client::SharedK8Client;
@@ -81,6 +86,13 @@ impl Setup {
             .arg("spu-server")
             .output()
             .expect("failed to execute process");
+
+
+        // delete fluvio file
+        debug!("remove fluvio directory");
+        if let Err(err) = remove_dir_all("/tmp/fluvio") {
+            error!("fluvio dir can't be removed: {}",err);
+        }
         
     }
 
@@ -104,9 +116,14 @@ impl Setup {
 
     async fn launch_sc() -> Child {
 
+        let outputs = File::create(format!("/tmp/sc.log")).expect("log file");
+        let errors = outputs.try_clone().expect("error  file");
+
         debug!("starting sc server");
         get_binary("sc-k8-server")
-            .expect("unable to get sc-k8-server")
+            .expect("unable to get sc-server")
+            .stdout(Stdio::from(outputs))
+            .stderr(Stdio::from(errors))
             .spawn()
             .expect("sc server failed to start")
         
@@ -152,6 +169,10 @@ impl Setup {
 
         // sleep 1 seconds for sc to connect
         sleep(Duration::from_millis(300)).await;
+
+        let outputs = File::create(format!("/tmp/spu_log_{}.log",spu_id)).expect("log file");
+        let errors = outputs.try_clone().expect("error  file");
+
         get_binary("spu-server")
             .expect("unable to get spu-server")
             .arg("-i")
@@ -160,7 +181,8 @@ impl Setup {
             .arg(format!("0.0.0.0:{}",public_port))
             .arg("-v")
             .arg(format!("0.0.0.0:{}",private_port))
-            .arg("--reset")
+            .stdout(Stdio::from(outputs))
+            .stderr(Stdio::from(errors))
             .spawn()
             .expect("spu server failed to start")
     }
