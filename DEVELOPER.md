@@ -10,7 +10,7 @@ Familiarity with
 
 Developer guide and examples should work with the following platforms:
 - macOS X
-- Linux
+- Linux  
 Other platforms such as Windows can be made to work, but we haven't tried them yet.
 
 To test and run services,  you need to get access to development Kubernetes cluster.  Our guide uses Minikube as examples because it is easy to it get it started, but you can use other Kubernetes cluster as well.  Please see  [Kubernetes](https://kubernetes.io) for setting up a development cluster.
