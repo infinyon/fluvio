@@ -72,9 +72,8 @@ impl JsReplicaLeader {
     }
 
     /// JS method to return Servers Host:Port address
-    #[allow(non_snake_case)]
     #[node_bindgen]
-    fn serverAddress(&self) -> String {
+    fn server_address(&self) -> String {
         if let Some(server_addr) = self.server_addr() {
             format!("{}:{}", server_addr.host, server_addr.port)    
         } else {
@@ -83,9 +82,8 @@ impl JsReplicaLeader {
     }
     
     /// JS method to return Server Host or IP
-    #[allow(non_snake_case)]
     #[node_bindgen]
-    fn serverHost(&self) -> String {
+    fn server_host(&self) -> String {
         if let Some(server_addr) = self.server_addr() {
             server_addr.host
         } else {

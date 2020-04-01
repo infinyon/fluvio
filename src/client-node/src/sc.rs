@@ -69,9 +69,8 @@ impl JsScClient {
     }
 
     /// JS method to return Servers Host:Port address
-    #[allow(non_snake_case)]
     #[node_bindgen]
-    fn serverAddress(&self) -> String {
+    fn server_address(&self) -> String {
         self.rust_addr()
     }
 
