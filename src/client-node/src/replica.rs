@@ -1,14 +1,17 @@
-// JS Wrapper for SpuLeader
+// JS Wrapper for Replica
 
 use std::sync::Arc;
 
 use log::debug;
+use types::socket_helpers::ServerAddress;
+
 use futures::stream::StreamExt;
 
 use flv_client::SpuReplicaLeader;
 use flv_client::ReplicaLeader;
 use flv_future_aio::sync::RwLock;
 use flv_future_aio::task::spawn;
+use flv_future_aio::task::run_block_on;
 use flv_client::ClientError;
 use flv_client::FetchLogOption;
 use flv_client::FetchOffset;
@@ -55,6 +58,39 @@ impl JsReplicaLeader {
 
     pub fn set_leader(&mut self, leader: SpuReplicaLeader) {
         self.inner.replace(Arc::new(RwLock::new(leader)));
+    }
+
+    fn server_addr(&self) -> Option<ServerAddress> {
+        // since clock is in the lock, we need to read in order to access it
+        self.inner.as_ref().map_or(None, move |c| {
+            run_block_on(async move {
+                let c1 = c.clone();
+                let read_client = c1.read().await;
+                Some(read_client.addr().clone())
+            })
+        })
+    }
+
+    /// JS method to return Servers Host:Port address
+    #[allow(non_snake_case)]
+    #[node_bindgen]
+    fn serverAddress(&self) -> String {
+        if let Some(server_addr) = self.server_addr() {
+            format!("{}:{}", server_addr.host, server_addr.port)    
+        } else {
+            "".to_owned()
+        }
+    }
+    
+    /// JS method to return Server Host or IP
+    #[allow(non_snake_case)]
+    #[node_bindgen]
+    fn serverHost(&self) -> String {
+        if let Some(server_addr) = self.server_addr() {
+            server_addr.host
+        } else {
+            "".to_owned()
+        }    
     }
 
     /// send string to replica
