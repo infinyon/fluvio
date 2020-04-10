@@ -31,7 +31,7 @@ struct ListTopics {
 // Retrieve and print topics in desired format
 pub async fn list_kf_topics<O>(
     out: std::sync::Arc<O>,
-    mut client: KfClient<String>,
+    mut client: KfClient,
     output_type: OutputType,
 ) -> Result<(), CliError>
 where

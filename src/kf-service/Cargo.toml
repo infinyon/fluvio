@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "kf-service"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["fluvio.io"]
 
 [dependencies]
@@ -10,10 +10,10 @@ futures = { version = "0.3.4", features = ["async-await"] }
 async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
 kf-protocol = { version = "1.0.0", path = "../kf-protocol"}
-flv-future-aio = { version = "1.0.0" }
+flv-future-aio = { version = "2.0.0", features = ["tls"] }
 kf-socket = { version = "1.0.0", path = "../kf-socket"}
 types = { version = "0.1.0", path ="../types", package = "flv-types"}
 
 [dev-dependencies]
-flv-future-aio = { version = "1.0.0", features = ["fixture"] }
+flv-future-aio = { version = "2.0.0", features = ["fixture"] }
 flv-util = { version = "0.1.0" }

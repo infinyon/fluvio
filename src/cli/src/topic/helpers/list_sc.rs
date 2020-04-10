@@ -30,7 +30,7 @@ type ListTopics = Vec<ScTopicMetadata>;
 // Retrieve and print topics in desired format
 pub async fn list_sc_topics<O>(
     out: std::sync::Arc<O>,
-    mut client: ScClient<String>,
+    mut client: ScClient,
     output_type: OutputType,
 ) -> Result<(), CliError>
 where

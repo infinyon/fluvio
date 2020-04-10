@@ -52,7 +52,7 @@ impl DeleteCustomSpuOpt {
     /// Validate cli options. Generate target-server and delete custom spu config.
     fn validate(self) -> Result<(ScConfig, FlvCustomSpu), CliError> {
 
-        let target_server = ScConfig::new(self.sc, self.profile)?;
+        let target_server = ScConfig::new(self.sc)?;
 
         // custom spu
         let custom_spu = if let Some(name) = self.name {

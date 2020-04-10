@@ -22,13 +22,13 @@ structopt = { version = "0.3.5", optional = true}
 serde = { version ="1.0.103", features = ['derive'] }
 kf-protocol = { path = "../kf-protocol"}
 kf-socket = { path = "../kf-socket"}
-flv-future-aio = { version = "1.0.0" }
+flv-future-aio = { version = "2.0.0" }
 utils = { path= "../utils", optional = false }
 types = { path ="../types", package = "flv-types"}
 
 
 [dev-dependencies]
-flv-future-aio = { version = "1.0.0", features=["fixture"]}
+flv-future-aio = { version = "2.0.0", features=["fixture"]}
 flv-util = { version = "0.1.0", features = ["fixture"]}
 
 

@@ -7,91 +7,124 @@
 //!     2) custom configuration if provided, or default configuration (if not)
 //!     3) cli parameters
 //!
+use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::process;
 
 use log::info;
+use log::debug;
 use structopt::StructOpt;
 
 use types::print_cli_err;
-use types::socket_helpers::string_to_socket_addr;
 use k8_client::K8Config;
 use flv_sc_core::config::ScConfig;
+use flv_future_aio::net::tls::TlsAcceptor;
+use flv_future_aio::net::tls::AcceptorBuilder;
 
 use crate::ScK8Error;
 
+
 /// cli options
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(name = "sc-server", about = "Streaming Controller")]
 pub struct ScOpt {
-    #[structopt(short = "i", long = "id", value_name = "integer")]
-    /// Unique identifier of the server
-    pub id: Option<i32>,
+    #[structopt(long)]
+    /// Address for external service
+    bind_public: Option<String>,
 
-    #[structopt(short = "b", long = "bind-public", value_name = "host:port")]
-    /// Address for external communication
-    pub bind_public: Option<String>,
+    #[structopt(long)]
+    /// Address for internal service
+    bind_private: Option<String>,
 
-    #[structopt(short = "f", long = "conf", value_name = "file")]
-    /// Configuration file
-    pub config_file: Option<String>,
-
+    // k8 namespace
     #[structopt(short = "n", long = "namespace", value_name = "namespace")]
-    pub namespace: Option<String>,
+    namespace: Option<String>,
+
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
-/// validate streaming controller cli inputs and generate ScConfig
-pub fn get_sc_config() -> Result<(ScConfig, K8Config), ScK8Error> {
-    sc_opt_to_sc_config(ScOpt::from_args())
-}
+impl ScOpt {
 
-/// convert cli options to sc_config
-fn sc_opt_to_sc_config(opt: ScOpt) -> Result<(ScConfig, K8Config), ScK8Error> {
-    let mut sc_config = ScConfig::new(opt.config_file)?;
 
-    let k8_config = K8Config::load().expect("no k8 config founded");
+    fn get_sc_and_k8_config() -> Result<(ScConfig, K8Config, Option<(TlsAcceptor,String)>), ScK8Error> {
+        let mut sc_opt = ScOpt::from_args();
 
-    sc_config.namespace = k8_config.namespace().to_owned();
-    info!(
-        "using {} as namespace from kubernetes config",
-        sc_config.namespace
-    );
+        let k8_config = K8Config::load().expect("no k8 config founded");
 
-    // override id if set
-    if let Some(id) = opt.id {
-        if id < 0 {
-            return Err(
-                IoError::new(ErrorKind::InvalidInput, "Id must greater of equal to 0").into(),
+        // if name space is specified, use one from k8 config
+        if sc_opt.namespace.is_none() {
+            let k8_namespace = k8_config.namespace().to_owned();
+            info!(
+                "using {} as namespace from kubernetes config",
+                k8_namespace
             );
+            sc_opt.namespace = Some(k8_namespace);
         }
-        sc_config.id = id;
+
+        let tls_acceptor = sc_opt.try_build_tls_acceptor()?;
+        let (sc_config,tls_addr_opt) = sc_opt.as_sc_config()?;
+        let tls_config = match tls_acceptor {
+            Some(acceptor) => Some((acceptor,tls_addr_opt.unwrap())),
+            None => None
+        };
+
+        Ok((sc_config, k8_config,tls_config))
     }
 
-    // override public if set
-    if let Some(bind_public) = opt.bind_public {
-        let addr = string_to_socket_addr(&bind_public).map_err(|err| {
-            IoError::new(
-                ErrorKind::InvalidInput,
-                format!("problem resolving public bind {}'", err),
-            )
-        })?;
-        sc_config.public_endpoint = addr.into();
+    fn as_sc_config(self) -> Result<(ScConfig,Option<String>),IoError> {
+
+        let mut config = ScConfig::default();
+
+        // apply our option
+        if let Some(public_addr) = self.bind_public {
+            config.public_endpoint = public_addr.clone();
+        }
+        let mut tls_port: Option<String> = None;
+
+        if self.tls.tls {
+            let proxy_addr = config.public_endpoint.clone();
+            debug!("using tls proxy addr: {}",proxy_addr);
+            tls_port = Some(proxy_addr);
+            config.public_endpoint = self.tls.bind_non_tls_public.ok_or_else(|| 
+                IoError::new(ErrorKind::NotFound, "non tls addr for public must be specified"))?;
+            
+        } 
+
+        if let Some(private_addr) = self.bind_private {
+            config.private_endpoint = private_addr.clone();
+        }
+        config.namespace = self.namespace.unwrap().clone();
+        Ok((config,tls_port))
+
     }
 
-    // override namespace if set
-    if let Some(namespace) = opt.namespace {
-        sc_config.namespace = namespace;
+    fn try_build_tls_acceptor(&self) -> Result<Option<TlsAcceptor>,IoError> {
+
+        let tls_config = &self.tls;
+        if !tls_config.tls {
+            return Ok(None)
+        }
+
+        let server_crt_path = tls_config.server_cert.as_ref().ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server cert"))?;
+        let server_key_pat = tls_config.server_key.as_ref().ok_or_else(|| IoError::new(ErrorKind::NotFound,"missing server key"))?;
+
+        let builder = (if tls_config.enable_client_cert {
+            let ca_path = tls_config.ca_cert.as_ref().ok_or_else(|| IoError::new(ErrorKind::NotFound,"missing ca cert"))?;
+            AcceptorBuilder::new_client_authenticate(ca_path)?
+        } else {
+            AcceptorBuilder::new_no_client_authentication()
+        })
+            .load_server_certs(server_crt_path,server_key_pat)?;
+
+        Ok(Some(builder.build()))
+
     }
-
-    info!("sc config: {:#?}", sc_config);
-
-    Ok((sc_config, k8_config))
 }
 
 /// return SC configuration or exist program.
-pub fn parse_cli_or_exit() -> (ScConfig, K8Config) {
-    match get_sc_config() {
+pub fn parse_cli_or_exit() -> (ScConfig, K8Config,Option<(TlsAcceptor,String)>) {
+    match ScOpt::get_sc_and_k8_config() {
         Err(err) => {
             print_cli_err!(err);
             process::exit(0x0100);
@@ -100,89 +133,32 @@ pub fn parse_cli_or_exit() -> (ScConfig, K8Config) {
     }
 }
 
-// ---------------------------------------
-// Unit Tests
-// ---------------------------------------
 
-#[cfg(test)]
-pub mod test {
-    use std::net::{IpAddr, Ipv4Addr};
-    use std::net::SocketAddr;
-    use types::socket_helpers::EndPoint;
-    use flv_sc_core::config::ScConfig;
 
-    use super::ScOpt;
-    use super::sc_opt_to_sc_config;
+#[derive(Debug, StructOpt, Default )]
+struct TlsConfig {
 
-    #[test]
-    fn test_get_sc_config_no_params() {
-        let sc_opt = ScOpt {
-            id: None,
-            bind_public: None,
-            config_file: None,
-            namespace: Some("test".to_owned()),
-        };
+    /// enable tls 
+    #[structopt(long)]
+    tls: bool,
 
-        // test read & parse
-        let result = sc_opt_to_sc_config(sc_opt);
-        assert!(result.is_ok());
+    /// TLS: path to server certificate
+    #[structopt(long)]
+    server_cert: Option<String>,
 
-        // compare with expected result
-        let expected = ScConfig {
-            id: 1,
-            public_endpoint: EndPoint::all_end_point(9003),
-            namespace: "test".to_owned(),
-            ..Default::default()
-        };
+    #[structopt(long)]
+    /// TLS: path to server private key
+    server_key: Option<String>,
 
-        assert_eq!(result.unwrap().0, expected);
-    }
+    /// TLS: enable client cert
+    #[structopt(long)]
+    enable_client_cert: bool,
 
-    #[test]
-    fn test_get_sc_config_from_config_file() {
-        let sc_opt = ScOpt {
-            id: None,
-            bind_public: None,
-            config_file: Some("./test-data/config/sc_server.toml".to_owned()),
-            namespace: Some("test".to_owned()),
-        };
+    /// TLS: path to ca cert, required when client cert is enabled
+    #[structopt(long)]
+    ca_cert: Option<String>,
 
-        // test read & parse
-        let result = sc_opt_to_sc_config(sc_opt);
-        assert!(result.is_ok());
-
-        // compare with expected result
-        let expected = ScConfig {
-            id: 500,
-            public_endpoint: EndPoint::local_end_point(9999),
-            namespace: "test".to_owned(),
-            ..Default::default()
-        };
-
-        assert_eq!(result.unwrap().0, expected);
-    }
-
-    #[test]
-    fn test_get_sc_config_overwite_config_file() {
-        let sc_opt = ScOpt {
-            id: Some(100),
-            bind_public: Some("1.1.1.1:8888".to_owned()),
-            config_file: Some("./test-data/config/sc_server.toml".to_owned()),
-            namespace: Some("test".to_owned()),
-        };
-
-        // test read & parse
-        let result = sc_opt_to_sc_config(sc_opt);
-        assert!(result.is_ok());
-
-        // compare with expected result
-        let expected = ScConfig {
-            id: 100,
-            public_endpoint: (SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 8888)).into(),
-            namespace: "test".to_owned(),
-            ..Default::default()
-        };
-
-        assert_eq!(result.unwrap().0, expected);
-    }
+    #[structopt(long)]
+    /// TLS: address of non tls public service, required
+    bind_non_tls_public: Option<String>,
 }

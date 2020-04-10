@@ -9,14 +9,13 @@ mod replica;
 pub mod profile;
 pub mod query_params;
 
-pub use client::ClientConfig;
-pub use client::Client;
+pub use client::*;
 pub use error::ClientError;
 pub use spu::SpuReplicaLeader;
 pub use spu::Spu;
-pub use sc::ScClient;
+pub use sc::*;
 pub use kf::KfClient;
 pub use kf::KfLeader;
 pub use spu_controller::SpuController;
 pub use leader::*;
-pub use replica::ReplicaLeaderConfig;
+pub use replica::*;

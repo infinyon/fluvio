@@ -59,7 +59,7 @@ pub fn create_public_server<C>(
 ) -> PublicApiServer<C>
      where C: MetadataClient
 {
-     let addr = metadata.config().public_endpoint.addr.clone();
+     let addr = metadata.config().public_endpoint.clone();
      info!("start public api service at: {}", addr);
 
      KfApiServer::new(

@@ -14,10 +14,14 @@ use crate::operator::run_k8_operators;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+
+
+
+
 pub fn main_k8_loop() {
    
     // parse configuration (program exits on error)
-    let (sc_config, k8_config) = parse_cli_or_exit();
+    let (sc_config, k8_config,tls_acceptor_option) = parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
 
@@ -25,9 +29,39 @@ pub fn main_k8_loop() {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
-        let (ws_service, metadata) = start_main_loop(sc_config, k8_client).await;
+        let (ws_service, metadata) = start_main_loop(sc_config.clone(), k8_client).await;
         run_k8_operators(ws_service.clone(), namespace.clone(), metadata.owned_spus());
 
+        if let Some(tls_config) = tls_acceptor_option {
+            proxy::start_proxy(sc_config,tls_config).await;
+        }
+    
         println!("Streaming Controller started successfully");
     });
+}
+
+
+mod proxy {
+
+    use std::process;
+
+    use log::info;
+
+    use types::print_cli_err;
+    use flv_future_aio::net::tls::TlsAcceptor;
+    use flv_sc_core::config::ScConfig;
+    use flv_tls_proxy::start as proxy_start;
+
+    pub async fn start_proxy(config: ScConfig,acceptor: (TlsAcceptor,String)) {
+
+        let (tls_acceptor,proxy_addr) = acceptor;
+        let target = config.public_endpoint;
+        info!("starting TLS proxy: {}",proxy_addr);
+
+        if let Err(err) = proxy_start(&proxy_addr,tls_acceptor,target).await {
+            print_cli_err!(err);
+            process::exit(0x0100);
+        }
+
+    }
 }

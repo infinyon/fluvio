@@ -17,20 +17,24 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop() {
     // parse configuration (program exits on error)
-    let spu_config = process_spu_cli_or_exit();
+    let (spu_config,tls_acceptor_option) = process_spu_cli_or_exit();
 
     println!(
-        "starting {}-spu services (id:{})",
-        spu_config.type_label(),
+        "starting spu server (id:{})",
         spu_config.id
     );
 
 
-    main(async {
-        let (_ctx, internal_server, public_server) = create_services(spu_config, true, true);
+    main(async move {
+        let (_ctx, internal_server, public_server) = create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
+
+        if let Some(tls_config) = tls_acceptor_option {
+            proxy::start_proxy(spu_config,tls_config).await;
+        }
+    
 
         println!("SPU Version: {} started successfully", VERSION);
     });
@@ -48,8 +52,8 @@ pub fn create_services(
 ) {
     let ctx = FileReplicaContext::new_shared_context(local_spu);
 
-    let public_ep_addr = ctx.config().public_socket_addr().clone();
-    let private_ep_addr = ctx.config().private_socket_addr().clone();
+    let public_ep_addr = ctx.config().public_socket_addr().to_owned();
+    let private_ep_addr = ctx.config().private_socket_addr().to_owned();
 
     let public_server = if public {
         Some(create_public_server(public_ep_addr, ctx.clone()))
@@ -67,4 +71,30 @@ pub fn create_services(
     sc_dispatcher.run();
 
     (ctx, internal_server, public_server)
+}
+
+
+mod proxy {
+
+    use std::process;
+
+    use log::info;
+
+    use types::print_cli_err;
+    use flv_future_aio::net::tls::TlsAcceptor;
+    use crate::config::SpuConfig;
+    use flv_tls_proxy::start as proxy_start;
+
+    pub async fn start_proxy(config: SpuConfig,acceptor: (TlsAcceptor,String)) {
+
+        let (tls_acceptor,proxy_addr) = acceptor;
+        let target = config.public_endpoint;
+        info!("starting TLS proxy: {}",proxy_addr);
+
+        if let Err(err) = proxy_start(&proxy_addr,tls_acceptor,target).await {
+            print_cli_err!(err);
+            process::exit(0x0100);
+        }
+
+    }
 }

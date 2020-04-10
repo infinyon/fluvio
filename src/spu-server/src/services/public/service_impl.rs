@@ -2,14 +2,18 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use futures::io::AsyncRead;
+use futures::io::AsyncWrite;
 
-use kf_socket::KfSocket;
+use kf_socket::InnerKfSocket;
+use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
 use kf_service::call_service;
 use kf_service::KfService;
 use kf_service::api_loop;
 use spu_api::SpuApiKey;
 use spu_api::PublicRequest;
+use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 
 use crate::core::DefaultSharedGlobalContext;
@@ -32,15 +36,19 @@ impl PublicService {
 }
 
 #[async_trait]
-impl KfService for PublicService {
+impl <S>KfService<S> for PublicService
+    where S: AsyncRead + AsyncWrite + Unpin + Send + 'static 
+{
     type Context = DefaultSharedGlobalContext;
     type Request = PublicRequest;
     
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        socket: KfSocket
-    ) -> Result<(),KfSocketError> {
+        socket: InnerKfSocket<S>,
+    ) -> Result<(),KfSocketError>
+        where InnerKfSink<S>: ZeroCopyWrite 
+    {
        
         let (mut sink,mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<PublicRequest,SpuApiKey>();

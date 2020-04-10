@@ -15,7 +15,7 @@ test = false
 [dependencies]
 log = "0.4.8"
 futures = { version = "0.3.4", features = ['async-await'] }
-flv-future-aio = { version = "1.0.0" }
+flv-future-aio = { version = "2.0.0" }
 node-bindgen = { version = "1.0.0" }
 kf-protocol = { version  = "1.0.0"}
 types = { version = "0.1.0", package = "flv-types"}

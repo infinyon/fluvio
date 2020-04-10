@@ -110,7 +110,7 @@ async fn handle_response(
     Ok(())
 }
 
-async fn test_server(addr: SocketAddr) -> Result<(), StorageError> {
+async fn test_server(addr: &str) -> Result<(), StorageError> {
     debug!("setting up replica");
     let replica = setup_replica().await?;
 
@@ -134,7 +134,7 @@ async fn test_server(addr: SocketAddr) -> Result<(), StorageError> {
 }
 
 async fn test_fetch(
-    addr: &SocketAddr,
+    addr: &str,
     iteration: i16,
     offset: i64,
     expected_batch_len: usize,
@@ -175,15 +175,15 @@ async fn test_fetch(
     Ok(())
 }
 
-async fn test_client(addr: SocketAddr) -> Result<(), KfSocketError> {
+async fn test_client(addr: &str) -> Result<(), KfSocketError> {
     sleep(Duration::from_millis(100)).await;
     // for offset 0, it should return entire batches
-    test_fetch(&addr, 0, 0, 2)
+    test_fetch(addr, 0, 0, 2)
         .await
         .expect("test should succeed");
 
     // for offset 1, it should return only last batch
-    test_fetch(&addr, 1, 2, 1)
+    test_fetch(addr, 1, 2, 1)
         .await
         .expect("test should succeed");
     Ok(())
@@ -192,9 +192,9 @@ async fn test_client(addr: SocketAddr) -> Result<(), KfSocketError> {
 /// test replica fetch using dummy server
 #[test_async]
 async fn test_replica_fetch() -> Result<(), StorageError> {
-    let addr = "127.0.0.1:9911".parse::<SocketAddr>().expect("parse");
+    let addr = "127.0.0.1:9911";
 
-    let _r = join(test_client(addr), test_server(addr.clone())).await;
+    let _r = join(test_client(addr), test_server(addr)).await;
 
     Ok(())
 }

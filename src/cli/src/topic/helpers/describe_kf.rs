@@ -24,7 +24,7 @@ use super::KfTopicMetadata;
 
 // Connect to Kafka Controller and query server for topic
 pub async fn describe_kf_topics<O>(
-    mut client: KfClient<String>,
+    mut client: KfClient,
     topics: Vec<String>,
     output_type: OutputType,
     out: std::sync::Arc<O>,

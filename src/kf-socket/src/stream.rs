@@ -5,12 +5,14 @@ use std::io::ErrorKind;
 
 use log::trace;
 use log::error;
+use futures::io::{AsyncRead, AsyncWrite};
 use futures::Stream;
 use futures::stream::StreamExt;
 use futures::stream::SplitStream;
-use futures_codec::Framed;
-
+use tokio_util::codec::Framed;
+use tokio_util::compat::Compat;
 use flv_future_aio::net::TcpStream;
+use flv_future_aio::net::tls::AllTcpStream;
 use kf_protocol::api::Request;
 use kf_protocol::transport::KfCodec;
 use kf_protocol::Decoder as KfDecoder;
@@ -20,11 +22,19 @@ use kf_protocol::api::KfRequestMessage;
 
 use crate::KfSocketError;
 
-#[derive(Debug)]
-pub struct KfStream(SplitStream<Framed<TcpStream, KfCodec>>);
+pub type KfStream = InnerKfStream<TcpStream>;
+#[allow(unused)]
+pub type AllKfStream = InnerKfStream<AllTcpStream>;
 
-impl KfStream {
-    pub fn get_mut_tcp_stream(&mut self) -> &mut SplitStream<Framed<TcpStream, KfCodec>> {
+type FrameStream<S> = SplitStream<Framed<Compat<S>,KfCodec>>;
+
+/// inner kf stream which is generic over stream
+#[derive(Debug)]
+pub struct InnerKfStream<S>(FrameStream<S>);
+
+impl<S> InnerKfStream<S> where S: AsyncRead + AsyncWrite + Unpin {
+
+    pub fn get_mut_tcp_stream(&mut self) -> &mut FrameStream<S> {
         &mut self.0
     }
 
@@ -104,7 +114,6 @@ impl KfStream {
         })
     }
 
-
     pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, KfSocketError>>
     where
         R: KfRequestMessage<ApiKey = A>,
@@ -114,26 +123,24 @@ impl KfStream {
         stream.next().await
     }
 
-    pub fn response_stream<'a,R>(
+    pub fn response_stream<'a, R>(
         &'a mut self,
-        req_msg: RequestMessage<R>) 
-    -> impl Stream<Item = R::Response> + 'a
-        where R: Request
+        req_msg: RequestMessage<R>,
+    ) -> impl Stream<Item = R::Response> + 'a
+    where
+        R: Request,
     {
         let version = req_msg.header.api_version();
         (&mut self.0).filter_map(move |req_bytes| async move {
-
             match req_bytes {
-                Ok(mut bytes) => {
-                    match ResponseMessage::decode_from(&mut bytes,version) {
-                        Ok(res_msg) => {
-                            trace!("receive response: {:#?}", &res_msg);
-                            Some(res_msg.response)
-                        },
-                        Err(err) => {
-                            error!("error decoding response: {:?}",err);
-                            None
-                        }
+                Ok(mut bytes) => match ResponseMessage::decode_from(&mut bytes, version) {
+                    Ok(res_msg) => {
+                        trace!("receive response: {:#?}", &res_msg);
+                        Some(res_msg.response)
+                    }
+                    Err(err) => {
+                        error!("error decoding response: {:?}", err);
+                        None
                     }
                 },
                 Err(err) => {
@@ -141,13 +148,12 @@ impl KfStream {
                     None
                 }
             }
-           
         })
     }
 }
 
-impl From<SplitStream<Framed<TcpStream, KfCodec>>> for KfStream {
-    fn from(stream: SplitStream<Framed<TcpStream, KfCodec>>) -> Self {
-        KfStream(stream)
+impl <S>From<FrameStream<S>> for InnerKfStream<S> {
+    fn from(stream: FrameStream<S>) -> Self {
+        InnerKfStream(stream)
     }
 }

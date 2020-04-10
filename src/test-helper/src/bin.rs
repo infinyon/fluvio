@@ -18,5 +18,60 @@ pub fn get_binary(bin_name: &str) -> Result<Command,IoError> {
     } else {
         Ok(Command::new(bin_dir.into_os_string()))
     }
+}
+
+use std::fs::File;
+use std::process::Stdio;
+
+pub fn open_log(prefix: &str)  -> (File,File) {
+
+    let output = File::create(format!("/tmp/flv_{}.out",prefix)).expect("log file");
+    let error = File::create(format!("/tmp/flv_{}.log",prefix)).expect("err file");
+
+    (output,error)
+}
+
+
+pub fn command_exec(binary: &str,prefix: &str, process: impl Fn(&mut Command))  {
+
+    let mut cmd = get_binary(binary)
+            .expect(&format!("unable to get binary: {}",binary));
+
+
+    let (output,error) = open_log(prefix);
+        
+    cmd    
+        .stdout(Stdio::from(output))
+        .stderr(Stdio::from(error));
+
+    process(&mut cmd);
+
+    let status = cmd   
+        .status()
+        .expect("topic creation failed");
+
+    if !status.success() {
+        println!("topic creation failed: {}", status);
+    }
+
+}
+
+use std::process::Child;
+
+pub fn command_spawn(binary: &str,prefix: &str, process: impl Fn(&mut Command)) -> Child {
+
+    let mut cmd = get_binary(binary)
+            .expect(&format!("unable to get binary: {}",binary));
+
+
+    let (output,error) = open_log(prefix);
+        
+    cmd    
+        .stdout(Stdio::from(output))
+        .stderr(Stdio::from(error));
+
+    process(&mut cmd);
+
+    cmd.spawn().expect("child")
 
 }

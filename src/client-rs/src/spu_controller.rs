@@ -6,6 +6,7 @@ use crate::ClientError;
 use crate::ReplicaLeader;
 use crate::query_params::ReplicaConfig;
 
+
 #[async_trait]
 pub trait SpuController
 {

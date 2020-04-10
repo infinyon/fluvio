@@ -51,7 +51,7 @@ arg_enum! {
 /// Parse from file and return Request object
 pub async fn parse_and_pretty_from_file<P, R, O>(
     out: std::sync::Arc<O>,
-    client: &mut Client<String>,
+    client: &mut Client,
     file_path: P,
 ) -> Result<(), CliError>
 where
@@ -70,7 +70,7 @@ where
 // Connect to Kafka Controller and process request
 async fn pretty_pretty_spu<O, R>(
     out: std::sync::Arc<O>,
-    client: &mut Client<String>,
+    client: &mut Client,
     request: R,
 ) -> Result<(), CliError>
 where

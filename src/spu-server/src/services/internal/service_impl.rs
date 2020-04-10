@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+
 use kf_service::api_loop;
 use kf_service::KfService;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
+use flv_future_aio::net::TcpStream;
 
 use super::SpuPeerRequest;
 use super::KfSPUPeerApiEnum;
@@ -22,7 +24,7 @@ impl InternalService {
 }
 
 #[async_trait]
-impl KfService for InternalService {
+impl KfService<TcpStream> for InternalService  {
 
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;

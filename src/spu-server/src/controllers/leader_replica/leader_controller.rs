@@ -26,7 +26,7 @@ use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
 use super::SharedReplicaLeadersState;
 
-/// time for complete reconcillation with followers
+/// time for complete re-sync with followers
 pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
 
 /// Controller for managing leader replica.

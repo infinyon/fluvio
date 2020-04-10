@@ -10,15 +10,18 @@ use std::sync::Arc;
 use std::marker::PhantomData;
 
 use async_trait::async_trait;
+use futures::io::AsyncRead;
+use futures::io::AsyncWrite;
 
 use kf_service::api_loop;
 use kf_service::call_service;
-use kf_socket::KfSocket;
+use kf_socket::InnerKfSocket;
 use kf_socket::KfSocketError;
 use kf_service::KfService;
 use sc_api::PublicRequest;
 use sc_api::ScApiKey;
 use k8_metadata_client::MetadataClient;
+use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use super::api::handle_api_versions_request;
 use super::api::handle_kf_metadata_request;
@@ -45,9 +48,10 @@ impl<C> PublicService<C> {
 }
 
 #[async_trait]
-impl<C> KfService for PublicService<C>
+impl<C,S> KfService<S> for PublicService<C>
 where
     C: MetadataClient,
+    S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite +'static
 {
     type Context = SharedPublicContext<C>;
     type Request = PublicRequest;
@@ -55,7 +59,7 @@ where
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
-        socket: KfSocket,
+        socket: InnerKfSocket<S>,
     ) -> Result<(), KfSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<PublicRequest, ScApiKey>();

@@ -3,7 +3,10 @@ use std::io::Error as IoError;
 use std::convert::TryInto;
 
 use async_trait::async_trait;
+use futures::io::AsyncRead;
+use futures::io::AsyncWrite;
 
+use flv_future_aio::zero_copy::ZeroCopyWrite;
 use kf_protocol::api::KfRequestMessage;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
@@ -13,7 +16,8 @@ use kf_protocol::bytes::Buf;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
-use kf_socket::KfSocket;
+use kf_socket::InnerKfSink;
+use kf_socket::InnerKfSocket;
 use kf_socket::KfSocketError;
 
 use crate::KfService;
@@ -143,13 +147,14 @@ async fn handle_echo_request(
 
 
 #[async_trait]
-impl KfService for TestService {
+impl <S>KfService<S> for TestService where S: AsyncRead + AsyncWrite + Unpin + Send  + 'static {
 
     type Context = SharedTestContext;
     type Request = TestApiRequest;
    
 
-    async fn respond(self: Arc<Self>, _context: Self::Context,socket: KfSocket) -> Result<(),KfSocketError>
+    async fn respond(self: Arc<Self>, _context: Self::Context,socket: InnerKfSocket<S>) -> Result<(),KfSocketError>
+        where InnerKfSink<S>: ZeroCopyWrite
     {
        
         let (mut sink,mut stream) = socket.split();
@@ -165,7 +170,7 @@ impl KfService for TestService {
             ),
             TestApiRequest::SaveRequest(_request) =>  {
                 drop(api_stream);
-                let _orig_socket: KfSocket  = (sink,stream).into();
+                //let _orig_socket: KfSocket  = (sink,stream).into();
                 break;
             }
         );

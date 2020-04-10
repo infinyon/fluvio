@@ -26,7 +26,7 @@ use super::topic_metadata_sc::ScTopicMetadata;
 
 // Connect to Kafka Controller and query server for topic
 pub async fn describe_sc_topics<O>(
-    mut client: ScClient<String>,
+    mut client: ScClient,
     topics: Vec<String>,
     output_type: OutputType,
     out: std::sync::Arc<O>

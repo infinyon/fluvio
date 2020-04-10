@@ -4,7 +4,7 @@ mod service_impl;
 mod fetch_stream_request;
 
 use log::info;
-use std::net::SocketAddr;
+
 
 use kf_service::KfApiServer;
 use service_impl::InternalService;
@@ -23,7 +23,7 @@ pub(crate) type InternalApiServer = KfApiServer<
         InternalService>;
 
 // start server
-pub fn create_internal_server(addr: SocketAddr, ctx: DefaultSharedGlobalContext) -> InternalApiServer
+pub fn create_internal_server(addr: String, ctx: DefaultSharedGlobalContext) -> InternalApiServer
  {
     info!("starting SPU: {} at internal service at: {}", ctx.local_spu_id(),addr);
 

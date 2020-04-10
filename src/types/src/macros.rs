@@ -30,7 +30,7 @@ macro_rules! log_actions {
 #[macro_export]
 macro_rules! print_cli_err {
     ($x:expr) => {
-        println!("\x1B[1;31merror:\x1B[0m {}", $x);
+        eprintln!("{}", $x);
     };
 }
 

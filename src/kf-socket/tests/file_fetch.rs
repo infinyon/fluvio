@@ -60,8 +60,8 @@ async fn setup_batch_file() -> Result<(), IoError> {
     Ok(())
 }
 
-async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
-    let listener = TcpListener::bind(&addr).await?;
+async fn test_server(addr: &str) -> Result<(), KfSocketError> {
+    let listener = TcpListener::bind(addr).await?;
     debug!("server is running");
     let mut incoming = listener.incoming();
     let incoming_stream = incoming.next().await;
@@ -103,10 +103,10 @@ async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
     Ok(())
 }
 
-async fn setup_client(addr: SocketAddr) -> Result<(), KfSocketError> {
+async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
     sleep(Duration::from_millis(50)).await;
     debug!("client: trying to connect");
-    let mut socket = KfSocket::connect(&addr).await?;
+    let mut socket = KfSocket::connect(addr).await?;
     debug!("client: connect to test server and waiting...");
 
     let req_msg: RequestMessage<DefaultKfFetchRequest> = RequestMessage::default();
@@ -133,9 +133,9 @@ async fn test_save_fetch() -> Result<(), KfSocketError> {
     // create fetch and save
     setup_batch_file().await?;
 
-    let addr = "127.0.0.1:9911".parse::<SocketAddr>().expect("parse");
+    let addr = "127.0.0.1:9911";
 
-    let _r = join(setup_client(addr), test_server(addr.clone())).await;
+    let _r = join(setup_client(addr), test_server(addr)).await;
 
     Ok(())
 }

@@ -4,11 +4,14 @@ use log::warn;
 use log::error;
 
 use futures::stream::StreamExt;
+use futures::io::AsyncRead;
+use futures::io::AsyncWrite;
 use tokio::select;
 
 use flv_future_aio::sync::broadcast::RecvError;
-use kf_socket::KfStream;
-use kf_socket::KfSink;
+use flv_future_aio::zero_copy::ZeroCopyWrite;
+use kf_socket::InnerKfStream;
+use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::RequestHeader;
@@ -26,22 +29,24 @@ use crate::core::DefaultSharedGlobalContext;
 
 /// continuous fetch handler
 /// while client is active, it continuously send back new records
-pub struct CfHandler {
+pub struct CfHandler<S> {
     ctx: DefaultSharedGlobalContext,
     replica: ReplicaKey,
     isolation: Isolation,
     header: RequestHeader,
-    kf_sink: KfSink,
+    kf_sink: InnerKfSink<S>,
 }
 
-impl CfHandler {
+impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSink<S>:ZeroCopyWrite {
     /// handle fluvio continuous fetch request
     pub async fn handle_continuous_fetch_request(
         request: RequestMessage<FileFlvContinuousFetchRequest>,
         ctx: DefaultSharedGlobalContext,
-        kf_sink: KfSink,
-        kf_stream: KfStream,
-    ) -> Result<(), KfSocketError> {
+        kf_sink: InnerKfSink<S>,
+        kf_stream: InnerKfStream<S>,
+    ) -> Result<(), KfSocketError>
+       where InnerKfSink<S>: ZeroCopyWrite
+    {
         // first get receiver to offset update channel to we don't missed events
 
         let (header, msg) = request.get_header_request();
@@ -71,7 +76,7 @@ impl CfHandler {
     async fn process(
         &mut self,
         starting_offset: Offset,
-        mut kf_stream: KfStream,
+        mut kf_stream: InnerKfStream<S>,
     ) -> Result<(), KfSocketError> {
         let mut current_offset =
             if let Some(offset) = self.send_back_records(starting_offset).await? {

@@ -6,17 +6,16 @@
 //!
 use std::io::Error as IoError;
 use std::process;
-use std::path::PathBuf;
+use std::io::ErrorKind;
 
-use log::trace;
 use log::debug;
-use log::warn;
-use log::info;
 use structopt::StructOpt;
 
 use types::print_cli_err;
+use flv_future_aio::net::tls::TlsAcceptor;
+use flv_future_aio::net::tls::AcceptorBuilder;
 
-use super::{SpuConfig, SpuConfigFile};
+use super::SpuConfig;
 
 /// cli options
 #[derive(Debug, Default, StructOpt)]
@@ -24,35 +23,104 @@ use super::{SpuConfig, SpuConfigFile};
 pub struct SpuOpt {
     /// SPU unique identifier
     #[structopt(short = "i", long = "id", value_name = "integer")]
-    pub id: Option<i32>,
+    pub id: i32,
 
- 
 
     #[structopt(short = "p", long = "public-server", value_name = "host:port")]
     /// Spu server for external communication
-    pub public_server: Option<String>,
+    pub bind_public: Option<String>,
 
     #[structopt(short = "v", long = "private-server", value_name = "host:port")]
     /// Spu server for internal cluster communication
-    pub private_server: Option<String>,
+    pub bind_private: Option<String>,
 
     /// Address of the SC Server
-    #[structopt(short = "c", long = "sc-controller", value_name = "host:port")]
-    pub sc_server: Option<String>,
+    #[structopt(long,value_name = "host:port")]
+    pub sc_addr: Option<String>,
 
-    #[structopt(short = "f", long = "conf", value_name = "file")]
-    /// Configuration file
-    pub config_file: Option<PathBuf>,
+    #[structopt(flatten)]
+    tls: TlsConfig,
 
-    /// Reset base directory 
-    #[structopt(short,long)]
-    pub reset: bool
+}
+
+impl SpuOpt  {
+
+
+    /// Validate SPU (Streaming Processing Unit) cli inputs and generate SpuConfig
+    pub fn get_spu_config() -> Result<(SpuConfig,Option<(TlsAcceptor,String)>), IoError> {
+
+
+        let opt = SpuOpt::from_args();
+    
+        let tls_acceptor = opt.try_build_tls_acceptor()?;
+        let (spu_config,tls_addr_opt) = opt.as_spu_config()?;
+        let tls_config = match tls_acceptor {
+            Some(acceptor) => Some((acceptor,tls_addr_opt.unwrap())),
+            None => None
+        };
+
+
+        Ok((spu_config,tls_config))
+    }
+
+    fn as_spu_config(self) -> Result<(SpuConfig,Option<String>),IoError>  {
+
+        let mut config = SpuConfig::default();
+
+        config.id = self.id;
+
+        if let Some(public_addr) = self.bind_public {
+            config.public_endpoint = public_addr.clone();
+        }
+        let mut tls_port: Option<String> = None;
+
+        if self.tls.tls {
+            let proxy_addr = config.public_endpoint.clone();
+            debug!("using tls proxy addr: {}",proxy_addr);
+            tls_port = Some(proxy_addr);
+            config.public_endpoint = self.tls.bind_non_tls_public.ok_or_else(|| 
+                IoError::new(ErrorKind::NotFound, "non tls addr for public must be specified"))?;
+            
+        } 
+
+        if let Some(private_addr) = self.bind_private {
+            config.private_endpoint = private_addr.clone();
+        }
+
+        Ok((config,tls_port))
+
+    }
+
+    fn try_build_tls_acceptor(&self) -> Result<Option<TlsAcceptor>,IoError> {
+
+        let tls_config = &self.tls;
+        if !tls_config.tls {
+            return Ok(None)
+        }
+
+        let server_crt_path = tls_config.server_cert.as_ref().ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server cert"))?;
+        let server_key_pat = tls_config.server_key.as_ref().ok_or_else(|| IoError::new(ErrorKind::NotFound,"missing server key"))?;
+
+        let builder = (if tls_config.enable_client_cert {
+            let ca_path = tls_config.ca_cert.as_ref().ok_or_else(|| IoError::new(ErrorKind::NotFound,"missing ca cert"))?;
+            AcceptorBuilder::new_client_authenticate(ca_path)?
+        } else {
+            AcceptorBuilder::new_no_client_authentication()
+        })
+            .load_server_certs(server_crt_path,server_key_pat)?;
+
+        Ok(Some(builder.build()))
+
+    }
+
+
 }
 
 /// Run SPU Cli and return SPU configuration. Errors are consider fatal
 /// and the program exits.
-pub fn process_spu_cli_or_exit() -> SpuConfig {
-    match get_spu_config() {
+pub fn process_spu_cli_or_exit() -> (SpuConfig,Option<(TlsAcceptor,String)>) {
+
+    match SpuOpt::get_spu_config() {
         Err(err) => {
             print_cli_err!(err);
             process::exit(0x0100);
@@ -61,29 +129,30 @@ pub fn process_spu_cli_or_exit() -> SpuConfig {
     }
 }
 
-/// Validate SPU (Streaming Processing Unit) cli inputs and generate SpuConfig
-pub fn get_spu_config() -> Result<SpuConfig, IoError> {
-    let cfg = SpuOpt::from_args();
 
-    let reset = cfg.reset;
+/// same in the SC
+#[derive(Debug, StructOpt, Default )]
+struct TlsConfig {
 
-    // generate config from file from user-file or default (if exists)
-    let spu_config_file = match &cfg.config_file {
-        Some(cfg_file) => Some(SpuConfigFile::from_file(&cfg_file)?),
-        None => SpuConfigFile::from_default_file()?,
-    };
+    /// enable tls 
+    #[structopt(long)]
+    pub tls: bool,
 
-    trace!("spu cli: {:#?}, file: {:#?}",cfg,spu_config_file);
-    // send config file and cli parameters to generate final config.
-    let config = SpuConfig::new_from_all(cfg, spu_config_file)?;
-    debug!("config: {:#?}",config);
+    /// TLS: path to server certificate
+    #[structopt(long)]
+    pub server_cert: Option<String>,
+    #[structopt(long)]
+    /// TLS: path to server private key
+    pub server_key: Option<String>,
+    /// TLS: enable client cert
+    #[structopt(long)]
+    pub enable_client_cert: bool,
+    /// TLS: path to ca cert, required when client cert is enabled
+    #[structopt(long)]
+    pub ca_cert: Option<String>,
 
-    if reset {
-        warn!("reset base directory: {:#?}",config.log.base_dir);
-        if let Err(err) =  config.log.reset_base_dir() {
-            info!("unable to reset base directory: {}",err);
-        }
-    }
-
-    Ok(config)
+    #[structopt(long)]
+    /// TLS: address of non tls public service, required
+    pub bind_non_tls_public: Option<String>,
 }
+

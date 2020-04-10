@@ -1,55 +1,55 @@
-use std::fmt::Display;
+
 
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
+#[cfg(unix)]
+use std::os::unix::io::RawFd;
 
-use log::trace;
+use log::debug;
 use futures::stream::StreamExt;
-use futures_codec::Framed;
+use tokio_util::codec::Framed;
+use tokio_util::compat::FuturesAsyncReadCompatExt;
+use futures::io::{AsyncRead, AsyncWrite};
 
-use flv_future_aio::net::ToSocketAddrs;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::transport::KfCodec;
 
 use flv_future_aio::net::TcpStream;
+use flv_future_aio::net::TcpDomainConnector;
+use flv_future_aio::net::DefaultTcpDomainConnector;
+use flv_future_aio::net::tls::AllTcpStream;
 
-use crate::KfSink;
-use crate::KfStream;
-
+use crate::InnerKfSink;
+use crate::InnerKfStream;
 use super::KfSocketError;
+
+pub type KfSocket = InnerKfSocket<TcpStream>;
+pub type AllKfSocket = InnerKfSocket<AllTcpStream>;
+
 
 /// KfSocket is high level socket that can send and receive kf-protocol
 #[derive(Debug)]
-pub struct KfSocket {
-    sink: KfSink,
-    stream: KfStream,
+pub struct InnerKfSocket<S> {
+    sink: InnerKfSink<S>,
+    stream: InnerKfStream<S>,
     stale: bool,
 }
 
-unsafe impl Sync for KfSocket {}
+unsafe impl <S>Sync for InnerKfSocket<S> {}
 
-impl KfSocket {
-    pub fn new(sink: KfSink, stream: KfStream) -> Self {
-        KfSocket {
+impl <S>InnerKfSocket<S> {
+
+    pub fn new(sink: InnerKfSink<S>, stream: InnerKfStream<S>) -> Self {
+        InnerKfSocket {
             sink,
             stream,
             stale: false,
         }
     }
 
-    /// create socket from establishing connection to server
-    pub async fn connect<A>(addr: A) -> Result<KfSocket, KfSocketError>
-    where
-        A: ToSocketAddrs + Display,
-    {
-        trace!("trying to connect to server at: {}", addr);
-        let tcp_stream = TcpStream::connect(addr).await?;
-        Ok(tcp_stream.into())
-    }
-
-    pub fn split(self) -> (KfSink, KfStream) {
+    pub fn split(self) -> (InnerKfSink<S>, InnerKfStream<S>) {
         (self.sink, self.stream)
     }
 
@@ -62,12 +62,33 @@ impl KfSocket {
         self.stale
     }
 
-    pub fn get_mut_sink(&mut self) -> &mut KfSink {
+    pub fn get_mut_sink(&mut self) -> &mut InnerKfSink<S> {
         &mut self.sink
     }
 
-    pub fn get_mut_stream(&mut self) -> &mut KfStream {
+    pub fn get_mut_stream(&mut self) -> &mut InnerKfStream<S> {
         &mut self.stream
+    }
+
+}
+
+impl <S>InnerKfSocket<S> where S: AsyncRead + AsyncWrite + Unpin + Send {
+
+    /// connect to domain
+    pub async fn connect_to_domain<C>(domain: &str,connector: &C) -> Result<Self, KfSocketError>
+        where C: TcpDomainConnector<WrapperStream=S>
+    {
+        debug!("trying to connect to domain at: {}", domain);
+        let (tcp_stream,fd) = connector.connect(domain).await?;
+        Ok(Self::from_stream(tcp_stream,fd))
+    }    
+
+    
+    pub fn from_stream(tcp_stream: S, raw_fd: RawFd) -> Self {
+
+        let framed = Framed::new(tcp_stream.compat(), KfCodec {});
+        let (sink, stream) = framed.split();
+        Self::new(InnerKfSink::new(sink, raw_fd),stream.into())
     }
 
     /// as client, send request and wait for reply from server
@@ -84,22 +105,32 @@ impl KfSocket {
     }
 }
 
-impl From<TcpStream> for KfSocket {
-    fn from(tcp_stream: TcpStream) -> Self {
-        let fd = tcp_stream.as_raw_fd();
-        let framed = Framed::new(tcp_stream, KfCodec {});
-        let (sink, stream) = framed.split();
-        KfSocket {
-            sink: KfSink::new(sink, fd),
-            stream: stream.into(),
-            stale: false,
-        }
+
+impl <S>From<(InnerKfSink<S>, InnerKfStream<S>)> for InnerKfSocket<S> 
+
+{
+    fn from(pair: (InnerKfSink<S>, InnerKfStream<S>)) -> Self {
+        let (sink, stream) = pair;
+        InnerKfSocket::new(sink, stream)
     }
 }
 
-impl From<(KfSink, KfStream)> for KfSocket {
-    fn from(pair: (KfSink, KfStream)) -> Self {
-        let (sink, stream) = pair;
-        KfSocket::new(sink, stream)
+
+impl KfSocket {
+
+    pub async fn connect(addr: &str) -> Result<Self, KfSocketError>
+    {
+        Self::connect_to_domain(addr,&DefaultTcpDomainConnector::new()).await
+    }    
+
+}
+
+
+impl From<TcpStream> for KfSocket {
+
+    fn from(tcp_stream: TcpStream) -> Self {
+        let fd = tcp_stream.as_raw_fd();
+        Self::from_stream(tcp_stream,fd)
     }
 }
+

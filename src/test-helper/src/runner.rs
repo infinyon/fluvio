@@ -1,11 +1,8 @@
-use std::time::Duration;
-
-use flv_future_aio::timer::sleep;
 
 use crate::TestOption;
 use crate::setup::Setup;
 use crate::tests::test_consumer;
-
+use crate::tests::produce_message_with_cli;
 pub struct TestRunner(TestOption);
 
 impl TestRunner {
@@ -19,37 +16,45 @@ impl TestRunner {
         
         let setup = Setup::new(self.0.clone());
 
-        if self.0.terminate {
-            setup.ensure_clean().await;
-            println!("cleanup done");
-        } else {
-
-            let launcher = setup.setup().await;
-
-            // wait 1 seconds for sc and spu to spin up
-            sleep(Duration::from_secs(1)).await;
-
-            if self.0.test_consumer() {
-
-                if let Err(err) = std::panic::catch_unwind(|| {
-
-                    test_consumer(self.0.clone());
-
-                }) {
-                
-                    launcher.terminate();
-                    eprintln!("panic during test, shutting down servers first: {:#?}",err);
-                    std::process::exit(-1);
-                
-                } else {
-                    launcher.terminate();
-                    println!("successful test");
-                
-                }    
-            } else {
-                println!("no test run, keeping servers around.  use -t to kill only later")
-            }
+        let launcher = setup.setup().await;
+       
+    
+        if self.0.produce() {
+            produce_message_with_cli();
         }
+
+
+
+        if self.0.test_consumer() {
+
+            if let Err(err) = std::panic::catch_unwind(|| {
+
+                test_consumer(self.0.clone());
+
+            }) {
+            
+                eprintln!("test failed during consumer test {:#?}",err);
+                if self.0.terminate_after_consumer_test() {
+                    launcher.terminate();
+                  
+                } else {
+                    eprintln!("server not shut down");
+                }
+                assert!(false);
+                
+            
+            } else {
+
+                println!("successful test");
+                if self.0.terminate_after_consumer_test() {
+                    launcher.terminate();
+                } else {
+                    println!("server not shutdown ")
+                }
+                assert!(true);
+                
+            }    
+        } 
 
         Ok(())
     }

@@ -89,6 +89,8 @@ mod produce {
             }
         }
 
+        debug!("done sending records");
+
         Ok(())
     }
 
@@ -96,7 +98,10 @@ mod produce {
     /// TODO: Add version handling for SPU
     async fn process_record<L: ReplicaLeader>(spu: &mut L, record: Vec<u8>) {
         match spu.send_record(record).await {
-            Ok(()) => print_cli_ok!(),
+            Ok(()) => {
+                debug!("record send success");
+                print_cli_ok!()
+            },
             Err(err) => print_cli_err!(format!("{}", err)),
         }
     }

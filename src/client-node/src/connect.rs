@@ -8,6 +8,6 @@ use crate::ScClientWrapper;
 
 #[node_bindgen()]
 async fn connect(host_addr: String) -> Result<ScClientWrapper, ClientError> {
-    let config = ScConfig::new(Some(host_addr), None)?;
+    let config = ScConfig::new(Some(host_addr))?;
     config.connect().await.map(|client| client.into())
 }

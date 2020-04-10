@@ -18,6 +18,7 @@ use super::advanced::process_advanced;
 use super::spu::all::process_spu;
 use super::spu::custom::process_custom_spu;
 use super::spu::group::process_spu_group;
+use super::profile::process_profile;
 
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
@@ -26,7 +27,7 @@ use super::advanced::AdvancedOpt;
 use super::spu::all::SpuOpt;
 use super::spu::custom::CustomSpuOpt;
 use super::spu::group::SpuGroupOpt;
-
+use super::profile::ProfileCommand;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -109,6 +110,15 @@ enum Root {
 {all-args}
 ", about = "Advanced operations")]
     Advanced(AdvancedOpt),
+
+    #[structopt(name = "profile", author = "", template = "{about}
+
+{usage}
+
+{all-args}
+", about = "Profile operation")]
+
+    Profile(ProfileCommand)
 }
 
 pub fn run_cli() -> Result<String, CliError> {
@@ -125,6 +135,7 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(),custom_spu).await,
             Root::Topic(topic) => process_topic(terminal.clone(),topic).await,
             Root::Advanced(advanced) => process_advanced(terminal.clone(),advanced).await,
+            Root::Profile(profile) => process_profile(terminal.clone(), profile)
         }
     })
 }

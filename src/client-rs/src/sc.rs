@@ -1,12 +1,11 @@
 use std::default::Default;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::fmt::Display;
+
 
 use log::debug;
 use async_trait::async_trait;
 
-use flv_future_aio::net::ToSocketAddrs;
 use types::socket_helpers::ServerAddress;
 use sc_api::errors::FlvErrorCode;
 use sc_api::topic::{FlvTopicCompositionRequest, FlvTopicCompositionResponse};
@@ -29,32 +28,29 @@ use sc_api::spu::FlvFetchSpuGroupsResponse;
 use sc_api::spu::FlvCustomSpu;
 use kf_socket::KfSocketError;
 
+
 use crate::ClientError;
 use crate::Client;
-use crate::ClientConfig;
 use crate::ReplicaLeaderConfig;
 use crate::SpuController;
 use crate::SpuReplicaLeader;
 use crate::query_params::ReplicaConfig;
 
-pub struct ScClient<A>(Client<A>);
 
-impl<A> ScClient<A> {
-    fn new(client: Client<A>) -> Self {
+
+pub struct ScClient(Client);
+
+impl ScClient  {
+    
+    pub fn new(client: Client) -> Self {
         Self(client)
     }
-}
 
-impl<A> ScClient<A> {
-    pub fn inner(&self) -> &Client<A> {
+    pub fn inner(&self) -> &Client {
         &self.0
     }
-}
 
-impl<A> ScClient<A>
-where
-    A: ToSocketAddrs + Display,
-{
+
     /// Connect to server, get version, and for topic composition: Replicas and SPUs
     pub async fn get_topic_composition(
         &mut self,
@@ -66,10 +62,7 @@ where
         self.0.send_receive(request).await
     }
 
-    pub async fn connect(config: ClientConfig<A>) -> Result<Self, ClientError> {
-        let client = Client::connect(config).await?;
-        Ok(Self::new(client))
-    }
+    
 
     pub async fn create_custom_spu(
         &mut self,
@@ -156,9 +149,7 @@ where
 }
 
 #[async_trait]
-impl<A> SpuController for ScClient<A>
-where
-    A: ToSocketAddrs + Display + Send + Sync,
+impl SpuController for ScClient
 {
     type Leader = SpuReplicaLeader;
 
@@ -220,11 +211,13 @@ where
 
                         debug!("spu {}/{}: is leader", spu_resp.host, spu_resp.port);
 
-                        let leader_config =
-                            ReplicaLeaderConfig::new(spu_resp.into(), topic.to_owned(), partition)
-                                .spu_id(leader_id)
-                                .client_id(self.0.client_id());
-                        return SpuReplicaLeader::connect(leader_config).await;
+                        let mut leader_client_config = self.0.clone_config();
+                        let addr: ServerAddress = spu_resp.into();
+                        leader_client_config.set_domain(addr.to_string());
+
+                        let client = leader_client_config.connect().await?;
+                        let leader_config = ReplicaLeaderConfig::new(topic.to_owned(), partition);
+                        return Ok(SpuReplicaLeader::new(leader_config,client))
                     }
                 }
             }

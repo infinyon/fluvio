@@ -10,5 +10,5 @@ license = "Apache-2.0"
 [dependencies]
 log = "0.4.8"
 serde = { version ="1.0.103", features = ['derive'] }
-flv-future-aio = { version = "1.0.0" }
+flv-future-aio = { version = "2.0.0" }
 kf-protocol = { version = "1.0.0", path = "../../kf-protocol"}

@@ -1,10 +1,13 @@
 use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::marker::PhantomData;
-use std::net::SocketAddr;
+
 
 use std::sync::Arc;
 use std::process;
+
+#[cfg(unix)]
+use std::os::unix::io::AsRawFd;
 
 use futures::StreamExt;
 use futures::future::FutureExt;
@@ -12,6 +15,8 @@ use futures::select;
 use futures::channel::mpsc::Receiver;
 use futures::channel::mpsc::Sender;
 use futures::channel::mpsc::channel;
+use futures::io::AsyncRead;
+use futures::io::AsyncWrite;
 
 use log::error;
 use log::info;
@@ -22,59 +27,114 @@ use async_trait::async_trait;
 
 use flv_future_aio::net::TcpListener;
 use flv_future_aio::net::TcpStream;
+use flv_future_aio::zero_copy::ZeroCopyWrite;
 use flv_future_aio::task::spawn;
 use kf_protocol::api::KfRequestMessage;
 use kf_protocol::Decoder as KfDecoder;
+use kf_socket::InnerKfSocket;
+use kf_socket::InnerKfSink;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use types::print_cli_err;
+
+#[async_trait]
+pub trait SocketBuilder: Clone {
+    type Stream: AsyncRead + AsyncWrite + Unpin + Send;
+
+    async fn to_socket(
+        &self,
+        raw_stream: TcpStream,
+    ) -> Result<InnerKfSocket<Self::Stream>, IoError> where InnerKfSink<Self::Stream>: ZeroCopyWrite;
+}
+
+
+#[derive(Clone)]
+pub struct DefaultSocketBuilder{}
+
+
+#[async_trait]
+impl SocketBuilder for DefaultSocketBuilder {
+    type Stream = TcpStream;
+
+    async fn to_socket(
+        &self,
+        raw_stream: TcpStream,
+    ) -> Result<InnerKfSocket<Self::Stream>, IoError> {
+        let fd = raw_stream.as_raw_fd();
+        Ok(KfSocket::from_stream(raw_stream, fd))
+    }
+}
+
 
 /// Trait for responding to kf service
 /// Request -> Response is type specific
 /// Each response is responsible for sending back to socket
 #[async_trait]
-pub trait KfService {
+pub trait KfService<S> where S:  AsyncRead + AsyncWrite + Unpin + Send{
     type Request;
     type Context;
+
 
     /// respond to request
     async fn respond(
         self: Arc<Self>,
         context: Self::Context,
-        socket: KfSocket,
-    ) -> Result<(), KfSocketError>;
+        socket: InnerKfSocket<S>,
+    ) -> Result<(), KfSocketError>
+        where InnerKfSink<S>: ZeroCopyWrite;
 }
 
+
 /// Transform Service into Futures 01
-pub struct KfApiServer<R, A, C, S> {
+pub struct InnerKfApiServer<R, A, C, S, T> {
     req: PhantomData<R>,
     api: PhantomData<A>,
     context: C,
     service: Arc<S>,
-    addr: SocketAddr,
+    addr: String,
+    builder: T,
 }
 
-impl<R, A, C, S> KfApiServer<R, A, C, S>
+impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
     C: Clone,
 {
-    pub fn new(addr: SocketAddr, context: C, service: S) -> Self {
-        KfApiServer {
+    pub fn inner_new(addr: String, context: C, service: S, builder: T) -> Self {
+        InnerKfApiServer {
             req: PhantomData,
             api: PhantomData,
             service: Arc::new(service),
             context,
             addr,
+            builder,
         }
     }
 }
 
+
+pub type KfApiServer<R,A,C,S> = InnerKfApiServer<R,A,C,S,DefaultSocketBuilder>;
+
+
 impl<R, A, C, S> KfApiServer<R, A, C, S>
+where
+    C: Clone,
+{
+    pub fn new(addr: String, context: C, service: S) -> Self {
+        Self::inner_new(addr,context,service, DefaultSocketBuilder{})
+    }
+}
+
+
+
+impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
     R: KfRequestMessage<ApiKey = A> + Send + Debug + 'static,
     C: Clone + Sync + Send + 'static,
     A: Send + KfDecoder + Debug + 'static,
-    S: KfService<Request = R, Context = C> + Send + 'static + Sync,
+    S: KfService<T::Stream,Request = R, Context = C > + Send + 'static + Sync,
+    T: SocketBuilder + Send + 'static,
+    T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
+    InnerKfSink<T::Stream>: ZeroCopyWrite
 {
     pub fn run(self) -> Sender<bool> {
         let (sender, receiver) = channel::<bool>(1);
@@ -98,7 +158,8 @@ where
     }
 
     async fn event_loop(self, listener: TcpListener, mut shutdown_signal: Receiver<bool>) {
-        let addr = self.addr;
+        
+        let addr = self.addr.clone();
 
         let mut incoming = listener.incoming();
 
@@ -133,19 +194,37 @@ where
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
                 Ok(stream) => {
+                    
                     let context = self.context.clone();
                     let service = self.service.clone();
+                    let builder = self.builder.clone();
 
                     let ft = async move {
-                        debug!("new connection from {}", stream.peer_addr().map(|addr| addr.to_string()).unwrap_or("".to_owned()));
-                        let socket: KfSocket = stream.into();
 
-                        if let Err(err) = service.respond(context.clone(), socket).await {
-                            error!("error handling stream: {}", err);
+
+                        debug!(
+                            "new connection from {}",
+                            stream
+                                .peer_addr()
+                                .map(|addr| addr.to_string())
+                                .unwrap_or("".to_owned())
+                        );
+
+                        let socket_res = builder.to_socket(stream);
+                        match socket_res.await {
+                            Ok(socket) => {
+                                if let Err(err) = service.respond(context.clone(), socket).await {
+                                    error!("error handling stream: {}", err);
+                                }
+                            }
+                            Err(err) => {
+                                error!("error on tls handshake: {}", err);
+                            }
                         }
                     };
 
                     spawn(ft);
+
                 }
                 Err(err) => {
                     error!("error with stream: {}", err);
@@ -160,7 +239,7 @@ where
 #[cfg(test)]
 mod test {
 
-    use std::net::SocketAddr;
+
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -189,7 +268,7 @@ mod test {
     use super::KfApiServer;
 
     fn create_server(
-        addr: SocketAddr,
+        addr: String,
     ) -> KfApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> {
         let ctx = Arc::new(TestContext::new());
         let server: KfApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> =
@@ -198,14 +277,14 @@ mod test {
         server
     }
 
-    async fn create_client(addr: SocketAddr) -> Result<KfSocket, KfSocketError> {
+    async fn create_client(addr: String) -> Result<KfSocket, KfSocketError> {
         debug!("client wait for 1 second for 2nd server to come up");
         sleep(Duration::from_millis(100)).await;
         KfSocket::connect(&addr).await
     }
 
     async fn test_client(
-        addr: SocketAddr,
+        addr: String,
         mut shutdown: Sender<bool>,
     ) -> Result<(), KfSocketError> {
         let mut socket = create_client(addr).await?;
@@ -232,7 +311,7 @@ mod test {
         // create fake server, anything will do since we only
         // care about creating tcp stream
 
-        let socket_addr = "127.0.0.1:30001".parse::<SocketAddr>().expect("parse");
+        let socket_addr = "127.0.0.1:30001".to_owned();
 
         let (sender, receiver) = channel::<bool>(1);
         let server = create_server(socket_addr.clone());

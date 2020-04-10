@@ -5,8 +5,8 @@ use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
 use log::trace;
-use futures_codec::Decoder;
-use futures_codec::Encoder;
+use tokio_util::codec::Decoder;
+use tokio_util::codec::Encoder;
 
 use kf_protocol::Decoder as KDecoder;
 
@@ -63,11 +63,11 @@ impl Decoder for KfCodec {
 /// Implement encoder for Kafka Codec
 /// We don't write buffer length because of file slice.  The buffer length
 /// is encoded in the
-impl Encoder for KfCodec {
-    type Item = Bytes;
+impl Encoder<Bytes> for KfCodec {
+
     type Error = IoError;
 
-    fn encode(&mut self, data: Self::Item, buf: &mut BytesMut) -> Result<(), IoError> {
+    fn encode(&mut self, data: Bytes, buf: &mut BytesMut) -> Result<(), IoError> {
         trace!("KCodec Encoder: Encoding data with {} bytes", data.len());
         buf.put(data);
         Ok(())
@@ -85,7 +85,8 @@ mod test {
     use futures::future::join;
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
-    use futures_codec::Framed;
+    use tokio_util::codec::Framed;
+    use tokio_util::compat::FuturesAsyncReadCompatExt;
 
     use flv_future_aio::net::TcpListener;
     use flv_future_aio::net::TcpStream;
@@ -111,7 +112,7 @@ mod test {
             while let Some(stream) = incoming.next().await {
                 debug!("server: got connection from client");
                 let tcp_stream = stream?;
-                let framed = Framed::new(tcp_stream, KfCodec {});
+                let framed = Framed::new(tcp_stream.compat(), KfCodec {});
                 let (mut sink, _) = framed.split();
                 let data: Vec<u8> = vec![0x1, 0x02, 0x03, 0x04, 0x5];
                 //  debug!("server encoding original vector with len: {}", data.len());
@@ -153,7 +154,7 @@ mod test {
             debug!("client: trying to connect");
             let tcp_stream = TcpStream::connect(&addr).await?;
             debug!("client: got connection. waiting");
-            let framed = Framed::new(tcp_stream, KfCodec {});
+            let framed = Framed::new(tcp_stream.compat(), KfCodec {});
             let (_, mut stream) = framed.split();
             if let Some(value) = stream.next().await {
                 debug!("client :received first value from server");

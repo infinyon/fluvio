@@ -3,7 +3,7 @@ use core::task::Poll;
 use core::task::Context;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::fmt::Display;
+
 
 use log::error;
 use log::debug;
@@ -14,8 +14,6 @@ use futures::future::FutureExt;
 use futures::stream::empty;
 use async_trait::async_trait;
 
-use flv_future_aio::net::ToSocketAddrs;
-use types::socket_helpers::ServerAddress;
 
 use kf_socket::KfSocketError;
 use kf_protocol::api::DefaultRecords;
@@ -31,58 +29,49 @@ use crate::ClientError;
 use crate::Client;
 use crate::ReplicaLeaderConfig;
 use crate::ReplicaLeader;
-use crate::ClientConfig;
 use crate::FetchLogOption;
 use crate::FetchOffset;
 
 /// Full access to SPU
-pub struct Spu<A>(Client<A>);
+pub struct Spu(Client);
 
-impl<A> Spu<A> {
-    fn new(client: Client<A>) -> Self {
+impl Spu  {
+    fn new(client: Client) -> Self {
         Self(client)
     }
 
-    pub fn mut_client(&mut self) -> &mut Client<A> {
+    pub fn mut_client(&mut self) -> &mut Client {
         &mut self.0
     }
 }
 
-impl<A> Spu<A>
-where
-    A: ToSocketAddrs + Display,
-{
-    pub async fn connect(config: ClientConfig<A>) -> Result<Self, ClientError> {
-        let client = Client::connect(config).await?;
-        Ok(Self::new(client))
-    }
-}
 
 // Access specific replica leader of the SPU
 // for now, we use string to store address, later, we might store address natively
-pub struct SpuReplicaLeader {
-    client: Client<String>,
+pub struct SpuReplicaLeader
+{
+    client: Client,
     config: ReplicaLeaderConfig,
 }
 
-impl SpuReplicaLeader {
+
+impl SpuReplicaLeader  {
+
+    pub fn new(config: ReplicaLeaderConfig, client: Client) -> Self {
+        Self {
+            client,
+            config
+        }
+    }
 
     pub fn config(&self) -> &ReplicaLeaderConfig {
         &self.config
     }
 
-    pub fn addr(&self) -> &ServerAddress {
-        &self.config.addr()
+    pub fn domain(&self) -> &str {
+        &self.client.config().domain()
     }
 
-
-    pub async fn connect(config: ReplicaLeaderConfig) -> Result<Self, ClientError> {
-        let inner_client = Client::connect(config.as_client_config()).await?;
-        Ok(Self {
-            client: inner_client,
-            config,
-        })
-    }
 
     /// fetch local spu
     pub async fn fetch_local_spu(&mut self) -> Result<FlvFetchLocalSpuResponse, KfSocketError> {
@@ -116,18 +105,25 @@ impl ReplicaLeader for SpuReplicaLeader {
         &self.config
     }
 
-    fn client(&mut self) -> &mut Client<String> {
+    fn mut_client(&mut self) -> &mut Client {
         &mut self.client
     }
 
+    fn client(&self) -> &Client {
+        &self.client
+    }
+
     async fn fetch_offsets(&mut self) -> Result<FetchOffsetPartitionResponse, ClientError> {
-        let response = self
-            .client
+
+       
+        let response = self.client
             .send_receive(FlvFetchOffsetsRequest::new(
-                self.topic().to_owned(),
-                self.partition(),
+            self.topic().to_owned(),
+            self.partition(),
             ))
             .await?;
+
+        
 
         match response.find_partition(self.topic(), self.partition()) {
             Some(partition_response) => Ok(partition_response),
@@ -155,7 +151,7 @@ impl ReplicaLeader for SpuReplicaLeader {
             offset_option,
             self.topic(),
             self.partition(),
-            self.addr(),
+            self.domain(),
         );
 
         let log_stream_ft = async move {
@@ -177,7 +173,7 @@ impl ReplicaLeader for SpuReplicaLeader {
                 ..Default::default()
             };
 
-            match self.client().send_request(request).await {
+            match self.client.send_request(request).await {
                 Ok(req_msg) => 
                     self.client.mut_socket().get_mut_stream().response_stream::<DefaultFlvContinuousFetchRequest>(req_msg)
                         .map(|response| response.partition)
@@ -202,9 +198,7 @@ impl ReplicaLeader for SpuReplicaLeader {
 
 pub struct FetchStream(SpuReplicaLeader);
 
-impl FetchStream {
 
-}
 
 impl Stream for FetchStream
 {

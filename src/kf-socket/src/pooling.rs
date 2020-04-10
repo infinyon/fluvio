@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::net::ToSocketAddrs;
+
 use std::sync::RwLock;
 
 use chashmap::CHashMap;
@@ -60,12 +60,12 @@ where
 
 impl<T> SocketPool<T>
 where
-    T: Eq + PartialEq + Hash + Debug + Clone + ToSocketAddrs,
+    T: Eq + PartialEq + Hash + Debug + Clone + ToString,
     KfSocket: Sync,
 {
     /// make connection where id can be used as address
     pub async fn make_connection(&self, id: T) -> Result<(), KfSocketError> {
-        let addr = id.clone();
+        let addr = id.to_string();
         self.make_connection_with_addr(id, &addr).await
     }
 }
@@ -76,18 +76,14 @@ where
     KfSocket: Sync,
 {
     /// make connection with addres as separate parameter
-    pub async fn make_connection_with_addr<'a, A>(
-        &'a self,
+    pub async fn make_connection_with_addr(
+        &self,
         id: T,
-        addr: &'a A,
+        addr: &str,
     ) -> Result<(), KfSocketError>
-    where
-        A: ToSocketAddrs + Debug,
     {
         trace!("creating new connection: {:#?}", addr);
-        let mut socket_address = addr.to_socket_addrs()?;
-        let socket_addr = socket_address.next().unwrap();
-        let client = KfSocket::connect(&socket_addr).await?;
+        let client = KfSocket::connect(addr).await?;
         trace!("got connection to server: {:#?}", &id);
         self.insert_socket(id.clone(), client);
         trace!("finish connection to server: {:#?}", &id);
@@ -95,13 +91,11 @@ where
     }
 
     /// get existing socket connection or make new one
-    pub async fn get_or_make<'a, A>(
+    pub async fn get_or_make<'a>(
         &'a self,
         id: T,
-        addr: &'a A,
-    ) -> Result<Option<WriteGuard<'a, T, KfSocket>>, KfSocketError>
-    where
-        A: ToSocketAddrs + Debug,
+        addr: &'a str,
+    ) -> Result<Option<WriteGuard<'a,T,KfSocket>>, KfSocketError>
     {
         if let Some(socket) = self.get_socket(&id) {
             return Ok(Some(socket));

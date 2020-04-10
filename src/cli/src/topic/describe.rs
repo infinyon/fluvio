@@ -8,7 +8,7 @@ use structopt::StructOpt;
 
 use crate::error::CliError;
 use crate::OutputType;
-use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTargetConfig;
 use flv_client::profile::SpuControllerTarget;
 use crate::Terminal;
 
@@ -64,8 +64,8 @@ pub struct DescribeTopicsOpt {
 
 impl DescribeTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(SpuControllerConfig, DescribeTopicsConfig), CliError> {
-        let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
+    fn validate(self) -> Result<(SpuControllerTargetConfig, DescribeTopicsConfig), CliError> {
+        let target_server = SpuControllerTargetConfig::possible_target(self.sc, self.kf)?;
 
         // transfer config parameters
         let describe_topics_cfg = DescribeTopicsConfig {
@@ -100,8 +100,8 @@ where
             describe_sc_topics(client, cfg.topic_names, cfg.output, out).await
         }
     })
-    .map(|_| format!(""))
-    .map_err(|err| err.into())
+        .map(|_| format!(""))
+        .map_err(|err| err.into())
 }
 
 // Query Kafka server for T

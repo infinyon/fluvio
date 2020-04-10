@@ -46,7 +46,7 @@ pub struct RunRequestOpt {
 
     /// Address of Kafka Controller
     #[structopt(short = "k", long = "kf", value_name = "host:port")]
-    kf: Option<String>,
+    kf: String,
 
     /// Request details file
     #[structopt(
@@ -57,9 +57,6 @@ pub struct RunRequestOpt {
     )]
     details_file: PathBuf,
 
-    ///Profile name
-    #[structopt(short = "P", long = "profile")]
-    pub profile: Option<String>,
 }
 
 macro_rules! pretty_send {
@@ -80,7 +77,7 @@ pub async fn process_run_request<O>(
 where
     O: Terminal,
 {
-    let kf_config = KfConfig::new(opt.kf, opt.profile)?;
+    let kf_config = KfConfig::new(opt.kf);
     let mut kf_server = kf_config.connect().await?;
     let mut client = kf_server.mut_client();
     let file = opt.details_file.to_path_buf();

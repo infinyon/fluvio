@@ -15,8 +15,9 @@ use flv_client::query_params::ReplicaConfig;
 use flv_client::query_params::Partitions;
 
 use crate::error::CliError;
-use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTargetConfig;
 use flv_client::profile::SpuControllerTarget;
+
 
 // -----------------------------------
 //  Parsed Config
@@ -130,7 +131,7 @@ impl CreateTopicOpt {
     }
 
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(SpuControllerConfig, CreateTopicConfig), CliError> {
+    fn validate(self) -> Result<(SpuControllerTargetConfig, CreateTopicConfig), CliError> {
         // topic specific configurations
         let replica_config = if self.partitions.is_some() {
             self.parse_computed_replica()
@@ -144,7 +145,7 @@ impl CreateTopicOpt {
             validate_only: self.validate_only,
         };
 
-        let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
+        let target_server = SpuControllerTargetConfig::possible_target(self.sc, self.kf)?;
 
         // return server separately from config
         Ok((target_server, create_topic_cfg))

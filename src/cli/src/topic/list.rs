@@ -10,7 +10,7 @@ use log::debug;
 
 use crate::error::CliError;
 use crate::OutputType;
-use flv_client::profile::SpuControllerConfig;
+use flv_client::profile::SpuControllerTargetConfig;
 use flv_client::profile::SpuControllerTarget;
 use crate::Terminal;
 
@@ -51,7 +51,7 @@ pub struct ListTopicsOpt {
 
     /// Output
     #[structopt(
-        short = "O",
+        short = "o",
         long = "output",
         value_name = "type",
         raw(possible_values = "&OutputType::variants()", case_insensitive = "true")
@@ -62,9 +62,9 @@ pub struct ListTopicsOpt {
 impl ListTopicsOpt {
 
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(SpuControllerConfig, ListTopicsConfig), CliError> {
+    fn validate(self) -> Result<(SpuControllerTargetConfig, ListTopicsConfig), CliError> {
 
-        let target_server = SpuControllerConfig::new(self.sc, self.kf, self.profile)?;
+        let target_server = SpuControllerTargetConfig::possible_target(self.sc, self.kf)?;
         
         // transfer config parameters
         let list_topics_cfg = ListTopicsConfig {

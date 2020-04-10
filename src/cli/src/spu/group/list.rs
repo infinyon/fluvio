@@ -44,7 +44,7 @@ impl ListManagedSpuGroupsOpt {
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ScConfig, ListSpuGroupsConfig), CliError> {
 
-        let target_server = ScConfig::new(self.sc, self.profile)?;
+        let target_server = ScConfig::new(self.sc)?;
 
         // transfer config parameters
         let list_spu_group_cfg = ListSpuGroupsConfig {

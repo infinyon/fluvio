@@ -6,7 +6,7 @@ mod tests;
 mod bin;
 
 use cli::TestOption;
-use bin::get_binary;
+use bin::*;
 fn main() {
 
     use runner::TestRunner;

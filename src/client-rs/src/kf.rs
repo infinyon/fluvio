@@ -1,7 +1,6 @@
 use std::default::Default;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::fmt::Display;
 use core::pin::Pin;
 use core::task::Poll;
 use core::task::Context;
@@ -14,7 +13,6 @@ use futures::stream::StreamExt;
 use futures::stream::empty;
 use futures::stream::BoxStream;
 
-use flv_future_aio::net::ToSocketAddrs;
 
 use kf_protocol::message::fetch::DefaultKfFetchRequest;
 use kf_protocol::message::fetch::FetchPartition;
@@ -53,6 +51,7 @@ use kf_protocol::api::DefaultRecords;
 use kf_protocol::message::topic::{KfDeleteTopicsRequest};
 use types::defaults::KF_REQUEST_TIMEOUT_MS;
 use kf_socket::KfSocketError;
+use types::socket_helpers::ServerAddress;
 
 use crate::ClientError;
 use crate::ClientConfig;
@@ -68,24 +67,24 @@ use crate::query_params::FetchLogsParam;
 use crate::query_params::ReplicaConfig;
 
 
-pub struct KfClient<A>(Client<A>);
+pub struct KfClient(Client);
 
-impl <A>KfClient<A> {
+impl KfClient {
 
-    fn new(client: Client<A>) -> Self {
+    pub fn new(client: Client) -> Self {
         Self(client)
     }
 
-    pub fn mut_client(&mut self) -> &mut Client<A> {
+    pub fn mut_client(&mut self) -> &mut Client {
         &mut self.0
     }
 }
 
-impl <A>KfClient<A> where A: ToSocketAddrs + Display {
+impl KfClient {
 
-    pub async fn connect(config: ClientConfig<A>) -> Result<Self,ClientError>
+    pub async fn connect(config: ClientConfig) -> Result<Self,ClientError>
     {
-        let client = Client::connect(config).await?;
+        let client = config.connect().await?;
         Ok(Self::new(client))
     }
 
@@ -332,9 +331,7 @@ impl <A>KfClient<A> where A: ToSocketAddrs + Display {
 
 
 #[async_trait]
-impl <A>SpuController for KfClient<A>
-
-    where A: ToSocketAddrs + Display + Send + Sync
+impl SpuController for KfClient
 {
 
     type Leader = KfLeader;
@@ -364,10 +361,14 @@ impl <A>SpuController for KfClient<A>
                         for broker in brokers {
                             if broker.node_id == leader_id {
                                 debug!("broker {}/{} is leader", broker.host, broker.port);
-                                let config = ReplicaLeaderConfig::new(broker.into(),topic.to_owned(),partition)
-                                        .spu_id(leader_id)
-                                        .client_id(self.0.client_id());
-                                return KfLeader::connect(config).await
+                                let mut kafka_config = self.0.clone_config();
+                                let broker: ServerAddress = broker.into();
+                                kafka_config.set_domain(broker.to_string());
+                                let kf_client = kafka_config.connect().await?;
+                               
+                                let config = ReplicaLeaderConfig::new(topic.to_owned(),partition)
+                                        .spu_id(leader_id);
+                                return Ok(KfLeader::new(kf_client,config))
                             }
                         }
                     }
@@ -499,19 +500,18 @@ impl <A>SpuController for KfClient<A>
 
 
 pub struct KfLeader {
-    client: Client<String>,
+    client: Client,
     config: ReplicaLeaderConfig
 }
 
 impl KfLeader {
 
 
-    pub async fn connect(config: ReplicaLeaderConfig) -> Result<Self,ClientError> {
-        let inner_client = Client::connect(config.as_client_config()).await?;
-        Ok(Self {
-            client: inner_client,
-            config 
-        })
+    pub fn new(client: Client,config: ReplicaLeaderConfig) -> Self {
+        Self {
+            client,
+            config
+        }
     }
 
      /// fetch logs
@@ -521,6 +521,7 @@ impl KfLeader {
         offset: i64,
         max_bytes: i32,
     ) ->  Result<FetchablePartitionResponse<DefaultRecords>, KfSocketError> { 
+
 
         let topic_request = FetchableTopic {
             name: self.topic().to_owned(),
@@ -550,12 +551,12 @@ impl KfLeader {
             "fetch logs '{}' ({}) partition to {}",
             self.topic(),
             self.partition(),
-            self.addr()
+            self.domain()
         );
 
         trace!("fetch logs req {:#?}", request);
 
-        let response = self.client().send_receive(request).await?;
+        let response = self.client.send_receive(request).await?;
 
 
         if response.error_code != KfErrorCode::None {
@@ -596,12 +597,17 @@ impl ReplicaLeader for KfLeader
         &self.config
     }
 
-    fn client(&mut self) -> &mut Client<String> {
+    fn client(&self) -> &Client {
+        &self.client
+    }
+
+    fn mut_client(&mut self) -> &mut Client {
         &mut self.client
     }
 
     async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError > {
 
+        
         let offset_partitions = vec![
             ListOffsetPartition {
                 partition_index: self.partition(),

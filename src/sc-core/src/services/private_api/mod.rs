@@ -30,7 +30,7 @@ pub fn create_internal_server(
      lrs_sender: Sender<UpdateLrsRequest>,
 ) -> InternalApiServer
 {
-    let addr = local_stores.config().private_endpoint.addr.clone();
+    let addr = local_stores.config().private_endpoint.clone();
     let ctx = InternalContext::new(
         local_stores,
         conn_mgr,

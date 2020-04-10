@@ -10,7 +10,7 @@ use kf_protocol::api::Offset;
 use kf_protocol::api::MAX_BYTES;
 
 use crate::error::CliError;
-use flv_client::profile::ServerTarget;
+use flv_client::profile::ServerTargetConfig;
 
 use super::ConsumeOutputType;
 
@@ -59,9 +59,6 @@ pub struct ConsumeLogOpt {
     )]
     pub kf: Option<String>,
 
-    /// Profile name
-    #[structopt(short = "P", long = "profile")]
-    pub profile: Option<String>,
 
     /// Suppress items items that have an unknown output type
     #[structopt(short = "s", long = "suppress-unknown")]
@@ -69,7 +66,7 @@ pub struct ConsumeLogOpt {
 
     /// Output
     #[structopt(
-        short = "O",
+        short = "o",
         long = "output",
         value_name = "type",
         raw(
@@ -82,9 +79,10 @@ pub struct ConsumeLogOpt {
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
-    pub fn validate(self) -> Result<(ServerTarget, ConsumeLogConfig), CliError> {
-        // profile specific configurations (target server)
-        let target_server = ServerTarget::new(self.sc, self.spu, self.kf, self.profile)?;
+    pub fn validate(self) -> Result<(ServerTargetConfig, ConsumeLogConfig), CliError> {
+
+    
+        let target_server = ServerTargetConfig::possible_target(self.sc, self.spu, self.kf)?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
 
         // consume log specific configurations

@@ -1,6 +1,8 @@
 use log::trace;
+use futures::io::AsyncRead;
+use futures::io::AsyncWrite;
 
-use kf_socket::KfSink;
+use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
 use flv_metadata::partition::ReplicaKey;
@@ -8,15 +10,18 @@ use kf_protocol::fs::FileFetchResponse;
 use kf_protocol::fs::KfFileFetchRequest;
 use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::fs::FileTopicResponse;
+use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 
 /// handle kafka fetch request
-pub async fn handle_fetch_request(
+pub async fn handle_fetch_request<S>(
     request: RequestMessage<KfFileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
-    sink: &mut KfSink,
-) -> Result<(), KfSocketError> {
+    sink: &mut InnerKfSink<S>,
+) -> Result<(), KfSocketError>
+    where S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSink<S>: ZeroCopyWrite
+{
 
     let (header, fetch_request) = request.get_header_request();
     let mut fetch_response = FileFetchResponse::default();

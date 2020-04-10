@@ -10,6 +10,7 @@ mod spu;
 mod topic;
 mod advanced;
 mod output;
+mod profile;
 
 
 pub use self::error::CliError;

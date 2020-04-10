@@ -21,7 +21,7 @@ pub async fn validate_consume_message(client_idx: u16) {
 
     println!("starting consumer validation: {}, sleeping 1 sec",client_idx);
 
-    let config = ScConfig::new(Some("localhost:9003".into()), None).expect("connect");
+    let config = ScConfig::new(Some("localhost:9003".into())).expect("connect");
     let mut sc = config.connect().await.expect("should connect");
 
     let mut leader = sc.find_replica_for_topic_partition("test1",0).await.expect("leader not founded");
@@ -50,7 +50,7 @@ pub async fn validate_consume_message(client_idx: u16) {
                 },
             }
         },
-        _ = (sleep(Duration::from_secs(10))).fuse() => {
+        _ = (sleep(Duration::from_secs(3))).fuse() => {
             assert!(false,"consumer: {} didn't receive any",client_idx)
         }
 

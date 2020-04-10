@@ -39,7 +39,7 @@ pub struct DeleteManagedSpuGroupOpt {
 impl DeleteManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and delete spu group configuration.
     fn validate(self) -> Result<(ScConfig, DeleteManagedSpuGroupConfig), CliError> {
-        let target_server = ScConfig::new(self.sc, self.profile)?;
+        let target_server = ScConfig::new(self.sc)?;
 
         let delete_spu_group_cfg = DeleteManagedSpuGroupConfig { name: self.name };
 

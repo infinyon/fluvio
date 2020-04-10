@@ -6,7 +6,7 @@ use log::trace;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
 
-use types::socket_helpers::ServerAddress;
+
 use kf_protocol::message::fetch::FetchablePartitionResponse;
 use kf_protocol::api::DefaultRecords;
 use kf_protocol::api::PartitionOffset;
@@ -23,6 +23,7 @@ use kf_protocol::api::MAX_BYTES;
 use crate::ReplicaLeaderConfig;
 use crate::ClientError;
 use crate::Client;
+
 
 #[derive(Clone)]
 pub struct FetchLogOption {
@@ -50,14 +51,19 @@ pub enum FetchOffset {
 
 /// Replica Leader (topic,partition)
 #[async_trait]
-pub trait ReplicaLeader: Send + Sync {
+pub trait ReplicaLeader: Send + Sync{
 
     type OffsetPartitionResponse: PartitionOffset;
 
     fn config(&self) -> &ReplicaLeaderConfig;
 
-    fn client(&mut self) -> &mut Client<String>;
+    fn mut_client(&mut self) -> &mut Client;
 
+    fn client(&self) -> &Client;
+
+    fn domain(&self) -> &str {
+        self.client().config().domain()
+    }
 
     fn topic(&self) -> &str {
         &self.config().topic()
@@ -66,16 +72,8 @@ pub trait ReplicaLeader: Send + Sync {
     fn partition(&self) -> i32 {
         self.config().partition()
     }
+
     
-    fn client_id(&self) -> &str {
-        self.config().get_client_id()
-    }
-
-    fn addr(&self) -> &ServerAddress {
-        self.config().addr()
-    }
-
-
      // fetch offsets for 
     async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError >;
 
@@ -91,14 +89,13 @@ pub trait ReplicaLeader: Send + Sync {
         &mut self,
         record: Vec<u8>,
     ) -> Result<(), ClientError> {
-
        
         // build produce log request message
         let mut request = DefaultKfProduceRequest::default();
         let mut topic_request = DefaultKfTopicRequest::default();
         let mut partition_request = DefaultKfPartitionRequest::default();
 
-        debug!("send record {} bytes to: {}", record.len(), self.addr());
+        debug!("send record {} bytes to: {}", record.len(), self.domain());
 
         let record_msg: DefaultRecord = record.into();
         let mut batch = DefaultBatch::default();
@@ -115,7 +112,7 @@ pub trait ReplicaLeader: Send + Sync {
 
         trace!("produce request: {:#?}", request);
 
-        let response = self.client().send_receive(request).await?;
+        let response = self.mut_client().send_receive(request).await?;
 
         trace!("received response: {:?}", response);
 

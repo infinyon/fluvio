@@ -4,14 +4,20 @@ use std::fmt::Debug;
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
 
+
 use log::trace;
 use log::debug;
 use bytes::Bytes;
 
 use futures::sink::SinkExt;
 use futures::stream::SplitSink;
+use futures::io::{AsyncRead, AsyncWrite};
+use tokio_util::compat::Compat;
+
 
 use flv_future_aio::zero_copy::ZeroCopyWrite;
+use flv_future_aio::zero_copy::SendFileError;
+use flv_future_aio::fs::AsyncFileSlice;
 use flv_future_aio::bytes::BytesMut;
 use kf_protocol::Version;
 use kf_protocol::Encoder as KfEncoder;
@@ -20,25 +26,32 @@ use kf_protocol::api::ResponseMessage;
 use kf_protocol::transport::KfCodec;
 use kf_protocol::fs::FileWrite;
 use kf_protocol::fs::StoreValue;
-use futures_codec::Framed;
-
+use tokio_util::codec::Framed;
 use flv_future_aio::net::TcpStream;
+use flv_future_aio::net::tls::AllTcpStream;
+
 use crate::KfSocketError;
 
+pub type KfSink = InnerKfSink<TcpStream>;
+#[allow(unused)]
+pub type AllKfSink = InnerKfSink<AllTcpStream>;
 
+
+type SplitFrame<S> = SplitSink<Framed<Compat<S>, KfCodec>, Bytes>;
 
 #[derive(Debug)]
-pub struct KfSink {
-    inner: SplitSink<Framed<TcpStream, KfCodec>, Bytes>,
-    fd: RawFd,
+pub struct InnerKfSink<S>  {
+    inner: SplitFrame<S>,
+    fd: RawFd
 }
 
-impl KfSink {
-    pub fn new(inner: SplitSink<Framed<TcpStream, KfCodec>, Bytes>, fd: RawFd) -> Self {
-        KfSink { fd, inner }
+impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send
+ {
+    pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
+        InnerKfSink { fd, inner }
     }
 
-    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitSink<Framed<TcpStream, KfCodec>, Bytes> {
+    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitFrame<S> {
         &mut self.inner
     }
 
@@ -72,6 +85,12 @@ impl KfSink {
         (&mut self.inner).send(resp_msg.as_bytes(version)?).await?;
         Ok(())
     }
+
+    
+ }
+
+
+ impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send, Self:ZeroCopyWrite {
 
     /// write
     pub async fn encode_file_slices<T>(
@@ -118,22 +137,21 @@ impl KfSink {
     }
 }
 
-impl AsRawFd for KfSink {
+impl <S>AsRawFd for InnerKfSink<S>  {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
 }
 
-impl ZeroCopyWrite for KfSink {}
 
 use futures::lock::Mutex;
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-pub struct ExclusiveKfSink(Mutex<KfSink>);
+pub struct InnerExclusiveKfSink<S>(Mutex<InnerKfSink<S>>);
 
-impl ExclusiveKfSink {
-    pub fn new(sink: KfSink) -> Self {
-        ExclusiveKfSink(Mutex::new(sink))
+impl <S>InnerExclusiveKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send {
+    pub fn new(sink: InnerKfSink<S>) -> Self {
+        InnerExclusiveKfSink(Mutex::new(sink))
     }
 
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), KfSocketError>
@@ -144,6 +162,8 @@ impl ExclusiveKfSink {
         inner_sink.send_request(req_msg).await
     }
 }
+
+pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
 
 #[cfg(test)]
 mod tests {
@@ -186,7 +206,7 @@ mod tests {
         }
     }
 
-    async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
+    async fn test_server(addr: &str) -> Result<(), KfSocketError> {
         let listener = TcpListener::bind(&addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
@@ -222,7 +242,7 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_client(addr: SocketAddr) -> Result<(), KfSocketError> {
+    async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
         sleep(Duration::from_millis(50)).await;
         debug!("client: trying to connect");
         let mut socket = KfSocket::connect(&addr).await?;
@@ -261,9 +281,9 @@ mod tests {
     async fn test_sink_copy() -> Result<(), KfSocketError> {
         setup_data().await?;
 
-        let addr = "127.0.0.1:9999".parse::<SocketAddr>().expect("parse");
+        let addr = "127.0.0.1:9999";
 
-        let _r = join(setup_client(addr), test_server(addr.clone())).await;
+        let _r = join(setup_client(addr), test_server(addr)).await;
         Ok(())
     }
 }

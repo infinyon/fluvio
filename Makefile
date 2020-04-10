@@ -17,7 +17,7 @@ build:
 	cargo build
 
 integration-test:	build
-	RUST_LOG=flv_integration=debug ./target/debug/flv-integration-test
+	target/debug/flv-integration-test
 
 
 run-all-unit-test:
@@ -182,11 +182,6 @@ test-internal-api:
 test-cli:
 	cd src/cli;cargo test
 
-test-helper:
-	cd src/future-helper;cargo test
-
-test-aio:
-	cd src/flv-future-aio = { version = "0.1.0" };cargo test
 
 test-kfsocket:
 	cd src/kf-socket;cargo test
@@ -197,11 +192,6 @@ test-kfservice:
 test-k8client:
 	cd src/k8-client;cargo test
 
-test-k8metadata:
-	cd src/k8-metadata;cargo test	
-
-test-k8config:
-	cd src/k8-config;cargo test
 
 test-kf-protocol:
 	cd src/kf-protocol;cargo test
@@ -209,7 +199,8 @@ test-kf-protocol:
 test-client:
 	cd src/client;cargo test
 
-
+test-kf-protocol-transport:
+	ccd src/kf-protocol/kf-protocol-transport; cargo test
 
 
 .PHONY:	build test-helper teste-aio test-kfsocket test-kfservice test-k8client test-k8config integration-test

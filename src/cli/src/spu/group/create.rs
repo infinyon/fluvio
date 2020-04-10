@@ -52,7 +52,7 @@ pub struct CreateManagedSpuGroupOpt {
 impl CreateManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and create spu group config.
     fn validate(self) -> Result<(ScConfig, FlvCreateSpuGroupRequest), CliError> {
-        let target_server = ScConfig::new(self.sc, self.profile)?;
+        let target_server = ScConfig::new(self.sc)?;
 
         let grp_config = self
             .storage

@@ -20,14 +20,14 @@ use node_bindgen::core::JSClass;
 
 use crate::ReplicaLeaderWrapper;
 
-type DefaultScClient = ScClient<String>;
-type SharedScClient = Arc<RwLock<DefaultScClient>>;
+
+type SharedScClient = Arc<RwLock<ScClient>>;
 
 // simple wrapper to facilitate conversion to JS Class
-pub struct ScClientWrapper(DefaultScClient);
+pub struct ScClientWrapper(ScClient);
 
-impl From<DefaultScClient> for ScClientWrapper {
-    fn from(client: DefaultScClient) -> Self {
+impl From<ScClient> for ScClientWrapper {
+    fn from(client: ScClient) -> Self {
         Self(client)
     }
 }
@@ -53,7 +53,7 @@ impl JsScClient {
         Self { inner: None }
     }
 
-    pub fn set_client(&mut self, client: DefaultScClient) {
+    pub fn set_client(&mut self, client: ScClient) {
         self.inner.replace(Arc::new(RwLock::new(client)));
     }
 
@@ -63,7 +63,7 @@ impl JsScClient {
             run_block_on(async move {
                 let c1 = c.clone();
                 let read_client = c1.read().await;
-                read_client.inner().addr().to_owned()
+                read_client.inner().domain().to_owned()
             })
         })
     }

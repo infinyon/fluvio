@@ -7,6 +7,7 @@ use sc_api::ApiError;
 
 #[derive(Debug)]
 pub enum ClientError {
+    Other(String),
     IoError(IoError),
     KfSocketError(KfSocketError),
     ScApiError(ApiError)
@@ -33,6 +34,7 @@ impl From<ApiError> for ClientError {
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::Other(msg) => write!(f,"{}",msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f,"{:#?}",err),
             Self::ScApiError(err) => write!(f,"{}",err)

@@ -32,26 +32,15 @@ pub struct FlvFetchLocalSpuResponse {
     /// Spu id. Managed Spu ids start from 0. Custom SPU ids start from 5000.
     pub id: i32,
 
-    /// Spu type: true for managed, false for custom.
-    pub managed: bool,
 
     /// Public endpoint server interface.
-    pub public_ep: EndPointMetadata,
+    pub public_ep: String,
 
     /// Private endpoint server interface.
-    pub private_ep: EndPointMetadata,
+    pub private_ep: String,
 
     /// Rack label, optional parameter used by replica assignment algorithm.
     pub rack: Option<String>,
-}
-
-#[derive(Encode, Decode, Default, Debug)]
-pub struct EndPointMetadata {
-    /// Port of the endpoint
-    pub port: u16,
-
-    /// Host name of the endoint
-    pub host: String,
 }
 
 // -----------------------------------

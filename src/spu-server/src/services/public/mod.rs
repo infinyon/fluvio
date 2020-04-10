@@ -7,7 +7,6 @@ mod offset_request;
 mod cf_handler;
 
 use log::info;
-use std::net::SocketAddr;
 
 use kf_service::KfApiServer;
 use service_impl::PublicService;
@@ -23,7 +22,7 @@ pub(crate) type PublicApiServer = KfApiServer<
     PublicService>;
 
 // start server
-pub fn create_public_server(addr: SocketAddr, ctx: DefaultSharedGlobalContext) -> PublicApiServer
+pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> PublicApiServer
 {
     info!("starting SPU: {} at public service at: {}", ctx.local_spu_id(),addr);
 

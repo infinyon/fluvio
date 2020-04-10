@@ -66,10 +66,10 @@ mod tests {
     use crate::test_request::TestKafkaApiEnum;
     use super::SinkPool;
 
-    async fn test_server(addr: SocketAddr) -> Result<(), KfSocketError> {
+    async fn test_server(addr: &str) -> Result<(), KfSocketError> {
         let sink_pool: SinkPool<u16> = SinkPool::new();
 
-        let listener = TcpListener::bind(&addr).await?;
+        let listener = TcpListener::bind(addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
         let incoming_stream = incoming.next().await;
@@ -111,7 +111,7 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_client(addr: SocketAddr) -> Result<(), KfSocketError> {
+    async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
         sleep(Duration::from_millis(20)).await;
         debug!("client: trying to connect");
         let mut socket = KfSocket::connect(&addr).await?;
@@ -124,9 +124,9 @@ mod tests {
 
     #[test_async]
     async fn test_sink_pool() -> Result<(), KfSocketError> {
-        let addr = "127.0.0.1:5999".parse::<SocketAddr>().expect("parse");
+        let addr = "127.0.0.1:5999";
 
-        let _r = join(setup_client(addr), test_server(addr.clone())).await;
+        let _r = join(setup_client(addr), test_server(addr)).await;
         Ok(())
     }
 }

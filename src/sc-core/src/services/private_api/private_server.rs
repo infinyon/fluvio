@@ -7,6 +7,7 @@ use log::error;
 use log::debug;
 use async_trait::async_trait;
 
+use flv_future_aio::net::TcpStream;
 use kf_service::api_loop;
 use kf_service::KfService;
 use kf_service::wait_for_request;
@@ -31,7 +32,8 @@ impl ScInternalService
 }
 
 #[async_trait]
-impl KfService for ScInternalService
+impl KfService<TcpStream> for ScInternalService
+   
 {
     type Context = SharedInternalContext;
     type Request = InternalScRequest;

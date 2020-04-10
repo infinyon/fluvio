@@ -1,38 +1,38 @@
 use std::default::Default;
-use std::fmt::Display;
 
 use log::trace;
 use rand::prelude::*;
 
-use flv_future_aio::net::ToSocketAddrs;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Request;
 use spu_api::versions::{ApiVersions, ApiVersionsRequest};
-
-use kf_socket::KfSocket;
+use kf_socket::AllKfSocket;
 use kf_socket::KfSocketError;
+use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::ClientError;
+
 
 /// Generate a random correlation_id (0 to 65535)
 fn rand_correlation_id() -> i32 {
     thread_rng().gen_range(0, 65535)
 }
 
-pub struct Client<A> {
-    socket: KfSocket,
-    config: ClientConfig<A>,
+/// Client to fluvio component
+/// 
+pub struct Client {
+    socket: AllKfSocket,
+    config: ClientConfig,
     versions: ApiVersions,
 }
 
-impl<A> Client<A>
-where
-    A: ToSocketAddrs + Display,
-{
-    /// connect to Stream Controller
-    pub async fn connect(config: ClientConfig<A>) -> Result<Self, ClientError> {
-        let mut socket = KfSocket::connect(&config.addr).await?;
-
+impl Client {
+    /// connect to established socket, retrieve version information
+    pub async fn connect(
+        mut socket: AllKfSocket,
+        config: ClientConfig
+    ) -> Result<Self, ClientError> {
+        
         // now get versions
         // Query for API versions
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
@@ -72,18 +72,22 @@ where
         None
     }
 
-    pub fn addr(&self) -> &A {
-        &self.config.addr
+    pub fn domain(&self) -> &str {
+        &self.config.domain
     }
     pub fn client_id(&self) -> &str {
         &self.config.client_id
     }
 
-    pub fn socket(&self) -> &KfSocket {
+    pub fn config(&self) -> &ClientConfig {
+        &self.config
+    }
+
+    pub fn socket(&self) -> &AllKfSocket {
         &self.socket
     }
 
-    pub fn mut_socket(&mut self) -> &mut KfSocket {
+    pub fn mut_socket(&mut self) -> &mut AllKfSocket {
         &mut self.socket
     }
 
@@ -95,7 +99,7 @@ where
         trace!(
             "send API '{}' req to srv '{}'",
             R::API_KEY,
-            self.config.addr
+            self.config.domain()
         );
 
         let req_msg = self.new_request(request, self.lookup_version(R::API_KEY));
@@ -116,37 +120,48 @@ where
         self.socket.get_mut_stream().next_response(&req_message).await
             .map(|res_msg| res_msg.response)
     }
+
+
+    pub fn clone_config(&self) -> ClientConfig {
+        self.config.clone()
+    }
 }
 
-pub struct ClientConfig<A> {
-    addr: A,
+
+/// Client Factory
+#[derive(Clone)]
+pub struct ClientConfig{
+    domain: String,
     client_id: String,
+    connector: AllDomainConnector
 }
 
-impl<A> Default for ClientConfig<A>
-where
-    A: Default,
-{
-    fn default() -> Self {
-        Self {
-            client_id: "fluvio".to_owned(),
-            addr: A::default(),
-        }
+impl From<String> for ClientConfig {
+
+    fn from(domain: String) -> Self {
+        Self::with_domain(domain)
     }
 }
 
-impl<A> ClientConfig<A>
-where
-    A: ToSocketAddrs + Display,
-{
-    pub fn new(addr: A) -> Self {
+impl ClientConfig {
+    pub fn new(domain: String,connector: AllDomainConnector) -> Self {
         Self {
-            addr,
+            domain,
             client_id: "fluvio".to_owned(),
+            connector
         }
     }
 
-    pub fn client_id<S>(mut self, id: S) -> Self
+    pub fn with_domain(domain: String) -> Self {
+        Self::new(domain,AllDomainConnector::default())
+    }
+
+    pub fn domain(&self) -> &str {
+        &self.domain
+    }
+
+    /// set client id
+    pub fn set_client_id<S>(mut self, id: S) -> Self
     where
         S: Into<String>,
     {
@@ -154,7 +169,14 @@ where
         self
     }
 
-    pub async fn connect(self) -> Result<Client<A>, ClientError> {
-        Client::connect(self).await
+    pub fn set_domain(&mut self,domain: String) {
+        self.domain = domain
+    }
+
+    pub async fn connect(self) -> Result<Client, ClientError> 
+    {
+        let socket = AllKfSocket::connect_to_domain(&self.domain,&self.connector).await?;
+        Client::connect(socket,self).await
     }
 }
+

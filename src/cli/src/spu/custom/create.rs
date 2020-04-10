@@ -57,7 +57,7 @@ impl CreateCustomSpuOpt {
     /// Validate cli options. Generate target-server and create custom spu config.
     fn validate(self) -> Result<(ScConfig, CreateCustomSpuConfig), CliError> {
         // profile specific configurations (target server)
-        let target_server = ScConfig::new(self.sc, self.profile)?;
+        let target_server = ScConfig::new(self.sc)?;
 
         // create custom spu config
         let cfg = CreateCustomSpuConfig {

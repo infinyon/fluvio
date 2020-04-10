@@ -1,323 +1,285 @@
 //!
-//! # Profile Configurations
+//! # Main Configuration file
 //!
-//! Stores configuration parameter retrieved from the default or custom profile file.
+//! Contains contexts, profiles
 //!
+use std::env;
+use std::fs::read_to_string;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::path::Path;
-use std::convert::TryInto;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::collections::HashMap;
+use std::fs::File;
 
-use log::debug;
+use dirs::home_dir;
+use serde::Deserialize;
+use serde::Serialize;
+use toml::value::Table;
 
-use types::socket_helpers::ServerAddress;
+use types::defaults::{CLI_CONFIG_PATH};
+use flv_future_aio::net::tls::AllDomainConnector;
+
 
 use crate::ClientConfig;
-use crate::ScClient;
-use crate::KfClient;
-use crate::SpuController;
-use crate::SpuReplicaLeader;
-use crate::ReplicaLeaderConfig;
-use crate::KfLeader;
-use crate::ClientError;
 
-
-use super::profile_file::build_cli_profile_file_path;
-use super::profile_file::ProfileFile;
-
-pub type CliClientConfig = ClientConfig<String>;
-
-const CLIENT_ID: &'static str = "fluvio_cli";
-
-fn addr_client_config(addr: ServerAddress) -> CliClientConfig {
-    ClientConfig::new(addr.to_string()).client_id(CLIENT_ID)
+pub struct ConfigFile {
+    path: PathBuf,
+    config: Config
 }
 
-/// actual replica leader
-pub enum ReplicaLeaderTarget {
-    Spu(SpuReplicaLeader),
-    Kf(KfLeader),
-}
-
-/// can target sc,spu or kf
-#[derive(Debug)]
-pub enum ServerTarget {
-    Sc(ServerAddress),
-    Spu(ServerAddress),
-    Kf(ServerAddress),
-}
-
-impl ServerTarget {
-    pub fn new(
-        sc_host_port: Option<String>,
-        spu_host_port: Option<String>,
-        kf_host_port: Option<String>,
-        profile_name: Option<String>,
-    ) -> Result<Self, ClientError> {
-
-
-        let profile = ProfileConfig::new_with_spu(sc_host_port, spu_host_port, kf_host_port, profile_name)?;
-
-        if let Some(sc_server) = profile.sc_addr {
-            Ok(Self::Sc(sc_server))
-        } else if let Some(spu_server) = profile.spu_addr {
-            Ok(Self::Spu(spu_server))
-        } else if let Some(kf_server) = profile.kf_addr {
-            Ok(Self::Kf(kf_server))
-        } else {
-            Err(ClientError::IoError(IoError::new(
-                ErrorKind::Other,
-                "replica server configuration missing",
-            )))
+impl ConfigFile {
+    fn new(path: PathBuf,config: Config) -> Self {
+        Self {
+            path,
+            config
         }
     }
 
-    pub async fn connect(
-        self,
-        topic: &str,
-        partition: i32,
-    ) -> Result<ReplicaLeaderTarget, ClientError> {
-        match self {
-            Self::Kf(addr) => {
-                let mut kf_client = KfClient::connect(addr_client_config(addr)).await?;
-                kf_client
-                    .find_replica_for_topic_partition(topic, partition)
-                    .await
-                    .map(|leader| ReplicaLeaderTarget::Kf(leader))
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    pub fn mut_config(&mut self) -> &mut Config {
+        &mut self.config
+    }
+
+    // save to file
+    pub fn save(&self) -> Result<(),IoError>  {
+
+        self.config.save_to(&self.path)
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize,Deserialize)]
+pub struct Config {
+    version: String,
+    current_profile: String,
+    profile: HashMap<String,Profile>,
+    topic: Table,
+    cluster: HashMap<String,Cluster>,
+    client_id: Option<String>
+}
+
+
+impl Config {
+
+    /// try to load from default locations
+    pub fn load(optional_path: Option<String>) -> Result<ConfigFile,IoError> {
+
+        Self::from_file(Self::default_file_path(optional_path)?)
+    }
+    
+    /// read from file
+    fn from_file<T: AsRef<Path>>(path: T) -> Result<ConfigFile, IoError> {
+        let path_ref = path.as_ref();
+        let file_str: String = read_to_string(path_ref)?;
+        let config = toml::from_str(&file_str)
+            .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
+        Ok(ConfigFile::new(path_ref.to_owned(), config))
+    }
+
+    
+
+    /// find default path where config is stored.  precedent is:
+    /// 1) supplied path
+    /// 2) environment variable in FLV_PROFILE_PATH
+    /// 3) home directory ~/.fluvio/config
+    fn default_file_path(path: Option<String>) -> Result<PathBuf,IoError> {
+
+        path
+            .map(|p| Ok(PathBuf::from(p)))
+            .unwrap_or_else(|| {
+                env::var("FLV_PROFILE_PATH")
+                    .map(|p| Ok(PathBuf::from(p)))
+                    .unwrap_or_else(|_| {
+                        if let Some(mut profile_path) = home_dir() {
+                            profile_path.push(CLI_CONFIG_PATH);
+                            profile_path.push("config");
+                            Ok(profile_path)
+                        } else {
+                            Err(IoError::new(
+                                ErrorKind::InvalidInput,
+                                "can't get home directory",
+                            ))
+                        }
+                    })
+            })
+    }
+
+    // save to file
+    fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(),IoError>  {
+        let toml = toml::to_vec(self)
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
+
+        let mut file = File::create(path)?;
+        file.write_all(&toml)
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+
+    /// current profile
+    pub fn current_profile_name(&self) -> &str {
+        &self.current_profile
+    }
+
+    pub fn current_profile(&self) -> Option<&Profile> {
+        self.profile.get(&self.current_profile)
+    }
+
+    /// set current profile, if profile doesn't exists return false
+    pub fn set_current_profile(&mut self,profile_name: &str) -> bool {
+
+        if self.profile.contains_key(profile_name) {
+            self.current_profile = profile_name.to_owned();
+            true
+        } else {
+            false
+        }
+    }
+
+
+    pub fn current_cluster(&self) -> Option<&Cluster> {
+        self.current_profile().and_then(|profile| self.cluster.get(&profile.cluster))
+    }
+
+    /// look up replica config
+    /// this will iterate and find all configuration that can resolve config
+    /// 1) match all config that matches criteria including asterik
+    /// 2) apply in terms of precedent
+    pub fn resolve_replica_config(&self,_topic_name: &str,_partition: i32) -> Replica {
+
+            for (key, val) in self.topic.iter() {
+                println!("key: {:#?}, value: {:#?}",key,val);
             }
-            Self::Sc(addr) => {
-                let mut sc_client = ScClient::connect(addr_client_config(addr)).await?;
-                sc_client
-                    .find_replica_for_topic_partition(topic, partition)
-                    .await
-                    .map(|leader| ReplicaLeaderTarget::Spu(leader))
-            }
-            Self::Spu(addr) => {
-                let leader_config =
-                    ReplicaLeaderConfig::new(addr, topic.to_owned(), partition).client_id(CLIENT_ID);
-                SpuReplicaLeader::connect(leader_config)
-                    .await
-                    .map(|leader| ReplicaLeaderTarget::Spu(leader))
-            }
+        
+
+        Replica::default()
+    }
+    
+}
+
+
+
+#[derive(Debug, PartialEq,Serialize, Deserialize)]
+pub struct Topic {
+    replica: HashMap<String,String>
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Profile {
+    pub cluster: String,
+    pub topic: Option<String>,
+    pub partition: Option<i32>
+}
+
+#[derive(Debug, Default,PartialEq, Serialize, Deserialize)]
+pub struct Replica {
+    pub max_bytes: Option<i32>,
+    pub isolation: Option<String>
+}
+
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Cluster {
+    domain: String,
+    certificate_authority_data: Option<String>
+}
+
+impl From<String> for Cluster {
+    fn from(domain: String) -> Self {
+        Self {
+            domain,
+            ..Default::default()
         }
     }
 }
 
-pub enum SpuControllerTarget {
-    Sc(ScClient<String>),
-    Kf(KfClient<String>),
-}
+impl Cluster {
 
-#[derive(Debug)]
-pub enum SpuControllerConfig {
-    Sc(ServerAddress),
-    Kf(ServerAddress),
-}
-
-impl SpuControllerConfig {
-    pub fn new(
-        sc_host_port: Option<String>,
-        kf_host_port: Option<String>,
-        profile_name: Option<String>,
-    ) -> Result<Self, ClientError> {
-        let profile = ProfileConfig::new(sc_host_port, kf_host_port, profile_name)?;
-
-        if let Some(sc_server) = profile.sc_addr {
-            Ok(Self::Sc(sc_server))
-        } else if let Some(kf_server) = profile.kf_addr {
-            Ok(Self::Kf(kf_server))
-        } else {
-            Err(ClientError::IoError(IoError::new(
-                ErrorKind::Other,
-                "controller server configuration missing",
-            )))
-        }
+    pub fn domain(&self) -> &str {
+        &self.domain
     }
 
-    pub async fn connect(self) -> Result<SpuControllerTarget, ClientError> {
-        match self {
-            Self::Kf(addr) => KfClient::connect(addr_client_config(addr))
-                .await
-                .map(|leader| SpuControllerTarget::Kf(leader)),
-            Self::Sc(addr) => ScClient::connect(addr_client_config(addr))
-                .await
-                .map(|leader| SpuControllerTarget::Sc(leader)),
-        }
+}
+
+
+impl From<Cluster> for ClientConfig {
+    fn from(cluster: Cluster) -> Self {
+
+        ClientConfig::new(cluster.domain,AllDomainConnector::default_tcp())
+
     }
 }
 
-/// Configure Sc server using either manual config or profile
-pub struct ScConfig(ServerAddress);
 
-impl ScConfig {
-    pub fn new(host_port: Option<String>, profile_name: Option<String>) -> Result<Self, ClientError> {
-        let profile = ProfileConfig::new(host_port, None, profile_name)?;
 
-        if let Some(sc_addr) = profile.sc_addr {
-            Ok(Self(sc_addr))
-        } else {
-            Err(ClientError::IoError(IoError::new(
-                ErrorKind::Other,
-                "Sc server configuration missing",
-            )))
-        }
+#[cfg(test)]
+pub mod test {
+    use super::*;
+    use std::path::PathBuf;
+    
+    #[test]
+    fn test_default_path_arg() {
+        assert_eq!(Config::default_file_path(Some("/user1/test".to_string())).expect("file"),
+            PathBuf::from("/user1/test"));
+    }
+     
+    //#[test]
+    fn test_default_path_env() {
+        env::set_var("FLV_PROFILE_PATH", "/user2/config");
+        assert_eq!(Config::default_file_path(None).expect("file"),
+            PathBuf::from("/user2/config"));
+        env::remove_var("FLV_PROFILE_PATH");
     }
 
-    pub async fn connect(self) -> Result<ScClient<String>, ClientError> {
-        ScClient::connect(addr_client_config(self.0)).await
-    }
-}
-
-/// Configure Kafka using either manual address or profile
-pub struct KfConfig(ServerAddress);
-
-impl KfConfig {
-    pub fn new(host_port: Option<String>, profile_name: Option<String>) -> Result<Self, ClientError> {
-        let profile = ProfileConfig::new(None, host_port, profile_name)?;
-
-        if let Some(kf_addr) = profile.kf_addr {
-            Ok(Self(kf_addr))
-        } else {
-            Err(ClientError::IoError(IoError::new(
-                ErrorKind::Other,
-                "Kf server configuration missing",
-            )))
-        }
+    #[test]
+    fn test_default_path_home() {
+        
+        let mut path = home_dir().expect("home dir must exist");
+        path.push(CLI_CONFIG_PATH);
+        path.push("config");
+        assert_eq!(Config::default_file_path(None).expect("file"),path);
     }
 
-    pub async fn connect(self) -> Result<KfClient<String>, ClientError> {
-        KfClient::connect(addr_client_config(self.0)).await
-    }
-}
+    /// test basic reading
+    #[test]
+    fn test_config() {
+    
+        // test read & parse
+        let mut conf_file = Config::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
+        let config = conf_file.mut_config();
 
-/// Profile parameters
-#[derive(Default, Debug, PartialEq)]
-pub struct ProfileConfig {
-    pub sc_addr: Option<ServerAddress>,
-    pub spu_addr: Option<ServerAddress>,
-    pub kf_addr: Option<ServerAddress>,
-}
+        assert_eq!(config.version(),"1.0");
+        assert_eq!(config.current_profile_name(),"local");
+        let profile = config.current_profile().expect("profile should exists");
+        assert_eq!(profile.cluster,"local");
 
-// -----------------------------------
-// Implementation
-// -----------------------------------
+        assert!(!config.set_current_profile("dummy"));
+        assert!(config.set_current_profile("local2"));
+        assert_eq!(config.current_profile_name(),"local2");
 
-impl ProfileConfig {
-    /// generate config from cli parameter where we could have one of the config
-    pub fn from_cli(
-        sc_host_port: Option<String>,
-        spu_host_port: Option<String>,
-        kf_host_port: Option<String>,
-    ) -> Result<Self, ClientError> {
-
-        let mut config = ProfileConfig::default();
-
-        if let Some(host_port) = sc_host_port {
-            let address: ServerAddress = host_port.try_into()?;
-            config.sc_addr = Some(address);
-        }
-
-        if let Some(host_port) = spu_host_port {
-            let address: ServerAddress = host_port.try_into()?;
-            config.spu_addr = Some(address);
-        }
-
-        if let Some(host_port) = kf_host_port {
-            let address: ServerAddress = host_port.try_into()?;
-            config.kf_addr = Some(address);
-        }
-
-        Ok(config)
+        let cluster = config.current_cluster().expect("cluster should exist");
+        assert_eq!(cluster.domain,"127.0.0.1:9003");
     }
 
-    /// generate profile configuration based on a default or custom profile file
-    pub fn new(
-        sc_host_port: Option<String>,
-        kf_host_port: Option<String>,
-        profile_name: Option<String>,
-    ) -> Result<Self, ClientError> {
-        ProfileConfig::new_with_spu(sc_host_port, None, kf_host_port, profile_name)
+    #[test]
+    fn test_set_config() {
+        let mut conf_file = Config::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
+        let config = conf_file.mut_config();
+        config.set_current_profile("local3");
+        config.save_to("/tmp/test_config.toml").expect("save should succeed");
+        let update_conf_file = Config::load(Some("/tmp/test_config.toml".to_owned())).expect("parse failed");
+        assert_eq!(update_conf_file.config().current_profile_name(),"local3");
     }
 
-    /// generate profile configuration with spu based on a default or custom profile file
-    pub fn new_with_spu(
-        sc_host_port: Option<String>,
-        spu_host_port: Option<String>,
-        kf_host_port: Option<String>,
-        profile_name: Option<String>,
-    ) -> Result<Self, ClientError> {
-
-        debug!("looking up spu using sc: {:#?}, spu: {:#?}, kf: {:#?}, profile: {:#?}",
-            sc_host_port,
-            spu_host_port,
-            kf_host_port,
-            profile_name);
-
-        // build profile config from cli parameters
-        let cli_config = Self::from_cli(sc_host_port, spu_host_port, kf_host_port)?;
-
-        let profile_config = if cli_config.valid_servers_or_error().is_ok() {
-            debug!("one server address is found");
-            cli_config
-        } else {
-            debug!("no server address found, looking from profile");
-            // build profile config from profile file
-            let mut file_config = match profile_name {
-                Some(profile) => ProfileConfig::config_from_custom_profile(profile)?,
-                None => ProfileConfig::config_from_default_profile()?,
-            };
-
-            // merge the profiles (cli takes precedence)
-            file_config.merge_with(&cli_config);
-            file_config
-        };
-
-        profile_config.valid_servers_or_error()?;
-
-        Ok(profile_config)
+    #[test]
+    fn test_topic_config() {
+        let conf_file = Config::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
+        let config = conf_file.config().resolve_replica_config("test3",0);
     }
 
-    /// convert my self into target server
 
-    /// ensure there is at least one server.
-    fn valid_servers_or_error(&self) -> Result<(), ClientError> {
-        if self.sc_addr.is_some() || self.spu_addr.is_some() || self.kf_addr.is_some() {
-            Ok(())
-        } else {
-            Err(ClientError::IoError(IoError::new(
-                ErrorKind::Other,
-                "no sc address or spu address is provided",
-            )))
-        }
-    }
-
-    /// merge local profile with the other profile
-    ///  - values are augmented but not cleared by other
-    fn merge_with(&mut self, other: &ProfileConfig) {
-        if other.sc_addr.is_some() {
-            self.sc_addr = other.sc_addr.clone();
-        }
-        if other.spu_addr.is_some() {
-            self.spu_addr = other.spu_addr.clone();
-        }
-        if other.kf_addr.is_some() {
-            self.kf_addr = other.kf_addr.clone();
-        }
-    }
-
-    /// read profile config from a user-defined (custom) profile
-    fn config_from_custom_profile(profile: String) -> Result<Self, IoError> {
-        let custom_profile_path = build_cli_profile_file_path(Some(&profile))?;
-        Ok((ProfileFile::from_file(custom_profile_path)?).into())
-    }
-
-    /// read profile config from the default profile
-    fn config_from_default_profile() -> Result<Self, IoError> {
-        let default_path = build_cli_profile_file_path(None)?;
-        if Path::new(&default_path).exists() {
-            Ok((ProfileFile::from_file(default_path)?).into())
-        } else {
-            Ok(ProfileConfig::default())
-        }
-    }
 }

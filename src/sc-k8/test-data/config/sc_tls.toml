@@ -1,0 +1,12 @@
+version = "1.0"
+
+
+[bind_public]
+host = "127.0.0.1"
+port = 9999
+
+[tls]
+server_cert = "test-data/server.crt"
+server_key = "test-data/server.key"
+enable_client_cert = true
+ca_cert = "test-data/ca.crt"

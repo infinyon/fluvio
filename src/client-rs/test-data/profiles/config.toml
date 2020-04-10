@@ -1,0 +1,42 @@
+version = "1.0"
+
+current_profile = "local"
+
+[cluster.local]
+domain = "127.0.0.1:9003"
+certificate_authority_data = ""
+
+[cluster.ec2]
+domain = "sandbox.xxxx.eksctl.io"
+certificate_authority_data = ""
+
+# no default topic
+[profile.local]
+cluster = "local"
+
+# use topic test3 as default
+[profile.local2]
+cluster = "local"
+topic = "test3"
+
+# use topic test3 and partition 3
+[profile.local3]
+cluster = "local"
+topic = "test3"
+partition = 3
+client_id = "local"
+
+
+# default for all topics, this has lowest precedent
+[topic."*"]
+isolation = "uncommitted"
+fetch_max_bytes = 10000
+
+# apply for all partition of test3
+[topic.test3]
+isolation = "read_committed"
+
+
+# only for topic test=3,replication=2
+[topic.test4.2]
+isolation = "uncommitted"
