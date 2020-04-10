@@ -3,7 +3,6 @@
 
 use std::io::Error as IoError;
 use std::env::temp_dir;
-use std::net::SocketAddr;
 use std::time::Duration;
 
 use log::debug;
