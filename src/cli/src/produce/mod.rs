@@ -20,7 +20,7 @@ mod produce {
     use types::{print_cli_err, print_cli_ok};
     use flv_client::ReplicaLeader;
 
-    use flv_client::profile::ReplicaLeaderTarget;
+    use flv_client::profile::ReplicaLeaderTargetInstance;
     use crate::CliError;
     use crate::Terminal;
     use crate::t_println;
@@ -50,10 +50,10 @@ mod produce {
         let file_records = file_to_records(&cfg.records_form_file).await?;
 
         (match target_server.connect(&cfg.topic, cfg.partition).await? {
-            ReplicaLeaderTarget::Kf(leader) => {
+            ReplicaLeaderTargetInstance::Kf(leader) => {
                 render_produce_record(out, leader, cfg, file_records).await
             }
-            ReplicaLeaderTarget::Spu(leader) => {
+            ReplicaLeaderTargetInstance::Spu(leader) => {
                 render_produce_record(out, leader, cfg, file_records).await
             }
         })

@@ -1,0 +1,15 @@
+version = "1.0"
+current_profile = "local"
+[profile.local]
+cluster = "local"
+[cluster.local]
+addr = "localhost:9003"
+
+[cluster.local.tls]
+cert_type = "File"
+
+[cluster.local.tls.cert]
+client_key = "/tmp/client.key"
+client_cert = "/tmp/client.cert"
+ca_cert = "/tmp/ca.cert"
+domain = "my_domain"

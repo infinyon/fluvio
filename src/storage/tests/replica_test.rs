@@ -1,7 +1,6 @@
 // test fetch of replica
 
 use std::env::temp_dir;
-use std::net::SocketAddr;
 use std::time::Duration;
 
 use log::debug;

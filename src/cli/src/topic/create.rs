@@ -13,11 +13,11 @@ use structopt::StructOpt;
 use flv_client::SpuController;
 use flv_client::query_params::ReplicaConfig;
 use flv_client::query_params::Partitions;
+use flv_client::profile::ControllerTargetConfig;
+use flv_client::profile::ControllerTargetInstance;
 
 use crate::error::CliError;
-use flv_client::profile::SpuControllerTargetConfig;
-use flv_client::profile::SpuControllerTarget;
-
+use crate::tls::TlsConfig;
 
 // -----------------------------------
 //  Parsed Config
@@ -94,9 +94,8 @@ pub struct CreateTopicOpt {
     )]
     kf: Option<String>,
 
-    /// Profile name
-    #[structopt(short = "P", long = "profile")]
-    profile: Option<String>,
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl CreateTopicOpt {
@@ -131,7 +130,7 @@ impl CreateTopicOpt {
     }
 
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(SpuControllerTargetConfig, CreateTopicConfig), CliError> {
+    fn validate(self) -> Result<(ControllerTargetConfig, CreateTopicConfig), CliError> {
         // topic specific configurations
         let replica_config = if self.partitions.is_some() {
             self.parse_computed_replica()
@@ -145,7 +144,7 @@ impl CreateTopicOpt {
             validate_only: self.validate_only,
         };
 
-        let target_server = SpuControllerTargetConfig::possible_target(self.sc, self.kf)?;
+        let target_server = ControllerTargetConfig::possible_target(self.sc, self.kf,self.tls.try_into_file_config()?)?;
 
         // return server separately from config
         Ok((target_server, create_topic_cfg))
@@ -161,12 +160,12 @@ pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliErro
     let (target_server, cfg) = opt.validate()?;
 
     (match target_server.connect().await? {
-        SpuControllerTarget::Kf(mut client) => {
+        ControllerTargetInstance::Kf(mut client) => {
             client
                 .create_topic(cfg.topic, cfg.replica, cfg.validate_only)
                 .await
         }
-        SpuControllerTarget::Sc(mut client) => {
+        ControllerTargetInstance::Sc(mut client) => {
             client
                 .create_topic(cfg.topic, cfg.replica, cfg.validate_only)
                 .await

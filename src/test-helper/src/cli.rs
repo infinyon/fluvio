@@ -6,23 +6,27 @@ use structopt::StructOpt;
 #[structopt(name = "fluvio-test-runner", about = "Test fluvio platform")]
 pub struct TestOption {
 
+    /// just perform cleanup, no testing and setup
+    #[structopt(short,long)]
+    cleanup: bool,
+
     /// disable produce and consumer test, only run server
-    #[structopt(short("t"),long)]
+    #[structopt(long)]
     disable_test: bool,
 
     /// don't produce message
-    #[structopt(short("d"),long)]
+    #[structopt(long)]
     disable_produce: bool,
 
     /// don't test consumer
-    #[structopt(short("c"),long)]
+    #[structopt(long)]
     disable_consume: bool,
 
     // disable initial cleanup
     #[structopt(long)]
     disable_clean: bool,
 
-    #[structopt(short("s"),long)]
+    #[structopt(long)]
     disable_setup: bool,
 
     // disable shutdown
@@ -38,11 +42,20 @@ pub struct TestOption {
     disable_init: bool,
 
     /// number of spu
-    #[structopt(short("p"),long)]
+    #[structopt(short,long)]
     spu: Option<u16>,
 
+    /// enable tls
     #[structopt(long)]
-    tls: bool
+    tls: bool,
+
+    /// run in kubernetes
+    #[structopt(short,long)]
+    k8: bool,
+
+    /// use profile
+    #[structopt(short,long)]
+    profile: bool
 }
 
 impl TestOption  {
@@ -54,20 +67,20 @@ impl TestOption  {
     }
 
     pub fn test_consumer(&self) -> bool {
-        !self.disable_test && !self.disable_consume
+        !self.cleanup && !self.disable_test && !self.disable_consume
     }
 
     pub fn cleanup(&self) -> bool {
-        self.setup() && !self.disable_clean
+        self.cleanup || (self.setup() && !self.disable_clean)
     }
 
     // do the setup (without cleanup)
     pub fn setup(&self) -> bool {
-        !self.disable_setup
+        !self.cleanup && !self.disable_setup
     }
 
     pub fn init_topic(&self) -> bool {
-        !self.disable_setup
+        !self.cleanup && !self.disable_setup
     }
 
     pub fn terminate_after_consumer_test(&self) -> bool {
@@ -91,7 +104,19 @@ impl TestOption  {
     }
 
     pub fn produce(&self) -> bool {
-        !self.disable_test && !self.disable_produce
+        !self.cleanup && !self.disable_test && !self.disable_produce
+    }
+
+    pub fn use_k8(&self) -> bool {
+        self.k8
+    }
+
+    pub fn use_profile(&self) -> bool {
+        self.profile
+    }
+
+    pub fn disable_profile(&mut self) {
+        self.profile = false;
     }
 
 }

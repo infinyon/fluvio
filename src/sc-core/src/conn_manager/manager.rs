@@ -373,7 +373,7 @@ impl ConnManager {
     async fn send_msg_to_all_live_spus(&self, msgs: Vec<SpuMsg>) {
         let online_spus = self.spu_store.online_spus();
         debug!(
-            "trying to send SPU spec to active Spu: {}",
+            "trying to send SPU spec to active Spus: {}",
             online_spus.len()
         );
         for live_spu in online_spus {

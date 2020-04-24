@@ -40,7 +40,8 @@ pub struct RunRequestOpt {
         short = "r",
         long = "request",
         value_name = "",
-        raw(possible_values = "&RequestApi::variants()", case_insensitive = "true")
+        possible_values = &RequestApi::variants(),
+        case_insensitive = true
     )]
     request: RequestApi,
 

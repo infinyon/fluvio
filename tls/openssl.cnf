@@ -20,6 +20,4 @@ basicConstraints = CA:true
 keyUsage = cRLSign, keyCertSign, digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment, keyAgreement, keyCertSign, cRLSign
 
 [ alt_names ]
-DNS.1 = testserver.com
-DNS.2 = second.testserver.com
-DNS.3 = localhost
+DNS.2 = fluvio.local

@@ -19,6 +19,7 @@ use super::spu::all::process_spu;
 use super::spu::custom::process_custom_spu;
 use super::spu::group::process_spu_group;
 use super::profile::process_profile;
+use super::install::process_install;
 
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
@@ -28,11 +29,11 @@ use super::spu::all::SpuOpt;
 use super::spu::custom::CustomSpuOpt;
 use super::spu::group::SpuGroupOpt;
 use super::profile::ProfileCommand;
+use super::install::InstallCommand;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
     about = "Fluvio Command Line Interface",
-    author = "",
     name = "fluvio",
     template = "{about}
 
@@ -40,14 +41,12 @@ use super::profile::ProfileCommand;
 
 {all-args}
 ",
-    raw(
-        global_settings = "&[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder]"
-    )
+    global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder]
+    
 )]
 enum Root {
     #[structopt(
         name = "consume",
-        author = "",
         template = "{about}
 
 {usage}
@@ -60,7 +59,6 @@ enum Root {
 
     #[structopt(
         name = "produce",
-        author = "",
         template = "{about}
 
 {usage}
@@ -71,7 +69,7 @@ enum Root {
     )]
     Produce(ProduceLogOpt),
 
-    #[structopt(name = "spu", author = "", template = "{about}
+    #[structopt(name = "spu",  template = "{about}
 
 {usage}
 
@@ -79,7 +77,7 @@ enum Root {
 ", about = "SPU Operations")]
     SPU(SpuOpt),
 
-    #[structopt(name = "spu-group", author = "", template = "{about}
+    #[structopt(name = "spu-group", template = "{about}
 
 {usage}
 
@@ -87,7 +85,7 @@ enum Root {
 ", about = "SPU Group Operations")]
     SPUGroup(SpuGroupOpt),
 
-    #[structopt(name = "custom-spu", author = "", template = "{about}
+    #[structopt(name = "custom-spu", template = "{about}
 
 {usage}
 
@@ -95,7 +93,7 @@ enum Root {
 ", about = "Custom SPU Operations")]
     CustomSPU(CustomSpuOpt),
 
-    #[structopt(name = "topic", author = "", template = "{about}
+    #[structopt(name = "topic", template = "{about}
 
 {usage}
 
@@ -103,7 +101,7 @@ enum Root {
 ", about = "Topic operations")]
     Topic(TopicOpt),
 
-    #[structopt(name = "advanced", author = "", template = "{about}
+    #[structopt(name = "advanced", template = "{about}
 
 {usage}
 
@@ -111,14 +109,23 @@ enum Root {
 ", about = "Advanced operations")]
     Advanced(AdvancedOpt),
 
-    #[structopt(name = "profile", author = "", template = "{about}
+    #[structopt(name = "profile", template = "{about}
 
 {usage}
 
 {all-args}
 ", about = "Profile operation")]
 
-    Profile(ProfileCommand)
+    Profile(ProfileCommand),
+
+    #[structopt(name = "install", template = "{about}
+
+{usage}
+
+{all-args}
+", about = "install cluster")]
+
+    Install(InstallCommand)
 }
 
 pub fn run_cli() -> Result<String, CliError> {
@@ -135,7 +142,8 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(),custom_spu).await,
             Root::Topic(topic) => process_topic(terminal.clone(),topic).await,
             Root::Advanced(advanced) => process_advanced(terminal.clone(),advanced).await,
-            Root::Profile(profile) => process_profile(terminal.clone(), profile)
+            Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
+            Root::Install(install) => process_install(terminal.clone(), install).await,
         }
     })
 }

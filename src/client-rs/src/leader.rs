@@ -61,8 +61,8 @@ pub trait ReplicaLeader: Send + Sync{
 
     fn client(&self) -> &Client;
 
-    fn domain(&self) -> &str {
-        self.client().config().domain()
+    fn addr(&self) -> &str {
+        self.client().config().addr()
     }
 
     fn topic(&self) -> &str {
@@ -95,7 +95,7 @@ pub trait ReplicaLeader: Send + Sync{
         let mut topic_request = DefaultKfTopicRequest::default();
         let mut partition_request = DefaultKfPartitionRequest::default();
 
-        debug!("send record {} bytes to: {}", record.len(), self.domain());
+        debug!("send record {} bytes to: {}", record.len(), self.addr());
 
         let record_msg: DefaultRecord = record.into();
         let mut batch = DefaultBatch::default();

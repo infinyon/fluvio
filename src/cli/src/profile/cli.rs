@@ -4,7 +4,7 @@
 //! CLI command for Profile operation
 //!
 
-
+use crate::tls::TlsConfig;
 use structopt::StructOpt;
 
 
@@ -18,13 +18,17 @@ pub enum Command {
     #[structopt(name = "use-profile")]
     UseProfile(UseProfile),
 
-    /// set local context
-    #[structopt(name="set-local")]
-    SetLocal(SetLocal),
+    /// set profile to local servers 
+    #[structopt(name="set-local-profile")]
+    SetLocalProfile(SetLocal),
+
+    /// set profile to kubernetes cluster
+    #[structopt(name="set-k8-profile")]
+    SetK8Profile(SetK8),
 
      /// Display entire configuration
-     #[structopt(name = "view")]
-     View,
+    #[structopt(name = "view")]
+    View,
 }
 
 #[derive(Debug, StructOpt)]
@@ -42,9 +46,28 @@ pub struct ProfileCommand {
 
 #[derive(Debug, StructOpt)]
 pub struct SetLocal {
-    #[structopt(value_name = "host:port")]
+    #[structopt(value_name = "host:port",default_value="localhost:9003")]
     pub local: String,
+
+    #[structopt(flatten)]
+    pub tls: TlsConfig
+
 }
+
+#[derive(Debug, StructOpt)]
+pub struct SetK8 {
+    /// kubernetes namespace, 
+    #[structopt(long,short,value_name = "namespace")]
+    pub namespace: Option<String>,
+
+    /// profile name
+    #[structopt(value_name = "name")]
+    pub name: Option<String>,
+
+    #[structopt(flatten)]
+    pub tls: TlsConfig
+}
+
 
 #[derive(Debug, StructOpt)]
 pub struct UseProfile {

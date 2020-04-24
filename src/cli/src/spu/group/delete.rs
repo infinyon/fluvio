@@ -5,8 +5,9 @@
 //!
 use structopt::StructOpt;
 
-use crate::error::CliError;
 use flv_client::profile::ScConfig;
+use crate::error::CliError;
+use crate::tls::TlsConfig;
 
 // -----------------------------------
 //  Parsed Config
@@ -31,15 +32,15 @@ pub struct DeleteManagedSpuGroupOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    /// Profile name
-    #[structopt(short = "P", long = "profile")]
-    profile: Option<String>,
+    #[structopt(flatten)]
+    tls: TlsConfig,
+
 }
 
 impl DeleteManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and delete spu group configuration.
     fn validate(self) -> Result<(ScConfig, DeleteManagedSpuGroupConfig), CliError> {
-        let target_server = ScConfig::new(self.sc)?;
+        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
 
         let delete_spu_group_cfg = DeleteManagedSpuGroupConfig { name: self.name };
 

@@ -19,7 +19,7 @@ use crate::Terminal;
 
 #[derive(Debug, StructOpt)]
 pub enum SpuGroupOpt {
-    #[structopt(name = "create", author = "", template = "{about}
+    #[structopt(name = "create", template = "{about}
 
 {usage}
 
@@ -27,7 +27,7 @@ pub enum SpuGroupOpt {
 ", about = "Create managed SPU group")]
     Create(CreateManagedSpuGroupOpt),
 
-    #[structopt(name = "delete", author = "", template = "{about}
+    #[structopt(name = "delete", template = "{about}
 
 {usage}
 
@@ -35,7 +35,7 @@ pub enum SpuGroupOpt {
 ", about = "Delete managed SPU group")]
     Delete(DeleteManagedSpuGroupOpt),
 
-    #[structopt(name = "list", author = "", template = "{about}
+    #[structopt(name = "list", template = "{about}
 
 {usage}
 

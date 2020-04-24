@@ -214,7 +214,7 @@ impl ScDispatcher<FileReplica> {
         let spu_id = self.ctx.local_spu_id();
         let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
-         debug!("trying to resolve sc endpoint: {}",sc_endpoint);
+         debug!("trying to connect to sc endpoint: {}",sc_endpoint);
        
         let wait_interval = self.ctx.config().sc_retry_ms;
         loop {

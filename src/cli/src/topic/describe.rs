@@ -6,11 +6,13 @@
 
 use structopt::StructOpt;
 
+
+use flv_client::profile::ControllerTargetConfig;
+use flv_client::profile::ControllerTargetInstance;
+use crate::Terminal;
 use crate::error::CliError;
 use crate::OutputType;
-use flv_client::profile::SpuControllerTargetConfig;
-use flv_client::profile::SpuControllerTarget;
-use crate::Terminal;
+use crate::tls::TlsConfig;
 
 use super::helpers::describe_kf_topics;
 use super::helpers::describe_sc_topics;
@@ -48,24 +50,24 @@ pub struct DescribeTopicsOpt {
     )]
     kf: Option<String>,
 
-    ///Profile name
-    #[structopt(short = "P", long = "profile")]
-    pub profile: Option<String>,
-
     /// Output
     #[structopt(
         short = "O",
         long = "output",
         value_name = "type",
-        raw(possible_values = "&OutputType::variants()", case_insensitive = "true")
+        possible_values = &OutputType::variants(),
+        case_insensitive = true
     )]
     output: Option<OutputType>,
+
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl DescribeTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(SpuControllerTargetConfig, DescribeTopicsConfig), CliError> {
-        let target_server = SpuControllerTargetConfig::possible_target(self.sc, self.kf)?;
+    fn validate(self) -> Result<(ControllerTargetConfig, DescribeTopicsConfig), CliError> {
+        let target_server = ControllerTargetConfig::possible_target(self.sc, self.kf,self.tls.try_into_file_config()?)?;
 
         // transfer config parameters
         let describe_topics_cfg = DescribeTopicsConfig {
@@ -93,10 +95,10 @@ where
     let (target_server, cfg) = opt.validate()?;
 
     (match target_server.connect().await? {
-        SpuControllerTarget::Kf(client) => {
+        ControllerTargetInstance::Kf(client) => {
             describe_kf_topics(client, cfg.topic_names, cfg.output, out).await
         }
-        SpuControllerTarget::Sc(client) => {
+        ControllerTargetInstance::Sc(client) => {
             describe_sc_topics(client, cfg.topic_names, cfg.output, out).await
         }
     })

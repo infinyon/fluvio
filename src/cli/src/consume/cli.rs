@@ -8,29 +8,37 @@ use structopt::StructOpt;
 
 use kf_protocol::api::Offset;
 use kf_protocol::api::MAX_BYTES;
-
-use crate::error::CliError;
 use flv_client::profile::ServerTargetConfig;
 
+use crate::error::CliError;
+use crate::tls::TlsConfig;
+
 use super::ConsumeOutputType;
+
+
+
 
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
     /// Topic name
-    #[structopt(short = "t", long = "topic", value_name = "string")]
+    #[structopt(short = "t", long, value_name = "string")]
     pub topic: String,
 
     /// Partition id
-    #[structopt(short = "p", long = "partition", value_name = "integer")]
+    #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
     pub partition: i32,
 
     /// Start reading from this offset
     #[structopt(short = "g", long = "from-beginning")]
     pub from_beginning: bool,
 
-    /// Read messages in a infinite loop
-    #[structopt(short = "C", long = "continuous")]
-    pub continuous: bool,
+    /// disable continuous processing of messages 
+    #[structopt(short = "d",long)]
+    pub disable_continuous: bool,
+
+    /// optional, offset, negate offset is relative to end offset (either committed or uncommitted)
+    #[structopt(short,long, value_name = "integer")]
+    pub offset: Option<i64>,
 
     /// Maximum number of bytes to be retrieved
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
@@ -66,15 +74,17 @@ pub struct ConsumeLogOpt {
 
     /// Output
     #[structopt(
-        short = "o",
+        short = "O",
         long = "output",
         value_name = "type",
-        raw(
-            possible_values = "&ConsumeOutputType::variants()",
-            case_insensitive = "true"
-        )
+        possible_values = &ConsumeOutputType::variants(),
+        case_insensitive = true
     )]
     output: Option<ConsumeOutputType>,
+
+    #[structopt(flatten)]
+    tls: TlsConfig,
+
 }
 
 impl ConsumeLogOpt {
@@ -82,7 +92,7 @@ impl ConsumeLogOpt {
     pub fn validate(self) -> Result<(ServerTargetConfig, ConsumeLogConfig), CliError> {
 
     
-        let target_server = ServerTargetConfig::possible_target(self.sc, self.spu, self.kf)?;
+        let target_server = ServerTargetConfig::possible_target(self.sc, self.spu, self.kf,self.tls.try_into_file_config()?)?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
 
         // consume log specific configurations
@@ -90,7 +100,7 @@ impl ConsumeLogOpt {
             topic: self.topic,
             partition: self.partition,
             from_beginning: self.from_beginning,
-            continuous: self.continuous,
+            disable_continuous: self.disable_continuous,
             offset: -1,
             max_bytes: max_bytes,
 
@@ -109,7 +119,7 @@ pub struct ConsumeLogConfig {
     pub topic: String,
     pub partition: i32,
     pub from_beginning: bool,
-    pub continuous: bool,
+    pub disable_continuous: bool,
     pub offset: Offset,
     pub max_bytes: i32,
 

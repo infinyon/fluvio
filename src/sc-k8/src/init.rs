@@ -16,12 +16,10 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 
 
-
-
 pub fn main_k8_loop() {
    
     // parse configuration (program exits on error)
-    let (sc_config, k8_config,tls_acceptor_option) = parse_cli_or_exit();
+    let (sc_config, k8_config,tls_option) = parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
 
@@ -30,10 +28,12 @@ pub fn main_k8_loop() {
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
         let (ws_service, metadata) = start_main_loop(sc_config.clone(), k8_client).await;
-        run_k8_operators(ws_service.clone(), namespace.clone(), metadata.owned_spus());
+        run_k8_operators(ws_service.clone(), namespace.clone(), metadata.owned_spus(),tls_option.clone().map(|(_,config)| config));
 
-        if let Some(tls_config) = tls_acceptor_option {
-            proxy::start_proxy(sc_config,tls_config).await;
+        if let Some((proxy_port,tls_config)) = tls_option {
+
+            let tls_acceptor = tls_config.try_build_tls_acceptor().expect("can't build tls acceptor");
+            proxy::start_proxy(sc_config,(tls_acceptor,proxy_port)).await;
         }
     
         println!("Streaming Controller started successfully");

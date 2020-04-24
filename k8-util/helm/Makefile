@@ -14,6 +14,7 @@ FLUVIO_VERSION=$(VERSION)
 SYS_VERSION=0.1.0
 CHART_REPO=../../../infinyon.github.io
 CHART_SRC=./fluvio-core
+LOCAL_RGISTRY=localhost:5000/infinyon
 
 dry-run:
 	helm install --debug --dry-run goodly-guppy ./fluvio --set appVersion=$(GIT_VERSION)
@@ -37,7 +38,7 @@ test-install:	NAME=$(TEST_NAME)
 test-install:	NS=$(TEST_NS)
 test-install:	FLUVIO_VERSION=$(GIT_VERSION)
 
-install_mk_test:	REGISTRY=localhost:5000/infinyon
+install_mk_test:	REGISTRY=$(LOCAL_RGISTRY)
 install_mk_test:	test-install
 install_mk_test:	CLOUD=minikube
 
@@ -49,6 +50,11 @@ install_sys_minikube:	install
 
 install_minikube:	CLOUD=minikube
 install_minikube:	install
+
+install_minikube_dev:	CLOUD=minikube
+install_minikube_dev:	install
+install_minikube_dev:	FLUVIO_VERSION=$(GIT_VERSION)
+install_minikube_dev:	REGISTRY=$(LOCAL_RGISTRY)
 
 install_minikube_test:	CLOUD=minikube
 install_minikube_test:	NS=test

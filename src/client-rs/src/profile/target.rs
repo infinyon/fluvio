@@ -5,8 +5,11 @@
 //!
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::convert::TryFrom;
 
+use log::debug;
 
+use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::ClientConfig;
 use crate::ScClient;
@@ -17,26 +20,33 @@ use crate::KfLeader;
 use crate::SpuController;
 use crate::ReplicaLeaderConfig;
 
-use super::config::Config;
-use super::config::Cluster;
+
+use super::config::ConfigFile;
+use super::tls::TlsConfig;
 
 
-
-/// Configure Sc server which was provided or thru profile
-pub struct ScConfig(Cluster);
+/// User facing Sc configuration
+pub struct ScConfig {
+    addr: String,
+    tls: Option<TlsConfig>
+}
 
 impl ScConfig {
-    pub fn new(domain_option: Option<String>) -> Result<Self, ClientError> {
+    pub fn new(addr_option: Option<String>, tls: Option<TlsConfig>) -> Result<Self, ClientError> {
         
-        if let Some(domain) = domain_option {
-            Ok(Self(
-                domain.into()
-            ))
+        if let Some(addr) = addr_option {
+            Ok(Self {
+                addr,
+                tls
+            })
         } else {
             // look up using profile
-            let config_file = Config::load(None)?;
+            let config_file = ConfigFile::load(None)?;
             if let Some(cluster) = config_file.config().current_cluster() {
-                Ok(Self(cluster.clone()))
+                Ok(Self {
+                    addr: cluster.addr().to_owned(),
+                    tls: cluster.tls.clone()
+                })
             } else {
                 Err(IoError::new(ErrorKind::Other,"no current cluster founded in profile").into())
             }
@@ -45,7 +55,11 @@ impl ScConfig {
 
     pub async fn connect(self) -> Result<ScClient, ClientError> {
 
-        let config: ClientConfig = self.0.into();
+        let connector = match self.tls {
+            None => AllDomainConnector::default_tcp(),
+            Some(tls) => TryFrom::try_from(tls)?
+        };
+        let config = ClientConfig::new(self.addr,connector);
         Ok(ScClient::new( config.connect().await?))
     }
 }
@@ -60,33 +74,35 @@ impl KfConfig {
 
     pub async fn connect(self) -> Result<KfClient, ClientError> {
 
-        let config = ClientConfig::with_domain(self.0);
+        let config = ClientConfig::with_addr(self.0);
         Ok(KfClient::new( config.connect().await?))
     }
 }
 
 /// Contains either spu leader or kafka
-pub enum ReplicaLeaderTarget {
+pub enum ReplicaLeaderTargetInstance {
     Spu(SpuReplicaLeader),
     Kf(KfLeader),
 }
 
 
-pub enum SpuControllerTarget {
+/// actual controller instances
+pub enum ControllerTargetInstance {
     Sc(ScClient),
     Kf(KfClient),
 }
 
 
+/// Controller which can be SC or Kf
 #[derive(Debug)]
-pub enum SpuControllerTargetConfig {
-    Sc(Option<String>),
+pub enum ControllerTargetConfig {
+    Sc(Option<String>,Option<TlsConfig>),
     Kf(String),
 }
 
-impl SpuControllerTargetConfig {
+impl ControllerTargetConfig {
 
-    pub fn possible_target(sc: Option<String>,kf: Option<String>) -> Result<Self,ClientError> {
+    pub fn possible_target(sc: Option<String>,kf: Option<String>,tls: Option<TlsConfig>) -> Result<Self,ClientError> {
 
         // profile specific configurations (target server)
         if let Some(sc_server) = sc {
@@ -94,23 +110,27 @@ impl SpuControllerTargetConfig {
             if kf.is_some() {
                 return Err(ClientError::Other("kf must not be specified".to_owned()))
             }
-            Ok(Self::Sc(Some(sc_server)))
+            Ok(Self::Sc(Some(sc_server),tls))
         } else if let Some(kf_server) = kf {
+            if tls.is_some() {
+                return Err(ClientError::Other("tls is not allowed with kf ".to_owned()))
+            }
             Ok(Self::Kf(kf_server))
         } else {
-            Ok(Self::Sc(None))
+            debug!("no target, looking for profile");
+            Ok(Self::Sc(None,tls))
         }
     }
 
-    pub async fn connect(self) -> Result<SpuControllerTarget, ClientError> {
+    pub async fn connect(self) -> Result<ControllerTargetInstance, ClientError> {
         match self {
-            Self::Kf(domain) => KfClient::connect(domain.into())
+            Self::Kf(addr) => KfClient::connect(addr.into())
                 .await
-                .map(|leader| SpuControllerTarget::Kf(leader)),
-            Self::Sc(domain) => {
-                let sc_config = ScConfig::new(domain)?;
+                .map(|leader| ControllerTargetInstance::Kf(leader)),
+            Self::Sc(addr,tls) => {
+                let sc_config = ScConfig::new(addr,tls)?;
                 let sc_client = sc_config.connect().await?;
-                Ok(SpuControllerTarget::Sc(sc_client))
+                Ok(ControllerTargetInstance::Sc(sc_client))
             }
         }
     }
@@ -121,36 +141,50 @@ impl SpuControllerTargetConfig {
 /// can target sc/kf/spu
 #[derive(Debug)]
 pub enum ServerTargetConfig {
-    Sc(Option<String>),
+    Sc(Option<String>,Option<TlsConfig>),
     Kf(String),
-    Spu(String),
+    Spu(String,Option<TlsConfig>),
 }
 
 impl ServerTargetConfig {
 
-    pub fn possible_target(sc: Option<String>,kf: Option<String>,spu: Option<String>) -> Result<Self,ClientError> {
+    // not type checked, do dynamic check, should be refactor later on
+    pub fn possible_target(
+        sc: Option<String>,
+        kf: Option<String>,
+        spu: Option<String>,
+        tls: Option<TlsConfig>,
+    ) -> Result<Self,ClientError> {
 
-        // profile specific configurations (target server)
+
+        // manual targets
         if let Some(sc_server) = sc {
             // check if spu or kf is set
             if kf.is_some() || spu.is_some() {
                 return Err(ClientError::Other("kf and spu must not be specified".to_owned()))
             }
-            Ok(Self::sc(Some(sc_server)))
-        } else if let Some(kf_server) = kf {
+            return Ok(Self::Sc(Some(sc_server),tls))
+        }
+        
+        
+        if let Some(kf_server) = kf {
+
+            if tls.is_some() {
+                return Err(ClientError::Other("tls is not allowed ".to_owned()))
+            }
             if spu.is_some() {
                 return Err(ClientError::Other("kf and spu must not be specified".to_owned()))
             }
             Ok(Self::kf(kf_server))
         } else if let Some(spu_server) = spu {
-            Ok(Self::spu(spu_server))
+            Ok(Self::Spu(spu_server,tls))
         } else {
-            Ok(Self::sc(None))
+            Ok(Self::Sc(None,tls))
         }
     }
 
     pub fn sc(target: Option<String>) -> Self {
-        Self::Sc(target)
+        Self::Sc(target,None)
     }
 
     pub fn kf(target: String) -> Self {
@@ -158,7 +192,7 @@ impl ServerTargetConfig {
     }
 
     pub fn spu(target: String) -> Self {
-        Self::Spu(target)
+        Self::Spu(target,None)
     }
     
 
@@ -166,7 +200,7 @@ impl ServerTargetConfig {
         self,
         topic: &str,
         partition: i32,
-    ) -> Result<ReplicaLeaderTarget, ClientError> {
+    ) -> Result<ReplicaLeaderTargetInstance, ClientError> {
 
         match self {
             Self::Kf(domain) => {
@@ -174,21 +208,21 @@ impl ServerTargetConfig {
                 kf_client
                     .find_replica_for_topic_partition(topic, partition)
                     .await
-                    .map(|leader| ReplicaLeaderTarget::Kf(leader))
+                    .map(|leader| ReplicaLeaderTargetInstance::Kf(leader))
             }
-            Self::Sc(domain) => {
-                let sc_config = ScConfig::new(domain)?;
+            Self::Sc(domain,tls) => {
+                let sc_config = ScConfig::new(domain,tls)?;
                 let mut sc_client = sc_config.connect().await?;
                 sc_client
                     .find_replica_for_topic_partition(topic, partition)
                     .await
-                    .map(|leader| ReplicaLeaderTarget::Spu(leader))
+                    .map(|leader| ReplicaLeaderTargetInstance::Spu(leader))
             }
-            Self::Spu(domain) => {
+            Self::Spu(domain,_tls) => {
 
                 let config: ClientConfig = domain.into();   // get generic configuration
                 let leader_config = ReplicaLeaderConfig::new(topic.to_owned(), partition);
-                Ok(ReplicaLeaderTarget::Spu(SpuReplicaLeader::new(leader_config,config.connect().await?)))
+                Ok(ReplicaLeaderTargetInstance::Spu(SpuReplicaLeader::new(leader_config,config.connect().await?)))
             }
         }
     }

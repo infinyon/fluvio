@@ -3,12 +3,12 @@ version = "1.0"
 current_profile = "local"
 
 [cluster.local]
-domain = "127.0.0.1:9003"
-certificate_authority_data = ""
+addr = "127.0.0.1:9003"
+
 
 [cluster.ec2]
-domain = "sandbox.xxxx.eksctl.io"
-certificate_authority_data = ""
+addr = "sandbox.xxxx.eksctl.io"
+
 
 # no default topic
 [profile.local]

@@ -11,6 +11,8 @@ mod topic;
 mod advanced;
 mod output;
 mod profile;
+mod tls;
+mod install;
 
 
 pub use self::error::CliError;

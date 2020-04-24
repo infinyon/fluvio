@@ -22,9 +22,9 @@ use crate::Terminal;
 use super::CliError;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "topic", author = "", about = "Topic operations")]
+#[structopt(name = "topic", about = "Topic operations")]
 pub enum TopicOpt {
-    #[structopt(name = "create", author = "", template = "{about}
+    #[structopt(name = "create", template = "{about}
 
 {usage}
 
@@ -32,7 +32,7 @@ pub enum TopicOpt {
 ",about = "Create a topic")]
     Create(CreateTopicOpt),
 
-    #[structopt(name = "delete", author = "", template = "{about}
+    #[structopt(name = "delete", template = "{about}
 
 {usage}
 
@@ -40,7 +40,7 @@ pub enum TopicOpt {
 ",about = "Delete a topic")]
     Delete(DeleteTopicOpt),
 
-    #[structopt(name = "describe", author = "", template = "{about}
+    #[structopt(name = "describe", template = "{about}
 
 {usage}
 
@@ -48,7 +48,7 @@ pub enum TopicOpt {
 ",about = "Show details of a topic")]
     Describe(DescribeTopicsOpt),
 
-    #[structopt(name = "list", author = "", template = "{about}
+    #[structopt(name = "list", template = "{about}
 
 {usage}
 

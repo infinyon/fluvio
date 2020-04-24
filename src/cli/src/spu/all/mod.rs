@@ -10,7 +10,7 @@ use crate::Terminal;
 
 #[derive(Debug, StructOpt)]
 pub enum SpuOpt {
-    #[structopt(name = "list", author = "", template = "{about}
+    #[structopt(name = "list", template = "{about}
 
 {usage}
 

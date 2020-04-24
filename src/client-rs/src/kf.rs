@@ -363,7 +363,7 @@ impl SpuController for KfClient
                                 debug!("broker {}/{} is leader", broker.host, broker.port);
                                 let mut kafka_config = self.0.clone_config();
                                 let broker: ServerAddress = broker.into();
-                                kafka_config.set_domain(broker.to_string());
+                                kafka_config.set_addr(broker.to_string());
                                 let kf_client = kafka_config.connect().await?;
                                
                                 let config = ReplicaLeaderConfig::new(topic.to_owned(),partition)
@@ -551,7 +551,7 @@ impl KfLeader {
             "fetch logs '{}' ({}) partition to {}",
             self.topic(),
             self.partition(),
-            self.domain()
+            self.addr()
         );
 
         trace!("fetch logs req {:#?}", request);

@@ -32,13 +32,13 @@ use kf_protocol::api::ResponseMessage;
 
 /// send request and return response from calling server at socket addr
 pub async fn send_and_receive<R>(
-    domain: &str,
+    addr: &str,
     request: &RequestMessage<R>,
 ) -> Result<ResponseMessage<R::Response>, KfSocketError>
 where
     R: Request,
 {
-    let mut client = KfSocket::connect(domain).await?;
+    let mut client = KfSocket::connect(addr).await?;
 
     let msgs: ResponseMessage<R::Response> = client.send(&request).await?;
 

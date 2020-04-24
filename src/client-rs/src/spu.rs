@@ -36,6 +36,8 @@ use crate::FetchOffset;
 pub struct Spu(Client);
 
 impl Spu  {
+
+    #[allow(unused)]
     fn new(client: Client) -> Self {
         Self(client)
     }
@@ -68,8 +70,8 @@ impl SpuReplicaLeader  {
         &self.config
     }
 
-    pub fn domain(&self) -> &str {
-        &self.client.config().domain()
+    pub fn addr(&self) -> &str {
+        &self.client.config().addr()
     }
 
 
@@ -151,7 +153,7 @@ impl ReplicaLeader for SpuReplicaLeader {
             offset_option,
             self.topic(),
             self.partition(),
-            self.domain(),
+            self.addr(),
         );
 
         let log_stream_ft = async move {

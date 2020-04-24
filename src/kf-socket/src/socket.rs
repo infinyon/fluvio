@@ -74,12 +74,12 @@ impl <S>InnerKfSocket<S> {
 
 impl <S>InnerKfSocket<S> where S: AsyncRead + AsyncWrite + Unpin + Send {
 
-    /// connect to domain
-    pub async fn connect_to_domain<C>(domain: &str,connector: &C) -> Result<Self, KfSocketError>
+    /// connect to target address with connector
+    pub async fn connect_with_connector<C>(addr: &str,connector: &C) -> Result<Self, KfSocketError>
         where C: TcpDomainConnector<WrapperStream=S>
     {
-        debug!("trying to connect to domain at: {}", domain);
-        let (tcp_stream,fd) = connector.connect(domain).await?;
+        debug!("trying to connect to addr at: {}", addr);
+        let (tcp_stream,fd) = connector.connect(addr).await?;
         Ok(Self::from_stream(tcp_stream,fd))
     }    
 
@@ -120,7 +120,7 @@ impl KfSocket {
 
     pub async fn connect(addr: &str) -> Result<Self, KfSocketError>
     {
-        Self::connect_to_domain(addr,&DefaultTcpDomainConnector::new()).await
+        Self::connect_with_connector(addr,&DefaultTcpDomainConnector::new()).await
     }    
 
 }

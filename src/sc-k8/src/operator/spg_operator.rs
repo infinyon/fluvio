@@ -34,6 +34,7 @@ use types::SpuId;
 use flv_sc_core::core::spus::SharedSpuLocalStore;
 
 
+use crate::cli::TlsConfig;
 use super::convert_cluster_to_statefulset;
 use super::generate_service;
 use super::SpuGroupObj;
@@ -43,14 +44,21 @@ pub struct SpgOperator {
     client: SharedK8Client,
     spu_store: SharedSpuLocalStore,
     namespace: String,
+    tls: Option<TlsConfig>
 }
 
 impl SpgOperator {
-    pub fn new(client: SharedK8Client, namespace: String, spu_store: SharedSpuLocalStore) -> Self {
+    pub fn new(
+        client: SharedK8Client, 
+        namespace: String, 
+        spu_store: SharedSpuLocalStore,
+        tls: Option<TlsConfig>
+    ) -> Self {
         Self {
             client,
             namespace,
             spu_store,
+            tls
         }
     }
 
@@ -186,6 +194,7 @@ impl SpgOperator {
             spg_name,
             spg_svc_name,
             &self.namespace,
+            self.tls.as_ref()
         );
         debug!(
             "cluster '{}': apply statefulset '{}' changes",

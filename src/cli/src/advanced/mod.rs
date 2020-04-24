@@ -25,7 +25,7 @@ pub enum AdvancedOpt {
 ", about = "Generate a request template")]
     Generate(GenerateTemplateOpt),
 
-    #[structopt(name = "run", author = "", template = "{about}
+    #[structopt(name = "run",  template = "{about}
 
 {usage}
 

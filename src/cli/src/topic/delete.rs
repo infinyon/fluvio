@@ -7,9 +7,10 @@
 use structopt::StructOpt;
 
 use flv_client::SpuController;
+use flv_client::profile::ScConfig;
 
 use crate::error::CliError;
-use flv_client::profile::ScConfig;
+use crate::tls::TlsConfig;
 
 
 // -----------------------------------
@@ -44,16 +45,15 @@ pub struct DeleteTopicOpt {
     )]
     kf: Option<String>,
 
-    /// Profile name
-    #[structopt(short = "P", long = "profile")]
-    profile: Option<String>,
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl DeleteTopicOpt {
     /// Validate cli options. Generate target-server and delete-topic configuration.
     fn validate(self) -> Result<(ScConfig, DeleteTopicConfig), CliError> {
         // profile specific configurations (target server)
-        let target_server = ScConfig::new(self.sc)?;
+        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
         let delete_topic_cfg = DeleteTopicConfig { name: self.topic };
 
         // return server separately from config

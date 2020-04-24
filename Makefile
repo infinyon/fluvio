@@ -12,6 +12,7 @@ DOCKER_REGISTRY=infinyon
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
+FLVD=target/debug/fluvio
 
 build:
 	cargo build
@@ -19,6 +20,19 @@ build:
 integration-test:	build
 	target/debug/flv-integration-test
 
+# create secret for k8 in development mode
+k8-create-secret:
+	kubectl delete secret fluvio-ca --ignore-not-found=true
+	kubectl delete secret fluvio-tls --ignore-not-found=true
+	kubectl create secret generic fluvio-ca --from-file tls/certs/ca.crt
+	kubectl create secret tls fluvio-tls --cert tls/certs/server.crt --key tls/certs/server.key
+
+k8-tls-list:
+	$(FLVD) topic list --tls --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key --sc fluvio.local:9003
+
+# set k8 profile using tls
+k8-set-k8-profile-tls:
+	$(FLVD) profile set-k8-profile --tls --domain fluvio.local --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key
 
 run-all-unit-test:
 	cargo test --all
@@ -128,6 +142,15 @@ delete_release:
 # helm targets
 helm_package:
 	cd k8-util/helm; make package-core
+
+
+# install using local helm chart and current code
+helm_minikube_dev_install:	minikube_image	
+	cd k8-util/helm; make install_minikube_dev
+
+
+helm_uninstall_dev:
+	helm uninstall fluvio
 
 
 ## Helper targets to compile specific crate

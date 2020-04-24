@@ -7,11 +7,15 @@ fluvioVersion: 0.0.1
 registry: infinyon
 
 scLog: info
+tls: false
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 imagePolicy:  IfNotPresent
 
+cert:
+  caCert: fluvio-ca
+  tls: fluvio-tls
 rbac:
   create: true
 
@@ -22,9 +26,4 @@ podSecurityContext: {}
   # fsGroup: 2000
 
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+

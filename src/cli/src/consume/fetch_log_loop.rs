@@ -63,10 +63,16 @@ where
 
     let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);
 
-    while let Some(record) = log_stream.next().await {
-        process_fetch_topic_response(out.clone(), &topic, record, &opt).await?;
+    while let Some(response) = log_stream.next().await {
 
-        if !opt.continuous {
+        debug!("got response: LSO: {} batchs: {}",
+            response.log_start_offset,
+            response.records.batches.len(),
+        );        
+        
+        process_fetch_topic_response(out.clone(), &topic, response, &opt).await?;
+
+        if opt.disable_continuous {
             debug!("finishing fetch loop");
             break;
         }

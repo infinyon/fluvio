@@ -12,7 +12,7 @@ use sc_api::spu::FlvCustomSpu;
 use flv_client::profile::ScConfig;
 
 use crate::error::CliError;
-
+use crate::tls::TlsConfig;
 
 
 // -----------------------------------
@@ -38,9 +38,8 @@ pub struct DeleteCustomSpuOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    /// Profile name
-    #[structopt(short = "P", long = "profile")]
-    profile: Option<String>,
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 
@@ -52,7 +51,7 @@ impl DeleteCustomSpuOpt {
     /// Validate cli options. Generate target-server and delete custom spu config.
     fn validate(self) -> Result<(ScConfig, FlvCustomSpu), CliError> {
 
-        let target_server = ScConfig::new(self.sc)?;
+        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
 
         // custom spu
         let custom_spu = if let Some(name) = self.name {

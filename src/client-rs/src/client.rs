@@ -72,8 +72,8 @@ impl Client {
         None
     }
 
-    pub fn domain(&self) -> &str {
-        &self.config.domain
+    pub fn addr(&self) -> &str {
+        &self.config.addr
     }
     pub fn client_id(&self) -> &str {
         &self.config.client_id
@@ -99,7 +99,7 @@ impl Client {
         trace!(
             "send API '{}' req to srv '{}'",
             R::API_KEY,
-            self.config.domain()
+            self.config.addr()
         );
 
         let req_msg = self.new_request(request, self.lookup_version(R::API_KEY));
@@ -131,33 +131,33 @@ impl Client {
 /// Client Factory
 #[derive(Clone)]
 pub struct ClientConfig{
-    domain: String,
+    addr: String,
     client_id: String,
     connector: AllDomainConnector
 }
 
 impl From<String> for ClientConfig {
 
-    fn from(domain: String) -> Self {
-        Self::with_domain(domain)
+    fn from(addr: String) -> Self {
+        Self::with_addr(addr)
     }
 }
 
 impl ClientConfig {
-    pub fn new(domain: String,connector: AllDomainConnector) -> Self {
+    pub fn new(addr: String,connector: AllDomainConnector) -> Self {
         Self {
-            domain,
+            addr,
             client_id: "fluvio".to_owned(),
             connector
         }
     }
 
-    pub fn with_domain(domain: String) -> Self {
-        Self::new(domain,AllDomainConnector::default())
+    pub fn with_addr(addr: String) -> Self {
+        Self::new(addr,AllDomainConnector::default())
     }
 
-    pub fn domain(&self) -> &str {
-        &self.domain
+    pub fn addr(&self) -> &str {
+        &self.addr
     }
 
     /// set client id
@@ -169,13 +169,13 @@ impl ClientConfig {
         self
     }
 
-    pub fn set_domain(&mut self,domain: String) {
-        self.domain = domain
+    pub fn set_addr(&mut self,domain: String) {
+        self.addr = domain
     }
 
     pub async fn connect(self) -> Result<Client, ClientError> 
     {
-        let socket = AllKfSocket::connect_to_domain(&self.domain,&self.connector).await?;
+        let socket = AllKfSocket::connect_with_connector(&self.addr,&self.connector).await?;
         Client::connect(socket,self).await
     }
 }

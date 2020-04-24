@@ -94,6 +94,9 @@ mod proxy {
         if let Err(err) = proxy_start(&proxy_addr,tls_acceptor,target).await {
             print_cli_err!(err);
             process::exit(0x0100);
+        } else {
+            info!("TLS started successfully");
+            println!("TLS proxy started");
         }
 
     }

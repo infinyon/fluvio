@@ -183,12 +183,14 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
             .await
         {
             debug!(
-                "conn: {}, retrieved records replica: {}, from: {} to hw: {}, leo: {}",
+                "conn: {}, retrieved slice len: {} replica: {}, from: {} to hw: {}, leo: {}",
+                partition_response.records.len(),
                 self.kf_sink.id(),
                 self.replica,
                 offset,
                 hw,
-                leo
+                leo,
+                
             );
             let response = FlvContinuousFetchResponse {
                 topic: self.replica.topic.clone(),

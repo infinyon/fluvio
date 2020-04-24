@@ -4,52 +4,63 @@ use flv_client::profile::ScConfig;
 use flv_client::SpuController;
 use flv_client::ReplicaLeader;
 
+use crate::CommandUtil;
+
 
 /// produce message
 #[allow(unused)]
-pub async fn produce_message_with_api() {
+pub fn produce_message_with_api() {
 
-    sleep(Duration::from_secs(2)).await;
+    use flv_future_aio::task::run_block_on;
+    
+    run_block_on(async {
 
-    let config = ScConfig::new(Some("localhost:9003".into())).expect("connect");
-    let mut sc = config.connect().await.expect("should connect");
+        sleep(Duration::from_secs(2)).await;
 
-    let mut leader = sc.find_replica_for_topic_partition("test1",0).await.expect("leader not founded");
+        let config = ScConfig::new(Some("localhost:9003".into()),None).expect("connect");
+        let mut sc = config.connect().await.expect("should connect");
 
-    let message = "hello world".to_owned().into_bytes();
+        let mut leader = sc.find_replica_for_topic_partition("test1",0).await.expect("leader not founded");
 
-    leader.send_record(message).await.expect("message sent");
+        let message = "hello world".to_owned().into_bytes();
+
+        leader.send_record(message).await.expect("message sent");
+
+        println!("message produced");
+    });
 }
 
 use std::io::Write;
+use std::io;
 use std::process::Stdio;
 
-use crate::command_spawn;
+use crate::Target;
+use crate::get_fluvio;
+use crate::TlsLoader;
 
+pub fn produce_message_with_cli(tls: &TlsLoader,target: &Target) {
 
-pub fn produce_message_with_cli() {
-
-    let mut child = command_spawn("fluvio","produce",
-            | cmd | {
-
-                cmd
-                    .stdin(Stdio::piped())
-                    .arg("produce")
-                    .arg("--topic")
-                    .arg("test1")
-                    .arg("--sc")
-                    .arg("localhost:9003");
-
-                println!("produce cmd: {:#?}",cmd);
-
-            });
+    println!("starting produce");
+    let mut child = get_fluvio()
+            .expect("no fluvio")
+            .stdin(Stdio::piped())
+            .arg("produce")
+            .arg("--topic")
+            .arg("test1")
+            .target(target)
+            .setup_client_tls(tls)
+            .print()
+            .spawn()
+            .expect("no child");
+                  
 
     let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-    stdin.write_all("hello, world".as_bytes()).expect("Failed to write to stdin");
+    stdin.write_all("hello world".as_bytes()).expect("Failed to write to stdin");
 
-    let status = child.wait().expect("Failed to read stdout");
+    let output = child.wait_with_output().expect("Failed to read stdout");
 
-    assert!(status.success());
+    io::stdout().write_all(&output.stdout).unwrap();
+    io::stderr().write_all(&output.stderr).unwrap();
 
     println!("produce message: hello world");
 

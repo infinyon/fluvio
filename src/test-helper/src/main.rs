@@ -1,12 +1,18 @@
-mod launcher;
 mod runner;
 mod cli;
-mod setup;
 mod tests;
 mod bin;
+mod cmd;
+mod environment;
+mod target;
+mod tls;
 
 use cli::TestOption;
 use bin::*;
+use cmd::*;
+use target::*;
+use tls::*;
+
 fn main() {
 
     use runner::TestRunner;
@@ -15,9 +21,11 @@ fn main() {
     flv_future_aio::util::init_logger();
 
     let option = TestOption::parse_cli_or_exit();
-    let runner = TestRunner::new(option);
 
-    if let Err(err) = run_block_on(runner.basic_test()) {
+    
+    let mut runner = TestRunner::new(option);
+
+    if let Err(err) = run_block_on(runner.test()) {
         assert!(false,"error: {:?}",err);
     }  
 

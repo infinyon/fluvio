@@ -8,11 +8,13 @@ use structopt::StructOpt;
 
 use log::debug;
 
+
+use flv_client::profile::ControllerTargetConfig;
+use flv_client::profile::ControllerTargetInstance;
+use crate::Terminal;
 use crate::error::CliError;
 use crate::OutputType;
-use flv_client::profile::SpuControllerTargetConfig;
-use flv_client::profile::SpuControllerTarget;
-use crate::Terminal;
+use crate::tls::TlsConfig;
 
 use super::helpers::list_kf_topics;
 use super::helpers::list_sc_topics;
@@ -45,26 +47,27 @@ pub struct ListTopicsOpt {
     )]
     kf: Option<String>,
 
-    ///Profile name
-    #[structopt(short = "P", long = "profile")]
-    pub profile: Option<String>,
 
     /// Output
     #[structopt(
         short = "o",
         long = "output",
         value_name = "type",
-        raw(possible_values = "&OutputType::variants()", case_insensitive = "true")
+        possible_values = &OutputType::variants(),
+        case_insensitive = true
     )]
     output: Option<OutputType>,
+
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl ListTopicsOpt {
 
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(SpuControllerTargetConfig, ListTopicsConfig), CliError> {
+    fn validate(self) -> Result<(ControllerTargetConfig, ListTopicsConfig), CliError> {
 
-        let target_server = SpuControllerTargetConfig::possible_target(self.sc, self.kf)?;
+        let target_server = ControllerTargetConfig::possible_target(self.sc, self.kf,self.tls.try_into_file_config()?)?;
         
         // transfer config parameters
         let list_topics_cfg = ListTopicsConfig {
@@ -93,8 +96,8 @@ pub async fn process_list_topics<O>(out: std::sync::Arc<O>,opt: ListTopicsOpt) -
     debug!("list topics {:#?} server: {:#?}",cfg,target_server);
 
     (match target_server.connect().await? {
-        SpuControllerTarget::Kf(client) => list_kf_topics(out,client, cfg.output).await,
-        SpuControllerTarget::Sc(client) => list_sc_topics(out,client, cfg.output).await
+        ControllerTargetInstance::Kf(client) => list_kf_topics(out,client, cfg.output).await,
+        ControllerTargetInstance::Sc(client) => list_sc_topics(out,client, cfg.output).await
     })
         .map(|_| format!(""))
         .map_err(|err| err.into())

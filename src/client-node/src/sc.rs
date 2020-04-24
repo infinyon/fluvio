@@ -63,7 +63,7 @@ impl JsScClient {
             run_block_on(async move {
                 let c1 = c.clone();
                 let read_client = c1.read().await;
-                read_client.inner().domain().to_owned()
+                read_client.inner().addr().to_owned()
             })
         })
     }

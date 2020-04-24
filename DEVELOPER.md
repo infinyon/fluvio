@@ -134,12 +134,14 @@ Get SPU
  fluvio spu list --sc 127.0.0.1:9003
 ```
 
-## Deploying docker images to minikube
+## Deploying development docker images to minikube
 
-Steps are:
-* First make sure to shut down sc and custom spu servers.
-* Delete Custom SPU and topics.
-* Make sure docker is running
+### Setup 
+
+Install helm binary
+```
+brew install helm
+```
   
 Run following script to allow host docker to access minikube docker.  Without it, you can't upload image to minikube.
 
@@ -152,22 +154,38 @@ Ensure you have setup tunnel so can access SC and SPU from your machine:
 sudo ./k8-util/minikube-tunnel.sh
 ```
 
-Create Docker images locally:
+### Create development docker image
+
+This build local docker image using current branch of the code.
 ```
 make minikube_image
 ```
 
-## Helm Install
+## Installing fluvio to minikube
 
-Install helm
+Fluvio CLI can be used to install on minikube
 ```
-brew install helm
+target/debug/fluvio install
 ```
 
-Deploy docker images
+Ensure it is listed
 ```
-./k8-utils/deploy.sh
+helm list
 ```
+
+## Installing TLS version to minikube
+
+Ensure no other fluvio installation in the name space.  You can uninstall existing fluvio installation by:
+```helm uninstall fluvio```
+
+First, generate TLS certificates with domain "fluvio.local".  This will generate necessary certificates and create Kubernetes secrets:
+
+```make create-secret```
+
+Install TLS version of Fluvio
+```target/debug/fluvio install --tls```
+
+
 
 ## Running integration test
 
@@ -181,12 +199,12 @@ cargo build
 
 Run end to end integration test with a single SPU
 ```
-./target/debug/flv-integration-test
+./target/debug/flv-test
 ```
 
 Run end to end integration test with a multiple SPU.  For example, with 2 SPU
 ```
-./target/debug/flv-integration-test -r 2
+./target/debug/flv-test -r 2
 ```
 
 

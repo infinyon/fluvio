@@ -14,6 +14,8 @@ use k8_metadata::core::pod::ContainerSpec;
 use k8_metadata::core::pod::ContainerPortSpec;
 use k8_metadata::core::pod::PodSpec;
 use k8_metadata::core::pod::VolumeMount;
+use k8_metadata::core::pod::VolumeSpec;
+use k8_metadata::core::pod::SecretVolumeSpec;
 use k8_metadata::core::service::ServiceSpec;
 use k8_metadata::core::service::ServicePort;
 use k8_metadata::app::stateful::ResourceRequirements;
@@ -26,9 +28,11 @@ use k8_metadata::spg::SpuGroupSpec;
 use types::defaults::SPU_DEFAULT_NAME;
 use types::defaults::SPU_PUBLIC_PORT;
 use types::defaults::SPU_PRIVATE_PORT;
+use types::defaults::SC_PRIVATE_PORT;
 use types::defaults::PRODUCT_NAME;
-use types::defaults::FLV_LOG_BASE_DIR;
-use types::defaults::FLV_LOG_SIZE;
+
+
+use crate::cli::TlsConfig;
 
 
 fn find_spu_image() -> String {
@@ -41,12 +45,14 @@ pub fn convert_cluster_to_statefulset(
         metadata: &ObjectMeta,
         group_name: &str,
         group_svc_name: String,
-        namespace: &str) 
+        namespace: &str,
+        tls: Option<&TlsConfig>
+    ) 
     -> InputK8Obj<StatefulSetSpec>
 {
 
     let statefulset_name = format!("flv-spg-{}",group_name);
-    let spec  = generate_stateful(group_spec, group_name,group_svc_name,namespace);
+    let spec  = generate_stateful(group_spec, group_name,group_svc_name,namespace,tls);
     let owner_ref = metadata.make_owner_reference::<SpuGroupSpec>();
     
     InputK8Obj {
@@ -69,7 +75,9 @@ fn generate_stateful(
     spg_spec: &SpuGroupSpec,
     name: &str,
     group_svc_name: String,
-    namespace: &str) -> StatefulSetSpec {
+    namespace: &str,
+    tls_config: Option<&TlsConfig>
+) -> StatefulSetSpec {
 
     let replicas = spg_spec.replicas;
     let spg_template = &spg_spec.template.spec;
@@ -90,11 +98,87 @@ fn generate_stateful(
     let size =  storage.size();
     let mut env = vec![
         Env::key_field_ref("SPU_INDEX", "metadata.name"),
-        Env::key_value("FLV_SC_PRIVATE_HOST",&format!("flv-sc-internal.{}.svc.cluster.local",namespace)),
-        Env::key_value("SPU_MIN", &format!("{}",spg_spec.min_id())),
-        Env::key_value(FLV_LOG_BASE_DIR,&storage.log_dir()),
-        Env::key_value(FLV_LOG_SIZE, &size)
+        Env::key_value("SPU_MIN", &format!("{}",spg_spec.min_id()))
     ];
+
+    let mut volume_mounts = vec![VolumeMount {
+        name: "data".to_owned(),
+        mount_path: format!("/var/lib/{}/data", PRODUCT_NAME),
+        ..Default::default()
+    }];
+
+    let mut volumes = vec![];
+
+    let mut args = vec![
+        "/fluvio/spu-server".to_owned(),
+        "--sc-addr".to_owned(),
+        format!("flv-sc-internal.{}.svc.cluster.local:{}",namespace,SC_PRIVATE_PORT),
+        "--log-base-dir".to_owned(),
+        storage.log_dir(),
+        "--log-size".to_owned(),
+        size.clone()
+    ];
+
+    if let Some(tls) = tls_config {
+
+        args.push("--tls".to_owned());
+        if tls.enable_client_cert {
+            args.push("--enable-client-cert".to_owned());
+            args.push("--ca-cert".to_owned());
+            args.push(tls.ca_cert.clone().unwrap());
+            volume_mounts.push(
+                VolumeMount {
+                    name: "cacert".to_owned(),
+                    mount_path: "/var/certs/ca".to_owned(),
+                    read_only: Some(true),
+                    ..Default::default()
+                }
+            );
+            volumes.push(
+                VolumeSpec {
+                    name: "cacert".to_owned(),
+                    secret: Some(SecretVolumeSpec {
+                        secret_name: "fluvio-ca".to_owned(),         // fixed
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }
+            );
+        }
+
+        args.push("--server-cert".to_owned());
+        args.push(tls.server_cert.clone().unwrap());
+        args.push("--server-key".to_owned());
+        args.push(tls.server_key.clone().unwrap());
+
+        volume_mounts.push(
+            VolumeMount {
+                name: "tls".to_owned(),
+                mount_path: "/var/certs/tls".to_owned(),
+                read_only: Some(true),
+                ..Default::default()
+            }
+        );
+
+        volumes.push(
+            VolumeSpec {
+                name: "tls".to_owned(),
+                secret: Some(SecretVolumeSpec {
+                    secret_name: "fluvio-tls".to_owned(),         // fixed
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }
+        );
+
+        args.push("--bind-non-tls-public".to_owned());
+        args.push("0.0.0.0:9007".to_owned());
+    }
+
+    // add RUST LOG, if passed
+    if let Ok(rust_log) = std::env::var("RUST_LOG") {
+        env.push(Env::key_value("RUST_LOG", &rust_log));
+    }
     
     env.append(&mut spg_template.env.clone());
     
@@ -110,14 +194,12 @@ fn generate_stateful(
                 name: SPU_DEFAULT_NAME.to_owned(),
                 image: Some(find_spu_image()),
                 ports: vec![public_port, private_port],
-                volume_mounts: vec![VolumeMount {
-                    name: "data".to_owned(),
-                    mount_path: format!("/var/lib/{}/data", PRODUCT_NAME),
-                    ..Default::default()
-                }],
-                env: Some(env),
+                volume_mounts,
+                env,
+                args,
                 ..Default::default()
             }],
+            volumes,
             ..Default::default()
         },
     };

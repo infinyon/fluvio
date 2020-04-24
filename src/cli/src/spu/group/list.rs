@@ -5,11 +5,12 @@
 
 use structopt::StructOpt;
 
+use flv_client::profile::ScConfig;
+
 use crate::output::OutputType;
 use crate::error::CliError;
-use flv_client::profile::ScConfig;
 use crate::Terminal;
-
+use crate::tls::TlsConfig;
 use super::helpers::list_output::spu_group_response_to_output;
 
 #[derive(Debug)]
@@ -25,18 +26,19 @@ pub struct ListManagedSpuGroupsOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    ///Profile name
-    #[structopt(short = "P", long = "profile")]
-    pub profile: Option<String>,
 
     /// Output
     #[structopt(
         short = "O",
         long = "output",
         value_name = "type",
-        raw(possible_values = "&OutputType::variants()", case_insensitive = "true")
+        possible_values = &OutputType::variants(),
+        case_insensitive = true
     )]
     output: Option<OutputType>,
+
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl ListManagedSpuGroupsOpt {
@@ -44,7 +46,7 @@ impl ListManagedSpuGroupsOpt {
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ScConfig, ListSpuGroupsConfig), CliError> {
 
-        let target_server = ScConfig::new(self.sc)?;
+        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
 
         // transfer config parameters
         let list_spu_group_cfg = ListSpuGroupsConfig {

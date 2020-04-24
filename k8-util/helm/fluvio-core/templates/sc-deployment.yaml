@@ -17,3 +17,30 @@ spec:
           value: {{ .Values.scLog }}
         - name:  SPU_IMAGE
           value: {{ .Values.registry }}/fluvio-spu:{{ .Values.fluvioVersion }}
+  {{ if .Values.tls }}
+      command: ["/fluvio/sc-k8-server"]
+      args:
+        - --tls
+        - --enable-client-cert
+        - --ca-cert
+        - /var/certs/ca/ca.crt
+        - --server-cert
+        - /var/certs/tls/tls.crt
+        - --server-key
+        - /var/certs/tls/tls.key
+        - --bind-non-tls-public
+        - 0.0.0.0:9005
+      volumeMounts:
+          - mountPath: "/var/certs/ca"
+            name: cacert
+            readOnly: true
+          - mountPath: "/var/certs/tls"
+            name: tls
+  volumes:
+    - name: cacert
+      secret:
+        secretName: {{ .Values.cert.caCert }}
+    - name: tls
+      secret:
+        secretName: {{ .Values.cert.tls }}
+  {{ end }}

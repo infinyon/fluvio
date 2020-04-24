@@ -4,6 +4,10 @@ use std::process::Command;
 
 use log::debug;
 
+pub fn get_fluvio() -> Result<Command,IoError> {
+    get_binary("fluvio")
+}
+
 /// get path to the binary
 pub fn get_binary(bin_name: &str) -> Result<Command,IoError> {
 

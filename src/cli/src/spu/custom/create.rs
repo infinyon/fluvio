@@ -9,9 +9,10 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use types::socket_helpers::ServerAddress;
-
-use crate::error::CliError;
 use flv_client::profile::ScConfig;
+
+use crate::tls::TlsConfig;
+use crate::error::CliError;
 
 #[derive(Debug)]
 pub struct CreateCustomSpuConfig {
@@ -48,16 +49,15 @@ pub struct CreateCustomSpuOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    /// Profile name
-    #[structopt(short = "P", long = "profile")]
-    profile: Option<String>,
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl CreateCustomSpuOpt {
     /// Validate cli options. Generate target-server and create custom spu config.
     fn validate(self) -> Result<(ScConfig, CreateCustomSpuConfig), CliError> {
         // profile specific configurations (target server)
-        let target_server = ScConfig::new(self.sc)?;
+        let target_server = ScConfig::new(self.sc, self.tls.try_into_file_config()?)?;
 
         // create custom spu config
         let cfg = CreateCustomSpuConfig {

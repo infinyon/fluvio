@@ -9,7 +9,7 @@ pub enum CliError {
     InvalidArg(String),
     IoError(IoError),
     KfSocketError(KfSocketError),
-    ClientError(ClientError),
+    ClientError(ClientError)
 }
 
 impl From<IoError> for CliError {
@@ -36,7 +36,7 @@ impl fmt::Display for CliError {
             Self::InvalidArg(msg) => write!(f,"{}",msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f, "{}", err),
-            Self::ClientError(err) => write!(f, "{}", err),
+            Self::ClientError(err) => write!(f, "{}", err)
         }
     }
 }

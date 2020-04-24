@@ -1,6 +1,6 @@
 [package]
 name = "k8-flv-metadata"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
 description = "Kubernets metadata objects for fluvio"
@@ -14,8 +14,8 @@ name = "k8_metadata"
 log = "0.4.8"
 
 k8-obj-metadata = { version = "1.0.0"}
-k8-obj-core = { version = "1.0.0"}
-k8-obj-app = { version = "1.0.0" }
+k8-obj-core = { version = "1.1.0"}
+k8-obj-app = { version = "1.1.0" }
 flv-k8-topic = { version = "1.0.0", path = "metadata-topic"}
 flv-k8-spu = { version = "1.0.0", path = "metadata-spu"}
 flv-k8-partition = { version = "1.0.0", path = "metadata-partition"}

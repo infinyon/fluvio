@@ -1,24 +1,69 @@
 mod consume;
 mod produce;
 
-pub use produce::*;
 
-/// test consumer
-pub fn test_consumer(option: crate::TestOption) {
+use crate::TestOption;
+use crate::Target;
+use crate::TlsLoader;
 
-    use flv_future_aio::task::run_block_on;
-    use futures::future::join_all;
+pub struct ConsumeProducerRunner(TestOption);
 
-    let mut consumer_test = vec ![];
 
-    for i in 0..option.replication() {
-        consumer_test.push(consume::validate_consume_message(i));
+impl ConsumeProducerRunner {
+
+    pub fn new(option: TestOption) -> Self {
+        Self(option)
     }
 
 
-    run_block_on(
-        join_all(consumer_test)
-    );
+    /// run tester
+    pub fn run(&self,tls: TlsLoader,target: Target) {
 
+        //use futures::future::join_all;
+        //use futures::future::join;
+
+        //use flv_future_aio::task::run_block_on;
+
+        //let mut listen_consumer_test = vec ![];
+
+        println!("start testing...");
+
+        /*
+        if self.0.test_consumer() {
+            for i in 0..self.0.replication() {
+                listen_consumer_test.push(consume::validate_consumer_listener(i,&self.0));
+            }    
+        }
+        */
+
+        /*
+        run_block_on(
+            join(
+                self.produce_and_consume_cli(&target),
+                join_all(listen_consumer_test)
+            ));
+        */
+        self.produce_and_consume_cli(&tls,&target);
+    }
+        
+
+    fn produce_and_consume_cli(&self,tls: &TlsLoader,target: &Target)  {
+
+        // sleep 100 ms to allow listener to start earlier
+        if self.0.produce() {
+            produce::produce_message_with_cli(tls,target);
+        } else {
+            println!("produce skipped");
+        }
+       
+        
+        if self.0.test_consumer() {
+            consume::validate_consume_message_cli(tls,target);
+        } else {
+            println!("consume test skipped");
+        }
+        
+        
+    }
 
 }

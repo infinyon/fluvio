@@ -6,12 +6,14 @@
 
 use structopt::StructOpt;
 
+use flv_client::profile::ScConfig;
+
 use crate::error::CliError;
 use crate::OutputType;
-use flv_client::profile::ScConfig;
 use crate::Terminal;
 use crate::spu::helpers::format_spu_response_output;
 use crate::spu::helpers::flv_response_to_spu_metadata;
+use crate::tls::TlsConfig;
 
 #[derive(Debug)]
 pub struct ListSpusConfig {
@@ -24,24 +26,25 @@ pub struct ListSpusOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    ///Profile name
-    #[structopt(short = "P", long = "profile")]
-    pub profile: Option<String>,
 
     /// Output
     #[structopt(
         short = "O",
         long = "output",
         value_name = "type",
-        raw(possible_values = "&OutputType::variants()", case_insensitive = "true")
+        possible_values = &OutputType::variants(),
+        case_insensitive = true
     )]
     output: Option<OutputType>,
+
+    #[structopt(flatten)]
+    tls: TlsConfig,
 }
 
 impl ListSpusOpt {
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ScConfig, ListSpusConfig), CliError> {
-        let target_server = ScConfig::new(self.sc)?;
+        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
 
         // transfer config parameters
         let list_spu_cfg = ListSpusConfig {

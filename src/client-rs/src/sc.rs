@@ -213,7 +213,7 @@ impl SpuController for ScClient
 
                         let mut leader_client_config = self.0.clone_config();
                         let addr: ServerAddress = spu_resp.into();
-                        leader_client_config.set_domain(addr.to_string());
+                        leader_client_config.set_addr(addr.to_string());
 
                         let client = leader_client_config.connect().await?;
                         let leader_config = ReplicaLeaderConfig::new(topic.to_owned(), partition);
