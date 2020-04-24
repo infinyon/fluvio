@@ -20,6 +20,7 @@ use crate::CommandUtil;
 use crate::tls::Cert;
 use crate::Target;
 
+#[allow(unused)]
 /// test when consuming using streaming mode
 pub async fn validate_consumer_listener(client_idx: u16,option: &TestOption) {
 

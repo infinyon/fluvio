@@ -344,6 +344,7 @@ pub mod test {
     }
      
     //#[test]
+    #[allow(unused)]
     fn test_default_path_env() {
         env::set_var("FLV_PROFILE_PATH", "/user2/config");
         assert_eq!(ConfigFile::default_file_path(None).expect("file"),

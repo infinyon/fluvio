@@ -55,8 +55,8 @@ impl Encoder for FileEmptyRecords {
     }
 }
 
-/// need to create separate implemention of batch stream
-/// for specific implemetnation due to problem with compiler
+/// need to create separate implementation of batch stream
+/// for specific implementation due to problem with compiler
 impl Stream for FileBatchStream<FileEmptyRecords> {
     type Item = BatchHeaderPos;
 
@@ -86,8 +86,10 @@ mod tests {
     use super::BatchHeaderStream;
     use super::BatchHeaderPos;
 
+    #[allow(unused)]
     const TEST_FILE_NAME: &str = "00000000000000000200.log"; // for offset 200
 
+    #[allow(unused)]
     fn default_option() -> ConfigOption {
         ConfigOption {
             base_dir: temp_dir(),
@@ -96,6 +98,7 @@ mod tests {
         }
     }
 
+    #[allow(unused)]
     //#[test_async]
     async fn test_decode_batch_header_simple() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME);
@@ -125,8 +128,10 @@ mod tests {
         Ok(())
     }
 
+    #[allow(unused)]
     const TEST_FILE_NAME2: &str = "00000000000000000201.log"; // for offset 200
 
+    #[allow(unused)]
     //#[test_async]
     async fn test_decode_batch_header_multiple() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME2);

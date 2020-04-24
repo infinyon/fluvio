@@ -110,15 +110,6 @@ fn set_local_context(local_config: cli::SetLocal) -> Result<String,IoError> {
 }
 
 
-    
-/// set cluster from config
-pub fn set_cluster_tls(cluster: &mut Cluster,tls: crate::tls::TlsConfig) {
-
-
-
-}
-
-
 mod k8_context {
 
     use super::*;

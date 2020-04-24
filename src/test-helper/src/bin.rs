@@ -27,6 +27,7 @@ pub fn get_binary(bin_name: &str) -> Result<Command,IoError> {
 use std::fs::File;
 use std::process::Stdio;
 
+#[allow(unused)]
 pub fn open_log(prefix: &str)  -> (File,File) {
 
     let output = File::create(format!("/tmp/flv_{}.out",prefix)).expect("log file");
@@ -35,7 +36,7 @@ pub fn open_log(prefix: &str)  -> (File,File) {
     (output,error)
 }
 
-
+#[allow(unused)]
 pub fn command_exec(binary: &str,prefix: &str, process: impl Fn(&mut Command))  {
 
     let mut cmd = get_binary(binary)
@@ -62,6 +63,7 @@ pub fn command_exec(binary: &str,prefix: &str, process: impl Fn(&mut Command))  
 
 use std::process::Child;
 
+#[allow(unused)]
 pub fn command_spawn(binary: &str,prefix: &str, process: impl Fn(&mut Command)) -> Child {
 
     let mut cmd = get_binary(binary)

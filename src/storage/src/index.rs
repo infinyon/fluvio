@@ -199,6 +199,7 @@ mod tests {
     use crate::ConfigOption;
     use super::OffsetPosition;
 
+    #[allow(unused)]
     const TEST_FILE: &str = "00000000000000000921.index";
 
     #[test]
@@ -223,6 +224,7 @@ mod tests {
         assert_eq!(lookup_entry(&indexes, 50), Some(5)); // (21,12000) max
     }
 
+    #[allow(unused)]
     fn default_option() -> ConfigOption {
         ConfigOption {
             segment_max_bytes: 1000,
@@ -233,6 +235,7 @@ mod tests {
         }
     }
 
+    #[allow(unused)]
     //#[test_async]
     async fn test_index_read_offset() -> Result<(), IoError> {
         let option = default_option();

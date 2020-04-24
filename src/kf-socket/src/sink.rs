@@ -166,7 +166,6 @@ pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
 #[cfg(test)]
 mod tests {
 
-    use std::net::SocketAddr;
     use std::io::Cursor;
     use std::path::Path;
     use std::time::Duration;

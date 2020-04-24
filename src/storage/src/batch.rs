@@ -344,7 +344,7 @@ mod tests {
         Ok(())
     }
 
-    
+    #[allow(unused)]
     //#[test_async]
     async fn test_decode_batch_stream_multiple() -> Result<(),StorageError>  {
 
