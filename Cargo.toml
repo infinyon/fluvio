@@ -2,7 +2,6 @@
 members = [
     "src/cli",
     "src/client-rs",
-    "src/client-node",
     "src/api/internal-api",
     "src/kf-protocol",
     "src/kf-protocol/kf-protocol-dump",
@@ -32,7 +31,7 @@ members = [
 #k8-config = { path = "../k8-api/src/k8-config"}
 #k8-diff = { path = "../k8-api/src/k8-diff"}
 #flv-future-aio = { path = "../flv-future/src/future-aio"}
-##node-bindgen = { path = "../node-bindgen"}
+
 
 # profile to make image sizer smaller
 # comment out for now
