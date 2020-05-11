@@ -11,7 +11,7 @@ license = "Apache-2.0"
 [dependencies]
 log = "0.4.8"
 serde = { version ="1.0.103", features = ['derive'] }
-kf-protocol = { version = "1.1.0", path = "../../kf-protocol"}
+kf-protocol = { version = "1.1.2", path = "../../kf-protocol"}
 flv-metadata = { version = "1.0.0",path = "../../metadata"}
 types = { version = "0.1.0", path ="../../types", package = "flv-types"}
 k8-flv-metadata = { version = "1.0.0",path = "../../k8-metadata"}

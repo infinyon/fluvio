@@ -24,10 +24,10 @@ pin-utils = "0.1.0-alpha.4"
 chashmap = "2.2.0"
 tokio-util = { version = "0.3.1", features = ["codec","compat"]} 
 async-trait = "0.1.21"
-kf-protocol = { version = "1.1.0", path = "../kf-protocol"}
-flv-future-aio = { version = "2.0.0", features = ["tls"] }
+kf-protocol = { version = "1.1.2", path = "../kf-protocol"}
+flv-future-aio = { version = "2.1.0", features = ["tls"] }
 
 
 [dev-dependencies]
 flv-util = { version = "0.1.0", features = ["fixture"]}
-flv-future-aio = { version = "2.0.0", features = ["fixture"] }
+flv-future-aio = { version = "2.1.0", features = ["fixture"] }

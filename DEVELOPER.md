@@ -59,7 +59,7 @@ It is recommended to use custom SPU instead of managed SPU which allow SPU to ru
 
 
 
-## Setting up development env for Minikube
+## Setting up development env for Minikube Kubernetes
 
 Due to limitation of third party library, we need to apply DNS name for minikube cluster.
 
@@ -205,6 +205,17 @@ Run end to end integration test with a single SPU
 Run end to end integration test with a multiple SPU.  For example, with 2 SPU
 ```
 ./target/debug/flv-test -r 2
+```
+
+### Running integration test on Kubernetes
+
+Prerequisite:
+* minikube images
+* sys chart
+* minikube tunnel
+
+```
+./target/debug/flv-test -k
 ```
 
 
