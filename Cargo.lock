@@ -551,7 +551,7 @@ dependencies = [
 
 [[package]]
 name = "flv-api-spu"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "flv-future-aio",
  "kf-protocol",

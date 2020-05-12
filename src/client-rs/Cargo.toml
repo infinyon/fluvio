@@ -23,4 +23,4 @@ kf-protocol = { version = "1.1.2", path = "../kf-protocol"}
 types = { version = "0.1.0", path ="../types", package = "flv-types"}
 kf-socket = { version = "1.1.0", path = "../kf-socket" }
 sc-api = { version = "1.1.0", path = "../api/sc-api", package = "flv-api-sc"}
-spu-api = { version = "1.0.0", path = "../api/spu-api", package = "flv-api-spu"}
+spu-api = { version = "1.1.0", path = "../api/spu-api", package = "flv-api-spu"}
