@@ -28,7 +28,7 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
     pub partition: i32,
 
-    /// Start reading from this offset
+    /// Start reading from beginning
     #[structopt(short = "g", long = "from-beginning")]
     pub from_beginning: bool,
 
@@ -78,9 +78,10 @@ pub struct ConsumeLogOpt {
         long = "output",
         value_name = "type",
         possible_values = &ConsumeOutputType::variants(),
-        case_insensitive = true
+        case_insensitive = true,
+        default_value
     )]
-    output: Option<ConsumeOutputType>,
+    output: ConsumeOutputType,
 
     #[structopt(flatten)]
     tls: TlsConfig,
@@ -101,10 +102,9 @@ impl ConsumeLogOpt {
             partition: self.partition,
             from_beginning: self.from_beginning,
             disable_continuous: self.disable_continuous,
-            offset: -1,
+            offset: self.offset,
             max_bytes: max_bytes,
-
-            output: self.output.unwrap_or(ConsumeOutputType::default()),
+            output: self.output,
             suppress_unknown: self.suppress_unknown,
         };
 
@@ -120,9 +120,8 @@ pub struct ConsumeLogConfig {
     pub partition: i32,
     pub from_beginning: bool,
     pub disable_continuous: bool,
-    pub offset: Offset,
+    pub offset: Option<Offset>,
     pub max_bytes: i32,
-
     pub output: ConsumeOutputType,
     pub suppress_unknown: bool,
 }

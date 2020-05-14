@@ -48,11 +48,21 @@ where
         )));
     }
 
-    // list offsets
+    // compute offset
     let initial_offset = if opt.from_beginning {
-        FetchOffset::Earliest
+        FetchOffset::Earliest(opt.offset)
     } else {
-       FetchOffset::Latest
+       if let Some(offset) = opt.offset {
+            // if it is negative, we start from end
+            if offset < 0 {
+                FetchOffset::Latest(Some(offset * -1))
+            } else {
+                FetchOffset::Offset(offset)
+            }
+       } else {
+            FetchOffset::Latest(None)
+       }
+       
     };
 
 

@@ -42,9 +42,9 @@ impl Default for FetchLogOption {
 
 #[derive(Debug)]
 pub enum FetchOffset {
-    Earliest,
-    Latest,
-    Offset(i64)
+    Earliest(Option<i64>),      /// earliest + offset
+    Latest(Option<i64>),        /// latest - offset
+    Offset(i64)                 
 }
 
 

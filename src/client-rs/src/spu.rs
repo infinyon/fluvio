@@ -86,13 +86,13 @@ impl SpuReplicaLeader  {
 
         Ok(match offset {
             FetchOffset::Offset(inner_offset) => inner_offset,
-            FetchOffset::Earliest =>  {
+            FetchOffset::Earliest(relative_offset) =>  {
                 let offsets = self.fetch_offsets().await?;
-                offsets.start_offset()
+                offsets.start_offset() + relative_offset.unwrap_or(0)
             },
-            FetchOffset::Latest => {
+            FetchOffset::Latest(relative_offset) => {
                 let offsets = self.fetch_offsets().await?;
-                offsets.last_stable_offset()
+                offsets.last_stable_offset() - relative_offset.unwrap_or(0)
             }
         })
     }
