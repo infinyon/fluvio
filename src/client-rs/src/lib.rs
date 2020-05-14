@@ -8,6 +8,7 @@ mod leader;
 mod replica;
 pub mod profile;
 pub mod query_params;
+pub mod topic;
 
 pub use client::*;
 pub use error::ClientError;

@@ -5,7 +5,7 @@ mod list_sc;
 mod list_kf;
 
 mod topic_metadata_kf;
-mod topic_metadata_sc;
+
 
 pub use describe_sc::describe_sc_topics;
 pub use describe_kf::describe_kf_topics;

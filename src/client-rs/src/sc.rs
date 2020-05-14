@@ -1,7 +1,7 @@
 use std::default::Default;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-
+use std::iter::Iterator;
 
 use log::debug;
 use async_trait::async_trait;
@@ -12,7 +12,6 @@ use sc_api::topic::{FlvTopicCompositionRequest, FlvTopicCompositionResponse};
 use sc_api::topic::{FlvDeleteTopicsRequest};
 use sc_api::topic::{FlvCreateTopicRequest, FlvCreateTopicsRequest};
 use sc_api::topic::FlvTopicSpecMetadata;
-use sc_api::topic::FlvFetchTopicResponse;
 use sc_api::topic::FlvFetchTopicsRequest;
 use sc_api::spu::FlvCreateCustomSpusRequest;
 use sc_api::spu::{FlvCreateCustomSpuRequest, FlvEndPointMetadata};
@@ -35,7 +34,7 @@ use crate::ReplicaLeaderConfig;
 use crate::SpuController;
 use crate::SpuReplicaLeader;
 use crate::query_params::ReplicaConfig;
-
+use crate::topic::TopicMetadata;
 
 
 pub struct ScClient(Client);
@@ -153,7 +152,8 @@ impl SpuController for ScClient
 {
     type Leader = SpuReplicaLeader;
 
-    type TopicMetadata = FlvFetchTopicResponse;
+    type TopicMetadata = TopicMetadata;
+
     /// Connect to replica leader for a topic/partition
     async fn find_replica_for_topic_partition(
         &mut self,
@@ -318,6 +318,10 @@ impl SpuController for ScClient
         let request = FlvFetchTopicsRequest { names: topics };
 
         let response = self.0.send_receive(request).await?;
-        Ok(response.topics)
+        let topics: Vec<Self::TopicMetadata> = response.topics
+            .into_iter()
+            .map(|t| TopicMetadata::new(t))
+            .collect();
+        Ok(topics)
     }
 }

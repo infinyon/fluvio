@@ -17,7 +17,7 @@ use sc_api::errors::FlvErrorCode;
 
 
 #[derive(Serialize, Debug)]
-pub struct ScTopicMetadata {
+pub struct TopicMetadata {
     pub name: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -26,6 +26,34 @@ pub struct ScTopicMetadata {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub topic: Option<Topic>,
 }
+
+
+impl TopicMetadata {
+    pub fn new(fetched_topic_metadata: FlvFetchTopicResponse) -> Self {
+        // if topic is present, convert it
+        let topic = if let Some(fetched_topic) = fetched_topic_metadata.topic {
+            Some(Topic::new(fetched_topic))
+        } else {
+            None
+        };
+
+        // if error is present, convert it
+        let error = if fetched_topic_metadata.error_code.is_error() {
+            Some(fetched_topic_metadata.error_code)
+        } else {
+            None
+        };
+
+        // topic metadata with all parameters converted
+        Self {
+            name: fetched_topic_metadata.name.clone(),
+            error: error,
+            topic: topic,
+        }
+    }
+}
+
+
 
 #[derive(Serialize, Debug)]
 pub struct Topic {
@@ -48,50 +76,6 @@ pub struct Topic {
     pub partition_map: Option<Vec<PartitionReplica>>,
 }
 
-#[derive(Serialize, Debug)]
-pub struct PartitionReplica {
-    pub id: i32,
-    pub leader: i32,
-    pub replicas: Vec<i32>,
-    pub live_replicas: Vec<i32>,
-}
-
-#[derive(Serialize, Debug)]
-pub enum TopicResolution {
-    Provisioned,
-    Init,
-    Pending,
-    InsufficientResources,
-    InvalidConfig,
-}
-
-// -----------------------------------
-// Implementation
-// -----------------------------------
-impl ScTopicMetadata {
-    pub fn new(fetched_topic_metadata: FlvFetchTopicResponse) -> Self {
-        // if topic is present, convert it
-        let topic = if let Some(fetched_topic) = fetched_topic_metadata.topic {
-            Some(Topic::new(fetched_topic))
-        } else {
-            None
-        };
-
-        // if error is present, convert it
-        let error = if fetched_topic_metadata.error_code.is_error() {
-            Some(fetched_topic_metadata.error_code)
-        } else {
-            None
-        };
-
-        // topic metadata with all parameters converted
-        ScTopicMetadata {
-            name: fetched_topic_metadata.name.clone(),
-            error: error,
-            topic: topic,
-        }
-    }
-}
 
 impl Topic {
     pub fn new(fetched_topic: FlvFetchTopic) -> Self {
@@ -144,6 +128,16 @@ impl Topic {
     }
 }
 
+
+#[derive(Serialize, Debug)]
+pub struct PartitionReplica {
+    pub id: i32,
+    pub leader: i32,
+    pub replicas: Vec<i32>,
+    pub live_replicas: Vec<i32>,
+}
+
+
 impl PartitionReplica {
     pub fn new(flv_partition_replica: FlvPartitionReplica) -> Self {
         PartitionReplica {
@@ -154,6 +148,17 @@ impl PartitionReplica {
         }
     }
 }
+
+
+#[derive(Serialize, Debug)]
+pub enum TopicResolution {
+    Provisioned,
+    Init,
+    Pending,
+    InsufficientResources,
+    InvalidConfig,
+}
+
 
 impl TopicResolution {
     pub fn new(flv_topic_resolution: FlvTopicResolution) -> Self {

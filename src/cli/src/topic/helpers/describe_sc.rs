@@ -13,6 +13,7 @@ use prettytable::row;
 
 use flv_client::ScClient;
 use flv_client::SpuController;
+use flv_client::topic::TopicMetadata;
 
 use crate::OutputType;
 use crate::error::CliError;
@@ -20,8 +21,6 @@ use crate::DescribeObjectHandler;
 use crate::{KeyValOutputHandler, TableOutputHandler};
 use crate::Terminal;
 
-
-use super::topic_metadata_sc::ScTopicMetadata;
 
 
 // Connect to Kafka Controller and query server for topic
@@ -41,12 +40,11 @@ pub async fn describe_sc_topics<O>(
     // query none for empty topic_names array
     let topics = client.topic_metadata(topic_args).await?;
 
-    let inner: Vec<ScTopicMetadata> = topics.into_iter().map(|t| ScTopicMetadata::new(t)).collect();
-    out.describe_objects(&inner,output_type)    
+    out.describe_objects(&topics,output_type)    
 }
 
 
-impl DescribeObjectHandler for ScTopicMetadata {
+impl DescribeObjectHandler for TopicMetadata {
 
     
     fn label() -> &'static str {
@@ -88,7 +86,7 @@ impl DescribeObjectHandler for ScTopicMetadata {
 // Implement - TableOutputHandler
 // -----------------------------------
 
-impl TableOutputHandler for ScTopicMetadata {
+impl TableOutputHandler for TopicMetadata {
 
    
     /// table header implementation
@@ -125,7 +123,7 @@ impl TableOutputHandler for ScTopicMetadata {
 // Implement - KeyValOutputHandler
 // -----------------------------------
 
-impl KeyValOutputHandler for ScTopicMetadata {
+impl KeyValOutputHandler for TopicMetadata {
     
     /// key value hash map implementation
     fn key_values(&self) -> Vec<(String, Option<String>)> {

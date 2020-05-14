@@ -12,6 +12,7 @@ use log::debug;
 
 use flv_client::ScClient;
 use flv_client::SpuController;
+use flv_client::topic::TopicMetadata;
 
 use crate::error::CliError;
 use crate::OutputType;
@@ -19,9 +20,8 @@ use crate::TableOutputHandler;
 use crate::Terminal;
 use crate::t_println;
 
-use super::topic_metadata_sc::ScTopicMetadata;
 
-type ListTopics = Vec<ScTopicMetadata>;
+type ListTopics = Vec<TopicMetadata>;
 
 // -----------------------------------
 // Process Request
@@ -36,11 +36,7 @@ pub async fn list_sc_topics<O>(
 where
     O: Terminal,
 {
-    let topics = client.topic_metadata(None).await?;
-    let list_topics: Vec<ScTopicMetadata> = topics
-        .into_iter()
-        .map(|t| ScTopicMetadata::new(t))
-        .collect();
+    let list_topics = client.topic_metadata(None).await?;
     debug!("topics retrieved: {:#?}", list_topics);
     format_response_output(out, list_topics, output_type)
 }
