@@ -71,10 +71,28 @@ mod topic_partition {
         partitions: Vec<Partition>,
     }
 
+    impl Partitions {
+        #[allow(unused)]
+        fn new(partitions: Vec<Partition>) -> Self {
+            Self {
+                partitions
+            }
+        }
+    }
+
     #[derive(Debug, Deserialize, PartialEq)]
     pub struct Partition {
         id: i32,
         replicas: Vec<i32>,
+    }
+
+    impl Partition {
+        pub fn new(id: i32,replicas: Vec<i32>) -> Self {
+            Self {
+                id,
+                replicas
+            }
+        }
     }
 
 
