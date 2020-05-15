@@ -12,7 +12,6 @@ use crate::error::CliError;
 use crate::Terminal;
 use crate::OutputType;
 use crate::spu::helpers::format_spu_response_output;
-use crate::spu::helpers::flv_response_to_spu_metadata;
 use crate::tls::TlsConfig;
 
 #[derive(Debug)]
@@ -69,11 +68,9 @@ pub async fn process_list_custom_spus<O>(out: std::sync::Arc<O>,opt: ListCustomS
 
     let mut sc = target_server.connect().await?;
 
-    let flv_spus = sc.list_spu(true).await?;
-
-    let sc_spus = flv_response_to_spu_metadata(flv_spus);
+    let spus = sc.list_spu(true).await?;
 
     // format and dump to screen
-    format_spu_response_output(out,sc_spus, list_custom_spu_cfg.output)?;
+    format_spu_response_output(out,spus, list_custom_spu_cfg.output)?;
     Ok(())
 }

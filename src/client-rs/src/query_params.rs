@@ -73,7 +73,7 @@ mod topic_partition {
 
     impl Partitions {
         #[allow(unused)]
-        fn new(partitions: Vec<Partition>) -> Self {
+        pub fn new(partitions: Vec<Partition>) -> Self {
             Self {
                 partitions
             }

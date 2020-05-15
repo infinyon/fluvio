@@ -12,7 +12,7 @@ use crate::error::CliError;
 use crate::OutputType;
 use crate::Terminal;
 use crate::spu::helpers::format_spu_response_output;
-use crate::spu::helpers::flv_response_to_spu_metadata;
+
 use crate::tls::TlsConfig;
 
 #[derive(Debug)]
@@ -69,10 +69,9 @@ where
 
     let mut sc = target_server.connect().await?;
 
-    let flv_spus = sc.list_spu(false).await?;
-    let sc_spus = flv_response_to_spu_metadata(flv_spus);
-
+    let spus = sc.list_spu(false).await?;
+   
     // format and dump to screen
-    format_spu_response_output(out, sc_spus, list_spu_cfg.output)?;
+    format_spu_response_output(out, spus, list_spu_cfg.output)?;
     Ok(())
 }

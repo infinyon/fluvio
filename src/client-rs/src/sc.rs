@@ -18,7 +18,6 @@ use sc_api::spu::{FlvCreateCustomSpuRequest, FlvEndPointMetadata};
 use sc_api::spu::FlvDeleteCustomSpusRequest;
 use sc_api::spu::FlvFetchSpusRequest;
 use sc_api::spu::FlvRequestSpuType;
-use sc_api::spu::FlvFetchSpuResponse;
 use sc_api::spu::FlvCreateSpuGroupRequest;
 use sc_api::spu::FlvCreateSpuGroupsRequest;
 use sc_api::spu::FlvDeleteSpuGroupsRequest;
@@ -34,7 +33,8 @@ use crate::ReplicaLeaderConfig;
 use crate::SpuController;
 use crate::SpuReplicaLeader;
 use crate::query_params::ReplicaConfig;
-use crate::topic::TopicMetadata;
+use crate::metadata::topic::TopicMetadata;
+use crate::metadata::spu::SpuMetadata;
 
 
 pub struct ScClient(Client);
@@ -107,7 +107,7 @@ impl ScClient  {
     pub async fn list_spu(
         &mut self,
         only_custom_spu: bool,
-    ) -> Result<Vec<FlvFetchSpuResponse>, ClientError> {
+    ) -> Result<Vec<SpuMetadata>, ClientError> {
         let request = FlvFetchSpusRequest {
             req_spu_type: match only_custom_spu {
                 true => FlvRequestSpuType::Custom,
@@ -118,7 +118,7 @@ impl ScClient  {
 
         let responses = self.0.send_receive(request).await?;
 
-        Ok(responses.spus)
+        Ok(responses.spus.into_iter().map(|spu| spu.into()).collect())
     }
 
     pub async fn create_group(

@@ -13,7 +13,7 @@ use prettytable::row;
 
 use flv_client::ScClient;
 use flv_client::SpuController;
-use flv_client::topic::TopicMetadata;
+use flv_client::metadata::topic::TopicMetadata;
 
 use crate::OutputType;
 use crate::error::CliError;

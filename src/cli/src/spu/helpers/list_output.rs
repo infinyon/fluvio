@@ -7,29 +7,21 @@ use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
 
+use flv_client::metadata::spu::SpuMetadata;
+
 use crate::error::CliError;
 use crate::OutputType;
 use crate::Terminal;
 use crate::TableOutputHandler;
 use crate::t_println;
 
-use super::list_metadata::ScSpuMetadata;
 
-// -----------------------------------
-// ListSpus Data Structure
-// -----------------------------------
-
-type ListSpus = Vec<ScSpuMetadata>;
-
-
-// -----------------------------------
-// Process Request
-// -----------------------------------
+type ListSpus = Vec<SpuMetadata>;
 
 /// Process server based on output type
 pub fn format_spu_response_output<O>(
     out: std::sync::Arc<O>,
-    spus: Vec<ScSpuMetadata>,
+    spus: ListSpus,
     output_type: OutputType,
 ) -> Result<(), CliError>
     where O: Terminal
@@ -44,9 +36,6 @@ pub fn format_spu_response_output<O>(
     Ok(())
 }
 
-// -----------------------------------
-// Output Handlers
-// -----------------------------------
 impl TableOutputHandler for ListSpus {
 
 

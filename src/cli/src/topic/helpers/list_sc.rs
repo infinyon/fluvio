@@ -12,7 +12,7 @@ use log::debug;
 
 use flv_client::ScClient;
 use flv_client::SpuController;
-use flv_client::topic::TopicMetadata;
+use flv_client::metadata::topic::TopicMetadata;
 
 use crate::error::CliError;
 use crate::OutputType;
