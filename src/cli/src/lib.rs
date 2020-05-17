@@ -21,6 +21,8 @@ pub use self::root_cli::run_cli;
 use output::Terminal;
 use output::*;
 
+const VERSION: &'static str =  include_str!("VERSION");
+
 #[macro_export]
 macro_rules! t_println {
     ($out:expr,$($arg:tt)*) => ( $out.println(&format!($($arg)*)))

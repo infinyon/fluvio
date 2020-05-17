@@ -171,7 +171,7 @@ impl TestRunner {
             self.find_target().await
         };
        
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(3)).await;
 
         // at this point, cluster is up, we need to ensure clean shutdown of cluster
         // no matter if produce or consumer test crashes

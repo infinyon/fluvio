@@ -41,11 +41,12 @@ use super::install::InstallCommand;
 
 {all-args}
 ",
-    global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder]
+    global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
     
 )]
 enum Root {
     #[structopt(
+        no_version,
         name = "consume",
         template = "{about}
 
@@ -125,7 +126,10 @@ enum Root {
 {all-args}
 ", about = "install cluster")]
 
-    Install(InstallCommand)
+    Install(InstallCommand),
+
+    #[structopt(name = "version")]
+    Version(VersionCmd)
 }
 
 pub fn run_cli() -> Result<String, CliError> {
@@ -144,6 +148,7 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Advanced(advanced) => process_advanced(terminal.clone(),advanced).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Install(install) => process_install(terminal.clone(), install).await,
+            Root::Version(_) => process_version_cmd()
         }
     })
 }
@@ -176,4 +181,14 @@ impl Terminal for PrintTerminal {
 
 }
 
+#[derive(Debug, StructOpt)]
+struct VersionCmd{}
+
+
+
+fn process_version_cmd() -> Result<String,CliError> {
+
+    println!("version is: {}",crate::VERSION);
+    Ok("".to_owned())
+}
 

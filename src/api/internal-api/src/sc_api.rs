@@ -38,7 +38,7 @@ pub enum InternalScRequest {
      UpdateLrsRequest(RequestMessage<UpdateLrsRequest>),
 }
 
-// Added to satisfy Encode/Decode traits
+
 impl Default for InternalScRequest {
     fn default() -> InternalScRequest {
         InternalScRequest::RegisterSpuRequest(RequestMessage::default())

@@ -2,28 +2,23 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-cloud:  minikube
-fluvioVersion: 0.0.1
+cloud: minikube
+fluvioVersion: 0.4.1
 registry: infinyon
-
 scLog: info
 tls: false
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
-imagePolicy:  IfNotPresent
-
+imagePolicy: IfNotPresent
 cert:
   caCert: fluvio-ca
   tls: fluvio-tls
 rbac:
   create: true
-
-serviceAccount: 
+serviceAccount:
   name: fluvio
-
 podSecurityContext: {}
-  # fsGroup: 2000
+# fsGroup: 2000
 
 securityContext: {}
-

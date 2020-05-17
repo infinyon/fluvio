@@ -14,6 +14,11 @@ TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLVD=target/debug/fluvio
 
+# install all tools required
+install_tools:
+	brew install yq
+	brew install helm
+
 build:
 	cargo build
 
@@ -141,7 +146,7 @@ delete_release:
 
 # helm targets
 helm_package:
-	cd k8-util/helm; make package-core
+	make -C k8-util/helm package-core
 
 
 # install using local helm chart and current code

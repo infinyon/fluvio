@@ -192,9 +192,11 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         let mut install = get_fluvio()
                 .expect("unable to get fluvio");
                 
-        install.arg("install")
-                .arg("--log")
-                .arg("flv=debug,kf=debug");
+        install
+            .arg("install")
+            .arg("--develop")
+            .arg("--log")
+            .arg("flv=debug,kf=debug");
 
         if self.option.tls() {
             install.arg("--tls");

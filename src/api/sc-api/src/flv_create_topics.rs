@@ -13,9 +13,6 @@ use flv_metadata::topic::TopicSpec as TopicConfigMetadata;
 use crate::FlvResponseMessage;
 use crate::ScApiKey;
 
-// -----------------------------------
-// FlvCreateTopicsRequest
-// -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvCreateTopicsRequest {
@@ -36,9 +33,6 @@ pub struct FlvCreateTopicRequest {
     pub topic: TopicConfigMetadata,
 }
 
-// -----------------------------------
-// FlvCreateTopicsResponse
-// -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvCreateTopicsResponse {
@@ -46,9 +40,6 @@ pub struct FlvCreateTopicsResponse {
     pub results: Vec<FlvResponseMessage>,
 }
 
-// -----------------------------------
-// Implementation - FlvCreateTopicsRequest
-// -----------------------------------
 
 impl Request for FlvCreateTopicsRequest {
     const API_KEY: u16 = ScApiKey::FlvCreateTopics as u16;

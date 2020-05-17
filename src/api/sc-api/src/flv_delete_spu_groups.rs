@@ -12,10 +12,6 @@ use crate::FlvResponseMessage;
 use crate::ScApiKey;
 use crate::ApiError;
 
-// -----------------------------------
-// FlvDeleteSpuGroupsRequest
-// -----------------------------------
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteSpuGroupsRequest {
     /// Each spu group in the delete request.
@@ -28,10 +24,6 @@ impl Request for FlvDeleteSpuGroupsRequest {
     type Response = FlvDeleteSpuGroupsResponse;
 }
 
-
-// -----------------------------------
-// FlvDeleteSpuGroupsResponse
-// -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteSpuGroupsResponse {

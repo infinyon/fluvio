@@ -12,10 +12,6 @@ use crate::FlvResponseMessage;
 use crate::ScApiKey;
 use crate::common::flv_spus::FlvCustomSpu;
 
-// -----------------------------------
-// FlvDeleteCustomSpusRequest
-// -----------------------------------
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteCustomSpusRequest {
     /// Each spu name or id to be deleted.
@@ -28,10 +24,6 @@ impl Request for FlvDeleteCustomSpusRequest {
     type Response = FlvDeleteCustomSpusResponse;
 }
 
-
-// -----------------------------------
-// FlvDeleteTopicsResponse
-// -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteCustomSpusResponse {

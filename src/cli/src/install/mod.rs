@@ -15,15 +15,21 @@ use structopt::StructOpt;
 #[structopt(about = "Available Commands")]
 pub struct InstallCommand {
 
-    // install release version
+    // develop version
     #[structopt(long)]
-    release: bool,
+    develop: bool,
 
     #[structopt(long)]
     version: Option<String>,
 
-    #[structopt(long)]
-    namespace: Option<String>,
+    #[structopt(long,default_value="default")]
+    namespace: String,
+
+    #[structopt(long,default_value="fluvio")]
+    name: String,
+
+    #[structopt(long,default_value="minikube")]
+    cloud: String,
 
     /// tls
     #[structopt(long)]
@@ -58,45 +64,56 @@ mod inner_install{
 
     pub fn invoke_install(opt: InstallCommand) {
 
-        let version = if opt.release {
-            "1.0".to_owned()
-        } else {
+        let version = if opt.develop {
+            // get git version
             let output = Command::new("git").args(&["log", "-1","--pretty=format:\"%H\""]).output().unwrap();
             let version = String::from_utf8(output.stdout).unwrap();
             version.trim_matches('"').to_owned()
+        } else {
+            crate::VERSION.to_owned()
         };
 
-        let registry = if opt.release {
-            "infinyon"
-        } else {
+        let registry = if opt.develop {
             "localhost:5000/infinyon"
-        };
-
-        let cloud = if opt.release {
-            "eks"
         } else {
-            "minikube"
+            "infinyon"
         };
 
-        let ns = opt.namespace.unwrap_or("default".to_owned());
+        
+        let ns = opt.namespace;
+
         println!("flv: {}",version);
 
         let fluvio_version = format!("fluvioVersion={}",version);
         println!("using fluvio version: {}",fluvio_version);
 
         let mut cmd = Command::new("helm");
+
+        if opt.develop {
+            cmd
+                .arg("install")
+                .arg(opt.name)
+                .arg("./k8-util/helm/fluvio-core")
+                .arg("--set")
+                .arg(fluvio_version)
+                .arg("--set")
+                .arg(format!("registry={}",registry));
+        } else {
+
+            helm_add_repo();
+            helm_repo_update();
+
+            cmd
+                .arg("install")
+                .arg(opt.name)
+                .arg("fluvio/fluvio-core");
+        };
+
         cmd
-            .arg("install")
-            .arg("fluvio")
-            .arg("./k8-util/helm/fluvio-core")
             .arg("-n")
             .arg(ns)
             .arg("--set")
-            .arg(fluvio_version)
-            .arg("--set")
-            .arg(format!("registry={}",registry))
-            .arg("--set")
-            .arg(format!("cloud={}",cloud));
+            .arg(format!("cloud={}",opt.cloud));
             
         if opt.tls {
             cmd
@@ -109,12 +126,46 @@ mod inner_install{
                 .arg("--set")
                 .arg(format!("scLog={}",log));
         }
+
         
         let output = cmd.output()
             .expect("helm command fail to run");
 
         io::stdout().write_all(&output.stdout).unwrap();
         io::stderr().write_all(&output.stderr).unwrap();
+
+    }
+
+    fn helm_add_repo() {
+
+        // add repo
+        let output = Command::new("helm")
+            .arg("repo")
+            .arg("add")
+            .arg("fluvio")
+            .arg("https://infinyon.github.io/charts")
+            .output()
+            .expect("adding repo");
+
+        io::stdout().write_all(&output.stdout).unwrap();
+        io::stderr().write_all(&output.stderr).unwrap();
+
+        assert!(output.status.success());
+    }
+
+    fn helm_repo_update() {
+
+        // add repo
+        let output = Command::new("helm")
+            .arg("repo")
+            .arg("update")
+            .output()
+            .expect("adding repo");
+
+        io::stdout().write_all(&output.stdout).unwrap();
+        io::stderr().write_all(&output.stderr).unwrap();
+
+        assert!(output.status.success());
 
     }
 

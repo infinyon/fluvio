@@ -11,9 +11,6 @@ use kf_protocol::derive::{Decode, Encode};
 use crate::FlvResponseMessage;
 use crate::ScApiKey;
 
-// -----------------------------------
-// FlvDeleteTopicsRequest
-// -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteTopicsRequest {
@@ -21,19 +18,11 @@ pub struct FlvDeleteTopicsRequest {
     pub topics: Vec<String>,
 }
 
-// -----------------------------------
-// FlvDeleteTopicsResponse
-// -----------------------------------
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteTopicsResponse {
     /// A response message for each topic request
     pub results: Vec<FlvResponseMessage>,
 }
-
-// -----------------------------------
-// Implementation - FlvDeleteTopicsRequest
-// -----------------------------------
 
 impl Request for FlvDeleteTopicsRequest {
     const API_KEY: u16 = ScApiKey::FlvDeleteTopics as u16;

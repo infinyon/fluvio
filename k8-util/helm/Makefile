@@ -22,7 +22,12 @@ dry-run:
 dry-run-aws:
 	helm install --debug --dry-run goodly-guppy ./fluvio --set cloud=aws
 
-install:
+update_version:
+	yq w -i fluvio-core/Chart.yaml version $(VERSION)
+	yq w -i fluvio-core/values.yaml fluvioVersion $(VERSION)
+
+
+install:	update_version
 	helm install $(NAME) $(CHART_SRC) -n $(NS) \
 		--set fluvioVersion=$(FLUVIO_VERSION) \
 		--set registry=$(REGISTRY)	\
