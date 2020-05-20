@@ -37,7 +37,11 @@ pub struct InstallCommand {
 
     /// RUST_LOG
     #[structopt(long)]
-    log: Option<String>
+    log: Option<String>,
+
+    #[structopt(long)]
+    /// installing sys
+    sys: bool
 }
 
 
@@ -49,7 +53,12 @@ pub async fn process_install<O>(_out: std::sync::Arc<O>,command: InstallCommand)
     where O: Terminal
  {
 
-    inner_install::invoke_install(command);
+    if command.sys {
+        inner_install::install_sys(command);
+    } else {
+        inner_install::install_core(command);
+    }
+    
     
     Ok("".to_owned())
 }
@@ -62,7 +71,7 @@ mod inner_install{
 
     use super::InstallCommand;
 
-    pub fn invoke_install(opt: InstallCommand) {
+    pub fn install_core(opt: InstallCommand) {
 
         let version = if opt.develop {
             // get git version
@@ -133,6 +142,30 @@ mod inner_install{
 
         io::stdout().write_all(&output.stdout).unwrap();
         io::stderr().write_all(&output.stderr).unwrap();
+
+        println!("fluvio chart has been installed");
+
+    }
+
+    pub fn install_sys(opt: InstallCommand) {
+
+        
+        helm_add_repo();
+        helm_repo_update();
+       
+        let output = Command::new("helm")
+            .arg("install")
+            .arg("fluvio-sys")
+            .arg("fluvio/fluvio-sys")
+            .arg("--set")
+            .arg(format!("cloud={}",opt.cloud))
+            .output()
+            .expect("sys install");
+
+        io::stdout().write_all(&output.stdout).unwrap();
+        io::stderr().write_all(&output.stderr).unwrap();
+
+        println!("fluvio sys chart has been installed");
 
     }
 

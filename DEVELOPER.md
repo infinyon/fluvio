@@ -88,15 +88,10 @@ This script performs the following tasks:
 
 Before you begin, Make sure to install [Helm](https://helm.sh/docs/intro/install/) client appropriate for your environment.  Currently only helm version 3.0+ is supported.  
 
-Then add fluvio helm repo:
-```
-helm repo add fluvio https://infinyon.github.io/charts
-helm repo update
-```
 
-Install Fluvio system charts which install storage driver and CRD:
+Install Fluvio system charts using fluvio CLI
 ```
-helm install fluvio-sys fluvio/fluvio-sys  --set cloud=minikube
+./target/debug/fluvio install --sys
 ```
 
 

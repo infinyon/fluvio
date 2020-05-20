@@ -12,6 +12,7 @@ use flv_client::profile::ServerTargetConfig;
 
 use crate::error::CliError;
 use crate::tls::TlsConfig;
+use crate::profile::InlineProfile;
 
 use super::ConsumeOutputType;
 
@@ -29,7 +30,7 @@ pub struct ConsumeLogOpt {
     pub partition: i32,
 
     /// Start reading from beginning
-    #[structopt(short = "g", long = "from-beginning")]
+    #[structopt(short = "B", long = "from-beginning")]
     pub from_beginning: bool,
 
     /// disable continuous processing of messages 
@@ -86,6 +87,8 @@ pub struct ConsumeLogOpt {
     #[structopt(flatten)]
     tls: TlsConfig,
 
+    #[structopt(flatten)]
+    profile: InlineProfile
 }
 
 impl ConsumeLogOpt {
@@ -93,7 +96,12 @@ impl ConsumeLogOpt {
     pub fn validate(self) -> Result<(ServerTargetConfig, ConsumeLogConfig), CliError> {
 
     
-        let target_server = ServerTargetConfig::possible_target(self.sc, self.spu, self.kf,self.tls.try_into_file_config()?)?;
+        let target_server = ServerTargetConfig::possible_target(
+            self.sc, 
+        self.spu, 
+        self.kf,
+        self.tls.try_into_file_config()?,
+            self.profile.profile)?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
 
         // consume log specific configurations

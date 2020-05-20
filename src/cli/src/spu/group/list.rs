@@ -11,6 +11,8 @@ use crate::output::OutputType;
 use crate::error::CliError;
 use crate::Terminal;
 use crate::tls::TlsConfig;
+use crate::profile::InlineProfile;
+
 use super::helpers::list_output::spu_group_response_to_output;
 
 #[derive(Debug)]
@@ -18,14 +20,11 @@ pub struct ListSpuGroupsConfig {
     pub output: OutputType,
 }
 
-
-
 #[derive(Debug, StructOpt)]
 pub struct ListManagedSpuGroupsOpt {
     /// Address of Streaming Controller
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
-
 
     /// Output
     #[structopt(
@@ -39,14 +38,19 @@ pub struct ListManagedSpuGroupsOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(flatten)]
+    profile: InlineProfile,
 }
 
 impl ListManagedSpuGroupsOpt {
-
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ScConfig, ListSpuGroupsConfig), CliError> {
-
-        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
+        let target_server = ScConfig::new_with_profile(
+            self.sc,
+            self.tls.try_into_file_config()?,
+            self.profile.profile,
+        )?;
 
         // transfer config parameters
         let list_spu_group_cfg = ListSpuGroupsConfig {
@@ -56,22 +60,18 @@ impl ListManagedSpuGroupsOpt {
         // return server separately from topic result
         Ok((target_server, list_spu_group_cfg))
     }
-
 }
 
-
-
-
-
 /// Process list spus cli request
-pub async fn process_list_managed_spu_groups<O: Terminal>(out: std::sync::Arc<O>,opt: ListManagedSpuGroupsOpt) -> Result<(), CliError> {
-    
+pub async fn process_list_managed_spu_groups<O: Terminal>(
+    out: std::sync::Arc<O>,
+    opt: ListManagedSpuGroupsOpt,
+) -> Result<(), CliError> {
     let (target_server, list_spu_group_cfg) = opt.validate()?;
 
     let mut sc = target_server.connect().await?;
 
     let lists = sc.list_group().await?;
 
-    spu_group_response_to_output(out,lists, list_spu_group_cfg.output)
-
+    spu_group_response_to_output(out, lists, list_spu_group_cfg.output)
 }

@@ -18,6 +18,7 @@ use flv_client::profile::ControllerTargetInstance;
 
 use crate::error::CliError;
 use crate::tls::TlsConfig;
+use crate::profile::InlineProfile;
 
 // -----------------------------------
 //  Parsed Config
@@ -85,17 +86,14 @@ pub struct CreateTopicOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    /// Address of Kafka Controller
-    #[structopt(
-        short = "k",
-        long = "kf",
-        value_name = "host:port",
-        conflicts_with = "sc"
-    )]
-    kf: Option<String>,
+    #[structopt(flatten)]
+    kf: crate::common::KfConfig,
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(flatten)]
+    profile: InlineProfile,
 }
 
 impl CreateTopicOpt {
@@ -144,7 +142,15 @@ impl CreateTopicOpt {
             validate_only: self.validate_only,
         };
 
-        let target_server = ControllerTargetConfig::possible_target(self.sc, self.kf,self.tls.try_into_file_config()?)?;
+        let target_server = ControllerTargetConfig::possible_target(
+            self.sc,
+            #[cfg(feature = "kf")]
+            self.kf.kf,
+            #[cfg(not(feature = "kf"))]
+            None,
+            self.tls.try_into_file_config()?,
+            self.profile.profile,
+        )?;
 
         // return server separately from config
         Ok((target_server, create_topic_cfg))

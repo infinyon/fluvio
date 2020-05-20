@@ -13,6 +13,7 @@ use flv_client::profile::ScConfig;
 
 use crate::tls::TlsConfig;
 use crate::error::CliError;
+use crate::profile::InlineProfile;
 
 #[derive(Debug)]
 pub struct CreateCustomSpuConfig {
@@ -51,13 +52,20 @@ pub struct CreateCustomSpuOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(flatten)]
+    profile: InlineProfile,
 }
 
 impl CreateCustomSpuOpt {
     /// Validate cli options. Generate target-server and create custom spu config.
     fn validate(self) -> Result<(ScConfig, CreateCustomSpuConfig), CliError> {
         // profile specific configurations (target server)
-        let target_server = ScConfig::new(self.sc, self.tls.try_into_file_config()?)?;
+        let target_server = ScConfig::new_with_profile(
+            self.sc,
+            self.tls.try_into_file_config()?,
+            self.profile.profile,
+        )?;
 
         // create custom spu config
         let cfg = CreateCustomSpuConfig {

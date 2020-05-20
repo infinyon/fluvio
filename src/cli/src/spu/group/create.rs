@@ -12,6 +12,8 @@ use flv_client::profile::ScConfig;
 
 use crate::error::CliError;
 use crate::tls::TlsConfig;
+use crate::profile::InlineProfile;
+
 use super::helpers::group_config::GroupConfig;
 
 // -----------------------------------
@@ -46,12 +48,19 @@ pub struct CreateManagedSpuGroupOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(flatten)]
+    profile: InlineProfile,
 }
 
 impl CreateManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and create spu group config.
     fn validate(self) -> Result<(ScConfig, FlvCreateSpuGroupRequest), CliError> {
-        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
+        let target_server = ScConfig::new_with_profile(
+            self.sc,
+            self.tls.try_into_file_config()?,
+            self.profile.profile,
+        )?;
 
         let grp_config = self
             .storage

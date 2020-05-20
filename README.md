@@ -1,8 +1,11 @@
-# Fluvio
+<h1 align="center">Fluvio</h1>
+<div align="center">
+ <strong>
+   Cloud native platform for Data Stream
+ </strong>
+</div>
 
-* Website: https://www.fluvio.io
 
-Welcome to the Fluvio project!
 
 Fluvio is a cloud-native platform for data-in-motion, built from the ground up to run on Kubernetes.  
 It brings centralized control to connect, transform, and distribute real-time data across the organization.
@@ -18,8 +21,6 @@ The repository contains all the code necessary to run the Fluvio platform: Servi
 - Powerful CLI  - User-friendly and easy to use Command Line Interface.
 - Written in [Rust](https://www.rust-lang.org) - [Safe](https://msrc-blog.microsoft.com/2019/07/22/why-rust-for-safe-systems-programming), Fast, Small Footprint - built for high performance distributed systems.
     - Goodbye garbage collection!
-- Compatible with Kafka - Works with Kafka client and server APIs. 
-    - Fluvio CLI to manage Kafka topics, as well as produce and consume Kafka logs.
 
 
 ## Release Status

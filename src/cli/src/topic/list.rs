@@ -15,6 +15,7 @@ use crate::Terminal;
 use crate::error::CliError;
 use crate::OutputType;
 use crate::tls::TlsConfig;
+use crate::profile::InlineProfile;
 
 use super::helpers::list_kf_topics;
 use super::helpers::list_sc_topics;
@@ -38,15 +39,8 @@ pub struct ListTopicsOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-    /// Address of Kafka Controller
-    #[structopt(
-        short = "k",
-        long = "kf",
-        value_name = "host:port",
-        conflicts_with = "sc"
-    )]
-    kf: Option<String>,
-
+    #[structopt(flatten)]
+    kf: crate::common::KfConfig,
 
     /// Output
     #[structopt(
@@ -60,6 +54,11 @@ pub struct ListTopicsOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(flatten)]
+    profile: InlineProfile
+
+
 }
 
 impl ListTopicsOpt {
@@ -67,7 +66,13 @@ impl ListTopicsOpt {
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ControllerTargetConfig, ListTopicsConfig), CliError> {
 
-        let target_server = ControllerTargetConfig::possible_target(self.sc, self.kf,self.tls.try_into_file_config()?)?;
+        let target_server = ControllerTargetConfig::possible_target(
+            self.sc, 
+            #[cfg(kf)]
+            self.kf.kf,
+        #[cfg(not(foo))]
+            None,
+        self.tls.try_into_file_config()?,self.profile.profile)?;
         
         // transfer config parameters
         let list_topics_cfg = ListTopicsConfig {

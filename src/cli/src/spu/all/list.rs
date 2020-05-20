@@ -12,8 +12,8 @@ use crate::error::CliError;
 use crate::OutputType;
 use crate::Terminal;
 use crate::spu::helpers::format_spu_response_output;
-
 use crate::tls::TlsConfig;
+use crate::profile::InlineProfile;
 
 #[derive(Debug)]
 pub struct ListSpusConfig {
@@ -39,12 +39,18 @@ pub struct ListSpusOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(flatten)]
+    profile: InlineProfile
 }
 
 impl ListSpusOpt {
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ScConfig, ListSpusConfig), CliError> {
-        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
+        let target_server = ScConfig::new_with_profile(
+            self.sc,
+            self.tls.try_into_file_config()?,
+            self.profile.profile)?;
 
         // transfer config parameters
         let list_spu_cfg = ListSpusConfig {

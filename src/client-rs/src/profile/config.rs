@@ -128,12 +128,12 @@ impl ConfigFile {
 
 
 pub const LOCAL_PROFILE: &'static str = "local";
-const CONFIG_VERSION: &'static str = "1.0";
+const CONFIG_VERSION: &'static str = "2.0";
 
 #[derive(Debug, Default, PartialEq, Serialize,Deserialize)]
 pub struct Config {
     version: String,
-    current_profile: String,
+    current_profile: Option<String>,
     profile: HashMap<String,Profile>,
     cluster: HashMap<String,Cluster>,
     client_id: Option<String>
@@ -191,12 +191,12 @@ impl Config {
     }
 
     /// current profile
-    pub fn current_profile_name(&self) -> &str {
-        &self.current_profile
+    pub fn current_profile_name(&self) -> Option<&str> {
+        self.current_profile.as_ref().map(|c| c.as_ref())
     }
 
     pub fn current_profile(&self) -> Option<&Profile> {
-        self.profile.get(&self.current_profile)
+        self.current_profile.as_ref().and_then(|p| self.profile.get(p))
     }
 
 
@@ -204,7 +204,25 @@ impl Config {
     pub fn set_current_profile(&mut self,profile_name: &str) -> bool {
 
         if self.profile.contains_key(profile_name) {
-            self.current_profile = profile_name.to_owned();
+            self.current_profile = Some(profile_name.to_owned());
+            true
+        } else {
+            false
+        }
+    }
+
+    /// delete profile
+    pub fn delete_profile(&mut self,profile_name: &str) -> bool {
+
+        if self.profile.remove(profile_name).is_some() {
+
+            if let Some(old_profile) = &self.current_profile {
+                // check if it same as current profile, then remove it
+                if profile_name == old_profile {
+                    self.current_profile = None;
+                }
+            }
+            
             true
         } else {
             false
@@ -215,7 +233,20 @@ impl Config {
         self.profile.get_mut(profile_name)
     }
 
+    /// find cluster specified in the profile or current cluster
+    pub fn current_cluster_or_with_profile(&self,profile_name: Option<&str>) -> Option<&Cluster> {
+        if let Some(profile) = profile_name {
+            if let Some(profile_info) = self.profile.get(profile) {
+                self.cluster.get(&profile_info.cluster)
+            } else {
+                None
+            }
+        } else {
+            self.current_cluster()
+        }
+    }
 
+    /// find current cluster
     pub fn current_cluster(&self) -> Option<&Cluster> {
         self.current_profile().and_then(|profile| self.cluster.get(&profile.cluster))
     }
@@ -370,13 +401,13 @@ pub mod test {
         let config = conf_file.mut_config();
 
         assert_eq!(config.version(),"1.0");
-        assert_eq!(config.current_profile_name(),"local");
+        assert_eq!(config.current_profile_name().unwrap(),"local");
         let profile = config.current_profile().expect("profile should exists");
         assert_eq!(profile.cluster,"local");
 
         assert!(!config.set_current_profile("dummy"));
         assert!(config.set_current_profile("local2"));
-        assert_eq!(config.current_profile_name(),"local2");
+        assert_eq!(config.current_profile_name().unwrap(),"local2");
 
         let cluster = config.current_cluster().expect("cluster should exist");
         assert_eq!(cluster.addr,"127.0.0.1:9003");
@@ -419,7 +450,7 @@ pub mod test {
         config.set_current_profile("local3");
         config.save_to("/tmp/test_config.toml").expect("save should succeed");
         let update_conf_file = ConfigFile::load(Some("/tmp/test_config.toml".to_owned())).expect("parse failed");
-        assert_eq!(update_conf_file.config().current_profile_name(),"local3");
+        assert_eq!(update_conf_file.config().current_profile_name().unwrap(),"local3");
     }
 
     /*
@@ -436,8 +467,7 @@ pub mod test {
 
         let config = Config::new_with_local_cluster("localhost:9003".to_owned());
 
-        assert_eq!(config.version,"1.0");
-        assert_eq!(config.current_profile_name(),"local");
+        assert_eq!(config.current_profile_name().unwrap(),"local");
         let cluster = config.current_cluster().expect("cluster should exists");
         assert_eq!(cluster.addr,"localhost:9003");
     }
