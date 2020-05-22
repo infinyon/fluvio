@@ -163,24 +163,24 @@ where
 
         let mut incoming = listener.incoming();
 
-        trace!("opened connection from: {}", addr);
+        debug!("listening connection on {}", addr);
 
         let mut done = false;
 
         while !done {
-            trace!("waiting for client connection...");
+            debug!("waiting for client connection...");
 
             select! {
                 incoming = incoming.next().fuse() => {
-                     self.server_incoming(incoming)
+                     self.serve_incoming(incoming)
                 },
                 shutdown = shutdown_signal.next()  => {
-                    trace!("shutdown signal received");
+                    debug!("shutdown signal received");
                     if let Some(flag) = shutdown {
                         warn!("shutdown received");
                         done = true;
                     } else {
-                        trace!("no shutdown value, ignoring");
+                        debug!("no shutdown value, ignoring");
                     }
                 }
 
@@ -190,7 +190,8 @@ where
         info!("server terminating");
     }
 
-    fn server_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
+    /// process incoming request, for each request, we create async task for serving
+    fn serve_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
                 Ok(stream) => {
@@ -200,7 +201,6 @@ where
                     let builder = self.builder.clone();
 
                     let ft = async move {
-
 
                         debug!(
                             "new connection from {}",

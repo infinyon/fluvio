@@ -25,13 +25,14 @@ use super::config::ConfigFile;
 use super::tls::TlsConfig;
 
 
-/// User facing Sc configuration
+/// Logical look for Sc
 pub struct ScConfig {
     addr: String,
     tls: Option<TlsConfig>
 }
 
 impl ScConfig {
+    /// create new Sc with optional address and tls, assume default profile
     pub fn new(
         addr_option: Option<String>, 
         tls: Option<TlsConfig>
@@ -40,7 +41,7 @@ impl ScConfig {
         Self::new_with_profile(addr_option,tls,None)
     }
 
-    // new with profile
+    // create new Sc with optional address and tls and can specify optional preferred profile
     pub fn new_with_profile(addr_option: Option<String>, tls: Option<TlsConfig>,profile: Option<String>) -> Result<Self, ClientError> {
         
         if let Some(addr) = addr_option {

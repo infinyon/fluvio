@@ -31,7 +31,7 @@ Cargo build
 
 Run integration test with 2 SPU and replicas:
 ```
-flvt -k -r 2
+flvt --develop -r 2
 ```
 
 ## Upload release image to docker hub

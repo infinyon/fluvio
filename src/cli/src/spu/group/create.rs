@@ -20,37 +20,37 @@ use super::helpers::group_config::GroupConfig;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt,Default)]
 pub struct CreateManagedSpuGroupOpt {
     /// Managed SPU group name
     #[structopt(short = "n", long = "name", value_name = "string")]
-    name: String,
+    pub name: String,
 
     /// SPU replicas
     #[structopt(short = "l", long = "replicas")]
-    replicas: u16,
+    pub replicas: u16,
 
     /// Minimum SPU id (default: 1)
     #[structopt(short = "i", long = "min-id")]
-    min_id: Option<i32>,
+    pub min_id: Option<i32>,
 
     /// Rack name
     #[structopt(short = "r", long = "rack", value_name = "string")]
-    rack: Option<String>,
+    pub rack: Option<String>,
 
     /// storage size
     #[structopt(short = "s", long = "size", value_name = "string")]
-    storage: Option<String>,
+    pub storage: Option<String>,
 
     /// Address of Streaming Controller
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
-    sc: Option<String>,
+    pub sc: Option<String>,
 
     #[structopt(flatten)]
-    tls: TlsConfig,
+    pub tls: TlsConfig,
 
     #[structopt(flatten)]
-    profile: InlineProfile,
+    pub profile: InlineProfile,
 }
 
 impl CreateManagedSpuGroupOpt {

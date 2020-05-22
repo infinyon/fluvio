@@ -84,7 +84,7 @@ uninstall:
 	helm uninstall $(NAME) -n $(NS)
 
 
-package-core:	cleanup
+package-core:	cleanup	update_version
 	echo "Installing $(VERSION) core helm package"
 	helm package ./fluvio-core
 	mv fluvio-core-$(VERSION).tgz $(CHART_REPO)/charts

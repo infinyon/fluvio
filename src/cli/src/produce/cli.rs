@@ -39,8 +39,9 @@ pub enum FileRecord {
 
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
+
     /// Topic name
-    #[structopt(short = "t", long = "topic", value_name = "string")]
+    #[structopt(value_name="topic")]
     pub topic: String,
 
     /// Partition id

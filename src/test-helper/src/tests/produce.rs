@@ -45,7 +45,6 @@ pub fn produce_message_with_cli(tls: &TlsLoader,target: &Target) {
             .expect("no fluvio")
             .stdin(Stdio::piped())
             .arg("produce")
-            .arg("--topic")
             .arg("test1")
             .target(target)
             .setup_client_tls(tls)

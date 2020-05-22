@@ -87,11 +87,11 @@ impl ScDispatcher<FileReplica> {
     }
 
     async fn dispatch_loop(mut self) {
-        info!("starting SC Dispatcher");
+        debug!("starting SC Dispatcher");
 
         loop {
             if let Some(mut socket) = self.create_socket_to_sc().await {
-                trace!(
+                debug!(
                     "established connection to sc for spu: {}",
                     self.ctx.local_spu_id()
                 );
@@ -125,7 +125,12 @@ impl ScDispatcher<FileReplica> {
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
         let shared_sink = Arc::new(ExclusiveKfSink::new(sink));
+
+        debug!("entering request loop");
+
         loop {
+
+            debug!("waiting for request from sc");
             select! {
                 sc_request = api_stream.next().fuse() => {
 
@@ -180,7 +185,7 @@ impl ScDispatcher<FileReplica> {
 
         let local_spu_id = self.ctx.local_spu_id();
        
-        debug!("spu '{}' registration request", local_spu_id);
+        debug!("sending spu '{}' registration request", local_spu_id);
 
         let register_req = RegisterSpuRequest::new(local_spu_id);
         let mut message = RequestMessage::new_request(register_req);
@@ -258,7 +263,7 @@ impl ScDispatcher<FileReplica> {
         let (_, request) = req_msg.get_header_request();
 
         debug!(
-            "RCVD-Req << (CTRL): UpdateAll({} spus, {} replicas)",
+            "received sync all requests from sc: ({} spus, {} replicas)",
             request.spus.len(),
             request.replicas.len(),
         );

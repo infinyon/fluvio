@@ -66,15 +66,6 @@ impl TestRunner {
         Ok(())
     }
 
-    /// clean existing objects
-    async fn delete_all(&self) -> Result<(), ClientError> {
-
-        self.delete_objects::<TopicSpec>().await?;
-        self.delete_objects::<SpuSpec>().await?;
-        self.delete_objects::<SpuGroupSpec>().await
-        
-    }
-
     async fn find_target(&self) -> Target {
         self.env_driver.find_target().await.expect("svc not found")
     }
@@ -83,7 +74,15 @@ impl TestRunner {
     /// cleanup before initialize
     pub async fn pre_init_cleanup(&mut self) {
 
-        self.delete_all().await.expect("deleting existing object failed");
+        // make sure delete all
+
+        get_fluvio()
+            .expect("fluvio not founded")
+            .arg("cluster")
+            .arg("uninstall")
+            .print()
+            .wait_and_check();
+
         debug!("waiting 1 second for object delete to sync");  
         sleep(Duration::from_millis(1000)).await;
         self.env_driver.pre_init_cleanup().await;
@@ -98,10 +97,7 @@ impl TestRunner {
             .expect("fluvio not founded")
             .arg("topic")
             .arg("create")
-            .arg("--topic")
             .arg("test1")
-            .arg("--partitions")
-            .arg("1")
             .arg("--replication")
             .arg(self.option.replication().to_string())
             .target(target)
@@ -129,7 +125,8 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic(&target).await;
-            sleep(Duration::from_secs(1)).await;
+            println!("wait til topic is created");
+            sleep(Duration::from_secs(5)).await;
         } else {
             println!("no topic initialized");
         }

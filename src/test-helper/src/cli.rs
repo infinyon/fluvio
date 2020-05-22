@@ -49,13 +49,21 @@ pub struct TestOption {
     #[structopt(long)]
     tls: bool,
 
-    /// run in kubernetes
-    #[structopt(short,long)]
-    k8: bool,
+    /// run custom spu
+    #[structopt(long)]
+    custom: bool,
+
+    /// run develop image, this is for k8 
+    #[structopt(long)]
+    develop: bool,
 
     /// use profile
     #[structopt(short,long)]
-    profile: bool
+    profile: bool,
+
+    // log flag
+    #[structopt(short,long,default_value="flv=debug,kf=debug")]
+    pub log: String,
 }
 
 impl TestOption  {
@@ -108,7 +116,7 @@ impl TestOption  {
     }
 
     pub fn use_k8(&self) -> bool {
-        self.k8
+        !self.custom
     }
 
     pub fn use_profile(&self) -> bool {
@@ -117,6 +125,10 @@ impl TestOption  {
 
     pub fn disable_profile(&mut self) {
         self.profile = false;
+    }
+
+    pub fn develop_mode(&self) -> bool {
+        self.develop
     }
 
 }

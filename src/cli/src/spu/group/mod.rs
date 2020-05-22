@@ -5,8 +5,8 @@ mod helpers;
 
 use structopt::StructOpt;
 
-use create::CreateManagedSpuGroupOpt;
-use create::process_create_managed_spu_group;
+pub use create::CreateManagedSpuGroupOpt;
+pub use create::process_create_managed_spu_group;
 
 use delete::DeleteManagedSpuGroupOpt;
 use delete::process_delete_managed_spu_group;

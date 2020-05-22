@@ -23,7 +23,7 @@ chrono = { version = "0.4.6", features = ["serde"] }
 chashmap = "2.2.0"
 pin-utils = "0.1.0-alpha.4"
 regex = "1.3.1"
-tokio = { version = "0.2.12", features = ["macros"] }
+tokio = { version = "0.2.21", features = ["macros"] }
 flv-future-aio = { version = "2.0.0" }
 flv-util = { version = "0.1.1" }
 kf-protocol = { path = "../kf-protocol"}

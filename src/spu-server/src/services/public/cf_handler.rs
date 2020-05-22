@@ -164,6 +164,8 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
             
         }
 
+        debug!("conn: {}, done with cf loop exiting",self.kf_sink.id());
+
         Ok(())
     }
 

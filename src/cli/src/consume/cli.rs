@@ -22,7 +22,7 @@ use super::ConsumeOutputType;
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
     /// Topic name
-    #[structopt(short = "t", long, value_name = "string")]
+    #[structopt(value_name = "string")]
     pub topic: String,
 
     /// Partition id

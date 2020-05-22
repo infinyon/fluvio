@@ -580,6 +580,7 @@ dependencies = [
  "futures",
  "k8-client",
  "k8-flv-metadata",
+ "k8-metadata-client",
  "k8-obj-core",
  "k8-obj-metadata",
  "kf-protocol",

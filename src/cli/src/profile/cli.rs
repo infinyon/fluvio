@@ -14,7 +14,7 @@ use crate::t_println;
 use crate::t_print_cli_err;
 use crate::error::CliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt,Default)]
 pub struct InlineProfile {
     #[structopt(short = "P",long,value_name = "profile")]
     pub profile: Option<String>,
@@ -71,7 +71,7 @@ pub struct SetLocal {
 
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt,Default)]
 pub struct SetK8 {
     /// kubernetes namespace, 
     #[structopt(long,short,value_name = "namespace")]

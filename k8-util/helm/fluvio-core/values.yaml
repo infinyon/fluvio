@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 cloud: minikube
-fluvioVersion: 0.4.1
+fluvioVersion: 0.5.0
 registry: infinyon
 scLog: info
 tls: false

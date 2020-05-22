@@ -19,8 +19,8 @@ use super::spu::all::process_spu;
 use super::spu::custom::process_custom_spu;
 use super::spu::group::process_spu_group;
 use super::profile::process_profile;
-use super::install::process_install;
-//use super::minikube::process_minikube;
+use super::cluster::process_cluster;
+
 
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
@@ -30,8 +30,8 @@ use super::spu::all::SpuOpt;
 use super::spu::custom::CustomSpuOpt;
 use super::spu::group::SpuGroupOpt;
 use super::profile::ProfileCommand;
-use super::install::InstallCommand;
-//use super::minikube::MinikubeCommands;
+use super::cluster::ClusterCommands;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -121,25 +121,15 @@ enum Root {
 
     Profile(ProfileCommand),
 
-    #[structopt(name = "install", template = "{about}
+    #[structopt(name = "cluster", template = "{about}
 
 {usage}
 
 {all-args}
-", about = "install cluster")]
+", about = "Cluster Operations")]
 
-    Install(InstallCommand),
+    Cluster(ClusterCommands),
 
-
-    /*
-    #[structopt(name = "minikube", template = "{about}
-
-    {usage}
-
-    {all-args}
-    ", about = "minikube")]
-    Minikube(MinikubeCommands),
-    */
 
     #[structopt(name = "version")]
     Version(VersionCmd)
@@ -160,8 +150,7 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Topic(topic) => process_topic(terminal.clone(),topic).await,
             Root::Advanced(advanced) => process_advanced(terminal.clone(),advanced).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
-            Root::Install(install) => process_install(terminal.clone(), install).await,
-          //  Root::Minikube(minikube) => process_minikube(terminal.clone(), minikube).await,
+            Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
             Root::Version(_) => process_version_cmd()
         }
     })

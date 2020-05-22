@@ -38,26 +38,28 @@ pub struct CreateTopicConfig {
 #[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
     /// Topic name
-    #[structopt(short = "t", long = "topic", value_name = "string")]
+    #[structopt(value_name = "topic name")]
     topic: String,
 
     /// Number of partitions
     #[structopt(
         short = "p",
         long = "partitions",
-        value_name = "integer",
+        value_name = "partitions",
+        default_value = "1",
         required_unless = "replica_assignment"
     )]
-    partitions: Option<i32>,
+    partitions: i32,
 
     /// Replication factor per partition
     #[structopt(
         short = "r",
         long = "replication",
         value_name = "integer",
+        default_value = "1",
         required_unless = "replica_assignment"
     )]
-    replication: Option<i16>,
+    replication: i16,
 
     /// Ignore racks while computing replica assignment
     #[structopt(
@@ -100,8 +102,8 @@ impl CreateTopicOpt {
     /// Ensure all parameters are valid for computed replication
     fn parse_computed_replica(&self) -> ReplicaConfig {
         ReplicaConfig::Computed(
-            self.partitions.unwrap_or(-1),
-            self.replication.unwrap_or(-1),
+            self.partitions,
+            self.replication,
             self.ignore_rack_assigment,
         )
     }
@@ -130,7 +132,7 @@ impl CreateTopicOpt {
     /// Validate cli options. Generate target-server and create-topic configuration.
     fn validate(self) -> Result<(ControllerTargetConfig, CreateTopicConfig), CliError> {
         // topic specific configurations
-        let replica_config = if self.partitions.is_some() {
+        let replica_config = if self.replica_assignment.is_none() {
             self.parse_computed_replica()
         } else {
             self.parse_assigned_replica()?

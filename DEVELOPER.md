@@ -17,23 +17,26 @@ To test and run services,  you need to get access to development Kubernetes clus
 
 # Rust futures and nightly
 
-Currently,  Fluvio is using the nightly version of Rust because it is using unstable version of the Futures library.  We expect to switch to the stable version of Rust in [1.39](https://github.com/rust-lang/rust/pull/63209)
+Currently,  Fluvio is using the nightly version of Rust because it is using unstable version of the Futures library.  Currently we are depending on following nightly features:
+
+- [Default specialization](https://github.com/rust-lang/rust/issues/37653)
 
 
-# Fluvio components
-Fluvio platform consists of the following components.  
+# Fluvio cluster
+Fluvio is installed as cluster of components designed to work in Kubernetes:
 
 ## Streaming Controller (SC)
-Streaming Controller implements control plane operations for data-in-motion.  It is responsible for organizing and coordinating data streams between SPU's.  It uses the declarative model to self-heal and recover much as possible during failures.
+Streaming Controller implements control plane.  It is responsible for organizing and coordinating data streams between SPU's.  It uses the declarative model to self-heal and recover much as possible during failures.
 
 ## Streaming Processing Engine (SPU)
-SPU's are the engine for data-in-motion.   Each SPU can handle multiple data streams.   SPU uses reactive and asynchronous architecture to ensure efficient handling of data. 
+SPU's are engine for processing streams.   Each SPU can handle multiple data streams.   SPU uses reactive and asynchronous architecture to ensure efficient handling of data. 
 
-## CLI
-Fluvio CLI provides
-manages SPU
-manages streams (topics and partitions)
-produce and consume streams
+## Fluvio CLI(Command Line Interface
+
+CLI provides built-in way to manage Fluvio streams and interaction.  It can manage
+* Topics
+* SPU and SPU group
+* Consume and produce messages to streams
 
 
 # Building Fluvio
@@ -44,7 +47,7 @@ Please follow [setup](https://www.rust-lang.org/tools/install) instructions to i
 
 ## Checkout and build
 
-This will build Fluvio for your environment:
+This will build and run unit tests forFluvio for your environment:
 
 ```
 $ git clone https://github.com/infinyon/fluvio.git
@@ -53,51 +56,61 @@ $ cargo build
 $ cargo test
 ```
 
-# Running SC and SPU in development mode
-
-It is recommended to use custom SPU instead of managed SPU which allow SPU to run locally in your local machine.
-
-
-
-## Setting up development env for Minikube Kubernetes
-
-Due to limitation of third party library, we need to apply DNS name for minikube cluster.
-
-First ensure minikube is set up by the following [instruction](https://www.fluvio.io/docs/getting-started/minikube/).
-
-When creating a new minikube cluster,  please specify kubernetes version 1.14x to ensure maximum compatibility as shown below: 
-
+You can run development version of fluvio CLI:
 ```
-minikube start
+$ target/debug/fluvio
 ```
 
-After cluster is created, run following script to setup your local environment:
+You can assign alias to simplify references to CLI like this:
+```
+alias flvd=target/debug/fluvio
+```
+
+From now on, we will reference ```flvd``` instead of release version.
+
+## Setting up Kubernetes Clusters and Installing system chart
+
+Please follow instruction on INSTALL.md for setting up kubernetes clusters and installing fluvio system chart.
+
+
+## Deploying development version of Fluvio cluster to Kubernetes
+
+Please ensure local docker registry is running:
 
 ```
-./dev-tools/minikube-mycube.sh
+./dev-tools/minikube-docker.sh 
 ```
 
-This script performs the following tasks:
-
-* adds a new DNS entry ```minikubeCA``` to your /etc/hosts file
-* creates a new ```mycube``` context
-* points the API server to ```minikubeCA```
-
-
-## Installing Fluvio system chart
-
-Before you begin, Make sure to install [Helm](https://helm.sh/docs/intro/install/) client appropriate for your environment.  Currently only helm version 3.0+ is supported.  
-
-
-Install Fluvio system charts using fluvio CLI
+Then build docker images for current source code:
 ```
-./target/debug/fluvio install --sys
+make minikube_image
 ```
+
+You can install develop version of fluvio using same installation command:
+```
+flvd cluster install --develop
+```
+
+You can remove fluvio cluster by
+```
+flvd cluster uninstall
+```
+
+
+# Running Fluvio using custom SPU
+
+There are 2 types of SPU supported.  Default is managed SPU which are running in Kubernetes Cluster.  Second is "custom" SPU which  can be run outside Kubernetes.  This can be useful for develop and test SPU in your local laptop.  
+
+It is recommended to use custom SPU when you are working on feature development.
 
 
 ## Registering Custom SPU
 
-To run development SPU (custom) from your laptop, you must register them.  
+To run custom SPU (custom) from your laptop, you must register their configuration.  Using sample configuration, you can register a SPU with id of 5001
+
+```
+kubectl create -f k8-util/samples/crd/spu_5001.yaml
+```  
 
 To register 3 SPU:
 ```
@@ -112,61 +125,28 @@ kubectl create -f k8-util/samples/crd/spu_5003.yaml
 ```
 
 ## Starting custom SPU
+
+To start a single SPU using configuration registered as above:
+
 ```
 ./dev-tools/log/debug-spu-min 5001 9005 9006
+```
+
+To start 3 SPU with in separate terminal session:
+```
 ./dev-tools/log/debug-spu-min 5002 9007 9008
+```
+```
 ./dev-tools/log/debug-spu-min 5003 9009 9010
 ```
 
-## Running CLI
+## Using CLI
 
-To connect with local SC, use "--sc" parameter as shown below.
-Please refer to fluvio web site for CLI operation.
-
-Get SPU
-
+To connect to custom SPU, create local profile:
 ```
- fluvio spu list --sc 127.0.0.1:9003
+flvd profile create-local-profile
 ```
 
-## Deploying development docker images to minikube
-
-### Setup 
-
-Install helm binary
-```
-brew install helm
-```
-  
-Run following script to allow host docker to access minikube docker.  Without it, you can't upload image to minikube.
-
-```
-./dev-tools/minikube-docker.sh 
-```
-
-Ensure you have setup tunnel so can access SC and SPU from your machine:
-```
-sudo ./k8-util/minikube-tunnel.sh
-```
-
-### Create development docker image
-
-This build local docker image using current branch of the code.
-```
-make minikube_image
-```
-
-## Installing fluvio to minikube
-
-Fluvio CLI can be used to install on minikube
-```
-target/debug/fluvio install
-```
-
-Ensure it is listed
-```
-helm list
-```
 
 ## Installing TLS version to minikube
 
@@ -202,32 +182,12 @@ Run end to end integration test with a multiple SPU.  For example, with 2 SPU
 ./target/debug/flv-test -r 2
 ```
 
-### Running integration test on Kubernetes
+### Running integration test for custom SPU
 
-Prerequisite:
-* minikube images
-* sys chart
-* minikube tunnel
 
 ```
-./target/debug/flv-test -k
+./target/debug/flv-test --custom
 ```
-
-
-## Release Process
-
-* Create and switch to release branch
-* Ensure integration tests passes
-* Bump up VERSION and related crates
-* Release docker image: ```make release_image```
-* Bump up helm version same as VERSION in the helm/fluvio-core/Chart.yaml
-* Generates charts: ```make helm_package```
-* Commit and Push chart repo: infinyon.github.io/charts
-* Commit and merged/rebase release branch into master
-* Generates github releases:
-  * ```make create_release```
-  * ```make upload_release```
-
 
 
 

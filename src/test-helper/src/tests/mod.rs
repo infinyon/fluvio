@@ -1,69 +1,100 @@
 mod consume;
 mod produce;
+mod stress_test;
 
 
-use crate::TestOption;
-use crate::Target;
-use crate::TlsLoader;
+pub use runner::*;
 
-pub struct ConsumeProducerRunner(TestOption);
+mod runner {
 
+    use crate::TestOption;
+    use crate::Target;
+    use crate::TlsLoader;
 
-impl ConsumeProducerRunner {
+    pub struct ConsumeProducerRunner(TestOption);
 
-    pub fn new(option: TestOption) -> Self {
-        Self(option)
-    }
-
-
-    /// run tester
-    pub fn run(&self,tls: TlsLoader,target: Target) {
-
-        //use futures::future::join_all;
-        //use futures::future::join;
-
-        //use flv_future_aio::task::run_block_on;
-
-        //let mut listen_consumer_test = vec ![];
-
-        println!("start testing...");
-
-        /*
-        if self.0.test_consumer() {
-            for i in 0..self.0.replication() {
-                listen_consumer_test.push(consume::validate_consumer_listener(i,&self.0));
-            }    
+    impl ConsumeProducerRunner {
+        pub fn new(option: TestOption) -> Self {
+            Self(option)
         }
-        */
 
-        /*
-        run_block_on(
-            join(
-                self.produce_and_consume_cli(&target),
-                join_all(listen_consumer_test)
-            ));
-        */
-        self.produce_and_consume_cli(&tls,&target);
+        /// run tester
+        pub fn run(&self, tls: TlsLoader, target: Target) {
+            //use futures::future::join_all;
+            //use futures::future::join;
+
+            //use flv_future_aio::task::run_block_on;
+
+            //let mut listen_consumer_test = vec ![];
+
+            println!("start testing...");
+
+            /*
+            if self.0.test_consumer() {
+                for i in 0..self.0.replication() {
+                    listen_consumer_test.push(consume::validate_consumer_listener(i,&self.0));
+                }
+            }
+            */
+
+            /*
+            run_block_on(
+                join(
+                    self.produce_and_consume_cli(&target),
+                    join_all(listen_consumer_test)
+                ));
+            */
+            self.produce_and_consume_cli(&tls, &target);
+        }
+
+        fn produce_and_consume_cli(&self, tls: &TlsLoader, target: &Target) {
+            // sleep 100 ms to allow listener to start earlier
+            if self.0.produce() {
+                super::produce::produce_message_with_cli(tls, target);
+            } else {
+                println!("produce skipped");
+            }
+
+            if self.0.test_consumer() {
+                super::consume::validate_consume_message_cli(tls, target);
+            } else {
+                println!("consume test skipped");
+            }
+        }
     }
-        
+}
 
-    fn produce_and_consume_cli(&self,tls: &TlsLoader,target: &Target)  {
+mod client {
 
-        // sleep 100 ms to allow listener to start earlier
-        if self.0.produce() {
-            produce::produce_message_with_cli(tls,target);
+    use flv_client::profile::ScConfig;
+    use flv_client::ScClient;
+    use flv_client::profile::TlsConfig;
+    use flv_client::profile::TlsClientConfig;
+
+    use crate::TestOption;
+    use crate::tls::Cert;
+
+    pub async fn get_client(option: &TestOption) -> ScClient {
+
+        let tls_option = if option.tls() {
+
+            let client_cert = Cert::load_client();
+
+            Some(TlsConfig::File(TlsClientConfig{
+                client_cert: client_cert.cert.display().to_string(),
+                client_key: client_cert.key.display().to_string(),
+                ca_cert: client_cert.ca.display().to_string(),
+                domain: "fluvio.local".to_owned()
+            }))
         } else {
-            println!("produce skipped");
-        }
-       
-        
-        if self.0.test_consumer() {
-            consume::validate_consume_message_cli(tls,target);
-        } else {
-            println!("consume test skipped");
-        }
-        
-        
+            None
+        };
+
+        let config = ScConfig::new(None,tls_option).expect("connect");
+        config.connect().await.expect("should connect")
     }
+
+
+    
 
 }
