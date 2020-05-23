@@ -169,7 +169,7 @@ impl ConnManager {
         self.add_conn_param(spu_id.clone(), param);
     }
 
-    /// Unregist sink.  This happens when connection when down
+    /// De-register sink.  This happens when connection when down
     pub async fn clear_sink(&self, spu_id: &SpuId) {
         self.sinks.clear_sink(spu_id);
         debug!("removing socket sink for spu: {}", spu_id);

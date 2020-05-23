@@ -34,7 +34,7 @@ macro_rules! api_loop {
         use futures::stream::StreamExt;
         loop {
 
-            log::trace!("waiting for next api request");
+            log::debug!("waiting for next api request");
             if let Some(msg) = $api_stream.next().await {
                 if let Ok(req_message) = msg {
                     log::trace!("received request: {:#?}",req_message);
@@ -42,12 +42,12 @@ macro_rules! api_loop {
                         $($matcher => $result),*
                     }
                 } else {
-                    log::trace!("no content, end of connection {:#?}", msg);
+                    log::debug!("no content, end of connection {:#?}", msg);
                     break;
                 }
 
             } else {
-                log::trace!("client connect terminated");
+                log::debug!("client connect terminated");
                 break;
             }
         }

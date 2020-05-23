@@ -47,6 +47,9 @@ use crate::InternalServerError;
 
 use super::SupervisorCommand;
 
+/// time to resync to SC
+const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60;   
+
 /// Controller for handling connection to SC
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
@@ -87,9 +90,14 @@ impl ScDispatcher<FileReplica> {
     }
 
     async fn dispatch_loop(mut self) {
-        debug!("starting SC Dispatcher");
+        
+
+        let mut counter: u64 = 0;
 
         loop {
+
+            debug!("entering SC dispatch loop: {}",counter);
+
             if let Some(mut socket) = self.create_socket_to_sc().await {
                 debug!(
                     "established connection to sc for spu: {}",
@@ -107,13 +115,19 @@ impl ScDispatcher<FileReplica> {
 
                 // continuously process updates from and send back status to SC
                 match self.sc_request_loop(socket).await {
-                    Ok(_) => {}
-                    Err(err) => warn!("error, connecting to sc: {:#?}", err),
+                    Ok(_) => {
+                        debug!("sc request loop finished: {}",counter);
+                        // give little bit time before trying to reconnect
+                        sleep(Duration::from_millis(100)).await;
+                        counter = counter + 1;
+                    }
+                    Err(err) => { 
+                        warn!("error, connecting to sc: {:#?}", err);
+                         // We are  connection to sc.  Retry again
+                        // Currently we use 3 seconds to retry but this should be using backoff algorithm
+                        sleep(Duration::from_millis(3000)).await;
+                    }
                 }
-
-                // We lost connection to sc.  Retry again
-                // Currently we use 3 seconds to retry but this should be using backoff algorithm
-                sleep(Duration::from_millis(3000)).await
                     
             }
         }
@@ -126,12 +140,18 @@ impl ScDispatcher<FileReplica> {
 
         let shared_sink = Arc::new(ExclusiveKfSink::new(sink));
 
-        debug!("entering request loop");
+        debug!("entering sc request loop");
 
         loop {
 
             debug!("waiting for request from sc");
             select! {
+
+                _ = (sleep(Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC))).fuse() => {
+                    debug!("timer fired - exiting sc request loop");
+                    break;
+                },
+
                 sc_request = api_stream.next().fuse() => {
 
                     if let Some(sc_msg) = sc_request {
@@ -166,13 +186,12 @@ impl ScDispatcher<FileReplica> {
                     }
                     
                 },
-                super_command = self.supervisor_command_receiver.next().fuse() => {
-
-                }
+                
 
             }
             
         }
+
 
         Ok(())
     }
