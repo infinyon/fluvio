@@ -9,7 +9,7 @@ use futures::future::FutureExt;
 use flv_future_core::test_async;
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
-use types::SpuId;
+use flv_types::SpuId;
 
 use crate::tests::fixture::ScTestRunner;
 use crate::tests::fixture::ScTest;

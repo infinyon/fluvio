@@ -8,7 +8,7 @@ use log::trace;
 use log::error;
 use log::debug;
 use log::warn;
-use types::print_cli_err;
+use flv_util::print_cli_err;
 
 use futures::channel::mpsc::Receiver;
 use futures::channel::mpsc::Sender;
@@ -33,7 +33,7 @@ use kf_socket::KfSocketError;
 use kf_socket::ExclusiveKfSink;
 use flv_storage::FileReplica;
 use flv_metadata::partition::ReplicaKey;
-use types::log_on_err;
+use flv_types::log_on_err;
 use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
@@ -48,7 +48,7 @@ use crate::InternalServerError;
 use super::SupervisorCommand;
 
 /// time to resync to SC
-const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60;   
+const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60;
 
 /// Controller for handling connection to SC
 /// including registering and reconnect
@@ -62,41 +62,31 @@ pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
 }
 
-impl <S>ScDispatcher<S> {
-
-    pub fn new(
-        ctx: SharedGlobalContext<S>
-    ) -> Self  {
-
-        let (termination_sender,termination_receiver) = channel(1);
-        let (supervisor_command_sender,supervisor_command_receiver) = channel(100);
+impl<S> ScDispatcher<S> {
+    pub fn new(ctx: SharedGlobalContext<S>) -> Self {
+        let (termination_sender, termination_receiver) = channel(1);
+        let (supervisor_command_sender, supervisor_command_receiver) = channel(100);
         Self {
             termination_receiver,
             termination_sender,
             supervisor_command_sender,
             supervisor_command_receiver,
-            ctx
+            ctx,
         }
     }
 }
 
 impl ScDispatcher<FileReplica> {
-
-
     /// start the controller with ctx and receiver
     pub fn run(self) {
-
         spawn(self.dispatch_loop());
     }
 
     async fn dispatch_loop(mut self) {
-        
-
         let mut counter: u64 = 0;
 
         loop {
-
-            debug!("entering SC dispatch loop: {}",counter);
+            debug!("entering SC dispatch loop: {}", counter);
 
             if let Some(mut socket) = self.create_socket_to_sc().await {
                 debug!(
@@ -116,19 +106,18 @@ impl ScDispatcher<FileReplica> {
                 // continuously process updates from and send back status to SC
                 match self.sc_request_loop(socket).await {
                     Ok(_) => {
-                        debug!("sc request loop finished: {}",counter);
+                        debug!("sc request loop finished: {}", counter);
                         // give little bit time before trying to reconnect
                         sleep(Duration::from_millis(100)).await;
                         counter = counter + 1;
                     }
-                    Err(err) => { 
+                    Err(err) => {
                         warn!("error, connecting to sc: {:#?}", err);
-                         // We are  connection to sc.  Retry again
+                        // We are  connection to sc.  Retry again
                         // Currently we use 3 seconds to retry but this should be using backoff algorithm
                         sleep(Duration::from_millis(3000)).await;
                     }
                 }
-                    
             }
         }
     }
@@ -143,7 +132,6 @@ impl ScDispatcher<FileReplica> {
         debug!("entering sc request loop");
 
         loop {
-
             debug!("waiting for request from sc");
             select! {
 
@@ -157,7 +145,7 @@ impl ScDispatcher<FileReplica> {
                     if let Some(sc_msg) = sc_request {
                        if let Ok(req_message) = sc_msg {
                             match req_message {
-                                
+
                                 InternalSpuRequest::UpdateAllRequest(request) => {
                                     if let Err(err) = self.handle_sync_all_request(request,shared_sink.clone()).await {
                                         error!("error handling all request from sc {}", err);
@@ -174,24 +162,22 @@ impl ScDispatcher<FileReplica> {
                                     }
                                 }
                             }
-                            
+
                         } else {
                             debug!("no more sc msg content, end");
                             break;
                         }
-                    
+
                     } else {
                         debug!("sc connection terminated");
                         break;
                     }
-                    
+
                 },
-                
+
 
             }
-            
         }
-
 
         Ok(())
     }
@@ -201,9 +187,8 @@ impl ScDispatcher<FileReplica> {
         &self,
         socket: &mut KfSocket,
     ) -> Result<bool, InternalServerError> {
-
         let local_spu_id = self.ctx.local_spu_id();
-       
+
         debug!("sending spu '{}' registration request", local_spu_id);
 
         let register_req = RegisterSpuRequest::new(local_spu_id);
@@ -238,8 +223,8 @@ impl ScDispatcher<FileReplica> {
         let spu_id = self.ctx.local_spu_id();
         let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
-         debug!("trying to connect to sc endpoint: {}",sc_endpoint);
-       
+        debug!("trying to connect to sc endpoint: {}", sc_endpoint);
+
         let wait_interval = self.ctx.config().sc_retry_ms;
         loop {
             trace!(
@@ -270,15 +255,13 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-
     /// Bulk Update Handler sent by Controller
     ///
     async fn handle_sync_all_request(
         &mut self,
         req_msg: RequestMessage<UpdateAllRequest>,
-        shared_sc_sink: Arc<ExclusiveKfSink>
+        shared_sc_sink: Arc<ExclusiveKfSink>,
     ) -> Result<(), IoError> {
-
         let (_, request) = req_msg.get_header_request();
 
         debug!(
@@ -287,15 +270,14 @@ impl ScDispatcher<FileReplica> {
             request.replicas.len(),
         );
 
-
         let spu_actions = self.ctx.spu_localstore().sync_all(request.spus);
 
-        trace!("all spu actions detail: {:#?}",spu_actions);
+        trace!("all spu actions detail: {:#?}", spu_actions);
 
         /*
          * For now, there are nothing to do.
         for spu_action in spu_actions.into_iter() {
-            
+
             match spu_action {
 
                 SpecChange::Add(_) => {},
@@ -303,15 +285,15 @@ impl ScDispatcher<FileReplica> {
                 SpecChange::Delete(_) => {}
 
             }
-            
+
         }
         */
 
         let replica_actions = self.ctx.replica_localstore().sync_all(request.replicas);
-        self.apply_replica_actions(replica_actions,shared_sc_sink).await;    
+        self.apply_replica_actions(replica_actions, shared_sc_sink)
+            .await;
         Ok(())
     }
-
 
     ///
     /// Follower Update Handler sent by a peer Spu
@@ -319,18 +301,20 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
-        shared_sc_sink: Arc<ExclusiveKfSink>
+        shared_sc_sink: Arc<ExclusiveKfSink>,
     ) -> Result<(), IoError> {
-
         let (_, request) = req_msg.get_header_request();
 
-        debug!("received replica update from sc: {:#?}",request);
-    
-        let replica_actions = self.ctx.replica_localstore().apply_changes(request.replicas().messages);
-        self.apply_replica_actions(replica_actions,shared_sc_sink).await;    
+        debug!("received replica update from sc: {:#?}", request);
+
+        let replica_actions = self
+            .ctx
+            .replica_localstore()
+            .apply_changes(request.replicas().messages);
+        self.apply_replica_actions(replica_actions, shared_sc_sink)
+            .await;
         Ok(())
     }
-
 
     ///
     /// Follower Update Handler sent by a peer Spu
@@ -338,24 +322,21 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
-        _shared_sc_sink: Arc<ExclusiveKfSink>
+        _shared_sc_sink: Arc<ExclusiveKfSink>,
     ) -> Result<(), IoError> {
-
         let (_, request) = req_msg.get_header_request();
 
-        debug!("received spu update from sc: {:#?}",request);
-    
+        debug!("received spu update from sc: {:#?}", request);
+
         let _spu_actions = self.ctx.spu_localstore().apply_changes(request.spus());
         Ok(())
     }
 
-
     async fn apply_replica_actions(
-        &self, 
+        &self,
         actions: Actions<SpecChange<Replica>>,
-        shared_sc_sink: Arc<ExclusiveKfSink>
+        shared_sc_sink: Arc<ExclusiveKfSink>,
     ) {
-
         if actions.count() == 0 {
             debug!("no replica actions to process. ignoring");
             return;
@@ -366,135 +347,131 @@ impl ScDispatcher<FileReplica> {
         let local_id = self.ctx.local_spu_id();
 
         for replica_action in actions.into_iter() {
-
             trace!("applying replica action: {:#?}", replica_action);
 
             match replica_action {
                 SpecChange::Add(new_replica) => {
-                    if new_replica.leader == local_id  {
-                        self.add_leader_replica(
-                            new_replica,
-                            shared_sc_sink.clone()
-                        )
-                        .await;
+                    if new_replica.leader == local_id {
+                        self.add_leader_replica(new_replica, shared_sc_sink.clone())
+                            .await;
                     } else {
-                        self.add_follower_replica(
-                            new_replica
-                        ).await;
+                        self.add_follower_replica(new_replica).await;
                     }
-                },
+                }
                 SpecChange::Delete(deleted_replica) => {
                     if deleted_replica.leader == local_id {
                         self.remove_leader_replica(&deleted_replica.id);
                     } else {
                         self.remove_follower_replica(deleted_replica);
                     }
-                },
-                SpecChange::Mod(new_replica,old_replica) => {
-                    trace!("replica changed, old: {:#?}, new: {:#?}",new_replica,old_replica);
+                }
+                SpecChange::Mod(new_replica, old_replica) => {
+                    trace!(
+                        "replica changed, old: {:#?}, new: {:#?}",
+                        new_replica,
+                        old_replica
+                    );
 
                     // check for leader change
                     if new_replica.leader != old_replica.leader {
-                        if new_replica.leader == local_id  {
+                        if new_replica.leader == local_id {
                             // we become leader
-                            self.promote_replica(new_replica,old_replica,shared_sc_sink.clone());
+                            self.promote_replica(new_replica, old_replica, shared_sc_sink.clone());
                         } else {
                             // we are follower
                             // if we were leader before, we demote out self
                             if old_replica.leader == local_id {
-                                 self.demote_replica(new_replica).await;
+                                self.demote_replica(new_replica).await;
                             } else {
                                 // we stay as follower but we switch to new leader
-                                debug!("still follower but switching leader: {}",new_replica);
+                                debug!("still follower but switching leader: {}", new_replica);
                                 self.remove_follower_replica(old_replica);
                                 self.add_follower_replica(new_replica).await;
                             }
                         }
                     } else {
-                        if new_replica.leader == local_id  {
-                            self.update_leader_replica(
-                                new_replica
-                            )
-                            .await;
+                        if new_replica.leader == local_id {
+                            self.update_leader_replica(new_replica).await;
                         } else {
                             self.update_follower_replica(new_replica).await;
                         }
                     }
                 }
             }
-
         }
     }
 
-
-    async fn add_leader_replica(
-        &self,
-        replica: Replica,
-        shared_sc_sink: Arc<ExclusiveKfSink>) 
-    {
-
-        debug!("adding new leader replica: {}",replica);
+    async fn add_leader_replica(&self, replica: Replica, shared_sc_sink: Arc<ExclusiveKfSink>) {
+        debug!("adding new leader replica: {}", replica);
 
         let storage_log = self.ctx.config().storage().new_config();
         let replica_id = replica.id.clone();
-                    
+
         match LeaderReplicaState::create_file_replica(replica, &storage_log).await {
             Ok(leader_replica) => {
-                debug!("file replica for leader is created: {}",storage_log);
-                self.spawn_leader_controller(replica_id,leader_replica,shared_sc_sink);
-            },
+                debug!("file replica for leader is created: {}", storage_log);
+                self.spawn_leader_controller(replica_id, leader_replica, shared_sc_sink);
+            }
             Err(err) => {
-                error!("error creating storage foer leader replica {:#?}",err);
+                error!("error creating storage foer leader replica {:#?}", err);
                 // TODO: send status back to SC
             }
         }
-
     }
 
-
-    async fn update_leader_replica(
-        &self,
-        replica: Replica,
-    ) {
+    async fn update_leader_replica(&self, replica: Replica) {
         debug!("updating leader controller: {}", replica.id);
 
         if self.ctx.leaders_state().has_replica(&replica.id) {
-            
-            debug!("leader replica was found, sending replica info: {}",replica);
+            debug!(
+                "leader replica was found, sending replica info: {}",
+                replica
+            );
 
-            match self.ctx.leaders_state().send_message(
-                &replica.id,
-                LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica.clone()),
-            )
-            .await
+            match self
+                .ctx
+                .leaders_state()
+                .send_message(
+                    &replica.id,
+                    LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica.clone()),
+                )
+                .await
             {
                 Ok(status) => {
                     if !status {
-                        error!("leader controller mailbox: {} was not founded",replica.id);
+                        error!("leader controller mailbox: {} was not founded", replica.id);
                     }
                 }
-                Err(err) => error!("error sending external command: {:#?} to replica controller: {}", err,replica.id),
+                Err(err) => error!(
+                    "error sending external command: {:#?} to replica controller: {}",
+                    err, replica.id
+                ),
             }
         } else {
-            error!("leader controller was not found: {}",replica.id)
+            error!("leader controller was not found: {}", replica.id)
         }
     }
-
 
     /// spwan new leader controller
     fn spawn_leader_controller(
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
-        shared_sc_sink: Arc<ExclusiveKfSink>) 
-    {
-
-        debug!("spawning new leader controller for {}",replica_id);
+        shared_sc_sink: Arc<ExclusiveKfSink>,
+    ) {
+        debug!("spawning new leader controller for {}", replica_id);
 
         let (sender, receiver) = channel(10);
-        
-        if let Some(old_replica) = self.ctx.leaders_state().insert_replica(replica_id.clone(),leader_state, sender) {
-            error!("there was existing replica when creating new leader replica: {}",old_replica.replica_id());
+
+        if let Some(old_replica) =
+            self.ctx
+                .leaders_state()
+                .insert_replica(replica_id.clone(), leader_state, sender)
+        {
+            error!(
+                "there was existing replica when creating new leader replica: {}",
+                old_replica.replica_id()
+            );
         }
 
         let leader_controller = ReplicaLeaderController::new(
@@ -504,27 +481,20 @@ impl ScDispatcher<FileReplica> {
             self.ctx.leader_state_owned(),
             self.ctx.followers_sink_owned(),
             shared_sc_sink,
-            self.ctx.offset_channel().sender()
+            self.ctx.offset_channel().sender(),
         );
         leader_controller.run();
-
     }
 
-
-    pub fn remove_leader_replica(
-        &self,
-        id: &ReplicaKey) {
-
+    pub fn remove_leader_replica(&self, id: &ReplicaKey) {
         debug!("removing leader replica: {}", id);
 
         if self.ctx.leaders_state().remove_replica(id).is_none() {
-            error!("fails to find leader replica: {} when removing",id);
+            error!("fails to find leader replica: {} when removing", id);
         }
     }
 
-
-
-    /// Promote follower replica as leader, 
+    /// Promote follower replica as leader,
     /// This is done in 3 steps
     /// // 1: Remove follower replica from followers state
     /// // 2: Terminate followers controller if need to be (if there are no more follower replicas for that controller)
@@ -533,96 +503,112 @@ impl ScDispatcher<FileReplica> {
         &self,
         new_replica: Replica,
         old_replica: Replica,
-        shared_sc_sink: Arc<ExclusiveKfSink>) 
-    {
+        shared_sc_sink: Arc<ExclusiveKfSink>,
+    ) {
+        debug!("promoting replica: {} from: {}", new_replica, old_replica);
 
-         debug!("promoting replica: {} from: {}",new_replica,old_replica);
-
-         if let Some(follower_replica) = self.ctx.followers_state().remove_replica(&old_replica.leader,&old_replica.id) {
-                    
-            debug!("old follower replica exists, converting to leader: {}",old_replica.id);
-
-            let leader_state = LeaderReplicaState::new(
-                    new_replica.id.clone(),
-                    new_replica.leader,
-                    follower_replica.storage_owned(),
-                    new_replica.replicas
+        if let Some(follower_replica) = self
+            .ctx
+            .followers_state()
+            .remove_replica(&old_replica.leader, &old_replica.id)
+        {
+            debug!(
+                "old follower replica exists, converting to leader: {}",
+                old_replica.id
             );
 
-            self.spawn_leader_controller(new_replica.id,leader_state,shared_sc_sink); 
+            let leader_state = LeaderReplicaState::new(
+                new_replica.id.clone(),
+                new_replica.leader,
+                follower_replica.storage_owned(),
+                new_replica.replicas,
+            );
 
+            self.spawn_leader_controller(new_replica.id, leader_state, shared_sc_sink);
         }
     }
 
-
     /// Demote leader replica as follower.
     /// This only happens on manual election
-    pub async fn demote_replica(&self,replica: Replica) {
-
-        debug!("demoting replica: {}",replica);
+    pub async fn demote_replica(&self, replica: Replica) {
+        debug!("demoting replica: {}", replica);
 
         if let Some(leader_replica_state) = self.ctx.leaders_state().remove_replica(&replica.id) {
             drop(leader_replica_state);
             // for now, we re-scan file replica
             self.add_follower_replica(replica).await;
         } else {
-            error!("leader controller was not found: {}",replica.id)
+            error!("leader controller was not found: {}", replica.id)
         }
     }
 
-
-
-
     /// add new follower controller and it's mailbox
-    async fn add_follower_replica(&self,replica: Replica) {
-
+    async fn add_follower_replica(&self, replica: Replica) {
         let leader = &replica.leader;
-        debug!("trying to adding follower replica: {}",replica);
+        debug!("trying to adding follower replica: {}", replica);
 
         if let Some(mut sender) = self.ctx.followers_state().mailbox(leader) {
-            debug!("existing follower controller exists: {}, send request to controller",replica);
-             log_on_err!(sender.send(FollowerReplicaControllerCommand::AddReplica(replica)).await)
+            debug!(
+                "existing follower controller exists: {}, send request to controller",
+                replica
+            );
+            log_on_err!(
+                sender
+                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
+                    .await
+            )
         } else {
             // we need to spin new follower controller
-             debug!("no existing follower controller exists for {},need to spin up",replica);
-            let (mut sender,receiver) = self.ctx.followers_state().insert_mailbox(*leader);
+            debug!(
+                "no existing follower controller exists for {},need to spin up",
+                replica
+            );
+            let (mut sender, receiver) = self.ctx.followers_state().insert_mailbox(*leader);
             let follower_controller = ReplicaFollowerController::new(
                 *leader,
                 receiver,
                 self.ctx.spu_localstore_owned(),
                 self.ctx.followers_state_owned(),
-                self.ctx.config_owned()
+                self.ctx.config_owned(),
             );
             follower_controller.run();
-            log_on_err!(sender.send(FollowerReplicaControllerCommand::AddReplica(replica)).await);
+            log_on_err!(
+                sender
+                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
+                    .await
+            );
         }
     }
 
     /// update follower replida
-    async fn update_follower_replica(&self,replica: Replica) {
-
+    async fn update_follower_replica(&self, replica: Replica) {
         let leader = &replica.leader;
-        debug!("trying to adding follower replica: {}",replica);
+        debug!("trying to adding follower replica: {}", replica);
 
         if let Some(mut sender) = self.ctx.followers_state().mailbox(leader) {
-            debug!("existing follower controller exists: {}, send update request to controller",replica);
-             log_on_err!(sender.send(FollowerReplicaControllerCommand::UpdateReplica(replica)).await)
+            debug!(
+                "existing follower controller exists: {}, send update request to controller",
+                replica
+            );
+            log_on_err!(
+                sender
+                    .send(FollowerReplicaControllerCommand::UpdateReplica(replica))
+                    .await
+            )
         } else {
-            error!("no follower controller found: {}",replica);
+            error!("no follower controller found: {}", replica);
         }
     }
 
-
-   
-
-    fn remove_follower_replica(&self,replica: Replica) {
-
-        debug!("removing follower replica: {}",replica);
-        if self.ctx.followers_state().remove_replica(&replica.leader,&replica.id).is_none() {
-            error!("there was no follower replica: {}",replica);
+    fn remove_follower_replica(&self, replica: Replica) {
+        debug!("removing follower replica: {}", replica);
+        if self
+            .ctx
+            .followers_state()
+            .remove_replica(&replica.leader, &replica.id)
+            .is_none()
+        {
+            error!("there was no follower replica: {}", replica);
         }
-
     }
-
-
 }

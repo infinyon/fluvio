@@ -5,7 +5,7 @@
 //!
 use futures::channel::mpsc::Sender;
 use futures::sink::SinkExt;
-use types::log_on_err;
+use flv_types::log_on_err;
 use utils::actions::Actions;
 
 use crate::core::ScRequest;

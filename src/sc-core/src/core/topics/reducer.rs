@@ -15,7 +15,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use log::{debug, trace};
-use types::log_on_err;
+use flv_types::log_on_err;
 use flv_metadata::spu::SpuSpec;
 
 use crate::core::spus::SpuLocalStore;

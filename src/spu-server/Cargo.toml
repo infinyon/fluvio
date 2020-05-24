@@ -1,7 +1,7 @@
 [package]
 name = "flv-spu"
 edition = "2018"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["fluvio.io"]
 
 
@@ -25,13 +25,13 @@ pin-utils = "0.1.0-alpha.4"
 regex = "1.3.1"
 tokio = { version = "0.2.21", features = ["macros"] }
 flv-future-aio = { version = "2.0.0" }
-flv-util = { version = "0.1.1" }
-kf-protocol = { path = "../kf-protocol"}
+flv-util = { version = "0.2.0" }
+kf-protocol = { version = "1.1.3" } 
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
-internal-api = { path = "../api/internal-api"}
-spu-api = { path = "../api/spu-api",  package = "flv-api-spu"}
-types = { path ="../types", package = "flv-types"}
+internal-api = { path = "../internal-api"}
+spu-api = { path = "../spu-api",  package = "flv-api-spu"}
+flv-types = { path ="../types", version = "0.2.0"}
 utils = { path= "../utils"}
 flv-metadata = { path = "../metadata" }
 flv-storage = { path = "../storage"}

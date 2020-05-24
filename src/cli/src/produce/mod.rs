@@ -17,7 +17,7 @@ mod produce {
     use flv_future_aio::io::ReadExt;
     use flv_future_aio::io::BufReader;
     use flv_future_aio::io::AsyncBufReadExt;
-    use types::{print_cli_err, print_cli_ok};
+    use flv_types::{print_cli_err, print_cli_ok};
     use flv_client::ReplicaLeader;
 
     use flv_client::profile::ReplicaLeaderTargetInstance;

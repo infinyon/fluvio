@@ -8,7 +8,7 @@ use std::fmt::Debug;
 
 use kf_socket::SharedSinkPool;
 use kf_socket::SinkPool;
-use types::SpuId;
+use flv_types::SpuId;
 use flv_storage::ReplicaStorage;
 use flv_future_aio::sync::broadcast::Channel;
 
@@ -32,7 +32,7 @@ pub struct GlobalContext<S> {
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     follower_sinks: SharedSinkPool<SpuId>,
-    offset_channel: Channel<OffsetUpdateEvent>
+    offset_channel: Channel<OffsetUpdateEvent>,
 }
 
 // -----------------------------------
@@ -48,7 +48,6 @@ where
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
-
         GlobalContext {
             spu_localstore: SpuLocalStore::new_shared(),
             replica_localstore: ReplicaStore::new_shared(),
@@ -56,7 +55,7 @@ where
             follower_sinks: SinkPool::new_shared(),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
-            offset_channel: Channel::new(100)
+            offset_channel: Channel::new(100),
         }
     }
 

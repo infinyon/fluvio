@@ -19,7 +19,7 @@ use flv_metadata::partition::PartitionSpec;
 use flv_metadata::spu::SpuSpec;
 use k8_metadata::metadata::InputK8Obj;
 
-use types::log_on_err;
+use flv_types::log_on_err;
 
 use k8_metadata::metadata::Spec as K8Spec;
 use k8_metadata::metadata::UpdateK8ObjStatus;

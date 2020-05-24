@@ -1,7 +1,7 @@
 
 use fluvio::run_cli;
 
-use types::print_cli_err;
+use flv_types::print_cli_err;
 
 fn main() {
     

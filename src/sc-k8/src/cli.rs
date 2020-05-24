@@ -15,7 +15,7 @@ use log::info;
 use log::debug;
 use structopt::StructOpt;
 
-use types::print_cli_err;
+use flv_types::print_cli_err;
 use k8_client::K8Config;
 use flv_sc_core::config::ScConfig;
 use flv_future_aio::net::tls::TlsAcceptor;

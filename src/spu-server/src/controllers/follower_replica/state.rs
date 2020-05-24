@@ -20,7 +20,7 @@ use flv_storage::FileReplica;
 use flv_storage::ConfigOption;
 use flv_storage::StorageError;
 use flv_storage::ReplicaStorage;
-use types::SpuId;
+use flv_types::SpuId;
 use flv_util::SimpleConcurrentBTreeMap;
 
 use crate::core::storage::create_replica_storage;

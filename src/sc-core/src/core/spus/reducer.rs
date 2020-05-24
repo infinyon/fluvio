@@ -5,7 +5,7 @@
 //!
 
 use log::{debug, trace};
-use types::log_on_err;
+use flv_types::log_on_err;
 
 
 use crate::core::common::LSChange;

@@ -21,7 +21,7 @@ use log::trace;
 use serde::de::DeserializeOwned;
 
 use flv_util::actions::Actions;
-use types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
+use flv_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
 use k8_metadata::metadata::K8List;

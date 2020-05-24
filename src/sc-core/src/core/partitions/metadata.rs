@@ -13,7 +13,7 @@ use flv_metadata::partition::{PartitionSpec, PartitionStatus};
 use flv_metadata::topic::TopicSpec;
 use k8_metadata::partition::PartitionSpec as K8PartitionSpec;
 use k8_metadata::metadata::K8Obj;
-use types::SpuId;
+use flv_types::SpuId;
 
 use crate::core::common::LocalStore;
 use crate::core::common::KVObject;

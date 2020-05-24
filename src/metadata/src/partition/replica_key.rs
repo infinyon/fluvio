@@ -7,8 +7,8 @@ use std::convert::TryFrom;
 
 use kf_protocol::derive::{Decode, Encode};
 
-use types::PartitionError;
-use types::partition::decompose_partition_name;
+use flv_types::PartitionError;
+use flv_types::partition::decompose_partition_name;
 
 #[derive(Hash, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
 pub struct ReplicaKey {

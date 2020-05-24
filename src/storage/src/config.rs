@@ -5,9 +5,9 @@ use std::fmt;
 
 use serde::Deserialize;
 
-use types::defaults::SPU_LOG_INDEX_MAX_BYTES;
-use types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
-use types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
+use flv_types::defaults::SPU_LOG_INDEX_MAX_BYTES;
+use flv_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
+use flv_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 
 use kf_protocol::api::Size;
 

@@ -3,8 +3,8 @@
 //!
 use std::path::PathBuf;
 
-use types::defaults::CONFIG_FILE_EXTENTION;
-use types::defaults::{SERVER_CONFIG_BASE_PATH, SERVER_CONFIG_DIR};
+use flv_types::defaults::CONFIG_FILE_EXTENTION;
+use flv_types::defaults::{SERVER_CONFIG_BASE_PATH, SERVER_CONFIG_DIR};
 
 /// generate server configuration file
 pub fn build_server_config_file_path(file_name: &'static str) -> PathBuf {
@@ -26,7 +26,7 @@ pub fn build_server_config_file_path(file_name: &'static str) -> PathBuf {
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use types::defaults::{SC_CONFIG_FILE, SPU_CONFIG_FILE};
+    use flv_types::defaults::{SC_CONFIG_FILE, SPU_CONFIG_FILE};
 
     #[test]
     fn test_build_sc_server_config_file_path() {

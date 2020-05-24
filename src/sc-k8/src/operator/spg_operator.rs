@@ -28,9 +28,9 @@ use k8_metadata::metadata::LabelProvider;
 use k8_client::metadata::MetadataClient;
 use k8_client::metadata::ApplyResult;
 use k8_client::SharedK8Client;
-use types::defaults::SPU_PUBLIC_PORT;
-use types::defaults::SPU_DEFAULT_NAME;
-use types::SpuId;
+use flv_types::defaults::SPU_PUBLIC_PORT;
+use flv_types::defaults::SPU_DEFAULT_NAME;
+use flv_types::SpuId;
 use flv_sc_core::core::spus::SharedSpuLocalStore;
 
 

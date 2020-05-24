@@ -11,7 +11,7 @@ use kf_protocol::derive::{Decode, Encode};
 use k8_metadata::topic::TopicStatus as K8TopicStatus;
 use k8_metadata::topic::TopicStatusResolution as K8TopicStatusResolution;
 
-use types::{ReplicaMap, SpuId};
+use flv_types::{ReplicaMap, SpuId};
 
 
 // -----------------------------------

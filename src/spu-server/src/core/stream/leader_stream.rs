@@ -13,7 +13,7 @@ use futures::future::TryFutureExt;
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
 
-use types::SpuId;
+use flv_types::SpuId;
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;
 use kf_protocol::api::RequestMessage;

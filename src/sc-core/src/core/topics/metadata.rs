@@ -20,7 +20,7 @@ use log::warn;
 use rand::thread_rng;
 use rand::Rng;
 
-use types::ReplicaMap;
+use flv_types::ReplicaMap;
 use k8_metadata::metadata::K8Obj;
 use flv_metadata::topic::{TopicSpec, TopicStatus,PartitionMap,TopicResolution};
 use flv_metadata::topic::TopicReplicaParam;

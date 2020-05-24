@@ -28,7 +28,7 @@ use internal_api::messages::UpdateAllSpusContent;
 use internal_api::messages::Replica;
 use internal_api::UpdateSpuRequest;
 use flv_metadata::partition::ReplicaKey;
-use types::SpuId;
+use flv_types::SpuId;
 use flv_metadata::spu::SpuSpec;
 
 use crate::core::DefaultSharedGlobalContext;

@@ -47,7 +47,7 @@ mod proxy {
 
     use log::info;
 
-    use types::print_cli_err;
+    use flv_types::print_cli_err;
     use flv_future_aio::net::tls::TlsAcceptor;
     use flv_sc_core::config::ScConfig;
     use flv_tls_proxy::start as proxy_start;

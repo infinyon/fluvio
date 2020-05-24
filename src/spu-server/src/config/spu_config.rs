@@ -13,22 +13,22 @@ use std::path::PathBuf;
 
 
 // defaults values
-use types::defaults::SPU_PUBLIC_PORT;
-use types::defaults::SPU_PRIVATE_PORT;
-use types::defaults::SC_PRIVATE_PORT;
-use types::defaults::SPU_LOG_BASE_DIR;
-use types::defaults::SPU_LOG_SIZE;
-use types::defaults::SPU_LOG_INDEX_MAX_BYTES;
-use types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
-use types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
-use types::defaults::SPU_RETRY_SC_TIMEOUT_MS;
+use flv_types::defaults::SPU_PUBLIC_PORT;
+use flv_types::defaults::SPU_PRIVATE_PORT;
+use flv_types::defaults::SC_PRIVATE_PORT;
+use flv_types::defaults::SPU_LOG_BASE_DIR;
+use flv_types::defaults::SPU_LOG_SIZE;
+use flv_types::defaults::SPU_LOG_INDEX_MAX_BYTES;
+use flv_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
+use flv_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
+use flv_types::defaults::SPU_RETRY_SC_TIMEOUT_MS;
 
 // environment variables
 
-use types::defaults::SPU_MIN_IN_SYNC_REPLICAS;
-use types::defaults::FLV_LOG_BASE_DIR;
-use types::defaults::FLV_LOG_SIZE;
-use types::SpuId;
+use flv_types::defaults::SPU_MIN_IN_SYNC_REPLICAS;
+use flv_types::defaults::FLV_LOG_BASE_DIR;
+use flv_types::defaults::FLV_LOG_SIZE;
+use flv_types::SpuId;
 use flv_storage::ConfigOption;
 
 

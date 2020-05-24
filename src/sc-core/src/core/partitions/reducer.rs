@@ -8,7 +8,7 @@ use log::debug;
 use log::error;
 use log::warn;
 
-use types::log_on_err;
+use flv_types::log_on_err;
 use flv_metadata::partition::PartitionSpec;
 use flv_metadata::partition::PartitionResolution;
 use flv_metadata::partition::PartitionStatus;

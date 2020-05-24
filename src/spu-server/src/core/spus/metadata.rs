@@ -4,7 +4,7 @@
 //
 
 use flv_metadata::spu::SpuSpec;
-use types::SpuId;
+use flv_types::SpuId;
 
 use crate::core::Spec;
 use crate::core::LocalStore;

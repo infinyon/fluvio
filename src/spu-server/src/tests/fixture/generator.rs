@@ -9,7 +9,7 @@ use flv_metadata::spu::Endpoint as MetadatEndPoint;
 
 use flv_metadata::spu::SpuSpec;
 use utils::fixture::ensure_clean_dir;
-use types::socket_helpers::EndPoint;
+use flv_types::socket_helpers::EndPoint;
 
 use crate::core::LocalSpu;
 use crate::config::SpuConfig;

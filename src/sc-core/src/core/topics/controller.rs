@@ -10,7 +10,7 @@ use log::info;
 use futures::select;
 use futures::stream::StreamExt;
 
-use types::log_on_err;
+use flv_types::log_on_err;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::spu::SpuSpec;
 use flv_future_aio::task::spawn;

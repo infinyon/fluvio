@@ -5,8 +5,8 @@
 //!
 use std::io::Error as IoError;
 
-use types::defaults::SC_PUBLIC_PORT;
-use types::defaults::SC_PRIVATE_PORT;
+use flv_types::defaults::SC_PUBLIC_PORT;
+use flv_types::defaults::SC_PRIVATE_PORT;
 
 
 // -----------------------------------

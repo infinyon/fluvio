@@ -49,9 +49,9 @@ use kf_protocol::api::Isolation;
 use kf_protocol::api::ErrorCode as KfErrorCode;
 use kf_protocol::api::DefaultRecords;
 use kf_protocol::message::topic::{KfDeleteTopicsRequest};
-use types::defaults::KF_REQUEST_TIMEOUT_MS;
+use flv_types::defaults::KF_REQUEST_TIMEOUT_MS;
 use kf_socket::KfSocketError;
-use types::socket_helpers::ServerAddress;
+use flv_util::socket_helpers::ServerAddress;
 
 use crate::ClientError;
 use crate::ClientConfig;

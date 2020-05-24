@@ -1,7 +1,7 @@
 use log::trace;
 use std::io::Error;
 
-use types::Name;
+use flv_types::Name;
 
 use kf_protocol::message::metadata::{KfMetadataRequest, KfMetadataResponse};
 use kf_protocol::message::metadata::MetadataResponseTopic;

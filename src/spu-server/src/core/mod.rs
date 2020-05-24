@@ -17,7 +17,7 @@ pub use self::replica::SharedReplicaLocalStore;
 use std::sync::Arc;
 use ::flv_storage::FileReplica;
 use kf_socket::SinkPool;
-use types::SpuId;
+use flv_types::SpuId;
 use crate::config::SpuConfig;
 
 pub type SharedGlobalContext<S> = Arc<GlobalContext<S>>;

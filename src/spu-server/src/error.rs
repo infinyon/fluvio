@@ -1,7 +1,7 @@
 use std::fmt;
 
 use futures::channel::mpsc::SendError;
-use types::PartitionError;
+use flv_types::PartitionError;
 use flv_storage::StorageError;
 use kf_socket::KfSocketError;
 

@@ -1,7 +1,7 @@
 use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use types::SpuId;
+use flv_types::SpuId;
 
 use super::KfSPUPeerApiEnum;
 

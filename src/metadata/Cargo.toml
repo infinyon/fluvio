@@ -1,7 +1,7 @@
 [package]
 name = "flv-metadata"
 edition = "2018"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio metadata"
 repository = "https://github.com/infinyon/fluvio"
@@ -9,6 +9,7 @@ license = "Apache-2.0"
 
 [dependencies]
 log = "0.4.8"
-kf-protocol = { version = "1.0.0", path = "../kf-protocol"}
+kf-protocol =  "1.1.3" 
 k8-flv-metadata = {  version = "1.0.0", path = "../k8-metadata"}
-types = { version = "0.1.0", path ="../types", package = "flv-types"}
+flv-types = { path ="../types", version = "0.2.0" }
+flv-util = { version = "0.2.0"}

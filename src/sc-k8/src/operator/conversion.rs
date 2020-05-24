@@ -25,11 +25,11 @@ use k8_metadata::app::stateful::StatefulSetSpec;
 use k8_metadata::app::stateful::VolumeAccessMode;
 use k8_metadata::spg::SpuGroupSpec;
 
-use types::defaults::SPU_DEFAULT_NAME;
-use types::defaults::SPU_PUBLIC_PORT;
-use types::defaults::SPU_PRIVATE_PORT;
-use types::defaults::SC_PRIVATE_PORT;
-use types::defaults::PRODUCT_NAME;
+use flv_types::defaults::SPU_DEFAULT_NAME;
+use flv_types::defaults::SPU_PUBLIC_PORT;
+use flv_types::defaults::SPU_PRIVATE_PORT;
+use flv_types::defaults::SC_PRIVATE_PORT;
+use flv_types::defaults::PRODUCT_NAME;
 
 
 use crate::cli::TlsConfig;

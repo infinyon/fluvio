@@ -6,7 +6,7 @@ use std::iter::Iterator;
 use log::debug;
 use async_trait::async_trait;
 
-use types::socket_helpers::ServerAddress;
+use flv_util::socket_helpers::ServerAddress;
 use sc_api::errors::FlvErrorCode;
 use sc_api::topic::{FlvTopicCompositionRequest, FlvTopicCompositionResponse};
 use sc_api::topic::{FlvDeleteTopicsRequest};

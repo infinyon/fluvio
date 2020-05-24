@@ -4,7 +4,7 @@
 //! Actions are received through check dispatcher channel and are forwarded to
 //! Connection manager for processing.
 //!
-use types::SpuId;
+use flv_types::SpuId;
 use flv_metadata::spu::SpuSpec;
 use flv_metadata::partition::PartitionSpec;
 use flv_metadata::partition::ReplicaKey;

@@ -5,12 +5,12 @@ use futures::SinkExt;
 use futures::future::BoxFuture;
 use futures::future::FutureExt;
 
-use types::SpuId;
+use flv_types::SpuId;
 use error::ServerError;
 use flv_metadata::partition::ReplicaKey;
 use utils::actions::Actions;
 use utils::SimpleConcurrentHashMap;
-use types::log_on_err;
+use flv_types::log_on_err;
 
 use crate::core::auth_tokens::AuthTokenKV;
 use crate::core::auth_tokens::AuthTokenAction;

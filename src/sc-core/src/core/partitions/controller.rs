@@ -11,7 +11,7 @@ use futures::channel::mpsc::Receiver;
 use futures::channel::mpsc::Sender;
 use futures::channel::mpsc::channel;
 
-use types::log_on_err;
+use flv_types::log_on_err;
 use flv_metadata::partition::PartitionSpec;
 use flv_metadata::spu::SpuSpec;
 use flv_future_aio::task::spawn;

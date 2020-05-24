@@ -1,6 +1,6 @@
 use k8_metadata::metadata::K8Obj;
 use k8_metadata::spg::SpuGroupSpec;
-use types::SpuId;
+use flv_types::SpuId;
 
 use flv_sc_core::core::spus::SpuLocalStore;
 

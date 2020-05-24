@@ -8,7 +8,7 @@ use kf_socket::KfSocketError;
 use kf_socket::KfStream;
 use kf_socket::KfSocket;
 use kf_service::api_loop;
-use types::SpuId;
+use flv_types::SpuId;
 
 use crate::core::DefaultSharedGlobalContext;
 

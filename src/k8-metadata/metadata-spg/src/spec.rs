@@ -14,8 +14,8 @@ use k8_obj_metadata::Env;
 use k8_obj_metadata::TemplateSpec;
 use flv_k8_spu::EncryptionEnum;
 
-use types::defaults::SPU_PUBLIC_PORT;
-use types::defaults::SPU_PRIVATE_PORT;
+use flv_types::defaults::SPU_PUBLIC_PORT;
+use flv_types::defaults::SPU_PRIVATE_PORT;
 
 use crate::SPG_API;
 

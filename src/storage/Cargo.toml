@@ -20,11 +20,11 @@ pin-utils = "0.1.0-alpha.4"
 async-trait = "0.1.18"
 structopt = { version = "0.3.5", optional = true}
 serde = { version ="1.0.103", features = ['derive'] }
-kf-protocol = { path = "../kf-protocol"}
+kf-protocol = { version = "1.1.3" } 
 kf-socket = { path = "../kf-socket"}
 flv-future-aio = { version = "2.0.0" }
 utils = { path= "../utils", optional = false }
-types = { path ="../types", package = "flv-types"}
+flv-types = { path ="../types", version = "0.2.0" }
 
 
 [dev-dependencies]

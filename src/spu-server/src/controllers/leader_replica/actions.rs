@@ -2,7 +2,7 @@ use std::fmt;
 
 use internal_api::messages::Replica;
 use kf_protocol::api::Offset;
-use types::SpuId;
+use flv_types::SpuId;
 
 
 #[derive(Debug)]

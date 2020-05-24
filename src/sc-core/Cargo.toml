@@ -1,7 +1,7 @@
 [package]
 name = "flv-sc-core"
 edition = "2018"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["fluvio.io"]
 
 [dependencies]
@@ -17,15 +17,15 @@ async-trait = "0.1.21"
 flv-util = { version = "0.1.1"}
 flv-future-aio = { version = "2.0.0", features =["tls"] }
 k8-metadata-client = { version = "1.0.1"}
-types = { path ="../types", package = "flv-types"}
+flv-types = { path ="../types", version = "0.2.0"}
 utils = { path = "../utils"}
-kf-protocol = { path = "../kf-protocol"}
+kf-protocol = { version = "1.1.3" } 
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
-internal-api = { path = "../api/internal-api"}
+internal-api = { path = "../internal-api"}
 k8-flv-metadata = { version = "1.0.0", path = "../k8-metadata"}
 flv-metadata = { path = "../metadata"}
-sc-api = { version = "1.0.0", path = "../api/sc-api", package = "flv-api-sc"}
+sc-api = { version = "1.0.0", path = "../sc-api", package = "flv-api-sc"}
 
 [dev-dependencies]
 flv-future-aio = { version = "2.0.0", features=["fixture"]}

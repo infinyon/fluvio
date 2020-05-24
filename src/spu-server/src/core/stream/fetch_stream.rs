@@ -15,7 +15,7 @@ use log::debug;
 use log::error;
 use log::trace;
 
-use types::SpuId;
+use flv_types::SpuId;
 use flv_future_core::spawn;
 use internal_api::InternalApiRequest;
 use internal_api::InternalApiResponse;
@@ -185,7 +185,7 @@ mod test {
     use futures::stream::StreamExt;
     use log::debug;
 
-    use types::SpuId;
+    use flv_types::SpuId;
     use flv_future_aio::net::AsyncTcpListener;
     use flv_future_aio::net::AsyncTcpStream;
     use flv_future_core::sleep;

@@ -14,7 +14,7 @@ use futures::stream::StreamExt;
 use flv_future_aio::task::spawn;
 use flv_util::actions::Actions;
 use flv_metadata::spu::SpuSpec;
-use types::log_on_err;
+use flv_types::log_on_err;
 
 use crate::core::WSUpdateService;
 use crate::conn_manager::SharedConnManager;

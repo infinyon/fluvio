@@ -8,7 +8,7 @@ use futures::channel::mpsc::Sender;
 
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
-use types::SpuId;
+use flv_types::SpuId;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::topic::TopicStatus;
 use flv_metadata::topic::TopicResolution;

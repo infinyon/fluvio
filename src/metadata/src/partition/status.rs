@@ -9,7 +9,7 @@ use std::slice::Iter;
 
 use kf_protocol::derive::{Decode, Encode};
 use kf_protocol::api::Offset;
-use types::SpuId;
+use flv_types::SpuId;
 
 use k8_metadata::partition::PartitionStatus as K8PartitionStatus;
 use k8_metadata::partition::ReplicaStatus as K8ReplicaStatus;

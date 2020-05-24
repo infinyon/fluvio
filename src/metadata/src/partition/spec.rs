@@ -3,7 +3,7 @@
 //!
 //! Partition Spec metadata information cached locally.
 //!
-use types::SpuId;
+use flv_types::SpuId;
 use kf_protocol::derive::{Decode, Encode};
 use k8_metadata::partition::PartitionSpec as K8PartitionSpec;
 

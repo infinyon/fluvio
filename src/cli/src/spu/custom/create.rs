@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 
 use structopt::StructOpt;
 
-use types::socket_helpers::ServerAddress;
+use flv_util::socket_helpers::ServerAddress;
 use flv_client::profile::ScConfig;
 
 use crate::tls::TlsConfig;

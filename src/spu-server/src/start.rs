@@ -80,7 +80,7 @@ mod proxy {
 
     use log::info;
 
-    use types::print_cli_err;
+    use flv_util::print_cli_err;
     use flv_future_aio::net::tls::TlsAcceptor;
     use crate::config::SpuConfig;
     use flv_tls_proxy::start as proxy_start;

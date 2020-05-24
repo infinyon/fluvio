@@ -5,7 +5,7 @@ use futures::channel::mpsc::Sender;
 use futures::sink::SinkExt;
 
 
-use types::SpuId;
+use flv_types::SpuId;
 use kf_socket::KfSink;
 use internal_api::UpdateLrsRequest;
 

@@ -15,7 +15,7 @@ use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
 use flv_metadata::partition::ReplicaKey;
 use flv_storage::FileReplica;
-use types::SpuId;
+use flv_types::SpuId;
 use kf_socket::ExclusiveKfSink;
 use flv_future_aio::sync::broadcast::Sender;
 

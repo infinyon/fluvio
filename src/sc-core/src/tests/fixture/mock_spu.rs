@@ -21,8 +21,8 @@ use internal_api::messages::SpuContent;
 use kf_protocol::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
-use types::socket_helpers::EndPoint;
-use types::SpuId;
+use flv_types::socket_helpers::EndPoint;
+use flv_types::SpuId;
 use utils::SimpleConcurrentHashMap;
 
 use flv_future_core::spawn;
