@@ -13,10 +13,9 @@ members = [
     "src/spu-api",
     "src/spu-server",
     "src/storage",
-    "src/test-helper",
     "src/types",
     "src/utils",
-    "src/proxy"
+    "tests/runner",
 ]
 
 [patch.crates-io]
