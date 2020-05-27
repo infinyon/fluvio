@@ -16,9 +16,8 @@ use flv_client::profile::TlsConfig;
 use flv_client::profile::TlsClientConfig;
 
 use crate::TestOption;
-use crate::CommandUtil;
+use crate::util::CommandUtil;
 use crate::tls::Cert;
-use crate::Target;
 
 #[allow(unused)]
 /// test when consuming using streaming mode
@@ -81,11 +80,11 @@ pub async fn validate_consumer_listener(client_idx: u16,option: &TestOption) {
 use std::io;
 use std::io::Write;
 
-use crate::bin::get_fluvio;
-use crate::TlsLoader;
+use utils::bin::get_fluvio;
+
 
 /// verify consumer thru CLI
-pub fn validate_consume_message_cli(tls: &TlsLoader,target: &Target) {
+pub fn validate_consume_message_cli() {
 
     let output = get_fluvio()
         .expect("fluvio not founded")
@@ -95,8 +94,6 @@ pub fn validate_consume_message_cli(tls: &TlsLoader,target: &Target) {
         .arg("0")
         .arg("-B")
         .arg("-d")
-        .target(target)
-        .setup_client_tls(tls)
         .print()
         .output()
         .expect("no output");

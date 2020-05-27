@@ -49,17 +49,15 @@ pub struct TestOption {
     #[structopt(long)]
     tls: bool,
 
-    /// run custom spu
+    /// run local environment
     #[structopt(long)]
-    custom: bool,
+    local_driver: bool,
 
     /// run develop image, this is for k8 
     #[structopt(long)]
     develop: bool,
 
-    /// use profile
-    #[structopt(short,long)]
-    profile: bool,
+
 
     // log flag
     #[structopt(short,long,default_value="flv=debug,kf=debug")]
@@ -78,7 +76,8 @@ impl TestOption  {
         !self.cleanup && !self.disable_test && !self.disable_consume
     }
 
-    pub fn cleanup(&self) -> bool {
+    /// before we start test run, remove cluster
+    pub fn remove_cluster_before(&self) -> bool {
         self.cleanup || (self.setup() && !self.disable_clean)
     }
 
@@ -115,17 +114,11 @@ impl TestOption  {
         !self.cleanup && !self.disable_test && !self.disable_produce
     }
 
-    pub fn use_k8(&self) -> bool {
-        !self.custom
+    /// use k8 env driver
+    pub fn use_k8_driver(&self) -> bool {
+        !self.local_driver
     }
 
-    pub fn use_profile(&self) -> bool {
-        self.profile
-    }
-
-    pub fn disable_profile(&mut self) {
-        self.profile = false;
-    }
 
     pub fn develop_mode(&self) -> bool {
         self.develop

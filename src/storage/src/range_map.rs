@@ -126,8 +126,8 @@ mod tests {
 
     use flv_future_aio::test_async;
     use kf_protocol::api::Offset;
+    use flv_util::fixture::ensure_new_dir;
 
-    use crate::fixture::ensure_new_dir;
     use super::SegmentList;
     use crate::StorageError;
     use crate::segment::MutableSegment;

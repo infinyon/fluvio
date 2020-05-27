@@ -75,10 +75,10 @@ mod tests {
     use futures::stream::StreamExt;
 
     use flv_future_aio::fs::util as file_util;
+    use flv_util::fixture::ensure_clean_file;
 
     use crate::fixture::create_batch;
     use crate::fixture::create_batch_with_producer;
-    use crate::fixture::ensure_clean_file;
     use crate::mut_records::MutFileRecords;
     use crate::ConfigOption;
     use crate::StorageError;

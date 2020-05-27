@@ -726,7 +726,7 @@ dependencies = [
 
 [[package]]
 name = "flv-metadata"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "flv-types",
  "flv-util 0.2.0",
@@ -737,7 +737,7 @@ dependencies = [
 
 [[package]]
 name = "flv-sc-core"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-trait",
  "base64 0.11.0",
@@ -746,7 +746,7 @@ dependencies = [
  "flv-future-aio",
  "flv-metadata",
  "flv-types",
- "flv-util 0.1.1",
+ "flv-util 0.2.0",
  "futures",
  "internal-api",
  "k8-flv-metadata",
@@ -771,7 +771,7 @@ dependencies = [
  "flv-sc-core",
  "flv-tls-proxy",
  "flv-types",
- "flv-util 0.1.1",
+ "flv-util 0.2.0",
  "futures",
  "k8-client",
  "k8-flv-metadata",
@@ -822,7 +822,7 @@ dependencies = [
  "bytes 0.5.4",
  "flv-future-aio",
  "flv-types",
- "flv-util 0.1.1",
+ "flv-util 0.2.0",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -2758,7 +2758,7 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "utils"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "flv-types",
  "log",

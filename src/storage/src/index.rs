@@ -191,7 +191,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Error as IoError;
 
-    use crate::fixture::ensure_clean_file;
+    use flv_util::fixture::ensure_clean_file;
 
     use super::lookup_entry;
     use super::LogIndex;

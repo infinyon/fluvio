@@ -4,7 +4,7 @@ use flv_client::profile::ScConfig;
 use flv_client::SpuController;
 use flv_client::ReplicaLeader;
 
-use crate::CommandUtil;
+use crate::util::CommandUtil;
 
 
 /// produce message
@@ -34,11 +34,9 @@ use std::io::Write;
 use std::io;
 use std::process::Stdio;
 
-use crate::Target;
-use crate::get_fluvio;
-use crate::TlsLoader;
+use utils::bin::get_fluvio;
 
-pub fn produce_message_with_cli(tls: &TlsLoader,target: &Target) {
+pub fn produce_message_with_cli() {
 
     println!("starting produce");
     let mut child = get_fluvio()
@@ -46,8 +44,6 @@ pub fn produce_message_with_cli(tls: &TlsLoader,target: &Target) {
             .stdin(Stdio::piped())
             .arg("produce")
             .arg("test1")
-            .target(target)
-            .setup_client_tls(tls)
             .print()
             .spawn()
             .expect("no child");

@@ -124,11 +124,11 @@ mod tests {
     use flv_future_aio::fs::BoundedFileSink;
     use flv_future_aio::fs::BoundedFileOption;
     use flv_future_aio::test_async;
+    use flv_util::fixture::ensure_clean_file;
     use kf_protocol::api::DefaultRecord;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Offset;
 
-    use crate::fixture::ensure_clean_file;
     use crate::mut_records::MutFileRecords;
     use crate::ConfigOption;
 

@@ -11,10 +11,6 @@ use kf_protocol::api::Size;
 
 use crate::ConfigOption;
 
-pub use flv_util::fixture::ensure_clean_dir;
-pub use flv_util::fixture::ensure_new_dir;
-pub use flv_util::fixture::ensure_clean_file;
-
 
 pub fn create_batch() -> DefaultBatch {
     create_batch_with_producer(12,2)

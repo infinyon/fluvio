@@ -1,6 +1,6 @@
 [package]
 name = "utils"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["fluvio.io"]
 edition = "2018"
 

@@ -7,12 +7,12 @@ use std::convert::TryFrom;
 use std::io::Error as IoError;
 use std::fmt;
 
-use flv_types::socket_helpers::EndPoint as SocketEndPoint;
-use flv_types::socket_helpers::EndPointEncryption;
+use flv_util::socket_helpers::EndPoint as SocketEndPoint;
+use flv_util::socket_helpers::EndPointEncryption;
 use flv_types::defaults::{SPU_PRIVATE_HOSTNAME, SPU_PRIVATE_PORT};
 use flv_types::defaults::SPU_PUBLIC_PORT;
 use flv_types::SpuId;
-use flv_types::socket_helpers::ServerAddress;
+use flv_util::socket_helpers::ServerAddress;
 
 use kf_protocol::derive::{Decode, Encode};
 

@@ -337,10 +337,10 @@ mod tests {
     use kf_protocol::api::ErrorCode;
     use kf_protocol::fs::FilePartitionResponse;
     use kf_protocol::api::DefaultRecords;
+    use flv_util::fixture::ensure_clean_dir;
     
     use super::FileReplica;
     use crate::fixture::create_batch;
-    use crate::fixture::ensure_clean_dir;
     use crate::fixture::read_bytes_from_file;
     use crate::ConfigOption;
     use crate::StorageError;

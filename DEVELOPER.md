@@ -96,6 +96,12 @@ You can remove fluvio cluster by
 flvd cluster uninstall
 ```
 
+Note that when you uninstall cluster, CLI will remove all related objects such as
+* Topics
+* Partitions
+* Tls Secrets
+* Storage
+
 
 # Running Fluvio using custom SPU
 
@@ -104,61 +110,28 @@ There are 2 types of SPU supported.  Default is managed SPU which are running in
 It is recommended to use custom SPU when you are working on feature development.
 
 
-## Registering Custom SPU
+## Creating local cluster
 
-To run custom SPU (custom) from your laptop, you must register their configuration.  Using sample configuration, you can register a SPU with id of 5001
-
-```
-kubectl create -f k8-util/samples/crd/spu_5001.yaml
-```  
-
-To register 3 SPU:
-```
-kubectl create -f k8-util/samples/crd/spu_5001.yaml 
-kubectl create -f k8-util/samples/crd/spu_5002.yaml 
-kubectl create -f k8-util/samples/crd/spu_5003.yaml 
-```
-
-## Starting SC
-```
-./dev-tools/log/debug-sc-min
-```
-
-## Starting custom SPU
-
-To start a single SPU using configuration registered as above:
+Local cluster of custom SPU can be created same manner previously:
 
 ```
-./dev-tools/log/debug-spu-min 5001 9005 9006
+flvd cluster install --local --spu <spu>
 ```
 
-To start 3 SPU with in separate terminal session:
+where ```---spu``` is optional.  This will launch SC and SPU's using native build instead of docker images.
+
+The logs for SC and SPU can be found in:
+* /tmp/flv_sc.log
+* /tmp/spu_log_<spu_id>.og
+
+
+## Uninstalling local cluster
+
+Local cluster can be uninstalled as:
+
 ```
-./dev-tools/log/debug-spu-min 5002 9007 9008
+flvd cluster uninstall --local
 ```
-```
-./dev-tools/log/debug-spu-min 5003 9009 9010
-```
-
-## Using CLI
-
-To connect to custom SPU, create local profile:
-```
-flvd profile create-local-profile
-```
-
-
-## Installing TLS version to minikube
-
-Ensure no other fluvio installation in the name space.  You can uninstall existing fluvio installation by:
-```helm uninstall fluvio```
-
-First, generate TLS certificates with domain "fluvio.local".  This will generate necessary certificates and create Kubernetes secrets:
-
-```make create-secret```
-
-Install TLS version of Fluvio
-```target/debug/fluvio install --tls```
 
 
 
@@ -184,9 +157,8 @@ Run end to end integration test with a multiple SPU.  For example, with 2 SPU
 
 ### Running integration test for custom SPU
 
-
 ```
-./target/debug/flv-test --custom
+./target/debug/flv-test --local
 ```
 
 

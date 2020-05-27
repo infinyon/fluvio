@@ -153,11 +153,11 @@ mod tests {
     use flv_future_aio::test_async;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::Decoder;
+    use flv_util::fixture::ensure_clean_file;
 
     use super::MutFileRecords;
     use super::StorageError;
     use crate::fixture::create_batch;
-    use crate::fixture::ensure_clean_file;
     use crate::fixture::read_bytes_from_file;
     use crate::ConfigOption;
 

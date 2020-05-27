@@ -61,7 +61,7 @@ pub struct ProfileCommand {
 
 
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Default,StructOpt)]
 pub struct SetLocal {
     #[structopt(value_name = "host:port",default_value="localhost:9003")]
     pub local: String,

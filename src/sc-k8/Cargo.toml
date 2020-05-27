@@ -20,7 +20,7 @@ k8-client = { version = "1.1.1"}
 flv-tls-proxy = "0.1.0"
 flv-types = { path ="../types", version = "0.2.0"}
 flv-future-aio = { version = "2.0.0", features = ["tls"] }
-flv-util = { version = "0.1.0"}
+flv-util = { version = "0.2.0"}
 utils = { path = "../utils"}
 k8-flv-metadata = { path = "../k8-metadata", version = "1.1.0"}
 flv-sc-core = { path = "../sc-core"}

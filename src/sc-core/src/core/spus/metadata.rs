@@ -9,7 +9,7 @@ use std::iter::FromIterator;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use flv_types::socket_helpers::ServerAddress;
+use flv_util::socket_helpers::ServerAddress;
 use flv_types::SpuId;
 use flv_metadata::spu::{Endpoint, SpuSpec, SpuStatus, IngressPort};
 use k8_metadata::metadata::K8Obj;

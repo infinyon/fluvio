@@ -299,13 +299,13 @@ mod tests {
     use futures::stream::StreamExt;
 
     use flv_future_aio::test_async;
+    use flv_util::fixture::ensure_new_dir;
  
     use crate::ConfigOption;
     use crate::StorageError;
     use crate::segment::MutableSegment;
     use crate::fixture::create_batch;
     use crate::fixture::create_batch_with_producer;
-    use crate::fixture::ensure_new_dir;
   
 
     fn default_option(base_dir: PathBuf) -> ConfigOption {

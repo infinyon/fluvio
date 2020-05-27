@@ -156,10 +156,11 @@ mod tests {
     use std::io::Error as IoError;
 
     use flv_future_aio::test_async;
+    use flv_util::fixture::ensure_clean_file;
 
-    use super::CheckPoint;
-    use crate::fixture::ensure_clean_file;
     use crate::ConfigOption;
+    use super::CheckPoint;
+    
 
     #[test_async]
     async fn checkpoint_test() -> Result<(), IoError> {

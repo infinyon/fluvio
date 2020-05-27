@@ -248,11 +248,11 @@ mod tests {
     use std::io::Read;
    
     use flv_future_aio::test_async;
+    use flv_util::fixture::ensure_clean_file;
 
     use super::MutLogIndex;
     use crate::index::Index;
     use crate::fixture::default_option;
-    use crate::fixture::ensure_clean_file;
     use crate::index::OffsetPosition;
 
     const TEST_FILE: &str = "00000000000000000121.index";

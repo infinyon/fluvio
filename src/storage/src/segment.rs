@@ -362,7 +362,7 @@ mod tests {
     use std::path::PathBuf;
 
     use flv_future_aio::test_async;
-
+    use flv_util::fixture::ensure_new_dir;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::Size;
     use kf_protocol::Decoder;
@@ -370,7 +370,6 @@ mod tests {
     use super::MutableSegment;
     use crate::fixture::create_batch_with_producer;
     use crate::fixture::create_batch;
-    use crate::fixture::ensure_new_dir;
     use crate::fixture::read_bytes_from_file;
     use crate::ConfigOption;
     use crate::StorageError;

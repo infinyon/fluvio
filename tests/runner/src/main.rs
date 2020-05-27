@@ -1,32 +1,35 @@
-mod runner;
+mod setup;
 mod cli;
 mod tests;
-mod bin;
-mod cmd;
+mod util;
 mod environment;
-mod target;
 mod tls;
+mod test_runner;
 
-use cli::TestOption;
-use bin::*;
-use cmd::*;
-use target::*;
-use tls::*;
+pub use cli::*;
+pub use tls::*;
 
 fn main() {
 
-    use runner::TestRunner;
     use flv_future_aio::task::run_block_on;
+    use setup::Setup;
+    use test_runner::TestRunner;
+
 
     flv_future_aio::util::init_logger();
 
+
     let option = TestOption::parse_cli_or_exit();
+   
+    let mut setup = Setup::new(option.clone());
+    let test_runner = TestRunner::new(option);
 
-    
-    let mut runner = TestRunner::new(option);
+    run_block_on(async {
 
-    if let Err(err) = run_block_on(runner.test()) {
-        assert!(false,"error: {:?}",err);
-    }  
+        setup.setup().await;
+
+        test_runner.run_test().await;
+
+    });
 
 }

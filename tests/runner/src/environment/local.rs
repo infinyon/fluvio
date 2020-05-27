@@ -4,39 +4,45 @@ use utils::bin::get_fluvio;
 
 use crate::TestOption;
 use crate::util::CommandUtil;
+
+
 use super::EnvironmentDriver;
 
-
-pub struct K8EnvironmentDriver {
-    option: TestOption,
-}
-
-impl K8EnvironmentDriver {
-
-    pub fn new(option: TestOption) -> Self {
-        Self {
-            option: option.clone()
-        }
-    }
-
+/// Local Env driver where we should SPU locally
+pub struct LocalEnvDriver {
+    option: TestOption
 }
     
 
+impl LocalEnvDriver {
+
+    pub fn new(option: TestOption) -> Self {
+
+        Self {
+            option
+        }
+    }
+
+    
+}
+
 #[async_trait]
-impl EnvironmentDriver for K8EnvironmentDriver {
+impl EnvironmentDriver for LocalEnvDriver {
 
-
-    /// remove cluster 
+    
+        
+        /// remove cluster 
     async fn remove_cluster(&self) {
 
         get_fluvio()
             .expect("fluvio not founded")
             .arg("cluster")
             .arg("uninstall")
+            .arg("--local")
             .print()
             .wait_and_check();
-    }
 
+    }
 
     async fn install_cluster(&self) {
      
@@ -46,17 +52,23 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         cmd
             .arg("cluster")
             .arg("install")
-            .arg("--spu")
-            .arg(self.option.spu_count().to_string());
+            .arg("--local");
 
         if self.option.tls() {
-            self.set_tls(&self.option, &mut cmd);
-        }
 
+            self.set_tls(&self.option, &mut cmd);
+
+        }
+        
         cmd
             .print()
             .wait_and_check();
+
+
     }
 
 
+
+
 }
+

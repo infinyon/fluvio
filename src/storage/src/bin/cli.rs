@@ -7,13 +7,14 @@ use std::io::Error as IoError;
 use structopt::StructOpt;
 use futures::stream::StreamExt;
 
-use flv_future_aio::fs::file_util;
-use flv_future_core::run_block_on;
 
-use storage::DefaultFileBatchStream;
-use storage::LogIndex;
-use storage::StorageError;
-use storage::OffsetPosition;
+use flv_future_aio::task::run_block_on;
+use flv_future_aio::fs::util as fs_util;
+
+use flv_storage::DefaultFileBatchStream;
+use flv_storage::LogIndex;
+use flv_storage::StorageError;
+use flv_storage::OffsetPosition;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]
@@ -25,7 +26,7 @@ enum Main {
 }
 
 fn main() {
-    utils::init_logger();
+    flv_util::init_logger();
 
     let opt = Main::from_args();
 
@@ -46,7 +47,7 @@ pub(crate) struct LogOpt {
 }
 
 async fn print_logs(path: PathBuf) -> Result<(), IoError> {
-    let file = file_util::open(path).await?;
+    let file = fs_util::open(path).await?;
 
     let mut batch_stream = DefaultFileBatchStream::new(file);
 

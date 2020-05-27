@@ -58,19 +58,17 @@ pub struct ScDispatcher<S> {
     termination_sender: Sender<bool>,
     #[allow(dead_code)]
     supervisor_command_sender: Sender<SupervisorCommand>,
-    supervisor_command_receiver: Receiver<SupervisorCommand>,
     ctx: SharedGlobalContext<S>,
 }
 
 impl<S> ScDispatcher<S> {
     pub fn new(ctx: SharedGlobalContext<S>) -> Self {
         let (termination_sender, termination_receiver) = channel(1);
-        let (supervisor_command_sender, supervisor_command_receiver) = channel(100);
+        let (supervisor_command_sender, _supervisor_command_receiver) = channel(100);
         Self {
             termination_receiver,
             termination_sender,
             supervisor_command_sender,
-            supervisor_command_receiver,
             ctx,
         }
     }

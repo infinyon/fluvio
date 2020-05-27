@@ -1,13 +1,14 @@
 mod install;
 mod uninstall;
 mod minikube;
+mod util;
 
+pub use process::process_cluster;
 
 use structopt::StructOpt;
 
-pub use process::process_cluster;
-pub use cmd_util::CommandUtil;
-pub use k8_util::*;
+
+use util::*;
 
 use minikube::SetMinikubeContext;
 use install::InstallCommand;
@@ -60,51 +61,6 @@ mod process {
 
 
 
-
-mod cmd_util {
-
-    pub trait CommandUtil {
-
-        // wait and check
-        fn wait(&mut self);
-
-        fn wait_check(&mut self);
-    }
-
-    use std::process::Command;
-
-    impl CommandUtil for Command {
-
-        /// execute and wait, ignore error
-        fn wait(&mut self) {
-
-            use std::io;
-            use std::io::Write;
-
-            let output = self.output().expect("execution failed");
-
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
-
-        }
-
-        /// execute and wait, ignore error
-        fn wait_check(&mut self) {
-
-            use std::io;
-            use std::io::Write;
-
-            let output = self.output().expect("execution failed");
-
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
-
-            assert!(output.status.success());
-
-
-        }
-    }
-}
 
 
 mod k8_util {

@@ -1,0 +1,291 @@
+
+
+
+
+
+use std::process::Command;
+use std::io::Error as IoError;
+
+use super::*;
+
+pub async fn install_core(opt: InstallCommand) -> Result<(),CliError> {
+
+    install_core_app(&opt)?;
+
+    if let Some(_) = k8_util::wait_for_service_exist(&opt.k8_config.namespace).await
+                .map_err(|err| CliError::Other(err.to_string()))? 
+    {
+        println!("fluvio is up");
+        set_profile(&opt).await?;
+
+        if opt.spu > 0 {
+            create_spg(&opt).await?;
+        }
+        
+        Ok(())
+    } else {
+        println!("unable to detect fluvio service");
+        println!("for minikube, check if you have tunnel up!");
+        Err(CliError::Other("unable to detect fluvio service".to_owned()))
+    }
+
+}
+
+/// for tls, copy secrets 
+fn copy_secrets(opt: &InstallCommand) {
+
+    println!("copy secrets");
+
+    let tls = &opt.tls;
+
+    // copy certificate as kubernetes secrets
+
+    Command::new("kubectl")
+        .arg("create")
+        .arg("secret")
+        .arg("generic")
+        .arg("fluvio-ca")
+        .arg("--from-file")
+        .arg(&tls.ca_cert.as_ref().expect("ca cert"))
+        .print()
+        .wait_check();
+
+    Command::new("kubectl")
+        .arg("create")
+        .arg("secret")
+        .arg("tls")
+        .arg("fluvio-tls")
+        .arg("--cert")
+        .arg(&tls.server_cert.as_ref().expect("server cert"))
+        .arg("--key")
+        .arg(&tls.server_key.as_ref().expect("server key"))
+        .print()
+        .wait_check();
+
+}
+
+/// install helm core chart
+fn install_core_app(opt: &InstallCommand) -> Result<(),CliError>  {
+
+    if opt.tls.tls {
+        copy_secrets(opt);
+    }
+
+    let version = if opt.develop {
+        // get git version
+        let output = Command::new("git").args(&["log", "-1","--pretty=format:\"%H\""]).output().unwrap();
+        let version = String::from_utf8(output.stdout).unwrap();
+        version.trim_matches('"').to_owned()
+    } else {
+        helm_add_repo();
+        helm_repo_update();
+        crate::VERSION.to_owned()
+    };
+
+    let registry = if opt.develop {
+        "localhost:5000/infinyon"
+    } else {
+        "infinyon"
+    };
+
+    let k8_config = &opt.k8_config;
+    let ns = &k8_config.namespace;
+
+    println!("flv: {}",version);
+
+    let fluvio_version = format!("fluvioVersion={}",version);
+    println!("using fluvio version: {}",fluvio_version);
+
+    let mut cmd = Command::new("helm");
+
+    if opt.develop {
+        cmd
+            .arg("install")
+            .arg(&k8_config.name)
+            .arg("./k8-util/helm/fluvio-core")
+            .arg("--set")
+            .arg(fluvio_version)
+            .arg("--set")
+            .arg(format!("registry={}",registry));
+    } else {
+
+        helm_add_repo();
+        helm_repo_update();
+
+        cmd
+            .arg("install")
+            .arg(&k8_config.name)
+            .arg("fluvio/fluvio-core");
+    };
+
+    cmd
+        .arg("-n")
+        .arg(ns)
+        .arg("--set")
+        .arg(format!("cloud={}",k8_config.cloud));
+        
+
+    if opt.tls.tls {
+        cmd
+            .arg("--set")
+            .arg("tls=true");
+
+    }
+
+    if let Some(log) = &opt.log {
+        cmd
+            .arg("--set")
+            .arg(format!("scLog={}",log));
+    }
+
+    cmd.wait();
+    
+    println!("fluvio chart has been installed");
+
+    Ok(())
+
+}
+
+pub fn install_sys(opt: InstallCommand) {
+
+    
+    helm_add_repo();
+    helm_repo_update();
+    
+    Command::new("helm")
+        .arg("install")
+        .arg("fluvio-sys")
+        .arg("fluvio/fluvio-sys")
+        .arg("--set")
+        .arg(format!("cloud={}",opt.k8_config.cloud))
+        .wait_check();
+
+
+    println!("fluvio sys chart has been installed");
+
+}
+
+fn helm_add_repo() {
+
+    // add repo
+    Command::new("helm")
+        .arg("repo")
+        .arg("add")
+        .arg("fluvio")
+        .arg("https://infinyon.github.io/charts")
+        .wait_check();
+}
+
+fn helm_repo_update() {
+
+    // add repo
+    Command::new("helm")
+        .arg("repo")
+        .arg("update")
+        .wait_check();
+}
+
+/// switch to profile
+async fn set_profile(opt: &InstallCommand) -> Result<(),IoError> {
+
+    use crate::profile::set_k8_context;
+    use crate::profile::SetK8;
+    use crate::tls::TlsConfig;
+
+    let tls_config = &opt.tls;
+    let tls = if tls_config.tls {
+        TlsConfig {
+            tls: true,
+            domain: tls_config.domain.clone(),
+            enable_client_cert: true,
+            client_key: tls_config.client_key.clone(),
+            client_cert: tls_config.client_cert.clone(),
+            ca_cert: tls_config.ca_cert.clone(),
+            ..Default::default()
+        }
+    } else {
+        TlsConfig::default()
+    };
+
+    
+    let config =  SetK8 {
+        namespace: Some(opt.k8_config.namespace.clone()),
+        tls,
+        ..Default::default()   
+    };
+
+    println!("{}",set_k8_context(config).await?);
+
+    Ok(())
+}
+
+
+async fn create_spg(opt: &InstallCommand) -> Result<(),CliError> {
+
+    use crate::spu::group::process_create_managed_spu_group;
+    use crate::spu::group::CreateManagedSpuGroupOpt;
+
+    let group_name = &opt.k8_config.group_name;
+    let group_opt = CreateManagedSpuGroupOpt {
+        name: group_name.clone(),
+        replicas: opt.spu,
+        ..Default::default()
+    };
+
+    process_create_managed_spu_group(group_opt).await?;
+
+    println!("group: {} with replica: {} created",group_name,opt.spu);
+
+    Ok(())
+}
+
+
+
+mod k8_util {
+
+    use std::time::Duration;
+
+    use flv_future_aio::timer::sleep;
+    use k8_client::ClientError;
+    use k8_client::load_and_share;
+    use k8_obj_core::service::ServiceSpec;
+    use k8_obj_metadata::InputObjectMeta;
+    use k8_metadata_client::MetadataClient;
+    use k8_client::ClientError as K8ClientError;
+
+   
+    pub async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError>  {
+
+        let client = load_and_share()?;
+
+        let input = InputObjectMeta::named("flv-sc-public", ns);
+
+        for i in 0..100u16 {
+            println!("checking to see if svc exists, count: {}",i);
+            match client.retrieve_item::<ServiceSpec,_>(&input).await {
+                Ok(svc) => {
+                    // check if load balancer status exists
+                    if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
+                        println!("found svc load balancer addr: {}",addr);
+                        return Ok(Some(format!("{}:9003",addr.to_owned())))
+                    } else {
+                        println!("svc exists but no load balancer exist yet, continue wait");
+                        sleep(Duration::from_millis(3000)).await;
+                    }
+                },
+                Err(err) => match err {
+                    K8ClientError::NotFound => {
+                        println!("no svc found, sleeping ");
+                        sleep(Duration::from_millis(3000)).await;
+                    },
+                    _ => assert!(false,format!("error: {}",err))
+                }
+            };
+        }
+
+        Ok(None)
+
+    }
+
+    
+}

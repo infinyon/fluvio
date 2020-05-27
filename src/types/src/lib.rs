@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 pub mod defaults;
 pub mod macros;
 pub mod partition;
-pub mod socket_helpers;
+
 
 pub use partition::PartitionError;
 

@@ -158,77 +158,23 @@ helm_uninstall_dev:
 	helm uninstall fluvio
 
 
-## Helper targets to compile specific crate
+test-local:
+	make -C tests run-local
 
+install-local-tls:
+	$(FLVD) cluster install --local  \
+		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
+		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
+		--client-key tls/certs/client.key --domain fluvio.local
+	
+uninstall-local:
+	$(FLVD) cluster uninstall --local
 
-build-sc-test:
-	cd src/sc-server;cargo test --no-run
-			
-			
-build-spu-test:
-	cd src/spu-server;cargo test --no-run
+install-k8-tls:
+	$(FLVD) cluster install --develop \
+		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
+		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
+		--client-key tls/certs/client.key --domain fluvio.local
 
-build-storage-test:
-	cd src/storage;cargo test --no-run
-
-build-internal-test:
-	cd src/internal-api;cargo test --no-run	
-
-		
-build-k8client:
-	cd src/k8-client;cargo build
-
-
-test-spu:
-	cd src/spu-server;cargo test
-
-test-spu-offset:
-	cd src/spu-server;RUST_LOG=spu_server=trace cargo test flv_offset_fetch_test	
-
-test-sc-connection:
-	cd src/sc-server;RUST_LOG=sc_server=trace cargo test connection_test
-
-test-sc-partition:
-	cd src/sc-server;RUST_LOG=sc_server=trace cargo test partition_test
-
-test-sc-controller:
-	cd src/sc-server; cargo test test_controller_basic		
-
-test-sc:
-	cd src/sc-core;cargo test	
-
-
-test-sc-k8:
-	cd src/sc-k8;cargo test
-
-test-storage:
-	cd src/storage;cargo test
-
-test-internal-api:
-	cd src/api/internal-api;cargo test
-
-test-cli:
-	cd src/cli;cargo test
-
-
-test-kfsocket:
-	cd src/kf-socket;cargo test
-
-test-kfservice:
-	cd src/kf-service;cargo test
-
-test-k8client:
-	cd src/k8-client;cargo test
-
-
-test-kf-protocol:
-	cd src/kf-protocol;cargo test
-
-test-client:
-	cd src/client;cargo test
-
-test-kf-protocol-transport:
-	ccd src/kf-protocol/kf-protocol-transport; cargo test
-
-
-.PHONY:	build test-helper teste-aio test-kfsocket test-kfservice test-k8client test-k8config integration-test
+uninstall-k8:
+	$(FLVD) cluster uninstall

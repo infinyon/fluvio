@@ -16,26 +16,23 @@ impl TlsLoader {
         }
     }
 
-    pub fn disable_profile(&mut self) {
-        self.option.disable_profile();
-    }
     
     pub fn set_client_tls(&self,cmd: &mut Command)  {
 
-        if !self.option.use_profile() && self.option.tls() {
-            let client_dir = Cert::load_client();
+       
+        let client_dir = Cert::load_client();
 
-            cmd.arg("--tls")
-                .arg("--domain")
-                .arg("fluvio.local")
-                .arg("--enable-client-cert")
-                .arg("--ca-cert")
-                .arg(client_dir.ca.as_os_str())
-                .arg("--client-cert")
-                .arg(client_dir.cert.as_os_str())
-                .arg("--client-key")
-                .arg(client_dir.key.as_os_str());
-        } 
+        cmd.arg("--tls")
+            .arg("--domain")
+            .arg("fluvio.local")
+            .arg("--enable-client-cert")
+            .arg("--ca-cert")
+            .arg(client_dir.ca.as_os_str())
+            .arg("--client-cert")
+            .arg(client_dir.cert.as_os_str())
+            .arg("--client-key")
+            .arg(client_dir.key.as_os_str());
+        
 
     }
 
