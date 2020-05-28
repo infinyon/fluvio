@@ -20,7 +20,7 @@ use crate::profile::InlineProfile;
 // -----------------------------------
 
 #[derive(Debug, StructOpt)]
-pub struct DeleteCustomSpuOpt {
+pub struct UnregisterCustomSpuOpt {
     /// SPU id
     #[structopt(short = "i", long = "id", required_unless = "name")]
     id: Option<i32>,
@@ -45,8 +45,8 @@ pub struct DeleteCustomSpuOpt {
     profile: InlineProfile,
 }
 
-impl DeleteCustomSpuOpt {
-    /// Validate cli options. Generate target-server and delete custom spu config.
+impl UnregisterCustomSpuOpt {
+    /// Validate cli options. Generate target-server and unregister custom spu config.
     fn validate(self) -> Result<(ScConfig, FlvCustomSpu), CliError> {
         let target_server = ScConfig::new_with_profile(
             self.sc,
@@ -75,11 +75,11 @@ impl DeleteCustomSpuOpt {
 //  CLI Processing
 // -----------------------------------
 
-/// Process delete custom-spu cli request
-pub async fn process_delete_custom_spu(opt: DeleteCustomSpuOpt) -> Result<(), CliError> {
+/// Process unregister custom-spu cli request
+pub async fn process_unregister_custom_spu(opt: UnregisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, cfg) = opt.validate()?;
 
     let mut sc = target_server.connect().await?;
 
-    sc.delete_custom_spu(cfg).await.map_err(|err| err.into())
+    sc.unregister_custom_spu(cfg).await.map_err(|err| err.into())
 }

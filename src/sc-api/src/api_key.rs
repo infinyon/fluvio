@@ -23,8 +23,8 @@ pub enum ScApiKey {
     FlvTopicComposition = 2004,
 
     // Custom SPUs
-    FlvCreateCustomSpus = 2005,
-    FlvDeleteCustomSpus = 2006,
+    FlvRegisterCustomSpus = 2005,
+    FlvUnregisterCustomSpus = 2006,
     FlvFetchSpus = 2007,
 
     // SPU Groups

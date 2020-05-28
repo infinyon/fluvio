@@ -16,8 +16,8 @@ mod api {
      pub use super::flv::fetch_topics_req::*;
      pub use super::flv::topic_composition_req::*;
 
-     pub use super::flv::create_custom_spus_req::*;
-     pub use super::flv::delete_custom_spus_req::*;
+     pub use super::flv::register_custom_spus_req::*;
+     pub use super::flv::unregister_custom_spus_req::*;
      pub use super::flv::fetch_spu_req::*;
 
      pub use super::flv::create_spu_groups_req::*;

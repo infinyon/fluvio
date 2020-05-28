@@ -14,26 +14,26 @@ use crate::ApiError;
 use super::spu::FlvEndPointMetadata;
 
 // -----------------------------------
-// FlvCreateCustomSpusRequest
+// FlvRegisterCustomSpusRequest
 // -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvCreateCustomSpusRequest {
+pub struct FlvRegisterCustomSpusRequest {
     /// A list of one or more custom spus to be created.
-    pub custom_spus: Vec<FlvCreateCustomSpuRequest>,
+    pub custom_spus: Vec<FlvRegisterCustomSpuRequest>,
 }
 
 
-impl Request for FlvCreateCustomSpusRequest {
-    const API_KEY: u16 = ScApiKey::FlvCreateCustomSpus as u16;
+impl Request for FlvRegisterCustomSpusRequest {
+    const API_KEY: u16 = ScApiKey::FlvRegisterCustomSpus as u16;
     const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvCreateCustomSpusResponse;
+    type Response = FlvRegisterCustomSpusResponse;
 }
 
 
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvCreateCustomSpuRequest {
+pub struct FlvRegisterCustomSpuRequest {
     /// The id of the custom spu (globally unique id)
     pub id: i32,
 
@@ -51,16 +51,16 @@ pub struct FlvCreateCustomSpuRequest {
 }
 
 // -----------------------------------
-// FlvCreateCustomSpusResponse
+// FlvRegisterCustomSpusResponse
 // -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvCreateCustomSpusResponse {
+pub struct FlvRegisterCustomSpusResponse {
     /// The custom spu creation result messages.
     pub results: Vec<FlvResponseMessage>,
 }
 
-impl FlvCreateCustomSpusResponse {
+impl FlvRegisterCustomSpusResponse {
 
     /// validate and extract a single response
     pub fn validate(self, name: &str) -> Result<(),ApiError> {

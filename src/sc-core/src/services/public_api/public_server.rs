@@ -30,8 +30,8 @@ use super::api::handle_create_topics_request;
 use super::api::handle_delete_topics_request;
 use super::api::handle_fetch_topics_request;
 use super::api::handle_topic_composition_request;
-use super::api::handle_create_custom_spus_request;
-use super::api::handle_delete_custom_spus_request;
+use super::api::handle_register_custom_spus_request;
+use super::api::handle_unregister_custom_spus_request;
 use super::api::handle_fetch_spu_request;
 use super::api::handle_create_spu_groups_request;
 use super::api::handle_delete_spu_groups_request;
@@ -110,15 +110,15 @@ where
             ),
 
             // Fluvio - Spus
-            PublicRequest::FlvCreateCustomSpusRequest(request) => call_service!(
+            PublicRequest::FlvRegisterCustomSpusRequest(request) => call_service!(
                 request,
-                handle_create_custom_spus_request(request, &ctx),
+                handle_register_custom_spus_request(request, &ctx),
                 sink,
                 "create custom spus handler"
             ),
-            PublicRequest::FlvDeleteCustomSpusRequest(request) => call_service!(
+            PublicRequest::FlvUnregisterCustomSpusRequest(request) => call_service!(
                 request,
-                handle_delete_custom_spus_request(request, &ctx),
+                handle_unregister_custom_spus_request(request, &ctx),
                 sink,
                 "delete custom spus handler"
             ),

@@ -13,26 +13,26 @@ use crate::ScApiKey;
 use crate::common::flv_spus::FlvCustomSpu;
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvDeleteCustomSpusRequest {
+pub struct FlvUnregisterCustomSpusRequest {
     /// Each spu name or id to be deleted.
     pub custom_spus: Vec<FlvCustomSpu>,
 }
 
-impl Request for FlvDeleteCustomSpusRequest {
-    const API_KEY: u16 = ScApiKey::FlvDeleteCustomSpus as u16;
+impl Request for FlvUnregisterCustomSpusRequest {
+    const API_KEY: u16 = ScApiKey::FlvUnregisterCustomSpus as u16;
     const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvDeleteCustomSpusResponse;
+    type Response = FlvUnregisterCustomSpusResponse;
 }
 
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvDeleteCustomSpusResponse {
+pub struct FlvUnregisterCustomSpusResponse {
     /// A response message for each delete request
     pub results: Vec<FlvResponseMessage>,
 }
 
 
-impl FlvDeleteCustomSpusResponse {
+impl FlvUnregisterCustomSpusResponse {
 
     /// validate and extract a single response
     pub fn validate(self) -> Result<(),ApiError> {

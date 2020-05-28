@@ -21,8 +21,8 @@ use kf_protocol::derive::Encode;
 use kf_protocol::message::metadata::KfMetadataRequest;
 
 use crate::versions::ApiVersionsRequest;
-use crate::spu::FlvCreateCustomSpusRequest;
-use crate::spu::FlvDeleteCustomSpusRequest;
+use crate::spu::FlvRegisterCustomSpusRequest;
+use crate::spu::FlvUnregisterCustomSpusRequest;
 use crate::spu::FlvFetchSpusRequest;
 use crate::spu::FlvCreateSpuGroupsRequest;
 use crate::spu::FlvFetchSpuGroupsRequest;
@@ -49,8 +49,8 @@ pub enum PublicRequest {
     FlvTopicCompositionRequest(RequestMessage<FlvTopicCompositionRequest>),
 
     // Fluvio - Spus
-    FlvCreateCustomSpusRequest(RequestMessage<FlvCreateCustomSpusRequest>),
-    FlvDeleteCustomSpusRequest(RequestMessage<FlvDeleteCustomSpusRequest>),
+    FlvRegisterCustomSpusRequest(RequestMessage<FlvRegisterCustomSpusRequest>),
+    FlvUnregisterCustomSpusRequest(RequestMessage<FlvUnregisterCustomSpusRequest>),
     FlvFetchSpusRequest(RequestMessage<FlvFetchSpusRequest>),
 
     FlvCreateSpuGroupsRequest(RequestMessage<FlvCreateSpuGroupsRequest>),
@@ -96,11 +96,11 @@ impl KfRequestMessage for PublicRequest {
             }
 
             // Fluvio - Custom Spus / Spu Groups
-            ScApiKey::FlvCreateCustomSpus => {
-                api_decode!(PublicRequest, FlvCreateCustomSpusRequest, src, header)
+            ScApiKey::FlvRegisterCustomSpus => {
+                api_decode!(PublicRequest, FlvRegisterCustomSpusRequest, src, header)
             }
-            ScApiKey::FlvDeleteCustomSpus => {
-                api_decode!(PublicRequest, FlvDeleteCustomSpusRequest, src, header)
+            ScApiKey::FlvUnregisterCustomSpus => {
+                api_decode!(PublicRequest, FlvUnregisterCustomSpusRequest, src, header)
             }
             ScApiKey::FlvFetchSpus => api_decode!(PublicRequest, FlvFetchSpusRequest, src, header),
 
