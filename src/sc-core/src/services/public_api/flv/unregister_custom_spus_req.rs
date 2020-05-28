@@ -10,7 +10,7 @@ use std::io::Error;
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 use kf_protocol::api::FlvErrorCode;
 use sc_api::{FlvResponseMessage};
-use sc_api::spu::{FlvDeleteCustomSpusRequest, FlvDeleteCustomSpusResponse};
+use sc_api::spu::{FlvUnregisterCustomSpusRequest, FlvUnregisterCustomSpusResponse};
 use sc_api::spu::FlvCustomSpu;
 use k8_metadata::spu::SpuSpec as K8SpuSpec;
 use k8_metadata_client::MetadataClient;
@@ -19,14 +19,14 @@ use crate::core::spus::SpuKV;
 use super::PublicContext;
 
 /// Handler for delete custom spu request
-pub async fn handle_delete_custom_spus_request<C>(
-    request: RequestMessage<FlvDeleteCustomSpusRequest>,
+pub async fn handle_unregister_custom_spus_request<C>(
+    request: RequestMessage<FlvUnregisterCustomSpusRequest>,
     ctx: &PublicContext<C>,
-) -> Result<ResponseMessage<FlvDeleteCustomSpusResponse>, Error>
+) -> Result<ResponseMessage<FlvUnregisterCustomSpusResponse>, Error>
 where
     C: MetadataClient,
 {
-    let mut response = FlvDeleteCustomSpusResponse::default();
+    let mut response = FlvUnregisterCustomSpusResponse::default();
     let mut results: Vec<FlvResponseMessage> = vec![];
 
     // look-up custom spus based on their names or ids
@@ -37,7 +37,7 @@ where
 
                 // spu-name must exist
                 if let Some(spu) = &ctx.metadata().spus().spu(spu_name) {
-                    delete_custom_spu(ctx, spu).await?
+                    unregister_custom_spu(ctx, spu).await?
                 } else {
                     // spu does not exist
                     FlvResponseMessage::new(
@@ -52,7 +52,7 @@ where
 
                 // spu-id must exist
                 if let Some(spu) = &ctx.metadata().spus().get_by_id(spu_id) {
-                    delete_custom_spu(ctx, spu).await?
+                    unregister_custom_spu(ctx, spu).await?
                 } else {
                     // spu does not exist
                     FlvResponseMessage::new(
@@ -76,7 +76,7 @@ where
 }
 
 /// Generate for delete custom spu operation and return result.
-pub async fn delete_custom_spu<C>(
+pub async fn unregister_custom_spu<C>(
     ctx: &PublicContext<C>,
     spu: &SpuKV,
 ) -> Result<FlvResponseMessage, Error>

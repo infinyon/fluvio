@@ -1,8 +1,8 @@
 mod api_key;
 mod flv_create_topics;
 mod flv_delete_topics;
-mod flv_create_custom_spus;
-mod flv_delete_custom_spus;
+mod flv_register_custom_spus;
+mod flv_unregister_custom_spus;
 mod flv_fetch_spus;
 mod flv_create_spu_groups;
 mod flv_delete_spu_groups;
@@ -31,8 +31,8 @@ pub mod errors {
 }
 
 pub mod spu {
-    pub use crate::flv_create_custom_spus::*;
-    pub use crate::flv_delete_custom_spus::*;
+    pub use crate::flv_register_custom_spus::*;
+    pub use crate::flv_unregister_custom_spus::*;
     pub use crate::flv_fetch_spus::*;
 
     pub use crate::flv_create_spu_groups::*;

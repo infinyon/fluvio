@@ -16,7 +16,7 @@ use crate::error::CliError;
 use crate::profile::InlineProfile;
 
 #[derive(Debug)]
-pub struct CreateCustomSpuConfig {
+pub struct RegisterCustomSpuConfig {
     pub id: i32,
     pub name: String,
     pub public_server: ServerAddress,
@@ -25,7 +25,7 @@ pub struct CreateCustomSpuConfig {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct CreateCustomSpuOpt {
+pub struct RegisterCustomSpuOpt {
     /// SPU id
     #[structopt(short = "i", long = "id")]
     id: i32,
@@ -57,9 +57,9 @@ pub struct CreateCustomSpuOpt {
     profile: InlineProfile,
 }
 
-impl CreateCustomSpuOpt {
+impl RegisterCustomSpuOpt {
     /// Validate cli options. Generate target-server and create custom spu config.
-    fn validate(self) -> Result<(ScConfig, CreateCustomSpuConfig), CliError> {
+    fn validate(self) -> Result<(ScConfig, RegisterCustomSpuConfig), CliError> {
         // profile specific configurations (target server)
         let target_server = ScConfig::new_with_profile(
             self.sc,
@@ -68,7 +68,7 @@ impl CreateCustomSpuOpt {
         )?;
 
         // create custom spu config
-        let cfg = CreateCustomSpuConfig {
+        let cfg = RegisterCustomSpuConfig {
             id: self.id,
             name: self.name.unwrap_or(format!("custom-spu-{}", self.id)),
             public_server: TryFrom::try_from(self.public_server)?,
@@ -84,12 +84,12 @@ impl CreateCustomSpuOpt {
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_create_custom_spu(opt: CreateCustomSpuOpt) -> Result<(), CliError> {
+pub async fn process_register_custom_spu(opt: RegisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, cfg) = opt.validate()?;
 
     let mut sc = target_server.connect().await?;
 
-    sc.create_custom_spu(
+    sc.register_custom_spu(
         cfg.id,
         cfg.name,
         cfg.public_server,

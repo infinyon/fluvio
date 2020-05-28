@@ -13,9 +13,9 @@ use sc_api::topic::{FlvDeleteTopicsRequest};
 use sc_api::topic::{FlvCreateTopicRequest, FlvCreateTopicsRequest};
 use sc_api::topic::FlvTopicSpecMetadata;
 use sc_api::topic::FlvFetchTopicsRequest;
-use sc_api::spu::FlvCreateCustomSpusRequest;
-use sc_api::spu::{FlvCreateCustomSpuRequest, FlvEndPointMetadata};
-use sc_api::spu::FlvDeleteCustomSpusRequest;
+use sc_api::spu::FlvRegisterCustomSpusRequest;
+use sc_api::spu::{FlvRegisterCustomSpuRequest, FlvEndPointMetadata};
+use sc_api::spu::FlvUnregisterCustomSpusRequest;
 use sc_api::spu::FlvFetchSpusRequest;
 use sc_api::spu::FlvRequestSpuType;
 use sc_api::spu::FlvCreateSpuGroupRequest;
@@ -63,7 +63,7 @@ impl ScClient  {
 
     
 
-    pub async fn create_custom_spu(
+    pub async fn register_custom_spu(
         &mut self,
         id: i32,
         name: String,
@@ -71,7 +71,7 @@ impl ScClient  {
         private_server: ServerAddress,
         rack: Option<String>,
     ) -> Result<(), ClientError> {
-        let spu = FlvCreateCustomSpuRequest {
+        let spu = FlvRegisterCustomSpuRequest {
             id,
             name: name.to_owned(),
             public_server: FlvEndPointMetadata {
@@ -85,7 +85,7 @@ impl ScClient  {
             rack,
         };
         // generate request with 1 custom spu
-        let request = FlvCreateCustomSpusRequest {
+        let request = FlvRegisterCustomSpusRequest {
             custom_spus: vec![spu],
         };
 
@@ -94,8 +94,8 @@ impl ScClient  {
         responses.validate(&name).map_err(|err| err.into())
     }
 
-    pub async fn delete_custom_spu(&mut self, spu: FlvCustomSpu) -> Result<(), ClientError> {
-        let request = FlvDeleteCustomSpusRequest {
+    pub async fn unregister_custom_spu(&mut self, spu: FlvCustomSpu) -> Result<(), ClientError> {
+        let request = FlvUnregisterCustomSpusRequest {
             custom_spus: vec![spu],
         };
 

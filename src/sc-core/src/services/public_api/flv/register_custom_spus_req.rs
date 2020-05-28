@@ -14,8 +14,8 @@ use k8_metadata_client::MetadataClient;
 use flv_metadata::spu::{SpuSpec, Endpoint, SpuType, IngressPort};
 
 use sc_api::FlvResponseMessage;
-use sc_api::spu::{FlvCreateCustomSpusRequest, FlvCreateCustomSpusResponse};
-use sc_api::spu::FlvCreateCustomSpuRequest;
+use sc_api::spu::{FlvRegisterCustomSpusRequest, FlvRegisterCustomSpusResponse};
+use sc_api::spu::FlvRegisterCustomSpuRequest;
 
 use crate::core::LocalStores;
 use crate::core::spus::SpuKV;
@@ -24,16 +24,16 @@ use crate::core::common::KvContext;
 use super::PublicContext;
 
 /// Handler for create spus request
-pub async fn handle_create_custom_spus_request<C>(
-    request: RequestMessage<FlvCreateCustomSpusRequest>,
+pub async fn handle_register_custom_spus_request<C>(
+    request: RequestMessage<FlvRegisterCustomSpusRequest>,
     ctx: &PublicContext<C>,
-) -> Result<ResponseMessage<FlvCreateCustomSpusResponse>, Error>
+) -> Result<ResponseMessage<FlvRegisterCustomSpusResponse>, Error>
 where
     C: MetadataClient,
 {
     let (header, custom_spu_req) = request.get_header_request();
 
-    let mut response = FlvCreateCustomSpusResponse::default();
+    let mut response = FlvRegisterCustomSpusResponse::default();
     let mut results: Vec<FlvResponseMessage> = vec![];
 
     // process create custom spus requests in sequence
@@ -58,12 +58,12 @@ where
     response.results = results;
     trace!("create custom-spus response {:#?}", response);
 
-    Ok(RequestMessage::<FlvCreateCustomSpusRequest>::response_with_header(&header, response))
+    Ok(RequestMessage::<FlvRegisterCustomSpusRequest>::response_with_header(&header, response))
 }
 
 /// Validate custom_spu requests (one at a time)
 fn validate_custom_spu_request(
-    custom_spu_req: &FlvCreateCustomSpuRequest,
+    custom_spu_req: &FlvRegisterCustomSpuRequest,
     metadata: &LocalStores,
 ) -> Result<(), FlvResponseMessage> {
     let spu_id = &custom_spu_req.id;
@@ -86,14 +86,14 @@ fn validate_custom_spu_request(
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 async fn process_custom_spu_request<C>(
     ctx: &PublicContext<C>,
-    custom_spu_req: FlvCreateCustomSpuRequest,
+    custom_spu_req: FlvRegisterCustomSpuRequest,
 ) -> FlvResponseMessage
 where
     C: MetadataClient,
 {
     let name = custom_spu_req.name.clone();
 
-    if let Err(err) = create_custom_spu(ctx, custom_spu_req).await {
+    if let Err(err) = register_custom_spu(ctx, custom_spu_req).await {
         let error = Some(err.to_string());
         FlvResponseMessage::new(name, FlvErrorCode::SpuError, error)
     } else {
@@ -101,9 +101,9 @@ where
     }
 }
 
-async fn create_custom_spu<C>(
+async fn register_custom_spu<C>(
     ctx: &PublicContext<C>,
-    spu_req: FlvCreateCustomSpuRequest,
+    spu_req: FlvRegisterCustomSpuRequest,
 ) -> Result<(), C::MetadataClientError>
 where
     C: MetadataClient,
