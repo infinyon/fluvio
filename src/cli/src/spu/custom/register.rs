@@ -58,7 +58,7 @@ pub struct RegisterCustomSpuOpt {
 }
 
 impl RegisterCustomSpuOpt {
-    /// Validate cli options. Generate target-server and create custom spu config.
+    /// Validate cli options. Generate target-server and register custom spu config.
     fn validate(self) -> Result<(ScConfig, RegisterCustomSpuConfig), CliError> {
         // profile specific configurations (target server)
         let target_server = ScConfig::new_with_profile(
@@ -67,7 +67,7 @@ impl RegisterCustomSpuOpt {
             self.profile.profile,
         )?;
 
-        // create custom spu config
+        // register custom spu config
         let cfg = RegisterCustomSpuConfig {
             id: self.id,
             name: self.name.unwrap_or(format!("custom-spu-{}", self.id)),

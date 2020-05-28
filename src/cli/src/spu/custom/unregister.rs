@@ -46,7 +46,7 @@ pub struct UnregisterCustomSpuOpt {
 }
 
 impl UnregisterCustomSpuOpt {
-    /// Validate cli options. Generate target-server and delete custom spu config.
+    /// Validate cli options. Generate target-server and unregister custom spu config.
     fn validate(self) -> Result<(ScConfig, FlvCustomSpu), CliError> {
         let target_server = ScConfig::new_with_profile(
             self.sc,
@@ -75,7 +75,7 @@ impl UnregisterCustomSpuOpt {
 //  CLI Processing
 // -----------------------------------
 
-/// Process delete custom-spu cli request
+/// Process unregister custom-spu cli request
 pub async fn process_unregister_custom_spu(opt: UnregisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, cfg) = opt.validate()?;
 

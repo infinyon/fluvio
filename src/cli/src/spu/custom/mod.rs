@@ -19,7 +19,7 @@ use crate::Terminal;
 
 #[derive(Debug, StructOpt)]
 pub enum CustomSpuOpt {
-    #[structopt(name = "create", template = "{about}
+    #[structopt(name = "register", template = "{about}
 
 {usage}
 
@@ -27,7 +27,7 @@ pub enum CustomSpuOpt {
 ", about = "Create custom SPU")]
     Create(RegisterCustomSpuOpt),
 
-    #[structopt(name = "delete", template = "{about}
+    #[structopt(name = "unregister", template = "{about}
 
 {usage}
 
