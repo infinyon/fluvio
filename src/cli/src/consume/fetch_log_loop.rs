@@ -71,23 +71,38 @@ where
         ..Default::default()
     };
 
-    let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);
+    if opt.disable_continuous {
 
-    while let Some(response) = log_stream.next().await {
+        let response = leader.fetch_logs_once(initial_offset, fetch_option).await?;
 
-        debug!("got response: LSO: {} batchs: {}",
-            response.log_start_offset,
-            response.records.batches.len(),
-        );        
-        
+        debug!("got a single response: LSO: {} batchs: {}",
+                response.log_start_offset,
+                response.records.batches.len(),
+        );    
+
         process_fetch_topic_response(out.clone(), &topic, response, &opt).await?;
 
-        if opt.disable_continuous {
-            debug!("finishing fetch loop");
-            break;
-        }
-    }
+    } else {
+        let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);
 
-    debug!("fetch loop exited");
+        while let Some(response) = log_stream.next().await {
+
+            debug!("got response: LSO: {} batchs: {}",
+                response.log_start_offset,
+                response.records.batches.len(),
+            );        
+            
+            process_fetch_topic_response(out.clone(), &topic, response, &opt).await?;
+
+            if opt.disable_continuous {
+                debug!("finishing fetch loop");
+                break;
+            }
+        }
+
+        debug!("fetch loop exited");
+        
+    }
+    
     Ok(())
 }

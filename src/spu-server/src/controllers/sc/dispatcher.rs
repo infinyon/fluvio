@@ -97,7 +97,7 @@ impl ScDispatcher<FileReplica> {
                     Ok(_) => {}
                     Err(err) => {
                         print_cli_err!(format!("cannot register with sc: {}", err));
-                        process::exit(0x0100);
+                        process::exit(-1);
                     }
                 }
 

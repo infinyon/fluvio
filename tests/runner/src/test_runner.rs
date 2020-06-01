@@ -1,4 +1,3 @@
-
 use std::time::Duration;
 use flv_future_aio::timer::sleep;
 
@@ -13,38 +12,82 @@ pub struct TestRunner {
 }
 
 impl TestRunner {
-
     pub fn new(option: TestOption) -> Self {
-
-        Self {
-            option,
-        }
-
+        Self { option }
     }
 
-    async fn setup_topic(&self) {
 
-       
-            
-        println!("creating test topic: <test1>");
+    /*
+    fn wait_for_topic(&self) {
+
+
+         
+        // wait until topic is provisioned
+        // topic describe is not correct since it doesn't specify partition
+        for _ in 0..100u16 {
+            let output = get_fluvio()
+                .expect("fluvio not founded")
+                .log(self.option.log.as_ref())
+                .arg("topic")
+                .arg("describe")
+                .arg("--topic")
+                .arg(topic_name)
+                .print()
+                .output()
+                .expect("topic describe");
+
+            std::io::stderr().write_all(&output.stderr).unwrap();
+            if output.status.success() {
+                // check if output contains provisioned word, may do json
+                let msg = String::from_utf8(output.stdout).expect("output");
+                println!("output: {}", msg);
+                if msg.contains("provisioned") {
+                    println!("topic {} provisioned", topic_name);
+                    return;
+                } else {
+                    println!("topic {} not provisioned, waiting 2 seconds", topic_name);
+                }
+            } else {
+                println!("topic: {} not provisioned, waiting 2 second", topic_name);
+            }
+            sleep(Duration::from_secs(2)).await
+        }
+
+        assert!(false, "unable to provision topic: {}", topic_name);
         
+
+    }
+    */
+
+    async fn setup_topic(&self) {
+        
+        // wait until SPU come online
+        sleep(Duration::from_secs(2)).await;
+
+        let topic_name = &self.option.topic_name;
+
+        println!("creating test topic: <{}>", topic_name);
+
         get_fluvio()
             .expect("fluvio not founded")
             .arg("topic")
             .arg("create")
-            .arg("test1")
+            .arg(topic_name)
             .arg("--replication")
             .arg(self.option.replication().to_string())
-         //   .setup_client_tls(&self.env_driver.tls())
             .print()
-            .wait_and_check();
+            .inherit();
 
         println!("topic created");
+
+        // wait until topic is created, this is hack for now until we have correct
+        // implementation of find topic
+        sleep(Duration::from_secs(5)).await
+       
     }
 
     /// main entry point
-    pub async fn run_test(&self) {       
-        
+    pub async fn run_test(&self) {
         use crate::tests::create_test_driver;
 
         // at this point, cluster is up, we need to ensure clean shutdown of cluster
@@ -54,23 +97,14 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-            println!("wait til topic is created");
-            sleep(Duration::from_secs(5)).await;
+
+        // sleep(Duration::from_secs(3)).await;
         } else {
             println!("no topic initialized");
         }
 
         let test_driver = create_test_driver(self.option.clone());
-       
-        if let Err(err) = std::panic::catch_unwind(move || {
-            test_driver.run();
 
-        }) {
-            eprintln!("producer/consumer crashes {:#?}",err);
-            
-        } 
-        
+        test_driver.run().await;
     }
-
-
 }

@@ -77,7 +77,16 @@ pub trait ReplicaLeader: Send + Sync{
      // fetch offsets for 
     async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError >;
 
-    /// stream of partition response
+    
+    /// fetch log once
+    async fn fetch_logs_once(
+        &mut self,
+        offset_option: FetchOffset,
+        option: FetchLogOption
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>,ClientError>;
+
+
+    /// fetch log as stream
     fn fetch_logs<'a>(
         &'a mut self,
         offset: FetchOffset,

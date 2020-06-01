@@ -57,7 +57,7 @@ pub async fn process_uninstall<O>(_out: std::sync::Arc<O>,command: UninstallComm
         .arg("fluvio-ca")
         .arg("--ignore-not-found=true")
         .print()
-        .wait_check();
+        .inherit();
 
     Command::new("kubectl")
         .arg("delete")
@@ -65,7 +65,7 @@ pub async fn process_uninstall<O>(_out: std::sync::Arc<O>,command: UninstallComm
         .arg("fluvio-tls")
         .arg("--ignore-not-found=true")
         .print()
-        .wait_check();
+        .inherit();
    
     
     Ok("".to_owned())
@@ -80,7 +80,7 @@ fn remove_objects(object_type: &str,namespace: &str) {
         .arg("--all")
         .arg("--namespace")
         .arg(namespace)
-        .wait_check();
+        .inherit();
 
 }
 

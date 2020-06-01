@@ -219,7 +219,7 @@ pub fn process_spu_cli_or_exit() -> (SpuConfig, Option<(TlsAcceptor, String)>) {
     match SpuOpt::get_spu_config() {
         Err(err) => {
             print_cli_err!(err);
-            process::exit(0x0100);
+            process::exit(-1);
         }
         Ok(config) => config,
     }

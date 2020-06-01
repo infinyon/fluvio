@@ -4,6 +4,7 @@ use std::io::ErrorKind;
 use std::iter::Iterator;
 
 use log::debug;
+use log::trace;
 use async_trait::async_trait;
 
 use flv_util::socket_helpers::ServerAddress;
@@ -55,6 +56,8 @@ impl ScClient  {
         &mut self,
         topic: &str,
     ) -> Result<FlvTopicCompositionResponse, KfSocketError> {
+
+        debug!("request topic metadata for topic: {}",topic);
         let mut request = FlvTopicCompositionRequest::default();
         request.topic_names = vec![topic.to_owned()];
 
@@ -160,7 +163,13 @@ impl SpuController for ScClient
         topic: &str,
         partition: i32,
     ) -> Result<Self::Leader, ClientError> {
+
+        debug!("trying to find replica for topic: {}, partition: {}",topic,partition);
+
         let topic_comp_resp = self.get_topic_composition(topic).await?;
+        
+        trace!("topic composition: {:#?}",topic_comp_resp);
+
         let mut topics_resp = topic_comp_resp.topics;
         let spus_resp = topic_comp_resp.spus;
 
@@ -172,13 +181,20 @@ impl SpuController for ScClient
             )));
         }
 
-        // check for errors
+        
         let topic_resp = topics_resp.remove(0);
+
+        
         if topic_resp.error_code != FlvErrorCode::None {
-            return Err(ClientError::IoError(IoError::new(
-                ErrorKind::InvalidData,
-                format!("topic error: {}", topic_resp.error_code.to_sentence()),
-            )));
+
+            if topic_resp.error_code == FlvErrorCode::TopicNotFound {
+                return Err(ClientError::TopicNotFound(topic.to_owned()))
+            } else {
+                return Err(ClientError::IoError(IoError::new(
+                    ErrorKind::InvalidData,
+                    format!("error during topic lookup: {}", topic_resp.error_code.to_sentence()),
+                )))
+            }
         }
         // lookup leader
         for partition_resp in topic_resp.partitions {
@@ -200,10 +216,12 @@ impl SpuController for ScClient
                     if spu_resp.spu_id == leader_id {
                         // check for errors
                         if spu_resp.error_code != FlvErrorCode::None {
+
                             return Err(ClientError::IoError(IoError::new(
                                 ErrorKind::InvalidData,
                                 format!(
-                                    "topic-composition spu error: {}",
+                                    "problem with partition look up {}:{} error: {}",
+                                    topic,partition,
                                     topic_resp.error_code.to_sentence()
                                 ),
                             )));
@@ -223,13 +241,7 @@ impl SpuController for ScClient
             }
         }
 
-        Err(ClientError::IoError(IoError::new(
-            ErrorKind::Other,
-            format!(
-                "topic-composition '{}/{}': unknown topic or partition",
-                topic, partition
-            ),
-        )))
+        Err(ClientError::PartitionNotFound(topic.to_owned(),partition))
     }
 
     async fn delete_topic(&mut self, topic: &str) -> Result<String, ClientError> {

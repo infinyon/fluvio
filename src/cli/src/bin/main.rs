@@ -13,6 +13,9 @@ fn main() {
                 println!("{}",output)
             }
         },
-        Err(err) =>  print_cli_err!(err)
+        Err(err) =>  {
+            print_cli_err!(format!("error: {}",err));
+            std::process::exit(-1);
+        }
     }
 }

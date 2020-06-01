@@ -45,6 +45,7 @@ impl ScConfig {
     pub fn new_with_profile(addr_option: Option<String>, tls: Option<TlsConfig>,profile: Option<String>) -> Result<Self, ClientError> {
         
         if let Some(addr) = addr_option {
+            debug!("using custom target addr: {}",addr);
             Ok(Self {
                 addr,
                 tls
@@ -53,6 +54,7 @@ impl ScConfig {
             // look up using profile
             let config_file = ConfigFile::load(None)?;
             if let Some(cluster) = config_file.config().current_cluster_or_with_profile(profile.as_ref().map(|p| p.as_ref())) {
+                debug!("looking up using profile: cluster addr {}",cluster.addr);
                 Ok(Self {
                     addr: cluster.addr().to_owned(),
                     tls: cluster.tls.clone()
@@ -70,7 +72,9 @@ impl ScConfig {
             Some(tls) => TryFrom::try_from(tls)?
         };
         let config = ClientConfig::new(self.addr,connector);
-        Ok(ScClient::new( config.connect().await?))
+        let client = config.connect().await?;
+        debug!("connected to sc: {}",client.addr());
+        Ok(ScClient::new( client))
     }
 }
 

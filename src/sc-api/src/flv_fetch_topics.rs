@@ -18,7 +18,7 @@ use crate::ScApiKey;
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct FlvFetchTopicsRequest {
-    /// A list of one or more topics to be retireved.
+    /// A list of one or more topics to be retrieved.
     /// None retrieves all topics.
     pub names: Option<Vec<String>>,
 }

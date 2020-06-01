@@ -48,7 +48,7 @@ fn copy_secrets(opt: &InstallCommand) {
         .arg("--from-file")
         .arg(&tls.ca_cert.as_ref().expect("ca cert"))
         .print()
-        .wait_check();
+        .inherit();
 
     Command::new("kubectl")
         .arg("create")
@@ -60,7 +60,7 @@ fn copy_secrets(opt: &InstallCommand) {
         .arg("--key")
         .arg(&tls.server_key.as_ref().expect("server key"))
         .print()
-        .wait_check();
+        .inherit();
 
 }
 
@@ -158,7 +158,7 @@ pub fn install_sys(opt: InstallCommand) {
         .arg("fluvio/fluvio-sys")
         .arg("--set")
         .arg(format!("cloud={}",opt.k8_config.cloud))
-        .wait_check();
+        .inherit();
 
 
     println!("fluvio sys chart has been installed");
@@ -173,7 +173,7 @@ fn helm_add_repo() {
         .arg("add")
         .arg("fluvio")
         .arg("https://infinyon.github.io/charts")
-        .wait_check();
+        .inherit();
 }
 
 fn helm_repo_update() {
@@ -182,7 +182,7 @@ fn helm_repo_update() {
     Command::new("helm")
         .arg("repo")
         .arg("update")
-        .wait_check();
+        .inherit();
 }
 
 /// switch to profile

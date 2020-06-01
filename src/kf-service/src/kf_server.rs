@@ -152,7 +152,7 @@ where
             }
             Err(err) => {
                 print_cli_err!(err);
-                process::exit(0x0100);
+                process::exit(-1);
             }
         }
     }

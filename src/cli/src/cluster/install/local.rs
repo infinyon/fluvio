@@ -45,7 +45,10 @@ fn launch_sc(option: &InstallCommand)  {
     let mut base = get_binary("sc-k8-server")
         .expect("unable to get sc-server");
 
-    set_server_tls(&mut base, option, 9005);
+    if option.tls.tls {
+        set_server_tls(&mut base, option, 9005);
+    }
+   
     
     if let Some(log) = &option.log {
         base.env("RUST_LOG",log);
@@ -169,6 +172,10 @@ async fn launch_spu(spu_index: u16,client: SharedK8Client,option: &InstallComman
 
     if option.tls.tls {         
         set_server_tls(&mut binary, option, private_port + 1);
+    }
+
+    if let Some(log) = &option.log {
+        binary.env("RUST_LOG",log);
     }
     
     let cmd = binary

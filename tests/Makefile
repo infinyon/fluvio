@@ -1,18 +1,18 @@
 flvt=../target/debug/flv-test
+DRIVER=--local-driver
+COUNT=3000
 
 build:
 	cargo build
 
 test:	run-local run-k8
 
-run-local:	build
-	$(flvt) --local-driver
+smoke-test:	build
+	$(flvt) $(DRIVER)
 
-run-local-tols:	build
-	$(flvt) --local-driver 
 
-run-k8:	build
-	$(flvt)
+run-stress:	build
+	$(flvt) $(DRIVER) --produce-count	$(COUNT)
 
 
 

@@ -246,7 +246,7 @@ where
         RequestMessage::new_request(req).set_client_id(self.client_id.clone())
     }
 
-    pub fn create_fetch_request<S>(
+    pub fn <S>(
         &self,
         offset: Offset,
         topic: S,

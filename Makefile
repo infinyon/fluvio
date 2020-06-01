@@ -158,8 +158,8 @@ helm_uninstall_dev:
 	helm uninstall fluvio
 
 
-test-local:
-	make -C tests run-local
+test-smoke:
+	make -C tests smoke-test
 
 install-local-tls:
 	$(FLVD) cluster install --local  \

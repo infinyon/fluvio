@@ -1,6 +1,9 @@
 mod consume;
 mod produce;
+mod listener;
 
+
+pub const MESSAGE_PREFIX: &'static str = "test message abcdefghijklmnopqrsxtyz";
 
 pub use runner::*;
 
@@ -8,10 +11,13 @@ use super::TestDriver;
 
 mod runner {
 
+
     use async_trait::async_trait;
 
     use crate::TestOption;
     use super::*;
+
+    
 
     /// simple smoke test runner which tests
     pub struct SmokeTestRunner {
@@ -25,16 +31,20 @@ mod runner {
             }
         }
 
-        fn produce_and_consume_cli(&self) {
+        async fn produce_and_consume_cli(&self) {
+
+            
             // sleep 100 ms to allow listener to start earlier
             if self.option.produce() {
-                super::produce::produce_message_with_cli();
+                super::produce::produce_message_with_cli(&self.option).await;
             } else {
                 println!("produce skipped");
             }
 
+           // sleep(Duration::from_secs(1)).await;
+
             if self.option.test_consumer() {
-                super::consume::validate_consume_message_cli();
+                super::consume::validate_consume_message(&self.option).await;
             } else {
                 println!("consume test skipped");
             }
@@ -46,7 +56,7 @@ mod runner {
     impl TestDriver for SmokeTestRunner {
 
         /// run tester
-        fn run(&self) {
+        async fn run(&self) {
             //use futures::future::join_all;
             //use futures::future::join;
 
@@ -71,7 +81,7 @@ mod runner {
                     join_all(listen_consumer_test)
                 ));
             */
-            self.produce_and_consume_cli();
+            self.produce_and_consume_cli().await;
         }
 
        

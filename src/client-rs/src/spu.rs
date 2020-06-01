@@ -7,6 +7,7 @@ use std::io::ErrorKind;
 
 use log::error;
 use log::debug;
+use log::trace;
 use futures::stream::Stream;
 use futures::stream::BoxStream;
 use futures::stream::StreamExt;
@@ -117,7 +118,7 @@ impl ReplicaLeader for SpuReplicaLeader {
 
     async fn fetch_offsets(&mut self) -> Result<FetchOffsetPartitionResponse, ClientError> {
 
-       
+        debug!("fetching offset for: {}:{}",self.topic(),self.partition());
         let response = self.client
             .send_receive(FlvFetchOffsetsRequest::new(
             self.topic().to_owned(),
@@ -125,7 +126,7 @@ impl ReplicaLeader for SpuReplicaLeader {
             ))
             .await?;
 
-        
+        trace!("receive topic {}:{}  offset: {:#?}",self.topic(),self.partition(),response);
 
         match response.find_partition(self.topic(), self.partition()) {
             Some(partition_response) => Ok(partition_response),
@@ -141,7 +142,58 @@ impl ReplicaLeader for SpuReplicaLeader {
         }
     }
 
-    /// stream of partition response
+
+    async fn fetch_logs_once(
+        &mut self,
+        offset_option: FetchOffset,
+        option: FetchLogOption
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>,ClientError>  {
+
+  
+        use kf_protocol::message::fetch::DefaultKfFetchRequest;
+        use kf_protocol::message::fetch::FetchPartition;
+        use kf_protocol::message::fetch::FetchableTopic;
+
+        debug!(
+            "starting fetch log once: {:#?} '{}' ({}) partition to {}",
+            offset_option,
+            self.topic(),
+            self.partition(),
+            self.addr(),
+        );
+
+        let offset = self.calc_offset(offset_option).await?;
+
+        let partition = FetchPartition {
+            partition_index: self.partition(),
+            fetch_offset: offset,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        let topic_request = FetchableTopic {
+            name: self.topic().into(),
+            fetch_partitions: vec![partition],
+            ..Default::default()
+        };
+
+
+        let fetch_request = DefaultKfFetchRequest {
+            topics: vec![topic_request],
+            isolation_level: option.isolation,
+            ..Default::default()
+        };
+
+        let response = self.client.send_receive(fetch_request).await?;
+
+        if let Some(partition_response) = response.find_partition(&self.topic(),self.partition()) {
+            Ok(partition_response)
+        } else {
+            Err(ClientError::PartitionNotFound(self.topic().to_owned(),self.partition()))
+        }
+    }
+
+    /// fetch logs as stream
     fn fetch_logs<'a>(
         &'a mut  self,
         offset_option: FetchOffset,

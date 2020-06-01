@@ -17,10 +17,7 @@ use crate::errors::FlvErrorCode;
 #[derive(Decode, Encode, Default, Debug)]
 pub struct FlvFetchLocalSpuRequest {}
 
-// -----------------------------------
-// FlvFetchLocalSpuResponse
-// -----------------------------------
-
+/// SPU metadata
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvFetchLocalSpuResponse {
     /// Spu lookup error code, None for no error

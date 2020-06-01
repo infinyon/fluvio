@@ -31,32 +31,51 @@ pub fn produce_message_with_api() {
 }
 
 use std::io::Write;
-use std::io;
 use std::process::Stdio;
 
 use utils::bin::get_fluvio;
+use crate::cli::TestOption;
 
-pub fn produce_message_with_cli() {
+pub async fn produce_message_with_cli(option: &TestOption) {
+
 
     println!("starting produce");
+
+    let produce_count = option.produce.produce_count;
+    for i in 0..produce_count {
+        produce_message(i,&option.topic_name,option);
+        //sleep(Duration::from_millis(10)).await
+    }
+
+    
+}
+
+
+fn produce_message(index: u16,topic_name: &str,option: &TestOption) {
+
+    use std::io;
+    use super::MESSAGE_PREFIX;
+
+    println!("produce message: {}",index);
+
     let mut child = get_fluvio()
             .expect("no fluvio")
+            .log(option.log.as_ref())
             .stdin(Stdio::piped())
             .arg("produce")
-            .arg("test1")
+            .arg(topic_name)
             .print()
             .spawn()
             .expect("no child");
                   
 
     let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-    stdin.write_all("hello world".as_bytes()).expect("Failed to write to stdin");
+    let msg = format!("message: {}, {}",index,MESSAGE_PREFIX);
+    stdin.write_all(msg.as_bytes()).expect("Failed to write to stdin");
+
 
     let output = child.wait_with_output().expect("Failed to read stdout");
-
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
-
-    println!("produce message: hello world");
-
+    assert!(output.status.success());
 }

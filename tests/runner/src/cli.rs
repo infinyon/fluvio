@@ -1,18 +1,26 @@
 use structopt::StructOpt;
 
+#[derive(Debug, Clone, StructOpt)]
+pub struct ProductOption {
+
+    /// number of records
+    #[structopt(short,long,default_value="1")]
+    pub produce_count: u16
+
+}
 
 /// cli options
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(name = "fluvio-test-runner", about = "Test fluvio platform")]
 pub struct TestOption {
 
-    /// just perform cleanup, no testing and setup
-    #[structopt(short,long)]
-    cleanup: bool,
+    #[structopt(flatten)]
+    pub produce: ProductOption,
 
-    /// disable produce and consumer test, only run server
-    #[structopt(long)]
-    disable_test: bool,
+    /// don't install and uninstall
+    #[structopt(short,long)]
+    disable_install: bool,
+
 
     /// don't produce message
     #[structopt(long)]
@@ -22,24 +30,21 @@ pub struct TestOption {
     #[structopt(long)]
     disable_consume: bool,
 
-    // disable initial cleanup
+    
+    /// disable set up topics
     #[structopt(long)]
-    disable_clean: bool,
+    disable_topic_setup: bool,
 
-    #[structopt(long)]
-    disable_setup: bool,
 
-    // disable shutdown
-    #[structopt(long)]
-    disable_shutdown: bool,
 
     #[structopt(short,long,default_value = "1")]
     /// replication count, number of spu will be same as replication count, unless overridden 
     replication: u16,
 
-    /// disable init
-    #[structopt(short("i"),long)]
-    disable_init: bool,
+    /// topic name used for testing
+    #[structopt(short("t"),long,default_value="topic1")]
+    pub topic_name: String,
+
 
     /// number of spu
     #[structopt(short,long)]
@@ -57,11 +62,9 @@ pub struct TestOption {
     #[structopt(long)]
     develop: bool,
 
-
-
     // log flag
-    #[structopt(short,long,default_value="flv=debug,kf=debug")]
-    pub log: String,
+    #[structopt(short,long)]
+    pub log: Option<String>,
 }
 
 impl TestOption  {
@@ -73,25 +76,25 @@ impl TestOption  {
     }
 
     pub fn test_consumer(&self) -> bool {
-        !self.cleanup && !self.disable_test && !self.disable_consume
+        !self.disable_consume
     }
 
     /// before we start test run, remove cluster
     pub fn remove_cluster_before(&self) -> bool {
-        self.cleanup || (self.setup() && !self.disable_clean)
+        !self.disable_install
     }
 
     // do the setup (without cleanup)
     pub fn setup(&self) -> bool {
-        !self.cleanup && !self.disable_setup
+        !!self.disable_install
     }
 
     pub fn init_topic(&self) -> bool {
-        !self.cleanup && !self.disable_setup
+        !self.disable_topic_setup
     }
 
     pub fn terminate_after_consumer_test(&self) -> bool {
-        !self.disable_shutdown
+        !self.disable_install
     }
 
     pub fn tls(&self) -> bool {
@@ -111,7 +114,7 @@ impl TestOption  {
     }
 
     pub fn produce(&self) -> bool {
-        !self.cleanup && !self.disable_test && !self.disable_produce
+        !self.disable_produce
     }
 
     /// use k8 env driver

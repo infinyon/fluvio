@@ -104,7 +104,7 @@ pub fn parse_cli_or_exit() -> (ScConfig, K8Config, Option<(String, TlsConfig)>) 
     match ScOpt::get_sc_and_k8_config() {
         Err(err) => {
             print_cli_err!(err);
-            process::exit(0x0100);
+            process::exit(-1);
         }
         Ok(config) => config,
     }

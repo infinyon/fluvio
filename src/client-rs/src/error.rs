@@ -7,6 +7,8 @@ use sc_api::ApiError;
 
 #[derive(Debug)]
 pub enum ClientError {
+    TopicNotFound(String),      
+    PartitionNotFound(String,i32),  
     Other(String),
     IoError(IoError),
     KfSocketError(KfSocketError),
@@ -35,6 +37,8 @@ impl From<ApiError> for ClientError {
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::TopicNotFound(topic) => write!(f,"topic: {} not found",topic),
+            Self::PartitionNotFound(topic,partition) => write!(f,"partition <{}:{}> not found",topic,partition),
             Self::Other(msg) => write!(f,"{}",msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f,"{:#?}",err),

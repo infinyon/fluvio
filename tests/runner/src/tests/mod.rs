@@ -16,7 +16,7 @@ mod common {
     pub trait TestDriver: UnwindSafe {
 
         /// run tester
-        fn run(&self);
+        async fn run(&self);
 
     }
 

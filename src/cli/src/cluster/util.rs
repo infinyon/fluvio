@@ -34,11 +34,27 @@ mod cmd_util {
         fn wait_check(&mut self);
 
         fn print(&mut self) -> &mut Self;
+
+        /// inherit stdout from parent and check for success
+        fn inherit(&mut self);
     }
 
     use std::process::Command;
 
     impl CommandUtil for Command {
+
+       
+        fn inherit(&mut self) {
+
+            use std::process::Stdio;
+            
+            let output = self.stdout(Stdio::inherit())
+                .output().expect("execution failed");
+
+
+            assert!(output.status.success());
+
+        }
 
         /// execute and wait, ignore error
         fn wait(&mut self) {

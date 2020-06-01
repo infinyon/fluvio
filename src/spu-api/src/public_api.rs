@@ -25,14 +25,14 @@ use crate::fetch::FileFlvContinuousFetchRequest;
 
 #[derive(Debug, Encode)]
 pub enum PublicRequest {
-    // Mixed
+    /// list of versions supported
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
 
-    // Kafka
+    // Kafka compatible requests
     KfProduceRequest(RequestMessage<DefaultKfProduceRequest>),
     KfFileFetchRequest(RequestMessage<KfFileFetchRequest>),
 
-    // Fluvio
+    // Fluvio specific requests
     FlvFetchLocalSpuRequest(RequestMessage<FlvFetchLocalSpuRequest>),
     FlvFetchOffsetsRequest(RequestMessage<FlvFetchOffsetsRequest>),
     FileFlvContinuousFetchRequest(RequestMessage<FileFlvContinuousFetchRequest>)

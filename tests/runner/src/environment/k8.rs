@@ -34,7 +34,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             .arg("cluster")
             .arg("uninstall")
             .print()
-            .wait_and_check();
+            .inherit();
     }
 
 
@@ -55,7 +55,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
 
         cmd
             .print()
-            .wait_and_check();
+            .inherit();
     }
 
 

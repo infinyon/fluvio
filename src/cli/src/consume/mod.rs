@@ -39,7 +39,6 @@ mod process {
             ReplicaLeaderTargetInstance::Kf(leader) => fetch_log_loop(out, leader, cfg).await,
             ReplicaLeaderTargetInstance::Spu(leader) => {
                 fetch_log_loop(out, leader, cfg).await?;
-                debug!("finished fetch loop");
                 Ok(())
             }
         })

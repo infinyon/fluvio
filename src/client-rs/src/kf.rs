@@ -636,6 +636,15 @@ impl ReplicaLeader for KfLeader
     
     }
 
+    async fn fetch_logs_once(
+        &mut self,
+        _offset_option: FetchOffset,
+        _option: FetchLogOption
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>,ClientError>  {
+
+        Err(ClientError::Other("Not yet implemented".to_string()))
+    }
+
      /// Fetch log records from a target server
     fn fetch_logs<'a>(
         &'a mut self,

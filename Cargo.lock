@@ -423,7 +423,7 @@ version = "3.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a4ba686dff9fa4c1c9636ce1010b0cf98ceb421361b0bb3d6faeec43bd217a7"
 dependencies = [
- "nix 0.17.0",
+ "nix",
  "winapi 0.3.8",
 ]
 
@@ -579,7 +579,7 @@ checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
 name = "fluvio"
-version = "3.0.1"
+version = "3.1.0"
 dependencies = [
  "async-trait",
  "bytes 0.5.4",
@@ -612,7 +612,7 @@ dependencies = [
 
 [[package]]
 name = "flv-api-sc"
-version = "1.1.1"
+version = "1.2.0"
 dependencies = [
  "flv-metadata",
  "flv-types",
@@ -635,7 +635,7 @@ dependencies = [
 
 [[package]]
 name = "flv-client"
-version = "3.0.1"
+version = "3.1.0"
 dependencies = [
  "async-trait",
  "base64 0.12.1",
@@ -657,21 +657,21 @@ dependencies = [
 
 [[package]]
 name = "flv-future-aio"
-version = "2.1.0"
+version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6694301bbdf04f606a41ced7f34ef065ef5255fa08d85a60cd31c566ebadfa06"
+checksum = "3c1974ffb1ac46339f998aa2cbac4a7243357e412b7e3de86f42ab7db11042f8"
 dependencies = [
  "async-std",
  "async-test-derive",
  "async-tls",
  "async-trait",
  "bytes 0.5.4",
- "flv-util 0.1.1",
+ "flv-util 0.2.0",
  "futures",
  "futures-timer",
  "log",
  "memmap",
- "nix 0.16.1",
+ "nix",
  "pin-project",
  "pin-utils",
  "rustls 0.17.0",
@@ -1640,19 +1640,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "winapi 0.3.8",
-]
-
-[[package]]
-name = "nix"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd0eaf8df8bab402257e0a5c17a254e4cc1f72a93588a1ddfb5d356c801aa7cb"
-dependencies = [
- "bitflags",
- "cc",
- "cfg-if",
- "libc",
- "void",
 ]
 
 [[package]]
