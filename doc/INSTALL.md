@@ -94,6 +94,43 @@ flvd spu list
   0  main-0  online  managed   -    10.102.55.151:9005  flv-spg-main-0.flv-spg-main:9006 
 ```
 
+## Trouble Shooting Installation
+
+If `fluvio spu list` responds with `no spu`, then the installation failed. 
+
+Additionally, if `helm list` shows an empty table, then the installation failed.
+
+`helm list` should respond with the following:
+
+```
+NAME      	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+fluvio    	default  	1       	2020-06-03 12:48:43.664808 -0700 PDT	deployed	fluvio-core-0.5.0
+fluvio-sys	default  	1       	2020-06-03 12:48:30.8367 -0700 PDT  	deployed	fluvio-sys-0.1.0 	0.1.0
+```
+
+### Helpful Tips
+
+- Ensure the `minikube` and `helm` version are up to date:
+
+Minikube
+```
+minikube version: v1.11.0
+commit: 57e2f55f47effe9ce396cea42a1e0eb4f611ebbd
+```
+
+Helm
+```
+version.BuildInfo{Version:"v3.2.1", GitCommit:"fe51cd1e31e6a202cba7dead9552a6d418ded79a", GitTreeState:"clean", GoVersion:"go1.13.10"}
+```
+
+- Uninstall fluvio cluster using `fluvio cluster uninstall && fluvio cluster uninstall --local`
+- Remove any prior clusters using `minikube delete`
+
+> WARNING: `minikube delete` will remove a local cluster and all associated files. This may not be desirable in all situations. Read the [minikube documentation](https://minikube.sigs.k8s.io/docs/commands/delete/) first to understand any undesired behaviors before running the command.
+
+
+After uninstalling and removing old artifacts, attempt to follow the installation guide again. If you continue to encounter errors, please open an issue and provide as much information as possible for trouble shooting.
+
 ## Quick Start
 
 To perform a simple consume and producer test:
