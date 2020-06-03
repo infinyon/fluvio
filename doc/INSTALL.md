@@ -94,7 +94,7 @@ flvd spu list
   0  main-0  online  managed   -    10.102.55.151:9005  flv-spg-main-0.flv-spg-main:9006 
 ```
 
-## Trouble Shooting Installation
+## Troubleshooting Installation
 
 If `fluvio spu list` responds with `no spu`, then the installation failed. 
 
@@ -129,7 +129,7 @@ version.BuildInfo{Version:"v3.2.1", GitCommit:"fe51cd1e31e6a202cba7dead9552a6d41
 > WARNING: `minikube delete` will remove a local cluster and all associated files. This may not be desirable in all situations. Read the [minikube documentation](https://minikube.sigs.k8s.io/docs/commands/delete/) first to understand any undesired behaviors before running the command.
 
 
-After uninstalling and removing old artifacts, attempt to follow the installation guide again. If you continue to encounter errors, please open an issue and provide as much information as possible for trouble shooting.
+After uninstalling and removing old artifacts, attempt to follow the installation guide again. If you continue to encounter errors, please [open an issue](https://github.com/infinyon/fluvio/issues/new) and provide as much information as possible.
 
 ## Quick Start
 
