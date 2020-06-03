@@ -9,6 +9,7 @@ use std::iter::FromIterator;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+
 use flv_util::socket_helpers::ServerAddress;
 use flv_types::SpuId;
 use flv_metadata::spu::{Endpoint, SpuSpec, SpuStatus, IngressPort};
@@ -290,7 +291,7 @@ impl SpuLocalStore {
     // check if spu can be registered
     pub fn validate_spu_for_registered(&self, id: &SpuId) -> bool {
         for (_, spu) in (self.inner_store().read()).iter() {
-            if spu.id() == id && spu.status.is_offline() {
+            if spu.id() == id {
                 return true;
             }
         }

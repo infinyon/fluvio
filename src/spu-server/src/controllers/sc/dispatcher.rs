@@ -1,5 +1,4 @@
 use std::time::Duration;
-use std::process;
 use std::io::Error as IoError;
 use std::sync::Arc;
 
@@ -83,6 +82,9 @@ impl ScDispatcher<FileReplica> {
     async fn dispatch_loop(mut self) {
         let mut counter: u64 = 0;
 
+        const WAIT_RECONNECT_INTERVAL: u64 = 3000;
+
+
         loop {
             debug!("entering SC dispatch loop: {}", counter);
 
@@ -93,27 +95,35 @@ impl ScDispatcher<FileReplica> {
                 );
 
                 // register and exit on error
-                match self.send_spu_registeration(&mut socket).await {
-                    Ok(_) => {}
+                let status = match self.send_spu_registeration(&mut socket).await {
+                    Ok(status) => status,
                     Err(err) => {
-                        print_cli_err!(format!("cannot register with sc: {}", err));
-                        process::exit(-1);
+                        print_cli_err!(format!(
+                            "spu registeration failed with sc due to error: {}",
+                            err
+                        ));
+                        false
                     }
-                }
+                };
 
-                // continuously process updates from and send back status to SC
-                match self.sc_request_loop(socket).await {
-                    Ok(_) => {
-                        debug!("sc request loop finished: {}", counter);
-                        // give little bit time before trying to reconnect
-                        sleep(Duration::from_millis(100)).await;
-                        counter = counter + 1;
-                    }
-                    Err(err) => {
-                        warn!("error, connecting to sc: {:#?}", err);
-                        // We are  connection to sc.  Retry again
-                        // Currently we use 3 seconds to retry but this should be using backoff algorithm
-                        sleep(Duration::from_millis(3000)).await;
+                if !status {
+                    warn!("sleeping 3 seconds before re-trying re-register");
+                    sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
+                } else {
+                    // continuously process updates from and send back status to SC
+                    match self.sc_request_loop(socket).await {
+                        Ok(_) => {
+                            debug!("sc connection terminated: {}, waiting before reconnecting", counter);
+                            // give little bit time before trying to reconnect
+                            sleep(Duration::from_millis(10)).await;
+                            counter = counter + 1;
+                        }
+                        Err(err) => {
+                            warn!("error connecting to sc: {:#?}, waiting before reconnecting", err);
+                            // We are  connection to sc.  Retry again
+                            // Currently we use 3 seconds to retry but this should be using backoff algorithm
+                            sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
+                        }
                     }
                 }
             }
@@ -177,6 +187,9 @@ impl ScDispatcher<FileReplica> {
             }
         }
 
+        drop(api_stream);
+        drop(shared_sink);
+
         Ok(())
     }
 
@@ -209,7 +222,7 @@ impl ScDispatcher<FileReplica> {
 
             Ok(false)
         } else {
-            debug!("spu '{}' registration Ok", local_spu_id);
+            info!("spu '{}' registration successful", local_spu_id);
 
             Ok(true)
         }

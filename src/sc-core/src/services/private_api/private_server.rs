@@ -80,14 +80,14 @@ impl KfService<TcpStream> for ScInternalService
 
         api_loop!(
             api_stream,
-                InternalScRequest::UpdateLrsRequest(msg) => {
-                    debug!("received lrs request: {}",msg);
-                    context.send_lrs_to_sender(msg.request).await;
-                },
-                InternalScRequest::RegisterSpuRequest(_request) => {
-                    error!("registration req only valid during initialization");
-                    return Err(KfSocketError::IoError(IoError::new(ErrorKind::InvalidData,"register spu request is only valid beggining")))
-                }
+            InternalScRequest::UpdateLrsRequest(msg) => {
+                debug!("received lrs request: {}",msg);
+                context.send_lrs_to_sender(msg.request).await;
+            },
+            InternalScRequest::RegisterSpuRequest(_request) => {
+                error!("registration req only valid during initialization");
+                return Err(KfSocketError::IoError(IoError::new(ErrorKind::InvalidData,"register spu request is only valid at init")))
+            }
         );
 
         debug!("api loop terminated; clearing sink");
