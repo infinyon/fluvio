@@ -20,7 +20,7 @@ Familiarity with
 Currently, fluvio supports the following platforms:
 - macOS X
 - Linux  
-Other platforms such as Windows can be made to work, but we haven't tried them yet.
+- Other platforms such as Windows can be made to work, but we haven't tried them yet.
 
 ## Ask a Question
 
@@ -40,7 +40,7 @@ To report a bug, open an issue on GitHub with the label `bug`. Please ensure the
 
 ### Suggest an Enhancement
 
-To suggest an enhancement, please create an issue on GitHub with the label `enhancement` using the available feature issue template.
+To suggest an enhancement, please create an issue on GitHub with the label `enhancement`.
 
 ### Creating pull request
 
