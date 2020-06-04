@@ -50,6 +50,10 @@ To suggest an enhancement, please create an issue on GitHub with the label `enha
 
 If you’d like to implement a new feature, please consider creating a `feature request` issue first to start a discussion about the feature.
 
+### License
+
+This project is licensed under the [Apache license](LICENSE).
+
 
 
 
