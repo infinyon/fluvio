@@ -42,3 +42,7 @@ https://www.fluvio.io/docs
 ## For Developers
 
 To learn about the Fluvio Architecture and contribute to Fluvio project, please visit the [Developer](DEVELOPER.md) section.
+
+## Contributing
+
+If you'd like to contribute to the project, please read our [Contributing guide](CONTRIBUTING.md).
