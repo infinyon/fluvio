@@ -46,3 +46,7 @@ To learn about the Fluvio Architecture and contribute to Fluvio project, please 
 ## Contributing
 
 If you'd like to contribute to the project, please read our [Contributing guide](CONTRIBUTING.md).
+
+## License
+
+This project is licensed under the [Apache license](LICENSE).
