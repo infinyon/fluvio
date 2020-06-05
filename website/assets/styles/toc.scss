@@ -1,0 +1,32 @@
+.toc-area {
+  max-width: 220px;
+}
+
+.side-toc {
+  margin: 20px 0;
+  padding: 5px 10px;
+  border-left: 1px solid $col-gray-light7;
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+
+    li {
+      font-size: .9em;
+      padding-bottom: 0;
+    }
+
+    a {
+      text-decoration: none;
+      color: $col-gray-light1;
+    }
+  }
+}
+
+@media (max-width: 1200px ) {
+  .toc-area {
+    display: none;
+    width: 0;
+  }
+}

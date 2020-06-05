@@ -1,0 +1,26 @@
+#api {
+    table {
+        border-collapse: collapse;
+        border: 1px solid #eee;
+        width: calc(100% - 8em);
+        min-width: 420px;
+        max-width: 900px;
+        margin-left: 4em;
+        margin-top: 1.5em;
+        margin-bottom: 1.5em;
+    }
+    th {
+        background: #f4f4f4;
+        padding: 0.6rem;
+        line-height: 2em;
+    }
+
+    td {
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        padding: 0.6rem;
+    }
+    td:nth-child(1) {
+        min-width: 160px;
+    }    
+}

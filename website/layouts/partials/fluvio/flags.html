@@ -1,0 +1,9 @@
+{{- $words := .words -}}
+
+{{- range $word := $words -}}
+    {{- if hasPrefix $word "-" -}}
+        <span class="grn">{{$word}} </span>
+    {{- else -}}
+        <span>{{$word}} </span>
+    {{- end -}}
+{{- end -}}

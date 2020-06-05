@@ -1,0 +1,29 @@
+languageCode = "en-us"
+title = "Fluvio"
+
+[params]
+  version = "1.0.2"
+  blog_time_format = "January 02, 2006"
+
+[menu]
+  [[menu.main]]
+    identifier = "docs"
+    name = "Docs"
+    url = "/docs/"
+    weight = 100
+
+
+  [[menu.main]]
+    identifier = "github"
+    name = "github"
+    url = "https://github.com/infinyon/fluvio"
+    pre = "fab fa-github"
+    weight = 130
+
+  [[menu.main]]
+    identifier = "twitter"
+    name = "twitter"
+    url = "https://twitter.com/infinyon"
+    pre = "fab fa-twitter"
+    weight = 140
+

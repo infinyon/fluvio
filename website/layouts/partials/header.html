@@ -1,0 +1,26 @@
+<nav class="navbar navbar-expand-md navbar-custom">
+  <a class="navbar-brand" id="logo" href="{{ "/" | relURL}}"><img src="/images/fluvio-white.png" width="90" ></img></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav ml-auto">
+      {{- $currentPage := . -}}
+      {{ range .Site.Menus.main }}
+        {{- $active := "" -}}
+        {{- if eq $currentPage.Section (.Name | lower) -}}
+          {{- $active = "active" -}}
+        {{- end -}}       
+        <li class="navbar-item {{ $active }}" >
+          <a class="nav-link{{ .Post }}" href="{{ .URL }}">
+            {{ if .Pre }}
+              <i class="{{ .Pre }}"></i>
+            {{ end }}
+            {{ .Name }}
+          </a>
+        </li>
+      {{ end }}
+    </ul>
+  </div>
+</nav>

@@ -1,0 +1,13 @@
+{{- $words := .words -}}
+{{- $foundFirstWord := false -}}
+
+{{- range $word := $words -}}
+    {{- $firstWord := trim (partial "fluvio/firstWord.html" (dict "words" $words)) "\"" -}}
+
+    {{- if and (eq $word $firstWord) (eq $foundFirstWord false) -}}
+        {{- $foundFirstWord = true -}}
+        <span class="blu">{{$word}} </span>
+    {{- else -}}
+        <span>{{$word}} </span>
+    {{- end -}}
+{{- end -}}

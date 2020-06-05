@@ -1,0 +1,22 @@
+code[class*="language-"],
+pre[class*="language-"] {
+    font-family: $font-callout;
+    font-size: 14px;    
+}
+
+.code-wrapper {
+    margin-left: 2em;
+    margin-right: 2em;
+
+    &#light {
+        background: #f8f8f8;
+        padding: .3em 1em;
+        border-radius: 0.4em;
+    
+        .code-toolbar > .toolbar {
+            top: -.3em;
+            right: 0;
+        }
+    }
+}
+

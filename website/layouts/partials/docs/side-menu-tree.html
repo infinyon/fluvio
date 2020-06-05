@@ -1,0 +1,72 @@
+{{- template "top-nav" (dict "selected" .ctx "ancesters" .ancesters) -}}
+
+{{- define "top-nav" -}}
+	{{- $top_section := site.GetPage "section" "docs" -}}
+	<div id="top-nav" class="flv_acrd"> 
+		{{- template "section-content" (dict "selected" .selected "section" $top_section "parent" "top-nav" "ancesters" .ancesters) -}}
+	</div>
+{{- end -}}
+
+{{- define "section-content" -}}
+	{{- $parent := .parent -}}
+	{{- $ancesters := .ancesters -}}
+	{{- $selected := .selected -}}
+	{{- $level_sections :=  (union .section.Pages .section.Sections) -}}
+	{{- $all_sorted := where $level_sections.ByWeight ".Params.hidden" "!=" true -}}
+
+	{{ range $all_sorted }}
+		{{ if .IsPage }}
+			{{ template "page-card" (dict "page" . "selected" $selected) }}
+		{{ else }}
+			<div class="card">
+				{{- $ancester := false}}
+				{{- if in $ancesters .CurrentSection.File.Dir -}}
+					{{- $ancester = true -}}
+				{{- end -}}
+				{{ template "section-header-card" (dict "section" . "ancester" $ancester) }}
+				{{ template "section-body-card" (dict "section" . "parent" $parent "ancester" $ancester "ancesters" $ancesters  "selected" $selected) }}
+			</div>
+		{{ end }}
+	{{ end }}
+{{- end -}}
+
+{{- define "page-card" -}}
+	{{- $selected := "" -}}
+	{{- $menu := .page.Params.menu | default .page.LinkTitle -}}
+	{{- if eq .page .selected }}
+		{{- $selected = " selected" -}}
+	{{- end -}}
+	<div class="card card-page {{ $selected }}"><a href="{{ .page.RelPermalink }}">{{ $menu }}</a></div>
+{{- end -}}
+
+{{- define "section-header-card" -}}
+	{{- $section_id := anchorize .section.LinkTitle -}}
+	{{- $expanded := "false" -}}
+	{{- if .ancester -}}
+			{{- $expanded = "true" -}}
+	{{- end -}}
+	
+	<div id="hdr-{{ $section_id }}", class="card-header">
+		<div class="mb-0">
+			<a role="button" data-toggle="collapse" href="#clps-{{ $section_id }}" aria-expanded="{{$expanded}}" aria-controls="clps-{{ $section_id }}">
+				{{ .section.LinkTitle }}
+			</a>
+		</div>
+	</div>
+{{- end -}}
+
+{{- define "section-body-card" -}}
+	{{- $section_id := anchorize .section.LinkTitle -}}
+	{{- $show := "" -}}
+	{{- if .ancester -}}
+		{{- $show = " show" -}}
+	{{- end -}}
+
+  <div id="clps-{{ $section_id }}" class="collapse{{ $show }}" data-parent="#{{ .parent }}" aria-labelledby="hdr-{{ $section_id }}">
+    <div id="{{ $section_id }}" class="card-body">
+      {{- template "section-content" (dict "section" .section "parent" $section_id "ancesters" .ancesters "selected" .selected) -}}
+    </div>
+  </div>
+{{- end -}}
+
+{{/* printf `content: %v` .CurrentSection */}}

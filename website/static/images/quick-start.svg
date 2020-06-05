@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="232 98 306 182" width="306" height="182">
+  <defs>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="StickArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-9 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M -8 0 L 0 0 M 0 3 L -8 0 L 0 -3" fill="none" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <font-face font-family="Avenir Next" font-size="10" panose-1="2 11 5 3 2 2 2 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="468" cap-height="708" ascent="1e3" descent="-365.9973" font-weight="400">
+      <font-face-src>
+        <font-face-name name="AvenirNext-Regular"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Helvetica Neue" font-size="10" panose-1="2 0 5 3 0 0 0 2 0 4" units-per-em="1000" underline-position="-100" underline-thickness="50" slope="0" x-height="517" cap-height="714" ascent="951.9958" descent="-212.99744" font-weight="400">
+      <font-face-src>
+        <font-face-name name="HelveticaNeue"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="StickArrow_Marker_2" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 0 M 0 -3 L 8 0 L 0 3" fill="none" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.13 
+    <dc:date>2020-03-15 18:59:45 +0000</dc:date>
+  </metadata>
+  <g id="Quick_Start_Complete_2" stroke-dasharray="none" fill="none" stroke-opacity="1" fill-opacity="1" stroke="none">
+    <title>Quick Start</title>
+    <g id="Quick_Start_Complete_2: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_504">
+        <rect x="366.75" y="170.0323" width="169.875" height="64.50476" fill="white"/>
+        <rect x="366.75" y="170.0323" width="169.875" height="64.50476" stroke="#095aaa" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25"/>
+      </g>
+      <g id="Line_709">
+        <line x1="415.12797" y1="206.19805" x2="443.7956" y2="206.19805" stroke="#095aaa" stroke-linecap="butt" stroke-linejoin="round" stroke-width="3"/>
+      </g>
+      <g id="Graphic_1666">
+        <path d="M 460.65625 180.72817 L 510.09375 180.72817 C 511.1983 180.72817 512.09375 181.6236 512.09375 182.72817 L 512.09375 210.22817 C 512.09375 211.33274 511.1983 212.22817 510.09375 212.22817 L 460.65625 212.22817 C 459.5517 212.22817 458.65625 211.33274 458.65625 210.22817 L 458.65625 182.72817 C 458.65625 181.6236 459.5517 180.72817 460.65625 180.72817 Z" fill="white"/>
+        <path d="M 460.65625 180.72817 L 510.09375 180.72817 C 511.1983 180.72817 512.09375 181.6236 512.09375 182.72817 L 512.09375 210.22817 C 512.09375 211.33274 511.1983 212.22817 510.09375 212.22817 L 460.65625 212.22817 C 459.5517 212.22817 458.65625 211.33274 458.65625 210.22817 L 458.65625 182.72817 C 458.65625 181.6236 459.5517 180.72817 460.65625 180.72817 Z" stroke="#095aaa" stroke-opacity=".29522302" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_1665">
+        <path d="M 453.6875 186.13786 L 503.125 186.13786 C 504.22957 186.13786 505.125 187.0333 505.125 188.13786 L 505.125 215.63786 C 505.125 216.74243 504.22957 217.63786 503.125 217.63786 L 453.6875 217.63786 C 452.58293 217.63786 451.6875 216.74243 451.6875 215.63786 L 451.6875 188.13786 C 451.6875 187.0333 452.58293 186.13786 453.6875 186.13786 Z" fill="white"/>
+        <path d="M 453.6875 186.13786 L 503.125 186.13786 C 504.22957 186.13786 505.125 187.0333 505.125 188.13786 L 505.125 215.63786 C 505.125 216.74243 504.22957 217.63786 503.125 217.63786 L 453.6875 217.63786 C 452.58293 217.63786 451.6875 216.74243 451.6875 215.63786 L 451.6875 188.13786 C 451.6875 187.0333 452.58293 186.13786 453.6875 186.13786 Z" stroke="#095aaa" stroke-opacity=".29522302" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_1032">
+        <path d="M 372.59706 206.1944 L 312.75 206.16543 L 312.75 158.625" marker-start="url(#StickArrow_Marker)" stroke="black" stroke-linecap="butt" stroke-linejoin="miter" stroke-width=".75"/>
+      </g>
+      <g id="Group_1417">
+        <g id="Group_1275">
+          <g id="Graphic_1273">
+            <rect x="286.3125" y="118.86464" width="50.095" height="31.786366" fill="white"/>
+            <rect x="286.3125" y="118.86464" width="50.095" height="31.786366" stroke="#095aaa" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25"/>
+          </g>
+          <g id="Graphic_1274">
+            <rect x="287.83096" y="156.84248" width="47.19094" height="1.2292707" fill="white"/>
+            <rect x="287.83096" y="156.84248" width="47.19094" height="1.2292707" stroke="#095aaa" stroke-linecap="round" stroke-linejoin="miter" stroke-width="3"/>
+          </g>
+        </g>
+        <g id="Graphic_1276">
+          <text transform="translate(303.91 128.6773)" fill="#005493">
+            <tspan font-family="Avenir Next" font-size="10" font-weight="400" fill="#005493" x="7274181e-19" y="10">CLI</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_1515">
+        <g id="Graphic_1514">
+          <path d="M 386.60946 190.94805 L 413.12797 190.94805 C 414.23254 190.94805 415.12797 191.84348 415.12797 192.94805 L 415.12797 220.44805 C 415.12797 221.55262 414.23254 222.44805 413.12797 222.44805 L 386.60946 222.44805 C 385.5049 222.44805 384.60946 221.55262 384.60946 220.44805 L 384.60946 192.94805 C 384.60946 191.84348 385.5049 190.94805 386.60946 190.94805 Z" fill="white"/>
+          <path d="M 386.60946 190.94805 L 413.12797 190.94805 C 414.23254 190.94805 415.12797 191.84348 415.12797 192.94805 L 415.12797 220.44805 C 415.12797 221.55262 414.23254 222.44805 413.12797 222.44805 L 386.60946 222.44805 C 385.5049 222.44805 384.60946 221.55262 384.60946 220.44805 L 384.60946 192.94805 C 384.60946 191.84348 385.5049 190.94805 386.60946 190.94805 Z" stroke="#095aaa" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Graphic_1513">
+          <text transform="translate(393.0187 200.55805)" fill="#065aaa">
+            <tspan font-family="Helvetica Neue" font-size="10" font-weight="400" fill="#065aaa" x="36415315e-20" y="10">SC</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Graphic_1448">
+        <path d="M 445.7956 190.94805 L 495.2331 190.94805 C 496.3377 190.94805 497.2331 191.84348 497.2331 192.94805 L 497.2331 220.44805 C 497.2331 221.55262 496.3377 222.44805 495.2331 222.44805 L 445.7956 222.44805 C 444.69105 222.44805 443.7956 221.55262 443.7956 220.44805 L 443.7956 192.94805 C 443.7956 191.84348 444.69105 190.94805 445.7956 190.94805 Z" fill="white"/>
+        <path d="M 445.7956 190.94805 L 495.2331 190.94805 C 496.3377 190.94805 497.2331 191.84348 497.2331 192.94805 L 497.2331 220.44805 C 497.2331 221.55262 496.3377 222.44805 495.2331 222.44805 L 445.7956 222.44805 C 444.69105 222.44805 443.7956 221.55262 443.7956 220.44805 L 443.7956 192.94805 C 443.7956 191.84348 444.69105 190.94805 445.7956 190.94805 Z" stroke="#095aaa" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Group_1529">
+        <g id="Graphic_1463">
+          <rect x="478.6706" y="195.7547" width="11.736446" height="22.28" stroke="black" stroke-linecap="round" stroke-linejoin="miter" stroke-width="1.5"/>
+        </g>
+        <g id="Graphic_1430">
+          <rect x="478.6706" y="195.83634" width="11.736446" height="22.198352" fill="white"/>
+        </g>
+        <g id="Graphic_1439">
+          <rect x="479.9523" y="197.08509" width="9.17312" height="3.09375" fill="black"/>
+        </g>
+        <g id="Line_1452">
+          <line x1="478.6706" y1="201.5476" x2="490.40707" y2="201.5476" stroke="black" stroke-linecap="butt" stroke-linejoin="round" stroke-width=".5"/>
+        </g>
+        <g id="Line_1453">
+          <line x1="478.6706" y1="207.97044" x2="490.40707" y2="207.97044" stroke="black" stroke-linecap="butt" stroke-linejoin="round" stroke-width=".5"/>
+        </g>
+        <g id="Line_1464">
+          <line x1="478.6706" y1="213.26826" x2="490.40707" y2="213.26826" stroke="black" stroke-linecap="butt" stroke-linejoin="round" stroke-width=".5"/>
+        </g>
+        <g id="Graphic_1525">
+          <rect x="479.9523" y="203.14962" width="9.17312" height="3.09375" fill="black"/>
+        </g>
+      </g>
+      <g id="Graphic_1575">
+        <text transform="translate(451.1431 200.7547)" fill="#065aaa">
+          <tspan font-family="Helvetica Neue" font-size="10" font-weight="400" fill="#065aaa" x="14566126e-20" y="10">SPU</tspan>
+        </text>
+      </g>
+      <g id="Graphic_1672">
+        <text transform="translate(390.2782 118.65261)" fill="#666">
+          <tspan font-family="Helvetica Neue" font-size="10" font-weight="400" fill="#666" x="0" y="10">Produce</tspan>
+        </text>
+      </g>
+      <g id="Line_1673">
+        <path d="M 484.2452 177.16074 L 484.2452 134.14658 L 336.4075 134.75782" marker-start="url(#StickArrow_Marker)" stroke="black" stroke-linecap="butt" stroke-linejoin="miter" stroke-width=".75"/>
+      </g>
+      <g id="Line_1674">
+        <path d="M 484.6154 225.45788 L 484.84344 277.1091 L 234.96152 277.1734 L 234.99173 134.71996 L 278.7625 134.75225" marker-end="url(#StickArrow_Marker_2)" stroke="black" stroke-linecap="butt" stroke-linejoin="miter" stroke-width=".75"/>
+      </g>
+      <g id="Group_1681">
+        <g id="Graphic_1683">
+          <circle cx="409.0782" cy="109.4375" r="8.15626303288736" fill="#06aa90"/>
+          <circle cx="409.0782" cy="109.4375" r="8.15626303288736" stroke="#a5a5a5" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+        </g>
+        <g id="Graphic_1682">
+          <text transform="translate(406.1782 103.27623)" fill="white">
+            <tspan font-family="Avenir Next" font-size="10" font-weight="400" fill="white" x="0" y="10">2</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Graphic_1692">
+        <text transform="translate(271.77875 206.50707)" fill="#666">
+          <tspan font-family="Helvetica Neue" font-size="10" font-weight="400" fill="#666" x="5098144e-19" y="10">Create</tspan>
+          <tspan font-family="Helvetica Neue" font-size="10" font-weight="400" fill="#666" x="2.87" y="22.28">Topic</tspan>
+        </text>
+      </g>
+      <g id="Graphic_1700">
+        <text transform="translate(343.4518 260.9651)" fill="#666">
+          <tspan font-family="Helvetica Neue" font-size="10" font-weight="400" fill="#666" x="0" y="10">Consume</tspan>
+        </text>
+      </g>
+      <g id="Group_1713">
+        <g id="Graphic_1715">
+          <circle cx="364.9418" cy="252.40147" r="8.15626303288735" fill="#06aa90"/>
+          <circle cx="364.9418" cy="252.40147" r="8.15626303288735" stroke="#a5a5a5" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+        </g>
+        <g id="Graphic_1714">
+          <text transform="translate(362.0418 246.2402)" fill="white">
+            <tspan font-family="Avenir Next" font-size="10" font-weight="400" fill="white" x="0" y="10">3</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_1716">
+        <g id="Graphic_1718">
+          <circle cx="286.59375" cy="196.12964" r="8.15626303288735" fill="#06aa90"/>
+          <circle cx="286.59375" cy="196.12964" r="8.15626303288735" stroke="#a5a5a5" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+        </g>
+        <g id="Graphic_1717">
+          <text transform="translate(283.69375 189.96837)" fill="white">
+            <tspan font-family="Avenir Next" font-size="10" font-weight="400" fill="white" x="0" y="10">1</tspan>
+          </text>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

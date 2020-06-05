@@ -1,0 +1,36 @@
+<div class="container-fluid blog-nav">
+  <div class="row">
+    <div class="col">
+      {{- template "next_page" (dict "next_page" .page.NextInSection) -}}
+    </div>
+    <div class="col text-right">
+      {{- template "prev_page" (dict "prev_page" .page.PrevInSection) -}}
+    </div>
+  </div>
+</div>
+
+{{- define "prev_page" -}}
+  {{ if .prev_page }}
+      {{ $hidden := .prev_page.Params.hidden | default false}}
+      {{ if eq $hidden true }}
+        {{- template "prev_page" (dict "prev_page" .prev_page.PrevInSection) -}}
+      {{ else }}
+        <div class="pagerButton">
+          <h5><a class=" button" href="{{ .prev_page.RelPermalink }}">{{ .prev_page.Title }}<i class="fa fa-arrow-right ml-1"></i></a></h5>
+        </div>
+      {{ end }}
+  {{ end }}
+{{- end -}}
+
+{{- define "next_page" -}}
+  {{ if .next_page }}
+      {{ $hidden := .next_page.Params.hidden | default false}}
+      {{ if eq $hidden true }}
+        {{- template "next_page" (dict "next_page" .next_page.NextInSection) -}}
+      {{ else }}
+        <div class="pagerButton">
+          <h5><a class=" button" href="{{ .next_page.RelPermalink }}"><i class="fa fa-arrow-left mr-1"></i>{{ .next_page.Title }}</a></h5>
+        </div>
+      {{ end }}
+  {{ end }}
+{{- end -}}
