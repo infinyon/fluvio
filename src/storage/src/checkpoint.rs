@@ -160,7 +160,6 @@ mod tests {
 
     use crate::ConfigOption;
     use super::CheckPoint;
-    
 
     #[test_async]
     async fn checkpoint_test() -> Result<(), IoError> {

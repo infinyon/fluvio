@@ -27,9 +27,6 @@ impl Request for FlvCreateSpuGroupsRequest {
     type Response = FlvCreateSpuGroupsResponse;
 }
 
-
-
-
 // quick way to convert a single group into groups requests
 impl From<FlvCreateSpuGroupRequest> for FlvCreateSpuGroupsRequest {
     fn from(group: FlvCreateSpuGroupRequest) -> Self {
@@ -63,7 +60,7 @@ pub struct FlvCreateSpuGroupRequest {
 pub struct FlvGroupConfig {
     pub storage: Option<FlvStorageConfig>,
     pub replication: Option<FlvReplicationConfig>,
-    pub env: Vec<FlvEnvVar>
+    pub env: Vec<FlvEnvVar>,
 }
 
 #[derive(Encode, Decode, Default, Debug)]
@@ -93,20 +90,14 @@ pub struct FlvCreateSpuGroupsResponse {
     pub results: Vec<FlvResponseMessage>,
 }
 
-
-
 impl FlvCreateSpuGroupsResponse {
-
     /// validate and extract a single response
-    pub fn validate(self) -> Result<(),ApiError> {
-
+    pub fn validate(self) -> Result<(), ApiError> {
         // ? what is name, so just find first item
-        if let Some(item) = self.results.into_iter().find(|_| true ) {
+        if let Some(item) = self.results.into_iter().find(|_| true) {
             item.as_result()
         } else {
             Err(ApiError::NoResourceFounded("custom spu".to_owned()))
         }
-        
     }
 }
-

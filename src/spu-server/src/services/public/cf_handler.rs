@@ -26,7 +26,6 @@ use spu_api::PublicRequest;
 
 use crate::core::DefaultSharedGlobalContext;
 
-
 /// continuous fetch handler
 /// while client is active, it continuously send back new records
 pub struct CfHandler<S> {
@@ -37,7 +36,11 @@ pub struct CfHandler<S> {
     kf_sink: InnerKfSink<S>,
 }
 
-impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSink<S>:ZeroCopyWrite {
+impl<S> CfHandler<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+    InnerKfSink<S>: ZeroCopyWrite,
+{
     /// handle fluvio continuous fetch request
     pub async fn handle_continuous_fetch_request(
         request: RequestMessage<FileFlvContinuousFetchRequest>,
@@ -45,7 +48,8 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
         kf_sink: InnerKfSink<S>,
         kf_stream: InnerKfStream<S>,
     ) -> Result<(), KfSocketError>
-       where InnerKfSink<S>: ZeroCopyWrite
+    where
+        InnerKfSink<S>: ZeroCopyWrite,
     {
         // first get receiver to offset update channel to we don't missed events
 
@@ -94,13 +98,15 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
 
         let mut api_stream = kf_stream.api_stream::<PublicRequest, SpuApiKey>();
 
-        let mut counter: i32  = 0;
+        let mut counter: i32 = 0;
         loop {
             counter += 1;
-            debug!("conn: {}, waiting event, counter: {}", self.kf_sink.id(),counter);
+            debug!(
+                "conn: {}, waiting event, counter: {}",
+                self.kf_sink.id(),
+                counter
+            );
 
-       
-            
             select! {
                 offset_event_res = receiver.recv() => {
 
@@ -130,7 +136,7 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
                             } else {
                                 debug!("conn: {}, ignoring event because replica does not match",self.kf_sink.id());
                             }
-                            
+
 
                         },
                         Err(err) => {
@@ -146,9 +152,9 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
                         }
                     }
 
-                    
-                    
-                    
+
+
+
                 },
 
                 msg = api_stream.next() => {
@@ -161,10 +167,9 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
 
                 }
             }
-            
         }
 
-        debug!("conn: {}, done with cf loop exiting",self.kf_sink.id());
+        debug!("conn: {}, done with cf loop exiting", self.kf_sink.id());
 
         Ok(())
     }
@@ -192,7 +197,6 @@ impl <S>CfHandler<S> where  S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSin
                 offset,
                 hw,
                 leo,
-                
             );
             let response = FlvContinuousFetchResponse {
                 topic: self.replica.topic.clone(),

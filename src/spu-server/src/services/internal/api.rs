@@ -1,4 +1,3 @@
-
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
@@ -9,17 +8,16 @@ use kf_protocol::Decoder;
 use kf_protocol::derive::Encode;
 use kf_protocol::derive::Decode;
 
-
 use kf_protocol::api::KfRequestMessage;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::RequestHeader;
 
 use super::fetch_stream_request::FetchStreamRequest;
 
-#[derive(PartialEq, Debug, Encode, Decode,  Clone, Copy)]
+#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum KfSPUPeerApiEnum {
-    FetchStream = 0
+    FetchStream = 0,
 }
 
 impl Default for KfSPUPeerApiEnum {
@@ -28,43 +26,33 @@ impl Default for KfSPUPeerApiEnum {
     }
 }
 
-
-
-
-#[derive(Debug,Encode)]
-pub enum SpuPeerRequest  {
-    FetchStream(RequestMessage<FetchStreamRequest>)
+#[derive(Debug, Encode)]
+pub enum SpuPeerRequest {
+    FetchStream(RequestMessage<FetchStreamRequest>),
 }
 
-
-
 impl Default for SpuPeerRequest {
-    fn default() ->  SpuPeerRequest {
+    fn default() -> SpuPeerRequest {
         SpuPeerRequest::FetchStream(RequestMessage::<FetchStreamRequest>::default())
     }
 }
 
-
-
-impl KfRequestMessage for SpuPeerRequest  {
-
+impl KfRequestMessage for SpuPeerRequest {
     type ApiKey = KfSPUPeerApiEnum;
 
-    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self,IoError>
-        where
-                Self: Default + Sized,
-                Self::ApiKey: Sized,
-                T: Buf
+    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
+    where
+        Self: Default + Sized,
+        Self::ApiKey: Sized,
+        T: Buf,
     {
-
-        trace!("decoding with header: {:#?}",header);
+        trace!("decoding with header: {:#?}", header);
         let version = header.api_version();
         match header.api_key().try_into()? {
-            KfSPUPeerApiEnum::FetchStream => Ok(SpuPeerRequest::FetchStream(RequestMessage::new(header,FetchStreamRequest::decode_from(src,
-                version)?)))
+            KfSPUPeerApiEnum::FetchStream => Ok(SpuPeerRequest::FetchStream(RequestMessage::new(
+                header,
+                FetchStreamRequest::decode_from(src, version)?,
+            ))),
         }
-
     }
-
 }
-

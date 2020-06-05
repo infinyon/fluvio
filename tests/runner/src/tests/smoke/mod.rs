@@ -2,7 +2,6 @@ mod consume;
 mod produce;
 mod listener;
 
-
 pub const MESSAGE_PREFIX: &'static str = "test message abcdefghijklmnopqrsxtyz";
 
 pub use runner::*;
@@ -11,13 +10,10 @@ use super::TestDriver;
 
 mod runner {
 
-
     use async_trait::async_trait;
 
     use crate::TestOption;
     use super::*;
-
-    
 
     /// simple smoke test runner which tests
     pub struct SmokeTestRunner {
@@ -26,14 +22,10 @@ mod runner {
 
     impl SmokeTestRunner {
         pub fn new(option: TestOption) -> Self {
-            Self {
-                option,
-            }
+            Self { option }
         }
 
         async fn produce_and_consume_cli(&self) {
-
-            
             // sleep 100 ms to allow listener to start earlier
             if self.option.produce() {
                 super::produce::produce_message_with_cli(&self.option).await;
@@ -41,7 +33,7 @@ mod runner {
                 println!("produce skipped");
             }
 
-           // sleep(Duration::from_secs(1)).await;
+            // sleep(Duration::from_secs(1)).await;
 
             if self.option.test_consumer() {
                 super::consume::validate_consume_message(&self.option).await;
@@ -51,10 +43,8 @@ mod runner {
         }
     }
 
-
     #[async_trait]
     impl TestDriver for SmokeTestRunner {
-
         /// run tester
         async fn run(&self) {
             //use futures::future::join_all;
@@ -83,8 +73,6 @@ mod runner {
             */
             self.produce_and_consume_cli().await;
         }
-
-       
     }
 }
 
@@ -100,26 +88,20 @@ mod client {
 
     #[allow(unused)]
     pub async fn get_client(option: &TestOption) -> ScClient {
-
         let tls_option = if option.tls() {
-
             let client_cert = Cert::load_client();
 
-            Some(TlsConfig::File(TlsClientConfig{
+            Some(TlsConfig::File(TlsClientConfig {
                 client_cert: client_cert.cert.display().to_string(),
                 client_key: client_cert.key.display().to_string(),
                 ca_cert: client_cert.ca.display().to_string(),
-                domain: "fluvio.local".to_owned()
+                domain: "fluvio.local".to_owned(),
             }))
         } else {
             None
         };
 
-        let config = ScConfig::new(None,tls_option).expect("connect");
+        let config = ScConfig::new(None, tls_option).expect("connect");
         config.connect().await.expect("should connect")
     }
-
-
-    
-
 }

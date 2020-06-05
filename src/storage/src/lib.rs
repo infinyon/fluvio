@@ -27,7 +27,6 @@ pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub(crate) use crate::segment::SegmentSlice;
 
-
 use kf_protocol::api::ErrorCode;
 use kf_protocol::api::Offset;
 use flv_future_aio::fs::AsyncFileSlice;
@@ -38,27 +37,23 @@ impl<'a, T: ?Sized> Captures<'a> for T {}
 
 /// output from storage is represented as slice
 pub trait SlicePartitionResponse {
-
     fn set_hw(&mut self, offset: i64);
 
-    fn set_last_stable_offset(&mut self,offset: i64);
+    fn set_last_stable_offset(&mut self, offset: i64);
 
-    fn set_log_start_offset(&mut self,offset: i64);
+    fn set_log_start_offset(&mut self, offset: i64);
 
     fn set_slice(&mut self, slice: AsyncFileSlice);
 
-    fn set_error_code(&mut self,error: ErrorCode);
-
+    fn set_error_code(&mut self, error: ErrorCode);
 }
 
-
 impl SlicePartitionResponse for FilePartitionResponse {
-
     fn set_hw(&mut self, offset: i64) {
         self.high_watermark = offset;
     }
 
-    fn set_last_stable_offset(&mut self,offset: i64) {
+    fn set_last_stable_offset(&mut self, offset: i64) {
         self.last_stable_offset = offset;
     }
 
@@ -73,16 +68,12 @@ impl SlicePartitionResponse for FilePartitionResponse {
     fn set_error_code(&mut self, error: ErrorCode) {
         self.error_code = error;
     }
-
 }
 
-
-pub trait ReplicaStorage   {
-
+pub trait ReplicaStorage {
     /// high water mark offset (records that has been replicated)
     fn get_hw(&self) -> Offset;
 
     /// log end offset ( records that has been stored)
     fn get_leo(&self) -> Offset;
-
 }

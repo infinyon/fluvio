@@ -101,8 +101,8 @@ mod produce {
             Ok(()) => {
                 debug!("record send success");
                 print_cli_ok!()
-            },
-            Err(err) => { 
+            }
+            Err(err) => {
                 print_cli_err!(format!("error processing record: {}", err));
                 std::process::exit(-1);
             }

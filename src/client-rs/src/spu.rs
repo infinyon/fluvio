@@ -4,7 +4,6 @@ use core::task::Context;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-
 use log::error;
 use log::debug;
 use log::trace;
@@ -15,7 +14,6 @@ use futures::future::FutureExt;
 use futures::stream::empty;
 use async_trait::async_trait;
 
-
 use kf_socket::KfSocketError;
 use kf_protocol::api::DefaultRecords;
 use kf_protocol::api::PartitionOffset;
@@ -24,7 +22,6 @@ use spu_api::fetch::DefaultFlvContinuousFetchRequest;
 use spu_api::offsets::{FlvFetchOffsetsRequest};
 use spu_api::offsets::FetchOffsetPartitionResponse;
 use spu_api::spus::{FlvFetchLocalSpuRequest, FlvFetchLocalSpuResponse};
-
 
 use crate::ClientError;
 use crate::Client;
@@ -36,8 +33,7 @@ use crate::FetchOffset;
 /// Full access to SPU
 pub struct Spu(Client);
 
-impl Spu  {
-
+impl Spu {
     #[allow(unused)]
     fn new(client: Client) -> Self {
         Self(client)
@@ -48,23 +44,16 @@ impl Spu  {
     }
 }
 
-
 // Access specific replica leader of the SPU
 // for now, we use string to store address, later, we might store address natively
-pub struct SpuReplicaLeader
-{
+pub struct SpuReplicaLeader {
     client: Client,
     config: ReplicaLeaderConfig,
 }
 
-
-impl SpuReplicaLeader  {
-
+impl SpuReplicaLeader {
     pub fn new(config: ReplicaLeaderConfig, client: Client) -> Self {
-        Self {
-            client,
-            config
-        }
+        Self { client, config }
     }
 
     pub fn config(&self) -> &ReplicaLeaderConfig {
@@ -75,7 +64,6 @@ impl SpuReplicaLeader  {
         &self.client.config().addr()
     }
 
-
     /// fetch local spu
     pub async fn fetch_local_spu(&mut self) -> Result<FlvFetchLocalSpuResponse, KfSocketError> {
         let request = FlvFetchLocalSpuRequest::default();
@@ -83,14 +71,13 @@ impl SpuReplicaLeader  {
     }
 
     /// depends on offset option, calculate offset
-    async fn calc_offset(&mut self,offset: FetchOffset) -> Result<i64,ClientError> {
-
+    async fn calc_offset(&mut self, offset: FetchOffset) -> Result<i64, ClientError> {
         Ok(match offset {
             FetchOffset::Offset(inner_offset) => inner_offset,
-            FetchOffset::Earliest(relative_offset) =>  {
+            FetchOffset::Earliest(relative_offset) => {
                 let offsets = self.fetch_offsets().await?;
                 offsets.start_offset() + relative_offset.unwrap_or(0)
-            },
+            }
             FetchOffset::Latest(relative_offset) => {
                 let offsets = self.fetch_offsets().await?;
                 offsets.last_stable_offset() - relative_offset.unwrap_or(0)
@@ -101,7 +88,6 @@ impl SpuReplicaLeader  {
 
 #[async_trait]
 impl ReplicaLeader for SpuReplicaLeader {
-
     type OffsetPartitionResponse = FetchOffsetPartitionResponse;
 
     fn config(&self) -> &ReplicaLeaderConfig {
@@ -117,16 +103,21 @@ impl ReplicaLeader for SpuReplicaLeader {
     }
 
     async fn fetch_offsets(&mut self) -> Result<FetchOffsetPartitionResponse, ClientError> {
-
-        debug!("fetching offset for: {}:{}",self.topic(),self.partition());
-        let response = self.client
+        debug!("fetching offset for: {}:{}", self.topic(), self.partition());
+        let response = self
+            .client
             .send_receive(FlvFetchOffsetsRequest::new(
-            self.topic().to_owned(),
-            self.partition(),
+                self.topic().to_owned(),
+                self.partition(),
             ))
             .await?;
 
-        trace!("receive topic {}:{}  offset: {:#?}",self.topic(),self.partition(),response);
+        trace!(
+            "receive topic {}:{}  offset: {:#?}",
+            self.topic(),
+            self.partition(),
+            response
+        );
 
         match response.find_partition(self.topic(), self.partition()) {
             Some(partition_response) => Ok(partition_response),
@@ -142,14 +133,11 @@ impl ReplicaLeader for SpuReplicaLeader {
         }
     }
 
-
     async fn fetch_logs_once(
         &mut self,
         offset_option: FetchOffset,
-        option: FetchLogOption
-    ) -> Result<FetchablePartitionResponse<DefaultRecords>,ClientError>  {
-
-  
+        option: FetchLogOption,
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>, ClientError> {
         use kf_protocol::message::fetch::DefaultKfFetchRequest;
         use kf_protocol::message::fetch::FetchPartition;
         use kf_protocol::message::fetch::FetchableTopic;
@@ -177,7 +165,6 @@ impl ReplicaLeader for SpuReplicaLeader {
             ..Default::default()
         };
 
-
         let fetch_request = DefaultKfFetchRequest {
             topics: vec![topic_request],
             isolation_level: option.isolation,
@@ -186,20 +173,22 @@ impl ReplicaLeader for SpuReplicaLeader {
 
         let response = self.client.send_receive(fetch_request).await?;
 
-        if let Some(partition_response) = response.find_partition(&self.topic(),self.partition()) {
+        if let Some(partition_response) = response.find_partition(&self.topic(), self.partition()) {
             Ok(partition_response)
         } else {
-            Err(ClientError::PartitionNotFound(self.topic().to_owned(),self.partition()))
+            Err(ClientError::PartitionNotFound(
+                self.topic().to_owned(),
+                self.partition(),
+            ))
         }
     }
 
     /// fetch logs as stream
     fn fetch_logs<'a>(
-        &'a mut  self,
+        &'a mut self,
         offset_option: FetchOffset,
-        option: FetchLogOption
-    ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>>  {
-
+        option: FetchLogOption,
+    ) -> BoxStream<'a, FetchablePartitionResponse<DefaultRecords>> {
         debug!(
             "starting continuous fetch logs: {:#?} '{}' ({}) partition to {}",
             offset_option,
@@ -209,12 +198,11 @@ impl ReplicaLeader for SpuReplicaLeader {
         );
 
         let log_stream_ft = async move {
-
             let offset = match self.calc_offset(offset_option).await {
                 Ok(offset) => offset,
                 Err(err) => {
-                    error!("error getting offset: {}",err);
-                    return empty().right_stream()
+                    error!("error getting offset: {}", err);
+                    return empty().right_stream();
                 }
             };
 
@@ -228,43 +216,30 @@ impl ReplicaLeader for SpuReplicaLeader {
             };
 
             match self.client.send_request(request).await {
-                Ok(req_msg) => 
-                    self.client.mut_socket().get_mut_stream().response_stream::<DefaultFlvContinuousFetchRequest>(req_msg)
-                        .map(|response| response.partition)
-                        .left_stream(),
+                Ok(req_msg) => self
+                    .client
+                    .mut_socket()
+                    .get_mut_stream()
+                    .response_stream::<DefaultFlvContinuousFetchRequest>(req_msg)
+                    .map(|response| response.partition)
+                    .left_stream(),
                 Err(err) => {
-                    error!("error retrieving continuous fetch log: {}",err);
+                    error!("error retrieving continuous fetch log: {}", err);
                     empty().right_stream()
                 }
             }
-            
         };
 
         log_stream_ft.flatten_stream().boxed()
-        
-        
     }
-
-
 }
-
-
 
 pub struct FetchStream(SpuReplicaLeader);
 
-
-
-impl Stream for FetchStream
-{
-
+impl Stream for FetchStream {
     type Item = FetchablePartitionResponse<DefaultRecords>;
 
     fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-       Poll::Ready(None)
+        Poll::Ready(None)
     }
-
 }
-
-
-
-

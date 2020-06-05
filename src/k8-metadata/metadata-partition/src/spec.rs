@@ -14,7 +14,6 @@ use serde::Serialize;
 use super::PartitionStatus;
 
 impl Spec for PartitionSpec {
-
     type Header = DefaultHeader;
     type Status = PartitionStatus;
     fn metadata() -> &'static Crd {

@@ -4,28 +4,21 @@ use crate::CliError;
 
 pub use context::process_minikube_context;
 
-#[derive(Debug,StructOpt)]
+#[derive(Debug, StructOpt)]
 pub struct SetMinikubeContext {
-
     /// set context name
-    #[structopt(long,value_name = "name")]
+    #[structopt(long, value_name = "name")]
     pub name: Option<String>,
 }
-
-
-
 
 mod context {
 
     use super::*;
 
-
-
     /// Performs following
     ///     add minikube IP address to /etc/host
     ///     create new kubectl cluster and context which uses minikube name
-    pub fn process_minikube_context(ctx: SetMinikubeContext) -> Result<String,CliError> {
-
+    pub fn process_minikube_context(ctx: SetMinikubeContext) -> Result<String, CliError> {
         use k8_config::context::Option;
         use k8_config::context::create_dns_context;
 

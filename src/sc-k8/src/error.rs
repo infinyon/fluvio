@@ -17,16 +17,14 @@ pub enum ScK8Error {
     ClientError(ClientError),
     SendError(SendError),
     PartitionError(PartitionError),
-    UnknownSpu(SpuId), 
+    UnknownSpu(SpuId),
 }
-
 
 impl From<StdIoError> for ScK8Error {
     fn from(error: StdIoError) -> Self {
         Self::IoError(error)
     }
 }
-
 
 impl From<SendError> for ScK8Error {
     fn from(error: SendError) -> Self {
@@ -46,15 +44,14 @@ impl From<ClientError> for ScK8Error {
     }
 }
 
-
 impl fmt::Display for ScK8Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::IoError(err) => write!(f, "{}", err),
-            Self::SendError(err) => write!(f,"{}",err),
-            Self::PartitionError(err) => write!(f,"{}",err),
-            Self::UnknownSpu(spu) => write!(f,"unknown spu: {}",spu),
-            Self::ClientError(err) => write!(f,"{}",err)
+            Self::SendError(err) => write!(f, "{}", err),
+            Self::PartitionError(err) => write!(f, "{}", err),
+            Self::UnknownSpu(spu) => write!(f, "unknown spu: {}", spu),
+            Self::ClientError(err) => write!(f, "{}", err),
         }
     }
 }

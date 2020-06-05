@@ -4,7 +4,6 @@ use std::fmt::Debug;
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
 
-
 use log::trace;
 use log::debug;
 use bytes::Bytes;
@@ -13,7 +12,6 @@ use futures::sink::SinkExt;
 use futures::stream::SplitSink;
 use futures::io::{AsyncRead, AsyncWrite};
 use tokio_util::compat::Compat;
-
 
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 use flv_future_aio::bytes::BytesMut;
@@ -34,17 +32,18 @@ pub type KfSink = InnerKfSink<TcpStream>;
 #[allow(unused)]
 pub type AllKfSink = InnerKfSink<AllTcpStream>;
 
-
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, KfCodec>, Bytes>;
 
 #[derive(Debug)]
-pub struct InnerKfSink<S>  {
+pub struct InnerKfSink<S> {
     inner: SplitFrame<S>,
-    fd: RawFd
+    fd: RawFd,
 }
 
-impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send
- {
+impl<S> InnerKfSink<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+{
     pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
         InnerKfSink { fd, inner }
     }
@@ -83,13 +82,13 @@ impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send
         (&mut self.inner).send(resp_msg.as_bytes(version)?).await?;
         Ok(())
     }
+}
 
-    
- }
-
-
- impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send, Self:ZeroCopyWrite {
-
+impl<S> InnerKfSink<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+    Self: ZeroCopyWrite,
+{
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -123,7 +122,11 @@ impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send
                     if f_slice.len() == 0 {
                         debug!("empty slice, skipping");
                     } else {
-                        debug!("writing file slice pos: {} len: {} to socket", f_slice.position(),f_slice.len());
+                        debug!(
+                            "writing file slice pos: {} len: {} to socket",
+                            f_slice.position(),
+                            f_slice.len()
+                        );
                         self.zero_copy_write(&f_slice).await?;
                         trace!("finish writing file slice");
                     }
@@ -135,19 +138,21 @@ impl <S>InnerKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send
     }
 }
 
-impl <S>AsRawFd for InnerKfSink<S>  {
+impl<S> AsRawFd for InnerKfSink<S> {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
 }
-
 
 use futures::lock::Mutex;
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct InnerExclusiveKfSink<S>(Mutex<InnerKfSink<S>>);
 
-impl <S>InnerExclusiveKfSink<S> where S: AsyncRead + AsyncWrite + Unpin + Send {
+impl<S> InnerExclusiveKfSink<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+{
     pub fn new(sink: InnerKfSink<S>) -> Self {
         InnerExclusiveKfSink(Mutex::new(sink))
     }

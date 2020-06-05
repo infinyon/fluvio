@@ -7,7 +7,6 @@ use std::io::Error as IoError;
 use structopt::StructOpt;
 use futures::stream::StreamExt;
 
-
 use flv_future_aio::task::run_block_on;
 use flv_future_aio::fs::util as fs_util;
 

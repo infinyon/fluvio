@@ -16,9 +16,6 @@ use crate::profile::InlineProfile;
 
 use super::ConsumeOutputType;
 
-
-
-
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
     /// Topic name
@@ -33,12 +30,12 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "B", long = "from-beginning")]
     pub from_beginning: bool,
 
-    /// disable continuous processing of messages 
-    #[structopt(short = "d",long)]
+    /// disable continuous processing of messages
+    #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
     /// optional, offset, negate offset is relative to end offset (either committed or uncommitted)
-    #[structopt(short,long, value_name = "integer")]
+    #[structopt(short, long, value_name = "integer")]
     pub offset: Option<i64>,
 
     /// Maximum number of bytes to be retrieved
@@ -68,7 +65,6 @@ pub struct ConsumeLogOpt {
     )]
     pub kf: Option<String>,
 
-
     /// Suppress items items that have an unknown output type
     #[structopt(short = "s", long = "suppress-unknown")]
     pub suppress_unknown: bool,
@@ -88,20 +84,19 @@ pub struct ConsumeLogOpt {
     tls: TlsConfig,
 
     #[structopt(flatten)]
-    profile: InlineProfile
+    profile: InlineProfile,
 }
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
     pub fn validate(self) -> Result<(ServerTargetConfig, ConsumeLogConfig), CliError> {
-
-    
         let target_server = ServerTargetConfig::possible_target(
-            self.sc, 
-        self.spu, 
-        self.kf,
-        self.tls.try_into_file_config()?,
-            self.profile.profile)?;
+            self.sc,
+            self.spu,
+            self.kf,
+            self.tls.try_into_file_config()?,
+            self.profile.profile,
+        )?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
 
         // consume log specific configurations

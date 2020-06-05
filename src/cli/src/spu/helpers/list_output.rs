@@ -15,7 +15,6 @@ use crate::Terminal;
 use crate::TableOutputHandler;
 use crate::t_println;
 
-
 type ListSpus = Vec<SpuMetadata>;
 
 /// Process server based on output type
@@ -24,21 +23,19 @@ pub fn format_spu_response_output<O>(
     spus: ListSpus,
     output_type: OutputType,
 ) -> Result<(), CliError>
-    where O: Terminal
+where
+    O: Terminal,
 {
-
     if spus.len() > 0 {
-        out.render_list(&spus,output_type)?;
+        out.render_list(&spus, output_type)?;
     } else {
-        t_println!(out,"no spu");
+        t_println!(out, "no spu");
     }
-   
+
     Ok(())
 }
 
 impl TableOutputHandler for ListSpus {
-
-
     /// table header implementation
     fn header(&self) -> Row {
         row!["ID", "NAME", "STATUS", "TYPE", "RACK", "PUBLIC", "PRIVATE"]

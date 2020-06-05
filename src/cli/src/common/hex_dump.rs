@@ -68,7 +68,6 @@ pub fn hex_dump_separator() -> String {
     "------------------------------------------------------------------------------\n".to_owned()
 }
 
-
 #[cfg(test)]
 mod test {
     use super::bytes_to_hex_dump;
@@ -87,8 +86,7 @@ mod test {
             32, 32, 32, 32, 93, 10, 125,
         ];
 
-        let expected =
-            r#"00000000  7b 0a 20 20 20 20 22 70  61 72 74 69 74 69 6f 6e  |{.    "partition|
+        let expected = r#"00000000  7b 0a 20 20 20 20 22 70  61 72 74 69 74 69 6f 6e  |{.    "partition|
 00000010  73 22 3a 20 5b 0a 20 20  20 20 20 20 20 20 7b 0a  |s": [.        {.|
 00000020  20 20 20 20 20 20 20 20  20 20 20 20 22 69 64 22  |            "id"|
 00000030  3a 20 30 2c 0a 20 20 20  20 20 20 20 20 20 20 20  |: 0,.           |
@@ -109,8 +107,7 @@ mod test {
     fn test_bytes_to_hex_dump_half_row() {
         let records: Vec<u8> = vec![123, 10, 32, 32, 32, 32, 34, 112];
 
-        let expected =
-            r#"00000000  7b 0a 20 20 20 20 22 70                           |{.    "p        |
+        let expected = r#"00000000  7b 0a 20 20 20 20 22 70                           |{.    "p        |
 "#;
 
         let result = bytes_to_hex_dump(&records);

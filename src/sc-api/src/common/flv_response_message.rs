@@ -17,7 +17,6 @@ pub struct FlvResponseMessage {
 }
 
 impl FlvResponseMessage {
-
     pub fn new_ok(name: String) -> Self {
         FlvResponseMessage {
             name: name,
@@ -38,12 +37,11 @@ impl FlvResponseMessage {
         self.error_code.is_error()
     }
 
-    pub fn as_result(self) -> Result<(),ApiError> {
+    pub fn as_result(self) -> Result<(), ApiError> {
         if self.error_code.is_ok() {
             Ok(())
         } else {
-            Err(ApiError::Code(self.error_code,self.error_message))
+            Err(ApiError::Code(self.error_code, self.error_message))
         }
     }
-
 }

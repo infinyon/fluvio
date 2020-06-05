@@ -10,7 +10,6 @@ pub mod app {
     pub use k8_obj_app::*;
 }
 
-
 pub mod topic {
     pub use flv_k8_topic::*;
 }

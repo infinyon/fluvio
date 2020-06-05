@@ -33,7 +33,6 @@ use flv_types::defaults::SPU_DEFAULT_NAME;
 use flv_types::SpuId;
 use flv_sc_core::core::spus::SharedSpuLocalStore;
 
-
 use crate::cli::TlsConfig;
 use super::convert_cluster_to_statefulset;
 use super::generate_service;
@@ -44,21 +43,21 @@ pub struct SpgOperator {
     client: SharedK8Client,
     spu_store: SharedSpuLocalStore,
     namespace: String,
-    tls: Option<TlsConfig>
+    tls: Option<TlsConfig>,
 }
 
 impl SpgOperator {
     pub fn new(
-        client: SharedK8Client, 
-        namespace: String, 
+        client: SharedK8Client,
+        namespace: String,
         spu_store: SharedSpuLocalStore,
-        tls: Option<TlsConfig>
+        tls: Option<TlsConfig>,
     ) -> Self {
         Self {
             client,
             namespace,
             spu_store,
-            tls
+            tls,
         }
     }
 
@@ -69,7 +68,7 @@ impl SpgOperator {
     async fn inner_run(self) {
         let mut spg_stream = self
             .client
-            .watch_stream_since::<SpuGroupSpec,_>(self.namespace.clone(), None);
+            .watch_stream_since::<SpuGroupSpec, _>(self.namespace.clone(), None);
 
         info!("starting spg operator with namespace: {}", self.namespace);
         while let Some(result) = spg_stream.next().await {
@@ -84,10 +83,7 @@ impl SpgOperator {
         debug!("spg operator finished");
     }
 
-    async fn dispatch_events(
-        &self,
-        events: Vec<Result<K8Watch<SpuGroupSpec>, ClientError>>,
-    ) {
+    async fn dispatch_events(&self, events: Vec<Result<K8Watch<SpuGroupSpec>, ClientError>>) {
         for event_r in events {
             match event_r {
                 Ok(watch_event) => {
@@ -102,10 +98,7 @@ impl SpgOperator {
         }
     }
 
-    async fn process_event(
-        &self,
-        event: K8Watch<SpuGroupSpec>,
-    ) -> Result<(), ClientError> {
+    async fn process_event(&self, event: K8Watch<SpuGroupSpec>) -> Result<(), ClientError> {
         trace!("watch event: {:#?}", event);
         match event {
             K8Watch::ADDED(obj) => {
@@ -194,7 +187,7 @@ impl SpgOperator {
             spg_name,
             spg_svc_name,
             &self.namespace,
-            self.tls.as_ref()
+            self.tls.as_ref(),
         );
         debug!(
             "cluster '{}': apply statefulset '{}' changes",

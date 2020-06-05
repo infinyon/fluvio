@@ -6,7 +6,6 @@
 
 use structopt::StructOpt;
 
-
 use flv_client::profile::ControllerTargetConfig;
 use flv_client::profile::ControllerTargetInstance;
 use crate::Terminal;
@@ -59,19 +58,21 @@ pub struct DescribeTopicsOpt {
     tls: TlsConfig,
 
     #[structopt(flatten)]
-    profile: InlineProfile
+    profile: InlineProfile,
 }
 
 impl DescribeTopicsOpt {
     /// Validate cli options and generate config
     fn validate(self) -> Result<(ControllerTargetConfig, DescribeTopicsConfig), CliError> {
         let target_server = ControllerTargetConfig::possible_target(
-            self.sc, 
+            self.sc,
             #[cfg(kf)]
             self.kf.kf,
-        #[cfg(not(foo))]
+            #[cfg(not(foo))]
             None,
-            self.tls.try_into_file_config()?,self.profile.profile)?;
+            self.tls.try_into_file_config()?,
+            self.profile.profile,
+        )?;
 
         // transfer config parameters
         let describe_topics_cfg = DescribeTopicsConfig {
@@ -106,8 +107,8 @@ where
             describe_sc_topics(client, cfg.topic_names, cfg.output, out).await
         }
     })
-        .map(|_| format!(""))
-        .map_err(|err| err.into())
+    .map(|_| format!(""))
+    .map_err(|err| err.into())
 }
 
 // Query Kafka server for T

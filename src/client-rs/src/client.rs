@@ -12,14 +12,13 @@ use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::ClientError;
 
-
 /// Generate a random correlation_id (0 to 65535)
 fn rand_correlation_id() -> i32 {
     thread_rng().gen_range(0, 65535)
 }
 
 /// Client to fluvio component
-/// 
+///
 pub struct Client {
     socket: AllKfSocket,
     config: ClientConfig,
@@ -30,9 +29,8 @@ impl Client {
     /// connect to established socket, retrieve version information
     pub async fn connect(
         mut socket: AllKfSocket,
-        config: ClientConfig
+        config: ClientConfig,
     ) -> Result<Self, ClientError> {
-        
         // now get versions
         // Query for API versions
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
@@ -92,7 +90,7 @@ impl Client {
     }
 
     /// send request only
-    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>,KfSocketError>
+    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, KfSocketError>
     where
         R: Request,
     {
@@ -104,8 +102,7 @@ impl Client {
 
         let req_msg = self.new_request(request, self.lookup_version(R::API_KEY));
 
-        self.socket.get_mut_sink().send_request(&req_msg)
-            .await?;
+        self.socket.get_mut_sink().send_request(&req_msg).await?;
         Ok(req_msg)
     }
 
@@ -117,43 +114,43 @@ impl Client {
         let req_message = self.send_request(request).await?;
 
         // send request & save response
-        self.socket.get_mut_stream().next_response(&req_message).await
+        self.socket
+            .get_mut_stream()
+            .next_response(&req_message)
+            .await
             .map(|res_msg| res_msg.response)
     }
-
 
     pub fn clone_config(&self) -> ClientConfig {
         self.config.clone()
     }
 }
 
-
 /// Client Factory
 #[derive(Clone)]
-pub struct ClientConfig{
+pub struct ClientConfig {
     addr: String,
     client_id: String,
-    connector: AllDomainConnector
+    connector: AllDomainConnector,
 }
 
 impl From<String> for ClientConfig {
-
     fn from(addr: String) -> Self {
         Self::with_addr(addr)
     }
 }
 
 impl ClientConfig {
-    pub fn new(addr: String,connector: AllDomainConnector) -> Self {
+    pub fn new(addr: String, connector: AllDomainConnector) -> Self {
         Self {
             addr,
             client_id: "fluvio".to_owned(),
-            connector
+            connector,
         }
     }
 
     pub fn with_addr(addr: String) -> Self {
-        Self::new(addr,AllDomainConnector::default())
+        Self::new(addr, AllDomainConnector::default())
     }
 
     pub fn addr(&self) -> &str {
@@ -169,14 +166,12 @@ impl ClientConfig {
         self
     }
 
-    pub fn set_addr(&mut self,domain: String) {
+    pub fn set_addr(&mut self, domain: String) {
         self.addr = domain
     }
 
-    pub async fn connect(self) -> Result<Client, ClientError> 
-    {
-        let socket = AllKfSocket::connect_with_connector(&self.addr,&self.connector).await?;
-        Client::connect(socket,self).await
+    pub async fn connect(self) -> Result<Client, ClientError> {
+        let socket = AllKfSocket::connect_with_connector(&self.addr, &self.connector).await?;
+        Client::connect(socket, self).await
     }
 }
-

@@ -23,16 +23,16 @@ pub struct FlvFetchOffsetsRequest {
 }
 
 impl FlvFetchOffsetsRequest {
-
     /// create request with a single topic and partition
-    pub fn new(topic: String,partition: i32) -> Self {
+    pub fn new(topic: String, partition: i32) -> Self {
         Self {
             topics: vec![FetchOffsetTopic {
                 name: topic,
                 partitions: vec![FetchOffsetPartition {
-                    partition_index: partition
-                }]
-            }]}
+                    partition_index: partition,
+                }],
+            }],
+        }
     }
 }
 
@@ -62,9 +62,11 @@ pub struct FlvFetchOffsetsResponse {
 }
 
 impl FlvFetchOffsetsResponse {
-
-    pub fn find_partition(self,topic: &str,partition: i32) -> Option<FetchOffsetPartitionResponse> {
-
+    pub fn find_partition(
+        self,
+        topic: &str,
+        partition: i32,
+    ) -> Option<FetchOffsetPartitionResponse> {
         for topic_res in self.topics {
             if topic_res.name == topic {
                 for partition_res in topic_res.partitions {
@@ -76,7 +78,6 @@ impl FlvFetchOffsetsResponse {
         }
 
         None
-
     }
 }
 
@@ -105,7 +106,6 @@ pub struct FetchOffsetPartitionResponse {
 }
 
 impl PartitionOffset for FetchOffsetPartitionResponse {
-
     fn last_stable_offset(&self) -> i64 {
         self.last_stable_offset
     }
@@ -113,10 +113,7 @@ impl PartitionOffset for FetchOffsetPartitionResponse {
     fn start_offset(&self) -> i64 {
         self.start_offset
     }
-
-
 }
-
 
 // -----------------------------------
 // Implementation - KfListOffsetRequest

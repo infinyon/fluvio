@@ -21,8 +21,14 @@ pub fn run_k8_operators(
     k8_ws: K8WSUpdateService<K8Client>,
     namespace: String,
     spu_store: SharedSpuLocalStore,
-    tls: Option<TlsConfig>
+    tls: Option<TlsConfig>,
 ) {
-    SpgOperator::new(k8_ws.own_client(), namespace.clone(), spu_store.clone(),tls).run();
+    SpgOperator::new(
+        k8_ws.own_client(),
+        namespace.clone(),
+        spu_store.clone(),
+        tls,
+    )
+    .run();
     SvcOperator::new(k8_ws, namespace, spu_store).run();
 }

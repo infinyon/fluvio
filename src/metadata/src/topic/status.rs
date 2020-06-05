@@ -13,7 +13,6 @@ use k8_metadata::topic::TopicStatusResolution as K8TopicStatusResolution;
 
 use flv_types::{ReplicaMap, SpuId};
 
-
 // -----------------------------------
 // Data Structures
 // -----------------------------------
@@ -25,25 +24,22 @@ pub struct TopicStatus {
     pub reason: String,
 }
 
-
 impl fmt::Display for TopicStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{:#?}",self.resolution)
+        write!(f, "{:#?}", self.resolution)
     }
 }
 
-
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 pub enum TopicResolution {
-    Init,                       // initializing this is starting state.
-    Pending,                    // Has valid config, ready for replica mapping assignment
-    InsufficientResources,    // replica map cannot be created due to lack of capacity  
-    InvalidConfig,              // invalid configuration
-    Provisioned,                // topics are allocated
+    Init,                  // initializing this is starting state.
+    Pending,               // Has valid config, ready for replica mapping assignment
+    InsufficientResources, // replica map cannot be created due to lack of capacity
+    InvalidConfig,         // invalid configuration
+    Provisioned,           // topics are allocated
 }
 
 impl TopicResolution {
-   
     pub fn resolution_label(&self) -> &'static str {
         match self {
             TopicResolution::Provisioned => "provisioned",
@@ -57,14 +53,14 @@ impl TopicResolution {
     pub fn is_invalid(&self) -> bool {
         match self {
             Self::InvalidConfig => true,
-            _ => false
+            _ => false,
         }
     }
 
     pub fn no_resource(&self) -> bool {
         match self {
             Self::InsufficientResources => true,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -74,7 +70,6 @@ impl std::fmt::Display for TopicResolution {
         write!(f, "resolution::{}", self.resolution_label())
     }
 }
-
 
 // -----------------------------------
 // Encode - from KV Topic Status
@@ -86,7 +81,9 @@ impl From<K8TopicStatus> for TopicStatus {
             K8TopicStatusResolution::Provisioned => TopicResolution::Provisioned,
             K8TopicStatusResolution::Init => TopicResolution::Init,
             K8TopicStatusResolution::Pending => TopicResolution::Pending,
-            K8TopicStatusResolution::InsufficientResources => TopicResolution::InsufficientResources,
+            K8TopicStatusResolution::InsufficientResources => {
+                TopicResolution::InsufficientResources
+            }
             K8TopicStatusResolution::InvalidConfig => TopicResolution::InvalidConfig,
         };
 
@@ -104,7 +101,9 @@ impl From<TopicStatus> for K8TopicStatus {
             TopicResolution::Provisioned => K8TopicStatusResolution::Provisioned,
             TopicResolution::Init => K8TopicStatusResolution::Init,
             TopicResolution::Pending => K8TopicStatusResolution::Pending,
-            TopicResolution::InsufficientResources => K8TopicStatusResolution::InsufficientResources,
+            TopicResolution::InsufficientResources => {
+                K8TopicStatusResolution::InsufficientResources
+            }
             TopicResolution::InvalidConfig => K8TopicStatusResolution::InvalidConfig,
         };
 
@@ -115,7 +114,6 @@ impl From<TopicStatus> for K8TopicStatus {
         }
     }
 }
-
 
 /*
 // -----------------------------------
@@ -134,7 +132,6 @@ impl From<&TopicResolution> for u8 {
     }
 }
 */
-
 
 // -----------------------------------
 // Default
@@ -160,7 +157,6 @@ impl ::std::default::Default for TopicResolution {
 // Implementation
 // -----------------------------------
 
-
 fn create_replica_map(rows: Vec<Vec<i32>>) -> BTreeMap<i32, Vec<i32>> {
     let mut map = BTreeMap::new();
     for (idx, row) in rows.iter().enumerate() {
@@ -169,18 +165,15 @@ fn create_replica_map(rows: Vec<Vec<i32>>) -> BTreeMap<i32, Vec<i32>> {
     map
 }
 
-
 impl TopicStatus {
-
-    pub fn new<S>(
-        resolution: TopicResolution,
-        replica_map: Vec<Vec<i32>>,
-        reason: S,
-    ) -> Self where S: Into<String> {
+    pub fn new<S>(resolution: TopicResolution, replica_map: Vec<Vec<i32>>, reason: S) -> Self
+    where
+        S: Into<String>,
+    {
         TopicStatus {
             resolution: resolution,
             replica_map: create_replica_map(replica_map),
-            reason: reason.into()
+            reason: reason.into(),
         }
     }
 
@@ -210,8 +203,6 @@ impl TopicStatus {
         spu_list
     }
 
-    
-
     pub fn replica_map_str(&self) -> String {
         format!("{:?}", self.replica_map)
     }
@@ -239,8 +230,8 @@ impl TopicStatus {
 
     /// need to update the replic map
     pub fn need_replica_map_recal(&self) -> bool {
-        self.resolution == TopicResolution::Pending ||
-            self.resolution == TopicResolution::InsufficientResources
+        self.resolution == TopicResolution::Pending
+            || self.resolution == TopicResolution::InsufficientResources
     }
 
     pub fn is_resolution_pending(&self) -> bool {
@@ -248,33 +239,38 @@ impl TopicStatus {
     }
 
     pub fn is_resolution_transient(&self) -> bool {
-        self.resolution == TopicResolution::Init ||
-        self.resolution == TopicResolution::Pending
+        self.resolution == TopicResolution::Init || self.resolution == TopicResolution::Pending
     }
 
     pub fn is_resolution_provisioned(&self) -> bool {
         self.resolution == TopicResolution::Provisioned
     }
 
-    pub fn next_resolution_provisoned() -> (TopicResolution,String){
-        (TopicResolution::Provisioned,"".to_owned())
+    pub fn next_resolution_provisoned() -> (TopicResolution, String) {
+        (TopicResolution::Provisioned, "".to_owned())
     }
 
     /// set to pending mode which means it is waiting for spu resources to be allocated
-    pub fn next_resolution_pending() -> (TopicResolution,String) {
-        (TopicResolution::Pending,super::PENDING_REASON.to_owned())
+    pub fn next_resolution_pending() -> (TopicResolution, String) {
+        (TopicResolution::Pending, super::PENDING_REASON.to_owned())
     }
 
-    pub fn next_resolution_invalid_config<S>(reason: S) -> (TopicResolution,String) where S: Into<String> {
-        (TopicResolution::InvalidConfig,reason.into())
+    pub fn next_resolution_invalid_config<S>(reason: S) -> (TopicResolution, String)
+    where
+        S: Into<String>,
+    {
+        (TopicResolution::InvalidConfig, reason.into())
     }
 
-    pub fn set_resolution_no_resource<S>(reason: S) -> (TopicResolution,String) where S: Into<String> {
+    pub fn set_resolution_no_resource<S>(reason: S) -> (TopicResolution, String)
+    where
+        S: Into<String>,
+    {
         (TopicResolution::InsufficientResources, reason.into())
     }
 
-    pub fn set_next_resolution(&mut self,next: (TopicResolution,String)) {
-        let (resolution,reason) = next;
+    pub fn set_next_resolution(&mut self, next: (TopicResolution, String)) {
+        let (resolution, reason) = next;
         self.resolution = resolution;
         self.reason = reason;
     }

@@ -7,7 +7,7 @@
 //! Authorization result:
 //!     * FlvErrorCode::None - for success
 //!     * FLVErrorCode::SpuNotAuthorized - for error
-//!     
+//!
 //! In subsequent releases, Register SPU will carry additional credentials for mTLS
 //!
 use kf_protocol::api::Request;
@@ -24,7 +24,7 @@ use crate::InternalScKey;
 
 #[derive(Decode, Encode, Debug, Default)]
 pub struct RegisterSpuRequest {
-    spu: SpuId
+    spu: SpuId,
 }
 
 impl Request for RegisterSpuRequest {
@@ -50,8 +50,6 @@ impl RegisterSpuRequest {
     pub fn spu(&self) -> SpuId {
         self.spu
     }
-
-
 }
 
 // -----------------------------------
@@ -59,7 +57,6 @@ impl RegisterSpuRequest {
 // -----------------------------------
 
 impl RegisterSpuResponse {
-
     pub fn ok() -> Self {
         RegisterSpuResponse {
             error_code: FlvErrorCode::None,
@@ -70,11 +67,10 @@ impl RegisterSpuResponse {
     pub fn failed_registeration() -> Self {
         RegisterSpuResponse {
             error_code: FlvErrorCode::SpuRegisterationFailed,
-            error_message: None
+            error_message: None,
         }
     }
 
-   
     pub fn is_error(&self) -> bool {
         self.error_code.is_error()
     }

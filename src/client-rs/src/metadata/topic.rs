@@ -7,14 +7,12 @@
 
 use serde::Serialize;
 
-
 use sc_api::topic::FlvFetchTopicResponse;
 use sc_api::topic::FlvFetchTopic;
 use sc_api::topic::FlvTopicResolution;
 use sc_api::topic::FlvTopicSpecMetadata;
 use sc_api::topic::FlvPartitionReplica;
 use sc_api::errors::FlvErrorCode;
-
 
 #[derive(Serialize, Debug)]
 pub struct TopicMetadata {
@@ -26,7 +24,6 @@ pub struct TopicMetadata {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub topic: Option<Topic>,
 }
-
 
 impl TopicMetadata {
     pub fn new(fetched_topic_metadata: FlvFetchTopicResponse) -> Self {
@@ -53,8 +50,6 @@ impl TopicMetadata {
     }
 }
 
-
-
 #[derive(Serialize, Debug)]
 pub struct Topic {
     pub type_computed: bool,
@@ -76,10 +71,8 @@ pub struct Topic {
     pub partition_map: Option<Vec<PartitionReplica>>,
 }
 
-
 impl Topic {
     pub fn new(fetched_topic: FlvFetchTopic) -> Self {
-
         let reason = fetched_topic.status.reason_str().clone();
         let topic_resolution = TopicResolution::new(fetched_topic.status.resolution);
 
@@ -128,7 +121,6 @@ impl Topic {
     }
 }
 
-
 #[derive(Serialize, Debug)]
 pub struct PartitionReplica {
     pub id: i32,
@@ -136,7 +128,6 @@ pub struct PartitionReplica {
     pub replicas: Vec<i32>,
     pub live_replicas: Vec<i32>,
 }
-
 
 impl PartitionReplica {
     pub fn new(flv_partition_replica: FlvPartitionReplica) -> Self {
@@ -149,7 +140,6 @@ impl PartitionReplica {
     }
 }
 
-
 #[derive(Serialize, Debug)]
 pub enum TopicResolution {
     Provisioned,
@@ -158,7 +148,6 @@ pub enum TopicResolution {
     InsufficientResources,
     InvalidConfig,
 }
-
 
 impl TopicResolution {
     pub fn new(flv_topic_resolution: FlvTopicResolution) -> Self {

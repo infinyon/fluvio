@@ -72,9 +72,6 @@ where
     {
         self.inner_store().read().values().for_each(func);
     }
-
-
-
 }
 
 impl<S> LocalStore<S>
@@ -90,16 +87,18 @@ where
     */
 
     pub fn delete<K: ?Sized>(&self, key: &K)
-        where S::Key: Borrow<K>,
-            K: Ord
+    where
+        S::Key: Borrow<K>,
+        K: Ord,
     {
         self.inner_store().write().remove(key);
     }
 
     /// get copy of the value ref by key
-    pub fn value<K: ?Sized>(&self, key: &K) -> Option<KVObject<S>> 
-        where S::Key: Borrow<K>,
-            K: Ord
+    pub fn value<K: ?Sized>(&self, key: &K) -> Option<KVObject<S>>
+    where
+        S::Key: Borrow<K>,
+        K: Ord,
     {
         match self.inner_store().read().get(key) {
             Some(value) => Some(value.clone()),
@@ -108,9 +107,10 @@ where
     }
 
     /// get copy of the spec ref by key
-    pub fn spec<K: ?Sized>(&self, key: &K) -> Option<S> 
-        where S::Key: Borrow<K>,
-            K: Ord
+    pub fn spec<K: ?Sized>(&self, key: &K) -> Option<S>
+    where
+        S::Key: Borrow<K>,
+        K: Ord,
     {
         match self.inner_store().read().get(key) {
             Some(value) => Some(value.spec.clone()),
@@ -118,33 +118,32 @@ where
         }
     }
 
-
-
-    pub fn find_and_do<K,F>(&self, key: &K, mut func: F) -> Option<()>
-        where
-            F: FnMut(&'_ KVObject<S>),
-            K: Ord,
-            S::Key: Borrow<K>
+    pub fn find_and_do<K, F>(&self, key: &K, mut func: F) -> Option<()>
+    where
+        F: FnMut(&'_ KVObject<S>),
+        K: Ord,
+        S::Key: Borrow<K>,
     {
-        if let Some(value)  = self.inner_store().read().get(key) {
+        if let Some(value) = self.inner_store().read().get(key) {
             func(value);
             Some(())
         } else {
             None
         }
-
     }
 
-    pub fn contains_key<K: ?Sized>(&self, key: &K) -> bool 
-        where S::Key: Borrow<K>,
-            K: Ord
+    pub fn contains_key<K: ?Sized>(&self, key: &K) -> bool
+    where
+        S::Key: Borrow<K>,
+        K: Ord,
     {
         self.inner_store().read().contains_key(key)
     }
 
-    pub fn remove<K: ?Sized>(&self, key: &K) -> Option<KVObject<S>> 
-        where S::Key: Borrow<K>,
-            K: Ord
+    pub fn remove<K: ?Sized>(&self, key: &K) -> Option<KVObject<S>>
+    where
+        S::Key: Borrow<K>,
+        K: Ord,
     {
         self.inner_store().write().remove(key)
     }
@@ -162,41 +161,42 @@ where
     }
 
     pub fn all_specs(&self) -> Vec<S> {
-        self.inner_store().read().values().map(|kv| kv.spec.clone()).collect()
+        self.inner_store()
+            .read()
+            .values()
+            .map(|kv| kv.spec.clone())
+            .collect()
     }
- 
+
     /// update status
-    pub fn update_status<K: ?Sized>(&self, key: &K, status: S::Status) -> Result<(), IoError> 
-        where S::Key: Borrow<K>,
-            K: Display + Ord
-        
+    pub fn update_status<K: ?Sized>(&self, key: &K, status: S::Status) -> Result<(), IoError>
+    where
+        S::Key: Borrow<K>,
+        K: Display + Ord,
     {
-        
         if let Some(old_kv) = self.inner_store().write().get_mut(key) {
             old_kv.status = status;
             Ok(())
         } else {
             Err(IoError::new(
                 ErrorKind::InvalidData,
-                format!("{} '{}': not found, cannot update", S::LABEL,key)
+                format!("{} '{}': not found, cannot update", S::LABEL, key),
             ))
         }
     }
 }
 
-
 impl<S> Display for LocalStore<S>
 where
     S: Spec,
-    <S as Spec>::Status: Debug
+    <S as Spec>::Status: Debug,
 {
-     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-
-         write!(f, "{} Store count: {}",S::LABEL,self.inner_store().read().len())
-     }
-
-
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{} Store count: {}",
+            S::LABEL,
+            self.inner_store().read().len()
+        )
+    }
 }
-
-
-

@@ -9,7 +9,6 @@ use std::iter::FromIterator;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-
 use flv_util::socket_helpers::ServerAddress;
 use flv_types::SpuId;
 use flv_metadata::spu::{Endpoint, SpuSpec, SpuStatus, IngressPort};
@@ -30,9 +29,7 @@ impl Spec for SpuSpec {
     type K8Spec = K8SpuSpec;
     type Owner = SpuSpec;
 
-    fn convert_from_k8(
-        k8_obj: K8Obj<Self::K8Spec>,
-    ) -> Result<KVObject<Self>, IoError> {
+    fn convert_from_k8(k8_obj: K8Obj<Self::K8Spec>) -> Result<KVObject<Self>, IoError> {
         default_convert_from_k8(k8_obj)
     }
 }

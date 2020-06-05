@@ -76,12 +76,7 @@ where
     KfSocket: Sync,
 {
     /// make connection with addres as separate parameter
-    pub async fn make_connection_with_addr(
-        &self,
-        id: T,
-        addr: &str,
-    ) -> Result<(), KfSocketError>
-    {
+    pub async fn make_connection_with_addr(&self, id: T, addr: &str) -> Result<(), KfSocketError> {
         trace!("creating new connection: {:#?}", addr);
         let client = KfSocket::connect(addr).await?;
         trace!("got connection to server: {:#?}", &id);
@@ -95,8 +90,7 @@ where
         &'a self,
         id: T,
         addr: &'a str,
-    ) -> Result<Option<WriteGuard<'a,T,KfSocket>>, KfSocketError>
-    {
+    ) -> Result<Option<WriteGuard<'a, T, KfSocket>>, KfSocketError> {
         if let Some(socket) = self.get_socket(&id) {
             return Ok(Some(socket));
         }

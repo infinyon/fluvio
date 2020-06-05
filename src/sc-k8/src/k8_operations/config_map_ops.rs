@@ -29,7 +29,6 @@ pub async fn add_config_map(
         data.len()
     );
 
-    
     let new_map: InputK8Obj<ConfigMapSpec> = InputK8Obj {
         api_version: ConfigMapSpec::api_version(),
         kind: ConfigMapSpec::kind(),
@@ -44,10 +43,7 @@ pub async fn add_config_map(
 
     trace!("send create config_map to K8 {:#?}", &new_map);
 
-    client
-        .apply::<ConfigMapSpec>(new_map)
-        .await?;
-    
+    client.apply::<ConfigMapSpec>(new_map).await?;
 
     Ok(())
 }

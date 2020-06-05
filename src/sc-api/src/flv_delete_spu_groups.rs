@@ -24,26 +24,19 @@ impl Request for FlvDeleteSpuGroupsRequest {
     type Response = FlvDeleteSpuGroupsResponse;
 }
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteSpuGroupsResponse {
     /// A response message for each delete spu group request
     pub results: Vec<FlvResponseMessage>,
 }
 
-
 impl FlvDeleteSpuGroupsResponse {
-
     /// validate and extract a single response
-    pub fn validate(self) -> Result<(),ApiError> {
-
-        if let Some(item) = self.results.into_iter().find(|_| true ) {
+    pub fn validate(self) -> Result<(), ApiError> {
+        if let Some(item) = self.results.into_iter().find(|_| true) {
             item.as_result()
         } else {
             Err(ApiError::NoResourceFounded("spu group".to_owned()))
         }
-        
     }
 }
-
-

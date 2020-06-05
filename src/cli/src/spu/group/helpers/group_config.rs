@@ -36,11 +36,10 @@ impl Into<FlvGroupConfig> for GroupConfig {
         FlvGroupConfig {
             storage: self.storage.map(|cfg| cfg.into()),
             replication: self.replication.map(|cfg| cfg.into()),
-            env: self.env.into_iter().map(|var| var.into()).collect()
+            env: self.env.into_iter().map(|var| var.into()).collect(),
         }
     }
 }
-
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -49,15 +48,14 @@ pub struct StorageConfig {
     pub size: Option<String>,
 }
 
-impl  StorageConfig {
+impl StorageConfig {
     pub fn new(size: String) -> Self {
         Self {
             log_dir: None,
-            size: Some(size)
+            size: Some(size),
         }
     }
 }
-
 
 impl Into<FlvStorageConfig> for StorageConfig {
     fn into(self) -> FlvStorageConfig {
@@ -68,18 +66,16 @@ impl Into<FlvStorageConfig> for StorageConfig {
     }
 }
 
-
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ReplicationConfig {
     pub in_sync_replica_min: Option<u16>,
 }
 
-
 impl Into<FlvReplicationConfig> for ReplicationConfig {
     fn into(self) -> FlvReplicationConfig {
         FlvReplicationConfig {
-            in_sync_replica_min: self.in_sync_replica_min.map(|cfg| cfg.into())
+            in_sync_replica_min: self.in_sync_replica_min.map(|cfg| cfg.into()),
         }
     }
 }
@@ -90,13 +86,11 @@ pub struct EnvVar {
     pub value: String,
 }
 
-
 impl Into<FlvEnvVar> for EnvVar {
     fn into(self) -> FlvEnvVar {
         FlvEnvVar {
             name: self.name,
-            value: self.value
+            value: self.value,
         }
     }
 }
-

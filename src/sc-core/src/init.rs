@@ -25,11 +25,11 @@ use crate::services::InternalApiServer;
 use crate::metadata::K8AllChangeDispatcher;
 use crate::metadata::K8WSUpdateService;
 
-
-
 /// start the main loop
-pub async fn start_main_loop<C>(sc_config: ScConfig, metadata_client: SharedClient<C>)
-    -> (K8WSUpdateService<C>,ShareLocalStores)
+pub async fn start_main_loop<C>(
+    sc_config: ScConfig,
+    metadata_client: SharedClient<C>,
+) -> (K8WSUpdateService<C>, ShareLocalStores)
 where
     C: MetadataClient + 'static,
     K8WSUpdateService<C>: Clone,
@@ -51,8 +51,7 @@ where
 
     k8_dispatcher.run();
 
-    (k8_ws_service,metadata)    
-
+    (k8_ws_service, metadata)
 }
 
 /// essential core controllers

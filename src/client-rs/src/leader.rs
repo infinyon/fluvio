@@ -6,7 +6,6 @@ use log::trace;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
 
-
 use kf_protocol::message::fetch::FetchablePartitionResponse;
 use kf_protocol::api::DefaultRecords;
 use kf_protocol::api::PartitionOffset;
@@ -18,12 +17,9 @@ use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::DefaultRecord;
 use kf_protocol::api::MAX_BYTES;
 
-
-
 use crate::ReplicaLeaderConfig;
 use crate::ClientError;
 use crate::Client;
-
 
 #[derive(Clone)]
 pub struct FetchLogOption {
@@ -35,24 +31,23 @@ impl Default for FetchLogOption {
     fn default() -> Self {
         Self {
             max_bytes: MAX_BYTES,
-            isolation: Isolation::default()
+            isolation: Isolation::default(),
         }
     }
 }
 
 #[derive(Debug)]
 pub enum FetchOffset {
-    Earliest(Option<i64>),      /// earliest + offset
-    Latest(Option<i64>),        /// latest - offset
-    Offset(i64)                 
+    Earliest(Option<i64>),
+    /// earliest + offset
+    Latest(Option<i64>),
+    /// latest - offset
+    Offset(i64),
 }
-
-
 
 /// Replica Leader (topic,partition)
 #[async_trait]
-pub trait ReplicaLeader: Send + Sync{
-
+pub trait ReplicaLeader: Send + Sync {
     type OffsetPartitionResponse: PartitionOffset;
 
     fn config(&self) -> &ReplicaLeaderConfig;
@@ -73,32 +68,25 @@ pub trait ReplicaLeader: Send + Sync{
         self.config().partition()
     }
 
-    
-     // fetch offsets for 
-    async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError >;
+    // fetch offsets for
+    async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError>;
 
-    
     /// fetch log once
     async fn fetch_logs_once(
         &mut self,
         offset_option: FetchOffset,
-        option: FetchLogOption
-    ) -> Result<FetchablePartitionResponse<DefaultRecords>,ClientError>;
-
+        option: FetchLogOption,
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>, ClientError>;
 
     /// fetch log as stream
     fn fetch_logs<'a>(
         &'a mut self,
         offset: FetchOffset,
-        config: FetchLogOption
-    ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>>;
+        config: FetchLogOption,
+    ) -> BoxStream<'a, FetchablePartitionResponse<DefaultRecords>>;
 
     /// Sends record to a target server (Kf, SPU, or SC)
-    async fn send_record(
-        &mut self,
-        record: Vec<u8>,
-    ) -> Result<(), ClientError> {
-       
+    async fn send_record(&mut self, record: Vec<u8>) -> Result<(), ClientError> {
         // build produce log request message
         let mut request = DefaultKfProduceRequest::default();
         let mut topic_request = DefaultKfTopicRequest::default();
@@ -126,7 +114,7 @@ pub trait ReplicaLeader: Send + Sync{
         trace!("received response: {:?}", response);
 
         // process response
-        match response.find_partition_response(self.topic(),self.partition()) {
+        match response.find_partition_response(self.topic(), self.partition()) {
             Some(partition_response) => {
                 if partition_response.error_code.is_error() {
                     return Err(ClientError::IoError(IoError::new(
@@ -142,7 +130,4 @@ pub trait ReplicaLeader: Send + Sync{
             ))),
         }
     }
-
-    
 }
-

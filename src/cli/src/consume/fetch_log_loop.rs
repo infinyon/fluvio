@@ -52,19 +52,17 @@ where
     let initial_offset = if opt.from_beginning {
         FetchOffset::Earliest(opt.offset)
     } else {
-       if let Some(offset) = opt.offset {
+        if let Some(offset) = opt.offset {
             // if it is negative, we start from end
             if offset < 0 {
                 FetchOffset::Latest(Some(offset * -1))
             } else {
                 FetchOffset::Offset(offset)
             }
-       } else {
+        } else {
             FetchOffset::Latest(None)
-       }
-       
+        }
     };
-
 
     let fetch_option = FetchLogOption {
         max_bytes: opt.max_bytes,
@@ -72,26 +70,25 @@ where
     };
 
     if opt.disable_continuous {
-
         let response = leader.fetch_logs_once(initial_offset, fetch_option).await?;
 
-        debug!("got a single response: LSO: {} batchs: {}",
-                response.log_start_offset,
-                response.records.batches.len(),
-        );    
+        debug!(
+            "got a single response: LSO: {} batchs: {}",
+            response.log_start_offset,
+            response.records.batches.len(),
+        );
 
         process_fetch_topic_response(out.clone(), &topic, response, &opt).await?;
-
     } else {
         let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);
 
         while let Some(response) = log_stream.next().await {
-
-            debug!("got response: LSO: {} batchs: {}",
+            debug!(
+                "got response: LSO: {} batchs: {}",
                 response.log_start_offset,
                 response.records.batches.len(),
-            );        
-            
+            );
+
             process_fetch_topic_response(out.clone(), &topic, response, &opt).await?;
 
             if opt.disable_continuous {
@@ -101,8 +98,7 @@ where
         }
 
         debug!("fetch loop exited");
-        
     }
-    
+
     Ok(())
 }

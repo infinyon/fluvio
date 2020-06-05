@@ -5,7 +5,6 @@ mod describe;
 pub use output::Terminal;
 pub use output::OutputType;
 
-
 pub use table::TableOutputHandler;
 use table::TableRenderer;
 
@@ -17,12 +16,9 @@ pub use self::describe::DescribeObjectHandler;
 
 pub use context::RenderContext;
 
-
-
 pub trait KeyValOutputHandler {
     fn key_values(&self) -> Vec<(String, Option<String>)>;
 }
-
 
 mod context {
 
@@ -31,23 +27,15 @@ mod context {
     use async_trait::async_trait;
     use crate::Terminal;
 
-
-
     #[async_trait]
-    pub trait RenderContext
-    {
-
+    pub trait RenderContext {
         async fn render_on<O: Terminal>(&self, out: Arc<O>);
-
     }
-
-
 }
 
 mod output {
 
     use std::sync::Arc;
-
 
     use structopt::clap::arg_enum;
     use serde::Serialize;
@@ -91,47 +79,50 @@ mod output {
         }
     }
 
-    
-    pub trait Terminal:  Sized {
+    pub trait Terminal: Sized {
+        fn print(&self, msg: &str);
+        fn println(&self, msg: &str);
 
-        fn print(&self,msg: &str);
-        fn println(&self,msg: &str);
-
-        fn render_list<T>(self: Arc<Self>,list: &T,mode: OutputType) -> Result<(),CliError>
-            where T: TableOutputHandler + Serialize
+        fn render_list<T>(self: Arc<Self>, list: &T, mode: OutputType) -> Result<(), CliError>
+        where
+            T: TableOutputHandler + Serialize,
         {
-
-            
             if mode.is_table() {
                 let render = TableRenderer::new(self.clone());
-                render.render(list,false);
+                render.render(list, false);
             } else {
                 let render = SerdeRenderer::new(self.clone());
-                render.render(&list,mode.into())?;
+                render.render(&list, mode.into())?;
             }
-           
+
             Ok(())
         }
 
-        fn render_table<T: TableOutputHandler>(self: Arc<Self>,val: &T,indent: bool) {
+        fn render_table<T: TableOutputHandler>(self: Arc<Self>, val: &T, indent: bool) {
             let render = TableRenderer::new(self.clone());
-            render.render(val,indent);
+            render.render(val, indent);
         }
 
-        fn render_serde<T: Serialize>(self: Arc<Self>, val: &T, mode: SerializeType) -> Result<(), CliError> {
+        fn render_serde<T: Serialize>(
+            self: Arc<Self>,
+            val: &T,
+            mode: SerializeType,
+        ) -> Result<(), CliError> {
             let render = SerdeRenderer::new(self.clone());
-            render.render(val,mode)
+            render.render(val, mode)
         }
 
-
-        fn describe_objects<D: DescribeObjectHandler>(self: Arc<Self>, objects: &Vec<D>, mode: OutputType) -> Result<(),CliError>
-            where D: TableOutputHandler + KeyValOutputHandler + Serialize
-         {
-
-                let render = DescribeObjectRender::new(self.clone());
-                render.render(objects,mode)
+        fn describe_objects<D: DescribeObjectHandler>(
+            self: Arc<Self>,
+            objects: &Vec<D>,
+            mode: OutputType,
+        ) -> Result<(), CliError>
+        where
+            D: TableOutputHandler + KeyValOutputHandler + Serialize,
+        {
+            let render = DescribeObjectRender::new(self.clone());
+            render.render(objects, mode)
         }
-
 
         /// print something that can be rendered as key values
         fn render_key_values<K: KeyValOutputHandler>(&self, key_val: &K) {
@@ -153,7 +144,4 @@ mod output {
             table.printstd();
         }
     }
-
-
 }
-

@@ -28,9 +28,7 @@ impl Spec for PartitionSpec {
     type K8Spec = K8PartitionSpec;
     type Owner = TopicSpec;
 
-    fn convert_from_k8(
-        k8_obj: K8Obj<Self::K8Spec>,
-    ) -> Result<KVObject<Self>, IoError> {
+    fn convert_from_k8(k8_obj: K8Obj<Self::K8Spec>) -> Result<KVObject<Self>, IoError> {
         default_convert_from_k8(k8_obj)
     }
 }

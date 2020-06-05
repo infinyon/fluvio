@@ -11,13 +11,12 @@ use kf_protocol::api::Size;
 
 use crate::ConfigOption;
 
-
 pub fn create_batch() -> DefaultBatch {
-    create_batch_with_producer(12,2)
+    create_batch_with_producer(12, 2)
 }
 
 /// create batches with produce and records count
-pub fn create_batch_with_producer(producer: i64,records: u16) -> DefaultBatch {
+pub fn create_batch_with_producer(producer: i64, records: u16) -> DefaultBatch {
     let mut batches = DefaultBatch::default();
     let header = batches.get_mut_header();
     header.magic = 2;
@@ -30,12 +29,14 @@ pub fn create_batch_with_producer(producer: i64,records: u16) -> DefaultBatch {
         record.value = Some(bytes).into();
         batches.add_record(record);
     }
-    
+
     batches
 }
 
-
-pub fn read_bytes_from_file<P>(path: P) -> Result<Vec<u8>, io::Error> where P: AsRef<Path> {
+pub fn read_bytes_from_file<P>(path: P) -> Result<Vec<u8>, io::Error>
+where
+    P: AsRef<Path>,
+{
     let file_path = path.as_ref();
     info!("test file: {}", file_path.display());
     let mut f = File::open(file_path)?;
@@ -44,8 +45,7 @@ pub fn read_bytes_from_file<P>(path: P) -> Result<Vec<u8>, io::Error> where P: A
     Ok(buffer)
 }
 
-pub fn default_option(index_max_interval_bytes: Size ) -> ConfigOption {
-        
+pub fn default_option(index_max_interval_bytes: Size) -> ConfigOption {
     ConfigOption {
         segment_max_bytes: 100,
         index_max_interval_bytes,
@@ -55,22 +55,20 @@ pub fn default_option(index_max_interval_bytes: Size ) -> ConfigOption {
     }
 }
 
-
-mod pin_tests  {
+mod pin_tests {
 
     use std::pin::Pin;
     use pin_utils::pin_mut;
     use pin_utils::unsafe_unpinned;
 
-  //  impl Unpin for Counter{}
+    //  impl Unpin for Counter{}
 
     struct Counter {
-        total: u16
+        total: u16,
     }
 
     impl Counter {
-
-         unsafe_unpinned!(total: u16);
+        unsafe_unpinned!(total: u16);
 
         fn get_total(self: Pin<&mut Self>) -> u16 {
             self.total
@@ -81,21 +79,18 @@ mod pin_tests  {
         }
     }
 
-
     #[test]
     fn test_read_pin() {
-        let counter = Counter { total: 20};
-        pin_mut!(counter);      // works with future that requires unpin
-        assert_eq!(counter.get_total(),20);
+        let counter = Counter { total: 20 };
+        pin_mut!(counter); // works with future that requires unpin
+        assert_eq!(counter.get_total(), 20);
     }
 
-     #[test]
+    #[test]
     fn test_write_pin() {
-        let counter = Counter { total: 20};
-        pin_mut!(counter);      // works with future that requires unpin
+        let counter = Counter { total: 20 };
+        pin_mut!(counter); // works with future that requires unpin
         counter.as_mut().update_total(30);
-        assert_eq!(counter.get_total(),30);
+        assert_eq!(counter.get_total(), 30);
     }
-
-
 }

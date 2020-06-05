@@ -26,14 +26,16 @@ pub type KfStream = InnerKfStream<TcpStream>;
 #[allow(unused)]
 pub type AllKfStream = InnerKfStream<AllTcpStream>;
 
-type FrameStream<S> = SplitStream<Framed<Compat<S>,KfCodec>>;
+type FrameStream<S> = SplitStream<Framed<Compat<S>, KfCodec>>;
 
 /// inner kf stream which is generic over stream
 #[derive(Debug)]
 pub struct InnerKfStream<S>(FrameStream<S>);
 
-impl<S> InnerKfStream<S> where S: AsyncRead + AsyncWrite + Unpin {
-
+impl<S> InnerKfStream<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
     pub fn get_mut_tcp_stream(&mut self) -> &mut FrameStream<S> {
         &mut self.0
     }
@@ -152,7 +154,7 @@ impl<S> InnerKfStream<S> where S: AsyncRead + AsyncWrite + Unpin {
     }
 }
 
-impl <S>From<FrameStream<S>> for InnerKfStream<S> {
+impl<S> From<FrameStream<S>> for InnerKfStream<S> {
     fn from(stream: FrameStream<S>) -> Self {
         InnerKfStream(stream)
     }

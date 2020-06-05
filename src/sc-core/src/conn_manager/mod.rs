@@ -7,4 +7,3 @@ pub use self::actions::SpuSpecChange;
 pub use self::actions::PartitionSpecChange;
 pub use self::manager::{ConnManager, SharedConnManager};
 pub use self::manager::ConnParams;
-

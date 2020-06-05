@@ -1,6 +1,3 @@
-
-    
-
 use std::io::Error as IoError;
 use std::env::temp_dir;
 use std::time::Duration;
@@ -30,7 +27,6 @@ use kf_protocol::fs::FileTopicResponse;
 
 use flv_util::fixture::ensure_clean_file;
 use kf_socket::KfSocket;
-
 
 /// create sample batches with message
 fn create_batches(records: u16) -> DefaultBatch {
@@ -138,4 +134,3 @@ async fn test_save_fetch() -> Result<(), KfSocketError> {
 
     Ok(())
 }
-

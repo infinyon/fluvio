@@ -10,7 +10,7 @@ pub enum CliError {
     IoError(IoError),
     KfSocketError(KfSocketError),
     ClientError(ClientError),
-    Other(String)
+    Other(String),
 }
 
 impl From<IoError> for CliError {
@@ -34,11 +34,11 @@ impl From<ClientError> for CliError {
 impl fmt::Display for CliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::InvalidArg(msg) => write!(f,"{}",msg),
+            Self::InvalidArg(msg) => write!(f, "{}", msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f, "{}", err),
             Self::ClientError(err) => write!(f, "{}", err),
-            Self::Other(msg) => write!(f,"{}",msg)
+            Self::Other(msg) => write!(f, "{}", msg),
         }
     }
 }

@@ -35,7 +35,7 @@ pub enum PublicRequest {
     // Fluvio specific requests
     FlvFetchLocalSpuRequest(RequestMessage<FlvFetchLocalSpuRequest>),
     FlvFetchOffsetsRequest(RequestMessage<FlvFetchOffsetsRequest>),
-    FileFlvContinuousFetchRequest(RequestMessage<FileFlvContinuousFetchRequest>)
+    FileFlvContinuousFetchRequest(RequestMessage<FileFlvContinuousFetchRequest>),
 }
 
 impl Default for PublicRequest {
@@ -68,9 +68,15 @@ impl KfRequestMessage for PublicRequest {
             SpuApiKey::KfFetch => api_decode!(PublicRequest, KfFileFetchRequest, src, header),
 
             // Fluvio
-            SpuApiKey::FlvFetchLocalSpu => api_decode!(PublicRequest, FlvFetchLocalSpuRequest, src, header),
-            SpuApiKey::FlvFetchOffsets => api_decode!(PublicRequest, FlvFetchOffsetsRequest, src, header),
-            SpuApiKey::FlvContinuousFetch => api_decode!(PublicRequest, FileFlvContinuousFetchRequest, src, header)
+            SpuApiKey::FlvFetchLocalSpu => {
+                api_decode!(PublicRequest, FlvFetchLocalSpuRequest, src, header)
+            }
+            SpuApiKey::FlvFetchOffsets => {
+                api_decode!(PublicRequest, FlvFetchOffsetsRequest, src, header)
+            }
+            SpuApiKey::FlvContinuousFetch => {
+                api_decode!(PublicRequest, FileFlvContinuousFetchRequest, src, header)
+            }
         }
     }
 }

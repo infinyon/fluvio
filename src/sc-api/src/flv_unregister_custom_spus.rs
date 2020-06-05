@@ -24,26 +24,20 @@ impl Request for FlvUnregisterCustomSpusRequest {
     type Response = FlvUnregisterCustomSpusResponse;
 }
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvUnregisterCustomSpusResponse {
     /// A response message for each delete request
     pub results: Vec<FlvResponseMessage>,
 }
 
-
 impl FlvUnregisterCustomSpusResponse {
-
     /// validate and extract a single response
-    pub fn validate(self) -> Result<(),ApiError> {
-
+    pub fn validate(self) -> Result<(), ApiError> {
         // ? what is name, so just find first item
-        if let Some(item) = self.results.into_iter().find(|_| true ) {
+        if let Some(item) = self.results.into_iter().find(|_| true) {
             item.as_result()
         } else {
             Err(ApiError::NoResourceFounded("custom spu".to_owned()))
         }
-        
     }
 }
-

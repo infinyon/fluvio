@@ -5,12 +5,10 @@
 //!
 use std::fmt;
 
-
 use kf_protocol::derive::{Decode, Encode};
 
 use k8_metadata::spu::SpuStatus as K8SpuStatus;
 use k8_metadata::spu::SpuStatusResolution as K8SpuStatusResolution;
-
 
 // -----------------------------------
 // Data Structures
@@ -23,10 +21,9 @@ pub struct SpuStatus {
 
 impl fmt::Display for SpuStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{:#?}",self.resolution)
+        write!(f, "{:#?}", self.resolution)
     }
 }
-
 
 // -----------------------------------
 // Implementation - SpuStatus
@@ -34,11 +31,11 @@ impl fmt::Display for SpuStatus {
 
 impl From<K8SpuStatus> for SpuStatus {
     fn from(kv_status: K8SpuStatus) -> Self {
-        SpuStatus { 
+        SpuStatus {
             resolution: match kv_status.resolution {
                 K8SpuStatusResolution::Online => SpuResolution::Online,
                 K8SpuStatusResolution::Offline => SpuResolution::Offline,
-                K8SpuStatusResolution::Init => SpuResolution::Init
+                K8SpuStatusResolution::Init => SpuResolution::Init,
             },
         }
     }
@@ -50,7 +47,7 @@ impl From<SpuStatus> for K8SpuStatus {
             resolution: (match status.resolution {
                 SpuResolution::Online => K8SpuStatusResolution::Online,
                 SpuResolution::Offline => K8SpuStatusResolution::Offline,
-                SpuResolution::Init => K8SpuStatusResolution::Init
+                SpuResolution::Init => K8SpuStatusResolution::Init,
             }),
         }
     }
@@ -70,7 +67,7 @@ impl SpuStatus {
         match self.resolution {
             SpuResolution::Online => "online",
             SpuResolution::Offline => "offline",
-            SpuResolution::Init => "Init"
+            SpuResolution::Init => "Init",
         }
     }
 
@@ -94,16 +91,12 @@ impl SpuStatus {
     }
 }
 
-
-
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 pub enum SpuResolution {
     Online,
     Offline,
-    Init
+    Init,
 }
-
-
 
 // -----------------------------------
 // Implementation - SpuResolution
@@ -114,4 +107,3 @@ impl Default for SpuResolution {
         SpuResolution::Init
     }
 }
-

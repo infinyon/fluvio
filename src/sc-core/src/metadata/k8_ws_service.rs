@@ -32,17 +32,13 @@ use crate::core::common::KVObject;
 use crate::core::WSUpdateService;
 use crate::core::common::WSAction;
 
-
 pub struct K8WSUpdateService<C>(SharedClient<C>);
 
-impl <C>Clone for K8WSUpdateService<C> {
-
+impl<C> Clone for K8WSUpdateService<C> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
-
 }
-
 
 impl<C> K8WSUpdateService<C>
 where
@@ -122,14 +118,13 @@ where
         let k8_status: <<S as Spec>::K8Spec as K8Spec>::Status = value.status().clone().into();
 
         if let Some(ref kv_ctx) = value.kv_ctx().item_ctx {
-            let k8_input: UpdateK8ObjStatus<S::K8Spec> =
-                UpdateK8ObjStatus {
-                    api_version: S::K8Spec::api_version(),
-                    kind: S::K8Spec::kind(),
-                    metadata: kv_ctx.clone().into(),
-                    status: k8_status,
-                    ..Default::default()
-                };
+            let k8_input: UpdateK8ObjStatus<S::K8Spec> = UpdateK8ObjStatus {
+                api_version: S::K8Spec::api_version(),
+                kind: S::K8Spec::kind(),
+                metadata: kv_ctx.clone().into(),
+                status: k8_status,
+                ..Default::default()
+            };
 
             self.0.update_status(&k8_input).await.map(|_| ())
         } else {

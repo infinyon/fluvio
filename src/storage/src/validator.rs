@@ -237,11 +237,18 @@ mod tests {
             ..Default::default()
         };
 
-        let mut msg_sink = MutFileRecords::create(501, &options).await.expect("record created");
-        msg_sink.send(create_batch(501, 2)).await.expect("create batch");
+        let mut msg_sink = MutFileRecords::create(501, &options)
+            .await
+            .expect("record created");
+        msg_sink
+            .send(create_batch(501, 2))
+            .await
+            .expect("create batch");
 
         // add some junk
-        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default()).await.expect("open batch file");
+        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default())
+            .await
+            .expect("open batch file");
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");

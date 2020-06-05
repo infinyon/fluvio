@@ -21,7 +21,6 @@ use super::spu::group::process_spu_group;
 use super::profile::process_profile;
 use super::cluster::process_cluster;
 
-
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
 use super::topic::TopicOpt;
@@ -31,7 +30,6 @@ use super::spu::custom::CustomSpuOpt;
 use super::spu::group::SpuGroupOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
-
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -44,7 +42,6 @@ use super::cluster::ClusterCommands;
 {all-args}
 ",
     global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
-    
 )]
 enum Root {
     #[structopt(
@@ -55,7 +52,7 @@ enum Root {
 {usage}
 
 {all-args}
-", 
+",
         about = "Read messages from a topic/partition"
     )]
     Consume(ConsumeLogOpt),
@@ -67,131 +64,142 @@ enum Root {
 {usage}
 
 {all-args}
-", 
+",
         about = "Write messages to a topic/partition"
     )]
     Produce(ProduceLogOpt),
 
-    #[structopt(name = "spu",  template = "{about}
+    #[structopt(
+        name = "spu",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "SPU Operations")]
+",
+        about = "SPU Operations"
+    )]
     SPU(SpuOpt),
 
-    #[structopt(name = "spu-group", template = "{about}
+    #[structopt(
+        name = "spu-group",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "SPU Group Operations")]
+",
+        about = "SPU Group Operations"
+    )]
     SPUGroup(SpuGroupOpt),
 
-    #[structopt(name = "custom-spu", template = "{about}
+    #[structopt(
+        name = "custom-spu",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Custom SPU Operations")]
+",
+        about = "Custom SPU Operations"
+    )]
     CustomSPU(CustomSpuOpt),
 
-    #[structopt(name = "topic", template = "{about}
+    #[structopt(
+        name = "topic",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Topic operations")]
+",
+        about = "Topic operations"
+    )]
     Topic(TopicOpt),
 
-    #[structopt(name = "advanced", template = "{about}
+    #[structopt(
+        name = "advanced",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Advanced operations")]
+",
+        about = "Advanced operations"
+    )]
     Advanced(AdvancedOpt),
 
-    #[structopt(name = "profile", template = "{about}
+    #[structopt(
+        name = "profile",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Profile operation")]
-
+",
+        about = "Profile operation"
+    )]
     Profile(ProfileCommand),
 
-    #[structopt(name = "cluster", template = "{about}
+    #[structopt(
+        name = "cluster",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Cluster Operations")]
-
+",
+        about = "Cluster Operations"
+    )]
     Cluster(ClusterCommands),
 
-
     #[structopt(name = "version")]
-    Version(VersionCmd)
+    Version(VersionCmd),
 }
 
 pub fn run_cli() -> Result<String, CliError> {
-
-    run_block_on(async move{
-
+    run_block_on(async move {
         let terminal = Arc::new(PrintTerminal::new());
-        
+
         match Root::from_args() {
-            Root::Consume(consume) => process_consume_log(terminal.clone(),consume).await,
-            Root::Produce(produce) => process_produce_record(terminal.clone(),produce).await,
-            Root::SPU(spu) => process_spu(terminal.clone(),spu).await,
-            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(),spu_group).await,
-            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(),custom_spu).await,
-            Root::Topic(topic) => process_topic(terminal.clone(),topic).await,
-            Root::Advanced(advanced) => process_advanced(terminal.clone(),advanced).await,
+            Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await,
+            Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await,
+            Root::SPU(spu) => process_spu(terminal.clone(), spu).await,
+            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await,
+            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await,
+            Root::Topic(topic) => process_topic(terminal.clone(), topic).await,
+            Root::Advanced(advanced) => process_advanced(terminal.clone(), advanced).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
-            Root::Version(_) => process_version_cmd()
+            Root::Version(_) => process_version_cmd(),
         }
     })
 }
 
-
 use crate::Terminal;
 
-
-struct PrintTerminal {
-}
-
+struct PrintTerminal {}
 
 impl PrintTerminal {
     fn new() -> Self {
-        Self{}
+        Self {}
     }
 }
 
-
 impl Terminal for PrintTerminal {
-
-    fn print(&self,msg: &str) {
-        print!("{}",msg);
+    fn print(&self, msg: &str) {
+        print!("{}", msg);
     }
 
-    fn println(&self,msg: &str){
-        println!("{}",msg);
-
+    fn println(&self, msg: &str) {
+        println!("{}", msg);
     }
-
 }
 
 #[derive(Debug, StructOpt)]
-struct VersionCmd{}
+struct VersionCmd {}
 
-
-
-fn process_version_cmd() -> Result<String,CliError> {
-
-    println!("version is: {}",crate::VERSION);
+fn process_version_cmd() -> Result<String, CliError> {
+    println!("version is: {}", crate::VERSION);
     Ok("".to_owned())
 }
-

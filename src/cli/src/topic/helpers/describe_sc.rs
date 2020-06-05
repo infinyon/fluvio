@@ -21,32 +21,24 @@ use crate::DescribeObjectHandler;
 use crate::{KeyValOutputHandler, TableOutputHandler};
 use crate::Terminal;
 
-
-
 // Connect to Kafka Controller and query server for topic
 pub async fn describe_sc_topics<O>(
     mut client: ScClient,
     topics: Vec<String>,
     output_type: OutputType,
-    out: std::sync::Arc<O>
+    out: std::sync::Arc<O>,
 ) -> Result<(), CliError>
-    where O: Terminal
+where
+    O: Terminal,
 {
-    let topic_args = if topics.len() > 0 {
-        Some(topics)
-    } else {
-        None
-    };
+    let topic_args = if topics.len() > 0 { Some(topics) } else { None };
     // query none for empty topic_names array
     let topics = client.topic_metadata(topic_args).await?;
 
-    out.describe_objects(&topics,output_type)    
+    out.describe_objects(&topics, output_type)
 }
 
-
 impl DescribeObjectHandler for TopicMetadata {
-
-    
     fn label() -> &'static str {
         "topic"
     }
@@ -87,8 +79,6 @@ impl DescribeObjectHandler for TopicMetadata {
 // -----------------------------------
 
 impl TableOutputHandler for TopicMetadata {
-
-   
     /// table header implementation
     fn header(&self) -> Row {
         row!["ID", "LEADER", "REPLICAS", "LIVE-REPLICAS",]
@@ -124,7 +114,6 @@ impl TableOutputHandler for TopicMetadata {
 // -----------------------------------
 
 impl KeyValOutputHandler for TopicMetadata {
-    
     /// key value hash map implementation
     fn key_values(&self) -> Vec<(String, Option<String>)> {
         let mut key_values = Vec::new();

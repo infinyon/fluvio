@@ -107,7 +107,7 @@ where
 
         // create watch streams
         let mut k8_stream = client
-            . watch_stream_since::<S::K8Spec,_>(self.namespace.clone(), resume_stream)
+            .watch_stream_since::<S::K8Spec, _>(self.namespace.clone(), resume_stream)
             .fuse();
 
         trace!("starting watch stream for: {}", S::LABEL);
@@ -148,7 +148,7 @@ where
     async fn retrieve_all_k8_items(&mut self) -> Result<String, C::MetadataClientError> {
         let k8_objects = self
             .client
-            .retrieve_items::<S::K8Spec,_>(self.namespace.clone())
+            .retrieve_items::<S::K8Spec, _>(self.namespace.clone())
             .await?;
 
         self.process_retrieved_items(k8_objects).await

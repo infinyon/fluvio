@@ -21,8 +21,6 @@ use crate::TableOutputHandler;
 use crate::Terminal;
 use crate::t_println;
 
-
-
 #[derive(Serialize, Debug)]
 pub struct SpuGroupRow {
     pub name: String,
@@ -30,8 +28,7 @@ pub struct SpuGroupRow {
     pub status: SpuGroupStatus,
 }
 
-impl SpuGroupRow  {
-
+impl SpuGroupRow {
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -45,7 +42,12 @@ impl SpuGroupRow  {
     }
 
     fn rack(&self) -> String {
-        self.spec.template.spec.rack.clone().unwrap_or("".to_string())
+        self.spec
+            .template
+            .spec
+            .rack
+            .clone()
+            .unwrap_or("".to_string())
     }
 
     fn size(&self) -> String {
@@ -56,13 +58,8 @@ impl SpuGroupRow  {
         self.status.resolution.to_string()
     }
 }
-              
-
-
 
 type ListSpuGroups = Vec<SpuGroupRow>;
-
-
 
 // -----------------------------------
 // Format Output
@@ -74,49 +71,35 @@ pub fn spu_group_response_to_output<O: Terminal>(
     spu_groups: FlvFetchSpuGroupsResponse,
     output_type: OutputType,
 ) -> Result<(), CliError> {
-
     let groups = spu_groups.spu_groups;
 
     // TODO: display error output
 
     let list_spu_groups: Vec<SpuGroupRow> = groups
-            .into_iter()
-            .map(|g| {
-               let  (name,spec,status) = g.into();
-                SpuGroupRow {
-                    name,
-                    spec,
-                    status
-                }
-            }).collect();
+        .into_iter()
+        .map(|g| {
+            let (name, spec, status) = g.into();
+            SpuGroupRow { name, spec, status }
+        })
+        .collect();
 
-    debug!("groups: {:#?}",list_spu_groups);
+    debug!("groups: {:#?}", list_spu_groups);
 
     if list_spu_groups.len() > 0 {
-        out.render_list(&list_spu_groups,output_type)
+        out.render_list(&list_spu_groups, output_type)
     } else {
-        t_println!(out,"no groups");
+        t_println!(out, "no groups");
         Ok(())
     }
 }
 
-
 // -----------------------------------
 // Output Handlers
 // -----------------------------------
-impl TableOutputHandler for ListSpuGroups{
-
-
+impl TableOutputHandler for ListSpuGroups {
     /// table header implementation
     fn header(&self) -> Row {
-        row![
-            "NAME",
-            "REPLICAS",
-            "MIN ID",
-            "RACK",
-            "SIZE",
-            "STATUS",
-        ]
+        row!["NAME", "REPLICAS", "MIN ID", "RACK", "SIZE", "STATUS",]
     }
 
     /// return errors in string format
@@ -126,22 +109,17 @@ impl TableOutputHandler for ListSpuGroups{
 
     /// table content implementation
     fn content(&self) -> Vec<Row> {
-
         self.iter()
-            .map( |r| {
-                Row::new(
-                    vec![
-                        Cell::new_align(&r.name(),Alignment::RIGHT),
-                        Cell::new_align(&r.replicas(),Alignment::CENTER),
-                        Cell::new_align(&r.min_id(),Alignment::RIGHT),
-                        Cell::new_align(&r.rack(),Alignment::RIGHT),
-                        Cell::new_align(&r.size(), Alignment::RIGHT),
-                        Cell::new_align(&r.status(),Alignment::RIGHT)
-                    ]
-                )
+            .map(|r| {
+                Row::new(vec![
+                    Cell::new_align(&r.name(), Alignment::RIGHT),
+                    Cell::new_align(&r.replicas(), Alignment::CENTER),
+                    Cell::new_align(&r.min_id(), Alignment::RIGHT),
+                    Cell::new_align(&r.rack(), Alignment::RIGHT),
+                    Cell::new_align(&r.size(), Alignment::RIGHT),
+                    Cell::new_align(&r.status(), Alignment::RIGHT),
+                ])
             })
             .collect()
-            
     }
 }
-

@@ -57,7 +57,6 @@ pub struct RunRequestOpt {
         parse(from_os_str)
     )]
     details_file: PathBuf,
-
 }
 
 macro_rules! pretty_send {

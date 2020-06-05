@@ -31,9 +31,7 @@ use flv_types::defaults::SPU_PRIVATE_PORT;
 use flv_types::defaults::SC_PRIVATE_PORT;
 use flv_types::defaults::PRODUCT_NAME;
 
-
 use crate::cli::TlsConfig;
-
 
 fn find_spu_image() -> String {
     std::env::var("SPU_IMAGE").expect("SPU IMAGE must be passed as env")
@@ -41,20 +39,17 @@ fn find_spu_image() -> String {
 
 /// convert SpuGroup to Statefulset
 pub fn convert_cluster_to_statefulset(
-        group_spec: &SpuGroupSpec,
-        metadata: &ObjectMeta,
-        group_name: &str,
-        group_svc_name: String,
-        namespace: &str,
-        tls: Option<&TlsConfig>
-    ) 
-    -> InputK8Obj<StatefulSetSpec>
-{
-
-    let statefulset_name = format!("flv-spg-{}",group_name);
-    let spec  = generate_stateful(group_spec, group_name,group_svc_name,namespace,tls);
+    group_spec: &SpuGroupSpec,
+    metadata: &ObjectMeta,
+    group_name: &str,
+    group_svc_name: String,
+    namespace: &str,
+    tls: Option<&TlsConfig>,
+) -> InputK8Obj<StatefulSetSpec> {
+    let statefulset_name = format!("flv-spg-{}", group_name);
+    let spec = generate_stateful(group_spec, group_name, group_svc_name, namespace, tls);
     let owner_ref = metadata.make_owner_reference::<SpuGroupSpec>();
-    
+
     InputK8Obj {
         api_version: StatefulSetSpec::api_version(),
         kind: StatefulSetSpec::kind(),
@@ -62,12 +57,11 @@ pub fn convert_cluster_to_statefulset(
             name: statefulset_name.clone(),
             namespace: metadata.namespace().to_string(),
             owner_references: vec![owner_ref],
-            ..Default::default()       
+            ..Default::default()
         },
         spec,
         ..Default::default()
     }
-
 }
 
 /// generate statefulset spec from cluster spec
@@ -76,29 +70,36 @@ fn generate_stateful(
     name: &str,
     group_svc_name: String,
     namespace: &str,
-    tls_config: Option<&TlsConfig>
+    tls_config: Option<&TlsConfig>,
 ) -> StatefulSetSpec {
-
     let replicas = spg_spec.replicas;
     let spg_template = &spg_spec.template.spec;
     let mut public_port = ContainerPortSpec {
-        container_port: spg_template.public_endpoint.as_ref().map(|t| t.port).unwrap_or(SPU_PUBLIC_PORT),
+        container_port: spg_template
+            .public_endpoint
+            .as_ref()
+            .map(|t| t.port)
+            .unwrap_or(SPU_PUBLIC_PORT),
         ..Default::default()
     };
     public_port.name = Some("public".to_owned());
 
     let mut private_port = ContainerPortSpec {
-        container_port: spg_template.private_endpoint.as_ref().map(|t|t.port).unwrap_or(SPU_PRIVATE_PORT),
+        container_port: spg_template
+            .private_endpoint
+            .as_ref()
+            .map(|t| t.port)
+            .unwrap_or(SPU_PRIVATE_PORT),
         ..Default::default()
     };
     private_port.name = Some("private".to_owned());
 
     // storage is special because defaults are explicit.
     let storage = spg_spec.template.spec.storage.clone().unwrap_or_default();
-    let size =  storage.size();
+    let size = storage.size();
     let mut env = vec![
         Env::key_field_ref("SPU_INDEX", "metadata.name"),
-        Env::key_value("SPU_MIN", &format!("{}",spg_spec.min_id()))
+        Env::key_value("SPU_MIN", &format!("{}", spg_spec.min_id())),
     ];
 
     let mut volume_mounts = vec![VolumeMount {
@@ -112,38 +113,36 @@ fn generate_stateful(
     let mut args = vec![
         "/fluvio/spu-server".to_owned(),
         "--sc-addr".to_owned(),
-        format!("flv-sc-internal.{}.svc.cluster.local:{}",namespace,SC_PRIVATE_PORT),
+        format!(
+            "flv-sc-internal.{}.svc.cluster.local:{}",
+            namespace, SC_PRIVATE_PORT
+        ),
         "--log-base-dir".to_owned(),
         storage.log_dir(),
         "--log-size".to_owned(),
-        size.clone()
+        size.clone(),
     ];
 
     if let Some(tls) = tls_config {
-
         args.push("--tls".to_owned());
         if tls.enable_client_cert {
             args.push("--enable-client-cert".to_owned());
             args.push("--ca-cert".to_owned());
             args.push(tls.ca_cert.clone().unwrap());
-            volume_mounts.push(
-                VolumeMount {
-                    name: "cacert".to_owned(),
-                    mount_path: "/var/certs/ca".to_owned(),
-                    read_only: Some(true),
+            volume_mounts.push(VolumeMount {
+                name: "cacert".to_owned(),
+                mount_path: "/var/certs/ca".to_owned(),
+                read_only: Some(true),
+                ..Default::default()
+            });
+            volumes.push(VolumeSpec {
+                name: "cacert".to_owned(),
+                secret: Some(SecretVolumeSpec {
+                    secret_name: "fluvio-ca".to_owned(), // fixed
                     ..Default::default()
-                }
-            );
-            volumes.push(
-                VolumeSpec {
-                    name: "cacert".to_owned(),
-                    secret: Some(SecretVolumeSpec {
-                        secret_name: "fluvio-ca".to_owned(),         // fixed
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                }
-            );
+                }),
+                ..Default::default()
+            });
         }
 
         args.push("--server-cert".to_owned());
@@ -151,25 +150,21 @@ fn generate_stateful(
         args.push("--server-key".to_owned());
         args.push(tls.server_key.clone().unwrap());
 
-        volume_mounts.push(
-            VolumeMount {
-                name: "tls".to_owned(),
-                mount_path: "/var/certs/tls".to_owned(),
-                read_only: Some(true),
-                ..Default::default()
-            }
-        );
+        volume_mounts.push(VolumeMount {
+            name: "tls".to_owned(),
+            mount_path: "/var/certs/tls".to_owned(),
+            read_only: Some(true),
+            ..Default::default()
+        });
 
-        volumes.push(
-            VolumeSpec {
-                name: "tls".to_owned(),
-                secret: Some(SecretVolumeSpec {
-                    secret_name: "fluvio-tls".to_owned(),         // fixed
-                    ..Default::default()
-                }),
+        volumes.push(VolumeSpec {
+            name: "tls".to_owned(),
+            secret: Some(SecretVolumeSpec {
+                secret_name: "fluvio-tls".to_owned(), // fixed
                 ..Default::default()
-            }
-        );
+            }),
+            ..Default::default()
+        });
 
         args.push("--bind-non-tls-public".to_owned());
         args.push("0.0.0.0:9007".to_owned());
@@ -179,15 +174,13 @@ fn generate_stateful(
     if let Ok(rust_log) = std::env::var("RUST_LOG") {
         env.push(Env::key_value("RUST_LOG", &rust_log));
     }
-    
+
     env.append(&mut spg_template.env.clone());
-    
+
     let template = TemplateSpec {
-        metadata: Some(TemplateMeta::default().set_labels(
-            vec![
-                ("app", SPU_DEFAULT_NAME),
-                ("group",name)
-            ])),
+        metadata: Some(
+            TemplateMeta::default().set_labels(vec![("app", SPU_DEFAULT_NAME), ("group", name)]),
+        ),
         spec: PodSpec {
             termination_grace_period_seconds: Some(10),
             containers: vec![ContainerSpec {
@@ -207,19 +200,14 @@ fn generate_stateful(
         access_modes: vec![VolumeAccessMode::ReadWriteOnce],
         storage_class_name: format!("{}-{}", PRODUCT_NAME, SPU_DEFAULT_NAME),
         resources: ResourceRequirements {
-            requests: VolumeRequest {
-                storage: size
-            },
+            requests: VolumeRequest { storage: size },
         },
     };
 
     StatefulSetSpec {
         replicas: Some(replicas),
         service_name: group_svc_name,
-        selector: LabelSelector::new_labels(vec![
-            ("app", SPU_DEFAULT_NAME),
-            ("group",name)
-        ]),
+        selector: LabelSelector::new_labels(vec![("app", SPU_DEFAULT_NAME), ("group", name)]),
         template,
         volume_claim_templates: vec![TemplateSpec {
             spec: claim,
@@ -229,26 +217,31 @@ fn generate_stateful(
     }
 }
 
-
-pub fn generate_service(spg: &SpuGroupSpec,name: &str) -> ServiceSpec {
-
+pub fn generate_service(spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
     let spg_template = &spg.template.spec;
     let mut public_port = ServicePort {
-        port: spg_template.public_endpoint.as_ref().map(|t|t.port).unwrap_or(SPU_PUBLIC_PORT),
+        port: spg_template
+            .public_endpoint
+            .as_ref()
+            .map(|t| t.port)
+            .unwrap_or(SPU_PUBLIC_PORT),
         ..Default::default()
     };
 
     public_port.name = Some("public".to_owned());
     let mut private_port = ServicePort {
-        port: spg_template.private_endpoint.as_ref().map(|t|t.port).unwrap_or(SPU_PRIVATE_PORT),
+        port: spg_template
+            .private_endpoint
+            .as_ref()
+            .map(|t| t.port)
+            .unwrap_or(SPU_PRIVATE_PORT),
         ..Default::default()
     };
     private_port.name = Some("private".to_owned());
 
-
     let mut selector = HashMap::new();
     selector.insert("app".to_owned(), SPU_DEFAULT_NAME.to_owned());
-    selector.insert("group".to_owned(),name.to_owned());
+    selector.insert("group".to_owned(), name.to_owned());
 
     ServiceSpec {
         cluster_ip: "None".to_owned(),
@@ -256,5 +249,4 @@ pub fn generate_service(spg: &SpuGroupSpec,name: &str) -> ServiceSpec {
         selector: Some(selector),
         ..Default::default()
     }
-    
 }

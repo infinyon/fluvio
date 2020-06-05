@@ -20,7 +20,7 @@ use super::helpers::group_config::GroupConfig;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt,Default)]
+#[derive(Debug, StructOpt, Default)]
 pub struct CreateManagedSpuGroupOpt {
     /// Managed SPU group name
     #[structopt(short = "n", long = "name", value_name = "string")]

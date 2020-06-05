@@ -10,7 +10,6 @@ pub mod metadata;
 pub mod profile;
 pub mod query_params;
 
-
 pub use client::*;
 pub use error::ClientError;
 pub use spu::SpuReplicaLeader;

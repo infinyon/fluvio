@@ -17,46 +17,35 @@ use super::TopicLSChange;
 #[derive(Debug, PartialEq, Clone)]
 pub enum TopicChangeRequest {
     Topic(Actions<TopicLSChange>),
-    Spu(Actions<SpuLSChange>)
+    Spu(Actions<SpuLSChange>),
 }
 
-
 impl fmt::Display for TopicChangeRequest {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TopicChangeRequest::Topic(req) =>  write!(f,"Topic LS: {}",req.count()),
-            TopicChangeRequest::Spu(req) => write!(f,"SPU LS: {}",req.count())
+            TopicChangeRequest::Topic(req) => write!(f, "Topic LS: {}", req.count()),
+            TopicChangeRequest::Spu(req) => write!(f, "SPU LS: {}", req.count()),
         }
     }
 }
 
-
-
-#[derive(Debug,Default)]
-pub struct TopicActions{
+#[derive(Debug, Default)]
+pub struct TopicActions {
     pub topics: Actions<TopicWSAction>,
-    pub partitions: Actions<PartitionWSAction>
+    pub partitions: Actions<PartitionWSAction>,
 }
 
-
-
 impl fmt::Display for TopicActions {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.topics.count() == 0 && self.partitions.count() == 0 {
-            write!(f,
-                "Empty topic actions"
-            )
+            write!(f, "Empty topic actions")
         } else {
-            write!(f,
+            write!(
+                f,
                 "Topic Actions: {}, Partition Actions:: {}, ",
                 self.topics.count(),
                 self.partitions.count(),
             )
         }
-        
     }
 }
-
-

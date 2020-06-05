@@ -24,12 +24,11 @@ use crate::KfService;
 use crate::call_service;
 use crate::api_loop;
 
-
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub(crate) enum TestKafkaApiEnum {
     Echo = 1000,
-    Save = 1001
+    Save = 1001,
 }
 
 impl Default for TestKafkaApiEnum {
@@ -38,51 +37,41 @@ impl Default for TestKafkaApiEnum {
     }
 }
 
-
-
-
 #[derive(Decode, Encode, Debug, Default)]
 pub(crate) struct EchoRequest {
     msg: String,
 }
 
 impl EchoRequest {
-     
     pub(crate) fn new(msg: String) -> Self {
-        EchoRequest {
-            msg
-        }
+        EchoRequest { msg }
     }
 }
 
-impl Request for EchoRequest{
-
-    const API_KEY: u16 =  TestKafkaApiEnum::Echo as u16;
+impl Request for EchoRequest {
+    const API_KEY: u16 = TestKafkaApiEnum::Echo as u16;
     type Response = EchoResponse;
- }
-
+}
 
 #[derive(Decode, Encode, Default, Debug)]
 pub(crate) struct EchoResponse {
-    pub msg: String
+    pub msg: String,
 }
 
-
-#[derive(Decode,Encode,Debug,Default)]
+#[derive(Decode, Encode, Debug, Default)]
 pub(crate) struct SaveRequest {}
-impl Request for SaveRequest{
-    const API_KEY: u16 =  TestKafkaApiEnum::Save as u16;
+impl Request for SaveRequest {
+    const API_KEY: u16 = TestKafkaApiEnum::Save as u16;
     type Response = SaveResponse;
 }
 
-#[derive(Decode,Encode,Debug,Default)]
-pub(crate) struct SaveResponse{}
+#[derive(Decode, Encode, Debug, Default)]
+pub(crate) struct SaveResponse {}
 
-
-#[derive(Debug,Encode)]
+#[derive(Debug, Encode)]
 pub(crate) enum TestApiRequest {
     EchoRequest(RequestMessage<EchoRequest>),
-    SaveRequest(RequestMessage<SaveRequest>)
+    SaveRequest(RequestMessage<SaveRequest>),
 }
 
 // Added to satisfy Encode/Decode traits
@@ -92,73 +81,66 @@ impl Default for TestApiRequest {
     }
 }
 
-
 impl KfRequestMessage for TestApiRequest {
-
     type ApiKey = TestKafkaApiEnum;
 
-    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self,IoError>
-        where
-                Self: Default + Sized,
-                Self::ApiKey: Sized,
-                T: Buf
+    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
+    where
+        Self: Default + Sized,
+        Self::ApiKey: Sized,
+        T: Buf,
     {
         match header.api_key().try_into()? {
-            TestKafkaApiEnum::Echo => api_decode!(TestApiRequest,EchoRequest,src,header),
-            TestKafkaApiEnum::Save => api_decode!(TestApiRequest,SaveRequest,src,header)
+            TestKafkaApiEnum::Echo => api_decode!(TestApiRequest, EchoRequest, src, header),
+            TestKafkaApiEnum::Save => api_decode!(TestApiRequest, SaveRequest, src, header),
         }
     }
 }
 
-
-
-pub(crate) struct TestContext {
-}
+pub(crate) struct TestContext {}
 
 impl TestContext {
     pub(crate) fn new() -> Self {
-        TestContext{}
+        TestContext {}
     }
 }
 
 pub(crate) type SharedTestContext = Arc<TestContext>;
 
-
-pub(crate) struct TestService {
-}
+pub(crate) struct TestService {}
 
 impl TestService {
-
     pub fn new() -> TestService {
         Self {}
     }
-
 }
 
-
 async fn handle_echo_request(
-    msg: RequestMessage<EchoRequest>
-) -> Result<ResponseMessage<EchoResponse>,IoError> {
-
+    msg: RequestMessage<EchoRequest>,
+) -> Result<ResponseMessage<EchoResponse>, IoError> {
     let mut response = EchoResponse::default();
     response.msg = msg.request.msg.clone();
     Ok(msg.new_response(response))
 }
 
-
 #[async_trait]
-impl <S>KfService<S> for TestService where S: AsyncRead + AsyncWrite + Unpin + Send  + 'static {
-
+impl<S> KfService<S> for TestService
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
+{
     type Context = SharedTestContext;
     type Request = TestApiRequest;
-   
 
-    async fn respond(self: Arc<Self>, _context: Self::Context,socket: InnerKfSocket<S>) -> Result<(),KfSocketError>
-        where InnerKfSink<S>: ZeroCopyWrite
+    async fn respond(
+        self: Arc<Self>,
+        _context: Self::Context,
+        socket: InnerKfSocket<S>,
+    ) -> Result<(), KfSocketError>
+    where
+        InnerKfSink<S>: ZeroCopyWrite,
     {
-       
-        let (mut sink,mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<TestApiRequest,TestKafkaApiEnum>();
+        let (mut sink, mut stream) = socket.split();
+        let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 
         api_loop!(
             api_stream,
@@ -177,5 +159,4 @@ impl <S>KfService<S> for TestService where S: AsyncRead + AsyncWrite + Unpin + S
 
         Ok(())
     }
-
 }

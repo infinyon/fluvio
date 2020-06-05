@@ -16,12 +16,11 @@ impl TestRunner {
         Self { option }
     }
 
-
     /*
     fn wait_for_topic(&self) {
 
 
-         
+
         // wait until topic is provisioned
         // topic describe is not correct since it doesn't specify partition
         for _ in 0..100u16 {
@@ -54,13 +53,12 @@ impl TestRunner {
         }
 
         assert!(false, "unable to provision topic: {}", topic_name);
-        
+
 
     }
     */
 
     async fn setup_topic(&self) {
-        
         // wait until SPU come online
         sleep(Duration::from_secs(2)).await;
 
@@ -83,7 +81,6 @@ impl TestRunner {
         // wait until topic is created, this is hack for now until we have correct
         // implementation of find topic
         sleep(Duration::from_secs(5)).await
-       
     }
 
     /// main entry point

@@ -1,8 +1,7 @@
-
 use kf_protocol::derive::Encode;
 use kf_protocol::derive::Decode;
 
-#[derive(PartialEq, Debug, Encode, Decode,  Clone, Copy)]
+#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum SpuApiKey {
     // Mixed
@@ -15,7 +14,7 @@ pub enum SpuApiKey {
     // Fluvio
     FlvFetchLocalSpu = 1001,
     FlvFetchOffsets = 1002,
-    FlvContinuousFetch = 1003
+    FlvContinuousFetch = 1003,
 }
 
 impl Default for SpuApiKey {

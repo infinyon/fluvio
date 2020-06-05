@@ -20,9 +20,10 @@ pub async fn handle_fetch_request<S>(
     ctx: DefaultSharedGlobalContext,
     sink: &mut InnerKfSink<S>,
 ) -> Result<(), KfSocketError>
-    where S: AsyncRead + AsyncWrite + Unpin + Send, InnerKfSink<S>: ZeroCopyWrite
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+    InnerKfSink<S>: ZeroCopyWrite,
 {
-
     let (header, fetch_request) = request.get_header_request();
     let mut fetch_response = FileFetchResponse::default();
 

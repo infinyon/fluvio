@@ -20,10 +20,7 @@ pub async fn handle_topic_composition_request(
     let mut topic_comp_resp = FlvTopicCompositionResponse::default();
     let mut spu_ids = vec![];
 
-    debug!(
-        "request topics '{:#?}'",
-        request.request.topic_names
-    );
+    debug!("request topics '{:#?}'", request.request.topic_names);
 
     // encode topics
     let mut topics = vec![];
@@ -62,7 +59,8 @@ pub async fn handle_topic_composition_request(
                         // update partition with metadata
                         partition_response.leader_id = partition_mtd.spec.leader.clone();
                         partition_response.replicas = partition_mtd.spec.replicas.clone();
-                        partition_response.live_replicas = partition_mtd.status.live_replicas().clone();
+                        partition_response.live_replicas =
+                            partition_mtd.status.live_replicas().clone();
                     }
 
                     partitions.push(partition_response);
@@ -105,9 +103,12 @@ pub async fn handle_topic_composition_request(
                     spu.host = host;
                     spu.port = ingress.port;
                 } else {
-                    warn!("no public host founded for spu: {}, ingress: {:#?}",spu_id,ingress);
+                    warn!(
+                        "no public host founded for spu: {}, ingress: {:#?}",
+                        spu_id, ingress
+                    );
                 }
-               
+
                 spus.push(spu);
             }
         } else {

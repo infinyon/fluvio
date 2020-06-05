@@ -12,7 +12,6 @@ use flv_client::profile::ScConfig;
 use crate::error::CliError;
 use crate::tls::TlsConfig;
 
-
 // -----------------------------------
 //  Parsed Config
 // -----------------------------------
@@ -53,7 +52,7 @@ impl DeleteTopicOpt {
     /// Validate cli options. Generate target-server and delete-topic configuration.
     fn validate(self) -> Result<(ScConfig, DeleteTopicConfig), CliError> {
         // profile specific configurations (target server)
-        let target_server = ScConfig::new(self.sc,self.tls.try_into_file_config()?)?;
+        let target_server = ScConfig::new(self.sc, self.tls.try_into_file_config()?)?;
         let delete_topic_cfg = DeleteTopicConfig { name: self.topic };
 
         // return server separately from config
@@ -70,7 +69,9 @@ pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliErro
     let (target_server, cfg) = opt.validate()?;
 
     let mut client = target_server.connect().await?;
-    client.delete_topic(&cfg.name).await
+    client
+        .delete_topic(&cfg.name)
+        .await
         .map(|topic_name| format!("topic \"{}\" deleted", topic_name))
         .map_err(|err| err.into())
 }

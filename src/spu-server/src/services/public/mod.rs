@@ -15,16 +15,16 @@ use spu_api::SpuApiKey;
 
 use crate::core::DefaultSharedGlobalContext;
 
-pub(crate) type PublicApiServer = KfApiServer<
-    PublicRequest,
-    SpuApiKey,
-    DefaultSharedGlobalContext,
-    PublicService>;
+pub(crate) type PublicApiServer =
+    KfApiServer<PublicRequest, SpuApiKey, DefaultSharedGlobalContext, PublicService>;
 
 // start server
-pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> PublicApiServer
-{
-    info!("starting SPU: {} at public service at: {}", ctx.local_spu_id(),addr);
+pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> PublicApiServer {
+    info!(
+        "starting SPU: {} at public service at: {}",
+        ctx.local_spu_id(),
+        addr
+    );
 
     KfApiServer::new(addr, ctx, PublicService::new())
 }

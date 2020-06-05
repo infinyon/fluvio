@@ -23,8 +23,6 @@ use k8_metadata::spu::Endpoint as K8Endpoint;
 use k8_metadata::spu::IngressPort as K8IngressPort;
 use k8_metadata::spu::IngressAddr as K8IngressAddr;
 
-
-
 // -----------------------------------
 // Data Structures
 // -----------------------------------
@@ -37,7 +35,6 @@ pub struct SpuSpec {
     pub private_endpoint: Endpoint,
     pub rack: Option<String>,
 }
-
 
 impl Default for SpuSpec {
     fn default() -> Self {
@@ -58,13 +55,11 @@ impl Default for SpuSpec {
     }
 }
 
-
 impl From<SpuId> for SpuSpec {
     fn from(spec: SpuId) -> Self {
         Self::new(spec)
     }
 }
-
 
 impl From<K8SpuSpec> for SpuSpec {
     fn from(kv_spec: K8SpuSpec) -> Self {
@@ -86,7 +81,6 @@ impl From<K8SpuSpec> for SpuSpec {
     }
 }
 
-
 impl Into<K8SpuSpec> for SpuSpec {
     fn into(self) -> K8SpuSpec {
         K8SpuSpec {
@@ -98,8 +92,6 @@ impl Into<K8SpuSpec> for SpuSpec {
         }
     }
 }
-
-
 
 impl SpuSpec {
     /// Given an Spu id generate a new SpuSpec
@@ -139,10 +131,6 @@ impl SpuSpec {
     }
 }
 
-
-
-
-
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
 pub struct IngressPort {
     pub port: u16,
@@ -152,10 +140,8 @@ pub struct IngressPort {
 
 impl fmt::Display for IngressPort {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-
-        write!(f,"{}:{}",self.host_string(),self.port)
+        write!(f, "{}:{}", self.host_string(), self.port)
     }
-
 }
 
 impl From<K8IngressPort> for IngressPort {
@@ -163,7 +149,7 @@ impl From<K8IngressPort> for IngressPort {
         Self {
             port: ingress_port.port,
             ingress: ingress_port.ingress.into_iter().map(|a| a.into()).collect(),
-            encryption: ingress_port.encryption.into()
+            encryption: ingress_port.encryption.into(),
         }
     }
 }
@@ -173,11 +159,10 @@ impl Into<K8IngressPort> for IngressPort {
         K8IngressPort {
             port: self.port,
             ingress: self.ingress.into_iter().map(|a| a.into()).collect(),
-            encryption: self.encryption.into()
+            encryption: self.encryption.into(),
         }
     }
 }
-
 
 impl IngressPort {
     pub fn from_port_host(port: u16, host: String) -> Self {
@@ -185,7 +170,7 @@ impl IngressPort {
             port: port,
             ingress: vec![IngressAddr {
                 hostname: Some(host),
-                ip: None
+                ip: None,
             }],
             encryption: EncryptionEnum::PLAINTEXT,
         }
@@ -203,23 +188,19 @@ impl IngressPort {
     pub fn host_string(&self) -> String {
         match self.host() {
             Some(host_val) => host_val,
-            None => "".to_owned()
+            None => "".to_owned(),
         }
     }
-
 }
 
-
-
-
-#[derive(Decode, Encode, Default,Debug, Clone, PartialEq)]
+#[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
 pub struct IngressAddr {
     pub hostname: Option<String>,
-    pub ip: Option<String>
+    pub ip: Option<String>,
 }
 
 impl IngressAddr {
-    pub fn host(&self) -> Option<String>  {
+    pub fn host(&self) -> Option<String> {
         if let Some(name) = &self.hostname {
             Some(name.clone())
         } else {
@@ -236,7 +217,7 @@ impl From<K8IngressAddr> for IngressAddr {
     fn from(addr: K8IngressAddr) -> Self {
         Self {
             hostname: addr.hostname,
-            ip: addr.ip
+            ip: addr.ip,
         }
     }
 }
@@ -245,7 +226,7 @@ impl Into<K8IngressAddr> for IngressAddr {
     fn into(self) -> K8IngressAddr {
         K8IngressAddr {
             hostname: self.hostname,
-            ip: self.ip
+            ip: self.ip,
         }
     }
 }
@@ -262,7 +243,7 @@ impl From<K8Endpoint> for Endpoint {
         Self {
             port: pt.port,
             host: pt.host,
-            encryption: pt.encryption.into()
+            encryption: pt.encryption.into(),
         }
     }
 }
@@ -272,12 +253,10 @@ impl Into<K8Endpoint> for Endpoint {
         K8Endpoint {
             port: self.port,
             host: self.host,
-            encryption: self.encryption.into()
+            encryption: self.encryption.into(),
         }
     }
 }
-
-
 
 impl fmt::Display for Endpoint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -285,17 +264,16 @@ impl fmt::Display for Endpoint {
     }
 }
 
-
 impl TryFrom<&Endpoint> for SocketEndPoint {
     type Error = IoError;
 
     fn try_from(endpoint: &Endpoint) -> Result<Self, Self::Error> {
-        flv_util::socket_helpers::host_port_to_socket_addr(&endpoint.host, endpoint.port).map(|addr| {
-            SocketEndPoint {
+        flv_util::socket_helpers::host_port_to_socket_addr(&endpoint.host, endpoint.port).map(
+            |addr| SocketEndPoint {
                 addr,
                 encryption: EndPointEncryption::PLAINTEXT,
-            }
-        })
+            },
+        )
     }
 }
 
@@ -339,16 +317,11 @@ impl Endpoint {
     }
 }
 
-
-
-
-
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 pub enum EncryptionEnum {
     PLAINTEXT,
     SSL,
 }
-
 
 impl Default for EncryptionEnum {
     fn default() -> Self {
@@ -360,7 +333,7 @@ impl From<K8EncryptionEnum> for EncryptionEnum {
     fn from(enc: K8EncryptionEnum) -> Self {
         match enc {
             K8EncryptionEnum::PLAINTEXT => Self::PLAINTEXT,
-            K8EncryptionEnum::SSL => Self::SSL
+            K8EncryptionEnum::SSL => Self::SSL,
         }
     }
 }
@@ -369,14 +342,10 @@ impl Into<K8EncryptionEnum> for EncryptionEnum {
     fn into(self) -> K8EncryptionEnum {
         match self {
             Self::PLAINTEXT => K8EncryptionEnum::PLAINTEXT,
-            Self::SSL => K8EncryptionEnum::SSL
-
+            Self::SSL => K8EncryptionEnum::SSL,
         }
     }
 }
-
-
-
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 pub enum SpuType {

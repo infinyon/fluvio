@@ -22,25 +22,28 @@ pub async fn handle_kf_lookup_version_request(
     let mut response = ApiVersionsResponse::default();
 
     // Kafka
-    response
-        .api_keys
-        .push(make_version_key(
-                SpuApiKey::KfProduce,
-                DefaultKfProduceRequest::MIN_API_VERSION, 
-                DefaultKfProduceRequest::MAX_API_VERSION));
-    response
-        .api_keys
-        .push(make_version_key(SpuApiKey::KfFetch,
-             DefaultKfFetchRequest::MIN_API_VERSION,
-             DefaultKfFetchRequest::MAX_API_VERSION));
+    response.api_keys.push(make_version_key(
+        SpuApiKey::KfProduce,
+        DefaultKfProduceRequest::MIN_API_VERSION,
+        DefaultKfProduceRequest::MAX_API_VERSION,
+    ));
+    response.api_keys.push(make_version_key(
+        SpuApiKey::KfFetch,
+        DefaultKfFetchRequest::MIN_API_VERSION,
+        DefaultKfFetchRequest::MAX_API_VERSION,
+    ));
 
     // Fluvio
-    response
-        .api_keys
-        .push(make_version_key(SpuApiKey::FlvFetchLocalSpu, FlvFetchLocalSpuRequest::DEFAULT_API_VERSION, FlvFetchLocalSpuRequest::DEFAULT_API_VERSION));
-    response
-        .api_keys
-        .push(make_version_key(SpuApiKey::FlvFetchOffsets, FlvFetchOffsetsRequest::DEFAULT_API_VERSION, FlvFetchOffsetsRequest::DEFAULT_API_VERSION));
+    response.api_keys.push(make_version_key(
+        SpuApiKey::FlvFetchLocalSpu,
+        FlvFetchLocalSpuRequest::DEFAULT_API_VERSION,
+        FlvFetchLocalSpuRequest::DEFAULT_API_VERSION,
+    ));
+    response.api_keys.push(make_version_key(
+        SpuApiKey::FlvFetchOffsets,
+        FlvFetchOffsetsRequest::DEFAULT_API_VERSION,
+        FlvFetchOffsetsRequest::DEFAULT_API_VERSION,
+    ));
 
     Ok(request.new_response(response))
 }

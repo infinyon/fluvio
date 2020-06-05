@@ -22,9 +22,6 @@ impl ::std::default::Default for MsgType {
     }
 }
 
-
-
-
 #[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
 pub struct Message<C>
 where
@@ -34,20 +31,18 @@ where
     pub content: C,
 }
 
-
-impl <C>fmt::Display for Message<C>
-    where C: Encoder + Decoder + Debug + Display,
- {
+impl<C> fmt::Display for Message<C>
+where
+    C: Encoder + Decoder + Debug + Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{:#?} {}",self.header,self.content)
-       
+        write!(f, "{:#?} {}", self.header, self.content)
     }
 }
 
-
 impl<C> Message<C>
 where
-    C: Encoder + Decoder+ Debug,
+    C: Encoder + Decoder + Debug,
 {
     pub fn new(typ: MsgType, content: C) -> Self {
         Message {
@@ -57,11 +52,11 @@ where
     }
 
     pub fn delete(content: C) -> Self {
-        Self::new(MsgType::DELETE,content)
+        Self::new(MsgType::DELETE, content)
     }
 
     pub fn update(content: C) -> Self {
-        Self::new(MsgType::UPDATE,content)
+        Self::new(MsgType::UPDATE, content)
     }
 }
 
