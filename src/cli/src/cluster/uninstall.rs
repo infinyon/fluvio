@@ -80,6 +80,7 @@ fn remove_objects(object_type: &str,namespace: &str) {
         .arg("--all")
         .arg("--namespace")
         .arg(namespace)
+        .print()
         .inherit();
 
 }

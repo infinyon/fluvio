@@ -1,7 +1,5 @@
 use structopt::StructOpt;
 
-use log::debug;
-
 use crate::CliError;
 
 pub use context::process_minikube_context;
@@ -21,16 +19,6 @@ mod context {
 
     use super::*;
 
-    const TEMPLATE: &'static str = r#"
-    #!/bin/bash
-    export IP=$(minikube ip)
-    sudo sed -i '' '/minikubeCA/d' /etc/hosts
-    echo "$IP minikubeCA" | sudo tee -a  /etc/hosts
-    cd ~
-    kubectl config set-cluster {{ name }} --server=https://minikubeCA:8443 --certificate-authority=.minikube/ca.crt
-    kubectl config set-context {{ name }} --user=minikube --cluster={{ name }}
-    kubectl config use-context {{ name }}
-    "#;
 
 
     /// Performs following
@@ -38,43 +26,15 @@ mod context {
     ///     create new kubectl cluster and context which uses minikube name
     pub fn process_minikube_context(ctx: SetMinikubeContext) -> Result<String,CliError> {
 
-        use std::io::Write;
-        use std::io;
-        use std::os::unix::fs::OpenOptionsExt;
-        use std::fs::OpenOptions;
-        use std::process::Command;
-        use std::env;
+        use k8_config::context::Option;
+        use k8_config::context::create_dns_context;
 
-        use tera::Tera;
-        use tera::Context;
+        let mut option = Option::default();
+        if let Some(name) = ctx.name {
+            option.ctx_name = name;
+        }
 
-        let mut tera = Tera::default();
-
-        let name = ctx.name.unwrap_or("mycube".to_owned());
-        tera.add_raw_template("cube.sh", TEMPLATE).expect("string compilation");
-
-        let mut context = Context::new();
-        context.insert("name", &name);
-
-        let render = tera.render("cube.sh", &context).expect("rendering");
-
-        let tmp_file = env::temp_dir().join("flv_minikube.sh");
-
-        let mut file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .mode(0o755)
-            .open(tmp_file.clone())?;
-
-        file.write_all(render.as_bytes())?;
-
-        debug!("script {}",render);
-
-        let output = Command::new(tmp_file).output().expect("cluster command");
-        io::stdout().write_all(&output.stdout).unwrap();
-        io::stderr().write_all(&output.stderr).unwrap();
-
+        create_dns_context(option);
 
         Ok("".to_owned())
     }

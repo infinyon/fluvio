@@ -1,9 +1,24 @@
+<div>
+   <!-- CI status -->
+  <a href="https://github.com/infinyon/fluvio/actions">
+    <img src="https://github.com/infinyon/fluvio/workflows/CI/badge.svg"
+      alt="CI Status" />
+  </a>
+  <a href="https://discordapp.com/invite/bBG2dTz">
+    <img src="https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat-square"
+      alt="chat" />
+  </a>
+</div>
+
+
+
 <h1 align="center">Fluvio</h1>
 <div align="center">
  <strong>
    Cloud native platform for Data Stream
  </strong>
 </div>
+
 
 
 
