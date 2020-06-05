@@ -9,13 +9,25 @@ on:
 jobs:
 
   check_fmt:
-    name: enforce cargo check_fmt
-    runs-on: ubuntu-latest
+    name: check cargo fmt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [nightly]
+
     steps:
-      - uses: actions/checkout@v2
-      - name: run check
-        run: |
-          make check-fmt
+    - uses: actions/checkout@v2
+    - name: Install ${{ matrix.rust }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Install cargo fmt
+      run:  rustup component add rustfmt
+    - name: check fmt
+      run:  make check-fmt
+
       
 
   unit_test:
