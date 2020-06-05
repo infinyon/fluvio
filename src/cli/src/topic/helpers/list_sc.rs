@@ -20,7 +20,6 @@ use crate::TableOutputHandler;
 use crate::Terminal;
 use crate::t_println;
 
-
 type ListTopics = Vec<TopicMetadata>;
 
 // -----------------------------------

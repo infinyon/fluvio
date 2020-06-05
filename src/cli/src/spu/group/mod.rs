@@ -19,36 +19,53 @@ use crate::Terminal;
 
 #[derive(Debug, StructOpt)]
 pub enum SpuGroupOpt {
-    #[structopt(name = "create", template = "{about}
+    #[structopt(
+        name = "create",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Create managed SPU group")]
+",
+        about = "Create managed SPU group"
+    )]
     Create(CreateManagedSpuGroupOpt),
 
-    #[structopt(name = "delete", template = "{about}
+    #[structopt(
+        name = "delete",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "Delete managed SPU group")]
+",
+        about = "Delete managed SPU group"
+    )]
     Delete(DeleteManagedSpuGroupOpt),
 
-    #[structopt(name = "list", template = "{about}
+    #[structopt(
+        name = "list",
+        template = "{about}
 
 {usage}
 
 {all-args}
-", about = "List managed SPU groups")]
+",
+        about = "List managed SPU groups"
+    )]
     List(ListManagedSpuGroupsOpt),
 }
 
-pub(crate) async fn process_spu_group<O: Terminal>(out: std::sync::Arc<O>,spu_group_opt: SpuGroupOpt) -> Result<String, CliError> {
-    
+pub(crate) async fn process_spu_group<O: Terminal>(
+    out: std::sync::Arc<O>,
+    spu_group_opt: SpuGroupOpt,
+) -> Result<String, CliError> {
     (match spu_group_opt {
         SpuGroupOpt::Create(spu_group_opt) => process_create_managed_spu_group(spu_group_opt).await,
         SpuGroupOpt::Delete(spu_group_opt) => process_delete_managed_spu_group(spu_group_opt).await,
-        SpuGroupOpt::List(spu_group_opt) => process_list_managed_spu_groups(out,spu_group_opt).await,
-    }).map(|_| format!(""))
+        SpuGroupOpt::List(spu_group_opt) => {
+            process_list_managed_spu_groups(out, spu_group_opt).await
+        }
+    })
+    .map(|_| format!(""))
 }

@@ -204,18 +204,14 @@ impl ReplicaFollowerController<FileReplica> {
                 return spu;
             }
 
-            follower_debug!(self,"leader spu spec is not available, waiting 1 second");
+            follower_debug!(self, "leader spu spec is not available, waiting 1 second");
             sleep(Duration::from_millis(1000)).await;
-            follower_debug!(self,"awake from sleep, checking spus");
+            follower_debug!(self, "awake from sleep, checking spus");
         }
     }
 
     async fn write_to_follower_replica(&self, sink: &mut KfSink, req: DefaultSyncRequest) {
-        follower_debug!(
-            self,
-            "handling sync request from req {}",
-            req
-        );
+        follower_debug!(self, "handling sync request from req {}", req);
 
         let offsets = self.followers_state.send_records(req).await;
         self.sync_offsets_to_leader(sink, offsets).await;

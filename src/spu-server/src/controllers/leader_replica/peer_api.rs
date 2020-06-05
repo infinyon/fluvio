@@ -13,42 +13,32 @@ use kf_protocol::api::RequestHeader;
 use super::KfLeaderPeerApiEnum;
 use super::UpdateOffsetRequest;
 
-
-#[derive(Debug,Encode)]
-pub enum LeaderPeerRequest  {
-    UpdateOffsets(RequestMessage<UpdateOffsetRequest>)
+#[derive(Debug, Encode)]
+pub enum LeaderPeerRequest {
+    UpdateOffsets(RequestMessage<UpdateOffsetRequest>),
 }
 
-
-
 impl Default for LeaderPeerRequest {
-    fn default() ->  LeaderPeerRequest {
+    fn default() -> LeaderPeerRequest {
         LeaderPeerRequest::UpdateOffsets(RequestMessage::<UpdateOffsetRequest>::default())
     }
 }
 
-
-
-impl KfRequestMessage for LeaderPeerRequest  {
-
+impl KfRequestMessage for LeaderPeerRequest {
     type ApiKey = KfLeaderPeerApiEnum;
 
-    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self,IoError>
-        where
-                Self: Default + Sized,
-                Self::ApiKey: Sized,
-                T: Buf
+    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
+    where
+        Self: Default + Sized,
+        Self::ApiKey: Sized,
+        T: Buf,
     {
-
-        trace!("decoding with header: {:#?}",header);
+        trace!("decoding with header: {:#?}", header);
         let version = header.api_version();
         match header.api_key().try_into()? {
-            KfLeaderPeerApiEnum::UpdateOffsets => Ok(LeaderPeerRequest::UpdateOffsets(RequestMessage::new(header,
-                UpdateOffsetRequest::decode_from(src,version)?)))       
+            KfLeaderPeerApiEnum::UpdateOffsets => Ok(LeaderPeerRequest::UpdateOffsets(
+                RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
+            )),
         }
-
     }
-
 }
-
-

@@ -17,24 +17,20 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop() {
     // parse configuration (program exits on error)
-    let (spu_config,tls_acceptor_option) = process_spu_cli_or_exit();
+    let (spu_config, tls_acceptor_option) = process_spu_cli_or_exit();
 
-    println!(
-        "starting spu server (id:{})",
-        spu_config.id
-    );
-
+    println!("starting spu server (id:{})", spu_config.id);
 
     main(async move {
-        let (_ctx, internal_server, public_server) = create_services(spu_config.clone(), true, true);
+        let (_ctx, internal_server, public_server) =
+            create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
 
         if let Some(tls_config) = tls_acceptor_option {
-            proxy::start_proxy(spu_config,tls_config).await;
+            proxy::start_proxy(spu_config, tls_config).await;
         }
-    
 
         println!("SPU Version: {} started successfully", VERSION);
     });
@@ -73,7 +69,6 @@ pub fn create_services(
     (ctx, internal_server, public_server)
 }
 
-
 mod proxy {
 
     use std::process;
@@ -85,19 +80,17 @@ mod proxy {
     use crate::config::SpuConfig;
     use flv_tls_proxy::start as proxy_start;
 
-    pub async fn start_proxy(config: SpuConfig,acceptor: (TlsAcceptor,String)) {
-
-        let (tls_acceptor,proxy_addr) = acceptor;
+    pub async fn start_proxy(config: SpuConfig, acceptor: (TlsAcceptor, String)) {
+        let (tls_acceptor, proxy_addr) = acceptor;
         let target = config.public_endpoint;
-        info!("starting TLS proxy: {}",proxy_addr);
+        info!("starting TLS proxy: {}", proxy_addr);
 
-        if let Err(err) = proxy_start(&proxy_addr,tls_acceptor,target).await {
+        if let Err(err) = proxy_start(&proxy_addr, tls_acceptor, target).await {
             print_cli_err!(err);
             process::exit(-1);
         } else {
             info!("TLS started successfully");
             println!("TLS proxy started");
         }
-
     }
 }

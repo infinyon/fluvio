@@ -2,9 +2,8 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum PartitionError {
-    InvalidSyntax(String)
+    InvalidSyntax(String),
 }
-
 
 impl fmt::Display for PartitionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -13,7 +12,6 @@ impl fmt::Display for PartitionError {
         }
     }
 }
-
 
 // returns a tuple (topic_name, idx)
 pub fn decompose_partition_name(partition_name: &str) -> Result<(String, i32), PartitionError> {

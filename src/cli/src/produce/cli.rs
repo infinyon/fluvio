@@ -39,13 +39,17 @@ pub enum FileRecord {
 
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
-
     /// Topic name
-    #[structopt(value_name="topic")]
+    #[structopt(value_name = "topic")]
     pub topic: String,
 
     /// Partition id
-    #[structopt(short = "p", long = "partition", value_name = "integer", default_value = "0")]
+    #[structopt(
+        short = "p",
+        long = "partition",
+        value_name = "integer",
+        default_value = "0"
+    )]
     pub partition: i32,
 
     /// Send messages in an infinite loop
@@ -74,7 +78,7 @@ pub struct ProduceLogOpt {
     /// Address of Streaming Controller
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     pub sc: Option<String>,
-    
+
     ///Address of Streaming Processing Unit
     #[structopt(
         short = "u",
@@ -98,19 +102,19 @@ pub struct ProduceLogOpt {
     tls: TlsConfig,
 
     #[structopt(flatten)]
-    profile: InlineProfile
+    profile: InlineProfile,
 }
 
 impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
     pub fn validate(self) -> Result<(ServerTargetConfig, ProduceLogConfig), CliError> {
-
         let target_server = ServerTargetConfig::possible_target(
-            self.sc, 
+            self.sc,
             self.spu,
             self.kf,
             self.tls.try_into_file_config()?,
-            self.profile.profile)?;
+            self.profile.profile,
+        )?;
 
         // generate file record
         let records_from_file = if let Some(record_per_line) = self.record_per_line {

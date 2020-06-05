@@ -24,14 +24,11 @@ pub struct ConfigOption {
     pub segment_max_bytes: Size,
 }
 
-
 impl fmt::Display for ConfigOption {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"storage config at: {:#?}",self.base_dir)
+        write!(f, "storage config at: {:#?}", self.base_dir)
     }
 }
-
-
 
 fn default_base_dir() -> PathBuf {
     Path::new("/tmp").to_path_buf()
@@ -50,12 +47,17 @@ fn default_segment_max_bytes() -> Size {
 }
 
 impl ConfigOption {
-    pub fn new(base_dir: PathBuf, index_max_bytes: u32, index_max_interval_bytes: u32, segment_max_bytes: u32) -> Self {
+    pub fn new(
+        base_dir: PathBuf,
+        index_max_bytes: u32,
+        index_max_interval_bytes: u32,
+        segment_max_bytes: u32,
+    ) -> Self {
         ConfigOption {
             base_dir,
             index_max_bytes,
             index_max_interval_bytes,
-            segment_max_bytes
+            segment_max_bytes,
         }
     }
 

@@ -1,8 +1,6 @@
-
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::path::Path;
-
 
 use log::debug;
 use log::trace;
@@ -27,7 +25,6 @@ use crate::records::FileRecords;
 
 pub const MESSAGE_LOG_EXTENSION: &'static str = "log";
 
-
 /// Can append new batch to file
 pub struct MutFileRecords {
     base_offset: Offset,
@@ -36,12 +33,9 @@ pub struct MutFileRecords {
     path: PathBuf,
 }
 
-
 impl Unpin for MutFileRecords {}
 
-
 impl MutFileRecords {
-
     pub async fn create(
         base_offset: Offset,
         option: &ConfigOption,
@@ -56,7 +50,7 @@ impl MutFileRecords {
             base_offset,
             f_sink,
             item_last_offset_delta: 0,
-            path: log_path.to_owned()
+            path: log_path.to_owned(),
         })
     }
 
@@ -76,7 +70,7 @@ impl MutFileRecords {
             base_offset,
             f_sink,
             item_last_offset_delta: 0,
-            path: log_path.to_owned()
+            path: log_path.to_owned(),
         })
     }
 
@@ -92,13 +86,11 @@ impl MutFileRecords {
         self.f_sink.get_current_len() as Size
     }
 
-
     pub fn get_item_last_offset_delta(&self) -> Size {
         self.item_last_offset_delta
     }
 
     pub async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
-
         trace!("start sending using batch {:#?}", item.get_header());
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
@@ -107,21 +99,19 @@ impl MutFileRecords {
         if self.f_sink.can_be_appended(buffer.len() as u64) {
             self.f_sink.write_all(&buffer).await?;
             // for now, we flush for every send
-            self.f_sink.flush().await.map_err(|err|err.into())
+            self.f_sink.flush().await.map_err(|err| err.into())
         } else {
             Err(StorageError::NoRoom(item))
         }
     }
 
     #[allow(unused)]
-    pub async fn flush(&mut self) -> Result<(),IoError> {
+    pub async fn flush(&mut self) -> Result<(), IoError> {
         self.f_sink.flush().await
     }
-
 }
 
 impl FileRecords for MutFileRecords {
-
     fn get_base_offset(&self) -> Offset {
         self.base_offset
     }

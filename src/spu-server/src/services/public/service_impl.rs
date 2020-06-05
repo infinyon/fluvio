@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -15,7 +14,6 @@ use spu_api::SpuApiKey;
 use spu_api::PublicRequest;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
-
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
 use super::produce_handler::handle_produce_request;
@@ -24,38 +22,36 @@ use super::cf_handler::CfHandler;
 use super::local_spu_request::handle_spu_request;
 use super::offset_request::handle_offset_request;
 
-pub struct PublicService {
-}
+pub struct PublicService {}
 
 impl PublicService {
-
     pub fn new() -> Self {
-        PublicService{}
+        PublicService {}
     }
-
 }
 
 #[async_trait]
-impl <S>KfService<S> for PublicService
-    where S: AsyncRead + AsyncWrite + Unpin + Send + 'static 
+impl<S> KfService<S> for PublicService
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Context = DefaultSharedGlobalContext;
     type Request = PublicRequest;
-    
+
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
         socket: InnerKfSocket<S>,
-    ) -> Result<(),KfSocketError>
-        where InnerKfSink<S>: ZeroCopyWrite 
+    ) -> Result<(), KfSocketError>
+    where
+        InnerKfSink<S>: ZeroCopyWrite,
     {
-       
-        let (mut sink,mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<PublicRequest,SpuApiKey>();
+        let (mut sink, mut stream) = socket.split();
+        let mut api_stream = stream.api_stream::<PublicRequest, SpuApiKey>();
 
         api_loop!(
             api_stream,
-            
+
             // Mixed
             PublicRequest::ApiVersionsRequest(request) => call_service!(
                 request,
@@ -72,7 +68,7 @@ impl <S>KfService<S> for PublicService
                 "ks produce request handler"
             ),
             PublicRequest::KfFileFetchRequest(request) => handle_fetch_request(request,context.clone(),&mut sink).await?,
-            
+
             // Fluvio
             PublicRequest::FlvFetchLocalSpuRequest(request) => call_service!(
                 request,
@@ -93,10 +89,9 @@ impl <S>KfService<S> for PublicService
                 break;
 
             }
-              
+
         );
 
         Ok(())
     }
-
 }

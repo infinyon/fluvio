@@ -23,77 +23,73 @@ use k8_metadata::topic::Partition as K8Partition;
 // Data Structures
 // -----------------------------------
 
-#[derive(Debug,Clone,Default,PartialEq,Encode,Decode)]
+#[derive(Debug, Clone, Default, PartialEq, Encode, Decode)]
 pub struct TopicReplicaParam {
     pub partitions: PartitionCount,
     pub replication_factor: ReplicationFactor,
-    pub ignore_rack_assignment: IgnoreRackAssignment
+    pub ignore_rack_assignment: IgnoreRackAssignment,
 }
 
-
 impl TopicReplicaParam {
-    pub fn new(partitions: PartitionCount,replication_factor: ReplicationFactor,
-        ignore_rack_assignment: IgnoreRackAssignment) -> Self {
-
+    pub fn new(
+        partitions: PartitionCount,
+        replication_factor: ReplicationFactor,
+        ignore_rack_assignment: IgnoreRackAssignment,
+    ) -> Self {
         Self {
             partitions,
             replication_factor,
-            ignore_rack_assignment
+            ignore_rack_assignment,
         }
     }
 }
 
-impl From<(PartitionCount,ReplicationFactor,IgnoreRackAssignment)> for  TopicReplicaParam {
-    fn from(value: (PartitionCount,ReplicationFactor,IgnoreRackAssignment)) -> Self {
-        let (partitions,replication_factor,ignore_rack) = value;
-        Self::new(partitions,replication_factor,ignore_rack)
+impl From<(PartitionCount, ReplicationFactor, IgnoreRackAssignment)> for TopicReplicaParam {
+    fn from(value: (PartitionCount, ReplicationFactor, IgnoreRackAssignment)) -> Self {
+        let (partitions, replication_factor, ignore_rack) = value;
+        Self::new(partitions, replication_factor, ignore_rack)
     }
 }
-
 
 impl std::fmt::Display for TopicReplicaParam {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "replica param::(p:{}, r:{})", self.partitions, self.replication_factor)
+        write!(
+            f,
+            "replica param::(p:{}, r:{})",
+            self.partitions, self.replication_factor
+        )
     }
 }
 
-
 /// Hack: field instead of new type to get around encode and decode limitations
-#[derive(Debug,Default,Clone,PartialEq,Encode,Decode)]
+#[derive(Debug, Default, Clone, PartialEq, Encode, Decode)]
 pub struct PartitionMaps {
-    maps: Vec<PartitionMap>
+    maps: Vec<PartitionMap>,
 }
 
 impl From<Vec<PartitionMap>> for PartitionMaps {
     fn from(maps: Vec<PartitionMap>) -> Self {
-        Self {
-            maps
-        }
+        Self { maps }
     }
 }
 
 impl From<Vec<(i32, Vec<i32>)>> for PartitionMaps {
     fn from(partition_vec: Vec<(i32, Vec<i32>)>) -> Self {
-        let maps: Vec<PartitionMap> = partition_vec.into_iter()
-            .map( |(id,replicas)| PartitionMap {
-                id,
-                replicas
-            }).
-            collect();
+        let maps: Vec<PartitionMap> = partition_vec
+            .into_iter()
+            .map(|(id, replicas)| PartitionMap { id, replicas })
+            .collect();
         maps.into()
     }
 }
-
 
 impl std::fmt::Display for PartitionMaps {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "partiton map:{})", self.maps.len())
     }
 }
- 
 
 impl PartitionMaps {
-
     pub fn maps(&self) -> &Vec<PartitionMap> {
         &self.maps
     }
@@ -105,7 +101,7 @@ impl PartitionMaps {
     fn partition_count(&self) -> Option<PartitionCount> {
         // compute partitions form replica map
         let partitions = self.maps.len() as PartitionCount;
-        if  partitions > 0 {
+        if partitions > 0 {
             Some(partitions)
         } else {
             None
@@ -150,7 +146,6 @@ impl PartitionMaps {
 
         spu_ids
     }
-
 
     /// Convert partition map into replica map
     pub fn partition_map_to_replica_map(&self) -> ReplicaMap {
@@ -240,7 +235,6 @@ impl PartitionMaps {
                 ));
             }
 
-
             // all ids must be positive numbers
             for spu_id in &partition.replicas {
                 if *spu_id < 0 {
@@ -254,24 +248,19 @@ impl PartitionMaps {
                 }
             }
 
-
             // increment id for next iteration
             id += 1;
         }
 
         Ok(())
     }
-
 }
 
-
-
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TopicSpec {
     Assigned(PartitionMaps),
-    Computed(TopicReplicaParam)
+    Computed(TopicReplicaParam),
 }
-
 
 // -----------------------------------
 // Implementation
@@ -283,7 +272,10 @@ impl Default for TopicSpec {
 }
 
 impl TopicSpec {
-    pub fn new_assigned<J>(partition_map: J) -> Self where J: Into<PartitionMaps> {
+    pub fn new_assigned<J>(partition_map: J) -> Self
+    where
+        J: Into<PartitionMaps>,
+    {
         TopicSpec::Assigned(partition_map.into())
     }
 
@@ -305,14 +297,14 @@ impl TopicSpec {
     pub fn partitions(&self) -> Option<PartitionCount> {
         match self {
             TopicSpec::Computed(param) => Some(param.partitions),
-            TopicSpec::Assigned(partition_map) => partition_map.partition_count()
+            TopicSpec::Assigned(partition_map) => partition_map.partition_count(),
         }
     }
 
     pub fn replication_factor(&self) -> Option<ReplicationFactor> {
         match self {
             TopicSpec::Computed(param) => Some(param.replication_factor),
-            TopicSpec::Assigned(partition_map) => partition_map.replication_factor()
+            TopicSpec::Assigned(partition_map) => partition_map.replication_factor(),
         }
     }
 
@@ -357,7 +349,7 @@ impl TopicSpec {
     pub fn partition_map_str(&self) -> Option<String> {
         match self {
             TopicSpec::Computed(_) => None,
-            TopicSpec::Assigned(partition_map) => partition_map.partition_map_string()
+            TopicSpec::Assigned(partition_map) => partition_map.partition_map_string(),
         }
     }
 
@@ -402,28 +394,22 @@ impl TopicSpec {
 
         Ok(())
     }
-
-
-
-    
 }
 
-
-
 impl Decoder for TopicSpec {
-    fn decode<T>(&mut self, src: &mut T,version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         let mut typ: u8 = 0;
-        typ.decode(src,version)?;
+        typ.decode(src, version)?;
         trace!("decoded type: {}", typ);
 
         match typ {
             // Assigned Replicas
             0 => {
                 let mut partition_map = PartitionMaps::default();
-                partition_map.decode(src,version)?;
+                partition_map.decode(src, version)?;
                 *self = Self::Assigned(partition_map);
                 Ok(())
             }
@@ -431,8 +417,8 @@ impl Decoder for TopicSpec {
             // Computed Replicas
             1 => {
                 let mut param = TopicReplicaParam::default();
-                param.decode(src,version)?;
-                *self =TopicSpec::Computed(param);
+                param.decode(src, version)?;
+                *self = TopicSpec::Computed(param);
                 Ok(())
             }
 
@@ -445,27 +431,21 @@ impl Decoder for TopicSpec {
     }
 }
 
-
-
-
 // -----------------------------------
 // Encoder / Decoder
 // -----------------------------------
 impl Encoder for TopicSpec {
-
     // compute size for fluvio replicas
     fn write_size(&self, version: Version) -> usize {
         let typ_size = (0 as u8).write_size(version);
         match self {
             TopicSpec::Assigned(partitions) => typ_size + partitions.write_size(version),
-            TopicSpec::Computed(param) => {
-                typ_size + param.write_size(version)
-            }
+            TopicSpec::Computed(param) => typ_size + param.write_size(version),
         }
     }
 
     // encode fluvio replicas
-    fn encode<T>(&self, dest: &mut T,version: Version) -> Result<(), Error>
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
     where
         T: BufMut,
     {
@@ -483,48 +463,41 @@ impl Encoder for TopicSpec {
         match self {
             // encode assign partitions
             TopicSpec::Assigned(partitions) => {
-
                 let typ: u8 = 0;
-                typ.encode(dest,version)?;
-                partitions.encode(dest,version)?;
-
+                typ.encode(dest, version)?;
+                partitions.encode(dest, version)?;
             }
 
             // encode computed partitions
             TopicSpec::Computed(param) => {
-
                 let typ: u8 = 1;
-                typ.encode(dest,version)?;
-                param.encode(dest,version)?;
-
+                typ.encode(dest, version)?;
+                param.encode(dest, version)?;
             }
         }
 
         Ok(())
     }
-
 }
 
 impl From<TopicSpec> for K8TopicSpec {
     fn from(spec: TopicSpec) -> Self {
-        
         match spec {
             TopicSpec::Computed(computed_param) => K8TopicSpec::new(
-                    Some(computed_param.partitions),
-                    Some(computed_param.replication_factor),
-                    Some(computed_param.ignore_rack_assignment),
-                    None
-                ),
+                Some(computed_param.partitions),
+                Some(computed_param.replication_factor),
+                Some(computed_param.ignore_rack_assignment),
+                None,
+            ),
             TopicSpec::Assigned(assign_param) => K8TopicSpec::new(
-                    None,
-                    None,
-                    None,
-                    Some(replica_map_to_k8_partition(assign_param))
-                )
+                None,
+                None,
+                None,
+                Some(replica_map_to_k8_partition(assign_param)),
+            ),
         }
     }
 }
-
 
 /// Translate Fluvio Replica Map to K8 Partitions to KV store notification
 fn replica_map_to_k8_partition(partition_maps: PartitionMaps) -> Vec<K8Partition> {
@@ -535,29 +508,26 @@ fn replica_map_to_k8_partition(partition_maps: PartitionMaps) -> Vec<K8Partition
     k8_partitions
 }
 
-
-impl From<(PartitionCount,ReplicationFactor,IgnoreRackAssignment)> for TopicSpec {
-    fn from(spec: (PartitionCount,ReplicationFactor,IgnoreRackAssignment)) -> Self {
-        let (count,factor, rack) = spec;
-        Self::new_computed(count,factor,Some(rack))
+impl From<(PartitionCount, ReplicationFactor, IgnoreRackAssignment)> for TopicSpec {
+    fn from(spec: (PartitionCount, ReplicationFactor, IgnoreRackAssignment)) -> Self {
+        let (count, factor, rack) = spec;
+        Self::new_computed(count, factor, Some(rack))
     }
 }
 
 /// convert from tuple with partition and replication with rack off
-impl From<(PartitionCount,ReplicationFactor)> for TopicSpec {
-    fn from(spec: (PartitionCount,ReplicationFactor)) -> Self {
-        let (count,factor) = spec;
-        Self::new_computed(count,factor,Some(false))
+impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
+    fn from(spec: (PartitionCount, ReplicationFactor)) -> Self {
+        let (count, factor) = spec;
+        Self::new_computed(count, factor, Some(false))
     }
 }
-
 
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
 pub struct PartitionMap {
     pub id: PartitionId,
     pub replicas: Vec<SpuId>,
 }
-
 
 // -----------------------------------
 // Unit Tests
@@ -567,8 +537,6 @@ pub struct PartitionMap {
 pub mod test {
     use super::*;
     use std::io::Cursor;
-
-   
 
     #[test]
     fn test_is_computed_topic() {
@@ -727,11 +695,8 @@ pub mod test {
     #[test]
     fn test_unique_spus_in_partition_map() {
         // id starts from 1 rather than 0
-        let p1: PartitionMaps = vec![
-            (0, vec![0, 1, 3]),
-            (1, vec![0, 2, 3]),
-            (2, vec![1, 3, 4]),
-        ].into();
+        let p1: PartitionMaps =
+            vec![(0, vec![0, 1, 3]), (1, vec![0, 2, 3]), (2, vec![1, 3, 4])].into();
 
         let p1_result = p1.unique_spus_in_partition_map();
         let expected_p1_result: Vec<i32> = vec![0, 1, 3, 2, 4];
@@ -746,12 +711,13 @@ pub mod test {
         let partition_map: PartitionMaps = vec![PartitionMap {
             id: 0,
             replicas: vec![5001, 5002],
-        }].into();
+        }]
+        .into();
         let topic_spec = TopicSpec::Assigned(partition_map.clone());
         let mut dest = vec![];
 
         // test encode
-        let result = topic_spec.encode(&mut dest,0);
+        let result = topic_spec.encode(&mut dest, 0);
         assert!(result.is_ok());
 
         let expected_dest = [
@@ -766,7 +732,7 @@ pub mod test {
 
         // test encode
         let mut topic_spec_decoded = TopicSpec::default();
-        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest),0);
+        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
         assert!(result.is_ok());
 
         match topic_spec_decoded {
@@ -776,7 +742,8 @@ pub mod test {
                     vec![PartitionMap {
                         id: 0,
                         replicas: vec![5001, 5002],
-                    }].into()
+                    }]
+                    .into()
                 );
             }
             _ => assert!(
@@ -793,7 +760,7 @@ pub mod test {
         let mut dest = vec![];
 
         // test encode
-        let result = topic_spec.encode(&mut dest,0);
+        let result = topic_spec.encode(&mut dest, 0);
         assert!(result.is_ok());
 
         let expected_dest = [
@@ -806,7 +773,7 @@ pub mod test {
 
         // test encode
         let mut topic_spec_decoded = TopicSpec::default();
-        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest),0);
+        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
         assert!(result.is_ok());
 
         match topic_spec_decoded {
@@ -826,11 +793,8 @@ pub mod test {
     #[test]
     fn test_partition_map_str() {
         // Test multiple
-        let p1: PartitionMaps = vec![
-            (0, vec![0, 1, 3]),
-            (1, vec![0, 2, 3]),
-            (2, vec![1, 3, 4]),
-        ].into();
+        let p1: PartitionMaps =
+            vec![(0, vec![0, 1, 3]), (1, vec![0, 2, 3]), (2, vec![1, 3, 4])].into();
         let spec = TopicSpec::new_assigned(p1);
         assert_eq!(
             spec.partition_map_str(),

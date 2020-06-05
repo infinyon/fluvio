@@ -41,7 +41,6 @@ pub struct PartitionParam {
 
 pub use topic_partition::*;
 
-
 mod topic_partition {
 
     use serde::Deserialize;
@@ -53,7 +52,6 @@ mod topic_partition {
     use kf_protocol::message::topic::CreatableReplicaAssignment;
     use sc_api::topic::FlvTopicPartitionMap;
 
-
     #[derive(Debug)]
     pub enum ReplicaConfig {
         // replica assignment
@@ -62,8 +60,6 @@ mod topic_partition {
         // partitions, replication, ignore_rack_assignment
         Computed(i32, i16, bool),
     }
-
-
 
     #[derive(Debug, Deserialize, PartialEq)]
     #[serde(rename_all = "camelCase")]
@@ -74,9 +70,7 @@ mod topic_partition {
     impl Partitions {
         #[allow(unused)]
         pub fn new(partitions: Vec<Partition>) -> Self {
-            Self {
-                partitions
-            }
+            Self { partitions }
         }
     }
 
@@ -87,15 +81,10 @@ mod topic_partition {
     }
 
     impl Partition {
-        pub fn new(id: i32,replicas: Vec<i32>) -> Self {
-            Self {
-                id,
-                replicas
-            }
+        pub fn new(id: i32, replicas: Vec<i32>) -> Self {
+            Self { id, replicas }
         }
     }
-
-
 
     impl Partitions {
         /// Read and decode the json file into Replica Assignment map
@@ -129,6 +118,4 @@ mod topic_partition {
             partition_map
         }
     }
-
-
 }

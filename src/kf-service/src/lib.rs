@@ -58,32 +58,25 @@ macro_rules! api_loop {
 #[macro_export]
 macro_rules! wait_for_request {
     ( $api_stream:ident, $matcher:pat => $result:expr) => {{
-        
-        use futures::stream::StreamExt;        
-        
+        use futures::stream::StreamExt;
+
         if let Some(msg) = $api_stream.next().await {
-        
             if let Ok(req_message) = msg {
-                    
-                log::trace!("received request: {:#?}",req_message);
+                log::trace!("received request: {:#?}", req_message);
                 match req_message {
                     $matcher => $result,
                     _ => {
-                        log::error!("unexpected request: {:#?}",req_message);
-                        return Ok(())
+                        log::error!("unexpected request: {:#?}", req_message);
+                        return Ok(());
                     }
                 }
-                    
             } else {
                 log::trace!("no content, end of connection");
-                return Ok(())
+                return Ok(());
             }
-        
         } else {
             log::trace!("client connect terminated");
-            return Ok(())
+            return Ok(());
         }
-
-    
     }};
 }

@@ -1,7 +1,4 @@
-
-
 use internal_api::messages::MsgType;
-
 
 // Test Actions - helps generate composite actions
 pub enum TAction {
@@ -15,9 +12,7 @@ impl From<TAction> for MsgType {
         match value {
             TAction::UPDATE => MsgType::UPDATE,
             TAction::DEL => MsgType::DELETE,
-            TAction::MOD => MsgType::UPDATE
+            TAction::MOD => MsgType::UPDATE,
         }
     }
 }
-
-

@@ -13,7 +13,6 @@ use futures::stream::StreamExt;
 use futures::stream::empty;
 use futures::stream::BoxStream;
 
-
 use kf_protocol::message::fetch::DefaultKfFetchRequest;
 use kf_protocol::message::fetch::FetchPartition;
 use kf_protocol::message::fetch::FetchableTopic;
@@ -66,11 +65,9 @@ use crate::query_params::TopicPartitionParam;
 use crate::query_params::FetchLogsParam;
 use crate::query_params::ReplicaConfig;
 
-
 pub struct KfClient(Client);
 
 impl KfClient {
-
     pub fn new(client: Client) -> Self {
         Self(client)
     }
@@ -81,9 +78,7 @@ impl KfClient {
 }
 
 impl KfClient {
-
-    pub async fn connect(config: ClientConfig) -> Result<Self,ClientError>
-    {
+    pub async fn connect(config: ClientConfig) -> Result<Self, ClientError> {
         let client = config.connect().await?;
         Ok(Self::new(client))
     }
@@ -109,17 +104,13 @@ impl KfClient {
         self.0.send_receive(request).await
     }
 
-   
-
-    
     pub async fn list_offsets(
         &mut self,
         topic_name: &str,
         leader: &LeaderParam,
     ) -> Result<KfListOffsetResponse, KfSocketError> {
-
         let mut request = KfListOffsetRequest::default();
-      
+
         // collect partition index & epoch information from leader
         let mut offset_partitions: Vec<ListOffsetPartition> = vec![];
         for partition in &leader.partitions {
@@ -146,11 +137,9 @@ impl KfClient {
         group_id: &str,
         topic_name: &str,
         tp_param: &TopicPartitionParam,
-
     ) -> Result<KfOffsetFetchResponse, KfSocketError> {
-
         let mut request = KfOffsetFetchRequest::default();
-      
+
         // collect partition indexes
         let mut partition_indexes: Vec<i32> = vec![];
         for leader in &tp_param.leaders {
@@ -177,7 +166,6 @@ impl KfClient {
         &mut self,
         group_id: &str,
     ) -> Result<KfFindCoordinatorResponse, KfSocketError> {
-
         let mut request = KfFindCoordinatorRequest::default();
         request.key = group_id.to_owned();
 
@@ -189,9 +177,8 @@ impl KfClient {
         &mut self,
         group_id: &str,
         member_id: &str,
-        generation_id: i32
+        generation_id: i32,
     ) -> Result<KfHeartbeatResponse, KfSocketError> {
-
         let mut request = KfHeartbeatRequest::default();
 
         // request with protocol
@@ -208,10 +195,9 @@ impl KfClient {
         topic_name: &str,
         group_id: &str,
         member_id: &str,
-    ) -> Result<KfJoinGroupResponse, KfSocketError > {
-
+    ) -> Result<KfJoinGroupResponse, KfSocketError> {
         let mut request = KfJoinGroupRequest::default();
-       
+
         // metadata
         let mut metadata = Metadata::default();
         metadata.topics = vec![topic_name.to_owned()];
@@ -243,9 +229,8 @@ impl KfClient {
         group_id: &str,
         member_id: &str,
     ) -> Result<KfLeaveGroupResponse, KfSocketError> {
-
         let mut request = KfLeaveGroupRequest::default();
-      
+
         // request with protocol
         request.group_id = group_id.to_owned();
         request.member_id = member_id.to_owned();
@@ -253,13 +238,11 @@ impl KfClient {
         self.0.send_receive(request).await
     }
 
-
     /// Fetch log records from a target server
     pub async fn kf_fetch_logs(
         &mut self,
         fetch_log_param: &FetchLogsParam,
-    ) -> Result<DefaultKfFetchResponse, KfSocketError > {
-
+    ) -> Result<DefaultKfFetchResponse, KfSocketError> {
         let mut fetch_partitions = vec![];
         for partition_param in &fetch_log_param.partitions {
             let mut fetch_part = FetchPartition::default();
@@ -295,11 +278,10 @@ impl KfClient {
         topic_name: &str,
         group_id: &str,
         member_id: &str,
-        generation_id: i32
+        generation_id: i32,
     ) -> Result<KfSyncGroupResponse, KfSocketError> {
-
         let mut request = KfSyncGroupRequest::default();
-        
+
         // assignment
         let mut assignment = Assignment::default();
         assignment.topics = vec![topic_name.to_owned()];
@@ -323,17 +305,10 @@ impl KfClient {
 
         self.0.send_receive(request).await
     }
-
-
-
 }
 
-
-
 #[async_trait]
-impl SpuController for KfClient
-{
-
+impl SpuController for KfClient {
     type Leader = KfLeader;
 
     type TopicMetadata = MetadataResponseTopic;
@@ -344,14 +319,11 @@ impl SpuController for KfClient
         topic: &str,
         partition: i32,
     ) -> Result<Self::Leader, ClientError> {
-
-        
         let kf_metadata = self.query_metadata(Some(vec![topic.to_owned()])).await?;
         let brokers = &kf_metadata.brokers;
         let topics = kf_metadata.topics;
-        
+
         for response_topic in topics {
-            
             if response_topic.name == topic {
                 for response_partition in response_topic.partitions {
                     if response_partition.partition_index == partition {
@@ -365,19 +337,17 @@ impl SpuController for KfClient
                                 let broker: ServerAddress = broker.into();
                                 kafka_config.set_addr(broker.to_string());
                                 let kf_client = kafka_config.connect().await?;
-                               
-                                let config = ReplicaLeaderConfig::new(topic.to_owned(),partition)
-                                        .spu_id(leader_id);
-                                return Ok(KfLeader::new(kf_client,config))
+
+                                let config = ReplicaLeaderConfig::new(topic.to_owned(), partition)
+                                    .spu_id(leader_id);
+                                return Ok(KfLeader::new(kf_client, config));
                             }
                         }
                     }
                 }
             }
-            
         }
-        
-    
+
         Err(ClientError::IoError(IoError::new(
             ErrorKind::Other,
             format!(
@@ -385,11 +355,9 @@ impl SpuController for KfClient
                 topic, partition
             ),
         )))
-        
     }
 
-    async fn delete_topic(&mut self, topic: &str) -> Result<String,ClientError> {
-
+    async fn delete_topic(&mut self, topic: &str) -> Result<String, ClientError> {
         let request = KfDeleteTopicsRequest {
             topic_names: vec![topic.to_owned()],
             timeout_ms: KF_REQUEST_TIMEOUT_MS,
@@ -400,30 +368,33 @@ impl SpuController for KfClient
         for topic_response in response.responses {
             if topic_response.name == topic {
                 if topic_response.error_code.is_ok() {
-                    return Ok(topic_response.name)
+                    return Ok(topic_response.name);
                 } else {
                     return Err(ClientError::IoError(IoError::new(
                         ErrorKind::Other,
-                        format!("topic error '{}' {}", topic, topic_response.error_code.to_sentence()),
-                    )))
+                        format!(
+                            "topic error '{}' {}",
+                            topic,
+                            topic_response.error_code.to_sentence()
+                        ),
+                    )));
                 }
             }
         }
 
-        Err(
-            ClientError::IoError(
-                IoError::new(
-                    ErrorKind::Other,
-                    format!("kf topic response: {}", topic)
+        Err(ClientError::IoError(IoError::new(
+            ErrorKind::Other,
+            format!("kf topic response: {}", topic),
         )))
-
     }
 
-
-    async fn create_topic(&mut self,topic: String, replica: ReplicaConfig,validate_only: bool) -> Result<String,ClientError> {
-
+    async fn create_topic(
+        &mut self,
+        topic: String,
+        replica: ReplicaConfig,
+        validate_only: bool,
+    ) -> Result<String, ClientError> {
         let topic_request = match replica {
-
             ReplicaConfig::Computed(partitions, replicas, _) => CreatableTopic {
                 name: topic.clone(),
                 num_partitions: partitions,
@@ -437,13 +408,13 @@ impl SpuController for KfClient
                 replication_factor: -1,
                 assignments: partitions.kf_encode(),
                 configs: vec![],
-            }
+            },
         };
 
         let request = KfCreateTopicsRequest {
             topics: vec![topic_request],
             timeout_ms: KF_REQUEST_TIMEOUT_MS,
-            validate_only
+            validate_only,
         };
 
         let response = self.0.send_receive(request).await?;
@@ -451,27 +422,30 @@ impl SpuController for KfClient
         for topic_response in response.topics {
             if topic_response.name == topic {
                 if topic_response.error_code.is_ok() {
-                    return Ok(topic)
+                    return Ok(topic);
                 } else {
                     return Err(ClientError::IoError(IoError::new(
                         ErrorKind::Other,
-                        format!("topic error '{}' {}", topic, topic_response.error_code.to_sentence()),
-                    )))
+                        format!(
+                            "topic error '{}' {}",
+                            topic,
+                            topic_response.error_code.to_sentence()
+                        ),
+                    )));
                 }
             }
         }
 
-        Err(
-            ClientError::IoError(
-                IoError::new(
-                    ErrorKind::Other,
-                    format!("kf topic response: {}", topic)
+        Err(ClientError::IoError(IoError::new(
+            ErrorKind::Other,
+            format!("kf topic response: {}", topic),
         )))
-        
     }
 
-    async fn topic_metadata(&mut self,topics: Option<Vec<String>>) -> Result<Vec<Self::TopicMetadata>,ClientError> {
-
+    async fn topic_metadata(
+        &mut self,
+        topics: Option<Vec<String>>,
+    ) -> Result<Vec<Self::TopicMetadata>, ClientError> {
         let topics = if let Some(topics) = topics {
             let mut req_topics: Vec<MetadataRequestTopic> = vec![];
             for name in topics {
@@ -486,53 +460,40 @@ impl SpuController for KfClient
             topics,
             ..Default::default()
         };
-       
-    
+
         let response = self.0.send_receive(request).await?;
-    
+
         Ok(response.topics)
     }
-
-
-
-
 }
-
 
 pub struct KfLeader {
     client: Client,
-    config: ReplicaLeaderConfig
+    config: ReplicaLeaderConfig,
 }
 
 impl KfLeader {
-
-
-    pub fn new(client: Client,config: ReplicaLeaderConfig) -> Self {
-        Self {
-            client,
-            config
-        }
+    pub fn new(client: Client, config: ReplicaLeaderConfig) -> Self {
+        Self { client, config }
     }
 
-     /// fetch logs
-     #[allow(unused)]
-     async fn fetch_logs_inner(
+    /// fetch logs
+    #[allow(unused)]
+    async fn fetch_logs_inner(
         &mut self,
         offset: i64,
         max_bytes: i32,
-    ) ->  Result<FetchablePartitionResponse<DefaultRecords>, KfSocketError> { 
-
-
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>, KfSocketError> {
         let topic_request = FetchableTopic {
             name: self.topic().to_owned(),
-            fetch_partitions: vec![
-                FetchPartition {
-                    partition_index: self.partition(),
-                    current_leader_epoch:  -1,
-                    fetch_offset: offset,
-                    log_start_offset: -1,
-                    max_bytes
-                }]};
+            fetch_partitions: vec![FetchPartition {
+                partition_index: self.partition(),
+                current_leader_epoch: -1,
+                fetch_offset: offset,
+                log_start_offset: -1,
+                max_bytes,
+            }],
+        };
 
         let request = DefaultKfFetchRequest {
             replica_id: -1,
@@ -545,7 +506,6 @@ impl KfLeader {
             topics: vec![topic_request],
             ..Default::default()
         };
-        
 
         debug!(
             "fetch logs '{}' ({}) partition to {}",
@@ -558,39 +518,40 @@ impl KfLeader {
 
         let response = self.client.send_receive(request).await?;
 
-
         if response.error_code != KfErrorCode::None {
             return Err(IoError::new(
                 ErrorKind::InvalidData,
-                format!("fetch: {}", response.error_code.to_sentence())
-            ).into());
+                format!("fetch: {}", response.error_code.to_sentence()),
+            )
+            .into());
         }
 
-        match response.find_partition(self.topic(),self.partition()) {
+        match response.find_partition(self.topic(), self.partition()) {
             None => Err(IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("no topic: {}, partition: {} founded",self.topic(),self.partition())
-                ).into()),
+                ErrorKind::InvalidData,
+                format!(
+                    "no topic: {}, partition: {} founded",
+                    self.topic(),
+                    self.partition()
+                ),
+            )
+            .into()),
             Some(partition_response) => {
                 if partition_response.error_code != KfErrorCode::None {
                     return Err(IoError::new(
                         ErrorKind::InvalidData,
-                        format!("fetch: {}", partition_response.error_code.to_sentence())
-                    ).into());
+                        format!("fetch: {}", partition_response.error_code.to_sentence()),
+                    )
+                    .into());
                 }
                 Ok(partition_response)
             }
         }
-        
     }
-
 }
 
-
 #[async_trait]
-impl ReplicaLeader for KfLeader
-{
-
+impl ReplicaLeader for KfLeader {
     type OffsetPartitionResponse = ListOffsetPartitionResponse;
 
     fn config(&self) -> &ReplicaLeaderConfig {
@@ -605,15 +566,12 @@ impl ReplicaLeader for KfLeader
         &mut self.client
     }
 
-    async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError > {
-
-        
-        let offset_partitions = vec![
-            ListOffsetPartition {
-                partition_index: self.partition(),
-                current_leader_epoch: 0,
-                timestamp: -1
-            }];
+    async fn fetch_offsets(&mut self) -> Result<Self::OffsetPartitionResponse, ClientError> {
+        let offset_partitions = vec![ListOffsetPartition {
+            partition_index: self.partition(),
+            current_leader_epoch: 0,
+            timestamp: -1,
+        }];
 
         let request = KfListOffsetRequest {
             topics: vec![ListOffsetTopic {
@@ -623,120 +581,103 @@ impl ReplicaLeader for KfLeader
             replica_id: -1,
             ..Default::default()
         };
-    
+
         let response = self.client.send_receive(request).await?;
 
-        match response.find_partition(self.topic(),self.partition()) {
+        match response.find_partition(self.topic(), self.partition()) {
             Some(partition_response) => Ok(partition_response),
             None => Err(IoError::new(
                 ErrorKind::InvalidData,
-                format!("no topic: {}, partition: {} founded",self.topic(),self.partition())
-            ).into())
+                format!(
+                    "no topic: {}, partition: {} founded",
+                    self.topic(),
+                    self.partition()
+                ),
+            )
+            .into()),
         }
-    
     }
 
     async fn fetch_logs_once(
         &mut self,
         _offset_option: FetchOffset,
-        _option: FetchLogOption
-    ) -> Result<FetchablePartitionResponse<DefaultRecords>,ClientError>  {
-
+        _option: FetchLogOption,
+    ) -> Result<FetchablePartitionResponse<DefaultRecords>, ClientError> {
         Err(ClientError::Other("Not yet implemented".to_string()))
     }
 
-     /// Fetch log records from a target server
+    /// Fetch log records from a target server
     fn fetch_logs<'a>(
         &'a mut self,
         _offset: FetchOffset,
-        _config: FetchLogOption
-    ) -> BoxStream<'a,FetchablePartitionResponse<DefaultRecords>> {
-
+        _config: FetchLogOption,
+    ) -> BoxStream<'a, FetchablePartitionResponse<DefaultRecords>> {
         empty().boxed()
 
-    /*
-    et offsets = leader.fetch_offsets().await?;
-    let last_offset = offsets.last_stable_offset();
-
-    let mut current_offset = if opt.from_beginning {
-        offsets.start_offset()
-    } else {
-        offsets.last_stable_offset()
-    };
-
-    debug!("entering loop");
-
-    loop {
-        debug!("fetching with offset: {}", current_offset);
-
-        let fetch_logs_res = leader.fetch_logs(current_offset, opt.max_bytes).await?;
-
-        current_offset = fetch_logs_res.last_stable_offset;
-
-        debug!("fetching last offset: {} and response", last_offset);
-
-        // process logs response
-
-        process_fetch_topic_response(out.clone(), &topic, fetch_logs_res, &opt).await?;
-        let read_lock = end.read().unwrap();
-        if *read_lock {
-            debug!("detected end by ctrl-c, exiting loop");
-            break;
-        }
-
         /*
-        if !opt.continuous {
-            if last_offset > last_offset {
+        et offsets = leader.fetch_offsets().await?;
+        let last_offset = offsets.last_stable_offset();
+
+        let mut current_offset = if opt.from_beginning {
+            offsets.start_offset()
+        } else {
+            offsets.last_stable_offset()
+        };
+
+        debug!("entering loop");
+
+        loop {
+            debug!("fetching with offset: {}", current_offset);
+
+            let fetch_logs_res = leader.fetch_logs(current_offset, opt.max_bytes).await?;
+
+            current_offset = fetch_logs_res.last_stable_offset;
+
+            debug!("fetching last offset: {} and response", last_offset);
+
+            // process logs response
+
+            process_fetch_topic_response(out.clone(), &topic, fetch_logs_res, &opt).await?;
+            let read_lock = end.read().unwrap();
+            if *read_lock {
+                debug!("detected end by ctrl-c, exiting loop");
+                break;
+            }
+
+            /*
+            if !opt.continuous {
+                if last_offset > last_offset {
+                    debug!("finishing fetch loop");
+                    break;
+                }
+            }
+            */
+
+
+            if !opt.continuous {
                 debug!("finishing fetch loop");
                 break;
             }
-        }
-        */
-
-        
-        if !opt.continuous {
-            debug!("finishing fetch loop");
-            break;
-        }
-        
-
-        debug!("sleeping 200 ms between next fetch");
-        sleep(Duration::from_millis(200)).await;
-    
-        */
 
 
+            debug!("sleeping 200 ms between next fetch");
+            sleep(Duration::from_millis(200)).await;
+
+            */
     }
-        
-        
 }
-
 
 /// Implement simple polling stream for kafka
 /// it just iterates with simple delay
 pub struct FetchStream {
     #[allow(unused)]
-    leader: KfLeader
+    leader: KfLeader,
 }
 
-impl Stream for FetchStream 
-{
-
+impl Stream for FetchStream {
     type Item = FetchablePartitionResponse<DefaultRecords>;
 
     fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-       Poll::Ready(None)
+        Poll::Ready(None)
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,3 @@
-
 mod create;
 mod delete;
 mod describe;
@@ -24,46 +23,68 @@ use super::CliError;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "topic", about = "Topic operations")]
 pub enum TopicOpt {
-    #[structopt(name = "create", template = "{about}
+    #[structopt(
+        name = "create",
+        template = "{about}
 
 {usage}
 
 {all-args}
-",about = "Create a topic")]
+",
+        about = "Create a topic"
+    )]
     Create(CreateTopicOpt),
 
-    #[structopt(name = "delete", template = "{about}
+    #[structopt(
+        name = "delete",
+        template = "{about}
 
 {usage}
 
 {all-args}
-",about = "Delete a topic")]
+",
+        about = "Delete a topic"
+    )]
     Delete(DeleteTopicOpt),
 
-    #[structopt(name = "describe", template = "{about}
+    #[structopt(
+        name = "describe",
+        template = "{about}
 
 {usage}
 
 {all-args}
-",about = "Show details of a topic")]
+",
+        about = "Show details of a topic"
+    )]
     Describe(DescribeTopicsOpt),
 
-    #[structopt(name = "list", template = "{about}
+    #[structopt(
+        name = "list",
+        template = "{about}
 
 {usage}
 
 {all-args}
-",about = "Show all topics")]
+",
+        about = "Show all topics"
+    )]
     List(ListTopicsOpt),
 }
 
-pub(crate) async fn process_topic<O>(out: std::sync::Arc<O>,topic_opt: TopicOpt) -> Result<String, CliError>
-    where O: Terminal
+pub(crate) async fn process_topic<O>(
+    out: std::sync::Arc<O>,
+    topic_opt: TopicOpt,
+) -> Result<String, CliError>
+where
+    O: Terminal,
 {
     match topic_opt {
         TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await,
         TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await,
-        TopicOpt::Describe(describe_topics_opt) => process_describe_topics(out,describe_topics_opt).await,
-        TopicOpt::List(list_topics_opt) => process_list_topics(out,list_topics_opt).await
+        TopicOpt::Describe(describe_topics_opt) => {
+            process_describe_topics(out, describe_topics_opt).await
+        }
+        TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await,
     }
 }

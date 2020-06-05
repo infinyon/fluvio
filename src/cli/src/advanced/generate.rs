@@ -44,8 +44,12 @@ pub struct GenerateTemplateOpt {
 // -----------------------------------
 
 /// Parse request API and generate template
-pub fn process_generate_template<O>(out: std::sync::Arc<O>,opt: GenerateTemplateOpt) -> Result<(), CliError> 
-    where O: Terminal
+pub fn process_generate_template<O>(
+    out: std::sync::Arc<O>,
+    opt: GenerateTemplateOpt,
+) -> Result<(), CliError>
+where
+    O: Terminal,
 {
     let json = match opt.request {
         RequestApi::ApiVersions => serde_json::to_string_pretty(&KfApiVersionsRequest::default()),
@@ -68,7 +72,7 @@ pub fn process_generate_template<O>(out: std::sync::Arc<O>,opt: GenerateTemplate
     };
 
     let result = json.map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
-    t_println!(out,"{}", result);
+    t_println!(out, "{}", result);
 
     Ok(())
 }

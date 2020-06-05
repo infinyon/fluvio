@@ -187,7 +187,6 @@ pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usi
 #[cfg(test)]
 mod tests {
 
-
     use std::env::temp_dir;
     use std::io::Error as IoError;
 

@@ -186,5 +186,4 @@ pub mod test {
         assert_eq!(counters, Counters::new(generate_counters()));
         assert_eq!(counters.list.len(), 5);
     }
-
 }

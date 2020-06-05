@@ -8,13 +8,6 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 categories = ["encoding"]
 
-[[bin]]
-name = "file_send"
-path = "src/bin/file_send.rs"
-doc = false
-required-features = ["cli"]
-
-
 
 [dependencies]
 log = "0.4.8"

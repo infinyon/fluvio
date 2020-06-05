@@ -23,14 +23,11 @@ pub struct FlvRegisterCustomSpusRequest {
     pub custom_spus: Vec<FlvRegisterCustomSpuRequest>,
 }
 
-
 impl Request for FlvRegisterCustomSpusRequest {
     const API_KEY: u16 = ScApiKey::FlvRegisterCustomSpus as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvRegisterCustomSpusResponse;
 }
-
-
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvRegisterCustomSpuRequest {
@@ -61,17 +58,12 @@ pub struct FlvRegisterCustomSpusResponse {
 }
 
 impl FlvRegisterCustomSpusResponse {
-
     /// validate and extract a single response
-    pub fn validate(self, name: &str) -> Result<(),ApiError> {
-
+    pub fn validate(self, name: &str) -> Result<(), ApiError> {
         if let Some(item) = self.results.into_iter().find(|m| m.name == name) {
             item.as_result()
         } else {
             Err(ApiError::NoResourceFounded(name.to_owned()))
         }
-        
-
     }
-
 }

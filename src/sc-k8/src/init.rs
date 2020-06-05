@@ -14,12 +14,9 @@ use crate::operator::run_k8_operators;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-
-
 pub fn main_k8_loop() {
-   
     // parse configuration (program exits on error)
-    let (sc_config, k8_config,tls_option) = parse_cli_or_exit();
+    let (sc_config, k8_config, tls_option) = parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
 
@@ -28,18 +25,23 @@ pub fn main_k8_loop() {
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
         let (ws_service, metadata) = start_main_loop(sc_config.clone(), k8_client).await;
-        run_k8_operators(ws_service.clone(), namespace.clone(), metadata.owned_spus(),tls_option.clone().map(|(_,config)| config));
+        run_k8_operators(
+            ws_service.clone(),
+            namespace.clone(),
+            metadata.owned_spus(),
+            tls_option.clone().map(|(_, config)| config),
+        );
 
-        if let Some((proxy_port,tls_config)) = tls_option {
-
-            let tls_acceptor = tls_config.try_build_tls_acceptor().expect("can't build tls acceptor");
-            proxy::start_proxy(sc_config,(tls_acceptor,proxy_port)).await;
+        if let Some((proxy_port, tls_config)) = tls_option {
+            let tls_acceptor = tls_config
+                .try_build_tls_acceptor()
+                .expect("can't build tls acceptor");
+            proxy::start_proxy(sc_config, (tls_acceptor, proxy_port)).await;
         }
-    
+
         println!("Streaming Controller started successfully");
     });
 }
-
 
 mod proxy {
 
@@ -52,16 +54,14 @@ mod proxy {
     use flv_sc_core::config::ScConfig;
     use flv_tls_proxy::start as proxy_start;
 
-    pub async fn start_proxy(config: ScConfig,acceptor: (TlsAcceptor,String)) {
-
-        let (tls_acceptor,proxy_addr) = acceptor;
+    pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {
+        let (tls_acceptor, proxy_addr) = acceptor;
         let target = config.public_endpoint;
-        info!("starting TLS proxy: {}",proxy_addr);
+        info!("starting TLS proxy: {}", proxy_addr);
 
-        if let Err(err) = proxy_start(&proxy_addr,tls_acceptor,target).await {
+        if let Err(err) = proxy_start(&proxy_addr, tls_acceptor, target).await {
             print_cli_err!(err);
             process::exit(-1);
         }
-
     }
 }

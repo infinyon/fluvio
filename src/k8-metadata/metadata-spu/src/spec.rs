@@ -10,17 +10,15 @@ use k8_obj_metadata::DefaultHeader;
 use k8_obj_core::pod::ContainerPortSpec;
 use k8_obj_core::service::ServicePort;
 
-
 use serde::Deserialize;
 use serde::Serialize;
 
 use super::SpuStatus;
 
 impl Spec for SpuSpec {
-
     type Status = SpuStatus;
     type Header = DefaultHeader;
-    
+
     fn metadata() -> &'static Crd {
         &SPU_API
     }
@@ -88,7 +86,6 @@ impl Endpoint {
     }
 }
 
-
 impl From<&Endpoint> for ContainerPortSpec {
     fn from(end_point: &Endpoint) -> Self {
         ContainerPortSpec {
@@ -98,8 +95,6 @@ impl From<&Endpoint> for ContainerPortSpec {
     }
 }
 
-
-
 impl From<&Endpoint> for ServicePort {
     fn from(end_point: &Endpoint) -> Self {
         ServicePort {
@@ -108,8 +103,6 @@ impl From<&Endpoint> for ServicePort {
         }
     }
 }
-
-
 
 // -----------------------------------
 // Implementation - EncryptionEnum

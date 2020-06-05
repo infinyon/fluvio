@@ -1,5 +1,3 @@
-
-
 mod hex_dump;
 
 pub use self::hex_dump::bytes_to_hex_dump;
@@ -9,13 +7,10 @@ pub use cli::*;
 
 mod cli {
 
-
     use structopt::StructOpt;
 
     #[derive(Debug, StructOpt)]
     pub struct KfConfig {
-        
-
         #[cfg(feature = "kf")]
         #[structopt(
             short = "k",

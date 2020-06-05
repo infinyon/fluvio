@@ -1,4 +1,3 @@
-
 mod global_context;
 mod store;
 pub(crate) mod storage;
@@ -27,17 +26,16 @@ pub type SharedSpuConfig = Arc<SpuConfig>;
 
 pub use event::OffsetUpdateEvent;
 
-
 mod event {
 
     use kf_protocol::api::Offset;
     use flv_metadata::partition::ReplicaKey;
 
-        /// used for communicating change in offset for any replica
-    #[derive(Debug,Clone)]
+    /// used for communicating change in offset for any replica
+    #[derive(Debug, Clone)]
     pub struct OffsetUpdateEvent {
         pub replica_id: ReplicaKey,
-        pub leo: Offset,            
-        pub hw: Offset             
+        pub leo: Offset,
+        pub hw: Offset,
     }
 }

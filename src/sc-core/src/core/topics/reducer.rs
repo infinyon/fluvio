@@ -89,7 +89,6 @@ impl TopicReducer {
         &self,
         requests: TopicChangeRequest,
     ) -> Result<TopicActions, ScServerError> {
-        
         trace!("processing requests: {}", requests);
 
         let mut actions = TopicActions::default();
@@ -167,15 +166,12 @@ impl TopicReducer {
         if new_topic.spec != old_topic.spec {
             return Err(IoError::new(
                 ErrorKind::InvalidData,
-                format!(
-                    "topic '{}' - update spec... not implemented",
-                    name)
+                format!("topic '{}' - update spec... not implemented", name),
             ));
         }
 
         // if topic changed, update status & notify partitions
-        if new_topic.
-        status != old_topic.status {
+        if new_topic.status != old_topic.status {
             self.update_actions_next_state(&new_topic, actions);
         }
 
@@ -187,9 +183,8 @@ impl TopicReducer {
         match request {
             LSChange::Add(new_spu) => {
                 debug!("processing SPU add: {}", new_spu);
-                
+
                 self.generate_replica_map_for_all_topics_handler(actions);
-                
             }
 
             LSChange::Mod(_new_spu, _old_spu) => {
@@ -220,10 +215,9 @@ impl TopicReducer {
     /// if state is different, apply actions
     ///
     fn update_actions_next_state(&self, topic: &TopicKV, actions: &mut TopicActions) {
-        
         let next_state = topic.compute_next_state(self.spu_store(), self.partition_store());
-        
-        debug!("topic: {} next state: {}",topic.key(),next_state);
+
+        debug!("topic: {} next state: {}", topic.key(), next_state);
         let mut updated_topic = topic.clone();
         trace!("next state detal: {:#?}", next_state);
 
@@ -235,11 +229,19 @@ impl TopicReducer {
         }
 
         // apply changes to topics
-        if updated_topic.status.resolution != topic.status.resolution || updated_topic.status.reason != topic.status.reason {
-            debug!("{} status change to {} from: {}",topic.key(),updated_topic.status,topic.status);
-            actions.topics.push(TopicWSAction::UpdateStatus(updated_topic));
-        } 
-
+        if updated_topic.status.resolution != topic.status.resolution
+            || updated_topic.status.reason != topic.status.reason
+        {
+            debug!(
+                "{} status change to {} from: {}",
+                topic.key(),
+                updated_topic.status,
+                topic.status
+            );
+            actions
+                .topics
+                .push(TopicWSAction::UpdateStatus(updated_topic));
+        }
     }
 
     ///

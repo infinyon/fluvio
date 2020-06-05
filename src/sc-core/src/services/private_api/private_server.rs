@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-
 use log::error;
 use log::debug;
 use async_trait::async_trait;
@@ -20,24 +19,19 @@ use internal_api::RegisterSpuResponse;
 use crate::conn_manager::ConnParams;
 use super::SharedInternalContext;
 
-
 pub struct ScInternalService {}
 
-impl ScInternalService
-{
+impl ScInternalService {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
-
 }
 
 #[async_trait]
-impl KfService<TcpStream> for ScInternalService
-   
-{
+impl KfService<TcpStream> for ScInternalService {
     type Context = SharedInternalContext;
     type Request = InternalScRequest;
-  
+
     async fn respond(
         self: Arc<Self>,
         context: SharedInternalContext,
@@ -45,7 +39,7 @@ impl KfService<TcpStream> for ScInternalService
     ) -> Result<(), KfSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
-        
+
         // wait for spu registeration request
         let spu_id = wait_for_request!(api_stream,
             InternalScRequest::RegisterSpuRequest(req_msg) => {
@@ -53,7 +47,7 @@ impl KfService<TcpStream> for ScInternalService
                 let mut status = true;
                 debug!("registration req from spu '{}'", spu_id);
 
-                
+
                 let register_res = if context.validate_spu(&spu_id) {
                     debug!("SPU: {} validation succeed",spu_id);
                     RegisterSpuResponse::ok()
@@ -71,12 +65,11 @@ impl KfService<TcpStream> for ScInternalService
                 } else {
                     return Ok(())
                 }
-                
+
 
                 spu_id
             }
         );
-
 
         api_loop!(
             api_stream,

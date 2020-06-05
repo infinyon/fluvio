@@ -22,7 +22,7 @@ use rand::Rng;
 
 use flv_types::ReplicaMap;
 use k8_metadata::metadata::K8Obj;
-use flv_metadata::topic::{TopicSpec, TopicStatus,PartitionMap,TopicResolution};
+use flv_metadata::topic::{TopicSpec, TopicStatus, PartitionMap, TopicResolution};
 use flv_metadata::topic::TopicReplicaParam;
 use flv_metadata::topic::PartitionMaps;
 use flv_metadata::partition::ReplicaKey;
@@ -39,24 +39,16 @@ use crate::core::spus::SpuLocalStore;
 use crate::core::Spec;
 use crate::core::Status;
 
-
-impl Spec for TopicSpec
-    
-{
+impl Spec for TopicSpec {
     const LABEL: &'static str = "Topic";
     type Key = String;
     type Status = TopicStatus;
     type K8Spec = K8TopicSpec;
     type Owner = TopicSpec;
 
-
-/// convert kubernetes objects into KV vbalue
-    fn convert_from_k8(k8_topic: K8Obj<K8TopicSpec>) -> 
-            Result<KVObject<Self>,IoError> 
-
-    {
-
-       // metadata is mandatory
+    /// convert kubernetes objects into KV vbalue
+    fn convert_from_k8(k8_topic: K8Obj<K8TopicSpec>) -> Result<KVObject<Self>, IoError> {
+        // metadata is mandatory
         let topic_name = &k8_topic.metadata.name;
 
         // spec is mandatory
@@ -66,13 +58,9 @@ impl Spec for TopicSpec
         let topic_status = create_topic_status_from_k8_spec(&k8_topic.status);
 
         let ctx = KvContext::default().with_ctx(k8_topic.metadata.clone());
-        Ok(
-            TopicKV::new( topic_name.to_owned(),topic_spec, topic_status).with_kv_ctx(ctx),
-        )
+        Ok(TopicKV::new(topic_name.to_owned(), topic_spec, topic_status).with_kv_ctx(ctx))
     }
-    
 }
-
 
 /// There are 2 types of topic configurations:
 ///  * Computed
@@ -85,7 +73,6 @@ impl Spec for TopicSpec
 ///  * Values provided for partitions and replication factor are overwritten by the
 ///    values derived from custom replica assignment.
 fn create_computed_topic_spec_from_k8_spec(k8_topic_spec: &K8TopicSpec) -> TopicSpec {
-
     if let Some(k8_replica_assign) = &k8_topic_spec.custom_replica_assignment {
         // Assigned Topic
         let mut partition_map: Vec<PartitionMap> = vec![];
@@ -98,7 +85,6 @@ fn create_computed_topic_spec_from_k8_spec(k8_topic_spec: &K8TopicSpec) -> Topic
         }
 
         TopicSpec::new_assigned(partition_map)
-
     } else {
         // Computed Topic
         let partitions = match k8_topic_spec.partitions {
@@ -117,7 +103,6 @@ fn create_computed_topic_spec_from_k8_spec(k8_topic_spec: &K8TopicSpec) -> Topic
             k8_topic_spec.ignore_rack_assignment,
         )
     }
-
 }
 
 /// converts K8 topic status into metadata topic status
@@ -125,35 +110,26 @@ fn create_topic_status_from_k8_spec(k8_topic_status: &K8TopicStatus) -> TopicSta
     k8_topic_status.clone().into()
 }
 
-
-
-
-impl Status for TopicStatus{}
-
+impl Status for TopicStatus {}
 
 /// values for next state
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 pub struct TopicNextState {
     pub resolution: TopicResolution,
     pub reason: String,
     pub replica_map: ReplicaMap,
-    pub partitions: Vec<PartitionKV>
+    pub partitions: Vec<PartitionKV>,
 }
-
-
 
 impl fmt::Display for TopicNextState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{:#?}",self.resolution)
+        write!(f, "{:#?}", self.resolution)
     }
 }
 
-
-
-
-impl From<(TopicResolution,String)> for TopicNextState {
-    fn from(val: (TopicResolution,String)) -> Self {
-        let (resolution,reason) = val;
+impl From<(TopicResolution, String)> for TopicNextState {
+    fn from(val: (TopicResolution, String)) -> Self {
+        let (resolution, reason) = val;
         Self {
             resolution,
             reason,
@@ -162,9 +138,9 @@ impl From<(TopicResolution,String)> for TopicNextState {
     }
 }
 
-impl From<((TopicResolution,String),ReplicaMap)> for TopicNextState {
-    fn from(val: ((TopicResolution,String),ReplicaMap)) -> Self {
-        let ((resolution,reason),replica_map) = val;
+impl From<((TopicResolution, String), ReplicaMap)> for TopicNextState {
+    fn from(val: ((TopicResolution, String), ReplicaMap)) -> Self {
+        let ((resolution, reason), replica_map) = val;
         Self {
             resolution,
             reason,
@@ -174,9 +150,9 @@ impl From<((TopicResolution,String),ReplicaMap)> for TopicNextState {
     }
 }
 
-impl From<((TopicResolution,String),Vec<PartitionKV>)> for TopicNextState {
-    fn from(val: ((TopicResolution,String),Vec<PartitionKV>)) -> Self {
-        let ((resolution,reason),partitions) = val;
+impl From<((TopicResolution, String), Vec<PartitionKV>)> for TopicNextState {
+    fn from(val: ((TopicResolution, String), Vec<PartitionKV>)) -> Self {
+        let ((resolution, reason), partitions) = val;
         Self {
             resolution,
             reason,
@@ -185,7 +161,6 @@ impl From<((TopicResolution,String),Vec<PartitionKV>)> for TopicNextState {
         }
     }
 }
-
 
 // -----------------------------------
 // Data Structures
@@ -199,12 +174,8 @@ pub type TopicKV = KVObject<TopicSpec>;
 impl std::fmt::Display for TopicKV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.spec {
-            TopicSpec::Assigned(partition_map) => {
-                write!(f, "assigned::{}", partition_map)
-            }
-            TopicSpec::Computed(param) => {
-                write!(f, "computed::({})", param)
-            }
+            TopicSpec::Assigned(partition_map) => write!(f, "assigned::{}", partition_map),
+            TopicSpec::Computed(param) => write!(f, "computed::({})", param),
         }
     }
 }
@@ -234,7 +205,7 @@ impl TopicKV {
     }
 
     /// update our state with next state, return remaining partiton kv changes
-    pub fn apply_next_state(&mut self,next_state: TopicNextState) -> Vec<PartitionKV> {
+    pub fn apply_next_state(&mut self, next_state: TopicNextState) -> Vec<PartitionKV> {
         self.status.resolution = next_state.resolution;
         self.status.reason = next_state.reason;
         if next_state.replica_map.len() > 0 {
@@ -244,73 +215,74 @@ impl TopicKV {
     }
 
     /// based on our current state, compute what should be next state
-    pub fn compute_next_state(&self,
+    pub fn compute_next_state(
+        &self,
         spu_store: &SpuLocalStore,
-        partition_store: &PartitionLocalStore
+        partition_store: &PartitionLocalStore,
     ) -> TopicNextState {
-
         match self.spec() {
             // Computed Topic
-            TopicSpec::Computed(ref param) => {
-                match self.status.resolution {
-                    TopicResolution::Init | TopicResolution::InvalidConfig => {
-                        self.validate_computed_topic_parameters(param)
-                    },
-                    TopicResolution::Pending | TopicResolution::InsufficientResources => {
-                        let mut next_state = self.generate_replica_map(spu_store,param);
-                        if next_state.resolution == TopicResolution::Provisioned {
-                            debug!("Topic: {} replica generate successfull, status is provisioned",self.key());
-                            next_state.partitions = self.create_new_partitions(partition_store);
-                            next_state
-                        } else {
-                            next_state
-                        }
-                    },
-                    _ => {
-                        debug!("topic: {} resolution: {:#?} ignoring",self.key,self.status.resolution);
-                        let mut next_state = self.same_next_state();
-                        if next_state.resolution == TopicResolution::Provisioned {
-                            next_state.partitions = self.create_new_partitions(partition_store);
-                            next_state
-                        } else {
-                            next_state
-                        }
-
+            TopicSpec::Computed(ref param) => match self.status.resolution {
+                TopicResolution::Init | TopicResolution::InvalidConfig => {
+                    self.validate_computed_topic_parameters(param)
+                }
+                TopicResolution::Pending | TopicResolution::InsufficientResources => {
+                    let mut next_state = self.generate_replica_map(spu_store, param);
+                    if next_state.resolution == TopicResolution::Provisioned {
+                        debug!(
+                            "Topic: {} replica generate successfull, status is provisioned",
+                            self.key()
+                        );
+                        next_state.partitions = self.create_new_partitions(partition_store);
+                        next_state
+                    } else {
+                        next_state
                     }
                 }
-               
-            }
+                _ => {
+                    debug!(
+                        "topic: {} resolution: {:#?} ignoring",
+                        self.key, self.status.resolution
+                    );
+                    let mut next_state = self.same_next_state();
+                    if next_state.resolution == TopicResolution::Provisioned {
+                        next_state.partitions = self.create_new_partitions(partition_store);
+                        next_state
+                    } else {
+                        next_state
+                    }
+                }
+            },
 
             // Assign Topic
-            TopicSpec::Assigned(ref partition_map) => {
-                match self.status.resolution {
-                    TopicResolution::Init | TopicResolution::InvalidConfig  => {
-                        self.validate_assigned_topic_parameters(partition_map)
-                    },
-                    TopicResolution::Pending | TopicResolution::InsufficientResources => {
-                        let mut next_state = self.update_replica_map_for_assigned_topic(partition_map,spu_store);
-                        if next_state.resolution == TopicResolution::Provisioned {
-                            next_state.partitions = self.create_new_partitions(partition_store);
-                            next_state
-                        } else {
-                            next_state
-                        }
-                    },
-                    _ => {
-                        debug!("assigned topic: {} resolution: {:#?} ignoring",self.key,self.status.resolution);
-                        let mut next_state = self.same_next_state();
-                        if next_state.resolution == TopicResolution::Provisioned {
-                            next_state.partitions = self.create_new_partitions(partition_store);
-                            next_state
-                        } else {
-                            next_state
-                        }
-
+            TopicSpec::Assigned(ref partition_map) => match self.status.resolution {
+                TopicResolution::Init | TopicResolution::InvalidConfig => {
+                    self.validate_assigned_topic_parameters(partition_map)
+                }
+                TopicResolution::Pending | TopicResolution::InsufficientResources => {
+                    let mut next_state =
+                        self.update_replica_map_for_assigned_topic(partition_map, spu_store);
+                    if next_state.resolution == TopicResolution::Provisioned {
+                        next_state.partitions = self.create_new_partitions(partition_store);
+                        next_state
+                    } else {
+                        next_state
                     }
                 }
-                
-                
-            }
+                _ => {
+                    debug!(
+                        "assigned topic: {} resolution: {:#?} ignoring",
+                        self.key, self.status.resolution
+                    );
+                    let mut next_state = self.same_next_state();
+                    if next_state.resolution == TopicResolution::Provisioned {
+                        next_state.partitions = self.create_new_partitions(partition_store);
+                        next_state
+                    } else {
+                        next_state
+                    }
+                }
+            },
         }
     }
 
@@ -318,23 +290,21 @@ impl TopicKV {
     /// Validate computed topic spec parameters and update topic status
     ///  * error is passed to the topic reason.
     ///
-    pub fn validate_computed_topic_parameters(
-        &self,
-        param: &TopicReplicaParam,
-    ) -> TopicNextState {
+    pub fn validate_computed_topic_parameters(&self, param: &TopicReplicaParam) -> TopicNextState {
         if let Err(err) = TopicSpec::valid_partition(&param.partitions) {
-            warn!("topic: {} partition config is invalid",self.key());
+            warn!("topic: {} partition config is invalid", self.key());
             TopicStatus::next_resolution_invalid_config(&err.to_string()).into()
         } else if let Err(err) = TopicSpec::valid_replication_factor(&param.replication_factor) {
-            warn!("topic: {} replication config is invalid",self.key());
+            warn!("topic: {} replication config is invalid", self.key());
             TopicStatus::next_resolution_invalid_config(&err.to_string()).into()
         } else {
-            debug!("topic: {} config is valid, transition to pending",self.key());
+            debug!(
+                "topic: {} config is valid, transition to pending",
+                self.key()
+            );
             TopicStatus::next_resolution_pending().into()
         }
     }
-
-
 
     ///
     /// Validate assigned topic spec parameters and update topic status
@@ -351,7 +321,6 @@ impl TopicKV {
         }
     }
 
-
     ///
     /// Genereate Replica Map if there are enough online spus
     ///  * returns a replica map or a reason for the failure
@@ -360,12 +329,10 @@ impl TopicKV {
     pub fn generate_replica_map(
         &self,
         spus: &SpuLocalStore,
-        param: &TopicReplicaParam
+        param: &TopicReplicaParam,
     ) -> TopicNextState {
-        
         let spu_count = spus.count();
         if spu_count < param.replication_factor {
-
             trace!(
                 "topic '{}' - R-MAP needs {:?} online spus, found {:?}",
                 self.key,
@@ -373,53 +340,40 @@ impl TopicKV {
                 spu_count
             );
 
-            let reason = format!("need {} more SPU",param.replication_factor - spu_count);
+            let reason = format!("need {} more SPU", param.replication_factor - spu_count);
             TopicStatus::set_resolution_no_resource(reason).into()
-
-            
         } else {
-            let replica_map = generate_replica_map_for_topic(spus,param,None);
+            let replica_map = generate_replica_map_for_topic(spus, param, None);
             if replica_map.len() > 0 {
-                (TopicStatus::next_resolution_provisoned(),replica_map).into()
+                (TopicStatus::next_resolution_provisoned(), replica_map).into()
             } else {
                 let reason = "empty replica map";
                 TopicStatus::set_resolution_no_resource(reason.to_owned()).into()
             }
-
         }
     }
 
-
-    
     /// create partition children if it doesn't exists
-    pub fn create_new_partitions(
-        &self,
-        partition_store: &PartitionLocalStore,
-    ) -> Vec<PartitionKV> {
-
+    pub fn create_new_partitions(&self, partition_store: &PartitionLocalStore) -> Vec<PartitionKV> {
         let parent_kv_ctx = self.kv_ctx.make_parent_ctx();
 
-        self.status.replica_map.iter()
-            .filter_map(| (idx,replicas) | {
-             
-                let replica_key = ReplicaKey::new(self.key(),*idx);
-                debug!("Topic: {} creating partition: {}",self.key(),replica_key);
+        self.status
+            .replica_map
+            .iter()
+            .filter_map(|(idx, replicas)| {
+                let replica_key = ReplicaKey::new(self.key(), *idx);
+                debug!("Topic: {} creating partition: {}", self.key(), replica_key);
                 if partition_store.contains_key(&replica_key) {
-                    None 
+                    None
                 } else {
                     Some(
-                        PartitionKV::with_spec(
-                            replica_key,
-                            replicas.clone().into()
-                        )
-                        .with_kv_ctx(parent_kv_ctx.clone())
+                        PartitionKV::with_spec(replica_key, replicas.clone().into())
+                            .with_kv_ctx(parent_kv_ctx.clone()),
                     )
-                } 
-            }).collect()
-        
+                }
+            })
+            .collect()
     }
-
-
 
     ///
     /// Compare assigned SPUs versus local SPUs. If all assigned SPUs are live,
@@ -430,14 +384,17 @@ impl TopicKV {
         partition_maps: &PartitionMaps,
         spu_store: &SpuLocalStore,
     ) -> TopicNextState {
-
         let partition_map_spus = partition_maps.unique_spus_in_partition_map();
         let spus_id = spu_store.spu_ids_for_replica();
 
         // ensure spu existds
         for spu in &partition_map_spus {
             if !spus_id.contains(spu) {
-                return TopicStatus::next_resolution_invalid_config(format!("invalid spu id: {}",spu)).into()
+                return TopicStatus::next_resolution_invalid_config(format!(
+                    "invalid spu id: {}",
+                    spu
+                ))
+                .into();
             }
         }
 
@@ -445,15 +402,10 @@ impl TopicKV {
         if replica_map.len() == 0 {
             TopicStatus::next_resolution_invalid_config("invalid replica map".to_owned()).into()
         } else {
-            (TopicStatus::next_resolution_provisoned(),replica_map).into()
+            (TopicStatus::next_resolution_provisoned(), replica_map).into()
         }
-       
     }
-
-
 }
-
-
 
 ///
 /// Generate replica map for a specific topic
@@ -462,16 +414,15 @@ pub fn generate_replica_map_for_topic(
     spus: &SpuLocalStore,
     param: &TopicReplicaParam,
     from_index: Option<i32>,
-) -> ReplicaMap  {
-   
+) -> ReplicaMap {
     let in_rack_count = spus.spus_in_rack_count();
     let start_index = from_index.unwrap_or(-1);
 
     // generate partition map (with our without rack assignment)
     if param.ignore_rack_assignment || in_rack_count == 0 {
-        generate_partitions_without_rack(&spus,&param, start_index)
+        generate_partitions_without_rack(&spus, &param, start_index)
     } else {
-        generate_partitions_with_rack_assignment(&spus, &param,start_index)
+        generate_partitions_with_rack_assignment(&spus, &param, start_index)
     }
 }
 
@@ -506,9 +457,9 @@ fn generate_partitions_with_rack_assignment(
     partition_map
 }
 
-    ///
-    /// Generate partitions without taking rack assignments into consideration
-    ///
+///
+/// Generate partitions without taking rack assignments into consideration
+///
 fn generate_partitions_without_rack(
     spus: &SpuLocalStore,
     param: &TopicReplicaParam,
@@ -539,25 +490,19 @@ fn generate_partitions_without_rack(
     partition_map
 }
 
-
 pub type TopicLocalStore = LocalStore<TopicSpec>;
-
 
 // -----------------------------------
 // Topics - Implementation
 // -----------------------------------
 
 impl TopicLocalStore {
-
-
     pub fn topic(&self, topic_name: &str) -> Option<TopicKV> {
         match (*self.inner_store().read()).get(topic_name) {
             Some(topic) => Some(topic.clone()),
             None => None,
         }
     }
-
-
 
     pub fn table_fmt(&self) -> String {
         let mut table = String::new();
@@ -592,11 +537,7 @@ impl TopicLocalStore {
 
         table
     }
-
-
 }
-
-
 
 //
 // Unit Tests
@@ -608,15 +549,10 @@ mod test {
 
     use super::{TopicKV, TopicLocalStore};
 
-
     #[test]
     fn test_topic_replica_map() {
         // empty replica map
-        let topic1 = TopicKV::new(
-            "Topic-1",
-            (1, 1, false).into(),
-            TopicStatus::default(),
-        );
+        let topic1 = TopicKV::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
         assert_eq!(topic1.replica_map().len(), 0);
 
         // replica map with 2 partitions
@@ -635,11 +571,7 @@ mod test {
     #[test]
     fn test_update_topic_status_objects() {
         // create topic 1
-        let mut topic1 = TopicKV::new(
-            "Topic-1",
-            (2, 2, false).into(),
-            TopicStatus::default(),
-        );
+        let mut topic1 = TopicKV::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.resolution, TopicResolution::Init);
 
         // create topic 2
@@ -665,16 +597,8 @@ mod test {
     #[test]
     fn topic_list_insert() {
         // create topics
-        let topic1 = TopicKV::new(
-            "Topic-1",
-            (1, 1, false).into(),
-            TopicStatus::default(),
-        );
-        let topic2 = TopicKV::new(
-            "Topic-2",
-            (2, 2, false).into(),
-            TopicStatus::default(),
-        );
+        let topic1 = TopicKV::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
+        let topic2 = TopicKV::new("Topic-2", (2, 2, false).into(), TopicStatus::default());
 
         let topics = TopicLocalStore::default();
         topics.insert(topic1);
@@ -688,11 +612,7 @@ mod test {
         let topics = TopicLocalStore::default();
 
         // resolution: Init
-        let topic1 = TopicKV::new(
-            "Topic-1",
-            (1, 1, false).into(),
-            TopicStatus::default(),
-        );
+        let topic1 = TopicKV::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.is_resolution_initializing(), true);
 
         // resulution: Pending
@@ -735,16 +655,14 @@ mod test {
         topics.insert(topic3);
         topics.insert(topic4);
 
-        let expected = vec![String::from("Topic-2"),String::from("Topic-4")];
+        let expected = vec![String::from("Topic-2"), String::from("Topic-4")];
         let mut pending_state_names: Vec<String> = vec![];
 
-        topics
-            .visit_values(|topic| {
-                if topic.status.need_replica_map_recal() {
-                     pending_state_names.push(topic.key_owned());
-                }
-            });
-                    
+        topics.visit_values(|topic| {
+            if topic.status.need_replica_map_recal() {
+                pending_state_names.push(topic.key_owned());
+            }
+        });
 
         assert_eq!(pending_state_names, expected);
     }
@@ -753,11 +671,7 @@ mod test {
     fn test_update_topic_status_with_other_error_topic_not_found() {
         let topics = TopicLocalStore::default();
 
-        let topic1 = TopicKV::new(
-            "Topic-1",
-            (1, 1, false).into(),
-            TopicStatus::default(),
-        );
+        let topic1 = TopicKV::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
         topics.insert(topic1);
 
         let topic2 = TopicKV::new(
@@ -771,7 +685,7 @@ mod test {
         );
 
         // test: update_status (returns error)
-        let res = topics.update_status(topic2.key(),topic2.status.clone());
+        let res = topics.update_status(topic2.key(), topic2.status.clone());
         assert_eq!(
             format!("{}", res.unwrap_err()),
             "Topic 'Topic-2': not found, cannot update"
@@ -781,11 +695,7 @@ mod test {
     #[test]
     fn test_update_topic_status_successful() {
         let topics = TopicLocalStore::default();
-        let topic1 = TopicKV::new(
-            "Topic-1",
-            (2, 2, false).into(),
-            TopicStatus::default(),
-        );
+        let topic1 = TopicKV::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
         topics.insert(topic1);
 
         let updated_topic = TopicKV::new(
@@ -799,7 +709,7 @@ mod test {
         );
 
         // run test
-        let res = topics.update_status(updated_topic.key(),updated_topic.status.clone());
+        let res = topics.update_status(updated_topic.key(), updated_topic.status.clone());
         assert!(res.is_ok());
 
         let topic = topics.topic("Topic-1");
@@ -807,40 +717,35 @@ mod test {
 
         assert_eq!(topic.unwrap(), updated_topic);
     }
-
 }
-
-
-
 
 //
 // Unit Tests
 //
 #[cfg(test)]
 pub mod replica_map_test {
-    
+
     use std::collections::BTreeMap;
 
     use super::SpuLocalStore;
     use super::generate_replica_map_for_topic;
 
-
     #[test]
     fn generate_replica_map_for_topic_1x_replicas_no_rack() {
-
         let spus: SpuLocalStore = vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (4, true, None),
             (5000, true, None),
-        ].into();
+        ]
+        .into();
 
         assert_eq!(spus.online_spu_count(), 5);
 
         // test 4 partitions, 1 replicas - index 8
         let param = (4, 1, false).into();
-        let map_1xi = generate_replica_map_for_topic(&spus,&param,Some(8));
+        let map_1xi = generate_replica_map_for_topic(&spus, &param, Some(8));
         let mut map_1xi_expected = BTreeMap::new();
         map_1xi_expected.insert(0, vec![4]);
         map_1xi_expected.insert(1, vec![5000]);
@@ -851,14 +756,14 @@ pub mod replica_map_test {
 
     #[test]
     fn generate_replica_map_for_topic_2x_replicas_no_rack() {
-
         let spus = vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (3, true, None),
             (4, true, None),
-        ].into();
+        ]
+        .into();
 
         // test 4 partitions, 2 replicas - index 3
         let param = (4, 2, false).into();
@@ -879,11 +784,12 @@ pub mod replica_map_test {
             (2, true, None),
             (3, true, None),
             (4, true, None),
-        ].into();
+        ]
+        .into();
 
         // test 21 partitions, 3 replicas - index 0
-        let param =  (21, 3, false).into();
-        let map_3x = generate_replica_map_for_topic(&spus,&param, Some(0));
+        let param = (21, 3, false).into();
+        let map_3x = generate_replica_map_for_topic(&spus, &param, Some(0));
         let mut map_3x_expected = BTreeMap::new();
         map_3x_expected.insert(0, vec![0, 1, 2]);
         map_3x_expected.insert(1, vec![1, 2, 3]);
@@ -921,14 +827,14 @@ pub mod replica_map_test {
 
     #[test]
     fn generate_replica_map_for_topic_4x_replicas_no_rack() {
-
         let spus = vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (3, true, None),
             (4, true, None),
-        ].into();
+        ]
+        .into();
 
         // test 4 partitions, 4 replicas - index 10
         let param = (4, 4, false).into();
@@ -943,14 +849,14 @@ pub mod replica_map_test {
 
     #[test]
     fn generate_replica_map_for_topic_5x_replicas_no_rack() {
-
         let spus = vec![
             (0, true, None),
             (1, true, None),
             (3, true, None),
             (4, true, None),
             (5002, true, None),
-        ].into();
+        ]
+        .into();
 
         // test 4 partitions, 5 replicas - index 14
         let param = (4, 5, false).into();
@@ -976,7 +882,8 @@ pub mod replica_map_test {
             (3, true, Some(r3.clone())),
             (4, true, Some(r3.clone())),
             (5, true, Some(r3.clone())),
-        ].into();
+        ]
+        .into();
 
         // Compute & compare with result
         let param = (6, 3, false).into();
@@ -1012,7 +919,8 @@ pub mod replica_map_test {
             (9, true, Some(r4.clone())),
             (10, true, Some(r4.clone())),
             (11, true, Some(r4.clone())),
-        ].into();
+        ]
+        .into();
 
         // Compute & compare with result
         let param = (12, 4, false).into();
@@ -1050,10 +958,11 @@ pub mod replica_map_test {
             (6, true, Some(r3.clone())),
             (7, true, Some(r3.clone())),
             (8, true, Some(r3.clone())),
-        ].into();
+        ]
+        .into();
 
         // test 9 partitions, 3 replicas - index 0
-        let param  = (9, 3, false).into();
+        let param = (9, 3, false).into();
         let computed = generate_replica_map_for_topic(&spus, &param, Some(0));
         let mut expected = BTreeMap::new();
         expected.insert(0, vec![0, 4, 8]);

@@ -13,7 +13,6 @@ use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
 use super::UpdateAllRequest;
 
-
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum InternalSpuApi {
@@ -22,16 +21,13 @@ pub enum InternalSpuApi {
     UpdateReplica = 1003,
 }
 
-
 impl Default for InternalSpuApi {
     fn default() -> InternalSpuApi {
         InternalSpuApi::UpdateSpu
     }
 }
 
-
-
-#[derive(Debug,Encode)]
+#[derive(Debug, Encode)]
 pub enum InternalSpuRequest {
     UpdateAllRequest(RequestMessage<UpdateAllRequest>),
     UpdateSpuRequest(RequestMessage<UpdateSpuRequest>),
@@ -49,26 +45,27 @@ impl InternalSpuRequest {
     pub fn new_update_spu_req(msg: UpdateSpuRequest) -> InternalSpuRequest {
         InternalSpuRequest::UpdateSpuRequest(RequestMessage::new_request(msg))
     }
-
 }
-
 
 impl KfRequestMessage for InternalSpuRequest {
     type ApiKey = InternalSpuApi;
 
-    fn decode_with_header<T>(
-        src: &mut T,
-        header: RequestHeader,
-    ) -> Result<Self, IoError>
+    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
     where
         Self: Default + Sized,
         Self::ApiKey: Sized,
         T: Buf,
     {
         match header.api_key().try_into()? {
-            InternalSpuApi::UpdateAll => api_decode!(InternalSpuRequest, UpdateAllRequest, src, header),
-            InternalSpuApi::UpdateSpu => api_decode!(InternalSpuRequest, UpdateSpuRequest, src, header),
-            InternalSpuApi::UpdateReplica => api_decode!(InternalSpuRequest,UpdateReplicaRequest,src,header)
+            InternalSpuApi::UpdateAll => {
+                api_decode!(InternalSpuRequest, UpdateAllRequest, src, header)
+            }
+            InternalSpuApi::UpdateSpu => {
+                api_decode!(InternalSpuRequest, UpdateSpuRequest, src, header)
+            }
+            InternalSpuApi::UpdateReplica => {
+                api_decode!(InternalSpuRequest, UpdateReplicaRequest, src, header)
+            }
         }
     }
 }

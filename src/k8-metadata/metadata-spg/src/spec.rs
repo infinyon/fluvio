@@ -22,7 +22,6 @@ use crate::SPG_API;
 use super::SpuGroupStatus;
 
 impl Spec for SpuGroupSpec {
-
     type Status = SpuGroupStatus;
     type Header = DefaultHeader;
     fn metadata() -> &'static Crd {

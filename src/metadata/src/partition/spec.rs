@@ -34,7 +34,7 @@ impl From<PartitionSpec> for K8PartitionSpec {
     fn from(spec: PartitionSpec) -> K8PartitionSpec {
         K8PartitionSpec {
             leader: spec.leader,
-            replicas: spec.replicas
+            replicas: spec.replicas,
         }
     }
 }
@@ -57,26 +57,21 @@ impl std::default::Default for PartitionSpec {
 // -----------------------------------
 
 impl PartitionSpec {
-    pub fn new(leader: SpuId,replicas: Vec<SpuId>) -> Self {
-        Self {
-            leader,
-            replicas
-        }
+    pub fn new(leader: SpuId, replicas: Vec<SpuId>) -> Self {
+        Self { leader, replicas }
     }
 
-    pub fn has_spu(&self,spu: &SpuId) -> bool {
+    pub fn has_spu(&self, spu: &SpuId) -> bool {
         self.replicas.contains(spu)
     }
-    
 }
 
 impl From<Vec<i32>> for PartitionSpec {
     fn from(replicas: Vec<i32>) -> Self {
         if replicas.len() > 0 {
-            Self::new( replicas[0].clone(),replicas)
+            Self::new(replicas[0].clone(), replicas)
         } else {
-            Self::new( 0, replicas)
+            Self::new(0, replicas)
         }
-        
     }
 }

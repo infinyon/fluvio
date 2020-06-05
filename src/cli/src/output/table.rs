@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use prettytable::format;
@@ -8,51 +7,45 @@ use prettytable::Table;
 use crate::Terminal;
 use crate::t_println;
 
-
 pub trait TableOutputHandler {
-
     fn header(&self) -> Row;
     fn content(&self) -> Vec<Row>;
-    fn errors(&self) -> Vec<String>;    
+    fn errors(&self) -> Vec<String>;
 }
-
-
 
 pub struct TableRenderer<O>(Arc<O>);
 
-impl <O>TableRenderer<O> 
-    where O: Terminal
+impl<O> TableRenderer<O>
+where
+    O: Terminal,
 {
-
     pub fn new(out: Arc<O>) -> Self {
         Self(out)
     }
 
-    pub fn render<T>(&self,list: &T,indent: bool) 
-        where T: TableOutputHandler
+    pub fn render<T>(&self, list: &T, indent: bool)
+    where
+        T: TableOutputHandler,
     {
-
-            // expecting array with one or more elements
+        // expecting array with one or more elements
         self.display_errors(list);
-        self.display_table(list,indent);
+        self.display_table(list, indent);
     }
 
-
     // display errors one at a time
-    fn display_errors<T: TableOutputHandler>(&self,list: &T)
-    {
+    fn display_errors<T: TableOutputHandler>(&self, list: &T) {
         if list.errors().len() > 0 {
             for error in list.errors() {
-                t_println!(self.0,"{}", error);
+                t_println!(self.0, "{}", error);
             }
-            t_println!(self.0,"-------------");
+            t_println!(self.0, "-------------");
         }
     }
 
-
     /// convert result to table output and print to screen
-    fn display_table<T>(&self, list: &T, indent: bool) 
-        where T: TableOutputHandler
+    fn display_table<T>(&self, list: &T, indent: bool)
+    where
+        T: TableOutputHandler,
     {
         let header = list.header();
         let content = list.content();
@@ -80,6 +73,4 @@ impl <O>TableRenderer<O>
         // print table to stdout
         table.printstd();
     }
-
-
 }

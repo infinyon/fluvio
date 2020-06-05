@@ -10,8 +10,6 @@ use kf_protocol::message::metadata::MetadataResponseTopic;
 use kf_protocol::message::metadata::MetadataResponsePartition;
 use kf_protocol::api::ErrorCode as KfErrorCode;
 
-
-
 #[derive(Serialize, Debug)]
 pub struct KfTopicMetadata {
     pub name: String,
@@ -25,7 +23,6 @@ pub struct KfTopicMetadata {
 
 impl KfTopicMetadata {
     pub fn new(response_topic: MetadataResponseTopic) -> Self {
-
         let name = response_topic.name.clone();
 
         // if error is present, convert it
@@ -50,7 +47,6 @@ impl KfTopicMetadata {
         }
     }
 }
-   
 
 #[derive(Serialize, Debug)]
 pub struct Topic {
@@ -69,7 +65,6 @@ pub struct PartitionReplica {
 
     pub status: String,
 }
-
 
 impl Topic {
     pub fn new(response_topic: MetadataResponseTopic) -> Self {

@@ -13,45 +13,36 @@ use super::InstallCommand;
 use super::get_binary;
 use super::CommandUtil;
 
-pub async fn install_local(opt: InstallCommand) -> Result<(),CliError> {
-
-
+pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     println!("launching sc");
     launch_sc(&opt);
 
     println!("setting local profile");
     set_profile(&opt)?;
 
-    println!("launching spu group with size: {}",opt.spu);
+    println!("launching spu group with size: {}", opt.spu);
     launch_spu_group(&opt).await;
 
     sleep(Duration::from_secs(1)).await;
 
     Ok(())
-
 }
 
-
-
-fn launch_sc(option: &InstallCommand)  {
-
-
+fn launch_sc(option: &InstallCommand) {
     use std::fs::File;
 
     let outputs = File::create(format!("/tmp/flv_sc.log")).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
     debug!("starting sc server");
-    let mut base = get_binary("sc-k8-server")
-        .expect("unable to get sc-server");
+    let mut base = get_binary("sc-k8-server").expect("unable to get sc-server");
 
     if option.tls.tls {
         set_server_tls(&mut base, option, 9005);
     }
-   
-    
+
     if let Some(log) = &option.log {
-        base.env("RUST_LOG",log);
+        base.env("RUST_LOG", log);
     }
 
     base.print();
@@ -60,16 +51,14 @@ fn launch_sc(option: &InstallCommand)  {
         .stderr(Stdio::from(errors))
         .spawn()
         .expect("sc server failed to start");
-
 }
 
 /// set local profile
-fn set_profile(opt: &InstallCommand) -> Result<(),IoError> {
-
+fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
     use crate::profile::SetLocal;
     use crate::profile::set_local_context;
     use crate::tls::TlsConfig;
-    
+
     let tls_config = &opt.tls;
     let tls = if tls_config.tls {
         TlsConfig {
@@ -87,34 +76,28 @@ fn set_profile(opt: &InstallCommand) -> Result<(),IoError> {
 
     let local = SetLocal {
         local: "localhost:9003".to_owned(),
-        tls
+        tls,
     };
 
-    println!("{}",set_local_context(local)?);
+    println!("{}", set_local_context(local)?);
 
     Ok(())
-
 }
 
-
-async fn launch_spu_group(opt: &InstallCommand ) {
-
+async fn launch_spu_group(opt: &InstallCommand) {
     use k8_client::load_and_share;
 
     let client = load_and_share().expect("client should not fail");
 
     for i in 0..opt.spu {
-        println!("launching spu<{}> out of {}",i,opt.spu);
-        launch_spu(i,client.clone(),opt).await;
+        println!("launching spu<{}> out of {}", i, opt.spu);
+        launch_spu(i, client.clone(), opt).await;
     }
-        
-    sleep(Duration::from_millis(500)).await;
 
+    sleep(Duration::from_millis(500)).await;
 }
 
-
-async fn launch_spu(spu_index: u16,client: SharedK8Client,option: &InstallCommand)  {
-
+async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallCommand) {
     use std::fs::File;
 
     use k8_metadata::spu::SpuSpec;
@@ -148,65 +131,60 @@ async fn launch_spu(spu_index: u16,client: SharedK8Client,option: &InstallComman
             ..Default::default()
         },
         ..Default::default()
-        
     };
 
-    let input = InputK8Obj::new(spu_spec,InputObjectMeta {
-        name: format!("custom-spu-{}",spu_id),
-        namespace: "default".to_owned(),
-        ..Default::default()
-    });
+    let input = InputK8Obj::new(
+        spu_spec,
+        InputObjectMeta {
+            name: format!("custom-spu-{}", spu_id),
+            namespace: "default".to_owned(),
+            ..Default::default()
+        },
+    );
 
     client.create_item(input).await.expect("item created");
-
 
     // sleep 1 seconds for sc to connect
     sleep(Duration::from_millis(300)).await;
 
-    let outputs = File::create(format!("/tmp/spu_log_{}.log",spu_id)).expect("log file");
+    let outputs = File::create(format!("/tmp/spu_log_{}.log", spu_id)).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
-    let mut binary = get_binary("spu-server")
-        .expect("unable to get spu-server");
-   
+    let mut binary = get_binary("spu-server").expect("unable to get spu-server");
 
-    if option.tls.tls {         
+    if option.tls.tls {
         set_server_tls(&mut binary, option, private_port + 1);
     }
 
     if let Some(log) = &option.log {
-        binary.env("RUST_LOG",log);
+        binary.env("RUST_LOG", log);
     }
-    
+
     let cmd = binary
         .arg("-i")
-        .arg(format!("{}",spu_id))
+        .arg(format!("{}", spu_id))
         .arg("-p")
-        .arg(format!("0.0.0.0:{}",public_port))
+        .arg(format!("0.0.0.0:{}", public_port))
         .arg("-v")
-        .arg(format!("0.0.0.0:{}",private_port))
+        .arg(format!("0.0.0.0:{}", private_port))
         .print();
 
-    println!("SPU<{}> cmd: {:#?}",spu_index,cmd);
+    println!("SPU<{}> cmd: {:#?}", spu_index, cmd);
 
-    cmd
-        .stdout(Stdio::from(outputs))
+    cmd.stdout(Stdio::from(outputs))
         .stderr(Stdio::from(errors))
         .spawn()
         .expect("spu server failed to start");
-
 }
 
 use std::process::Command;
 
-fn set_server_tls(cmd: &mut Command,option: &InstallCommand,port: u16) {
-
+fn set_server_tls(cmd: &mut Command, option: &InstallCommand, port: u16) {
     let tls = &option.tls;
-        
+
     println!("starting SC with TLS options");
-        
-    cmd
-        .arg("--tls")
+
+    cmd.arg("--tls")
         .arg("--enable-client-cert")
         .arg("--server-cert")
         .arg(&tls.server_cert.as_ref().expect("server cert"))
@@ -215,7 +193,5 @@ fn set_server_tls(cmd: &mut Command,option: &InstallCommand,port: u16) {
         .arg("--ca-cert")
         .arg(&tls.ca_cert.as_ref().expect("ca cert"))
         .arg("--bind-non-tls-public")
-        .arg(format!("0.0.0.0:{}",port));
-    
-    
+        .arg(format!("0.0.0.0:{}", port));
 }

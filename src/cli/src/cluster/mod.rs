@@ -7,31 +7,25 @@ pub use process::process_cluster;
 
 use structopt::StructOpt;
 
-
 use util::*;
 
 use minikube::SetMinikubeContext;
 use install::InstallCommand;
 use uninstall::UninstallCommand;
 
-#[derive(Debug,StructOpt)]
+#[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
 pub enum ClusterCommands {
-
-
     /// set my own context
     #[structopt(name = "set-minikube-context")]
     SetMinikubeContext(SetMinikubeContext),
 
-    
-    #[structopt(name = "install")] 
+    #[structopt(name = "install")]
     Install(InstallCommand),
 
     #[structopt(name = "uninstall")]
     Uninstall(UninstallCommand),
-
 }
-
 
 mod process {
 
@@ -44,24 +38,20 @@ mod process {
     use uninstall::process_uninstall;
     use minikube::process_minikube_context;
 
-    pub async fn process_cluster<O>(out: std::sync::Arc<O>,cmd: ClusterCommands) -> Result<String,CliError>
-        where O: Terminal
+    pub async fn process_cluster<O>(
+        out: std::sync::Arc<O>,
+        cmd: ClusterCommands,
+    ) -> Result<String, CliError>
+    where
+        O: Terminal,
     {
-
         match cmd {
-            ClusterCommands::SetMinikubeContext(ctx) =>  process_minikube_context(ctx),
+            ClusterCommands::SetMinikubeContext(ctx) => process_minikube_context(ctx),
             ClusterCommands::Install(install) => process_install(out, install).await,
-            ClusterCommands::Uninstall(uninstall) => process_uninstall(out, uninstall).await
+            ClusterCommands::Uninstall(uninstall) => process_uninstall(out, uninstall).await,
         }
-
-    
     }
-
 }
-
-
-
-
 
 mod k8_util {
 
@@ -75,29 +65,24 @@ mod k8_util {
     use k8_client::ClientError as K8ClientError;
 
     // wait for i8 objects appear
-    pub async fn wait_for_delete<S:Spec>(client: SharedK8Client,input: &InputObjectMeta)  {
-
+    pub async fn wait_for_delete<S: Spec>(client: SharedK8Client, input: &InputObjectMeta) {
         for i in 0..100u16 {
-            println!("checking to see if {} is deleted, count: {}",S::label(),i);
-            match client.retrieve_item::<S,_>(input).await {
+            println!("checking to see if {} is deleted, count: {}", S::label(), i);
+            match client.retrieve_item::<S, _>(input).await {
                 Ok(_) => {
-                    println!("sc {} still exists, sleeping 10 second",S::label());
+                    println!("sc {} still exists, sleeping 10 second", S::label());
                     sleep(Duration::from_millis(10000)).await;
-                },
+                }
                 Err(err) => match err {
                     K8ClientError::NotFound => {
-                        println!("no sc {} found, can proceed to setup ",S::label());
+                        println!("no sc {} found, can proceed to setup ", S::label());
                         return;
-                    },
-                    _ => assert!(false,format!("error: {}",err))
-                }
+                    }
+                    _ => assert!(false, format!("error: {}", err)),
+                },
             };
         }
 
-        assert!(false,"waiting too many times, failing");
-
+        assert!(false, "waiting too many times, failing");
     }
-
-
-
 }

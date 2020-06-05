@@ -110,7 +110,6 @@ impl SegmentList {
         self.segments.get(&offset)
     }
 
-
     pub fn find_segment(&self, offset: Offset) -> Option<(&Offset, &ReadSegment)> {
         (&self.segments)
             .range((Excluded(offset - self.max_base_offset), Included(offset)))

@@ -11,7 +11,7 @@ pub struct UpdateReplicaRequest {
     replicas: ReplicaMsgs,
 }
 
-impl Request for UpdateReplicaRequest{
+impl Request for UpdateReplicaRequest {
     const API_KEY: u16 = InternalSpuApi::UpdateReplica as u16;
     type Response = UpdateReplicaResponse;
 }

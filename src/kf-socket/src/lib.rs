@@ -7,7 +7,6 @@ mod stream;
 mod sink;
 mod sink_pool;
 
-
 #[cfg(test)]
 pub mod test_request;
 
@@ -24,11 +23,9 @@ pub use socket::InnerKfSocket;
 pub use socket::AllKfSocket;
 pub use sink::ExclusiveKfSink;
 
-
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-
 
 /// send request and return response from calling server at socket addr
 pub async fn send_and_receive<R>(

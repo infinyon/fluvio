@@ -26,7 +26,6 @@ pub struct ListSpusOpt {
     #[structopt(short = "c", long = "sc", value_name = "host:port")]
     sc: Option<String>,
 
-
     /// Output
     #[structopt(
         short = "O",
@@ -41,7 +40,7 @@ pub struct ListSpusOpt {
     tls: TlsConfig,
 
     #[structopt(flatten)]
-    profile: InlineProfile
+    profile: InlineProfile,
 }
 
 impl ListSpusOpt {
@@ -50,7 +49,8 @@ impl ListSpusOpt {
         let target_server = ScConfig::new_with_profile(
             self.sc,
             self.tls.try_into_file_config()?,
-            self.profile.profile)?;
+            self.profile.profile,
+        )?;
 
         // transfer config parameters
         let list_spu_cfg = ListSpusConfig {
@@ -76,7 +76,7 @@ where
     let mut sc = target_server.connect().await?;
 
     let spus = sc.list_spu(false).await?;
-   
+
     // format and dump to screen
     format_spu_response_output(out, spus, list_spu_cfg.output)?;
     Ok(())

@@ -1,10 +1,8 @@
 mod smoke;
 mod stress;
 
-
 pub use driver::*;
 pub use common::*;
-
 
 mod common {
 
@@ -14,16 +12,13 @@ mod common {
 
     #[async_trait]
     pub trait TestDriver: UnwindSafe {
-
         /// run tester
         async fn run(&self);
-
     }
-
 }
 
 /// select runner based on option
-mod driver{
+mod driver {
 
     use crate::TestOption;
     use crate::tests::smoke::SmokeTestRunner;
@@ -31,10 +26,6 @@ mod driver{
     use super::TestDriver;
 
     pub fn create_test_driver(option: TestOption) -> Box<dyn TestDriver> {
-
         Box::new(SmokeTestRunner::new(option))
-
     }
-
 }
-

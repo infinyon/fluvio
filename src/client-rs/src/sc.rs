@@ -27,7 +27,6 @@ use sc_api::spu::FlvFetchSpuGroupsResponse;
 use sc_api::spu::FlvCustomSpu;
 use kf_socket::KfSocketError;
 
-
 use crate::ClientError;
 use crate::Client;
 use crate::ReplicaLeaderConfig;
@@ -37,11 +36,9 @@ use crate::query_params::ReplicaConfig;
 use crate::metadata::topic::TopicMetadata;
 use crate::metadata::spu::SpuMetadata;
 
-
 pub struct ScClient(Client);
 
-impl ScClient  {
-    
+impl ScClient {
     pub fn new(client: Client) -> Self {
         Self(client)
     }
@@ -50,21 +47,17 @@ impl ScClient  {
         &self.0
     }
 
-
     /// Connect to server, get version, and for topic composition: Replicas and SPUs
     pub async fn get_topic_composition(
         &mut self,
         topic: &str,
     ) -> Result<FlvTopicCompositionResponse, KfSocketError> {
-
-        debug!("request topic metadata for topic: {}",topic);
+        debug!("request topic metadata for topic: {}", topic);
         let mut request = FlvTopicCompositionRequest::default();
         request.topic_names = vec![topic.to_owned()];
 
         self.0.send_receive(request).await
     }
-
-    
 
     pub async fn register_custom_spu(
         &mut self,
@@ -151,8 +144,7 @@ impl ScClient  {
 }
 
 #[async_trait]
-impl SpuController for ScClient
-{
+impl SpuController for ScClient {
     type Leader = SpuReplicaLeader;
 
     type TopicMetadata = TopicMetadata;
@@ -163,12 +155,14 @@ impl SpuController for ScClient
         topic: &str,
         partition: i32,
     ) -> Result<Self::Leader, ClientError> {
-
-        debug!("trying to find replica for topic: {}, partition: {}",topic,partition);
+        debug!(
+            "trying to find replica for topic: {}, partition: {}",
+            topic, partition
+        );
 
         let topic_comp_resp = self.get_topic_composition(topic).await?;
-        
-        trace!("topic composition: {:#?}",topic_comp_resp);
+
+        trace!("topic composition: {:#?}", topic_comp_resp);
 
         let mut topics_resp = topic_comp_resp.topics;
         let spus_resp = topic_comp_resp.spus;
@@ -181,19 +175,19 @@ impl SpuController for ScClient
             )));
         }
 
-        
         let topic_resp = topics_resp.remove(0);
 
-        
         if topic_resp.error_code != FlvErrorCode::None {
-
             if topic_resp.error_code == FlvErrorCode::TopicNotFound {
-                return Err(ClientError::TopicNotFound(topic.to_owned()))
+                return Err(ClientError::TopicNotFound(topic.to_owned()));
             } else {
                 return Err(ClientError::IoError(IoError::new(
                     ErrorKind::InvalidData,
-                    format!("error during topic lookup: {}", topic_resp.error_code.to_sentence()),
-                )))
+                    format!(
+                        "error during topic lookup: {}",
+                        topic_resp.error_code.to_sentence()
+                    ),
+                )));
             }
         }
         // lookup leader
@@ -216,12 +210,12 @@ impl SpuController for ScClient
                     if spu_resp.spu_id == leader_id {
                         // check for errors
                         if spu_resp.error_code != FlvErrorCode::None {
-
                             return Err(ClientError::IoError(IoError::new(
                                 ErrorKind::InvalidData,
                                 format!(
                                     "problem with partition look up {}:{} error: {}",
-                                    topic,partition,
+                                    topic,
+                                    partition,
                                     topic_resp.error_code.to_sentence()
                                 ),
                             )));
@@ -235,13 +229,13 @@ impl SpuController for ScClient
 
                         let client = leader_client_config.connect().await?;
                         let leader_config = ReplicaLeaderConfig::new(topic.to_owned(), partition);
-                        return Ok(SpuReplicaLeader::new(leader_config,client))
+                        return Ok(SpuReplicaLeader::new(leader_config, client));
                     }
                 }
             }
         }
 
-        Err(ClientError::PartitionNotFound(topic.to_owned(),partition))
+        Err(ClientError::PartitionNotFound(topic.to_owned(), partition))
     }
 
     async fn delete_topic(&mut self, topic: &str) -> Result<String, ClientError> {
@@ -330,7 +324,8 @@ impl SpuController for ScClient
         let request = FlvFetchTopicsRequest { names: topics };
 
         let response = self.0.send_receive(request).await?;
-        let topics: Vec<Self::TopicMetadata> = response.topics
+        let topics: Vec<Self::TopicMetadata> = response
+            .topics
             .into_iter()
             .map(|t| TopicMetadata::new(t))
             .collect();

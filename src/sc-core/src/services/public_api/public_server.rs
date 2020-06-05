@@ -48,10 +48,10 @@ impl<C> PublicService<C> {
 }
 
 #[async_trait]
-impl<C,S> KfService<S> for PublicService<C>
+impl<C, S> KfService<S> for PublicService<C>
 where
     C: MetadataClient,
-    S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite +'static
+    S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
     type Context = SharedPublicContext<C>;
     type Request = PublicRequest;

@@ -1,4 +1,4 @@
-#![feature(trace_macros, generators,specialization)]
+#![feature(trace_macros, generators, specialization)]
 #![recursion_limit = "256"]
 
 pub mod config;

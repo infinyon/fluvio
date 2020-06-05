@@ -2,25 +2,21 @@ use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct ProductOption {
-
     /// number of records
-    #[structopt(short,long,default_value="1")]
-    pub produce_count: u16
-
+    #[structopt(short, long, default_value = "1")]
+    pub produce_count: u16,
 }
 
 /// cli options
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(name = "fluvio-test-runner", about = "Test fluvio platform")]
 pub struct TestOption {
-
     #[structopt(flatten)]
     pub produce: ProductOption,
 
     /// don't install and uninstall
-    #[structopt(short,long)]
+    #[structopt(short, long)]
     disable_install: bool,
-
 
     /// don't produce message
     #[structopt(long)]
@@ -30,24 +26,20 @@ pub struct TestOption {
     #[structopt(long)]
     disable_consume: bool,
 
-    
     /// disable set up topics
     #[structopt(long)]
     disable_topic_setup: bool,
 
-
-
-    #[structopt(short,long,default_value = "1")]
-    /// replication count, number of spu will be same as replication count, unless overridden 
+    #[structopt(short, long, default_value = "1")]
+    /// replication count, number of spu will be same as replication count, unless overridden
     replication: u16,
 
     /// topic name used for testing
-    #[structopt(short("t"),long,default_value="topic1")]
+    #[structopt(short("t"), long, default_value = "topic1")]
     pub topic_name: String,
 
-
     /// number of spu
-    #[structopt(short,long)]
+    #[structopt(short, long)]
     spu: Option<u16>,
 
     /// enable tls
@@ -58,20 +50,18 @@ pub struct TestOption {
     #[structopt(long)]
     local_driver: bool,
 
-    /// run develop image, this is for k8 
+    /// run develop image, this is for k8
     #[structopt(long)]
     develop: bool,
 
     // log flag
-    #[structopt(short,long)]
+    #[structopt(short, long)]
     pub log: Option<String>,
 }
 
-impl TestOption  {
-
-        /// return SC configuration or exist program.
+impl TestOption {
+    /// return SC configuration or exist program.
     pub fn parse_cli_or_exit() -> Self {
-        
         Self::from_args()
     }
 
@@ -122,11 +112,7 @@ impl TestOption  {
         !self.local_driver
     }
 
-
     pub fn develop_mode(&self) -> bool {
         self.develop
     }
-
 }
-
-

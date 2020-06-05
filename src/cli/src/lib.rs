@@ -11,7 +11,6 @@ mod profile;
 mod tls;
 mod cluster;
 
-
 pub use self::error::CliError;
 pub use self::root_cli::run_cli;
 

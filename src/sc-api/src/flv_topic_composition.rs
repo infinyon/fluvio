@@ -35,7 +35,6 @@ pub struct FlvTopicCompositionResponse {
     pub spus: Vec<FetchSpuResponse>,
 }
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FetchTopicResponse {
     /// The error code, None for no errors
@@ -82,10 +81,9 @@ pub struct FetchSpuResponse {
 }
 
 impl FetchSpuResponse {
-
     pub fn into(&self) -> ServerAddress {
-        ServerAddress::new(self.host.clone(),self.port)
-    }  
+        ServerAddress::new(self.host.clone(), self.port)
+    }
 }
 
 // -----------------------------------

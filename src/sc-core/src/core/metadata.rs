@@ -19,7 +19,6 @@ pub struct LocalStores {
     partitions: Arc<PartitionLocalStore>,
     topics: Arc<TopicLocalStore>,
     config: ScConfig,
-
 }
 
 // -----------------------------------
@@ -40,7 +39,6 @@ impl LocalStores {
             config: config,
         }
     }
-
 
     /// reference to spus
     pub fn spus(&self) -> &SharedSpuLocalStore {

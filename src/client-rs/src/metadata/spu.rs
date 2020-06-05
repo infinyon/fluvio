@@ -13,7 +13,6 @@ use sc_api::errors::FlvErrorCode;
 
 use super::endpoint::Endpoint;
 
-
 #[derive(Serialize, Debug)]
 pub struct SpuMetadata {
     pub name: String,
@@ -25,18 +24,19 @@ pub struct SpuMetadata {
     pub spu: Option<Spu>,
 }
 
-
 impl From<FlvFetchSpuResponse> for SpuMetadata {
     fn from(spu: FlvFetchSpuResponse) -> Self {
         Self::new(spu)
     }
 }
 
-
-impl  SpuMetadata {
+impl SpuMetadata {
     pub fn new(fetch_spu_resp: FlvFetchSpuResponse) -> Self {
-
-        let (f_spu,f_error_code,f_name) = (fetch_spu_resp.spu,fetch_spu_resp.error_code,fetch_spu_resp.name);
+        let (f_spu, f_error_code, f_name) = (
+            fetch_spu_resp.spu,
+            fetch_spu_resp.error_code,
+            fetch_spu_resp.name,
+        );
         // if spu is present, convert it
         let spu = if let Some(fetched_spu) = f_spu {
             Some(Spu::new(f_name.clone(), fetched_spu))
@@ -59,7 +59,6 @@ impl  SpuMetadata {
         }
     }
 }
-
 
 #[derive(Serialize, Debug)]
 pub struct Spu {
@@ -88,17 +87,16 @@ pub enum SpuResolution {
     Init,
 }
 
-
 impl Spu {
     pub fn new(spu_name: String, fetched_spu: FlvFetchSpu) -> Self {
-        let (public_eps,private_ep) = (fetched_spu.public_ep,fetched_spu.private_ep);
+        let (public_eps, private_ep) = (fetched_spu.public_ep, fetched_spu.private_ep);
 
         Spu {
             id: fetched_spu.id,
             name: spu_name.clone(),
             spu_type: SpuType::new(&fetched_spu.spu_type),
 
-            public_server: Endpoint::new(public_eps.host,public_eps.port),
+            public_server: Endpoint::new(public_eps.host, public_eps.port),
             private_server: Endpoint::new(private_ep.host, private_ep.port),
 
             rack: fetched_spu.rack.clone(),

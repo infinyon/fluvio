@@ -16,7 +16,6 @@ use super::OutputType;
 use super::TableOutputHandler;
 use super::KeyValOutputHandler;
 
-
 pub trait DescribeObjectHandler {
     fn is_ok(&self) -> bool;
     fn is_error(&self) -> bool;
@@ -26,15 +25,13 @@ pub trait DescribeObjectHandler {
     fn label_plural() -> &'static str;
 }
 
-
 // -----------------------------------
 // Data Structures
 // -----------------------------------
 
 pub struct DescribeObjectRender<O>(Arc<O>);
 
-
-impl <O>DescribeObjectRender<O> {
+impl<O> DescribeObjectRender<O> {
     pub fn new(out: Arc<O>) -> Self {
         Self(out)
     }
@@ -44,32 +41,30 @@ impl <O>DescribeObjectRender<O> {
 // Describe Objects Implementation
 // -----------------------------------
 
-impl<O: Terminal> DescribeObjectRender<O>
-{
-    
-    pub fn render<D>(&self, objects: &Vec<D>,output_type: OutputType) -> Result<(), CliError>
-        where D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler + Serialize
+impl<O: Terminal> DescribeObjectRender<O> {
+    pub fn render<D>(&self, objects: &Vec<D>, output_type: OutputType) -> Result<(), CliError>
+    where
+        D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler + Serialize,
     {
-
         let out = self.0.clone();
         if output_type.is_table() {
             self.print_table(objects)
         } else {
-            out.render_serde(objects,output_type.into())
+            out.render_serde(objects, output_type.into())
         }
     }
 
-    pub fn print_table<D> (&self,objects: &Vec<D>) -> Result<(), CliError> 
-        where D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler
+    pub fn print_table<D>(&self, objects: &Vec<D>) -> Result<(), CliError>
+    where
+        D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler,
     {
-        
         match objects.len() {
             1 => {
                 let object = &objects[0];
                 // provide detailed validation
                 object.validate()?;
                 self.0.render_key_values(object);
-                self.0.clone().render_table(object,true);
+                self.0.clone().render_table(object, true);
             }
 
             _ => {
@@ -78,11 +73,11 @@ impl<O: Terminal> DescribeObjectRender<O>
 
                 for object in objects {
                     if object.is_ok() {
-                        t_println!(self.0,"");
+                        t_println!(self.0, "");
                         println!("{} DETAILS", D::label().to_ascii_uppercase());
                         println!("-------------");
                         self.0.render_key_values(object);
-                        self.0.clone().render_table(object,true);
+                        self.0.clone().render_table(object, true);
                     }
                 }
             }
@@ -91,10 +86,10 @@ impl<O: Terminal> DescribeObjectRender<O>
         Ok(())
     }
 
-
     /// Provide a header summary
-    fn header_summary<D>(&self,objects: &Vec<D>) -> String
-    where D: DescribeObjectHandler
+    fn header_summary<D>(&self, objects: &Vec<D>) -> String
+    where
+        D: DescribeObjectHandler,
     {
         let all_cnt = objects.len();
         let mut ok_cnt = 0;
@@ -111,15 +106,18 @@ impl<O: Terminal> DescribeObjectRender<O>
         if invalid_cnt > 0 {
             format!(
                 "Retrieved {} out of {} {} ({} are invalid)",
-                ok_cnt, all_cnt, D::label_plural(), invalid_cnt
+                ok_cnt,
+                all_cnt,
+                D::label_plural(),
+                invalid_cnt
             )
         } else {
             format!(
                 "Retrieved {} out of {} {}",
-                ok_cnt, all_cnt, D::label_plural()
+                ok_cnt,
+                all_cnt,
+                D::label_plural()
             )
         }
     }
-
 }
-

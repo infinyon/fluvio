@@ -11,7 +11,6 @@ use kf_protocol::derive::{Decode, Encode};
 use crate::FlvResponseMessage;
 use crate::ScApiKey;
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteTopicsRequest {
     /// Each topic in the request.

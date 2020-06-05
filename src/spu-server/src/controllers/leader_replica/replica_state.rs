@@ -349,14 +349,15 @@ impl LeaderReplicaState<FileReplica> {
         offset: Offset,
         isolation: Isolation,
         partition_response: &mut P,
-    ) -> (Offset,Offset) where
+    ) -> (Offset, Offset)
+    where
         P: SlicePartitionResponse,
     {
         self.storage
             .read_records_with_isolation(offset, isolation, partition_response)
             .await;
 
-        (self.hw(),self.leo())
+        (self.hw(), self.leo())
     }
 
     pub async fn send_records(

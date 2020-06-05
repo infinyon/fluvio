@@ -29,7 +29,6 @@ pub struct FlvFetchLocalSpuResponse {
     /// Spu id. Managed Spu ids start from 0. Custom SPU ids start from 5000.
     pub id: i32,
 
-
     /// Public endpoint server interface.
     pub public_ep: String,
 

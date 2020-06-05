@@ -2,11 +2,9 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
 
-
 use futures::stream::StreamExt;
 use log::debug;
 use log::trace;
-
 
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
@@ -226,8 +224,6 @@ impl Segment<LogIndex, FileRecordsSlice> {
 impl Unpin for Segment<MutLogIndex, MutFileRecords> {}
 
 impl Segment<MutLogIndex, MutFileRecords> {
-  
-
     // create segment on base directory
     pub async fn create(
         base_offset: Offset,
@@ -306,15 +302,14 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
-    pub async fn send(&mut self,mut item: DefaultBatch) -> Result<(),StorageError> {
-
+    pub async fn send(&mut self, mut item: DefaultBatch) -> Result<(), StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
         let pos = self.get_log_pos();
 
         // fill in the base offset using current offset if record's batch offset is 0
         // ensure batch is not already recorded
-        if item.base_offset == 0 { 
+        if item.base_offset == 0 {
             item.set_base_offset(current_offset);
         } else {
             if item.base_offset < current_offset {
@@ -325,21 +320,19 @@ impl Segment<MutLogIndex, MutFileRecords> {
         }
 
         let batch_offset_delta = (current_offset - base_offset) as i32;
-        debug!(
-            "writing batch base_off: {}, pos: {}",
-            base_offset, pos
-        );
+        debug!("writing batch base_off: {}, pos: {}", base_offset, pos);
 
         match self.msg_log.send(item).await {
             Ok(_) => {
                 let batch_len = self.msg_log.get_pos();
-                self.index.send((batch_offset_delta as u32, pos, batch_len)).await?;
-                    
+                self.index
+                    .send((batch_offset_delta as u32, pos, batch_len))
+                    .await?;
+
                 let last_offset_delta = self.msg_log.get_item_last_offset_delta();
                 trace!("flushing: last offset delta: {}", last_offset_delta);
                 self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
                 Ok(())
-                
             }
             Err(err) => Err(err),
         }
@@ -347,9 +340,8 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
     #[allow(unused)]
     pub async fn flush(&mut self) -> Result<(), StorageError> {
-        self.msg_log.flush().await.map_err(|err|err.into())
+        self.msg_log.flush().await.map_err(|err| err.into())
     }
-
 }
 
 #[cfg(test)]

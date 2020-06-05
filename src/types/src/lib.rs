@@ -4,7 +4,6 @@ pub mod defaults;
 pub mod macros;
 pub mod partition;
 
-
 pub use partition::PartitionError;
 
 //

@@ -23,13 +23,11 @@ use super::spu::FlvSpuGroupResolution;
 #[derive(Decode, Encode, Default, Debug)]
 pub struct FlvFetchSpuGroupsRequest {}
 
-
 impl Request for FlvFetchSpuGroupsRequest {
     const API_KEY: u16 = ScApiKey::FlvFetchSpuGroups as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvFetchSpuGroupsResponse;
 }
-
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvFetchSpuGroupsResponse {
@@ -40,7 +38,6 @@ pub struct FlvFetchSpuGroupsResponse {
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvFetchSpuGroup {
-
     pub name: String,
 
     /// The number of replicas for the spu group
@@ -53,7 +50,7 @@ pub struct FlvFetchSpuGroup {
     pub rack: Option<String>,
 
     /// storage size
-    pub size: String,     
+    pub size: String,
 
     /// Status resolution
     pub resolution: FlvSpuGroupResolution,
@@ -62,10 +59,8 @@ pub struct FlvFetchSpuGroup {
     pub reason: Option<String>,
 }
 
-impl Into<(String,SpuGroupSpec,SpuGroupStatus)> for FlvFetchSpuGroup {
-
-    fn into(self) -> (String,SpuGroupSpec,SpuGroupStatus) {
-
+impl Into<(String, SpuGroupSpec, SpuGroupStatus)> for FlvFetchSpuGroup {
+    fn into(self) -> (String, SpuGroupSpec, SpuGroupStatus) {
         (
             self.name,
             SpuGroupSpec {
@@ -81,26 +76,22 @@ impl Into<(String,SpuGroupSpec,SpuGroupStatus)> for FlvFetchSpuGroup {
                         ..Default::default()
                     },
                     ..Default::default()
-                }
-
+                },
             },
             SpuGroupStatus {
                 resolution: self.resolution.into(),
                 ..Default::default()
-            }
+            },
         )
     }
 }
 
-
 impl From<K8Obj<SpuGroupSpec>> for FlvFetchSpuGroup {
-
     fn from(item: K8Obj<SpuGroupSpec>) -> Self {
-
-        let (name,spec,status) = (item.metadata.name,item.spec,item.status);
+        let (name, spec, status) = (item.metadata.name, item.spec, item.status);
         let min_id = spec.min_id();
-        let (replicas,template) = (spec.replicas,spec.template.spec);
-        let (rack,storage) = (template.rack,template.storage.unwrap_or_default());
+        let (replicas, template) = (spec.replicas, spec.template.spec);
+        let (rack, storage) = (template.rack, template.storage.unwrap_or_default());
         Self {
             name,
             replicas,
@@ -111,13 +102,10 @@ impl From<K8Obj<SpuGroupSpec>> for FlvFetchSpuGroup {
             reason: None,
         }
     }
-  
 }
 
 impl From<SpuGroupStatusResolution> for FlvSpuGroupResolution {
-    
     fn from(res: SpuGroupStatusResolution) -> Self {
-        
         match res {
             SpuGroupStatusResolution::Init => FlvSpuGroupResolution::Init,
             SpuGroupStatusResolution::Invalid => FlvSpuGroupResolution::Invalid,
@@ -126,9 +114,8 @@ impl From<SpuGroupStatusResolution> for FlvSpuGroupResolution {
     }
 }
 
-
 impl Into<SpuGroupStatusResolution> for FlvSpuGroupResolution {
-    fn into(self) -> SpuGroupStatusResolution  {
+    fn into(self) -> SpuGroupStatusResolution {
         match self {
             Self::Init => SpuGroupStatusResolution::Init,
             Self::Invalid => SpuGroupStatusResolution::Invalid,

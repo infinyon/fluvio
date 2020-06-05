@@ -5,21 +5,15 @@ use crate::TestOption;
 
 #[derive(Clone)]
 pub struct TlsLoader {
-    option: TestOption
+    option: TestOption,
 }
 
 impl TlsLoader {
-
     pub fn new(option: TestOption) -> Self {
-        Self {
-            option
-        }
+        Self { option }
     }
 
-    
-    pub fn set_client_tls(&self,cmd: &mut Command)  {
-
-       
+    pub fn set_client_tls(&self, cmd: &mut Command) {
         let client_dir = Cert::load_client();
 
         cmd.arg("--tls")
@@ -32,16 +26,12 @@ impl TlsLoader {
             .arg(client_dir.cert.as_os_str())
             .arg("--client-key")
             .arg(client_dir.key.as_os_str());
-        
-
     }
 
-    pub fn setup_server_tls(&self,cmd: &mut Command )  {
-
-        if self.option.tls()  {
+    pub fn setup_server_tls(&self, cmd: &mut Command) {
+        if self.option.tls() {
             let server_dir = Cert::load_server();
-            cmd
-                .arg("--tls")
+            cmd.arg("--tls")
                 .arg("--enable-client-cert")
                 .arg("--ca-cert")
                 .arg(server_dir.ca.as_os_str())
@@ -50,13 +40,8 @@ impl TlsLoader {
                 .arg("--server-key")
                 .arg(server_dir.key.as_os_str());
         }
-
     }
-
-
 }
-
-
 
 pub fn cert_dir() -> PathBuf {
     std::env::current_dir().unwrap().join("tls").join("certs")
@@ -65,7 +50,7 @@ pub fn cert_dir() -> PathBuf {
 pub struct Cert {
     pub ca: PathBuf,
     pub cert: PathBuf,
-    pub key: PathBuf
+    pub key: PathBuf,
 }
 
 impl Cert {
@@ -74,7 +59,7 @@ impl Cert {
         Cert {
             ca: cert_dir.join("ca.crt"),
             cert: cert_dir.join("client.crt"),
-            key: cert_dir.join("client.key")
+            key: cert_dir.join("client.key"),
         }
     }
 
@@ -83,8 +68,7 @@ impl Cert {
         Cert {
             ca: cert_dir.join("ca.crt"),
             cert: cert_dir.join("server.crt"),
-            key: cert_dir.join("server.key")
+            key: cert_dir.join("server.key"),
         }
     }
 }
-

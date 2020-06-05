@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::marker::PhantomData;
 
-
 use std::sync::Arc;
 use std::process;
 
@@ -44,13 +43,13 @@ pub trait SocketBuilder: Clone {
     async fn to_socket(
         &self,
         raw_stream: TcpStream,
-    ) -> Result<InnerKfSocket<Self::Stream>, IoError> where InnerKfSink<Self::Stream>: ZeroCopyWrite;
+    ) -> Result<InnerKfSocket<Self::Stream>, IoError>
+    where
+        InnerKfSink<Self::Stream>: ZeroCopyWrite;
 }
 
-
 #[derive(Clone)]
-pub struct DefaultSocketBuilder{}
-
+pub struct DefaultSocketBuilder {}
 
 #[async_trait]
 impl SocketBuilder for DefaultSocketBuilder {
@@ -65,15 +64,16 @@ impl SocketBuilder for DefaultSocketBuilder {
     }
 }
 
-
 /// Trait for responding to kf service
 /// Request -> Response is type specific
 /// Each response is responsible for sending back to socket
 #[async_trait]
-pub trait KfService<S> where S:  AsyncRead + AsyncWrite + Unpin + Send{
+pub trait KfService<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+{
     type Request;
     type Context;
-
 
     /// respond to request
     async fn respond(
@@ -81,9 +81,9 @@ pub trait KfService<S> where S:  AsyncRead + AsyncWrite + Unpin + Send{
         context: Self::Context,
         socket: InnerKfSocket<S>,
     ) -> Result<(), KfSocketError>
-        where InnerKfSink<S>: ZeroCopyWrite;
+    where
+        InnerKfSink<S>: ZeroCopyWrite;
 }
-
 
 /// Transform Service into Futures 01
 pub struct InnerKfApiServer<R, A, C, S, T> {
@@ -111,30 +111,26 @@ where
     }
 }
 
-
-pub type KfApiServer<R,A,C,S> = InnerKfApiServer<R,A,C,S,DefaultSocketBuilder>;
-
+pub type KfApiServer<R, A, C, S> = InnerKfApiServer<R, A, C, S, DefaultSocketBuilder>;
 
 impl<R, A, C, S> KfApiServer<R, A, C, S>
 where
     C: Clone,
 {
     pub fn new(addr: String, context: C, service: S) -> Self {
-        Self::inner_new(addr,context,service, DefaultSocketBuilder{})
+        Self::inner_new(addr, context, service, DefaultSocketBuilder {})
     }
 }
-
-
 
 impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
     R: KfRequestMessage<ApiKey = A> + Send + Debug + 'static,
     C: Clone + Sync + Send + 'static,
     A: Send + KfDecoder + Debug + 'static,
-    S: KfService<T::Stream,Request = R, Context = C > + Send + 'static + Sync,
+    S: KfService<T::Stream, Request = R, Context = C> + Send + 'static + Sync,
     T: SocketBuilder + Send + 'static,
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
-    InnerKfSink<T::Stream>: ZeroCopyWrite
+    InnerKfSink<T::Stream>: ZeroCopyWrite,
 {
     pub fn run(self) -> Sender<bool> {
         let (sender, receiver) = channel::<bool>(1);
@@ -158,7 +154,6 @@ where
     }
 
     async fn event_loop(self, listener: TcpListener, mut shutdown_signal: Receiver<bool>) {
-        
         let addr = self.addr.clone();
 
         let mut incoming = listener.incoming();
@@ -195,13 +190,11 @@ where
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
                 Ok(stream) => {
-                    
                     let context = self.context.clone();
                     let service = self.service.clone();
                     let builder = self.builder.clone();
 
                     let ft = async move {
-
                         debug!(
                             "new connection from {}",
                             stream
@@ -224,7 +217,6 @@ where
                     };
 
                     spawn(ft);
-
                 }
                 Err(err) => {
                     error!("error with stream: {}", err);
@@ -238,7 +230,6 @@ where
 
 #[cfg(test)]
 mod test {
-
 
     use std::sync::Arc;
     use std::time::Duration;
@@ -283,10 +274,7 @@ mod test {
         KfSocket::connect(&addr).await
     }
 
-    async fn test_client(
-        addr: String,
-        mut shutdown: Sender<bool>,
-    ) -> Result<(), KfSocketError> {
+    async fn test_client(addr: String, mut shutdown: Sender<bool>) -> Result<(), KfSocketError> {
         let mut socket = create_client(addr).await?;
 
         let request = EchoRequest::new("hello".to_owned());

@@ -29,15 +29,13 @@ pub type DefaultFlvContinuousFetchRequest = FlvContinuousFetchRequest<DefaultRec
 
 use crate::SpuApiKey;
 
-
-
 /// Fetch records continuously
 /// After initial fetch, update to same replica will stream to client
 #[derive(Decode, Encode, Default, Debug)]
-pub struct FlvContinuousFetchRequest<R> 
-    where R: Encoder + Decoder + Default + Debug,
+pub struct FlvContinuousFetchRequest<R>
+where
+    R: Encoder + Decoder + Default + Debug,
 {
-    
     pub topic: String,
     pub partition: i32,
     pub fetch_offset: i64,
@@ -46,24 +44,23 @@ pub struct FlvContinuousFetchRequest<R>
     pub data: PhantomData<R>,
 }
 
-
-impl <R>Request for FlvContinuousFetchRequest<R> 
-    where R: Debug + Decoder + Encoder
+impl<R> Request for FlvContinuousFetchRequest<R>
+where
+    R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuApiKey::FlvContinuousFetch as u16;
     const DEFAULT_API_VERSION: i16 = 10;
     type Response = FlvContinuousFetchResponse<R>;
 }
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvContinuousFetchResponse<R>
-    where R: Encoder + Decoder + Default + Debug,
+where
+    R: Encoder + Decoder + Default + Debug,
 {
     pub topic: String,
-    pub partition: FetchablePartitionResponse<R>
+    pub partition: FetchablePartitionResponse<R>,
 }
-
 
 impl FileWrite for FlvContinuousFetchResponse<KfFileRecordSet> {
     fn file_encode(
@@ -72,12 +69,10 @@ impl FileWrite for FlvContinuousFetchResponse<KfFileRecordSet> {
         data: &mut Vec<StoreValue>,
         version: Version,
     ) -> Result<(), IoError> {
-
         trace!("file encoding FlvContinuousFetchResponse");
         trace!("topic {}", self.topic);
         self.topic.encode(src, version)?;
         self.partition.file_encode(src, data, version)?;
         Ok(())
-
     }
 }

@@ -84,7 +84,6 @@ impl ScDispatcher<FileReplica> {
 
         const WAIT_RECONNECT_INTERVAL: u64 = 3000;
 
-
         loop {
             debug!("entering SC dispatch loop: {}", counter);
 
@@ -113,13 +112,19 @@ impl ScDispatcher<FileReplica> {
                     // continuously process updates from and send back status to SC
                     match self.sc_request_loop(socket).await {
                         Ok(_) => {
-                            debug!("sc connection terminated: {}, waiting before reconnecting", counter);
+                            debug!(
+                                "sc connection terminated: {}, waiting before reconnecting",
+                                counter
+                            );
                             // give little bit time before trying to reconnect
                             sleep(Duration::from_millis(10)).await;
                             counter = counter + 1;
                         }
                         Err(err) => {
-                            warn!("error connecting to sc: {:#?}, waiting before reconnecting", err);
+                            warn!(
+                                "error connecting to sc: {:#?}, waiting before reconnecting",
+                                err
+                            );
                             // We are  connection to sc.  Retry again
                             // Currently we use 3 seconds to retry but this should be using backoff algorithm
                             sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;

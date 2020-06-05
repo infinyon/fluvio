@@ -297,7 +297,8 @@ impl PartitionReducer {
             // find partition who's leader is same as offline spu
             if partition_kv.spec.leader == offline_leader_spu_id {
                 // find suitable leader
-                if let Some(candidate_leader) = partition_kv.status.candidate_leader(&spu_status, &policy)
+                if let Some(candidate_leader) =
+                    partition_kv.status.candidate_leader(&spu_status, &policy)
                 {
                     debug!(
                         "suitable leader has found: {} leader: {}",

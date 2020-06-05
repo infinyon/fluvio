@@ -128,7 +128,6 @@ impl<S> ReplicaLeadersState<S> {
 }
 
 impl ReplicaLeadersState<FileReplica> {
-
     /// write records to response
     ///
     /// # Arguments
@@ -145,12 +144,13 @@ impl ReplicaLeadersState<FileReplica> {
         offset: Offset,
         isolation: Isolation,
         response: &mut FilePartitionResponse,
-    ) -> Option<(Offset,Offset)> {
-
+    ) -> Option<(Offset, Offset)> {
         if let Some(leader_replica) = self.get_replica(rep_id) {
-            Some(leader_replica
-                .read_records(offset, isolation, response)
-                .await)
+            Some(
+                leader_replica
+                    .read_records(offset, isolation, response)
+                    .await,
+            )
         } else {
             warn!("no replica is found: {}", rep_id);
             response.error_code = ErrorCode::NotLeaderForPartition;
@@ -167,9 +167,7 @@ impl ReplicaLeadersState<FileReplica> {
         update_hw: bool,
     ) -> Result<bool, InternalServerError> {
         if let Some(mut leader_replica) = self.get_mut_replica(rep_id) {
-            leader_replica
-                .send_records(records, update_hw)
-                .await?;
+            leader_replica.send_records(records, update_hw).await?;
             self.send_message(rep_id, LeaderReplicaControllerCommand::EndOffsetUpdated)
                 .await
                 .map_err(|err| err.into())

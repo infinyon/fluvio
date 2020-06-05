@@ -48,7 +48,7 @@ pub async fn handle_api_versions_request(
         FlvFetchSpusRequest::DEFAULT_API_VERSION,
     ));
 
-    trace!("flv api versions response: {:#?}",response);
+    trace!("flv api versions response: {:#?}", response);
 
     Ok(request.new_response(response))
 }

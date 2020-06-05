@@ -28,8 +28,8 @@ impl ReplicaKey {
         }
     }
 
-    pub fn split(self) -> (String,i32) {
-        (self.topic,self.partition)
+    pub fn split(self) -> (String, i32) {
+        (self.topic, self.partition)
     }
 }
 

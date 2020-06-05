@@ -287,8 +287,13 @@ impl FollowerReplicaState<FileReplica> {
         replica: &'a ReplicaKey,
         config: &'a ConfigOption,
     ) -> Result<Self, StorageError> {
-
-        debug!("creating follower replica: local_spu: {}, replica: {}, leader: {}, base_dir: {}", local_spu,replica,leader, config.base_dir.display());
+        debug!(
+            "creating follower replica: local_spu: {}, replica: {}, leader: {}, base_dir: {}",
+            local_spu,
+            replica,
+            leader,
+            config.base_dir.display()
+        );
 
         let storage = create_replica_storage(local_spu, replica, &config).await?;
 

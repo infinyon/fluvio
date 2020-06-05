@@ -44,8 +44,8 @@ pub struct ScOpt {
 }
 
 impl ScOpt {
-    fn get_sc_and_k8_config(
-    ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error> {
+    fn get_sc_and_k8_config() -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error>
+    {
         let mut sc_opt = ScOpt::from_args();
 
         let k8_config = K8Config::load().expect("no k8 config founded");
@@ -58,19 +58,19 @@ impl ScOpt {
         }
 
         let (sc_config, tls_option) = sc_opt.as_sc_config()?;
-        
+
         Ok((sc_config, k8_config, tls_option))
     }
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
-    fn as_sc_config(self) -> Result<(ScConfig, Option<(String,TlsConfig)>), IoError> {
+    fn as_sc_config(self) -> Result<(ScConfig, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
         if let Some(public_addr) = self.bind_public {
             config.public_endpoint = public_addr.clone();
         }
-       
+
         if let Some(private_addr) = self.bind_private {
             config.private_endpoint = private_addr.clone();
         }
@@ -90,13 +90,11 @@ impl ScOpt {
                 )
             })?;
 
-            Ok((config,Some((proxy_addr,tls))))
+            Ok((config, Some((proxy_addr, tls))))
         } else {
-            Ok((config,None))
+            Ok((config, None))
         }
     }
-
-    
 }
 
 /// return SC configuration or exist program.
@@ -138,26 +136,24 @@ pub struct TlsConfig {
 }
 
 impl TlsConfig {
-
-    pub fn try_build_tls_acceptor(&self) -> Result<TlsAcceptor,IoError>  {
-
+    pub fn try_build_tls_acceptor(&self) -> Result<TlsAcceptor, IoError> {
         let server_crt_path = self
             .server_cert
             .as_ref()
             .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server cert"))?;
-        info!("using server crt: {}",server_crt_path);
+        info!("using server crt: {}", server_crt_path);
         let server_key_path = self
             .server_key
             .as_ref()
             .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server key"))?;
-        info!("using server key: {}",server_key_path);
+        info!("using server key: {}", server_key_path);
 
         let builder = (if self.enable_client_cert {
             let ca_path = self
                 .ca_cert
                 .as_ref()
                 .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing ca cert"))?;
-            info!("using client cert CA path: {}",ca_path);
+            info!("using client cert CA path: {}", ca_path);
             AcceptorBuilder::new_client_authenticate(ca_path)?
         } else {
             info!("using tls anonymous access");
@@ -167,6 +163,4 @@ impl TlsConfig {
 
         Ok(builder.build())
     }
-
-
 }

@@ -72,13 +72,11 @@ macro_rules! leader_debug {
     ($self:ident, $message:expr) => ( debug!(concat!("replica: <{}> => ",$message),$self.id))
 }
 
-
 macro_rules! leader_warn {
     ($self:ident, $message:expr,$($arg:expr)*) => ( warn!(concat!("replica: <{}> => ",$message),$self.id, $($arg)*) ) ;
 
     ($self:ident, $message:expr) => ( warn!(concat!("replica: {} => ",$message),$self.id))
 }
-
 
 impl ReplicaLeaderController<FileReplica> {
     pub fn run(self) {
@@ -90,7 +88,7 @@ impl ReplicaLeaderController<FileReplica> {
         self.send_status_to_sc().await;
         self.sync_followers().await;
         loop {
-            leader_debug!(self,"waiting for next command");
+            leader_debug!(self, "waiting for next command");
 
             select! {
 
@@ -161,7 +159,7 @@ impl ReplicaLeaderController<FileReplica> {
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica.sync_followers(&self.follower_sinks).await;
         } else {
-            leader_warn!(self,"sync followers: no replica is found");
+            leader_warn!(self, "sync followers: no replica is found");
         }
     }
 
@@ -170,7 +168,7 @@ impl ReplicaLeaderController<FileReplica> {
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica.send_status_to_sc(&self.sc_sink).await;
         } else {
-            leader_warn!(self,"no replica is found");
+            leader_warn!(self, "no replica is found");
         }
     }
 
@@ -184,10 +182,10 @@ impl ReplicaLeaderController<FileReplica> {
             };
 
             if let Err(err) = self.offset_sender.send(event) {
-                error!("error sending offset {:#?}",err);
+                error!("error sending offset {:#?}", err);
             }
         } else {
-            leader_warn!(self,"no replica is found");
+            leader_warn!(self, "no replica is found");
         }
     }
 }
