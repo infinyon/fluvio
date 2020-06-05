@@ -9,9 +9,6 @@ pub enum KfSocketError {
 }
 
 impl From<IoError> for KfSocketError {
-
-
-    
     fn from(error: IoError) -> Self {
         KfSocketError::IoError(error)
     }
