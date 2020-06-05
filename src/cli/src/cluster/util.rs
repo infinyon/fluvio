@@ -86,7 +86,9 @@ mod cmd_util {
 
         fn print(&mut self) -> &mut Self {
 
-            println!(">> {}",format!("{:?}",self).replace("\"",""));
+            use log::debug;
+
+            debug!("cmd: {}",format!("{:?}",self).replace("\"",""));
             self
         }
     }

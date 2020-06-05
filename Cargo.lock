@@ -579,7 +579,7 @@ checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
 name = "fluvio"
-version = "3.1.0"
+version = "3.1.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.4",
@@ -592,6 +592,7 @@ dependencies = [
  "flv-util 0.2.0",
  "futures",
  "k8-client",
+ "k8-config",
  "k8-flv-metadata",
  "k8-metadata-client",
  "k8-obj-core",
@@ -605,7 +606,6 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
- "tera",
  "toml",
  "utils",
 ]
@@ -1226,14 +1226,15 @@ dependencies = [
 
 [[package]]
 name = "k8-config"
-version = "1.0.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddc77e8bee27bdb5751e219c0b1e7f9c3cf5b8f0434f54340d713e05a663403b"
+checksum = "ec6deea2c3563e444b4eb5ca448f985e91ede1671189cd0cd38f103d9f7ab0e1"
 dependencies = [
  "dirs 2.0.2",
  "log",
  "serde",
  "serde_yaml",
+ "tera",
 ]
 
 [[package]]
