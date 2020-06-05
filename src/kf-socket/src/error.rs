@@ -8,7 +8,8 @@ pub enum KfSocketError {
     SendFileError(SendFileError),
 }
 
-impl From<IoError> for KfSocketError {
+impl From<IoError> for KfSocketError
+ {
     fn from(error: IoError) -> Self {
         KfSocketError::IoError(error)
     }
