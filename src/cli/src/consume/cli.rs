@@ -34,7 +34,7 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
-    /// optional, offset, negate offset is relative to end offset (either committed or uncommitted)
+    /// Offsets can be positive or negative. (Syntax for negative offset: --offset="-1")
     #[structopt(short, long, value_name = "integer")]
     pub offset: Option<i64>,
 
