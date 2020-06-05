@@ -8,6 +8,16 @@ on:
 
 jobs:
 
+  check_fmt:
+    name: enforce cargo check_fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: run check
+        run: |
+          make check-fmt
+      
+
   unit_test:
     name: Unit test
     runs-on: ${{ matrix.os }}

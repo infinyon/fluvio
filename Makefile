@@ -25,6 +25,9 @@ build:
 integration-test:	build
 	target/debug/flv-integration-test
 
+check-fmt:
+	cargo fmt -- --check
+
 # create secret for k8 in development mode
 k8-create-secret:
 	kubectl delete secret fluvio-ca --ignore-not-found=true
