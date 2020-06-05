@@ -1,0 +1,16 @@
+{{- $org := "" -}}
+{{- if (.page.Param "author.org") -}}
+    {{ $org = print " (" (.page.Param "author.org")  ")" }}
+{{- end -}}
+<h1 class="post-title entry-title">{{ .page.Title }}</h1>
+<div class="author-area text-muted">
+    <span class="by">by</span> 
+    <span class="author">{{ .page.Param "author.name"}}</span>{{ $org }} 
+    <span class="ml-1">|</span>
+    <i class="fa fa-calendar-day pr-1 pl-1"></i>
+    <span class="date">{{ .page.Date.Format site.Params.blog_time_format }} </span>
+</div>
+
+<div class="inner">
+{{ .page.Content }}
+</div>

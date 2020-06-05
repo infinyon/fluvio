@@ -1,0 +1,37 @@
+{{- $lines := .lines -}}
+{{- $indent := .indent -}}
+{{- $type := "" -}}
+
+{{- range $idx, $line := $lines -}}    
+    {{- $words := split $line " " -}}
+    {{- $firstWord := trim (partial "fluvio/firstWord.html" (dict "words" $words)) "\"" -}}
+
+    {{- if eq $firstWord "$" -}}
+        {{- $words = after 1 $words -}}
+        <span class="drk">$ </span>
+        {{- partial "fluvio/command.html" (dict "words" $words "indent" $indent) -}}
+    {{- else if eq $firstWord "fluvio" -}}
+        {{- partial "fluvio/command.html" (dict "words" $words "indent" $indent) -}}
+    {{- else if hasPrefix $firstWord "FLAGS" -}}
+        {{- $type = "flags" -}}
+        {{- partial "fluvio/text.html" (dict "words" $words "class" "drk") -}}
+    {{- else if hasPrefix $firstWord "OPTIONS" -}}
+        {{- $type = "flags" -}}
+        {{- partial "fluvio/text.html" (dict "words" $words "class" "drk") -}}
+    {{- else if hasPrefix $firstWord "SUBCOMMANDS" -}}
+        {{- $type = "subcommands" -}}
+        {{- partial "fluvio/text.html" (dict "words" $words "class" "drk") -}}
+    {{- else if eq (index $words 0) "\n" -}}
+        {{- $type = "" -}}
+    {{- else -}}
+        {{- if eq $type "flags" -}}
+            {{- partial "fluvio/flags.html" (dict "words" $words) -}}
+        {{- else if eq $type "subcommands" -}}
+            {{- partial "fluvio/subCommand.html" (dict "words" $words) -}}
+        {{- else -}}
+            {{- partial "fluvio/text.html" (dict "words" $words "class" "drk") -}}
+        {{- end -}}
+    {{- end -}}
+    {{- print "\n" -}}
+{{- end -}}
+

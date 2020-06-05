@@ -1,0 +1,15 @@
+<!-- Generate all ancesters sections (e.g. doc/section1/, doc/section1/subsection1/) -->
+{{- $section_path := .CurrentSection -}}
+{{- $section_nodes := split $section_path.File "/" }}
+{{- $last_cnt := (sub (len $section_nodes) 1) }}
+{{- $collector := "" }}
+{{- $ancesters := slice }}
+{{- range $index, $node := $section_nodes -}}
+    {{- if (eq $index 0) -}}
+        {{- $collector = $node -}}
+    {{- else if (lt $index $last_cnt) -}}
+        {{- $collector = (print  $collector "/" $node ) -}}
+        {{- $ancesters = $ancesters | append (print $collector "/") -}}
+    {{- end -}}
+{{- end -}}
+{{- partial "docs/side-menu-tree.html" (dict "ctx" . "ancesters" $ancesters) -}}

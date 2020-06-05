@@ -1,0 +1,7 @@
+{{/* get file that matches the filename as specified as src="" in shortcode */}}
+{{ $src := .Get "src" }}
+{{ $link := .Get "link" | default "#" }}
+{{ $width := .Get "width" | default "36" }}
+{{ $alt := .Get "alt" | default "" }}
+
+<a href="{{$link}}"><img srcset="{{$src}}" width="{{$width}}" alt="{{$alt}}"/></a>

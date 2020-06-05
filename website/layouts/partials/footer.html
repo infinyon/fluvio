@@ -1,0 +1,34 @@
+{{- $isProduction := true -}}
+{{- if in (string .Site.BaseURL) "localhost" -}}
+    {{ $isProduction = false }}
+{{- end -}}
+
+<footer class="footer mt-4">
+  <div class="container-fluid py-3">
+    <div class="row">
+        <div class="col-md-4 pt-2">
+           <a href="https://github.com/infinyon/fluvio" target="_blank"><h1 class="fab fa-github"></h1></a>
+           <a href="https://discordapp.com/invite/bBG2dTz" target="_blank"><h1 class="fab fa-discord ml-2"></h1></a>
+           <a href="https://twitter.com/infinyon" target="_blank"><h1 class="fab fa-twitter ml-2"></h1></a>
+        </div>
+        <div class="col-md-4 pt-1 text-center">
+          <div class="font-footer">Fluvio {{ $.Site.Params.Version }}</div>
+          <div class="font-footer">@{{ now.Format "2006"}} Fluvio Authors</div>
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+  </div>
+
+{{- if $isProduction -}}
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-147220940-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-147220940-1');
+  </script>
+{{- end -}}
+
+</footer>

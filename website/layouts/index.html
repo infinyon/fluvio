@@ -1,0 +1,53 @@
+{{ define "main" }}
+{{- $page := .Site.GetPage "/main/_index.md" -}}
+{{- $header := .Site.GetPage "/main/header.md" -}}
+{{- $paragraph1 := .Site.GetPage "/main/paragraph1.md" -}}
+{{- $paragraph2 := .Site.GetPage "/main/paragraph2.md" -}}
+
+<div class="jumbotron">
+  <div class="container main">
+    <div class="desc">
+     <div class="row">
+      <div class="col-lg-6">
+        {{- partial "main/product-description.html" . -}}
+      </div>
+      <div class="col-lg-6">
+          <div class="mlc5 mt-4">
+            {{- partial "main/code-samples.html" . -}}
+          </div>
+        <a class="btn btn-primary mt-3 mlc5" href="{{ $page.Params.button.link }}">{{ $page.Params.button.label }}</a>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container main">
+  <div class="row">
+    {{- range (where $.Site.RegularPages "Section" "main" ) -}}
+      <div class="col-md-6 col-lg-4 box">
+        <div class="card bg-light">
+          <div class="m-3 align-self-center">
+            <div class="box-header font-xl">
+              <a href="{{ .RelPermalink | relURL}}">{{ .Title | markdownify}}</a>
+            </div>
+
+            <img src="/images/{{.Params.image}}" class="mx-auto d-block" width="260" height="130">
+
+            <article class="box-content" style="width: 260px">
+              <p>{{ .Summary }}</p>
+            </article>
+
+            <center>
+              {{/* }}
+              <a class="btn btn-info" href="{{ .RelPermalink | relURL }}">Read more...</a>
+              {{ */}}
+            </center>
+          </div>
+        </div>
+      </div>
+    {{- end -}}
+  </div>
+</div>
+
+{{ end }}

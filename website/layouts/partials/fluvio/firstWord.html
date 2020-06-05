@@ -1,0 +1,15 @@
+{{- $text := "" -}}
+{{- $words := .words -}}
+
+{{- $whitespace := split "\t " "" -}}
+
+{{- range $word := $words -}}
+  {{- $firstChar := substr $word 0 1 -}}
+  {{- if ne ($firstChar | in $whitespace) true -}}
+    {{- if eq (len $text) 0 -}}
+      {{- $text = trim $word "\n" -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}} 
+
+{{- $text -}}

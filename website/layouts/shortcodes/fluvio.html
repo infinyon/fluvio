@@ -1,0 +1,9 @@
+{{- $content := trim .Inner "\n" -}}
+{{- $lines := split $content "\n" -}}
+{{- $indentParams := .Get "indent" | default "false" }}
+
+<div class="callout text pl-3 mb-3">
+    <pre class="font">
+        {{- partial "fluvio/dispatch.html" (dict "lines" $lines "indent" $indentParams) -}}
+    </pre>
+</div>
