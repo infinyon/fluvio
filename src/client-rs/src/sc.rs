@@ -143,35 +143,21 @@ impl ScClient {
     }
 }
 
-
-
 macro_rules! topic_error {
-    ($topic:expr,$topic_response:expr,$msg:expr) => {
-        {
-            use crate::ClientError;
-            use std::io::Error as IoError;
+    ($topic:expr,$topic_response:expr,$msg:expr) => {{
+        use crate::ClientError;
+        use std::io::Error as IoError;
 
-            if let Some(msg) = &($topic_response.error_message) {
-                ClientError::IoError(IoError::new(
-                    ErrorKind::Other,
-                    msg.to_owned()
-                ))
-        
-            } else {
-                ClientError::IoError(IoError::new(
-                    ErrorKind::Other,
-                    format!(
-                        $msg,
-                        $topic,
-                        $topic_response.error_code.to_sentence()
-                    ),
-                ))
-            }
+        if let Some(msg) = &($topic_response.error_message) {
+            ClientError::IoError(IoError::new(ErrorKind::Other, msg.to_owned()))
+        } else {
+            ClientError::IoError(IoError::new(
+                ErrorKind::Other,
+                format!($msg, $topic, $topic_response.error_code.to_sentence()),
+            ))
         }
-        
-    };
+    }};
 }
-
 
 #[async_trait]
 impl SpuController for ScClient {
@@ -211,7 +197,6 @@ impl SpuController for ScClient {
             if topic_resp.error_code == FlvErrorCode::TopicNotFound {
                 return Err(ClientError::TopicNotFound(topic.to_owned()));
             } else {
-                
                 return Err(ClientError::IoError(IoError::new(
                     ErrorKind::InvalidData,
                     format!(
@@ -241,7 +226,6 @@ impl SpuController for ScClient {
                     if spu_resp.spu_id == leader_id {
                         // check for errors
                         if spu_resp.error_code != FlvErrorCode::None {
-
                             return Err(ClientError::IoError(IoError::new(
                                 ErrorKind::InvalidData,
                                 format!(
@@ -282,7 +266,11 @@ impl SpuController for ScClient {
                 if topic_response.error_code.is_ok() {
                     return Ok(topic_response.name);
                 } else {
-                    return  Err(topic_error!(topic, topic_response,"topic deletion error '{}' {}"))
+                    return Err(topic_error!(
+                        topic,
+                        topic_response,
+                        "topic deletion error '{}' {}"
+                    ));
                 }
             }
         }
@@ -324,7 +312,11 @@ impl SpuController for ScClient {
                 if topic_response.error_code.is_ok() {
                     return Ok(topic);
                 } else {
-                   return  Err(topic_error!(topic, topic_response,"topic creation error '{}' {}"))
+                    return Err(topic_error!(
+                        topic,
+                        topic_response,
+                        "topic creation error '{}' {}"
+                    ));
                 }
             }
         }
@@ -350,5 +342,3 @@ impl SpuController for ScClient {
         Ok(topics)
     }
 }
-
-
