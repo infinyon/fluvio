@@ -1,4 +1,4 @@
-# To preview and and locally
+# To run website locally
 
 We are using [Hugo](https://gohugo.io) to render website.
 
