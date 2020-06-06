@@ -36,7 +36,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         cmd.arg("cluster")
             .arg("install")
             .arg("--spu")
-            .arg(self.option.spu_count().to_string());
+            .arg(self.option.spu.to_string());
 
         if self.option.tls() {
             self.set_tls(&self.option, &mut cmd);

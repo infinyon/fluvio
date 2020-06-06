@@ -16,51 +16,10 @@ impl TestRunner {
         Self { option }
     }
 
-    /*
-    fn wait_for_topic(&self) {
-
-
-
-        // wait until topic is provisioned
-        // topic describe is not correct since it doesn't specify partition
-        for _ in 0..100u16 {
-            let output = get_fluvio()
-                .expect("fluvio not founded")
-                .log(self.option.log.as_ref())
-                .arg("topic")
-                .arg("describe")
-                .arg("--topic")
-                .arg(topic_name)
-                .print()
-                .output()
-                .expect("topic describe");
-
-            std::io::stderr().write_all(&output.stderr).unwrap();
-            if output.status.success() {
-                // check if output contains provisioned word, may do json
-                let msg = String::from_utf8(output.stdout).expect("output");
-                println!("output: {}", msg);
-                if msg.contains("provisioned") {
-                    println!("topic {} provisioned", topic_name);
-                    return;
-                } else {
-                    println!("topic {} not provisioned, waiting 2 seconds", topic_name);
-                }
-            } else {
-                println!("topic: {} not provisioned, waiting 2 second", topic_name);
-            }
-            sleep(Duration::from_secs(2)).await
-        }
-
-        assert!(false, "unable to provision topic: {}", topic_name);
-
-
-    }
-    */
 
     async fn setup_topic(&self) {
         // wait until SPU come online
-        sleep(Duration::from_secs(2)).await;
+        sleep(Duration::from_secs(1)).await;
 
         let topic_name = &self.option.topic_name;
 
@@ -80,7 +39,7 @@ impl TestRunner {
 
         // wait until topic is created, this is hack for now until we have correct
         // implementation of find topic
-        sleep(Duration::from_secs(5)).await
+        sleep(Duration::from_secs(2)).await
     }
 
     /// main entry point
@@ -94,11 +53,11 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-
-        // sleep(Duration::from_secs(3)).await;
         } else {
             println!("no topic initialized");
         }
+
+        sleep(Duration::from_secs(1)).await;        // sleep 1 second in just case
 
         let test_driver = create_test_driver(self.option.clone());
 

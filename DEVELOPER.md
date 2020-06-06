@@ -151,32 +151,6 @@ flvd cluster uninstall --local
 ```
 
 
-
-## Running integration test
-
-Please ensure Fluvio system chart has been installed.
-
-First, build all targets
-
-```
-cargo build
-```
-
-Run end to end integration test with a single SPU
-```
-./target/debug/flv-test
-```
-
-Run end to end integration test with a multiple SPU.  For example, with 2 SPU
-```
-./target/debug/flv-test -r 2
-```
-
-### Running integration test for custom SPU
-
-```
-./target/debug/flv-test --local
-```
 ## Troubleshooting
 This guide helps users to solve issues they might face during the setup process. 
 

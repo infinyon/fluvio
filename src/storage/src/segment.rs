@@ -320,7 +320,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         }
 
         let batch_offset_delta = (current_offset - base_offset) as i32;
-        debug!("writing batch base_off: {}, pos: {}", base_offset, pos);
+        debug!("writing batch base_off: {}, pos: {}, batch record: {}", base_offset, pos, compute_batch_record_size(&item));
 
         match self.msg_log.send(item).await {
             Ok(_) => {
@@ -342,6 +342,11 @@ impl Segment<MutLogIndex, MutFileRecords> {
     pub async fn flush(&mut self) -> Result<(), StorageError> {
         self.msg_log.flush().await.map_err(|err| err.into())
     }
+}
+
+/// compute total number of values in the default batch
+fn compute_batch_record_size(batch: &DefaultBatch) -> usize {
+    batch.records.iter().fold(0, |acc, batch | acc + batch.value.len())
 }
 
 #[cfg(test)]
