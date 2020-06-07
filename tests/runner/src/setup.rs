@@ -38,6 +38,6 @@ impl Setup {
 
         self.env_driver.install_cluster().await;
 
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_millis(100)).await;
     }
 }

@@ -7,19 +7,18 @@ use utils::bin::get_fluvio;
 
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
+use super::message::*;
 
 /// verify consumer thru CLI
 pub async fn validate_consume_message(option: &TestOption) {
-    if option.produce.produce_count == 1 {
+    if option.produce.produce_iteration == 1 {
         validate_consume_message_cli(option);
     } else {
-        // validate_consume_message_api(option).await;
+        validate_consume_message_api(option).await;
     }
 }
 
 fn validate_consume_message_cli(option: &TestOption) {
-    use super::MESSAGE_PREFIX;
-
     let topic_name = &option.topic_name;
 
     let output = get_fluvio()
@@ -37,16 +36,14 @@ fn validate_consume_message_cli(option: &TestOption) {
     // io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
-    let msg = format!("message: {}, {}\n", 0, MESSAGE_PREFIX);
-
-    assert_eq!(output.stdout.as_slice(), msg.as_bytes());
+    let msg = output.stdout.as_slice();
+    validate_message(0, option, &msg[0..msg.len() - 1]);
 
     println!("consume message validated!");
 }
 
-#[allow(unused)]
 async fn validate_consume_message_api(option: &TestOption) {
-    use futures::stream::StreamExt;
+    // futures::stream::StreamExt;
 
     use flv_client::profile::ScConfig;
     use flv_client::SpuController;
@@ -63,6 +60,17 @@ async fn validate_consume_message_api(option: &TestOption) {
         .await
         .expect("leader not founded");
 
+    println!("retrieving messages");
+    let response = leader
+        .fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default())
+        .await
+        .expect("records");
+    println!("message received");
+    let batches = response.records.batches;
+
+    assert_eq!(batches.len(), option.produce.produce_iteration as usize);
+    println!("consume message validated!");
+    /*
     let mut log_stream = leader.fetch_logs(FetchOffset::Earliest(None), FetchLogOption::default());
 
     if let Some(partition_response) = log_stream.next().await {
@@ -72,4 +80,5 @@ async fn validate_consume_message_api(option: &TestOption) {
     } else {
         assert!(false, "no response")
     }
+    */
 }

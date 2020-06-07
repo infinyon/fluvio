@@ -34,7 +34,11 @@ impl EnvironmentDriver for LocalEnvDriver {
     async fn install_cluster(&self) {
         let mut cmd = get_fluvio().expect("fluvio not founded");
 
-        cmd.arg("cluster").arg("install").arg("--local");
+        cmd.arg("cluster")
+            .arg("install")
+            .arg("--spu")
+            .arg(self.option.spu.to_string())
+            .arg("--local");
 
         if let Some(log) = &self.option.log {
             cmd.arg("--log").arg(log);

@@ -2,9 +2,17 @@ use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]
 pub struct ProductOption {
-    /// number of records
+    /// number of produce iteration for a single producer
     #[structopt(short, long, default_value = "1")]
-    pub produce_count: u16,
+    pub produce_iteration: u16,
+
+    // record size
+    #[structopt(long, default_value = "100")]
+    pub record_size: usize,
+
+    // number of parallel producer
+    #[structopt(long, default_value = "1")]
+    pub producer_count: u16,
 }
 
 /// cli options
@@ -39,8 +47,8 @@ pub struct TestOption {
     pub topic_name: String,
 
     /// number of spu
-    #[structopt(short, long)]
-    spu: Option<u16>,
+    #[structopt(short, long, default_value = "1")]
+    pub spu: u16,
 
     /// enable tls
     #[structopt(long)]
@@ -93,14 +101,6 @@ impl TestOption {
 
     pub fn replication(&self) -> u16 {
         self.replication
-    }
-
-    pub fn spu_count(&self) -> u16 {
-        if let Some(spu) = self.spu {
-            spu
-        } else {
-            self.replication
-        }
     }
 
     pub fn produce(&self) -> bool {

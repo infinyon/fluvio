@@ -1,14 +1,16 @@
 mod consume;
 mod produce;
 mod listener;
-
-pub const MESSAGE_PREFIX: &'static str = "test message abcdefghijklmnopqrsxtyz";
+mod message;
 
 pub use runner::*;
 
 use super::TestDriver;
 
 mod runner {
+
+    use std::time::Duration;
+    use flv_future_aio::timer::sleep;
 
     use async_trait::async_trait;
 
@@ -26,14 +28,13 @@ mod runner {
         }
 
         async fn produce_and_consume_cli(&self) {
-            // sleep 100 ms to allow listener to start earlier
             if self.option.produce() {
-                super::produce::produce_message_with_cli(&self.option).await;
+                super::produce::produce_message(&self.option).await;
             } else {
                 println!("produce skipped");
             }
 
-            // sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(1)).await;
 
             if self.option.test_consumer() {
                 super::consume::validate_consume_message(&self.option).await;
