@@ -2,24 +2,19 @@ use crate::TestOption;
 use super::message::*;
 
 pub async fn produce_message(option: &TestOption) {
-
-    
     if option.produce.produce_iteration == 1 {
         cli::produce_message_with_cli(option).await;
     } else {
         produce_message_with_api(option).await;
-       
     }
 }
 
-
 pub async fn produce_message_with_api(option: &TestOption) {
-    
     use flv_client::profile::ScConfig;
     use flv_client::SpuController;
     use flv_client::ReplicaLeader;
-        
-    let config = ScConfig::new(None,None).expect("connect");
+
+    let config = ScConfig::new(None, None).expect("connect");
     let mut sc = config.connect().await.expect("should connect");
 
     let mut leader = sc
@@ -31,16 +26,12 @@ pub async fn produce_message_with_api(option: &TestOption) {
         let message = generate_message(i, option);
 
         leader.send_record(message).await.expect("message sent");
-        
-        println!("message sent: {}",i);
-    }
-       
-   
 
+        println!("message sent: {}", i);
+    }
 }
 
 mod cli {
-
 
     use std::io::Write;
     use std::process::Stdio;
@@ -63,7 +54,6 @@ mod cli {
 
     fn produce_message(_index: u16, topic_name: &str, option: &TestOption) {
         use std::io;
-       
 
         let mut child = get_fluvio()
             .expect("no fluvio")
@@ -76,7 +66,7 @@ mod cli {
             .expect("no child");
 
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        let msg = generate_message(0,option);
+        let msg = generate_message(0, option);
         stdin
             .write_all(msg.as_slice())
             .expect("Failed to write to stdin");

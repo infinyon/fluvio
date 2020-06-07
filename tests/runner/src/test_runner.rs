@@ -16,7 +16,6 @@ impl TestRunner {
         Self { option }
     }
 
-
     async fn setup_topic(&self) {
         // wait until SPU come online
         sleep(Duration::from_secs(1)).await;
@@ -57,7 +56,7 @@ impl TestRunner {
             println!("no topic initialized");
         }
 
-        sleep(Duration::from_secs(1)).await;        // sleep 1 second in just case
+        sleep(Duration::from_secs(1)).await; // sleep 1 second in just case
 
         let test_driver = create_test_driver(self.option.clone());
 

@@ -19,7 +19,6 @@ pub async fn validate_consume_message(option: &TestOption) {
 }
 
 fn validate_consume_message_cli(option: &TestOption) {
-    
     let topic_name = &option.topic_name;
 
     let output = get_fluvio()
@@ -38,11 +37,10 @@ fn validate_consume_message_cli(option: &TestOption) {
     io::stderr().write_all(&output.stderr).unwrap();
 
     let msg = output.stdout.as_slice();
-    validate_message(0, option,&msg[0..msg.len()-1]);
+    validate_message(0, option, &msg[0..msg.len() - 1]);
 
     println!("consume message validated!");
 }
-
 
 async fn validate_consume_message_api(option: &TestOption) {
     // futures::stream::StreamExt;
@@ -62,13 +60,15 @@ async fn validate_consume_message_api(option: &TestOption) {
         .await
         .expect("leader not founded");
 
-
     println!("retrieving messages");
-    let response = leader.fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default()).await.expect("records");
+    let response = leader
+        .fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default())
+        .await
+        .expect("records");
     println!("message received");
     let batches = response.records.batches;
 
-    assert_eq!(batches.len(),option.produce.produce_iteration as usize);
+    assert_eq!(batches.len(), option.produce.produce_iteration as usize);
     println!("consume message validated!");
     /*
     let mut log_stream = leader.fetch_logs(FetchOffset::Earliest(None), FetchLogOption::default());

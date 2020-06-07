@@ -28,7 +28,6 @@ mod runner {
         }
 
         async fn produce_and_consume_cli(&self) {
-            
             if self.option.produce() {
                 super::produce::produce_message(&self.option).await;
             } else {

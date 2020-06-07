@@ -7,13 +7,12 @@ pub struct ProductOption {
     pub produce_iteration: u16,
 
     // record size
-    #[structopt(long, default_value="100")]
+    #[structopt(long, default_value = "100")]
     pub record_size: usize,
 
     // number of parallel producer
-    #[structopt(long, default_value="1")]
-    pub producer_count: u16
-    
+    #[structopt(long, default_value = "1")]
+    pub producer_count: u16,
 }
 
 /// cli options
@@ -48,7 +47,7 @@ pub struct TestOption {
     pub topic_name: String,
 
     /// number of spu
-    #[structopt(short, long,default_value = "1")]
+    #[structopt(short, long, default_value = "1")]
     pub spu: u16,
 
     /// enable tls
@@ -66,8 +65,6 @@ pub struct TestOption {
     // log flag
     #[structopt(short, long)]
     pub log: Option<String>,
-
-    
 }
 
 impl TestOption {
@@ -106,7 +103,6 @@ impl TestOption {
         self.replication
     }
 
-    
     pub fn produce(&self) -> bool {
         !self.disable_produce
     }
