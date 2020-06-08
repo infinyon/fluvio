@@ -95,7 +95,7 @@ async fn handle_response(
     let mut topic_response = FileTopicResponse::default();
     let mut part_response = FilePartitionResponse::default();
     replica
-        .read_records(fetch_offset, None, &mut part_response)
+        .read_records(fetch_offset, None, FileReplica::PREFER_MAX_LEN,&mut part_response)
         .await;
     topic_response.partitions.push(part_response);
     response.topics.push(topic_response);

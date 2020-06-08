@@ -1,6 +1,6 @@
 use crate::TestOption;
 
-const VALUE: u8 = 2;
+const VALUE: u8 = 65;
 
 /// generate test data based on iteration and option
 pub fn generate_message(_index: u16, option: &TestOption) -> Vec<u8> {

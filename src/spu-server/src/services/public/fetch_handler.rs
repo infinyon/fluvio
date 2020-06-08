@@ -14,7 +14,7 @@ use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 
-/// handle kafka fetch request
+/// perform log fetch request using zero copy write
 pub async fn handle_fetch_request<S>(
     request: RequestMessage<KfFileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
