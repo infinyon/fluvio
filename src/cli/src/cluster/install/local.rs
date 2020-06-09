@@ -146,7 +146,8 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
     // sleep 1 seconds for sc to connect
     sleep(Duration::from_millis(300)).await;
 
-    let outputs = File::create(format!("/tmp/spu_log_{}.log", spu_id)).expect("log file");
+    let log_spu = format!("/tmp/spu_log_{}.log", spu_id);
+    let outputs = File::create(&log_spu).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
     let mut binary = get_binary("spu-server").expect("unable to get spu-server");
@@ -169,7 +170,7 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
         .print();
 
     println!("SPU<{}> cmd: {:#?}", spu_index, cmd);
-    println!("SPU log generated at /tmp/spu_log_{}.log", spu_id);
+    println!("SPU log generated at {}", log_spu);
     cmd.stdout(Stdio::from(outputs))
         .stderr(Stdio::from(errors))
         .spawn()
