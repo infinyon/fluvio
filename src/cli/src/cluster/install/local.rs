@@ -44,7 +44,6 @@ fn launch_sc(option: &InstallCommand) {
     if let Some(log) = &option.log {
         base.env("RUST_LOG", log);
     }
-
     base.print();
 
     base.stdout(Stdio::from(outputs))
@@ -90,10 +89,10 @@ async fn launch_spu_group(opt: &InstallCommand) {
     let client = load_and_share().expect("client should not fail");
 
     for i in 0..opt.spu {
-        println!("launching spu<{}> out of {}", i, opt.spu);
+        println!("launching SPU ({} of {})", i + 1, opt.spu);
         launch_spu(i, client.clone(), opt).await;
     }
-
+    println!("SC log generated at /tmp/flv_sc.log");
     sleep(Duration::from_millis(500)).await;
 }
 
@@ -147,7 +146,8 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
     // sleep 1 seconds for sc to connect
     sleep(Duration::from_millis(300)).await;
 
-    let outputs = File::create(format!("/tmp/spu_log_{}.log", spu_id)).expect("log file");
+    let log_spu = format!("/tmp/spu_log_{}.log", spu_id);
+    let outputs = File::create(&log_spu).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
     let mut binary = get_binary("spu-server").expect("unable to get spu-server");
@@ -170,7 +170,7 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
         .print();
 
     println!("SPU<{}> cmd: {:#?}", spu_index, cmd);
-
+    println!("SPU log generated at {}", log_spu);
     cmd.stdout(Stdio::from(outputs))
         .stderr(Stdio::from(errors))
         .spawn()

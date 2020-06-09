@@ -71,7 +71,7 @@ pub struct InstallCommand {
     #[structopt(flatten)]
     k8_config: K8Install,
 
-    /// number of spu
+    /// number of SPU
     #[structopt(long, default_value = "1")]
     spu: u16,
 
