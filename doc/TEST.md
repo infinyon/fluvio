@@ -68,5 +68,5 @@ This use release version of fluvio image.  To run local image compiled from curr
 and
 
 ```
-flvt --local
+flvt --local-driver
 ```
