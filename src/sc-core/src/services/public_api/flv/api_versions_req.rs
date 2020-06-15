@@ -5,14 +5,14 @@ use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::api::Request;
 
-use sc_api::versions::ApiVersionKey;
-use sc_api::versions::{ApiVersionsRequest, ApiVersionsResponse};
-use sc_api::ScApiKey;
-use sc_api::topic::FlvCreateTopicsRequest;
-use sc_api::topic::FlvDeleteTopicsRequest;
-use sc_api::topic::FlvFetchTopicsRequest;
-use sc_api::topic::FlvTopicCompositionRequest;
-use sc_api::spu::FlvFetchSpusRequest;
+use sc_api::server::versions::ApiVersionKey;
+use sc_api::server::versions::{ApiVersionsRequest, ApiVersionsResponse};
+use sc_api::server::ScServerApiKey;
+use sc_api::server::topic::FlvCreateTopicsRequest;
+use sc_api::server::topic::FlvDeleteTopicsRequest;
+use sc_api::server::topic::FlvFetchTopicsRequest;
+use sc_api::server::topic::FlvTopicCompositionRequest;
+use sc_api::server::spu::FlvFetchSpusRequest;
 
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
@@ -21,29 +21,29 @@ pub async fn handle_api_versions_request(
 
     // topic versions
     response.api_keys.push(make_version_key(
-        ScApiKey::FlvCreateTopics,
+        ScServerApiKey::FlvCreateTopics,
         FlvCreateTopicsRequest::DEFAULT_API_VERSION,
         FlvCreateTopicsRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
-        ScApiKey::FlvDeleteTopics,
+        ScServerApiKey::FlvDeleteTopics,
         FlvDeleteTopicsRequest::DEFAULT_API_VERSION,
         FlvDeleteTopicsRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
-        ScApiKey::FlvFetchTopics,
+        ScServerApiKey::FlvFetchTopics,
         FlvFetchTopicsRequest::DEFAULT_API_VERSION,
         FlvFetchTopicsRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
-        ScApiKey::FlvTopicComposition,
+        ScServerApiKey::FlvTopicComposition,
         FlvTopicCompositionRequest::DEFAULT_API_VERSION,
         FlvTopicCompositionRequest::DEFAULT_API_VERSION,
     ));
 
     // spus versions
     response.api_keys.push(make_version_key(
-        ScApiKey::FlvFetchSpus,
+        ScServerApiKey::FlvFetchSpus,
         FlvFetchSpusRequest::DEFAULT_API_VERSION,
         FlvFetchSpusRequest::DEFAULT_API_VERSION,
     ));
@@ -54,7 +54,7 @@ pub async fn handle_api_versions_request(
 }
 
 /// Build version key object
-fn make_version_key(key: ScApiKey, min_version: i16, max_version: i16) -> ApiVersionKey {
+fn make_version_key(key: ScServerApiKey, min_version: i16, max_version: i16) -> ApiVersionKey {
     let api_key = key as i16;
     ApiVersionKey {
         api_key,

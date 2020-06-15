@@ -73,7 +73,7 @@ where
         let response = leader.fetch_logs_once(initial_offset, fetch_option).await?;
 
         debug!(
-            "got a single response: LSO: {} batchs: {}",
+            "got a single response: LSO: {} batches: {}",
             response.log_start_offset,
             response.records.batches.len(),
         );

@@ -1,4 +1,5 @@
 use log::trace;
+use log::debug;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
@@ -35,6 +36,10 @@ where
 
         for partition_req in &topic_request.fetch_partitions {
             let partition = &partition_req.partition_index;
+            debug!(
+                "fetch log: {}-{}, max_bytes: {}",
+                topic, partition, fetch_request.max_bytes
+            );
             let fetch_offset = partition_req.fetch_offset;
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
             let mut partition_response = FilePartitionResponse::default();
@@ -44,6 +49,7 @@ where
                 .read_records(
                     &rep_id,
                     fetch_offset,
+                    fetch_request.max_bytes as u32,
                     fetch_request.isolation_level.clone(),
                     &mut partition_response,
                 )

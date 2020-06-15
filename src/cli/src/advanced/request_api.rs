@@ -14,7 +14,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use kf_protocol::api::Request;
-use flv_client::Client;
+use flv_client::client::Client;
 
 use crate::error::CliError;
 use crate::Terminal;

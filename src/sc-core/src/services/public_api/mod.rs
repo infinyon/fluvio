@@ -33,8 +33,8 @@ use log::debug;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use sc_api::PublicRequest;
-use sc_api::ScApiKey;
+use sc_api::server::ScServerRequest;
+use sc_api::server::ScServerApiKey;
 use kf_service::KfApiServer;
 use public_server::PublicService;
 use k8_metadata::metadata::InputObjectMeta;
@@ -50,7 +50,7 @@ use crate::core::LocalStores;
 pub type SharedPublicContext<C> = Arc<PublicContext<C>>;
 
 pub type PublicApiServer<C> =
-    KfApiServer<PublicRequest, ScApiKey, SharedPublicContext<C>, PublicService<C>>;
+    KfApiServer<ScServerRequest, ScServerApiKey, SharedPublicContext<C>, PublicService<C>>;
 
 /// create public server
 pub fn create_public_server<C>(

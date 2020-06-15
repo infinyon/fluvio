@@ -46,7 +46,7 @@ async fn validate_consume_message_api(option: &TestOption) {
     // futures::stream::StreamExt;
 
     use flv_client::profile::ScConfig;
-    use flv_client::SpuController;
+    use flv_client::client::*;
     use flv_client::FetchOffset;
     use flv_client::ReplicaLeader;
     use flv_client::FetchLogOption;

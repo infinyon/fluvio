@@ -1,8 +1,8 @@
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
+use flv_metadata::api::ReplicaMsgs;
 
-use crate::messages::ReplicaMsgs;
 use crate::InternalSpuApi;
 
 /// Changes in the Replica Specs
@@ -16,12 +16,9 @@ impl Request for UpdateReplicaRequest {
     type Response = UpdateReplicaResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
-pub struct UpdateReplicaResponse {}
-
 impl UpdateReplicaRequest {
     pub fn encode_request(replica_msgs: ReplicaMsgs) -> Self {
-        UpdateReplicaRequest {
+        Self {
             replicas: replica_msgs,
         }
     }
@@ -34,3 +31,6 @@ impl UpdateReplicaRequest {
         self.replicas
     }
 }
+
+#[derive(Decode, Encode, Default, Debug)]
+pub struct UpdateReplicaResponse {}

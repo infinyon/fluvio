@@ -19,10 +19,10 @@ use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
 use flv_metadata::partition::ReplicaKey;
 use kf_protocol::fs::FilePartitionResponse;
-use spu_api::fetch::FileFlvContinuousFetchRequest;
-use spu_api::fetch::FlvContinuousFetchResponse;
-use spu_api::SpuApiKey;
-use spu_api::PublicRequest;
+use spu_api::server::continous_fetch::FileFlvContinuousFetchRequest;
+use spu_api::server::continous_fetch::FlvContinuousFetchResponse;
+use spu_api::server::SpuServerApiKey;
+use spu_api::server::SpuServerRequest;
 
 use crate::core::DefaultSharedGlobalContext;
 
@@ -32,6 +32,7 @@ pub struct CfHandler<S> {
     ctx: DefaultSharedGlobalContext,
     replica: ReplicaKey,
     isolation: Isolation,
+    max_bytes: u32,
     header: RequestHeader,
     kf_sink: InnerKfSink<S>,
 }
@@ -58,12 +59,13 @@ where
         let current_offset = msg.fetch_offset;
         let isolation = msg.isolation;
         let replica = ReplicaKey::new(msg.topic, msg.partition);
-
+        let max_bytes = msg.max_bytes as u32;
         debug!(
-            "conn: {}, start continuous fetch replica: {} offset: {}",
+            "conn: {}, start continuous fetch replica: {} offset: {}, max_bytes: {}",
             kf_sink.id(),
             replica,
-            current_offset
+            current_offset,
+            max_bytes
         );
 
         let mut handler = Self {
@@ -71,6 +73,7 @@ where
             isolation,
             replica,
             header,
+            max_bytes,
             kf_sink,
         };
 
@@ -96,7 +99,7 @@ where
         let mut receiver = self.ctx.offset_channel().receiver();
         //pin_mut!(receiver);
 
-        let mut api_stream = kf_stream.api_stream::<PublicRequest, SpuApiKey>();
+        let mut api_stream = kf_stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
 
         let mut counter: i32 = 0;
         loop {
@@ -184,6 +187,7 @@ where
             .read_records(
                 &self.replica,
                 offset,
+                self.max_bytes,
                 self.isolation.clone(),
                 &mut partition_response,
             )

@@ -3,9 +3,7 @@ use std::io::Error;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 
-use sc_api::topic::{FlvFetchTopicsRequest, FlvFetchTopicsResponse};
-use sc_api::topic::FlvFetchTopicResponse;
-use sc_api::topic::FlvPartitionReplica;
+use sc_api::server::topic::*;
 use flv_metadata::partition::ReplicaKey;
 
 use crate::core::ShareLocalStores;

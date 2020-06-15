@@ -6,14 +6,7 @@
 
 use serde::Deserialize;
 
-use sc_api::spu::FlvGroupConfig;
-use sc_api::spu::FlvStorageConfig;
-use sc_api::spu::FlvReplicationConfig;
-use sc_api::spu::FlvEnvVar;
-
-// -----------------------------------
-// Data Structures
-// -----------------------------------
+use sc_api::server::spu::*;
 
 #[derive(Debug, Deserialize, Default, PartialEq)]
 pub struct GroupConfig {

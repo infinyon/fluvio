@@ -13,6 +13,7 @@ use kf_protocol::derive::Decode;
 use super::RegisterSpuRequest;
 use super::UpdateLrsRequest;
 
+/// API call from Spu to SC
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum InternalScKey {

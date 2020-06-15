@@ -4,10 +4,10 @@ use log::trace;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use spu_api::offsets::FlvFetchOffsetsRequest;
-use spu_api::offsets::FetchOffsetTopicResponse;
-use spu_api::offsets::FlvFetchOffsetsResponse;
-use spu_api::offsets::FetchOffsetPartitionResponse;
+use spu_api::server::fetch_offset::FlvFetchOffsetsRequest;
+use spu_api::server::fetch_offset::FetchOffsetTopicResponse;
+use spu_api::server::fetch_offset::FlvFetchOffsetsResponse;
+use spu_api::server::fetch_offset::FetchOffsetPartitionResponse;
 use flv_metadata::partition::ReplicaKey;
 use kf_protocol::api::FlvErrorCode;
 use flv_storage::ReplicaStorage;

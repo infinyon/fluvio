@@ -11,7 +11,7 @@ pub async fn produce_message(option: &TestOption) {
 
 pub async fn produce_message_with_api(option: &TestOption) {
     use flv_client::profile::ScConfig;
-    use flv_client::SpuController;
+    use flv_client::client::*;
     use flv_client::ReplicaLeader;
 
     let config = ScConfig::new(None, None).expect("connect");

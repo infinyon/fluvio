@@ -250,7 +250,7 @@ impl ConnManager {
         self.inner_remove_spu(&old_spu);
         self.inner_add_spu(&new_spu);
 
-        let spu_msg = SpuMsg::delete(old_spu.into());
+        let spu_msg = SpuMsg::update(old_spu.into());
         self.send_msg_to_all_live_spus(vec![spu_msg]).await;
     }
 

@@ -51,6 +51,15 @@ pub struct SpuOpt {
     #[structopt(long, value_name = "integer", env = "FLV_LOG_INDEX_MAX_INTERVAL_BYTES")]
     pub index_max_interval_bytes: Option<u32>,
 
+    /// max bytes to transfer between leader and follower
+    #[structopt(
+        long,
+        value_name = "integer",
+        env = "FLV_PEER_MAX_BYTES",
+        default_value = "1000000"
+    )]
+    pub peer_max_bytes: u32,
+
     #[structopt(flatten)]
     tls: TlsConfig,
 }
@@ -131,6 +140,8 @@ impl SpuOpt {
             info!("overriding private addr: {}", private_addr);
             config.private_endpoint = private_addr.clone();
         }
+
+        config.peer_max_bytes = self.peer_max_bytes;
 
         Ok((config, tls_port))
     }

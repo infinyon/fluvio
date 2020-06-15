@@ -15,7 +15,7 @@ use chashmap::ReadGuard;
 use chashmap::WriteGuard;
 
 use flv_metadata::partition::ReplicaKey;
-use kf_protocol::api::DefaultRecords;
+use kf_protocol::api::RecordSet;
 use flv_storage::FileReplica;
 use flv_storage::ConfigOption;
 use flv_storage::StorageError;
@@ -304,7 +304,7 @@ impl FollowerReplicaState<FileReplica> {
         })
     }
 
-    pub async fn send_records(&mut self, records: DefaultRecords) -> Result<(), StorageError> {
+    pub async fn send_records(&mut self, records: RecordSet) -> Result<(), StorageError> {
         trace!(
             "writing records to follower replica: {}, leader: {}",
             self.replica,

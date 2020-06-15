@@ -9,8 +9,7 @@ use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
 
-use flv_client::SpuController;
-use flv_client::KfClient;
+use flv_client::client::*;
 
 use crate::error::CliError;
 use crate::OutputType;

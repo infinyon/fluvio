@@ -6,7 +6,7 @@
 
 use structopt::StructOpt;
 
-use flv_client::SpuController;
+use flv_client::client::*;
 use flv_client::profile::ScConfig;
 
 use crate::error::CliError;

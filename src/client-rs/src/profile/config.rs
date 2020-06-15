@@ -21,8 +21,8 @@ use serde::Serialize;
 use flv_types::defaults::{CLI_CONFIG_PATH};
 use flv_future_aio::net::tls::AllDomainConnector;
 
+use crate::client::*;
 use crate::ClientError;
-use crate::ClientConfig;
 use super::TlsConfig;
 
 pub struct ConfigFile {

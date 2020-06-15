@@ -1,6 +1,6 @@
 [package]
 name = "flv-client"
-version = "3.1.1"
+version = "4.0.0"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -12,15 +12,16 @@ log = "0.4.8"
 rand = "0.7.2"
 dirs = "1.0.2"
 toml = "0.5.5"
+dashmap = "3.11.4"
 base64 = { version = "0.12.0"}
 futures = { version = "0.3.4", features = ['async-await'] }
 async-trait = "0.1.30"
 serde = { version ="1.0.110", features = ['derive'] }
 serde_json = "1.0.53"
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
-kf-protocol = { version = "1.1.3" } 
+kf-protocol = { version = "2.0.0" } 
 flv-types = { version = "0.2.0", path ="../types" }
 flv-util = "0.2.0"
 kf-socket = { version = "2.0.0", path = "../kf-socket" }
-sc-api = { version = "1.2.0", path = "../sc-api", package = "flv-api-sc"}
-spu-api = { version = "1.1.0", path = "../spu-api", package = "flv-api-spu"}
+sc-api = { version = "2.0.0", path = "../sc-api", package = "flv-api-sc"}
+spu-api = { version = "2.0.0", path = "../spu-api", package = "flv-api-spu"}

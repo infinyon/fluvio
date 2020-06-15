@@ -11,7 +11,7 @@ use prettytable::format::Alignment;
 use serde::Serialize;
 use log::debug;
 
-use sc_api::spu::FlvFetchSpuGroupsResponse;
+use sc_api::server::spu::FlvFetchSpuGroupsResponse;
 use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata::spg::SpuGroupStatus;
 

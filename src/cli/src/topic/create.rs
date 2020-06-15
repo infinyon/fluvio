@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use flv_client::SpuController;
+use flv_client::client::*;
 use flv_client::query_params::ReplicaConfig;
 use flv_client::query_params::Partitions;
 use flv_client::profile::ControllerTargetConfig;

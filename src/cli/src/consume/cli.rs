@@ -7,8 +7,8 @@
 use structopt::StructOpt;
 
 use kf_protocol::api::Offset;
-use kf_protocol::api::MAX_BYTES;
 use flv_client::profile::ServerTargetConfig;
+use flv_client::MAX_FETCH_BYTES;
 
 use crate::error::CliError;
 use crate::tls::TlsConfig;
@@ -97,7 +97,7 @@ impl ConsumeLogOpt {
             self.tls.try_into_file_config()?,
             self.profile.profile,
         )?;
-        let max_bytes = self.max_bytes.unwrap_or(MAX_BYTES);
+        let max_bytes = self.max_bytes.unwrap_or(MAX_FETCH_BYTES as i32);
 
         // consume log specific configurations
         let consume_log_cfg = ConsumeLogConfig {

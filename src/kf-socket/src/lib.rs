@@ -6,22 +6,18 @@ mod socket;
 mod stream;
 mod sink;
 mod sink_pool;
+mod multiplexing;
 
 #[cfg(test)]
 pub mod test_request;
 
 pub use self::error::KfSocketError;
 pub use self::socket::KfSocket;
-pub use pooling::SocketPool;
-pub use sink_pool::SinkPool;
-pub use sink_pool::SharedSinkPool;
-pub use stream::KfStream;
-pub use stream::InnerKfStream;
-pub use sink::KfSink;
-pub use sink::InnerKfSink;
-pub use socket::InnerKfSocket;
-pub use socket::AllKfSocket;
-pub use sink::ExclusiveKfSink;
+pub use pooling::*;
+pub use sink_pool::*;
+pub use stream::*;
+pub use sink::*;
+pub use socket::*;
 
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;

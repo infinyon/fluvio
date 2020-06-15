@@ -4,11 +4,7 @@ use log::debug;
 use log::warn;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
-use sc_api::topic::FlvTopicCompositionRequest;
-use sc_api::topic::FlvTopicCompositionResponse;
-use sc_api::topic::FetchTopicResponse;
-use sc_api::topic::FetchPartitionResponse;
-use sc_api::topic::FetchSpuResponse;
+use sc_api::server::topic::*;
 use kf_protocol::api::FlvErrorCode;
 
 use crate::core::ShareLocalStores;

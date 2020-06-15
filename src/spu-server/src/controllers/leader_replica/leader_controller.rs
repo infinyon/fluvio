@@ -40,6 +40,7 @@ pub struct ReplicaLeaderController<S> {
     follower_sinks: SharedSpuSinks,
     sc_sink: Arc<ExclusiveKfSink>,
     offset_sender: Sender<OffsetUpdateEvent>,
+    max_bytes: u32,
 }
 
 impl<S> ReplicaLeaderController<S> {
@@ -51,6 +52,7 @@ impl<S> ReplicaLeaderController<S> {
         follower_sinks: SharedSpuSinks,
         sc_sink: Arc<ExclusiveKfSink>,
         offset_sender: Sender<OffsetUpdateEvent>,
+        max_bytes: u32,
     ) -> Self {
         Self {
             local_spu,
@@ -60,6 +62,7 @@ impl<S> ReplicaLeaderController<S> {
             follower_sinks,
             sc_sink,
             offset_sender,
+            max_bytes,
         }
     }
 }
@@ -140,7 +143,12 @@ impl ReplicaLeaderController<FileReplica> {
                 async {
                     if let Some(follower_info) = sync_follower {
                         leader_replica
-                            .sync_follower(&self.follower_sinks, follower_id, &follower_info)
+                            .sync_follower(
+                                &self.follower_sinks,
+                                follower_id,
+                                &follower_info,
+                                self.max_bytes,
+                            )
                             .await;
                     }
                 },
@@ -154,10 +162,12 @@ impl ReplicaLeaderController<FileReplica> {
         }
     }
 
-    /// update the follower with my state
+    /// go thru each of follower and sync replicas
     async fn sync_followers(&self) {
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
-            leader_replica.sync_followers(&self.follower_sinks).await;
+            leader_replica
+                .sync_followers(&self.follower_sinks, self.max_bytes)
+                .await;
         } else {
             leader_warn!(self, "sync followers: no replica is found");
         }

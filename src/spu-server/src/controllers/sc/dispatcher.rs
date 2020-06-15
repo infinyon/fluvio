@@ -58,10 +58,11 @@ pub struct ScDispatcher<S> {
     #[allow(dead_code)]
     supervisor_command_sender: Sender<SupervisorCommand>,
     ctx: SharedGlobalContext<S>,
+    max_bytes: u32,
 }
 
 impl<S> ScDispatcher<S> {
-    pub fn new(ctx: SharedGlobalContext<S>) -> Self {
+    pub fn new(ctx: SharedGlobalContext<S>, max_bytes: u32) -> Self {
         let (termination_sender, termination_receiver) = channel(1);
         let (supervisor_command_sender, _supervisor_command_receiver) = channel(100);
         Self {
@@ -69,6 +70,7 @@ impl<S> ScDispatcher<S> {
             termination_sender,
             supervisor_command_sender,
             ctx,
+            max_bytes,
         }
     }
 }
@@ -468,7 +470,7 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    /// spwan new leader controller
+    /// spawn new leader controller
     fn spawn_leader_controller(
         &self,
         replica_id: ReplicaKey,
@@ -498,6 +500,7 @@ impl ScDispatcher<FileReplica> {
             self.ctx.followers_sink_owned(),
             shared_sc_sink,
             self.ctx.offset_channel().sender(),
+            self.max_bytes,
         );
         leader_controller.run();
     }

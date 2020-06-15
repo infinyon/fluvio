@@ -12,7 +12,7 @@ use log::trace;
 use log::error;
 
 use flv_metadata::partition::ReplicaKey;
-use kf_protocol::api::DefaultRecords;
+use kf_protocol::api::RecordSet;
 use flv_storage::FileReplica;
 use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::api::Offset;
@@ -142,13 +142,14 @@ impl ReplicaLeadersState<FileReplica> {
         &self,
         rep_id: &ReplicaKey,
         offset: Offset,
+        max_len: u32,
         isolation: Isolation,
         response: &mut FilePartitionResponse,
     ) -> Option<(Offset, Offset)> {
         if let Some(leader_replica) = self.get_replica(rep_id) {
             Some(
                 leader_replica
-                    .read_records(offset, isolation, response)
+                    .read_records(offset, max_len, isolation, response)
                     .await,
             )
         } else {
@@ -163,7 +164,7 @@ impl ReplicaLeadersState<FileReplica> {
     pub async fn send_records(
         &self,
         rep_id: &ReplicaKey,
-        records: DefaultRecords,
+        records: RecordSet,
         update_hw: bool,
     ) -> Result<bool, InternalServerError> {
         if let Some(mut leader_replica) = self.get_mut_replica(rep_id) {
@@ -177,24 +178,6 @@ impl ReplicaLeadersState<FileReplica> {
         }
     }
 }
-
-/*
-/// encapsulate LeaderReplicaState that has readable lock
-struct ReadableLeaderReplicaState<'a,S>(ReadGuard<'a,ReplicaKey, LeaderReplicaState<S>>);
-
-impl <'a,S>ReadableLeaderReplicaState<'a,S>  {
-
-
-
-}
-
-
-impl <'a,S>From<ReadGuard<'a,ReplicaKey, LeaderReplicaState<S>>> for ReadableLeaderReplicaState<'a,S> {
-    fn from(replica_state: ReadGuard<'a,ReplicaKey, LeaderReplicaState<S>>) -> Self {
-        Self(replica_state)
-    }
-}
-*/
 
 #[cfg(test)]
 mod test_channel {
