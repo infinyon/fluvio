@@ -14,17 +14,17 @@ use k8_metadata::metadata::TemplateSpec;
 use k8_metadata::metadata::K8Obj;
 use k8_metadata::spg::StorageConfig;
 
-use super::ScServerApiKey;
-use super::FlvResponseMessage;
+use crate::ScPublicApiKey;
+use crate::FlvResponseMessage;
 
-use super::spu::FlvSpuGroupResolution;
+use super::FlvSpuGroupResolution;
 
 /// Fetch SPU Groups by type
 #[derive(Decode, Encode, Default, Debug)]
 pub struct FlvFetchSpuGroupsRequest {}
 
 impl Request for FlvFetchSpuGroupsRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvFetchSpuGroups as u16;
+    const API_KEY: u16 = ScPublicApiKey::FlvFetchSpuGroups as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvFetchSpuGroupsResponse;
 }

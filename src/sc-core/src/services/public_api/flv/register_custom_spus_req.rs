@@ -13,8 +13,8 @@ use k8_metadata::metadata::ObjectMeta;
 use k8_metadata_client::MetadataClient;
 use flv_metadata::spu::{SpuSpec, Endpoint, SpuType, IngressPort};
 
-use sc_api::server::FlvResponseMessage;
-use sc_api::server::spu::*;
+use sc_api::FlvResponseMessage;
+use sc_api::spu::*;
 use crate::core::LocalStores;
 use crate::core::spus::SpuKV;
 use crate::core::common::KvContext;

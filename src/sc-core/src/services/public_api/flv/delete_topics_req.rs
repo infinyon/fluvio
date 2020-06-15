@@ -9,8 +9,8 @@ use std::io::Error;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 use kf_protocol::api::FlvErrorCode;
-use sc_api::server::{FlvResponseMessage};
-use sc_api::server::topic::{FlvDeleteTopicsRequest, FlvDeleteTopicsResponse};
+use sc_api::{FlvResponseMessage};
+use sc_api::topics::*;
 use k8_metadata::topic::TopicSpec as K8TopicSpec;
 use k8_metadata_client::MetadataClient;
 

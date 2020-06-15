@@ -3,7 +3,7 @@ use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
 use flv_metadata::api::Message;
 
-use super::ScClientApiKey;
+use crate::ScPublicApiKey;
 use super::replica::ReplicaLeader;
 
 pub type ReplicaMsg = Message<ReplicaLeader>;

@@ -18,8 +18,8 @@ use kf_service::call_service;
 use kf_socket::InnerKfSocket;
 use kf_socket::KfSocketError;
 use kf_service::KfService;
-use sc_api::server::ScServerRequest;
-use sc_api::server::ScServerApiKey;
+use sc_api::ScPublicRequest;
+use sc_api::ScPublicApiKey;
 use k8_metadata_client::MetadataClient;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
@@ -54,7 +54,7 @@ where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
     type Context = SharedPublicContext<C>;
-    type Request = ScServerRequest;
+    type Request = ScPublicRequest;
 
     async fn respond(
         self: Arc<Self>,
@@ -62,13 +62,13 @@ where
         socket: InnerKfSocket<S>,
     ) -> Result<(), KfSocketError> {
         let (mut sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<ScServerRequest, ScServerApiKey>();
+        let mut api_stream = stream.api_stream::<ScPublicRequest, ScPublicApiKey>();
 
         api_loop!(
             api_stream,
 
             // Common
-            ScServerRequest::ApiVersionsRequest(request) => call_service!(
+            ScPublicRequest::ApiVersionsRequest(request) => call_service!(
                 request,
                 handle_api_versions_request(request),
                 sink,
@@ -76,7 +76,7 @@ where
             ),
 
             // Kafka
-            ScServerRequest::KfMetadataRequest(request) => call_service!(
+            ScPublicRequest::KfMetadataRequest(request) => call_service!(
                 request,
                 handle_kf_metadata_request(request, ctx.metadata.clone()),
                 sink,
@@ -84,25 +84,25 @@ where
             ),
 
             // Fluvio - Topics
-            ScServerRequest::FlvCreateTopicsRequest(request) => call_service!(
+            ScPublicRequest::FlvCreateTopicsRequest(request) => call_service!(
                 request,
                 handle_create_topics_request(request, &ctx),
                 sink,
                 "create topic handler"
             ),
-            ScServerRequest::FlvDeleteTopicsRequest(request) => call_service!(
+            ScPublicRequest::FlvDeleteTopicsRequest(request) => call_service!(
                 request,
                 handle_delete_topics_request(request, &ctx),
                 sink,
                 "delete topic handler"
             ),
-            ScServerRequest::FlvFetchTopicsRequest(request) => call_service!(
+            ScPublicRequest::FlvFetchTopicsRequest(request) => call_service!(
                 request,
                 handle_fetch_topics_request(request, ctx.metadata.clone()),
                 sink,
                 "fetch topic handler"
             ),
-            ScServerRequest::FlvTopicCompositionRequest(request) => call_service!(
+            ScPublicRequest::FlvTopicCompositionRequest(request) => call_service!(
                 request,
                 handle_topic_composition_request(request, ctx.metadata.clone()),
                 sink,
@@ -110,38 +110,38 @@ where
             ),
 
             // Fluvio - Spus
-            ScServerRequest::FlvRegisterCustomSpusRequest(request) => call_service!(
+            ScPublicRequest::FlvRegisterCustomSpusRequest(request) => call_service!(
                 request,
                 handle_register_custom_spus_request(request, &ctx),
                 sink,
                 "create custom spus handler"
             ),
-            ScServerRequest::FlvUnregisterCustomSpusRequest(request) => call_service!(
+            ScPublicRequest::FlvUnregisterCustomSpusRequest(request) => call_service!(
                 request,
                 handle_unregister_custom_spus_request(request, &ctx),
                 sink,
                 "delete custom spus handler"
             ),
-            ScServerRequest::FlvFetchSpusRequest(request) => call_service!(
+            ScPublicRequest::FlvFetchSpusRequest(request) => call_service!(
                 request,
                 handle_fetch_spu_request(request, ctx.metadata.clone()),
                 sink,
                 "fetch spus handler"
             ),
 
-            ScServerRequest::FlvCreateSpuGroupsRequest(request) => call_service!(
+            ScPublicRequest::FlvCreateSpuGroupsRequest(request) => call_service!(
                 request,
                 handle_create_spu_groups_request(request, &ctx),
                 sink,
                 "create spu groups handler"
             ),
-            ScServerRequest::FlvDeleteSpuGroupsRequest(request) => call_service!(
+            ScPublicRequest::FlvDeleteSpuGroupsRequest(request) => call_service!(
                 request,
                 handle_delete_spu_groups_request(request, &ctx),
                 sink,
                 "delete spu groups handler"
             ),
-            ScServerRequest::FlvFetchSpuGroupsRequest(request) => call_service!(
+            ScPublicRequest::FlvFetchSpuGroupsRequest(request) => call_service!(
                 request,
                 handle_fetch_spu_groups_request(request, &ctx),
                 sink,

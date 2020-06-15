@@ -7,7 +7,7 @@ use flv_metadata::partition::ReplicaKey;
 use flv_metadata::spu::SpuSpec;
 use flv_types::SpuId;
 
-use super::ScClientApiKey;
+use crate::ScPublicApiKey;
 use super::replica::ReplicaLeader;
 
 /// All specs.  Listener can use this to sync their own metadata store.
@@ -18,7 +18,7 @@ pub struct UpdateAllRequest {
 }
 
 impl Request for UpdateAllRequest {
-    const API_KEY: u16 = ScClientApiKey::UpdateAll as u16;
+    const API_KEY: u16 = ScPublicApiKey::UpdateAll as u16;
     type Response = UpdateAllResponse;
 }
 

@@ -9,12 +9,12 @@ use kf_protocol::api::Request;
 use kf_protocol::derive::{Decode, Encode};
 use kf_protocol::api::FlvErrorCode;
 
-use super::ScServerApiKey;
+use crate::ScPublicApiKey;
 
 pub type ApiVersions = Vec<ApiVersionKey>;
 
 /// Given an API key, it returns max_version. None if not found
-pub fn lookup_version(api_key: ScServerApiKey, versions: &ApiVersions) -> Option<i16> {
+pub fn lookup_version(api_key: ScPublicApiKey, versions: &ApiVersions) -> Option<i16> {
     for version in versions {
         if version.api_key == api_key as i16 {
             return Some(version.max_version);
@@ -29,6 +29,13 @@ pub fn lookup_version(api_key: ScServerApiKey, versions: &ApiVersions) -> Option
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct ApiVersionsRequest {}
+
+impl Request for ApiVersionsRequest {
+    const API_KEY: u16 = ScPublicApiKey::ApiVersion as u16;
+    type Response = ApiVersionsResponse;
+}
+
+
 
 // -----------------------------------
 // ApiVersionsResponse
@@ -47,11 +54,3 @@ pub struct ApiVersionKey {
     pub max_version: i16,
 }
 
-// -----------------------------------
-// Implementation - ApiVersionsRequest
-// -----------------------------------
-
-impl Request for ApiVersionsRequest {
-    const API_KEY: u16 = ScServerApiKey::ApiVersion as u16;
-    type Response = ApiVersionsResponse;
-}

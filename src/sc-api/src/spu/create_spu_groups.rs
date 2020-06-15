@@ -7,9 +7,9 @@
 use kf_protocol::api::Request;
 use kf_protocol::derive::{Decode, Encode};
 
-use super::FlvResponseMessage;
-use super::ScServerApiKey;
-use super::ApiError;
+use crate::FlvResponseMessage;
+use crate::ScPublicApiKey;
+use crate::ApiError;
 
 // -----------------------------------
 // FlvCreateSpuGroupsRequest
@@ -22,7 +22,7 @@ pub struct FlvCreateSpuGroupsRequest {
 }
 
 impl Request for FlvCreateSpuGroupsRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvCreateSpuGroups as u16;
+    const API_KEY: u16 = ScPublicApiKey::FlvCreateSpuGroups as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvCreateSpuGroupsResponse;
 }

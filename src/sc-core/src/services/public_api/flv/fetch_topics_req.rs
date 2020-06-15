@@ -3,7 +3,7 @@ use std::io::Error;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 
-use sc_api::server::topic::*;
+use sc_api::topics::*;
 use flv_metadata::partition::ReplicaKey;
 
 use crate::core::ShareLocalStores;

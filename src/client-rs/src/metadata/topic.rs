@@ -7,11 +7,7 @@
 
 use serde::Serialize;
 
-use sc_api::server::topic::FlvFetchTopicResponse;
-use sc_api::server::topic::FlvFetchTopic;
-use sc_api::server::topic::FlvTopicResolution;
-use sc_api::server::topic::FlvTopicSpecMetadata;
-use sc_api::server::topic::FlvPartitionReplica;
+use sc_api::topics::*;
 use sc_api::errors::FlvErrorCode;
 
 #[derive(Serialize, Debug)]

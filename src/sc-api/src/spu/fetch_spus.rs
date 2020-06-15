@@ -8,12 +8,11 @@ use kf_protocol::api::FlvErrorCode;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 
-use super::ScServerApiKey;
-use super::common::flv_spus::FlvRequestSpuType;
-use super::common::flv_spus::FlvSpuType;
-use super::common::flv_spus::FlvSpuResolution;
-
-use super::spu::FlvEndPointMetadata;
+use crate::ScPublicApiKey;
+use super::FlvRequestSpuType;
+use super::FlvSpuType;
+use super::FlvSpuResolution;
+use super::FlvEndPointMetadata;
 
 // -----------------------------------
 // FlvFetchSpusRequest
@@ -25,6 +24,13 @@ pub struct FlvFetchSpusRequest {
     /// SPU type All or Custom
     pub req_spu_type: FlvRequestSpuType,
 }
+
+impl Request for FlvFetchSpusRequest {
+    const API_KEY: u16 = ScPublicApiKey::FlvFetchSpus as u16;
+    const DEFAULT_API_VERSION: i16 = 1;
+    type Response = FlvFetchSpusResponse;
+}
+
 
 // -----------------------------------
 // FlvFetchSpusResponse
@@ -67,14 +73,4 @@ pub struct FlvFetchSpu {
 
     /// Status resolution
     pub resolution: FlvSpuResolution,
-}
-
-// -----------------------------------
-// Implementation - FlvFetchSpusRequest
-// -----------------------------------
-
-impl Request for FlvFetchSpusRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvFetchSpus as u16;
-    const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvFetchSpusResponse;
 }

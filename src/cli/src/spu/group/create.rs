@@ -7,7 +7,7 @@
 use log::debug;
 use structopt::StructOpt;
 
-use sc_api::server::spu::FlvCreateSpuGroupRequest;
+use sc_api::spu::FlvCreateSpuGroupRequest;
 use flv_client::profile::ScConfig;
 
 use crate::error::CliError;

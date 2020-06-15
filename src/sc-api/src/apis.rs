@@ -10,7 +10,7 @@ use kf_protocol::derive::Decode;
 /// API call from client to SPU
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
-pub enum ScServerApiKey {
+pub enum ScPublicApiKey {
     // Mixed
     ApiVersion = 18,
 
@@ -18,7 +18,7 @@ pub enum ScServerApiKey {
     KfMetadata = 3,
 
     // update metadata async
-    FlvUpdateAllMetadata = 1000,
+  //  FlvUpdateAllMetadata = 1000,
     //  FlvUpdateSpuMetadata = 1001,
     //  FlvUpdateReplicaMetadata = 1002,
 
@@ -39,7 +39,7 @@ pub enum ScServerApiKey {
     FlvFetchSpuGroups = 2010,
 }
 
-impl Default for ScServerApiKey {
+impl Default for ScPublicApiKey {
     fn default() -> Self {
         Self::ApiVersion
     }

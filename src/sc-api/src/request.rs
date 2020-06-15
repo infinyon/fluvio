@@ -22,13 +22,13 @@ use kf_protocol::message::metadata::KfMetadataRequest;
 
 use super::versions::ApiVersionsRequest;
 use super::spu::*;
-use super::topic::*;
-use super::update_all_metadata::*;
+use super::topics::*;
+use super::metadata::*;
 
-use super::ScServerApiKey;
+use super::ScPublicApiKey;
 
 #[derive(Debug, Encode)]
-pub enum ScServerRequest {
+pub enum ScPublicRequest {
     // Mixed
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
 
@@ -50,17 +50,17 @@ pub enum ScServerRequest {
     FlvDeleteSpuGroupsRequest(RequestMessage<FlvDeleteSpuGroupsRequest>),
     FlvFetchSpuGroupsRequest(RequestMessage<FlvFetchSpuGroupsRequest>),
 
-    UpdateAllMetadataRequest(RequestMessage<UpdateAllMetadataRequest>),
+   // UpdateAllMetadataRequest(RequestMessage<UpdateAllMetadataRequest>),
 }
 
-impl Default for ScServerRequest {
+impl Default for ScPublicRequest {
     fn default() -> Self {
         Self::ApiVersionsRequest(RequestMessage::<ApiVersionsRequest>::default())
     }
 }
 
-impl KfRequestMessage for ScServerRequest {
-    type ApiKey = ScServerApiKey;
+impl KfRequestMessage for ScPublicRequest {
+    type ApiKey = ScPublicApiKey;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
     where
@@ -71,45 +71,45 @@ impl KfRequestMessage for ScServerRequest {
         trace!("decoding header: {:#?}", header);
         match header.api_key().try_into()? {
             // Mixed
-            ScServerApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
+            ScPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
 
             //Kafka
-            ScServerApiKey::KfMetadata => api_decode!(Self, KfMetadataRequest, src, header),
+            ScPublicApiKey::KfMetadata => api_decode!(Self, KfMetadataRequest, src, header),
 
             // Fluvio - Topics
-            ScServerApiKey::FlvCreateTopics => {
+            ScPublicApiKey::FlvCreateTopics => {
                 api_decode!(Self, FlvCreateTopicsRequest, src, header)
             }
-            ScServerApiKey::FlvDeleteTopics => {
+            ScPublicApiKey::FlvDeleteTopics => {
                 api_decode!(Self, FlvDeleteTopicsRequest, src, header)
             }
-            ScServerApiKey::FlvFetchTopics => api_decode!(Self, FlvFetchTopicsRequest, src, header),
-            ScServerApiKey::FlvTopicComposition => {
+            ScPublicApiKey::FlvFetchTopics => api_decode!(Self, FlvFetchTopicsRequest, src, header),
+            ScPublicApiKey::FlvTopicComposition => {
                 api_decode!(Self, FlvTopicCompositionRequest, src, header)
             }
 
             // Fluvio - Custom Spus / Spu Groups
-            ScServerApiKey::FlvRegisterCustomSpus => {
+            ScPublicApiKey::FlvRegisterCustomSpus => {
                 api_decode!(Self, FlvRegisterCustomSpusRequest, src, header)
             }
-            ScServerApiKey::FlvUnregisterCustomSpus => {
+            ScPublicApiKey::FlvUnregisterCustomSpus => {
                 api_decode!(Self, FlvUnregisterCustomSpusRequest, src, header)
             }
-            ScServerApiKey::FlvFetchSpus => api_decode!(Self, FlvFetchSpusRequest, src, header),
+            ScPublicApiKey::FlvFetchSpus => api_decode!(Self, FlvFetchSpusRequest, src, header),
 
-            ScServerApiKey::FlvCreateSpuGroups => {
+            ScPublicApiKey::FlvCreateSpuGroups => {
                 api_decode!(Self, FlvCreateSpuGroupsRequest, src, header)
             }
-            ScServerApiKey::FlvDeleteSpuGroups => {
+            ScPublicApiKey::FlvDeleteSpuGroups => {
                 api_decode!(Self, FlvDeleteSpuGroupsRequest, src, header)
             }
-            ScServerApiKey::FlvFetchSpuGroups => {
+            ScPublicApiKey::FlvFetchSpuGroups => {
                 api_decode!(Self, FlvFetchSpuGroupsRequest, src, header)
             }
 
-            ScServerApiKey::FlvUpdateAllMetadata => {
-                api_decode!(Self, UpdateAllMetadataRequest, src, header)
-            }
+           // ScPublicApiKey::FlvUpdateAllMetadata => {
+           //     api_decode!(Self, UpdateAllMetadataRequest, src, header)
+           // }
         }
     }
 }

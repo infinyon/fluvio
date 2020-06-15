@@ -11,8 +11,8 @@ use k8_metadata::spg::SpuGroupSpec;
 use k8_metadata_client::MetadataClient;
 use kf_protocol::api::FlvErrorCode;
 use kf_protocol::api::{RequestMessage, ResponseMessage};
-use sc_api::server::{FlvResponseMessage};
-use sc_api::server::spu::{FlvDeleteSpuGroupsRequest, FlvDeleteSpuGroupsResponse};
+use sc_api::{FlvResponseMessage};
+use sc_api::spu::{FlvDeleteSpuGroupsRequest, FlvDeleteSpuGroupsResponse};
 
 use super::PublicContext;
 

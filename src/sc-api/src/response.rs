@@ -7,7 +7,7 @@ use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::FlvErrorCode;
 
-use crate::server::ApiError;
+use crate::ApiError;
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvResponseMessage {

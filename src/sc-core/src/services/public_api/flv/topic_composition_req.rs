@@ -4,7 +4,7 @@ use log::debug;
 use log::warn;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
-use sc_api::server::topic::*;
+use sc_api::metadata::*;
 use kf_protocol::api::FlvErrorCode;
 
 use crate::core::ShareLocalStores;

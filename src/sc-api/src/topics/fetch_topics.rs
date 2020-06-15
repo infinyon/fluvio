@@ -10,7 +10,7 @@ use kf_protocol::derive::Encode;
 
 use flv_metadata::topic::{TopicSpec, TopicStatus};
 
-use super::ScServerApiKey;
+use crate::ScPublicApiKey;
 
 // -----------------------------------
 // FlvFetchTopicsRequest
@@ -23,9 +23,11 @@ pub struct FlvFetchTopicsRequest {
     pub names: Option<Vec<String>>,
 }
 
-// -----------------------------------
-// FlvFetchTopicsResponse
-// -----------------------------------
+impl Request for FlvFetchTopicsRequest {
+    const API_KEY: u16 = ScPublicApiKey::FlvFetchTopics as u16;
+    type Response = FlvFetchTopicsResponse;
+}
+
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvFetchTopicsResponse {
@@ -72,18 +74,7 @@ pub struct FlvPartitionReplica {
     pub live_replicas: Vec<i32>,
 }
 
-// -----------------------------------
-// Implementation - FlvFetchTopicsRequest
-// -----------------------------------
 
-impl Request for FlvFetchTopicsRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvFetchTopics as u16;
-    type Response = FlvFetchTopicsResponse;
-}
-
-// -----------------------------------
-// Implementation - FlvFetchTopicResponse
-// -----------------------------------
 impl FlvFetchTopicResponse {
     /// Constructor for topics found
     pub fn new(

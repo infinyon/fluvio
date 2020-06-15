@@ -10,7 +10,7 @@ use kf_protocol::api::FlvErrorCode;
 use flv_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
-use super::ScServerApiKey;
+use crate::ScPublicApiKey;
 
 // -----------------------------------
 // FlvTopicCompositionRequest
@@ -91,7 +91,7 @@ impl FetchSpuResponse {
 // -----------------------------------
 
 impl Request for FlvTopicCompositionRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvTopicComposition as u16;
+    const API_KEY: u16 = ScPublicApiKey::FlvTopicComposition as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvTopicCompositionResponse;
 }

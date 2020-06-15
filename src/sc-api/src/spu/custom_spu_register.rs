@@ -7,11 +7,11 @@
 use kf_protocol::api::Request;
 use kf_protocol::derive::{Decode, Encode};
 
-use super::FlvResponseMessage;
-use super::ScServerApiKey;
-use super::ApiError;
+use crate::FlvResponseMessage;
+use crate::ScPublicApiKey;
+use crate::ApiError;
 
-use super::spu::FlvEndPointMetadata;
+use super::FlvEndPointMetadata;
 
 // -----------------------------------
 // FlvRegisterCustomSpusRequest
@@ -24,7 +24,7 @@ pub struct FlvRegisterCustomSpusRequest {
 }
 
 impl Request for FlvRegisterCustomSpusRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvRegisterCustomSpus as u16;
+    const API_KEY: u16 = ScPublicApiKey::FlvRegisterCustomSpus as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvRegisterCustomSpusResponse;
 }

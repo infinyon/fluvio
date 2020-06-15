@@ -5,10 +5,10 @@
 //!
 use serde::Serialize;
 
-use sc_api::server::spu::FlvFetchSpuResponse;
-use sc_api::server::spu::FlvFetchSpu;
-use sc_api::server::spu::FlvSpuResolution;
-use sc_api::server::spu::FlvSpuType;
+use sc_api::spu::FlvFetchSpuResponse;
+use sc_api::spu::FlvFetchSpu;
+use sc_api::spu::FlvSpuResolution;
+use sc_api::spu::FlvSpuType;
 use sc_api::errors::FlvErrorCode;
 
 use super::endpoint::Endpoint;

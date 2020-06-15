@@ -10,8 +10,8 @@ use kf_protocol::derive::{Decode, Encode};
 
 use flv_metadata::topic::TopicSpec as TopicConfigMetadata;
 
-use super::FlvResponseMessage;
-use super::ScServerApiKey;
+use crate::FlvResponseMessage;
+use crate::ScPublicApiKey;
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvCreateTopicsRequest {
@@ -22,6 +22,13 @@ pub struct FlvCreateTopicsRequest {
     /// to validate custom replicas.
     pub validate_only: bool,
 }
+
+impl Request for FlvCreateTopicsRequest {
+    const API_KEY: u16 = ScPublicApiKey::FlvCreateTopics as u16;
+    const DEFAULT_API_VERSION: i16 = 1;
+    type Response = FlvCreateTopicsResponse;
+}
+
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvCreateTopicRequest {
@@ -38,8 +45,3 @@ pub struct FlvCreateTopicsResponse {
     pub results: Vec<FlvResponseMessage>,
 }
 
-impl Request for FlvCreateTopicsRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvCreateTopics as u16;
-    const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvCreateTopicsResponse;
-}

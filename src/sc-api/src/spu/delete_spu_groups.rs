@@ -8,9 +8,9 @@
 use kf_protocol::api::Request;
 use kf_protocol::derive::{Decode, Encode};
 
-use super::FlvResponseMessage;
-use super::ScServerApiKey;
-use super::ApiError;
+use crate::FlvResponseMessage;
+use crate::ScPublicApiKey;
+use crate::ApiError;
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvDeleteSpuGroupsRequest {
@@ -19,7 +19,7 @@ pub struct FlvDeleteSpuGroupsRequest {
 }
 
 impl Request for FlvDeleteSpuGroupsRequest {
-    const API_KEY: u16 = ScServerApiKey::FlvDeleteSpuGroups as u16;
+    const API_KEY: u16 = ScPublicApiKey::FlvDeleteSpuGroups as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = FlvDeleteSpuGroupsResponse;
 }

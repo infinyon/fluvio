@@ -6,7 +6,7 @@
 
 use serde::Deserialize;
 
-use sc_api::server::spu::*;
+use sc_api::spu::*;
 
 #[derive(Debug, Deserialize, Default, PartialEq)]
 pub struct GroupConfig {

@@ -9,22 +9,9 @@ use async_trait::async_trait;
 
 use flv_util::socket_helpers::ServerAddress;
 use sc_api::errors::FlvErrorCode;
-use sc_api::server::topic::{FlvTopicCompositionRequest, FlvTopicCompositionResponse};
-use sc_api::server::topic::{FlvDeleteTopicsRequest};
-use sc_api::server::topic::{FlvCreateTopicRequest, FlvCreateTopicsRequest};
-use sc_api::server::topic::FlvTopicSpecMetadata;
-use sc_api::server::topic::FlvFetchTopicsRequest;
-use sc_api::server::spu::FlvRegisterCustomSpusRequest;
-use sc_api::server::spu::{FlvRegisterCustomSpuRequest, FlvEndPointMetadata};
-use sc_api::server::spu::FlvUnregisterCustomSpusRequest;
-use sc_api::server::spu::FlvFetchSpusRequest;
-use sc_api::server::spu::FlvRequestSpuType;
-use sc_api::server::spu::FlvCreateSpuGroupRequest;
-use sc_api::server::spu::FlvCreateSpuGroupsRequest;
-use sc_api::server::spu::FlvDeleteSpuGroupsRequest;
-use sc_api::server::spu::FlvFetchSpuGroupsRequest;
-use sc_api::server::spu::FlvFetchSpuGroupsResponse;
-use sc_api::server::spu::FlvCustomSpu;
+use sc_api::metadata::*;
+use sc_api::spu::*;
+use sc_api::topics::*;
 use kf_socket::KfSocketError;
 
 use crate::ClientError;
