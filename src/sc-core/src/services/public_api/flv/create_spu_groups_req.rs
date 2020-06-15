@@ -15,11 +15,11 @@ use k8_metadata::metadata::Env;
 use k8_metadata_client::MetadataClient;
 use k8_metadata::metadata::Spec as K8Spec;
 use k8_metadata::metadata::TemplateSpec;
-use sc_api::FlvResponseMessage;
-use sc_api::spu::{FlvCreateSpuGroupsRequest, FlvCreateSpuGroupsResponse};
-use sc_api::spu::FlvCreateSpuGroupRequest;
-use sc_api::spu::FlvEnvVar;
-use sc_api::spu::FlvStorageConfig;
+use sc_api::server::FlvResponseMessage;
+use sc_api::server::spu::{FlvCreateSpuGroupsRequest, FlvCreateSpuGroupsResponse};
+use sc_api::server::spu::FlvCreateSpuGroupRequest;
+use sc_api::server::spu::FlvEnvVar;
+use sc_api::server::spu::FlvStorageConfig;
 
 use super::PublicContext;
 

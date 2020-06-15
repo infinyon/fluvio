@@ -5,10 +5,10 @@ use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use flv_metadata::partition::ReplicaKey;
 use flv_metadata::spu::SpuSpec;
+use flv_metadata::api::Replica;
 use flv_types::SpuId;
 
 use crate::InternalSpuApi;
-use crate::messages::Replica;
 
 /// All specs.  Listener can use this to sync their own metadata store.
 #[derive(Decode, Encode, Debug, Default)]

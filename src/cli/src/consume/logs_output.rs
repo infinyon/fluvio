@@ -8,7 +8,7 @@ use log::debug;
 use serde_json;
 use serde_json::Value;
 
-use kf_protocol::api::DefaultRecords;
+use kf_protocol::api::RecordSet;
 use kf_protocol::message::fetch::FetchablePartitionResponse;
 
 use crate::error::CliError;
@@ -24,7 +24,7 @@ use super::ConsumeOutputType;
 pub async fn process_fetch_topic_response<O>(
     out: std::sync::Arc<O>,
     topic: &str,
-    response: FetchablePartitionResponse<DefaultRecords>,
+    response: FetchablePartitionResponse<RecordSet>,
     config: &ConsumeLogConfig,
 ) -> Result<(), CliError>
 where
@@ -63,7 +63,7 @@ where
 pub fn generate_json_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
+    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
     suppress: bool,
 ) -> Vec<Value>
 where
@@ -86,7 +86,7 @@ where
 
 /// Traverse all partition batches and parse records to json format
 pub fn partition_to_json_records(
-    partition: &FetchablePartitionResponse<DefaultRecords>,
+    partition: &FetchablePartitionResponse<RecordSet>,
     suppress: bool,
 ) -> Vec<Value> {
     let mut json_records: Vec<Value> = vec![];
@@ -128,7 +128,7 @@ where
 pub fn print_text_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
+    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
     suppress: bool,
 ) where
     O: Terminal,
@@ -165,7 +165,7 @@ pub fn print_text_records<O>(
 pub fn print_binary_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
+    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
 ) where
     O: Terminal,
 {
@@ -206,7 +206,7 @@ pub fn print_binary_records<O>(
 pub fn print_dynamic_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
+    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
 ) where
     O: Terminal,
 {
@@ -240,7 +240,7 @@ pub fn print_dynamic_records<O>(
 pub fn print_raw_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<DefaultRecords>>,
+    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
 ) where
     O: Terminal,
 {
@@ -268,7 +268,7 @@ pub fn print_raw_records<O>(
 /// If header has error, format and return
 pub fn error_in_header(
     topic_name: &str,
-    r_partition: &FetchablePartitionResponse<DefaultRecords>,
+    r_partition: &FetchablePartitionResponse<RecordSet>,
 ) -> Option<String> {
     if r_partition.error_code.is_error() {
         Some(format!(

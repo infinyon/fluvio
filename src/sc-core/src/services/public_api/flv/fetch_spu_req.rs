@@ -4,13 +4,7 @@ use std::io::Error;
 use kf_protocol::api::FlvErrorCode;
 use kf_protocol::api::{RequestMessage, ResponseMessage};
 
-use sc_api::spu::{FlvFetchSpusRequest, FlvFetchSpusResponse};
-use sc_api::spu::FlvFetchSpuResponse;
-use sc_api::spu::FlvRequestSpuType;
-use sc_api::spu::FlvFetchSpu;
-use sc_api::spu::FlvSpuType;
-use sc_api::spu::FlvEndPointMetadata;
-use sc_api::spu::FlvSpuResolution;
+use sc_api::server::spu::*;
 
 use flv_metadata::spu::SpuType;
 use flv_metadata::spu::SpuResolution;

@@ -126,6 +126,7 @@ mod tests {
         let addr = "127.0.0.1:5999";
 
         let _r = join(setup_client(addr), test_server(addr)).await;
+        assert!(true);
         Ok(())
     }
 }

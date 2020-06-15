@@ -10,8 +10,7 @@ use kf_protocol::api::ErrorCode;
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Size;
-use kf_protocol::api::DefaultRecords;
-use kf_protocol::api::Isolation;
+use kf_protocol::api::RecordSet;
 
 use crate::checkpoint::CheckPoint;
 use crate::range_map::SegmentList;
@@ -51,6 +50,7 @@ impl ReplicaStorage for FileReplica {
 }
 
 impl FileReplica {
+    pub const PREFER_MAX_LEN: u32 = 1000000; // 1MB as limit
     /// Construct a new replica with specified topic and partition.
     /// It can start with arbitrary offset.  However, for normal replica,
     /// it is usually starts with 0.  
@@ -167,7 +167,7 @@ impl FileReplica {
     /// write records to this replica, update high watermark if required
     pub async fn send_records(
         &mut self,
-        records: DefaultRecords,
+        records: RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
         for batch in records.batches {
@@ -181,48 +181,38 @@ impl FileReplica {
         Ok(())
     }
 
-    /// read uncommitted records( between high watermark and end offset) to file response
-    pub async fn read_uncommitted_records<P>(&self, response: &mut P)
+    /// read all uncommitted records
+    pub async fn read_uncommitted_records<P>(&self, max_len: u32, response: &mut P)
     where
         P: SlicePartitionResponse,
     {
-        self.read_records(self.get_hw(), None, response).await
-    }
-
-    /// read committed records
-    pub async fn read_committed_records<P>(&self, start_offset: Offset, response: &mut P)
-    where
-        P: SlicePartitionResponse,
-    {
-        self.read_records(start_offset, Some(self.get_hw()), response)
+        self.read_records(self.get_hw(), None, max_len, response)
             .await
     }
 
-    pub async fn read_records_with_isolation<P>(
+    /// committed records are records up to high watermark
+    pub async fn read_committed_records<P>(
         &self,
-        offset: Offset,
-        isolation: Isolation,
-        partition_response: &mut P,
+        start_offset: Offset,
+        max_len: u32,
+        response: &mut P,
     ) where
         P: SlicePartitionResponse,
     {
-        match isolation {
-            Isolation::ReadCommitted => {
-                self.read_committed_records(offset, partition_response)
-                    .await
-            }
-            Isolation::ReadUncommitted => self.read_records(offset, None, partition_response).await,
-        }
+        self.read_records(start_offset, Some(self.get_hw()), max_len, response)
+            .await
     }
 
-    /// read records
+    /// read record slice into response
     /// * `start_offset`:  start offsets
     /// * `max_offset`:  max offset (exclusive)
     /// * `responsive`:  output
+    /// * `max_len`:  max length of the slice
     pub async fn read_records<P>(
         &self,
         start_offset: Offset,
         max_offset: Option<Offset>,
+        max_len: u32,
         response: &mut P,
     ) where
         P: SlicePartitionResponse,
@@ -268,13 +258,30 @@ impl FileReplica {
                 match slice {
                     Ok(slice) => match slice {
                         Some(slice) => {
-                            debug!(
-                                "retrieved record slice fd: {}, position: {}, len{}",
-                                slice.fd(),
-                                slice.position(),
-                                slice.len()
-                            );
-                            response.set_slice(slice);
+                            use flv_future_aio::fs::AsyncFileSlice;
+
+                            let limited_slice = if slice.len() > max_len as u64 {
+                                debug!(
+                                    "retrieved record slice fd: {}, position: {}, max {} out of len {}",
+                                    slice.fd(),
+                                    slice.position(),
+                                    max_len,
+                                    slice.len()
+                                );
+                                AsyncFileSlice::new(slice.fd(), slice.position(), max_len as u64)
+                            } else {
+                                debug!(
+                                    "retrieved record slice fd: {}, position: {}, len: {}",
+                                    slice.fd(),
+                                    slice.position(),
+                                    slice.len()
+                                );
+
+                                slice
+                            };
+
+                            // limit slice
+                            response.set_slice(limited_slice);
                         }
                         None => {
                             debug!("records not found for: {}", start_offset);
@@ -336,7 +343,7 @@ mod tests {
     use kf_protocol::Encoder;
     use kf_protocol::api::ErrorCode;
     use kf_protocol::fs::FilePartitionResponse;
-    use kf_protocol::api::DefaultRecords;
+    use kf_protocol::api::RecordSet;
     use flv_util::fixture::ensure_clean_dir;
 
     use super::FileReplica;
@@ -430,7 +437,7 @@ mod tests {
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
 
     #[test_async]
-    async fn test_uncommited_fetch() -> Result<(), StorageError> {
+    async fn test_uncommitted_fetch() -> Result<(), StorageError> {
         let option = base_option(TEST_UNCOMMIT_DIR);
 
         let mut replica = FileReplica::create("test", 0, 0, &option)
@@ -438,7 +445,9 @@ mod tests {
             .expect("test replica");
 
         let mut empty_response = FilePartitionResponse::default();
-        replica.read_uncommitted_records(&mut empty_response).await;
+        replica
+            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut empty_response)
+            .await;
         assert_eq!(empty_response.records.len(), 0);
         assert_eq!(empty_response.error_code, ErrorCode::None);
 
@@ -449,7 +458,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(&mut partition_response)
+            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), batch_len);
 
@@ -462,7 +471,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(&mut partition_response)
+            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         debug!("partiton response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
@@ -470,9 +479,15 @@ mod tests {
         replica.send(create_batch()).await?;
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(&mut partition_response)
+            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), batch_len * 2);
+
+        let mut partition_response = FilePartitionResponse::default();
+        replica
+            .read_uncommitted_records(50, &mut partition_response)
+            .await;
+        assert_eq!(partition_response.records.len(), 50);
 
         Ok(())
     }
@@ -555,7 +570,7 @@ mod tests {
             .await
             .expect("test replica");
 
-        let records = DefaultRecords::default().add(create_batch());
+        let records = RecordSet::default().add(create_batch());
 
         replica.send_records(records, true).await?;
 
@@ -590,15 +605,15 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, &mut partition_response)
+            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
-        debug!("partiton response: {:#?}", partition_response);
+        debug!("partition response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), 0);
 
         replica
             .update_high_watermark_to_end()
             .await
-            .expect("update highwatermark");
+            .expect("update high watermark");
 
         debug!(
             "replica end: {} high: {}",
@@ -608,9 +623,9 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, &mut partition_response)
+            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
-        debug!("partiton response: {:#?}", partition_response);
+        debug!("partition response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
 
         // write 1 more batch
@@ -624,24 +639,12 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, &mut partition_response)
+            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
-        debug!("partiton response: {:#?}", partition_response);
+        debug!("partition response: {:#?}", partition_response);
         // should return same records as 1 batch since we didn't commit 2nd batch
         assert_eq!(partition_response.records.len(), batch_len);
 
         Ok(())
     }
-
-    /*
-    use kf_protocol::api::DefaultRecord;
-    fn create_batch_with_text(text: &str) -> DefaultBatch {
-
-        let record = text.as_bytes().to_vec();
-        let record_msg: DefaultRecord = record.into();
-        let mut batch = DefaultBatch::default();
-        batch.records.push(record_msg);
-        batch
-    }
-    */
 }

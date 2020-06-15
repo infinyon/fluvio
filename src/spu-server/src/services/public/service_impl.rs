@@ -1,26 +1,31 @@
 use std::sync::Arc;
+use std::collections::HashSet;
 
+use log::debug;
+use log::trace;
+use log::warn;
 use async_trait::async_trait;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
+use futures::stream::StreamExt;
+use tokio::select;
 
+use kf_protocol::api::RequestMessage;
 use kf_socket::InnerKfSocket;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
 use kf_service::call_service;
 use kf_service::KfService;
-use kf_service::api_loop;
-use spu_api::SpuApiKey;
-use spu_api::PublicRequest;
+use spu_api::server::SpuServerApiKey;
+use spu_api::server::SpuServerRequest;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
 use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
-use super::cf_handler::CfHandler;
-use super::local_spu_request::handle_spu_request;
 use super::offset_request::handle_offset_request;
+use super::OffsetReplicaList;
 
 pub struct PublicService {}
 
@@ -36,7 +41,7 @@ where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Context = DefaultSharedGlobalContext;
-    type Request = PublicRequest;
+    type Request = SpuServerRequest;
 
     async fn respond(
         self: Arc<Self>,
@@ -47,51 +52,119 @@ where
         InnerKfSink<S>: ZeroCopyWrite,
     {
         let (mut sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<PublicRequest, SpuApiKey>();
+        let mut api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
 
-        api_loop!(
-            api_stream,
+        let mut offset_replica_list: OffsetReplicaList = HashSet::new();
 
-            // Mixed
-            PublicRequest::ApiVersionsRequest(request) => call_service!(
-                request,
-                handle_kf_lookup_version_request(request),
-                sink,
-                "kf api version handler"
-            ),
+        let mut receiver = context.offset_channel().receiver();
 
-            // Kafka
-            PublicRequest::KfProduceRequest(request) => call_service!(
-                request,
-                handle_produce_request(request,context.clone()),
-                sink,
-                "ks produce request handler"
-            ),
-            PublicRequest::KfFileFetchRequest(request) => handle_fetch_request(request,context.clone(),&mut sink).await?,
+        loop {
+            select! {
+                offset_event_res = receiver.recv() => {
 
-            // Fluvio
-            PublicRequest::FlvFetchLocalSpuRequest(request) => call_service!(
-                request,
-                handle_spu_request(request,context.clone()),
-                sink,
-                "handling local spu request"
-            ),
-            PublicRequest::FlvFetchOffsetsRequest(request) => call_service!(
-                request,
-                handle_offset_request(request,context.clone()),
-                sink,
-                "handling offset fetch request"
-            ),
-            PublicRequest::FileFlvContinuousFetchRequest(request) => {
+                    match offset_event_res {
 
-                drop(api_stream);
-                CfHandler::handle_continuous_fetch_request(request,context.clone(),sink,stream).await?;
-                break;
+                        Ok(offset_event) => {
+                            trace!("conn: {}, offset event from leader {:#?}", sink.id(),offset_event);
+                            if offset_replica_list.contains(&offset_event.replica_id) {
+
+                                use spu_api::client::offset::ReplicaOffsetUpdateRequest;
+                                use spu_api::client::offset::ReplicaOffsetUpdate;
+                                use kf_protocol::api::FlvErrorCode;
+
+                                debug!("conn: {}, sending replica: {} hw: {}, leo: {}",sink.id(),
+                                    offset_event.replica_id,
+                                    offset_event.hw,
+                                    offset_event.leo);
+
+                                let req = ReplicaOffsetUpdateRequest {
+                                    offsets: vec![ReplicaOffsetUpdate {
+                                        replica: offset_event.replica_id,
+                                        error_code: FlvErrorCode::None,
+                                        start_offset: 0,
+                                        leo: offset_event.leo,
+                                        hw: offset_event.hw
+                                    }]
+                                };
+                                sink.send_request(&RequestMessage::new_request(req)).await?;
+
+                            }
+                        },
+
+                        Err(err) => {
+
+                            use flv_future_aio::sync::broadcast::RecvError;
+
+                            match err {
+                                RecvError::Closed => {
+                                    warn!("conn: {}, lost connection to event channel, closing conn",sink.id());
+                                    break;
+                                },
+                                RecvError::Lagged(lag) => {
+                                    warn!("conn: {}, lagging: {}",sink.id(),lag);
+                                }
+                            }
+
+                        }
+
+                    }
+                },
+
+
+                api_msg = api_stream.next() => {
+
+                    if let Some(msg) = api_msg {
+
+                        if let Ok(req_message) = msg {
+                            trace!("conn: {}, received request: {:#?}",sink.id(),req_message);
+                            match req_message {
+                                SpuServerRequest::ApiVersionsRequest(request) => call_service!(
+                                    request,
+                                    handle_kf_lookup_version_request(request),
+                                    sink,
+                                    "kf api version handler"
+                                ),
+
+                                // Kafka
+                                SpuServerRequest::KfProduceRequest(request) => call_service!(
+                                    request,
+                                    handle_produce_request(request,context.clone()),
+                                    sink,
+                                    "ks produce request handler"
+                                ),
+                                SpuServerRequest::KfFileFetchRequest(request) => handle_fetch_request(request,context.clone(),&mut sink).await?,
+
+                                SpuServerRequest::FlvFetchOffsetsRequest(request) => call_service!(
+                                    request,
+                                    handle_offset_request(request,context.clone()),
+                                    sink,
+                                    "handling offset fetch request"
+                                ),
+
+                                SpuServerRequest::RegisterSyncReplicaRequest(request) => {
+                                    use std::iter::FromIterator;
+
+                                    let (_, sync_request) = request.get_header_request();
+                                    debug!("registered offset sync request: {:#?}",sync_request);
+                                    offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
+                                }
+
+                            }
+                        } else {
+                            log::debug!("conn: {} msg can't be decoded, ending connection",sink.id());
+                            break;
+                        }
+                    } else {
+                        log::debug!("conn: {}, no content, end of connection", sink.id());
+                        break;
+                    }
+
+                }
 
             }
+        }
 
-        );
-
+        debug!("conn: {}, loop terminated ", sink.id());
         Ok(())
     }
 }

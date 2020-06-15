@@ -2,21 +2,22 @@ mod api_versions;
 mod service_impl;
 mod produce_handler;
 mod fetch_handler;
-mod local_spu_request;
 mod offset_request;
-mod cf_handler;
 
 use log::info;
 
 use kf_service::KfApiServer;
 use service_impl::PublicService;
-use spu_api::PublicRequest;
-use spu_api::SpuApiKey;
+use spu_api::server::SpuServerRequest;
+use spu_api::server::SpuServerApiKey;
 
 use crate::core::DefaultSharedGlobalContext;
+use kf_protocol::api::ReplicaKey;
+
+pub type OffsetReplicaList = std::collections::HashSet<ReplicaKey>;
 
 pub(crate) type PublicApiServer =
-    KfApiServer<PublicRequest, SpuApiKey, DefaultSharedGlobalContext, PublicService>;
+    KfApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
 
 // start server
 pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> PublicApiServer {

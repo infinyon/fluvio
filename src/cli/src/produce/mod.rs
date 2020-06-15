@@ -76,8 +76,7 @@ mod produce {
             }
         } else {
             let stdin = stdin();
-            let std_lock = stdin.lock().await;
-            let mut lines = BufReader::new(std_lock).lines();
+            let mut lines = BufReader::new(stdin).lines();
             while let Some(line) = lines.next().await {
                 let text = line?;
                 debug!("read lines {} bytes", text);

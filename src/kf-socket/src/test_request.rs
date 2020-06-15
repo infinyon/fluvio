@@ -14,6 +14,7 @@ use kf_protocol::api::Request;
 #[repr(u16)]
 pub enum TestKafkaApiEnum {
     Echo = 1000,
+    Status = 1001,
 }
 
 impl Default for TestKafkaApiEnum {
@@ -38,9 +39,32 @@ impl Request for EchoRequest {
     type Response = EchoResponse;
 }
 
+/// request to send back status
+#[derive(Decode, Encode, Debug, Default)]
+pub struct AsyncStatusRequest {
+    pub count: i32,
+}
+
+impl AsyncStatusRequest {
+    pub fn new(count: i32) -> Self {
+        Self { count }
+    }
+}
+
+impl Request for AsyncStatusRequest {
+    const API_KEY: u16 = TestKafkaApiEnum::Status as u16;
+    type Response = AsyncStatusResponse;
+}
+
+#[derive(Decode, Encode, Debug, Default)]
+pub struct AsyncStatusResponse {
+    pub status: i32,
+}
+
 #[derive(Encode, Debug)]
 pub enum TestApiRequest {
     EchoRequest(RequestMessage<EchoRequest>),
+    AsyncStatusRequest(RequestMessage<AsyncStatusRequest>),
     Noop(bool),
 }
 
@@ -62,6 +86,9 @@ impl KfRequestMessage for TestApiRequest {
     {
         match header.api_key().try_into()? {
             TestKafkaApiEnum::Echo => api_decode!(TestApiRequest, EchoRequest, src, header),
+            TestKafkaApiEnum::Status => {
+                api_decode!(TestApiRequest, AsyncStatusRequest, src, header)
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ use log::error;
 use log::warn;
 
 use kf_socket::SinkPool;
-use kf_protocol::api::DefaultRecords;
+use kf_protocol::api::RecordSet;
 use kf_protocol::api::Offset;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Isolation;
@@ -292,6 +292,7 @@ impl LeaderReplicaState<FileReplica> {
         sinks: &SinkPool<SpuId>,
         follower_id: SpuId,
         follower_info: &FollowerReplicaInfo,
+        max_bytes: u32,
     ) {
         if let Some(mut sink) = sinks.get_sink(&follower_id) {
             trace!(
@@ -305,6 +306,7 @@ impl LeaderReplicaState<FileReplica> {
             partition_response.partition_index = self.replica_id.partition;
             self.read_records(
                 follower_info.leo,
+                max_bytes,
                 Isolation::ReadUncommitted,
                 &mut partition_response,
             )
@@ -334,11 +336,12 @@ impl LeaderReplicaState<FileReplica> {
     }
 
     /// synchronize
-    pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>) {
+    pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
         let follower_sync = self.need_follower_updates();
 
         for (follower_id, follower_info) in follower_sync {
-            self.sync_follower(sinks, follower_id, &follower_info).await;
+            self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
+                .await;
         }
     }
 
@@ -347,22 +350,32 @@ impl LeaderReplicaState<FileReplica> {
     pub async fn read_records<P>(
         &self,
         offset: Offset,
+        max_len: u32,
         isolation: Isolation,
         partition_response: &mut P,
     ) -> (Offset, Offset)
     where
         P: SlicePartitionResponse,
     {
-        self.storage
-            .read_records_with_isolation(offset, isolation, partition_response)
-            .await;
+        match isolation {
+            Isolation::ReadCommitted => {
+                self.storage
+                    .read_committed_records(offset, max_len, partition_response)
+                    .await;
+            }
+            Isolation::ReadUncommitted => {
+                self.storage
+                    .read_records(offset, None, max_len, partition_response)
+                    .await;
+            }
+        }
 
         (self.hw(), self.leo())
     }
 
     pub async fn send_records(
         &mut self,
-        records: DefaultRecords,
+        records: RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
         trace!(

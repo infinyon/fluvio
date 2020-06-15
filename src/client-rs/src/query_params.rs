@@ -50,7 +50,7 @@ mod topic_partition {
     use std::path::Path;
 
     use kf_protocol::message::topic::CreatableReplicaAssignment;
-    use sc_api::topic::FlvTopicPartitionMap;
+    use sc_api::server::topic::FlvTopicPartitionMap;
 
     #[derive(Debug)]
     pub enum ReplicaConfig {

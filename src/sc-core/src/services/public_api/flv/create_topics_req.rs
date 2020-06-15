@@ -19,8 +19,8 @@ use kf_protocol::api::FlvErrorCode;
 use k8_metadata::metadata::ObjectMeta;
 use k8_metadata_client::MetadataClient;
 
-use sc_api::FlvResponseMessage;
-use sc_api::topic::{FlvCreateTopicsRequest, FlvCreateTopicsResponse};
+use sc_api::server::FlvResponseMessage;
+use sc_api::server::topic::{FlvCreateTopicsRequest, FlvCreateTopicsResponse};
 
 use flv_metadata::topic::TopicSpec;
 

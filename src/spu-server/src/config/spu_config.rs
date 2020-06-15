@@ -96,6 +96,8 @@ pub struct SpuConfig {
     // parameters
     pub replication: Replication,
     pub log: Log,
+
+    pub peer_max_bytes: u32,
 }
 
 impl Default for SpuConfig {
@@ -109,6 +111,7 @@ impl Default for SpuConfig {
             replication: Replication::default(),
             sc_retry_ms: SPU_RETRY_SC_TIMEOUT_MS,
             log: Log::default(),
+            peer_max_bytes: flv_storage::FileReplica::PREFER_MAX_LEN,
         }
     }
 }
@@ -118,6 +121,7 @@ impl SpuConfig {
         self.id
     }
 
+    #[allow(unused)]
     pub fn rack(&self) -> &Option<String> {
         &self.rack
     }
@@ -130,16 +134,14 @@ impl SpuConfig {
         &self.public_endpoint
     }
 
+    #[allow(unused)]
     pub fn public_server_addr(&self) -> &str {
         &self.public_endpoint
     }
 
+    #[allow(unused)]
     pub fn private_socket_addr(&self) -> &str {
         &self.private_endpoint
-    }
-
-    pub fn private_server_addr(&self) -> &str {
-        &self.public_endpoint
     }
 
     pub fn storage(&self) -> &Log {

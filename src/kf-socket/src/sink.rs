@@ -31,6 +31,8 @@ use crate::KfSocketError;
 pub type KfSink = InnerKfSink<TcpStream>;
 #[allow(unused)]
 pub type AllKfSink = InnerKfSink<AllTcpStream>;
+pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
+pub type ExclusiveAllKfSink = InnerExclusiveKfSink<AllTcpStream>;
 
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, KfCodec>, Bytes>;
 
@@ -42,7 +44,7 @@ pub struct InnerKfSink<S> {
 
 impl<S> InnerKfSink<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
+    S: AsyncRead + AsyncWrite + Unpin,
 {
     pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
         InnerKfSink { fd, inner }
@@ -102,7 +104,7 @@ where
         let mut buf = BytesMut::with_capacity(1000);
         let mut data: Vec<StoreValue> = vec![];
         msg.file_encode(&mut buf, &mut data, version)?;
-        trace!("file buf len: {}", buf.len());
+        trace!("encoded buffer len: {}", buf.len());
         // add remainder
         data.push(StoreValue::Bytes(buf.freeze()));
         self.write_store_values(data).await
@@ -144,17 +146,17 @@ impl<S> AsRawFd for InnerKfSink<S> {
     }
 }
 
-use futures::lock::Mutex;
+use async_lock::Lock;
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-pub struct InnerExclusiveKfSink<S>(Mutex<InnerKfSink<S>>);
+pub struct InnerExclusiveKfSink<S>(Lock<InnerKfSink<S>>);
 
 impl<S> InnerExclusiveKfSink<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
+    S: AsyncRead + AsyncWrite + Unpin,
 {
     pub fn new(sink: InnerKfSink<S>) -> Self {
-        InnerExclusiveKfSink(Mutex::new(sink))
+        InnerExclusiveKfSink(Lock::new(sink))
     }
 
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), KfSocketError>
@@ -164,9 +166,25 @@ where
         let mut inner_sink = self.0.lock().await;
         inner_sink.send_request(req_msg).await
     }
+
+    pub async fn send_response<P>(
+        &mut self,
+        resp_msg: &ResponseMessage<P>,
+        version: Version,
+    ) -> Result<(), KfSocketError>
+    where
+        ResponseMessage<P>: KfEncoder + Default + Debug,
+    {
+        let mut inner_sink = self.0.lock().await;
+        inner_sink.send_response(resp_msg, version).await
+    }
 }
 
-pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
+impl<S> Clone for InnerExclusiveKfSink<S> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 #[cfg(test)]
 mod tests {

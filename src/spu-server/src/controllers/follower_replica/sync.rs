@@ -12,7 +12,7 @@ use kf_protocol::Decoder;
 use kf_protocol::Version;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use kf_protocol::api::DefaultRecords;
+use kf_protocol::api::RecordSet;
 use kf_protocol::api::Request;
 use kf_protocol::api::ErrorCode;
 use kf_protocol::fs::KfFileRecordSet;
@@ -24,12 +24,12 @@ use flv_future_aio::fs::AsyncFileSlice;
 use super::KfFollowerPeerApiEnum;
 
 pub type FileSyncRequest = SyncRequest<KfFileRecordSet>;
-pub type DefaultSyncRequest = SyncRequest<DefaultRecords>;
+pub type DefaultSyncRequest = SyncRequest<RecordSet>;
 pub type PeerFilePartitionResponse = PeerFetchablePartitionResponse<KfFileRecordSet>;
 pub type PeerFileTopicResponse = PeerFetchableTopicResponse<KfFileRecordSet>;
 
 /// used for sending records and commits
-/// repurpose topic response since it has records and commit offsets
+/// re purpose topic response since it has records and commit offsets
 #[derive(Default, Encode, Decode, Debug)]
 pub struct SyncRequest<R>
 where
