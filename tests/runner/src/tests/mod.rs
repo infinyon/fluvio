@@ -6,12 +6,10 @@ pub use common::*;
 
 mod common {
 
-    use std::panic::UnwindSafe;
-
     use async_trait::async_trait;
 
     #[async_trait]
-    pub trait TestDriver: UnwindSafe {
+    pub trait TestDriver {
         /// run tester
         async fn run(&self);
     }
