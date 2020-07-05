@@ -18,7 +18,7 @@ pub enum ScPublicApiKey {
     KfMetadata = 3,
 
     // update metadata async
-  //  FlvUpdateAllMetadata = 1000,
+    //  FlvUpdateAllMetadata = 1000,
     //  FlvUpdateSpuMetadata = 1001,
     //  FlvUpdateReplicaMetadata = 1002,
 

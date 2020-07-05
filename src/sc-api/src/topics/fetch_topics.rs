@@ -28,7 +28,6 @@ impl Request for FlvFetchTopicsRequest {
     type Response = FlvFetchTopicsResponse;
 }
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvFetchTopicsResponse {
     /// The list of topics that have been retrieved.
@@ -73,7 +72,6 @@ pub struct FlvPartitionReplica {
     /// Only live replicas in replica assignment
     pub live_replicas: Vec<i32>,
 }
-
 
 impl FlvFetchTopicResponse {
     /// Constructor for topics found
