@@ -29,7 +29,6 @@ impl Request for FlvCreateTopicsRequest {
     type Response = FlvCreateTopicsResponse;
 }
 
-
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FlvCreateTopicRequest {
     /// The name of the topic.
@@ -44,4 +43,3 @@ pub struct FlvCreateTopicsResponse {
     /// The topic creation result messages.
     pub results: Vec<FlvResponseMessage>,
 }
-

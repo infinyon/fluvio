@@ -31,7 +31,6 @@ impl Request for FlvFetchSpusRequest {
     type Response = FlvFetchSpusResponse;
 }
 
-
 // -----------------------------------
 // FlvFetchSpusResponse
 // -----------------------------------

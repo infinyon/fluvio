@@ -35,8 +35,6 @@ impl Request for ApiVersionsRequest {
     type Response = ApiVersionsResponse;
 }
 
-
-
 // -----------------------------------
 // ApiVersionsResponse
 // -----------------------------------
@@ -53,4 +51,3 @@ pub struct ApiVersionKey {
     pub min_version: i16,
     pub max_version: i16,
 }
-

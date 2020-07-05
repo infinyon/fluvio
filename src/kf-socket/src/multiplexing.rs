@@ -280,7 +280,6 @@ impl MultiPlexingResponseDispatcher {
     {
         use futures::StreamExt;
 
-
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
