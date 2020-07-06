@@ -11,41 +11,41 @@ Fluvio **Command Line Interface (CLI)** is the management tool utilized to provi
 
 ## Download and Install
 
-CLI **binaries** are available for download in <a href="https://github.com/infinyon/fluvio/releases" target="_blank">github</a>:
+CLI **binaries** are available for download in {{< target-blank title="github" url="https://github.com/infinyon/fluvio/releases" >}}:
 
-* <a href="https://github.com/infinyon/fluvio/releases/latest" target="_blank">Mac binary</a>
-* <a href="https://github.com/infinyon/fluvio/releases/latest" target="_blank">Linux binary</a>
+* {{< target-blank title="Mac binary" url="https://github.com/infinyon/fluvio/releases" >}}
+* {{< target-blank title="Linux binary" url="https://github.com/infinyon/fluvio/releases" >}}
 
-Copy binary to your bin path and make it executable. 
+Copy the binary to your bin path and make it executable. 
 
 To check CLI version, run:
 
-```bash
+{{< fluvio >}}
 $ fluvio --version
  fluvio 0.3.0
-```
+{{< /fluvio >}}
 
 ## CLI Overview
 
-Fluvio CLI hierarchy has the following pattern: **fluvio**, **module**, **operation** followed by _options_ and _flags_. 
+Fluvio CLI hierarchy has the following pattern: __fluvio__, __module__, __operation__ followed by _options_ and _flags_. 
 
-```bash
+{{< fluvio >}}
 fluvio module operation [FLAGS] [OPTIONS]
-```
+{{< /fluvio >}}
 
 Depending on context, _options_ can be mandatory or optional. Mandatory options are shown in the CLI usage line. For example, in _fluvio topic create_ :
 
-```bash
+{{< fluvio >}}
 fluvio topic create --partitions <integer> --replication <integer> --topic <string>
-```
+{{< /fluvio >}}
 
-* **options**: &dash;&dash;topic,  &dash;&dash;partitions, and  &dash;&dash;replication, are mandatory.
+options: {{< pre >}}--topic{{< /pre >}}, {{< pre >}}--partitions{{< /pre >}}, and {{< pre >}}--replication{{< /pre >}}, are mandatory.
 
 ### Modules
 
-Command line help is available at any level by appending -h or &dash;&dash;help to the command. At top level, you can run **fluvio** with without arguments to get a list of available options.
+Command line help is available at any level by appending {{< pre >}}-h{{< /pre >}} or {{< pre >}}--help{{< /pre >}} to the command. At top level, you can run __fluvio__ with without arguments to get a list of available options.
 
-```bash
+{{< fluvio >}}
 $ fluvio 
 Fluvio Command Line Interface
 
@@ -64,7 +64,7 @@ SUBCOMMANDS:
     topic         Topic operations
     advanced      Advanced operations
     help          Prints this message or the help of the given subcommand(s)
-```
+{{< /fluvio >}}
 
 Top level fluvio CLI is organized by modules:
 
@@ -84,7 +84,7 @@ However, there are a few exceptions:
 
 **Operations** describe module capabilities. For example, _topic_ module has the ability to create, list, describe, or delete topics:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic
 Topic operations
 
@@ -99,17 +99,17 @@ SUBCOMMANDS:
     describe    Show details of a topic
     list        Show all topics
     help        Prints this message or the help of the given subcommand(s)
-```
+{{< /fluvio >}}
 
-Other modules, such as **spu** have different options, hence different capabilities.
+Other modules, such as __spu__ have different options, hence different capabilities.
 
 ### Options / Flags
 
-**Options** are module attributes, such as: -t, &dash;&dash;topic, followed by modifiers, whereas **flags** are attributes without value.
+**Options** are module attributes, such as: {{< pre >}}-t, --topic{{< /pre >}}, followed by modifiers, whereas **flags** are attributes without value.
 
 Mandatory options are shown in the syntax definition. All other flags and options are optional.
 
-```bash
+{{< fluvio >}}
 $ fluvio topic create --help
 Create a topic
 
@@ -128,23 +128,23 @@ OPTIONS:
     -c, --sc <host:port>                    Address of Streaming Controller
     -k, --kf <host:port>                    Address of Kafka Controller
     -P, --profile <profile>                 Profile name
-```
+{{< /fluvio >}}
 
-A small subset of the options, &dash;&dash;kf, &dash;&dash;sc, and &dash;&dash;profile, are applied to every command. The purpose of these options is to help the CLI identify the location of the services where to send the command.
+A small subset of the options, {{< pre >}}--kf, --sc,{{< /pre >}} and {{< pre >}}--profile{{< /pre >}}, are applied to every command. The purpose of these options is to help the CLI identify the location of the services where to send the command.
 
 ### Fluvio Clusters
 
 The **CLI** generates commands for a specific **cluster**. The **cluster** is explicit when defined through the an  _option_ or implicit when derived from a _profile_. **CLI** _options_ has higher precedence than _profiles_. 
 
-For additional information, checkout [Fluvio Profiles](./profiles) section.
+For additional information, checkout [Fluvio Profiles]({{< relref "profiles" >}}) section.
 
 
-#### Related Topics
--------------------
-* [Fluvio Profiles](./profiles/)
-* [Produce CLI](./produce/)
-* [Consume CLI](./consume/)
-* [SPUs CLI](./spus/)
-* [Custom SPU CLI](./custom-spus/)
-* [SPU-Groups CLI](./spu-groups/)
-* [Topics CLI](./topics/)
+{{< links "Related Topics" >}}
+* [Fluvio Profiles]({{< relref "profiles" >}})
+* [Produce CLI]({{< relref "produce" >}})
+* [Consume CLI]({{< relref "consume" >}})
+* [SPUs CLI]({{< relref "spus" >}})
+* [Custom SPU CLI]({{< relref "custom-spus" >}})
+* [SPU-Groups CLI]({{< relref "spu-groups" >}})
+* [Topics CLI]({{< relref "topics" >}})
+{{< /links >}}
