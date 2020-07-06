@@ -1,8 +1,0 @@
-<div>
-    <aside class="callout text mb-3">
-        <div class="content">
-            {{- $text := partial "others/strip_indent.html"  (dict "inner" .Inner "pos" .Position) -}}
-            {{- $text | markdownify -}}
-        </div>
-    </aside>
-</div>

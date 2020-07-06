@@ -1,6 +1,0 @@
-{{- $title := .Get 0 | default "Related Topics" -}}
-<div class="related-hdr">{{ $title }}</div>
-<hr class="related-hr"/>
-<div class="next-steps-list">
-{{- .Inner | markdownify -}}
-</div>
