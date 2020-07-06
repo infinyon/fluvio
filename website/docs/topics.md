@@ -4,11 +4,11 @@ toc: true
 weight: 70
 ---
 
-The **topic** is the primary construct for creating a data stream. A topic coupled with a partition creates a unique identifier for a data stream in a Fluvio deployment. The **topic/partition** unique identifier is used by the **Producers** and the **Consumers** to exchange messages over data streams.  
+The __topic__ is the primary construct for creating a data stream. A topic coupled with a partition creates a unique identifier for a data stream in a Fluvio deployment. The __topic/partition__ unique identifier is used by the __Producers__ and the __Consumers__ to exchange messages over data streams.  
 
 Topics module defines the following CLI operations: 
 
-```bash
+{{< fluvio >}}
 fluvio topic <SUBCOMMAND>
 
 SUBCOMMANDS:
@@ -16,14 +16,14 @@ SUBCOMMANDS:
     delete      Delete a topic
     describe    Show details of a topic
     list        Show all topics
-```
+{{< /fluvio >}}
 
 
 ## Create Topic
 
-Create **topic** operation adds a topic to a **Fluvio** or a **Kafka** deployment. 
+Create __topic__ operation adds a topic to a __Fluvio__ or a __Kafka__ deployment. 
 
-```bash
+{{< fluvio >}}
 fluvio topic create [FLAGS] [OPTIONS] --topic <string> --partitions <integer> --replication <integer> 
 
 FLAGS:
@@ -38,78 +38,78 @@ OPTIONS:
     -c, --sc <host:port>                    Address of Streaming Controller
     -k, --kf <host:port>                    Address of Kafka Controller
     -P, --profile <profile>                 Profile name
-```
+{{< /fluvio >}}
 
 The flags and options are defined as follows:
 
-* **&dash;&dash;ignore-rack-assignment**:
- _rack labels_ are optional parameters assigned to SPUs. The rack label is used by [replica assignment](/docs/architecture/replication/#replica-assignment-algorithm) to compute rack-aware replica distribution. When **ignore_rack_assignment** flag is set, replica assignment ignores rack labels. If the SPUs do not have rack labels assigned, the flag is ignored.
+* <strong>{{< pre >}}--ignore-rack-assignment{{< /pre >}}</strong>: 
+[rack](create_topic) labels are optional parameters assigned to SPUs. The rack label is used during replica assignment to compute rack-aware replica distribution. Apply *ignore_rack_assignment* flag to skip rack-aware assignment. If the SPUs do not have rack labels assigned, the flag is ignored.
 
-* **&dash;&dash;validate-only**:
-allows you to check if the configuration is correct without applying the changes to the system. This flag is particularly useful to ensure a [manual replica-assignment](/docs/architecture/replication/#manual-replica-assignment) is correct before applying it to the system.
+* <strong>{{< pre >}}--validate-only{{< /pre >}}</strong>: 
+allows you to check if the configuration is correct without applying the changes to the system. This flag is particularly useful to ensure a custom {{< pre >}}--replica-assignment{{< /pre >}} is correct before applying it to the system.
 
-* **&dash;&dash;topic &lt;string&gt;**:
+* <strong>{{< pre >}}--topic &lt;string&gt;{{< /pre >}}</strong>:
 is the name of the topic to be created. Topic is a mandatory option and it must be unique.
 
-* **&dash;&dash;partitions &lt;integer&gt;**:
-is the number of partitions for the topic. Partitions is mandatory but mutually exclusive with _&dash;&dash;replica-assigment_. It must be a number greater than 0.
+* <strong>{{< pre >}}--partitions &lt;integer&gt;{{< /pre >}}</strong>:
+is the number of partitions for the topic. Partitions is mandatory but mutually exclusive with *replica-assigment*. It must be a number greater than 0.
 
-* **&dash;&dash;replication &lt;integer&gt;**:
-is the replication factor for the topic. Replication is mandatory but mutually exclusive with _&dash;&dash;replica-assigment_. For example, a replication factor of 3 ensures that each message is replicated to 3 different SPUs. Replication must be a number greater than 0.
+* <strong>{{< pre >}}--replication &lt;integer&gt;{{< /pre >}}</strong>:
+is the replication factor for the topic. Replication is mandatory but mutually exclusive with *replica-assigment*. For example, a replication factor of 3 ensures that each message is replicated to 3 different SPUs. Replication must be a number greater than 0.
 
-* **&dash;&dash;replica-assignment &lt;file.json&gt;**:
+* <strong>{{< pre >}}--replica-assignment &lt;file.json&gt;{{< /pre >}}</strong>:
 is the custom-defined replica assignment file. Replica-assignment is mutually exclusive with *partitions* and *replication*. The replica assignment file allows you to replace Fluvio's built-in replication algorithm with your custom SPU map for each topic/partitions.  
 
-  The replica-assignment JSON file has the following syntax:
+    The replica-assignment JSON file has the following syntax:
 
-  ```bash
-  { 
-      "partitions": [
-          {
-              "id": <partition-id>,
-              "replicas": [
-                  <spu-id>, 
-                  ...
-              ]
-          }, 
-          ...
-      ]
-  }
-  ```
+    {{< code lang="json" style="light" >}}
+{ 
+    "partitions": [
+        {
+            "id": <partition-id>,
+            "replicas": [
+                <spu-id>, 
+                ...
+            ]
+        }, 
+        ...
+    ]
+}
+{{< /code >}}
 
-  The following example shows a replica assignment file with 2 partitions and 3 replicas: 
+    The following example shows a replica assignment file with 2 partitions and 3 replicas: 
 
-  ```json
-  {
-      "partitions": [
-          {
-              "id": 0,
-              "replicas": [
-                  0,
-                  2,
-                  3
-              ]
-          },
-          {
-              "id": 1,
-              "replicas": [
-                  1,
-                  3,
-                  2
-              ]
-          }
-      ]
-  }
-  ```
+    {{< code lang="json" style="light" >}}
+{
+    "partitions": [
+        {
+            "id": 0,
+            "replicas": [
+                0,
+                2,
+                3
+            ]
+        },
+        {
+            "id": 1,
+            "replicas": [
+                1,
+                3,
+                2
+            ]
+        }
+    ]
+}
+{{< /code >}}
 
-* **&dash;&dash;sc &lt;host:port&gt;**:
-is the public interface of the Streaming Controller. The SC is optional and mutually exclusive with &dash;&dash;kf. The SC is used in combination with [Cli Profiles](../profiles) to compute a target service.
+* <strong>{{< pre >}}--sc &lt;host:port&gt;{{< /pre >}}</strong>:
+is the public interface of the Streaming Controller. The SC is optional and mutually exclusive with {{< pre >}}--kf{{< /pre >}}. The SC is used in combination with [CLI Profiles]({{< relref "overview#profiles" >}}) to compute a target service.
 
-* **&dash;&dash;kf &lt;host:port&gt;**:
-is the public interface of the Kafka Controller. The KF is optional and mutually exclusive with&dash;&dash;sc. The KF is used in combination with [Cli Profiles](../profiles) to compute a target service.
+* <strong>{{< pre >}}--kf &lt;host:port&gt;{{< /pre >}}</strong>:
+is the public interface of the Kafka Controller. The KF is optional and mutually exclusive with {{< pre >}}--sc{{< /pre >}}. The KF is used in combination with [CLI Profiles]({{< relref "overview#profiles" >}}) to compute a target service.
 
-* **&dash;&dash;profile &lt;profile&gt;**:
-is the custom-defined profile file. The profile is an optional field used to compute a target service. For additional information, see [Target Service](..#target-service) section.
+* <strong>{{< pre >}}--profile &lt;profile&gt;{{< /pre >}}</strong>:
+is the custom-defined profile file. The profile is an optional field used to compute a target service. For additional information, see [Target Service]({{< relref "overview#target-service" >}}) section.
 
 ### Create Topic Examples 
 
@@ -117,26 +117,26 @@ is the custom-defined profile file. The profile is an optional field used to com
 
 Create a topic with 2 partitions and 3 replica in a Fluvio deployment:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic create --topic sc-topic --partitions 2 --replication 3  --sc `SC`:9003
 topic 'sc-topic' created successfully
-```
+{{< /fluvio >}}
 
 #### Create a Kafka Topic
 
 Create the a similar topic in a Kafka deployment:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic create --topic kf-topic --partitions 2 --replication 3  --kf 0.0.0.0:9092
 topic 'kf-topic' created successfully
-```
+{{< /fluvio >}}
 
 
 ## Delete Topic
 
-Delete **topic** operation deletes a topic from a **Fluvio** or a **Kafka** deployment. 
+Delete __topic__ operation deletes a topic from a __Fluvio__ or a __Kafka__ deployment. 
 
-```bash
+{{< fluvio >}}
 fluvio topic delete [OPTIONS] --topic <string>
 
 OPTIONS:
@@ -144,20 +144,20 @@ OPTIONS:
     -c, --sc <host:port>       Address of Streaming Controller
     -k, --kf <host:port>       Address of Kafka Controller
     -P, --profile <profile>    Profile name
-```
+{{< /fluvio >}}
 
 The options are defined as follows:
 
-* **&dash;&dash;topic &lt;string&gt;**:
+* <strong>{{< pre >}}--topic &lt;string&gt;{{< /pre >}}</strong>:
 is the name of the topic to be deleted. Topic is a mandatory option.
 
-* **&dash;&dash;sc &lt;host:port&gt;**:
+* <strong>{{< pre >}}--sc &lt;host:port&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
-* **&dash;&dash;kf &lt;host:port&gt;**:
+* <strong>{{< pre >}}--kf &lt;host:port&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
-* **&dash;&dash;profile &lt;profile&gt;**:
+* <strong>{{< pre >}}--profile &lt;profile&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
 
@@ -167,27 +167,27 @@ See [Create Topic](#create-topic)
 
 Delete a Fluvio topic:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic delete --topic sc-topic --sc `SC`:9003
 topic 'sc-topic' deleted successfully
-```
+{{< /fluvio >}}
 
 
 #### Delete a Kafka Topic
 
 Delete a Kafka topic:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic delete --topic kf-topic  --kf 0.0.0.0:9092
 topic 'kf-topic' deleted successfully
-```
+{{< /fluvio >}}
 
 
 ## Describe Topics
 
-Describe **topics** operation show one or more a topics in a **Fluvio** or a **Kafka** deployment. 
+Describe __topics__ operation show one or more a topics in a __Fluvio__ or a __Kafka__ deployment. 
 
-```bash
+{{< fluvio >}}
 fluvio topic describe [OPTIONS]
 
 OPTIONS:
@@ -196,35 +196,35 @@ OPTIONS:
     -k, --kf <host:port>       Address of Kafka Controller
     -P, --profile <profile>    Profile name
     -O, --output <type>        Output [possible values: table, yaml, json]
-```
+{{< /fluvio >}}
 
 The options are defined as follows:
 
-* **&dash;&dash;topic &lt;string&gt;**:
+* <strong>{{< pre >}}--topics &lt;string&gt;{{< /pre >}}</strong>:
 are the names of the topics to be described. A list of one or more topic names is required.
 
-* **&dash;&dash;sc &lt;host:port&gt;**:
+* <strong>{{< pre >}}--sc &lt;host:port&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
-* **&dash;&dash;kf &lt;host:port&gt;**:
+* <strong>{{< pre >}}--kf &lt;host:port&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
-* **&dash;&dash;profile &lt;profile&gt;**:
-See [CLI Profiles](../profiles)
+* <strong>{{< pre >}}--profile &lt;profile&gt;{{< /pre >}}</strong>:
+See [Create Topic](#create-topic)
 
-* **&dash;&dash;output &lt;type&gt;**:
-is the format to be used to display the topics. The output is an optional field and it defaults to **table** format. Alternative formats are: **yaml** and **json**.
+* <strong>{{< pre >}}--output &lt;type&gt;{{< /pre >}}</strong>:
+is the format to be used to display the topics. The output is an optional field and it defaults to __table__ format. Alternative formats are: __yaml__ and __json__.
 
 
 ### Describe Topics Examples 
 
-Use **Fluvio CLI** describe a **Fluvio** and a **Kafka** topic.
+Use __Fluvio CLI__ describe a __Fluvio__ and a __Kafka__ topic.
 
 #### Describe Fluvio Topics
 
 Describe a Fluvio topic in a human-readable format:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic describe --topic sc-topic --sc `SC`:9003
  Name                    :  sc-topic 
  Type                    :  computed 
@@ -238,12 +238,13 @@ $ fluvio topic describe --topic sc-topic --sc `SC`:9003
      ID      LEADER      REPLICAS         LIVE-REPLICAS 
       0        2         [2, 200, 0]      [0, 200] 
       1       200        [200, 1, 2]      [1, 2] 
-```
+{{< /fluvio >}}
 
-Describe the same topic in **yaml** format:
-* **&dash;&dash;output yaml**:
+Describe the same topic in _yaml__ format:
 
-```yaml
+{{< fluvio >}}
+$ fluvio topic describe --topic sc-topic --sc `SC`:9003 -O yaml
+---
 - topic_metadata:
     name: sc-topic
     topic:
@@ -272,13 +273,13 @@ Describe the same topic in **yaml** format:
           live_replicas:
             - 1
             - 2
-```
+{{< /fluvio >}}
 
 #### Describe Kafka Topics
 
 Describe a Kafka topic in a human-readable format:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic describe --topic kf-topic  --kf 0.0.0.0:9092
  Name                :  kf-topic 
  Internal            :  false 
@@ -289,13 +290,12 @@ $ fluvio topic describe --topic kf-topic  --kf 0.0.0.0:9092
      ID      STATUS      LEADER      REPLICAS       ISR 
       0        Ok          1         [1, 2, 3]      [1, 2, 3] 
       1        Ok          2         [2, 3, 1]      [2, 3, 1] 
-```
+{{< /fluvio >}}
 
-Describe the same topic in **json** format:
+Describe the same topic in __json__ format:
 
-* **&dash;&dash;output json**:
-
-```json
+{{< cli json >}}
+$ fluvio topic describe --topic kf-topic  --kf 0.0.0.0:9092 -O json
  [
   {
     "topic_metadata": {
@@ -340,13 +340,13 @@ Describe the same topic in **json** format:
     }
   }
 ]
-```
+{{< /fluvio >}}
 
 ## List Topics
 
-List **topics** operation shows all topics in a **Fluvio** or a **Kafka** deployment. 
+List __topics__ operation shows all topics in a __Fluvio__ or a __Kafka__ deployment. 
 
-```bash
+{{< fluvio >}}
 fluvio topic list [OPTIONS]
 
 OPTIONS:
@@ -354,20 +354,20 @@ OPTIONS:
     -k, --kf <host:port>       Address of Kafka Controller
     -P, --profile <profile>    Profile name
     -O, --output <type>        Output [possible values: table, yaml, json]
-```
+{{< /fluvio >}}
 
 The options are defined as follows:
 
-* **&dash;&dash;sc &lt;host:port&gt;**:
+* <strong>{{< pre >}}--sc &lt;host:port&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
-* **&dash;&dash;kf &lt;host:port&gt;**:
+* <strong>{{< pre >}}--kf &lt;host:port&gt;{{< /pre >}}</strong>:
 See [Create Topic](#create-topic)
 
-* **&dash;&dash;profile &lt;profile&gt;**:
-See [CLI Profiles](../profiles)
+* <strong>{{< pre >}}--profile &lt;profile&gt;{{< /pre >}}</strong>:
+See [Create Topic](#create-topic)
 
-* **&dash;&dash;output &lt;type&gt;**:
+* <strong>{{< pre >}}--output &lt;type&gt;{{< /pre >}}</strong>:
 See [Describe Topics](#describe-topics)
 
 
@@ -377,28 +377,28 @@ See [Describe Topics](#describe-topics)
 
 List a Fluvio topic in table format:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic list --sc `SC`:9003
  NAME      TYPE      PARTITIONS  REPLICAS  IGNORE-RACK  STATUS       REASON 
  my-topic  computed      1          3           -       provisioned   
  sc-topic  computed      2          3           -       provisioned   
-```
+{{< /fluvio >}}
 
 #### List Kafka Topics
 
 List a Kafka topic in table format:
 
-```bash
+{{< fluvio >}}
 $ fluvio topic list --kf 0.0.0.0:9092
  NAME      INTERNAL  PARTITIONS  REPLICAS 
  kf-topic   false        2          3 
-```
+{{< /fluvio >}}
 
 
-#### Related Topics
--------------------
-* [Produce CLI](../produce)
-* [Consume CLI](../consume)
-* [SPUs CLI](../spus)
-* [Custom SPU CLI](../custom-spus)
-* [SPU-Groups CLI](../spu-groups)
+{{< links "Related Topics" >}}
+* [Produce CLI]({{< relref "produce" >}})
+* [Consume CLI]({{< relref "consume" >}})
+* [SPUs CLI]({{< relref "spus" >}})
+* [Custom SPU CLI]({{< relref "custom-spus" >}})
+* [SPU-Groups CLI]({{< relref "spu-groups" >}})
+{{< /links >}}
