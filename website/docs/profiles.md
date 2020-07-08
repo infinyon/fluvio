@@ -57,10 +57,41 @@ addr = "10.98.246.30:9003"
 Profiles point to the current configuration. There can only be one active profile at a time. The `current_profile` field in the configuration file points to the current active profile.When the profile parameter is omitted, whatever is there in the `current_profile`, is used.
 ###Profile operations `fluvio profile -h`
 * current-profile: Display the current context
-* switch-profile: There can be multiple profiles and you can switch among them.
-* delete-profile          
+```
+$ fluvio profile current-profile
+mycube
+```
+
 * create-local-profile: set profile to local servers
-* create-k8-profile: set profile to kubernetes 
+```
+$ fluvio profile create-local-profile
+local context is set to: localhost:9003
+```
+
+* switch-profile: There can be multiple profiles and you can switch among them.
+
+`fluvio profile switch-profile <profile name>`
+```
+$ fluvio profile switch-profile local
+$ fluvio profile current-profile
+local
+```
+
+* delete-profile : Any selected profile can be  deleted.
+
+`fluvio profile delete-profile <profile name>`
+
+```
+$ fluvio profile delete-profile local
+profile local deleted
+```
+This gives the following warning
+```
+warning: this removed your current profile, use config switch-profile to select a different one
+```
+
+* create-k8-profile: set profile to kubernetes
+To set the profile to kubernetes, fluvio service needs to be deployed. 
 
 ## Default Profile
 
