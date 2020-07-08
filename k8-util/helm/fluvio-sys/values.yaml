@@ -1,6 +1,7 @@
 # Default values for fluvio-sys
 
 cloud:  minikube
+localPVPath: ""
 nameOverride: ""
 fullnameOverride: ""
 imagePolicy:  IfNotPresent
