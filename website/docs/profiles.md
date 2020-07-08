@@ -40,6 +40,27 @@ version = "1.0"
 host = "sc.fluvio.dev.acme.com"
 port = 9003
 ```
+The configuraton file is stord at `~/.fluvio/config`. For example:
+```
+version = "2.0"
+current_profile = "mycube"
+[profile.local]
+cluster = "local"
+[profile.mycube]
+cluster = "mycube"
+[cluster.local]
+addr = "localhost:9003"
+[cluster.mycube]
+addr = "10.98.246.30:9003"
+```
+
+Profiles point to the current configuration. There can only be one active profile at a time. The `current_profile` field in the configuration file points to the current active profile.When the profile parameter is omitted, whatever is there in the `current_profile`, is used.
+###Profile operations `fluvio profile -h`
+* current-profile: Display the current context
+* switch-profile: There can be multiple profiles and you can switch among them.
+* delete-profile          
+* create-local-profile: set profile to local servers
+* create-k8-profile: set profile to kubernetes 
 
 ## Default Profile
 
@@ -61,3 +82,8 @@ The CLI searches for the **default.toml** profile file in the following order:
     ```
 
 ->The directory hierarchy  **/.fluvio/profiles/** is preserved whether $FLUVIO_HOME is provisioned or not.
+
+
+##Clusters
+There are different clusters in fluvio, for instance local cluster. They can be either in the local machine or remote cloud.Cluster information in the config file gives the cluster information.
+
