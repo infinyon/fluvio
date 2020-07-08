@@ -14,4 +14,7 @@ provisioner: kubernetes.io/aws-ebs
 parameters:
   type: gp2
   fsType: ext4 
+{{- else if eq .Values.cloud "local" }}
+provisioner:  kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
 {{- end }}

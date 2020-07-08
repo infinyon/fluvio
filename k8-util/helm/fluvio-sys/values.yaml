@@ -1,6 +1,9 @@
 # Default values for fluvio-sys
 
 cloud:  minikube
+localPVPath: ""
+localPVStorageSize: 1Gi
+localPVReclaimPolicy: Delete
 nameOverride: ""
 fullnameOverride: ""
 imagePolicy:  IfNotPresent
