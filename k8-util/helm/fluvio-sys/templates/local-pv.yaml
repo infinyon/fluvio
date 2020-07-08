@@ -5,11 +5,11 @@ metadata:
   name: fluvio-spu-pv
 spec:
   capacity:
-    storage: 1Gi
+    storage: {{ .Values.localPVStorageSize }}
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
+  persistentVolumeReclaimPolicy: {{ .Values.localPVReclaimPolicy }}
   storageClassName: fluvio-spu
   local:
     path: {{ .Values.localPVPath }}
