@@ -31,6 +31,9 @@ use super::spu::group::SpuGroupOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 
+#[cfg(feature = "cluster_components")]
+use super::run::{process_run, RunOpt};
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     about = "Fluvio Command Line Interface",
@@ -152,6 +155,10 @@ enum Root {
         about = "Cluster Operations"
     )]
     Cluster(ClusterCommands),
+    
+    #[cfg(feature = "cluster_components")]
+    #[structopt(about = "Run cluster component")]
+    Run(RunOpt),
 
     #[structopt(name = "version")]
     Version(VersionCmd),
@@ -171,6 +178,8 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Advanced(advanced) => process_advanced(terminal.clone(), advanced).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
+            #[cfg(feature = "cluster_components")]
+            Root::Run(opt) => process_run(opt),
             Root::Version(_) => process_version_cmd(),
         }
     })
