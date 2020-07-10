@@ -12,6 +12,7 @@ doc = false
 
 [features]
 kf = []
+cluster_components = ["flv-spu", "flv-sc-k8"]
 
 
 [dependencies]
@@ -42,5 +43,5 @@ kf-protocol = { version = "2.0.0" }
 kf-socket = { path = "../kf-socket" }
 sc-api = { path = "../sc-api", version = "2.0.0", package = "flv-api-sc"}
 spu-api = { path = "../spu-api", package = "flv-api-spu"}
-
-
+flv-spu = { path = "../spu-server", optional = true }
+flv-sc-k8 = { path = "../sc-k8", optional = true }

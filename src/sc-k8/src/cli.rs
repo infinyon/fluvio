@@ -44,20 +44,19 @@ pub struct ScOpt {
 }
 
 impl ScOpt {
-    fn get_sc_and_k8_config() -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error>
-    {
-        let mut sc_opt = ScOpt::from_args();
-
+    fn get_sc_and_k8_config(
+        mut self,
+    ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
-        if sc_opt.namespace.is_none() {
+        if self.namespace.is_none() {
             let k8_namespace = k8_config.namespace().to_owned();
             info!("using {} as namespace from kubernetes config", k8_namespace);
-            sc_opt.namespace = Some(k8_namespace);
+            self.namespace = Some(k8_namespace);
         }
 
-        let (sc_config, tls_option) = sc_opt.as_sc_config()?;
+        let (sc_config, tls_option) = self.as_sc_config()?;
 
         Ok((sc_config, k8_config, tls_option))
     }
@@ -95,16 +94,15 @@ impl ScOpt {
             Ok((config, None))
         }
     }
-}
 
-/// return SC configuration or exist program.
-pub fn parse_cli_or_exit() -> (ScConfig, K8Config, Option<(String, TlsConfig)>) {
-    match ScOpt::get_sc_and_k8_config() {
-        Err(err) => {
-            print_cli_err!(err);
-            process::exit(-1);
+    pub fn parse_cli_or_exit(self) -> (ScConfig, K8Config, Option<(String, TlsConfig)>) {
+        match self.get_sc_and_k8_config() {
+            Err(err) => {
+                print_cli_err!(err);
+                process::exit(-1);
+            }
+            Ok(config) => config,
         }
-        Ok(config) => config,
     }
 }
 

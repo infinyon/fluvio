@@ -651,6 +651,8 @@ dependencies = [
  "flv-api-spu",
  "flv-client",
  "flv-future-aio",
+ "flv-sc-k8",
+ "flv-spu",
  "flv-types",
  "flv-util 0.2.1",
  "futures",

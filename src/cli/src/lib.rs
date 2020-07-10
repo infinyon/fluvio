@@ -11,6 +11,9 @@ mod profile;
 mod tls;
 mod cluster;
 
+#[cfg(feature = "cluster_components")]
+mod run;
+
 pub use self::error::CliError;
 pub use self::root_cli::run_cli;
 

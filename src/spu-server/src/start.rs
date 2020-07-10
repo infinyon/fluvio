@@ -1,8 +1,7 @@
 use flv_future_aio::task::main;
 use flv_storage::FileReplica;
 
-use crate::config::process_spu_cli_or_exit;
-use crate::config::SpuConfig;
+use crate::config::{SpuConfig, SpuOpt};
 use crate::services::create_internal_server;
 use crate::services::create_public_server;
 use crate::services::internal::InternalApiServer;
@@ -15,9 +14,9 @@ type FileReplicaContext = GlobalContext<FileReplica>;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-pub fn main_loop() {
+pub fn main_loop(opt: SpuOpt) {
     // parse configuration (program exits on error)
-    let (spu_config, tls_acceptor_option) = process_spu_cli_or_exit();
+    let (spu_config, tls_acceptor_option) = opt.process_spu_cli_or_exit();
 
     println!("starting spu server (id:{})", spu_config.id);
 

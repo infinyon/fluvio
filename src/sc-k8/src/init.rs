@@ -9,14 +9,13 @@ use flv_future_aio::task::main;
 
 use k8_client::new_shared;
 use flv_sc_core::start_main_loop;
-use crate::cli::parse_cli_or_exit;
-use crate::operator::run_k8_operators;
+use crate::{ScOpt, operator::run_k8_operators};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-pub fn main_k8_loop() {
+pub fn main_k8_loop(opt: ScOpt) {
     // parse configuration (program exits on error)
-    let (sc_config, k8_config, tls_option) = parse_cli_or_exit();
+    let (sc_config, k8_config, tls_option) = opt.parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
 
