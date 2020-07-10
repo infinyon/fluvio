@@ -155,7 +155,8 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
 
     #[cfg(feature = "cluster_components")]
     let mut binary = {
-        let mut cmd = Command::new(std::env::current_exe().expect("unable to get current executable"));
+        let mut cmd =
+            Command::new(std::env::current_exe().expect("unable to get current executable"));
         cmd.arg("run");
         cmd.arg("spu");
         cmd

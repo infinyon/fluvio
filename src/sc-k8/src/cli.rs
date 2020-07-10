@@ -44,7 +44,9 @@ pub struct ScOpt {
 }
 
 impl ScOpt {
-    fn get_sc_and_k8_config(mut self) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error> {
+    fn get_sc_and_k8_config(
+        mut self,
+    ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config

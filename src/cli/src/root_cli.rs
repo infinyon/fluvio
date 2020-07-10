@@ -155,7 +155,7 @@ enum Root {
         about = "Cluster Operations"
     )]
     Cluster(ClusterCommands),
-    
+
     #[cfg(feature = "cluster_components")]
     #[structopt(about = "Run cluster component")]
     Run(RunOpt),

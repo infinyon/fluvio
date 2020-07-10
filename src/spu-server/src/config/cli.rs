@@ -67,7 +67,6 @@ pub struct SpuOpt {
 impl SpuOpt {
     /// Validate SPU (Streaming Processing Unit) cli inputs and generate SpuConfig
     fn get_spu_config(self) -> Result<(SpuConfig, Option<(TlsAcceptor, String)>), IoError> {
-        
         let tls_acceptor = self.try_build_tls_acceptor()?;
         let (spu_config, tls_addr_opt) = self.as_spu_config()?;
         let tls_config = match tls_acceptor {
