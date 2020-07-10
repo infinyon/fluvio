@@ -150,7 +150,16 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
     let outputs = File::create(&log_spu).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
+    #[cfg(not(feature = "cluster_components"))]
     let mut binary = get_binary("spu-server").expect("unable to get spu-server");
+
+    #[cfg(feature = "cluster_components")]
+    let mut binary = {
+        let mut cmd = Command::new(std::env::current_exe().expect("unable to get current executable"));
+        cmd.arg("run");
+        cmd.arg("spu");
+        cmd
+    };
 
     if option.tls.tls {
         set_server_tls(&mut binary, option, private_port + 1);
