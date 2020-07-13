@@ -14,24 +14,37 @@ use super::get_binary;
 use super::CommandUtil;
 
 pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
+    use std::path::Path;
+    use std::fs::create_dir_all;
+
+    let log_dir;
+    if std::env::consts::OS == "macos" {
+        log_dir = "/usr/local/var/log/fluvio";
+    } else {
+        log_dir = "/var/log/fluvio";
+    }
+    if Path::new(&log_dir).exists() == false {
+        create_dir_all(log_dir).expect("could not create log directory");
+    }
+
     println!("launching sc");
-    launch_sc(&opt);
+    launch_sc(&opt, &log_dir);
 
     println!("setting local profile");
     set_profile(&opt)?;
 
     println!("launching spu group with size: {}", opt.spu);
-    launch_spu_group(&opt).await;
+    launch_spu_group(&opt, &log_dir).await;
 
     sleep(Duration::from_secs(1)).await;
 
     Ok(())
 }
 
-fn launch_sc(option: &InstallCommand) {
+fn launch_sc(option: &InstallCommand, log_dir: &str) {
     use std::fs::File;
 
-    let outputs = File::create(format!("/tmp/flv_sc.log")).expect("log file");
+    let outputs = File::create(format!("{}/flv_sc.log", log_dir)).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
     debug!("starting sc server");
@@ -83,20 +96,25 @@ fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
     Ok(())
 }
 
-async fn launch_spu_group(opt: &InstallCommand) {
+async fn launch_spu_group(opt: &InstallCommand, log_dir: &str) {
     use k8_client::load_and_share;
 
     let client = load_and_share().expect("client should not fail");
 
     for i in 0..opt.spu {
         println!("launching SPU ({} of {})", i + 1, opt.spu);
-        launch_spu(i, client.clone(), opt).await;
+        launch_spu(i, client.clone(), opt, log_dir).await;
     }
-    println!("SC log generated at /tmp/flv_sc.log");
+    println!("SC log generated at /{}/flv_sc.log", log_dir);
     sleep(Duration::from_millis(500)).await;
 }
 
-async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallCommand) {
+async fn launch_spu(
+    spu_index: u16,
+    client: SharedK8Client,
+    option: &InstallCommand,
+    log_dir: &str,
+) {
     use std::fs::File;
 
     use k8_metadata::spu::SpuSpec;
@@ -146,7 +164,7 @@ async fn launch_spu(spu_index: u16, client: SharedK8Client, option: &InstallComm
     // sleep 1 seconds for sc to connect
     sleep(Duration::from_millis(300)).await;
 
-    let log_spu = format!("/tmp/spu_log_{}.log", spu_id);
+    let log_spu = format!("{}/spu_log_{}.log", log_dir, spu_id);
     let outputs = File::create(&log_spu).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
