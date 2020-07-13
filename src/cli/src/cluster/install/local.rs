@@ -13,18 +13,24 @@ use super::InstallCommand;
 use super::get_binary;
 use super::CommandUtil;
 
+#[cfg(target_os = "macos")]
+fn get_log_directory() -> &'static str {
+    "/usr/local/var/log/fluvio"
+}
+
+#[cfg(not(target_os = "macos"))]
+fn get_log_directory() -> &'static str {
+    "/var/log/fluvio"
+}
+
 pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     use std::path::Path;
     use std::fs::create_dir_all;
 
-    let log_dir;
-    if std::env::consts::OS == "macos" {
-        log_dir = "/usr/local/var/log/fluvio";
-    } else {
-        log_dir = "/var/log/fluvio";
-    }
+    let log_dir = get_log_directory();
+
     if Path::new(&log_dir).exists() == false {
-        create_dir_all(log_dir).expect("could not create log directory");
+        create_dir_all(log_dir).map_err(|err| CliError::IoError(err))?;
     }
 
     println!("launching sc");
@@ -105,7 +111,7 @@ async fn launch_spu_group(opt: &InstallCommand, log_dir: &str) {
         println!("launching SPU ({} of {})", i + 1, opt.spu);
         launch_spu(i, client.clone(), opt, log_dir).await;
     }
-    println!("SC log generated at /{}/flv_sc.log", log_dir);
+    println!("SC log generated at {}/flv_sc.log", log_dir);
     sleep(Duration::from_millis(500)).await;
 }
 
