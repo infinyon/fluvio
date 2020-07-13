@@ -52,14 +52,14 @@ clean_build:
 	rm -rf /tmp/cli-*
 
 # create binaries for CLI
-release_cli_darwin:	
-	cargo build --release --bin fluvio  --target ${TARGET_DARWIN}
+release_cli_darwin: 
+	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_DARWIN}
 	mkdir -p /tmp/$(CLI_BUILD)_${TARGET_DARWIN}
 	cp target/${TARGET_DARWIN}/release/fluvio /tmp/$(CLI_BUILD)_${TARGET_DARWIN}
 	cd /tmp;tar -czvf cli-${TARGET_DARWIN}-release.tar.gz $(CLI_BUILD)_${TARGET_DARWIN};rm -rf $(CLI_BUILD)_${TARGET_DARWIN}
 
 release_cli_linux:
-	cargo build --release --bin fluvio  --target ${TARGET_LINUX}
+	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_LINUX}
 	mkdir -p /tmp/$(CLI_BUILD)_${TARGET_LINUX}
 	cp target/${TARGET_LINUX}/release/fluvio /tmp/$(CLI_BUILD)_${TARGET_LINUX}
 	cd /tmp;tar -czvf cli-${TARGET_LINUX}-release.tar.gz $(CLI_BUILD)_${TARGET_LINUX};rm -rf $(CLI_BUILD)_${TARGET_LINUX}
