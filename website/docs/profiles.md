@@ -64,13 +64,13 @@ FLAGS:
 
 SUBCOMMANDS:
 
-    current-profile      Display the current context
+    current-profile         Display the current context
     switch-profile          
     delete-profile          
     create-local-profile    set profile to local servers
     create-k8-profile       set profile to kubernetes cluster
     view                    Display entire configuration
-    help        Prints this message or the help of the given subcommands
+    help                    Prints this message or the help of the given subcommands
 ```
 
  * **current-profile** : displays the current context
