@@ -5,42 +5,36 @@ toc: true
 weight: 20
 ---
 
+
+There can be multiple types of clusters in fluvio.For example local cluster. The cluster can be either in the local machine or remote cloud.Cluster information in the config file gives the cluster information.
 Fluvio **profiles** makes managing multiple deployments simple. A **profile** is a .toml configuration file that stores the location of the services. The syntax is as follows:
 
 ```bash
 version = <profile-version>
 
-[sc]
-host = <hostname/ip>
-port = <port>
+current_profile = <profile_name>
 
-[spu]
-host = <hostname/ip>
-port = <port>
+[profile.<local_profile_name]
+cluster = <local_profile_name>
 
-[kf]
-host = <hostname/ip>
-port = <port>
+[profile.<non_local_profile_name>]
+cluster = <non_local_profile_name>
+
+[cluster.local]
+addr = <local_address>
+[cluster.mycube]
+addr = <non_local_address>
+
 ```
 
 The parameters are as follows:
 
-* **version** is currently set to "1.0".
-* **hostname/ip** is the location of the service, it may be a domain name or an IP address.
-* **port** is the listening port of the service.
+* **version** is currently set to "2.0".
+* **current_profile** points to the current active profile.When the profile parameter is omitted, whatever is there in the `current_profile`, is used.
+* **cluster** can be local or non-local clusters.
+* **addr** gives the address of all the existing clusters.
 
-~> While it is possible to configure all three services, it is not a useful configuration. Services with lower priority are shadowed by the services with higher priority. The lookup order is: SC => SPU => KF
-
-The most common configuration is _one service per profile_.
-
-```toml
-version = "1.0"
-
-[sc]
-host = "sc.fluvio.dev.acme.com"
-port = 9003
-```
-The configuraton file is stord at `~/.fluvio/config`. For example:
+The configuraton file is stored at `~/.fluvio/config`. For example:
 ```
 version = "2.0"
 current_profile = "mycube"
@@ -54,67 +48,61 @@ addr = "localhost:9003"
 addr = "10.98.246.30:9003"
 ```
 
-Profiles point to the current configuration. There can only be one active profile at a time. The `current_profile` field in the configuration file points to the current active profile.When the profile parameter is omitted, whatever is there in the `current_profile`, is used.
-###Profile operations `fluvio profile -h`
-* current-profile: Display the current context
-```
-$ fluvio profile current-profile
-mycube
+Profiles point to the current configuration. There can only be one active profile at a time. The `current_profile` field in the configuration file points to the current active profile. When the profile parameter is omitted whatever is in the `current_profile` is used.
+
+### Profile operations
+
+Command line help is available at any level by appending -h or ‐‐help to the command. At top level, you can run fluvio with without arguments to get a list of available options.
+
+```bash
+Profile operation
+
+fluvio profile <SUBCOMMAND>
+
+FLAGS:
+    -h, --help    Prints help information
+
+SUBCOMMANDS:
+
+    current-profile      Display the current context
+    switch-profile          
+    delete-profile          
+    create-local-profile    set profile to local servers
+    create-k8-profile       set profile to kubernetes cluster
+    view                    Display entire configuration
+    help        Prints this message or the help of the given subcommands
 ```
 
-* create-local-profile: set profile to local servers
-```
-$ fluvio profile create-local-profile
-local context is set to: localhost:9003
-```
+ * **current-profile** : displays the current context
+    ```
+    $ fluvio profile current-profile
+    mycube
+    ```
 
-* switch-profile: There can be multiple profiles and you can switch among them.
+* **create-local-profile** : set profile to local servers
+    ```
+    $ fluvio profile create-local-profile
+    local context is set to: localhost:9003
+    ```
 
-`fluvio profile switch-profile <profile name>`
-```
-$ fluvio profile switch-profile local
-$ fluvio profile current-profile
-local
-```
+* **switch-profile** : transfers context to another profile
 
-* delete-profile : Any selected profile can be  deleted.
+    ```
+    $ fluvio profile switch-profile local
+    $ fluvio profile current-profile
+    local
+    ```
 
-`fluvio profile delete-profile <profile name>`
+* **delete-profile** : removes a profile from the client
 
-```
-$ fluvio profile delete-profile local
-profile local deleted
-```
-This gives the following warning
-```
-warning: this removed your current profile, use config switch-profile to select a different one
-```
+    ```
+    $ fluvio profile delete-profile local
+    profile local deleted
+    ```
+    This gives the following warning
 
-* create-k8-profile: set profile to kubernetes
+    ~> **Warning** : this removed your current profile, use config switch-profile to select a different one.
+
+
+* **create-k8-profile** : set profile to kubernetes
 To set the profile to kubernetes, fluvio service needs to be deployed. 
-
-## Default Profile
-
-Fluvio CLI has one **default** profile and an unlimited number of **user-defined** profiles. The **default** profile has the lowest precedence and it is looked-up in the following order:
-
-* command line parameter **service** (&dash;&dash;sc, &dash;&dash;spu, &dash;&dash;kf),
-* command line parameter **user-defined profile** (&dash;&dash;profile).
-* **default profile**
-
-The CLI searches for the **default.toml** profile file in the following order: 
-
-* if $FLUVIO_HOME environment variable is set, look-up:
-    ```bash
-    $FLUVIO_HOME/.fluvio/profiles/default.toml
-    ```
-* if no environment variable is set, look-up:
-    ```bash
-    $HOME/.fluvio/profiles/default.toml 
-    ```
-
-->The directory hierarchy  **/.fluvio/profiles/** is preserved whether $FLUVIO_HOME is provisioned or not.
-
-
-##Clusters
-There are different clusters in fluvio, for instance local cluster. They can be either in the local machine or remote cloud.Cluster information in the config file gives the cluster information.
-
