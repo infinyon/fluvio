@@ -45,7 +45,7 @@ Fluvio is at Alpha and should be suitable for lab environment. APIs, Schema, CLI
 ## Documentation
 
 Please see following list of doc:
-- [Installation](doc/INSTALL.md)
+- [Installation](website/kubernetes/INSTALL.md)
 
 
 Full, comprehensive documentation is viewable on the Fluvio website:

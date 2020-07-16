@@ -105,4 +105,4 @@ SUBCOMMANDS:
 
 
 * **create-k8-profile** : set profile to kubernetes
-To set the profile to kubernetes, fluvio service needs to be deployed. 
+To set the profile to kubernetes, fluvio service needs to be deployed.

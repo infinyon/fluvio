@@ -12,10 +12,6 @@ mod controllers;
 //#[cfg(test)]
 //mod tests;
 
-use start::main_loop;
 use self::error::InternalServerError;
-
-pub fn start_main() {
-    flv_util::init_logger();
-    main_loop();
-}
+pub use start::main_loop;
+pub use config::SpuOpt;

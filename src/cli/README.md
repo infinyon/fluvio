@@ -1,9 +1,10 @@
 # Command Line Interface
 
-Fluvio Command Line Interface (aka CLI) is the primary communication mechanism for a Fluvio cluster. A cluster has binaries:
-* Command Line Interface (fluvio)
-* Streaming Controller Server (sc-server)
-* Streaming Processing Unit (spu-server)
+Fluvio Command Line Interface (aka CLI) is the primary communication mechanism for a Fluvio cluster.
+
+A cluster consists of two components, which are run using the respective commands:
+* Streaming Controller (fluvio run sc)
+* Streaming Processing Unit (fluvio run spu)
 
 #### Kafka
 Fluvio CLI is also compatible with Kafka 2.x. Fluvio makes it easy for system administrators to provision Kafka and Fluvio environments through a common user friendly command line interface.

@@ -1,5 +1,8 @@
-use flv_spu::start_main;
+use structopt::StructOpt;
 
 fn main() {
-    start_main();
+    flv_util::init_logger();
+
+    let opt = flv_spu::SpuOpt::from_args();
+    flv_spu::main_loop(opt);
 }
