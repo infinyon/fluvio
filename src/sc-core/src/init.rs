@@ -29,6 +29,7 @@ where
     use crate::stores::spu::SpuSpec;
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
+    use crate::stores::spg::SpuGroupSpec;
 
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
@@ -49,6 +50,12 @@ where
         namespace.clone(),
         metadata_client.clone(),
         ctx.partitions().clone(),
+    );
+
+    K8ClusterStateDispatcher::<SpuGroupSpec, C>::start(
+        namespace.clone(),
+        metadata_client.clone(),
+        ctx.spgs().clone(),
     );
 
     SpuController::start(ctx.clone());

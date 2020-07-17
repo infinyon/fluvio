@@ -20,7 +20,7 @@ use crate::target::ClusterTarget;
 #[derive(Debug, StructOpt, Default)]
 pub struct CreateManagedSpuGroupOpt {
     /// Managed SPU group name
-    #[structopt(short, long, value_name = "string")]
+    #[structopt(value_name = "string")]
     pub name: String,
 
     /// SPU replicas

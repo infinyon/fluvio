@@ -1,9 +1,6 @@
 use log::debug;
 
 use flv_future_aio::task::spawn;
-use kf_socket::AsyncResponse;
-use flv_api_sc::metadata::WatchMetadataResponse;
-
 use super::SharedMetadataStore;
 
 /// sync from sc

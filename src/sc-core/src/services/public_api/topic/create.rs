@@ -124,8 +124,7 @@ async fn process_topic_request(ctx: &Context, name: String, topic_spec: TopicSpe
 }
 
 async fn create_topic(ctx: &Context, name: String, topic: TopicSpec) -> Result<(), IoError> {
-    use flv_metadata::k8::metadata::ObjectMeta;
+    
 
-    let meta = ObjectMeta::new(name.clone(), ctx.namespace().to_owned());
     ctx.topics().create_spec(name, topic).await.map(|_| ())
 }

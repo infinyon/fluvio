@@ -7,7 +7,6 @@ pub mod metadata;
 mod error;
 mod init;
 mod services;
-mod spu;
 pub mod stores;
 
 

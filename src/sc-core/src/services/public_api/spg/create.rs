@@ -8,7 +8,6 @@ use std::io::Error;
 
 use log::{debug, trace};
 
-
 use sc_api::FlvStatus;
 use sc_api::spg::*;
 
@@ -35,14 +34,12 @@ async fn process_custom_spu_request(
     name: String,
     spg_spec: SpuGroupSpec,
 ) -> FlvStatus {
-    /*
-    match ctx.create::<K8SpuGroupSpec>(&name, spg_spec.into()).await {
-        Ok(_) => FlvStatus::new_ok(name.clone()),
-        Err(err) => {
-            let error = Some(err.to_string());
-            FlvStatus::new(name, FlvErrorCode::SpuError, error)
-        }
+    use kf_protocol::api::FlvErrorCode;
+
+    if let Err(err) = ctx.spgs().create_spec(name.clone(), spg_spec).await {
+        let error = Some(err.to_string());
+        FlvStatus::new(name, FlvErrorCode::SpuError, error)
+    } else {
+        FlvStatus::new_ok(name.clone())
     }
-    */
-    unimplemented!("todo")
 }

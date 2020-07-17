@@ -14,19 +14,16 @@ use k8_obj_metadata::TemplateSpec;
 use flv_types::defaults::SPU_PUBLIC_PORT;
 use flv_types::defaults::SPU_PRIVATE_PORT;
 
-
 use crate::spu::EncryptionEnum;
 use crate::spg::SpuGroupStatus;
 
 use crd::SPG_API;
 mod crd {
-   
 
     use k8_obj_metadata::Crd;
     use k8_obj_metadata::CrdNames;
     use k8_obj_metadata::GROUP;
     use k8_obj_metadata::V1;
-
 
     pub const SPG_API: Crd = Crd {
         group: GROUP,
@@ -38,7 +35,6 @@ mod crd {
         },
     };
 }
-
 
 impl Spec for K8SpuGroupSpec {
     type Status = SpuGroupStatus;
@@ -54,9 +50,8 @@ pub struct K8SpuGroupSpec {
     pub template: TemplateSpec<SpuTemplate>,
     pub replicas: u16,
     #[serde(default)]
-    pub min_id: i32
+    pub min_id: i32,
 }
-
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase", default)]
@@ -140,19 +135,36 @@ impl K8StorageConfig {
     }
 }
 
-
 mod convert {
 
     use k8_obj_metadata::*;
     use crate::spg::*;
 
-
-
     use super::*;
+
+    impl From<K8SpuGroupSpec> for SpuGroupSpec {
+        fn from(spec: K8SpuGroupSpec) -> Self {
+            Self {
+                replicas: spec.replicas,
+                min_id: spec.min_id,
+                spu_config: spec.template.spec.into(),
+            }
+        }
+    }
+
+    impl From<SpuTemplate> for SpuConfig {
+        fn from(template: SpuTemplate) -> Self {
+            Self {
+                rack: template.rack,
+                replication: template.replication.map(|r| r.into()),
+                storage: template.storage.map(|s| s.into()),
+                env: vec![],    // doesn't really matter
+            }
+        }
+    }
 
     impl From<SpuGroupSpec> for K8SpuGroupSpec {
         fn from(spec: SpuGroupSpec) -> Self {
-           
             Self {
                 replicas: spec.replicas,
                 min_id: spec.min_id,
@@ -175,33 +187,28 @@ mod convert {
         }
     }
 
-
-
-
-   impl From<StorageConfig> for K8StorageConfig {
-       fn from(storage: StorageConfig) -> Self {
-           Self {
-               log_dir: storage.log_dir,
-               size: storage.size
-           }
-       }
-   }
+    impl From<StorageConfig> for K8StorageConfig {
+        fn from(storage: StorageConfig) -> Self {
+            Self {
+                log_dir: storage.log_dir,
+                size: storage.size,
+            }
+        }
+    }
 
     impl From<K8StorageConfig> for StorageConfig {
         fn from(config: K8StorageConfig) -> Self {
-
             Self {
                 log_dir: config.log_dir,
-                size: config.size
+                size: config.size,
             }
-
         }
     }
 
     impl From<ReplicationConfig> for K8ReplicationConfig {
         fn from(config: ReplicationConfig) -> Self {
             Self {
-                in_sync_replica_min: config.in_sync_replica_min
+                in_sync_replica_min: config.in_sync_replica_min,
             }
         }
     }
@@ -209,11 +216,8 @@ mod convert {
     impl From<K8ReplicationConfig> for ReplicationConfig {
         fn from(config: K8ReplicationConfig) -> Self {
             Self {
-                in_sync_replica_min: config.in_sync_replica_min
+                in_sync_replica_min: config.in_sync_replica_min,
             }
         }
     }
-
-    
-
 }
