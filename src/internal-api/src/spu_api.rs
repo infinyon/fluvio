@@ -11,15 +11,13 @@ use kf_protocol::derive::Decode;
 
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
-use super::UpdateAllRequest;
 
 /// API call from SC to SPU
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum InternalSpuApi {
-    UpdateAll = 1000,
     UpdateSpu = 1001,
-    UpdateReplica = 1003,
+    UpdateReplica = 1002,
 }
 
 impl Default for InternalSpuApi {
@@ -30,7 +28,6 @@ impl Default for InternalSpuApi {
 
 #[derive(Debug, Encode)]
 pub enum InternalSpuRequest {
-    UpdateAllRequest(RequestMessage<UpdateAllRequest>),
     UpdateSpuRequest(RequestMessage<UpdateSpuRequest>),
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
 }
@@ -58,7 +55,6 @@ impl KfRequestMessage for InternalSpuRequest {
         T: Buf,
     {
         match header.api_key().try_into()? {
-            InternalSpuApi::UpdateAll => api_decode!(Self, UpdateAllRequest, src, header),
             InternalSpuApi::UpdateSpu => api_decode!(Self, UpdateSpuRequest, src, header),
             InternalSpuApi::UpdateReplica => api_decode!(Self, UpdateReplicaRequest, src, header),
         }

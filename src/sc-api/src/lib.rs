@@ -1,17 +1,25 @@
 mod apis;
-pub mod topics;
+pub mod topic;
 pub mod spu;
+pub mod spg;
+pub mod partition;
 pub mod metadata;
 pub mod versions;
+pub mod objects;
 mod request;
 mod response;
 
 pub use apis::*;
 pub use request::*;
 pub use response::*;
+pub use admin::*;
 
 pub mod errors {
     pub use kf_protocol::api::FlvErrorCode;
+}
+
+pub mod core {
+    pub use flv_metadata::core::*;
 }
 
 /// Error from api call
@@ -33,5 +41,14 @@ impl std::fmt::Display for ApiError {
             }
             Self::NoResourceFounded(msg) => write!(f, "no resource founded {}", msg),
         }
+    }
+}
+
+mod admin {
+
+    use kf_protocol::api::Request;
+    
+    pub trait AdminRequest: Request {
+
     }
 }

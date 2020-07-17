@@ -18,6 +18,7 @@ pub use sink_pool::*;
 pub use stream::*;
 pub use sink::*;
 pub use socket::*;
+pub use multiplexing::*;
 
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;

@@ -1,23 +1,33 @@
 mod hex_dump;
 
-pub use self::hex_dump::bytes_to_hex_dump;
-pub use self::hex_dump::hex_dump_separator;
+pub use self::hex_dump::*;
 
-pub use cli::*;
+pub use output::*;
 
-mod cli {
+mod output {
 
     use structopt::StructOpt;
 
-    #[derive(Debug, StructOpt)]
-    pub struct KfConfig {
-        #[cfg(feature = "kf")]
+    use crate::OutputType;
+
+
+#[derive(Debug, StructOpt, Default)]
+    pub struct OutputFormat {
+
+        /// Output
         #[structopt(
-            short = "k",
-            long = "kf",
-            value_name = "host:port",
-            conflicts_with = "sc"
+            short = "O",
+            long = "output",
+            value_name = "type",
+            possible_values = &OutputType::variants(),
+            case_insensitive = true
         )]
-        pub kf: Option<String>,
+        output: Option<OutputType>,
+    }
+
+    impl OutputFormat {
+        pub fn as_output(self) -> OutputType {
+            self.output.unwrap_or(OutputType::default())
+        }
     }
 }

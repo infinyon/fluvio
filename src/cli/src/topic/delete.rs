@@ -4,59 +4,30 @@
 //! CLI tree to generate Delete Topics
 //!
 
+use log::debug;
 use structopt::StructOpt;
 
-use flv_client::client::*;
-use flv_client::profile::ScConfig;
-
+use flv_client::config::ClusterConfig;
+use flv_client::metadata::topic::TopicSpec;
 use crate::error::CliError;
-use crate::tls::TlsConfig;
-
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
-
-#[derive(Debug)]
-pub struct DeleteTopicConfig {
-    pub name: String,
-}
-
-// -----------------------------------
-// CLI Options
-// -----------------------------------
+use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteTopicOpt {
-    /// Topic name
-    #[structopt(short = "t", long = "topic", value_name = "string")]
+    #[structopt(value_name = "string")]
     topic: String,
 
-    /// Address of Streaming Controller
-    #[structopt(short = "c", long = "sc", value_name = "host:port")]
-    sc: Option<String>,
-
-    /// Address of Kafka Controller
-    #[structopt(
-        short = "k",
-        long = "kf",
-        value_name = "host:port",
-        conflicts_with = "sc"
-    )]
-    kf: Option<String>,
-
     #[structopt(flatten)]
-    tls: TlsConfig,
+    target: ClusterTarget,
 }
 
 impl DeleteTopicOpt {
     /// Validate cli options. Generate target-server and delete-topic configuration.
-    fn validate(self) -> Result<(ScConfig, DeleteTopicConfig), CliError> {
-        // profile specific configurations (target server)
-        let target_server = ScConfig::new(self.sc, self.tls.try_into_file_config()?)?;
-        let delete_topic_cfg = DeleteTopicConfig { name: self.topic };
+    fn validate(self) -> Result<(ClusterConfig, String), CliError> {
+        let target_server = self.target.load()?;
 
         // return server separately from config
-        Ok((target_server, delete_topic_cfg))
+        Ok((target_server, self.topic))
     }
 }
 
@@ -66,12 +37,12 @@ impl DeleteTopicOpt {
 
 /// Process delete topic cli request
 pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliError> {
-    let (target_server, cfg) = opt.validate()?;
+    let (target_server, name) = opt.validate()?;
+
+    debug!("deleting topic: {}", name);
 
     let mut client = target_server.connect().await?;
-    client
-        .delete_topic(&cfg.name)
-        .await
-        .map(|topic_name| format!("topic \"{}\" deleted", topic_name))
-        .map_err(|err| err.into())
+    let mut admin = client.admin().await;
+    admin.delete::<TopicSpec, _>(&name).await?;
+    Ok(format!("topic \"{}\" deleted", name))
 }

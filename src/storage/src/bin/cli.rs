@@ -1,11 +1,10 @@
-// Storage CLi
-#![feature(async_await)]
+
 
 use std::path::PathBuf;
 use std::io::Error as IoError;
 
 use structopt::StructOpt;
-use futures::stream::StreamExt;
+
 
 use flv_future_aio::task::run_block_on;
 use flv_future_aio::fs::util as fs_util;
@@ -48,10 +47,11 @@ pub(crate) struct LogOpt {
 async fn print_logs(path: PathBuf) -> Result<(), IoError> {
     let file = fs_util::open(path).await?;
 
-    let mut batch_stream = DefaultFileBatchStream::new(file);
+    let mut _batch_stream = DefaultFileBatchStream::new(file);
 
     //  println!("base offset: {}",batch_stream.get_base_offset());
-
+    /*
+    TODO: comment out
     while let Some(file_batch) = batch_stream.next().await {
         // let batch_base_offset = batch.get_base_offset();
         let batch = file_batch.get_batch();
@@ -69,6 +69,7 @@ async fn print_logs(path: PathBuf) -> Result<(), IoError> {
             println!("record offset: {}", record.get_offset_delta());
         }
     }
+    */
 
     Ok(())
 }

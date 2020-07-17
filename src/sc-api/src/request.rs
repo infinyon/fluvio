@@ -7,7 +7,7 @@
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use log::trace;
+use log::debug;
 
 use kf_protocol::bytes::Buf;
 
@@ -18,48 +18,31 @@ use kf_protocol::api::RequestMessage;
 use kf_protocol::api::api_decode;
 use kf_protocol::derive::Encode;
 
-use kf_protocol::message::metadata::KfMetadataRequest;
-
 use super::versions::ApiVersionsRequest;
-use super::spu::*;
-use super::topics::*;
 use super::metadata::*;
+use super::objects::*;
 
-use super::ScPublicApiKey;
+use super::AdminPublicApiKey;
 
 #[derive(Debug, Encode)]
-pub enum ScPublicRequest {
+pub enum AdminPublicRequest {
     // Mixed
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
 
-    // Kafka
-    KfMetadataRequest(RequestMessage<KfMetadataRequest>),
-
-    // Fluvio - Topics
-    FlvCreateTopicsRequest(RequestMessage<FlvCreateTopicsRequest>),
-    FlvDeleteTopicsRequest(RequestMessage<FlvDeleteTopicsRequest>),
-    FlvFetchTopicsRequest(RequestMessage<FlvFetchTopicsRequest>),
-    FlvTopicCompositionRequest(RequestMessage<FlvTopicCompositionRequest>),
-
-    // Fluvio - Spus
-    FlvRegisterCustomSpusRequest(RequestMessage<FlvRegisterCustomSpusRequest>),
-    FlvUnregisterCustomSpusRequest(RequestMessage<FlvUnregisterCustomSpusRequest>),
-    FlvFetchSpusRequest(RequestMessage<FlvFetchSpusRequest>),
-
-    FlvCreateSpuGroupsRequest(RequestMessage<FlvCreateSpuGroupsRequest>),
-    FlvDeleteSpuGroupsRequest(RequestMessage<FlvDeleteSpuGroupsRequest>),
-    FlvFetchSpuGroupsRequest(RequestMessage<FlvFetchSpuGroupsRequest>),
-    // UpdateAllMetadataRequest(RequestMessage<UpdateAllMetadataRequest>),
+    CreateRequest(RequestMessage<CreateRequest>),
+    DeleteRequest(RequestMessage<DeleteRequest>),
+    ListRequest(RequestMessage<ListRequest>),
+    WatchMetadataRequest(RequestMessage<WatchMetadataRequest>),
 }
 
-impl Default for ScPublicRequest {
+impl Default for AdminPublicRequest {
     fn default() -> Self {
         Self::ApiVersionsRequest(RequestMessage::<ApiVersionsRequest>::default())
     }
 }
 
-impl KfRequestMessage for ScPublicRequest {
-    type ApiKey = ScPublicApiKey;
+impl KfRequestMessage for AdminPublicRequest {
+    type ApiKey = AdminPublicApiKey;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
     where
@@ -67,46 +50,15 @@ impl KfRequestMessage for ScPublicRequest {
         Self::ApiKey: Sized,
         T: Buf,
     {
-        trace!("decoding header: {:#?}", header);
-        match header.api_key().try_into()? {
-            // Mixed
-            ScPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
+        let api_key = header.api_key().try_into()?;
+        debug!("decoding admin public request from: {} api: {:#?}", header.client_id(),api_key);
+        match api_key {
+            AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
 
-            //Kafka
-            ScPublicApiKey::KfMetadata => api_decode!(Self, KfMetadataRequest, src, header),
-
-            // Fluvio - Topics
-            ScPublicApiKey::FlvCreateTopics => {
-                api_decode!(Self, FlvCreateTopicsRequest, src, header)
-            }
-            ScPublicApiKey::FlvDeleteTopics => {
-                api_decode!(Self, FlvDeleteTopicsRequest, src, header)
-            }
-            ScPublicApiKey::FlvFetchTopics => api_decode!(Self, FlvFetchTopicsRequest, src, header),
-            ScPublicApiKey::FlvTopicComposition => {
-                api_decode!(Self, FlvTopicCompositionRequest, src, header)
-            }
-
-            // Fluvio - Custom Spus / Spu Groups
-            ScPublicApiKey::FlvRegisterCustomSpus => {
-                api_decode!(Self, FlvRegisterCustomSpusRequest, src, header)
-            }
-            ScPublicApiKey::FlvUnregisterCustomSpus => {
-                api_decode!(Self, FlvUnregisterCustomSpusRequest, src, header)
-            }
-            ScPublicApiKey::FlvFetchSpus => api_decode!(Self, FlvFetchSpusRequest, src, header),
-
-            ScPublicApiKey::FlvCreateSpuGroups => {
-                api_decode!(Self, FlvCreateSpuGroupsRequest, src, header)
-            }
-            ScPublicApiKey::FlvDeleteSpuGroups => {
-                api_decode!(Self, FlvDeleteSpuGroupsRequest, src, header)
-            }
-            ScPublicApiKey::FlvFetchSpuGroups => {
-                api_decode!(Self, FlvFetchSpuGroupsRequest, src, header)
-            } // ScPublicApiKey::FlvUpdateAllMetadata => {
-              //     api_decode!(Self, UpdateAllMetadataRequest, src, header)
-              // }
+            AdminPublicApiKey::Create => api_decode!(Self, CreateRequest, src, header),
+            AdminPublicApiKey::Delete => api_decode!(Self, DeleteRequest, src, header),
+            AdminPublicApiKey::List => api_decode!(Self, ListRequest, src,header),
+            AdminPublicApiKey::WatchMetadata => api_decode!(Self, WatchMetadataRequest, src, header),
         }
     }
 }

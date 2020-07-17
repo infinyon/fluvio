@@ -1,47 +1,20 @@
 //!
 //! # Partition Spec
 //!
-//! Partition Spec metadata information cached locally.
 //!
 use flv_types::SpuId;
 use kf_protocol::derive::{Decode, Encode};
-use k8_metadata::partition::PartitionSpec as K8PartitionSpec;
 
-// -----------------------------------
-// Data Structures
-// -----------------------------------
 
+/// Spec for Partition
+/// Each partition has replicas spread among SPU
+/// one of replica is leader which is duplicated in the leader field
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
 pub struct PartitionSpec {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
 }
-
-// -----------------------------------
-// Encode - from K8 PartitionSpec
-// -----------------------------------
-
-impl From<K8PartitionSpec> for PartitionSpec {
-    fn from(kv_spec: K8PartitionSpec) -> Self {
-        PartitionSpec {
-            leader: kv_spec.leader,
-            replicas: kv_spec.replicas,
-        }
-    }
-}
-
-impl From<PartitionSpec> for K8PartitionSpec {
-    fn from(spec: PartitionSpec) -> K8PartitionSpec {
-        K8PartitionSpec {
-            leader: spec.leader,
-            replicas: spec.replicas,
-        }
-    }
-}
-
-// -----------------------------------
-// Default
-// -----------------------------------
 
 impl std::default::Default for PartitionSpec {
     fn default() -> Self {
@@ -52,9 +25,6 @@ impl std::default::Default for PartitionSpec {
     }
 }
 
-// -----------------------------------
-// Implementation
-// -----------------------------------
 
 impl PartitionSpec {
     pub fn new(leader: SpuId, replicas: Vec<SpuId>) -> Self {
@@ -63,6 +33,12 @@ impl PartitionSpec {
 
     pub fn has_spu(&self, spu: &SpuId) -> bool {
         self.replicas.contains(spu)
+    }
+
+    /// follower replicas
+    pub fn followers(&self) -> Vec<SpuId> {
+       
+        self.replicas.iter().filter_map(|r| if r == &self.leader { None} else { Some(*r)} ).collect()
     }
 }
 
@@ -75,3 +51,4 @@ impl From<Vec<i32>> for PartitionSpec {
         }
     }
 }
+

@@ -52,6 +52,30 @@ macro_rules! api_loop {
             }
         }
     }};
+
+    ( $api_stream:ident, $debug_msg:expr, $($matcher:pat => $result:expr),*) => {{
+
+        use futures::stream::StreamExt;
+        loop {
+
+            log::debug!("waiting for next api request: {}",$debug_msg);
+            if let Some(msg) = $api_stream.next().await {
+                if let Ok(req_message) = msg {
+                    log::trace!("received request: {:#?}",req_message);
+                    match req_message {
+                        $($matcher => $result),*
+                    }
+                } else {
+                    log::debug!("no content, end of connection {}", $debug_msg);
+                    break;
+                }
+
+            } else {
+                log::debug!("client connect terminated: {}",$debug_msg);
+                break;
+            }
+        }
+    }};
 }
 
 /// wait for a single request

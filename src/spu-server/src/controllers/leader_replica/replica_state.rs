@@ -11,7 +11,7 @@ use kf_protocol::api::Offset;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Isolation;
 use flv_metadata::partition::ReplicaKey;
-use internal_api::messages::Replica;
+use flv_metadata::partition::Replica;
 use internal_api::UpdateLrsRequest;
 use flv_storage::FileReplica;
 use flv_storage::ConfigOption;

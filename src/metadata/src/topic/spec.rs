@@ -16,18 +16,262 @@ use kf_protocol::Version;
 use kf_protocol::bytes::{Buf, BufMut};
 use kf_protocol::derive::{Decode, Encode};
 use kf_protocol::{Decoder, Encoder};
-use k8_metadata::topic::TopicSpec as K8TopicSpec;
-use k8_metadata::topic::Partition as K8Partition;
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
+pub enum TopicSpec {
+    Assigned(PartitionMaps),
+    Computed(TopicReplicaParam),
+}
 
 // -----------------------------------
-// Data Structures
+// Implementation
 // -----------------------------------
+impl Default for TopicSpec {
+    fn default() -> TopicSpec {
+        TopicSpec::Assigned(PartitionMaps::default())
+    }
+}
 
+impl TopicSpec {
+    pub fn new_assigned<J>(partition_map: J) -> Self
+    where
+        J: Into<PartitionMaps>,
+    {
+        TopicSpec::Assigned(partition_map.into())
+    }
+
+    pub fn new_computed(
+        partitions: PartitionCount,
+        replication: ReplicationFactor,
+        ignore_rack: Option<IgnoreRackAssignment>,
+    ) -> Self {
+        TopicSpec::Computed((partitions, replication, ignore_rack.unwrap_or(false)).into())
+    }
+
+    pub fn is_computed(&self) -> bool {
+        match self {
+            TopicSpec::Computed(_) => true,
+            TopicSpec::Assigned(_) => false,
+        }
+    }
+
+    pub fn partitions(&self) -> Option<PartitionCount> {
+        match self {
+            TopicSpec::Computed(param) => Some(param.partitions),
+            TopicSpec::Assigned(partition_map) => partition_map.partition_count(),
+        }
+    }
+
+    pub fn replication_factor(&self) -> Option<ReplicationFactor> {
+        match self {
+            TopicSpec::Computed(param) => Some(param.replication_factor),
+            TopicSpec::Assigned(partition_map) => partition_map.replication_factor(),
+        }
+    }
+
+    pub fn ignore_rack_assignment(&self) -> IgnoreRackAssignment {
+        match self {
+            TopicSpec::Computed(param) => param.ignore_rack_assignment,
+            TopicSpec::Assigned(_) => false,
+        }
+    }
+
+    
+    pub fn type_label(&self) -> &'static str {
+        match self {
+            Self::Computed(_) => "computed",
+            Self::Assigned(_) => "assigned"
+        }
+        
+    }
+
+    pub fn partitions_display(&self) -> String {
+        match self {
+            Self::Computed(param) => param.partitions.to_string(),
+            Self::Assigned(_) => "".to_owned()
+        }
+       
+    }
+
+    pub fn replication_factor_display(&self) -> String {
+        match self {
+            Self::Computed(param) => param.replication_factor.to_string(),
+            Self::Assigned(_) => "".to_owned()
+        }
+  
+    }
+
+    pub fn ignore_rack_assign_display(&self) -> &'static str {
+        match self {
+            Self::Computed(param) => {
+                if param.ignore_rack_assignment {
+                    "yes"
+                } else {
+                    ""
+                }
+            },
+            Self::Assigned(_) => ""
+        }
+
+    }
+
+    pub fn partition_map_str(&self) -> Option<String> {
+        match self {
+            Self::Computed(_) => None,
+            Self::Assigned(partition_map) => partition_map.partition_map_string(),
+        }
+    }
+
+    // -----------------------------------
+    //  Parameter validation
+    // -----------------------------------
+
+    /// Validate partitions
+    pub fn valid_partition(partitions: &PartitionCount) -> Result<(), Error> {
+        if *partitions < 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "partition is mandatory for computed topics",
+            ));
+        }
+
+        if *partitions == 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "partition must be greater than 0",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validate replication factor
+    pub fn valid_replication_factor(replication: &ReplicationFactor) -> Result<(), Error> {
+        if *replication < 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "replication factor is mandatory for computed topics",
+            ));
+        }
+
+        if *replication == 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "replication factor must be greater than 0",
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+impl Decoder for TopicSpec {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        let mut typ: u8 = 0;
+        typ.decode(src, version)?;
+        trace!("decoded type: {}", typ);
+
+        match typ {
+            // Assigned Replicas
+            0 => {
+                let mut partition_map = PartitionMaps::default();
+                partition_map.decode(src, version)?;
+                *self = Self::Assigned(partition_map);
+                Ok(())
+            }
+
+            // Computed Replicas
+            1 => {
+                let mut param = TopicReplicaParam::default();
+                param.decode(src, version)?;
+                *self = TopicSpec::Computed(param);
+                Ok(())
+            }
+
+            // Unexpected type
+            _ => Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                format!("unknown replica type {}", typ),
+            )),
+        }
+    }
+}
+
+// -----------------------------------
+// Encoder / Decoder
+// -----------------------------------
+impl Encoder for TopicSpec {
+    // compute size for fluvio replicas
+    fn write_size(&self, version: Version) -> usize {
+        let typ_size = (0 as u8).write_size(version);
+        match self {
+            Self::Assigned(partitions) => typ_size + partitions.write_size(version),
+            Self::Computed(param) => typ_size + param.write_size(version),
+        }
+    }
+
+    // encode fluvio replicas
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        // ensure buffer is large enough
+        if dest.remaining_mut() < self.write_size(version) {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                format!(
+                    "not enough capacity for replica len of {}",
+                    self.write_size(version)
+                ),
+            ));
+        }
+
+        match self {
+            // encode assign partitions
+            TopicSpec::Assigned(partitions) => {
+                let typ: u8 = 0;
+                typ.encode(dest, version)?;
+                partitions.encode(dest, version)?;
+            }
+
+            // encode computed partitions
+            TopicSpec::Computed(param) => {
+                let typ: u8 = 1;
+                typ.encode(dest, version)?;
+                param.encode(dest, version)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Topic param
 #[derive(Debug, Clone, Default, PartialEq, Encode, Decode)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct TopicReplicaParam {
+    #[cfg_attr(feature = "use_serde", serde(default = "default_count"))]
     pub partitions: PartitionCount,
+    #[cfg_attr(feature = "use_serde", serde(default = "default_count"))]
     pub replication_factor: ReplicationFactor,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "bool::clone"))]
     pub ignore_rack_assignment: IgnoreRackAssignment,
+}
+
+fn default_count() -> i32 {
+    1
 }
 
 impl TopicReplicaParam {
@@ -63,6 +307,7 @@ impl std::fmt::Display for TopicReplicaParam {
 
 /// Hack: field instead of new type to get around encode and decode limitations
 #[derive(Debug, Default, Clone, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMaps {
     maps: Vec<PartitionMap>,
 }
@@ -256,258 +501,6 @@ impl PartitionMaps {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum TopicSpec {
-    Assigned(PartitionMaps),
-    Computed(TopicReplicaParam),
-}
-
-// -----------------------------------
-// Implementation
-// -----------------------------------
-impl Default for TopicSpec {
-    fn default() -> TopicSpec {
-        TopicSpec::Assigned(PartitionMaps::default())
-    }
-}
-
-impl TopicSpec {
-    pub fn new_assigned<J>(partition_map: J) -> Self
-    where
-        J: Into<PartitionMaps>,
-    {
-        TopicSpec::Assigned(partition_map.into())
-    }
-
-    pub fn new_computed(
-        partitions: PartitionCount,
-        replication: ReplicationFactor,
-        ignore_rack: Option<IgnoreRackAssignment>,
-    ) -> Self {
-        TopicSpec::Computed((partitions, replication, ignore_rack.unwrap_or(false)).into())
-    }
-
-    pub fn is_computed(&self) -> bool {
-        match self {
-            TopicSpec::Computed(_) => true,
-            TopicSpec::Assigned(_) => false,
-        }
-    }
-
-    pub fn partitions(&self) -> Option<PartitionCount> {
-        match self {
-            TopicSpec::Computed(param) => Some(param.partitions),
-            TopicSpec::Assigned(partition_map) => partition_map.partition_count(),
-        }
-    }
-
-    pub fn replication_factor(&self) -> Option<ReplicationFactor> {
-        match self {
-            TopicSpec::Computed(param) => Some(param.replication_factor),
-            TopicSpec::Assigned(partition_map) => partition_map.replication_factor(),
-        }
-    }
-
-    pub fn ignore_rack_assignment(&self) -> IgnoreRackAssignment {
-        match self {
-            TopicSpec::Computed(param) => param.ignore_rack_assignment,
-            TopicSpec::Assigned(_) => false,
-        }
-    }
-
-    // -----------------------------------
-    // Labels & Strings
-    // -----------------------------------
-    pub fn type_label(is_computed: &bool) -> &'static str {
-        match is_computed {
-            true => "computed",
-            false => "assigned",
-        }
-    }
-
-    pub fn partitions_str(partition_cnt: &Option<PartitionCount>) -> String {
-        match partition_cnt {
-            Some(partitions) => partitions.to_string(),
-            None => "-".to_string(),
-        }
-    }
-
-    pub fn replication_factor_str(replication_cnt: &Option<ReplicationFactor>) -> String {
-        match replication_cnt {
-            Some(replication) => replication.to_string(),
-            None => "-".to_string(),
-        }
-    }
-
-    pub fn ignore_rack_assign_str(ignore_rack_assign: &bool) -> &'static str {
-        match ignore_rack_assign {
-            true => "yes",
-            false => "-",
-        }
-    }
-
-    pub fn partition_map_str(&self) -> Option<String> {
-        match self {
-            TopicSpec::Computed(_) => None,
-            TopicSpec::Assigned(partition_map) => partition_map.partition_map_string(),
-        }
-    }
-
-    // -----------------------------------
-    //  Parameter validation
-    // -----------------------------------
-
-    /// Validate partitions
-    pub fn valid_partition(partitions: &PartitionCount) -> Result<(), Error> {
-        if *partitions < 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "partition is mandatory for computed topics",
-            ));
-        }
-
-        if *partitions == 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "partition must be greater than 0",
-            ));
-        }
-
-        Ok(())
-    }
-
-    /// Validate replication factor
-    pub fn valid_replication_factor(replication: &ReplicationFactor) -> Result<(), Error> {
-        if *replication < 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "replication factor is mandatory for computed topics",
-            ));
-        }
-
-        if *replication == 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "replication factor must be greater than 0",
-            ));
-        }
-
-        Ok(())
-    }
-}
-
-impl Decoder for TopicSpec {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: Buf,
-    {
-        let mut typ: u8 = 0;
-        typ.decode(src, version)?;
-        trace!("decoded type: {}", typ);
-
-        match typ {
-            // Assigned Replicas
-            0 => {
-                let mut partition_map = PartitionMaps::default();
-                partition_map.decode(src, version)?;
-                *self = Self::Assigned(partition_map);
-                Ok(())
-            }
-
-            // Computed Replicas
-            1 => {
-                let mut param = TopicReplicaParam::default();
-                param.decode(src, version)?;
-                *self = TopicSpec::Computed(param);
-                Ok(())
-            }
-
-            // Unexpected type
-            _ => Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!("unknown replica type {}", typ),
-            )),
-        }
-    }
-}
-
-// -----------------------------------
-// Encoder / Decoder
-// -----------------------------------
-impl Encoder for TopicSpec {
-    // compute size for fluvio replicas
-    fn write_size(&self, version: Version) -> usize {
-        let typ_size = (0 as u8).write_size(version);
-        match self {
-            TopicSpec::Assigned(partitions) => typ_size + partitions.write_size(version),
-            TopicSpec::Computed(param) => typ_size + param.write_size(version),
-        }
-    }
-
-    // encode fluvio replicas
-    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: BufMut,
-    {
-        // ensure buffer is large enough
-        if dest.remaining_mut() < self.write_size(version) {
-            return Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!(
-                    "not enough capacity for replica len of {}",
-                    self.write_size(version)
-                ),
-            ));
-        }
-
-        match self {
-            // encode assign partitions
-            TopicSpec::Assigned(partitions) => {
-                let typ: u8 = 0;
-                typ.encode(dest, version)?;
-                partitions.encode(dest, version)?;
-            }
-
-            // encode computed partitions
-            TopicSpec::Computed(param) => {
-                let typ: u8 = 1;
-                typ.encode(dest, version)?;
-                param.encode(dest, version)?;
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl From<TopicSpec> for K8TopicSpec {
-    fn from(spec: TopicSpec) -> Self {
-        match spec {
-            TopicSpec::Computed(computed_param) => K8TopicSpec::new(
-                Some(computed_param.partitions),
-                Some(computed_param.replication_factor),
-                Some(computed_param.ignore_rack_assignment),
-                None,
-            ),
-            TopicSpec::Assigned(assign_param) => K8TopicSpec::new(
-                None,
-                None,
-                None,
-                Some(replica_map_to_k8_partition(assign_param)),
-            ),
-        }
-    }
-}
-
-/// Translate Fluvio Replica Map to K8 Partitions to KV store notification
-fn replica_map_to_k8_partition(partition_maps: PartitionMaps) -> Vec<K8Partition> {
-    let mut k8_partitions: Vec<K8Partition> = vec![];
-    for partition in partition_maps.maps() {
-        k8_partitions.push(K8Partition::new(partition.id, partition.replicas.clone()));
-    }
-    k8_partitions
-}
-
 impl From<(PartitionCount, ReplicationFactor, IgnoreRackAssignment)> for TopicSpec {
     fn from(spec: (PartitionCount, ReplicationFactor, IgnoreRackAssignment)) -> Self {
         let (count, factor, rack) = spec;
@@ -524,6 +517,7 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 }
 
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,
     pub replicas: Vec<SpuId>,

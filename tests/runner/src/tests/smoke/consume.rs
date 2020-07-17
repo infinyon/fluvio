@@ -45,23 +45,16 @@ fn validate_consume_message_cli(option: &TestOption) {
 async fn validate_consume_message_api(option: &TestOption) {
     // futures::stream::StreamExt;
 
-    use flv_client::profile::ScConfig;
-    use flv_client::client::*;
-    use flv_client::FetchOffset;
-    use flv_client::ReplicaLeader;
-    use flv_client::FetchLogOption;
+    use flv_client::ClusterConfig;
+    use flv_client::params::FetchOffset;;
+    use flv_client::params::FetchLogOption;
 
-    let config = ScConfig::new(None, None).expect("connect");
-    let mut sc = config.connect().await.expect("should connect");
-
-    let topic_name = &option.topic_name;
-    let mut leader = sc
-        .find_replica_for_topic_partition(topic_name, 0)
-        .await
-        .expect("leader not founded");
+    let config = ClusterConfig::lookup_profile(None).expect("connect");
+    let mut cluster = config.connect().await.expect("should connect");
+    let mut consumer = cluster.consumer(&option.topic_name,0).await.expect("consumer");
 
     println!("retrieving messages");
-    let response = leader
+    let response = consumer
         .fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default())
         .await
         .expect("records");

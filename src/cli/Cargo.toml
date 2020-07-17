@@ -11,14 +11,13 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
-kf = []
 cluster_components = ["flv-spu", "flv-sc-k8"]
 
 
 [dependencies]
 log = "0.4.8"
 bytes = "0.5.3"
-structopt = { version = "0.3.12", default-features = false }
+structopt = { version = "0.3.15", default-features = false }
 toml = "0.5.5"
 prettytable-rs = "0.8.0"
 rand = "0.7.2"
@@ -31,17 +30,14 @@ futures = { version = "0.3.4", features = ['async-await'] }
 flv-future-aio = { version = "2.2.1" }
 flv-util = { version = "0.2.0"}
 flv-client = { path = "../client-rs"}
-k8-client = { version = "1.1.1"}
-k8-config = { version = "1.1.1", features = ["context"]}
+flv-metadata = { path = "../metadata", features = ["use_serde"]}
+flv-api-sc = { version = "2.0.0", path = "../sc-api", features = ["use_serde"]}
+k8-client = { version = "1.1.0"}
+k8-config = { version = "1.1.0", features = ["context"]}
 k8-obj-core = { version = "1.1.0"}
 k8-obj-metadata = { version = "1.0.0"}
-k8-flv-metadata = { path = "../k8-metadata"}
-k8-metadata-client = { version = "1.0.1"}
+k8-metadata-client = { version = "1.0.0"}
 utils = { path= "../utils"}
 flv-types = { path ="../types", version = "0.2.0" }
-kf-protocol = { version = "2.0.0" } 
-kf-socket = { path = "../kf-socket" }
-sc-api = { path = "../sc-api", version = "2.0.0", package = "flv-api-sc"}
-spu-api = { path = "../spu-api", package = "flv-api-spu"}
 flv-spu = { path = "../spu-server", optional = true }
 flv-sc-k8 = { path = "../sc-k8", optional = true }

@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Error as IoError;
 
 use kf_socket::KfSocketError;
-use sc_api::ApiError;
+use flv_api_sc::ApiError;
 
 #[derive(Debug)]
 pub enum ClientError {
@@ -11,7 +11,7 @@ pub enum ClientError {
     Other(String),
     IoError(IoError),
     KfSocketError(KfSocketError),
-    ScApiError(ApiError),
+    ApiError(ApiError),
     UnableToReadProfile,
 }
 
@@ -29,7 +29,7 @@ impl From<KfSocketError> for ClientError {
 
 impl From<ApiError> for ClientError {
     fn from(error: ApiError) -> Self {
-        Self::ScApiError(error)
+        Self::ApiError(error)
     }
 }
 
@@ -43,7 +43,7 @@ impl fmt::Display for ClientError {
             Self::Other(msg) => write!(f, "{}", msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f, "{:#?}", err),
-            Self::ScApiError(err) => write!(f, "{}", err),
+            Self::ApiError(err) => write!(f, "{}", err),
             Self::UnableToReadProfile => write!(f, "No configuration has been provided"),
         }
     }

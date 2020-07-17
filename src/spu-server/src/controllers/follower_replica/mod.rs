@@ -15,7 +15,7 @@ pub use self::sync::PeerFilePartitionResponse;
 pub use self::sync::DefaultSyncRequest;
 pub use self::sync::FileSyncRequest;
 
-use internal_api::messages::Replica;
+use flv_metadata::partition::Replica;
 
 #[derive(Debug)]
 pub enum FollowerReplicaControllerCommand {

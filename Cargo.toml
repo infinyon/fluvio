@@ -7,7 +7,6 @@ members = [
     "src/internal-api",
     "src/kf-socket",
     "src/kf-service",
-    "src/k8-metadata",
     "src/metadata",
     "src/sc-api",
     "src/sc-core",

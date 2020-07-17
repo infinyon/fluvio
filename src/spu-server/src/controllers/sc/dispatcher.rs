@@ -24,8 +24,7 @@ use internal_api::InternalSpuRequest;
 use internal_api::RegisterSpuRequest;
 use internal_api::UpdateSpuRequest;
 use internal_api::UpdateReplicaRequest;
-use internal_api::UpdateAllRequest;
-use internal_api::messages::Replica;
+use flv_metadata::partition::Replica;
 use kf_protocol::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
@@ -139,6 +138,8 @@ impl ScDispatcher<FileReplica> {
 
     /// dispatch sc request
     async fn sc_request_loop(&mut self, socket: KfSocket) -> Result<(), KfSocketError> {
+        use tokio::select;
+
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
@@ -150,30 +151,28 @@ impl ScDispatcher<FileReplica> {
             debug!("waiting for request from sc");
             select! {
 
-                _ = (sleep(Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC))).fuse() => {
-                    debug!("timer fired - exiting sc request loop");
-                    break;
+                _ = (sleep(Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC))) => {
+                    debug!("SC request loop timer fired, just checking, sink: {}",shared_sink.id());
+                   // break;
                 },
 
-                sc_request = api_stream.next().fuse() => {
+
+                sc_request = api_stream.next() => {
 
                     if let Some(sc_msg) = sc_request {
                        if let Ok(req_message) = sc_msg {
                             match req_message {
 
-                                InternalSpuRequest::UpdateAllRequest(request) => {
-                                    if let Err(err) = self.handle_sync_all_request(request,shared_sink.clone()).await {
-                                        error!("error handling all request from sc {}", err);
-                                    }
-                                },
                                 InternalSpuRequest::UpdateReplicaRequest(request) => {
                                     if let Err(err) = self.handle_update_replica_request(request,shared_sink.clone()).await {
                                         error!("error handling update replica request: {}",err);
+                                        break;
                                     }
                                 },
                                 InternalSpuRequest::UpdateSpuRequest(request) => {
                                     if let Err(err) = self.handle_update_spu_request(request,shared_sink.clone()).await {
                                         error!("error handling update spu request: {}",err);
+                                        break;
                                     }
                                 }
                             }
@@ -194,8 +193,7 @@ impl ScDispatcher<FileReplica> {
             }
         }
 
-        drop(api_stream);
-        drop(shared_sink);
+        debug!("exiting request loop");
 
         Ok(())
     }
@@ -273,46 +271,6 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    /// Bulk Update Handler sent by Controller
-    ///
-    async fn handle_sync_all_request(
-        &mut self,
-        req_msg: RequestMessage<UpdateAllRequest>,
-        shared_sc_sink: Arc<ExclusiveKfSink>,
-    ) -> Result<(), IoError> {
-        let (_, request) = req_msg.get_header_request();
-
-        debug!(
-            "received sync all requests from sc: ({} spus, {} replicas)",
-            request.spus.len(),
-            request.replicas.len(),
-        );
-
-        let spu_actions = self.ctx.spu_localstore().sync_all(request.spus);
-
-        trace!("all spu actions detail: {:#?}", spu_actions);
-
-        /*
-         * For now, there are nothing to do.
-        for spu_action in spu_actions.into_iter() {
-
-            match spu_action {
-
-                SpecChange::Add(_) => {},
-                SpecChange::Mod(_,_) => {},
-                SpecChange::Delete(_) => {}
-
-            }
-
-        }
-        */
-
-        let replica_actions = self.ctx.replica_localstore().sync_all(request.replicas);
-        self.apply_replica_actions(replica_actions, shared_sc_sink)
-            .await;
-        Ok(())
-    }
-
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
@@ -325,12 +283,25 @@ impl ScDispatcher<FileReplica> {
 
         debug!("received replica update from sc: {:#?}", request);
 
-        let replica_actions = self
-            .ctx
-            .replica_localstore()
-            .apply_changes(request.replicas().messages);
-        self.apply_replica_actions(replica_actions, shared_sc_sink)
-            .await;
+        let actions = if request.all.len() > 0 {
+            debug!(
+                "received replica sync all epoch: {}, items: {}",
+                request.epoch,
+                request.all.len()
+            );
+            trace!("received replica all items: {:#?}", request.all);
+            self.ctx.replica_localstore().sync_all(request.all)
+        } else {
+            debug!(
+                "received replica changes epoch: {}, items: {}",
+                request.epoch,
+                request.changes.len()
+            );
+            trace!("received replica all items: {:#?}", request.changes);
+            self.ctx.replica_localstore().apply_changes(request.changes)
+        };
+
+        self.apply_replica_actions(actions, shared_sc_sink).await;
         Ok(())
     }
 
@@ -340,13 +311,28 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
-        _shared_sc_sink: Arc<ExclusiveKfSink>,
+        shared_sc_sink: Arc<ExclusiveKfSink>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!("received spu update from sc: {:#?}", request);
+        let actions = if request.all.len() > 0 {
+            debug!(
+                "received spu sync all epoch: {}, items: {}",
+                request.epoch,
+                request.all.len()
+            );
+            trace!("received spu all items: {:#?}", request.all);
+            self.ctx.spu_localstore().sync_all(request.all)
+        } else {
+            debug!(
+                "received spu changes epoch: {}, items: {}",
+                request.epoch,
+                request.changes.len()
+            );
+            trace!("received spu all items: {:#?}", request.changes);
+            self.ctx.spu_localstore().apply_changes(request.changes)
+        };
 
-        let _spu_actions = self.ctx.spu_localstore().apply_changes(request.spus());
         Ok(())
     }
 

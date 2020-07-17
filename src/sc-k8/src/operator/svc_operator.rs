@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use log::debug;
 use log::error;
 use log::info;
@@ -6,48 +8,54 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use k8_client::ClientError;
-use k8_client::K8Client;
-use k8_metadata::metadata::K8Watch;
-use k8_metadata::metadata::K8Obj;
-use k8_metadata::core::service::ServiceSpec;
-use k8_metadata::core::service::LoadBalancerIngress;
+use flv_metadata::k8::metadata::*;
+use flv_metadata::k8::core::service::*;
 use k8_client::metadata::MetadataClient;
+use k8_client::SharedK8Client;
 use flv_metadata::spu::IngressAddr;
 
-use flv_sc_core::metadata::K8WSUpdateService;
-use flv_sc_core::core::spus::SharedSpuLocalStore;
+
+use flv_sc_core::stores::spu::SpuAdminStore;
 use crate::ScK8Error;
 
 /// An operator to deal with Svc
 /// It is used to update SPU's public ip address from external load balancer service.
 /// External load balancer update external ip or hostname out of band.
 pub struct SvcOperator {
-    k8_ws: K8WSUpdateService<K8Client>,
-    spu_store: SharedSpuLocalStore,
+    client: SharedK8Client,
+    spu_store: Arc<SpuAdminStore>,
     namespace: String,
 }
 
 impl SvcOperator {
-    pub fn new(
-        k8_ws: K8WSUpdateService<K8Client>,
+    pub fn run(
+        client: SharedK8Client,
         namespace: String,
-        spu_store: SharedSpuLocalStore,
-    ) -> Self {
-        Self {
-            k8_ws,
+        spu_store: Arc<SpuAdminStore>,
+    )  {
+       
+       let operator =  Self {
+            client,
             namespace,
             spu_store,
+        };
+
+        spawn(operator.outer_loop());
+    }
+
+    async fn outer_loop(mut self) {
+        info!("starting svc operator");
+        loop {
+            debug!("starting inner loop");
+            self.inner_loop().await;
         }
     }
 
-    pub fn run(self) {
-        spawn(self.inner_run());
-    }
 
-    async fn inner_run(self) {
+
+    async fn inner_loop(&mut self) {
         let mut svc_stream = self
-            .k8_ws
-            .client()
+            .client
             .watch_stream_since::<ServiceSpec, _>(self.namespace.clone(), None);
 
         info!("starting svc operator with namespace: {}", self.namespace);
@@ -97,10 +105,12 @@ impl SvcOperator {
     }
 
     async fn apply_svc_changes(&self, svc_obj: K8Obj<ServiceSpec>) -> Result<(), ScK8Error> {
-        debug!("svc spec: {:#?}", svc_obj);
+        debug!("received svc: {}",svc_obj.metadata.name);
+        trace!("svc spec: {:#?}", svc_obj);
 
         if let Some(spu_id) = svc_obj.metadata.labels.get("fluvio.io/spu-name") {
-            if let Some(mut old_value) = self.spu_store.value(spu_id) {
+            if let Some(mut old_value) = self.spu_store.value(spu_id).await {
+
                 debug!(
                     "found spu: {} to update ingress from external load balancer ",
                     spu_id
@@ -109,7 +119,7 @@ impl SvcOperator {
                 let ingresses = svc_obj.status.load_balancer.ingress;
                 old_value.spec.public_endpoint.ingress =
                     ingresses.into_iter().map(|addr| convert(addr)).collect();
-                self.k8_ws.update_spec(old_value).await?;
+               // self.k8_ws.update_spec(old_value.inner_owned()).await?;
             }
         }
         Ok(())

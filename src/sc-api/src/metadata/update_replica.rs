@@ -1,31 +1,30 @@
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use kf_protocol::api::Request;
-use flv_metadata::api::Message;
+use flv_metadata::message::*;
 
-use crate::ScPublicApiKey;
-use super::replica::ReplicaLeader;
+use crate::objects::Metadata;
+use crate::partition::PartitionSpec;
 
-pub type ReplicaMsg = Message<ReplicaLeader>;
+pub type ReplicaUpdate = Message<Metadata<PartitionSpec>>;
 
 /// Changes in the Replica Specs
-#[derive(Decode, Encode, Debug, Default)]
-pub struct ReplicaChangeRequest {
-    pub replicas: Vec<ReplicaMsg>,
+#[derive(Decode, Encode, Debug, Clone, Default)]
+pub struct UpdateReplicaResponse {
+    pub epoch: i64,
+    pub replicas: Vec<ReplicaUpdate>
 }
 
-impl Request for ReplicaChangeRequest {
-    const API_KEY: u16 = ScClientApiKey::ReplicaChange as u16;
-    type Response = ReplicaChangeResponse;
+impl std::fmt::Display for UpdateReplicaResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "partitions: {}:{}", self.epoch,self.replicas.len())
+    }
 }
 
-impl ReplicaChangeRequest {
-    pub fn new(replica_msgs: Vec<ReplicaMsg>) -> Self {
+impl UpdateReplicaResponse {
+    pub fn new(epoch: i64, replica_msgs: Vec<ReplicaUpdate>) -> Self {
         Self {
+            epoch,
             replicas: replica_msgs,
         }
     }
 }
-
-#[derive(Decode, Encode, Default, Debug)]
-pub struct ReplicaChangeResponse {}

@@ -7,7 +7,7 @@
 use crate::tls::TlsConfig;
 use structopt::StructOpt;
 
-use flv_client::profile::ConfigFile;
+use flv_client::config::ConfigFile;
 
 use crate::Terminal;
 use crate::t_println;

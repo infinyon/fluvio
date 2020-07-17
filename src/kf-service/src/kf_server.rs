@@ -9,11 +9,7 @@ use std::process;
 use std::os::unix::io::AsRawFd;
 
 use futures::StreamExt;
-use futures::future::FutureExt;
-use futures::select;
-use futures::channel::mpsc::Receiver;
-use futures::channel::mpsc::Sender;
-use futures::channel::mpsc::channel;
+use event_listener::Event;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
@@ -21,7 +17,6 @@ use log::error;
 use log::info;
 use log::trace;
 use log::debug;
-use log::warn;
 use async_trait::async_trait;
 
 use flv_future_aio::net::TcpListener;
@@ -132,15 +127,15 @@ where
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
     InnerKfSink<T::Stream>: ZeroCopyWrite,
 {
-    pub fn run(self) -> Sender<bool> {
-        let (sender, receiver) = channel::<bool>(1);
+    pub fn run(self) -> Arc<Event> {
+        let event = Arc::new(Event::new());
 
-        spawn(self.run_shutdown(receiver));
+        spawn(self.run_shutdown(event.clone()));
 
-        sender
+        event
     }
 
-    pub async fn run_shutdown(self, shutdown_signal: Receiver<bool>) {
+    async fn run_shutdown(self, shutdown_signal: Arc<Event>) {
         match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
                 info!("starting event loop for: {}", &self.addr);
@@ -153,36 +148,30 @@ where
         }
     }
 
-    async fn event_loop(self, listener: TcpListener, mut shutdown_signal: Receiver<bool>) {
-        let addr = self.addr.clone();
+    async fn event_loop(self, listener: TcpListener, shutdown: Arc<Event>) {
+        use tokio::select;
 
+        let addr = self.addr.clone();
         let mut incoming = listener.incoming();
 
         debug!("listening connection on {}", addr);
 
-        let mut done = false;
-
-        while !done {
-            debug!("waiting for client connection...");
+        loop {
+            debug!("waiting for client connection: {}", addr);
 
             select! {
-                incoming = incoming.next().fuse() => {
+                incoming = incoming.next() => {
                      self.serve_incoming(incoming)
                 },
-                shutdown = shutdown_signal.next()  => {
-                    debug!("shutdown signal received");
-                    if let Some(flag) = shutdown {
-                        warn!("shutdown received");
-                        done = true;
-                    } else {
-                        debug!("no shutdown value, ignoring");
-                    }
+                _ = shutdown.listen()  => {
+                    debug!("shutdown signal received: {}",addr);
+                    break;
                 }
 
             }
         }
 
-        info!("server terminating");
+        debug!("server terminating: {}", addr);
     }
 
     /// process incoming request, for each request, we create async task for serving
@@ -234,11 +223,6 @@ mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use futures::future::join;
-    use futures::channel::mpsc::Sender;
-    use futures::channel::mpsc::channel;
-    use futures::sink::SinkExt;
-
     use log::debug;
     use log::trace;
 
@@ -256,7 +240,7 @@ mod test {
     use crate::test_request::TestKafkaApiEnum;
     use crate::test_request::TestService;
 
-    use super::KfApiServer;
+    use super::*;
 
     fn create_server(
         addr: String,
@@ -274,24 +258,23 @@ mod test {
         KfSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: String, mut shutdown: Sender<bool>) -> Result<(), KfSocketError> {
-        let mut socket = create_client(addr).await?;
+    async fn test_client(addr: String, shutdown: Arc<Event>) {
+        let mut socket = create_client(addr).await.expect("client");
 
         let request = EchoRequest::new("hello".to_owned());
         let msg = RequestMessage::new_request(request);
-        let reply = socket.send(&msg).await?;
+        let reply = socket.send(&msg).await.expect("send");
         trace!("received reply from server: {:#?}", reply);
         assert_eq!(reply.response.msg, "hello");
 
         // send 2nd message on same socket
         let request2 = EchoRequest::new("hello2".to_owned());
         let msg2 = RequestMessage::new_request(request2);
-        let reply2 = socket.send(&msg2).await?;
+        let reply2 = socket.send(&msg2).await.expect("send");
         trace!("received 2nd reply from server: {:#?}", reply2);
         assert_eq!(reply2.response.msg, "hello2");
 
-        shutdown.send(true).await.expect("shutdown should succeed"); // shutdown server
-        Ok(())
+        shutdown.notify(1);
     }
 
     #[test_async]
@@ -301,11 +284,10 @@ mod test {
 
         let socket_addr = "127.0.0.1:30001".to_owned();
 
-        let (sender, receiver) = channel::<bool>(1);
         let server = create_server(socket_addr.clone());
-        let client_ft1 = test_client(socket_addr.clone(), sender);
+        let shutdown = server.run();
 
-        let _r = join(client_ft1, server.run_shutdown(receiver)).await;
+        test_client(socket_addr.clone(), shutdown).await;
 
         Ok(())
     }

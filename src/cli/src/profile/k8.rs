@@ -11,9 +11,8 @@ use k8_client::metadata::MetadataClient;
 use k8_client::ClientError as K8ClientError;
 use k8_client::K8Config;
 
-use flv_client::profile::ConfigFile;
-use flv_client::profile::Cluster;
-use flv_client::profile::Profile;
+use flv_client::config::*;
+
 
 use super::cli::SetK8;
 

@@ -1,14 +1,16 @@
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
-use flv_metadata::api::ReplicaMsgs;
-
+use flv_metadata::message::ReplicaMsg;
+use flv_metadata::partition::Replica;
 use crate::InternalSpuApi;
 
-/// Changes in the Replica Specs
+/// Changes to Replica Specs
 #[derive(Decode, Encode, Debug, Default)]
 pub struct UpdateReplicaRequest {
-    replicas: ReplicaMsgs,
+    pub epoch: i64,
+    pub changes: Vec<ReplicaMsg>,
+    pub all: Vec<Replica>,
 }
 
 impl Request for UpdateReplicaRequest {
@@ -17,18 +19,20 @@ impl Request for UpdateReplicaRequest {
 }
 
 impl UpdateReplicaRequest {
-    pub fn encode_request(replica_msgs: ReplicaMsgs) -> Self {
+    pub fn with_changes(epoch: i64, changes: Vec<ReplicaMsg>) -> Self {
         Self {
-            replicas: replica_msgs,
+            epoch,
+            changes,
+            all: vec![],
         }
     }
 
-    pub fn decode_request(&self) -> &ReplicaMsgs {
-        &self.replicas
-    }
-
-    pub fn replicas(self) -> ReplicaMsgs {
-        self.replicas
+    pub fn with_all(epoch: i64, all: Vec<Replica>) -> Self {
+        Self {
+            epoch,
+            changes: vec![],
+            all,
+        }
     }
 }
 

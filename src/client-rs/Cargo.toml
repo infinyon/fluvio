@@ -7,9 +7,10 @@ authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
 description = "Fluvio rust client"
 
+
+
 [dependencies]
 log = "0.4.8"
-rand = "0.7.2"
 dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"
@@ -22,6 +23,6 @@ flv-future-aio = { version = "2.2.1", features = ["tls"] }
 kf-protocol = { version = "2.0.0" } 
 flv-types = { version = "0.2.0", path ="../types" }
 flv-util = "0.2.0"
-kf-socket = { version = "2.0.0", path = "../kf-socket" }
-sc-api = { version = "2.0.0", path = "../sc-api", package = "flv-api-sc"}
+kf-socket = { version = "2.1.0", path = "../kf-socket" }
+flv-api-sc = { version = "2.0.0", path = "../sc-api", default-features=false}
 spu-api = { version = "2.0.0", path = "../spu-api", package = "flv-api-spu"}

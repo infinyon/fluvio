@@ -1,4 +1,4 @@
-use internal_api::messages::MsgType;
+use flv_metadata::message::*;
 
 // Test Actions - helps generate composite actions
 pub enum TAction {

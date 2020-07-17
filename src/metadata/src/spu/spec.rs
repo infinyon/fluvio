@@ -5,7 +5,9 @@
 //!
 use std::convert::TryFrom;
 use std::io::Error as IoError;
+use std::io::ErrorKind;
 use std::fmt;
+
 
 use flv_util::socket_helpers::EndPoint as SocketEndPoint;
 use flv_util::socket_helpers::EndPointEncryption;
@@ -15,24 +17,22 @@ use flv_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
 use kf_protocol::derive::{Decode, Encode};
+use kf_protocol::{Decoder, Encoder};
+use kf_protocol::bytes::{Buf, BufMut};
+use kf_protocol::Version;
 
-use k8_metadata::spu::SpuSpec as K8SpuSpec;
-use k8_metadata::spu::SpuType as K8SpuType;
-use k8_metadata::spu::EncryptionEnum as K8EncryptionEnum;
-use k8_metadata::spu::Endpoint as K8Endpoint;
-use k8_metadata::spu::IngressPort as K8IngressPort;
-use k8_metadata::spu::IngressAddr as K8IngressAddr;
 
-// -----------------------------------
-// Data Structures
-// -----------------------------------
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
 pub struct SpuSpec {
+    #[cfg_attr(feature = "use_serde", serde(rename = "spuId"))]
     pub id: SpuId,
+    #[cfg_attr(feature = "use_serde",serde(default))]
     pub spu_type: SpuType,
     pub public_endpoint: IngressPort,
     pub private_endpoint: Endpoint,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub rack: Option<String>,
 }
 
@@ -61,37 +61,6 @@ impl From<SpuId> for SpuSpec {
     }
 }
 
-impl From<K8SpuSpec> for SpuSpec {
-    fn from(kv_spec: K8SpuSpec) -> Self {
-        // convert spu-type, defaults to Custom for none
-        let spu_type = if let Some(kv_spu_type) = kv_spec.spu_type {
-            kv_spu_type.into()
-        } else {
-            SpuType::Custom
-        };
-
-        // spu spec
-        SpuSpec {
-            id: kv_spec.spu_id,
-            spu_type: spu_type,
-            public_endpoint: kv_spec.public_endpoint.into(),
-            private_endpoint: kv_spec.private_endpoint.into(),
-            rack: kv_spec.rack.clone(),
-        }
-    }
-}
-
-impl Into<K8SpuSpec> for SpuSpec {
-    fn into(self) -> K8SpuSpec {
-        K8SpuSpec {
-            spu_id: self.id,
-            spu_type: Some(self.spu_type.into()),
-            public_endpoint: self.public_endpoint.into(),
-            private_endpoint: self.private_endpoint.into(),
-            rack: self.rack,
-        }
-    }
-}
 
 impl SpuSpec {
     /// Given an Spu id generate a new SpuSpec
@@ -106,14 +75,7 @@ impl SpuSpec {
         self
     }
 
-    /// Return type label in String format
-    pub fn type_label(&self) -> String {
-        match self.spu_type {
-            SpuType::Managed => "managed".to_owned(),
-            SpuType::Custom => "custom".to_owned(),
-        }
-    }
-
+    
     /// Return custom type: true for custom, false otherwise
     pub fn is_custom(&self) -> bool {
         match self.spu_type {
@@ -129,9 +91,72 @@ impl SpuSpec {
             port: private_ep.port,
         }
     }
+
+    pub fn update(&mut self,other: &Self) {
+        
+        if self.rack != other.rack {
+            self.rack = other.rack.clone();
+        }
+        if self.public_endpoint != other.public_endpoint {
+            self.public_endpoint = other.public_endpoint.clone();
+        }
+        if self.private_endpoint != other.private_endpoint {
+            self.private_endpoint = other.private_endpoint.clone();
+        }
+            
+        
+    }
 }
 
+
+/// Custom Spu Spec
+/// This is not real spec since when this is stored on metadata store, it will be stored as SPU
+#[derive(Decode, Encode, Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+pub struct CustomSpuSpec {
+    pub id: SpuId,
+    pub public_endpoint: IngressPort,
+    pub private_endpoint: Endpoint,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub rack: Option<String>,
+}
+
+impl CustomSpuSpec {
+    pub const LABEL: &'static str = "CustomSpu";
+}
+
+
+impl From<CustomSpuSpec> for SpuSpec {
+    fn from(spec: CustomSpuSpec) -> Self {
+        Self {
+            id: spec.id,
+            public_endpoint: spec.public_endpoint,
+            private_endpoint: spec.private_endpoint,
+            rack: spec.rack,
+            spu_type: SpuType::Custom
+        }
+    }
+}
+
+impl From<SpuSpec> for CustomSpuSpec {
+    fn from(spu: SpuSpec) -> Self {
+        match spu.spu_type {
+            SpuType::Custom => {
+                Self {
+                    id: spu.id,
+                    public_endpoint: spu.public_endpoint,
+                    private_endpoint: spu.private_endpoint,
+                    rack: spu.rack
+                }
+            },
+            SpuType::Managed => panic!("managed spu type can't be converted into custom")
+        }
+    }
+}
+
+
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase",default))]
 pub struct IngressPort {
     pub port: u16,
     pub ingress: Vec<IngressAddr>,
@@ -144,25 +169,16 @@ impl fmt::Display for IngressPort {
     }
 }
 
-impl From<K8IngressPort> for IngressPort {
-    fn from(ingress_port: K8IngressPort) -> Self {
+impl From<ServerAddress> for IngressPort {
+    fn from(addr: ServerAddress) -> Self {
         Self {
-            port: ingress_port.port,
-            ingress: ingress_port.ingress.into_iter().map(|a| a.into()).collect(),
-            encryption: ingress_port.encryption.into(),
+            port: addr.port,
+            ingress: vec![IngressAddr::from_host(addr.host)],
+            ..Default::default()
         }
     }
 }
 
-impl Into<K8IngressPort> for IngressPort {
-    fn into(self) -> K8IngressPort {
-        K8IngressPort {
-            port: self.port,
-            ingress: self.ingress.into_iter().map(|a| a.into()).collect(),
-            encryption: self.encryption.into(),
-        }
-    }
-}
 
 impl IngressPort {
     pub fn from_port_host(port: u16, host: String) -> Self {
@@ -194,12 +210,30 @@ impl IngressPort {
 }
 
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
 pub struct IngressAddr {
     pub hostname: Option<String>,
     pub ip: Option<String>,
 }
 
+
 impl IngressAddr {
+
+    pub fn from_host(hostname: String) -> Self {
+        Self {
+            hostname: Some(hostname),
+            ..Default::default()
+        }
+    }
+
+    pub fn from_ip(ip: String) -> Self {
+        Self {
+            ip: Some(ip),
+            ..Default::default()
+        }
+    }
+
+
     pub fn host(&self) -> Option<String> {
         if let Some(name) = &self.hostname {
             Some(name.clone())
@@ -213,50 +247,24 @@ impl IngressAddr {
     }
 }
 
-impl From<K8IngressAddr> for IngressAddr {
-    fn from(addr: K8IngressAddr) -> Self {
-        Self {
-            hostname: addr.hostname,
-            ip: addr.ip,
-        }
-    }
-}
-
-impl Into<K8IngressAddr> for IngressAddr {
-    fn into(self) -> K8IngressAddr {
-        K8IngressAddr {
-            hostname: self.hostname,
-            ip: self.ip,
-        }
-    }
-}
-
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
 pub struct Endpoint {
     pub port: u16,
     pub host: String,
     pub encryption: EncryptionEnum,
 }
 
-impl From<K8Endpoint> for Endpoint {
-    fn from(pt: K8Endpoint) -> Self {
+impl From<ServerAddress> for Endpoint {
+    fn from(addr: ServerAddress) -> Self {
         Self {
-            port: pt.port,
-            host: pt.host,
-            encryption: pt.encryption.into(),
+            port: addr.port,
+            host: addr.host,
+            ..Default::default()
         }
     }
 }
 
-impl Into<K8Endpoint> for Endpoint {
-    fn into(self) -> K8Endpoint {
-        K8Endpoint {
-            port: self.port,
-            host: self.host,
-            encryption: self.encryption.into(),
-        }
-    }
-}
 
 impl fmt::Display for Endpoint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -305,19 +313,11 @@ impl Endpoint {
         }
     }
 
-    pub fn new(ep: K8Endpoint) -> Self {
-        Self {
-            port: ep.port,
-            host: ep.host,
-            encryption: match ep.encryption {
-                K8EncryptionEnum::PLAINTEXT => EncryptionEnum::PLAINTEXT,
-                K8EncryptionEnum::SSL => EncryptionEnum::SSL,
-            },
-        }
-    }
+    
 }
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
 pub enum EncryptionEnum {
     PLAINTEXT,
     SSL,
@@ -329,25 +329,8 @@ impl Default for EncryptionEnum {
     }
 }
 
-impl From<K8EncryptionEnum> for EncryptionEnum {
-    fn from(enc: K8EncryptionEnum) -> Self {
-        match enc {
-            K8EncryptionEnum::PLAINTEXT => Self::PLAINTEXT,
-            K8EncryptionEnum::SSL => Self::SSL,
-        }
-    }
-}
-
-impl Into<K8EncryptionEnum> for EncryptionEnum {
-    fn into(self) -> K8EncryptionEnum {
-        match self {
-            Self::PLAINTEXT => K8EncryptionEnum::PLAINTEXT,
-            Self::SSL => K8EncryptionEnum::SSL,
-        }
-    }
-}
-
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
 pub enum SpuType {
     Managed,
     Custom,
@@ -359,20 +342,112 @@ impl Default for SpuType {
     }
 }
 
-impl From<K8SpuType> for SpuType {
-    fn from(kv_spu_type: K8SpuType) -> Self {
-        match kv_spu_type {
-            K8SpuType::Managed => SpuType::Managed,
-            K8SpuType::Custom => SpuType::Custom,
+
+
+/// Return type label in String format
+impl SpuType {
+
+    pub fn type_label(&self) -> &str {
+        match  self {
+            Self::Managed => "managed",
+            Self::Custom => "custom"
         }
     }
 }
 
-impl Into<K8SpuType> for SpuType {
-    fn into(self) -> K8SpuType {
+impl fmt::Display for SpuType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#?}", self.type_label())
+    }
+}
+
+
+
+
+#[derive(Debug)]
+pub enum CustomSpu {
+    Name(String),
+    Id(i32),
+}
+
+// -----------------------------------
+// Implementation - CustomSpu
+// -----------------------------------
+impl Default for CustomSpu {
+    fn default() -> CustomSpu {
+        Self::Name("".to_string())
+    }
+}
+
+impl Encoder for CustomSpu {
+    // compute size
+    fn write_size(&self, version: Version) -> usize {
+        let type_size = (0 as u8).write_size(version);
         match self {
-            SpuType::Managed => K8SpuType::Managed,
-            SpuType::Custom => K8SpuType::Custom,
+            Self::Name(name) => type_size + name.write_size(version),
+            Self::Id(id) => type_size + id.write_size(version),
         }
+    }
+
+    // encode match
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: BufMut,
+    {
+        // ensure buffer is large enough
+        if dest.remaining_mut() < self.write_size(version) {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                format!(
+                    "not enough capacity for custom spu len of {}",
+                    self.write_size(version)
+                ),
+            ));
+        }
+
+        match self {
+            Self::Name(name) => {
+                let typ: u8 = 0;
+                typ.encode(dest, version)?;
+                name.encode(dest, version)?;
+            }
+            Self::Id(id) => {
+                let typ: u8 = 1;
+                typ.encode(dest, version)?;
+                id.encode(dest, version)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl Decoder for CustomSpu {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: Buf,
+    {
+        let mut value: u8 = 0;
+        value.decode(src, version)?;
+        match value {
+            0 => {
+                let mut name: String = String::default();
+                name.decode(src, version)?;
+                *self = Self::Name(name)
+            }
+            1 => {
+                let mut id: i32 = 0;
+                id.decode(src, version)?;
+                *self = Self::Id(id)
+            }
+            _ => {
+                return Err(IoError::new(
+                    ErrorKind::UnexpectedEof,
+                    format!("invalid value for Custom Spu: {}", value),
+                ))
+            }
+        }
+
+        Ok(())
     }
 }

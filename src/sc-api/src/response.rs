@@ -10,15 +10,15 @@ use kf_protocol::api::FlvErrorCode;
 use crate::ApiError;
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvResponseMessage {
+pub struct FlvStatus {
     pub name: String,
     pub error_code: FlvErrorCode,
     pub error_message: Option<String>,
 }
 
-impl FlvResponseMessage {
+impl FlvStatus {
     pub fn new_ok(name: String) -> Self {
-        FlvResponseMessage {
+        Self {
             name: name,
             error_code: FlvErrorCode::None,
             error_message: None,
@@ -26,7 +26,7 @@ impl FlvResponseMessage {
     }
 
     pub fn new(name: String, code: FlvErrorCode, msg: Option<String>) -> Self {
-        FlvResponseMessage {
+        Self {
             name: name,
             error_code: code,
             error_message: msg,

@@ -1,9 +1,7 @@
 use std::io::Error as IoError;
 
-use flv_client::profile::ConfigFile;
-use flv_client::profile::Cluster;
-use flv_client::profile::Profile;
-use flv_client::profile::LOCAL_PROFILE;
+use flv_client::config::*;
+
 
 use crate::Terminal;
 use crate::t_println;

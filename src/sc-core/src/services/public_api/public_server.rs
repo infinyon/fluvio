@@ -1,5 +1,5 @@
 //!
-//! # Service Implementataion
+//! # Public Sc Api Implementation
 //!
 //! Public service API allows 3rd party systems to invoke operations on Fluvio
 //! Streaming Controller. Requests are received and dispatched to handlers
@@ -7,151 +7,92 @@
 //!
 
 use std::sync::Arc;
-use std::marker::PhantomData;
 
 use async_trait::async_trait;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
+use event_listener::Event;
 
 use kf_service::api_loop;
 use kf_service::call_service;
 use kf_socket::InnerKfSocket;
 use kf_socket::KfSocketError;
 use kf_service::KfService;
-use sc_api::ScPublicRequest;
-use sc_api::ScPublicApiKey;
-use k8_metadata_client::MetadataClient;
+use sc_api::AdminPublicApiKey;
+use sc_api::AdminPublicRequest;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
-use super::api::handle_api_versions_request;
-use super::api::handle_kf_metadata_request;
+use crate::core::*;
+use super::*;
 
-use super::api::handle_create_topics_request;
-use super::api::handle_delete_topics_request;
-use super::api::handle_fetch_topics_request;
-use super::api::handle_topic_composition_request;
-use super::api::handle_register_custom_spus_request;
-use super::api::handle_unregister_custom_spus_request;
-use super::api::handle_fetch_spu_request;
-use super::api::handle_create_spu_groups_request;
-use super::api::handle_delete_spu_groups_request;
-use super::api::handle_fetch_spu_groups_request;
+pub struct PublicService {}
 
-use super::SharedPublicContext;
-
-pub struct PublicService<C>(PhantomData<C>);
-
-impl<C> PublicService<C> {
+impl PublicService {
     pub fn new() -> Self {
-        PublicService(PhantomData)
+        Self {}
     }
 }
 
 #[async_trait]
-impl<C, S> KfService<S> for PublicService<C>
+impl<S> KfService<S> for PublicService
 where
-    C: MetadataClient,
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
-    type Context = SharedPublicContext<C>;
-    type Request = ScPublicRequest;
+    type Context = SharedContext;
+    type Request = AdminPublicRequest;
 
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
         socket: InnerKfSocket<S>,
     ) -> Result<(), KfSocketError> {
-        let (mut sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<ScPublicRequest, ScPublicApiKey>();
+        let (sink, mut stream) = socket.split();
+        let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
+        let mut shared_sink = sink.as_shared();
+
+        let end_event = Arc::new(Event::new());
 
         api_loop!(
             api_stream,
+            "PublicAPI",
 
-            // Common
-            ScPublicRequest::ApiVersionsRequest(request) => call_service!(
+            AdminPublicRequest::ApiVersionsRequest(request) => call_service!(
                 request,
-                handle_api_versions_request(request),
-                sink,
+                super::api_version::handle_api_versions_request(request),
+                shared_sink,
                 "api version handler"
             ),
 
-            // Kafka
-            ScPublicRequest::KfMetadataRequest(request) => call_service!(
+            AdminPublicRequest::CreateRequest(request) => call_service!(
                 request,
-                handle_kf_metadata_request(request, ctx.metadata.clone()),
-                sink,
-                "metadata request handler"
+                super::create::handle_create_request(request, ctx.clone()),
+                shared_sink,
+                "create  handler"
+            ),
+            AdminPublicRequest::DeleteRequest(request) => call_service!(
+                request,
+                super::delete::handle_delete_request(request, ctx.clone()),
+                shared_sink,
+                "delete  handler"
             ),
 
-            // Fluvio - Topics
-            ScPublicRequest::FlvCreateTopicsRequest(request) => call_service!(
+            AdminPublicRequest::ListRequest(request) => call_service!(
                 request,
-                handle_create_topics_request(request, &ctx),
-                sink,
-                "create topic handler"
+                super::list::handle_list_request(request, ctx.clone()),
+                shared_sink,
+                "list handler"
             ),
-            ScPublicRequest::FlvDeleteTopicsRequest(request) => call_service!(
-                request,
-                handle_delete_topics_request(request, &ctx),
-                sink,
-                "delete topic handler"
-            ),
-            ScPublicRequest::FlvFetchTopicsRequest(request) => call_service!(
-                request,
-                handle_fetch_topics_request(request, ctx.metadata.clone()),
-                sink,
-                "fetch topic handler"
-            ),
-            ScPublicRequest::FlvTopicCompositionRequest(request) => call_service!(
-                request,
-                handle_topic_composition_request(request, ctx.metadata.clone()),
-                sink,
-                "topic metadata handler"
-            ),
-
-            // Fluvio - Spus
-            ScPublicRequest::FlvRegisterCustomSpusRequest(request) => call_service!(
-                request,
-                handle_register_custom_spus_request(request, &ctx),
-                sink,
-                "create custom spus handler"
-            ),
-            ScPublicRequest::FlvUnregisterCustomSpusRequest(request) => call_service!(
-                request,
-                handle_unregister_custom_spus_request(request, &ctx),
-                sink,
-                "delete custom spus handler"
-            ),
-            ScPublicRequest::FlvFetchSpusRequest(request) => call_service!(
-                request,
-                handle_fetch_spu_request(request, ctx.metadata.clone()),
-                sink,
-                "fetch spus handler"
-            ),
-
-            ScPublicRequest::FlvCreateSpuGroupsRequest(request) => call_service!(
-                request,
-                handle_create_spu_groups_request(request, &ctx),
-                sink,
-                "create spu groups handler"
-            ),
-            ScPublicRequest::FlvDeleteSpuGroupsRequest(request) => call_service!(
-                request,
-                handle_delete_spu_groups_request(request, &ctx),
-                sink,
-                "delete spu groups handler"
-            ),
-            ScPublicRequest::FlvFetchSpuGroupsRequest(request) => call_service!(
-                request,
-                handle_fetch_spu_groups_request(request, &ctx),
-                sink,
-                "fetch spu groups handler"
-            ),
-            _ => {
-                log::warn!("not actual protocol");
-            }
-
+            AdminPublicRequest::WatchMetadataRequest(request) =>
+                super::metadata::ClientMetadataController::handle_metadata_update(
+                    request,
+                    shared_sink.clone(),
+                    end_event.clone(),
+                    ctx.clone()
+                )
         );
+
+        // we are done with this tcp stream, notify any controllers use this strep
+        end_event.notify(1);
 
         Ok(())
     }

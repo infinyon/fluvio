@@ -28,12 +28,12 @@ use crate::FetchOffset;
 // Access specific replica leader of the SPU
 // for now, we use string to store address, later, we might store address natively
 pub struct SpuReplicaLeader {
-    client: Client,
+    client: RawClient,
     config: ReplicaLeaderConfig,
 }
 
 impl SpuReplicaLeader {
-    pub fn new(config: ReplicaLeaderConfig, client: Client) -> Self {
+    pub(crate) fn new(config: ReplicaLeaderConfig, client: RawClient) -> Self {
         Self { client, config }
     }
 
@@ -41,9 +41,8 @@ impl SpuReplicaLeader {
         &self.config
     }
 
-    pub fn addr(&self) -> &str {
-        &self.client.config().addr()
-    }
+    
+
 
     /// depends on offset option, calculate offset
     async fn calc_offset(&mut self, offset: FetchOffset) -> Result<i64, ClientError> {
@@ -59,24 +58,33 @@ impl SpuReplicaLeader {
             }
         })
     }
+
+    
+
+    fn client(&self) -> &RawClient {
+        &self.client
+    }
+
+    
 }
 
 #[async_trait]
 impl ReplicaLeader for SpuReplicaLeader {
     type OffsetPartitionResponse = FetchOffsetPartitionResponse;
+    type Client = RawClient;
 
     fn config(&self) -> &ReplicaLeaderConfig {
         &self.config
     }
 
-    fn mut_client(&mut self) -> &mut Client {
+    fn addr(&self) -> &str {
+        &self.client.config().addr()
+    }
+
+    fn mut_client(&mut self) -> &mut Self::Client {
         &mut self.client
     }
-
-    fn client(&self) -> &Client {
-        &self.client
-    }
-
+    
     async fn fetch_offsets(&mut self) -> Result<FetchOffsetPartitionResponse, ClientError> {
         debug!("fetching offset for: {}:{}", self.topic(), self.partition());
         let response = self

@@ -1,95 +1,71 @@
 use std::collections::BTreeMap;
 
-use kf_protocol::api::Request;
+
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use flv_metadata::partition::ReplicaKey;
-use flv_metadata::spu::SpuSpec;
 use flv_types::SpuId;
 
-use crate::ScPublicApiKey;
-use super::replica::ReplicaLeader;
+use crate::objects::Metadata;
+use crate::spu::SpuSpec;
+use crate::partition::PartitionSpec;
+
 
 /// All specs.  Listener can use this to sync their own metadata store.
 #[derive(Decode, Encode, Debug, Default)]
-pub struct UpdateAllRequest {
-    pub spus: Vec<SpuSpec>,
-    pub replicas: Vec<ReplicaLeader>,
+pub struct UpdateAllMetadataResponse {
+    pub spus: Vec<Metadata<SpuSpec>>,
+    pub spu_epoch: i64,
+    pub partitions: Vec<Metadata<PartitionSpec>>,
+    pub partition_epoch: i64
 }
 
-impl Request for UpdateAllRequest {
-    const API_KEY: u16 = ScPublicApiKey::UpdateAll as u16;
-    type Response = UpdateAllResponse;
+impl std::fmt::Display for UpdateAllMetadataResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "spus: {}:{}, partitions: {}:{}", self.spu_epoch,self.spus.len(),self.partition_epoch,self.partitions.len())
+    }
 }
 
-impl UpdateAllRequest {
-    pub fn new(spus: Vec<SpuSpec>, replicas: Vec<ReplicaLeader>) -> Self {
-        Self { spus, replicas }
+impl UpdateAllMetadataResponse {
+    pub fn new(
+        spus: Vec<Metadata<SpuSpec>>, 
+        spu_epoch: i64,
+        partitions: Vec<Metadata<PartitionSpec>>,
+        partition_epoch: i64
+    ) -> Self {
+        Self { 
+            spus,
+            spu_epoch,
+            partitions,
+            partition_epoch
+         }
     }
 
-    /// Used when only SPU spec changes
-    pub fn new_with_spu(spus: Vec<SpuSpec>) -> Self {
-        Self::new(spus, vec![])
+
+    pub fn spu_epoch(&self) -> i64 {
+        self.spu_epoch
     }
 
-    pub fn spus_ref(&self) -> &Vec<SpuSpec> {
+    pub fn partition_epoch(&self) ->i64 {
+        self.partition_epoch
+    }
+
+    
+    pub fn spus(&self) -> &Vec<Metadata<SpuSpec>> {
         &self.spus
     }
 
-    pub fn spus(self) -> Vec<SpuSpec> {
+    pub fn spus_owned(self) -> Vec<Metadata<SpuSpec>> {
         self.spus
     }
 
     pub fn spus_to_map(&self) -> BTreeMap<SpuId, SpuSpec> {
         let mut res = BTreeMap::new();
         for spu in self.spus.iter() {
-            res.insert(spu.id.clone(), spu.clone());
+            res.insert(spu.spec.id.clone(), spu.spec.clone());
         }
         res
     }
 
-    pub fn replicas_to_map(&self) -> BTreeMap<ReplicaKey, ReplicaLeader> {
-        let mut res: BTreeMap<ReplicaKey, ReplicaLeader> = BTreeMap::new();
-        for replica in self.replicas.iter() {
-            res.insert(replica.id.clone(), replica.clone());
-        }
-        res
-    }
-
-    pub fn push_spu(&mut self, msg: SpuSpec) {
-        self.spus.push(msg);
-    }
-
-    pub fn add_spu<S>(mut self, spu: S) -> Self
-    where
-        S: Into<SpuSpec>,
-    {
-        self.spus.push(spu.into());
-        self
-    }
-
-    pub fn mut_add_spu<S>(&mut self, spu: S)
-    where
-        S: Into<SpuSpec>,
-    {
-        self.spus.push(spu.into());
-    }
-
-    pub fn add_replica<R>(mut self, replica: R) -> Self
-    where
-        R: Into<ReplicaLeader>,
-    {
-        self.replicas.push(replica.into());
-        self
-    }
-
-    pub fn add_replica_by_ref<R>(&mut self, replica: R)
-    where
-        R: Into<ReplicaLeader>,
-    {
-        self.replicas.push(replica.into());
-    }
+    
 }
 
-#[derive(Decode, Encode, Default, Debug)]
-pub struct UpdateAllResponse {}
