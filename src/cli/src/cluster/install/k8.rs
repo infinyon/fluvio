@@ -1,8 +1,6 @@
 use std::process::Command;
 use std::io::Error as IoError;
 
-use log::*;
-
 use super::*;
 
 pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
@@ -89,7 +87,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     let k8_config = &opt.k8_config;
     let ns = &k8_config.namespace;
 
-    info!("installing fluvio chart version: {}", version);
+    println!("installing fluvio chart version: {}", version);
 
     let fluvio_version = format!("fluvioVersion={}", version);
 
@@ -109,9 +107,12 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         helm::repo_update();
 
         if !helm::check_chart_version_exists(CORE_CHART_NAME, crate::VERSION) {
-            return Err(CliError::Other(format!("{}:{} not found in helm repo", CORE_CHART_NAME, crate::VERSION)));
+            return Err(CliError::Other(format!(
+                "{}:{} not found in helm repo",
+                CORE_CHART_NAME,
+                crate::VERSION
+            )));
         }
-
 
         cmd.arg("install")
             .arg(&k8_config.name)
@@ -135,7 +136,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 
     cmd.wait();
 
-    info!("fluvio chart has been installed");
+    println!("fluvio chart has been installed");
 
     Ok(())
 }
