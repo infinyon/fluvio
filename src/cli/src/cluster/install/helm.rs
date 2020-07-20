@@ -1,5 +1,6 @@
 use std::process::Command;
 
+use log::debug;
 use serde::Deserialize;
 
 use super::*;
@@ -37,13 +38,20 @@ pub fn check_chart_version_exists(name: &str, version: &str) -> bool {
 }
 
 fn core_chart_versions(name: &str) -> Vec<Chart> {
-    let output = Command::new("helm")
+    let mut cmd = Command::new("helm");
+    cmd
         .arg("search")
+        .arg("repo")
         .arg(name)
         .arg("--output")
-        .arg("json")
-        .output()
+        .arg("json");
+
+    debug!("command {:?}", cmd);
+
+    let output = cmd.output()
         .expect("unable to query for versions of fluvio-core in helm repo");
         
+    debug!("command output {:?}", output);
+
     serde_json::from_slice(&output.stdout).expect("invalid json from helm search")
 }
