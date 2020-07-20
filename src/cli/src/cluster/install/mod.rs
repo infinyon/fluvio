@@ -1,5 +1,6 @@
 mod k8;
 mod local;
+mod helm;
 
 use structopt::StructOpt;
 
