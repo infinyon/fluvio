@@ -108,7 +108,9 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 
         cmd.arg("install")
             .arg(&k8_config.name)
-            .arg("fluvio/fluvio-core");
+            .arg("fluvio/fluvio-core")
+            .arg("--version")
+            .arg(fluvio_version);
     };
 
     cmd.arg("-n")
