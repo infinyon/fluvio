@@ -73,8 +73,8 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         let version = String::from_utf8(output.stdout).unwrap();
         version.trim_matches('"').to_owned()
     } else {
-        helm_add_repo();
-        helm_repo_update();
+        helm::repo_add();
+        helm::repo_update();
         crate::VERSION.to_owned()
     };
 
@@ -87,10 +87,9 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     let k8_config = &opt.k8_config;
     let ns = &k8_config.namespace;
 
-    println!("flv: {}", version);
+    println!("installing fluvio chart version: {}", version);
 
     let fluvio_version = format!("fluvioVersion={}", version);
-    println!("using fluvio version: {}", fluvio_version);
 
     let mut cmd = Command::new("helm");
 
@@ -103,12 +102,23 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
             .arg("--set")
             .arg(format!("registry={}", registry));
     } else {
-        helm_add_repo();
-        helm_repo_update();
+        const CORE_CHART_NAME: &'static str = "fluvio/fluvio-core";
+        helm::repo_add();
+        helm::repo_update();
+
+        if !helm::check_chart_version_exists(CORE_CHART_NAME, crate::VERSION) {
+            return Err(CliError::Other(format!(
+                "{}:{} not found in helm repo",
+                CORE_CHART_NAME,
+                crate::VERSION
+            )));
+        }
 
         cmd.arg("install")
             .arg(&k8_config.name)
-            .arg("fluvio/fluvio-core");
+            .arg(CORE_CHART_NAME)
+            .arg("--version")
+            .arg(crate::VERSION);
     };
 
     cmd.arg("-n")
@@ -132,8 +142,8 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 }
 
 pub fn install_sys(opt: InstallCommand) {
-    helm_add_repo();
-    helm_repo_update();
+    helm::repo_add();
+    helm::repo_update();
 
     Command::new("helm")
         .arg("install")
@@ -144,21 +154,6 @@ pub fn install_sys(opt: InstallCommand) {
         .inherit();
 
     println!("fluvio sys chart has been installed");
-}
-
-fn helm_add_repo() {
-    // add repo
-    Command::new("helm")
-        .arg("repo")
-        .arg("add")
-        .arg("fluvio")
-        .arg("https://infinyon.github.io/charts")
-        .inherit();
-}
-
-fn helm_repo_update() {
-    // add repo
-    Command::new("helm").arg("repo").arg("update").inherit();
 }
 
 /// switch to profile
