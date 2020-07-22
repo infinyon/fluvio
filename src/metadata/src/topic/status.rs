@@ -8,9 +8,6 @@ use std::fmt;
 
 use kf_protocol::derive::{Decode, Encode};
 
-use k8_metadata::topic::TopicStatus as K8TopicStatus;
-use k8_metadata::topic::TopicStatusResolution as K8TopicStatusResolution;
-
 use flv_types::{ReplicaMap, SpuId};
 
 // -----------------------------------
@@ -18,6 +15,11 @@ use flv_types::{ReplicaMap, SpuId};
 // -----------------------------------
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct TopicStatus {
     pub resolution: TopicResolution,
     pub replica_map: BTreeMap<i32, Vec<i32>>,
@@ -31,6 +33,7 @@ impl fmt::Display for TopicStatus {
 }
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TopicResolution {
     Init,                  // initializing this is starting state.
     Pending,               // Has valid config, ready for replica mapping assignment
@@ -74,46 +77,6 @@ impl std::fmt::Display for TopicResolution {
 // -----------------------------------
 // Encode - from KV Topic Status
 // -----------------------------------
-
-impl From<K8TopicStatus> for TopicStatus {
-    fn from(kv_status: K8TopicStatus) -> Self {
-        let resolution = match kv_status.resolution {
-            K8TopicStatusResolution::Provisioned => TopicResolution::Provisioned,
-            K8TopicStatusResolution::Init => TopicResolution::Init,
-            K8TopicStatusResolution::Pending => TopicResolution::Pending,
-            K8TopicStatusResolution::InsufficientResources => {
-                TopicResolution::InsufficientResources
-            }
-            K8TopicStatusResolution::InvalidConfig => TopicResolution::InvalidConfig,
-        };
-
-        TopicStatus {
-            resolution,
-            replica_map: kv_status.replica_map.clone(),
-            reason: kv_status.reason.clone(),
-        }
-    }
-}
-
-impl From<TopicStatus> for K8TopicStatus {
-    fn from(status: TopicStatus) -> K8TopicStatus {
-        let resolution = match status.resolution {
-            TopicResolution::Provisioned => K8TopicStatusResolution::Provisioned,
-            TopicResolution::Init => K8TopicStatusResolution::Init,
-            TopicResolution::Pending => K8TopicStatusResolution::Pending,
-            TopicResolution::InsufficientResources => {
-                K8TopicStatusResolution::InsufficientResources
-            }
-            TopicResolution::InvalidConfig => K8TopicStatusResolution::InvalidConfig,
-        };
-
-        K8TopicStatus {
-            resolution: resolution,
-            replica_map: status.replica_map.clone(),
-            reason: status.reason.clone(),
-        }
-    }
-}
 
 /*
 // -----------------------------------
@@ -246,7 +209,7 @@ impl TopicStatus {
         self.resolution == TopicResolution::Provisioned
     }
 
-    pub fn next_resolution_provisoned() -> (TopicResolution, String) {
+    pub fn next_resolution_provisioned() -> (TopicResolution, String) {
         (TopicResolution::Provisioned, "".to_owned())
     }
 

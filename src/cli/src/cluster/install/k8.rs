@@ -189,8 +189,8 @@ async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
 }
 
 async fn create_spg(opt: &InstallCommand) -> Result<(), CliError> {
-    use crate::spu::group::process_create_managed_spu_group;
-    use crate::spu::group::CreateManagedSpuGroupOpt;
+    use crate::group::process_create_managed_spu_group;
+    use crate::group::CreateManagedSpuGroupOpt;
 
     let group_name = &opt.k8_config.group_name;
     let group_opt = CreateManagedSpuGroupOpt {

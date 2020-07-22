@@ -15,7 +15,7 @@ use kf_socket::KfSocket;
 use kf_socket::KfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
-use internal_api::messages::Replica;
+use flv_metadata::partition::Replica;
 use flv_types::SpuId;
 use flv_util::log_on_err;
 use flv_storage::FileReplica;

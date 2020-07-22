@@ -1,0 +1,8 @@
+#!/bin/sh
+# debug sc with spu
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+RELATIVE_PATH="$DIR"/../../target/debug
+COMMIT="$(git log -1 --pretty=format:"%H" )"
+SPU_IMAGE=localhost:5000/infinyon/fluvio-spu:"$COMMIT"
+echo $SPU_IMAGE
+RUST_LOG=kf=debug,sc=debug,flv=debug SPU_IMAGE="$SPU_IMAGE" "$RELATIVE_PATH"/sc-k8-server  $@

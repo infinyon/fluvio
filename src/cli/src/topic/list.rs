@@ -8,20 +8,13 @@ use structopt::StructOpt;
 
 use log::debug;
 
-use flv_client::profile::ControllerTargetConfig;
-use flv_client::profile::ControllerTargetInstance;
+use flv_client::ClusterConfig;
+use flv_client::metadata::topic::TopicSpec;
+
 use crate::Terminal;
 use crate::error::CliError;
 use crate::OutputType;
-use crate::tls::TlsConfig;
-use crate::profile::InlineProfile;
-
-use super::helpers::list_kf_topics;
-use super::helpers::list_sc_topics;
-
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
+use crate::target::ClusterTarget;
 
 #[derive(Debug)]
 pub struct ListTopicsConfig {
@@ -34,50 +27,26 @@ pub struct ListTopicsConfig {
 
 #[derive(Debug, StructOpt)]
 pub struct ListTopicsOpt {
-    /// Address of Streaming Controller
-    #[structopt(short = "c", long = "sc", value_name = "host:port")]
-    sc: Option<String>,
-
-    #[structopt(flatten)]
-    kf: crate::common::KfConfig,
-
     /// Output
     #[structopt(
         short = "o",
         long = "output",
         value_name = "type",
         possible_values = &OutputType::variants(),
-        case_insensitive = true
+        case_insensitive = true,
     )]
     output: Option<OutputType>,
 
     #[structopt(flatten)]
-    tls: TlsConfig,
-
-    #[structopt(flatten)]
-    profile: InlineProfile,
+    target: ClusterTarget,
 }
 
 impl ListTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(ControllerTargetConfig, ListTopicsConfig), CliError> {
-        let target_server = ControllerTargetConfig::possible_target(
-            self.sc,
-            #[cfg(kf)]
-            self.kf.kf,
-            #[cfg(not(foo))]
-            None,
-            self.tls.try_into_file_config()?,
-            self.profile.profile,
-        )?;
+    fn validate(self) -> Result<(ClusterConfig, OutputType), CliError> {
+        let target_server = self.target.load()?;
 
-        // transfer config parameters
-        let list_topics_cfg = ListTopicsConfig {
-            output: self.output.unwrap_or(OutputType::default()),
-        };
-
-        // return server separately from topic result
-        Ok((target_server, list_topics_cfg))
+        Ok((target_server, self.output.unwrap_or_default()))
     }
 }
 
@@ -93,14 +62,88 @@ pub async fn process_list_topics<O>(
 where
     O: Terminal,
 {
-    let (target_server, cfg) = opt.validate()?;
+    let (target_server, output_type) = opt.validate()?;
 
-    debug!("list topics {:#?} server: {:#?}", cfg, target_server);
+    debug!("list topics {:#?} ", output_type);
 
-    (match target_server.connect().await? {
-        ControllerTargetInstance::Kf(client) => list_kf_topics(out, client, cfg.output).await,
-        ControllerTargetInstance::Sc(client) => list_sc_topics(out, client, cfg.output).await,
-    })
-    .map(|_| format!(""))
-    .map_err(|err| err.into())
+    let mut client = target_server.connect().await?;
+    let mut admin = client.admin().await;
+
+    let topics = admin.list::<TopicSpec, _>(vec![]).await?;
+    display::format_response_output(out, topics, output_type)?;
+    Ok("".to_owned())
+}
+
+mod display {
+
+    use prettytable::*;
+
+    use flv_client::metadata::objects::Metadata;
+    use flv_client::metadata::topic::TopicSpec;
+
+    use crate::error::CliError;
+    use crate::OutputType;
+    use crate::TableOutputHandler;
+    use crate::Terminal;
+    use crate::t_println;
+
+    type ListTopics = Vec<Metadata<TopicSpec>>;
+
+    /// Process server based on output type
+    pub fn format_response_output<O>(
+        out: std::sync::Arc<O>,
+        list_topics: ListTopics,
+        output_type: OutputType,
+    ) -> Result<(), CliError>
+    where
+        O: Terminal,
+    {
+        if list_topics.len() > 0 {
+            out.render_list(&list_topics, output_type)
+        } else {
+            t_println!(out, "No topics found");
+            Ok(())
+        }
+    }
+
+    // -----------------------------------
+    // Output Handlers
+    // -----------------------------------
+    impl TableOutputHandler for ListTopics {
+        /// table header implementation
+        fn header(&self) -> Row {
+            row![
+                "NAME",
+                "TYPE",
+                "PARTITIONS",
+                "REPLICAS",
+                "IGNORE-RACK",
+                "STATUS",
+                "REASON"
+            ]
+        }
+
+        /// return errors in string format
+        fn errors(&self) -> Vec<String> {
+            vec![]
+        }
+
+        /// table content implementation
+        fn content(&self) -> Vec<Row> {
+            self.iter()
+                .map(|metadata| {
+                    let topic = &metadata.spec;
+                    row![
+                        l -> metadata.name,
+                        c -> topic.type_label(),
+                        c -> topic.partitions_display(),
+                        c -> topic.replication_factor_display(),
+                        c -> topic.ignore_rack_assign_display(),
+                        c -> metadata.status.resolution.to_string(),
+                        l -> metadata.status.reason
+                    ]
+                })
+                .collect()
+        }
+    }
 }

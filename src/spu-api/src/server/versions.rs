@@ -30,7 +30,7 @@ pub struct ApiVersionsResponse {
     pub api_keys: Vec<ApiVersionKey>,
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decode, Encode, Default, Clone, Debug)]
 pub struct ApiVersionKey {
     pub api_key: i16,
     pub min_version: i16,

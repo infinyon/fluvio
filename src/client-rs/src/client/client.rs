@@ -1,32 +1,82 @@
 use std::default::Default;
+use std::fmt;
 
 use log::trace;
-use rand::prelude::*;
+use async_trait::async_trait;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Request;
-use spu_api::server::versions::{ApiVersions, ApiVersionsRequest};
-use kf_socket::AllKfSocket;
-use kf_socket::KfSocketError;
+use flv_api_spu::server::versions::{ApiVersions, ApiVersionsRequest};
+use kf_socket::*;
 use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::ClientError;
 
-/// Generate a random correlation_id (0 to 65535)
-fn rand_correlation_id() -> i32 {
-    thread_rng().gen_range(0, 65535)
+/// Generic client trait
+#[async_trait]
+pub trait Client: Sync + Send {
+    /// client config
+    fn config(&self) -> &ClientConfig;
+
+    /// create new request based on version
+    fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
+    where
+        R: Request + Send,
+    {
+        let mut req_msg = RequestMessage::new_request(request);
+        req_msg
+            .get_mut_header()
+            .set_client_id(&self.config().client_id);
+
+        if let Some(ver) = version {
+            req_msg.get_mut_header().set_api_version(ver);
+        }
+        req_msg
+    }
+
+    /// send and receive
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    where
+        R: Request + Send + Sync;
 }
 
-/// Client to fluvio component
-///
-pub struct Client {
+/// Client with socket connection
+pub struct RawClient {
     socket: AllKfSocket,
     config: ClientConfig,
-    versions: ApiVersions,
+    versions: Versions,
 }
 
-impl Client {
-    /// connect to established socket, retrieve version information
+impl fmt::Display for RawClient {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "config {}", self.config)
+    }
+}
+
+#[async_trait]
+impl Client for RawClient {
+    fn config(&self) -> &ClientConfig {
+        &self.config
+    }
+
+    /// send and wait for reply
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    where
+        R: Request + Send + Sync,
+    {
+        let req_message = self.send_request(request).await?;
+
+        // send request & save response
+        self.socket
+            .get_mut_stream()
+            .next_response(&req_message)
+            .await
+            .map(|res_msg| res_msg.response)
+    }
+}
+
+impl RawClient {
+    /// connect to end point and retrieve versions
     pub async fn connect(
         mut socket: AllKfSocket,
         config: ClientConfig,
@@ -41,62 +91,18 @@ impl Client {
         Ok(Self {
             socket,
             config,
-            versions: response.api_keys,
+            versions: Versions::new(response.api_keys),
         })
     }
 
-    pub fn split(self) -> (AllKfSocket, ClientConfig, ApiVersions) {
+    pub fn split(self) -> (AllKfSocket, ClientConfig, Versions) {
         (self.socket, self.config, self.versions)
-    }
-
-    pub fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
-    where
-        R: Request,
-    {
-        let mut req_msg = RequestMessage::new_request(request);
-        req_msg
-            .get_mut_header()
-            .set_client_id(&self.config.client_id)
-            .set_correlation_id(rand_correlation_id());
-        if let Some(ver) = version {
-            req_msg.get_mut_header().set_api_version(ver);
-        }
-        req_msg
-    }
-
-    /// Given an API key, it returns max_version. None if not found
-    pub fn lookup_version(&self, api_key: u16) -> Option<i16> {
-        for version in &self.versions {
-            if version.api_key == api_key as i16 {
-                return Some(version.max_version);
-            }
-        }
-        None
-    }
-
-    pub fn addr(&self) -> &str {
-        &self.config.addr
-    }
-    pub fn client_id(&self) -> &str {
-        &self.config.client_id
-    }
-
-    pub fn config(&self) -> &ClientConfig {
-        &self.config
-    }
-
-    pub fn socket(&self) -> &AllKfSocket {
-        &self.socket
-    }
-
-    pub fn mut_socket(&mut self) -> &mut AllKfSocket {
-        &mut self.socket
     }
 
     /// send request only
     pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, KfSocketError>
     where
-        R: Request,
+        R: Request + Send + Sync,
     {
         trace!(
             "send API '{}' req to srv '{}'",
@@ -104,38 +110,25 @@ impl Client {
             self.config.addr()
         );
 
-        let req_msg = self.new_request(request, self.lookup_version(R::API_KEY));
+        let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
 
         self.socket.get_mut_sink().send_request(&req_msg).await?;
         Ok(req_msg)
     }
-
-    /// send and wait for reply
-    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
-    where
-        R: Request,
-    {
-        let req_message = self.send_request(request).await?;
-
-        // send request & save response
-        self.socket
-            .get_mut_stream()
-            .next_response(&req_message)
-            .await
-            .map(|res_msg| res_msg.response)
-    }
-
-    pub fn clone_config(&self) -> ClientConfig {
-        self.config.clone()
-    }
 }
 
-/// Client Factory
+/// Connection Config to any client
 #[derive(Clone)]
 pub struct ClientConfig {
     addr: String,
     client_id: String,
     connector: AllDomainConnector,
+}
+
+impl fmt::Display for ClientConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "addr {}", self.addr)
+    }
 }
 
 impl From<String> for ClientConfig {
@@ -174,8 +167,64 @@ impl ClientConfig {
         self.addr = domain
     }
 
-    pub async fn connect(self) -> Result<Client, ClientError> {
+    pub(crate) async fn connect(self) -> Result<RawClient, ClientError> {
         let socket = AllKfSocket::connect_with_connector(&self.addr, &self.connector).await?;
-        Client::connect(socket, self).await
+        RawClient::connect(socket, self).await
+    }
+}
+
+/// wrap around versions
+#[derive(Clone)]
+pub struct Versions(ApiVersions);
+
+impl Versions {
+    pub fn new(versions: ApiVersions) -> Self {
+        Self(versions)
+    }
+
+    /// Given an API key, it returns max_version. None if not found
+    pub fn lookup_version(&self, api_key: u16) -> Option<i16> {
+        for version in &self.0 {
+            if version.api_key == api_key as i16 {
+                return Some(version.max_version);
+            }
+        }
+        None
+    }
+}
+
+/// Client that performs serial request and response
+/// This wraps Serial Multiplex Client
+pub struct SerialClient {
+    socket: AllSerialSocket,
+    config: ClientConfig,
+    versions: Versions,
+}
+
+impl SerialClient {
+    pub fn new(socket: AllSerialSocket, config: ClientConfig, versions: Versions) -> Self {
+        Self {
+            socket,
+            config,
+            versions,
+        }
+    }
+}
+
+#[async_trait]
+impl Client for SerialClient {
+    fn config(&self) -> &ClientConfig {
+        &self.config
+    }
+
+    /// send and wait for reply serially
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    where
+        R: Request + Send + Sync,
+    {
+        let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
+
+        // send request & save response
+        self.socket.send_and_receive(req_msg).await
     }
 }

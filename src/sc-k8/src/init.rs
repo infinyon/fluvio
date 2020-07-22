@@ -23,11 +23,12 @@ pub fn main_k8_loop(opt: ScOpt) {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
-        let (ws_service, metadata) = start_main_loop(sc_config.clone(), k8_client).await;
+        let ctx = start_main_loop(sc_config.clone(), k8_client.clone()).await;
+
         run_k8_operators(
-            ws_service.clone(),
             namespace.clone(),
-            metadata.owned_spus(),
+            k8_client,
+            ctx.spus().store().clone(),
             tls_option.clone().map(|(_, config)| config),
         );
 

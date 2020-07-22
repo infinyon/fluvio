@@ -14,22 +14,17 @@ use crate::CliError;
 use super::consume::process_consume_log;
 use super::produce::process_produce_record;
 use super::topic::process_topic;
-use super::advanced::process_advanced;
-use super::spu::all::process_spu;
-use super::spu::custom::process_custom_spu;
-use super::spu::group::process_spu_group;
+use super::spu::*;
+use super::custom::*;
+use super::group::*;
 use super::profile::process_profile;
 use super::cluster::process_cluster;
-
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
 use super::topic::TopicOpt;
-use super::advanced::AdvancedOpt;
-use super::spu::all::SpuOpt;
-use super::spu::custom::CustomSpuOpt;
-use super::spu::group::SpuGroupOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
+use super::partition::PartitionOpt;
 
 #[cfg(feature = "cluster_components")]
 use super::run::{process_run, RunOpt};
@@ -121,16 +116,16 @@ enum Root {
     Topic(TopicOpt),
 
     #[structopt(
-        name = "advanced",
+        name = "partition",
         template = "{about}
 
 {usage}
 
 {all-args}
 ",
-        about = "Advanced operations"
+        about = "Partition operations"
     )]
-    Advanced(AdvancedOpt),
+    Partition(PartitionOpt),
 
     #[structopt(
         name = "profile",
@@ -175,7 +170,7 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await,
             Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await,
             Root::Topic(topic) => process_topic(terminal.clone(), topic).await,
-            Root::Advanced(advanced) => process_advanced(terminal.clone(), advanced).await,
+            Root::Partition(partition) => partition.process_partition(terminal.clone()).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
             #[cfg(feature = "cluster_components")]

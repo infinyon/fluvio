@@ -4,20 +4,24 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::Cursor;
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use log::debug;
 use log::error;
 use log::trace;
 use bytes::BytesMut;
 use futures::io::{AsyncRead, AsyncWrite};
+use futures::StreamExt;
 use async_lock::Lock;
 use event_listener::Event;
 use async_channel::Sender;
 use async_channel::Receiver;
 use async_channel::bounded;
+use tokio::select;
 
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::net::tls::AllTcpStream;
+use flv_future_aio::timer::sleep;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestHeader;
@@ -30,7 +34,6 @@ use crate::InnerExclusiveKfSink;
 
 #[allow(unused)]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
-#[allow(unused)]
 pub type AllMultiplexerSocket = MultiplexerSocket<AllTcpStream>;
 
 type SharedMsg = (Lock<Option<BytesMut>>, Arc<Event>);
@@ -55,11 +58,13 @@ impl<S> MultiplexerSocket<S>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
 {
+    /// create new multiplexer socket, this always starts with correlation id of 1
+    /// correlation id of 0 means shared
     pub fn new(socket: InnerKfSocket<S>) -> Self {
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
-            correlation_id_counter: Lock::new(0),
+            correlation_id_counter: Lock::new(1),
             senders: Lock::new(HashMap::new()),
             sink: InnerExclusiveKfSink::new(sink),
         };
@@ -98,14 +103,14 @@ where
     pub async fn send_with_async_response<R>(
         &mut self,
         mut req_msg: RequestMessage<R>,
-        len: usize,
+        queue_len: usize,
     ) -> Result<AsyncResponse<R>, KfSocketError>
     where
         R: Request,
     {
         let correlation_id = self.next_correlation_id().await;
         req_msg.header.set_correlation_id(correlation_id);
-        let (sender, receiver) = bounded(len);
+        let (sender, receiver) = bounded(queue_len);
 
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Queue(sender));
@@ -136,13 +141,12 @@ where
     R: Request,
 {
     pub async fn next(&mut self) -> Result<R::Response, KfSocketError> {
-        use futures::StreamExt;
-
         debug!(
             "waiting for async response: {} correlation: {}",
             R::API_KEY,
             self.correlation_id
         );
+
         if let Some(res_bytes) = self.receiver.next().await {
             let response =
                 R::Response::decode_from(&mut Cursor::new(&res_bytes), self.header.api_version())?;
@@ -156,7 +160,41 @@ where
             )))
         }
     }
+
+    pub async fn next_timeout(&mut self, time_out: Duration) -> Result<R::Response, KfSocketError> {
+        debug!(
+            "waiting for async response: {} correlation: {}",
+            R::API_KEY,
+            self.correlation_id
+        );
+        select! {
+            _ = (sleep(time_out.clone())) => {
+                debug!("async socket timeout expired: {},",self.correlation_id);
+                Err(KfSocketError::IoError(IoError::new(
+                    ErrorKind::TimedOut,
+                    format!("time out in async time out: {}",self.correlation_id),
+                )))
+            },
+            bytes = self.receiver.next() => {
+                if let Some(res_bytes) = bytes {
+                    trace!("received bytes {}",res_bytes.len());
+                    let response =
+                        R::Response::decode_from(&mut Cursor::new(&res_bytes), self.header.api_version())?;
+                    trace!("receive response: {:#?}", &response);
+                    Ok(response)
+                } else {
+                    error!("no more response. server has terminated connection");
+                    Err(KfSocketError::IoError(IoError::new(
+                        ErrorKind::UnexpectedEof,
+                        "server has terminated connection",
+                    )))
+                }
+            }
+        }
+    }
 }
+
+pub type AllSerialSocket = SerialSocket<AllTcpStream>;
 
 /// socket that can send request and response one at time,
 /// this can be only created from multiplex socket
@@ -177,12 +215,6 @@ where
     where
         R: Request,
     {
-        use std::time::Duration;
-
-        use tokio::select;
-        use futures::FutureExt;
-        use flv_future_aio::timer::sleep;
-
         // first try to lock, this should lock
         // if lock fails then somebody still trying to  writing which should not happen, in this cases, we bail
         // if lock ok, then we cleared the value
@@ -206,13 +238,14 @@ where
         req_msg.header.set_correlation_id(self.correlation_id);
 
         debug!("serial: sending serial request id: {}", self.correlation_id);
+        trace!("sending request: {:#?}", req_msg);
         self.sink.send_request(&req_msg).await?;
         debug!(
             "serial: finished and waiting for reply from dispatcher for: {}",
             self.correlation_id
         );
         select! {
-            _ = (sleep(Duration::from_secs(5))).fuse() => {
+            _ = sleep(Duration::from_secs(5)) => {
                 debug!("serial socket: timeout happen, id: {}",self.correlation_id);
                 Err(KfSocketError::IoError(IoError::new(
                     ErrorKind::TimedOut,
@@ -278,8 +311,6 @@ impl MultiPlexingResponseDispatcher {
     where
         S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
     {
-        use futures::StreamExt;
-
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
@@ -333,7 +364,7 @@ impl MultiPlexingResponseDispatcher {
                         ))),
                     }
                 }
-                SharedSender::Queue(queue_sender) => queue_sender.send(msg).await.map_err(|err| {
+                SharedSender::Queue(queue_sender) => queue_sender.send(msg).await.map_err(|_| {
                     KfSocketError::IoError(IoError::new(
                         ErrorKind::BrokenPipe,
                         format!("problem sending to queue socket: {}", correlation_id),

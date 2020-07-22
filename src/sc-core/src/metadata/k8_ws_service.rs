@@ -1,218 +1,155 @@
 //!
 //! # Update KV Store with SPU status (online/offline)
 //!
-use std::fmt::Debug;
 use std::fmt::Display;
 use std::convert::Into;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
+use std::marker::PhantomData;
 
 use log::trace;
-use log::warn;
 use log::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use async_trait::async_trait;
 
-use flv_metadata::topic::TopicSpec;
-use flv_metadata::partition::PartitionSpec;
-use flv_metadata::spu::SpuSpec;
-use k8_metadata::metadata::InputK8Obj;
-
+use flv_metadata::k8::metadata::InputK8Obj;
+use flv_metadata::core::Spec;
+use flv_metadata::store::*;
 use flv_types::log_on_err;
-
-use k8_metadata::metadata::Spec as K8Spec;
-use k8_metadata::metadata::UpdateK8ObjStatus;
+use flv_metadata::k8::metadata::Spec as K8Spec;
+use flv_metadata::k8::metadata::UpdateK8ObjStatus;
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 
-use crate::ScServerError;
-use crate::core::Spec;
-use crate::core::common::KVObject;
-use crate::core::WSUpdateService;
-use crate::core::common::WSAction;
+use crate::stores::*;
+use super::k8_actions::K8Action;
 
-pub struct K8WSUpdateService<C>(SharedClient<C>);
-
-impl<C> Clone for K8WSUpdateService<C> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
+pub struct K8WSUpdateService<C, S> {
+    client: SharedClient<C>,
+    data: PhantomData<S>,
 }
 
-impl<C> K8WSUpdateService<C>
+impl<C, S> K8WSUpdateService<C, S>
 where
     C: MetadataClient,
+    S: K8ExtendedSpec + Into<<S as K8ExtendedSpec>::K8Spec>,
+    <S as Spec>::Owner: K8ExtendedSpec,
+    S::Status: PartialEq + Display + Into<<<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status>,
+    S::IndexKey: Display,
+    <S as K8ExtendedSpec>::K8Spec: DeserializeOwned + Serialize + Send + Sync,
+    <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status:
+        From<S::Status> + DeserializeOwned + Serialize + Send + Sync,
 {
     pub fn new(client: SharedClient<C>) -> Self {
-        Self(client)
+        Self {
+            client,
+            data: PhantomData,
+        }
     }
 
-    pub fn client(&self) -> &C {
-        &self.0
-    }
-
-    pub fn own_client(&self) -> SharedClient<C> {
-        self.0.clone()
-    }
-
-    pub async fn add<S>(&self, value: KVObject<S>) -> Result<(), C::MetadataClientError>
-    where
-        S: Spec + Debug + Into<<S as Spec>::K8Spec>,
-        S::Status: Debug + PartialEq,
-        S::Key: Display + Debug,
-        <S as Spec>::K8Spec: Debug + Default + DeserializeOwned + Serialize + Clone + Send,
-        <<S as Spec>::K8Spec as K8Spec>::Status:
-            Default + Debug + DeserializeOwned + Serialize + Clone + Send,
-    {
-        debug!("Adding: {}:{}", S::LABEL, value.key());
+    /// add/update
+    async fn apply(
+        &self,
+        value: MetadataStoreObject<S, K8MetaItem>,
+    ) -> Result<(), C::MetadataClientError>
+where {
+        debug!("K8 Adding {}:{}", S::LABEL, value.key());
         trace!("adding KV {:#?} to k8 kv", value);
 
-        let (key, spec, kv_ctx) = value.parts();
+        let (key, spec, _status, ctx) = value.parts();
         let k8_spec: S::K8Spec = spec.into();
-        if let Some(item_ctx) = kv_ctx.item_ctx {
-            let new_k8 = InputK8Obj::new(k8_spec, item_ctx.into());
 
-            self.0
-                .apply(new_k8)
-                .await
-                .map(|_| ())
-                .map_err(|err| err.into())
-        } else if let Some(ref parent_metadata) = kv_ctx.parent_ctx {
+        if let Some(parent_metadata) = ctx.owner() {
             let item_name = key.to_string();
 
             let new_k8 = InputK8Obj::new(
                 k8_spec,
                 parent_metadata
-                    .make_child_input_metadata::<<<S as Spec>::Owner as Spec>::K8Spec>(item_name),
+                    .make_child_input_metadata::<<<S as Spec>::Owner as K8ExtendedSpec>::K8Spec>(
+                        item_name,
+                    ),
             );
 
-            self.0.apply(new_k8).await.map(|_| ())
+            self.client.apply(new_k8).await.map(|_| ())
         } else {
-            Err(IoError::new(
-                ErrorKind::Other,
-                format!("{} add failed - no item or context {}", S::LABEL, key),
-            )
-            .into())
+            let new_k8 = InputK8Obj::new(k8_spec, ctx.item_owned().into());
+
+            trace!("adding k8 {:#?} ", new_k8);
+
+            self.client
+                .apply(new_k8)
+                .await
+                .map(|_| ())
+                .map_err(|err| err.into())
         }
     }
 
     /// only update the status
-    async fn update_status<S>(&self, value: KVObject<S>) -> Result<(), C::MetadataClientError>
-    where
-        S: Spec + Debug,
-        S::Key: Debug + Display,
-        S::Status: Debug + Display + Into<<<S as Spec>::K8Spec as K8Spec>::Status>,
-        <S as Spec>::K8Spec: Debug + Default + Serialize + DeserializeOwned + Send + Sync,
-        <<S as Spec>::K8Spec as K8Spec>::Status:
-            Default + Debug + Serialize + DeserializeOwned + Send + Sync,
-    {
+    async fn update_status(
+        &self,
+        metadata: K8MetaItem,
+        status: S::Status,
+    ) -> Result<(), C::MetadataClientError>
+where {
         debug!(
             "K8 Update Status: {} key: {} value: {}",
             S::LABEL,
-            value.key(),
-            value.status
+            metadata.name,
+            status
         );
-        trace!("status update: {:#?}", value.status);
+        trace!("status update: {:#?}", status);
 
-        let k8_status: <<S as Spec>::K8Spec as K8Spec>::Status = value.status().clone().into();
+        let k8_status: <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status = status.into();
 
-        if let Some(ref kv_ctx) = value.kv_ctx().item_ctx {
-            let k8_input: UpdateK8ObjStatus<S::K8Spec> = UpdateK8ObjStatus {
-                api_version: S::K8Spec::api_version(),
-                kind: S::K8Spec::kind(),
-                metadata: kv_ctx.clone().into(),
-                status: k8_status,
-                ..Default::default()
-            };
+        let k8_input: UpdateK8ObjStatus<S::K8Spec> = UpdateK8ObjStatus {
+            api_version: S::K8Spec::api_version(),
+            kind: S::K8Spec::kind(),
+            metadata: metadata.into(),
+            status: k8_status,
+            ..Default::default()
+        };
 
-            self.0.update_status(&k8_input).await.map(|_| ())
-        } else {
-            Err(IoError::new(
-                ErrorKind::Other,
-                "KVS update failed - missing  KV ctx".to_owned(),
-            )
-            .into())
-        }
+        self.client.update_status(&k8_input).await.map(|_| ())
     }
 
-    /// update both spec and status
-    pub async fn update_spec<S>(&self, value: KVObject<S>) -> Result<(), C::MetadataClientError>
-    where
-        S: Spec + Debug + Into<<S as Spec>::K8Spec>,
-        S::Key: Debug + Display,
-        S::Status: Debug + Into<<<S as Spec>::K8Spec as K8Spec>::Status>,
-        <S as Spec>::K8Spec: Debug + Default + Serialize + DeserializeOwned + Clone + Send,
-        <<S as Spec>::K8Spec as K8Spec>::Status:
-            Default + Debug + Serialize + DeserializeOwned + Clone + Send,
-    {
-        debug!("K8 Update Spec: {} key: {}", S::LABEL, value.key());
-        trace!("K8 Update Spec: {:#?}", value);
-        let k8_spec: <S as Spec>::K8Spec = value.spec().clone().into();
-
-        if let Some(ref kv_ctx) = value.kv_ctx().item_ctx {
-            trace!("updating spec: {:#?}", k8_spec);
-
-            let k8_input: InputK8Obj<S::K8Spec> = InputK8Obj {
-                api_version: S::K8Spec::api_version(),
-                kind: S::K8Spec::kind(),
-                metadata: kv_ctx.clone().into(),
-                spec: k8_spec,
-                ..Default::default()
-            };
-
-            self.0.apply(k8_input).await.map(|_| ())
-        } else {
-            Err(IoError::new(
-                ErrorKind::Other,
-                "KVS update failed - missing  KV ctx".to_owned(),
-            )
-            .into())
-        }
-    }
-
-    async fn inner_process<S>(&self, action: WSAction<S>) -> Result<(), ScServerError>
-    where
-        S: Spec + Debug + Into<<S as Spec>::K8Spec>,
-        S::Key: Display + Debug,
-        S::Status: Debug + PartialEq + Display,
-        <S as Spec>::K8Spec: Clone + Debug + Default + Serialize + DeserializeOwned + Send + Sync,
-        <<S as Spec>::K8Spec as K8Spec>::Status:
-            From<S::Status> + Clone + Default + Debug + Serialize + DeserializeOwned + Send + Sync,
-    {
-        match action {
-            WSAction::Add(value) => log_on_err!(self.add(value).await),
-            WSAction::UpdateStatus(value) => log_on_err!(self.update_status(value).await),
-            WSAction::UpdateSpec(value) => log_on_err!(self.update_spec(value).await),
-            WSAction::Delete(_key) => warn!("delete not yet implemente"),
-        }
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<C> WSUpdateService for K8WSUpdateService<C>
-where
-    C: MetadataClient,
-{
-    async fn update_spu(&self, ws_actions: WSAction<SpuSpec>) -> Result<(), ScServerError> {
-        let service = self.clone();
-        service.inner_process(ws_actions).await?;
-        Ok(())
-    }
-
-    async fn update_topic(&self, ws_actions: WSAction<TopicSpec>) -> Result<(), ScServerError> {
-        let service = self.clone();
-        service.inner_process(ws_actions).await?;
-        Ok(())
-    }
-
-    async fn update_partition(
+    /// update spec only
+    async fn update_spec(
         &self,
-        ws_actions: WSAction<PartitionSpec>,
-    ) -> Result<(), ScServerError> {
-        let service = self.clone();
-        service.inner_process(ws_actions).await?;
-        Ok(())
+        metadata: K8MetaItem,
+        spec: S,
+    ) -> Result<(), C::MetadataClientError>
+where {
+        debug!("K8 Update Spec: {} key: {}", S::LABEL, metadata.name);
+        trace!("K8 Update Spec: {:#?}", spec);
+
+        let k8_spec: <S as K8ExtendedSpec>::K8Spec = spec.into();
+
+        trace!("updating spec: {:#?}", k8_spec);
+
+        let k8_input: InputK8Obj<S::K8Spec> = InputK8Obj {
+            api_version: S::K8Spec::api_version(),
+            kind: S::K8Spec::kind(),
+            metadata: metadata.into(),
+            spec: k8_spec,
+            ..Default::default()
+        };
+
+        self.client.apply(k8_input).await.map(|_| ())
+    }
+
+    async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+        self.client
+            .delete_item::<S::K8Spec, _>(&meta)
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn process(&self, action: K8Action<S>) {
+        match action {
+            K8Action::Apply(value) => log_on_err!(self.apply(value).await),
+            K8Action::UpdateStatus((status, meta)) => {
+                log_on_err!(self.update_status(meta, status).await)
+            }
+            K8Action::UpdateSpec((spec, meta)) => log_on_err!(self.update_spec(meta, spec).await),
+            K8Action::Delete(meta) => log_on_err!(self.delete(meta).await),
+        }
     }
 }

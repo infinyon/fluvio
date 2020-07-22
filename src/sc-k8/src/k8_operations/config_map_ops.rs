@@ -7,10 +7,8 @@ use std::collections::BTreeMap;
 
 use log::{debug, trace};
 
-use k8_metadata::metadata::InputK8Obj;
-use k8_metadata::metadata::InputObjectMeta;
-use k8_metadata::metadata::Spec;
-use k8_metadata::core::config_map::ConfigMapSpec;
+use flv_metadata::k8::metadata::*;
+use flv_metadata::k8::core::config_map::ConfigMapSpec;
 use k8_client::metadata::MetadataClient;
 use k8_client::SharedK8Client;
 

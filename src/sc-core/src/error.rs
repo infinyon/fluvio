@@ -8,7 +8,6 @@ use futures::channel::mpsc::SendError;
 
 use kf_socket::KfSocketError;
 use flv_types::PartitionError;
-use flv_types::SpuId;
 
 #[derive(Debug)]
 pub enum ScServerError {
@@ -16,8 +15,6 @@ pub enum ScServerError {
     SendError(SendError),
     SocketError(KfSocketError),
     PartitionError(PartitionError),
-    UnknownSpu(SpuId),
-    SpuCommuncationError(SpuId, KfSocketError),
 }
 
 impl fmt::Display for ScServerError {
@@ -27,8 +24,6 @@ impl fmt::Display for ScServerError {
             Self::SendError(err) => write!(f, "{}", err),
             Self::SocketError(err) => write!(f, "{}", err),
             Self::PartitionError(err) => write!(f, "{}", err),
-            Self::UnknownSpu(spu) => write!(f, "unknown spu: {}", spu),
-            Self::SpuCommuncationError(id, err) => write!(f, "spu comm error: {}, {}", id, err),
         }
     }
 }

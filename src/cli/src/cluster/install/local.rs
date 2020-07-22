@@ -123,10 +123,10 @@ async fn launch_spu(
 ) {
     use std::fs::File;
 
-    use k8_metadata::spu::SpuSpec;
-    use k8_metadata::spu::IngressPort;
-    use k8_metadata::spu::Endpoint;
-    use k8_metadata::spu::IngressAddr;
+    use flv_client::metadata::spu::SpuSpec;
+    use flv_client::metadata::spu::IngressPort;
+    use flv_client::metadata::spu::Endpoint;
+    use flv_client::metadata::spu::IngressAddr;
     use k8_obj_metadata::InputK8Obj;
     use k8_obj_metadata::InputObjectMeta;
     use k8_metadata_client::MetadataClient;
@@ -139,7 +139,7 @@ async fn launch_spu(
     let private_port = public_port + 1;
 
     let spu_spec = SpuSpec {
-        spu_id,
+        id: spu_id,
         public_endpoint: IngressPort {
             port: public_port,
             ingress: vec![IngressAddr {

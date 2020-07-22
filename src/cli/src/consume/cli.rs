@@ -6,13 +6,12 @@
 
 use structopt::StructOpt;
 
-use kf_protocol::api::Offset;
-use flv_client::profile::ServerTargetConfig;
-use flv_client::MAX_FETCH_BYTES;
+use flv_client::kf::api::Offset;
+use flv_client::ClusterConfig;
+use flv_client::params::MAX_FETCH_BYTES;
 
 use crate::error::CliError;
-use crate::tls::TlsConfig;
-use crate::profile::InlineProfile;
+use crate::target::ClusterTarget;
 
 use super::ConsumeOutputType;
 
@@ -42,29 +41,6 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
     pub max_bytes: Option<i32>,
 
-    /// Address of Streaming Controller
-    #[structopt(short = "c", long = "sc", value_name = "host:port")]
-    pub sc: Option<String>,
-
-    /// Address of Streaming Processing Unit
-    #[structopt(
-        short = "u",
-        long = "spu",
-        value_name = "host:port",
-        conflicts_with = "sc"
-    )]
-    pub spu: Option<String>,
-
-    /// Address of Kafka Controller
-    #[structopt(
-        short = "k",
-        long = "kf",
-        value_name = "host:port",
-        conflicts_with = "sc",
-        conflicts_with = "spu"
-    )]
-    pub kf: Option<String>,
-
     /// Suppress items items that have an unknown output type
     #[structopt(short = "s", long = "suppress-unknown")]
     pub suppress_unknown: bool,
@@ -81,22 +57,13 @@ pub struct ConsumeLogOpt {
     output: ConsumeOutputType,
 
     #[structopt(flatten)]
-    tls: TlsConfig,
-
-    #[structopt(flatten)]
-    profile: InlineProfile,
+    target: ClusterTarget,
 }
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
-    pub fn validate(self) -> Result<(ServerTargetConfig, ConsumeLogConfig), CliError> {
-        let target_server = ServerTargetConfig::possible_target(
-            self.sc,
-            self.spu,
-            self.kf,
-            self.tls.try_into_file_config()?,
-            self.profile.profile,
-        )?;
+    pub fn validate(self) -> Result<(ClusterConfig, ConsumeLogConfig), CliError> {
+        let target_server = self.target.load()?;
         let max_bytes = self.max_bytes.unwrap_or(MAX_FETCH_BYTES as i32);
 
         // consume log specific configurations

@@ -8,8 +8,8 @@ use log::debug;
 use serde_json;
 use serde_json::Value;
 
-use kf_protocol::api::RecordSet;
-use kf_protocol::message::fetch::FetchablePartitionResponse;
+use flv_client::kf::api::RecordSet;
+use flv_client::kf::message::fetch::FetchablePartitionResponse;
 
 use crate::error::CliError;
 use crate::common::{bytes_to_hex_dump, hex_dump_separator};
@@ -23,7 +23,6 @@ use super::ConsumeOutputType;
 /// Process fetch topic response based on output type
 pub async fn process_fetch_topic_response<O>(
     out: std::sync::Arc<O>,
-    topic: &str,
     response: FetchablePartitionResponse<RecordSet>,
     config: &ConsumeLogConfig,
 ) -> Result<(), CliError>
@@ -31,6 +30,8 @@ where
     O: Terminal,
 {
     let partition_res = vec![response];
+
+    let topic = &config.topic;
 
     match config.output {
         ConsumeOutputType::json => {

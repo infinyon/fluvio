@@ -3,9 +3,9 @@ mod conversion;
 mod spg_group;
 mod svc_operator;
 
-use flv_sc_core::metadata::K8WSUpdateService;
-use flv_sc_core::core::spus::SharedSpuLocalStore;
-use k8_client::K8Client;
+use flv_sc_core::stores::spu::SharedSpuLocalStore;
+use flv_sc_core::stores::K8MetaItem;
+use k8_client::SharedK8Client;
 
 use spg_operator::SpgOperator;
 use svc_operator::SvcOperator;
@@ -18,17 +18,12 @@ use self::spg_group::SpuValidation;
 use crate::cli::TlsConfig;
 
 pub fn run_k8_operators(
-    k8_ws: K8WSUpdateService<K8Client>,
     namespace: String,
-    spu_store: SharedSpuLocalStore,
+    k8_client: SharedK8Client,
+    spu_store: SharedSpuLocalStore<K8MetaItem>,
     tls: Option<TlsConfig>,
 ) {
-    SpgOperator::new(
-        k8_ws.own_client(),
-        namespace.clone(),
-        spu_store.clone(),
-        tls,
-    )
-    .run();
-    SvcOperator::new(k8_ws, namespace, spu_store).run();
+    SpgOperator::new(k8_client.clone(), namespace.clone(), spu_store.clone(), tls).run();
+
+    SvcOperator::run(k8_client.clone(), namespace, spu_store);
 }

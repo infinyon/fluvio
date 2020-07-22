@@ -16,7 +16,6 @@ mod process {
 
     use log::debug;
 
-    use flv_client::profile::ReplicaLeaderTargetInstance;
     use crate::CliError;
     use crate::Terminal;
 
@@ -31,17 +30,17 @@ mod process {
     where
         O: Terminal,
     {
+        use flv_client::kf::api::ReplicaKey;
+
         let (target_server, cfg) = opt.validate()?;
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
-        (match target_server.connect(&cfg.topic, cfg.partition).await? {
-            ReplicaLeaderTargetInstance::Kf(leader) => fetch_log_loop(out, leader, cfg).await,
-            ReplicaLeaderTargetInstance::Spu(leader) => {
-                fetch_log_loop(out, leader, cfg).await?;
-                Ok(())
-            }
-        })
-        .map(|_| format!(""))
+        let replica: ReplicaKey = (cfg.topic.clone(), cfg.partition).into();
+        let mut target = target_server.connect().await?;
+        let consumer = target.consumer(replica).await?;
+        fetch_log_loop(out, consumer, cfg).await?;
+
+        Ok("".to_owned())
     }
 }

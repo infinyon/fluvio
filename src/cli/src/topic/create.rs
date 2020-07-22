@@ -8,28 +8,14 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
+use log::debug;
 use structopt::StructOpt;
 
-use flv_client::client::*;
-use flv_client::query_params::ReplicaConfig;
-use flv_client::query_params::Partitions;
-use flv_client::profile::ControllerTargetConfig;
-use flv_client::profile::ControllerTargetInstance;
+use flv_client::ClusterConfig;
+use flv_client::metadata::topic::TopicSpec;
 
 use crate::error::CliError;
-use crate::tls::TlsConfig;
-use crate::profile::InlineProfile;
-
-// -----------------------------------
-//  Parsed Config
-// -----------------------------------
-
-#[derive(Debug)]
-pub struct CreateTopicConfig {
-    pub topic: String,
-    pub replica: ReplicaConfig,
-    pub validate_only: bool,
-}
+use crate::target::ClusterTarget;
 
 // -----------------------------------
 // CLI Options
@@ -81,81 +67,44 @@ pub struct CreateTopicOpt {
     replica_assignment: Option<PathBuf>,
 
     /// Validates configuration, does not provision
-    #[structopt(short = "v", long = "validate-only")]
-    validate_only: bool,
-
-    /// Address of Streaming Controller
-    #[structopt(short = "c", long = "sc", value_name = "host:port")]
-    sc: Option<String>,
+    #[structopt(short = "d", long)]
+    dry_run: bool,
 
     #[structopt(flatten)]
-    kf: crate::common::KfConfig,
-
-    #[structopt(flatten)]
-    tls: TlsConfig,
-
-    #[structopt(flatten)]
-    profile: InlineProfile,
+    target: ClusterTarget,
 }
 
 impl CreateTopicOpt {
-    /// Ensure all parameters are valid for computed replication
-    fn parse_computed_replica(&self) -> ReplicaConfig {
-        ReplicaConfig::Computed(
-            self.partitions,
-            self.replication,
-            self.ignore_rack_assigment,
-        )
-    }
-
-    /// Ensure all parameters are valid for computed replication
-    fn parse_assigned_replica(&self) -> Result<ReplicaConfig, CliError> {
-        if let Some(replica_assign_file) = &self.replica_assignment {
-            match Partitions::file_decode(replica_assign_file) {
-                Ok(partitions) => Ok(ReplicaConfig::Assigned(partitions)),
-                Err(err) => Err(CliError::IoError(IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!(
-                        "cannot parse replica assignment file {:?}: {}",
-                        replica_assign_file, err
-                    ),
-                ))),
-            }
-        } else {
-            Err(CliError::IoError(IoError::new(
-                ErrorKind::InvalidInput,
-                "cannot find replica assignment file",
-            )))
-        }
-    }
-
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(ControllerTargetConfig, CreateTopicConfig), CliError> {
-        // topic specific configurations
-        let replica_config = if self.replica_assignment.is_none() {
-            self.parse_computed_replica()
+    fn validate(self) -> Result<(ClusterConfig, (String, TopicSpec)), CliError> {
+        use flv_client::metadata::topic::PartitionMaps;
+        use flv_client::metadata::topic::TopicReplicaParam;
+        use load::PartitionLoad;
+
+        let target_server = self.target.load()?;
+
+        let topic = if let Some(replica_assign_file) = &self.replica_assignment {
+            TopicSpec::Assigned(
+                PartitionMaps::file_decode(replica_assign_file).map_err(|err| {
+                    IoError::new(
+                        ErrorKind::InvalidInput,
+                        format!(
+                            "cannot parse replica assignment file {:?}: {}",
+                            replica_assign_file, err
+                        ),
+                    )
+                })?,
+            )
         } else {
-            self.parse_assigned_replica()?
+            TopicSpec::Computed(TopicReplicaParam {
+                partitions: self.partitions,
+                replication_factor: self.replication as i32,
+                ignore_rack_assignment: self.ignore_rack_assigment,
+            })
         };
-
-        let create_topic_cfg = CreateTopicConfig {
-            topic: self.topic,
-            replica: replica_config,
-            validate_only: self.validate_only,
-        };
-
-        let target_server = ControllerTargetConfig::possible_target(
-            self.sc,
-            #[cfg(feature = "kf")]
-            self.kf.kf,
-            #[cfg(not(feature = "kf"))]
-            None,
-            self.tls.try_into_file_config()?,
-            self.profile.profile,
-        )?;
 
         // return server separately from config
-        Ok((target_server, create_topic_cfg))
+        Ok((target_server, (self.topic, topic)))
     }
 }
 
@@ -165,20 +114,40 @@ impl CreateTopicOpt {
 
 /// Process create topic cli request
 pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliError> {
-    let (target_server, cfg) = opt.validate()?;
+    let dry_run = opt.dry_run;
 
-    (match target_server.connect().await? {
-        ControllerTargetInstance::Kf(mut client) => {
-            client
-                .create_topic(cfg.topic, cfg.replica, cfg.validate_only)
-                .await
+    let (target_server, (name, topic_spec)) = opt.validate()?;
+
+    debug!("creating topic: {} spec: {:#?}", name, topic_spec);
+
+    let mut target = target_server.connect().await?;
+    let mut admin = target.admin().await;
+
+    admin.create(name.clone(), dry_run, topic_spec).await?;
+
+    Ok(format!("topic \"{}\" created", name))
+}
+
+/// module to load partitions maps from file
+mod load {
+
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+    use std::fs::read_to_string;
+    use std::path::Path;
+
+    use flv_client::metadata::topic::PartitionMaps;
+
+    pub trait PartitionLoad: Sized {
+        fn file_decode<T: AsRef<Path>>(path: T) -> Result<Self, IoError>;
+    }
+
+    impl PartitionLoad for PartitionMaps {
+        /// Read and decode the json file into Replica Assignment map
+        fn file_decode<T: AsRef<Path>>(path: T) -> Result<Self, IoError> {
+            let file_str: String = read_to_string(path)?;
+            serde_json::from_str(&file_str)
+                .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))
         }
-        ControllerTargetInstance::Sc(mut client) => {
-            client
-                .create_topic(cfg.topic, cfg.replica, cfg.validate_only)
-                .await
-        }
-    })
-    .map(|topic_name| format!("topic \"{}\" created", topic_name))
-    .map_err(|err| err.into())
+    }
 }

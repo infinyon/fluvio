@@ -7,9 +7,20 @@ description = "Fluvio metadata"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
+[features]
+use_serde = ["serde"]
+k8 = ["use_serde","k8-obj-metadata","k8-obj-core","k8-obj-app"]
+
 [dependencies]
 log = "0.4.8"
+serde = { version ="1.0.0", features = ['derive'], optional = true }
+k8-obj-metadata = { version = "1.0.0", optional = true }
+k8-obj-core = { version = "1.1.0", optional = true}
+k8-obj-app = { version = "1.1.0", optional = true }
+flv-future-aio = { version = "2.3.0"}
 kf-protocol =  "2.0.0" 
-k8-flv-metadata = {  version = "1.0.0", path = "../k8-metadata"}
 flv-types = { path ="../types", version = "0.2.0" }
 flv-util = { version = "0.2.0"}
+
+[dev-dependencies]
+flv-future-aio = { version = "2.3.0", features=["fixture"]}

@@ -2,89 +2,93 @@ mod create;
 mod delete;
 mod describe;
 mod list;
-mod helpers;
 
-use structopt::StructOpt;
+pub use cli::*;
 
-use create::CreateTopicOpt;
-use delete::DeleteTopicOpt;
-use describe::DescribeTopicsOpt;
-use list::ListTopicsOpt;
+mod cli {
 
-use create::process_create_topic;
-use delete::process_delete_topic;
-use describe::process_describe_topics;
-use list::process_list_topics;
+    use structopt::StructOpt;
+    use super::*;
 
-use crate::Terminal;
+    use create::CreateTopicOpt;
+    use delete::DeleteTopicOpt;
+    use describe::DescribeTopicsOpt;
+    use list::ListTopicsOpt;
 
-use super::CliError;
+    use create::process_create_topic;
+    use delete::process_delete_topic;
+    use describe::process_describe_topics;
+    use list::process_list_topics;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "topic", about = "Topic operations")]
-pub enum TopicOpt {
-    #[structopt(
-        name = "create",
-        template = "{about}
+    use crate::Terminal;
+    use crate::CliError;
 
-{usage}
+    #[derive(Debug, StructOpt)]
+    #[structopt(name = "topic", about = "Topic operations")]
+    pub enum TopicOpt {
+        #[structopt(
+            name = "create",
+            template = "{about}
 
-{all-args}
-",
-        about = "Create a topic"
-    )]
-    Create(CreateTopicOpt),
+    {usage}
 
-    #[structopt(
-        name = "delete",
-        template = "{about}
+    {all-args}
+    ",
+            about = "Create a topic"
+        )]
+        Create(CreateTopicOpt),
 
-{usage}
+        #[structopt(
+            name = "delete",
+            template = "{about}
 
-{all-args}
-",
-        about = "Delete a topic"
-    )]
-    Delete(DeleteTopicOpt),
+    {usage}
 
-    #[structopt(
-        name = "describe",
-        template = "{about}
+    {all-args}
+    ",
+            about = "Delete a topic"
+        )]
+        Delete(DeleteTopicOpt),
 
-{usage}
+        #[structopt(
+            name = "describe",
+            template = "{about}
 
-{all-args}
-",
-        about = "Show details of a topic"
-    )]
-    Describe(DescribeTopicsOpt),
+    {usage}
 
-    #[structopt(
-        name = "list",
-        template = "{about}
+    {all-args}
+    ",
+            about = "Show details of a topic"
+        )]
+        Describe(DescribeTopicsOpt),
 
-{usage}
+        #[structopt(
+            name = "list",
+            template = "{about}
 
-{all-args}
-",
-        about = "Show all topics"
-    )]
-    List(ListTopicsOpt),
-}
+    {usage}
 
-pub(crate) async fn process_topic<O>(
-    out: std::sync::Arc<O>,
-    topic_opt: TopicOpt,
-) -> Result<String, CliError>
-where
-    O: Terminal,
-{
-    match topic_opt {
-        TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await,
-        TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await,
-        TopicOpt::Describe(describe_topics_opt) => {
-            process_describe_topics(out, describe_topics_opt).await
+    {all-args}
+    ",
+            about = "Show all topics"
+        )]
+        List(ListTopicsOpt),
+    }
+
+    pub(crate) async fn process_topic<O>(
+        out: std::sync::Arc<O>,
+        topic_opt: TopicOpt,
+    ) -> Result<String, CliError>
+    where
+        O: Terminal,
+    {
+        match topic_opt {
+            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await,
+            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await,
+            TopicOpt::Describe(describe_topics_opt) => {
+                process_describe_topics(out, describe_topics_opt).await
+            }
+            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await,
         }
-        TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await,
     }
 }

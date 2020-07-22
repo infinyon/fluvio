@@ -7,12 +7,13 @@ description = "Fluvio API for SC"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
+[features]
+use_serde = ["flv-metadata/use_serde","serde"]
 
 [dependencies]
 log = "0.4.8"
-serde = { version ="1.0.103", features = ['derive'] }
+serde = { version ="1.0.0", features = ['derive'], optional = true }
 kf-protocol = { version = "2.0.0" } 
-flv-metadata = { version = "2.0.0",path = "../metadata"}
+flv-metadata = { version = "2.0.0", default-features = false, path = "../metadata"}
 flv-types = { version = "0.2.0", path ="../types" }
-k8-flv-metadata = { version = "1.0.0",path = "../k8-metadata"}
 flv-util = { version = "0.2.0"}

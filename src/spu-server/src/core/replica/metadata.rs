@@ -1,4 +1,4 @@
-use internal_api::messages::Replica;
+use flv_metadata::partition::Replica;
 use flv_metadata::partition::ReplicaKey;
 
 use crate::core::Spec;

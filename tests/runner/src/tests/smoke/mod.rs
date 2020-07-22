@@ -75,31 +75,3 @@ mod runner {
         }
     }
 }
-
-mod client {
-
-    use flv_client::profile::*;
-    use flv_client::client::*;
-
-    use crate::TestOption;
-    use crate::tls::Cert;
-
-    #[allow(unused)]
-    pub async fn get_client(option: &TestOption) -> ScClient {
-        let tls_option = if option.tls() {
-            let client_cert = Cert::load_client();
-
-            Some(TlsConfig::File(TlsClientConfig {
-                client_cert: client_cert.cert.display().to_string(),
-                client_key: client_cert.key.display().to_string(),
-                ca_cert: client_cert.ca.display().to_string(),
-                domain: "fluvio.local".to_owned(),
-            }))
-        } else {
-            None
-        };
-
-        let config = ScConfig::new(None, tls_option).expect("connect");
-        config.connect().await.expect("should connect")
-    }
-}

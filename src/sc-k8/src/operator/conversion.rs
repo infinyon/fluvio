@@ -1,29 +1,16 @@
 /// convert spu group spec to statefulset for input
 use std::collections::HashMap;
 
-use k8_metadata::metadata::InputK8Obj;
-use k8_metadata::metadata::InputObjectMeta;
-use k8_metadata::metadata::Env;
-use k8_metadata::metadata::Spec;
-use k8_metadata::metadata::ObjectMeta;
-use k8_metadata::metadata::TemplateMeta;
-use k8_metadata::metadata::LabelSelector;
-use k8_metadata::metadata::TemplateSpec;
-use k8_metadata::metadata::LabelProvider;
-use k8_metadata::core::pod::ContainerSpec;
-use k8_metadata::core::pod::ContainerPortSpec;
-use k8_metadata::core::pod::PodSpec;
-use k8_metadata::core::pod::VolumeMount;
-use k8_metadata::core::pod::VolumeSpec;
-use k8_metadata::core::pod::SecretVolumeSpec;
-use k8_metadata::core::service::ServiceSpec;
-use k8_metadata::core::service::ServicePort;
-use k8_metadata::app::stateful::ResourceRequirements;
-use k8_metadata::app::stateful::VolumeRequest;
-use k8_metadata::app::stateful::PersistentVolumeClaim;
-use k8_metadata::app::stateful::StatefulSetSpec;
-use k8_metadata::app::stateful::VolumeAccessMode;
-use k8_metadata::spg::SpuGroupSpec;
+use flv_metadata::k8::metadata::*;
+use flv_metadata::k8::core::pod::ContainerSpec;
+use flv_metadata::k8::core::pod::ContainerPortSpec;
+use flv_metadata::k8::core::pod::PodSpec;
+use flv_metadata::k8::core::pod::VolumeMount;
+use flv_metadata::k8::core::pod::VolumeSpec;
+use flv_metadata::k8::core::pod::SecretVolumeSpec;
+use flv_metadata::k8::core::service::*;
+use flv_metadata::k8::app::stateful::*;
+use flv_metadata::spg::K8SpuGroupSpec;
 
 use flv_types::defaults::SPU_DEFAULT_NAME;
 use flv_types::defaults::SPU_PUBLIC_PORT;
@@ -39,7 +26,7 @@ fn find_spu_image() -> String {
 
 /// convert SpuGroup to Statefulset
 pub fn convert_cluster_to_statefulset(
-    group_spec: &SpuGroupSpec,
+    group_spec: &K8SpuGroupSpec,
     metadata: &ObjectMeta,
     group_name: &str,
     group_svc_name: String,
@@ -48,7 +35,7 @@ pub fn convert_cluster_to_statefulset(
 ) -> InputK8Obj<StatefulSetSpec> {
     let statefulset_name = format!("flv-spg-{}", group_name);
     let spec = generate_stateful(group_spec, group_name, group_svc_name, namespace, tls);
-    let owner_ref = metadata.make_owner_reference::<SpuGroupSpec>();
+    let owner_ref = metadata.make_owner_reference::<K8SpuGroupSpec>();
 
     InputK8Obj {
         api_version: StatefulSetSpec::api_version(),
@@ -66,7 +53,7 @@ pub fn convert_cluster_to_statefulset(
 
 /// generate statefulset spec from cluster spec
 fn generate_stateful(
-    spg_spec: &SpuGroupSpec,
+    spg_spec: &K8SpuGroupSpec,
     name: &str,
     group_svc_name: String,
     namespace: &str,
@@ -99,7 +86,7 @@ fn generate_stateful(
     let size = storage.size();
     let mut env = vec![
         Env::key_field_ref("SPU_INDEX", "metadata.name"),
-        Env::key_value("SPU_MIN", &format!("{}", spg_spec.min_id())),
+        Env::key_value("SPU_MIN", &format!("{}", spg_spec.min_id)),
     ];
 
     let mut volume_mounts = vec![VolumeMount {
@@ -217,7 +204,7 @@ fn generate_stateful(
     }
 }
 
-pub fn generate_service(spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
+pub fn generate_service(spg: &K8SpuGroupSpec, name: &str) -> ServiceSpec {
     let spg_template = &spg.template.spec;
     let mut public_port = ServicePort {
         port: spg_template

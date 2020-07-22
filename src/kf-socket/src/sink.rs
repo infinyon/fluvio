@@ -42,10 +42,7 @@ pub struct InnerKfSink<S> {
     fd: RawFd,
 }
 
-impl<S> InnerKfSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
+impl<S> InnerKfSink<S> {
     pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
         InnerKfSink { fd, inner }
     }
@@ -58,6 +55,16 @@ where
         self.fd
     }
 
+    /// convert to shared sink
+    pub fn as_shared(self) -> InnerExclusiveKfSink<S> {
+        InnerExclusiveKfSink::new(self)
+    }
+}
+
+impl<S> InnerKfSink<S>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
     /// as client, send request to server
     pub async fn send_request<R>(
         &mut self,
@@ -149,21 +156,30 @@ impl<S> AsRawFd for InnerKfSink<S> {
 use async_lock::Lock;
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-pub struct InnerExclusiveKfSink<S>(Lock<InnerKfSink<S>>);
+pub struct InnerExclusiveKfSink<S> {
+    inner: Lock<InnerKfSink<S>>,
+    fd: RawFd,
+}
+
+impl<S> InnerExclusiveKfSink<S> {
+    pub fn new(sink: InnerKfSink<S>) -> Self {
+        let fd = sink.id();
+        InnerExclusiveKfSink {
+            inner: Lock::new(sink),
+            fd,
+        }
+    }
+}
 
 impl<S> InnerExclusiveKfSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    pub fn new(sink: InnerKfSink<S>) -> Self {
-        InnerExclusiveKfSink(Lock::new(sink))
-    }
-
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), KfSocketError>
     where
         RequestMessage<R>: KfEncoder + Default + Debug,
     {
-        let mut inner_sink = self.0.lock().await;
+        let mut inner_sink = self.inner.lock().await;
         inner_sink.send_request(req_msg).await
     }
 
@@ -175,14 +191,21 @@ where
     where
         ResponseMessage<P>: KfEncoder + Default + Debug,
     {
-        let mut inner_sink = self.0.lock().await;
+        let mut inner_sink = self.inner.lock().await;
         inner_sink.send_response(resp_msg, version).await
+    }
+
+    pub fn id(&self) -> RawFd {
+        self.fd
     }
 }
 
 impl<S> Clone for InnerExclusiveKfSink<S> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self {
+            inner: self.inner.clone(),
+            fd: self.fd.clone(),
+        }
     }
 }
 

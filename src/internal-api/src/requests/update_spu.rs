@@ -1,18 +1,17 @@
-use std::collections::BTreeMap;
-
 use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use flv_types::SpuId;
 use flv_metadata::spu::SpuSpec;
-use flv_metadata::api::SpuMsg;
+use flv_metadata::message::SpuMsg;
 
 use crate::InternalSpuApi;
 
 /// Changes to Spu specs
 #[derive(Decode, Encode, Debug, Default)]
 pub struct UpdateSpuRequest {
-    pub spus: Vec<SpuMsg>,
+    pub epoch: i64,
+    pub changes: Vec<SpuMsg>,
+    pub all: Vec<SpuSpec>,
 }
 
 impl Request for UpdateSpuRequest {
@@ -21,18 +20,31 @@ impl Request for UpdateSpuRequest {
 }
 
 impl UpdateSpuRequest {
-    pub fn new(spus: Vec<SpuMsg>) -> Self {
-        Self { spus }
+    pub fn with_changes(epoch: i64, changes: Vec<SpuMsg>) -> Self {
+        Self {
+            epoch,
+            changes,
+            all: vec![],
+        }
     }
 
-    pub fn spus_ref(&self) -> &Vec<SpuMsg> {
-        &self.spus
+    pub fn with_all(epoch: i64, all: Vec<SpuSpec>) -> Self {
+        Self {
+            epoch,
+            changes: vec![],
+            all,
+        }
     }
 
-    pub fn spus(self) -> Vec<SpuMsg> {
-        self.spus
+    pub fn changes(&self) -> &Vec<SpuMsg> {
+        &self.changes
     }
 
+    pub fn changes_owned(self) -> Vec<SpuMsg> {
+        self.changes
+    }
+
+    /*
     pub fn spus_to_map(&self) -> BTreeMap<SpuId, SpuSpec> {
         let mut res = BTreeMap::new();
         for spu in self.spus.iter() {
@@ -40,7 +52,9 @@ impl UpdateSpuRequest {
         }
         res
     }
+    */
 
+    /*
     pub fn add<S>(mut self, spu: S) -> Self
     where
         S: Into<SpuMsg>,
@@ -48,6 +62,7 @@ impl UpdateSpuRequest {
         self.spus.push(spu.into());
         self
     }
+    */
 }
 
 #[derive(Decode, Encode, Default, Debug)]

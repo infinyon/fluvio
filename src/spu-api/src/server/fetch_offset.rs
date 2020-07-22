@@ -2,11 +2,13 @@
 //! # Fetch Topic Offsets
 //!
 //! API that allows CLI to fetch topic offsets.
-//!
+use std::fmt;
+
 use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::PartitionOffset;
+use kf_protocol::api::ReplicaKey;
 
 use crate::errors::FlvErrorCode;
 use super::SpuServerApiKey;
@@ -62,15 +64,11 @@ pub struct FlvFetchOffsetsResponse {
 }
 
 impl FlvFetchOffsetsResponse {
-    pub fn find_partition(
-        self,
-        topic: &str,
-        partition: i32,
-    ) -> Option<FetchOffsetPartitionResponse> {
+    pub fn find_partition(self, replica: &ReplicaKey) -> Option<FetchOffsetPartitionResponse> {
         for topic_res in self.topics {
-            if topic_res.name == topic {
+            if topic_res.name == replica.topic {
                 for partition_res in topic_res.partitions {
-                    if partition_res.partition_index == partition {
+                    if partition_res.partition_index == replica.partition {
                         return Some(partition_res);
                     }
                 }
@@ -103,6 +101,16 @@ pub struct FetchOffsetPartitionResponse {
 
     /// Last readable offset
     pub last_stable_offset: i64,
+}
+
+impl fmt::Display for FetchOffsetPartitionResponse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "error: {:#?}, partition: {}, start: {}, last: {}",
+            self.error_code, self.partition_index, self.start_offset, self.last_stable_offset
+        )
+    }
 }
 
 impl PartitionOffset for FetchOffsetPartitionResponse {
