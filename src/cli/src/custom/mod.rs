@@ -17,6 +17,7 @@ mod cli {
     use list::ListCustomSpusOpt;
     use list::process_list_custom_spus;
 
+    use crate::COMMAND_TEMPLATE;
     use crate::error::CliError;
     use crate::Terminal;
 
@@ -26,36 +27,21 @@ mod cli {
     pub enum CustomSpuOpt {
         #[structopt(
             name = "register",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Create custom SPU"
         )]
         Create(RegisterCustomSpuOpt),
 
         #[structopt(
             name = "unregister",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Delete custom SPU"
         )]
         Delete(UnregisterCustomSpuOpt),
 
         #[structopt(
             name = "list",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "List custom SPUs"
         )]
         List(ListCustomSpusOpt),

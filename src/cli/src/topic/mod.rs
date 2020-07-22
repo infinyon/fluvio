@@ -20,6 +20,7 @@ mod cli {
     use describe::process_describe_topics;
     use list::process_list_topics;
 
+    use crate::COMMAND_TEMPLATE;
     use crate::Terminal;
     use crate::CliError;
 
@@ -28,48 +29,28 @@ mod cli {
     pub enum TopicOpt {
         #[structopt(
             name = "create",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Create a topic"
         )]
         Create(CreateTopicOpt),
 
         #[structopt(
             name = "delete",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Delete a topic"
         )]
         Delete(DeleteTopicOpt),
 
         #[structopt(
             name = "describe",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Show details of a topic"
         )]
         Describe(DescribeTopicsOpt),
 
         #[structopt(
             name = "list",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Show all topics"
         )]
         List(ListTopicsOpt),

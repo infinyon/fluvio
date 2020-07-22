@@ -12,6 +12,7 @@ mod cli {
 
     use structopt::StructOpt;
 
+    use crate::COMMAND_TEMPLATE;
     use crate::error::CliError;
     use crate::Terminal;
 
@@ -19,12 +20,7 @@ mod cli {
     pub enum SpuOpt {
         #[structopt(
             name = "list",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "List custom & managed SPUs"
         )]
         List(ListSpusOpt),

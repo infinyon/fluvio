@@ -24,6 +24,13 @@ use output::*;
 
 const VERSION: &'static str = include_str!("VERSION");
 
+const COMMAND_TEMPLATE: &'static str = "{about}
+
+{usage}
+
+{all-args}
+";
+
 #[macro_export]
 macro_rules! t_println {
     ($out:expr,$($arg:tt)*) => ( $out.println(&format!($($arg)*)))

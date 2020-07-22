@@ -9,6 +9,7 @@ use structopt::StructOpt;
 
 use flv_future_aio::task::run_block_on;
 
+use crate::COMMAND_TEMPLATE;
 use crate::CliError;
 
 use super::consume::process_consume_log;
@@ -33,120 +34,70 @@ use super::run::{process_run, RunOpt};
 #[structopt(
     about = "Fluvio Command Line Interface",
     name = "fluvio",
-    template = "{about}
-
-{usage}
-
-{all-args}
-",
+    template = COMMAND_TEMPLATE,
     global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
 )]
 enum Root {
     #[structopt(
         no_version,
         name = "consume",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Read messages from a topic/partition"
     )]
     Consume(ConsumeLogOpt),
 
     #[structopt(
         name = "produce",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Write messages to a topic/partition"
     )]
     Produce(ProduceLogOpt),
 
     #[structopt(
         name = "spu",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "SPU Operations"
     )]
     SPU(SpuOpt),
 
     #[structopt(
         name = "spu-group",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "SPU Group Operations"
     )]
     SPUGroup(SpuGroupOpt),
 
     #[structopt(
         name = "custom-spu",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Custom SPU Operations"
     )]
     CustomSPU(CustomSpuOpt),
 
     #[structopt(
         name = "topic",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Topic operations"
     )]
     Topic(TopicOpt),
 
     #[structopt(
         name = "partition",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Partition operations"
     )]
     Partition(PartitionOpt),
 
     #[structopt(
         name = "profile",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Profile operation"
     )]
     Profile(ProfileCommand),
 
     #[structopt(
         name = "cluster",
-        template = "{about}
-
-{usage}
-
-{all-args}
-",
+        template = COMMAND_TEMPLATE,
         about = "Cluster Operations"
     )]
     Cluster(ClusterCommands),

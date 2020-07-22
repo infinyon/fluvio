@@ -5,6 +5,7 @@ mod cli {
 
     use structopt::StructOpt;
 
+    use crate::COMMAND_TEMPLATE;
     use crate::Terminal;
     use crate::CliError;
 
@@ -15,12 +16,7 @@ mod cli {
     pub enum PartitionOpt {
         #[structopt(
             name = "list",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Show all partitions"
         )]
         List(ListPartitionOpt),

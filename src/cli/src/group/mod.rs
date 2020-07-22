@@ -19,6 +19,7 @@ mod cli {
     use list::ListManagedSpuGroupsOpt;
     use list::process_list_managed_spu_groups;
 
+    use crate::COMMAND_TEMPLATE;
     use crate::error::CliError;
     use crate::Terminal;
 
@@ -26,36 +27,21 @@ mod cli {
     pub enum SpuGroupOpt {
         #[structopt(
             name = "create",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Create managed SPU group"
         )]
         Create(CreateManagedSpuGroupOpt),
 
         #[structopt(
             name = "delete",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "Delete managed SPU group"
         )]
         Delete(DeleteManagedSpuGroupOpt),
 
         #[structopt(
             name = "list",
-            template = "{about}
-
-    {usage}
-
-    {all-args}
-    ",
+            template = COMMAND_TEMPLATE,
             about = "List managed SPU groups"
         )]
         List(ListManagedSpuGroupsOpt),
