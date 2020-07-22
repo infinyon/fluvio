@@ -3,11 +3,11 @@ mod spg;
 mod spu;
 mod topic;
 mod partition;
-mod metadata;
 mod api_version;
 mod create;
 mod delete;
 mod list;
+mod watch;
 
 pub use context::*;
 

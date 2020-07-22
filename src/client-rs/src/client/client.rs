@@ -1,11 +1,12 @@
 use std::default::Default;
+use std::fmt;
 
 use log::trace;
 use async_trait::async_trait;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Request;
-use spu_api::server::versions::{ApiVersions, ApiVersionsRequest};
+use flv_api_spu::server::versions::{ApiVersions, ApiVersionsRequest};
 use kf_socket::*;
 use flv_future_aio::net::tls::AllDomainConnector;
 
@@ -41,13 +42,20 @@ pub trait Client: Sync + Send  {
 
 }
 
-/// Client to fluvio component
-///
+/// Client with socket connection
 pub struct RawClient {
     socket: AllKfSocket,
     config: ClientConfig,
     versions: Versions,
 }
+
+impl fmt::Display for RawClient {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "config {}", self.config)
+    }
+}
+
+
 
 #[async_trait]
 impl Client for RawClient {
@@ -120,12 +128,18 @@ impl RawClient {
 
 }
 
-/// Client Factory
+/// Connection Config to any client
 #[derive(Clone)]
 pub struct ClientConfig {
     addr: String,
     client_id: String,
     connector: AllDomainConnector,
+}
+
+impl fmt::Display for ClientConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "addr {}", self.addr)
+    }
 }
 
 impl From<String> for ClientConfig {

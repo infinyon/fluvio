@@ -1,13 +1,14 @@
 use std::fmt;
 use std::io::Error as IoError;
 
+use kf_protocol::api::ReplicaKey;
 use kf_socket::KfSocketError;
 use flv_api_sc::ApiError;
 
 #[derive(Debug)]
 pub enum ClientError {
     TopicNotFound(String),
-    PartitionNotFound(String, i32),
+    PartitionNotFound(ReplicaKey),
     Other(String),
     IoError(IoError),
     KfSocketError(KfSocketError),
@@ -37,8 +38,8 @@ impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::TopicNotFound(topic) => write!(f, "topic: {} not found", topic),
-            Self::PartitionNotFound(topic, partition) => {
-                write!(f, "partition <{}:{}> not found", topic, partition)
+            Self::PartitionNotFound(replica) => {
+                write!(f, "partition <{}> not found",replica)
             }
             Self::Other(msg) => write!(f, "{}", msg),
             Self::IoError(err) => write!(f, "{}", err),

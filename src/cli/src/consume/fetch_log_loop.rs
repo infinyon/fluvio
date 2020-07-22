@@ -32,7 +32,7 @@ where
     O: Terminal,
 {
     
-    // force to be non continous
+    // force to be non continuous
     opt.disable_continuous = true;
 
     debug!("starting fetch loop: {:#?}", opt);
@@ -78,7 +78,7 @@ where
             response.records.batches.len(),
         );
 
-        process_fetch_topic_response(out.clone(),consumer.topic(),response, &opt).await?;
+        process_fetch_topic_response(out.clone(),response, &opt).await?;
     } else {
         /*
         let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);

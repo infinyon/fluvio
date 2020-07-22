@@ -1,9 +1,4 @@
 use std::fmt::Debug;
-use std::fmt::Display;
-use std::convert::TryFrom;
-use std::convert::TryInto;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 
 use kf_protocol::derive::{Decode, Encode};
 use kf_protocol::api::Request;
@@ -12,121 +7,90 @@ use flv_metadata::core::*;
 use flv_metadata::topic::TopicSpec;
 use flv_metadata::spu::*;
 use flv_metadata::spg::SpuGroupSpec;
-use flv_metadata::store::*;
 use flv_metadata::partition::PartitionSpec;
+use flv_metadata::store::Epoch;
+use flv_metadata::message::Message;
+
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
-/// marker trait
-pub trait ListFilter {}
+use super::*;
 
-/// filter by name
-pub type NameFilter = String;
-
-impl ListFilter for NameFilter{}
-
-pub trait ListSpec: Spec {
-
-    /// filter type
-    type Filter: ListFilter;
-    
+/// marker trait for List
+pub trait WatchSpec: Spec {
     /// convert to list request with filters
-    fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest;
+    fn into_list_request(epoch: Epoch) -> WatchRequest;
 }
 
 #[derive(Debug)]
-pub enum ListRequest {
-    Topic(Vec<NameFilter>),
-    Spu(Vec<NameFilter>),
-    SpuGroup(Vec<NameFilter>),
-    CustomSpu(Vec<NameFilter>),
-    Partition(Vec<NameFilter>)
+pub enum WatchRequest {
+    Topic(Epoch),
+    Spu(Epoch),
+    SpuGroup(Epoch),
+    Partition(Epoch),
 }
 
-impl Default for ListRequest {
+impl Default for WatchRequest {
     fn default() -> Self {
-        Self::Spu(vec![])
+        Self::Spu(0)
     }
 }
 
-
-impl Request for ListRequest {
-    const API_KEY: u16 = AdminPublicApiKey::List as u16;
+impl Request for WatchRequest {
+    const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = 0;
-    type Response = ListResponse;
+    type Response = WatchResponse;
 }
 
-impl AdminRequest for ListRequest{}
-
+impl AdminRequest for WatchRequest {}
 
 #[derive(Debug)]
-pub enum ListResponse {
-    Topic(Vec<Metadata<TopicSpec>>),
-    Spu(Vec<Metadata<SpuSpec>>),
-    CustomSpu(Vec<Metadata<CustomSpuSpec>>),
-    SpuGroup(Vec<Metadata<SpuGroupSpec>>),
-    Partition(Vec<Metadata<PartitionSpec>>)
+pub enum WatchResponse {
+    Topic(MetadataUpdate<TopicSpec>),
+    Spu(MetadataUpdate<SpuSpec>),
+    SpuGroup(MetadataUpdate<SpuGroupSpec>),
+    Partition(MetadataUpdate<PartitionSpec>),
 }
 
-impl Default for ListResponse {
+impl Default for WatchResponse {
     fn default() -> Self {
-        Self::Topic(vec![])
+        Self::Topic(MetadataUpdate::default())
     }
 }
 
 
-
+/// updates on metadata
 #[derive(Encode, Decode, Default, Clone,Debug)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
-pub struct Metadata<S> 
-    where S: Spec + Debug, 
+pub struct MetadataUpdate<S>
+    where S: Spec + Debug,
         S::Status: Debug
 {
-    pub name: String,
-    pub spec: S,
-    pub status: S::Status
+    pub epoch: Epoch,
+    pub changes: Vec<Message<Metadata<S>>>,
+    pub all: Vec<Metadata<S>>,
 }
 
-
-impl <S,C>From<MetadataStoreObject<S,C>> for Metadata<S> 
-   where 
-        S: Spec,
-        S::IndexKey: ToString,
-        C: MetadataItem
+impl <S> MetadataUpdate<S>
+    where S: Spec + Debug,
+    S::Status: Debug
 {
-    fn from(meta: MetadataStoreObject<S,C>) -> Self {
+
+    pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {
-            name: meta.key.to_string(),
-            spec: meta.spec,
-            status: meta.status
+            epoch,
+            changes,
+            all: vec![],
+        }
+    }
+
+    pub fn with_all(epoch: i64, all: Vec<Metadata<S>>) -> Self {
+        Self {
+            epoch,
+            changes: vec![],
+            all
         }
     }
 }
-
-impl <S,C>TryFrom<Metadata<S>> for MetadataStoreObject<S,C> 
-    where 
-        S: Spec,
-        C: MetadataItem,
-        <S as Spec>::IndexKey: TryFrom<String>,
-        <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display
-{
-    type Error = IoError;
-
-    fn try_from(value: Metadata<S>) -> Result<Self, Self::Error> {
-        
-        Ok(Self{
-            spec: value.spec,
-            status: value.status,
-            key: value.name.try_into().map_err(|err| 
-                IoError::new(ErrorKind::InvalidData,format!("problem converting: {}",err)))?,
-            ctx: MetadataContext::default()
-        })
-    }
-
-}
-
-
-
 
 
 // later this can be written using procedure macro
@@ -141,36 +105,31 @@ mod encoding {
     use kf_protocol::Decoder;
     use kf_protocol::Version;
     use kf_protocol::bytes::{Buf, BufMut};
-    
 
     use super::*;
 
-    impl ListRequest {
+    impl WatchRequest {
         /// type represent as string
         fn type_string(&self) -> &'static str {
             match self {
                 Self::Topic(_) => TopicSpec::LABEL,
                 Self::Spu(_) => SpuSpec::LABEL,
                 Self::SpuGroup(_) => SpuGroupSpec::LABEL,
-                Self::CustomSpu(_) => CustomSpuSpec::LABEL,
-                Self::Partition(_) => PartitionSpec::LABEL
+                Self::Partition(_) => PartitionSpec::LABEL,
             }
         }
     }
 
-
-    impl Encoder for ListRequest {
-    
+    impl Encoder for WatchRequest {
         fn write_size(&self, version: Version) -> usize {
             let type_size = self.type_string().to_owned().write_size(version);
-        
+
             type_size
                 + match self {
                     Self::Topic(s) => s.write_size(version),
-                    Self::CustomSpu(s) => s.write_size(version),
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::Spu(s) => s.write_size(version),
-                    Self::Partition(s) => s.write_size(version)
+                    Self::Partition(s) => s.write_size(version),
                 }
         }
 
@@ -179,22 +138,20 @@ mod encoding {
         where
             T: BufMut,
         {
-
-            self.type_string().to_owned().encode(dest,version)?;
+            self.type_string().to_owned().encode(dest, version)?;
 
             match self {
                 Self::Topic(s) => s.encode(dest, version)?,
-                Self::CustomSpu(s) => s.encode(dest, version)?,
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::Spu(s) => s.encode(dest, version)?,
-                Self::Partition(s) => s.encode(dest, version)?
+                Self::Partition(s) => s.encode(dest, version)?,
             }
 
             Ok(())
         }
     }
 
-    impl Decoder for ListRequest {
+    impl Decoder for WatchRequest {
         fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
         where
             T: Buf,
@@ -205,35 +162,29 @@ mod encoding {
 
             match typ.as_ref() {
                 TopicSpec::LABEL => {
-                    let mut response:  Vec<NameFilter> = vec![];
+                    let mut response: Epoch = Epoch::default();
                     response.decode(src, version)?;
                     *self = Self::Topic(response);
                     Ok(())
-                },
+                }
 
-                CustomSpuSpec::LABEL => {
-                    let mut response: Vec<NameFilter>  = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::CustomSpu(response);
-                    Ok(())
-                },
 
                 SpuGroupSpec::LABEL => {
-                    let mut response: Vec<NameFilter>  = vec![];
+                    let mut response: Epoch = Epoch::default();
                     response.decode(src, version)?;
                     *self = Self::SpuGroup(response);
                     Ok(())
-                },
+                }
 
                 SpuSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
+                    let mut response: Epoch = Epoch::default();
                     response.decode(src, version)?;
                     *self = Self::Spu(response);
                     Ok(())
-                },
+                }
 
                 PartitionSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
+                    let mut response: Epoch = Epoch::default();
                     response.decode(src, version)?;
                     *self = Self::Partition(response);
                     Ok(())
@@ -247,38 +198,29 @@ mod encoding {
             }
         }
     }
-    
 
-
-
-
-    impl ListResponse {
+    impl WatchResponse {
         /// type represent as string
         fn type_string(&self) -> &'static str {
             match self {
                 Self::Topic(_) => TopicSpec::LABEL,
                 Self::Spu(_) => SpuSpec::LABEL,
                 Self::SpuGroup(_) => SpuGroupSpec::LABEL,
-                Self::CustomSpu(_) => CustomSpuSpec::LABEL,
-                Self::Partition(_) => PartitionSpec::LABEL
+                Self::Partition(_) => PartitionSpec::LABEL,
             }
         }
     }
 
-
-
-    impl Encoder for ListResponse {
-    
+    impl Encoder for WatchResponse {
         fn write_size(&self, version: Version) -> usize {
             let type_size = self.type_string().to_owned().write_size(version);
-        
+
             type_size
                 + match self {
                     Self::Topic(s) => s.write_size(version),
-                    Self::CustomSpu(s) => s.write_size(version),
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::Spu(s) => s.write_size(version),
-                    Self::Partition(s) => s.write_size(version)
+                    Self::Partition(s) => s.write_size(version),
                 }
         }
 
@@ -287,22 +229,20 @@ mod encoding {
         where
             T: BufMut,
         {
-
-            self.type_string().to_owned().encode(dest,version)?;
+            self.type_string().to_owned().encode(dest, version)?;
 
             match self {
                 Self::Topic(s) => s.encode(dest, version)?,
-                Self::CustomSpu(s) => s.encode(dest, version)?,
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::Spu(s) => s.encode(dest, version)?,
-                Self::Partition(s) => s.encode(dest, version)?
+                Self::Partition(s) => s.encode(dest, version)?,
             }
 
             Ok(())
         }
     }
 
-    impl Decoder for ListResponse {
+    impl Decoder for WatchResponse {
         fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
         where
             T: Buf,
@@ -313,35 +253,28 @@ mod encoding {
 
             match typ.as_ref() {
                 TopicSpec::LABEL => {
-                    let mut response:  Vec<Metadata<TopicSpec>> = vec![];
+                    let mut response = MetadataUpdate::default();
                     response.decode(src, version)?;
                     *self = Self::Topic(response);
                     Ok(())
-                },
-
-                CustomSpuSpec::LABEL => {
-                    let mut response: Vec<Metadata<CustomSpuSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::CustomSpu(response);
-                    Ok(())
-                },
+                }
 
                 SpuGroupSpec::LABEL => {
-                    let mut response: Vec<Metadata<SpuGroupSpec>>  = vec![];
+                    let mut response = MetadataUpdate::default();
                     response.decode(src, version)?;
                     *self = Self::SpuGroup(response);
                     Ok(())
-                },
+                }
 
                 SpuSpec::LABEL => {
-                    let mut response: Vec<Metadata<SpuSpec>>= vec![];
+                    let mut response = MetadataUpdate::default();
                     response.decode(src, version)?;
                     *self = Self::Spu(response);
                     Ok(())
-                },
+                }
 
                 PartitionSpec::LABEL => {
-                    let mut response: Vec<Metadata<PartitionSpec>>= vec![];
+                    let mut response = MetadataUpdate::default();
                     response.decode(src, version)?;
                     *self = Self::Partition(response);
                     Ok(())
@@ -355,6 +288,4 @@ mod encoding {
             }
         }
     }
-
-
 }

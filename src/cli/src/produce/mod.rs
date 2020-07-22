@@ -104,11 +104,17 @@ pub async fn process_produce_record<O>(
 where
     O: Terminal,
 {
+    use log::debug;
+    use flv_client::kf::api::ReplicaKey;
+
     let (target_server, (cfg,file_records)) = opt.validate()?;
 
     let mut target = target_server.connect().await?;
-    let producer = target.producer(&cfg.topic,cfg.partition).await?;
+    
+    let replica: ReplicaKey = (cfg.topic.clone(),cfg.partition).into();
+    let producer = target.producer(replica).await?;
 
+    debug!("got producer");
     if let Some(records) = file_records {
         produce::produce_file_records(producer, out, cfg, records).await?;
     } else {

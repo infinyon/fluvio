@@ -374,7 +374,7 @@ mod convert {
             }
         }
 
-        if let Some(status) = local_store.apply_changes(changes).await {
+        if let Some(_) = local_store.apply_changes(changes).await {
             return true;
         } else {
             debug!("no apply changes: {}", S::LABEL);

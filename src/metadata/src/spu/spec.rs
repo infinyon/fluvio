@@ -36,6 +36,13 @@ pub struct SpuSpec {
     pub rack: Option<String>,
 }
 
+
+impl fmt::Display for SpuSpec {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "id: {}, type: {}, public: {}",self.id,self.spu_type,self.public_endpoint)
+    }
+}
+
 impl Default for SpuSpec {
     fn default() -> Self {
         SpuSpec {
@@ -206,6 +213,11 @@ impl IngressPort {
             Some(host_val) => host_val,
             None => "".to_owned(),
         }
+    }
+
+    // convert to host:addr format
+    pub fn addr(&self) -> String {
+        format!("{}:{}",self.host_string(),self.port)
     }
 }
 

@@ -3,9 +3,10 @@ mod client;
 mod admin;
 mod consumer;
 mod producer;
-mod metadata_store;
-pub mod config;
+mod sync;
+mod spu;
 
+pub mod config;
 pub mod params;
 
 pub use error::ClientError;
@@ -36,6 +37,14 @@ pub mod metadata {
 
     pub mod objects {
         pub use flv_api_sc::objects::*;
+    }
+
+    pub mod core {
+        pub use flv_api_sc::core::*;
+    }
+
+    pub mod store {
+        pub use flv_api_sc::store::*;
     }
 }
 

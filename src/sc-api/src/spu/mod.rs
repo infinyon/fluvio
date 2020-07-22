@@ -69,5 +69,27 @@ mod convert {
         }
     }
 
+    impl From<MetadataUpdate<SpuSpec>> for WatchResponse {
+
+        fn from(update: MetadataUpdate<SpuSpec>) -> Self {
+            Self::Spu(update)
+        }
+    }
+
+    impl TryInto<MetadataUpdate<SpuSpec>> for WatchResponse  {
+
+        type Error = Error;
+
+        fn try_into(self) -> Result<MetadataUpdate<SpuSpec>, Self::Error>  {
+
+            match self {
+                WatchResponse::Spu(m) => Ok(m),
+                _ => Err(Error::new(ErrorKind::Other,"not  spu"))
+            }
+        }
+    }
+
+
+
 
 }

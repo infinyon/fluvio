@@ -42,6 +42,7 @@ pub struct PartitionParam {
 }
 
 
+#[derive(Debug)]
 pub enum FetchOffset {
     Earliest(Option<i64>),
     /// earliest + offset

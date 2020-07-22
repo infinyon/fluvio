@@ -3,7 +3,6 @@ pub mod topic;
 pub mod spu;
 pub mod spg;
 pub mod partition;
-pub mod metadata;
 pub mod versions;
 pub mod objects;
 mod request;
@@ -20,6 +19,10 @@ pub mod errors {
 
 pub mod core {
     pub use flv_metadata::core::*;
+}
+
+pub mod store {
+    pub use flv_metadata::store::*;
 }
 
 /// Error from api call

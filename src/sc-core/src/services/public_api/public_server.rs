@@ -23,7 +23,7 @@ use sc_api::AdminPublicRequest;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::*;
-use super::*;
+
 
 pub struct PublicService {}
 
@@ -82,17 +82,19 @@ where
                 shared_sink,
                 "list handler"
             ),
-            AdminPublicRequest::WatchMetadataRequest(request) =>
-                super::metadata::ClientMetadataController::handle_metadata_update(
+            AdminPublicRequest::WatchRequest(request) =>
+
+                super::watch::handle_watch_request(
                     request,
+                    ctx.clone(),
                     shared_sink.clone(),
                     end_event.clone(),
-                    ctx.clone()
                 )
+
         );
 
         // we are done with this tcp stream, notify any controllers use this strep
-        end_event.notify(1);
+        end_event.notify(usize::MAX);
 
         Ok(())
     }

@@ -1,11 +1,9 @@
 mod k8_dispatcher;
 mod k8_ws_service;
-mod client;
 mod actions;
 
 pub use k8_dispatcher::*;
 use k8_ws_service::*;
-pub use client::*;
 pub use actions::*;
 
 mod k8_actions {

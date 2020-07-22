@@ -9,7 +9,7 @@ use sc_api::versions::ApiVersionKey;
 use sc_api::versions::{ApiVersionsRequest, ApiVersionsResponse};
 use sc_api::AdminPublicApiKey;
 use sc_api::objects::*;
-use sc_api::metadata::*;
+
 
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
@@ -33,9 +33,9 @@ pub async fn handle_api_versions_request(
         ListRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
-        AdminPublicApiKey::WatchMetadata,
-        WatchMetadataRequest::DEFAULT_API_VERSION,
-        WatchMetadataRequest::DEFAULT_API_VERSION,
+        AdminPublicApiKey::Watch,
+        WatchRequest::DEFAULT_API_VERSION,
+        WatchRequest::DEFAULT_API_VERSION,
     ));
 
 

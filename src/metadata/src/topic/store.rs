@@ -118,11 +118,14 @@ impl <C>TopicLocalStore<C>
 }
 
 
+#[cfg(test)]
 mod test {
     
     use flv_future_aio::test_async;
-    use crate::topic::store::*;
-    use crate::topic::*;
+    use crate::topic::store::DefaultTopicMd;
+    use crate::topic::TopicStatus;
+    use crate::topic::TopicResolution;
+    use crate::topic::store::DefaultTopicLocalStore;
  
 
     #[test]

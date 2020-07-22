@@ -11,14 +11,13 @@ use kf_protocol::derive::Decode;
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum AdminPublicApiKey {
-    // Mixed
+  
     ApiVersion = 18,
-
 
     Create = 1001,
     Delete = 1002,
     List = 1003,
-    WatchMetadata = 2000
+    Watch = 1004
 }
 
 impl Default for AdminPublicApiKey {

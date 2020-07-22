@@ -1,32 +1,33 @@
+use log::debug;
+
 use kf_socket::AllMultiplexerSocket;
+use kf_protocol::api::ReplicaKey;
 
 use crate::admin::AdminClient;
 use crate::Producer;
 use crate::Consumer;
 use crate::ClientError;
-use crate::metadata_store::*;
+use crate::sync::MetadataStores;
+use crate::spu::SpuPool;
 
 use super::*;
 
-/// Gate way to Sc
-/// All other clients are constructed from here
+/// Client connection to cluster
 pub struct ClusterClient {
     socket: AllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
-    metadata: SharedMetadataStore
+    spu_pool: Option<SpuPool>,
 }
 
 impl ClusterClient {
-
     pub(crate) fn new(client: RawClient) -> Self {
-
         let (socket, config, versions) = client.split();
         Self {
             socket: AllMultiplexerSocket::new(socket),
             config,
             versions,
-            metadata: MetadataStores::new_shared()
+            spu_pool: None,
         }
     }
 
@@ -34,7 +35,7 @@ impl ClusterClient {
         SerialClient::new(
             self.socket.create_serial_socket().await,
             self.config.clone(),
-            self.versions.clone()
+            self.versions.clone(),
         )
     }
 
@@ -43,38 +44,42 @@ impl ClusterClient {
         AdminClient::new(self.create_serial_client().await)
     }
 
+    
     /// create new producer for topic/partition
-    pub async fn producer(
-        &mut self,
-        topic: &str,
-        partition: i32,
-    ) -> Result<Producer, ClientError> {
-
-       Ok(Producer::new(self.create_serial_client().await,topic,partition))
-
-    }
-
-
-    /// create new consumer for topic/partition
-    pub async fn consumer(
-        &mut self,
-        topic: &str,
-        partition: i32,
-    ) -> Result<Consumer, ClientError> {
-
-        Ok(Consumer::new(self.create_serial_client().await, topic, partition))
-
-    }
-
-    /// start watch on metadata
-    /// first, it get current metadata then wait for update
-    pub async fn start_metadata_watch(
-        &mut self
-    ) -> Result<(), ClientError> {
-
-        self.metadata.start_metadata_watch(&mut self.socket).await       
+    pub async fn producer(&mut self, replica: ReplicaKey) -> Result<Producer,ClientError> {
+        debug!(
+            "creating producer, replica: {}",
+            replica
+        );
+        if let Some(pool) = &self.spu_pool {
+            Ok(Producer::new(replica,pool.clone()))
+        } else {
+            let pool = self.init_spu_pool().await?;
+            Ok(Producer::new(replica, pool))
+        }   
         
     }
+
+    /// initialize spu pool and return clone of the pool
+    async fn init_spu_pool(&mut self) -> Result<SpuPool,ClientError> {
+        debug!("init metadata store");
+        let metadata = MetadataStores::new(&mut self.socket).await?;
+        let pool = SpuPool::new(self.config.clone(), metadata);
+        self.spu_pool.replace(pool.clone());
+        Ok(pool)
+    }
+
+    /// create new consumer for topic/partition
+    pub async fn consumer(&mut self, replica: ReplicaKey) -> Result<Consumer, ClientError> {
+        debug!("creating consumer, replica: {}",replica);
+
+        if let Some(pool) = &self.spu_pool {
+            Ok(Consumer::new(replica,pool.clone()))
+        } else {
+            let pool = self.init_spu_pool().await?;
+            Ok(Consumer::new(replica, pool))
+        }  
+    }
+
+
 }
-
-

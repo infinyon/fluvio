@@ -19,7 +19,6 @@ use kf_protocol::api::api_decode;
 use kf_protocol::derive::Encode;
 
 use super::versions::ApiVersionsRequest;
-use super::metadata::*;
 use super::objects::*;
 
 use super::AdminPublicApiKey;
@@ -32,7 +31,7 @@ pub enum AdminPublicRequest {
     CreateRequest(RequestMessage<CreateRequest>),
     DeleteRequest(RequestMessage<DeleteRequest>),
     ListRequest(RequestMessage<ListRequest>),
-    WatchMetadataRequest(RequestMessage<WatchMetadataRequest>),
+    WatchRequest(RequestMessage<WatchRequest>)
 }
 
 impl Default for AdminPublicRequest {
@@ -58,7 +57,7 @@ impl KfRequestMessage for AdminPublicRequest {
             AdminPublicApiKey::Create => api_decode!(Self, CreateRequest, src, header),
             AdminPublicApiKey::Delete => api_decode!(Self, DeleteRequest, src, header),
             AdminPublicApiKey::List => api_decode!(Self, ListRequest, src,header),
-            AdminPublicApiKey::WatchMetadata => api_decode!(Self, WatchMetadataRequest, src, header),
+            AdminPublicApiKey::Watch => api_decode!(Self, WatchRequest, src, header),
         }
     }
 }

@@ -311,11 +311,11 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
-        shared_sc_sink: Arc<ExclusiveKfSink>,
+        _shared_sc_sink: Arc<ExclusiveKfSink>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
-        let actions = if request.all.len() > 0 {
+        let _actions = if request.all.len() > 0 {
             debug!(
                 "received spu sync all epoch: {}, items: {}",
                 request.epoch,

@@ -30,14 +30,17 @@ mod process {
     where
         O: Terminal,
     {
+        use flv_client::kf::api::ReplicaKey;
+
         let (target_server, cfg) = opt.validate()?;
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
+        let replica: ReplicaKey = (cfg.topic.clone(),cfg.partition).into();
         let mut target = target_server.connect().await?;
-        let consumer = target.consumer(&cfg.topic,cfg.partition).await?;
+        let consumer = target.consumer(replica).await?;
         fetch_log_loop(out, consumer, cfg).await?;
        
-        Ok("ok".to_owned())
+        Ok("".to_owned())
     }
 }

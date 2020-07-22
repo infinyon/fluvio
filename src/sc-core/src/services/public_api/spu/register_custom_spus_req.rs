@@ -7,7 +7,6 @@ use log::{debug, trace};
 use std::io::Error as IoError;
 
 use kf_protocol::api::FlvErrorCode;
-use flv_metadata::k8::metadata::ObjectMeta;
 use sc_api::FlvStatus;
 use sc_api::spu::CustomSpuSpec;
 use sc_api::spu::SpuSpec;
@@ -89,7 +88,6 @@ impl RegisterCustomSpu {
     async fn register_custom_spu(&self) -> Result<(), IoError> {
         let spu_spec: SpuSpec = self.spec.clone().into();
 
-        let meta = ObjectMeta::new(self.name.clone(), self.ctx.namespace().to_owned());
         self.ctx
             .spus()
             .create_spec(self.name.to_owned(), spu_spec)

@@ -77,12 +77,13 @@ mod context {
     use event_listener::{Event, EventListener};
     use async_channel::{Sender, Receiver, bounded, SendError};
 
-    use flv_metadata::core::*;
 
     use crate::metadata::WSAction;
+    use crate::stores::K8MetaItem;
 
-    use super::core::*;
-    use super::*;
+    use super::MetadataStoreObject;
+    use super::LocalStore;
+    use super::core::Spec;
 
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
