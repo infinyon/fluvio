@@ -21,8 +21,8 @@ Copy binary to your bin path and make it executable.
 To check CLI version, run:
 
 ```bash
-$ fluvio --version
- fluvio 0.3.0
+$ fluvio version
+ version is: 0.5.1
 ```
 
 ## CLI Overview
@@ -36,7 +36,7 @@ fluvio module operation [FLAGS] [OPTIONS]
 Depending on context, _options_ can be mandatory or optional. Mandatory options are shown in the CLI usage line. For example, in _fluvio topic create_ :
 
 ```bash
-fluvio topic create --partitions <integer> --replication <integer> --topic <string>
+fluvio topic create [FLAGS] [OPTIONS] <topic name> --partitions <partitions> --replication <integer>
 ```
 
 * **options**: &dash;&dash;topic,  &dash;&dash;partitions, and  &dash;&dash;replication, are mandatory.
@@ -47,22 +47,25 @@ Command line help is available at any level by appending -h or &dash;&dash;help 
 
 ```bash
 $ fluvio 
+
 Fluvio Command Line Interface
 
 fluvio <SUBCOMMAND>
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help    Prints help information
 
 SUBCOMMANDS:
     consume       Read messages from a topic/partition
-    produce       Write log records to a topic/partition
-    spu           SPU Operations
-    spu-group     SPU Group Operations
-    custom-spu    Custom SPU Operations
+    produce       Write messages to a topic/partition
+    spu           SPU operations
+    spu-group     SPU group operations
+    custom-spu    Custom SPU operations
     topic         Topic operations
-    advanced      Advanced operations
+    partition     Partition operations
+    profile       Profile operation
+    cluster       Cluster Operations
+    version       Print the current fluvio version
     help          Prints this message or the help of the given subcommand(s)
 ```
 
@@ -113,24 +116,31 @@ Mandatory options are shown in the syntax definition. All other flags and option
 $ fluvio topic create --help
 Create a topic
 
-fluvio topic create [FLAGS] [OPTIONS] --partitions <integer> --replication <integer> --topic <string>
+    fluvio topic create [FLAGS] [OPTIONS] <topic name> --partitions <partitions> --replication <integer>
 
-FLAGS:
+    FLAGS:
     -i, --ignore-rack-assignment    Ignore racks while computing replica assignment
-    -v, --validate-only             Validates configuration, does not provision
+    -d, --dry-run                   Validates configuration, does not provision
+        --tls                       enable tls
+        --enable-client-cert        TLS: enable client cert
     -h, --help                      Prints help information
 
 OPTIONS:
-    -t, --topic <string>                    Topic name
-    -p, --partitions <integer>              Number of partitions
-    -r, --replication <integer>             Replication factor per partition
+    -p, --partitions <partitions>           Number of partitions [default: 1]
+    -r, --replication <integer>             Replication factor per partition [default: 1]
     -f, --replica-assignment <file.json>    Replica assignment file
-    -c, --sc <host:port>                    Address of Streaming Controller
-    -k, --kf <host:port>                    Address of Kafka Controller
-    -P, --profile <profile>                 Profile name
+    -c, --cluster <host:port>               address of cluster
+        --domain <domain>                   required if client cert is used
+        --client-cert <client-cert>         TLS: path to client certificate
+        --client-key <client-key>           TLS: path to client private key
+        --ca-cert <ca-cert>                 TLS: path to ca cert, required when client cert is enabled
+    -P, --profile <profile>                 
+
+ARGS:
+    <topic name>    Topic name
 ```
 
-A small subset of the options, &dash;&dash;kf, &dash;&dash;sc, and &dash;&dash;profile, are applied to every command. The purpose of these options is to help the CLI identify the location of the services where to send the command.
+A small subset of the options, &dash;&dash;sc, and &dash;&dash;profile, are applied to every command. The purpose of these options is to help the CLI identify the location of the services where to send the command.
 
 ### Fluvio Clusters
 
