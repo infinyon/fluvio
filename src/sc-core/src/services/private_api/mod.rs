@@ -1,6 +1,5 @@
 mod private_server;
 
-
 use log::info;
 
 use private_server::ScInternalService;

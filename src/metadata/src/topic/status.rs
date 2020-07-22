@@ -8,7 +8,6 @@ use std::fmt;
 
 use kf_protocol::derive::{Decode, Encode};
 
-
 use flv_types::{ReplicaMap, SpuId};
 
 // -----------------------------------
@@ -16,7 +15,11 @@ use flv_types::{ReplicaMap, SpuId};
 // -----------------------------------
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct TopicStatus {
     pub resolution: TopicResolution,
     pub replica_map: BTreeMap<i32, Vec<i32>>,
@@ -30,7 +33,7 @@ impl fmt::Display for TopicStatus {
 }
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TopicResolution {
     Init,                  // initializing this is starting state.
     Pending,               // Has valid config, ready for replica mapping assignment
@@ -74,7 +77,6 @@ impl std::fmt::Display for TopicResolution {
 // -----------------------------------
 // Encode - from KV Topic Status
 // -----------------------------------
-
 
 /*
 // -----------------------------------

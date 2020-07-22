@@ -13,7 +13,6 @@ const SPU_API: Crd = Crd {
     },
 };
 
-
 impl Spec for SpuSpec {
     type Status = SpuStatus;
     type Header = DefaultHeader;

@@ -7,26 +7,20 @@ pub use channel::*;
 
 mod channel {
 
-
     use async_channel::{Sender, Receiver, bounded};
     use super::*;
 
     #[derive(Debug)]
     pub struct SpuStatusChannel {
         sender: Sender<SpuAction>,
-        receiver: Receiver<SpuAction>
+        receiver: Receiver<SpuAction>,
     }
 
-
     impl SpuStatusChannel {
-
         pub fn new() -> Self {
-            let (sender,receiver) = bounded(10);
+            let (sender, receiver) = bounded(10);
 
-            Self {
-                sender,
-                receiver
-            }
+            Self { sender, receiver }
         }
 
         pub fn receiver(&self) -> Receiver<SpuAction> {
@@ -37,6 +31,4 @@ mod channel {
             self.sender.clone()
         }
     }
-
-    
 }

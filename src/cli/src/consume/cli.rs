@@ -41,7 +41,6 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
     pub max_bytes: Option<i32>,
 
-  
     /// Suppress items items that have an unknown output type
     #[structopt(short = "s", long = "suppress-unknown")]
     pub suppress_unknown: bool,
@@ -58,7 +57,7 @@ pub struct ConsumeLogOpt {
     output: ConsumeOutputType,
 
     #[structopt(flatten)]
-    target: ClusterTarget
+    target: ClusterTarget,
 }
 
 impl ConsumeLogOpt {

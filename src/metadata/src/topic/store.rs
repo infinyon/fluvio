@@ -8,15 +8,14 @@ use crate::partition::store::*;
 use crate::partition::*;
 use super::*;
 
-pub type TopicMetadata<C> = MetadataStoreObject<TopicSpec,C>;
-pub type TopicLocalStore<C> = LocalStore<TopicSpec,C>;
+pub type TopicMetadata<C> = MetadataStoreObject<TopicSpec, C>;
+pub type TopicLocalStore<C> = LocalStore<TopicSpec, C>;
 pub type DefaultTopicMd = TopicMetadata<String>;
 pub type DefaultTopicLocalStore = TopicLocalStore<String>;
 
-
-
-impl <C>std::fmt::Display for TopicMetadata<C> 
-    where C: MetadataItem
+impl<C> std::fmt::Display for TopicMetadata<C>
+where
+    C: MetadataItem,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.spec {
@@ -26,11 +25,9 @@ impl <C>std::fmt::Display for TopicMetadata<C>
     }
 }
 
-
-
-
-impl<C> TopicMetadata<C> 
-    where C: MetadataItem
+impl<C> TopicMetadata<C>
+where
+    C: MetadataItem,
 {
     pub fn is_provisioned(&self) -> bool {
         self.status.is_resolution_provisioned()
@@ -50,7 +47,6 @@ impl<C> TopicMetadata<C>
         &self,
         partition_store: &PartitionLocalStore<C>,
     ) -> Vec<PartitionMetadata<C>> {
-
         let mut partitions = vec![];
         for (idx, replicas) in self.status.replica_map.iter() {
             let replica_key = ReplicaKey::new(self.key(), *idx);
@@ -66,14 +62,13 @@ impl<C> TopicMetadata<C>
     }
 }
 
-
-
 // -----------------------------------
 // Topics - Implementation
 // -----------------------------------
 
-impl <C>TopicLocalStore<C> 
-    where C: MetadataItem
+impl<C> TopicLocalStore<C>
+where
+    C: MetadataItem,
 {
     pub async fn topic(&self, topic_name: &str) -> Option<TopicMetadata<C>> {
         match self.read().await.get(topic_name) {
@@ -117,16 +112,14 @@ impl <C>TopicLocalStore<C>
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    
+
     use flv_future_aio::test_async;
     use crate::topic::store::DefaultTopicMd;
     use crate::topic::TopicStatus;
     use crate::topic::TopicResolution;
     use crate::topic::store::DefaultTopicLocalStore;
- 
 
     #[test]
     fn test_topic_replica_map() {
@@ -150,7 +143,8 @@ mod test {
     #[test]
     fn test_update_topic_status_objects() {
         // create topic 1
-        let mut topic1 = DefaultTopicMd::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
+        let mut topic1 =
+            DefaultTopicMd::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.resolution, TopicResolution::Init);
 
         // create topic 2
@@ -173,11 +167,8 @@ mod test {
         assert_eq!(topic1, topic2);
     }
 
-
-
     #[test_async]
     async fn test_topics_in_pending_state() -> Result<(), ()> {
-        
         use std::collections::HashSet;
 
         // resolution: Init
@@ -219,10 +210,11 @@ mod test {
             ),
         );
 
-        let topics = DefaultTopicLocalStore::bulk_new(vec![
-                topic1,topic2,topic3,topic4]);
+        let topics = DefaultTopicLocalStore::bulk_new(vec![topic1, topic2, topic3, topic4]);
 
-        let expected: HashSet<String> = vec![String::from("Topic-2"), String::from("Topic-4")].into_iter().collect();
+        let expected: HashSet<String> = vec![String::from("Topic-2"), String::from("Topic-4")]
+            .into_iter()
+            .collect();
         let mut pending_state_names: HashSet<String> = HashSet::new();
 
         for topic in topics.read().await.values() {
@@ -234,5 +226,4 @@ mod test {
         assert_eq!(pending_state_names, expected);
         Ok(())
     }
-
 }

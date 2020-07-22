@@ -124,7 +124,5 @@ async fn process_topic_request(ctx: &Context, name: String, topic_spec: TopicSpe
 }
 
 async fn create_topic(ctx: &Context, name: String, topic: TopicSpec) -> Result<(), IoError> {
-    
-
     ctx.topics().create_spec(name, topic).await.map(|_| ())
 }

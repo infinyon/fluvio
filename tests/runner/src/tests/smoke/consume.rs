@@ -52,7 +52,10 @@ async fn validate_consume_message_api(option: &TestOption) {
 
     let config = ClusterConfig::lookup_profile(None).expect("connect");
     let mut cluster = config.connect().await.expect("should connect");
-    let mut consumer = cluster.consumer(ReplicaKey::new(option.topic_name.to_owned(),0)).await.expect("consumer");
+    let mut consumer = cluster
+        .consumer(ReplicaKey::new(option.topic_name.to_owned(), 0))
+        .await
+        .expect("consumer");
 
     println!("retrieving messages");
     let response = consumer

@@ -1,11 +1,12 @@
-
 use kf_protocol::derive::{Decode, Encode};
 
-
 #[derive(Encode, Decode, Default, Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SpuGroupSpec {
-
     /// The number of replicas for the spu group
     pub replicas: u16,
 
@@ -15,12 +16,14 @@ pub struct SpuGroupSpec {
 
     /// Configuration elements to be applied to each SPUs in the group
     pub spu_config: SpuConfig,
-
 }
 
-
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SpuConfig {
     pub rack: Option<String>,
     pub replication: Option<ReplicationConfig>,
@@ -29,7 +32,6 @@ pub struct SpuConfig {
 }
 
 impl SpuConfig {
-
     pub fn real_storage_config(&self) -> RealStorageConfig {
         if let Some(config) = &self.storage {
             config.real_config()
@@ -40,13 +42,21 @@ impl SpuConfig {
 }
 
 #[derive(Encode, Decode, Default, Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct ReplicationConfig {
     pub in_sync_replica_min: Option<u16>,
 }
 
-#[derive(Encode, Decode, Debug, Default, PartialEq,Clone)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[derive(Encode, Decode, Debug, Default, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct StorageConfig {
     pub log_dir: Option<String>,
     pub size: Option<String>,
@@ -58,7 +68,7 @@ impl StorageConfig {
     pub fn real_config(&self) -> RealStorageConfig {
         RealStorageConfig {
             log_dir: self.log_dir.clone().unwrap_or("/tmp/fluvio".to_owned()),
-            size: self.size.clone().unwrap_or("1Gi".to_owned())
+            size: self.size.clone().unwrap_or("1Gi".to_owned()),
         }
     }
 }
@@ -69,9 +79,12 @@ pub struct RealStorageConfig {
     pub size: String,
 }
 
-
-#[derive(Encode, Decode, Default, Debug, PartialEq, Clone )]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[derive(Encode, Decode, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct EnvVar {
     pub name: String,
     pub value: String,

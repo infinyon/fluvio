@@ -32,7 +32,7 @@ impl UpdateSpuRequest {
         Self {
             epoch,
             changes: vec![],
-            all
+            all,
         }
     }
 

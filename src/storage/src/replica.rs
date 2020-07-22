@@ -196,8 +196,7 @@ impl FileReplica {
         start_offset: Offset,
         max_len: u32,
         response: &mut impl SlicePartitionResponse,
-    ) 
-    {
+    ) {
         self.read_records(start_offset, Some(self.get_hw()), max_len, response)
             .await
     }

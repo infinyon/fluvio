@@ -108,10 +108,7 @@ impl fmt::Display for FetchOffsetPartitionResponse {
         write!(
             f,
             "error: {:#?}, partition: {}, start: {}, last: {}",
-            self.error_code, 
-            self.partition_index, 
-            self.start_offset,
-            self.last_stable_offset
+            self.error_code, self.partition_index, self.start_offset, self.last_stable_offset
         )
     }
 }

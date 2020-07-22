@@ -158,7 +158,7 @@ mod convert {
                 rack: template.rack,
                 replication: template.replication.map(|r| r.into()),
                 storage: template.storage.map(|s| s.into()),
-                env: vec![],    // doesn't really matter
+                env: vec![], // doesn't really matter
             }
         }
     }

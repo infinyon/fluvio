@@ -58,23 +58,23 @@ impl Default for WatchResponse {
     }
 }
 
-
 /// updates on metadata
-#[derive(Encode, Decode, Default, Clone,Debug)]
+#[derive(Encode, Decode, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
-    where S: Spec + Debug,
-        S::Status: Debug
+where
+    S: Spec + Debug,
+    S::Status: Debug,
 {
     pub epoch: Epoch,
     pub changes: Vec<Message<Metadata<S>>>,
     pub all: Vec<Metadata<S>>,
 }
 
-impl <S> MetadataUpdate<S>
-    where S: Spec + Debug,
-    S::Status: Debug
+impl<S> MetadataUpdate<S>
+where
+    S: Spec + Debug,
+    S::Status: Debug,
 {
-
     pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {
             epoch,
@@ -87,11 +87,10 @@ impl <S> MetadataUpdate<S>
         Self {
             epoch,
             changes: vec![],
-            all
+            all,
         }
     }
 }
-
 
 // later this can be written using procedure macro
 mod encoding {
@@ -167,7 +166,6 @@ mod encoding {
                     *self = Self::Topic(response);
                     Ok(())
                 }
-
 
                 SpuGroupSpec::LABEL => {
                     let mut response: Epoch = Epoch::default();

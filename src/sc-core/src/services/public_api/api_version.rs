@@ -10,7 +10,6 @@ use sc_api::versions::{ApiVersionsRequest, ApiVersionsResponse};
 use sc_api::AdminPublicApiKey;
 use sc_api::objects::*;
 
-
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
@@ -37,7 +36,6 @@ pub async fn handle_api_versions_request(
         WatchRequest::DEFAULT_API_VERSION,
         WatchRequest::DEFAULT_API_VERSION,
     ));
-
 
     trace!("flv api versions response: {:#?}", response);
 

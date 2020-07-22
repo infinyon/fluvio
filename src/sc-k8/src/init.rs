@@ -20,13 +20,11 @@ pub fn main_k8_loop(opt: ScOpt) {
     println!("starting sc server with k8: {}", VERSION);
 
     main(async move {
-        
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
         let ctx = start_main_loop(sc_config.clone(), k8_client.clone()).await;
 
-        
         run_k8_operators(
             namespace.clone(),
             k8_client,
@@ -40,10 +38,8 @@ pub fn main_k8_loop(opt: ScOpt) {
                 .expect("can't build tls acceptor");
             proxy::start_proxy(sc_config, (tls_acceptor, proxy_port)).await;
         }
-        
 
         println!("Streaming Controller started successfully");
-        
     });
 }
 

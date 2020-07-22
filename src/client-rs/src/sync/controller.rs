@@ -84,7 +84,6 @@ where
     }
 
     async fn process_updates(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
-        
         if updates.all.len() > 0 {
             debug!(
                 "processing {}, sync all items: {}",

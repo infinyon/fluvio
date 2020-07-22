@@ -15,7 +15,7 @@ pub async fn produce_message_with_api(option: &TestOption) {
 
     let config = ClusterConfig::lookup_profile(None).expect("connect");
     let mut cluster = config.connect().await.expect("should connect");
-    let replica: ReplicaKey = (option.topic_name.clone(),0).into();
+    let replica: ReplicaKey = (option.topic_name.clone(), 0).into();
     let mut producer = cluster.producer(replica).await.expect("producer");
 
     for i in 0..option.produce.produce_iteration {

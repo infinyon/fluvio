@@ -14,8 +14,6 @@ pub use config::ClusterConfig;
 pub use producer::Producer;
 pub use consumer::Consumer;
 
-
-
 /// re-export metadata from sc-api
 pub mod metadata {
 

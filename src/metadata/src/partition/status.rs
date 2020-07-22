@@ -11,8 +11,6 @@ use kf_protocol::derive::{Decode, Encode};
 use kf_protocol::api::Offset;
 use flv_types::SpuId;
 
-
-
 use super::ElectionPolicy;
 use super::ElectionScoring;
 
@@ -21,7 +19,11 @@ use super::ElectionScoring;
 // -----------------------------------
 
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct PartitionStatus {
     pub resolution: PartitionResolution,
     pub leader: ReplicaStatus,
@@ -171,10 +173,8 @@ fn find_status(status: &mut Vec<ReplicaStatus>, spu: SpuId) -> Option<&'_ mut Re
     status.iter_mut().find(|status| status.spu == spu)
 }
 
-
-
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PartitionResolution {
     Offline,             // No leader available for serving partition
     Online,              // Partition is running normally, status contains replica info
@@ -189,7 +189,11 @@ impl Default for PartitionResolution {
 }
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct ReplicaStatus {
     pub spu: i32,
     pub hw: i64,
@@ -264,7 +268,6 @@ impl From<(SpuId, Offset, Offset)> for ReplicaStatus {
         Self::new(id, high_watermark, end_offset)
     }
 }
-
 
 #[cfg(test)]
 mod test {

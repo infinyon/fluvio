@@ -1,10 +1,13 @@
 use std::fmt;
 
-
 use kf_protocol::derive::*;
 
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq )]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SpuGroupStatus {
     /// Status resolution
     pub resolution: SpuGroupStatusResolution,
@@ -20,7 +23,6 @@ impl fmt::Display for SpuGroupStatus {
 }
 
 impl SpuGroupStatus {
-
     pub fn invalid(reason: String) -> Self {
         Self {
             resolution: SpuGroupStatusResolution::Invalid,
@@ -40,8 +42,8 @@ impl SpuGroupStatus {
     }
 }
 
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
-#[derive(Encode, Decode, Debug,Clone,PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, PartialEq)]
 pub enum SpuGroupStatusResolution {
     Init,
     Invalid,
@@ -56,7 +58,6 @@ impl Default for SpuGroupStatusResolution {
         Self::Init
     }
 }
-
 
 impl fmt::Display for SpuGroupStatusResolution {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

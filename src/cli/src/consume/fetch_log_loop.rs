@@ -31,7 +31,6 @@ pub async fn fetch_log_loop<O>(
 where
     O: Terminal,
 {
-    
     // force to be non continuous
     opt.disable_continuous = true;
 
@@ -70,7 +69,9 @@ where
     };
 
     if opt.disable_continuous {
-        let response = consumer.fetch_logs_once(initial_offset, fetch_option).await?;
+        let response = consumer
+            .fetch_logs_once(initial_offset, fetch_option)
+            .await?;
 
         debug!(
             "got a single response: LSO: {} batches: {}",
@@ -78,7 +79,7 @@ where
             response.records.batches.len(),
         );
 
-        process_fetch_topic_response(out.clone(),response, &opt).await?;
+        process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
         /*
         let mut log_stream = leader.fetch_logs(initial_offset, fetch_option);

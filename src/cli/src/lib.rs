@@ -62,32 +62,35 @@ mod target {
     impl ClusterTarget {
         /// try to create sc config
         pub fn load(self) -> Result<ClusterConfig, CliError> {
-
             let tls = self.tls.try_into_file_config()?;
             // check case when inline profile is used
             if let Some(profile) = self.profile.profile {
                 if self.cluster.is_some() {
-                    Err(CliError::invalid_arg("cluster addr is not valid when profile is used"))
+                    Err(CliError::invalid_arg(
+                        "cluster addr is not valid when profile is used",
+                    ))
                 } else if tls.is_some() {
-                    Err(CliError::invalid_arg("tls is not valid when profile is is used"))
+                    Err(CliError::invalid_arg(
+                        "tls is not valid when profile is is used",
+                    ))
                 } else {
                     ClusterConfig::lookup_profile(Some(profile)).map_err(|err| err.into())
                 }
-               
             } else {
                 // check if cluster address is used
                 if let Some(cluster) = self.cluster {
-                    Ok(ClusterConfig::new(cluster,tls))
+                    Ok(ClusterConfig::new(cluster, tls))
                 } else {
                     // check if tls is used
                     if tls.is_some() {
-                        Err(CliError::invalid_arg("tls is only valid if cluster addr is used"))
+                        Err(CliError::invalid_arg(
+                            "tls is only valid if cluster addr is used",
+                        ))
                     } else {
                         ClusterConfig::lookup_profile(None).map_err(|err| err.into())
                     }
                 }
             }
-            
         }
     }
 }

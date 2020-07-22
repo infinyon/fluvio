@@ -81,29 +81,25 @@ impl TopicSpec {
         }
     }
 
-    
     pub fn type_label(&self) -> &'static str {
         match self {
             Self::Computed(_) => "computed",
-            Self::Assigned(_) => "assigned"
+            Self::Assigned(_) => "assigned",
         }
-        
     }
 
     pub fn partitions_display(&self) -> String {
         match self {
             Self::Computed(param) => param.partitions.to_string(),
-            Self::Assigned(_) => "".to_owned()
+            Self::Assigned(_) => "".to_owned(),
         }
-       
     }
 
     pub fn replication_factor_display(&self) -> String {
         match self {
             Self::Computed(param) => param.replication_factor.to_string(),
-            Self::Assigned(_) => "".to_owned()
+            Self::Assigned(_) => "".to_owned(),
         }
-  
     }
 
     pub fn ignore_rack_assign_display(&self) -> &'static str {
@@ -114,10 +110,9 @@ impl TopicSpec {
                 } else {
                     ""
                 }
-            },
-            Self::Assigned(_) => ""
+            }
+            Self::Assigned(_) => "",
         }
-
     }
 
     pub fn partition_map_str(&self) -> Option<String> {

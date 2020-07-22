@@ -2,12 +2,10 @@ mod create;
 mod delete;
 mod list;
 
-
 pub use cli::*;
 pub use create::*;
 
-
-mod cli  {
+mod cli {
     use structopt::StructOpt;
 
     use super::*;
@@ -68,8 +66,12 @@ mod cli  {
         spu_group_opt: SpuGroupOpt,
     ) -> Result<String, CliError> {
         (match spu_group_opt {
-            SpuGroupOpt::Create(spu_group_opt) => process_create_managed_spu_group(spu_group_opt).await,
-            SpuGroupOpt::Delete(spu_group_opt) => process_delete_managed_spu_group(spu_group_opt).await,
+            SpuGroupOpt::Create(spu_group_opt) => {
+                process_create_managed_spu_group(spu_group_opt).await
+            }
+            SpuGroupOpt::Delete(spu_group_opt) => {
+                process_delete_managed_spu_group(spu_group_opt).await
+            }
             SpuGroupOpt::List(spu_group_opt) => {
                 process_list_managed_spu_groups(out, spu_group_opt).await
             }

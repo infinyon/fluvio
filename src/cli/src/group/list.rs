@@ -42,7 +42,7 @@ pub async fn process_list_managed_spu_groups<O: Terminal>(
     let mut client = target_server.connect().await?;
     let mut admin = client.admin().await;
 
-    let lists = admin.list::<SpuGroupSpec,_>(vec![]).await?;
+    let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
 
     output::spu_group_response_to_output(out, lists, output)
 }

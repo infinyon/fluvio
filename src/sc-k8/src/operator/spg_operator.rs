@@ -185,7 +185,7 @@ impl SpgOperator {
             spg_name, input_stateful.metadata.name,
         );
 
-        trace!("statefulset: {:#?}",input_stateful);
+        trace!("statefulset: {:#?}", input_stateful);
 
         self.client.apply(input_stateful).await?;
 

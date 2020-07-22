@@ -1,4 +1,3 @@
-
 use async_trait::async_trait;
 use flv_metadata::k8::metadata::K8Obj;
 use flv_metadata::spg::K8SpuGroupSpec;
@@ -35,6 +34,7 @@ impl SpuValidation for SpuGroupObj {
             &self.metadata.uid,
             min_id,
             min_id + self.spec.replicas as SpuId,
-        ).await
+        )
+        .await
     }
 }

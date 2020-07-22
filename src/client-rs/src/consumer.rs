@@ -21,48 +21,37 @@ use crate::spu::SpuPool;
 /// consume message from replica leader
 pub struct Consumer {
     replica: ReplicaKey,
-    pool: SpuPool
+    pool: SpuPool,
 }
 
-impl Consumer  {
-
+impl Consumer {
     pub fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
-        Self {
-            replica,
-            pool
-        }
+        Self { replica, pool }
     }
 
     pub fn replica(&self) -> &ReplicaKey {
         &self.replica
     }
 
-
     pub async fn fetch_logs_once(
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,
     ) -> Result<FetchablePartitionResponse<RecordSet>, ClientError> {
-
         use kf_protocol::message::fetch::DefaultKfFetchRequest;
         use kf_protocol::message::fetch::FetchPartition;
         use kf_protocol::message::fetch::FetchableTopic;
 
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
-            offset_option,
-            self.replica,
+            offset_option, self.replica,
         );
 
         let mut leader = self.pool.spu_leader(&self.replica).await?;
 
-        debug!(
-            "found spu leader {}",
-            leader
-        );
+        debug!("found spu leader {}", leader);
 
-
-        let offset = calc_offset(&mut leader,&self.replica,offset_option).await?;
+        let offset = calc_offset(&mut leader, &self.replica, offset_option).await?;
 
         let partition = FetchPartition {
             partition_index: self.replica.partition,
@@ -86,12 +75,11 @@ impl Consumer  {
 
         let response = leader.send_receive(fetch_request).await?;
 
-        debug!(
-            "received fetch logs for {}",
-            self.replica
-        );
+        debug!("received fetch logs for {}", self.replica);
 
-        if let Some(partition_response) = response.find_partition(&self.replica.topic, self.replica.partition) {
+        if let Some(partition_response) =
+            response.find_partition(&self.replica.topic, self.replica.partition)
+        {
             debug!(
                 "found partition response with: {} batches: {} bytes",
                 partition_response.records.batches.len(),
@@ -99,15 +87,15 @@ impl Consumer  {
             );
             Ok(partition_response)
         } else {
-            Err(ClientError::PartitionNotFound(
-                self.replica.to_owned()
-            ))
+            Err(ClientError::PartitionNotFound(self.replica.to_owned()))
         }
     }
 }
 
-
-async fn fetch_offsets(client: &mut RawClient,replica: &ReplicaKey) -> Result<FetchOffsetPartitionResponse, ClientError> {
+async fn fetch_offsets(
+    client: &mut RawClient,
+    replica: &ReplicaKey,
+) -> Result<FetchOffsetPartitionResponse, ClientError> {
     debug!("fetching offset for replica: {}", replica);
 
     let response = client
@@ -125,15 +113,12 @@ async fn fetch_offsets(client: &mut RawClient,replica: &ReplicaKey) -> Result<Fe
 
     match response.find_partition(&replica) {
         Some(partition_response) => {
-            debug!("replica: {}, fetch offset: {}",replica,partition_response);
+            debug!("replica: {}, fetch offset: {}", replica, partition_response);
             Ok(partition_response)
         }
         None => Err(IoError::new(
             ErrorKind::InvalidData,
-            format!(
-                "no replica offset for: {}",
-                replica
-            ),
+            format!("no replica offset for: {}", replica),
         )
         .into()),
     }
@@ -141,15 +126,19 @@ async fn fetch_offsets(client: &mut RawClient,replica: &ReplicaKey) -> Result<Fe
 
 /// depends on offset option, calculate offset
 
-async fn calc_offset(client: &mut RawClient, replica: &ReplicaKey,offset: FetchOffset) -> Result<i64, ClientError> {
+async fn calc_offset(
+    client: &mut RawClient,
+    replica: &ReplicaKey,
+    offset: FetchOffset,
+) -> Result<i64, ClientError> {
     Ok(match offset {
         FetchOffset::Offset(inner_offset) => inner_offset,
         FetchOffset::Earliest(relative_offset) => {
-            let offsets = fetch_offsets(client,replica).await?;
+            let offsets = fetch_offsets(client, replica).await?;
             offsets.start_offset() + relative_offset.unwrap_or(0)
         }
         FetchOffset::Latest(relative_offset) => {
-            let offsets = fetch_offsets(client,replica).await?;
+            let offsets = fetch_offsets(client, replica).await?;
             offsets.last_stable_offset() - relative_offset.unwrap_or(0)
         }
     })
@@ -157,7 +146,15 @@ async fn calc_offset(client: &mut RawClient, replica: &ReplicaKey,offset: FetchO
 
 /// compute total bytes in record set
 fn bytes_count(records: &RecordSet) -> usize {
-
-    records.batches.iter()
-        .map(|batch| batch.records.iter().map(|record| record.value.len()).sum::<usize>()).sum()
+    records
+        .batches
+        .iter()
+        .map(|batch| {
+            batch
+                .records
+                .iter()
+                .map(|record| record.value.len())
+                .sum::<usize>()
+        })
+        .sum()
 }

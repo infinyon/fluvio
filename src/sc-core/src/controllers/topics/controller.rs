@@ -69,7 +69,7 @@ impl TopicController {
     /// get list of topics we need to check
     async fn sync_topics(&mut self) {
         let read_guard = self.topics.store().read().await;
-        let (updates,_) = read_guard.changes_since(self.topic_epoch).parts();
+        let (updates, _) = read_guard.changes_since(self.topic_epoch).parts();
         drop(read_guard);
 
         let actions = self.reducer.process_requests(updates).await;

@@ -24,7 +24,6 @@ use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::*;
 
-
 pub struct PublicService {}
 
 impl PublicService {

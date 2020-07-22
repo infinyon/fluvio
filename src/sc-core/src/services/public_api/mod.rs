@@ -20,7 +20,6 @@ mod context {
     use crate::core::*;
     use super::public_server::PublicService;
 
-
     /// create public server
     pub fn start_public_server(ctx: SharedContext) {
         let addr = ctx.config().public_endpoint.clone();

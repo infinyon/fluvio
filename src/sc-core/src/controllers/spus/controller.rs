@@ -218,15 +218,18 @@ impl SpuController {
                 if update {
                     if let Err(err) = self
                         .spus
-                        .send(vec![WSAction::UpdateStatus((spu.key_owned(), spu.status.clone()))])
+                        .send(vec![WSAction::UpdateStatus((
+                            spu.key_owned(),
+                            spu.status.clone(),
+                        ))])
                         .await
                     {
                         error!("error sending spu status: {}", err);
                     } else {
-                        debug!("send spu: {}, status: {} to store",action.id,spu.status);
+                        debug!("send spu: {}, status: {} to store", action.id, spu.status);
                     }
                 } else {
-                    debug!("spu: {} health, no change",action.id);
+                    debug!("spu: {} health, no change", action.id);
                 }
             } else {
                 warn!("unknown spu id: {:?}", action);

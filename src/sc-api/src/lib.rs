@@ -50,8 +50,6 @@ impl std::fmt::Display for ApiError {
 mod admin {
 
     use kf_protocol::api::Request;
-    
-    pub trait AdminRequest: Request {
 
-    }
+    pub trait AdminRequest: Request {}
 }

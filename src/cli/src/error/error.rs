@@ -23,8 +23,6 @@ impl From<IoError> for CliError {
     }
 }
 
-
-
 impl From<ClientError> for CliError {
     fn from(error: ClientError) -> Self {
         Self::ClientError(error)

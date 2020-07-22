@@ -1,6 +1,5 @@
 use k8_obj_metadata::*;
 
-
 use super::TopicStatus;
 use super::TopicSpec;
 
@@ -23,8 +22,4 @@ impl Spec for TopicSpec {
     }
 }
 
-
 impl Status for TopicStatus {}
-
-
-

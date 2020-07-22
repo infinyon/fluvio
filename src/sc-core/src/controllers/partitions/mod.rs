@@ -1,7 +1,6 @@
 mod controller;
 mod reducer;
 
-
 pub use self::controller::*;
 pub use common::*;
 

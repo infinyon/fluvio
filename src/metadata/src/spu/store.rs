@@ -159,11 +159,7 @@ where
     }
 
     pub async fn spu_ids(&self) -> Vec<i32> {
-        let mut ids: Vec<i32> = self.read()
-            .await
-            .values()
-            .map(|spu| spu.id())
-            .collect();
+        let mut ids: Vec<i32> = self.read().await.values().map(|spu| spu.id()).collect();
         ids.sort();
         ids
     }

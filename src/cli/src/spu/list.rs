@@ -53,7 +53,7 @@ where
     let mut client = target_server.connect().await?;
     let mut admin = client.admin().await;
 
-    let spus = admin.list::<SpuSpec,_>(vec![]).await?;
+    let spus = admin.list::<SpuSpec, _>(vec![]).await?;
 
     // format and dump to screen
     format_spu_response_output(out, spus, output)?;

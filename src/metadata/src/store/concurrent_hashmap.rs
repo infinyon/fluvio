@@ -5,7 +5,6 @@ use flv_future_aio::sync::RwLock;
 use flv_future_aio::sync::RwLockReadGuard;
 use flv_future_aio::sync::RwLockWriteGuard;
 
-
 /// inefficient but simple concurrent hashmap
 /// this should be only used in a test
 /// it locks for every write
@@ -24,11 +23,11 @@ where
         lock.insert(key, value)
     }
 
-    pub async fn read<'a>(&'a self) -> RwLockReadGuard<'a,HashMap<K, V>> {
+    pub async fn read<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<K, V>> {
         self.0.read().await
     }
 
-    pub async fn write<'a>(&'a self) -> RwLockWriteGuard<'a,HashMap<K, V>> {
+    pub async fn write<'a>(&'a self) -> RwLockWriteGuard<'a, HashMap<K, V>> {
         self.0.write().await
     }
 
@@ -38,36 +37,38 @@ where
 }
 
 #[derive(Debug)]
-pub struct SimpleConcurrentBTreeMap<K,V>(RwLock<BTreeMap<K,V>>);
+pub struct SimpleConcurrentBTreeMap<K, V>(RwLock<BTreeMap<K, V>>);
 
-impl <K,V>Default for SimpleConcurrentBTreeMap<K,V> where K: Ord{
-
+impl<K, V> Default for SimpleConcurrentBTreeMap<K, V>
+where
+    K: Ord,
+{
     fn default() -> Self {
-         SimpleConcurrentBTreeMap(RwLock::new(BTreeMap::new()))
+        SimpleConcurrentBTreeMap(RwLock::new(BTreeMap::new()))
     }
-   
 }
 
-impl <K,V> SimpleConcurrentBTreeMap<K,V> 
-    where K: Ord 
+impl<K, V> SimpleConcurrentBTreeMap<K, V>
+where
+    K: Ord,
 {
     pub fn new() -> Self {
         Self(RwLock::new(BTreeMap::new()))
     }
 
-    pub fn new_with_map(map: BTreeMap<K,V>) -> Self {
+    pub fn new_with_map(map: BTreeMap<K, V>) -> Self {
         Self(RwLock::new(map))
     }
 
-    pub async fn read<'a>(&'a self) -> RwLockReadGuard<'a,BTreeMap<K, V>> {
+    pub async fn read<'a>(&'a self) -> RwLockReadGuard<'a, BTreeMap<K, V>> {
         self.0.read().await
     }
 
-    pub async fn write<'a>(&'a self) -> RwLockWriteGuard<'a,BTreeMap<K, V>> {
+    pub async fn write<'a>(&'a self) -> RwLockWriteGuard<'a, BTreeMap<K, V>> {
         self.0.write().await
     }
 
-    pub fn try_write(&self) -> Option<RwLockWriteGuard<BTreeMap<K,V>>> {
+    pub fn try_write(&self) -> Option<RwLockWriteGuard<BTreeMap<K, V>>> {
         self.0.try_write()
     }
 
@@ -76,9 +77,7 @@ impl <K,V> SimpleConcurrentBTreeMap<K,V>
         lock.insert(key, value)
     }
 
-
     pub async fn contains_key(&self, key: &K) -> bool {
         self.read().await.contains_key(key)
     }
-
 }

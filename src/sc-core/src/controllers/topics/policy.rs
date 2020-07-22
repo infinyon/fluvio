@@ -301,7 +301,6 @@ async fn generate_partitions_without_rack(
     let spu_cnt = spus.spu_used_for_replica().await;
     let spu_ids = spus.spu_ids().await;
 
-
     let s_idx = if start_index >= 0 {
         start_index
     } else {

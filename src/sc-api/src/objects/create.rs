@@ -12,13 +12,11 @@ use crate::AdminRequest;
 pub use create::AllCreatableSpec;
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct CreateRequest
-{
+pub struct CreateRequest {
     pub name: String,
     pub dry_run: bool,
-    pub spec: AllCreatableSpec 
+    pub spec: AllCreatableSpec,
 }
-
 
 impl Request for CreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
@@ -26,10 +24,7 @@ impl Request for CreateRequest {
     type Response = FlvStatus;
 }
 
-impl AdminRequest for CreateRequest{}
-
-
-
+impl AdminRequest for CreateRequest {}
 
 mod create {
 
@@ -44,7 +39,7 @@ mod create {
     use flv_metadata::spu::CustomSpuSpec;
     use flv_metadata::spg::SpuGroupSpec;
     use super::*;
-    
+
     const TOPIC: u8 = 0;
     const CUSTOM_SPU: u8 = 1;
     const SPG: u8 = 2;
@@ -54,7 +49,7 @@ mod create {
     pub enum AllCreatableSpec {
         Topic(TopicSpec),
         CustomSpu(CustomSpuSpec),
-        SpuGroup(SpuGroupSpec)
+        SpuGroup(SpuGroupSpec),
     }
 
     impl Default for AllCreatableSpec {
@@ -64,10 +59,9 @@ mod create {
     }
 
     impl Encoder for AllCreatableSpec {
-   
         fn write_size(&self, version: Version) -> usize {
             let type_size = (0 as u8).write_size(version);
-         
+
             type_size
                 + match self {
                     Self::Topic(s) => s.write_size(version),
@@ -75,13 +69,12 @@ mod create {
                     Self::SpuGroup(s) => s.write_size(version),
                 }
         }
-    
+
         // encode match
         fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
         where
             T: BufMut,
         {
-    
             match self {
                 Self::Topic(s) => {
                     let typ: u8 = TOPIC;
@@ -101,7 +94,7 @@ mod create {
                     s.encode(dest, version)?;
                 }
             }
-    
+
             Ok(())
         }
     }
@@ -146,5 +139,3 @@ mod create {
         }
     }
 }
-
-

@@ -38,9 +38,7 @@ impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::TopicNotFound(topic) => write!(f, "topic: {} not found", topic),
-            Self::PartitionNotFound(replica) => {
-                write!(f, "partition <{}> not found",replica)
-            }
+            Self::PartitionNotFound(replica) => write!(f, "partition <{}> not found", replica),
             Self::Other(msg) => write!(f, "{}", msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f, "{:#?}", err),

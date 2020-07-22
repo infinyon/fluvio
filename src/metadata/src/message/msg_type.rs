@@ -73,23 +73,19 @@ where
     }
 }
 
-
-
-impl <S,C,D>From<LSChange<S,C>> for Message<D> 
-    where S: Spec,
-        S::Status: PartialEq,
-        C: MetadataItem,
-        D: Encoder + Decoder + Debug,
-        D: From<MetadataStoreObject<S,C>>
+impl<S, C, D> From<LSChange<S, C>> for Message<D>
+where
+    S: Spec,
+    S::Status: PartialEq,
+    C: MetadataItem,
+    D: Encoder + Decoder + Debug,
+    D: From<MetadataStoreObject<S, C>>,
 {
-
-    fn from(change: LSChange<S,C>) -> Self {
-
+    fn from(change: LSChange<S, C>) -> Self {
         match change {
-            LSChange::Add(new) => Message::new(MsgType::UPDATE,new.into()),
-            LSChange::Mod(new,_old) => Message::new(MsgType::DELETE,new.into()),
-            LSChange::Delete(old) => Message::new(MsgType::DELETE,old.into())
+            LSChange::Add(new) => Message::new(MsgType::UPDATE, new.into()),
+            LSChange::Mod(new, _old) => Message::new(MsgType::DELETE, new.into()),
+            LSChange::Delete(old) => Message::new(MsgType::DELETE, old.into()),
         }
-
     }
 }

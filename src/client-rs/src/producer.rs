@@ -14,52 +14,57 @@ use crate::client::Client;
 /// produce message to replica leader
 pub struct Producer {
     replica: ReplicaKey,
-    pool: SpuPool
+    pool: SpuPool,
 }
 
 impl Producer {
-
-    pub fn new(replica: ReplicaKey,pool: SpuPool) -> Self {
-        Self {
-            replica,
-            pool
-        }
+    pub fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
+        Self { replica, pool }
     }
 
     pub fn replica(&self) -> &ReplicaKey {
         &self.replica
     }
 
-
     /// send records to spu leader for replica
     pub async fn send_record(&mut self, record: Vec<u8>) -> Result<(), ClientError> {
-        
-        debug!("sending records: {} bytes to: {}",record.len(),self.replica);
+        debug!(
+            "sending records: {} bytes to: {}",
+            record.len(),
+            self.replica
+        );
 
         let spu_client = self.pool.spu_leader(&self.replica).await?;
 
-        debug!("connect to replica leader at: {}",spu_client);
-       
-        send_record_raw(spu_client,&self.replica,record).await
+        debug!("connect to replica leader at: {}", spu_client);
+
+        send_record_raw(spu_client, &self.replica, record).await
     }
 }
 
 /// Sends record to a target server (Kf, SPU, or SC)
-async fn send_record_raw(mut leader: RawClient,replica: &ReplicaKey, record: Vec<u8>) -> Result<(), ClientError> {
-
+async fn send_record_raw(
+    mut leader: RawClient,
+    replica: &ReplicaKey,
+    record: Vec<u8>,
+) -> Result<(), ClientError> {
     use kf_protocol::message::produce::DefaultKfProduceRequest;
     use kf_protocol::message::produce::DefaultKfPartitionRequest;
     use kf_protocol::message::produce::DefaultKfTopicRequest;
     use kf_protocol::api::DefaultBatch;
     use kf_protocol::api::DefaultRecord;
 
-
     // build produce log request message
     let mut request = DefaultKfProduceRequest::default();
     let mut topic_request = DefaultKfTopicRequest::default();
     let mut partition_request = DefaultKfPartitionRequest::default();
 
-    debug!("send record {} bytes to: replica: {}, {}", record.len(), replica, leader);
+    debug!(
+        "send record {} bytes to: replica: {}, {}",
+        record.len(),
+        replica,
+        leader
+    );
 
     let record_msg: DefaultRecord = record.into();
     let mut batch = DefaultBatch::default();
@@ -81,7 +86,7 @@ async fn send_record_raw(mut leader: RawClient,replica: &ReplicaKey, record: Vec
     trace!("received response: {:?}", response);
 
     // process response
-    match response.find_partition_response(&replica.topic,replica.partition) {
+    match response.find_partition_response(&replica.topic, replica.partition) {
         Some(partition_response) => {
             if partition_response.error_code.is_error() {
                 return Err(ClientError::IoError(IoError::new(
@@ -97,7 +102,3 @@ async fn send_record_raw(mut leader: RawClient,replica: &ReplicaKey, record: Vec
         ))),
     }
 }
-
-    
-
-

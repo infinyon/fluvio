@@ -11,7 +11,6 @@ use crate::stores::*;
 use crate::stores::partition::*;
 use crate::stores::spu::*;
 
-
 use super::reducer::*;
 
 /// Handles Partition election
@@ -84,6 +83,4 @@ impl PartitionController {
             self.partitions.send_action(action).await;
         }
     }
-
-    
 }

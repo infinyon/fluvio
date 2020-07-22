@@ -8,7 +8,6 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt;
 
-
 use flv_util::socket_helpers::EndPoint as SocketEndPoint;
 use flv_util::socket_helpers::EndPointEncryption;
 use flv_types::defaults::{SPU_PRIVATE_HOSTNAME, SPU_PRIVATE_PORT};
@@ -21,14 +20,16 @@ use kf_protocol::{Decoder, Encoder};
 use kf_protocol::bytes::{Buf, BufMut};
 use kf_protocol::Version;
 
-
-
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SpuSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "spuId"))]
     pub id: SpuId,
-    #[cfg_attr(feature = "use_serde",serde(default))]
+    #[cfg_attr(feature = "use_serde", serde(default))]
     pub spu_type: SpuType,
     pub public_endpoint: IngressPort,
     pub private_endpoint: Endpoint,
@@ -36,10 +37,13 @@ pub struct SpuSpec {
     pub rack: Option<String>,
 }
 
-
 impl fmt::Display for SpuSpec {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "id: {}, type: {}, public: {}",self.id,self.spu_type,self.public_endpoint)
+        write!(
+            f,
+            "id: {}, type: {}, public: {}",
+            self.id, self.spu_type, self.public_endpoint
+        )
     }
 }
 
@@ -68,7 +72,6 @@ impl From<SpuId> for SpuSpec {
     }
 }
 
-
 impl SpuSpec {
     /// Given an Spu id generate a new SpuSpec
     pub fn new(id: SpuId) -> Self {
@@ -82,7 +85,6 @@ impl SpuSpec {
         self
     }
 
-    
     /// Return custom type: true for custom, false otherwise
     pub fn is_custom(&self) -> bool {
         match self.spu_type {
@@ -99,8 +101,7 @@ impl SpuSpec {
         }
     }
 
-    pub fn update(&mut self,other: &Self) {
-        
+    pub fn update(&mut self, other: &Self) {
         if self.rack != other.rack {
             self.rack = other.rack.clone();
         }
@@ -110,16 +111,17 @@ impl SpuSpec {
         if self.private_endpoint != other.private_endpoint {
             self.private_endpoint = other.private_endpoint.clone();
         }
-            
-        
     }
 }
-
 
 /// Custom Spu Spec
 /// This is not real spec since when this is stored on metadata store, it will be stored as SPU
 #[derive(Decode, Encode, Debug, Clone, Default, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct CustomSpuSpec {
     pub id: SpuId,
     pub public_endpoint: IngressPort,
@@ -132,7 +134,6 @@ impl CustomSpuSpec {
     pub const LABEL: &'static str = "CustomSpu";
 }
 
-
 impl From<CustomSpuSpec> for SpuSpec {
     fn from(spec: CustomSpuSpec) -> Self {
         Self {
@@ -140,7 +141,7 @@ impl From<CustomSpuSpec> for SpuSpec {
             public_endpoint: spec.public_endpoint,
             private_endpoint: spec.private_endpoint,
             rack: spec.rack,
-            spu_type: SpuType::Custom
+            spu_type: SpuType::Custom,
         }
     }
 }
@@ -148,22 +149,23 @@ impl From<CustomSpuSpec> for SpuSpec {
 impl From<SpuSpec> for CustomSpuSpec {
     fn from(spu: SpuSpec) -> Self {
         match spu.spu_type {
-            SpuType::Custom => {
-                Self {
-                    id: spu.id,
-                    public_endpoint: spu.public_endpoint,
-                    private_endpoint: spu.private_endpoint,
-                    rack: spu.rack
-                }
+            SpuType::Custom => Self {
+                id: spu.id,
+                public_endpoint: spu.public_endpoint,
+                private_endpoint: spu.private_endpoint,
+                rack: spu.rack,
             },
-            SpuType::Managed => panic!("managed spu type can't be converted into custom")
+            SpuType::Managed => panic!("managed spu type can't be converted into custom"),
         }
     }
 }
 
-
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase",default))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase", default)
+)]
 pub struct IngressPort {
     pub port: u16,
     pub ingress: Vec<IngressAddr>,
@@ -185,7 +187,6 @@ impl From<ServerAddress> for IngressPort {
         }
     }
 }
-
 
 impl IngressPort {
     pub fn from_port_host(port: u16, host: String) -> Self {
@@ -217,20 +218,18 @@ impl IngressPort {
 
     // convert to host:addr format
     pub fn addr(&self) -> String {
-        format!("{}:{}",self.host_string(),self.port)
+        format!("{}:{}", self.host_string(), self.port)
     }
 }
 
 #[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IngressAddr {
     pub hostname: Option<String>,
     pub ip: Option<String>,
 }
 
-
 impl IngressAddr {
-
     pub fn from_host(hostname: String) -> Self {
         Self {
             hostname: Some(hostname),
@@ -244,7 +243,6 @@ impl IngressAddr {
             ..Default::default()
         }
     }
-
 
     pub fn host(&self) -> Option<String> {
         if let Some(name) = &self.hostname {
@@ -260,7 +258,11 @@ impl IngressAddr {
 }
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct Endpoint {
     pub port: u16,
     pub host: String,
@@ -276,7 +278,6 @@ impl From<ServerAddress> for Endpoint {
         }
     }
 }
-
 
 impl fmt::Display for Endpoint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -324,12 +325,10 @@ impl Endpoint {
             encryption: EncryptionEnum::PLAINTEXT,
         }
     }
-
-    
 }
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EncryptionEnum {
     PLAINTEXT,
     SSL,
@@ -342,7 +341,7 @@ impl Default for EncryptionEnum {
 }
 
 #[derive(Debug, Clone, PartialEq, Encode, Decode)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpuType {
     Managed,
     Custom,
@@ -354,15 +353,12 @@ impl Default for SpuType {
     }
 }
 
-
-
 /// Return type label in String format
 impl SpuType {
-
     pub fn type_label(&self) -> &str {
-        match  self {
+        match self {
             Self::Managed => "managed",
-            Self::Custom => "custom"
+            Self::Custom => "custom",
         }
     }
 }
@@ -372,9 +368,6 @@ impl fmt::Display for SpuType {
         write!(f, "{:#?}", self.type_label())
     }
 }
-
-
-
 
 #[derive(Debug)]
 pub enum CustomSpu {

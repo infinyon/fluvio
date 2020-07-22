@@ -6,7 +6,6 @@
 
 use std::sync::Arc;
 
-
 use log::debug;
 
 use flv_types::SpuId;
@@ -17,16 +16,14 @@ use super::*;
 
 pub type SharedPartitionStore<C> = Arc<PartitionLocalStore<C>>;
 
-
-pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec,C>;
-pub type PartitionLocalStore<C> = LocalStore<PartitionSpec,C>;
+pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec, C>;
+pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<String>;
 
-
-
-impl <C>PartitionMetadata<C> 
-    where C: MetadataItem
+impl<C> PartitionMetadata<C>
+where
+    C: MetadataItem,
 {
     /// create new partition with replica map.
     /// first element of replicas is leader
@@ -36,10 +33,10 @@ impl <C>PartitionMetadata<C>
     }
 }
 
-impl<S,C> From<((S, i32), Vec<i32>)> for PartitionMetadata<C>
+impl<S, C> From<((S, i32), Vec<i32>)> for PartitionMetadata<C>
 where
     S: Into<String>,
-    C: MetadataItem
+    C: MetadataItem,
 {
     fn from(partition: ((S, i32), Vec<i32>)) -> Self {
         let (replica_key, replicas) = partition;
@@ -47,13 +44,13 @@ where
     }
 }
 
-
 // -----------------------------------
 // Partitions - Implementation
 // -----------------------------------
 
-impl <C>PartitionLocalStore<C> 
-    where C: MetadataItem
+impl<C> PartitionLocalStore<C>
+where
+    C: MetadataItem,
 {
     pub async fn names(&self) -> Vec<ReplicaKey> {
         self.read().await.keys().cloned().collect()
@@ -109,8 +106,6 @@ impl <C>PartitionLocalStore<C>
             .collect()
     }
 
-    
-
     pub async fn table_fmt(&self) -> String {
         let mut table = String::new();
 
@@ -136,7 +131,6 @@ impl <C>PartitionLocalStore<C>
 
         table
     }
-
 
     /// replica msg for target spu
     pub async fn replica_for_spu(&self, target_spu: SpuId) -> Vec<Replica> {
@@ -167,15 +161,12 @@ impl <C>PartitionLocalStore<C>
             })
             .collect()
     }
-
-    
-
 }
 
-impl<C,S> From<Vec<((S, i32), Vec<i32>)>> for PartitionLocalStore<C>
+impl<C, S> From<Vec<((S, i32), Vec<i32>)>> for PartitionLocalStore<C>
 where
     S: Into<String>,
-    C: MetadataItem
+    C: MetadataItem,
 {
     fn from(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
         let elements = partitions

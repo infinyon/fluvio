@@ -16,38 +16,30 @@ mod convert {
     }
 
     impl DeleteSpec for SpuGroupSpec {
-
-        fn into_request<K>(key: K) -> DeleteRequest where K: Into<Self::DeleteKey> {
+        fn into_request<K>(key: K) -> DeleteRequest
+        where
+            K: Into<Self::DeleteKey>,
+        {
             DeleteRequest::SpuGroup(key.into())
         }
-
     }
 
     impl ListSpec for SpuGroupSpec {
-
         type Filter = NameFilter;
 
         fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
             ListRequest::SpuGroup(filters)
         }
-
-        
     }
 
     impl TryInto<Vec<Metadata<SpuGroupSpec>>> for ListResponse {
         type Error = Error;
-        
-        fn try_into(self) -> Result<Vec<Metadata<SpuGroupSpec>>, Self::Error> {
 
+        fn try_into(self) -> Result<Vec<Metadata<SpuGroupSpec>>, Self::Error> {
             match self {
                 ListResponse::SpuGroup(s) => Ok(s),
-                _ => Err(Error::new(ErrorKind::Other,"not spg"))
+                _ => Err(Error::new(ErrorKind::Other, "not spg")),
             }
-
         }
     }
-
-    
-
-
 }

@@ -11,7 +11,6 @@ mod k8;
 #[cfg(feature = "k8")]
 pub use k8::*;
 
-
 mod metadata {
 
     use crate::core::*;
@@ -19,15 +18,14 @@ mod metadata {
 
     impl Spec for SpuSpec {
         const LABEL: &'static str = "SPU";
-        type IndexKey  = String;
+        type IndexKey = String;
         type Owner = Self;
         type Status = SpuStatus;
     }
 
-
     impl Status for SpuStatus {}
 }
-    
+
 mod custom_metadata {
 
     use std::io::Error;
@@ -40,15 +38,14 @@ mod custom_metadata {
     use kf_protocol::Version;
     use kf_protocol::bytes::{Buf, BufMut};
 
-
     use crate::core::*;
-    
+
     use super::*;
 
     /// this is not real spec but is there to allow passing of parameters
     impl Spec for CustomSpuSpec {
         const LABEL: &'static str = "CustomSpu";
-        type IndexKey  = String;
+        type IndexKey = String;
         type Status = SpuStatus;
         type Owner = SpuSpec;
     }
@@ -63,14 +60,14 @@ mod custom_metadata {
     #[derive(Debug)]
     pub enum CustomSpuKey {
         Name(String),
-        Id(i32)
+        Id(i32),
     }
 
     impl CustomSpuKey {
         fn type_string(&self) -> &'static str {
             match self {
                 Self::Name(_) => "Name",
-                Self::Id(_) => "Id"
+                Self::Id(_) => "Id",
             }
         }
     }
@@ -79,15 +76,12 @@ mod custom_metadata {
         fn default() -> Self {
             Self::Id(0)
         }
-    
     }
 
-
     impl Encoder for CustomSpuKey {
-    
         fn write_size(&self, version: Version) -> usize {
             let type_size = self.type_string().to_owned().write_size(version);
-        
+
             type_size
                 + match self {
                     Self::Name(s) => s.write_size(version),
@@ -100,8 +94,7 @@ mod custom_metadata {
         where
             T: BufMut,
         {
-
-            self.type_string().to_owned().encode(dest,version)?;
+            self.type_string().to_owned().encode(dest, version)?;
 
             match self {
                 Self::Name(s) => s.encode(dest, version)?,
@@ -127,15 +120,14 @@ mod custom_metadata {
                     response.decode(src, version)?;
                     *self = Self::Name(response);
                     Ok(())
-                },
+                }
 
                 "Id" => {
                     let mut response: i32 = 9;
                     response.decode(src, version)?;
                     *self = Self::Id(response);
                     Ok(())
-                },
-
+                }
 
                 // Unexpected type
                 _ => Err(Error::new(

@@ -69,7 +69,7 @@ where
     let mut client = target_server.connect().await?;
     let mut admin = client.admin().await;
 
-    let topics = admin.list::<TopicSpec,_>(vec![]).await?;
+    let topics = admin.list::<TopicSpec, _>(vec![]).await?;
     display::format_response_output(out, topics, output_type)?;
     Ok("".to_owned())
 }

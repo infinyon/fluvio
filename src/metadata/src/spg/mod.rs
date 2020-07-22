@@ -29,7 +29,7 @@ mod convert {
         type DeleteKey = String;
     }
 
-    impl Creatable for SpuGroupSpec{}
+    impl Creatable for SpuGroupSpec {}
 
     impl Status for SpuGroupStatus {}
 }

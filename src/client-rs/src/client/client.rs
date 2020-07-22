@@ -12,11 +12,9 @@ use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::ClientError;
 
-
 /// Generic client trait
 #[async_trait]
-pub trait Client: Sync + Send  {
-
+pub trait Client: Sync + Send {
     /// client config
     fn config(&self) -> &ClientConfig;
 
@@ -38,8 +36,8 @@ pub trait Client: Sync + Send  {
 
     /// send and receive
     async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
-        where R: Request + Send + Sync;
-
+    where
+        R: Request + Send + Sync;
 }
 
 /// Client with socket connection
@@ -55,11 +53,8 @@ impl fmt::Display for RawClient {
     }
 }
 
-
-
 #[async_trait]
 impl Client for RawClient {
-
     fn config(&self) -> &ClientConfig {
         &self.config
     }
@@ -104,8 +99,6 @@ impl RawClient {
         (self.socket, self.config, self.versions)
     }
 
-    
-
     /// send request only
     pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, KfSocketError>
     where
@@ -122,10 +115,6 @@ impl RawClient {
         self.socket.get_mut_sink().send_request(&req_msg).await?;
         Ok(req_msg)
     }
-
-    
-
-
 }
 
 /// Connection Config to any client
@@ -189,11 +178,9 @@ impl ClientConfig {
 pub struct Versions(ApiVersions);
 
 impl Versions {
-
     pub fn new(versions: ApiVersions) -> Self {
         Self(versions)
     }
-
 
     /// Given an API key, it returns max_version. None if not found
     pub fn lookup_version(&self, api_key: u16) -> Option<i16> {
@@ -204,7 +191,6 @@ impl Versions {
         }
         None
     }
-
 }
 
 /// Client that performs serial request and response
@@ -212,28 +198,21 @@ impl Versions {
 pub struct SerialClient {
     socket: AllSerialSocket,
     config: ClientConfig,
-    versions: Versions
+    versions: Versions,
 }
 
 impl SerialClient {
-
-    pub fn new(socket: AllSerialSocket,config: ClientConfig,versions: Versions) -> Self {
+    pub fn new(socket: AllSerialSocket, config: ClientConfig, versions: Versions) -> Self {
         Self {
             socket,
             config,
-            versions
+            versions,
         }
     }
-
-
-
-     
-
 }
 
 #[async_trait]
 impl Client for SerialClient {
-
     fn config(&self) -> &ClientConfig {
         &self.config
     }
@@ -241,15 +220,11 @@ impl Client for SerialClient {
     /// send and wait for reply serially
     async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
     where
-        R: Request + Send + Sync
+        R: Request + Send + Sync,
     {
         let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
-        
+
         // send request & save response
         self.socket.send_and_receive(req_msg).await
-    }   
-
+    }
 }
-
-
-

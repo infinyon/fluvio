@@ -115,7 +115,6 @@ enum Root {
     )]
     Topic(TopicOpt),
 
-
     #[structopt(
         name = "partition",
         template = "{about}
@@ -127,7 +126,6 @@ enum Root {
         about = "Partition operations"
     )]
     Partition(PartitionOpt),
-
 
     #[structopt(
         name = "profile",

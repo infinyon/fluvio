@@ -3,7 +3,6 @@ use super::PartitionSpec;
 
 use k8_obj_metadata::*;
 
-
 const PARTITION_API: Crd = Crd {
     group: GROUP,
     version: V1,
@@ -14,7 +13,6 @@ const PARTITION_API: Crd = Crd {
     },
 };
 
-
 impl Spec for PartitionSpec {
     type Header = DefaultHeader;
     type Status = PartitionStatus;
@@ -23,7 +21,4 @@ impl Spec for PartitionSpec {
     }
 }
 
-
 impl Status for PartitionStatus {}
-
-

@@ -5,12 +5,15 @@
 use flv_types::SpuId;
 use kf_protocol::derive::{Decode, Encode};
 
-
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
 /// one of replica is leader which is duplicated in the leader field
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize,serde::Deserialize),serde(rename_all = "camelCase"))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct PartitionSpec {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
@@ -25,7 +28,6 @@ impl std::default::Default for PartitionSpec {
     }
 }
 
-
 impl PartitionSpec {
     pub fn new(leader: SpuId, replicas: Vec<SpuId>) -> Self {
         Self { leader, replicas }
@@ -37,8 +39,10 @@ impl PartitionSpec {
 
     /// follower replicas
     pub fn followers(&self) -> Vec<SpuId> {
-       
-        self.replicas.iter().filter_map(|r| if r == &self.leader { None} else { Some(*r)} ).collect()
+        self.replicas
+            .iter()
+            .filter_map(|r| if r == &self.leader { None } else { Some(*r) })
+            .collect()
     }
 }
 
@@ -51,4 +55,3 @@ impl From<Vec<i32>> for PartitionSpec {
         }
     }
 }
-

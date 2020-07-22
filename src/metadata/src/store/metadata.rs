@@ -7,25 +7,25 @@ use crate::core::*;
 // -----------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct MetadataStoreObject<S,C>
+pub struct MetadataStoreObject<S, C>
 where
     S: Spec,
-    C: MetadataItem
+    C: MetadataItem,
 {
     pub spec: S,
     pub status: S::Status,
     pub key: S::IndexKey,
-    pub ctx: MetadataContext<C>
+    pub ctx: MetadataContext<C>,
 }
 
-impl<S,C> MetadataStoreObject<S,C>
+impl<S, C> MetadataStoreObject<S, C>
 where
     S: Spec,
-    C: MetadataItem
+    C: MetadataItem,
 {
     pub fn new<J>(key: J, spec: S, status: S::Status) -> Self
     where
-        J: Into<S::IndexKey>
+        J: Into<S::IndexKey>,
     {
         Self {
             key: key.into(),
@@ -35,7 +35,7 @@ where
         }
     }
 
-    pub fn new_with_context<J>(key: J, spec: S, ctx:MetadataContext<C>) -> Self
+    pub fn new_with_context<J>(key: J, spec: S, ctx: MetadataContext<C>) -> Self
     where
         J: Into<S::IndexKey>,
     {
@@ -49,17 +49,17 @@ where
 
     pub fn with_spec<J>(key: J, spec: S) -> Self
     where
-        J: Into<S::IndexKey>, C: Default
+        J: Into<S::IndexKey>,
+        C: Default,
     {
         Self::new(key.into(), spec, S::Status::default())
     }
 
-    pub fn with_key<J>(key: J) -> Self 
-        where
-            J: Into<S::IndexKey>
+    pub fn with_key<J>(key: J) -> Self
+    where
+        J: Into<S::IndexKey>,
     {
-        Self::with_spec(key.into(),S::default())
-
+        Self::with_spec(key.into(), S::default())
     }
 
     pub fn with_context(mut self, ctx: MetadataContext<C>) -> Self {
@@ -98,14 +98,12 @@ where
         self.ctx = ctx;
     }
 
-    pub fn parts(self) -> (S::IndexKey, S, S::Status,MetadataContext<C>) {
+    pub fn parts(self) -> (S::IndexKey, S, S::Status, MetadataContext<C>) {
         (self.key, self.spec, self.status, self.ctx)
     }
 
     /// check if metadata is owned by other
-    pub fn is_owned(&self, uid: &C::UId) -> bool 
-    {
-
+    pub fn is_owned(&self, uid: &C::UId) -> bool {
         match self.ctx().owner() {
             Some(parent) => parent.uid() == uid,
             None => false,
@@ -113,11 +111,10 @@ where
     }
 }
 
-
-impl<S,C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S,C>
+impl<S, C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S, C>
 where
     S: Spec,
-    C: MetadataItem
+    C: MetadataItem,
 {
     fn into(self) -> (S::IndexKey, S, S::Status) {
         (self.key, self.spec, self.status)

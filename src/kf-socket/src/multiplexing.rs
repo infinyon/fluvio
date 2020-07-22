@@ -146,7 +146,7 @@ where
             R::API_KEY,
             self.correlation_id
         );
-       
+
         if let Some(res_bytes) = self.receiver.next().await {
             let response =
                 R::Response::decode_from(&mut Cursor::new(&res_bytes), self.header.api_version())?;
@@ -161,8 +161,7 @@ where
         }
     }
 
-    pub async fn next_timeout(&mut self,time_out: Duration) -> Result<R::Response, KfSocketError> {
-        
+    pub async fn next_timeout(&mut self, time_out: Duration) -> Result<R::Response, KfSocketError> {
         debug!(
             "waiting for async response: {} correlation: {}",
             R::API_KEY,
@@ -192,8 +191,6 @@ where
                 }
             }
         }
-        
-        
     }
 }
 
@@ -218,8 +215,6 @@ where
     where
         R: Request,
     {
-     
-
         // first try to lock, this should lock
         // if lock fails then somebody still trying to  writing which should not happen, in this cases, we bail
         // if lock ok, then we cleared the value
@@ -243,7 +238,7 @@ where
         req_msg.header.set_correlation_id(self.correlation_id);
 
         debug!("serial: sending serial request id: {}", self.correlation_id);
-        trace!("sending request: {:#?}",req_msg);
+        trace!("sending request: {:#?}", req_msg);
         self.sink.send_request(&req_msg).await?;
         debug!(
             "serial: finished and waiting for reply from dispatcher for: {}",
@@ -316,7 +311,6 @@ impl MultiPlexingResponseDispatcher {
     where
         S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
     {
-
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {

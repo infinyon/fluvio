@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 
 use flv_client::config::*;
 
-
 use crate::Terminal;
 use crate::t_println;
 use super::cli::SetLocal;

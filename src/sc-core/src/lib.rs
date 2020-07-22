@@ -9,6 +9,5 @@ mod init;
 mod services;
 pub mod stores;
 
-
 use self::error::ScServerError;
 pub use init::start_main_loop;

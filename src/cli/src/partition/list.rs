@@ -15,7 +15,6 @@ use crate::Terminal;
 use crate::target::ClusterTarget;
 use crate::common::OutputFormat;
 
-
 /// Option for Listing Partition
 #[derive(Debug, StructOpt)]
 pub struct ListPartitionOpt {
@@ -35,7 +34,7 @@ impl ListPartitionOpt {
     }
 
     /// perform actions
-    pub async fn process<O>(self,out: std::sync::Arc<O>) -> Result<String, CliError>
+    pub async fn process<O>(self, out: std::sync::Arc<O>) -> Result<String, CliError>
     where
         O: Terminal,
     {
@@ -44,7 +43,7 @@ impl ListPartitionOpt {
         let mut client = target_server.connect().await?;
         let mut admin = client.admin().await;
 
-        let spus = admin.list::<PartitionSpec,_>(vec![]).await?;
+        let spus = admin.list::<PartitionSpec, _>(vec![]).await?;
 
         // format and dump to screen
         display::format_partition_response_output(out, spus, output)?;
@@ -52,9 +51,8 @@ impl ListPartitionOpt {
     }
 }
 
-
 mod display {
-    
+
     use std::convert::TryInto;
 
     use prettytable::Row;
@@ -94,7 +92,17 @@ mod display {
     impl TableOutputHandler for ListSpus {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["TOPIC","PARTITION","LEADER","REPLICAS","RESOLUTION","HW","LEO","LSR","FOLLOWER OFFSETS"]
+            row![
+                "TOPIC",
+                "PARTITION",
+                "LEADER",
+                "REPLICAS",
+                "RESOLUTION",
+                "HW",
+                "LEO",
+                "LSR",
+                "FOLLOWER OFFSETS"
+            ]
         }
 
         /// return errors in string format
@@ -107,11 +115,12 @@ mod display {
                 .map(|metadata| {
                     let spec = &metadata.spec;
                     let status = &metadata.status;
-                    let (topic,partition) = {
-                        let parse_key: Result<ReplicaKey,PartitionError> = metadata.name.clone().try_into();
+                    let (topic, partition) = {
+                        let parse_key: Result<ReplicaKey, PartitionError> =
+                            metadata.name.clone().try_into();
                         match parse_key {
                             Ok(key) => key.split(),
-                            Err(err) => (err.to_string(),-1)
+                            Err(err) => (err.to_string(), -1),
                         }
                     };
 

@@ -3,7 +3,6 @@ mod reducer;
 mod controller;
 mod policy;
 
-
 pub use self::actions::*;
 pub use self::controller::*;
 pub use self::policy::*;
@@ -15,5 +14,4 @@ mod common {
     use crate::metadata::*;
 
     pub type TopicWSAction = WSAction<TopicSpec>;
-    
 }

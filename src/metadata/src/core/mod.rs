@@ -16,7 +16,7 @@ mod context {
         fn uid(&self) -> &Self::UId;
     }
 
-    impl MetadataItem for String{
+    impl MetadataItem for String {
         type UId = String;
 
         fn uid(&self) -> &Self::UId {
@@ -24,23 +24,19 @@ mod context {
         }
     }
 
-    #[derive(Default,Debug,Clone,PartialEq)]
+    #[derive(Default, Debug, Clone, PartialEq)]
     pub struct MetadataContext<C> {
         item: C,
-        owner: Option<C>
+        owner: Option<C>,
     }
 
-    impl <C>From<C> for MetadataContext<C> {
+    impl<C> From<C> for MetadataContext<C> {
         fn from(item: C) -> Self {
-            Self {
-                item,
-                owner: None
-            }
+            Self { item, owner: None }
         }
     }
 
     impl<C> MetadataContext<C> {
-     
         pub fn item(&self) -> &C {
             &self.item
         }
@@ -57,21 +53,18 @@ mod context {
         }
     }
 
-    impl <C> MetadataContext<C>
-        where C: MetadataItem
+    impl<C> MetadataContext<C>
+    where
+        C: MetadataItem,
     {
-
         pub fn create_child(&self) -> Self {
             Self {
-                item:  C::default(),
-                owner: Some(self.item.clone())
+                item: C::default(),
+                owner: Some(self.item.clone()),
             }
         }
     }
-
-
 }
-
 
 #[cfg(feature = "k8")]
 pub mod k8 {
@@ -85,12 +78,8 @@ pub mod k8 {
         fn uid(&self) -> &Self::UId {
             &self.uid
         }
-        
-
     }
-
 }
-
 
 mod core_model {
 
@@ -105,39 +94,32 @@ mod core_model {
         type Metadata;
     }
 
-
-
     pub trait Spec: Encoder + Decoder + Debug + Clone + PartialEq {
         const LABEL: &'static str;
         type Status: Status;
         type Owner: Spec;
         type IndexKey: Debug + Eq + Hash + Clone + ToString;
-        
     }
 
-    pub trait Status: Encoder + Decoder + Debug + Clone + PartialEq {
-
-    }
+    pub trait Status: Encoder + Decoder + Debug + Clone + PartialEq {}
 
     /// for deleting objects
     pub trait Removable {
-
         type DeleteKey: Encoder + Decoder;
-
-        
     }
 
     /// marker trait for creating
     pub trait Creatable {}
 
     /// Represents some metadata object
-    pub struct MetadataObj<S,P> where P: MetadataStoreDriver, S:Spec {
+    pub struct MetadataObj<S, P>
+    where
+        P: MetadataStoreDriver,
+        S: Spec,
+    {
         pub name: String,
         pub metadata: P::Metadata,
         pub spec: S,
-        pub status: S::Status
+        pub status: S::Status,
     }
-
 }
-
-

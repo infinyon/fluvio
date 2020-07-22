@@ -38,13 +38,21 @@ pub fn handle_watch_request<T>(
 
     match req {
         WatchRequest::Topic(_) => unimplemented!(),
-        WatchRequest::Spu(epoch) => {
-            WatchController::<T,SpuSpec>::update(epoch, sink, end_event, ctx.spus().clone(), header)
-        }
+        WatchRequest::Spu(epoch) => WatchController::<T, SpuSpec>::update(
+            epoch,
+            sink,
+            end_event,
+            ctx.spus().clone(),
+            header,
+        ),
         WatchRequest::SpuGroup(_) => unimplemented!(),
-        WatchRequest::Partition(epoch) => {
-            WatchController::<T,PartitionSpec>::update(epoch, sink, end_event, ctx.partitions().clone(), header)
-        }
+        WatchRequest::Partition(epoch) => WatchController::<T, PartitionSpec>::update(
+            epoch,
+            sink,
+            end_event,
+            ctx.partitions().clone(),
+            header,
+        ),
     }
 }
 

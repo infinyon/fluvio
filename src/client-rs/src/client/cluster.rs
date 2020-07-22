@@ -44,24 +44,19 @@ impl ClusterClient {
         AdminClient::new(self.create_serial_client().await)
     }
 
-    
     /// create new producer for topic/partition
-    pub async fn producer(&mut self, replica: ReplicaKey) -> Result<Producer,ClientError> {
-        debug!(
-            "creating producer, replica: {}",
-            replica
-        );
+    pub async fn producer(&mut self, replica: ReplicaKey) -> Result<Producer, ClientError> {
+        debug!("creating producer, replica: {}", replica);
         if let Some(pool) = &self.spu_pool {
-            Ok(Producer::new(replica,pool.clone()))
+            Ok(Producer::new(replica, pool.clone()))
         } else {
             let pool = self.init_spu_pool().await?;
             Ok(Producer::new(replica, pool))
-        }   
-        
+        }
     }
 
     /// initialize spu pool and return clone of the pool
-    async fn init_spu_pool(&mut self) -> Result<SpuPool,ClientError> {
+    async fn init_spu_pool(&mut self) -> Result<SpuPool, ClientError> {
         debug!("init metadata store");
         let metadata = MetadataStores::new(&mut self.socket).await?;
         let pool = SpuPool::new(self.config.clone(), metadata);
@@ -71,15 +66,13 @@ impl ClusterClient {
 
     /// create new consumer for topic/partition
     pub async fn consumer(&mut self, replica: ReplicaKey) -> Result<Consumer, ClientError> {
-        debug!("creating consumer, replica: {}",replica);
+        debug!("creating consumer, replica: {}", replica);
 
         if let Some(pool) = &self.spu_pool {
-            Ok(Consumer::new(replica,pool.clone()))
+            Ok(Consumer::new(replica, pool.clone()))
         } else {
             let pool = self.init_spu_pool().await?;
             Ok(Consumer::new(replica, pool))
-        }  
+        }
     }
-
-
 }

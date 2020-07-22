@@ -10,10 +10,8 @@ mod output {
 
     use crate::OutputType;
 
-
-#[derive(Debug, StructOpt, Default)]
+    #[derive(Debug, StructOpt, Default)]
     pub struct OutputFormat {
-
         /// Output
         #[structopt(
             short = "O",

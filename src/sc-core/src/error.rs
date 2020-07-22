@@ -15,7 +15,6 @@ pub enum ScServerError {
     SendError(SendError),
     SocketError(KfSocketError),
     PartitionError(PartitionError),
-
 }
 
 impl fmt::Display for ScServerError {
@@ -24,7 +23,7 @@ impl fmt::Display for ScServerError {
             Self::IoError(err) => write!(f, "{}", err),
             Self::SendError(err) => write!(f, "{}", err),
             Self::SocketError(err) => write!(f, "{}", err),
-            Self::PartitionError(err) => write!(f, "{}", err)
+            Self::PartitionError(err) => write!(f, "{}", err),
         }
     }
 }

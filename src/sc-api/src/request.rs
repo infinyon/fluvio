@@ -31,7 +31,7 @@ pub enum AdminPublicRequest {
     CreateRequest(RequestMessage<CreateRequest>),
     DeleteRequest(RequestMessage<DeleteRequest>),
     ListRequest(RequestMessage<ListRequest>),
-    WatchRequest(RequestMessage<WatchRequest>)
+    WatchRequest(RequestMessage<WatchRequest>),
 }
 
 impl Default for AdminPublicRequest {
@@ -50,13 +50,17 @@ impl KfRequestMessage for AdminPublicRequest {
         T: Buf,
     {
         let api_key = header.api_key().try_into()?;
-        debug!("decoding admin public request from: {} api: {:#?}", header.client_id(),api_key);
+        debug!(
+            "decoding admin public request from: {} api: {:#?}",
+            header.client_id(),
+            api_key
+        );
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
 
             AdminPublicApiKey::Create => api_decode!(Self, CreateRequest, src, header),
             AdminPublicApiKey::Delete => api_decode!(Self, DeleteRequest, src, header),
-            AdminPublicApiKey::List => api_decode!(Self, ListRequest, src,header),
+            AdminPublicApiKey::List => api_decode!(Self, ListRequest, src, header),
             AdminPublicApiKey::Watch => api_decode!(Self, WatchRequest, src, header),
         }
     }

@@ -36,11 +36,11 @@ mod process {
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
-        let replica: ReplicaKey = (cfg.topic.clone(),cfg.partition).into();
+        let replica: ReplicaKey = (cfg.topic.clone(), cfg.partition).into();
         let mut target = target_server.connect().await?;
         let consumer = target.consumer(replica).await?;
         fetch_log_loop(out, consumer, cfg).await?;
-       
+
         Ok("".to_owned())
     }
 }

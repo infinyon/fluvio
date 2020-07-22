@@ -14,7 +14,6 @@ use k8_client::metadata::MetadataClient;
 use k8_client::SharedK8Client;
 use flv_metadata::spu::IngressAddr;
 
-
 use flv_sc_core::stores::spu::SpuAdminStore;
 use crate::ScK8Error;
 
@@ -28,13 +27,8 @@ pub struct SvcOperator {
 }
 
 impl SvcOperator {
-    pub fn run(
-        client: SharedK8Client,
-        namespace: String,
-        spu_store: Arc<SpuAdminStore>,
-    )  {
-       
-       let operator =  Self {
+    pub fn run(client: SharedK8Client, namespace: String, spu_store: Arc<SpuAdminStore>) {
+        let operator = Self {
             client,
             namespace,
             spu_store,
@@ -50,8 +44,6 @@ impl SvcOperator {
             self.inner_loop().await;
         }
     }
-
-
 
     async fn inner_loop(&mut self) {
         let mut svc_stream = self
@@ -105,12 +97,11 @@ impl SvcOperator {
     }
 
     async fn apply_svc_changes(&self, svc_obj: K8Obj<ServiceSpec>) -> Result<(), ScK8Error> {
-        debug!("received svc: {}",svc_obj.metadata.name);
+        debug!("received svc: {}", svc_obj.metadata.name);
         trace!("svc spec: {:#?}", svc_obj);
 
         if let Some(spu_id) = svc_obj.metadata.labels.get("fluvio.io/spu-name") {
             if let Some(mut old_value) = self.spu_store.value(spu_id).await {
-
                 debug!(
                     "found spu: {} to update ingress from external load balancer ",
                     spu_id
@@ -119,7 +110,7 @@ impl SvcOperator {
                 let ingresses = svc_obj.status.load_balancer.ingress;
                 old_value.spec.public_endpoint.ingress =
                     ingresses.into_iter().map(|addr| convert(addr)).collect();
-               // self.k8_ws.update_spec(old_value.inner_owned()).await?;
+                // self.k8_ws.update_spec(old_value.inner_owned()).await?;
             }
         }
         Ok(())

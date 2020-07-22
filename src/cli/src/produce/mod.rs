@@ -1,5 +1,3 @@
-
-
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -10,13 +8,12 @@ use crate::target::ClusterTarget;
 use crate::CliError;
 use crate::Terminal;
 
-
 /// Produce log configuration parameters
 #[derive(Debug)]
 pub struct ProduceLogConfig {
     pub topic: String,
     pub partition: i32,
-    pub continuous: bool
+    pub continuous: bool,
 }
 
 #[derive(Debug)]
@@ -73,10 +70,11 @@ pub struct ProduceLogOpt {
 
 impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
-    pub fn validate(self) -> Result<(ClusterConfig, (ProduceLogConfig,Option<FileRecord>)), CliError> {
+    pub fn validate(
+        self,
+    ) -> Result<(ClusterConfig, (ProduceLogConfig, Option<FileRecord>)), CliError> {
         let target_server = self.target.load()?;
 
-    
         let file_records = if let Some(record_per_line) = self.record_per_line {
             Some(FileRecord::Lines(record_per_line.clone()))
         } else if self.record_file.len() > 0 {
@@ -91,8 +89,7 @@ impl ProduceLogOpt {
             continuous: self.continuous,
         };
 
-      
-        Ok((target_server, ((produce_log_cfg,file_records))))
+        Ok((target_server, ((produce_log_cfg, file_records))))
     }
 }
 
@@ -107,11 +104,11 @@ where
     use log::debug;
     use flv_client::kf::api::ReplicaKey;
 
-    let (target_server, (cfg,file_records)) = opt.validate()?;
+    let (target_server, (cfg, file_records)) = opt.validate()?;
 
     let mut target = target_server.connect().await?;
-    
-    let replica: ReplicaKey = (cfg.topic.clone(),cfg.partition).into();
+
+    let replica: ReplicaKey = (cfg.topic.clone(), cfg.partition).into();
     let producer = target.producer(replica).await?;
 
     debug!("got producer");
@@ -123,7 +120,6 @@ where
 
     Ok("".to_owned())
 }
-
 
 mod produce {
 
@@ -138,20 +134,17 @@ mod produce {
     use flv_types::{print_cli_err, print_cli_ok};
     use flv_client::Producer;
 
- 
     use crate::t_println;
 
     use super::*;
 
     pub type RecordTuples = Vec<(String, Vec<u8>)>;
 
-
-   
     pub async fn produce_file_records<O: Terminal>(
         mut producer: Producer,
         out: std::sync::Arc<O>,
         _cfg: ProduceLogConfig,
-        file: FileRecord
+        file: FileRecord,
     ) -> Result<(), CliError> {
         let tuples = file_to_records(file).await?;
         for r_tuple in tuples {
@@ -160,14 +153,13 @@ mod produce {
         }
         Ok(())
     }
-    
+
     /// Dispatch records based on the content of the record tuples variable
     pub async fn produce_from_stdin<O: Terminal>(
         mut producer: Producer,
         _out: std::sync::Arc<O>,
         opt: ProduceLogConfig,
     ) -> Result<(), CliError> {
-        
         let stdin = stdin();
         let mut lines = BufReader::new(stdin).lines();
         while let Some(line) = lines.next().await {
@@ -179,7 +171,7 @@ mod produce {
                 return Ok(());
             }
         }
-        
+
         debug!("done sending records");
 
         Ok(())
@@ -201,13 +193,9 @@ mod produce {
     }
 
     /// Retrieve one or more files and converts them into a list of (name, record) touples
-    async fn file_to_records(
-        file_record_options: FileRecord,
-    ) -> Result<RecordTuples, CliError> {
-
+    async fn file_to_records(file_record_options: FileRecord) -> Result<RecordTuples, CliError> {
         let mut records: RecordTuples = vec![];
 
-        
         match file_record_options {
             // lines as records
             FileRecord::Lines(lines2rec_path) => {
@@ -234,7 +222,6 @@ mod produce {
                 }
             }
         }
-            
 
         Ok(records)
     }

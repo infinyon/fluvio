@@ -8,12 +8,10 @@ use sc_api::spu::CustomSpuSpec;
 use flv_metadata::store::*;
 use crate::core::Context;
 
-
 pub async fn handle_fetch_custom_spu_request(
     filters: Vec<String>,
     ctx: &Context,
 ) -> Result<ListResponse, Error> {
-
     debug!("fetching custom spu list");
     let spus: Vec<Metadata<SpuSpec>> = ctx
         .spus()
@@ -30,12 +28,14 @@ pub async fn handle_fetch_custom_spu_request(
         })
         .collect();
 
-    let custom_spus: Vec<Metadata<CustomSpuSpec>> = spus.into_iter()
+    let custom_spus: Vec<Metadata<CustomSpuSpec>> = spus
+        .into_iter()
         .map(|spu| Metadata {
             name: spu.name,
             spec: spu.spec.into(),
-            status: spu.status
-        }).collect();
+            status: spu.status,
+        })
+        .collect();
 
     debug!("flv fetch custom resp: {} items", custom_spus.len());
     trace!("flv fetch custom spus resp {:#?}", custom_spus);
@@ -47,7 +47,6 @@ pub async fn handle_fetch_spus_request(
     filters: Vec<String>,
     ctx: &Context,
 ) -> Result<ListResponse, Error> {
-
     debug!("fetching spu list");
 
     let spus: Vec<Metadata<SpuSpec>> = ctx

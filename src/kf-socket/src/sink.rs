@@ -65,8 +65,6 @@ impl<S> InnerKfSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    
-
     /// as client, send request to server
     pub async fn send_request<R>(
         &mut self,
@@ -160,7 +158,7 @@ use async_lock::Lock;
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct InnerExclusiveKfSink<S> {
     inner: Lock<InnerKfSink<S>>,
-    fd: RawFd
+    fd: RawFd,
 }
 
 impl<S> InnerExclusiveKfSink<S> {
@@ -168,7 +166,7 @@ impl<S> InnerExclusiveKfSink<S> {
         let fd = sink.id();
         InnerExclusiveKfSink {
             inner: Lock::new(sink),
-            fd
+            fd,
         }
     }
 }
@@ -177,7 +175,6 @@ impl<S> InnerExclusiveKfSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), KfSocketError>
     where
         RequestMessage<R>: KfEncoder + Default + Debug,
@@ -198,19 +195,16 @@ where
         inner_sink.send_response(resp_msg, version).await
     }
 
-
     pub fn id(&self) -> RawFd {
         self.fd
     }
-
-    
 }
 
 impl<S> Clone for InnerExclusiveKfSink<S> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            fd: self.fd.clone()
+            fd: self.fd.clone(),
         }
     }
 }

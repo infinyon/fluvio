@@ -9,7 +9,6 @@ use crate::controllers::partitions::PartitionWSAction;
 
 use super::*;
 
-
 #[derive(Debug, Default)]
 pub struct TopicActions {
     pub topics: Vec<TopicWSAction>,
