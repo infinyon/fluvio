@@ -14,6 +14,8 @@ doc = false
 kf = []
 cluster_components = ["flv-spu", "flv-sc-k8"]
 
+[build-dependencies]
+rustc_version = "0.2.3"
 
 [dependencies]
 log = "0.4.8"
