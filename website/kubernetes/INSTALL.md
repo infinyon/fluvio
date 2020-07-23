@@ -121,3 +121,50 @@ You can retrieve from known offset.
 ```
 flvd consume message -o 0
 ```
+
+## Troubleshooting
+This guide helps users to solve issues they might face during the setup process. 
+
+###### Cross-compilation errors
+
+If you face cross-compilation errors while creating minikube image, for example
+
+```
+cargo build --bin spu-server --target x86_64-unknown-linux-musl
+error: linker `x86_64-linux-musl-gcc` not found
+ |
+ = note: No such file or directory (os error 2)
+error: aborting due to previous error
+error: could not compile `flv-spu`.
+```
+This is indicative that you need to add standard library for the target platform:
+
+```
+rustup target add x86_64-unknown-linux-musl
+```
+
+If it still doesn't work
+
+```
+brew install filosottile/musl-cross/musl-cross
+```
+
+Make sure you set the following environment variable
+
+```
+export TARGET_CC=x86_64-linux-musl-gcc
+```
+
+###### Connection issues
+
+If you face issues while connecting to the registry
+
+```
+Get http://localhost:5000/v2/: dial tcp [::1]:5000: connect: connection refused
+```
+
+It means your docker registry is not running
+
+```
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+```
