@@ -75,7 +75,8 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
     }
     binary.print();
 
-    binary.stdout(Stdio::from(outputs))
+    binary
+        .stdout(Stdio::from(outputs))
         .stderr(Stdio::from(errors))
         .spawn()
         .expect("sc server failed to start");
