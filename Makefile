@@ -25,8 +25,11 @@ build:
 integration-test:	build
 	target/debug/flv-integration-test
 
+install-fmt:
+	rustup component add rustfmt --toolchain $(RUSTV)
+
 check-fmt:
-	cargo fmt -- --check
+	cargo +$(RUSTV) fmt -- --check
 
 # create secret for k8 in development mode
 k8-create-secret:

@@ -2,12 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
-
   check_fmt:
     name: check cargo fmt
     runs-on: ${{ matrix.os }}
@@ -17,46 +16,44 @@ jobs:
         rust: [nightly]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install ${{ matrix.rust }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-    - name: Install cargo fmt
-      run:  rustup component add rustfmt
-    - name: check fmt
-      run:  make check-fmt
-
-      
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Install cargo fmt
+        run: make install-fmt
+      - name: check fmt
+        run: make check-fmt
 
   unit_test:
     name: Unit test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest,macOS-latest]
+        os: [ubuntu-latest, macOS-latest]
         rust: [nightly]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install ${{ matrix.rust }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-    - name: Run unit tests
-      run:  cargo test
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Run unit tests
+        run: cargo test
 
   local_cluster_test:
-      name: Local cluster test
-      runs-on: ${{ matrix.os }}
-      strategy:
-        matrix:
-          os: [ubuntu-latest]
-          rust: [nightly]
+    name: Local cluster test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [nightly]
 
-      steps:
+    steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -65,9 +62,9 @@ jobs:
           override: true
       - uses: manusa/actions-setup-minikube@v1.0.2
         with:
-            minikube version: 'v1.11.0'
-            kubernetes version: 'v1.18.3'
-            github token: ${{ secrets.GITHUB_TOKEN }}
+          minikube version: "v1.11.0"
+          kubernetes version: "v1.18.3"
+          github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Test Minikube
         run: |
           kubectl get nodes
