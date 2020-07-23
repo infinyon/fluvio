@@ -42,7 +42,7 @@ impl CommandUtil for Command {
         if !output.status.success() {
             match output.status.code() {
                 Some(code) => println!("Exited with status code: {}", code),
-                None       => println!("Process terminated by signal")
+                None => println!("Process terminated by signal"),
             }
             panic!(-1);
         }
