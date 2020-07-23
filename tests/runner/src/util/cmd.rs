@@ -39,7 +39,13 @@ impl CommandUtil for Command {
             .output()
             .expect("execution failed");
 
-        assert!(output.status.success());
+        if !output.status.success() {
+            match output.status.code() {
+                Some(code) => println!("Exited with status code: {}", code),
+                None       => println!("Process terminated by signal")
+            }
+            panic!(-1);
+        }
     }
 
     /// execute and ensure command has been executed ok

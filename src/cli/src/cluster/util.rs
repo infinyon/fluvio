@@ -7,6 +7,7 @@ use log::debug;
 pub use cmd_util::*;
 
 /// get path to the binary
+#[allow(unused)]
 pub fn get_binary(bin_name: &str) -> Result<Command, IoError> {
     let current_exe =
         std::env::current_exe().expect("Failed to get the path of the integration test binary");
