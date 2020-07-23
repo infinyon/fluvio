@@ -25,6 +25,9 @@ build:
 integration-test:	build
 	target/debug/flv-integration-test
 
+install-fmt:
+	rustup component add rustfmt --toolchain $(RUSTV)
+
 check-fmt:
 	cargo fmt -- --check
 

@@ -24,7 +24,7 @@ jobs:
         toolchain: ${{ matrix.rust }}
         override: true
     - name: Install cargo fmt
-      run:  rustup component add rustfmt
+      run:  make install-fmt
     - name: check fmt
       run:  make check-fmt
 
