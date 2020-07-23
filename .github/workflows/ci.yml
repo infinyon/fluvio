@@ -28,7 +28,6 @@ jobs:
     - name: check fmt
       run:  make check-fmt
 
-      
 
   unit_test:
     name: Unit test
