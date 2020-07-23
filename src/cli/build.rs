@@ -1,6 +1,6 @@
 use std::fs;
 use std::process::Command;
-use rustc_version::version;
+use rustc_version::version_meta;
 
 fn main() {
 
@@ -12,16 +12,34 @@ fn main() {
     // Assign the git hash to the compile-time GIT_HASH env variable (to use with env!())
     println!("cargo:rustc-env=GIT_HASH={}", git_hash);
 
-    // Fetch OS information
-    let uname_output = Command::new("uname").args(&["-a"]).output().ok();
-    let uname_text = uname_output
-        .map(|output| String::from_utf8(output.stdout).expect("should read uname output to string"))
-        .unwrap_or_else(|| "<this platform does not support uname -a>".to_string());
-    println!("cargo:rustc-env=UNAME_ALL={}", uname_text);
+    // Fetch OS information if on unix
+    if cfg!(unix) {
+        let uname_output = Command::new("uname").args(&["-sro"])
+            .output().expect("should get OS info from uname");
+        let uname_text = String::from_utf8(uname_output.stdout)
+            .expect("should read uname output to string");
+        println!("cargo:rustc-env=UNAME={}", uname_text);
+    }
 
     // Fetch Rustc information
-    let rust_version = version().expect("should get rustc version");
-    println!("cargo:rustc-env=RUSTC_VERSION={}", rust_version);
+    let rust_version = version_meta().expect("should get rustc version");
+    let semver = &rust_version.semver;
+    let rustc_commit = rust_version.commit_hash.as_ref()
+        .and_then(|hash| rust_version.commit_date.as_ref()
+            .map(|date| (&hash[..7], date)));
+
+    match rustc_commit {
+        Some((commit_hash, commit_date)) => {
+            println!("cargo:rustc-env=RUSTC_VERSION={} ({} {})",
+                     semver,
+                     commit_hash,
+                     commit_date,
+            );
+        },
+        None => {
+            println!("cargo:rustc-env=RUSTC_VERSION={}", semver);
+        }
+    }
 
     println!("cargo:rerun-if-changed=src/VERSION");
     println!("cargo:rerun-if-changed=../../VERSION");

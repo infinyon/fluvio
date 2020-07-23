@@ -211,7 +211,9 @@ struct VersionCmd {}
 fn process_version_cmd() -> Result<String, CliError> {
     println!("Fluvio version : {}", crate::VERSION);
     println!("Git Commit     : {}", env!("GIT_HASH"));
-    println!("OS Details     : {}", env!("UNAME_ALL"));
+    if let Some(os_info) = option_env!("UNAME") {
+        println!("OS Details     : {}", os_info);
+    }
     println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
     Ok("".to_owned())
 }
