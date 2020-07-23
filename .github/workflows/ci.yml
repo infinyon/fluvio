@@ -62,7 +62,7 @@ jobs:
           override: true
       - uses: manusa/actions-setup-minikube@v1.0.2
         with:
-          minikube version: "v1.11.0"
+          minikube version: "v1.12.1"
           kubernetes version: "v1.18.3"
           github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Test Minikube
