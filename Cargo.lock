@@ -668,6 +668,7 @@ dependencies = [
  "log",
  "prettytable-rs",
  "rand 0.7.3",
+ "rustc_version",
  "serde",
  "serde_json",
  "serde_yaml",
