@@ -32,7 +32,7 @@ pub struct CreateTopicOpt {
         short = "p",
         long = "partitions",
         value_name = "partitions",
-        default_value = "1",
+        default_value = "1"
     )]
     partitions: i32,
 
@@ -41,7 +41,7 @@ pub struct CreateTopicOpt {
         short = "r",
         long = "replication",
         value_name = "integer",
-        default_value = "1",
+        default_value = "1"
     )]
     replication: i16,
 
