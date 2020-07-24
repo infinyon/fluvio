@@ -86,6 +86,7 @@ fn remove_local_cluster() {
         .arg("sc-k8-server")
         .arg("spu-server")
         .arg("fluvio")
+        .print()
         .output()
         .expect("failed to execute process");
 
