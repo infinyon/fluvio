@@ -24,7 +24,7 @@ use crate::target::ClusterTarget;
 #[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
     /// Topic name
-    #[structopt(value_name = "topic name")]
+    #[structopt(value_name = "topic-name")]
     topic: String,
 
     /// Number of partitions
@@ -32,8 +32,7 @@ pub struct CreateTopicOpt {
         short = "p",
         long = "partitions",
         value_name = "partitions",
-        default_value = "1",
-        required_unless = "replica_assignment"
+        default_value = "1"
     )]
     partitions: i32,
 
@@ -42,8 +41,7 @@ pub struct CreateTopicOpt {
         short = "r",
         long = "replication",
         value_name = "integer",
-        default_value = "1",
-        required_unless = "replica_assignment"
+        default_value = "1"
     )]
     replication: i16,
 

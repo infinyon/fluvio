@@ -10,24 +10,24 @@ use flv_client::config::TlsClientConfig;
 /// Optional Tls Configuration to Client
 #[derive(Debug, StructOpt, Default)]
 pub struct TlsConfig {
-    /// enable tls
+    /// Enable TLS
     #[structopt(long)]
     pub tls: bool,
 
-    /// required if client cert is used
+    /// Required if client cert is used
     #[structopt(long, required_if("tls", "true"))]
     pub domain: Option<String>,
 
-    /// TLS: path to client certificate
+    /// Path to TLS client certificate
     #[structopt(long)]
     pub client_cert: Option<String>,
     #[structopt(long)]
-    /// TLS: path to client private key
+    /// Path to TLS client private key
     pub client_key: Option<String>,
-    /// TLS: enable client cert
+    /// TLS: use client cert
     #[structopt(long)]
     pub enable_client_cert: bool,
-    /// TLS: path to ca cert, required when client cert is enabled
+    /// Path to TLS ca cert, required when client cert is enabled
     #[structopt(long)]
     pub ca_cert: Option<String>,
 }

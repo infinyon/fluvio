@@ -55,7 +55,7 @@ mod target {
     /// server configuration
     #[derive(Debug, StructOpt, Default)]
     pub struct ClusterTarget {
-        /// address of cluster
+        /// Address of cluster
         #[structopt(short = "c", long, value_name = "host:port")]
         pub cluster: Option<String>,
 
