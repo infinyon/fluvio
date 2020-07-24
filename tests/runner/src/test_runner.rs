@@ -31,7 +31,6 @@ impl TestRunner {
             .arg(topic_name)
             .arg("--replication")
             .arg(self.option.replication().to_string())
-            .print()
             .inherit();
 
         println!("topic created");

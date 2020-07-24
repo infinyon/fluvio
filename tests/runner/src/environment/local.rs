@@ -27,7 +27,6 @@ impl EnvironmentDriver for LocalEnvDriver {
             .arg("cluster")
             .arg("uninstall")
             .arg("--local")
-            .print()
             .inherit();
     }
 

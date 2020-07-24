@@ -432,7 +432,7 @@ mod tests {
                     if echo_request.request().msg == "slow" {
                         debug!("server: received slow msg");
                         spawn(async move {
-                            sleep(Duration::from_millis(100)).await;
+                            sleep(Duration::from_millis(500)).await;
                             let resp =
                                 echo_request.new_response(EchoResponse::new("slow".to_owned()));
                             debug!("server send slow response");
@@ -508,7 +508,7 @@ mod tests {
         let (slow, fast, _) = join3(
             async move {
                 debug!("trying to send slow");
-                // this message was send first but since there is delay of 100ms, it will return slower than fast
+                // this message was send first but since there is delay of 500ms, it will return slower than fast
                 let request = RequestMessage::new_request(EchoRequest::new("slow".to_owned()));
                 let response = slow.send_and_receive(request).await.expect("send success");
                 debug!("received slow response");

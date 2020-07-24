@@ -49,18 +49,22 @@ mod cmd_util {
         fn inherit(&mut self) {
             use std::process::Stdio;
 
+            self.print();
+
             let output = self
                 .stdout(Stdio::inherit())
                 .output()
                 .expect("execution failed");
 
-            assert!(output.status.success());
+            output.status.check();
         }
 
         /// execute and wait, ignore error
         fn wait(&mut self) {
             use std::io;
             use std::io::Write;
+
+            self.print();
 
             let output = self.output().expect("execution failed");
 
@@ -73,19 +77,43 @@ mod cmd_util {
             use std::io;
             use std::io::Write;
 
+            self.print();
+
             let output = self.output().expect("execution failed");
 
             io::stdout().write_all(&output.stdout).unwrap();
             io::stderr().write_all(&output.stderr).unwrap();
 
-            assert!(output.status.success());
+            output.status.check();
         }
 
         fn print(&mut self) -> &mut Self {
-            use log::debug;
+            use std::env;
 
-            debug!("cmd: {}", format!("{:?}", self).replace("\"", ""));
+            match env::var_os("FLV_CMD") {
+                Some(_) => {
+                    println!(">> {}", format!("{:?}", self).replace("\"", ""));
+                }
+                _ => {}
+            }
+
             self
+        }
+    }
+
+    trait StatusExt {
+        fn check(&self);
+    }
+
+    impl StatusExt for std::process::ExitStatus {
+        fn check(&self) {
+            if !self.success() {
+                match self.code() {
+                    Some(code) => println!("Exited with status code: {}", code),
+                    None => println!("Process terminated by signal"),
+                }
+                assert!(false);
+            }
         }
     }
 }
