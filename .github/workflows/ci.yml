@@ -84,4 +84,4 @@ jobs:
           ./target/debug/fluvio cluster install --sys
       - name: smoke test
         run: |
-          ./target/debug/flv-test -d --local-driver
+          FLV_CMD=true ./target/debug/flv-test -d --local-driver

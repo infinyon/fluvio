@@ -11,7 +11,6 @@ pub trait CommandUtil {
     // just wait
     fn wait(&mut self);
 
-    /// print
     fn print(&mut self) -> &mut Self;
 
     fn log<I>(&mut self, log: Option<I>) -> &mut Self
@@ -34,32 +33,31 @@ impl CommandUtil for Command {
     fn inherit(&mut self) {
         use std::process::Stdio;
 
+        self.print();
+
         let output = self
             .stdout(Stdio::inherit())
             .output()
             .expect("execution failed");
 
-        if !output.status.success() {
-            match output.status.code() {
-                Some(code) => println!("Exited with status code: {}", code),
-                None => println!("Process terminated by signal"),
-            }
-            panic!(-1);
-        }
+        output.status.check();
     }
 
     /// execute and ensure command has been executed ok
     fn wait_and_check(&mut self) {
+        self.print();
+
         let output = self.output().expect("execution failed");
 
         io::stdout().write_all(&output.stdout).unwrap();
         io::stderr().write_all(&output.stderr).unwrap();
 
-        assert!(output.status.success());
+        output.status.check();
     }
 
     /// execute and wait, ignore error
     fn wait(&mut self) {
+        self.print();
         let output = self.output().expect("execution failed");
 
         io::stdout().write_all(&output.stdout).unwrap();
@@ -67,7 +65,31 @@ impl CommandUtil for Command {
     }
 
     fn print(&mut self) -> &mut Self {
-        println!(">> {}", format!("{:?}", self).replace("\"", ""));
+        use std::env;
+
+        match env::var_os("FLV_CMD") {
+            Some(_) => {
+                println!(">> {}", format!("{:?}", self).replace("\"", ""));
+            }
+            _ => {}
+        }
+
         self
+    }
+}
+
+trait StatusExt {
+    fn check(&self);
+}
+
+impl StatusExt for std::process::ExitStatus {
+    fn check(&self) {
+        if !self.success() {
+            match self.code() {
+                Some(code) => println!("Exited with status code: {}", code),
+                None => println!("Process terminated by signal"),
+            }
+            assert!(false);
+        }
     }
 }

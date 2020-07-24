@@ -53,7 +53,6 @@ where
         .arg("secret")
         .arg("fluvio-ca")
         .arg("--ignore-not-found=true")
-        .print()
         .inherit();
 
     Command::new("kubectl")
@@ -61,7 +60,6 @@ where
         .arg("secret")
         .arg("fluvio-tls")
         .arg("--ignore-not-found=true")
-        .print()
         .inherit();
 
     Ok("".to_owned())
@@ -75,7 +73,6 @@ fn remove_objects(object_type: &str, namespace: &str) {
         .arg("--all")
         .arg("--namespace")
         .arg(namespace)
-        .print()
         .inherit();
 }
 
