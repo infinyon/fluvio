@@ -10,7 +10,6 @@ use flv_future_aio::timer::sleep;
 use crate::CliError;
 
 use super::InstallCommand;
-use super::get_binary;
 use super::CommandUtil;
 
 #[cfg(target_os = "macos")]
@@ -54,18 +53,30 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
     let errors = outputs.try_clone().expect("error  file");
 
     debug!("starting sc server");
-    let mut base = get_binary("sc-k8-server").expect("unable to get sc-server");
+
+    #[cfg(not(feature = "cluster_components"))]
+    let mut binary = super::get_binary("sc-k8-server").expect("unable to get sc-server");
+
+    #[cfg(feature = "cluster_components")]
+    let mut binary = {
+        let mut cmd =
+            Command::new(std::env::current_exe().expect("unable to get current executable"));
+        cmd.arg("run");
+        cmd.arg("sc");
+        cmd
+    };
 
     if option.tls.tls {
-        set_server_tls(&mut base, option, 9005);
+        set_server_tls(&mut binary, option, 9005);
     }
 
     if let Some(log) = &option.log {
-        base.env("RUST_LOG", log);
+        binary.env("RUST_LOG", log);
     }
-    base.print();
+    binary.print();
 
-    base.stdout(Stdio::from(outputs))
+    binary
+        .stdout(Stdio::from(outputs))
         .stderr(Stdio::from(errors))
         .spawn()
         .expect("sc server failed to start");

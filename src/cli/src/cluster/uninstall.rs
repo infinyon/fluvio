@@ -88,6 +88,7 @@ fn remove_local_cluster() {
     Command::new("pkill")
         .arg("sc-k8-server")
         .arg("spu-server")
+        .arg("fluvio")
         .output()
         .expect("failed to execute process");
 

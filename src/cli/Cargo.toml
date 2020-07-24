@@ -11,6 +11,7 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
+default = ["cluster_components"]
 cluster_components = ["flv-spu", "flv-sc-k8"]
 
 [build-dependencies]
