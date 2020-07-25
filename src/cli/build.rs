@@ -15,8 +15,14 @@ fn main() {
 
     // Fetch OS information if on unix
     if cfg!(unix) {
+        let get_uname_options = if cfg!(target_os = "macos") {
+            "-srm"
+        } else {
+            "-srom"
+        };
+        let options = vec![get_uname_options];
         let uname_output = Command::new("uname")
-            .args(&["-sro"])
+            .args(&options)
             .output()
             .expect("should get OS info from uname");
         let uname_text =
