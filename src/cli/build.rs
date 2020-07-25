@@ -69,14 +69,3 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     fs::copy("../../VERSION", "src/VERSION").expect("version copy");
 }
-
-/*#[cfg(test)]
-mod test {
-    use super::get_os;
-
-    #[test]
-    fn test_get_os() {
-        let result = get_os();
-        assert_eq!(result.is_empty(), false);
-    }
-}*/
