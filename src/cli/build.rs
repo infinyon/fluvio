@@ -2,6 +2,29 @@ use std::fs;
 use std::process::Command;
 use rustc_version::version_meta;
 
+#[cfg(target_os = "macos")]
+fn get_os() -> String {
+    // uname -'o' option is not supported for macos
+    let uname_output = Command::new("uname")
+        .args(&["-srm"])
+        .output()
+        .expect("should get OS info from uname");
+    let uname_text =
+        String::from_utf8(uname_output.stdout).expect("should read uname output to string");
+    return uname_text;
+}
+
+#[cfg(not(target_os = "macos"))]
+fn get_os() -> String {
+    let uname_output = Command::new("uname")
+        .args(&["-srom"])
+        .output()
+        .expect("should get OS info from uname");
+    let uname_text =
+        String::from_utf8(uname_output.stdout).expect("should read uname output to string");
+    return uname_text;
+}
+
 fn main() {
     // Fetch current git hash to print version output
     let git_version_output = Command::new("git")
@@ -15,13 +38,8 @@ fn main() {
 
     // Fetch OS information if on unix
     if cfg!(unix) {
-        let uname_output = Command::new("uname")
-            .args(&["-sro"])
-            .output()
-            .expect("should get OS info from uname");
-        let uname_text =
-            String::from_utf8(uname_output.stdout).expect("should read uname output to string");
-        println!("cargo:rustc-env=UNAME={}", uname_text);
+        let os_name = get_os();
+        println!("cargo:rustc-env=UNAME={}", os_name);
     }
 
     // Fetch Rustc information
@@ -51,3 +69,14 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     fs::copy("../../VERSION", "src/VERSION").expect("version copy");
 }
+
+/*#[cfg(test)]
+mod test {
+    use super::get_os;
+
+    #[test]
+    fn test_get_os() {
+        let result = get_os();
+        assert_eq!(result.is_empty(), false);
+    }
+}*/
