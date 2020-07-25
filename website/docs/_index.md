@@ -60,8 +60,8 @@ FLAGS:
     -h, --help    Prints help information
 
 SUBCOMMANDS:
-    consume       Read messages from a topic/partition
-    produce       Write messages to a topic/partition
+    consume       Reads messages from a topic/partition
+    produce       Writes messages to a topic/partition
     spu           SPU operations
     spu-group     SPU group operations
     custom-spu    Custom SPU operations
@@ -69,6 +69,7 @@ SUBCOMMANDS:
     partition     Partition operations
     profile       Profile operations
     cluster       Cluster operations
+    run           Run cluster component
     version       Prints the current fluvio version information
     help          Prints this message or the help of the given subcommand(s)
 ```
@@ -102,10 +103,10 @@ FLAGS:
     -h, --help    Prints help information
 
 SUBCOMMANDS:
-    create      Create a topic
-    delete      Delete a topic
-    describe    Show details of a topic
-    list        Show all topics
+    create      Creates a topic
+    delete      Deletes a topic
+    describe    Shows details of a topic
+    list        Shows all topics
     help        Prints this message or the help of the given subcommand(s)
 ```
 
