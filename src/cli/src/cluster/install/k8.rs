@@ -42,7 +42,6 @@ fn copy_secrets(opt: &InstallCommand) {
         .arg("fluvio-ca")
         .arg("--from-file")
         .arg(&tls.ca_cert.as_ref().expect("ca cert"))
-        .print()
         .inherit();
 
     Command::new("kubectl")
@@ -54,7 +53,6 @@ fn copy_secrets(opt: &InstallCommand) {
         .arg(&tls.server_cert.as_ref().expect("server cert"))
         .arg("--key")
         .arg(&tls.server_key.as_ref().expect("server key"))
-        .print()
         .inherit();
 }
 

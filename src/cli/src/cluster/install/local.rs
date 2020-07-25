@@ -26,11 +26,19 @@ pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     use std::path::Path;
     use std::fs::create_dir_all;
 
-    let log_dir = get_log_directory();
+    let log_dir = opt
+        .log
+        .clone()
+        .unwrap_or_else(|| get_log_directory().to_owned());
+
+    debug!("using log dir: {}", log_dir);
 
     if Path::new(&log_dir).exists() == false {
-        create_dir_all(log_dir).map_err(|err| CliError::IoError(err))?;
+        create_dir_all(&log_dir).map_err(|err| CliError::IoError(err))?;
     }
+
+    // ensure we sync files before we launch servers
+    Command::new("sync").inherit();
 
     println!("launching sc");
     launch_sc(&opt, &log_dir);

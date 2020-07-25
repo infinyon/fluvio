@@ -41,7 +41,8 @@ fn core_chart_versions(name: &str) -> Vec<Chart> {
         .arg("repo")
         .arg(name)
         .arg("--output")
-        .arg("json");
+        .arg("json")
+        .print();
 
     debug!("command {:?}", cmd);
 

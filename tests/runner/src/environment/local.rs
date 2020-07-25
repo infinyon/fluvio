@@ -47,6 +47,6 @@ impl EnvironmentDriver for LocalEnvDriver {
             self.set_tls(&self.option, &mut cmd);
         }
 
-        cmd.print().spawn().expect("cluster install failed");
+        cmd.inherit();
     }
 }
