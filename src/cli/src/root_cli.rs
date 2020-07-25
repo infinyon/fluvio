@@ -42,35 +42,35 @@ enum Root {
         no_version,
         name = "consume",
         template = COMMAND_TEMPLATE,
-        about = "Read messages from a topic/partition"
+        about = "Reads messages from a topic/partition"
     )]
     Consume(ConsumeLogOpt),
 
     #[structopt(
         name = "produce",
         template = COMMAND_TEMPLATE,
-        about = "Write messages to a topic/partition"
+        about = "Writes messages to a topic/partition"
     )]
     Produce(ProduceLogOpt),
 
     #[structopt(
         name = "spu",
         template = COMMAND_TEMPLATE,
-        about = "SPU Operations"
+        about = "SPU operations"
     )]
     SPU(SpuOpt),
 
     #[structopt(
         name = "spu-group",
         template = COMMAND_TEMPLATE,
-        about = "SPU Group Operations"
+        about = "SPU group operations"
     )]
     SPUGroup(SpuGroupOpt),
 
     #[structopt(
         name = "custom-spu",
         template = COMMAND_TEMPLATE,
-        about = "Custom SPU Operations"
+        about = "Custom SPU operations"
     )]
     CustomSPU(CustomSpuOpt),
 
@@ -91,14 +91,14 @@ enum Root {
     #[structopt(
         name = "profile",
         template = COMMAND_TEMPLATE,
-        about = "Profile operation"
+        about = "Profile operations"
     )]
     Profile(ProfileCommand),
 
     #[structopt(
         name = "cluster",
         template = COMMAND_TEMPLATE,
-        about = "Cluster Operations"
+        about = "Cluster operations"
     )]
     Cluster(ClusterCommands),
 
@@ -106,7 +106,10 @@ enum Root {
     #[structopt(about = "Run cluster component")]
     Run(RunOpt),
 
-    #[structopt(name = "version")]
+    #[structopt(
+        name = "version",
+        about = "Prints the current fluvio version information"
+    )]
     Version(VersionCmd),
 }
 

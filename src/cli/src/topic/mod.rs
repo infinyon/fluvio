@@ -30,28 +30,28 @@ mod cli {
         #[structopt(
             name = "create",
             template = COMMAND_TEMPLATE,
-            about = "Create a topic"
+            about = "Creates a topic"
         )]
         Create(CreateTopicOpt),
 
         #[structopt(
             name = "delete",
             template = COMMAND_TEMPLATE,
-            about = "Delete a topic"
+            about = "Deletes a topic"
         )]
         Delete(DeleteTopicOpt),
 
         #[structopt(
             name = "describe",
             template = COMMAND_TEMPLATE,
-            about = "Show details of a topic"
+            about = "Shows details of a topic"
         )]
         Describe(DescribeTopicsOpt),
 
         #[structopt(
             name = "list",
             template = COMMAND_TEMPLATE,
-            about = "Show all topics"
+            about = "Shows all topics"
         )]
         List(ListTopicsOpt),
     }
