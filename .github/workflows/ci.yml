@@ -73,7 +73,10 @@ jobs:
           sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: install fluvio system chart
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys
+          helm list
+          helm repo add fluvio https://infinyon.github.io/charts
+          helm repo update
+          helm install fluvio-sys fluvio/fluvio-sys --set cloud=minikube
       - name: smoke test
         run: |
           make smoke-test
