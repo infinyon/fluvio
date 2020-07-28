@@ -65,7 +65,7 @@ jobs:
           cargo build
       - name: setup context
         run: |
-          ./target/debug/fluvio cluster set-minikube-context
+          ./dev-tools/minikube-mycube.sh
           kubectl config view
       - name: set minikube tunnel
         run: |
