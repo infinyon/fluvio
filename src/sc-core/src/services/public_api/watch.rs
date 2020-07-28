@@ -8,6 +8,8 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
 use kf_socket::InnerExclusiveKfSink;
+use kf_protocol::Encoder;
+use kf_protocol::Decoder;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::RequestHeader;
 use kf_protocol::api::ResponseMessage;
@@ -70,9 +72,9 @@ where
 impl<T, S> WatchController<T, S>
 where
     T: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
-    S: Spec + Debug + 'static + Send + Sync,
+    S: Spec + Debug + 'static + Send + Sync + Encoder + Decoder,
     S::IndexKey: ToString,
-    <S as Spec>::Status: Sync + Send,
+    <S as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S as Spec>::IndexKey: Sync + Send,
     MetadataUpdate<S>: Into<WatchResponse>,
 {

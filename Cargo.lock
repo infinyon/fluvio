@@ -725,6 +725,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "flv-eventstream-model"
+version = "0.1.0"
+dependencies = [
+ "flv-future-aio",
+ "flv-types",
+ "flv-util 0.2.1",
+ "k8-obj-app",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "kf-protocol",
+ "log",
+ "serde",
+]
+
+[[package]]
 name = "flv-future-aio"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -752,6 +767,7 @@ dependencies = [
 name = "flv-metadata"
 version = "2.0.0"
 dependencies = [
+ "flv-eventstream-model",
  "flv-future-aio",
  "flv-types",
  "flv-util 0.2.1",

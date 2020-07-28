@@ -22,6 +22,7 @@ impl<S, C> MetadataStoreObject<S, C>
 where
     S: Spec,
     C: MetadataItem,
+    S::Status: Default
 {
     pub fn new<J>(key: J, spec: S, status: S::Status) -> Self
     where

@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
 use kf_protocol::derive::{Decode, Encode};
+use kf_protocol::Encoder;
+use kf_protocol::Decoder;
 use kf_protocol::api::Request;
 
 use flv_metadata::core::*;
@@ -62,8 +64,8 @@ impl Default for WatchResponse {
 #[derive(Encode, Decode, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
 where
-    S: Spec + Debug,
-    S::Status: Debug,
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     pub epoch: Epoch,
     pub changes: Vec<Message<Metadata<S>>>,
@@ -72,8 +74,8 @@ where
 
 impl<S> MetadataUpdate<S>
 where
-    S: Spec + Debug,
-    S::Status: Debug,
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {

@@ -1,15 +1,5 @@
-#![feature(drain_filter)]
+pub mod core;
 
-pub mod spu;
-pub mod topic;
-pub mod partition;
-pub mod spg;
-pub mod store;
-pub mod message;
-
-pub mod core {
-    pub use flv_eventstream_model::core::*;
-}
 
 #[cfg(feature = "k8")]
 pub mod k8 {

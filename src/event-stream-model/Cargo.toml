@@ -1,7 +1,7 @@
 [package]
-name = "flv-metadata"
+name = "flv-eventstream-model"
 edition = "2018"
-version = "2.0.0"
+version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio metadata"
 repository = "https://github.com/infinyon/fluvio"
@@ -9,7 +9,7 @@ license = "Apache-2.0"
 
 [features]
 use_serde = ["serde"]
-k8 = ["use_serde","k8-obj-metadata","k8-obj-core","k8-obj-app","flv-eventstream-model/k8"]
+k8 = ["use_serde","k8-obj-metadata","k8-obj-core","k8-obj-app"]
 
 [dependencies]
 log = "0.4.8"
@@ -21,7 +21,6 @@ flv-future-aio = { version = "2.3.0"}
 kf-protocol =  "2.0.0" 
 flv-types = { path ="../types", version = "0.2.0" }
 flv-util = { version = "0.2.0"}
-flv-eventstream-model = { path = "../event-stream-model"}
 
 [dev-dependencies]
 flv-future-aio = { version = "2.3.0", features=["fixture"]}

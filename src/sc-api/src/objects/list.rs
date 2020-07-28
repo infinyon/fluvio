@@ -6,6 +6,8 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use kf_protocol::derive::{Decode, Encode};
+use kf_protocol::Encoder;
+use kf_protocol::Decoder;
 use kf_protocol::api::Request;
 
 use flv_metadata::core::*;
@@ -79,8 +81,8 @@ impl Default for ListResponse {
 )]
 pub struct Metadata<S>
 where
-    S: Spec + Debug,
-    S::Status: Debug,
+    S: Spec + Debug + Encoder + Decoder , 
+    S::Status: Debug + Encoder + Decoder,
 {
     pub name: String,
     pub spec: S,
@@ -89,8 +91,9 @@ where
 
 impl<S, C> From<MetadataStoreObject<S, C>> for Metadata<S>
 where
-    S: Spec,
+    S: Spec + Encoder + Decoder,
     S::IndexKey: ToString,
+    S::Status: Encoder + Decoder,
     C: MetadataItem,
 {
     fn from(meta: MetadataStoreObject<S, C>) -> Self {
@@ -104,7 +107,8 @@ where
 
 impl<S, C> TryFrom<Metadata<S>> for MetadataStoreObject<S, C>
 where
-    S: Spec,
+    S: Spec + Encoder + Decoder,
+    S::Status: Encoder + Decoder,
     C: MetadataItem,
     <S as Spec>::IndexKey: TryFrom<String>,
     <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
