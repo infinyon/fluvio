@@ -60,7 +60,7 @@ jobs:
         run: |
           kubectl get nodes
           kubectl config view
-          helm list
+          helm version
       - name: Build
         run: |
           cargo build
