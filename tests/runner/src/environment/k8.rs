@@ -42,6 +42,10 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             self.set_tls(&self.option, &mut cmd);
         }
 
+        if self.option.develop_mode() {
+            cmd.arg("--develop");
+        }
+
         cmd.print().inherit();
     }
 }

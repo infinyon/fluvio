@@ -23,20 +23,21 @@ Currently,  Fluvio is using the nightly version of Rust because it is using unst
 
 
 # Fluvio cluster
-Fluvio is installed as cluster of components designed to work in Kubernetes:
+Fluvio is a distributed platform that consists of multiple components.   It is designed to deploy in the many varieties of infrastructures as possible, such as cloud and private data centers.  It has built-in first-class integration with Kubernetes.
+Components of Fluvio are:
 
 ## Streaming Controller (SC)
-Streaming Controller implements control plane.  It is responsible for organizing and coordinating data streams between SPU's.  It uses the declarative model to self-heal and recover much as possible during failures.
+Streaming Controller implements the control plane. It is responsible for organizing and coordinating data streams between SPU's. It uses the declarative model to self-heal and recover much as possible during failures.
 
 ## Streaming Processing Engine (SPU)
-SPU's are engine for processing streams.   Each SPU can handle multiple data streams.   SPU uses reactive and asynchronous architecture to ensure efficient handling of data. 
+An SPU implements a data processing engine for processing streams. Each SPU can handle multiple data streams. SPU uses reactive and asynchronous architecture to ensure efficient handling of data. 
 
 ## Fluvio CLI(Command Line Interface
 
-CLI provides built-in way to manage Fluvio streams and interaction.  It can manage
-* Topics
-* SPU and SPU group
-* Consume and produce messages to streams
+With Fluvio CLI, you can manage fluvio objects and stream them using the terminal interface. It can manage
+Topics
+SPU and SPU group
+Consume and produce messages to streams
 
 
 # Building Fluvio
@@ -47,7 +48,7 @@ Please follow [setup](https://www.rust-lang.org/tools/install) instructions to i
 
 ## Checkout and build
 
-This will build and run unit tests forFluvio for your environment:
+To build and run unit tests for Fluvio for your environment:
 
 ```
 $ git clone https://github.com/infinyon/fluvio.git
@@ -56,27 +57,39 @@ $ cargo build
 $ cargo test
 ```
 
-Add standard library for the target platform:
+#### Cross-platform installation for docker image
+
+Fluvio uses [musl](https://musl.libc.org) for deploying on a docker image.  
+
+First, install Rust target:
 
 ```
 rustup target add x86_64-unknown-linux-musl
 ```
-To build a full cross compiler toolchain targeting musl Linux amd64, perform:
+
+For mac:
 
 ```
 brew install filosottile/musl-cross/musl-cross
 ```
-You can run development version of fluvio CLI:
+
+For Linux, please see [musl wiki](https://wiki.musl-libc.org) for the installation of musl-gcc.
+
+
+## Running Fluvio CLI
+
+You can run the development version of fluvio CLI by:
 ```
 $ target/debug/fluvio
 ```
 
-You can assign alias to simplify references to CLI like this:
+You can assign an alias to simplify references to CLI like this:
 ```
 alias flvd=target/debug/fluvio
 ```
 
-From now on, we will reference ```flvd``` instead of release version.
+From now on, we will reference ```flvd``` instead of the release version.
+
 
 ## Setting up Kubernetes Clusters and Installing system chart
 
@@ -103,7 +116,7 @@ Then build docker images for current source code:
 make minikube_image
 ```
 
-You can install develop version of fluvio using same installation command:
+You can install develop a version of fluvio using same installation command:
 ```
 flvd cluster install --develop
 ```
