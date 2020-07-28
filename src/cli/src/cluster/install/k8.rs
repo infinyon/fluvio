@@ -15,14 +15,16 @@ fn pre_install_check() -> Result<(), CliError> {
                 err.to_string()
             ))
         })?;
-
     let version_text = String::from_utf8(helm_version.stdout).unwrap();
     let version_text_trimmed = &version_text[1..].trim();
-    if Version::parse(&version_text_trimmed) <= Version::parse("3.2.0") {
-        println!(
-            "Installed Helm version {} is not compatible with fluvio platform, please install version >= 3.2.0",
-            version_text_trimmed
-        );
+
+    const DEFAULT_HELM_VERSION: &'static str = "3.2.0";
+
+    if Version::parse(&version_text_trimmed) <= Version::parse(DEFAULT_HELM_VERSION) {
+        return Err(CliError::Other(format!(
+            "Helm version {} is not compatible with fluvio platform, please install version >= {}",
+            version_text_trimmed, DEFAULT_HELM_VERSION
+        )));
     }
     Ok(())
 }
