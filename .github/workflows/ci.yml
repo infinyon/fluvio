@@ -66,9 +66,9 @@ jobs:
           cargo build
       - name: setup context
         run: |
-        ./target/debug/fluvio cluster set-minikube-context
-        kubectl config view
-        helm list
+          ./target/debug/fluvio cluster set-minikube-context
+          kubectl config view
+          helm list
       - name: set minikube tunnel
         run: |
           sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
