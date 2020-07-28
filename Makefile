@@ -22,8 +22,16 @@ install_tools:
 build:
 	cargo build
 
-integration-test:	build
-	target/debug/flv-integration-test
+# run local smoke test
+smoke-test:	build test-clean-up
+	FLV_CMD=true ./target/debug/flv-test --local-driver --log /tmp
+
+smoke-test-k8:	build test-clean-up minikube_image
+	FLV_CMD=true ./target/debug/flv-test --develop --log /tmp
+
+test-clean-up:
+	$(FLVD) cluster uninstall
+	$(FLVD) cluster uninstall --local
 
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)

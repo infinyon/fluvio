@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
-      - uses: manusa/actions-setup-minikube@v1.0.2
+      - uses: manusa/actions-setup-minikube@v1.1.0
         with:
           minikube version: "v1.12.1"
           kubernetes version: "v1.18.3"
@@ -60,6 +60,7 @@ jobs:
         run: |
           kubectl get nodes
           kubectl config view
+          helm version
       - name: Build
         run: |
           cargo build
@@ -67,12 +68,13 @@ jobs:
         run: |
           ./target/debug/fluvio cluster set-minikube-context
           kubectl config view
+          helm list
       - name: set minikube tunnel
         run: |
           sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: install fluvio system chart
         run: |
-          ./target/debug/fluvio cluster install --sys
+          FLV_CMD=true ./target/debug/fluvio cluster install --sys
       - name: smoke test
         run: |
           FLV_CMD=true ./target/debug/flv-test -d --local-driver --log /tmp

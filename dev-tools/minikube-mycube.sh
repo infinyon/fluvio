@@ -1,6 +1,6 @@
 #!/bin/bash
 export IP=$(minikube ip)
-sudo sed -i '' '/minikubeCA/d' /etc/hosts
+sudo sed -i'' '/minikubeCA/d' /etc/hosts
 echo "$IP minikubeCA" | sudo tee -a  /etc/hosts
 cd ~
 kubectl config set-cluster mycube --server=https://minikubeCA:8443 --certificate-authority=.minikube/ca.crt
