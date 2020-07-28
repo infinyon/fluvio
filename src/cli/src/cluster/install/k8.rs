@@ -1,9 +1,36 @@
 use std::process::Command;
 use std::io::Error as IoError;
+use semver::Version;
 
 use super::*;
 
+fn pre_install_check() -> Result<(), CliError> {
+    let helm_version = Command::new("helm")
+        .arg("version")
+        .arg("--short")
+        .output()
+        .map_err(|err| {
+            CliError::Other(format!(
+                "Helm package manager not found: {}",
+                err.to_string()
+            ))
+        })?;
+    let version_text = String::from_utf8(helm_version.stdout).unwrap();
+    let version_text_trimmed = &version_text[1..].trim();
+
+    const DEFAULT_HELM_VERSION: &'static str = "3.2.0";
+
+    if Version::parse(&version_text_trimmed) <= Version::parse(DEFAULT_HELM_VERSION) {
+        return Err(CliError::Other(format!(
+            "Helm version {} is not compatible with fluvio platform, please install version >= {}",
+            version_text_trimmed, DEFAULT_HELM_VERSION
+        )));
+    }
+    Ok(())
+}
+
 pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
+    pre_install_check().map_err(|err| CliError::Other(err.to_string()))?;
     install_core_app(&opt)?;
 
     if let Some(_) = k8_util::wait_for_service_exist(&opt.k8_config.namespace)
