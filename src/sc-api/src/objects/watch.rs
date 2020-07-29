@@ -1,15 +1,17 @@
 use std::fmt::Debug;
 
 use kf_protocol::derive::{Decode, Encode};
+use kf_protocol::Encoder;
+use kf_protocol::Decoder;
 use kf_protocol::api::Request;
 
-use flv_metadata::core::*;
-use flv_metadata::topic::TopicSpec;
-use flv_metadata::spu::*;
-use flv_metadata::spg::SpuGroupSpec;
-use flv_metadata::partition::PartitionSpec;
-use flv_metadata::store::Epoch;
-use flv_metadata::message::Message;
+use flv_metadata_cluster::core::*;
+use flv_metadata_cluster::topic::TopicSpec;
+use flv_metadata_cluster::spu::*;
+use flv_metadata_cluster::spg::SpuGroupSpec;
+use flv_metadata_cluster::partition::PartitionSpec;
+use flv_metadata_cluster::store::Epoch;
+use flv_metadata_cluster::message::Message;
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
@@ -62,8 +64,8 @@ impl Default for WatchResponse {
 #[derive(Encode, Decode, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
 where
-    S: Spec + Debug,
-    S::Status: Debug,
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     pub epoch: Epoch,
     pub changes: Vec<Message<Metadata<S>>>,
@@ -72,8 +74,8 @@ where
 
 impl<S> MetadataUpdate<S>
 where
-    S: Spec + Debug,
-    S::Status: Debug,
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {

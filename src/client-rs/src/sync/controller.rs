@@ -31,7 +31,7 @@ where
 impl<S> MetadataSyncController<S>
 where
     S: Spec + Encoder + Decoder + Sync + Send + 'static,
-    <S as Spec>::Status: Sync + Send,
+    <S as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S as Spec>::IndexKey: Sync + Send,
     S::IndexKey: Display,
     WatchResponse: TryInto<MetadataUpdate<S>> + Send,

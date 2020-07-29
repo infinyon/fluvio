@@ -64,6 +64,7 @@ where
     }
 }
 
+/*
 impl<C> From<C> for Message<C>
 where
     C: Encoder + Decoder + Debug + Default,
@@ -72,6 +73,7 @@ where
         Message::update(content)
     }
 }
+*/
 
 impl<S, C, D> From<LSChange<S, C>> for Message<D>
 where

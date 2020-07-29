@@ -7,7 +7,7 @@ use rand::thread_rng;
 use rand::Rng;
 
 use flv_types::*;
-use flv_metadata::topic::*;
+use flv_metadata_cluster::topic::*;
 
 use crate::stores::topic::*;
 use crate::stores::partition::*;
@@ -331,19 +331,19 @@ pub mod replica_map_test {
     use std::collections::BTreeMap;
 
     use flv_future_aio::test_async;
+    use flv_metadata_cluster::spu::store::SpuLocalStorePolicy;
 
     use super::*;
 
     #[test_async]
     async fn generate_replica_map_for_topic_1x_replicas_no_rack() -> Result<(), ()> {
-        let spus: SpuAdminStore = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (4, true, None),
             (5000, true, None),
-        ]
-        .into();
+        ]);
 
         assert_eq!(spus.online_spu_count().await, 5);
 
@@ -361,14 +361,13 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_2x_replicas_no_rack() -> Result<(), ()> {
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (3, true, None),
             (4, true, None),
-        ]
-        .into();
+        ]);
 
         // test 4 partitions, 2 replicas - index 3
         let param = (4, 2, false).into();
@@ -384,14 +383,13 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_3x_replicas_no_rack() -> Result<(), ()> {
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (3, true, None),
             (4, true, None),
-        ]
-        .into();
+        ]);
 
         // test 21 partitions, 3 replicas - index 0
         let param = (21, 3, false).into();
@@ -434,14 +432,13 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_4x_replicas_no_rack() -> Result<(), ()> {
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
             (3, true, None),
             (4, true, None),
-        ]
-        .into();
+        ]);
 
         // test 4 partitions, 4 replicas - index 10
         let param = (4, 4, false).into();
@@ -457,14 +454,13 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_5x_replicas_no_rack() -> Result<(), ()> {
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (3, true, None),
             (4, true, None),
             (5002, true, None),
-        ]
-        .into();
+        ]);
 
         // test 4 partitions, 5 replicas - index 14
         let param = (4, 5, false).into();
@@ -484,15 +480,14 @@ pub mod replica_map_test {
         let r2 = String::from("r2");
         let r3 = String::from("r3");
 
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, Some(r1.clone())),
             (1, true, Some(r2.clone())),
             (2, true, Some(r2.clone())),
             (3, true, Some(r3.clone())),
             (4, true, Some(r3.clone())),
             (5, true, Some(r3.clone())),
-        ]
-        .into();
+        ]);
 
         // Compute & compare with result
         let param = (6, 3, false).into();
@@ -516,7 +511,7 @@ pub mod replica_map_test {
         let r3 = String::from("r3");
         let r4 = String::from("r4");
 
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, Some(r1.clone())),
             (1, true, Some(r1.clone())),
             (2, true, Some(r1.clone())),
@@ -529,8 +524,7 @@ pub mod replica_map_test {
             (9, true, Some(r4.clone())),
             (10, true, Some(r4.clone())),
             (11, true, Some(r4.clone())),
-        ]
-        .into();
+        ]);
 
         // Compute & compare with result
         let param = (12, 4, false).into();
@@ -559,7 +553,7 @@ pub mod replica_map_test {
         let r2 = String::from("r2");
         let r3 = String::from("r3");
 
-        let spus = vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, Some(r1.clone())),
             (1, true, Some(r1.clone())),
             (2, true, Some(r1.clone())),
@@ -569,8 +563,7 @@ pub mod replica_map_test {
             (6, true, Some(r3.clone())),
             (7, true, Some(r3.clone())),
             (8, true, Some(r3.clone())),
-        ]
-        .into();
+        ]);
 
         // test 9 partitions, 3 replicas - index 0
         let param = (9, 3, false).into();

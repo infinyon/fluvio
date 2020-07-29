@@ -5,7 +5,7 @@ use log::{trace, debug};
 use sc_api::objects::*;
 use sc_api::spu::SpuSpec;
 use sc_api::spu::CustomSpuSpec;
-use flv_metadata::store::*;
+use flv_metadata_cluster::store::*;
 use crate::core::Context;
 
 pub async fn handle_fetch_custom_spu_request(

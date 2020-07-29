@@ -86,26 +86,23 @@ mod core_model {
     use std::fmt::Debug;
     use std::hash::Hash;
 
-    use kf_protocol::Encoder;
-    use kf_protocol::Decoder;
-
     /// metadata driver
     pub trait MetadataStoreDriver {
         type Metadata;
     }
 
-    pub trait Spec: Encoder + Decoder + Debug + Clone + PartialEq {
+    pub trait Spec: Default + Debug + Clone + PartialEq {
         const LABEL: &'static str;
         type Status: Status;
         type Owner: Spec;
         type IndexKey: Debug + Eq + Hash + Clone + ToString;
     }
 
-    pub trait Status: Encoder + Decoder + Debug + Clone + PartialEq {}
+    pub trait Status: Default + Debug + Clone + PartialEq {}
 
     /// for deleting objects
     pub trait Removable {
-        type DeleteKey: Encoder + Decoder;
+        type DeleteKey;
     }
 
     /// marker trait for creating

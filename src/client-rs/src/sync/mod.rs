@@ -129,7 +129,7 @@ mod context {
         ) -> Result<MetadataStoreObject<SpuSpec, String>, ClientError> {
             self.lookup_and_wait(|g| {
                 for spu in g.values() {
-                    if spu.id() == id {
+                    if spu.spec.id == id {
                         return Some(spu.inner().clone());
                     }
                 }

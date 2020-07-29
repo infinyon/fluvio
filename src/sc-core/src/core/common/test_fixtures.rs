@@ -1,4 +1,4 @@
-use flv_metadata::message::*;
+use flv_metadata_cluster::message::*;
 
 // Test Actions - helps generate composite actions
 pub enum TAction {

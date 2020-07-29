@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::Display;
 
-use flv_metadata::core::*;
+use flv_metadata_cluster::core::*;
 
 use crate::stores::*;
 

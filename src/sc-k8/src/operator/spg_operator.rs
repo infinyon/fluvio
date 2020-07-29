@@ -10,12 +10,12 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use k8_client::ClientError;
-use flv_metadata::k8::metadata::*;
-use flv_metadata::k8::core::service::*;
-use flv_metadata::spg::K8SpuGroupSpec;
-use flv_metadata::spg::SpuGroupStatus;
-use flv_metadata::spg::SpuEndpointTemplate;
-use flv_metadata::spu::*;
+use flv_metadata_cluster::k8::metadata::*;
+use flv_metadata_cluster::k8::core::service::*;
+use flv_metadata_cluster::spg::K8SpuGroupSpec;
+use flv_metadata_cluster::spg::SpuGroupStatus;
+use flv_metadata_cluster::spg::SpuEndpointTemplate;
+use flv_metadata_cluster::spu::*;
 use k8_client::metadata::MetadataClient;
 use k8_client::metadata::ApplyResult;
 use k8_client::SharedK8Client;

@@ -4,6 +4,8 @@ use kf_protocol::derive::{Decode, Encode};
 use flv_types::SpuId;
 use crate::partition::ReplicaKey;
 use crate::core::*;
+use crate::store::MetadataStoreObject;
+use crate::partition::PartitionSpec;
 use super::store::*;
 
 #[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
@@ -28,10 +30,11 @@ where
     C: MetadataItem,
 {
     fn from(item: PartitionMetadata<C>) -> Self {
+        let inner: MetadataStoreObject<PartitionSpec, C> = item.into();
         Self {
-            id: item.key,
-            leader: item.spec.leader,
-            replicas: item.spec.replicas,
+            id: inner.key,
+            leader: inner.spec.leader,
+            replicas: inner.spec.replicas,
         }
     }
 }

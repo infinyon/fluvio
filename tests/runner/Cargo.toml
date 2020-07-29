@@ -17,4 +17,4 @@ kf-protocol = { version = "2.0.0" }
 flv-client = { path = "../../src/client-rs"}
 flv-types = { path ="../../src/types", version = "0.2.0" }
 utils = { path= "../../src/utils"}
-flv-metadata = { features=["k8"], path = "../../src/metadata" }
+flv-metadata-cluster = { features=["k8"], path = "../../src/metadata-cluster" }

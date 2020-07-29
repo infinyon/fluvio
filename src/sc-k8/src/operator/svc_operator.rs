@@ -8,11 +8,11 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use k8_client::ClientError;
-use flv_metadata::k8::metadata::*;
-use flv_metadata::k8::core::service::*;
+use flv_metadata_cluster::k8::metadata::*;
+use flv_metadata_cluster::k8::core::service::*;
 use k8_client::metadata::MetadataClient;
 use k8_client::SharedK8Client;
-use flv_metadata::spu::IngressAddr;
+use flv_metadata_cluster::spu::IngressAddr;
 
 use flv_sc_core::stores::spu::SpuAdminStore;
 use crate::ScK8Error;

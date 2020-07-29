@@ -28,7 +28,7 @@ kf-protocol = { version = "2.0.0" }
 kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../internal-api"}
-flv-metadata = { features = ["k8"],path = "../metadata"}
+flv-metadata-cluster = { features = ["k8"],path = "../metadata-cluster"}
 sc-api = { version = "2.0.0", path = "../sc-api",  package = "flv-api-sc"}
 
 [dev-dependencies]

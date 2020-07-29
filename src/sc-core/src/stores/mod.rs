@@ -6,10 +6,10 @@ pub use k8::*;
 pub use context::*;
 
 pub mod core {
-    pub use flv_metadata::core::*;
+    pub use flv_metadata_cluster::core::*;
 }
 
-pub use flv_metadata::store::*;
+pub use flv_metadata_cluster::store::*;
 
 mod k8 {
 
@@ -22,10 +22,10 @@ mod k8 {
 
     use k8_obj_metadata::Spec as K8Spec;
     use k8_obj_metadata::Status as K8Status;
-    use flv_metadata::k8::metadata::ObjectMeta;
-    use flv_metadata::k8::metadata::K8Obj;
-    use flv_metadata::store::*;
-    use flv_metadata::core::*;
+    use flv_metadata_cluster::k8::metadata::ObjectMeta;
+    use flv_metadata_cluster::k8::metadata::K8Obj;
+    use flv_metadata_cluster::store::*;
+    use flv_metadata_cluster::core::*;
 
     pub type K8MetaItem = ObjectMeta;
     pub type K8MetadataContext = MetadataContext<K8MetaItem>;

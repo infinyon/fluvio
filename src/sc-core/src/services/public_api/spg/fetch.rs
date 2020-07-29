@@ -5,7 +5,7 @@ use log::trace;
 
 use sc_api::objects::*;
 use sc_api::spg::SpuGroupSpec;
-use flv_metadata::store::*;
+use flv_metadata_cluster::store::*;
 
 use crate::core::Context;
 

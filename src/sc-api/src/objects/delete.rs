@@ -13,12 +13,12 @@ use kf_protocol::Decoder;
 use kf_protocol::Version;
 use kf_protocol::bytes::{Buf, BufMut};
 use kf_protocol::api::Request;
-use flv_metadata::topic::TopicSpec;
-use flv_metadata::spu::CustomSpuSpec;
-use flv_metadata::spu::CustomSpuKey;
-use flv_metadata::spg::SpuGroupSpec;
-use flv_metadata::core::Spec;
-use flv_metadata::core::Removable;
+use flv_metadata_cluster::topic::TopicSpec;
+use flv_metadata_cluster::spu::CustomSpuSpec;
+use flv_metadata_cluster::spu::CustomSpuKey;
+use flv_metadata_cluster::spg::SpuGroupSpec;
+use flv_metadata_cluster::core::Spec;
+use flv_metadata_cluster::core::Removable;
 
 use crate::FlvStatus;
 use crate::AdminPublicApiKey;

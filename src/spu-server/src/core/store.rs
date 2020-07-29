@@ -10,7 +10,7 @@ use log::trace;
 use log::debug;
 use log::error;
 
-use flv_metadata::message::*;
+use flv_metadata_cluster::message::*;
 use kf_protocol::{Decoder, Encoder};
 
 use flv_util::actions::Actions;
@@ -225,8 +225,8 @@ where
 
 #[cfg(test)]
 pub mod test {
-    use flv_metadata::spu::SpuSpec;
-    use flv_metadata::message::SpuMsg;
+    use flv_metadata_cluster::spu::SpuSpec;
+    use flv_metadata_cluster::message::SpuMsg;
 
     use crate::core::SpuLocalStore;
     use crate::core::SpecChange;

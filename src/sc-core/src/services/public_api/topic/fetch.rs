@@ -1,7 +1,7 @@
 use log::{trace, debug};
 use std::io::Error;
 
-use flv_metadata::store::KeyFilter;
+use flv_metadata_cluster::store::KeyFilter;
 use sc_api::objects::*;
 use sc_api::topic::TopicSpec;
 

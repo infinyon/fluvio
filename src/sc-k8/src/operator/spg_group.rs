@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use flv_metadata::k8::metadata::K8Obj;
-use flv_metadata::spg::K8SpuGroupSpec;
+use flv_metadata_cluster::k8::metadata::K8Obj;
+use flv_metadata_cluster::spg::K8SpuGroupSpec;
 use flv_types::SpuId;
 
 use flv_sc_core::stores::spu::*;

@@ -6,7 +6,7 @@
 use structopt::StructOpt;
 
 use flv_client::ClusterConfig;
-use flv_metadata::spg::SpuGroupSpec;
+use flv_metadata_cluster::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
 use crate::error::CliError;
@@ -62,7 +62,7 @@ mod output {
     use log::debug;
 
     use flv_client::metadata::objects::Metadata;
-    use flv_metadata::spg::SpuGroupSpec;
+    use flv_metadata_cluster::spg::SpuGroupSpec;
 
     use crate::error::CliError;
     use crate::output::OutputType;

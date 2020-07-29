@@ -2,9 +2,7 @@ use std::fmt::Debug;
 
 use crate::core::*;
 
-// -----------------------------------
-// Data Structures
-// -----------------------------------
+pub type DefaultMetadataObject<S> = MetadataStoreObject<S, String>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MetadataStoreObject<S, C>
@@ -22,6 +20,7 @@ impl<S, C> MetadataStoreObject<S, C>
 where
     S: Spec,
     C: MetadataItem,
+    S::Status: Default,
 {
     pub fn new<J>(key: J, spec: S, status: S::Status) -> Self
     where

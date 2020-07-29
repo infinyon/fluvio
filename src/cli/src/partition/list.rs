@@ -7,7 +7,7 @@
 use structopt::StructOpt;
 
 use flv_client::ClusterConfig;
-use flv_metadata::partition::*;
+use flv_metadata_cluster::partition::*;
 
 use crate::error::CliError;
 use crate::OutputType;

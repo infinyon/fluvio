@@ -8,8 +8,8 @@ pub use actions::*;
 
 mod k8_actions {
 
-    use flv_metadata::core::*;
-    use flv_metadata::store::*;
+    use flv_metadata_cluster::core::*;
+    use flv_metadata_cluster::store::*;
     use crate::stores::*;
 
     /// Actions to update World States

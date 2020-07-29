@@ -8,7 +8,7 @@ use futures::FutureExt;
 use flv_future_core::test_async;
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use flv_storage::ReplicaStorage;
 
 use crate::tests::fixture::TestGenerator;

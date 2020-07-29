@@ -135,8 +135,8 @@ impl TopicReducer {
 #[cfg(test)]
 mod test2 {
     use flv_future_aio::test_async;
-    use flv_metadata::topic::{TopicResolution, TopicStatus};
-    use flv_metadata::topic::PENDING_REASON;
+    use flv_metadata_cluster::topic::{TopicResolution, TopicStatus};
+    use flv_metadata_cluster::topic::PENDING_REASON;
 
     use super::*;
 

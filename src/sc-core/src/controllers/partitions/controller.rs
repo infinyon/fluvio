@@ -76,7 +76,10 @@ impl PartitionController {
             deletes.len()
         );
 
-        let actions = self.reducer.update_election_from_spu_changes(updates).await;
+        let actions = self
+            .reducer
+            .update_election_from_spu_changes(updates.into_iter().map(|s| s.into()).collect())
+            .await;
 
         debug!("there were election actions: {}", actions.len());
         for action in actions.into_iter() {

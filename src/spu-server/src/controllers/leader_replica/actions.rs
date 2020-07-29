@@ -1,6 +1,6 @@
 use std::fmt;
 
-use flv_metadata::partition::Replica;
+use flv_metadata_cluster::partition::Replica;
 use kf_protocol::api::Offset;
 use flv_types::SpuId;
 

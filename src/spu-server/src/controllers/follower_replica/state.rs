@@ -14,7 +14,7 @@ use chashmap::CHashMap;
 use chashmap::ReadGuard;
 use chashmap::WriteGuard;
 
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::api::RecordSet;
 use flv_storage::FileReplica;
 use flv_storage::ConfigOption;

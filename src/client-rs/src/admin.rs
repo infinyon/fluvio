@@ -1,6 +1,8 @@
 use std::convert::TryInto;
 use std::fmt::Display;
 
+use kf_protocol::Encoder;
+use kf_protocol::Decoder;
 use flv_api_sc::objects::*;
 use flv_api_sc::AdminRequest;
 use kf_socket::*;
@@ -58,7 +60,8 @@ impl AdminClient {
 
     pub async fn list<S, F>(&mut self, filters: F) -> Result<Vec<Metadata<S>>, ClientError>
     where
-        S: ListSpec,
+        S: ListSpec + Encoder + Decoder,
+        S::Status: Encoder + Decoder,
         F: Into<Vec<S::Filter>>,
         ListResponse: TryInto<Vec<Metadata<S>>>,
         <ListResponse as TryInto<Vec<Metadata<S>>>>::Error: Display,

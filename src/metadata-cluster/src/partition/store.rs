@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use log::debug;
+use async_trait::async_trait;
 
 use flv_types::SpuId;
 
@@ -21,56 +22,74 @@ pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<String>;
 
-impl<C> PartitionMetadata<C>
-where
-    C: MetadataItem,
-{
+pub trait PartitionMd<C: MetadataItem> {
+    fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
+
+    fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self;
+}
+
+impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
     /// create new partition with replica map.
     /// first element of replicas is leader
-    pub fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self {
+    fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self {
         let spec: PartitionSpec = replicas.into();
         Self::new(key, spec, PartitionStatus::default())
     }
-}
 
-impl<S, C> From<((S, i32), Vec<i32>)> for PartitionMetadata<C>
-where
-    S: Into<String>,
-    C: MetadataItem,
-{
-    fn from(partition: ((S, i32), Vec<i32>)) -> Self {
+    fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self {
         let (replica_key, replicas) = partition;
         Self::with_replicas(replica_key.into(), replicas)
     }
 }
 
-// -----------------------------------
-// Partitions - Implementation
-// -----------------------------------
-
-impl<C> PartitionLocalStore<C>
+#[async_trait]
+pub trait PartitionLocalStorePolicy<C>
 where
     C: MetadataItem,
 {
-    pub async fn names(&self) -> Vec<ReplicaKey> {
+    async fn names(&self) -> Vec<ReplicaKey>;
+
+    async fn topic_partitions(&self, topic: &str) -> Vec<PartitionMetadata<C>>;
+
+    /// find all partitions that has spu in the replicas
+    async fn partition_spec_for_spu(&self, target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)>;
+
+    async fn count_topic_partitions(&self, topic: &str) -> i32;
+
+    // return partitions that belong to this topic
+    async fn topic_partitions_list(&self, topic: &str) -> Vec<ReplicaKey>;
+
+    async fn table_fmt(&self) -> String;
+
+    /// replica msg for target spu
+    async fn replica_for_spu(&self, target_spu: SpuId) -> Vec<Replica>;
+
+    async fn leaders(&self) -> Vec<ReplicaLeader>;
+
+    fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self;
+}
+
+#[async_trait]
+impl<C> PartitionLocalStorePolicy<C> for PartitionLocalStore<C>
+where
+    C: MetadataItem + Send + Sync,
+{
+    async fn names(&self) -> Vec<ReplicaKey> {
         self.read().await.keys().cloned().collect()
     }
 
-    pub async fn topic_partitions(&self, topic: &str) -> Vec<PartitionMetadata<C>> {
+    async fn topic_partitions(&self, topic: &str) -> Vec<PartitionMetadata<C>> {
         let mut res: Vec<PartitionMetadata<C>> = Vec::default();
         for (name, partition) in self.read().await.iter() {
             if name.topic == topic {
-                res.push(partition.inner().clone());
+                res.push(partition.inner().clone().into());
             }
         }
         res
     }
 
     /// find all partitions that has spu in the replicas
-    pub async fn partition_spec_for_spu(
-        &self,
-        target_spu: i32,
-    ) -> Vec<(ReplicaKey, PartitionSpec)> {
+    async fn partition_spec_for_spu(&self, target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)> {
         let mut res = vec![];
         for (name, partition) in self.read().await.iter() {
             if partition.spec.replicas.contains(&target_spu) {
@@ -80,7 +99,7 @@ where
         res
     }
 
-    pub async fn count_topic_partitions(&self, topic: &str) -> i32 {
+    async fn count_topic_partitions(&self, topic: &str) -> i32 {
         let mut count: i32 = 0;
         for (name, _) in self.read().await.iter() {
             if name.topic == topic {
@@ -91,7 +110,6 @@ where
     }
 
     // return partitions that belong to this topic
-    #[allow(dead_code)]
     async fn topic_partitions_list(&self, topic: &str) -> Vec<ReplicaKey> {
         self.read()
             .await
@@ -106,7 +124,7 @@ where
             .collect()
     }
 
-    pub async fn table_fmt(&self) -> String {
+    async fn table_fmt(&self) -> String {
         let mut table = String::new();
 
         let partition_hdr = format!(
@@ -133,7 +151,7 @@ where
     }
 
     /// replica msg for target spu
-    pub async fn replica_for_spu(&self, target_spu: SpuId) -> Vec<Replica> {
+    async fn replica_for_spu(&self, target_spu: SpuId) -> Vec<Replica> {
         let msgs: Vec<Replica> = self
             .partition_spec_for_spu(target_spu)
             .await
@@ -151,7 +169,7 @@ where
         msgs
     }
 
-    pub async fn leaders(&self) -> Vec<ReplicaLeader> {
+    async fn leaders(&self) -> Vec<ReplicaLeader> {
         self.read()
             .await
             .iter()
@@ -161,17 +179,11 @@ where
             })
             .collect()
     }
-}
 
-impl<C, S> From<Vec<((S, i32), Vec<i32>)>> for PartitionLocalStore<C>
-where
-    S: Into<String>,
-    C: MetadataItem,
-{
-    fn from(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
+    fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
         let elements = partitions
             .into_iter()
-            .map(|(replica_key, replicas)| (replica_key, replicas).into())
+            .map(|(replica_key, replicas)| PartitionMetadata::quick((replica_key, replicas)))
             .collect();
         Self::bulk_new(elements)
     }
@@ -185,7 +197,7 @@ pub mod test {
 
     #[test_async]
     async fn test_partitions_to_replica_msgs() -> Result<(), ()> {
-        let partitions: DefaultPartitionStore = vec![(("topic1", 0), vec![10, 11, 12])].into();
+        let partitions = DefaultPartitionStore::bulk_load(vec![(("topic1", 0), vec![10, 11, 12])]);
         let replica_msg = partitions.replica_for_spu(10).await;
         assert_eq!(replica_msg.len(), 1);
         Ok(())

@@ -5,8 +5,8 @@ use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 
 use crate::InternalScKey;
-use flv_metadata::partition::ReplicaKey;
-use flv_metadata::partition::ReplicaStatus;
+use flv_metadata_cluster::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaStatus;
 
 /// Live Replica Status
 /// First lrs is leader by convention but should not be relied upon

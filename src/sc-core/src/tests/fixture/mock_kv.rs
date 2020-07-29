@@ -7,7 +7,7 @@ use futures::future::FutureExt;
 
 use flv_types::SpuId;
 use error::ServerError;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use utils::actions::Actions;
 use utils::SimpleConcurrentHashMap;
 use flv_types::log_on_err;
