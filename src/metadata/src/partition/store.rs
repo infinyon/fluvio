@@ -5,6 +5,7 @@
 //!
 
 use std::sync::Arc;
+use std::ops::Deref;
 
 use log::debug;
 
@@ -16,10 +17,33 @@ use super::*;
 
 pub type SharedPartitionStore<C> = Arc<PartitionLocalStore<C>>;
 
-pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec, C>;
-pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
+
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<String>;
+
+pub struct PartitionMetadata<C: MetadataItem>(MetadataStoreObject<PartitionSpec, C>);
+
+impl<C: MetadataItem> Deref for PartitionMetadata<C> {
+    type Target = MetadataStoreObject<PartitionSpec, C>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl <C: MetadataItem> From<MetadataStoreObject<PartitionSpec,C>> for PartitionMetadata<C> {
+    fn from(partition: MetadataStoreObject<PartitionSpec,C>) -> Self {
+        Self(partition)
+    }
+}
+
+impl <C: MetadataItem> Into<MetadataStoreObject<PartitionSpec,C>> for PartitionMetadata<C> {
+    fn into(self) -> MetadataStoreObject<PartitionSpec,C> {
+        self.0
+    }
+}
+
+
 
 impl<C> PartitionMetadata<C>
 where
@@ -29,7 +53,7 @@ where
     /// first element of replicas is leader
     pub fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self {
         let spec: PartitionSpec = replicas.into();
-        Self::new(key, spec, PartitionStatus::default())
+        Self(MetadataStoreObject::new(key, spec, PartitionStatus::default()))
     }
 }
 
@@ -44,9 +68,17 @@ where
     }
 }
 
-// -----------------------------------
-// Partitions - Implementation
-// -----------------------------------
+
+pub struct PartitionLocalStore<C: MetadataItem>(LocalStore<PartitionSpec, C>);
+
+impl<C: MetadataItem> Deref for PartitionLocalStore<C> {
+    type Target = LocalStore<PartitionSpec, C>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 
 impl<C> PartitionLocalStore<C>
 where
@@ -60,7 +92,7 @@ where
         let mut res: Vec<PartitionMetadata<C>> = Vec::default();
         for (name, partition) in self.read().await.iter() {
             if name.topic == topic {
-                res.push(partition.inner().clone());
+                res.push(partition.inner().clone().into());
             }
         }
         res
@@ -144,7 +176,7 @@ where
             .collect();
         debug!(
             "{} computing replica msg for spu y: {}, msg: {}",
-            self,
+            self.0,
             target_spu,
             msgs.len()
         );
@@ -171,9 +203,12 @@ where
     fn from(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
         let elements = partitions
             .into_iter()
-            .map(|(replica_key, replicas)| (replica_key, replicas).into())
+            .map(|(replica_key, replicas)| {
+                let p: PartitionMetadata<C> = (replica_key, replicas).into();
+                p.0
+            })
             .collect();
-        Self::bulk_new(elements)
+        Self(LocalStore::bulk_new(elements))
     }
 }
 

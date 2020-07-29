@@ -1,5 +1,5 @@
 pub mod core;
-
+pub mod store;
 
 #[cfg(feature = "k8")]
 pub mod k8 {

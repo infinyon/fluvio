@@ -7,6 +7,8 @@ use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::sync::Arc;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 use flv_types::SpuId;
 
@@ -17,46 +19,86 @@ use crate::message::*;
 
 pub type SharedSpuLocalStore<C> = Arc<SpuLocalStore<C>>;
 
-pub type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
+
 
 pub type DefaultSpuMd = SpuMetadata<String>;
 pub type DefaultSpuStore = SpuLocalStore<String>;
 
-// -----------------------------------
-// Spu - Implementation
-// -----------------------------------
+#[derive(PartialEq,Debug, Clone)]
+pub struct SpuMetadata<C: MetadataItem>(MetadataStoreObject<SpuSpec, C>);
 
-impl<C> SpuMetadata<C>
-where
-    C: MetadataItem,
+impl<C: MetadataItem> Deref for SpuMetadata<C> {
+    type Target = MetadataStoreObject<SpuSpec, C>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl <C: MetadataItem> DerefMut for SpuMetadata<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+
+
+impl <C: MetadataItem> From<MetadataStoreObject<SpuSpec,C>> for SpuMetadata<C> {
+    fn from(spu: MetadataStoreObject<SpuSpec,C>) -> Self {
+        Self(spu)
+    }
+}
+
+impl <C: MetadataItem> Into<MetadataStoreObject<SpuSpec,C>> for SpuMetadata<C> {
+    fn into(self) -> MetadataStoreObject<SpuSpec,C> {
+        self.0
+    }
+}
+
+/*
+pub trait SpuMeta {
+
+    fn id(&self) -> SpuId;
+
+    fn name(&self) -> &str;
+
+    fn resolution_label(&self) -> &'static str ;
+
+    fn type_label(&self) -> String ;
+
+    fn is_custom(&self) -> bool;
+
+    fn is_managed(&self) -> bool;
+}
+
+impl <C:MetadataItem> SpuMeta for MetadataStoreObject<SpuSpec,C> 
 {
-    //
-    // Accessors
-    //
-    pub fn id(&self) -> SpuId {
+    
+    fn id(&self) -> SpuId {
         self.spec.id
     }
 
-    pub fn name(&self) -> &str {
+    fn name(&self) -> &str {
         &self.key
     }
 
-    pub fn resolution_label(&self) -> &'static str {
+    fn resolution_label(&self) -> &'static str {
         self.status.resolution_label()
     }
 
-    pub fn type_label(&self) -> String {
+    fn type_label(&self) -> String {
         self.spec.spu_type.to_string()
     }
 
-    pub fn is_custom(&self) -> bool {
+    fn is_custom(&self) -> bool {
         self.spec.is_custom()
     }
 
-    pub fn is_managed(&self) -> bool {
+    fn is_managed(&self) -> bool {
         !self.spec.is_custom()
     }
 }
+*/
 
 /// used in the bulk add scenario
 impl<C, J> From<(J, i32, bool, Option<String>)> for SpuMetadata<C>
@@ -74,15 +116,30 @@ where
             status.set_online();
         }
 
-        Self::new(spu.0.into(), spec, status)
+        Self(MetadataStoreObject::new(spu.0.into(), spec, status))
     }
 }
 
-pub type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
 
-// -----------------------------------
-// Spus - Implementation
-// -----------------------------------
+pub struct SpuLocalStore<C: MetadataItem>(LocalStore<SpuSpec, C>);
+
+
+impl<C: MetadataItem> Deref for SpuLocalStore<C> {
+    type Target = LocalStore<SpuSpec, C>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+
+impl <C: MetadataItem> From<LocalStore<SpuSpec, C>> for SpuLocalStore<C> {
+    fn from(store: LocalStore<SpuSpec, C>) -> Self {
+        Self(store)
+    }
+}
+
+
 
 impl<C> SpuLocalStore<C>
 where
@@ -117,7 +174,7 @@ where
         let mut status = HashSet::new();
         for (_, spu) in self.read().await.iter() {
             if spu.status.is_online() {
-                status.insert(spu.id());
+                status.insert(spu.spec.id);
             }
         }
         status
@@ -150,7 +207,7 @@ where
             .values()
             .filter_map(|spu| {
                 if spu.status.is_online() {
-                    Some(spu.id())
+                    Some(spu.spec.id)
                 } else {
                     None
                 }
@@ -159,7 +216,7 @@ where
     }
 
     pub async fn spu_ids(&self) -> Vec<i32> {
-        let mut ids: Vec<i32> = self.read().await.values().map(|spu| spu.id()).collect();
+        let mut ids: Vec<i32> = self.read().await.values().map(|spu| spu.spec.id).collect();
         ids.sort();
         ids
     }
@@ -170,7 +227,7 @@ where
             .values()
             .filter_map(|spu| {
                 if spu.status.is_online() {
-                    Some(spu.inner().clone())
+                    Some(spu.inner().clone().into())
                 } else {
                     None
                 }
@@ -183,8 +240,8 @@ where
             .await
             .values()
             .filter_map(|spu| {
-                if spu.is_custom() {
-                    Some(spu.inner().clone())
+                if spu.spec.is_custom() {
+                    Some(spu.inner().clone().into())
                 } else {
                     None
                 }
@@ -194,15 +251,15 @@ where
 
     pub async fn spu(&self, name: &str) -> Option<SpuMetadata<C>> {
         match self.read().await.get(name) {
-            Some(spu) => Some(spu.inner().clone()),
+            Some(spu) => Some(spu.inner().clone().into()),
             None => None,
         }
     }
 
     pub async fn get_by_id(&self, id: i32) -> Option<SpuMetadata<C>> {
         for (_, spu) in self.read().await.iter() {
-            if spu.id() == id {
-                return Some(spu.inner().clone());
+            if spu.spec.id == id {
+                return Some(spu.inner().clone().into());
             }
         }
         None
@@ -211,7 +268,7 @@ where
     // check if spu can be registered
     pub async fn validate_spu_for_registered(&self, id: SpuId) -> bool {
         for (_, spu) in self.read().await.iter() {
-            if spu.id() == id {
+            if spu.spec.id == id {
                 return true;
             }
         }
@@ -250,9 +307,9 @@ where
             let row = format!(
                 "{n:<18}  {d:^6}  {s:<10}  {t:<8}  {p:<16}  {i:<16}  {r}\n",
                 n = name.clone(),
-                d = spu.id(),
-                s = spu.resolution_label(),
-                t = spu.type_label().clone(),
+                d = spu.spec.id,
+                s = spu.status.resolution_label(),
+                t = spu.spec.spu_type.to_string(),
                 p = spu.spec.public_endpoint,
                 i = spu.spec.private_endpoint,
                 r = rack,
@@ -296,9 +353,9 @@ where
                 let mut ids_in_map = rack_spus.remove(rack);
                 if ids_in_map.is_some() {
                     ids = ids_in_map.as_mut().unwrap().to_vec();
-                    ids.push(spu.id());
+                    ids.push(spu.spec.id);
                 } else {
-                    ids = vec![spu.id()];
+                    ids = vec![spu.spec.id];
                 }
                 ids.sort();
                 rack_spus.insert(rack.clone(), ids);
@@ -348,10 +405,11 @@ where
             .into_iter()
             .map(|(spu_id, online, rack)| {
                 let spu_key = format!("spu-{}", spu_id);
-                (spu_key, spu_id, online, rack).into()
+                let s: SpuMetadata<C> = (spu_key, spu_id, online, rack).into();
+                s.0
             })
             .collect();
-        Self::bulk_new(elements)
+        Self(LocalStore::bulk_new(elements))
     }
 }
 
@@ -365,6 +423,8 @@ pub mod test {
     use flv_future_aio::test_async;
 
     use crate::store::actions::*;
+    use crate::store::LocalStore;
+    use crate::store::MetadataStoreObject;
     use super::DefaultSpuMd;
     use super::DefaultSpuStore;
 
@@ -378,7 +438,7 @@ pub mod test {
         assert_eq!(offline_spu.status.is_online(), false);
         assert_eq!(no_status_spu.status.is_online(), false);
 
-        let spus = DefaultSpuStore::bulk_new(vec![online_spu, offline_spu, no_status_spu]);
+        let spus: DefaultSpuStore = LocalStore::bulk_new(vec![online_spu, offline_spu, no_status_spu]).into();
 
         assert_eq!(spus.all_spu_count().await, 3);
         assert_eq!(spus.online_spu_count().await, 1);
@@ -388,7 +448,7 @@ pub mod test {
     #[test]
     fn test_spu_status_updates_online_offline() {
         let mut test_spu: DefaultSpuMd = ("spu", 10, false, None).into();
-        assert_eq!(test_spu.id(), 10);
+        assert_eq!(test_spu.spec.id, 10);
 
         test_spu.status.set_online();
         assert_eq!(test_spu.status.is_online(), true);
@@ -402,7 +462,7 @@ pub mod test {
         let online_spu: DefaultSpuMd = ("spu-0", 0, true, None).into();
         let offline_spu: DefaultSpuMd = ("spu-1", 1, false, None).into();
 
-        let spus = DefaultSpuStore::bulk_new(vec![online_spu, offline_spu]);
+        let spus: DefaultSpuStore = LocalStore::bulk_new(vec![online_spu, offline_spu]).into();
 
         assert_eq!(spus.online_spu_count().await, 1);
         assert_eq!(spus.all_spu_count().await, 2);
@@ -432,14 +492,14 @@ pub mod test {
         let mut other_spec = SpuSpec::default();
         other_spec.id = 1;
         other_spec.rack = Some("rack".to_string());
-        let other_spu = DefaultSpuMd::new("spu-1", other_spec.clone(), SpuStatus::default());
+        let other_spu: DefaultSpuMd = MetadataStoreObject::new("spu-1", other_spec.clone(), SpuStatus::default()).into();
 
-        let spus = DefaultSpuStore::bulk_new(vec![spu_0, spu_1.clone()]);
+        let spus: DefaultSpuStore = LocalStore::bulk_new(vec![spu_0, spu_1.clone()]).into();
 
         // update spec on spu_1
         spu_1.spec = other_spec.clone();
         let status = spus
-            .apply_changes(vec![LSUpdate::Mod(spu_1)])
+            .apply_changes(vec![LSUpdate::Mod(spu_1.into())])
             .await
             .expect("some");
 
@@ -462,8 +522,7 @@ pub mod test {
         assert_eq!(online.status.is_online(), true);
         assert_eq!(offline.status.is_online(), false);
 
-        let spus =
-            DefaultSpuStore::bulk_new(vec![online.clone(), offline.clone(), offline2.clone()]);
+        let spus: DefaultSpuStore = LocalStore::bulk_new(vec![online.clone(), offline.clone(), offline2.clone()]).into();
         assert_eq!(spus.all_spu_count().await, 3);
         assert_eq!(spus.online_spu_count().await, 1);
 
@@ -471,7 +530,7 @@ pub mod test {
         let mut online_update = online.clone();
         online_update.status = offline.status.clone();
         let status = spus
-            .apply_changes(vec![LSUpdate::Mod(online_update)])
+            .apply_changes(vec![LSUpdate::Mod(online_update.into())])
             .await
             .expect("some");
         let spu = spus.spu("spu-0").await.expect("spu");
@@ -486,7 +545,7 @@ pub mod test {
         let mut offline_update = offline2.clone();
         offline_update.status = online.status.clone();
         let status = spus
-            .apply_changes(vec![LSUpdate::Mod(offline_update)])
+            .apply_changes(vec![LSUpdate::Mod(offline_update.into())])
             .await
             .expect("some");
         assert_eq!(status.add, 0);
