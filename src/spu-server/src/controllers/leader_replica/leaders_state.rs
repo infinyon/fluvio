@@ -11,7 +11,7 @@ use log::warn;
 use log::trace;
 use log::error;
 
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::api::RecordSet;
 use flv_storage::FileReplica;
 use kf_protocol::fs::FilePartitionResponse;

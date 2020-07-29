@@ -29,7 +29,7 @@ pub use event::OffsetUpdateEvent;
 mod event {
 
     use kf_protocol::api::Offset;
-    use flv_metadata::partition::ReplicaKey;
+    use flv_metadata_cluster::partition::ReplicaKey;
 
     /// used for communicating change in offset for any replica
     #[derive(Debug, Clone)]

@@ -10,12 +10,12 @@ use log::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use flv_metadata::k8::metadata::InputK8Obj;
-use flv_metadata::core::Spec;
-use flv_metadata::store::*;
+use flv_metadata_cluster::k8::metadata::InputK8Obj;
+use flv_metadata_cluster::core::Spec;
+use flv_metadata_cluster::store::*;
 use flv_types::log_on_err;
-use flv_metadata::k8::metadata::Spec as K8Spec;
-use flv_metadata::k8::metadata::UpdateK8ObjStatus;
+use flv_metadata_cluster::k8::metadata::Spec as K8Spec;
+use flv_metadata_cluster::k8::metadata::UpdateK8ObjStatus;
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 

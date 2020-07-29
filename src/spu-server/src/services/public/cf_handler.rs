@@ -17,7 +17,7 @@ use kf_protocol::api::RequestMessage;
 use kf_protocol::api::RequestHeader;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::fs::FilePartitionResponse;
 use spu_api::server::continous_fetch::FileFlvContinuousFetchRequest;
 use spu_api::server::continous_fetch::FlvContinuousFetchResponse;

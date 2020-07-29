@@ -1,5 +1,5 @@
-pub use flv_metadata::spu::store::*;
-pub use flv_metadata::spu::*;
+pub use flv_metadata_cluster::spu::store::*;
+pub use flv_metadata_cluster::spu::*;
 
 use super::*;
 

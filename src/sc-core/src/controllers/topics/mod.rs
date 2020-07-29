@@ -10,7 +10,7 @@ pub use common::*;
 
 mod common {
 
-    use ::flv_metadata::topic::TopicSpec;
+    use ::flv_metadata_cluster::topic::TopicSpec;
     use crate::metadata::*;
 
     pub type TopicWSAction = WSAction<TopicSpec>;

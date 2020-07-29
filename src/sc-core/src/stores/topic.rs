@@ -1,5 +1,5 @@
-pub use flv_metadata::topic::store::*;
-pub use flv_metadata::topic::*;
+pub use flv_metadata_cluster::topic::store::*;
+pub use flv_metadata_cluster::topic::*;
 
 use super::*;
 

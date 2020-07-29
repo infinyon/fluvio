@@ -1,4 +1,4 @@
-pub use flv_metadata::partition::*;
+pub use flv_metadata_cluster::partition::*;
 
 mod convert {
 

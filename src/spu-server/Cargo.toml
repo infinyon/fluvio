@@ -34,7 +34,7 @@ internal-api = { path = "../internal-api"}
 spu-api = { path = "../spu-api",  package = "flv-api-spu"}
 flv-types = { path ="../types", version = "0.2.0"}
 utils = { path= "../utils"}
-flv-metadata = { path = "../metadata" }
+flv-metadata-cluster = { path = "../metadata-cluster" }
 flv-storage = { path = "../storage"}
 
 

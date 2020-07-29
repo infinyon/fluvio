@@ -7,7 +7,7 @@ use rand::thread_rng;
 use rand::Rng;
 
 use flv_types::*;
-use flv_metadata::topic::*;
+use flv_metadata_cluster::topic::*;
 
 use crate::stores::topic::*;
 use crate::stores::partition::*;
@@ -331,7 +331,7 @@ pub mod replica_map_test {
     use std::collections::BTreeMap;
 
     use flv_future_aio::test_async;
-    use flv_metadata::spu::store::SpuLocalStorePolicy;
+    use flv_metadata_cluster::spu::store::SpuLocalStorePolicy;
 
     use super::*;
 
@@ -383,7 +383,7 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_3x_replicas_no_rack() -> Result<(), ()> {
-        let spus =  SpuAdminStore::quick(vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
@@ -432,7 +432,7 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_4x_replicas_no_rack() -> Result<(), ()> {
-        let spus =  SpuAdminStore::quick(vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (2, true, None),
@@ -454,7 +454,7 @@ pub mod replica_map_test {
 
     #[test_async]
     async fn generate_replica_map_for_topic_5x_replicas_no_rack() -> Result<(), ()> {
-        let spus =  SpuAdminStore::quick(vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
             (3, true, None),
@@ -480,7 +480,7 @@ pub mod replica_map_test {
         let r2 = String::from("r2");
         let r3 = String::from("r3");
 
-        let spus =  SpuAdminStore::quick(vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, Some(r1.clone())),
             (1, true, Some(r2.clone())),
             (2, true, Some(r2.clone())),
@@ -511,7 +511,7 @@ pub mod replica_map_test {
         let r3 = String::from("r3");
         let r4 = String::from("r4");
 
-        let spus =   SpuAdminStore::quick(vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, Some(r1.clone())),
             (1, true, Some(r1.clone())),
             (2, true, Some(r1.clone())),
@@ -553,7 +553,7 @@ pub mod replica_map_test {
         let r2 = String::from("r2");
         let r3 = String::from("r3");
 
-        let spus =  SpuAdminStore::quick(vec![
+        let spus = SpuAdminStore::quick(vec![
             (0, true, Some(r1.clone())),
             (1, true, Some(r1.clone())),
             (2, true, Some(r1.clone())),

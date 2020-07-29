@@ -8,7 +8,7 @@ use std::sync::Arc;
 use log::debug;
 use log::warn;
 
-use flv_metadata::partition::*;
+use flv_metadata_cluster::partition::*;
 
 use crate::stores::partition::*;
 use crate::stores::spu::*;

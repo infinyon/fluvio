@@ -15,11 +15,11 @@ use kf_socket::KfSocket;
 use kf_socket::KfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
-use flv_metadata::partition::Replica;
+use flv_metadata_cluster::partition::Replica;
 use flv_types::SpuId;
 use flv_util::log_on_err;
 use flv_storage::FileReplica;
-use flv_metadata::spu::SpuSpec;
+use flv_metadata_cluster::spu::SpuSpec;
 
 use crate::controllers::leader_replica::UpdateOffsetRequest;
 use crate::services::internal::FetchStreamRequest;

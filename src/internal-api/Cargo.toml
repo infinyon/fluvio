@@ -7,5 +7,5 @@ edition = "2018"
 [dependencies]
 log = "0.4.8"
 kf-protocol = { version = "2.0.0" } 
-flv-metadata = { path = "../metadata"}
+flv-metadata-cluster = { path = "../metadata-cluster"}
 flv-types = { path ="../types" }

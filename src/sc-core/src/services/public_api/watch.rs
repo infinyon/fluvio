@@ -18,10 +18,10 @@ use sc_api::objects::WatchResponse;
 use sc_api::objects::Metadata;
 use sc_api::objects::MetadataUpdate;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
-use flv_metadata::core::Spec;
-use flv_metadata::store::Epoch;
-use flv_metadata::partition::PartitionSpec;
-use flv_metadata::spu::SpuSpec;
+use flv_metadata_cluster::core::Spec;
+use flv_metadata_cluster::store::Epoch;
+use flv_metadata_cluster::partition::PartitionSpec;
+use flv_metadata_cluster::spu::SpuSpec;
 
 use crate::core::SharedContext;
 use crate::stores::StoreContext;
@@ -141,7 +141,7 @@ where
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
     async fn sync_and_send_changes(&mut self) -> bool {
-        use flv_metadata::message::*;
+        use flv_metadata_cluster::message::*;
 
         let read_guard = self.store.store().read().await;
         let changes = read_guard.changes_since(self.epoch);

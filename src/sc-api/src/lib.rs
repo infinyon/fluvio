@@ -18,11 +18,11 @@ pub mod errors {
 }
 
 pub mod core {
-    pub use flv_metadata::core::*;
+    pub use flv_metadata_cluster::core::*;
 }
 
 pub mod store {
-    pub use flv_metadata::store::*;
+    pub use flv_metadata_cluster::store::*;
 }
 
 /// Error from api call

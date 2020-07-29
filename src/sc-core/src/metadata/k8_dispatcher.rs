@@ -22,10 +22,10 @@ use serde::Serialize;
 use flv_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
-use flv_metadata::k8::metadata::K8List;
-use flv_metadata::k8::metadata::K8Watch;
-use flv_metadata::k8::metadata::Spec as K8Spec;
-use flv_metadata::core::Spec;
+use flv_metadata_cluster::k8::metadata::K8List;
+use flv_metadata_cluster::k8::metadata::K8Watch;
+use flv_metadata_cluster::k8::metadata::Spec as K8Spec;
+use flv_metadata_cluster::core::Spec;
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 
@@ -213,7 +213,7 @@ where
 
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use super::k8_actions::K8Action;
-        use flv_metadata::k8::metadata::ObjectMeta;
+        use flv_metadata_cluster::k8::metadata::ObjectMeta;
 
         let k8_action = match action {
             WSAction::Apply(obj) => K8Action::Apply(obj),
@@ -270,12 +270,12 @@ mod convert {
     use std::io::Error as IoError;
 
     use log::{debug, error, trace};
-    use flv_metadata::k8::metadata::K8List;
-    use flv_metadata::k8::metadata::K8Obj;
-    use flv_metadata::k8::metadata::K8Watch;
-    use flv_metadata::store::actions::*;
-    use flv_metadata::core::Spec;
-    use flv_metadata::store::*;
+    use flv_metadata_cluster::k8::metadata::K8List;
+    use flv_metadata_cluster::k8::metadata::K8Obj;
+    use flv_metadata_cluster::k8::metadata::K8Watch;
+    use flv_metadata_cluster::store::actions::*;
+    use flv_metadata_cluster::core::Spec;
+    use flv_metadata_cluster::store::*;
     use k8_obj_metadata::Spec as K8Spec;
     use k8_metadata_client::*;
 

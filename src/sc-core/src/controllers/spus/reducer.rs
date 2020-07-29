@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use log::{debug, trace};
 use flv_types::log_on_err;
-use flv_metadata::store::actions::*;
+use flv_metadata_cluster::store::actions::*;
 
 use crate::spu::*;
 use crate::ScServerError;

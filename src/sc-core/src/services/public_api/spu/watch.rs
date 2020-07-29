@@ -5,7 +5,7 @@ use log::{trace, debug};
 use sc_api::objects::*;
 use sc_api::spu::SpuSpec;
 use sc_api::objects::*;
-use flv_metadata::store::*;
+use flv_metadata_cluster::store::*;
 use flv_future_aio::task::spawn;
 use kf_socket::*;
 

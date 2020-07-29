@@ -10,12 +10,12 @@ use kf_protocol::Encoder;
 use kf_protocol::Decoder;
 use kf_protocol::api::Request;
 
-use flv_metadata::core::*;
-use flv_metadata::topic::TopicSpec;
-use flv_metadata::spu::*;
-use flv_metadata::spg::SpuGroupSpec;
-use flv_metadata::store::*;
-use flv_metadata::partition::PartitionSpec;
+use flv_metadata_cluster::core::*;
+use flv_metadata_cluster::topic::TopicSpec;
+use flv_metadata_cluster::spu::*;
+use flv_metadata_cluster::spg::SpuGroupSpec;
+use flv_metadata_cluster::store::*;
+use flv_metadata_cluster::partition::PartitionSpec;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -81,7 +81,7 @@ impl Default for ListResponse {
 )]
 pub struct Metadata<S>
 where
-    S: Spec + Debug + Encoder + Decoder , 
+    S: Spec + Debug + Encoder + Decoder,
     S::Status: Debug + Encoder + Decoder,
 {
     pub name: String,

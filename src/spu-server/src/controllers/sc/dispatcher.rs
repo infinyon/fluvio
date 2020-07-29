@@ -24,13 +24,13 @@ use internal_api::InternalSpuRequest;
 use internal_api::RegisterSpuRequest;
 use internal_api::UpdateSpuRequest;
 use internal_api::UpdateReplicaRequest;
-use flv_metadata::partition::Replica;
+use flv_metadata_cluster::partition::Replica;
 use kf_protocol::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use kf_socket::ExclusiveKfSink;
 use flv_storage::FileReplica;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use flv_types::log_on_err;
 use flv_util::actions::Actions;
 

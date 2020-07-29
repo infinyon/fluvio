@@ -9,10 +9,10 @@ use futures::channel::mpsc::Sender;
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
 use flv_types::SpuId;
-use flv_metadata::topic::TopicSpec;
-use flv_metadata::topic::TopicStatus;
-use flv_metadata::topic::TopicResolution;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::topic::TopicSpec;
+use flv_metadata_cluster::topic::TopicStatus;
+use flv_metadata_cluster::topic::TopicResolution;
+use flv_metadata_cluster::partition::ReplicaKey;
 use utils::SimpleConcurrentHashMap;
 
 use crate::core::common::test_fixtures::create_spu;

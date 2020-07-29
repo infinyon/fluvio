@@ -1,5 +1,5 @@
-use flv_metadata::partition::Replica;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::Replica;
+use flv_metadata_cluster::partition::ReplicaKey;
 
 use crate::core::Spec;
 use crate::core::LocalStore;

@@ -3,7 +3,7 @@
 //      >>> define what each element of SPU is used for
 //
 
-use flv_metadata::spu::SpuSpec;
+use flv_metadata_cluster::spu::SpuSpec;
 use flv_types::SpuId;
 
 use crate::core::Spec;

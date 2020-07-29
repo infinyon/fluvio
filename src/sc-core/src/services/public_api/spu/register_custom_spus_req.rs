@@ -7,7 +7,7 @@ use log::{debug, trace};
 use std::io::Error as IoError;
 
 use kf_protocol::api::FlvErrorCode;
-use flv_metadata::spu::store::SpuLocalStorePolicy;
+use flv_metadata_cluster::spu::store::SpuLocalStorePolicy;
 use sc_api::FlvStatus;
 use sc_api::spu::CustomSpuSpec;
 use sc_api::spu::SpuSpec;

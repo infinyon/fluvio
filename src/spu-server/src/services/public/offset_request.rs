@@ -8,7 +8,7 @@ use spu_api::server::fetch_offset::FlvFetchOffsetsRequest;
 use spu_api::server::fetch_offset::FetchOffsetTopicResponse;
 use spu_api::server::fetch_offset::FlvFetchOffsetsResponse;
 use spu_api::server::fetch_offset::FetchOffsetPartitionResponse;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::api::FlvErrorCode;
 use flv_storage::ReplicaStorage;
 

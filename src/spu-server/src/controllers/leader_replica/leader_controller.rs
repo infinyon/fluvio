@@ -13,7 +13,7 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use flv_storage::FileReplica;
 use flv_types::SpuId;
 use kf_socket::ExclusiveKfSink;

@@ -5,7 +5,7 @@ use futures::FutureExt;
 
 use flv_future_core::test_async;
 use kf_socket::KfSocketError;
-use flv_metadata::partition::ReplicaKey;
+use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::api::RequestMessage;
 use spu_api::offsets::FlvFetchOffsetsRequest;
 use spu_api::offsets::FetchOffsetTopic;

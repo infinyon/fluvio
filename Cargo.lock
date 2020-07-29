@@ -654,7 +654,7 @@ dependencies = [
  "flv-api-sc",
  "flv-client",
  "flv-future-aio",
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-sc-k8",
  "flv-spu",
  "flv-types",
@@ -681,7 +681,7 @@ dependencies = [
 name = "flv-api-sc"
 version = "2.0.0"
 dependencies = [
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-types",
  "flv-util 0.2.1",
  "kf-protocol",
@@ -764,8 +764,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-metadata"
-version = "2.0.0"
+name = "flv-metadata-cluster"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "flv-eventstream-model",
@@ -792,7 +792,7 @@ dependencies = [
  "event-listener",
  "flv-api-sc",
  "flv-future-aio",
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-types",
  "flv-util 0.2.1",
  "futures",
@@ -817,7 +817,7 @@ version = "0.3.1"
 dependencies = [
  "async-trait",
  "flv-future-aio",
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-sc-core",
  "flv-tls-proxy",
  "flv-types",
@@ -842,7 +842,7 @@ dependencies = [
  "chrono",
  "flv-api-spu",
  "flv-future-aio",
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-storage",
  "flv-tls-proxy",
  "flv-types",
@@ -891,7 +891,7 @@ dependencies = [
  "bytes 0.5.6",
  "flv-client",
  "flv-future-aio",
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-types",
  "futures",
  "k8-client",
@@ -1210,7 +1210,7 @@ dependencies = [
 name = "internal-api"
 version = "1.0.0"
 dependencies = [
- "flv-metadata",
+ "flv-metadata-cluster",
  "flv-types",
  "kf-protocol",
  "log",

@@ -7,7 +7,7 @@
 use structopt::StructOpt;
 
 use flv_client::ClusterConfig;
-use flv_metadata::spu::SpuSpec;
+use flv_metadata_cluster::spu::SpuSpec;
 
 use crate::error::CliError;
 use crate::OutputType;

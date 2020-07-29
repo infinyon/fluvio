@@ -11,7 +11,7 @@ use flv_future_core::test_async;
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
 use flv_types::SpuId;
-use flv_metadata::spu::SpuResolution;
+use flv_metadata_cluster::spu::SpuResolution;
 
 use crate::tests::fixture::ScTestRunner;
 use crate::tests::fixture::ScTest;

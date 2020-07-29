@@ -10,7 +10,7 @@ use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use flv_types::SpuId;
-use flv_metadata::spu::SpuSpec;
+use flv_metadata_cluster::spu::SpuSpec;
 
 use super::mock_sc::SharedScContext;
 

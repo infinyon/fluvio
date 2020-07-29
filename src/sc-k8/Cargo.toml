@@ -24,4 +24,4 @@ flv-future-aio = { version = "2.2.1", features = ["tls"] }
 flv-util = { version = "0.2.0"}
 utils = { path = "../utils"}
 flv-sc-core = { path = "../sc-core"}
-flv-metadata = { features = ["k8"],path = "../metadata"}
+flv-metadata-cluster = { features = ["k8"],path = "../metadata-cluster"}
