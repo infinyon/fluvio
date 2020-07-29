@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 use log::debug;
-
+use async_trait::async_trait;
 
 use crate::store::*;
 use crate::core::*;
@@ -11,62 +11,28 @@ use crate::partition::*;
 use super::*;
 
 
+pub type TopicMetadata<C> = MetadataStoreObject<TopicSpec, C>;
+pub type TopicLocalStore<C> = LocalStore<TopicSpec, C>;
 pub type DefaultTopicMd = TopicMetadata<String>;
 pub type DefaultTopicLocalStore = TopicLocalStore<String>;
 
-#[derive(PartialEq,Debug)]
-pub struct TopicMetadata<C: MetadataItem>(MetadataStoreObject<TopicSpec, C>);
+#[async_trait]
+pub trait TopicMd<C: MetadataItem> {
 
-impl<C: MetadataItem> Deref for TopicMetadata<C> {
-    type Target = MetadataStoreObject<TopicSpec, C>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+    async fn create_new_partitions(
+        &self,
+        partition_store: &PartitionLocalStore<C>,
+    ) -> Vec<PartitionMetadata<C>>;
 }
 
-impl <C: MetadataItem> DerefMut for TopicMetadata<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-
-impl <C: MetadataItem> From<MetadataStoreObject<TopicSpec,C>> for TopicMetadata<C> {
-    fn from(spu: MetadataStoreObject<TopicSpec,C>) -> Self {
-        Self(spu)
-    }
-}
-
-impl <C: MetadataItem> Into<MetadataStoreObject<TopicSpec,C>> for TopicMetadata<C> {
-    fn into(self) -> MetadataStoreObject<TopicSpec,C> {
-        self.0
-    }
-}
-
-
-
-impl<C> std::fmt::Display for TopicMetadata<C>
-where
-    C: MetadataItem,
+#[async_trait]
+impl<C: MetadataItem> TopicMd<C> for TopicMetadata<C>
+    where C: MetadataItem + Send + Sync
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self.spec {
-            TopicSpec::Assigned(partition_map) => write!(f, "assigned::{}", partition_map),
-            TopicSpec::Computed(param) => write!(f, "computed::({})", param),
-        }
-    }
-}
-
-impl<C> TopicMetadata<C>
-where
-    C: MetadataItem,
-{
-
 
     /// create new partitions from my replica map if it doesn't exists
     /// from partition store
-    pub async fn create_new_partitions(
+    async fn create_new_partitions(
         &self,
         partition_store: &PartitionLocalStore<C>,
     ) -> Vec<PartitionMetadata<C>> {
@@ -85,39 +51,21 @@ where
     }
 }
 
-pub struct TopicLocalStore<C: MetadataItem>(LocalStore<TopicSpec, C>);
 
-impl <C: MetadataItem> From<LocalStore<TopicSpec, C>> for TopicLocalStore<C> {
-    fn from(store: LocalStore<TopicSpec, C>) -> Self {
-        Self(store)
-    }
+#[async_trait]
+pub trait TopicLocalStorePolicy<C> where C: MetadataItem {
+
+    async fn table_fmt(&self) -> String;
+
 }
 
-
-
-impl<C: MetadataItem> Deref for TopicLocalStore<C> {
-    type Target = LocalStore<TopicSpec, C>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-
-
-
-impl<C> TopicLocalStore<C>
-where
-    C: MetadataItem,
+#[async_trait]
+impl<C> TopicLocalStorePolicy<C> for TopicLocalStore<C> 
+    where C: MetadataItem + Send + Sync
 {
-    pub async fn topic(&self, topic_name: &str) -> Option<TopicMetadata<C>> {
-        match self.read().await.get(topic_name) {
-            Some(topic) => Some(topic.inner().clone().into()),
-            None => None,
-        }
-    }
 
-    pub async fn table_fmt(&self) -> String {
+
+    async fn table_fmt(&self) -> String {
         let mut table = String::new();
 
         let topic_hdr = format!(
@@ -166,11 +114,11 @@ mod test {
     #[test]
     fn test_topic_replica_map() {
         // empty replica map
-        let topic1: DefaultTopicMd = MetadataStoreObject::new("Topic-1", (1, 1, false).into(), TopicStatus::default()).into();
+        let topic1 = DefaultTopicMd::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.replica_map.len(), 0);
 
         // replica map with 2 partitions
-        let topic2: DefaultTopicMd = MetadataStoreObject::new(
+        let topic2 = DefaultTopicMd::new(
             "Topic-2",
             (1, 1, false).into(),
             TopicStatus::new(
@@ -178,18 +126,18 @@ mod test {
                 vec![vec![0, 1], vec![1, 2]],
                 "".to_owned(),
             ),
-        ).into();
+        );
         assert_eq!(topic2.status.replica_map.len(), 2);
     }
 
     #[test]
     fn test_update_topic_status_objects() {
         // create topic 1
-        let mut topic1: DefaultTopicMd = MetadataStoreObject::new("Topic-1", (2, 2, false).into(), TopicStatus::default()).into();
+        let mut topic1 = DefaultTopicMd::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.resolution, TopicResolution::Init);
 
         // create topic 2
-        let topic2: DefaultTopicMd = MetadataStoreObject::new(
+        let topic2 = DefaultTopicMd::new(
             "Topic-1",
             (2, 2, false).into(),
             TopicStatus::new(
@@ -197,7 +145,7 @@ mod test {
                 vec![vec![0, 1], vec![1, 2]],
                 "".to_owned(),
             ),
-        ).into();
+        );
 
         // test update individual components
         topic1.status.set_replica_map(topic2.status.replica_map.clone());
@@ -213,11 +161,11 @@ mod test {
         use std::collections::HashSet;
 
         // resolution: Init
-        let topic1: DefaultTopicMd = MetadataStoreObject::new("Topic-1", (1, 1, false).into(), TopicStatus::default()).into();
+        let topic1 = DefaultTopicMd::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.is_resolution_initializing(), true);
 
         // resolution: Pending
-        let topic2: DefaultTopicMd = MetadataStoreObject::new(
+        let topic2 = DefaultTopicMd::new(
             "Topic-2",
             (1, 1, false).into(),
             TopicStatus::new(
@@ -225,11 +173,11 @@ mod test {
                 vec![],
                 "waiting for live spus".to_owned(),
             ),
-        ).into();
+        );
         assert_eq!(topic2.status.is_resolution_pending(), true);
 
         // resolution: Ok
-        let topic3: DefaultTopicMd = MetadataStoreObject::new(
+        let topic3 = DefaultTopicMd::new(
             "Topic-3",
             (2, 2, false).into(),
             TopicStatus::new(
@@ -237,11 +185,11 @@ mod test {
                 vec![vec![0, 1], vec![1, 2]],
                 "".to_owned(),
             ),
-        ).into();
+        );
         assert_eq!(topic3.status.is_resolution_provisioned(), true);
 
         // resolution: Inconsistent
-        let topic4: DefaultTopicMd = MetadataStoreObject::new(
+        let topic4 = DefaultTopicMd::new(
             "Topic-4",
             (2, 2, false).into(),
             TopicStatus::new(
@@ -249,9 +197,9 @@ mod test {
                 vec![vec![0], vec![1]],
                 "".to_owned(),
             ),
-        ).into();
+        );
 
-        let topics: DefaultTopicLocalStore = LocalStore::bulk_new(vec![topic1, topic2, topic3, topic4]).into();
+        let topics = DefaultTopicLocalStore::bulk_new(vec![topic1, topic2, topic3, topic4]);
 
         let expected: HashSet<String> = vec![String::from("Topic-2"), String::from("Topic-4")]
             .into_iter()
