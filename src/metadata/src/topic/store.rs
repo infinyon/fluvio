@@ -62,19 +62,7 @@ impl<C> TopicMetadata<C>
 where
     C: MetadataItem,
 {
-    /*
-    pub fn is_provisioned(&self) -> bool {
-        self.status.is_resolution_provisioned()
-    }
 
-    pub fn replica_map(&self) -> &ReplicaMap {
-        &self.status.replica_map
-    }
-
-    pub fn reason(&self) -> &String {
-        &self.status.reason
-    }
-    */
 
     /// create new partitions from my replica map if it doesn't exists
     /// from partition store

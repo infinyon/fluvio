@@ -19,7 +19,7 @@ pub type SharedPartitionStore<C> = Arc<PartitionLocalStore<C>>;
 
 
 pub type DefaultPartitionMd = PartitionMetadata<String>;
-pub type DefaultPartitionStore = PartitionLocalStore<String>;
+
 
 pub struct PartitionMetadata<C: MetadataItem>(MetadataStoreObject<PartitionSpec, C>);
 
@@ -69,9 +69,11 @@ where
 }
 
 
-pub struct PartitionLocalStore<C: MetadataItem>(LocalStore<PartitionSpec, C>);
+pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
+pub type DefaultPartitionStore = PartitionStoreWrapper<String>;
+pub struct PartitionStoreWrapper<C: MetadataItem>(LocalStore<PartitionSpec, C>);
 
-impl<C: MetadataItem> Deref for PartitionLocalStore<C> {
+impl<C: MetadataItem> Deref for PartitionStoreWrapper<C> {
     type Target = LocalStore<PartitionSpec, C>;
 
     fn deref(&self) -> &Self::Target {
@@ -80,7 +82,7 @@ impl<C: MetadataItem> Deref for PartitionLocalStore<C> {
 }
 
 
-impl<C> PartitionLocalStore<C>
+impl<C> PartitionStoreWrapper<C>
 where
     C: MetadataItem,
 {
@@ -195,7 +197,7 @@ where
     }
 }
 
-impl<C, S> From<Vec<((S, i32), Vec<i32>)>> for PartitionLocalStore<C>
+impl<C, S> From<Vec<((S, i32), Vec<i32>)>> for PartitionStoreWrapper<C>
 where
     S: Into<String>,
     C: MetadataItem,

@@ -20,7 +20,7 @@ pub async fn is_conflict(
 ) -> Option<i32> {
     for (_, spu) in spu_store.read().await.iter() {
         if !spu.is_owned(owner_uid) {
-            let id = spu.id();
+            let id = spu.spec.id;
             if id >= start && id < end_exclusive {
                 return Some(id);
             }
