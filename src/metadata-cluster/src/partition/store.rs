@@ -22,18 +22,13 @@ pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<String>;
 
-
 pub trait PartitionMd<C: MetadataItem> {
-
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
 
     fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self;
 }
 
-
-
-impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C>
-{
+impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
     /// create new partition with replica map.
     /// first element of replicas is leader
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self {
@@ -47,27 +42,27 @@ impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C>
     }
 }
 
-
 #[async_trait]
-pub trait PartitionLocalStorePolicy<C> where C: MetadataItem {
-
+pub trait PartitionLocalStorePolicy<C>
+where
+    C: MetadataItem,
+{
     async fn names(&self) -> Vec<ReplicaKey>;
 
-    async fn topic_partitions(&self, topic: &str) -> Vec<PartitionMetadata<C>> ;
+    async fn topic_partitions(&self, topic: &str) -> Vec<PartitionMetadata<C>>;
 
     /// find all partitions that has spu in the replicas
-    async fn partition_spec_for_spu(&self,target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)> ;
+    async fn partition_spec_for_spu(&self, target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)>;
 
     async fn count_topic_partitions(&self, topic: &str) -> i32;
 
     // return partitions that belong to this topic
     async fn topic_partitions_list(&self, topic: &str) -> Vec<ReplicaKey>;
-    
 
     async fn table_fmt(&self) -> String;
 
     /// replica msg for target spu
-    async fn replica_for_spu(&self, target_spu: SpuId) -> Vec<Replica> ;
+    async fn replica_for_spu(&self, target_spu: SpuId) -> Vec<Replica>;
 
     async fn leaders(&self) -> Vec<ReplicaLeader>;
 
@@ -75,8 +70,9 @@ pub trait PartitionLocalStorePolicy<C> where C: MetadataItem {
 }
 
 #[async_trait]
-impl<C> PartitionLocalStorePolicy<C> for PartitionLocalStore<C> 
-    where C: MetadataItem + Send + Sync
+impl<C> PartitionLocalStorePolicy<C> for PartitionLocalStore<C>
+where
+    C: MetadataItem + Send + Sync,
 {
     async fn names(&self) -> Vec<ReplicaKey> {
         self.read().await.keys().cloned().collect()
@@ -93,10 +89,7 @@ impl<C> PartitionLocalStorePolicy<C> for PartitionLocalStore<C>
     }
 
     /// find all partitions that has spu in the replicas
-    async fn partition_spec_for_spu(
-        &self,
-        target_spu: i32,
-    ) -> Vec<(ReplicaKey, PartitionSpec)> {
+    async fn partition_spec_for_spu(&self, target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)> {
         let mut res = vec![];
         for (name, partition) in self.read().await.iter() {
             if partition.spec.replicas.contains(&target_spu) {
@@ -190,9 +183,7 @@ impl<C> PartitionLocalStorePolicy<C> for PartitionLocalStore<C>
     fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
         let elements = partitions
             .into_iter()
-            .map(|(replica_key, replicas)| {
-                PartitionMetadata::quick((replica_key, replicas))
-            })
+            .map(|(replica_key, replicas)| PartitionMetadata::quick((replica_key, replicas)))
             .collect();
         Self::bulk_new(elements)
     }

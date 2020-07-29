@@ -17,7 +17,6 @@ use crate::store::*;
 use crate::core::*;
 use crate::message::*;
 
-
 pub type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
 pub type DefaultSpuStore = SpuLocalStore<String>;
 pub type SharedSpuLocalStore<C> = Arc<SpuLocalStore<C>>;
@@ -25,14 +24,15 @@ pub type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
 pub type DefaultSpuMd = SpuMetadata<String>;
 
 pub trait SpuMd<C: MetadataItem> {
-
-    fn quick<J>(spu: (J, i32, bool, Option<String>)) -> SpuMetadata<C> where J: Into<String>;
+    fn quick<J>(spu: (J, i32, bool, Option<String>)) -> SpuMetadata<C>
+    where
+        J: Into<String>;
 }
 
-impl <C: MetadataItem>SpuMd<C> for SpuMetadata<C> {
-
+impl<C: MetadataItem> SpuMd<C> for SpuMetadata<C> {
     fn quick<J>(spu: (J, i32, bool, Option<String>)) -> SpuMetadata<C>
-        where J: Into<String>,
+    where
+        J: Into<String>,
     {
         let mut spec = SpuSpec::default();
         spec.id = spu.1;
@@ -47,11 +47,11 @@ impl <C: MetadataItem>SpuMd<C> for SpuMetadata<C> {
     }
 }
 
-
-
 #[async_trait]
-pub trait SpuLocalStorePolicy<C> where C: MetadataItem {
-
+pub trait SpuLocalStorePolicy<C>
+where
+    C: MetadataItem,
+{
     async fn online_status(&self) -> HashSet<SpuId>;
 
     async fn online_spu_count(&self) -> i32;
@@ -74,7 +74,7 @@ pub trait SpuLocalStorePolicy<C> where C: MetadataItem {
 
     async fn table_fmt(&self) -> String;
 
-    async fn spus_in_rack_count(&self) -> i32 ;
+    async fn spus_in_rack_count(&self) -> i32;
 
     async fn live_spu_rack_map_sorted(&self) -> Vec<(String, Vec<i32>)>;
 
@@ -87,14 +87,11 @@ pub trait SpuLocalStorePolicy<C> where C: MetadataItem {
     fn quick(spus: Vec<(i32, bool, Option<String>)>) -> Self;
 }
 
-
-
 #[async_trait]
-impl<C> SpuLocalStorePolicy<C> for SpuLocalStore<C> 
-    where C: MetadataItem + Send + Sync
-
+impl<C> SpuLocalStorePolicy<C> for SpuLocalStore<C>
+where
+    C: MetadataItem + Send + Sync,
 {
-    
     // build hashmap of online
     async fn online_status(&self) -> HashSet<SpuId> {
         let mut status = HashSet::new();
@@ -203,7 +200,6 @@ impl<C> SpuLocalStorePolicy<C> for SpuLocalStore<C>
         }
         false
     }
-
 
     async fn all_names(&self) -> Vec<String> {
         self.read().await.keys().cloned().collect()
@@ -320,7 +316,6 @@ impl<C> SpuLocalStorePolicy<C> for SpuLocalStore<C>
             .collect()
     }
 
-
     fn quick(spus: Vec<(i32, bool, Option<String>)>) -> Self {
         let elements = spus
             .into_iter()
@@ -331,7 +326,6 @@ impl<C> SpuLocalStorePolicy<C> for SpuLocalStore<C>
             .collect();
         Self::bulk_new(elements)
     }
-
 }
 
 // -----------------------------------
@@ -349,10 +343,9 @@ pub mod test {
     use super::SpuMd;
     use super::SpuLocalStorePolicy;
 
-
     #[test_async]
     async fn test_spu_inquiry_online_offline_count() -> Result<(), ()> {
-        let online_spu= DefaultSpuMd::quick(("spu-0", 0, true, None));
+        let online_spu = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
         let no_status_spu = DefaultSpuMd::quick(("spu-2", 5001, false, None));
 
@@ -382,7 +375,7 @@ pub mod test {
     #[test_async]
     async fn test_delete_spu_from_local_cache() -> Result<(), ()> {
         let online_spu = DefaultSpuMd::quick(("spu-0", 0, true, None));
-        let offline_spu =DefaultSpuMd::quick(("spu-1", 1, false, None));
+        let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
 
         let spus = DefaultSpuStore::bulk_new(vec![online_spu, offline_spu]);
 
@@ -444,7 +437,8 @@ pub mod test {
         assert_eq!(online.status.is_online(), true);
         assert_eq!(offline.status.is_online(), false);
 
-        let spus = DefaultSpuStore::bulk_new(vec![online.clone(), offline.clone(), offline2.clone()]);
+        let spus =
+            DefaultSpuStore::bulk_new(vec![online.clone(), offline.clone(), offline2.clone()]);
         assert_eq!(spus.count().await, 3);
         assert_eq!(spus.online_spu_count().await, 1);
 

@@ -28,8 +28,7 @@ pub enum TopicSpec {
     Computed(TopicReplicaParam),
 }
 
-impl std::fmt::Display for TopicSpec
-{
+impl std::fmt::Display for TopicSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             TopicSpec::Assigned(partition_map) => write!(f, "assigned::{}", partition_map),
@@ -37,7 +36,6 @@ impl std::fmt::Display for TopicSpec
         }
     }
 }
-
 
 // -----------------------------------
 // Implementation

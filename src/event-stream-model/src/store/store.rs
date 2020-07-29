@@ -53,9 +53,10 @@ where
 {
     /// initialize local stores with list of metadata objects
     pub fn bulk_new<N>(objects: Vec<N>) -> Self
-        where N: Into<MetadataStoreObject<S, C>>
+    where
+        N: Into<MetadataStoreObject<S, C>>,
     {
-        let obj: Vec<MetadataStoreObject<S,C>> = objects.into_iter().map(|s| s.into()).collect();
+        let obj: Vec<MetadataStoreObject<S, C>> = objects.into_iter().map(|s| s.into()).collect();
         let mut map = HashMap::new();
         for obj in obj {
             map.insert(obj.key.clone(), obj.into());
@@ -106,7 +107,6 @@ where
             None => None,
         }
     }
-
 
     /// copy spec
     pub async fn spec<K: ?Sized>(&self, key: &K) -> Option<S>

@@ -7,7 +7,6 @@ use crate::partition::store::*;
 use crate::partition::*;
 use super::*;
 
-
 pub type TopicMetadata<C> = MetadataStoreObject<TopicSpec, C>;
 pub type TopicLocalStore<C> = LocalStore<TopicSpec, C>;
 pub type DefaultTopicMd = TopicMetadata<String>;
@@ -15,7 +14,6 @@ pub type DefaultTopicLocalStore = TopicLocalStore<String>;
 
 #[async_trait]
 pub trait TopicMd<C: MetadataItem> {
-
     async fn create_new_partitions(
         &self,
         partition_store: &PartitionLocalStore<C>,
@@ -24,9 +22,9 @@ pub trait TopicMd<C: MetadataItem> {
 
 #[async_trait]
 impl<C: MetadataItem> TopicMd<C> for TopicMetadata<C>
-    where C: MetadataItem + Send + Sync
+where
+    C: MetadataItem + Send + Sync,
 {
-
     /// create new partitions from my replica map if it doesn't exists
     /// from partition store
     async fn create_new_partitions(
@@ -40,7 +38,8 @@ impl<C: MetadataItem> TopicMd<C> for TopicMetadata<C>
             if !partition_store.contains_key(&replica_key).await {
                 partitions.push(
                     MetadataStoreObject::with_spec(replica_key, replicas.clone().into())
-                        .with_context(self.ctx.create_child()).into(),
+                        .with_context(self.ctx.create_child())
+                        .into(),
                 )
             }
         }
@@ -48,20 +47,19 @@ impl<C: MetadataItem> TopicMd<C> for TopicMetadata<C>
     }
 }
 
-
 #[async_trait]
-pub trait TopicLocalStorePolicy<C> where C: MetadataItem {
-
+pub trait TopicLocalStorePolicy<C>
+where
+    C: MetadataItem,
+{
     async fn table_fmt(&self) -> String;
-
 }
 
 #[async_trait]
-impl<C> TopicLocalStorePolicy<C> for TopicLocalStore<C> 
-    where C: MetadataItem + Send + Sync
+impl<C> TopicLocalStorePolicy<C> for TopicLocalStore<C>
+where
+    C: MetadataItem + Send + Sync,
 {
-
-
     async fn table_fmt(&self) -> String {
         let mut table = String::new();
 
@@ -106,7 +104,6 @@ mod test {
     use crate::topic::TopicResolution;
     use crate::topic::store::DefaultTopicLocalStore;
 
-
     #[test]
     fn test_topic_replica_map() {
         // empty replica map
@@ -129,7 +126,8 @@ mod test {
     #[test]
     fn test_update_topic_status_objects() {
         // create topic 1
-        let mut topic1 = DefaultTopicMd::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
+        let mut topic1 =
+            DefaultTopicMd::new("Topic-1", (2, 2, false).into(), TopicStatus::default());
         assert_eq!(topic1.status.resolution, TopicResolution::Init);
 
         // create topic 2
@@ -144,7 +142,9 @@ mod test {
         );
 
         // test update individual components
-        topic1.status.set_replica_map(topic2.status.replica_map.clone());
+        topic1
+            .status
+            .set_replica_map(topic2.status.replica_map.clone());
         topic1.status.reason = topic2.status.reason.clone();
         topic1.status.resolution = (&topic2.status.resolution).clone();
 
@@ -213,14 +213,11 @@ mod test {
     }
 }
 
-
-
 #[cfg(test)]
 pub mod test2 {
 
     use flv_future_aio::test_async;
 
-    
     use crate::store::actions::LSUpdate;
     use crate::store::DefaultMetadataObject;
     use crate::store::LocalStore;
@@ -230,7 +227,7 @@ pub mod test2 {
     use super::TopicResolution;
 
     type DefaultTopic = DefaultMetadataObject<TopicSpec>;
-    type DefaultTopicStore = LocalStore<TopicSpec,String>;
+    type DefaultTopicStore = LocalStore<TopicSpec, String>;
 
     #[test_async]
     async fn test_store_check_items_against_empty() -> Result<(), ()> {
