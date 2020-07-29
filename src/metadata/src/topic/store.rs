@@ -1,6 +1,3 @@
-use std::ops::Deref;
-use std::ops::DerefMut;
-
 use log::debug;
 use async_trait::async_trait;
 
@@ -108,8 +105,7 @@ mod test {
     use crate::topic::TopicStatus;
     use crate::topic::TopicResolution;
     use crate::topic::store::DefaultTopicLocalStore;
-    use crate::store::LocalStore;
-    use crate::store::MetadataStoreObject;
+
 
     #[test]
     fn test_topic_replica_map() {

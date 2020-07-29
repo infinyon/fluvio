@@ -19,7 +19,7 @@ pub async fn handle_delete_topic(
 ) -> Result<FlvStatus, Error> {
     debug!("api request: delete topic '{}'", topic_name);
 
-    let status = if let Some(_) = ctx.topics().store().topic(&topic_name).await {
+    let status = if let Some(_) = ctx.topics().store().value(&topic_name).await {
         if let Err(err) = ctx.topics().delete(topic_name.clone()).await {
             FlvStatus::new(
                 topic_name.clone(),

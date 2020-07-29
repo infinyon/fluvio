@@ -25,8 +25,8 @@ pub async fn handle_un_register_custom_spu_request(
             debug!("api request: delete custom-spu with name '{}'", spu_name);
 
             // spu-name must exist
-            if let Some(spu) = spu_store.spu(&spu_name).await {
-                un_register_custom_spu(&ctx, spu).await
+            if let Some(spu) = spu_store.value(&spu_name).await {
+                un_register_custom_spu(&ctx, spu.inner_owned()).await
             } else {
                 // spu does not exist
                 FlvStatus::new(
@@ -60,10 +60,10 @@ pub async fn handle_un_register_custom_spu_request(
 
 /// Generate for delete custom spu operation and return result.
 async fn un_register_custom_spu(ctx: &Context, spu: SpuAdminMd) -> FlvStatus {
-    let spu_name = spu.name().to_owned();
+    let spu_name = spu.key_owned();
 
     // must be Custom Spu
-    if !spu.is_custom() {
+    if !spu.spec.is_custom() {
         return FlvStatus::new(
             spu_name,
             FlvErrorCode::SpuError,

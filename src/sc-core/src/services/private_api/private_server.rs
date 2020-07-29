@@ -14,6 +14,7 @@ use flv_types::SpuId;
 use flv_future_aio::net::TcpStream;
 use kf_protocol::api::*;
 use flv_metadata::store::Epoch;
+use flv_metadata::spu::store::SpuLocalStorePolicy;
 use kf_service::KfService;
 use kf_service::wait_for_request;
 use kf_socket::*;

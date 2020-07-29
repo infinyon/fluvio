@@ -7,6 +7,7 @@ use log::{debug, trace};
 use std::io::Error as IoError;
 
 use kf_protocol::api::FlvErrorCode;
+use flv_metadata::spu::store::SpuLocalStorePolicy;
 use sc_api::FlvStatus;
 use sc_api::spu::CustomSpuSpec;
 use sc_api::spu::SpuSpec;
@@ -52,7 +53,7 @@ impl RegisterCustomSpu {
         debug!("validating custom-spu: {}({})", self.name, self.spec.id);
 
         // look-up SPU by name or id to check if already exists
-        if self.ctx.spus().store().spu(&self.name).await.is_some()
+        if self.ctx.spus().store().value(&self.name).await.is_some()
             || self
                 .ctx
                 .spus()
