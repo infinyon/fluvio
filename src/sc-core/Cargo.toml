@@ -1,7 +1,7 @@
 [package]
 name = "flv-sc-core"
 edition = "2018"
-version = "2.0.0"
+version = "0.1.0"
 authors = ["fluvio.io"]
 
 [dependencies]
@@ -29,7 +29,7 @@ kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../internal-api"}
 flv-metadata-cluster = { features = ["k8"],path = "../metadata-cluster"}
-sc-api = { version = "2.0.0", path = "../sc-api",  package = "flv-api-sc"}
+sc-api = { path = "../sc-api",  package = "flv-api-sc"}
 event-stream-k8 = { path = "../event-stream-k8" }
 
 [dev-dependencies]

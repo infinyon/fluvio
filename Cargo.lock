@@ -665,7 +665,7 @@ checksum = "36a9cb09840f81cd211e435d00a4e487edd263dc3c8ff815c32dd76ad668ebed"
 
 [[package]]
 name = "fluvio"
-version = "4.0.0"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
@@ -801,7 +801,7 @@ dependencies = [
 
 [[package]]
 name = "flv-sc-core"
-version = "2.0.0"
+version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -833,7 +833,7 @@ dependencies = [
 
 [[package]]
 name = "flv-sc-k8"
-version = "0.3.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "flv-future-aio",
