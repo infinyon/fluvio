@@ -18,5 +18,4 @@ pub mod store {
 pub mod k8 {
 
     pub use flv_eventstream_model::k8::*;
-    
 }

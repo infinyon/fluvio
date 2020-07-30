@@ -34,7 +34,7 @@ mod metadata {
 
     #[cfg(feature = "k8")]
     mod extended {
-    
+
         use super::TopicSpec;
         use crate::store::k8::K8ExtendedSpec;
 
@@ -42,8 +42,5 @@ mod metadata {
             type K8Spec = Self;
             type K8Status = Self::Status;
         }
-
-        
     }
-
 }

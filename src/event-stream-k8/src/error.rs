@@ -6,7 +6,6 @@ use std::fmt;
 use std::io::Error as StdIoError;
 use futures::channel::mpsc::SendError;
 
-
 use flv_types::PartitionError;
 
 #[derive(Debug)]
@@ -31,7 +30,6 @@ impl From<StdIoError> for StoreError {
         Self::IoError(error)
     }
 }
-
 
 impl From<SendError> for StoreError {
     fn from(error: SendError) -> Self {

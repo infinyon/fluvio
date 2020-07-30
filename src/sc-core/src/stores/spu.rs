@@ -2,10 +2,8 @@ pub use flv_metadata_cluster::spu::store::*;
 pub use flv_metadata_cluster::spu::*;
 pub use flv_metadata_cluster::store::k8::K8MetaItem;
 
-
 pub type SpuAdminMd = SpuMetadata<K8MetaItem>;
 pub type SpuAdminStore = SpuLocalStore<K8MetaItem>;
-
 
 // check if given range is conflict with any of the range
 pub async fn is_conflict(

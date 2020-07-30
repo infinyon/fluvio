@@ -21,7 +21,6 @@ use crate::store::k8::K8MetaItem;
 use crate::k8::metadata::Spec as K8Spec;
 use crate::k8::metadata::UpdateK8ObjStatus;
 
-
 use crate::store::*;
 use super::k8_actions::K8Action;
 

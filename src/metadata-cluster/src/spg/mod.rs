@@ -33,10 +33,9 @@ mod convert {
 
     impl Status for SpuGroupStatus {}
 
-
     #[cfg(feature = "k8")]
     mod extended {
-    
+
         use super::SpuGroupSpec;
         use super::K8SpuGroupSpec;
         use crate::store::k8::K8ExtendedSpec;
@@ -45,7 +44,5 @@ mod convert {
             type K8Spec = K8SpuGroupSpec;
             type K8Status = Self::Status;
         }
-        
-        
     }
 }

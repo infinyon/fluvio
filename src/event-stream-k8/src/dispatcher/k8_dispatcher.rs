@@ -1,4 +1,3 @@
-
 use std::time::Duration;
 use std::time::Instant;
 use std::fmt::Debug;
