@@ -1,9 +1,9 @@
 use std::fmt;
 use std::fmt::Display;
 
-use flv_metadata_cluster::core::*;
-
-use crate::stores::*;
+use crate::core::*;
+use crate::store::*;
+use crate::store::k8::K8MetaItem;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum WSAction<S>

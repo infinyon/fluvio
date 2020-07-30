@@ -7,7 +7,7 @@ pub use common::*;
 mod common {
 
     use flv_metadata_cluster::partition::PartitionSpec;
-    use crate::metadata::WSAction;
+    use crate::stores::actions::WSAction;
 
     pub type PartitionWSAction = WSAction<PartitionSpec>;
 }

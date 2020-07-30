@@ -30,4 +30,16 @@ mod metadata {
     }
 
     impl Status for PartitionStatus {}
+
+    #[cfg(feature = "k8")]
+    mod extended {
+
+        use super::metadata::PartitionSpec;
+        use crate::store::k8::K8ExtendedSpec;
+
+        impl K8ExtendedSpec for PartitionSpec {
+            type K8Spec = Self;
+            type K8Status = Self::Status;
+        }
+    }
 }

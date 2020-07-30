@@ -11,7 +11,7 @@ pub use common::*;
 mod common {
 
     use ::flv_metadata_cluster::topic::TopicSpec;
-    use crate::metadata::*;
+    use crate::stores::actions::WSAction;
 
     pub type TopicWSAction = WSAction<TopicSpec>;
 }

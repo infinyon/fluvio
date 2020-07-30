@@ -24,6 +24,18 @@ mod metadata {
     }
 
     impl Status for SpuStatus {}
+
+    #[cfg(feature = "k8")]
+    mod extended {
+
+        use super::SpuSpec;
+        use crate::store::k8::K8ExtendedSpec;
+
+        impl K8ExtendedSpec for SpuSpec {
+            type K8Spec = Self;
+            type K8Status = Self::Status;
+        }
+    }
 }
 
 mod custom_metadata {

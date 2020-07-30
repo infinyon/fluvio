@@ -1,16 +1,14 @@
 mod k8_dispatcher;
 mod k8_ws_service;
-mod actions;
 
 pub use k8_dispatcher::*;
 use k8_ws_service::*;
-pub use actions::*;
 
 mod k8_actions {
 
-    use flv_metadata_cluster::core::*;
-    use flv_metadata_cluster::store::*;
-    use crate::stores::*;
+    use crate::core::Spec;
+    use crate::store::k8::K8MetaItem;
+    use crate::store::MetadataStoreObject;
 
     /// Actions to update World States
     #[derive(Debug, PartialEq, Clone)]

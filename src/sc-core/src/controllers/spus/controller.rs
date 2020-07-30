@@ -14,7 +14,7 @@ use async_channel::Receiver;
 use flv_future_aio::task::spawn;
 use flv_types::SpuId;
 
-use crate::metadata::WSAction;
+use crate::stores::actions::WSAction;
 use crate::core::SharedContext;
 use crate::stores::StoreContext;
 use crate::stores::spu::*;

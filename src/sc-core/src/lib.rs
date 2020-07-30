@@ -3,11 +3,13 @@
 pub mod config;
 pub mod core;
 mod controllers;
-pub mod metadata;
 mod error;
 mod init;
 mod services;
 pub mod stores;
 
-use self::error::ScServerError;
 pub use init::start_main_loop;
+
+pub mod dispatcher {
+    pub use event_stream_k8::dispatcher::*;
+}

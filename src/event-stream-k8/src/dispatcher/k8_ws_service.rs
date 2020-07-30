@@ -10,16 +10,18 @@ use log::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use flv_metadata_cluster::k8::metadata::InputK8Obj;
-use flv_metadata_cluster::core::Spec;
-use flv_metadata_cluster::store::*;
 use flv_types::log_on_err;
-use flv_metadata_cluster::k8::metadata::Spec as K8Spec;
-use flv_metadata_cluster::k8::metadata::UpdateK8ObjStatus;
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 
-use crate::stores::*;
+use crate::k8::metadata::InputK8Obj;
+use crate::core::Spec;
+use crate::store::k8::K8ExtendedSpec;
+use crate::store::k8::K8MetaItem;
+use crate::k8::metadata::Spec as K8Spec;
+use crate::k8::metadata::UpdateK8ObjStatus;
+
+use crate::store::*;
 use super::k8_actions::K8Action;
 
 pub struct K8WSUpdateService<C, S> {
