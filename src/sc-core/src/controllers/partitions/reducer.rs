@@ -12,7 +12,7 @@ use flv_metadata_cluster::partition::*;
 
 use crate::stores::partition::*;
 use crate::stores::spu::*;
-use crate::metadata::*;
+use crate::stores::actions::WSAction;
 
 type PartitionWSAction = WSAction<PartitionSpec>;
 

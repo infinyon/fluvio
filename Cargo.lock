@@ -633,6 +633,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "829694371bd7bbc6aee17c4ff624aad8bf9f4dc06c6f9f6071eaa08c89530d10"
 
 [[package]]
+name = "event-stream-k8"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-lock",
+ "async-trait",
+ "event-listener",
+ "flv-eventstream-model",
+ "flv-future-aio",
+ "flv-types",
+ "flv-util 0.2.1",
+ "futures",
+ "k8-metadata-client",
+ "log",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -735,7 +754,6 @@ dependencies = [
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
- "kf-protocol",
  "log",
  "serde",
 ]
@@ -791,6 +809,7 @@ dependencies = [
  "base64 0.11.0",
  "chashmap",
  "event-listener",
+ "event-stream-k8",
  "flv-api-sc",
  "flv-future-aio",
  "flv-metadata-cluster",

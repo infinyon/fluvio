@@ -1,9 +1,4 @@
-//!
-//! # Kubernetes Dispatcher
-//!
-//! Dispatcher is the Event Loop, listens to messages form metadata store, translates them
-//! to actions, and sends them to Streaming Coordinator Workflow for processing.
-//!
+
 use std::time::Duration;
 use std::time::Instant;
 use std::fmt::Debug;
@@ -22,14 +17,18 @@ use serde::Serialize;
 use flv_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
-use flv_metadata_cluster::k8::metadata::K8List;
-use flv_metadata_cluster::k8::metadata::K8Watch;
-use flv_metadata_cluster::k8::metadata::Spec as K8Spec;
-use flv_metadata_cluster::core::Spec;
+
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 
-use crate::stores::*;
+use crate::k8::metadata::K8List;
+use crate::k8::metadata::K8Watch;
+use crate::k8::metadata::Spec as K8Spec;
+use crate::core::Spec;
+use crate::store::k8::K8ExtendedSpec;
+use crate::store::StoreContext;
+use crate::actions::WSAction;
+
 use convert::*;
 use super::*;
 
@@ -213,7 +212,7 @@ where
 
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use super::k8_actions::K8Action;
-        use flv_metadata_cluster::k8::metadata::ObjectMeta;
+        use crate::k8::metadata::ObjectMeta;
 
         let k8_action = match action {
             WSAction::Apply(obj) => K8Action::Apply(obj),
@@ -270,17 +269,18 @@ mod convert {
     use std::io::Error as IoError;
 
     use log::{debug, error, trace};
-    use flv_metadata_cluster::k8::metadata::K8List;
-    use flv_metadata_cluster::k8::metadata::K8Obj;
-    use flv_metadata_cluster::k8::metadata::K8Watch;
-    use flv_metadata_cluster::store::actions::*;
-    use flv_metadata_cluster::core::Spec;
-    use flv_metadata_cluster::store::*;
-    use k8_obj_metadata::Spec as K8Spec;
+    use crate::k8::metadata::K8List;
+    use crate::k8::metadata::K8Obj;
+    use crate::k8::metadata::K8Watch;
+    use crate::store::actions::*;
+    use crate::store::k8::K8MetaItem;
+    use crate::store::k8::K8ExtendedSpec;
+    use crate::core::Spec;
+    use crate::k8::metadata::Spec as K8Spec;
     use k8_metadata_client::*;
 
-    use crate::stores::*;
-    use crate::ScServerError;
+    use crate::store::*;
+    use crate::StoreError;
 
     ///
     /// Translate full metadata items from KVInputAction against MemStore which contains local state
@@ -290,7 +290,7 @@ mod convert {
     pub async fn k8_events_to_metadata_actions<S>(
         k8_tokens: K8List<S::K8Spec>,
         local_store: &LocalStore<S, K8MetaItem>,
-    ) -> Result<(), ScServerError>
+    ) -> Result<(), StoreError>
     where
         S: K8ExtendedSpec + PartialEq,
         <S as Spec>::Owner: K8ExtendedSpec,

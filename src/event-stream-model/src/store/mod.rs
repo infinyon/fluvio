@@ -4,6 +4,8 @@ mod store;
 mod metadata;
 mod filter;
 mod epoch_map;
+#[cfg(feature = "k8")]
+pub mod k8;
 
 pub use store::*;
 pub use filter::*;

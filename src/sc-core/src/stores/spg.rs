@@ -1,13 +1,7 @@
 pub use flv_metadata_cluster::spg::*;
 pub use flv_metadata_cluster::spg::store::*;
+pub use flv_metadata_cluster::store::k8::K8MetaItem;
 
-use super::*;
-
-/// for group status, we have custom spu group spec
-impl K8ExtendedSpec for SpuGroupSpec {
-    type K8Spec = K8SpuGroupSpec;
-    type K8Status = Self::Status;
-}
 
 pub type SpgAdminMd = SpuGroupMetadata<K8MetaItem>;
 pub type SpgAdminStore = SpuGroupLocalStore<K8MetaItem>;

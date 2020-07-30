@@ -4,8 +4,8 @@ mod spg_group;
 mod svc_operator;
 
 use flv_sc_core::stores::spu::SharedSpuLocalStore;
-use flv_sc_core::stores::K8MetaItem;
 use k8_client::SharedK8Client;
+use flv_metadata_cluster::store::k8::K8MetaItem;
 
 use spg_operator::SpgOperator;
 use svc_operator::SvcOperator;

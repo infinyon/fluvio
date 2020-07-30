@@ -23,7 +23,7 @@ use internal_api::*;
 use crate::core::*;
 use crate::stores::partition::*;
 use crate::controllers::spus::SpuAction;
-use crate::metadata::WSAction;
+use crate::stores::actions::WSAction;
 
 const HEALTH_DURATION: u64 = 30;
 pub struct ScInternalService {}

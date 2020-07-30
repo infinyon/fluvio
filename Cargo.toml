@@ -8,6 +8,8 @@ members = [
     "src/kf-socket",
     "src/kf-service",
     "src/metadata-cluster",
+    "src/event-stream-model",
+    "src/event-stream-k8",
     "src/sc-api",
     "src/sc-core",
     "src/sc-k8",
