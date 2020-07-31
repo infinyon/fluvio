@@ -20,12 +20,37 @@ fn pre_install_check() -> Result<(), CliError> {
 
     const DEFAULT_HELM_VERSION: &'static str = "3.2.0";
 
-    if Version::parse(&version_text_trimmed) <= Version::parse(DEFAULT_HELM_VERSION) {
+    if Version::parse(&version_text_trimmed) < Version::parse(DEFAULT_HELM_VERSION) {
         return Err(CliError::Other(format!(
             "Helm version {} is not compatible with fluvio platform, please install version >= {}",
             version_text_trimmed, DEFAULT_HELM_VERSION
         )));
     }
+
+    const SYS_CHART_VERSION: &'static str = "0.1.0";
+    const SYS_CHART_NAME: &'static str = "fluvio-sys";
+
+    let sys_charts = helm::installed_sys_charts(SYS_CHART_NAME);
+    if sys_charts.len() == 1 {
+        let installed_chart = sys_charts.first().unwrap();
+        let installed_chart_version = installed_chart.app_version.clone();
+        // checking version of chart found
+        if Version::parse(&installed_chart_version) < Version::parse(SYS_CHART_VERSION) {
+            return Err(CliError::Other(format!(
+                "Fluvio system chart {} is not compatible with fluvio platform, please install version >= {}",
+                installed_chart_version, SYS_CHART_VERSION
+            )));
+        }
+    } else if sys_charts.len() == 0 {
+        return Err(CliError::Other(format!(
+            "Fluvio system chart is not installed, please install fluvio-sys first",
+        )));
+    } else {
+        return Err(CliError::Other(format!(
+            "Multiple fluvio system charts found",
+        )));
+    }
+
     Ok(())
 }
 
