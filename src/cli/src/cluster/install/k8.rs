@@ -34,6 +34,7 @@ fn pre_install_check() -> Result<(), CliError> {
     if sys_charts.len() == 1 {
         let installed_chart = sys_charts.first().unwrap();
         let installed_chart_version = installed_chart.app_version.clone();
+        // checking version of chart found
         if Version::parse(&installed_chart_version) < Version::parse(SYS_CHART_VERSION) {
             return Err(CliError::Other(format!(
                 "Fluvio system chart {} is not compatible with fluvio platform, please install version >= {}",
