@@ -40,9 +40,13 @@ fn pre_install_check() -> Result<(), CliError> {
                 installed_chart_version, SYS_CHART_VERSION
             )));
         }
-    } else {
+    } else if sys_charts.len() == 0 {
         return Err(CliError::Other(format!(
             "Fluvio system chart is not installed, please install fluvio-sys first",
+        )));
+    } else {
+        return Err(CliError::Other(format!(
+            "Multiple fluvio system charts found",
         )));
     }
 
