@@ -266,7 +266,6 @@ mod convert {
     use std::convert::TryFrom;
     use std::fmt::Debug;
 
-
     use log::{debug, error, trace};
     use crate::k8::metadata::K8List;
     use crate::k8::metadata::K8Obj;
@@ -305,20 +304,14 @@ mod convert {
             trace!("converting kv: {:#?}", k8_obj);
             let new_kv_value = match k8_obj_to_kv_obj(k8_obj) {
                 Ok(k8_value) => k8_value,
-                Err(err) => {
-                    match err {
-                        K8ConvertError::Skip(obj) => {
-                            debug!("skipping: {}",obj.metadata.name);
-                            continue;
-                        },
-                        K8ConvertError::KeyConvertionError(err) => {
-                            return Err(err.into())
-                        },
-                        K8ConvertError::Other(err) => {
-                            return Err(err.into())
-                        }
+                Err(err) => match err {
+                    K8ConvertError::Skip(obj) => {
+                        debug!("skipping: {}", obj.metadata.name);
+                        continue;
                     }
-                }
+                    K8ConvertError::KeyConvertionError(err) => return Err(err.into()),
+                    K8ConvertError::Other(err) => return Err(err.into()),
+                },
             };
 
             debug!("K8: Received Last {}:{}", S::LABEL, new_kv_value.key());
@@ -360,52 +353,47 @@ mod convert {
                             debug!("K8: Watch Add: {}:{}", S::LABEL, new_kv_value.key());
                             changes.push(LSUpdate::Mod(new_kv_value));
                         }
-                        Err(err) => {
-                            match err {
-                                K8ConvertError::Skip(obj) => {
-                                    debug!("skipping: {}",obj.metadata.name);
-                                },
-                                _ => {
-                                    error!("converting {} {:#?}", S::LABEL, err);
-                                }
+                        Err(err) => match err {
+                            K8ConvertError::Skip(obj) => {
+                                debug!("skipping: {}", obj.metadata.name);
                             }
-                                
-                        }
+                            _ => {
+                                error!("converting {} {:#?}", S::LABEL, err);
+                            }
+                        },
                     },
                     K8Watch::MODIFIED(k8_obj) => match k8_obj_to_kv_obj(k8_obj) {
                         Ok(updated_kv_value) => {
                             debug!("K8: Watch Update {}:{}", S::LABEL, updated_kv_value.key());
                             changes.push(LSUpdate::Mod(updated_kv_value));
                         }
-                        Err(err) => {
-                            match err {
-                                K8ConvertError::Skip(obj) => {
-                                    debug!("skipping: {}",obj.metadata.name);
-                                },
-                                _ => {
-                                    error!("converting {} {:#?}", S::LABEL, err);
-                                }
+                        Err(err) => match err {
+                            K8ConvertError::Skip(obj) => {
+                                debug!("skipping: {}", obj.metadata.name);
                             }
-                        }
+                            _ => {
+                                error!("converting {} {:#?}", S::LABEL, err);
+                            }
+                        },
                     },
                     K8Watch::DELETED(k8_obj) => {
-                        let meta: Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>> =
-                            k8_obj_to_kv_obj(k8_obj);
+                        let meta: Result<
+                            MetadataStoreObject<S, K8MetaItem>,
+                            K8ConvertError<S::K8Spec>,
+                        > = k8_obj_to_kv_obj(k8_obj);
                         match meta {
                             Ok(kv_value) => {
                                 debug!("K8: Watch Delete {}:{}", S::LABEL, kv_value.key());
                                 changes.push(LSUpdate::Delete(kv_value.key_owned()));
                             }
-                            Err(err) => {
-                                match err {
-                                    K8ConvertError::Skip(obj) => {
-                                        debug!("skipping: {}",obj.metadata.name);
-                                    },
-                                    _ => {
-                                        error!("converting {} {:#?}", S::LABEL, err);
-                                    }
+                            Err(err) => match err {
+                                K8ConvertError::Skip(obj) => {
+                                    debug!("skipping: {}", obj.metadata.name);
                                 }
-                            }
+                                _ => {
+                                    error!("converting {} {:#?}", S::LABEL, err);
+                                }
+                            },
                         }
                     }
                 },
@@ -430,9 +418,7 @@ mod convert {
     where
         S: K8ExtendedSpec,
         <S as Spec>::Owner: K8ExtendedSpec,
-       
     {
-
         S::convert_from_k8(k8_obj)
             .map(|val| {
                 trace!("converted val: {:#?}", val.spec);

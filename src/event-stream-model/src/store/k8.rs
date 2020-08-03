@@ -17,13 +17,14 @@ pub type K8MetadataContext = MetadataContext<K8MetaItem>;
 
 #[derive(Debug)]
 pub enum K8ConvertError<S>
-    where S: K8Spec
+where
+    S: K8Spec,
 {
     /// skip, this object, it is not considered valid object  
     Skip(K8Obj<S>),
     /// Converting error
     KeyConvertionError(IoError),
-    Other(IoError)
+    Other(IoError),
 }
 
 /// trait to convert type object to our spec

@@ -27,7 +27,7 @@ mod metadata {
 
     #[cfg(feature = "k8")]
     mod extended {
-        
+
         use crate::store::k8::K8ExtendedSpec;
         use crate::store::k8::K8ConvertError;
         use crate::store::k8::K8MetaItem;
@@ -43,10 +43,10 @@ mod metadata {
 
             fn convert_from_k8(
                 k8_obj: K8Obj<Self::K8Spec>,
-            ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
+            ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
+            {
                 default_convert_from_k8(k8_obj)
             }
-
         }
     }
 }
