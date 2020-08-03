@@ -2,7 +2,6 @@ use std::time::Duration;
 use std::time::Instant;
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::convert::TryFrom;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
@@ -52,20 +51,13 @@ where
     S::Status: Display + Sync + Send + 'static,
     S::Status: Into<<<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status>,
     S::IndexKey: Display + Sync + Send + 'static,
-    <S::IndexKey as TryFrom<String>>::Error: Debug,
-    S::IndexKey: TryFrom<String> + ToString + Display,
     S: K8ExtendedSpec + Into<<S as K8ExtendedSpec>::K8Spec>,
     K8Watch<S::K8Spec>: DeserializeOwned,
     K8List<S::K8Spec>: DeserializeOwned,
     S::K8Spec: Sync + Send + 'static,
-    <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status: Into<S::Status> + Sync + Send + 'static,
     <S as K8ExtendedSpec>::K8Spec: DeserializeOwned + Serialize + Send + Sync,
     C: MetadataClient + 'static,
-    <S::IndexKey as TryFrom<String>>::Error: Debug,
-    S::IndexKey: TryFrom<String> + Display,
-    <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status:
-        From<S::Status> + DeserializeOwned + Serialize + Send + Sync,
-    S::K8Spec: Into<S>,
+    S::IndexKey: Display,
 {
     /// start dispatcher
     pub fn start(namespace: String, client: SharedClient<C>, ctx: StoreContext<S>) {
@@ -263,8 +255,6 @@ mod convert {
     //!
 
     use std::fmt::Display;
-    use std::convert::TryFrom;
-    use std::fmt::Debug;
 
     use log::{debug, error, trace};
     use crate::k8::metadata::K8List;
@@ -275,7 +265,6 @@ mod convert {
     use crate::store::k8::K8ExtendedSpec;
     use crate::store::k8::K8ConvertError;
     use crate::core::Spec;
-    use crate::k8::metadata::Spec as K8Spec;
     use k8_metadata_client::*;
 
     use crate::store::*;
@@ -294,10 +283,7 @@ mod convert {
         S: K8ExtendedSpec + PartialEq,
         <S as Spec>::Owner: K8ExtendedSpec,
         S::Status: PartialEq,
-        <S::IndexKey as TryFrom<String>>::Error: Debug,
-        S::IndexKey: TryFrom<String> + Display,
-        <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status: Into<S::Status>,
-        S::K8Spec: Into<S>,
+        S::IndexKey: Display,
     {
         let mut meta_items = vec![];
         for k8_obj in k8_tokens.items {
@@ -335,10 +321,7 @@ mod convert {
         <S as Spec>::Owner: K8ExtendedSpec,
         S::Status: PartialEq,
         E: MetadataClientError,
-        <S::IndexKey as TryFrom<String>>::Error: Debug,
-        S::IndexKey: TryFrom<String> + Display,
-        <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status: Into<S::Status>,
-        S::K8Spec: Into<S>,
+        S::IndexKey: Display,
     {
         let events = stream.unwrap();
         debug!("k8 {}: received  watch events: {}", S::LABEL, events.len());
