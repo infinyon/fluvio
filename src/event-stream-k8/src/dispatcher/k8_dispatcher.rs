@@ -57,7 +57,7 @@ where
     S::K8Spec: Sync + Send + 'static,
     <S as K8ExtendedSpec>::K8Spec: DeserializeOwned + Serialize + Send + Sync,
     C: MetadataClient + 'static,
-    S::IndexKey:  Display,
+    S::IndexKey: Display,
 {
     /// start dispatcher
     pub fn start(namespace: String, client: SharedClient<C>, ctx: StoreContext<S>) {
