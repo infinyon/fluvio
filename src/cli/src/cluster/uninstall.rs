@@ -49,9 +49,9 @@ where
 
     let ns = &command.namespace;
 
-    remove_objects("spg", ns);
-    remove_objects("spu", ns);
-    remove_objects("topic", ns);
+    remove_objects("spugroups", ns);
+    remove_objects("spus", ns);
+    remove_objects("topics", ns);
     remove_objects("persistentvolumeclaims", ns);
 
     // delete secrets
