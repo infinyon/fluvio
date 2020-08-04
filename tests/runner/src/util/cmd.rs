@@ -40,6 +40,10 @@ impl CommandUtil for Command {
             .output()
             .expect("execution failed");
 
+        if !output.status.success() {
+            io::stderr().write_all(&output.stderr).unwrap();
+        }
+
         output.status.check();
     }
 

@@ -47,6 +47,8 @@ mod cmd_util {
 
     impl CommandUtil for Command {
         fn inherit(&mut self) {
+            use std::io;
+            use std::io::Write;
             use std::process::Stdio;
 
             self.print();
@@ -55,6 +57,10 @@ mod cmd_util {
                 .stdout(Stdio::inherit())
                 .output()
                 .expect("execution failed");
+
+            if !output.status.success() {
+                io::stderr().write_all(&output.stderr).unwrap();
+            }
 
             output.status.check();
         }
