@@ -209,9 +209,8 @@ pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
             "fluvio sys chart installation failed: {}",
             String::from_utf8(output.stderr).unwrap()
         )));
-    } 
+    }
     println!("fluvio sys chart has been installed");
-    
     Ok(())
 }
 
