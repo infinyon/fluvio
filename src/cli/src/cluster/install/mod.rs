@@ -104,7 +104,7 @@ where
     use local::install_local;
 
     if command.sys {
-        install_sys(command)?;
+        install_sys(command);
     } else {
         if command.local {
             install_local(command).await?;
