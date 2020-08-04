@@ -78,3 +78,7 @@ jobs:
       - name: smoke test
         run: |
           FLV_CMD=true ./target/debug/flv-test -d --local-driver --log /tmp
+      - name: k8 smoke test
+        run: |
+          FLV_CMD=true smoke-test-k8 
+          
