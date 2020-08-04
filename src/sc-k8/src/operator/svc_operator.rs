@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use log::debug;
 use log::error;
 use log::info;
@@ -13,8 +11,9 @@ use flv_metadata_cluster::k8::core::service::*;
 use k8_client::metadata::MetadataClient;
 use k8_client::SharedK8Client;
 use flv_metadata_cluster::spu::IngressAddr;
-
-use flv_sc_core::stores::spu::SpuAdminStore;
+use flv_metadata_cluster::spu::SpuSpec;
+use flv_sc_core::core::SharedContext;
+use flv_sc_core::stores::StoreContext;
 use crate::ScK8Error;
 
 /// An operator to deal with Svc
@@ -22,16 +21,16 @@ use crate::ScK8Error;
 /// External load balancer update external ip or hostname out of band.
 pub struct SvcOperator {
     client: SharedK8Client,
-    spu_store: Arc<SpuAdminStore>,
+    spus: StoreContext<SpuSpec>,
     namespace: String,
 }
 
 impl SvcOperator {
-    pub fn run(client: SharedK8Client, namespace: String, spu_store: Arc<SpuAdminStore>) {
+    pub fn run(client: SharedK8Client, namespace: String, ctx: SharedContext) {
         let operator = Self {
             client,
             namespace,
-            spu_store,
+            spus: ctx.spus().clone(),
         };
 
         spawn(operator.outer_loop());
@@ -101,16 +100,20 @@ impl SvcOperator {
         trace!("svc spec: {:#?}", svc_obj);
 
         if let Some(spu_id) = svc_obj.metadata.labels.get("fluvio.io/spu-name") {
-            if let Some(mut old_value) = self.spu_store.value(spu_id).await {
+            if let Some(spu_wrapper) = self.spus.store().value(spu_id).await {
                 debug!(
                     "found spu: {} to update ingress from external load balancer ",
                     spu_id
                 );
-
                 let ingresses = svc_obj.status.load_balancer.ingress;
-                old_value.spec.public_endpoint.ingress =
+                let spu = spu_wrapper.inner_owned();
+                let key = spu.key_owned();
+                let mut updated_spec = spu.spec;
+                updated_spec.public_endpoint.ingress =
                     ingresses.into_iter().map(|addr| convert(addr)).collect();
-                // self.k8_ws.update_spec(old_value.inner_owned()).await?;
+                self.spus.create_spec(key, updated_spec).await?;
+            } else {
+                error!("no spu {} to update!!", spu_id);
             }
         }
         Ok(())

@@ -23,6 +23,7 @@ use flv_types::defaults::SPU_PUBLIC_PORT;
 use flv_types::defaults::SPU_DEFAULT_NAME;
 use flv_types::SpuId;
 use flv_sc_core::stores::spu::SpuAdminStore;
+use flv_sc_core::core::SharedContext;
 
 use crate::cli::TlsConfig;
 use super::convert_cluster_to_statefulset;
@@ -41,13 +42,13 @@ impl SpgOperator {
     pub fn new(
         client: SharedK8Client,
         namespace: String,
-        spu_store: Arc<SpuAdminStore>,
+        ctx: SharedContext,
         tls: Option<TlsConfig>,
     ) -> Self {
         Self {
             client,
             namespace,
-            spu_store,
+            spu_store: ctx.spus().store().clone(),
             tls,
         }
     }
