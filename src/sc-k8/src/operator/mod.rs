@@ -3,9 +3,8 @@ mod conversion;
 mod spg_group;
 mod svc_operator;
 
-use flv_sc_core::stores::spu::SharedSpuLocalStore;
+use flv_sc_core::core::SharedContext;
 use k8_client::SharedK8Client;
-use flv_metadata_cluster::store::k8::K8MetaItem;
 
 use spg_operator::SpgOperator;
 use svc_operator::SvcOperator;
@@ -20,10 +19,10 @@ use crate::cli::TlsConfig;
 pub fn run_k8_operators(
     namespace: String,
     k8_client: SharedK8Client,
-    spu_store: SharedSpuLocalStore<K8MetaItem>,
+    ctx: SharedContext,
     tls: Option<TlsConfig>,
 ) {
-    SpgOperator::new(k8_client.clone(), namespace.clone(), spu_store.clone(), tls).run();
+    SpgOperator::new(k8_client.clone(), namespace.clone(), ctx.clone(), tls).run();
 
-    SvcOperator::run(k8_client.clone(), namespace, spu_store);
+    SvcOperator::run(k8_client.clone(), namespace, ctx);
 }

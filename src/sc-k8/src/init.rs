@@ -28,7 +28,7 @@ pub fn main_k8_loop(opt: ScOpt) {
         run_k8_operators(
             namespace.clone(),
             k8_client,
-            ctx.spus().store().clone(),
+            ctx,
             tls_option.clone().map(|(_, config)| config),
         );
 
