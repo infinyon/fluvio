@@ -191,19 +191,28 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallCommand) {
+pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
     helm::repo_add();
     helm::repo_update();
 
-    Command::new("helm")
+    let output = Command::new("helm")
         .arg("install")
         .arg("fluvio-sys")
         .arg("fluvio/fluvio-sys")
         .arg("--set")
         .arg(format!("cloud={}", opt.k8_config.cloud))
-        .inherit();
+        .output()
+        .unwrap();
 
+    if !output.status.success() {
+        return Err(CliError::Other(format!(
+            "fluvio sys chart installation failed: {}",
+            String::from_utf8(output.stderr).unwrap()
+        )));
+    } 
     println!("fluvio sys chart has been installed");
+    
+    Ok(())
 }
 
 /// switch to profile
