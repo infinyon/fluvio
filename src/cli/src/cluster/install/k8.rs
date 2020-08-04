@@ -202,7 +202,6 @@ pub fn install_sys(opt: InstallCommand) {
         .arg("--set")
         .arg(format!("cloud={}", opt.k8_config.cloud))
         .inherit();
-
     println!("fluvio sys chart has been installed");
 }
 
