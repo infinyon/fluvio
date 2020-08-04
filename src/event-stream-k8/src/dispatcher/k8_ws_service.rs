@@ -37,8 +37,6 @@ where
     S::Status: PartialEq + Display + Into<<<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status>,
     S::IndexKey: Display,
     <S as K8ExtendedSpec>::K8Spec: DeserializeOwned + Serialize + Send + Sync,
-    <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status:
-        From<S::Status> + DeserializeOwned + Serialize + Send + Sync,
 {
     pub fn new(client: SharedClient<C>) -> Self {
         Self {
