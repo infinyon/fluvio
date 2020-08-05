@@ -20,6 +20,10 @@ pub struct UninstallCommand {
     /// uninstall local spu/sc(custom)
     #[structopt(long)]
     local: bool,
+
+    #[structopt(long)]
+    /// removing sys chart
+    sys: bool,
 }
 
 use std::process::Command;
@@ -33,11 +37,14 @@ where
     O: Terminal,
 {
     println!("removing fluvio installation");
-
-    if command.local {
-        remove_local_cluster();
+    if command.sys {
+        remove_sys();
     } else {
-        remove_k8_cluster(&command).await?;
+        if command.local {
+            remove_local_cluster();
+        } else {
+            remove_k8_cluster(&command).await?;
+        }
     }
 
     let ns = &command.namespace;
@@ -115,4 +122,15 @@ async fn remove_k8_cluster(command: &UninstallCommand) -> Result<(), CliError> {
     wait_for_delete::<PodSpec>(client, &sc_pod).await;
 
     Ok(())
+}
+
+fn remove_sys() {
+    println!("removing fluvio sys chart");
+
+    Command::new("helm")
+        .arg("uninstall")
+        .arg("fluvio-sys")
+        .inherit();
+
+    println!("fluvio sys chart has been uninstalled");
 }
