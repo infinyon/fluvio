@@ -3,8 +3,8 @@ pub mod topic;
 pub mod partition;
 pub mod spg;
 
-pub use event_stream_k8::store::*;
+pub use crate::dispatcher::store::*;
 
 pub mod actions {
-    pub use event_stream_k8::actions::*;
+    pub use crate::dispatcher::actions::*;
 }

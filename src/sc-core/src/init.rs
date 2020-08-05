@@ -16,7 +16,7 @@ use crate::controllers::partitions::PartitionController;
 use crate::config::ScConfig;
 use crate::services::start_public_server;
 use crate::services::start_internal_server;
-use crate::dispatcher::K8ClusterStateDispatcher;
+use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 
 /// start the main loop
 pub async fn start_main_loop<C>(
