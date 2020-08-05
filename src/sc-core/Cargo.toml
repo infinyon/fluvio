@@ -30,7 +30,7 @@ kf-service = { path = "../kf-service"}
 internal-api = { path = "../internal-api"}
 flv-metadata-cluster = { features = ["k8"],path = "../metadata-cluster"}
 sc-api = { path = "../sc-api",  package = "flv-api-sc"}
-event-stream-k8 = { path = "../event-stream-k8" }
+flv-eventstream-dispatcher = { path = "../event-stream-k8" }
 
 [dev-dependencies]
 flv-future-aio = { version = "2.3.0", features=["fixture"]}

@@ -11,5 +11,5 @@ pub mod stores;
 pub use init::start_main_loop;
 
 pub mod dispatcher {
-    pub use event_stream_k8::dispatcher::*;
+    pub use flv_eventstream_dispatcher::*;
 }

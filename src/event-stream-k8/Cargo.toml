@@ -1,5 +1,5 @@
 [package]
-name = "event-stream-k8"
+name = "flv-eventstream-dispatcher"
 edition = "2018"
 version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
