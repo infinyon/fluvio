@@ -38,5 +38,5 @@ pub fn decompose_partition_name(partition_name: &str) -> Result<(String, i32), P
 }
 
 pub fn create_partition_name(topic_name: &str, idx: &i32) -> String {
-    format!("{}-{}", topic_name.clone(), idx)
+    format!("{}-{}", <&str>::clone(&topic_name), idx)
 }

@@ -17,7 +17,7 @@ pub struct TopicActions {
 
 impl fmt::Display for TopicActions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.topics.len() == 0 && self.partitions.len() == 0 {
+        if self.topics.is_empty() && self.partitions.is_empty() {
             write!(f, "Empty topic actions")
         } else {
             write!(

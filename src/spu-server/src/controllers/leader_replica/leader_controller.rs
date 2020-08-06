@@ -43,6 +43,7 @@ pub struct ReplicaLeaderController<S> {
     max_bytes: u32,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl<S> ReplicaLeaderController<S> {
     pub fn new(
         local_spu: SpuId,

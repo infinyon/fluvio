@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod concurrent_hashmap;
 pub mod actions;
 mod store;

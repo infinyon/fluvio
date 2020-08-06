@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 mod sc_api;
 mod spu_api;
 mod requests;

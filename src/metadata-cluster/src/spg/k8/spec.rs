@@ -127,11 +127,13 @@ pub struct K8StorageConfig {
 
 impl K8StorageConfig {
     pub fn log_dir(&self) -> String {
-        self.log_dir.clone().unwrap_or("/tmp/fluvio".to_owned())
+        self.log_dir
+            .clone()
+            .unwrap_or_else(|| "/tmp/fluvio".to_owned())
     }
 
     pub fn size(&self) -> String {
-        self.size.clone().unwrap_or("1Gi".to_owned())
+        self.size.clone().unwrap_or_else(|| "1Gi".to_owned())
     }
 }
 
@@ -179,7 +181,7 @@ mod convert {
     impl From<SpuConfig> for SpuTemplate {
         fn from(config: SpuConfig) -> Self {
             Self {
-                rack: config.rack.into(),
+                rack: config.rack,
                 storage: config.storage.map(|s| s.into()),
                 replication: config.replication.map(|s| s.into()),
                 ..Default::default()

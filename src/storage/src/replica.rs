@@ -366,7 +366,6 @@ mod tests {
             base_dir,
             index_max_interval_bytes: 1000,
             index_max_bytes: 1000,
-            ..Default::default()
         }
     }
 
@@ -378,7 +377,6 @@ mod tests {
             base_dir,
             index_max_bytes: 1000,
             index_max_interval_bytes: 0,
-            ..Default::default()
         }
     }
 
@@ -409,15 +407,15 @@ mod tests {
 
         let segment = replica.find_segment(20);
         match segment.unwrap() {
-            SegmentSlice::MutableSegment(_) => assert!(true, "should be active segment"),
-            SegmentSlice::Segment(_) => assert!(false, "cannot be inactive"),
+            SegmentSlice::MutableSegment(_) => {}
+            SegmentSlice::Segment(_) => panic!("cannot be inactive"),
         }
 
         let segment = replica.find_segment(21);
         assert!(segment.is_some());
         match segment.unwrap() {
-            SegmentSlice::MutableSegment(_) => assert!(true, "should be active segment"),
-            SegmentSlice::Segment(_) => assert!(false, "cannot be inactive"),
+            SegmentSlice::MutableSegment(_) => {}
+            SegmentSlice::Segment(_) => panic!("cannot be inactive"),
         }
 
         replica.send(create_batch()).await?;
@@ -425,8 +423,8 @@ mod tests {
         let segment = replica.find_segment(30);
         assert!(segment.is_some());
         match segment.unwrap() {
-            SegmentSlice::MutableSegment(_) => assert!(true, "should be active segment"),
-            SegmentSlice::Segment(_) => assert!(false, "cannot be inactive"),
+            SegmentSlice::MutableSegment(_) => {}
+            SegmentSlice::Segment(_) => panic!("cannot be inactive"),
         }
 
         Ok(())

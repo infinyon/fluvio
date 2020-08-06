@@ -181,7 +181,7 @@ async fn dispatch_loop(
                     break;
                 }
 
-                time_left = time_left - health_time.elapsed();
+                time_left -= health_time.elapsed();
             },
 
 

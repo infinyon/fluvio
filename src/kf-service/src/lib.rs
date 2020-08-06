@@ -1,4 +1,5 @@
 #![feature(generators)]
+#![allow(clippy::assign_op_pattern)]
 
 mod kf_server;
 

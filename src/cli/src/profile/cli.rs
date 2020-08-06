@@ -112,10 +112,8 @@ where
                     .set_current_profile(&profile.profile_name)
                 {
                     t_println!(out, "profile {} not founded", profile.profile_name);
-                } else {
-                    if let Err(err) = config_file.save() {
-                        t_println!(out, "unable to save profile: {}", err);
-                    }
+                } else if let Err(err) = config_file.save() {
+                    t_println!(out, "unable to save profile: {}", err);
                 }
             }
             Err(_) => t_print_cli_err!(out, "no profile can be founded"),
@@ -139,16 +137,15 @@ where
                     .delete_profile(&profile.profile_name)
                 {
                     t_println!(out, "profile {} not founded", profile.profile_name);
+                } else if let Err(err) = config_file.save() {
+                    t_println!(out, "unable to save profile: {}", err);
                 } else {
-                    if let Err(err) = config_file.save() {
-                        t_println!(out, "unable to save profile: {}", err);
+                    t_println!(out, "profile {} deleted", profile.profile_name);
+
+                    if config_file.config().current_profile_name().is_none() {
+                        t_println!(out,"warning: this removed your current profile, use 'config switch-profile to select a different one");
                     } else {
-                        t_println!(out, "profile {} deleted", profile.profile_name);
-                        if config_file.config().current_profile_name().is_none() {
-                            t_println!(out,"warning: this removed your current profile, use 'config switch-profile to select a different one");
-                        } else {
-                            t_println!(out, "profile deleted");
-                        }
+                        t_println!(out, "profile deleted");
                     }
                 }
             }

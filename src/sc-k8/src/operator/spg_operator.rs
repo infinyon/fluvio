@@ -80,9 +80,8 @@ impl SpgOperator {
             match event_r {
                 Ok(watch_event) => {
                     let result = self.process_event(watch_event).await;
-                    match result {
-                        Err(err) => error!("error processing k8 spu event: {}", err),
-                        _ => {}
+                    if let Err(err) = result {
+                        error!("error processing k8 spu event: {}", err)
                     }
                 }
                 Err(err) => error!("error in watch item: {}", err),
@@ -374,7 +373,6 @@ impl SpgOperator {
                 namespace: metadata.namespace().to_string(),
                 labels,
                 owner_references: vec![owner_ref],
-                ..Default::default()
             },
             spec: service_spec,
             ..Default::default()

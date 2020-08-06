@@ -5,13 +5,13 @@
 //!
 
 /// Takes a u8 array of bytes and converts to hex dump
-pub fn bytes_to_hex_dump(record: &Vec<u8>) -> String {
+pub fn bytes_to_hex_dump(records: &[u8]) -> String {
     let cols = 16;
-    let record_cnt = record.len();
+    let record_cnt = records.len();
     let mut result = String::new();
     let mut collector = String::new();
 
-    for row_idx in 0..record_cnt {
+    for (row_idx, record) in records.iter().enumerate().take(record_cnt) {
         // colunn index
         if row_idx % cols == 0 {
             result.push_str(&format!("{:08x}", row_idx));
@@ -23,10 +23,10 @@ pub fn bytes_to_hex_dump(record: &Vec<u8>) -> String {
         }
 
         // convert and add character to collector
-        collector.push_str(&byte_to_string(&record[row_idx]));
+        collector.push_str(&byte_to_string(&record));
 
         // push binary
-        result.push_str(&format!(" {:02x}", record[row_idx]));
+        result.push_str(&format!(" {:02x}", record));
 
         // push characters
         if (row_idx + 1) % cols == 0 {
@@ -36,7 +36,7 @@ pub fn bytes_to_hex_dump(record: &Vec<u8>) -> String {
     }
 
     // if collect not empty, fill-in gap and add characters
-    if collector.len() > 0 {
+    if !collector.is_empty() {
         let last_char_idx = record_cnt % cols;
         if last_char_idx <= cols / 2 {
             result.push_str(&" ".to_owned());

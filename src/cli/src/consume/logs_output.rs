@@ -5,7 +5,6 @@
 //!
 
 use log::debug;
-use serde_json;
 use serde_json::Value;
 
 use flv_client::kf::api::RecordSet;
@@ -64,7 +63,7 @@ where
 pub fn generate_json_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
+    response_partitions: &[FetchablePartitionResponse<RecordSet>],
     suppress: bool,
 ) -> Vec<Value>
 where
@@ -114,7 +113,7 @@ pub fn partition_to_json_records(
 }
 
 /// Print json records to screen
-fn print_json_records<O>(out: std::sync::Arc<O>, records: &Vec<Value>)
+fn print_json_records<O>(out: std::sync::Arc<O>, records: &[Value])
 where
     O: Terminal,
 {
@@ -129,7 +128,7 @@ where
 pub fn print_text_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
+    response_partitions: &[FetchablePartitionResponse<RecordSet>],
     suppress: bool,
 ) where
     O: Terminal,
@@ -166,7 +165,7 @@ pub fn print_text_records<O>(
 pub fn print_binary_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
+    response_partitions: &[FetchablePartitionResponse<RecordSet>],
 ) where
     O: Terminal,
 {
@@ -207,7 +206,7 @@ pub fn print_binary_records<O>(
 pub fn print_dynamic_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
+    response_partitions: &[FetchablePartitionResponse<RecordSet>],
 ) where
     O: Terminal,
 {
@@ -241,7 +240,7 @@ pub fn print_dynamic_records<O>(
 pub fn print_raw_records<O>(
     out: std::sync::Arc<O>,
     topic_name: &str,
-    response_partitions: &Vec<FetchablePartitionResponse<RecordSet>>,
+    response_partitions: &[FetchablePartitionResponse<RecordSet>],
 ) where
     O: Terminal,
 {

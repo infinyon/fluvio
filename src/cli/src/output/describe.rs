@@ -42,19 +42,19 @@ impl<O> DescribeObjectRender<O> {
 // -----------------------------------
 
 impl<O: Terminal> DescribeObjectRender<O> {
-    pub fn render<D>(&self, objects: &Vec<D>, output_type: OutputType) -> Result<(), CliError>
+    pub fn render<D>(&self, objects: &[D], output_type: OutputType) -> Result<(), CliError>
     where
-        D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler + Serialize,
+        D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler + Serialize + Clone,
     {
         let out = self.0.clone();
         if output_type.is_table() {
             self.print_table(objects)
         } else {
-            out.render_serde(objects, output_type.into())
+            out.render_serde(&objects.to_vec(), output_type.into())
         }
     }
 
-    pub fn print_table<D>(&self, objects: &Vec<D>) -> Result<(), CliError>
+    pub fn print_table<D>(&self, objects: &[D]) -> Result<(), CliError>
     where
         D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler,
     {
@@ -87,7 +87,7 @@ impl<O: Terminal> DescribeObjectRender<O> {
     }
 
     /// Provide a header summary
-    fn header_summary<D>(&self, objects: &Vec<D>) -> String
+    fn header_summary<D>(&self, objects: &[D]) -> String
     where
         D: DescribeObjectHandler,
     {

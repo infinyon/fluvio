@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 mod spec;
 mod status;
 

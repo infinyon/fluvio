@@ -189,7 +189,7 @@ where
                             stream
                                 .peer_addr()
                                 .map(|addr| addr.to_string())
-                                .unwrap_or("".to_owned())
+                                .unwrap_or_else(|_| "".to_owned())
                         );
 
                         let socket_res = builder.to_socket(stream);

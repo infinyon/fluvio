@@ -191,7 +191,7 @@ impl From<ServerAddress> for IngressPort {
 impl IngressPort {
     pub fn from_port_host(port: u16, host: String) -> Self {
         Self {
-            port: port,
+            port,
             ingress: vec![IngressAddr {
                 hostname: Some(host),
                 ip: None,
@@ -202,7 +202,7 @@ impl IngressPort {
 
     // return any host whether it is IP or String
     pub fn host(&self) -> Option<String> {
-        if self.ingress.len() == 0 {
+        if self.ingress.is_empty() {
             None
         } else {
             self.ingress[0].host()
@@ -247,12 +247,10 @@ impl IngressAddr {
     pub fn host(&self) -> Option<String> {
         if let Some(name) = &self.hostname {
             Some(name.clone())
+        } else if let Some(ip) = &self.ip {
+            Some(ip.clone())
         } else {
-            if let Some(ip) = &self.ip {
-                Some(ip.clone())
-            } else {
-                None
-            }
+            None
         }
     }
 }
@@ -320,8 +318,8 @@ impl Default for Endpoint {
 impl Endpoint {
     pub fn from_port_host(port: u16, host: String) -> Self {
         Self {
-            port: port,
-            host: host,
+            port,
+            host,
             encryption: EncryptionEnum::PLAINTEXT,
         }
     }

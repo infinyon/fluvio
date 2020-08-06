@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -76,8 +78,8 @@ impl ProduceLogOpt {
         let target_server = self.target.load()?;
 
         let file_records = if let Some(record_per_line) = self.record_per_line {
-            Some(FileRecord::Lines(record_per_line.clone()))
-        } else if self.record_file.len() > 0 {
+            Some(FileRecord::Lines(record_per_line))
+        } else if !self.record_file.is_empty() {
             Some(FileRecord::Files(self.record_file.clone()))
         } else {
             None
@@ -89,7 +91,7 @@ impl ProduceLogOpt {
             continuous: self.continuous,
         };
 
-        Ok((target_server, ((produce_log_cfg, file_records))))
+        Ok((target_server, (produce_log_cfg, file_records)))
     }
 }
 
@@ -202,7 +204,7 @@ mod produce {
                 let f = File::open(lines2rec_path).await?;
                 let mut lines = BufReader::new(f).lines();
                 // reach each line and convert to byte array
-                for line in lines.next().await {
+                if let Some(line) = lines.next().await {
                     if let Ok(text) = line {
                         records.push((text.clone(), text.as_bytes().to_vec()));
                     }

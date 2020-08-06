@@ -23,16 +23,25 @@ where
         lock.insert(key, value)
     }
 
-    pub async fn read<'a>(&'a self) -> RwLockReadGuard<'a, HashMap<K, V>> {
+    pub async fn read<'a>(&'_ self) -> RwLockReadGuard<'_, HashMap<K, V>> {
         self.0.read().await
     }
 
-    pub async fn write<'a>(&'a self) -> RwLockWriteGuard<'a, HashMap<K, V>> {
+    pub async fn write<'a>(&'_ self) -> RwLockWriteGuard<'_, HashMap<K, V>> {
         self.0.write().await
     }
 
     pub async fn contains_key(&self, key: &K) -> bool {
         self.read().await.contains_key(key)
+    }
+}
+
+impl<K, V> Default for SimpleConcurrentHashMap<K, V>
+where
+    K: Eq + Hash,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -60,11 +69,11 @@ where
         Self(RwLock::new(map))
     }
 
-    pub async fn read<'a>(&'a self) -> RwLockReadGuard<'a, BTreeMap<K, V>> {
+    pub async fn read<'a>(&'_ self) -> RwLockReadGuard<'_, BTreeMap<K, V>> {
         self.0.read().await
     }
 
-    pub async fn write<'a>(&'a self) -> RwLockWriteGuard<'a, BTreeMap<K, V>> {
+    pub async fn write<'a>(&'_ self) -> RwLockWriteGuard<'_, BTreeMap<K, V>> {
         self.0.write().await
     }
 

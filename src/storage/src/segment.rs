@@ -287,7 +287,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 
     /// convert to immutable segment
-    pub async fn as_segment(self) -> Result<ReadSegment, StorageError> {
+    pub async fn as_segment(&self) -> Result<ReadSegment, StorageError> {
         Segment::open_for_read(self.get_base_offset(), &self.option).await
     }
 
@@ -311,12 +311,10 @@ impl Segment<MutLogIndex, MutFileRecords> {
         // ensure batch is not already recorded
         if item.base_offset == 0 {
             item.set_base_offset(current_offset);
-        } else {
-            if item.base_offset < current_offset {
-                return Err(StorageError::LogValidationError(
-                    LogValidationError::ExistingBatch,
-                ));
-            }
+        } else if item.base_offset < current_offset {
+            return Err(StorageError::LogValidationError(
+                LogValidationError::ExistingBatch,
+            ));
         }
 
         let batch_offset_delta = (current_offset - base_offset) as i32;
@@ -388,7 +386,6 @@ mod tests {
             base_dir,
             index_max_interval_bytes,
             index_max_bytes: 1000,
-            ..Default::default()
         }
     }
 

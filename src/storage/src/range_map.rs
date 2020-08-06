@@ -38,7 +38,7 @@ impl SegmentList {
     ) -> Result<(SegmentList, Option<Offset>), StorageError> {
         let dirs = option.base_dir.read_dir()?;
         debug!("reading segments at: {:#?}", dirs);
-        let files: Vec<_> = dirs.into_iter().filter_map(|entry| entry.ok()).collect();
+        let files: Vec<_> = dirs.filter_map(|entry| entry.ok()).collect();
         let mut offsets: Vec<Offset> = vec![];
         for entry in files {
             if let Ok(metadata) = entry.metadata() {
@@ -102,7 +102,7 @@ impl SegmentList {
         } else {
             min(self.min_base_offset, base_offset)
         };
-        &self.segments.insert(segment.get_base_offset(), segment);
+        self.segments.insert(segment.get_base_offset(), segment);
     }
 
     #[allow(dead_code)]
@@ -154,7 +154,6 @@ mod tests {
             base_dir,
             index_max_bytes: 1000,
             index_max_interval_bytes: 0,
-            ..Default::default()
         }
     }
 

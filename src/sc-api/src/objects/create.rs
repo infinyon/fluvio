@@ -27,7 +27,7 @@ impl Request for CreateRequest {
 impl AdminRequest for CreateRequest {}
 
 mod create {
-
+    #![allow(clippy::module_inception)]
     use std::io::Error;
     use std::io::ErrorKind;
 

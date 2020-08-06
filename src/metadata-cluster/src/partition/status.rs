@@ -102,7 +102,7 @@ impl PartitionStatus {
     }
 
     pub fn has_live_replicas(&self) -> bool {
-        self.replicas.len() > 0
+        !self.replicas.is_empty()
     }
 
     /// Fnd best candidate from online replicas
@@ -117,19 +117,18 @@ impl PartitionStatus {
         for candidate in &self.replicas {
             // only do for live replicas
             if online.contains(&candidate.spu) {
-                match policy.potential_leader_score(&candidate, &self.leader) {
-                    ElectionScoring::Score(score) => {
-                        if candiate_spu.is_some() {
-                            if score < best_score {
-                                best_score = score;
-                                candiate_spu = Some(candidate.spu);
-                            }
-                        } else {
+                if let ElectionScoring::Score(score) =
+                    policy.potential_leader_score(&candidate, &self.leader)
+                {
+                    if candiate_spu.is_some() {
+                        if score < best_score {
                             best_score = score;
                             candiate_spu = Some(candidate.spu);
                         }
+                    } else {
+                        best_score = score;
+                        candiate_spu = Some(candidate.spu);
                     }
-                    _ => {}
                 }
             }
         }

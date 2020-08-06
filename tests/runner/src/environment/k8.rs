@@ -12,9 +12,7 @@ pub struct K8EnvironmentDriver {
 
 impl K8EnvironmentDriver {
     pub fn new(option: TestOption) -> Self {
-        Self {
-            option: option.clone(),
-        }
+        Self { option }
     }
 }
 

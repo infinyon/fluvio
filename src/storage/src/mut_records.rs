@@ -23,7 +23,7 @@ use crate::ConfigOption;
 use crate::StorageError;
 use crate::records::FileRecords;
 
-pub const MESSAGE_LOG_EXTENSION: &'static str = "log";
+pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
 /// Can append new batch to file
 pub struct MutFileRecords {

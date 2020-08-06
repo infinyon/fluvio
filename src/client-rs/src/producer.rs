@@ -91,7 +91,7 @@ async fn send_record_raw(
             if partition_response.error_code.is_error() {
                 return Err(ClientError::IoError(IoError::new(
                     ErrorKind::Other,
-                    format!("{}", partition_response.error_code.to_sentence()),
+                    partition_response.error_code.to_sentence(),
                 )));
             }
             Ok(())

@@ -56,6 +56,7 @@ impl<S> InnerKfSink<S> {
     }
 
     /// convert to shared sink
+    #[allow(clippy::wrong_self_convention)]
     pub fn as_shared(self) -> InnerExclusiveKfSink<S> {
         InnerExclusiveKfSink::new(self)
     }
@@ -204,7 +205,7 @@ impl<S> Clone for InnerExclusiveKfSink<S> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            fd: self.fd.clone(),
+            fd: self.fd,
         }
     }
 }
@@ -242,7 +243,7 @@ mod tests {
         P: AsRef<Path>,
     {
         let log_path = path.as_ref();
-        if let Ok(_) = remove_file(log_path) {
+        if remove_file(log_path).is_ok() {
             info!("remove existing file: {}", log_path.display());
         } else {
             info!("there was no existing file: {}", log_path.display());

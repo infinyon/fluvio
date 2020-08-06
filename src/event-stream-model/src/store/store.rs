@@ -72,16 +72,16 @@ where
     /// Read guard
     #[inline(always)]
     pub async fn read<'a>(
-        &'a self,
-    ) -> RwLockReadGuard<'a, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
+        &'_ self,
+    ) -> RwLockReadGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.read().await
     }
 
     /// write guard, this is private, use sync API to make changes
     #[inline(always)]
     async fn write<'a>(
-        &'a self,
-    ) -> RwLockWriteGuard<'a, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
+        &'_ self,
+    ) -> RwLockWriteGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.write().await
     }
 
@@ -244,7 +244,7 @@ where
         // delete value that shouldn't be there
         for name in local_keys.into_iter() {
             if write_guard.contains_key(&name) {
-                if let Some(_) = write_guard.remove(&name) {
+                if write_guard.remove(&name).is_some() {
                     del_cnt += 1;
                 } else {
                     error!("delete  should never fail since key exists: {:#?}", name);
@@ -316,7 +316,7 @@ where
 
         drop(read_guard);
 
-        if actual_changes.len() == 0 {
+        if actual_changes.is_empty() {
             debug!("Apply changes <{}> required no changes", S::LABEL);
             return None;
         }
@@ -329,7 +329,7 @@ where
         for change in actual_changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
-                    if let Some(_) = write_guard.insert_meta(new_kv_value) {
+                    if write_guard.insert_meta(new_kv_value).is_some() {
                         mod_cnt += 1;
                     } else {
                         // there was no existing, so this is new

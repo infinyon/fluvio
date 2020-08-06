@@ -1,6 +1,7 @@
 #![feature(generators)]
 #![recursion_limit = "512"]
 #![type_length_limit = "1101663"]
+#![allow(clippy::assign_op_pattern)]
 
 mod error;
 mod start;

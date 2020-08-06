@@ -78,7 +78,7 @@ impl SpuController {
 
                     debug!("detected events in spu store");
                     self.sync_store().await;
-                    time_left = time_left - health_time.elapsed();
+                    time_left -= health_time.elapsed();
                 },
                 health_msg = self.health_receiver.recv() => {
 
@@ -91,7 +91,7 @@ impl SpuController {
                             error!("error receiving health msg: {}",err);
                         }
                     }
-                    time_left = time_left - health_time.elapsed();
+                    time_left -= health_time.elapsed();
 
                 },
                 _ = sleep(time_left) => {
@@ -110,8 +110,7 @@ impl SpuController {
         // check if we need to sync spu and our health check cache
         if self.spus.store().count().await as usize != self.status.len() {
             let keys = self.spus.store().spu_ids().await;
-            let mut status_keys: HashSet<SpuId> =
-                self.status.keys().map(|key| key.clone()).collect();
+            let mut status_keys: HashSet<SpuId> = self.status.keys().copied().collect();
             debug!(
                 "syncing store before store: {} items, health status: {} items",
                 keys.len(),
@@ -194,7 +193,7 @@ impl SpuController {
             }
         }
 
-        if actions.len() > 0 {
+        if !actions.is_empty() {
             debug!("health check: {} spus needed to be offline", actions.len());
             self.send_health_to_store(actions).await;
         } else {

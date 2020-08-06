@@ -43,10 +43,10 @@ pub struct ScOpt {
     tls: TlsConfig,
 }
 
+type ScK8ConfigResponse = (ScConfig, K8Config, Option<(String, TlsConfig)>);
+
 impl ScOpt {
-    fn get_sc_and_k8_config(
-        mut self,
-    ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error> {
+    fn get_sc_and_k8_config(mut self) -> Result<ScK8ConfigResponse, ScK8Error> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -62,18 +62,21 @@ impl ScOpt {
     }
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
+    #[allow(clippy::wrong_self_convention)]
     fn as_sc_config(self) -> Result<(ScConfig, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
         if let Some(public_addr) = self.bind_public {
-            config.public_endpoint = public_addr.clone();
+            config.public_endpoint = public_addr;
         }
 
         if let Some(private_addr) = self.bind_private {
-            config.private_endpoint = private_addr.clone();
+            config.private_endpoint = private_addr;
         }
-        config.namespace = self.namespace.unwrap().clone();
+        if let Some(namespace) = self.namespace {
+            config.namespace = namespace;
+        }
 
         let tls = self.tls;
 

@@ -274,6 +274,7 @@ pub struct TopicReplicaParam {
     pub ignore_rack_assignment: IgnoreRackAssignment,
 }
 
+#[allow(dead_code)]
 fn default_count() -> i32 {
     1
 }
@@ -359,7 +360,7 @@ impl PartitionMaps {
 
     fn replication_factor(&self) -> Option<ReplicationFactor> {
         // compute replication form replica map
-        if self.maps.len() > 0 {
+        if !self.maps.is_empty() {
             Some(self.maps[0].replicas.len() as i32)
         } else {
             None
@@ -371,7 +372,7 @@ impl PartitionMaps {
         for partition in &self.maps {
             res.push_str(&format!("{}:{:?}, ", partition.id, partition.replicas));
         }
-        if res.len() > 0 {
+        if !res.is_empty() {
             res.truncate(res.len() - 2);
         }
         Some(res)
@@ -388,7 +389,7 @@ impl PartitionMaps {
         for partition in &self.maps {
             for spu in &partition.replicas {
                 if !spu_ids.contains(spu) {
-                    spu_ids.push(spu.clone());
+                    spu_ids.push(*spu);
                 }
             }
         }
@@ -408,9 +409,10 @@ impl PartitionMaps {
     }
 
     /// Validate partition map for assigned topics
+    #[allow(clippy::explicit_counter_loop)]
     pub fn valid_partition_map(&self) -> Result<(), Error> {
         // there must be at least one partition in the partition map
-        if self.maps.len() == 0 {
+        if self.maps.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
                 "no assigned partitions found",
@@ -711,7 +713,7 @@ pub mod test {
             replicas: vec![5001, 5002],
         }]
         .into();
-        let topic_spec = TopicSpec::Assigned(partition_map.clone());
+        let topic_spec = TopicSpec::Assigned(partition_map);
         let mut dest = vec![];
 
         // test encode

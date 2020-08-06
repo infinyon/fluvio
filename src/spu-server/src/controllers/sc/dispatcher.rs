@@ -119,7 +119,7 @@ impl ScDispatcher<FileReplica> {
                             );
                             // give little bit time before trying to reconnect
                             sleep(Duration::from_millis(10)).await;
-                            counter = counter + 1;
+                            counter += 1;
                         }
                         Err(err) => {
                             warn!(
@@ -283,7 +283,7 @@ impl ScDispatcher<FileReplica> {
 
         debug!("received replica update from sc: {:#?}", request);
 
-        let actions = if request.all.len() > 0 {
+        let actions = if request.all.is_empty() {
             debug!(
                 "received replica sync all epoch: {}, items: {}",
                 request.epoch,
@@ -315,7 +315,7 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
-        let _actions = if request.all.len() > 0 {
+        let _actions = if request.all.is_empty() {
             debug!(
                 "received spu sync all epoch: {}, items: {}",
                 request.epoch,
@@ -393,12 +393,10 @@ impl ScDispatcher<FileReplica> {
                                 self.add_follower_replica(new_replica).await;
                             }
                         }
+                    } else if new_replica.leader == local_id {
+                        self.update_leader_replica(new_replica).await;
                     } else {
-                        if new_replica.leader == local_id {
-                            self.update_leader_replica(new_replica).await;
-                        } else {
-                            self.update_follower_replica(new_replica).await;
-                        }
+                        self.update_follower_replica(new_replica).await;
                     }
                 }
             }

@@ -77,6 +77,7 @@ impl SpuOpt {
         Ok((spu_config, tls_config))
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn as_spu_config(self) -> Result<(SpuConfig, Option<String>), IoError> {
         use std::path::PathBuf;
 
@@ -136,7 +137,7 @@ impl SpuOpt {
 
         if let Some(private_addr) = self.bind_private {
             info!("overriding private addr: {}", private_addr);
-            config.private_endpoint = private_addr.clone();
+            config.private_endpoint = private_addr;
         }
 
         config.peer_max_bytes = self.peer_max_bytes;
@@ -213,7 +214,7 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
                 info!("found SPU INDEX ID: {}", id);
 
                 // now we get SPU_MIN which tells min
-                let spu_min_var = env::var("SPU_MIN").unwrap_or("0".to_owned());
+                let spu_min_var = env::var("SPU_MIN").unwrap_or_else(|_| "0".to_owned());
                 debug!("found SPU MIN ID: {}", spu_min_var);
                 let base_id: SpuId = spu_min_var.parse().map_err(|err| {
                     IoError::new(
@@ -221,7 +222,7 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
                         format!("invalid spu min id: {}", err),
                     )
                 })?;
-                return Ok(id + base_id);
+                Ok(id + base_id)
             }
         } else {
             Err(IoError::new(

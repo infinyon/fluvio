@@ -16,7 +16,7 @@ pub fn generate_message(_index: u16, option: &TestOption) -> Vec<u8> {
 /// validate the message
 pub fn validate_message(_index: u16, option: &TestOption, data: &[u8]) {
     assert_eq!(data.len(), option.produce.record_size);
-    for i in 0..option.produce.record_size {
-        assert_eq!(data[i], VALUE);
+    for value in data.iter().take(option.produce.record_size) {
+        assert_eq!(value, &VALUE);
     }
 }

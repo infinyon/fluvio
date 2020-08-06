@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 mod apis;
 pub mod topic;
 pub mod spu;

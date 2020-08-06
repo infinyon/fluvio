@@ -54,7 +54,7 @@ impl TlsClientConfig {
         Ok(())
     }
 
-    pub fn set_ca_cert(&mut self, cert: &Vec<u8>) {
+    pub fn set_ca_cert(&mut self, cert: &[u8]) {
         self.ca_cert = encode(cert);
     }
 
@@ -63,7 +63,7 @@ impl TlsClientConfig {
         Ok(())
     }
 
-    pub fn set_client_cert(&mut self, cert: &Vec<u8>) {
+    pub fn set_client_cert(&mut self, cert: &[u8]) {
         self.client_cert = encode(cert);
     }
 
@@ -72,7 +72,7 @@ impl TlsClientConfig {
         Ok(())
     }
 
-    pub fn set_client_key(&mut self, key: &Vec<u8>) {
+    pub fn set_client_key(&mut self, key: &[u8]) {
         self.client_key = encode(key);
     }
 }

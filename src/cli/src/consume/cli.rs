@@ -73,7 +73,7 @@ impl ConsumeLogOpt {
             from_beginning: self.from_beginning,
             disable_continuous: self.disable_continuous,
             offset: self.offset,
-            max_bytes: max_bytes,
+            max_bytes,
             output: self.output,
             suppress_unknown: self.suppress_unknown,
         };

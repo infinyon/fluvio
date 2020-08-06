@@ -111,8 +111,8 @@ impl ConfigFile {
     }
 }
 
-pub const LOCAL_PROFILE: &'static str = "local";
-const CONFIG_VERSION: &'static str = "2.0";
+pub const LOCAL_PROFILE: &str = "local";
+const CONFIG_VERSION: &str = "2.0";
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Config {

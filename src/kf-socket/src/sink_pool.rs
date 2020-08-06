@@ -43,6 +43,15 @@ where
     }
 }
 
+impl<T> Default for SinkPool<T>
+where
+    T: Eq + PartialEq + Hash + Debug + Clone,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -103,7 +112,7 @@ mod tests {
                 }
                 */
             }
-            _ => assert!(false, "no echo request"),
+            _ => panic!("no echo request"),
         }
 
         debug!("server: finish sending out");
@@ -126,7 +135,6 @@ mod tests {
         let addr = "127.0.0.1:5999";
 
         let _r = join(setup_client(addr), test_server(addr)).await;
-        assert!(true);
         Ok(())
     }
 }

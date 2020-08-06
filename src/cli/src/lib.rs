@@ -23,9 +23,9 @@ pub use self::root_cli::run_cli;
 pub use output::Terminal;
 use output::*;
 
-const VERSION: &'static str = include_str!("VERSION");
+const VERSION: &str = include_str!("VERSION");
 
-const COMMAND_TEMPLATE: &'static str = "{about}
+const COMMAND_TEMPLATE: &str = "{about}
 
 {usage}
 

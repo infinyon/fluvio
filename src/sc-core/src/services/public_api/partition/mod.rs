@@ -17,7 +17,7 @@ pub async fn handle_fetch_request(
         .read()
         .await
         .values()
-        .filter_map(|value| Some(value.inner().clone().into()))
+        .map(|value| value.inner().clone().into())
         .collect();
 
     debug!("flv fetch partitions resp: {} items", partitions.len());

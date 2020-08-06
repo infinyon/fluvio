@@ -98,7 +98,7 @@ mod display {
     where
         O: Terminal,
     {
-        if list_topics.len() > 0 {
+        if !list_topics.is_empty() {
             out.render_list(&list_topics, output_type)
         } else {
             t_println!(out, "No topics found");

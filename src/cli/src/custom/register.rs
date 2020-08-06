@@ -53,7 +53,7 @@ impl RegisterCustomSpuOpt {
                 id: self.id,
                 public_endpoint: ServerAddress::try_from(self.public_server)?.into(),
                 private_endpoint: ServerAddress::try_from(self.private_server)?.into(),
-                rack: self.rack.clone(),
+                rack: self.rack,
             },
         );
 

@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 mod msg_type;
 mod replica_msg;
 

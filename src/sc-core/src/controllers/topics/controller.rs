@@ -74,7 +74,7 @@ impl TopicController {
 
         let actions = self.reducer.process_requests(updates).await;
 
-        if actions.topics.len() == 0 && actions.partitions.len() == 0 {
+        if actions.topics.is_empty() && actions.partitions.is_empty() {
             debug!("no actions needed");
         } else {
             debug!(

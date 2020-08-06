@@ -80,7 +80,7 @@ where
 
     async fn online_spu_rack_map(&self) -> BTreeMap<String, Vec<i32>>;
 
-    fn online_spus_in_rack(rack_map: &Vec<(String, Vec<i32>)>) -> Vec<i32>;
+    fn online_spus_in_rack(rack_map: &[(String, Vec<i32>)]) -> Vec<i32>;
 
     async fn all_spus_to_spu_msgs(&self) -> Vec<SpuMsg>;
 
@@ -150,7 +150,7 @@ where
             .values()
             .filter_map(|spu| {
                 if spu.status.is_online() {
-                    Some(spu.inner().clone().into())
+                    Some(spu.inner().clone())
                 } else {
                     None
                 }
@@ -164,7 +164,7 @@ where
             .values()
             .filter_map(|spu| {
                 if spu.spec.is_custom() {
-                    Some(spu.inner().clone().into())
+                    Some(spu.inner().clone())
                 } else {
                     None
                 }
@@ -185,7 +185,7 @@ where
     async fn get_by_id(&self, id: i32) -> Option<SpuMetadata<C>> {
         for (_, spu) in self.read().await.iter() {
             if spu.spec.id == id {
-                return Some(spu.inner().clone().into());
+                return Some(spu.inner().clone());
             }
         }
         None
@@ -287,7 +287,7 @@ where
     }
 
     // Returns a list of rack inter-leaved spus [0, 4, 5, 1, 3, 2]
-    fn online_spus_in_rack(rack_map: &Vec<(String, Vec<i32>)>) -> Vec<i32> {
+    fn online_spus_in_rack(rack_map: &[(String, Vec<i32>)]) -> Vec<i32> {
         let mut spus = vec![];
         let row_max = rack_map.len();
         let col_max = rack_map.iter().map(|(_, list)| list.len()).max().unwrap();
@@ -312,7 +312,7 @@ where
         self.clone_specs()
             .await
             .into_iter()
-            .map(|spu_spec| SpuMsg::update(spu_spec.into()))
+            .map(SpuMsg::update)
             .collect()
     }
 
@@ -407,14 +407,14 @@ pub mod test {
         let mut other_spec = SpuSpec::default();
         other_spec.id = 1;
         other_spec.rack = Some("rack".to_string());
-        let other_spu = DefaultSpuMd::new("spu-1", other_spec.clone(), SpuStatus::default()).into();
+        let other_spu = DefaultSpuMd::new("spu-1", other_spec.clone(), SpuStatus::default());
 
         let spus = DefaultSpuStore::bulk_new(vec![spu_0, spu_1.clone()]);
 
         // update spec on spu_1
         spu_1.spec = other_spec.clone();
         let status = spus
-            .apply_changes(vec![LSUpdate::Mod(spu_1.into())])
+            .apply_changes(vec![LSUpdate::Mod(spu_1)])
             .await
             .expect("some");
 
@@ -446,7 +446,7 @@ pub mod test {
         let mut online_update = online.clone();
         online_update.status = offline.status.clone();
         let status = spus
-            .apply_changes(vec![LSUpdate::Mod(online_update.into())])
+            .apply_changes(vec![LSUpdate::Mod(online_update)])
             .await
             .expect("some");
         let spu = spus.value("spu-0").await.expect("spu");
@@ -461,7 +461,7 @@ pub mod test {
         let mut offline_update = offline2.clone();
         offline_update.status = online.status.clone();
         let status = spus
-            .apply_changes(vec![LSUpdate::Mod(offline_update.into())])
+            .apply_changes(vec![LSUpdate::Mod(offline_update)])
             .await
             .expect("some");
         assert_eq!(status.add, 0);

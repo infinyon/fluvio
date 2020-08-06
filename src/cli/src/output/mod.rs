@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod table;
 mod serde;
 mod describe;
@@ -88,10 +90,10 @@ mod output {
             T: TableOutputHandler + Serialize,
         {
             if mode.is_table() {
-                let render = TableRenderer::new(self.clone());
+                let render = TableRenderer::new(self);
                 render.render(list, false);
             } else {
-                let render = SerdeRenderer::new(self.clone());
+                let render = SerdeRenderer::new(self);
                 render.render(&list, mode.into())?;
             }
 
@@ -99,7 +101,7 @@ mod output {
         }
 
         fn render_table<T: TableOutputHandler>(self: Arc<Self>, val: &T, indent: bool) {
-            let render = TableRenderer::new(self.clone());
+            let render = TableRenderer::new(self);
             render.render(val, indent);
         }
 
@@ -108,19 +110,19 @@ mod output {
             val: &T,
             mode: SerializeType,
         ) -> Result<(), CliError> {
-            let render = SerdeRenderer::new(self.clone());
+            let render = SerdeRenderer::new(self);
             render.render(val, mode)
         }
 
         fn describe_objects<D: DescribeObjectHandler>(
             self: Arc<Self>,
-            objects: &Vec<D>,
+            objects: &[D],
             mode: OutputType,
         ) -> Result<(), CliError>
         where
-            D: TableOutputHandler + KeyValOutputHandler + Serialize,
+            D: TableOutputHandler + KeyValOutputHandler + Serialize + Clone,
         {
-            let render = DescribeObjectRender::new(self.clone());
+            let render = DescribeObjectRender::new(self);
             render.render(objects, mode)
         }
 

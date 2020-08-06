@@ -112,10 +112,11 @@ impl<S> LeaderReplicaState<S> {
     /// probably only used in the test
     #[allow(dead_code)]
     pub(crate) fn followers(&self, spu: &SpuId) -> Option<FollowerReplicaInfo> {
-        self.followers.get(spu).map(|val| val.clone())
+        self.followers.get(spu).cloned()
     }
 
     /// if replica id's doesn't exists, then add, otherwise ignore it
+    #[allow(clippy::map_entry)]
     fn add_follower_replica(&mut self, follower_ids: Vec<SpuId>) {
         let leader_id = self.leader_id;
         for id in follower_ids.into_iter().filter(|id| *id != leader_id) {

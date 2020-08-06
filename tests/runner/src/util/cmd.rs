@@ -71,11 +71,8 @@ impl CommandUtil for Command {
     fn print(&mut self) -> &mut Self {
         use std::env;
 
-        match env::var_os("FLV_CMD") {
-            Some(_) => {
-                println!(">> {}", format!("{:?}", self).replace("\"", ""));
-            }
-            _ => {}
+        if env::var_os("FLV_CMD").is_some() {
+            println!(">> {}", format!("{:?}", self).replace("\"", ""));
         }
 
         self
@@ -93,7 +90,7 @@ impl StatusExt for std::process::ExitStatus {
                 Some(code) => println!("Exited with status code: {}", code),
                 None => println!("Process terminated by signal"),
             }
-            assert!(false);
+            unreachable!()
         }
     }
 }

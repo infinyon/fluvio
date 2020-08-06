@@ -13,7 +13,7 @@ pub async fn handle_delete_spu_group(name: String, ctx: SharedContext) -> Result
 
     debug!("delete spg group: {}", name);
 
-    let status = if let Some(_) = ctx.spgs().store().value(&name).await {
+    let status = if ctx.spgs().store().value(&name).await.is_some() {
         if let Err(err) = ctx.spgs().delete(name.clone()).await {
             FlvStatus::new(name.clone(), FlvErrorCode::SpuError, Some(err.to_string()))
         } else {

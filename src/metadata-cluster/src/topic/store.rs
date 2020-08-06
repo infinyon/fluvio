@@ -38,8 +38,7 @@ where
             if !partition_store.contains_key(&replica_key).await {
                 partitions.push(
                     MetadataStoreObject::with_spec(replica_key, replicas.clone().into())
-                        .with_context(self.ctx.create_child())
-                        .into(),
+                        .with_context(self.ctx.create_child()),
                 )
             }
         }

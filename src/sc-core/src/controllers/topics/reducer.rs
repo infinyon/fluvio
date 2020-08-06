@@ -83,9 +83,8 @@ impl TopicReducer {
 
         let mut actions = TopicActions::default();
 
-        for mut topic in topic_updates {
-            self.update_actions_next_state(&mut topic, &mut actions)
-                .await;
+        for topic in topic_updates {
+            self.update_actions_next_state(&topic, &mut actions).await;
         }
 
         actions
@@ -161,8 +160,7 @@ mod test2 {
                 "topic2".into(),
                 TopicStatus::new(TopicResolution::Pending, vec![], PENDING_REASON),
             )),
-        ]
-        .into();
+        ];
         assert_eq!(actions.topics, expected_actions);
         Ok(())
     }

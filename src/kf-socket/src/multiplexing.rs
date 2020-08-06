@@ -94,7 +94,7 @@ where
         debug!("serial socket created with: {}", correlation_id);
         SerialSocket {
             sink: self.sink.clone(),
-            correlation_id: correlation_id,
+            correlation_id,
             receiver: bytes_lock,
         }
     }
@@ -168,7 +168,7 @@ where
             self.correlation_id
         );
         select! {
-            _ = (sleep(time_out.clone())) => {
+            _ = (sleep(time_out)) => {
                 debug!("async socket timeout expired: {},",self.correlation_id);
                 Err(KfSocketError::IoError(IoError::new(
                     ErrorKind::TimedOut,
@@ -271,12 +271,12 @@ where
                             debug!("serial socket: value is empty, something bad happened");
                             Err(KfSocketError::IoError(IoError::new(
                                 ErrorKind::UnexpectedEof,
-                                format!("connection is closed"),
+                                "connection is closed".to_string(),
                             )))
                         }
 
                     },
-                    None =>  return Err(KfSocketError::IoError(IoError::new(
+                    None => Err(KfSocketError::IoError(IoError::new(
                         ErrorKind::BrokenPipe,
                         "locked failed, socket is in bad state"
                     )))
@@ -478,12 +478,11 @@ mod tests {
                         debug!("server: send back status second");
                     });
                 }
-                _ => assert!(false, "no echo request"),
+                _ => panic!("no echo request"),
             }
         }
 
         debug!("server: finish sending out");
-        assert!(true); // finish ok
     }
 
     async fn test_client(addr: &str) {
@@ -546,7 +545,6 @@ mod tests {
         let addr = "127.0.0.1:6000";
 
         let _r = join(test_client(addr), test_server(addr)).await;
-        assert!(true);
         Ok(())
     }
 }

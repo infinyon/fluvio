@@ -51,7 +51,7 @@ where
     pub fn new(typ: MsgType, content: C) -> Self {
         Message {
             header: typ,
-            content: content,
+            content,
         }
     }
 

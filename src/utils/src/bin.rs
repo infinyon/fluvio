@@ -43,7 +43,7 @@ pub fn open_log(prefix: &str) -> (File, File) {
 
 #[allow(unused)]
 pub fn command_exec(binary: &str, prefix: &str, process: impl Fn(&mut Command)) {
-    let mut cmd = get_binary(binary).expect(&format!("unable to get binary: {}", binary));
+    let mut cmd = get_binary(binary).unwrap_or_else(|_| panic!("unable to get binary: {}", binary));
 
     let (output, error) = open_log(prefix);
 
@@ -62,7 +62,7 @@ use std::process::Child;
 
 #[allow(unused)]
 pub fn command_spawn(binary: &str, prefix: &str, process: impl Fn(&mut Command)) -> Child {
-    let mut cmd = get_binary(binary).expect(&format!("unable to get binary: {}", binary));
+    let mut cmd = get_binary(binary).unwrap_or_else(|_| panic!("unable to get binary: {}", binary));
 
     let (output, error) = open_log(prefix);
 
