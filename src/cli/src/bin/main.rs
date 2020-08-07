@@ -1,4 +1,4 @@
-use fluvio::run_cli;
+use flv_cli::run_cli;
 
 use flv_types::print_cli_err;
 
