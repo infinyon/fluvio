@@ -5,13 +5,13 @@ use serde::Deserialize;
 
 use super::*;
 
-pub fn repo_add() {
+pub fn repo_add(chart_location: Option<&str>) {
     // add repo
     Command::new("helm")
         .arg("repo")
         .arg("add")
         .arg("fluvio")
-        .arg("https://infinyon.github.io/charts")
+        .arg(chart_location.unwrap_or("https://infinyon.github.io/charts"))
         .inherit();
 }
 
