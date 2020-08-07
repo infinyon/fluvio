@@ -23,9 +23,12 @@ pub struct K8Install {
     #[structopt(long, default_value = "main")]
     pub group_name: String,
 
-    /// k8
+    /// helm chart name
     #[structopt(long, default_value = "fluvio")]
-    pub name: String,
+    pub chart_name: String,
+
+    #[structopt(long)]
+    pub chart_location: Option<String>,
 
     /// k8
     #[structopt(long, default_value = "minikube")]

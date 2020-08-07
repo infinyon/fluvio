@@ -181,15 +181,17 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     }
 
     let version = if opt.develop {
-        // get git version
-        let output = Command::new("git")
-            .args(&["log", "-1", "--pretty=format:\"%H\""])
-            .output()
-            .unwrap();
-        let version = String::from_utf8(output.stdout).unwrap();
-        version.trim_matches('"').to_owned()
+        opt.k8_config.version.clone().unwrap_or_else(|| {
+            // get git version
+            let output = Command::new("git")
+                .args(&["log", "-1", "--pretty=format:\"%H\""])
+                .output()
+                .unwrap();
+            let version = String::from_utf8(output.stdout).unwrap();
+            version.trim_matches('"').to_owned()
+        })
     } else {
-        helm::repo_add();
+        helm::repo_add(opt.k8_config.chart_location.as_deref());
         helm::repo_update();
         crate::VERSION.to_owned()
     };
@@ -211,15 +213,20 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 
     if opt.develop {
         cmd.arg("install")
-            .arg(&k8_config.name)
-            .arg("./k8-util/helm/fluvio-core")
+            .arg(&k8_config.chart_name)
+            .arg(
+                k8_config
+                    .chart_location
+                    .as_deref()
+                    .unwrap_or("./k8-util/helm/fluvio-core"),
+            )
             .arg("--set")
             .arg(fluvio_version)
             .arg("--set")
             .arg(format!("registry={}", registry));
     } else {
         const CORE_CHART_NAME: &'static str = "fluvio/fluvio-core";
-        helm::repo_add();
+        helm::repo_add(opt.k8_config.chart_location.as_deref());
         helm::repo_update();
 
         if !helm::check_chart_version_exists(CORE_CHART_NAME, crate::VERSION) {
@@ -231,10 +238,15 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         }
 
         cmd.arg("install")
-            .arg(&k8_config.name)
+            .arg(&k8_config.chart_name)
             .arg(CORE_CHART_NAME)
             .arg("--version")
-            .arg(crate::VERSION);
+            .arg(
+                opt.k8_config
+                    .version
+                    .clone()
+                    .unwrap_or(crate::VERSION.to_owned()),
+            );
     };
 
     cmd.arg("-n")
@@ -258,7 +270,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 }
 
 pub fn install_sys(opt: InstallCommand) {
-    helm::repo_add();
+    helm::repo_add(opt.k8_config.chart_location.as_deref());
     helm::repo_update();
 
     Command::new("helm")
