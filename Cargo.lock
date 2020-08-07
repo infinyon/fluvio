@@ -645,7 +645,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36a9cb09840f81cd211e435d00a4e487edd263dc3c8ff815c32dd76ad668ebed"
 
 [[package]]
-name = "fluvio"
+name = "flv-api-sc"
+version = "2.0.0"
+dependencies = [
+ "flv-metadata-cluster",
+ "flv-types",
+ "flv-util 0.2.1",
+ "kf-protocol",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "flv-api-spu"
+version = "2.0.0"
+dependencies = [
+ "bytes 0.5.6",
+ "kf-protocol",
+ "log",
+ "serde",
+]
+
+[[package]]
+name = "flv-cli"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -677,28 +699,6 @@ dependencies = [
  "toml",
  "url",
  "utils",
-]
-
-[[package]]
-name = "flv-api-sc"
-version = "2.0.0"
-dependencies = [
- "flv-metadata-cluster",
- "flv-types",
- "flv-util 0.2.1",
- "kf-protocol",
- "log",
- "serde",
-]
-
-[[package]]
-name = "flv-api-spu"
-version = "2.0.0"
-dependencies = [
- "bytes 0.5.6",
- "kf-protocol",
- "log",
- "serde",
 ]
 
 [[package]]
