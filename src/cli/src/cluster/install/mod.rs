@@ -107,7 +107,6 @@ where
 {
     use k8::install_sys;
     use k8::install_core;
-    
 
     #[cfg(feature = "cluster_components")]
     use local::install_local;
@@ -116,7 +115,6 @@ where
         install_sys(command);
     } else {
         if command.local {
-
             #[cfg(feature = "cluster_components")]
             install_local(command).await?;
         } else {
