@@ -1,6 +1,6 @@
 mod k8;
 
-#[cfg(feature = "cluster_feature")]
+#[cfg(feature = "cluster_components")]
 mod local;
 
 mod helm;
@@ -109,7 +109,7 @@ where
     use k8::install_core;
     
 
-    #[cfg(feature = "cluster_feature")]
+    #[cfg(feature = "cluster_components")]
     use local::install_local;
 
     if command.sys {
@@ -117,7 +117,7 @@ where
     } else {
         if command.local {
 
-            #[cfg(feature = "cluster_feature")]
+            #[cfg(feature = "cluster_components")]
             install_local(command).await?;
         } else {
             install_core(command).await?;
