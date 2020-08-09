@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use util::*;
 
 use minikube::SetMinikubeContext;
-use install::InstallCommand;
+pub use install::InstallCommand;
 use uninstall::UninstallCommand;
 
 #[derive(Debug, StructOpt)]

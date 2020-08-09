@@ -18,10 +18,12 @@ use flv_future_aio::timer::sleep;
 
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
+use k8_metadata_client::NameSpace;
 
 use crate::k8::metadata::K8List;
 use crate::k8::metadata::K8Watch;
 use crate::k8::metadata::Spec as K8Spec;
+
 use crate::core::Spec;
 use crate::store::k8::K8ExtendedSpec;
 use crate::store::StoreContext;
@@ -39,7 +41,7 @@ where
     S::IndexKey: Debug,
 {
     client: SharedClient<C>,
-    namespace: String,
+    namespace: NameSpace,
     ctx: StoreContext<S>,
     ws_update_service: K8WSUpdateService<C, S>,
 }
@@ -60,10 +62,10 @@ where
     S::IndexKey: Display,
 {
     /// start dispatcher
-    pub fn start(namespace: String, client: SharedClient<C>, ctx: StoreContext<S>) {
+    pub fn start(namespace: impl Into<NameSpace>, client: SharedClient<C>, ctx: StoreContext<S>) {
         let ws_update_service = K8WSUpdateService::new(client.clone());
         let dispatcher = Self {
-            namespace,
+            namespace: namespace.into(),
             client,
             ctx,
             ws_update_service,
@@ -213,7 +215,7 @@ where
                     K8Action::UpdateSpec((spec, obj.inner().ctx().item().clone()))
                 } else {
                     // create new ctx
-                    let meta = ObjectMeta::new(key.to_string(), self.namespace.clone());
+                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
                     K8Action::UpdateSpec((spec, meta))
                 }
             }
@@ -223,7 +225,7 @@ where
                     K8Action::UpdateStatus((status, obj.inner().ctx().item().clone()))
                 } else {
                     // create new ctx
-                    let meta = ObjectMeta::new(key.to_string(), self.namespace.clone());
+                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
                     K8Action::UpdateStatus((status, meta))
                 }
             }

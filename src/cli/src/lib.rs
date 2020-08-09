@@ -8,7 +8,7 @@ mod topic;
 mod output;
 mod profile;
 mod tls;
-mod cluster;
+pub mod cluster;
 mod group;
 mod custom;
 mod partition;
@@ -19,7 +19,7 @@ mod run;
 pub use self::error::CliError;
 pub use self::root_cli::run_cli;
 
-use output::Terminal;
+pub use output::Terminal;
 use output::*;
 
 const VERSION: &'static str = include_str!("VERSION");
