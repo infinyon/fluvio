@@ -1,5 +1,8 @@
 mod k8;
+
+#[cfg(feature = "cluster_components")]
 mod local;
+
 mod helm;
 
 use structopt::StructOpt;
@@ -70,10 +73,10 @@ pub struct TlsConfig {
 pub struct InstallCommand {
     /// use local image
     #[structopt(long)]
-    develop: bool,
+    pub develop: bool,
 
     #[structopt(flatten)]
-    k8_config: K8Install,
+    pub k8_config: K8Install,
 
     /// number of SPU
     #[structopt(long, default_value = "1")]
@@ -104,12 +107,15 @@ where
 {
     use k8::install_sys;
     use k8::install_core;
+
+    #[cfg(feature = "cluster_components")]
     use local::install_local;
 
     if command.sys {
         install_sys(command);
     } else {
         if command.local {
+            #[cfg(feature = "cluster_components")]
             install_local(command).await?;
         } else {
             install_core(command).await?;
