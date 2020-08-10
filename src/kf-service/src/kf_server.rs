@@ -13,10 +13,11 @@ use event_listener::Event;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
-use log::error;
-use log::info;
-use log::trace;
-use log::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::debug;
+use tracing::instrument;
 use async_trait::async_trait;
 
 use flv_future_aio::net::TcpListener;
@@ -43,7 +44,7 @@ pub trait SocketBuilder: Clone {
         InnerKfSink<Self::Stream>: ZeroCopyWrite;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DefaultSocketBuilder {}
 
 #[async_trait]
@@ -81,6 +82,7 @@ where
 }
 
 /// Transform Service into Futures 01
+#[derive(Debug)]
 pub struct InnerKfApiServer<R, A, C, S, T> {
     req: PhantomData<R>,
     api: PhantomData<A>,
@@ -120,10 +122,10 @@ where
 impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
     R: KfRequestMessage<ApiKey = A> + Send + Debug + 'static,
-    C: Clone + Sync + Send + 'static,
+    C: Clone + Sync + Send + Debug +'static,
     A: Send + KfDecoder + Debug + 'static,
-    S: KfService<T::Stream, Request = R, Context = C> + Send + 'static + Sync,
-    T: SocketBuilder + Send + 'static,
+    S: KfService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
+    T: SocketBuilder + Send + Debug + 'static,
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
     InnerKfSink<T::Stream>: ZeroCopyWrite,
 {
@@ -148,6 +150,7 @@ where
         }
     }
 
+    #[instrument]
     async fn event_loop(self, listener: TcpListener, shutdown: Arc<Event>) {
         use tokio::select;
 

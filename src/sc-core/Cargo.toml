@@ -18,7 +18,7 @@ async-lock = "1.1.2"
 async-channel = "1.1.0"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
-flv-util = { version = "0.2.0"}
+flv-util = { path = "../../../flv-util", version = "0.2.0" }
 flv-future-aio = { version = "2.3.0", features =["tls","unstable"] }
 k8-metadata-client = { version = "1.0.1"}
 k8-obj-metadata = { version = "1.0.0" }
@@ -29,9 +29,10 @@ kf-socket = {path = "../kf-socket"}
 kf-service = { path = "../kf-service"}
 internal-api = { path = "../internal-api"}
 flv-metadata-cluster = { features = ["k8"],path = "../metadata-cluster"}
-sc-api = { path = "../sc-api",  package = "flv-api-sc"}
+sc-api = { version = "2.0.0", path = "../sc-api",  package = "flv-api-sc"}
 flv-eventstream-dispatcher = { path = "../event-stream-k8" }
+tracing = "0.1.17"
 
 [dev-dependencies]
 flv-future-aio = { version = "2.3.0", features=["fixture"]}
-flv-util = { version = "0.2.0", features=["fixture"]}
+flv-util = { path = "../../../flv-util", version = "0.2.0", features=["fixture"]}

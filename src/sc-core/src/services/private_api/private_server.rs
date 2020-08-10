@@ -26,6 +26,8 @@ use crate::controllers::spus::SpuAction;
 use crate::stores::actions::WSAction;
 
 const HEALTH_DURATION: u64 = 30;
+
+#[derive(Debug)]
 pub struct ScInternalService {}
 
 impl ScInternalService {

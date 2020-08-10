@@ -6,6 +6,8 @@ authors = ["fluvio.io"]
 
 [dependencies]
 log = "0.4.8"
+tracing = "0.1.18"
+tracing-futures = "0.2.4"
 futures = { version = "0.3.4", features = ["async-await"] }
 async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
