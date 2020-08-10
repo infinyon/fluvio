@@ -11,11 +11,9 @@ mod process {
     use crate::cloud::{LoginOpt, LogoutOpt};
     use crate::t_println;
 
-    pub async fn process_login<O>(
-        out: std::sync::Arc<O>,
-        opt: LoginOpt,
-    ) -> Result<String, CliError>
-        where O: Terminal,
+    pub async fn process_login<O>(out: std::sync::Arc<O>, opt: LoginOpt) -> Result<String, CliError>
+    where
+        O: Terminal,
     {
         let password = rpassword::read_password_from_tty(Some("Fluvio Password: "))?;
         t_println!(out, "Logging in: {} - {}", opt.username, password);
@@ -26,7 +24,8 @@ mod process {
         out: std::sync::Arc<O>,
         _opt: LogoutOpt,
     ) -> Result<String, CliError>
-        where O: Terminal,
+    where
+        O: Terminal,
     {
         t_println!(out, "Logging out");
         Ok("".to_owned())
