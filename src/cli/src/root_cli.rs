@@ -26,6 +26,8 @@ use super::topic::TopicOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 use super::partition::PartitionOpt;
+use super::login::LoginOpt;
+use super::login::process_login;
 
 #[cfg(feature = "cluster_components")]
 use super::run::{process_run, RunOpt};
@@ -45,6 +47,13 @@ enum Root {
         about = "Reads messages from a topic/partition"
     )]
     Consume(ConsumeLogOpt),
+
+    #[structopt(
+        name = "login",
+        template = COMMAND_TEMPLATE,
+        about = "Logs into Fluvio cloud"
+    )]
+    Login(LoginOpt),
 
     #[structopt(
         name = "produce",
@@ -127,6 +136,7 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Partition(partition) => partition.process_partition(terminal.clone()).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
+            Root::Login(login) => process_login(terminal.clone(), login).await,
             #[cfg(feature = "cluster_components")]
             Root::Run(opt) => process_run(opt),
             Root::Version(_) => process_version_cmd(),

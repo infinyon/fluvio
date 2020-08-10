@@ -12,6 +12,7 @@ pub mod cluster;
 mod group;
 mod custom;
 mod partition;
+mod login;
 
 #[cfg(feature = "cluster_components")]
 mod run;
