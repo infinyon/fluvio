@@ -9,3 +9,5 @@ pub struct LoginOpt {
     )]
     pub username: String,
 }
+
+pub struct LogoutOpt;
