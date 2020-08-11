@@ -14,6 +14,7 @@ use super::KfSPUPeerApiEnum;
 use super::fetch_stream::handle_fetch_stream_request;
 use crate::core::DefaultSharedGlobalContext;
 
+#[derive(Debug)]
 pub struct InternalService {}
 
 impl InternalService {

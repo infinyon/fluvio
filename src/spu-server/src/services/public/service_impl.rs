@@ -27,6 +27,7 @@ use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
 use super::OffsetReplicaList;
 
+#[derive(Debug)]
 pub struct PublicService {}
 
 impl PublicService {
