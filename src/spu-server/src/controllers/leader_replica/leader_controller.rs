@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use log::debug;
-use log::warn;
-use log::error;
+use tracing::debug;
+use tracing::warn;
+use tracing::error;
 use futures::channel::mpsc::Receiver;
 use futures::future::FutureExt;
 use futures::future::join3;

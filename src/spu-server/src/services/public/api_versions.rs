@@ -1,5 +1,5 @@
 use std::io::Error;
-use log::debug;
+use tracing::debug;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;

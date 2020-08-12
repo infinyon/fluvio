@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use log::debug;
-use log::error;
+use tracing::debug;
+use tracing::error;
 use event_listener::Event;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;

@@ -7,7 +7,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::convert::TryFrom;
 
-use log::debug;
+use tracing::debug;
 
 use flv_future_aio::net::tls::AllDomainConnector;
 

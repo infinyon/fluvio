@@ -13,10 +13,11 @@ use event_listener::Event;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
-use log::error;
-use log::info;
-use log::trace;
-use log::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::debug;
+use tracing::instrument;
 use async_trait::async_trait;
 
 use flv_future_aio::net::TcpListener;
@@ -43,7 +44,7 @@ pub trait SocketBuilder: Clone {
         InnerKfSink<Self::Stream>: ZeroCopyWrite;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DefaultSocketBuilder {}
 
 #[async_trait]
@@ -81,6 +82,7 @@ where
 }
 
 /// Transform Service into Futures 01
+#[derive(Debug)]
 pub struct InnerKfApiServer<R, A, C, S, T> {
     req: PhantomData<R>,
     api: PhantomData<A>,
@@ -120,10 +122,10 @@ where
 impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
     R: KfRequestMessage<ApiKey = A> + Send + Debug + 'static,
-    C: Clone + Sync + Send + 'static,
+    C: Clone + Sync + Send + Debug + 'static,
     A: Send + KfDecoder + Debug + 'static,
-    S: KfService<T::Stream, Request = R, Context = C> + Send + 'static + Sync,
-    T: SocketBuilder + Send + 'static,
+    S: KfService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
+    T: SocketBuilder + Send + Debug + 'static,
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
     InnerKfSink<T::Stream>: ZeroCopyWrite,
 {
@@ -138,7 +140,7 @@ where
     async fn run_shutdown(self, shutdown_signal: Arc<Event>) {
         match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
-                info!("starting event loop for: {}", &self.addr);
+                info!("starting event loop");
                 self.event_loop(listener, shutdown_signal).await;
             }
             Err(err) => {
@@ -148,33 +150,33 @@ where
         }
     }
 
+    #[instrument(skip(self, listener, shutdown), fields(address = &*self.addr))]
     async fn event_loop(self, listener: TcpListener, shutdown: Arc<Event>) {
         use tokio::select;
 
-        let addr = self.addr.clone();
         let mut incoming = listener.incoming();
-
-        debug!("listening connection on {}", addr);
+        debug!("opened connection listener");
 
         loop {
-            debug!("waiting for client connection: {}", addr);
+            debug!("waiting for client connection");
 
             select! {
                 incoming = incoming.next() => {
                      self.serve_incoming(incoming)
                 },
                 _ = shutdown.listen()  => {
-                    debug!("shutdown signal received: {}",addr);
+                    debug!("shutdown signal received");
                     break;
                 }
 
             }
         }
 
-        debug!("server terminating: {}", addr);
+        debug!("server terminating");
     }
 
     /// process incoming request, for each request, we create async task for serving
+    #[instrument(skip(self, incoming))]
     fn serve_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
@@ -184,13 +186,11 @@ where
                     let builder = self.builder.clone();
 
                     let ft = async move {
-                        debug!(
-                            "new connection from {}",
-                            stream
-                                .peer_addr()
-                                .map(|addr| addr.to_string())
-                                .unwrap_or("".to_owned())
-                        );
+                        let address = stream
+                            .peer_addr()
+                            .map(|addr| addr.to_string())
+                            .unwrap_or_else(|_| "".to_owned());
+                        debug!(peer = &*address, "new peer connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {
@@ -223,8 +223,8 @@ mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use log::debug;
-    use log::trace;
+    use tracing::debug;
+    use tracing::trace;
 
     use flv_future_aio::timer::sleep;
     use flv_future_aio::test_async;

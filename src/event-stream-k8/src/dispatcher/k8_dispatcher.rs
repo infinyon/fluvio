@@ -6,9 +6,10 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use futures::stream::StreamExt;
-use log::debug;
-use log::error;
-use log::info;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::instrument;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -74,10 +75,17 @@ where
         spawn(dispatcher.outer_loop());
     }
 
+    #[instrument(
+        skip(self),
+        fields(
+            spec = S::LABEL,
+            namespace = self.namespace.named(),
+        )
+    )]
     async fn outer_loop(mut self) {
-        info!("starting {} k8 dispatcher loop", S::LABEL);
+        info!("starting k8 dispatcher loop");
         loop {
-            debug!("starting inner loop: {}", S::LABEL);
+            debug!("starting inner loop");
             self.inner_loop().await;
         }
     }
@@ -85,6 +93,7 @@ where
     ///
     /// Kubernetes Dispatcher Event Loop
     ///
+    #[instrument(skip(self))]
     async fn inner_loop(&mut self) {
         use tokio::select;
 
@@ -108,9 +117,8 @@ where
         loop {
             let reconcile_time_mark = Instant::now();
             debug!(
-                "{}: waiting events for ws/k8, reconcile seconds left: {}",
-                S::LABEL,
-                reconcile_time_left.as_secs()
+                time_left = reconcile_time_left.as_secs(),
+                "waiting events for ws/k8"
             );
             let ws_receiver = self.ctx.receiver();
 
@@ -132,11 +140,11 @@ where
                                 ).await {
                                     self.ctx.event().notify(usize::MAX);
                                 } else {
-                                    debug!("no changes to sync_all: {}",S::LABEL)
+                                    debug!("no changes to sync_all")
                                 }
 
                             }
-                            Err(err) => error!("{}: watch error {}", S::LABEL,err),
+                            Err(err) => error!("watch error {}", err),
                         }
 
                     } else {
@@ -150,11 +158,11 @@ where
                 msg = ws_receiver.recv() => {
                     match msg {
                         Ok(action) => {
-                            debug!("{} store: received ws action: {}",S::LABEL,action);
+                            debug!("store: received ws action: {}", action);
                            self.process_ws_action(action).await;
                         },
                         Err(err) => {
-                            error!("WS channel: <{}> error: {}",S::LABEL,err);
+                            error!("WS channel error: {}", err);
                             panic!(-1);
                         }
                     }
@@ -170,6 +178,7 @@ where
     ///
     /// Retrieve all items from Kubernetes (K8) store for forward them to processing engine
     ///
+    #[instrument(skip(self))]
     async fn retrieve_all_k8_items(&mut self) -> Result<String, IoError> {
         let k8_objects = self
             .client
@@ -184,10 +193,9 @@ where
 
         let version = k8_objects.metadata.resource_version.clone();
         debug!(
-            "Retrieving <{}> items: {}, version: {}",
-            S::LABEL,
-            k8_objects.items.len(),
-            version
+            version = &*version,
+            item_count = k8_objects.items.len(),
+            "Retrieving items",
         );
         // wait to receive all items before sending to channel
         k8_events_to_metadata_actions(k8_objects, self.ctx.store())
@@ -198,11 +206,12 @@ where
                     format!("error converting k8: {}", err),
                 )
             })?;
-        debug!("notifying: {} receivers", S::LABEL);
+        debug!("notifying receivers");
         self.ctx.event().notify(usize::MAX);
         Ok(version)
     }
 
+    #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use super::k8_actions::K8Action;
         use crate::k8::metadata::ObjectMeta;
@@ -235,9 +244,8 @@ where
                     K8Action::Delete(obj.inner().ctx().item().clone())
                 } else {
                     error!(
-                        "Store: {} trying to delete, non existent key: {}",
-                        S::LABEL,
-                        key
+                        key = &*format!("{}", key),
+                        "Store: trying to delete non existent key",
                     );
                     return;
                 }
@@ -258,7 +266,8 @@ mod convert {
 
     use std::fmt::Display;
 
-    use log::{debug, error, trace};
+    use tracing::{debug, error, trace};
+    use tracing::instrument;
     use crate::k8::metadata::K8List;
     use crate::k8::metadata::K8Obj;
     use crate::k8::metadata::K8Watch;
@@ -277,6 +286,7 @@ mod convert {
     /// It only generates KVInputAction if incoming k8 object is different from memstore
     ///
     /// This will be replaced with store::sync_all
+    #[instrument(skip(k8_tokens, local_store))]
     pub async fn k8_events_to_metadata_actions<S>(
         k8_tokens: K8List<S::K8Spec>,
         local_store: &LocalStore<S, K8MetaItem>,
@@ -313,6 +323,7 @@ mod convert {
     ///
     /// Translates watch events into metadata action and apply into local store
     ///
+    #[instrument(skip(stream, local_store))]
     pub async fn k8_watch_events_to_metadata_actions<S, E>(
         stream: TokenStreamResult<S::K8Spec, E>,
         local_store: &LocalStore<S, K8MetaItem>,

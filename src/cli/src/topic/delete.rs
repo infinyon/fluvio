@@ -4,7 +4,7 @@
 //! CLI tree to generate Delete Topics
 //!
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
 use flv_client::config::ClusterConfig;

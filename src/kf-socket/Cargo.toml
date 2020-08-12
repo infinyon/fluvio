@@ -10,7 +10,7 @@ categories = ["encoding"]
 
 
 [dependencies]
-log = "0.4.8"
+tracing = "0.1.19"
 bytes = "0.5.4"
 futures = { version = "0.3.4" }
 pin-utils = "0.1.0-alpha.4"
@@ -26,5 +26,6 @@ flv-future-aio = { version = "2.2.1", features = ["tls"] }
 
 
 [dev-dependencies]
+log = "0.4.8"
 flv-util = { version = "0.1.0", features = ["fixture"]}
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }

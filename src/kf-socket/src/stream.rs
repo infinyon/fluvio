@@ -3,8 +3,8 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::trace;
-use log::error;
+use tracing::trace;
+use tracing::error;
 use futures::io::{AsyncRead, AsyncWrite};
 use futures::Stream;
 use futures::stream::StreamExt;

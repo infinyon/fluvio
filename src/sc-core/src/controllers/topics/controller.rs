@@ -3,7 +3,7 @@
 //!
 //! Reconcile Topics
 
-use log::debug;
+use tracing::debug;
 
 use flv_future_aio::task::spawn;
 
@@ -97,7 +97,7 @@ impl TopicController {
 #[cfg(test)]
 mod tests {
 
-    use log::debug;
+    use tracing::debug;
     use futures::channel::mpsc::channel;
     use futures::channel::mpsc::Receiver;
 

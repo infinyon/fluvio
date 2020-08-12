@@ -12,7 +12,7 @@ use_serde = ["serde"]
 k8 = ["use_serde","k8-obj-metadata","k8-obj-core","k8-obj-app"]
 
 [dependencies]
-log = "0.4.8"
+tracing = "0.1.19"
 serde = { version ="1.0.0", features = ['derive'], optional = true }
 k8-obj-metadata = { version = "1.0.0", optional = true }
 k8-obj-core = { version = "1.1.0", optional = true}

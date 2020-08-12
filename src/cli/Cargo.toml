@@ -20,9 +20,9 @@ cluster_components = ["flv-spu", "flv-sc-k8"]
 rustc_version = "0.2.3"
 
 [dependencies]
+tracing = "0.1.19"
 url = "2.1.1"
 semver = "0.10.0"
-log = "0.4.8"
 bytes = "0.5.3"
 structopt = { version = "0.3.15", default-features = false }
 toml = "0.5.5"

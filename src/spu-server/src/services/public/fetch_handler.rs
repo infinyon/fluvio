@@ -1,5 +1,5 @@
-use log::trace;
-use log::debug;
+use tracing::trace;
+use tracing::debug;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 

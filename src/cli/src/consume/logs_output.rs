@@ -4,7 +4,7 @@
 //! Connects to server and fetches logs
 //!
 
-use log::debug;
+use tracing::debug;
 use serde_json;
 use serde_json::Value;
 

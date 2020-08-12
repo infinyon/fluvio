@@ -1,7 +1,7 @@
 use std::default::Default;
 use std::fmt;
 
-use log::trace;
+use tracing::trace;
 use async_trait::async_trait;
 
 use kf_protocol::api::RequestMessage;

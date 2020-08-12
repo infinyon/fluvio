@@ -1,4 +1,4 @@
-use log::trace;
+use tracing::trace;
 use std::io::Error;
 
 use flv_types::Name;

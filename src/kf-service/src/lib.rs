@@ -14,11 +14,11 @@ macro_rules! call_service {
     ($req:expr,$handler:expr,$sink:expr,$msg:expr) => {{
         {
             let version = $req.header.api_version();
-            log::trace!("invoking handler: {}", $msg);
+            tracing::trace!("invoking handler: {}", $msg);
             let response = $handler.await?;
-            log::trace!("send back response: {:#?}", &response);
+            tracing::trace!("send back response: {:#?}", &response);
             $sink.send_response(&response, version).await?;
-            log::trace!("finish send");
+            tracing::trace!("finish send");
         }
     }};
 
@@ -34,20 +34,20 @@ macro_rules! api_loop {
         use futures::stream::StreamExt;
         loop {
 
-            log::debug!("waiting for next api request");
+            tracing::debug!("waiting for next api request");
             if let Some(msg) = $api_stream.next().await {
                 if let Ok(req_message) = msg {
-                    log::trace!("received request: {:#?}",req_message);
+                    tracing::trace!("received request: {:#?}",req_message);
                     match req_message {
                         $($matcher => $result),*
                     }
                 } else {
-                    log::debug!("no content, end of connection {:#?}", msg);
+                    tracing::debug!("no content, end of connection {:#?}", msg);
                     break;
                 }
 
             } else {
-                log::debug!("client connect terminated");
+                tracing::debug!("client connect terminated");
                 break;
             }
         }
@@ -58,20 +58,20 @@ macro_rules! api_loop {
         use futures::stream::StreamExt;
         loop {
 
-            log::debug!("waiting for next api request: {}",$debug_msg);
+            tracing::debug!("waiting for next api request: {}",$debug_msg);
             if let Some(msg) = $api_stream.next().await {
                 if let Ok(req_message) = msg {
-                    log::trace!("received request: {:#?}",req_message);
+                    tracing::trace!("received request: {:#?}",req_message);
                     match req_message {
                         $($matcher => $result),*
                     }
                 } else {
-                    log::debug!("no content, end of connection {}", $debug_msg);
+                    tracing::debug!("no content, end of connection {}", $debug_msg);
                     break;
                 }
 
             } else {
-                log::debug!("client connect terminated: {}",$debug_msg);
+                tracing::debug!("client connect terminated: {}",$debug_msg);
                 break;
             }
         }
@@ -86,20 +86,20 @@ macro_rules! wait_for_request {
 
         if let Some(msg) = $api_stream.next().await {
             if let Ok(req_message) = msg {
-                log::trace!("received request: {:#?}", req_message);
+                tracing::trace!("received request: {:#?}", req_message);
                 match req_message {
                     $matcher => $result,
                     _ => {
-                        log::error!("unexpected request: {:#?}", req_message);
+                        tracing::error!("unexpected request: {:#?}", req_message);
                         return Ok(());
                     }
                 }
             } else {
-                log::trace!("no content, end of connection");
+                tracing::trace!("no content, end of connection");
                 return Ok(());
             }
         } else {
-            log::trace!("client connect terminated");
+            tracing::trace!("client connect terminated");
             return Ok(());
         }
     }};

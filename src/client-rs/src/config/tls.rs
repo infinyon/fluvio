@@ -3,7 +3,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::Path;
 
-use log::info;
+use tracing::info;
 use base64::decode;
 use serde::Deserialize;
 use serde::Serialize;

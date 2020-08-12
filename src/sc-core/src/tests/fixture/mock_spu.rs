@@ -2,10 +2,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::io::Error as IoError;
 
-use log::info;
-use log::debug;
-use log::warn;
-use log::trace;
+use tracing::info;
+use tracing::debug;
+use tracing::warn;
+use tracing::trace;
 use futures::select;
 use futures::stream::StreamExt;
 use futures::future::FutureExt;
@@ -150,7 +150,7 @@ where
                 api_msg = api_stream.next().fuse() => {
                     if let Some(msg) = api_msg {
                         if let Ok(req_message) = msg {
-                            log::trace!("received request: {:#?}",req_message);
+                            tracing::trace!("received request: {:#?}",req_message);
                             match req_message {
                                 InternalSpuRequest::UpdateSpuRequest(request) => {
                                     handle_spu_update_request(request, self.ctx.clone()).await.expect("spu handl should work");
@@ -161,12 +161,12 @@ where
                             }
                             
                         } else {
-                            log::trace!("no content, end of connection {:#?}", msg);
+                            tracing::trace!("no content, end of connection {:#?}", msg);
                             break;
                         }
 
                     } else {
-                        log::trace!("client connect terminated");
+                        tracing::trace!("client connect terminated");
                         break;
                     }
                 }

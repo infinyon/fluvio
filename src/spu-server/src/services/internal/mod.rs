@@ -3,7 +3,7 @@ mod fetch_stream;
 mod service_impl;
 mod fetch_stream_request;
 
-use log::info;
+use tracing::info;
 
 use kf_service::KfApiServer;
 use service_impl::InternalService;

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use log::debug;
+use tracing::debug;
 use futures::channel::mpsc::Receiver;
 use futures::channel::mpsc::channel;
 use futures::channel::mpsc::Sender;

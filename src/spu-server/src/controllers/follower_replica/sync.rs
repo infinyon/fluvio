@@ -5,7 +5,7 @@ use std::io::Error as IoError;
 use std::marker::PhantomData;
 
 use bytes::BytesMut;
-use log::trace;
+use tracing::trace;
 
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;

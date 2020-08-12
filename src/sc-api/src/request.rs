@@ -7,7 +7,7 @@
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use log::debug;
+use tracing::debug;
 
 use kf_protocol::bytes::Buf;
 

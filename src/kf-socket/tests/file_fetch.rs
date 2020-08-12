@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::env::temp_dir;
 use std::time::Duration;
 
-use log::debug;
+use tracing::debug;
 use futures::io::AsyncWriteExt;
 use futures::future::join;
 use futures::stream::StreamExt;

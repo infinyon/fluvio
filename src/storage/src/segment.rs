@@ -3,8 +3,8 @@ use std::io::Error as IoError;
 use std::ops::Deref;
 
 use futures::stream::StreamExt;
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 
 use kf_protocol::api::DefaultBatch;
 use kf_protocol::api::Offset;
@@ -360,7 +360,7 @@ fn compute_batch_record_size(batch: &DefaultBatch) -> usize {
 #[cfg(test)]
 mod tests {
 
-    use log::debug;
+    use tracing::debug;
     use std::env::temp_dir;
     use std::fs::metadata;
     use std::io::Cursor;

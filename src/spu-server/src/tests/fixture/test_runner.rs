@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::sync::Arc;
 use std::sync::RwLock;
 
-use log::debug;
+use tracing::debug;
 use futures::SinkExt;
 use futures::future::join3;
 use futures::future::join_all;

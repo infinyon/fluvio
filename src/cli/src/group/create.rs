@@ -4,7 +4,7 @@
 //! CLI tree to generate Create Managed SPU Groups
 //!
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
 use flv_client::ClusterConfig;

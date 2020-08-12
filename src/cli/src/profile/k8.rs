@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::debug;
+use tracing::debug;
 
 use k8_client::K8Client;
 

@@ -1,4 +1,4 @@
-use log::info;
+use tracing::info;
 use std::fs::File;
 use std::io;
 use std::io::Read;

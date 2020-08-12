@@ -4,7 +4,7 @@ use std::hash::Hash;
 
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
-use log::trace;
+use tracing::trace;
 
 use crate::KfSink;
 
@@ -48,8 +48,8 @@ mod tests {
 
     use std::time::Duration;
 
-    use log::debug;
-    use log::info;
+    use tracing::debug;
+    use tracing::info;
     use futures::stream::StreamExt;
     use futures::future::join;
 

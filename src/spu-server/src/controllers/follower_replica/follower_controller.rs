@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use log::trace;
-use log::error;
-use log::debug;
+use tracing::trace;
+use tracing::error;
+use tracing::debug;
 
 use futures::channel::mpsc::Receiver;
 use futures::select;

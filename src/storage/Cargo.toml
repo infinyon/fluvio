@@ -12,7 +12,7 @@ required-features = ["cli"]
 
 
 [dependencies]
-log = "0.4.8"
+tracing = "0.1.19"
 libc = "0.2.58"
 bytes = "0.5.3"
 futures = { version = "0.3.4" }

@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::process::Stdio;
 use std::io::Error as IoError;
 
-use log::debug;
+use tracing::debug;
 
 use k8_client::SharedK8Client;
 use flv_future_aio::timer::sleep;

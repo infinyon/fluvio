@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::fs::create_dir_all;
 
-use log::debug;
+use tracing::debug;
 use dirs::home_dir;
 use serde::Deserialize;
 use serde::Serialize;

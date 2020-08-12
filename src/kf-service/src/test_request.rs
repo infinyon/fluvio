@@ -97,6 +97,7 @@ impl KfRequestMessage for TestApiRequest {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct TestContext {}
 
 impl TestContext {
@@ -107,6 +108,7 @@ impl TestContext {
 
 pub(crate) type SharedTestContext = Arc<TestContext>;
 
+#[derive(Debug)]
 pub(crate) struct TestService {}
 
 impl TestService {

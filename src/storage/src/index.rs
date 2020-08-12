@@ -8,8 +8,8 @@ use std::path::Path;
 use std::slice;
 
 use libc::c_void;
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 use pin_utils::unsafe_unpinned;
 
 use flv_future_aio::fs::MemoryMappedFile;
