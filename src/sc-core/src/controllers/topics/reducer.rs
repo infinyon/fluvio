@@ -12,7 +12,7 @@
 //!
 use std::sync::Arc;
 
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 use crate::stores::topic::*;
 use crate::stores::partition::*;

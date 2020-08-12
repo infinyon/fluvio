@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use log::debug;
+use tracing::debug;
 use serde::Deserialize;
 
 use super::*;

@@ -6,9 +6,9 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use futures::stream::StreamExt;
-use log::debug;
-use log::error;
-use log::info;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -258,7 +258,7 @@ mod convert {
 
     use std::fmt::Display;
 
-    use log::{debug, error, trace};
+    use tracing::{debug, error, trace};
     use crate::k8::metadata::K8List;
     use crate::k8::metadata::K8Obj;
     use crate::k8::metadata::K8Watch;

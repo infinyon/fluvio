@@ -1,7 +1,7 @@
-use log::trace;
-use log::error;
-use log::debug;
-use log::warn;
+use tracing::trace;
+use tracing::error;
+use tracing::debug;
+use tracing::warn;
 use kf_socket::KfSocketError;
 use kf_socket::KfStream;
 use kf_socket::KfSocket;

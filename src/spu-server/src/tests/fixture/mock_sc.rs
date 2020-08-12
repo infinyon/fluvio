@@ -4,8 +4,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 
-use log::info;
-use log::debug;
+use tracing::info;
+use tracing::debug;
 use futures::future::BoxFuture;
 use futures::future::FutureExt;
 

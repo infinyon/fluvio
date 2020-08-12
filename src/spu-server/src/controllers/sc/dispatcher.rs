@@ -2,11 +2,11 @@ use std::time::Duration;
 use std::io::Error as IoError;
 use std::sync::Arc;
 
-use log::info;
-use log::trace;
-use log::error;
-use log::debug;
-use log::warn;
+use tracing::info;
+use tracing::trace;
+use tracing::error;
+use tracing::debug;
+use tracing::warn;
 use flv_util::print_cli_err;
 
 use futures::channel::mpsc::Receiver;

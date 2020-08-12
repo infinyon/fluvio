@@ -150,34 +150,33 @@ where
         }
     }
 
-    #[instrument]
+    #[instrument(skip(self, listener, shutdown), fields(address = &*self.addr))]
     async fn event_loop(self, listener: TcpListener, shutdown: Arc<Event>) {
         use tokio::select;
 
-        let addr = self.addr.clone();
         let mut incoming = listener.incoming();
-
-        debug!("listening connection on {}", addr);
+        debug!("opened connection listener");
 
         loop {
-            debug!("waiting for client connection: {}", addr);
+            debug!("waiting for client connection");
 
             select! {
                 incoming = incoming.next() => {
                      self.serve_incoming(incoming)
                 },
                 _ = shutdown.listen()  => {
-                    debug!("shutdown signal received: {}",addr);
+                    debug!("shutdown signal received");
                     break;
                 }
 
             }
         }
 
-        debug!("server terminating: {}", addr);
+        debug!("server terminating");
     }
 
     /// process incoming request, for each request, we create async task for serving
+    #[instrument(skip(self, incoming))]
     fn serve_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
@@ -187,13 +186,10 @@ where
                     let builder = self.builder.clone();
 
                     let ft = async move {
-                        debug!(
-                            "new connection from {}",
-                            stream
-                                .peer_addr()
-                                .map(|addr| addr.to_string())
-                                .unwrap_or("".to_owned())
-                        );
+                        let address = stream.peer_addr()
+                            .map(|addr| addr.to_string())
+                            .unwrap_or_else(|_| "".to_owned());
+                        debug!(address = &*address, "new connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {
@@ -226,8 +222,8 @@ mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use log::debug;
-    use log::trace;
+    use tracing::debug;
+    use tracing::trace;
 
     use flv_future_aio::timer::sleep;
     use flv_future_aio::test_async;

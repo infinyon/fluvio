@@ -2,13 +2,13 @@
 macro_rules! log_on_err {
     ($x:expr) => {
         if let Err(err) = $x {
-            log::error!("{}", err);
+            tracing::error!("{}", err);
         }
     };
 
     ($x:expr,$msg:expr) => {
         if let Err(err) = $x {
-            log::error!($msg, err);
+            tracing::error!($msg, err);
         }
     };
 }
@@ -16,7 +16,7 @@ macro_rules! log_on_err {
 #[macro_export]
 macro_rules! log_actions {
     ($x1:expr, $x2:expr, $x3:expr, $x4:expr, $x5:expr, $x6:expr) => {
-        log::debug!(
+        tracing::debug!(
             "{:<20}: [add:{}, mod:{}, del:{}, skip:{}]",
             format!("{}({})", $x1, $x2),
             $x3,

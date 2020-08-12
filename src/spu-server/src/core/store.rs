@@ -6,9 +6,9 @@ use std::sync::Arc;
 use std::fmt::Display;
 use std::fmt::Debug;
 
-use log::trace;
-use log::debug;
-use log::error;
+use tracing::trace;
+use tracing::debug;
+use tracing::error;
 
 use flv_metadata_cluster::message::*;
 use kf_protocol::{Decoder, Encoder};

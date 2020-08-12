@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
 use flv_client::config::TlsConfig as TlsProfileConfig;

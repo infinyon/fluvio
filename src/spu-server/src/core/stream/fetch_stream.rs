@@ -11,9 +11,9 @@ use chashmap::ReadGuard;
 use futures::future::TryFutureExt;
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
-use log::debug;
-use log::error;
-use log::trace;
+use tracing::debug;
+use tracing::error;
+use tracing::trace;
 
 use flv_types::SpuId;
 use flv_future_core::spawn;
@@ -183,7 +183,7 @@ mod test {
 
     use futures::future::FutureExt;
     use futures::stream::StreamExt;
-    use log::debug;
+    use tracing::debug;
 
     use flv_types::SpuId;
     use flv_future_aio::net::AsyncTcpListener;

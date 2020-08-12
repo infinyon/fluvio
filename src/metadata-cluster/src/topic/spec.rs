@@ -8,7 +8,7 @@
 use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 
-use log::trace;
+use tracing::trace;
 use flv_types::{ReplicaMap, SpuId};
 use flv_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 

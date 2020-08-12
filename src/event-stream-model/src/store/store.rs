@@ -5,8 +5,8 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use log::debug;
-use log::error;
+use tracing::debug;
+use tracing::error;
 use flv_future_aio::sync::RwLock;
 use flv_future_aio::sync::RwLockReadGuard;
 use flv_future_aio::sync::RwLockWriteGuard;

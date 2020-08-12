@@ -1,4 +1,4 @@
-use log::debug;
+use tracing::debug;
 
 use kf_socket::AllMultiplexerSocket;
 use kf_socket::KfSocketError;

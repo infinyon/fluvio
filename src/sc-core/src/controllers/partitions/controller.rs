@@ -2,7 +2,7 @@
 //! # Auth Controller
 //!
 
-use log::debug;
+use tracing::debug;
 
 use flv_future_aio::task::spawn;
 

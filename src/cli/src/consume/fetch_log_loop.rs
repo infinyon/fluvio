@@ -7,7 +7,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::debug;
+use tracing::debug;
 
 use flv_client::params::*;
 use flv_client::Consumer;

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use log::debug;
-use log::error;
-use log::info;
-use log::trace;
-use log::warn;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::warn;
 use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;

@@ -5,8 +5,8 @@
 //!
 use std::sync::Arc;
 
-use log::debug;
-use log::warn;
+use tracing::debug;
+use tracing::warn;
 
 use flv_metadata_cluster::partition::*;
 

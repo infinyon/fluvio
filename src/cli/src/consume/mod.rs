@@ -14,7 +14,7 @@ pub use process::process_consume_log;
 
 mod process {
 
-    use log::debug;
+    use tracing::debug;
 
     use crate::CliError;
     use crate::Terminal;

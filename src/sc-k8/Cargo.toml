@@ -10,8 +10,8 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
+tracing = "0.1.19"
 rand = "0.7.2"
-log = "0.4.8"
 toml = "0.5.5"
 structopt = "0.3.12"
 serde = { version ="1.0.103", features = ['derive'] }

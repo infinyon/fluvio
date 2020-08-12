@@ -1,6 +1,6 @@
 use std::io::Error;
 
-use log::{trace, debug};
+use tracing::{trace, debug};
 
 use sc_api::objects::*;
 use sc_api::partition::*;

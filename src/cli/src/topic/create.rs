@@ -8,7 +8,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
 use flv_client::ClusterConfig;

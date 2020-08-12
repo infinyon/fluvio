@@ -4,8 +4,8 @@ use std::io::ErrorKind;
 use std::time::Duration;
 use std::time::Instant;
 
-use log::error;
-use log::debug;
+use tracing::error;
+use tracing::debug;
 use async_trait::async_trait;
 use async_channel::Sender;
 use futures::Stream;
@@ -162,7 +162,7 @@ async fn dispatch_loop(
 
 
                 if let Some(spu_request) = spu_request_msg {
-                    log::trace!("received spu: {} request: {:#?}",spu_id,spu_request);
+                    tracing::trace!("received spu: {} request: {:#?}",spu_id,spu_request);
 
                     if let Ok(req_message) = spu_request {
                         match req_message {

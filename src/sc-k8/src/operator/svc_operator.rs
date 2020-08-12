@@ -1,7 +1,7 @@
-use log::debug;
-use log::error;
-use log::info;
-use log::trace;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
 use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;

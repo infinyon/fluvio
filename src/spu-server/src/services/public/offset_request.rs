@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 
-use log::trace;
+use tracing::trace;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;

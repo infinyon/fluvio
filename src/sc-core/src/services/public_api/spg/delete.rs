@@ -1,5 +1,5 @@
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 
 use std::io::Error;
 
