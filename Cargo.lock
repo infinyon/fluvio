@@ -987,6 +987,8 @@ dependencies = [
 [[package]]
 name = "flv-util"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8da61ce3a9a3a4b0f7b4ef48bcc2a02e3eaca4d8532cc93845d713502aca347b"
 dependencies = [
  "chrono",
  "env_logger 0.7.1",
