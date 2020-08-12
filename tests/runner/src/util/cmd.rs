@@ -14,14 +14,12 @@ pub trait CommandUtil {
     fn print(&mut self) -> &mut Self;
 
     fn rust_log(&mut self, log_option: Option<&str>) -> &mut Self;
-    
 }
 
 impl CommandUtil for Command {
-    fn rust_log(&mut self, log_option: Option<&str>) -> &mut Self
-    {
+    fn rust_log(&mut self, log_option: Option<&str>) -> &mut Self {
         if let Some(log) = log_option {
-            println!("setting rust log: {}",log);
+            println!("setting rust log: {}", log);
             self.env("RUST_LOG", log);
         }
 
