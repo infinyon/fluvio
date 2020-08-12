@@ -258,7 +258,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         cmd.arg("--set").arg("tls=true");
     }
 
-    if let Some(log) = &opt.log {
+    if let Some(log) = &opt.rust_log {
         cmd.arg("--set").arg(format!("scLog={}", log));
     }
 

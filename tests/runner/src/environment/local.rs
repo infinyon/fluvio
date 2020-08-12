@@ -39,8 +39,12 @@ impl EnvironmentDriver for LocalEnvDriver {
             .arg(self.option.spu.to_string())
             .arg("--local");
 
-        if let Some(log) = &self.option.log {
-            cmd.arg("--log").arg(log);
+        if let Some(log) = &self.option.rust_log {
+            cmd.arg("--rust-log").arg(log);
+        }
+
+        if let Some(log) = &self.option.log_dir {
+            cmd.arg("--log-dir").arg(log);
         }
 
         if self.option.tls() {
