@@ -122,7 +122,7 @@ where
 impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
     R: KfRequestMessage<ApiKey = A> + Send + Debug + 'static,
-    C: Clone + Sync + Send + Debug +'static,
+    C: Clone + Sync + Send + Debug + 'static,
     A: Send + KfDecoder + Debug + 'static,
     S: KfService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
     T: SocketBuilder + Send + Debug + 'static,
@@ -140,7 +140,7 @@ where
     async fn run_shutdown(self, shutdown_signal: Arc<Event>) {
         match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
-                info!("starting event loop for: {}", &self.addr);
+                info!("starting event loop");
                 self.event_loop(listener, shutdown_signal).await;
             }
             Err(err) => {
@@ -186,10 +186,11 @@ where
                     let builder = self.builder.clone();
 
                     let ft = async move {
-                        let address = stream.peer_addr()
+                        let address = stream
+                            .peer_addr()
                             .map(|addr| addr.to_string())
                             .unwrap_or_else(|_| "".to_owned());
-                        debug!(address = &*address, "new connection");
+                        debug!(peer = &*address, "new peer connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {

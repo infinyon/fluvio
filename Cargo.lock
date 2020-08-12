@@ -756,6 +756,7 @@ dependencies = [
  "serde",
  "tokio",
  "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -866,6 +867,7 @@ dependencies = [
  "structopt",
  "toml",
  "tracing",
+ "tracing-futures",
  "utils",
 ]
 
@@ -898,6 +900,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "tracing-futures",
  "utils",
 ]
 

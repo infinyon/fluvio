@@ -7,6 +7,7 @@ use tracing::trace;
 use tracing::error;
 use tracing::debug;
 use tracing::warn;
+use tracing::instrument;
 use flv_util::print_cli_err;
 
 use futures::channel::mpsc::Receiver;
@@ -137,6 +138,7 @@ impl ScDispatcher<FileReplica> {
     }
 
     /// dispatch sc request
+    #[instrument(skip(self, socket))]
     async fn sc_request_loop(&mut self, socket: KfSocket) -> Result<(), KfSocketError> {
         use tokio::select;
 
@@ -152,48 +154,36 @@ impl ScDispatcher<FileReplica> {
             select! {
 
                 _ = (sleep(Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC))) => {
-                    debug!("SC request loop timer fired, just checking, sink: {}",shared_sink.id());
+                    debug!(sink = shared_sink.id(), "SC request loop timer fired, just checking");
                    // break;
                 },
 
-
-                sc_request = api_stream.next() => {
-
-                    if let Some(sc_msg) = sc_request {
-                       if let Ok(req_message) = sc_msg {
-                            match req_message {
-
-                                InternalSpuRequest::UpdateReplicaRequest(request) => {
-                                    if let Err(err) = self.handle_update_replica_request(request,shared_sink.clone()).await {
-                                        error!("error handling update replica request: {}",err);
-                                        break;
-                                    }
-                                },
-                                InternalSpuRequest::UpdateSpuRequest(request) => {
-                                    if let Err(err) = self.handle_update_spu_request(request,shared_sink.clone()).await {
-                                        error!("error handling update spu request: {}",err);
-                                        break;
-                                    }
-                                }
-                            }
-
-                        } else {
-                            debug!("no more sc msg content, end");
+                sc_request = api_stream.next() => match sc_request {
+                    Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
+                        if let Err(err) = self.handle_update_replica_request(request, shared_sink.clone()).await {
+                            error!("error handling update replica request: {}", err);
                             break;
                         }
-
-                    } else {
+                    },
+                    Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
+                        if let Err(err) = self.handle_update_spu_request(request, shared_sink.clone()).await {
+                            error!("error handling update spu request: {}", err);
+                            break;
+                        }
+                    },
+                    Some(_) => {
+                        debug!("no more sc msg content, end");
+                        break;
+                    },
+                    _ => {
                         debug!("sc connection terminated");
                         break;
                     }
-
-                },
-
-
+                }
             }
         }
 
-        debug!("exiting request loop");
+        debug!("exiting sc request loop");
 
         Ok(())
     }
@@ -274,6 +264,7 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
+    #[instrument(skip(self, req_msg, shared_sc_sink), name = "update_replica_request")]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
@@ -285,19 +276,19 @@ impl ScDispatcher<FileReplica> {
 
         let actions = if request.all.len() > 0 {
             debug!(
-                "received replica sync all epoch: {}, items: {}",
-                request.epoch,
-                request.all.len()
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received replica sync all"
             );
             trace!("received replica all items: {:#?}", request.all);
             self.ctx.replica_localstore().sync_all(request.all)
         } else {
             debug!(
-                "received replica changes epoch: {}, items: {}",
-                request.epoch,
-                request.changes.len()
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received replica changes"
             );
-            trace!("received replica all items: {:#?}", request.changes);
+            trace!("received replica change items: {:#?}", request.changes);
             self.ctx.replica_localstore().apply_changes(request.changes)
         };
 
@@ -308,6 +299,7 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
+    #[instrument(skip(self, req_msg, _shared_sc_sink), name = "update_spu_request")]
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
@@ -317,25 +309,29 @@ impl ScDispatcher<FileReplica> {
 
         let _actions = if request.all.len() > 0 {
             debug!(
-                "received spu sync all epoch: {}, items: {}",
-                request.epoch,
-                request.all.len()
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received spu sync all"
             );
             trace!("received spu all items: {:#?}", request.all);
             self.ctx.spu_localstore().sync_all(request.all)
         } else {
             debug!(
-                "received spu changes epoch: {}, items: {}",
-                request.epoch,
-                request.changes.len()
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received spu changes"
             );
-            trace!("received spu all items: {:#?}", request.changes);
+            trace!("received spu change items: {:#?}", request.changes);
             self.ctx.spu_localstore().apply_changes(request.changes)
         };
 
         Ok(())
     }
 
+    #[instrument(
+        skip(self, actions, shared_sc_sink),
+        fields(action_count = actions.count())
+    )]
     async fn apply_replica_actions(
         &self,
         actions: Actions<SpecChange<Replica>>,
@@ -346,12 +342,12 @@ impl ScDispatcher<FileReplica> {
             return;
         }
 
-        trace!("applying replica leader {} actions", actions.count());
+        trace!("applying replica leader actions");
 
         let local_id = self.ctx.local_spu_id();
 
         for replica_action in actions.into_iter() {
-            trace!("applying replica action: {:#?}", replica_action);
+            trace!("applying action: {:#?}", replica_action);
 
             match replica_action {
                 SpecChange::Add(new_replica) => {
@@ -405,8 +401,12 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
+    #[instrument(
+        skip(self, replica, shared_sc_sink),
+        fields(replica_id = &*format!("{}", replica.id))
+    )]
     async fn add_leader_replica(&self, replica: Replica, shared_sc_sink: Arc<ExclusiveKfSink>) {
-        debug!("adding new leader replica: {}", replica);
+        debug!("adding new leader replica");
 
         let storage_log = self.ctx.config().storage().new_config();
         let replica_id = replica.id.clone();
@@ -423,8 +423,12 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
+    #[instrument(
+        skip(self, replica),
+        fields(replica_id = &*format!("{}", replica.id))
+    )]
     async fn update_leader_replica(&self, replica: Replica) {
-        debug!("updating leader controller: {}", replica.id);
+        debug!("updating leader controller");
 
         if self.ctx.leaders_state().has_replica(&replica.id) {
             debug!(
@@ -443,27 +447,33 @@ impl ScDispatcher<FileReplica> {
             {
                 Ok(status) => {
                     if !status {
-                        error!("leader controller mailbox: {} was not founded", replica.id);
+                        error!("leader controller mailbox was not found");
                     }
                 }
-                Err(err) => error!(
-                    "error sending external command: {:#?} to replica controller: {}",
-                    err, replica.id
-                ),
+                Err(err) => {
+                    error!(
+                        "error sending external command to replica controller: {:#?}",
+                        err
+                    );
+                }
             }
         } else {
-            error!("leader controller was not found: {}", replica.id)
+            error!("leader controller was not found")
         }
     }
 
     /// spawn new leader controller
+    #[instrument(
+        skip(self, replica_id, leader_state, shared_sc_sink),
+        fields(replica_id = &*format!("{}", replica_id))
+    )]
     fn spawn_leader_controller(
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
         shared_sc_sink: Arc<ExclusiveKfSink>,
     ) {
-        debug!("spawning new leader controller for {}", replica_id);
+        debug!("spawning new leader controller");
 
         let (sender, receiver) = channel(10);
 
@@ -491,11 +501,15 @@ impl ScDispatcher<FileReplica> {
         leader_controller.run();
     }
 
+    #[instrument(
+        skip(self, id),
+        fields(replica_id = &*format!("{}", id))
+    )]
     pub fn remove_leader_replica(&self, id: &ReplicaKey) {
-        debug!("removing leader replica: {}", id);
+        debug!("removing leader replica");
 
         if self.ctx.leaders_state().remove_replica(id).is_none() {
-            error!("fails to find leader replica: {} when removing", id);
+            error!("failed to find leader replica when removing");
         }
     }
 
