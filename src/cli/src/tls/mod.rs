@@ -71,7 +71,7 @@ impl TlsConfig {
                 Ok(Some(TlsProfileConfig::NoVerification))
             }
         } else {
-            debug!("no tls detected");
+            debug!("no optional tls");
             Ok(None)
         }
     }

@@ -27,7 +27,7 @@ pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     use std::fs::create_dir_all;
 
     let log_dir = opt
-        .log
+        .log_dir
         .clone()
         .unwrap_or_else(|| get_log_directory().to_owned());
 
@@ -78,7 +78,7 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
         set_server_tls(&mut binary, option, 9005);
     }
 
-    if let Some(log) = &option.log {
+    if let Some(log) = &option.rust_log {
         binary.env("RUST_LOG", log);
     }
     binary.print();
@@ -209,7 +209,7 @@ async fn launch_spu(
         set_server_tls(&mut binary, option, private_port + 1);
     }
 
-    if let Some(log) = &option.log {
+    if let Some(log) = &option.rust_log {
         binary.env("RUST_LOG", log);
     }
 

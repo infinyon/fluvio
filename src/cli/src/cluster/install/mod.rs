@@ -82,9 +82,13 @@ pub struct InstallCommand {
     #[structopt(long, default_value = "1")]
     spu: u16,
 
-    /// RUST_LOG
+    /// RUST_LOG options
     #[structopt(long)]
-    log: Option<String>,
+    rust_log: Option<String>,
+
+    /// log dir
+    #[structopt(long)]
+    log_dir: Option<String>,
 
     #[structopt(long)]
     /// installing sys
