@@ -11,6 +11,7 @@ use crate::Terminal;
 use crate::CliError;
 
 use super::util::*;
+use std::path::PathBuf;
 
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
@@ -39,34 +40,34 @@ pub struct K8Install {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct TlsConfig {
+pub struct TlsOpt {
     /// tls
     #[structopt(long)]
     tls: bool,
 
     /// TLS: path to server certificate
-    #[structopt(long, required_if("tls", "true"))]
-    pub server_cert: Option<String>,
+    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
+    pub server_cert: Option<PathBuf>,
 
     /// TLS: path to server private key
-    #[structopt(long, required_if("tls", "true"))]
-    pub server_key: Option<String>,
+    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
+    pub server_key: Option<PathBuf>,
 
     /// TLS: domain
     #[structopt(long, required_if("tls", "true"))]
     pub domain: Option<String>,
 
     /// TLS: client cert
-    #[structopt(long, required_if("tls", "true"))]
-    pub client_cert: Option<String>,
+    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
+    pub client_cert: Option<PathBuf>,
 
     /// TLS: client key
-    #[structopt(long, required_if("tls", "true"))]
-    pub client_key: Option<String>,
+    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
+    pub client_key: Option<PathBuf>,
 
     /// TLS: ca cert
-    #[structopt(long, required_if("tls", "true"))]
-    pub ca_cert: Option<String>,
+    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
+    pub ca_cert: Option<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -99,7 +100,7 @@ pub struct InstallCommand {
     local: bool,
 
     #[structopt(flatten)]
-    tls: TlsConfig,
+    tls: TlsOpt,
 }
 
 pub async fn process_install<O>(

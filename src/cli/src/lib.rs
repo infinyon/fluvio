@@ -49,7 +49,7 @@ mod target {
     use structopt::StructOpt;
 
     use flv_client::ClusterConfig;
-    use crate::tls::TlsConfig;
+    use crate::tls::TlsOpt;
     use crate::CliError;
     use crate::profile::InlineProfile;
 
@@ -61,7 +61,7 @@ mod target {
         pub cluster: Option<String>,
 
         #[structopt(flatten)]
-        tls: TlsConfig,
+        tls: TlsOpt,
 
         #[structopt(flatten)]
         profile: InlineProfile,
@@ -70,7 +70,7 @@ mod target {
     impl ClusterTarget {
         /// try to create sc config
         pub fn load(self) -> Result<ClusterConfig, CliError> {
-            let tls = self.tls.try_into_file_config()?;
+            let tls = self.tls.try_into_inline()?;
             // check case when inline profile is used
             if let Some(profile) = self.profile.profile {
                 if self.cluster.is_some() {

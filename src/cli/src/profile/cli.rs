@@ -4,7 +4,7 @@
 //! CLI command for Profile operation
 //!
 
-use crate::tls::TlsConfig;
+use crate::tls::TlsOpt;
 use structopt::StructOpt;
 
 use flv_client::config::ConfigFile;
@@ -62,7 +62,7 @@ pub struct SetLocal {
     pub local: String,
 
     #[structopt(flatten)]
-    pub tls: TlsConfig,
+    pub tls: TlsOpt,
 }
 
 #[derive(Debug, StructOpt, Default)]
@@ -76,7 +76,7 @@ pub struct SetK8 {
     pub name: Option<String>,
 
     #[structopt(flatten)]
-    pub tls: TlsConfig,
+    pub tls: TlsOpt,
 }
 
 #[derive(Debug, StructOpt)]
