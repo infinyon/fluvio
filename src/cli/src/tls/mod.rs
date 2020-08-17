@@ -41,11 +41,11 @@ impl TryInto<Option<TlsConfigPaths>> for TlsOpt {
             _ if !self.tls => {
                 debug!("no optional tls");
                 Ok(None)
-            },
+            }
             _ if !self.enable_client_cert => {
                 debug!("using no cert verification");
                 Ok(Some(TlsConfigPaths::NoVerification))
-            },
+            }
             (Some(client_cert), Some(client_key), Some(ca_cert), Some(domain)) => {
                 debug!("using tls and client cert");
                 Ok(Some(TlsConfigPaths::WithPaths {
@@ -54,22 +54,33 @@ impl TryInto<Option<TlsConfigPaths>> for TlsOpt {
                     ca_cert,
                     domain,
                 }))
-            },
-            (None, _, _, _) => Err(IoError::new(ErrorKind::InvalidInput, "client cert is missing".to_owned())),
-            (_, None, _, _) => Err(IoError::new(ErrorKind::InvalidInput, "client private key is missing".to_owned())),
-            (_, _, None, _) => Err(IoError::new(ErrorKind::InvalidInput, "CA cert is missing".to_owned())),
-            (_, _, _, None) => Err(IoError::new(ErrorKind::InvalidInput, "domain is missing".to_owned())),
+            }
+            (None, _, _, _) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "client cert is missing".to_owned(),
+            )),
+            (_, None, _, _) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "client private key is missing".to_owned(),
+            )),
+            (_, _, None, _) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "CA cert is missing".to_owned(),
+            )),
+            (_, _, _, None) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "domain is missing".to_owned(),
+            )),
         }
     }
 }
 
 impl TlsOpt {
-
     pub fn try_into_inline(self) -> Result<Option<TlsConfig>, IoError> {
         let maybe_tls_paths: Option<TlsConfigPaths> = self.try_into()?;
         let maybe_tls_config = match maybe_tls_paths {
             None => None,
-            Some(tls_paths) => Some(tls_paths.try_into()?)
+            Some(tls_paths) => Some(tls_paths.try_into()?),
         };
         Ok(maybe_tls_config)
     }

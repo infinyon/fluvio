@@ -45,14 +45,17 @@ impl TryFrom<TlsConfigPaths> for TlsConfig {
         use std::fs::read;
         match value {
             TlsConfigPaths::NoVerification => Ok(Self::NoVerification),
-            TlsConfigPaths::WithPaths { client_key, client_cert, ca_cert, domain } => {
-                Ok(Self::WithCerts {
-                    client_key: encode(&read(client_key)?),
-                    client_cert: encode(&read(client_cert)?),
-                    ca_cert: encode(&read(ca_cert)?),
-                    domain,
-                })
-            }
+            TlsConfigPaths::WithPaths {
+                client_key,
+                client_cert,
+                ca_cert,
+                domain,
+            } => Ok(Self::WithCerts {
+                client_key: encode(&read(client_key)?),
+                client_cert: encode(&read(client_cert)?),
+                ca_cert: encode(&read(ca_cert)?),
+                domain,
+            }),
         }
     }
 }
@@ -76,7 +79,7 @@ pub enum TlsConfigPaths {
 
         /// Domain name
         domain: String,
-    }
+    },
 }
 
 impl TryFrom<TlsConfig> for AllDomainConnector {
@@ -92,8 +95,14 @@ impl TryFrom<TlsConfig> for AllDomainConnector {
                         .build()
                         .into(),
                 ))
-            },
-            TlsConfig::WithCerts { client_key, client_cert, ca_cert, domain, .. } => {
+            }
+            TlsConfig::WithCerts {
+                client_key,
+                client_cert,
+                ca_cert,
+                domain,
+                ..
+            } => {
                 info!("using inline cert");
                 let ca_cert = decode(ca_cert).map_err(|err| {
                     IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
