@@ -75,6 +75,13 @@ brew install filosottile/musl-cross/musl-cross
 
 For Linux, please see [musl wiki](https://wiki.musl-libc.org) for the installation of musl-gcc.
 
+For ubuntu:
+```
+sudo apt install -y musl-tools
+export TARGET_CC=musl-gcc
+sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+```
+
 
 ## Running Fluvio CLI
 
