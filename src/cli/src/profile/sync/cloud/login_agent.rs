@@ -1,9 +1,9 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::fs;
+use std::path::{PathBuf, Path};
 
 use tracing::{info, warn, error};
-use async_std::fs;
-use async_std::path::{PathBuf, Path};
 use serde::{Deserialize, Serialize};
 use flv_types::defaults::CLI_CONFIG_PATH;
 use surf::http_types::StatusCode;
@@ -88,7 +88,7 @@ impl LoginAgent {
             Some(creds) => creds,
             None => {
                 // If that doesn't work, try to get the token from disk
-                let loaded_creds = Credentials::try_load(&self.path).await?;
+                let loaded_creds = Credentials::try_load(&self.path)?;
                 self.session.replace(loaded_creds);
                 self.session.as_ref().unwrap()
             }
@@ -154,7 +154,7 @@ impl LoginAgent {
     /// Save the given Credentials to disk and in the LoginAgent's session.
     async fn save_credentials(&mut self, creds: Credentials) -> Result<(), CloudError> {
         // Save credentials to disk
-        creds.try_save(&self.path).await?;
+        creds.try_save(&self.path)?;
         // Save credentials in agent session
         self.session.replace(creds);
         Ok(())
@@ -176,24 +176,23 @@ struct Credentials {
 
 impl Credentials {
     /// Try to load credentials from disk
-    async fn try_load<P: AsRef<Path>>(path: P) -> Result<Self, CloudError> {
-        let file_str = fs::read_to_string(path)
-            .await
-            .map_err(|e| CloudError::UnableToLoadCredentials(e))?;
+    fn try_load<P: AsRef<Path>>(path: P) -> Result<Self, CloudError> {
+        let file_str =
+            fs::read_to_string(path).map_err(|e| CloudError::UnableToLoadCredentials(e))?;
         let creds: Credentials =
             toml::from_str(&*file_str).map_err(|e| CloudError::UnableToParseCredentials(e))?;
         Ok(creds)
     }
 
     /// Try to save credentials to disk
-    async fn try_save<P: AsRef<Path>>(&self, path: P) -> Result<(), IoError> {
+    fn try_save<P: AsRef<Path>>(&self, path: P) -> Result<(), IoError> {
         let parent = path.as_ref().parent().ok_or(IoError::new(
             ErrorKind::NotFound,
             "failed to open credentials folder",
         ))?;
-        fs::create_dir_all(parent).await?;
+        fs::create_dir_all(parent)?;
         // Serializing self can never fail because Credentials: Serialize
-        fs::write(path, toml::to_string(self).unwrap().as_bytes()).await
+        fs::write(path, toml::to_string(self).unwrap().as_bytes())
     }
 }
 
@@ -268,10 +267,10 @@ mod tests {
             id: "Johnny Appleseed".to_string(),
             token: "Token tokenson".to_string(),
         };
-        let write_result = creds.try_save(&tmp).await;
+        let write_result = creds.try_save(&tmp);
         assert!(write_result.is_ok());
 
-        let result = Credentials::try_load(tmp).await;
+        let result = Credentials::try_load(tmp);
         let loaded_creds = result.unwrap();
         assert_eq!(creds, loaded_creds);
         Ok(())

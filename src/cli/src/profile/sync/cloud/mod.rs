@@ -1,7 +1,7 @@
+use std::io;
+use std::io::Write;
 mod login_agent;
-use async_std::io;
 use structopt::StructOpt;
-use futures::AsyncWriteExt;
 pub use login_agent::CloudError;
 
 use crate::Terminal;
@@ -42,9 +42,9 @@ where
         Some(email) => email,
         None => {
             t_print!(out, "Fluvio Cloud username: ");
-            io::stdout().flush().await?;
+            io::stdout().flush()?;
             let mut email = String::new();
-            io::stdin().read_line(&mut email).await?;
+            io::stdin().read_line(&mut email)?;
             email
         }
     };
