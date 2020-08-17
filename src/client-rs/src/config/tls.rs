@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::path::Path;
+use std::path::PathBuf;
 
 use tracing::info;
 use base64::decode;
@@ -16,14 +16,20 @@ use flv_future_aio::net::tls::ConnectorBuilder;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "cert_type", content = "cert")]
 pub enum TlsConfig {
-    /// only if server allow anonymous authentication
+    /// Do not use TLS. Server must allow anonymous authentication
     NoVerification,
 
-    /// Client certs from file path
-    File(TlsClientConfig),
-
-    // Client certs from inline data
-    Inline(TlsClientConfig),
+    /// TLS client config with inline keys and certs
+    WithCerts {
+        /// Client private key
+        client_key: String,
+        /// Client certificate
+        client_cert: String,
+        /// Certificate Authority cert
+        ca_cert: String,
+        /// Domain name
+        domain: String,
+    },
 }
 
 impl Default for TlsConfig {
@@ -32,49 +38,48 @@ impl Default for TlsConfig {
     }
 }
 
-/// client config generated from either path to string
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct TlsClientConfig {
-    /// private key or path
-    pub client_key: String,
+impl TryFrom<TlsConfigPaths> for TlsConfig {
+    type Error = IoError;
 
-    /// client key or path
-    pub client_cert: String,
-
-    /// ca cert or path
-    pub ca_cert: String,
-
-    pub domain: String,
+    fn try_from(value: TlsConfigPaths) -> Result<Self, Self::Error> {
+        use std::fs::read;
+        match value {
+            TlsConfigPaths::NoVerification => Ok(Self::NoVerification),
+            TlsConfigPaths::WithPaths {
+                client_key,
+                client_cert,
+                ca_cert,
+                domain,
+            } => Ok(Self::WithCerts {
+                client_key: encode(&read(client_key)?),
+                client_cert: encode(&read(client_cert)?),
+                ca_cert: encode(&read(ca_cert)?),
+                domain,
+            }),
+        }
+    }
 }
 
-impl TlsClientConfig {
-    /// set ca cert data from external certificate
-    pub fn set_ca_cert_from<P: AsRef<Path>>(&mut self, path: P) -> Result<(), IoError> {
-        self.set_ca_cert(&read_from_file(path)?);
-        Ok(())
-    }
+/// TLS client config with paths to keys and certs
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum TlsConfigPaths {
+    /// Do not use TLS. Server must allow anonymous authentication
+    NoVerification,
 
-    pub fn set_ca_cert(&mut self, cert: &Vec<u8>) {
-        self.ca_cert = encode(cert);
-    }
+    /// Paths to TLS client configs
+    WithPaths {
+        /// Path to client private key
+        client_key: PathBuf,
 
-    pub fn set_client_cert_from<P: AsRef<Path>>(&mut self, path: P) -> Result<(), IoError> {
-        self.set_client_cert(&read_from_file(path)?);
-        Ok(())
-    }
+        /// Path to client certificate
+        client_cert: PathBuf,
 
-    pub fn set_client_cert(&mut self, cert: &Vec<u8>) {
-        self.client_cert = encode(cert);
-    }
+        /// Path to Certificate Authority certificate
+        ca_cert: PathBuf,
 
-    pub fn set_client_key_from<P: AsRef<Path>>(&mut self, path: P) -> Result<(), IoError> {
-        self.set_client_key(&read_from_file(path)?);
-        Ok(())
-    }
-
-    pub fn set_client_key(&mut self, key: &Vec<u8>) {
-        self.client_key = encode(key);
-    }
+        /// Domain name
+        domain: String,
+    },
 }
 
 impl TryFrom<TlsConfig> for AllDomainConnector {
@@ -91,25 +96,21 @@ impl TryFrom<TlsConfig> for AllDomainConnector {
                         .into(),
                 ))
             }
-            TlsConfig::File(file_config) => {
-                info!("using client cert");
-                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
-                    ConnectorBuilder::new()
-                        .load_client_certs(file_config.client_cert, file_config.client_key)?
-                        .load_ca_cert(file_config.ca_cert)?
-                        .build(),
-                    file_config.domain,
-                )))
-            }
-            TlsConfig::Inline(inline_config) => {
+            TlsConfig::WithCerts {
+                client_key,
+                client_cert,
+                ca_cert,
+                domain,
+                ..
+            } => {
                 info!("using inline cert");
-                let ca_cert = decode(inline_config.ca_cert).map_err(|err| {
+                let ca_cert = decode(ca_cert).map_err(|err| {
                     IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
                 })?;
-                let client_key = decode(inline_config.client_key).map_err(|err| {
+                let client_key = decode(client_key).map_err(|err| {
                     IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
                 })?;
-                let client_cert = decode(inline_config.client_cert).map_err(|err| {
+                let client_cert = decode(client_cert).map_err(|err| {
                     IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
                 })?;
 
@@ -118,21 +119,9 @@ impl TryFrom<TlsConfig> for AllDomainConnector {
                         .load_client_certs_from_bytes(&client_cert, &client_key)?
                         .load_ca_cert_from_bytes(&ca_cert)?
                         .build(),
-                    inline_config.domain,
+                    domain,
                 )))
             }
         }
     }
-}
-
-/// set ca cert data from external certificate
-fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, IoError> {
-    use std::fs::File;
-    use std::io::Read;
-
-    let mut file = File::open(path)?;
-    let mut buffer = vec![];
-    file.read_to_end(&mut buffer)?;
-
-    Ok(buffer)
 }

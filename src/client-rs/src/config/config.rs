@@ -324,12 +324,9 @@ impl From<Cluster> for ClientConfig {
 
 #[cfg(test)]
 pub mod test {
-
+    use super::*;
     use std::path::PathBuf;
     use std::env::temp_dir;
-
-    use super::*;
-    use super::super::TlsClientConfig;
 
     #[test]
     fn test_default_path_arg() {
@@ -383,7 +380,7 @@ pub mod test {
     #[test]
     fn test_tls_save() {
         let mut config = Config::new_with_local_cluster("localhost:9003".to_owned());
-        let inline_tls_config = TlsClientConfig {
+        let inline_tls_config = TlsConfig::WithCerts {
             client_key: "ABCDEFF".to_owned(),
             client_cert: "JJJJ".to_owned(),
             ca_cert: "XXXXX".to_owned(),
@@ -391,7 +388,7 @@ pub mod test {
         };
 
         println!("temp: {:#?}", temp_dir());
-        config.mut_cluster(LOCAL_PROFILE).unwrap().tls = Some(TlsConfig::Inline(inline_tls_config));
+        config.mut_cluster(LOCAL_PROFILE).unwrap().tls = Some(inline_tls_config);
         config
             .save_to(temp_dir().join("inline.toml"))
             .expect("save should succeed");
@@ -399,18 +396,6 @@ pub mod test {
         config.mut_cluster(LOCAL_PROFILE).unwrap().tls = Some(TlsConfig::NoVerification);
         config
             .save_to(temp_dir().join("noverf.toml"))
-            .expect("save should succeed");
-
-        let file_tls_config = TlsClientConfig {
-            client_key: "/tmp/client.key".to_owned(),
-            client_cert: "/tmp/client.cert".to_owned(),
-            ca_cert: "/tmp/ca.cert".to_owned(),
-            domain: "my_domain".to_owned(),
-        };
-
-        config.mut_cluster(LOCAL_PROFILE).unwrap().tls = Some(TlsConfig::File(file_tls_config));
-        config
-            .save_to(temp_dir().join("file.toml"))
             .expect("save should succeed");
     }
 
