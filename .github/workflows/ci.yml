@@ -75,12 +75,12 @@ jobs:
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys
-      - name: smoke test
+      - name: local smoke test
         run: |
           FLV_CMD=true ./target/debug/flv-test -d --local-driver --log-dir /tmp
-      - name: install mul
+      - name: k8 smoke test
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           export TARGET_CC=musl-gcc
-          FLV_CMD=true make smoke_test_k8
+          FLV_CMD=true make smoke-test-k8
