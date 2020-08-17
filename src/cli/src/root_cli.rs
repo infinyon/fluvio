@@ -26,9 +26,6 @@ use super::topic::TopicOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 use super::partition::PartitionOpt;
-use super::cloud::LoginOpt;
-use super::cloud::process_login;
-use super::cloud::process_logout;
 
 #[cfg(feature = "cluster_components")]
 use super::run::{process_run, RunOpt};
@@ -48,20 +45,6 @@ enum Root {
         about = "Reads messages from a topic/partition"
     )]
     Consume(ConsumeLogOpt),
-
-    #[structopt(
-        name = "login",
-        template = COMMAND_TEMPLATE,
-        about = "Logs into Fluvio Cloud"
-    )]
-    Login(LoginOpt),
-
-    #[structopt(
-        name = "logout",
-        template = COMMAND_TEMPLATE,
-        about = "Logs out of Fluvio Cloud"
-    )]
-    Logout,
 
     #[structopt(
         name = "produce",
@@ -151,8 +134,6 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Partition(partition) => partition.process_partition(terminal.clone()).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
-            Root::Login(login) => process_login(terminal.clone(), login).await,
-            Root::Logout => process_logout(terminal.clone(), LogoutOpt).await,
             #[cfg(feature = "cluster_components")]
             Root::Run(opt) => process_run(opt),
             Root::Version(_) => process_version_cmd(),
@@ -162,7 +143,6 @@ pub fn run_cli() -> Result<String, CliError> {
 }
 
 use crate::Terminal;
-use crate::cloud::LogoutOpt;
 
 struct PrintTerminal {}
 

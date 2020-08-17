@@ -4,10 +4,10 @@ use flv_client::config::*;
 
 use crate::Terminal;
 use crate::t_println;
-use super::cli::SetLocal;
+use crate::profile::sync::LocalOpt;
 
 /// create new local cluster and profile
-pub fn set_local_context(local_config: SetLocal) -> Result<String, IoError> {
+pub fn set_local_context(local_config: LocalOpt) -> Result<String, IoError> {
     let local_addr = local_config.local;
     let mut config_file = ConfigFile::load_default_or_new()?;
 

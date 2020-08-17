@@ -12,7 +12,6 @@ pub mod cluster;
 mod group;
 mod custom;
 mod partition;
-mod cloud;
 
 #[cfg(feature = "cluster_components")]
 mod run;
@@ -33,6 +32,11 @@ const COMMAND_TEMPLATE: &'static str = "{about}
 ";
 
 #[macro_export]
+macro_rules! t_print {
+    ($out:expr,$($arg:tt)*) => ( $out.print(&format!($($arg)*)))
+}
+
+#[macro_export]
 macro_rules! t_println {
     ($out:expr,$($arg:tt)*) => ( $out.println(&format!($($arg)*)))
 }
@@ -51,7 +55,12 @@ mod target {
     use flv_client::ClusterConfig;
     use crate::tls::TlsOpt;
     use crate::CliError;
-    use crate::profile::InlineProfile;
+
+    #[derive(Debug, StructOpt, Default)]
+    pub struct InlineProfile {
+        #[structopt(short = "P", long, value_name = "profile")]
+        pub profile: Option<String>,
+    }
 
     /// server configuration
     #[derive(Debug, StructOpt, Default)]

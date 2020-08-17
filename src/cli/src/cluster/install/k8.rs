@@ -286,7 +286,7 @@ pub fn install_sys(opt: InstallCommand) {
 /// switch to profile
 async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
     use crate::profile::set_k8_context;
-    use crate::profile::SetK8;
+    use crate::profile::K8Opt;
     use crate::tls::TlsOpt;
 
     let tls_config = &opt.tls;
@@ -304,7 +304,7 @@ async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
         TlsOpt::default()
     };
 
-    let config = SetK8 {
+    let config = K8Opt {
         namespace: Some(opt.k8_config.namespace.clone()),
         tls,
         ..Default::default()
