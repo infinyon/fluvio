@@ -92,7 +92,6 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
 
 /// set local profile
 fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
-    use crate::profile::SetLocal;
     use crate::profile::set_local_context;
     use crate::tls::TlsOpt;
 
@@ -111,7 +110,7 @@ fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
         TlsOpt::default()
     };
 
-    let local = SetLocal {
+    let local = LocalOpt {
         local: "localhost:9003".to_owned(),
         tls,
     };
@@ -231,6 +230,7 @@ async fn launch_spu(
 }
 
 use std::process::Command;
+use crate::profile::LocalOpt;
 
 fn set_server_tls(cmd: &mut Command, option: &InstallCommand, port: u16) {
     let tls = &option.tls;
