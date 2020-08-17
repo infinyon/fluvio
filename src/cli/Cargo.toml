@@ -24,7 +24,7 @@ tracing = "0.1.19"
 url = "2.1.1"
 semver = "0.10.0"
 bytes = "0.5.3"
-structopt = { version = "0.3.15", default-features = false }
+structopt = { version = "0.3.16", default-features = false }
 toml = "0.5.5"
 prettytable-rs = "0.8.0"
 rand = "0.7.2"

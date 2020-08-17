@@ -4,7 +4,7 @@
 //! CLI configurations at the top of the tree
 
 use std::sync::Arc;
-use structopt::clap::AppSettings;
+use structopt::clap::{AppSettings, Shell};
 use structopt::StructOpt;
 
 use flv_future_aio::task::run_block_on;
@@ -128,6 +128,13 @@ enum Root {
         about = "Prints the current fluvio version information"
     )]
     Version(VersionCmd),
+
+    #[structopt(
+        name = "completions",
+        about = "Generate command-line completions for Fluvio",
+        settings = &[AppSettings::Hidden]
+    )]
+    Completions(CompletionShell),
 }
 
 pub fn run_cli() -> Result<String, CliError> {
@@ -149,6 +156,7 @@ pub fn run_cli() -> Result<String, CliError> {
             #[cfg(feature = "cluster_components")]
             Root::Run(opt) => process_run(opt),
             Root::Version(_) => process_version_cmd(),
+            Root::Completions(shell) => process_completions_cmd(shell),
         }
     })
 }
@@ -185,4 +193,40 @@ fn process_version_cmd() -> Result<String, CliError> {
     }
     println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
     Ok("".to_owned())
+}
+
+#[derive(Debug, StructOpt)]
+struct CompletionOpt {
+    #[structopt(long, default_value = "fluvio")]
+    name: String,
+}
+
+#[derive(Debug, StructOpt)]
+enum CompletionShell {
+    /// Generate CLI completions for bash
+    #[structopt(name = "bash")]
+    Bash(CompletionOpt),
+    // Zsh generation currently has a bug that causes panic
+    // /// Generate CLI completions for zsh
+    // #[structopt(name = "zsh")]
+    // Zsh(CompletionOpt),
+    /// Generate CLI completions for fish
+    #[structopt(name = "fish")]
+    Fish(CompletionOpt),
+}
+
+fn process_completions_cmd(shell: CompletionShell) -> Result<String, CliError> {
+    let mut app: structopt::clap::App = Root::clap();
+    match shell {
+        CompletionShell::Bash(opt) => {
+            app.gen_completions_to(opt.name, Shell::Bash, &mut std::io::stdout());
+        }
+        // CompletionShell::Zsh(opt) => {
+        //     app.gen_completions_to(opt.name, Shell::Zsh, &mut std::io::stdout());
+        // }
+        CompletionShell::Fish(opt) => {
+            app.gen_completions_to(opt.name, Shell::Fish, &mut std::io::stdout());
+        }
+    }
+    Ok("".to_string())
 }
