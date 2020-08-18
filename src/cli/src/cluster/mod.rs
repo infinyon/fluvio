@@ -2,6 +2,7 @@ mod install;
 mod uninstall;
 mod minikube;
 mod util;
+mod check;
 
 pub use process::process_cluster;
 
@@ -12,6 +13,7 @@ use util::*;
 use minikube::SetMinikubeContext;
 pub use install::InstallCommand;
 use uninstall::UninstallCommand;
+use check::CheckCommand;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
@@ -20,11 +22,17 @@ pub enum ClusterCommands {
     #[structopt(name = "set-minikube-context")]
     SetMinikubeContext(SetMinikubeContext),
 
+    /// install cluster
     #[structopt(name = "install")]
     Install(InstallCommand),
 
+    /// uninstall cluster
     #[structopt(name = "uninstall")]
     Uninstall(UninstallCommand),
+
+    /// perform checks
+    #[structopt(name = "check")]
+    Check(CheckCommand),
 }
 
 mod process {
@@ -37,6 +45,7 @@ mod process {
     use install::process_install;
     use uninstall::process_uninstall;
     use minikube::process_minikube_context;
+    use check::run_checks;
 
     pub async fn process_cluster<O>(
         out: std::sync::Arc<O>,
@@ -49,6 +58,7 @@ mod process {
             ClusterCommands::SetMinikubeContext(ctx) => process_minikube_context(ctx),
             ClusterCommands::Install(install) => process_install(out, install).await,
             ClusterCommands::Uninstall(uninstall) => process_uninstall(out, uninstall).await,
+            ClusterCommands::Check(check) => run_checks(check).await,
         }
     }
 }

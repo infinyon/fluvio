@@ -12,6 +12,8 @@ use crate::CliError;
 
 use super::util::*;
 
+pub use helm::installed_sys_charts;
+
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific release version

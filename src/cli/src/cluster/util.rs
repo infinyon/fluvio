@@ -29,6 +29,25 @@ pub fn get_binary(bin_name: &str) -> Result<Command, IoError> {
     }
 }
 
+#[allow(unused)]
+pub fn check_create_permission(resource: &str) -> Result<bool, IoError> {
+    let check_command = Command::new("kubectl")
+        .arg("auth")
+        .arg("can-i")
+        .arg("create")
+        .arg(resource)
+        .output();
+    match check_command {
+        Ok(out) => match String::from_utf8(out.stdout) {
+            Ok(res) => Ok(res.trim() == "yes"),
+            Err(err) => return Err(IoError::new(ErrorKind::Other, err.to_string())),
+        },
+        Err(err) => {
+            return Err(IoError::new(ErrorKind::Other, err.to_string()));
+        }
+    }
+}
+
 mod cmd_util {
 
     pub trait CommandUtil {
