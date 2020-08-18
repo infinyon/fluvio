@@ -5,9 +5,10 @@ use std::collections::HashMap;
 use std::time::Instant;
 use std::time::Duration;
 
-use log::debug;
-use log::error;
-use log::warn;
+use tracing::debug;
+use tracing::error;
+use tracing::warn;
+use tracing::instrument;
 
 use async_channel::Receiver;
 
@@ -57,6 +58,7 @@ impl SpuController {
         });
     }
 
+    #[instrument(skip(self))]
     async fn dispatch_loop(mut self) {
         use tokio::select;
         use flv_future_aio::timer::sleep;
@@ -177,6 +179,7 @@ impl SpuController {
     }
 
     /// check if any spu has done health check
+    #[instrument(skip(self))]
     async fn health_check(&mut self) {
         debug!("performing health check");
         let mut actions: Vec<SpuAction> = vec![];
@@ -266,7 +269,7 @@ impl SpuController {
 #[cfg(test)]
 mod tests {
 
-    use log::debug;
+    use tracing::debug;
     use futures::channel::mpsc::channel;
     use futures::channel::mpsc::Receiver;
 

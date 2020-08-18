@@ -1,7 +1,7 @@
-use log::debug;
-use log::trace;
-use log::warn;
-use log::error;
+use tracing::debug;
+use tracing::trace;
+use tracing::warn;
+use tracing::error;
 
 use futures::stream::StreamExt;
 use futures::io::AsyncRead;

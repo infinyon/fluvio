@@ -4,7 +4,7 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use log::{debug, trace};
+use tracing::{debug, trace};
 use std::io::Error;
 
 use kf_protocol::api::FlvErrorCode;

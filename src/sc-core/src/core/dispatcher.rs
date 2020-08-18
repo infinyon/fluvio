@@ -12,8 +12,8 @@ use futures::channel::mpsc::Receiver;
 use futures::future::TryFutureExt;
 use futures::select;
 use futures::stream::StreamExt;
-use log::{error, info};
-use log::trace;
+use tracing::{error, info};
+use tracing::trace;
 
 use crate::core::WSUpdateService;
 use crate::conn_manager::SpuConnections;

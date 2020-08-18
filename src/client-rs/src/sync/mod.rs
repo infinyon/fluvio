@@ -9,7 +9,7 @@ mod context {
     use std::sync::Arc;
     use std::fmt::Display;
 
-    use log::debug;
+    use tracing::debug;
 
     use event_listener::Event;
     use event_listener::EventListener;

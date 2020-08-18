@@ -101,7 +101,7 @@ pub async fn process_produce_record<O>(
 where
     O: Terminal,
 {
-    use log::debug;
+    use tracing::debug;
     use flv_client::kf::api::ReplicaKey;
 
     let (target_server, (cfg, file_records)) = opt.validate()?;
@@ -123,7 +123,7 @@ where
 
 mod produce {
 
-    use log::debug;
+    use tracing::debug;
     use futures::stream::StreamExt;
 
     use flv_future_aio::fs::File;

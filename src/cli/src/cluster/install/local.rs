@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::process::Stdio;
 use std::io::Error as IoError;
 
-use log::debug;
+use tracing::debug;
 
 use k8_client::SharedK8Client;
 use flv_future_aio::timer::sleep;
@@ -27,7 +27,7 @@ pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     use std::fs::create_dir_all;
 
     let log_dir = opt
-        .log
+        .log_dir
         .clone()
         .unwrap_or_else(|| get_log_directory().to_owned());
 
@@ -78,7 +78,7 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
         set_server_tls(&mut binary, option, 9005);
     }
 
-    if let Some(log) = &option.log {
+    if let Some(log) = &option.rust_log {
         binary.env("RUST_LOG", log);
     }
     binary.print();
@@ -92,13 +92,12 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
 
 /// set local profile
 fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
-    use crate::profile::SetLocal;
     use crate::profile::set_local_context;
-    use crate::tls::TlsConfig;
+    use crate::tls::TlsOpt;
 
     let tls_config = &opt.tls;
     let tls = if tls_config.tls {
-        TlsConfig {
+        TlsOpt {
             tls: true,
             domain: tls_config.domain.clone(),
             enable_client_cert: true,
@@ -108,10 +107,10 @@ fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
             ..Default::default()
         }
     } else {
-        TlsConfig::default()
+        TlsOpt::default()
     };
 
-    let local = SetLocal {
+    let local = LocalOpt {
         local: "localhost:9003".to_owned(),
         tls,
     };
@@ -209,7 +208,7 @@ async fn launch_spu(
         set_server_tls(&mut binary, option, private_port + 1);
     }
 
-    if let Some(log) = &option.log {
+    if let Some(log) = &option.rust_log {
         binary.env("RUST_LOG", log);
     }
 
@@ -231,6 +230,7 @@ async fn launch_spu(
 }
 
 use std::process::Command;
+use crate::profile::LocalOpt;
 
 fn set_server_tls(cmd: &mut Command, option: &InstallCommand, port: u16) {
     let tls = &option.tls;

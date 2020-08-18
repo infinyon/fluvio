@@ -1,7 +1,7 @@
 // ApiRequest and Response that has all request and response
 // use for generic dump and client
 
-use log::trace;
+use tracing::trace;
 use std::convert::TryInto;
 use std::io::Error as IoError;
 

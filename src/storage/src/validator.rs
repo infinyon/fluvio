@@ -3,8 +3,8 @@ use std::fmt;
 use std::path::Path;
 
 use futures::stream::StreamExt;
-use log::warn;
-use log::trace;
+use tracing::warn;
+use tracing::trace;
 
 use kf_protocol::api::Offset;
 use flv_future_aio::fs::util as file_util;

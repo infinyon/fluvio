@@ -3,7 +3,7 @@
 //!
 //! Converts Custom Spu API request into KV request and sends to KV store for processing.
 //!
-use log::{debug, trace};
+use tracing::{debug, trace};
 use std::io::Error as IoError;
 
 use kf_protocol::api::FlvErrorCode;

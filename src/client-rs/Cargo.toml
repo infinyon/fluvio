@@ -10,7 +10,7 @@ description = "Fluvio rust client"
 
 
 [dependencies]
-log = "0.4.8"
+tracing = "0.1.19"
 dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"

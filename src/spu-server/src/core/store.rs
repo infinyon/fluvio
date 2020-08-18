@@ -6,9 +6,10 @@ use std::sync::Arc;
 use std::fmt::Display;
 use std::fmt::Debug;
 
-use log::trace;
-use log::debug;
-use log::error;
+use tracing::trace;
+use tracing::debug;
+use tracing::error;
+use tracing::instrument;
 
 use flv_metadata_cluster::message::*;
 use kf_protocol::{Decoder, Encoder};
@@ -109,18 +110,25 @@ where
 {
     /// Sync with source of truth.
     /// Returns diff as Change
+    #[instrument(skip(self, source_specs), fields(spec = S::LABEL, command_count = source_specs.len()))]
     pub fn sync_all(&self, source_specs: Vec<S>) -> Actions<SpecChange<S>> {
         let (mut add_cnt, mut mod_cnt, mut del_cnt, mut skip_cnt) = (0, 0, 0, 0);
         let mut local_keys = self.all_keys();
         let mut actions = Actions::default();
 
-        debug!("apply all <{}> {} commands", S::LABEL, source_specs.len());
+        debug!("sync all");
+        // debug!(
+        //     spec_label = S::LABEL,
+        //     command_count = source_specs.len(),
+        //     "apply all commands"
+        // );
+
         for new_spu in source_specs {
             let id = new_spu.key_owned();
 
             if let Some(old_spu) = self.insert(new_spu.clone()) {
                 if old_spu == new_spu {
-                    trace!("no changes: {}", new_spu.key());
+                    trace!(spu_key = &*format!("{}", new_spu.key()), "no changes");
                 } else {
                     actions.push(SpecChange::Mod(new_spu, old_spu));
                     mod_cnt += 1;
@@ -144,21 +152,27 @@ where
         }
 
         trace!(
-            "Apply All <{}> Spec changes: [add:{}, mod:{}, del:{}, skip:{}]",
-            S::LABEL,
-            add_cnt,
-            mod_cnt,
-            del_cnt,
-            skip_cnt
+            spec_label = S::LABEL,
+            add_count = add_cnt,
+            mod_count = mod_cnt,
+            del_count = del_cnt,
+            skip_count = skip_cnt,
+            "Apply all spec changes",
         );
 
         actions
     }
 
     /// apply changes coming from sc which generates spec change actions
+    #[instrument(skip(self, changes), fields(spec = S::LABEL, change_count = changes.len()))]
     pub fn apply_changes(&self, changes: Vec<Message<S>>) -> Actions<SpecChange<S>> {
         let (mut add_cnt, mut mod_cnt, mut del_cnt, mut skip_cnt) = (0, 0, 0, 0);
-        debug!("apply update <{}> {} requests", S::LABEL, changes.len());
+        debug!("apply changes");
+        // debug!(
+        //     spec_label = S::LABEL,
+        //     change_count = changes.len(),
+        //     "apply changes"
+        // );
         let mut actions = Actions::default();
 
         for change in changes {
@@ -191,12 +205,12 @@ where
         }
 
         debug!(
-            "Apply <{}> Spec changes: [add:{}, mod:{}, del:{}, skip:{}]",
-            S::LABEL,
-            add_cnt,
-            mod_cnt,
-            del_cnt,
-            skip_cnt
+            spec_label = S::LABEL,
+            add_count = add_cnt,
+            mod_count = mod_cnt,
+            del_count = del_cnt,
+            skip_count = skip_cnt,
+            "Apply spec changes",
         );
 
         actions

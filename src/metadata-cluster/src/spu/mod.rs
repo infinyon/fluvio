@@ -56,7 +56,7 @@ mod custom_metadata {
     use std::io::Error;
     use std::io::ErrorKind;
 
-    use log::trace;
+    use tracing::trace;
 
     use kf_protocol::Encoder;
     use kf_protocol::Decoder;

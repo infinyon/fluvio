@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::collections::HashMap;
 
-use log::error;
-use log::debug;
+use tracing::error;
+use tracing::debug;
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
 use futures::future::TryFutureExt;

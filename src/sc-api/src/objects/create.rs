@@ -31,7 +31,7 @@ mod create {
     use std::io::Error;
     use std::io::ErrorKind;
 
-    use log::trace;
+    use tracing::trace;
 
     use kf_protocol::Version;
     use kf_protocol::bytes::{Buf, BufMut};

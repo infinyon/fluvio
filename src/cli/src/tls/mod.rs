@@ -1,15 +1,16 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::path::PathBuf;
+use std::convert::TryInto;
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
-use flv_client::config::TlsConfig as TlsProfileConfig;
-use flv_client::config::TlsClientConfig;
+use flv_client::config::{TlsConfig, TlsConfigPaths};
 
 /// Optional Tls Configuration to Client
 #[derive(Debug, StructOpt, Default)]
-pub struct TlsConfig {
+pub struct TlsOpt {
     /// Enable TLS
     #[structopt(long)]
     pub tls: bool,
@@ -18,104 +19,69 @@ pub struct TlsConfig {
     #[structopt(long, required_if("tls", "true"))]
     pub domain: Option<String>,
 
-    /// Path to TLS client certificate
-    #[structopt(long)]
-    pub client_cert: Option<String>,
-    #[structopt(long)]
-    /// Path to TLS client private key
-    pub client_key: Option<String>,
     /// TLS: use client cert
     #[structopt(long)]
     pub enable_client_cert: bool,
+    /// Path to TLS client certificate
+    #[structopt(long, parse(from_os_str))]
+    pub client_cert: Option<PathBuf>,
+    /// Path to TLS client private key
+    #[structopt(long, parse(from_os_str))]
+    pub client_key: Option<PathBuf>,
     /// Path to TLS ca cert, required when client cert is enabled
-    #[structopt(long)]
-    pub ca_cert: Option<String>,
+    #[structopt(long, parse(from_os_str))]
+    pub ca_cert: Option<PathBuf>,
 }
 
-impl TlsConfig {
-    pub fn try_into_file_config(self) -> Result<Option<TlsProfileConfig>, IoError> {
-        if self.tls {
-            debug!("using tls");
-            if self.enable_client_cert {
-                debug!("using client cert");
-                if self.client_cert.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "client cert is missing".to_owned(),
-                    ))
-                } else if self.client_key.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "client private key is missing".to_owned(),
-                    ))
-                } else if self.ca_cert.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "CA cert is missing".to_owned(),
-                    ))
-                } else if self.domain.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "domain is missing".to_owned(),
-                    ))
-                } else {
-                    Ok(Some(TlsProfileConfig::File(TlsClientConfig {
-                        client_cert: self.client_cert.unwrap(),
-                        client_key: self.client_key.unwrap(),
-                        ca_cert: self.ca_cert.unwrap(),
-                        domain: self.domain.unwrap(),
-                    })))
-                }
-            } else {
-                debug!("using no cert verification");
-                Ok(Some(TlsProfileConfig::NoVerification))
+impl TryInto<Option<TlsConfigPaths>> for TlsOpt {
+    type Error = IoError;
+
+    fn try_into(self) -> Result<Option<TlsConfigPaths>, Self::Error> {
+        match (self.client_cert, self.client_key, self.ca_cert, self.domain) {
+            _ if !self.tls => {
+                debug!("no optional tls");
+                Ok(None)
             }
-        } else {
-            debug!("no tls detected");
-            Ok(None)
+            _ if !self.enable_client_cert => {
+                debug!("using no cert verification");
+                Ok(Some(TlsConfigPaths::NoVerification))
+            }
+            (Some(client_cert), Some(client_key), Some(ca_cert), Some(domain)) => {
+                debug!("using tls and client cert");
+                Ok(Some(TlsConfigPaths::WithPaths {
+                    client_cert,
+                    client_key,
+                    ca_cert,
+                    domain,
+                }))
+            }
+            (None, _, _, _) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "client cert is missing".to_owned(),
+            )),
+            (_, None, _, _) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "client private key is missing".to_owned(),
+            )),
+            (_, _, None, _) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "CA cert is missing".to_owned(),
+            )),
+            (_, _, _, None) => Err(IoError::new(
+                ErrorKind::InvalidInput,
+                "domain is missing".to_owned(),
+            )),
         }
     }
+}
 
-    pub fn try_into_inline(self) -> Result<Option<TlsProfileConfig>, IoError> {
-        if self.tls {
-            debug!("using tls");
-            if self.enable_client_cert {
-                debug!("using client cert");
-                if self.client_cert.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "client cert is missing".to_owned(),
-                    ))
-                } else if self.client_key.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "client private key is missing".to_owned(),
-                    ))
-                } else if self.ca_cert.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "CA cert is missing".to_owned(),
-                    ))
-                } else if self.domain.is_none() {
-                    Err(IoError::new(
-                        ErrorKind::InvalidInput,
-                        "domain is missing".to_owned(),
-                    ))
-                } else {
-                    let mut config = TlsClientConfig::default();
-                    config.set_ca_cert_from(self.ca_cert.unwrap())?;
-                    config.set_client_cert_from(self.client_cert.unwrap())?;
-                    config.set_client_key_from(self.client_key.unwrap())?;
-                    config.domain = self.domain.unwrap();
-                    Ok(Some(TlsProfileConfig::Inline(config)))
-                }
-            } else {
-                debug!("using no cert verification");
-                Ok(Some(TlsProfileConfig::NoVerification))
-            }
-        } else {
-            debug!("no tls detected");
-            Ok(None)
-        }
+impl TlsOpt {
+    pub fn try_into_inline(self) -> Result<Option<TlsConfig>, IoError> {
+        let maybe_tls_paths: Option<TlsConfigPaths> = self.try_into()?;
+        let maybe_tls_config = match maybe_tls_paths {
+            None => None,
+            Some(tls_paths) => Some(tls_paths.try_into()?),
+        };
+        Ok(maybe_tls_config)
     }
 }

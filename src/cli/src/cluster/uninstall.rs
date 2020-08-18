@@ -3,7 +3,7 @@ use crate::Terminal;
 use crate::CliError;
 
 use structopt::StructOpt;
-use log::debug;
+use tracing::debug;
 
 #[derive(Debug, StructOpt)]
 pub struct UninstallCommand {
@@ -49,9 +49,9 @@ where
 
     let ns = &command.namespace;
 
-    remove_objects("spg", ns);
-    remove_objects("spu", ns);
-    remove_objects("topic", ns);
+    remove_objects("spugroups", ns);
+    remove_objects("spus", ns);
+    remove_objects("topics", ns);
     remove_objects("persistentvolumeclaims", ns);
 
     // delete secrets
@@ -86,7 +86,7 @@ fn remove_objects(object_type: &str, namespace: &str) {
 fn remove_local_cluster() {
     use std::fs::remove_dir_all;
 
-    use log::warn;
+    use tracing::warn;
 
     println!("removing local cluster ");
     Command::new("pkill")

@@ -1,8 +1,8 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 use async_trait::async_trait;
 use futures::stream::BoxStream;
 

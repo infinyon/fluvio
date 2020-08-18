@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
-use log::trace;
+use tracing::trace;
 
-use log::info;
+use tracing::info;
 use futures::channel::mpsc::Receiver;
 use futures::stream::StreamExt;
 use futures::select;

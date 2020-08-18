@@ -258,7 +258,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         cmd.arg("--set").arg("tls=true");
     }
 
-    if let Some(log) = &opt.log {
+    if let Some(log) = &opt.rust_log {
         cmd.arg("--set").arg(format!("scLog={}", log));
     }
 
@@ -286,12 +286,12 @@ pub fn install_sys(opt: InstallCommand) {
 /// switch to profile
 async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
     use crate::profile::set_k8_context;
-    use crate::profile::SetK8;
-    use crate::tls::TlsConfig;
+    use crate::profile::K8Opt;
+    use crate::tls::TlsOpt;
 
     let tls_config = &opt.tls;
     let tls = if tls_config.tls {
-        TlsConfig {
+        TlsOpt {
             tls: true,
             domain: tls_config.domain.clone(),
             enable_client_cert: true,
@@ -301,10 +301,10 @@ async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
             ..Default::default()
         }
     } else {
-        TlsConfig::default()
+        TlsOpt::default()
     };
 
-    let config = SetK8 {
+    let config = K8Opt {
         namespace: Some(opt.k8_config.namespace.clone()),
         tls,
         ..Default::default()

@@ -4,7 +4,7 @@
 //! CLI to describe Topics and their corresponding Partitions
 //!
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
 use flv_client::ClusterConfig;

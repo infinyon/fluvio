@@ -9,8 +9,8 @@ use bytes::BufMut;
 use futures::io::AsyncReadExt;
 use futures::io::AsyncWriteExt;
 use futures::io::AsyncSeekExt;
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 
 use flv_future_aio::fs::File;
 use flv_future_aio::fs::metadata;

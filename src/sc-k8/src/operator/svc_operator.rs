@@ -1,7 +1,8 @@
-use log::debug;
-use log::error;
-use log::info;
-use log::trace;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::instrument;
 use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
@@ -62,6 +63,10 @@ impl SvcOperator {
         debug!("svc operator finished");
     }
 
+    #[instrument(
+        skip(self, events),
+        fields(namespace = &*self.namespace),
+    )]
     async fn dispatch_events(&self, events: Vec<Result<K8Watch<ServiceSpec>, ClientError>>) {
         for event_r in events {
             match event_r {
@@ -95,6 +100,10 @@ impl SvcOperator {
         }
     }
 
+    #[instrument(
+        skip(self, svc_obj),
+        fields(svc_name = &*svc_obj.metadata.name),
+    )]
     async fn apply_svc_changes(&self, svc_obj: K8Obj<ServiceSpec>) -> Result<(), ScK8Error> {
         debug!("received svc: {}", svc_obj.metadata.name);
         trace!("svc spec: {:#?}", svc_obj);

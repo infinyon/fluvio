@@ -1,8 +1,8 @@
 use std::fmt;
 use std::collections::BTreeMap;
 
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 use rand::thread_rng;
 use rand::Rng;
 

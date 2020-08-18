@@ -5,7 +5,7 @@
 //!
 use std::sync::Arc;
 
-use log::{debug, trace};
+use tracing::{debug, trace};
 use flv_types::log_on_err;
 use flv_metadata_cluster::store::actions::*;
 

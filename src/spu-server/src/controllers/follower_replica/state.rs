@@ -4,9 +4,9 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use log::debug;
-use log::trace;
-use log::error;
+use tracing::debug;
+use tracing::trace;
+use tracing::error;
 use futures::channel::mpsc::Sender;
 use futures::channel::mpsc::Receiver;
 use futures::channel::mpsc::channel;

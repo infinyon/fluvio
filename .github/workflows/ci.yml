@@ -51,16 +51,19 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
-      - uses: manusa/actions-setup-minikube@v1.1.0
+      - name: Start minikube
+        uses: manusa/actions-setup-minikube@v2.0.0
         with:
-          minikube version: "v1.12.1"
-          kubernetes version: "v1.18.3"
+          minikube version: "v1.12.3"
+          kubernetes version: "v1.18.8"
           github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Test Minikube
         run: |
           kubectl get nodes
           kubectl config view
           helm version
+          sudo minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
+          cat /tmp/tunnel.out
       - name: Build
         run: |
           cargo build
@@ -69,12 +72,22 @@ jobs:
           ./target/debug/fluvio cluster set-minikube-context
           kubectl config view
           helm list
-      - name: set minikube tunnel
-        run: |
-          sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys
       - name: smoke test
         run: |
-          FLV_CMD=true ./target/debug/flv-test -d --local-driver --log /tmp
+          FLV_CMD=true make smoke-test
+      - name: smoke test setup k8
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          ./dev-tools/minikube-docker.sh 
+          docker run -d -p 5000:5000 --restart=always --name registry registry:2
+      - name: run smoke test run k8
+        run: |
+          export TARGET_CC=musl-gcc
+          sleep 5
+          cat /tmp/tunnel.out
+          # FLV_CMD=true make smoke-test-k8
+          

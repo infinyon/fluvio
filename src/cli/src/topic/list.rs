@@ -6,7 +6,7 @@
 
 use structopt::StructOpt;
 
-use log::debug;
+use tracing::debug;
 
 use flv_client::ClusterConfig;
 use flv_client::metadata::topic::TopicSpec;

@@ -2,8 +2,8 @@ use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::path::Path;
 
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 use futures::io::AsyncWriteExt;
 
 use flv_future_aio::fs::File;
