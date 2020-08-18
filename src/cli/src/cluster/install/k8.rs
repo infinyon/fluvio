@@ -2,6 +2,7 @@ use std::process::Command;
 use std::io::Error as IoError;
 use semver::Version;
 use k8_client::K8Config;
+use k8_config::KubeContext;
 use std::io::ErrorKind;
 use std::net::{IpAddr};
 use std::str::FromStr;
@@ -9,23 +10,7 @@ use url::{Url};
 
 use super::*;
 
-fn get_cluster_server_host() -> Result<String, IoError> {
-    let k8_config = K8Config::load().map_err(|err| {
-        IoError::new(
-            ErrorKind::Other,
-            format!("unable to load kube context {}", err),
-        )
-    })?;
-    let kc_config = match k8_config {
-        K8Config::Pod(_) => {
-            return Err(IoError::new(
-                ErrorKind::Other,
-                "Pod config is not valid here",
-            ))
-        }
-        K8Config::KubeConfig(config) => config,
-    };
-
+fn get_cluster_server_host(kc_config: KubeContext) -> Result<String, IoError> {
     if let Some(ctx) = kc_config.config.current_cluster() {
         let server_url = ctx.cluster.server.to_owned();
         let url = match Url::parse(&server_url) {
@@ -90,32 +75,44 @@ fn pre_install_check() -> Result<(), CliError> {
         )));
     }
 
-    let server_host = match get_cluster_server_host() {
-        Ok(server) => server,
-        Err(e) => {
-            return Err(CliError::Other(format!(
-                "error fetching server from kube context {}",
-                e.to_string()
-            )))
+    let k8_config = K8Config::load().map_err(|err| {
+        IoError::new(
+            ErrorKind::Other,
+            format!("unable to load kube context {}", err),
+        )
+    })?;
+    match k8_config {
+        K8Config::Pod(_) => {
+            // ignore server check for pod
         }
-    };
-
-    if !server_host.trim().is_empty() {
-        match IpAddr::from_str(&server_host) {
-            Ok(_) => {
+        K8Config::KubeConfig(config) => {
+            let server_host = match get_cluster_server_host(config) {
+                Ok(server) => server,
+                Err(e) => {
+                    return Err(CliError::Other(format!(
+                        "error fetching server from kube context {}",
+                        e.to_string()
+                    )))
+                }
+            };
+            if !server_host.trim().is_empty() {
+                match IpAddr::from_str(&server_host) {
+                    Ok(_) => {
+                        return Err(CliError::Other(
+                            format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
+                        ));
+                    }
+                    Err(_) => {
+                        // ignore as it is expected to be a non IP address
+                    }
+                };
+            } else {
                 return Err(CliError::Other(
-                    format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
+                    "Cluster in kubectl context cannot have empty hostname".to_owned(),
                 ));
             }
-            Err(_) => {
-                // ignore as it is expected to be a non IP address
-            }
-        };
-    } else {
-        return Err(CliError::Other(
-            "Cluster in kubectl context cannot have empty hostname".to_owned(),
-        ));
-    }
+        }
+    };
 
     Ok(())
 }
