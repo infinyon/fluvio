@@ -5,8 +5,8 @@
 //!
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
-use flv_client::metadata::spg::SpuGroupSpec;
+use fluvio::ClusterConfig;
+use fluvio::metadata::spg::SpuGroupSpec;
 use crate::error::CliError;
 use crate::target::ClusterTarget;
 
