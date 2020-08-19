@@ -6,7 +6,7 @@ mod root_cli;
 mod spu;
 mod topic;
 mod output;
-mod profile;
+pub mod profile;
 mod tls;
 pub mod cluster;
 mod group;
