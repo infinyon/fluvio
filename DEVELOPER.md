@@ -217,3 +217,43 @@ It means your docker registry is not running
 ```
 docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
+
+If you face connection issues while creating minikube image while your docker registry is up running
+
+```
+$ make minikube_image
+Error response from daemon: Get http://localhost:5000/v2/: dial tcp 127.0.0.1:5000: connect: connection refused
+make[1]: *** [minikube] Error 1
+make: *** [spu_image] Error 2
+```
+Re-build i.e.delete and restart minikube cluster
+
+```
+minikube delete
+minikube start
+```
+
+
+###### Fluvio sys chart issues
+
+If you face issues while installing sys chart
+
+```
+$ flvd cluster install --sys
+"fluvio" has been added to your repositories
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "fluvio" chart repository
+Update Complete. ⎈ Happy Helming!⎈ 
+Exited with status code: 1
+thread 'main' panicked at 'assertion failed: false', src/cli/src/cluster/util.rs:115:17
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the sys chart installation throws an error. Make sure the storage class is deleted.
+
+```
+ kubectl delete storageclass fluvio-spu
+ ```
+
+
+
