@@ -8,7 +8,7 @@ use structopt::StructOpt;
 
 use fluvio::ClusterConfig;
 use fluvio::ClusterSocket;
-use flv_metadata_cluster::partition::*;
+use fluvio_controlplane_metadata::partition::*;
 
 use crate::error::CliError;
 use crate::OutputType;

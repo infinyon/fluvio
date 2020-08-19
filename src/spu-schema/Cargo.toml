@@ -1,0 +1,21 @@
+[package]
+name = "fluvio-spu-schema"
+version = "0.1.0"
+edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio API for SPU"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+
+[lib]
+name = "fluvio_spu_schema"
+path = "src/lib.rs"
+
+[dependencies]
+log = "0.4.8"
+tracing = "0.1.19"
+bytes = "0.5.4"
+serde = { version = "1.0.103", features = ['derive'] }
+
+# Fluvio dependencies
+kf-protocol = { version = "2.0.1" } 

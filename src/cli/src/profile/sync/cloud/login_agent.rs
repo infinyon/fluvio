@@ -10,7 +10,7 @@ use serde_json::Error as JsonError;
 use http_types::{Response, Request, StatusCode, Error as HttpError, Url};
 
 use fluvio::ClusterConfig;
-use flv_types::defaults::CLI_CONFIG_PATH;
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 use url::ParseError;
 use super::http::execute;
 

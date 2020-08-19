@@ -123,10 +123,10 @@ minikube_image:	MAKE_CMD=minikube
 
 
 linux-sc-server:	install_musl
-	cargo $(CARGO_BUILD) --bin sc-k8-server  --target ${TARGET_LINUX}
+	cargo $(CARGO_BUILD) --bin fluvio-sc-k8 --target ${TARGET_LINUX}
 
 linux-spu-server:	install_musl
-	cargo $(CARGO_BUILD) --bin spu-server  --target ${TARGET_LINUX}
+	cargo $(CARGO_BUILD) --bin fluvio-spu --target ${TARGET_LINUX}
 
 
 spu_image:	linux-spu-server

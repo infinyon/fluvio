@@ -6,10 +6,10 @@ use structopt::StructOpt;
 use flv_future_aio::task::run_block_on;
 use flv_future_aio::fs::util as fs_util;
 
-use flv_storage::DefaultFileBatchStream;
-use flv_storage::LogIndex;
-use flv_storage::StorageError;
-use flv_storage::OffsetPosition;
+use fluvio_storage::DefaultFileBatchStream;
+use fluvio_storage::LogIndex;
+use fluvio_storage::StorageError;
+use fluvio_storage::OffsetPosition;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]

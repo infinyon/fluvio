@@ -1,6 +1,6 @@
 use structopt::StructOpt;
-use flv_spu::SpuOpt;
-use flv_sc_k8::ScOpt;
+use fluvio_spu::SpuOpt;
+use fluvio_sc::cli::ScOpt;
 
 use crate::CliError;
 
@@ -14,8 +14,8 @@ pub enum RunOpt {
 
 pub fn process_run(run_opt: RunOpt) -> Result<String, CliError> {
     match run_opt {
-        RunOpt::SPU(opt) => flv_spu::main_loop(opt),
-        RunOpt::SC(opt) => flv_sc_k8::main_loop(opt),
+        RunOpt::SPU(opt) => fluvio_spu::main_loop(opt),
+        RunOpt::SC(opt) => fluvio_sc::k8::main_k8_loop(opt),
     }
 
     Ok("".to_owned())

@@ -24,9 +24,9 @@ use kf_protocol::fs::FileTopicResponse;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use flv_util::fixture::ensure_clean_dir;
-use flv_storage::StorageError;
-use flv_storage::FileReplica;
-use flv_storage::ConfigOption;
+use fluvio_storage::StorageError;
+use fluvio_storage::FileReplica;
+use fluvio_storage::ConfigOption;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;
