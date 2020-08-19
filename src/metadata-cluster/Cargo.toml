@@ -22,7 +22,7 @@ k8-obj-app = { version = "1.1.0", optional = true }
 flv-future-aio = { version = "2.3.0"}
 kf-protocol =  "2.0.0" 
 flv-types = { path ="../types", version = "0.2.0" }
-flv-util = { version = "0.2.0"}
+flv-util = { version = "0.3.1" }
 flv-eventstream-model = { path = "../event-stream-model"}
 
 [dev-dependencies]
