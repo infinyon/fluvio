@@ -471,7 +471,7 @@ impl PartitionMaps {
 
             // all replica ids must be unique
             let mut sorted_replicas = partition.replicas.clone();
-            sorted_replicas.sort();
+            sorted_replicas.sort_unstable();
             let unique_count = 1 + sorted_replicas
                 .windows(2)
                 .filter(|pair| pair[0] != pair[1])

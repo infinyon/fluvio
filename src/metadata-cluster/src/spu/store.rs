@@ -140,7 +140,7 @@ where
 
     async fn spu_ids(&self) -> Vec<i32> {
         let mut ids: Vec<i32> = self.read().await.values().map(|spu| spu.spec.id).collect();
-        ids.sort();
+        ids.sort_unstable();
         ids
     }
 
@@ -278,7 +278,7 @@ where
                 } else {
                     ids = vec![spu.spec.id];
                 }
-                ids.sort();
+                ids.sort_unstable();
                 rack_spus.insert(rack.clone(), ids);
             }
         }

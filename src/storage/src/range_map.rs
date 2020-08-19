@@ -64,7 +64,7 @@ impl SegmentList {
             }
         }
 
-        offsets.sort();
+        offsets.sort_unstable();
 
         let last_offset = offsets.pop();
         let mut segments = Self::new();
