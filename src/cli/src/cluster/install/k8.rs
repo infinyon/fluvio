@@ -342,6 +342,18 @@ mod k8_util {
     use k8_metadata_client::MetadataClient;
     use k8_client::ClientError as K8ClientError;
 
+    use super::*;
+
+    /// print svc
+    fn print_svc(ns: &str) {
+        Command::new("kubectl")
+            .arg("get")
+            .arg("svc")
+            .arg("-n")
+            .arg(ns)
+            .inherit();
+    }
+
     pub async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError> {
         let client = load_and_share()?;
 
@@ -353,7 +365,8 @@ mod k8_util {
                 Ok(svc) => {
                     // check if load balancer status exists
                     if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
-                        println!("found svc load balancer addr: {}", addr);
+                        print!("found svc load balancer addr: {}", addr);
+                        print_svc(ns);
                         return Ok(Some(format!("{}:9003", addr.to_owned())));
                     } else {
                         println!("svc exists but no load balancer exist yet, continue wait");
@@ -369,6 +382,9 @@ mod k8_util {
                 },
             };
         }
+
+        // if we  can't  find any service print out kc get svc
+        print_svc(ns);
 
         Ok(None)
     }
