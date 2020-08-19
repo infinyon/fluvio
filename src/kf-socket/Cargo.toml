@@ -8,6 +8,9 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 categories = ["encoding"]
 
+[lib]
+name = "kf_socket"
+path = "src/lib.rs"
 
 [dependencies]
 tracing = "0.1.19"
@@ -21,11 +24,14 @@ async-channel = "1.1.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 tokio-util = { version = "0.3.1", features = ["codec","compat"]} 
 async-trait = "0.1.21"
-kf-protocol = { version = "2.0.0" } 
-flv-future-aio = { version = "2.2.1", features = ["tls"] }
 
+# Fluvio dependencies
+flv-future-aio = { version = "2.2.1", features = ["tls"] }
+kf-protocol = { version = "2.0.0" }
 
 [dev-dependencies]
 log = "0.4.8"
+
+# Fluvio dependencies
 flv-util = { version = "0.1.0", features = ["fixture"]}
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }

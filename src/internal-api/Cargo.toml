@@ -4,9 +4,15 @@ version = "1.0.0"
 authors = ["fluvio.io"]
 edition = "2018"
 
+[lib]
+name = "internal_api"
+path = "src/lib.rs"
+
 [dependencies]
 log = "0.4.8"
 tracing = "0.1.19"
-kf-protocol = { version = "2.0.0" }
-flv-metadata-cluster = { path = "../metadata-cluster"}
+
+# Fluvio dependencies
 flv-types = { path ="../types" }
+flv-metadata-cluster = { path = "../metadata-cluster"}
+kf-protocol = { version = "2.0.0" }

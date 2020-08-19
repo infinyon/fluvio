@@ -4,6 +4,10 @@ edition = "2018"
 version = "0.1.0"
 authors = ["fluvio.io"]
 
+[lib]
+name = "flv_sc_k8"
+path = "src/lib.rs"
+
 [[bin]]
 name = "sc-k8-server"
 path = "src/main.rs"
@@ -15,14 +19,16 @@ tracing-futures = "0.2.4"
 rand = "0.7.2"
 toml = "0.5.5"
 structopt = "0.3.12"
-serde = { version ="1.0.103", features = ['derive'] }
+serde = { version = "1.0.103", features = ['derive'] }
 futures = { version = "0.3.4" }
 async-trait = "0.1.21"
-k8-client = { version = "1.1.1"}
-flv-tls-proxy = "0.1.0"
-flv-types = { path ="../types", version = "0.2.0"}
-flv-future-aio = { version = "2.2.1", features = ["tls"] }
+
+# Fluvio dependencies
 flv-util = { version = "0.3.0" }
-utils = { path = "../utils"}
-flv-sc-core = { path = "../sc-core"}
-flv-metadata-cluster = { features = ["k8"],path = "../metadata-cluster"}
+flv-types = { path = "../types", version = "0.2.0" }
+flv-sc-core = { path = "../sc-core" }
+flv-tls-proxy = "0.1.0"
+flv-future-aio = { version = "2.2.1", features = ["tls"] }
+flv-metadata-cluster = { features = ["k8"], path = "../metadata-cluster" }
+k8-client = { version = "1.1.1" }
+utils = { path = "../utils" }
