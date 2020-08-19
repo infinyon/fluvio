@@ -8,8 +8,8 @@ use std::io::Error as IoError;
 use std::process;
 use std::io::ErrorKind;
 
-use log::debug;
-use log::info;
+use tracing::debug;
+use tracing::info;
 use structopt::StructOpt;
 
 use flv_types::print_cli_err;

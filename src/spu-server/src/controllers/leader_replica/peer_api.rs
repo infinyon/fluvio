@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
-use log::trace;
+use tracing::trace;
 
 use kf_protocol::bytes::Buf;
 use kf_protocol::Decoder;

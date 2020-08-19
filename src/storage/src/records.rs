@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::path::Path;
 
-use log::debug;
+use tracing::debug;
 
 use flv_future_aio::fs::File;
 use flv_future_aio::fs::util as file_util;

@@ -1,4 +1,4 @@
-use log::debug;
+use tracing::debug;
 use async_trait::async_trait;
 
 use crate::store::*;

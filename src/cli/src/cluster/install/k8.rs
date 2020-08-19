@@ -2,6 +2,7 @@ use std::process::Command;
 use std::io::Error as IoError;
 use semver::Version;
 use k8_client::K8Config;
+use k8_config::KubeContext;
 use std::io::ErrorKind;
 use std::net::{IpAddr};
 use std::str::FromStr;
@@ -9,23 +10,7 @@ use url::{Url};
 
 use super::*;
 
-fn get_cluster_server_host() -> Result<String, IoError> {
-    let k8_config = K8Config::load().map_err(|err| {
-        IoError::new(
-            ErrorKind::Other,
-            format!("unable to load kube context {}", err),
-        )
-    })?;
-    let kc_config = match k8_config {
-        K8Config::Pod(_) => {
-            return Err(IoError::new(
-                ErrorKind::Other,
-                "Pod config is not valid here",
-            ))
-        }
-        K8Config::KubeConfig(config) => config,
-    };
-
+fn get_cluster_server_host(kc_config: KubeContext) -> Result<String, IoError> {
     if let Some(ctx) = kc_config.config.current_cluster() {
         let server_url = ctx.cluster.server.to_owned();
         let url = match Url::parse(&server_url) {
@@ -90,28 +75,39 @@ fn pre_install_check() -> Result<(), CliError> {
         ));
     }
 
-    let server_host = match get_cluster_server_host() {
-        Ok(server) => server,
-        Err(e) => {
-            return Err(CliError::Other(format!(
-                "error fetching server from kube context {}",
-                e.to_string()
-            )))
+    let k8_config = K8Config::load().map_err(|err| {
+        IoError::new(
+            ErrorKind::Other,
+            format!("unable to load kube context {}", err),
+        )
+    })?;
+    match k8_config {
+        K8Config::Pod(_) => {
+            // ignore server check for pod
+        }
+        K8Config::KubeConfig(config) => {
+            let server_host = match get_cluster_server_host(config) {
+                Ok(server) => server,
+                Err(e) => {
+                    return Err(CliError::Other(format!(
+                        "error fetching server from kube context {}",
+                        e.to_string()
+                    )))
+                }
+            };
+            if !server_host.trim().is_empty() {
+                if IpAddr::from_str(&server_host).is_ok() {
+                    return Err(CliError::Other(
+                        format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
+                    ));
+                };
+            } else {
+                return Err(CliError::Other(
+                    "Cluster in kubectl context cannot have empty hostname".to_owned(),
+                ));
+            }
         }
     };
-
-    if !server_host.trim().is_empty() {
-        if IpAddr::from_str(&server_host).is_ok() {
-            return Err(CliError::Other(format!(
-                "Cluster in kube context cannot use IP address, please use minikube context: {}",
-                server_host
-            )));
-        };
-    } else {
-        return Err(CliError::Other(
-            "Cluster in kubectl context cannot have empty hostname".to_owned(),
-        ));
-    }
 
     Ok(())
 }
@@ -255,7 +251,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         cmd.arg("--set").arg("tls=true");
     }
 
-    if let Some(log) = &opt.log {
+    if let Some(log) = &opt.rust_log {
         cmd.arg("--set").arg(format!("scLog={}", log));
     }
 
@@ -283,12 +279,12 @@ pub fn install_sys(opt: InstallCommand) {
 /// switch to profile
 async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
     use crate::profile::set_k8_context;
-    use crate::profile::SetK8;
-    use crate::tls::TlsConfig;
+    use crate::profile::K8Opt;
+    use crate::tls::TlsOpt;
 
     let tls_config = &opt.tls;
     let tls = if tls_config.tls {
-        TlsConfig {
+        TlsOpt {
             tls: true,
             domain: tls_config.domain.clone(),
             // enable_client_cert: true,
@@ -298,10 +294,10 @@ async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
             ..Default::default()
         }
     } else {
-        TlsConfig::default()
+        TlsOpt::default()
     };
 
-    let config = SetK8 {
+    let config = K8Opt {
         namespace: Some(opt.k8_config.namespace.clone()),
         tls,
         ..Default::default()
@@ -342,6 +338,18 @@ mod k8_util {
     use k8_metadata_client::MetadataClient;
     use k8_client::ClientError as K8ClientError;
 
+    use super::*;
+
+    /// print svc
+    fn print_svc(ns: &str) {
+        Command::new("kubectl")
+            .arg("get")
+            .arg("svc")
+            .arg("-n")
+            .arg(ns)
+            .inherit();
+    }
+
     pub async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError> {
         let client = load_and_share()?;
 
@@ -353,7 +361,8 @@ mod k8_util {
                 Ok(svc) => {
                     // check if load balancer status exists
                     if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
-                        println!("found svc load balancer addr: {}", addr);
+                        print!("found svc load balancer addr: {}", addr);
+                        print_svc(ns);
                         return Ok(Some(format!("{}:9003", addr.to_owned())));
                     } else {
                         println!("svc exists but no load balancer exist yet, continue wait");
@@ -369,6 +378,9 @@ mod k8_util {
                 },
             };
         }
+
+        // if we  can't  find any service print out kc get svc
+        print_svc(ns);
 
         Ok(None)
     }

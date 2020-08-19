@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::process::Command;
 
-use log::debug;
+use tracing::debug;
 
 pub use cmd_util::*;
 

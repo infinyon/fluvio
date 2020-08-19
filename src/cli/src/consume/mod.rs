@@ -14,7 +14,7 @@ pub use process::process_consume_log;
 
 mod process {
 
-    use log::debug;
+    use tracing::debug;
 
     use crate::CliError;
     use crate::Terminal;
@@ -30,7 +30,7 @@ mod process {
     where
         O: Terminal,
     {
-        use flv_client::kf::api::ReplicaKey;
+        use fluvio::kf::api::ReplicaKey;
 
         let (target_server, cfg) = opt.validate()?;
 

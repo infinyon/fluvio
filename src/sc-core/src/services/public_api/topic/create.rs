@@ -11,7 +11,7 @@
 
 use std::io::Error as IoError;
 
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 use kf_protocol::api::FlvErrorCode;
 

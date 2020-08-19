@@ -4,8 +4,8 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt::Display;
 
-use log::debug;
-use log::error;
+use tracing::debug;
+use tracing::error;
 
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;

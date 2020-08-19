@@ -6,10 +6,10 @@ use chashmap::WriteGuard;
 use futures::channel::mpsc::Sender;
 use futures::channel::mpsc::SendError;
 use futures::SinkExt;
-use log::debug;
-use log::warn;
-use log::trace;
-use log::error;
+use tracing::debug;
+use tracing::warn;
+use tracing::trace;
+use tracing::error;
 
 use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::api::RecordSet;

@@ -1,5 +1,5 @@
 mod controller {
-    use log::debug;
+    use tracing::debug;
     use futures::select;
     use futures::channel::mpsc::Sender;
 

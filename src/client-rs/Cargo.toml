@@ -1,16 +1,15 @@
 [package]
-name = "flv-client"
-version = "4.0.0"
+name = "fluvio"
+version = "0.1.0"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
-description = "Fluvio rust client"
-
+description = "The offical Fluvio driver for Rust"
 
 
 [dependencies]
-log = "0.4.8"
+tracing = "0.1.19"
 dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"

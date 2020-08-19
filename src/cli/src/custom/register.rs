@@ -9,8 +9,8 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use flv_util::socket_helpers::ServerAddress;
-use flv_client::ClusterConfig;
-use flv_client::metadata::spu::CustomSpuSpec;
+use fluvio::ClusterConfig;
+use fluvio::metadata::spu::CustomSpuSpec;
 
 use crate::error::CliError;
 use crate::target::ClusterTarget;

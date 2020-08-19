@@ -13,7 +13,8 @@ pub use context::*;
 
 mod context {
 
-    use log::info;
+    use tracing::info;
+    use tracing::instrument;
 
     use kf_service::KfApiServer;
 
@@ -21,9 +22,14 @@ mod context {
     use super::public_server::PublicService;
 
     /// create public server
+    #[instrument(
+        name = "sc_public_server"
+        skip(ctx),
+        fields(address = &*ctx.config().public_endpoint)
+    )]
     pub fn start_public_server(ctx: SharedContext) {
         let addr = ctx.config().public_endpoint.clone();
-        info!("start public api service at: {}", addr);
+        info!("start public api service");
 
         let server = KfApiServer::new(addr, ctx, PublicService::new());
         server.run();

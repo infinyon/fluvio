@@ -9,7 +9,7 @@ mod context {
     use std::io::ErrorKind;
     use std::fmt::Display;
 
-    use log::error;
+    use tracing::error;
     use event_listener::{Event, EventListener};
     use async_channel::{Sender, Receiver, bounded, SendError};
 
@@ -99,8 +99,8 @@ mod context {
             use std::time::Instant;
 
             use tokio::select;
-            use log::debug;
-            use log::warn;
+            use tracing::debug;
+            use tracing::warn;
             use flv_future_aio::timer::sleep;
 
             const MAX_WAIT_TIME: u64 = 5;
@@ -160,8 +160,8 @@ mod context {
             use std::time::Instant;
 
             use tokio::select;
-            use log::debug;
-            use log::warn;
+            use tracing::debug;
+            use tracing::warn;
             use flv_future_aio::timer::sleep;
 
             const MAX_WAIT_TIME: u64 = 5;

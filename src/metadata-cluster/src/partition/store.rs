@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use log::debug;
+use tracing::debug;
 use async_trait::async_trait;
 
 use flv_types::SpuId;

@@ -7,8 +7,8 @@ use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
 
-use flv_client::metadata::objects::Metadata;
-use flv_client::metadata::spu::SpuSpec;
+use fluvio::metadata::objects::Metadata;
+use fluvio::metadata::spu::SpuSpec;
 
 use crate::error::CliError;
 use crate::OutputType;

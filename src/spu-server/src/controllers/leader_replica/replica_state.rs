@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use log::debug;
-use log::trace;
-use log::error;
-use log::warn;
+use tracing::debug;
+use tracing::trace;
+use tracing::error;
+use tracing::warn;
 
 use kf_socket::SinkPool;
 use kf_protocol::api::RecordSet;

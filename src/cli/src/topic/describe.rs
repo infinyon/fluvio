@@ -4,11 +4,11 @@
 //! CLI to describe Topics and their corresponding Partitions
 //!
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
-use flv_client::metadata::topic::TopicSpec;
+use fluvio::ClusterConfig;
+use fluvio::metadata::topic::TopicSpec;
 
 use crate::target::ClusterTarget;
 
@@ -77,8 +77,8 @@ mod display {
     use prettytable::Row;
     use prettytable::row;
 
-    use flv_client::metadata::objects::Metadata;
-    use flv_client::metadata::topic::TopicSpec;
+    use fluvio::metadata::objects::Metadata;
+    use fluvio::metadata::topic::TopicSpec;
 
     use crate::OutputType;
     use crate::error::CliError;

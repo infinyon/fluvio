@@ -5,7 +5,7 @@
 
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
+use fluvio::ClusterConfig;
 use flv_metadata_cluster::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
@@ -59,9 +59,9 @@ mod output {
     use prettytable::Cell;
     use prettytable::cell;
     use prettytable::format::Alignment;
-    use log::debug;
+    use tracing::debug;
 
-    use flv_client::metadata::objects::Metadata;
+    use fluvio::metadata::objects::Metadata;
     use flv_metadata_cluster::spg::SpuGroupSpec;
 
     use crate::error::CliError;

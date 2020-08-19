@@ -11,8 +11,8 @@ use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::info;
-use log::debug;
+use tracing::info;
+use tracing::debug;
 use structopt::StructOpt;
 
 use flv_types::print_cli_err;

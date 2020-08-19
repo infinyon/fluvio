@@ -8,8 +8,8 @@ use std::pin::Pin;
 use std::task::Context;
 use std::task::Poll;
 
-use log::trace;
-use log::debug;
+use tracing::trace;
+use tracing::debug;
 use futures::Future;
 use futures::FutureExt;
 use futures::Stream;

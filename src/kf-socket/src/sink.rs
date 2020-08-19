@@ -4,8 +4,8 @@ use std::fmt::Debug;
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
 
-use log::trace;
-use log::debug;
+use tracing::trace;
+use tracing::debug;
 use bytes::Bytes;
 
 use futures::sink::SinkExt;
@@ -219,8 +219,8 @@ mod tests {
     use std::fs::remove_file;
     use std::env::temp_dir;
 
-    use log::debug;
-    use log::info;
+    use tracing::debug;
+    use tracing::info;
     use futures::stream::StreamExt;
     use futures::future::join;
     use futures::io::AsyncWriteExt;

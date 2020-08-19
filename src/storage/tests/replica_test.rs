@@ -3,7 +3,7 @@
 use std::env::temp_dir;
 use std::time::Duration;
 
-use log::debug;
+use tracing::debug;
 use futures::stream::StreamExt;
 use futures::future::join;
 

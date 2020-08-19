@@ -1,7 +1,7 @@
 use std::io::Error;
 
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 
 use sc_api::objects::*;
 use sc_api::spg::SpuGroupSpec;

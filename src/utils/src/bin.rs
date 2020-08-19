@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::process::Command;
 
-use log::debug;
+use tracing::debug;
 
 pub fn get_fluvio() -> Result<Command, IoError> {
     get_binary("fluvio")

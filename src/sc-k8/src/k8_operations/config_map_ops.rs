@@ -5,7 +5,7 @@
 //!
 use std::collections::BTreeMap;
 
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 use flv_metadata_cluster::k8::metadata::*;
 use flv_metadata_cluster::k8::core::config_map::ConfigMapSpec;

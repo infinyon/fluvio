@@ -2,7 +2,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use log::debug;
+use tracing::debug;
 use futures::future::BoxFuture;
 use futures::future::FutureExt;
 use futures::SinkExt;

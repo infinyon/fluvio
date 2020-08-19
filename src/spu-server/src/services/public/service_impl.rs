@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::collections::HashSet;
 
-use log::debug;
-use log::trace;
-use log::warn;
+use tracing::debug;
+use tracing::trace;
+use tracing::warn;
 use async_trait::async_trait;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
@@ -27,6 +27,7 @@ use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
 use super::OffsetReplicaList;
 
+#[derive(Debug)]
 pub struct PublicService {}
 
 impl PublicService {
@@ -151,11 +152,11 @@ where
 
                             }
                         } else {
-                            log::debug!("conn: {} msg can't be decoded, ending connection",sink.id());
+                            tracing::debug!("conn: {} msg can't be decoded, ending connection",sink.id());
                             break;
                         }
                     } else {
-                        log::debug!("conn: {}, no content, end of connection", sink.id());
+                        tracing::debug!("conn: {}, no content, end of connection", sink.id());
                         break;
                     }
 

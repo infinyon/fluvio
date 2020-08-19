@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use log::debug;
-use log::error;
-use log::info;
-use log::trace;
-use log::warn;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::warn;
+use tracing::instrument;
 use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
@@ -75,6 +76,10 @@ impl SpgOperator {
         debug!("spg operator finished");
     }
 
+    #[instrument(
+        skip(self, events),
+        fields(namespace = &*self.namespace)
+    )]
     async fn dispatch_events(&self, events: Vec<Result<K8Watch<K8SpuGroupSpec>, ClientError>>) {
         for event_r in events {
             match event_r {
@@ -107,6 +112,10 @@ impl SpgOperator {
         }
     }
 
+    #[instrument(
+        skip(self, spu_group),
+        fields(spg_name = &*spu_group.metadata.name),
+    )]
     async fn apply_spg_changes(&self, spu_group: SpuGroupObj) -> Result<(), ClientError> {
         let spg_name = spu_group.metadata.name.as_ref();
 
@@ -114,10 +123,7 @@ impl SpgOperator {
 
         // ensure we don't have conflict with existing spu group
         if let Some(conflict_id) = spu_group.is_conflict_with(&self.spu_store).await {
-            warn!(
-                "spg group: {} is conflict with existing id: {}",
-                spg_name, conflict_id
-            );
+            warn!(conflict_id, "spg is in conflict with existing id");
             let status = SpuGroupStatus::invalid(format!("conflict with: {}", conflict_id));
 
             let k8_status_change = spu_group.as_status_update(status);
@@ -142,22 +148,16 @@ impl SpgOperator {
                         .apply_stateful_set(&spu_group, spg_spec, &spg_name, svc_name)
                         .await
                     {
-                        error!(
-                            "cluster '{}': error applying stateful sets: {}",
-                            spg_name, err
-                        );
+                        error!("error applying stateful sets: {}", err);
                     }
                 }
                 Err(err) => {
-                    error!(
-                        "cluster '{}': error applying spg services: {}",
-                        spg_name, err
-                    );
+                    error!("error applying spg services: {}", err);
                 }
             }
 
             if let Err(err) = self.apply_spus(&spu_group, spg_spec, &spg_name).await {
-                error!("cluster '{}': error applying spus: {}", spg_name, err);
+                error!("error applying spus: {}", err);
             }
         }
 
@@ -165,6 +165,10 @@ impl SpgOperator {
     }
 
     /// Generate and apply a stateful set for this cluster
+    #[instrument(
+        skip(self, spu_group, spg_spec, spg_svc_name),
+        fields(spg_svc_name = &*spg_svc_name),
+    )]
     async fn apply_stateful_set(
         &self,
         spu_group: &SpuGroupObj,
@@ -181,8 +185,8 @@ impl SpgOperator {
             self.tls.as_ref(),
         );
         debug!(
-            "cluster '{}': apply statefulset '{}' changes",
-            spg_name, input_stateful.metadata.name,
+            "apply statefulset '{}' changes",
+            input_stateful.metadata.name
         );
 
         trace!("statefulset: {:#?}", input_stateful);
@@ -193,6 +197,7 @@ impl SpgOperator {
     }
 
     /// create SPU crd objects from cluster spec
+    #[instrument(skip(self, spg_obj, spg_spec, spg_name))]
     async fn apply_spus(
         &self,
         spg_obj: &SpuGroupObj,
@@ -228,6 +233,14 @@ impl SpgOperator {
     }
 
     /// create SPU crd objects from cluster spec
+    #[instrument(
+        skip(self, k8_group, group_spec, _replica_index, id),
+        fields(
+            namespace = k8_group.metadata.namespace(),
+            replica_index = _replica_index,
+            spu_id = id,
+        )
+    )]
     async fn apply_spu(
         &self,
         k8_group: &SpuGroupObj,
@@ -293,6 +306,7 @@ impl SpgOperator {
 
     /// Apply external svc for each SPU
     /// This is owned by group svc
+    #[instrument(skip(self, spg_obj, spg_spec))]
     async fn apply_spu_load_balancers(
         &self,
         spg_obj: &SpuGroupObj,
@@ -341,8 +355,7 @@ impl SpgOperator {
             ..Default::default()
         };
 
-        debug!("spu '{}': enable external services", spu_name);
-
+        debug!("enable external services");
         self.client.apply(input_service).await
     }
 

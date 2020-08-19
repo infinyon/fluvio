@@ -62,9 +62,13 @@ pub struct TestOption {
     #[structopt(long)]
     develop: bool,
 
-    // log flag
-    #[structopt(short, long)]
-    pub log: Option<String>,
+    // rust log
+    #[structopt(long)]
+    pub rust_log: Option<String>,
+
+    // log dir
+    #[structopt(long)]
+    pub log_dir: Option<String>,
 }
 
 impl TestOption {

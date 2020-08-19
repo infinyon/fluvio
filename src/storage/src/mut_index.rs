@@ -6,9 +6,9 @@ use std::ops::DerefMut;
 use std::slice;
 
 use libc::c_void;
-use log::debug;
-use log::trace;
-use log::error;
+use tracing::debug;
+use tracing::trace;
+use tracing::error;
 
 use flv_future_aio::fs::File;
 use flv_future_aio::fs::MemoryMappedMutFile;

@@ -4,11 +4,11 @@
 //! CLI tree to generate Create Managed SPU Groups
 //!
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
-use flv_client::metadata::spg::*;
+use fluvio::ClusterConfig;
+use fluvio::metadata::spg::*;
 
 use crate::error::CliError;
 use crate::target::ClusterTarget;

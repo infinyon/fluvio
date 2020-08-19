@@ -5,9 +5,9 @@ use std::ops::Bound::Excluded;
 use std::ops::Bound::Included;
 use std::ffi::OsStr;
 
-use log::debug;
-use log::trace;
-use log::error;
+use tracing::debug;
+use tracing::trace;
+use tracing::error;
 
 use kf_protocol::api::Offset;
 

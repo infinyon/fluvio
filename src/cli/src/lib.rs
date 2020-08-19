@@ -6,13 +6,12 @@ mod root_cli;
 mod spu;
 mod topic;
 mod output;
-mod profile;
+pub mod profile;
 mod tls;
 pub mod cluster;
 mod group;
 mod custom;
 mod partition;
-mod cloud;
 
 #[cfg(feature = "cluster_components")]
 mod run;
@@ -33,6 +32,11 @@ const COMMAND_TEMPLATE: &str = "{about}
 ";
 
 #[macro_export]
+macro_rules! t_print {
+    ($out:expr,$($arg:tt)*) => ( $out.print(&format!($($arg)*)))
+}
+
+#[macro_export]
 macro_rules! t_println {
     ($out:expr,$($arg:tt)*) => ( $out.println(&format!($($arg)*)))
 }
@@ -48,10 +52,15 @@ mod target {
 
     use structopt::StructOpt;
 
-    use flv_client::ClusterConfig;
-    use crate::tls::TlsConfig;
+    use fluvio::ClusterConfig;
+    use crate::tls::TlsOpt;
     use crate::CliError;
-    use crate::profile::InlineProfile;
+
+    #[derive(Debug, StructOpt, Default)]
+    pub struct InlineProfile {
+        #[structopt(short = "P", long, value_name = "profile")]
+        pub profile: Option<String>,
+    }
 
     /// server configuration
     #[derive(Debug, StructOpt, Default)]
@@ -61,7 +70,7 @@ mod target {
         pub cluster: Option<String>,
 
         #[structopt(flatten)]
-        tls: TlsConfig,
+        tls: TlsOpt,
 
         #[structopt(flatten)]
         profile: InlineProfile,
@@ -70,7 +79,7 @@ mod target {
     impl ClusterTarget {
         /// try to create sc config
         pub fn load(self) -> Result<ClusterConfig, CliError> {
-            let tls = self.tls.try_into_file_config()?;
+            let tls = self.tls.try_into_inline()?;
             // check case when inline profile is used
             if let Some(profile) = self.profile.profile {
                 if self.cluster.is_some() {

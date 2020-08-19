@@ -6,7 +6,7 @@
 
 use std::io::Error;
 
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 use sc_api::FlvStatus;
 use sc_api::spg::*;

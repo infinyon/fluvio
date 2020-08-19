@@ -47,7 +47,7 @@ mod proxy {
 
     use std::process;
 
-    use log::info;
+    use tracing::info;
 
     use flv_types::print_cli_err;
     use flv_future_aio::net::tls::TlsAcceptor;

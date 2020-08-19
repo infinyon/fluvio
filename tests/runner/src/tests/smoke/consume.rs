@@ -45,10 +45,10 @@ fn validate_consume_message_cli(option: &TestOption) {
 async fn validate_consume_message_api(option: &TestOption) {
     // futures::stream::StreamExt;
 
-    use flv_client::ClusterConfig;
-    use flv_client::params::FetchOffset;;
-    use flv_client::params::FetchLogOption;
-    use flv_client::kf::api::ReplicaKey;
+    use fluvio::ClusterConfig;
+    use fluvio::params::FetchOffset;;
+    use fluvio::params::FetchLogOption;
+    use fluvio::kf::api::ReplicaKey;
 
     let config = ClusterConfig::lookup_profile(None).expect("connect");
     let mut cluster = config.connect().await.expect("should connect");

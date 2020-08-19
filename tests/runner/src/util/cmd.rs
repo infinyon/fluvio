@@ -13,19 +13,16 @@ pub trait CommandUtil {
 
     fn print(&mut self) -> &mut Self;
 
-    fn log<I>(&mut self, log: Option<I>) -> &mut Self
-    where
-        I: AsRef<str>;
+    fn rust_log(&mut self, log_option: Option<&str>) -> &mut Self;
 }
 
 impl CommandUtil for Command {
-    fn log<I>(&mut self, log: Option<I>) -> &mut Self
-    where
-        I: AsRef<str>,
-    {
-        if let Some(log) = log {
-            self.env("RUST_LOG", log.as_ref());
+    fn rust_log(&mut self, log_option: Option<&str>) -> &mut Self {
+        if let Some(log) = log_option {
+            println!("setting rust log: {}", log);
+            self.env("RUST_LOG", log);
         }
+
         self
     }
 

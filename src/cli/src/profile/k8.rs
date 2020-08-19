@@ -1,23 +1,21 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use log::debug;
+use tracing::debug;
 
+use fluvio::config::*;
 use k8_client::K8Client;
-
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
 use k8_client::metadata::MetadataClient;
 use k8_client::ClientError as K8ClientError;
 use k8_client::K8Config;
 
-use flv_client::config::*;
-
-use super::cli::SetK8;
+use crate::profile::sync::K8Opt;
 
 /// compute profile name, if name exists in the cli option, we use that
 /// otherwise, we look up k8 config context name
-fn compute_profile_name(opt: &super::cli::SetK8, k8_config: &K8Config) -> Result<String, IoError> {
+fn compute_profile_name(opt: &K8Opt, k8_config: &K8Config) -> Result<String, IoError> {
     if let Some(name) = &opt.name {
         return Ok(name.to_owned());
     }
@@ -40,7 +38,7 @@ fn compute_profile_name(opt: &super::cli::SetK8, k8_config: &K8Config) -> Result
 }
 
 /// create new k8 cluster and profile
-pub async fn set_k8_context(opt: SetK8) -> Result<String, IoError> {
+pub async fn set_k8_context(opt: K8Opt) -> Result<String, IoError> {
     let mut config_file = ConfigFile::load_default_or_new()?;
 
     let k8_config = K8Config::load().map_err(|err| {

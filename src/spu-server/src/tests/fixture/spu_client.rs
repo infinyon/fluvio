@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 use std::net::SocketAddr;
 
-use log::debug;
+use tracing::debug;
 use futures::channel::mpsc::Sender;
 
 use kf_socket::KfSocketError;

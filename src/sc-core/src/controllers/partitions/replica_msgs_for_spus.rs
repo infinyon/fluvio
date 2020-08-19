@@ -11,8 +11,8 @@ use internal_api::messages::{ReplicaMsg, ReplicaMsgs};
 use internal_api::UpdateReplicaRequest;
 
 use error::ServerError;
-use log::{debug, error, trace};
-use log::warn;
+use tracing::{debug, error, trace};
+use tracing::warn;
 use utils::actions::Actions;
 
 use crate::core::common::spu_notify_by_id::SpuNotifyById;

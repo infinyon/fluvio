@@ -1,9 +1,9 @@
 use std::io::Error as IoError;
 use std::mem;
 
-use log::debug;
-use log::trace;
-use log::error;
+use tracing::debug;
+use tracing::trace;
+use tracing::error;
 
 use flv_future_aio::fs::create_dir_all;
 use kf_protocol::api::ErrorCode;
@@ -328,7 +328,7 @@ fn replica_dir_name<S: AsRef<str>>(topic_name: S, partition_index: Size) -> Stri
 #[cfg(test)]
 mod tests {
 
-    use log::debug;
+    use tracing::debug;
     use std::env::temp_dir;
     use std::fs;
     use std::fs::metadata;

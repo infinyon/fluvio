@@ -8,11 +8,11 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
-use log::debug;
+use tracing::debug;
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
-use flv_client::metadata::topic::TopicSpec;
+use fluvio::ClusterConfig;
+use fluvio::metadata::topic::TopicSpec;
 
 use crate::error::CliError;
 use crate::target::ClusterTarget;
@@ -75,8 +75,8 @@ pub struct CreateTopicOpt {
 impl CreateTopicOpt {
     /// Validate cli options. Generate target-server and create-topic configuration.
     fn validate(self) -> Result<(ClusterConfig, (String, TopicSpec)), CliError> {
-        use flv_client::metadata::topic::PartitionMaps;
-        use flv_client::metadata::topic::TopicReplicaParam;
+        use fluvio::metadata::topic::PartitionMaps;
+        use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
 
         let target_server = self.target.load()?;
@@ -134,7 +134,7 @@ mod load {
     use std::fs::read_to_string;
     use std::path::Path;
 
-    use flv_client::metadata::topic::PartitionMaps;
+    use fluvio::metadata::topic::PartitionMaps;
 
     pub trait PartitionLoad: Sized {
         fn file_decode<T: AsRef<Path>>(path: T) -> Result<Self, IoError>;

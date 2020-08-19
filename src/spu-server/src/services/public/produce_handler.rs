@@ -1,8 +1,8 @@
 use std::io::Error;
 
-use log::warn;
-use log::trace;
-use log::error;
+use tracing::warn;
+use tracing::trace;
+use tracing::error;
 
 use kf_protocol::api::ErrorCode;
 use kf_protocol::message::produce::DefaultKfProduceRequest;

@@ -1,4 +1,4 @@
-use log::{trace, debug};
+use tracing::{trace, debug};
 use std::io::Error;
 
 use flv_metadata_cluster::store::KeyFilter;

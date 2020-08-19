@@ -1,7 +1,7 @@
 use std::time::Duration;
 use std::sync::Arc;
 
-use log::debug;
+use tracing::debug;
 use futures::SinkExt;
 use futures::future::join;
 use futures::channel::mpsc::Sender;

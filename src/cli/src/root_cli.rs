@@ -4,7 +4,7 @@
 //! CLI configurations at the top of the tree
 
 use std::sync::Arc;
-use structopt::clap::AppSettings;
+use structopt::clap::{AppSettings, Shell};
 use structopt::StructOpt;
 
 use flv_future_aio::task::run_block_on;
@@ -26,9 +26,6 @@ use super::topic::TopicOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 use super::partition::PartitionOpt;
-use super::cloud::LoginOpt;
-use super::cloud::process_login;
-use super::cloud::process_logout;
 
 #[cfg(feature = "cluster_components")]
 use super::run::{process_run, RunOpt};
@@ -48,20 +45,6 @@ enum Root {
         about = "Reads messages from a topic/partition"
     )]
     Consume(ConsumeLogOpt),
-
-    #[structopt(
-        name = "login",
-        template = COMMAND_TEMPLATE,
-        about = "Logs into Fluvio Cloud"
-    )]
-    Login(LoginOpt),
-
-    #[structopt(
-        name = "logout",
-        template = COMMAND_TEMPLATE,
-        about = "Logs out of Fluvio Cloud"
-    )]
-    Logout,
 
     #[structopt(
         name = "produce",
@@ -128,6 +111,13 @@ enum Root {
         about = "Prints the current fluvio version information"
     )]
     Version(VersionCmd),
+
+    #[structopt(
+        name = "completions",
+        about = "Generate command-line completions for Fluvio",
+        settings = &[AppSettings::Hidden]
+    )]
+    Completions(CompletionShell),
 }
 
 pub fn run_cli() -> Result<String, CliError> {
@@ -144,17 +134,15 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Partition(partition) => partition.process_partition(terminal.clone()).await,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
-            Root::Login(login) => process_login(terminal.clone(), login).await,
-            Root::Logout => process_logout(terminal.clone(), LogoutOpt).await,
             #[cfg(feature = "cluster_components")]
             Root::Run(opt) => process_run(opt),
             Root::Version(_) => process_version_cmd(),
+            Root::Completions(shell) => process_completions_cmd(shell),
         }
     })
 }
 
 use crate::Terminal;
-use crate::cloud::LogoutOpt;
 
 struct PrintTerminal {}
 
@@ -185,4 +173,40 @@ fn process_version_cmd() -> Result<String, CliError> {
     }
     println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
     Ok("".to_owned())
+}
+
+#[derive(Debug, StructOpt)]
+struct CompletionOpt {
+    #[structopt(long, default_value = "fluvio")]
+    name: String,
+}
+
+#[derive(Debug, StructOpt)]
+enum CompletionShell {
+    /// Generate CLI completions for bash
+    #[structopt(name = "bash")]
+    Bash(CompletionOpt),
+    // Zsh generation currently has a bug that causes panic
+    // /// Generate CLI completions for zsh
+    // #[structopt(name = "zsh")]
+    // Zsh(CompletionOpt),
+    /// Generate CLI completions for fish
+    #[structopt(name = "fish")]
+    Fish(CompletionOpt),
+}
+
+fn process_completions_cmd(shell: CompletionShell) -> Result<String, CliError> {
+    let mut app: structopt::clap::App = Root::clap();
+    match shell {
+        CompletionShell::Bash(opt) => {
+            app.gen_completions_to(opt.name, Shell::Bash, &mut std::io::stdout());
+        }
+        // CompletionShell::Zsh(opt) => {
+        //     app.gen_completions_to(opt.name, Shell::Zsh, &mut std::io::stdout());
+        // }
+        CompletionShell::Fish(opt) => {
+            app.gen_completions_to(opt.name, Shell::Fish, &mut std::io::stdout());
+        }
+    }
+    Ok("".to_string())
 }

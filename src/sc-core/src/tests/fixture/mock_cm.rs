@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use log::debug;
+use tracing::debug;
 use futures::future::BoxFuture;
 use futures::future::FutureExt;
 

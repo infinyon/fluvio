@@ -5,8 +5,8 @@ use std::fmt::Display;
 use std::convert::Into;
 use std::marker::PhantomData;
 
-use log::trace;
-use log::debug;
+use tracing::trace;
+use tracing::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 

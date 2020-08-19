@@ -4,7 +4,7 @@ mod produce_handler;
 mod fetch_handler;
 mod offset_request;
 
-use log::info;
+use tracing::info;
 
 use kf_service::KfApiServer;
 use service_impl::PublicService;
