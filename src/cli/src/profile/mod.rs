@@ -16,7 +16,7 @@ pub use sync::CloudError;
 pub use sync::LocalOpt;
 pub use sync::K8Opt;
 
-use flv_client::config::ConfigFile;
+use fluvio::config::ConfigFile;
 
 use crate::Terminal;
 use crate::error::CliError;

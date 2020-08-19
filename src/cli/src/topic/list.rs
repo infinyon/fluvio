@@ -8,8 +8,8 @@ use structopt::StructOpt;
 
 use tracing::debug;
 
-use flv_client::ClusterConfig;
-use flv_client::metadata::topic::TopicSpec;
+use fluvio::ClusterConfig;
+use fluvio::metadata::topic::TopicSpec;
 
 use crate::Terminal;
 use crate::error::CliError;
@@ -78,8 +78,8 @@ mod display {
 
     use prettytable::*;
 
-    use flv_client::metadata::objects::Metadata;
-    use flv_client::metadata::topic::TopicSpec;
+    use fluvio::metadata::objects::Metadata;
+    use fluvio::metadata::topic::TopicSpec;
 
     use crate::error::CliError;
     use crate::OutputType;

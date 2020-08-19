@@ -6,7 +6,7 @@
 
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
+use fluvio::ClusterConfig;
 use flv_metadata_cluster::spu::SpuSpec;
 
 use crate::error::CliError;

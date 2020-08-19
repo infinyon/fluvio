@@ -5,10 +5,10 @@
 //!
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
-use flv_client::metadata::spu::CustomSpuSpec;
-use flv_client::metadata::spu::SpuSpec;
-use flv_client::metadata::objects::Metadata;
+use fluvio::ClusterConfig;
+use fluvio::metadata::spu::CustomSpuSpec;
+use fluvio::metadata::spu::SpuSpec;
+use fluvio::metadata::objects::Metadata;
 
 use crate::error::CliError;
 use crate::Terminal;

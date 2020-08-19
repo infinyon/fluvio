@@ -6,7 +6,7 @@
 
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
+use fluvio::ClusterConfig;
 use flv_metadata_cluster::partition::*;
 
 use crate::error::CliError;
@@ -59,9 +59,9 @@ mod display {
     use prettytable::row;
     use prettytable::cell;
 
-    use flv_client::metadata::objects::Metadata;
-    use flv_client::metadata::partition::*;
-    use flv_client::kf::api::*;
+    use fluvio::metadata::objects::Metadata;
+    use fluvio::metadata::partition::*;
+    use fluvio::kf::api::*;
 
     use crate::error::CliError;
     use crate::OutputType;

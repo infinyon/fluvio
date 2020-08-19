@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
+use fluvio::ClusterConfig;
 
 use crate::target::ClusterTarget;
 use crate::CliError;
@@ -102,7 +102,7 @@ where
     O: Terminal,
 {
     use tracing::debug;
-    use flv_client::kf::api::ReplicaKey;
+    use fluvio::kf::api::ReplicaKey;
 
     let (target_server, (cfg, file_records)) = opt.validate()?;
 
@@ -132,7 +132,7 @@ mod produce {
     use flv_future_aio::io::BufReader;
     use flv_future_aio::io::AsyncBufReadExt;
     use flv_types::{print_cli_err, print_cli_ok};
-    use flv_client::Producer;
+    use fluvio::Producer;
 
     use crate::t_println;
 

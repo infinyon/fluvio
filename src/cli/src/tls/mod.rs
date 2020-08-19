@@ -6,7 +6,7 @@ use std::convert::TryInto;
 use tracing::debug;
 use structopt::StructOpt;
 
-use flv_client::config::{TlsConfig, TlsConfigPaths};
+use fluvio::config::{TlsConfig, TlsConfigPaths};
 
 /// Optional Tls Configuration to Client
 #[derive(Debug, StructOpt, Default)]

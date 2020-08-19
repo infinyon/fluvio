@@ -10,8 +10,8 @@ pub async fn produce_message(option: &TestOption) {
 }
 
 pub async fn produce_message_with_api(option: &TestOption) {
-    use flv_client::ClusterConfig;
-    use flv_client::kf::api::ReplicaKey;
+    use fluvio::ClusterConfig;
+    use fluvio::kf::api::ReplicaKey;
 
     let config = ClusterConfig::lookup_profile(None).expect("connect");
     let mut cluster = config.connect().await.expect("should connect");

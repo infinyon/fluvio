@@ -52,7 +52,7 @@ mod target {
 
     use structopt::StructOpt;
 
-    use flv_client::ClusterConfig;
+    use fluvio::ClusterConfig;
     use crate::tls::TlsOpt;
     use crate::CliError;
 

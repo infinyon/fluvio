@@ -8,9 +8,9 @@ use std::io::ErrorKind;
 
 use structopt::StructOpt;
 
-use flv_client::metadata::spu::CustomSpuSpec;
-use flv_client::metadata::spu::CustomSpuKey;
-use flv_client::ClusterConfig;
+use fluvio::metadata::spu::CustomSpuSpec;
+use fluvio::metadata::spu::CustomSpuKey;
+use fluvio::ClusterConfig;
 
 use crate::target::ClusterTarget;
 use crate::error::CliError;

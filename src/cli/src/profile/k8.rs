@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 
-use flv_client::config::*;
+use fluvio::config::*;
 use k8_client::K8Client;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;

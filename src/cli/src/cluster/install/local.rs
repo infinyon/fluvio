@@ -141,10 +141,10 @@ async fn launch_spu(
 ) {
     use std::fs::File;
 
-    use flv_client::metadata::spu::SpuSpec;
-    use flv_client::metadata::spu::IngressPort;
-    use flv_client::metadata::spu::Endpoint;
-    use flv_client::metadata::spu::IngressAddr;
+    use fluvio::metadata::spu::SpuSpec;
+    use fluvio::metadata::spu::IngressPort;
+    use fluvio::metadata::spu::Endpoint;
+    use fluvio::metadata::spu::IngressAddr;
     use k8_obj_metadata::InputK8Obj;
     use k8_obj_metadata::InputObjectMeta;
     use k8_metadata_client::MetadataClient;
