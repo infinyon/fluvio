@@ -89,5 +89,5 @@ jobs:
           export TARGET_CC=musl-gcc
           sleep 5
           cat /tmp/tunnel.out
-          # FLV_CMD=true make smoke-test-k8
+          FLV_CMD=true make smoke-test-k8
           
