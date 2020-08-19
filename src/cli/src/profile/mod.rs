@@ -75,10 +75,10 @@ where
         ProfileCommand::DisplayCurrent => display_current_profile(out.clone()),
         ProfileCommand::Switch(profile) => {
             process_switch(out, profile)?;
-        },
+        }
         ProfileCommand::Delete(profile) => {
             process_delete(out, profile)?;
-        },
+        }
         ProfileCommand::Sync(profile) => {
             process_sync(out, profile).await?;
         }
@@ -87,19 +87,14 @@ where
     Ok("".to_owned())
 }
 
-pub fn process_switch<O>(
-    out: std::sync::Arc<O>,
-    opt: SwitchOpt,
-) -> Result<String, CliError>
-    where O: Terminal,
+pub fn process_switch<O>(out: std::sync::Arc<O>, opt: SwitchOpt) -> Result<String, CliError>
+where
+    O: Terminal,
 {
     let profile_name = opt.profile_name;
     match ConfigFile::load(None) {
         Ok(mut config_file) => {
-            if !config_file
-                .mut_config()
-                .set_current_profile(&profile_name)
-            {
+            if !config_file.mut_config().set_current_profile(&profile_name) {
                 t_println!(out, "profile {} not found", &profile_name);
             } else {
                 if let Err(err) = config_file.save() {
@@ -113,19 +108,14 @@ pub fn process_switch<O>(
     Ok("".to_string())
 }
 
-pub fn process_delete<O>(
-    out: std::sync::Arc<O>,
-    opt: DeleteOpt,
-) -> Result<String, CliError>
-    where O: Terminal,
+pub fn process_delete<O>(out: std::sync::Arc<O>, opt: DeleteOpt) -> Result<String, CliError>
+where
+    O: Terminal,
 {
     let profile_name = opt.profile_name;
     match ConfigFile::load(None) {
         Ok(mut config_file) => {
-            if !config_file
-                .mut_config()
-                .delete_profile(&profile_name)
-            {
+            if !config_file.mut_config().delete_profile(&profile_name) {
                 t_println!(out, "profile {} not found", &profile_name);
             } else {
                 if let Err(err) = config_file.save() {

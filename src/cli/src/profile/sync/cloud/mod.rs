@@ -74,10 +74,19 @@ where
 fn save_cluster<O: Terminal>(out: std::sync::Arc<O>, cluster: Cluster) -> Result<String, CliError> {
     let mut config_file = ConfigFile::load_default_or_new()?;
     let profile = Profile::new("fluvio-cloud".to_string());
-    config_file.mut_config().add_cluster(cluster, "fluvio-cloud".to_string());
-    config_file.mut_config().add_profile(profile, "fluvio-cloud".to_string());
+    config_file
+        .mut_config()
+        .add_cluster(cluster, "fluvio-cloud".to_string());
+    config_file
+        .mut_config()
+        .add_profile(profile, "fluvio-cloud".to_string());
     config_file.save()?;
     info!("Successfully saved fluvio-cloud profile");
-    process_switch(out, SwitchOpt { profile_name: "fluvio-cloud".to_string() })?;
+    process_switch(
+        out,
+        SwitchOpt {
+            profile_name: "fluvio-cloud".to_string(),
+        },
+    )?;
     Ok("Successfully saved fluvio-cloud profile".to_string())
 }

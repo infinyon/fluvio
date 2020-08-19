@@ -57,7 +57,10 @@ impl LoginAgent {
     /// Configure a custom remote
     pub fn with_remote<S: Into<String>>(mut self, remote: S) -> Self {
         let remote = remote.into();
-        trace!(remote = &*remote, "LoginAgent configured with custom remote");
+        trace!(
+            remote = &*remote,
+            "LoginAgent configured with custom remote"
+        );
         self.remote = remote;
         self
     }
@@ -91,7 +94,7 @@ impl LoginAgent {
             Some(creds) => {
                 debug!("Using credentials from session");
                 creds
-            },
+            }
             None => {
                 // If that doesn't work, try to get the token from disk
                 let loaded_creds = Credentials::try_load(&self.path)?;
@@ -136,7 +139,7 @@ impl LoginAgent {
             e => {
                 error!("Got unexpected status code {:?}", e);
                 Err(CloudError::Unexpected)
-            },
+            }
         }
     }
 
