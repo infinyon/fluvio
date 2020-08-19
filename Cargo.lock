@@ -905,6 +905,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4bd3bdaaf0a72155260a1c098989b60db1cbb22d6a628e64f16237aa4da93cc7"
 
 [[package]]
+name = "fluvio"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-trait",
+ "base64 0.12.3",
+ "dashmap",
+ "dirs 1.0.5",
+ "event-listener",
+ "flv-api-sc",
+ "flv-api-spu",
+ "flv-future-aio",
+ "flv-types",
+ "flv-util 0.2.1",
+ "futures 0.3.5",
+ "kf-protocol",
+ "kf-socket",
+ "serde",
+ "serde_json",
+ "tokio",
+ "toml",
+ "tracing",
+]
+
+[[package]]
 name = "flv-api-sc"
 version = "2.0.0"
 dependencies = [
@@ -936,8 +961,8 @@ dependencies = [
  "bytes 0.5.6",
  "ctrlc",
  "dirs 1.0.5",
+ "fluvio",
  "flv-api-sc",
- "flv-client",
  "flv-future-aio",
  "flv-metadata-cluster",
  "flv-sc-k8",
@@ -964,31 +989,6 @@ dependencies = [
  "tracing",
  "url",
  "utils",
-]
-
-[[package]]
-name = "flv-client"
-version = "4.0.0"
-dependencies = [
- "async-channel",
- "async-trait",
- "base64 0.12.3",
- "dashmap",
- "dirs 1.0.5",
- "event-listener",
- "flv-api-sc",
- "flv-api-spu",
- "flv-future-aio",
- "flv-types",
- "flv-util 0.2.1",
- "futures 0.3.5",
- "kf-protocol",
- "kf-socket",
- "serde",
- "serde_json",
- "tokio",
- "toml",
- "tracing",
 ]
 
 [[package]]
@@ -1183,7 +1183,7 @@ version = "1.0.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
- "flv-client",
+ "fluvio",
  "flv-future-aio",
  "flv-metadata-cluster",
  "flv-types",

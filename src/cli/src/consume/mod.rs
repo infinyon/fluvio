@@ -30,7 +30,7 @@ mod process {
     where
         O: Terminal,
     {
-        use flv_client::kf::api::ReplicaKey;
+        use fluvio::kf::api::ReplicaKey;
 
         let (target_server, cfg) = opt.validate()?;
 

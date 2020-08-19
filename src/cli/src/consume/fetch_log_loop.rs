@@ -9,8 +9,8 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 
-use flv_client::params::*;
-use flv_client::Consumer;
+use fluvio::params::*;
+use fluvio::Consumer;
 
 use crate::error::CliError;
 use crate::Terminal;

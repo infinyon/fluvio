@@ -14,7 +14,7 @@ k8-client = { version = "1.1.1"}
 k8-metadata-client = { version = "1.0.1"}
 flv-future-aio = { version = "2.2.1", features=["fixture"]}
 kf-protocol = { version = "2.0.0" } 
-flv-client = { path = "../../src/client-rs"}
+fluvio = { path = "../../src/client-rs"}
 flv-types = { path ="../../src/types", version = "0.2.0" }
 utils = { path= "../../src/utils"}
 flv-metadata-cluster = { features=["k8"], path = "../../src/metadata-cluster" }

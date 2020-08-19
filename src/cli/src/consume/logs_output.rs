@@ -8,8 +8,8 @@ use tracing::debug;
 use serde_json;
 use serde_json::Value;
 
-use flv_client::kf::api::RecordSet;
-use flv_client::kf::message::fetch::FetchablePartitionResponse;
+use fluvio::kf::api::RecordSet;
+use fluvio::kf::message::fetch::FetchablePartitionResponse;
 
 use crate::error::CliError;
 use crate::common::{bytes_to_hex_dump, hex_dump_separator};
