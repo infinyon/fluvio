@@ -14,7 +14,7 @@ members = [
     "src/controlplane",
     "src/controlplane-cli",
     "src/dataplane-api",
-    "src/dataplane-server",
+    "src/dataplane",
     "src/storage",
     "src/types",
     "src/utils",

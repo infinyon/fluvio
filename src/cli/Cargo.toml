@@ -18,7 +18,7 @@ doc = false
 
 [features]
 default = ["cluster_components"]
-cluster_components = ["fluvio-dataplane-server", "fluvio-controlplane-cli"]
+cluster_components = ["fluvio-dataplane", "fluvio-controlplane-cli"]
 
 [build-dependencies]
 rustc_version = "0.2.3"
@@ -48,7 +48,7 @@ fluvio = { path = "../client" }
 fluvio-utils = { path = "../utils" }
 fluvio-controlplane-cli = { path = "../controlplane-cli", optional = true }
 fluvio-controlplane-api = { version = "0.1.0", path = "../controlplane-api", features = ["use_serde"] }
-fluvio-dataplane-server = { path = "../dataplane-server", optional = true }
+fluvio-dataplane = { path = "../dataplane", optional = true }
 fluvio-metadata = { path = "../metadata", features = ["use_serde"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 flv-util = { version = "0.3.1" }

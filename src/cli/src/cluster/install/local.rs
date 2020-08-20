@@ -193,7 +193,7 @@ async fn launch_spu(
     let errors = outputs.try_clone().expect("error  file");
 
     #[cfg(not(feature = "cluster_components"))]
-    let mut binary = get_binary("dataplane-server").expect("unable to get dataplane-server");
+    let mut binary = get_binary("dataplane").expect("unable to get dataplane");
 
     #[cfg(feature = "cluster_components")]
     let mut binary = {

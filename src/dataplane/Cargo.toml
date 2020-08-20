@@ -1,5 +1,5 @@
 [package]
-name = "fluvio-dataplane-server"
+name = "fluvio-dataplane"
 edition = "2018"
 version = "0.1.0"
 authors = ["fluvio.io"]
@@ -9,7 +9,7 @@ name = "fluvio_dataplane"
 path = "src/lib.rs"
 
 [[bin]]
-name = "fluvio_dataplane_server"
+name = "fluvio-dataplane"
 path = "src/main.rs"
 doc = false
 

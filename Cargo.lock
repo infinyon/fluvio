@@ -940,7 +940,7 @@ dependencies = [
  "fluvio",
  "fluvio-controlplane-api",
  "fluvio-controlplane-cli",
- "fluvio-dataplane-server",
+ "fluvio-dataplane",
  "fluvio-metadata",
  "fluvio-types",
  "fluvio-utils",
@@ -1038,18 +1038,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-dataplane-api"
-version = "0.1.0"
-dependencies = [
- "bytes 0.5.6",
- "kf-protocol",
- "log",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-dataplane-server"
+name = "fluvio-dataplane"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -1079,6 +1068,17 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-dataplane-api"
+version = "0.1.0"
+dependencies = [
+ "bytes 0.5.6",
+ "kf-protocol",
+ "log",
+ "serde",
+ "tracing",
 ]
 
 [[package]]

@@ -9,7 +9,7 @@ name = "fluvio_controlplane_cli"
 path = "src/lib.rs"
 
 [[bin]]
-name = "fluvio_controlplane"
+name = "fluvio-controlplane"
 path = "src/main.rs"
 doc = false
 

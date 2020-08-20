@@ -9,7 +9,7 @@ name = "fluvio_storage"
 path = "src/lib.rs"
 
 [[bin]]
-name = "fluvio_storage"
+name = "fluvio-storage"
 path = "src/bin/cli.rs"
 doc = false
 required-features = ["cli"]
