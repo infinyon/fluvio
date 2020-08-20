@@ -40,11 +40,9 @@ pub fn check_create_permission(resource: &str) -> Result<bool, IoError> {
     match check_command {
         Ok(out) => match String::from_utf8(out.stdout) {
             Ok(res) => Ok(res.trim() == "yes"),
-            Err(err) => return Err(IoError::new(ErrorKind::Other, err.to_string())),
+            Err(err) => Err(IoError::new(ErrorKind::Other, err.to_string())),
         },
-        Err(err) => {
-            return Err(IoError::new(ErrorKind::Other, err.to_string()));
-        }
+        Err(err) => Err(IoError::new(ErrorKind::Other, err.to_string())),
     }
 }
 

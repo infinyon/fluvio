@@ -23,15 +23,15 @@ use crate::CliError;
 use super::*;
 
 // constants
-const MIN_KUBE_VERSION: &'static str = "1.5.0";
-const DEFAULT_HELM_VERSION: &'static str = "3.2.0";
-const SYS_CHART_VERSION: &'static str = "0.1.0";
-const SYS_CHART_NAME: &'static str = "fluvio-sys";
-const DEFAULT_NAMESPACE: &'static str = "default";
-const DUMMY_LB_SERVICE: &'static str = "flv-dummy-service";
-const RESOURCE_SERVICE: &'static str = "service";
-const RESOURCE_CRD: &'static str = "customresourcedefinitions";
-const RESOURCE_SERVICE_ACCOUNT: &'static str = "secret";
+const MIN_KUBE_VERSION: &str = "1.5.0";
+const DEFAULT_HELM_VERSION: &str = "3.2.0";
+const SYS_CHART_VERSION: &str = "0.1.0";
+const SYS_CHART_NAME: &str = "fluvio-sys";
+const DEFAULT_NAMESPACE: &str = "default";
+const DUMMY_LB_SERVICE: &str = "flv-dummy-service";
+const RESOURCE_SERVICE: &str = "service";
+const RESOURCE_CRD: &str = "customresourcedefinitions";
+const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 
 #[derive(Debug, StructOpt)]
 pub struct CheckCommand {
@@ -212,7 +212,7 @@ async fn run_preinstall_checks() -> Result<(), CliError> {
     }
 
     // check if there are any failures and show final message
-    if failures.len() > 0 {
+    if !failures.is_empty() {
         println!("\nSome pre-install checks have failed.\n");
         return Err(CliError::Other(
             "Some pre-install checks have failed.".to_string(),
@@ -249,15 +249,13 @@ fn get_current_context() -> Result<KubeContext, IoError> {
             format!("unable to load kube context {}", err),
         )
     })?;
-    return match k8_config {
-        K8Config::Pod(_) => {
-            return Err(IoError::new(
-                ErrorKind::Other,
-                "Pod config is not valid here",
-            ))
-        }
+    match k8_config {
+        K8Config::Pod(_) => Err(IoError::new(
+            ErrorKind::Other,
+            "Pod config is not valid here",
+        )),
         K8Config::KubeConfig(config) => Ok(config),
-    };
+    }
 }
 
 fn get_cluster_server_host() -> Result<String, IoError> {
@@ -311,7 +309,7 @@ async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError>
                 K8ClientError::NotFound => {
                     sleep(Duration::from_millis(3000)).await;
                 }
-                _ => assert!(false, format!("error: {}", err)),
+                _ => panic!("error: {}", err),
             },
         };
     }
@@ -332,9 +330,10 @@ async fn check_load_balancer_status() -> Result<(), IoError> {
     if username == "minikube" {
         // create dummy service
         create_dummy_service()?;
-        if let Some(_) = wait_for_service_exist(DEFAULT_NAMESPACE)
+        if wait_for_service_exist(DEFAULT_NAMESPACE)
             .await
             .map_err(|err| IoError::new(ErrorKind::Other, err.to_string()))?
+            .is_some()
         {
             // IP found, everything good
             delete_service()?;
@@ -342,7 +341,7 @@ async fn check_load_balancer_status() -> Result<(), IoError> {
             delete_service()?;
             return Err(IoError::new(
                 ErrorKind::Other,
-                format!("Not able to find the tunnel, please ensure minikube tunnel is up"),
+                "Not able to find the tunnel, please ensure minikube tunnel is up".to_string(),
             ));
         }
     }
@@ -394,15 +393,10 @@ fn check_loadable_config() -> Result<(), IoError> {
     };
 
     if !server_host.trim().is_empty() {
-        match IpAddr::from_str(&server_host) {
-            Ok(_) => {
-                return Err(IoError::new(ErrorKind::Other,
-                    format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
-                ));
-            }
-            Err(_) => {
-                // ignore as it is expected to be a non IP address
-            }
+        if IpAddr::from_str(&server_host).is_ok() {
+            return Err(IoError::new(ErrorKind::Other,
+                 format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
+            ));
         };
     } else {
         return Err(IoError::new(
@@ -482,15 +476,15 @@ fn check_sys_charts() -> Result<(), IoError> {
                 installed_chart_version, SYS_CHART_VERSION
             )));
         }
-    } else if sys_charts.len() == 0 {
+    } else if sys_charts.is_empty() {
         return Err(IoError::new(
             ErrorKind::Other,
-            format!("Fluvio system chart not found, please install fluvio-sys first"),
+            "Fluvio system chart not found, please install fluvio-sys first".to_string(),
         ));
     } else {
         return Err(IoError::new(
             ErrorKind::Other,
-            format!("Multiple fluvio system charts found"),
+            "Multiple fluvio system charts found".to_string(),
         ));
     }
     Ok(())
