@@ -1004,7 +1004,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-api"
-version = "2.0.0"
+version = "0.1.0"
 dependencies = [
  "fluvio-metadata",
  "fluvio-types",
@@ -1039,7 +1039,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-api"
-version = "2.0.0"
+version = "0.1.0"
 dependencies = [
  "bytes 0.5.6",
  "kf-protocol",
@@ -1050,7 +1050,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-server"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
@@ -1118,7 +1118,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-internal-api"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "fluvio-metadata",
  "fluvio-types",
@@ -1147,7 +1147,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-storage"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
@@ -1186,14 +1186,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.2.2"
+version = "0.1.0"
 dependencies = [
  "tracing",
 ]
 
 [[package]]
 name = "fluvio-utils"
-version = "0.3.0"
+version = "0.1.0"
 dependencies = [
  "fluvio-types",
  "rand 0.7.3",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "kf-service"
-version = "3.0.0"
+version = "4.0.0"
 dependencies = [
  "async-trait",
  "event-listener",

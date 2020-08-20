@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-controlplane-api"
-version = "2.0.0"
+version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SC"
@@ -20,7 +20,7 @@ tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.0", path = "../types" }
+fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-metadata = { version = "0.1.0", default-features = false, path = "../metadata" }
 flv-util = { version = "0.2.0" }
 kf-protocol = { version = "2.0.0" }

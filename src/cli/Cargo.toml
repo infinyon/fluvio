@@ -47,10 +47,10 @@ dirs = "1.0.2"
 fluvio = { path = "../client" }
 fluvio-utils = { path = "../utils" }
 fluvio-controlplane-cli = { path = "../controlplane-cli", optional = true }
-fluvio-controlplane-api = { version = "2.0.0", path = "../controlplane-api", features = ["use_serde"] }
+fluvio-controlplane-api = { version = "0.1.0", path = "../controlplane-api", features = ["use_serde"] }
 fluvio-dataplane-server = { path = "../dataplane-server", optional = true }
 fluvio-metadata = { path = "../metadata", features = ["use_serde"] }
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 flv-util = { version = "0.3.1" }
 flv-future-aio = { version = "2.2.1" }
 k8-client = { version = "1.1.0" }

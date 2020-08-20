@@ -26,7 +26,7 @@ async-trait = "0.1.21"
 # Fluvio dependencies
 flv-util = { version = "0.3.0" }
 fluvio-utils = { path = "../utils" }
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-metadata = { features = ["k8"], path = "../metadata" }
 fluvio-controlplane = { path = "../controlplane-core" }
 flv-tls-proxy = "0.1.0"

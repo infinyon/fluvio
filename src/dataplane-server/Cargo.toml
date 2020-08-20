@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-dataplane-server"
 edition = "2018"
-version = "1.0.0"
+version = "0.1.0"
 authors = ["fluvio.io"]
 
 [lib]
@@ -33,7 +33,7 @@ tokio = { version = "0.2.21", features = ["macros"] }
 # Fluvio dependencies
 flv-util = { version = "0.3.0" }
 fluvio-utils = { path = "../utils" }
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-storage = { path = "../storage" }
 fluvio-metadata = { path = "../metadata" }
 fluvio-internal-api = { path = "../internal-api" }

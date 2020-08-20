@@ -26,9 +26,9 @@ event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.0", path = "../types" }
-fluvio-controlplane-api = { version = "2.0.0", path = "../controlplane-api", default-features = false }
-fluvio-dataplane-api = { version = "2.0.0", path = "../dataplane-api" }
+fluvio-types = { version = "0.1.0", path = "../types" }
+fluvio-controlplane-api = { version = "0.1.0", path = "../controlplane-api", default-features = false }
+fluvio-dataplane-api = { version = "0.1.0", path = "../dataplane-api" }
 flv-util = "0.2.0"
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
 kf-socket = { version = "2.1.0", path = "../kf-socket" }

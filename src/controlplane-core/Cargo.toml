@@ -28,10 +28,10 @@ tokio = { version = "0.2.21", features = ["macros"] }
 # Fluvio dependencies
 flv-util = { version = "0.3.0" }
 fluvio-utils = { path = "../utils" }
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-metadata = { features = ["k8"], path = "../metadata" }
 fluvio-internal-api = { path = "../internal-api" }
-fluvio-controlplane-api = { version = "2.0.0", path = "../controlplane-api" }
+fluvio-controlplane-api = { version = "0.1.0", path = "../controlplane-api" }
 fluvio-eventstream-dispatcher = { path = "../eventstream-dispatcher" }
 flv-future-aio = { version = "2.3.0", features = ["tls", "unstable"] }
 k8-metadata-client = { version = "1.0.1" }

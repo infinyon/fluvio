@@ -22,7 +22,7 @@ serde = { version ="1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
 
 # Fluvio dependencies
-fluvio-types = { path ="../types", version = "0.2.0" }
+fluvio-types = { path ="../types", version = "0.1.0" }
 fluvio-eventstream-model = { path = "../eventstream-model" }
 flv-util = { version = "0.3.1" }
 flv-future-aio = { version = "2.3.0"}

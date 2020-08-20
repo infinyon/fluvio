@@ -24,7 +24,7 @@ event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-eventstream-model = { features = ["k8"], path = "../eventstream-model" }
 flv-util = { version = "0.2.0" }
 flv-future-aio = { version = "2.3.0", features = ["unstable"] }

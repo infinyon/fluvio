@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "fluvio-storage"
-version = "1.0.0"
+version = "0.1.0"
 authors = ["fluvio.io"]
 
 [lib]
@@ -26,7 +26,7 @@ serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
 fluvio-utils = { path = "../utils", optional = false }
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 flv-util = { version = "0.2.0" }
 flv-future-aio = { version = "2.2.1" }
 kf-socket = { path = "../kf-socket" }

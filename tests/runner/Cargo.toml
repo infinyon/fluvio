@@ -14,7 +14,7 @@ async-trait = "0.1.21"
 # Fluvio dependencies
 fluvio = { path = "../../src/client" }
 fluvio-utils = { path= "../../src/utils"}
-fluvio-types = { path ="../../src/types", version = "0.2.0" }
+fluvio-types = { path ="../../src/types", version = "0.1.0" }
 fluvio-metadata = { features=["k8"], path = "../../src/metadata" }
 flv-future-aio = { version = "2.2.1", features=["fixture"]}
 k8-client = { version = "1.1.1"}
