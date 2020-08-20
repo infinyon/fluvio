@@ -88,7 +88,7 @@ impl TestOption {
 
     // do the setup (without cleanup)
     pub fn setup(&self) -> bool {
-        !!self.disable_install
+        self.disable_install
     }
 
     pub fn init_topic(&self) -> bool {

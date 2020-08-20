@@ -42,7 +42,7 @@ fn pre_install_check() -> Result<(), CliError> {
     let version_text = String::from_utf8(helm_version.stdout).unwrap();
     let version_text_trimmed = &version_text[1..].trim();
 
-    const DEFAULT_HELM_VERSION: &'static str = "3.2.0";
+    const DEFAULT_HELM_VERSION: &str = "3.2.0";
 
     if Version::parse(&version_text_trimmed) < Version::parse(DEFAULT_HELM_VERSION) {
         return Err(CliError::Other(format!(
@@ -51,8 +51,8 @@ fn pre_install_check() -> Result<(), CliError> {
         )));
     }
 
-    const SYS_CHART_VERSION: &'static str = "0.1.0";
-    const SYS_CHART_NAME: &'static str = "fluvio-sys";
+    const SYS_CHART_VERSION: &str = "0.1.0";
+    const SYS_CHART_NAME: &str = "fluvio-sys";
 
     let sys_charts = helm::installed_sys_charts(SYS_CHART_NAME);
     if sys_charts.len() == 1 {
@@ -65,14 +65,14 @@ fn pre_install_check() -> Result<(), CliError> {
                 installed_chart_version, SYS_CHART_VERSION
             )));
         }
-    } else if sys_charts.len() == 0 {
-        return Err(CliError::Other(format!(
-            "Fluvio system chart is not installed, please install fluvio-sys first",
-        )));
+    } else if sys_charts.is_empty() {
+        return Err(CliError::Other(
+            "Fluvio system chart is not installed, please install fluvio-sys first".to_string(),
+        ));
     } else {
-        return Err(CliError::Other(format!(
-            "Multiple fluvio system charts found",
-        )));
+        return Err(CliError::Other(
+            "Multiple fluvio system charts found".to_string(),
+        ));
     }
 
     let k8_config = K8Config::load().map_err(|err| {
@@ -96,15 +96,10 @@ fn pre_install_check() -> Result<(), CliError> {
                 }
             };
             if !server_host.trim().is_empty() {
-                match IpAddr::from_str(&server_host) {
-                    Ok(_) => {
-                        return Err(CliError::Other(
-                            format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
-                        ));
-                    }
-                    Err(_) => {
-                        // ignore as it is expected to be a non IP address
-                    }
+                if IpAddr::from_str(&server_host).is_ok() {
+                    return Err(CliError::Other(
+                        format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
+                    ));
                 };
             } else {
                 return Err(CliError::Other(
@@ -121,9 +116,10 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
     pre_install_check().map_err(|err| CliError::Other(err.to_string()))?;
     install_core_app(&opt)?;
 
-    if let Some(_) = k8_util::wait_for_service_exist(&opt.k8_config.namespace)
+    if k8_util::wait_for_service_exist(&opt.k8_config.namespace)
         .await
         .map_err(|err| CliError::Other(err.to_string()))?
+        .is_some()
     {
         println!("fluvio is up");
         set_profile(&opt).await?;
@@ -222,7 +218,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
             .arg("--set")
             .arg(format!("registry={}", registry));
     } else {
-        const CORE_CHART_NAME: &'static str = "fluvio/fluvio-core";
+        const CORE_CHART_NAME: &str = "fluvio/fluvio-core";
         helm::repo_add(opt.k8_config.chart_location.as_deref());
         helm::repo_update();
 
@@ -242,7 +238,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
                 opt.k8_config
                     .version
                     .clone()
-                    .unwrap_or(crate::VERSION.to_owned()),
+                    .unwrap_or_else(|| crate::VERSION.to_owned()),
             );
     };
 
@@ -295,7 +291,6 @@ async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
             client_key: tls_config.client_key.clone(),
             client_cert: tls_config.client_cert.clone(),
             ca_cert: tls_config.ca_cert.clone(),
-            ..Default::default()
         }
     } else {
         TlsOpt::default()
@@ -378,7 +373,7 @@ mod k8_util {
                         println!("no svc found, sleeping ");
                         sleep(Duration::from_millis(3000)).await;
                     }
-                    _ => assert!(false, format!("error: {}", err)),
+                    _ => panic!("error: {}", err),
                 },
             };
         }

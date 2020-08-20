@@ -31,4 +31,10 @@ mod channel {
             self.sender.clone()
         }
     }
+
+    impl Default for SpuStatusChannel {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
 }

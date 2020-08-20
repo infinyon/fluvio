@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 //!
 //! # API Versions
 //!
@@ -14,7 +16,7 @@ use crate::AdminPublicApiKey;
 pub type ApiVersions = Vec<ApiVersionKey>;
 
 /// Given an API key, it returns max_version. None if not found
-pub fn lookup_version(api_key: AdminPublicApiKey, versions: &ApiVersions) -> Option<i16> {
+pub fn lookup_version(api_key: AdminPublicApiKey, versions: &[ApiVersionKey]) -> Option<i16> {
     for version in versions {
         if version.api_key == api_key as i16 {
             return Some(version.max_version);

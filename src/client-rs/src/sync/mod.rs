@@ -112,13 +112,22 @@ mod context {
 
                         _ = self.listen() => {
 
-                            time_left = time_left - current_time.elapsed();
+                            time_left -= current_time.elapsed();
                             debug!("{} store updated",S::LABEL);
                         }
 
                     }
                 }
             }
+        }
+    }
+
+    impl<S> Default for StoreContext<S>
+    where
+        S: Spec,
+    {
+        fn default() -> Self {
+            Self::new()
         }
     }
 

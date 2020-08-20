@@ -84,7 +84,7 @@ mod output {
     ) -> Result<(), CliError> {
         debug!("groups: {:#?}", list_spu_groups);
 
-        if list_spu_groups.len() > 0 {
+        if !list_spu_groups.is_empty() {
             out.render_list(&list_spu_groups, output_type)
         } else {
             t_println!(out, "no groups");

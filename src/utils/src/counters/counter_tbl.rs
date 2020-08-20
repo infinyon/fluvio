@@ -141,7 +141,7 @@ where
             for (column_id, counter) in row {
                 let value_str = counter.to_string();
                 let column_label = if let Some(column) = self.columns.get(column_id) {
-                    column.label.clone()
+                    &(*column.label)
                 } else {
                     ""
                 };

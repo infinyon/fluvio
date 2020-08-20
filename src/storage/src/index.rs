@@ -2,7 +2,6 @@ use std::ffi::OsStr;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::mem::size_of;
-use std::mem::transmute;
 use std::ops::Deref;
 use std::path::Path;
 use std::slice;
@@ -111,7 +110,7 @@ impl LogIndex {
         }
         let ptr = {
             let b_slices: &[u8] = &m_file.inner();
-            unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) }
+            b_slices.as_ptr() as *mut libc::c_void
         };
 
         Ok(LogIndex {
@@ -230,7 +229,6 @@ mod tests {
             base_dir: temp_dir(),
             index_max_bytes: 1000,
             index_max_interval_bytes: 0,
-            ..Default::default()
         }
     }
 

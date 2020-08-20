@@ -97,7 +97,7 @@ impl<S> FollowersState<S> {
         let mut empty = false;
         if let Some(keys_by_spu) = keys_lock.get_mut(leader) {
             keys_by_spu.remove(key);
-            if keys_by_spu.len() == 0 {
+            if keys_by_spu.is_empty() {
                 empty = true;
             }
         } else {
@@ -146,10 +146,7 @@ impl<S> FollowersState<S> {
     }
 
     pub(crate) fn mailbox(&self, spu: &SpuId) -> Option<Sender<FollowerReplicaControllerCommand>> {
-        self.mailboxes
-            .read()
-            .get(spu)
-            .map(|mailbox| mailbox.clone())
+        self.mailboxes.read().get(spu).cloned()
     }
 }
 

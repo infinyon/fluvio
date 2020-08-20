@@ -78,7 +78,7 @@ where {
                 .apply(new_k8)
                 .await
                 .map(|_| ())
-                .map_err(|err| err.into())
+                .map_err(|err| err)
         }
     }
 

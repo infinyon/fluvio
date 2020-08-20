@@ -113,10 +113,10 @@ async fn print_index(path: PathBuf) -> Result<(), StorageError> {
     for i in 0..entries {
         let (offset, pos) = log[i as usize].to_be();
         if offset > 0 && pos > 0 {
-            count = count + 1;
+            count += 1;
             if count < MAX {
                 println!("i: {} offset: {}  pos: {}", i, offset, pos);
-                display = display + 1;
+                display += 1;
             }
         }
     }

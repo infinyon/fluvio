@@ -81,7 +81,7 @@ async fn route_replica_offset(
 ) {
     let replica_key = replica.replica;
     let follower_update = FollowerOffsetUpdate {
-        follower_id: follower_id,
+        follower_id,
         leo: replica.leo,
         hw: replica.hw,
     };

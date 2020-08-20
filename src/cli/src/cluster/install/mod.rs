@@ -118,13 +118,11 @@ where
 
     if command.sys {
         install_sys(command);
+    } else if command.local {
+        #[cfg(feature = "cluster_components")]
+        install_local(command).await?;
     } else {
-        if command.local {
-            #[cfg(feature = "cluster_components")]
-            install_local(command).await?;
-        } else {
-            install_core(command).await?;
-        }
+        install_core(command).await?;
     }
 
     Ok("".to_owned())

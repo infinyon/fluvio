@@ -72,6 +72,15 @@ mod context {
         }
     }
 
+    impl<S> Default for StoreContext<S>
+    where
+        S: Spec,
+    {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl<S> StoreContext<S>
     where
         S: Spec + PartialEq,

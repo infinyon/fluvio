@@ -12,7 +12,7 @@ use crate::controllers::sc::ScDispatcher;
 
 type FileReplicaContext = GlobalContext<FileReplica>;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop(opt: SpuOpt) {
     // parse configuration (program exits on error)

@@ -23,6 +23,7 @@ use super::process_fetch_topic_response;
 // -----------------------------------
 
 /// Fetch log continuously
+#[allow(clippy::neg_multiply)]
 pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
     mut consumer: Consumer,
@@ -50,17 +51,15 @@ where
     // compute offset
     let initial_offset = if opt.from_beginning {
         FetchOffset::Earliest(opt.offset)
-    } else {
-        if let Some(offset) = opt.offset {
-            // if it is negative, we start from end
-            if offset < 0 {
-                FetchOffset::Latest(Some(offset * -1))
-            } else {
-                FetchOffset::Offset(offset)
-            }
+    } else if let Some(offset) = opt.offset {
+        // if it is negative, we start from end
+        if offset < 0 {
+            FetchOffset::Latest(Some(offset * -1))
         } else {
-            FetchOffset::Latest(None)
+            FetchOffset::Offset(offset)
         }
+    } else {
+        FetchOffset::Latest(None)
     };
 
     let fetch_option = FetchLogOption {

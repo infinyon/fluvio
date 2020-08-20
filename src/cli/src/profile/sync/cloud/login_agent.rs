@@ -14,7 +14,7 @@ use serde::export::Formatter;
 use futures::io::Error;
 use fluvio::config::Cluster;
 
-const DEFAULT_AGENT_REMOTE: &'static str = "cloud.fluvio.io";
+const DEFAULT_AGENT_REMOTE: &str = "cloud.fluvio.io";
 
 /// An Agent for authenticating with Fluvio Cloud
 ///
@@ -74,7 +74,7 @@ impl LoginAgent {
         if let Some(mut login_path) = dirs::home_dir() {
             login_path.push(CLI_CONFIG_PATH);
             login_path.push("login");
-            Ok(login_path.into())
+            Ok(login_path)
         } else {
             Err(IoError::new(
                 ErrorKind::InvalidInput,
@@ -147,6 +147,7 @@ impl LoginAgent {
     ///
     /// If this succeeds, the LoginAgent will save the Fluvio Cloud
     /// credentials in a session to be used later.
+    #[allow(clippy::unit_arg)]
     #[instrument(err
         skip(self, password),
         fields(
@@ -206,19 +207,17 @@ struct Credentials {
 impl Credentials {
     /// Try to load credentials from disk
     fn try_load<P: AsRef<Path>>(path: P) -> Result<Self, CloudError> {
-        let file_str =
-            fs::read_to_string(path).map_err(|e| CloudError::UnableToLoadCredentials(e))?;
+        let file_str = fs::read_to_string(path).map_err(CloudError::UnableToLoadCredentials)?;
         let creds: Credentials =
-            toml::from_str(&*file_str).map_err(|e| CloudError::UnableToParseCredentials(e))?;
+            toml::from_str(&*file_str).map_err(CloudError::UnableToParseCredentials)?;
         Ok(creds)
     }
 
     /// Try to save credentials to disk
     fn try_save<P: AsRef<Path>>(&self, path: P) -> Result<(), IoError> {
-        let parent = path.as_ref().parent().ok_or(IoError::new(
-            ErrorKind::NotFound,
-            "failed to open credentials folder",
-        ))?;
+        let parent = path.as_ref().parent().ok_or_else(|| {
+            IoError::new(ErrorKind::NotFound, "failed to open credentials folder")
+        })?;
         fs::create_dir_all(parent)?;
         // Serializing self can never fail because Credentials: Serialize
         fs::write(path, toml::to_string(self).unwrap().as_bytes())
@@ -307,7 +306,7 @@ mod tests {
 
     #[test]
     fn test_custom_remote() -> Result<(), IoError> {
-        let agent = LoginAgent::with_default_path()?.with_remote("localhost:3030");
+        let _agent = LoginAgent::with_default_path()?.with_remote("localhost:3030");
         Ok(())
     }
 }
