@@ -89,7 +89,7 @@ $ fluvio cluster install
 After installation, spu should see them provisioned:
 ```
 $ fluvio spu list
-flvd spu list
+fluvio spu list
  ID  NAME    STATUS  TYPE     RACK  PUBLIC              PRIVATE 
   0  main-0  online  managed   -    10.102.55.151:9005  flv-spg-main-0.flv-spg-main:9006 
 ```
@@ -113,13 +113,13 @@ Ok!
 ```
 Then we can consume or retrieve message.  In this case, we retrieve from beginning.  By default, messages are retrieval from last.  "-d" terminate immediately instead of waiting for next message.
 ```
-$ flvd consume message -B -d
+$ fluvio consume message -B -d
 hello world
 ```
 
 You can retrieve from known offset. 
 ```
-flvd consume message -o 0
+fluvio consume message -o 0
 ```
 
 ## Troubleshooting
