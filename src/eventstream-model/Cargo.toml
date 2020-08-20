@@ -1,5 +1,5 @@
 [package]
-name = "flv-eventstream-model"
+name = "fluvio-eventstream-model"
 edition = "2018"
 version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,7 +8,7 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
 [lib]
-name = "flv_eventstream_model"
+name = "fluvio_eventstream_model"
 path = "src/lib.rs"
 
 [features]
@@ -20,8 +20,8 @@ tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 
 # Fluvio dependencies
+fluvio-types = { path = "../types", version = "0.2.0" }
 flv-util = { version = "0.2.0" }
-flv-types = { path = "../types", version = "0.2.0" }
 flv-future-aio = { version = "2.3.0" }
 k8-obj-app = { version = "1.1.0", optional = true }
 k8-obj-core = { version = "1.1.0", optional = true }

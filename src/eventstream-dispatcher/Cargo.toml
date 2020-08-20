@@ -1,5 +1,5 @@
 [package]
-name = "flv-eventstream-dispatcher"
+name = "fluvio-eventstream-dispatcher"
 edition = "2018"
 version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,7 +8,7 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
 [lib]
-name = "flv_eventstream_dispatcher"
+name = "fluvio_eventstream_dispatcher"
 path = "src/lib.rs"
 
 [dependencies]
@@ -24,10 +24,10 @@ event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
+fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-eventstream-model = { features = ["k8"], path = "../eventstream-model" }
 flv-util = { version = "0.2.0" }
-flv-types = { path = "../types", version = "0.2.0" }
 flv-future-aio = { version = "2.3.0", features = ["unstable"] }
-flv-eventstream-model = { features = ["k8"], path = "../event-stream-model" }
 k8-metadata-client = { version = "1.0.1" }
 
 [dev-dependencies]

@@ -21,7 +21,7 @@ use super::SpuConfig;
 
 /// cli options
 #[derive(Debug, Default, StructOpt)]
-#[structopt(name = "spu-server", about = "Streaming Processing Unit")]
+#[structopt(name = "dataplane-server", about = "Streaming Processing Unit")]
 pub struct SpuOpt {
     /// SPU unique identifier
     #[structopt(short = "i", long = "id", value_name = "integer")]

@@ -1,15 +1,15 @@
 [package]
-name = "flv-sc-k8"
+name = "fluvio-controlplane-cli"
 edition = "2018"
 version = "0.1.0"
 authors = ["fluvio.io"]
 
 [lib]
-name = "flv_sc_k8"
+name = "fluvio_controlplane_cli"
 path = "src/lib.rs"
 
 [[bin]]
-name = "sc-k8-server"
+name = "fluvio_controlplane"
 path = "src/main.rs"
 doc = false
 
@@ -25,10 +25,10 @@ async-trait = "0.1.21"
 
 # Fluvio dependencies
 flv-util = { version = "0.3.0" }
-flv-types = { path = "../types", version = "0.2.0" }
-flv-sc-core = { path = "../sc-core" }
+fluvio-utils = { path = "../utils" }
+fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-metadata = { features = ["k8"], path = "../metadata" }
+fluvio-controlplane = { path = "../controlplane-core" }
 flv-tls-proxy = "0.1.0"
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
-flv-metadata-cluster = { features = ["k8"], path = "../metadata-cluster" }
 k8-client = { version = "1.1.1" }
-utils = { path = "../utils" }

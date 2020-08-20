@@ -10,11 +10,13 @@ bytes = "0.5.3"
 futures = { version = "0.3.4" }
 structopt = "0.3.5"
 async-trait = "0.1.21"
+
+# Fluvio dependencies
+fluvio = { path = "../../src/client" }
+fluvio-utils = { path= "../../src/utils"}
+fluvio-types = { path ="../../src/types", version = "0.2.0" }
+fluvio-metadata = { features=["k8"], path = "../../src/metadata" }
+flv-future-aio = { version = "2.2.1", features=["fixture"]}
 k8-client = { version = "1.1.1"}
 k8-metadata-client = { version = "1.0.1"}
-flv-future-aio = { version = "2.2.1", features=["fixture"]}
-kf-protocol = { version = "2.0.0" } 
-fluvio = { path = "../../src/client-rs"}
-flv-types = { path ="../../src/types", version = "0.2.0" }
-utils = { path= "../../src/utils"}
-flv-metadata-cluster = { features=["k8"], path = "../../src/metadata-cluster" }
+kf-protocol = { version = "2.0.0" }

@@ -1,11 +1,15 @@
 [package]
 edition = "2018"
-name = "flv-storage"
+name = "fluvio-storage"
 version = "1.0.0"
 authors = ["fluvio.io"]
 
+[lib]
+name = "fluvio_storage"
+path = "src/lib.rs"
+
 [[bin]]
-name = "storage-cli"
+name = "fluvio_storage"
 path = "src/bin/cli.rs"
 doc = false
 required-features = ["cli"]
@@ -21,12 +25,12 @@ structopt = { version = "0.3.5", optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
+fluvio-utils = { path = "../utils", optional = false }
+fluvio-types = { path = "../types", version = "0.2.0" }
 flv-util = { version = "0.2.0" }
-flv-types = { path = "../types", version = "0.2.0" }
 flv-future-aio = { version = "2.2.1" }
 kf-socket = { path = "../kf-socket" }
 kf-protocol = { version = "2.0.0" }
-utils = { path = "../utils", optional = false }
 
 [dev-dependencies]
 flv-util = { version = "0.2.0", features = ["fixture"] }

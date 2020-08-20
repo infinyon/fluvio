@@ -1,5 +1,5 @@
 [package]
-name = "flv-cli"
+name = "fluvio-cli"
 version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,7 +8,7 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
 [lib]
-name = "flv_cli"
+name = "fluvio_cli"
 path = "src/lib.rs"
 
 [[bin]]
@@ -18,7 +18,7 @@ doc = false
 
 [features]
 default = ["cluster_components"]
-cluster_components = ["flv-spu", "flv-sc-k8"]
+cluster_components = ["fluvio-dataplane-server", "fluvio-controlplane-cli"]
 
 [build-dependencies]
 rustc_version = "0.2.3"
@@ -44,20 +44,20 @@ surf = "2.0.0-alpha.4"
 dirs = "1.0.2"
 
 # Fluvio dependencies
-fluvio = { path = "../client-rs" }
+fluvio = { path = "../client" }
+fluvio-utils = { path = "../utils" }
+fluvio-controlplane-cli = { path = "../controlplane-cli", optional = true }
+fluvio-controlplane-api = { version = "2.0.0", path = "../controlplane-api", features = ["use_serde"] }
+fluvio-dataplane-server = { path = "../dataplane-server", optional = true }
+fluvio-metadata = { path = "../metadata", features = ["use_serde"] }
+fluvio-types = { path = "../types", version = "0.2.0" }
 flv-util = { version = "0.3.1" }
-flv-sc-k8 = { path = "../sc-k8", optional = true }
-flv-api-sc = { version = "2.0.0", path = "../sc-api", features = ["use_serde"] }
-flv-spu = { path = "../spu-server", optional = true }
 flv-future-aio = { version = "2.2.1" }
-flv-metadata-cluster = { path = "../metadata-cluster", features = ["use_serde"] }
-flv-types = { path = "../types", version = "0.2.0" }
 k8-client = { version = "1.1.0" }
 k8-config = { version = "1.1.0", features = ["context"] }
 k8-obj-core = { version = "1.1.0" }
 k8-obj-metadata = { version = "1.0.0" }
 k8-metadata-client = { version = "1.0.0" }
-utils = { path = "../utils" }
 
 [dev-dependencies]
 flv-future-aio = { version = "2.3.1", features = ["fixture"] }

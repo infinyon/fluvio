@@ -63,7 +63,7 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
     debug!("starting sc server");
 
     #[cfg(not(feature = "cluster_components"))]
-    let mut binary = super::get_binary("sc-k8-server").expect("unable to get sc-server");
+    let mut binary = super::get_binary("controlplane-cli-server").expect("unable to get sc-server");
 
     #[cfg(feature = "cluster_components")]
     let mut binary = {
@@ -193,7 +193,7 @@ async fn launch_spu(
     let errors = outputs.try_clone().expect("error  file");
 
     #[cfg(not(feature = "cluster_components"))]
-    let mut binary = get_binary("spu-server").expect("unable to get spu-server");
+    let mut binary = get_binary("dataplane-server").expect("unable to get dataplane-server");
 
     #[cfg(feature = "cluster_components")]
     let mut binary = {

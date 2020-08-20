@@ -49,7 +49,7 @@ mod controller {
         async fn dispatcher_loop(mut self) {
             debug!("entering sc request loop");
 
-            // the code is almost same as in the spu-server::controllers::sc::dispatcher
+            // the code is almost same as in the dataplane-server::controllers::sc::dispatcher
             loop {
                 use std::time::Duration;
                 use futures::FutureExt;

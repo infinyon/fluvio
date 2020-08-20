@@ -19,7 +19,7 @@ event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
-flv-types = { version = "0.2.0", path = "../types" }
+fluvio-types = { version = "0.2.0", path = "../types" }
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
 kf-socket = { version = "2.0.0", path = "../kf-socket" }
 kf-protocol = { version = "2.0.0" }

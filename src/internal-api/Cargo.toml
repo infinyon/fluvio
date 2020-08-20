@@ -1,11 +1,11 @@
 [package]
-name = "internal-api"
+name = "fluvio-internal-api"
 version = "1.0.0"
 authors = ["fluvio.io"]
 edition = "2018"
 
 [lib]
-name = "internal_api"
+name = "flvuio_internal_api"
 path = "src/lib.rs"
 
 [dependencies]
@@ -13,6 +13,6 @@ log = "0.4.8"
 tracing = "0.1.19"
 
 # Fluvio dependencies
-flv-types = { path ="../types" }
-flv-metadata-cluster = { path = "../metadata-cluster"}
+fluvio-types = { path ="../types" }
+fluvio-metadata = { path = "../metadata" }
 kf-protocol = { version = "2.0.0" }

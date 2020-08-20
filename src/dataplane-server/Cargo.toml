@@ -1,15 +1,15 @@
 [package]
-name = "flv-spu"
+name = "fluvio-dataplane-server"
 edition = "2018"
 version = "1.0.0"
 authors = ["fluvio.io"]
 
 [lib]
-name = "flv_spu"
+name = "fluvio_dataplane"
 path = "src/lib.rs"
 
 [[bin]]
-name = "spu-server"
+name = "fluvio_dataplane_server"
 path = "src/main.rs"
 doc = false
 
@@ -32,18 +32,18 @@ tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
 flv-util = { version = "0.3.0" }
-flv-types = { path = "../types", version = "0.2.0" }
-flv-storage = { path = "../storage" }
+fluvio-utils = { path = "../utils" }
+fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-storage = { path = "../storage" }
+fluvio-metadata = { path = "../metadata" }
+fluvio-internal-api = { path = "../internal-api" }
+fluvio-dataplane-api = { path = "../dataplane-api" }
 flv-tls-proxy = "0.1.0"
 flv-future-aio = { version = "2.2.1" }
-flv-metadata-cluster = { path = "../metadata-cluster" }
 kf-protocol = { version = "2.0.0" }
 kf-socket = { path = "../kf-socket" }
 kf-service = { path = "../kf-service" }
-internal-api = { path = "../internal-api" }
-spu-api = { path = "../spu-api", package = "flv-api-spu" }
-utils = { path = "../utils" }
 
 [dev-dependencies]
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }
-utils = { path = "../utils", features = ["fixture"] }
+fluvio-utils = { path = "../utils", features = ["fixture"] }

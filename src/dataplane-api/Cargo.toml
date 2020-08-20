@@ -1,5 +1,5 @@
 [package]
-name = "flv-api-spu"
+name = "fluvio-dataplane-api"
 version = "2.0.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,7 +8,7 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
 [lib]
-name = "flv_api_spu"
+name = "fluvio_dataplane_api"
 path = "src/lib.rs"
 
 [dependencies]
