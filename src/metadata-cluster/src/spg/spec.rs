@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use kf_protocol::derive::{Decode, Encode};
 
 #[derive(Encode, Decode, Default, Debug, PartialEq, Clone)]
@@ -67,8 +69,11 @@ impl StorageConfig {
     /// that should be used
     pub fn real_config(&self) -> RealStorageConfig {
         RealStorageConfig {
-            log_dir: self.log_dir.clone().unwrap_or("/tmp/fluvio".to_owned()),
-            size: self.size.clone().unwrap_or("1Gi".to_owned()),
+            log_dir: self
+                .log_dir
+                .clone()
+                .unwrap_or_else(|| "/tmp/fluvio".to_owned()),
+            size: self.size.clone().unwrap_or_else(|| "1Gi".to_owned()),
         }
     }
 }

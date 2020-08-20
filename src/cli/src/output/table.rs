@@ -34,7 +34,7 @@ where
 
     // display errors one at a time
     fn display_errors<T: TableOutputHandler>(&self, list: &T) {
-        if list.errors().len() > 0 {
+        if !list.errors().is_empty() {
             for error in list.errors() {
                 t_println!(self.0, "{}", error);
             }
@@ -51,13 +51,13 @@ where
         let content = list.content();
 
         // if table is empty, return
-        if content.len() == 0 {
+        if content.is_empty() {
             return;
         }
 
         // Create the table
         let mut table = Table::new();
-        let mut format = format::consts::FORMAT_CLEAN.clone();
+        let mut format = *format::consts::FORMAT_CLEAN;
         let pad_left = if indent { 5 } else { 1 };
         format.padding(pad_left, 1);
         table.set_format(format);

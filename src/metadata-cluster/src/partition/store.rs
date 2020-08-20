@@ -82,7 +82,7 @@ where
         let mut res: Vec<PartitionMetadata<C>> = Vec::default();
         for (name, partition) in self.read().await.iter() {
             if name.topic == topic {
-                res.push(partition.inner().clone().into());
+                res.push(partition.inner().clone());
             }
         }
         res
@@ -115,7 +115,7 @@ where
             .await
             .keys()
             .filter_map(|name| {
-                if &name.topic == topic {
+                if name.topic == topic {
                     Some(name.clone())
                 } else {
                     None

@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use std::fmt;
 
 use kf_protocol::derive::{Decode, Encode};
@@ -30,7 +32,7 @@ where
     C: MetadataItem,
 {
     fn from(item: PartitionMetadata<C>) -> Self {
-        let inner: MetadataStoreObject<PartitionSpec, C> = item.into();
+        let inner: MetadataStoreObject<PartitionSpec, C> = item;
         Self {
             id: inner.key,
             leader: inner.spec.leader,

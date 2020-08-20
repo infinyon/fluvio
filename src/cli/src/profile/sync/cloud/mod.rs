@@ -45,7 +45,7 @@ where
         | Err(CloudError::UnableToLoadCredentials(_))
         // If we're unable to parse the token file, continue to login
         | Err(CloudError::UnableToParseCredentials(_)) => (),
-        Err(other) => return Err(other)?,
+        Err(other) => return Err(other.into()),
     }
 
     // In case of error, try re-authentication

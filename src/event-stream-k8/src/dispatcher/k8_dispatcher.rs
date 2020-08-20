@@ -152,7 +152,7 @@ where
                         break;
                     }
 
-                    reconcile_time_left = reconcile_time_left - reconcile_time_mark.elapsed();
+                    reconcile_time_left -= reconcile_time_mark.elapsed();
                 },
 
                 msg = ws_receiver.recv() => {
@@ -167,7 +167,7 @@ where
                         }
                     }
 
-                    reconcile_time_left = reconcile_time_left - reconcile_time_mark.elapsed();
+                    reconcile_time_left -= reconcile_time_mark.elapsed();
 
                 }
 
@@ -397,7 +397,7 @@ mod convert {
             }
         }
 
-        if let Some(_) = local_store.apply_changes(changes).await {
+        if local_store.apply_changes(changes).await.is_some() {
             return true;
         } else {
             debug!("no apply changes: {}", S::LABEL);
@@ -420,6 +420,6 @@ mod convert {
                 trace!("converted val: {:#?}", val.spec);
                 val
             })
-            .map_err(|err| err.into())
+            .map_err(|err| err)
     }
 }

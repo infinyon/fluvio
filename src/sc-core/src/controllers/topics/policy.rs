@@ -60,7 +60,7 @@ pub async fn generate_replica_map(
         TopicStatus::set_resolution_no_resource(reason).into()
     } else {
         let replica_map = generate_replica_map_for_topic(spus, param, None).await;
-        if replica_map.len() > 0 {
+        if !replica_map.is_empty() {
             (TopicStatus::next_resolution_provisioned(), replica_map).into()
         } else {
             let reason = "empty replica map";
@@ -89,7 +89,7 @@ pub async fn update_replica_map_for_assigned_topic(
     }
 
     let replica_map = partition_maps.partition_map_to_replica_map();
-    if replica_map.len() == 0 {
+    if replica_map.is_empty() {
         TopicStatus::next_resolution_invalid_config("invalid replica map".to_owned()).into()
     } else {
         (TopicStatus::next_resolution_provisioned(), replica_map).into()
@@ -151,7 +151,7 @@ impl TopicNextState {
     pub fn apply_as_next_state(self, topic: &mut TopicAdminMd) -> Vec<PartitionAdminMd> {
         topic.status.resolution = self.resolution;
         topic.status.reason = self.reason;
-        if self.replica_map.len() > 0 {
+        if !self.replica_map.is_empty() {
             topic.status.set_replica_map(self.replica_map);
         }
         self.partitions

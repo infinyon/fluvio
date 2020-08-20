@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use std::fmt::Debug;
 
 use kf_protocol::derive::{Decode, Encode};
@@ -26,6 +28,7 @@ impl Request for CreateRequest {
 
 impl AdminRequest for CreateRequest {}
 
+#[allow(clippy::module_inception)]
 mod create {
 
     use std::io::Error;

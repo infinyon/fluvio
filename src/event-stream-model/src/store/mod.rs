@@ -1,5 +1,6 @@
 mod concurrent_hashmap;
 pub mod actions;
+#[allow(clippy::module_inception)]
 mod store;
 mod metadata;
 mod filter;

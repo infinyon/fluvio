@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;

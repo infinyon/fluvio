@@ -7,7 +7,7 @@ fn main() {
 
     match run_cli() {
         Ok(output) => {
-            if output.len() > 0 {
+            if !output.is_empty() {
                 println!("{}", output)
             }
         }

@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 //!
 //! # Response Message
 //!
@@ -19,7 +21,7 @@ pub struct FlvStatus {
 impl FlvStatus {
     pub fn new_ok(name: String) -> Self {
         Self {
-            name: name,
+            name,
             error_code: FlvErrorCode::None,
             error_message: None,
         }
@@ -27,7 +29,7 @@ impl FlvStatus {
 
     pub fn new(name: String, code: FlvErrorCode, msg: Option<String>) -> Self {
         Self {
-            name: name,
+            name,
             error_code: code,
             error_message: msg,
         }
@@ -37,6 +39,7 @@ impl FlvStatus {
         self.error_code.is_error()
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn as_result(self) -> Result<(), ApiError> {
         if self.error_code.is_ok() {
             Ok(())

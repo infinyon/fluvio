@@ -5,7 +5,7 @@ pub mod store;
 pub use self::spec::*;
 pub use self::status::*;
 
-pub const PENDING_REASON: &'static str = "waiting for live spus";
+pub const PENDING_REASON: &str = "waiting for live spus";
 
 #[cfg(feature = "k8")]
 mod k8;

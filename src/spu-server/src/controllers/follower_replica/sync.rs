@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;

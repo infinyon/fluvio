@@ -44,6 +44,7 @@ pub struct ScOpt {
 }
 
 impl ScOpt {
+    #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
     ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScK8Error> {
@@ -62,18 +63,19 @@ impl ScOpt {
     }
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
+    #[allow(clippy::wrong_self_convention)]
     fn as_sc_config(self) -> Result<(ScConfig, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
         if let Some(public_addr) = self.bind_public {
-            config.public_endpoint = public_addr.clone();
+            config.public_endpoint = public_addr;
         }
 
         if let Some(private_addr) = self.bind_private {
-            config.private_endpoint = private_addr.clone();
+            config.private_endpoint = private_addr;
         }
-        config.namespace = self.namespace.unwrap().clone();
+        config.namespace = self.namespace.unwrap();
 
         let tls = self.tls;
 

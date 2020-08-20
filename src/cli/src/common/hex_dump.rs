@@ -5,7 +5,8 @@
 //!
 
 /// Takes a u8 array of bytes and converts to hex dump
-pub fn bytes_to_hex_dump(record: &Vec<u8>) -> String {
+#[allow(clippy::needless_range_loop)]
+pub fn bytes_to_hex_dump(record: &[u8]) -> String {
     let cols = 16;
     let record_cnt = record.len();
     let mut result = String::new();
@@ -36,7 +37,7 @@ pub fn bytes_to_hex_dump(record: &Vec<u8>) -> String {
     }
 
     // if collect not empty, fill-in gap and add characters
-    if collector.len() > 0 {
+    if !collector.is_empty() {
         let last_char_idx = record_cnt % cols;
         if last_char_idx <= cols / 2 {
             result.push_str(&" ".to_owned());

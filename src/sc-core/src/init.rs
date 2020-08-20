@@ -53,8 +53,8 @@ where
     );
 
     K8ClusterStateDispatcher::<SpuGroupSpec, C>::start(
-        namespace.clone(),
-        metadata_client.clone(),
+        namespace,
+        metadata_client,
         ctx.spgs().clone(),
     );
 

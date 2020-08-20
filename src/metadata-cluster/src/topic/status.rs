@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 //!
 //! # Topic Status
 //!
@@ -54,17 +56,11 @@ impl TopicResolution {
     }
 
     pub fn is_invalid(&self) -> bool {
-        match self {
-            Self::InvalidConfig => true,
-            _ => false,
-        }
+        matches!(self, Self::InvalidConfig)
     }
 
     pub fn no_resource(&self) -> bool {
-        match self {
-            Self::InsufficientResources => true,
-            _ => false,
-        }
+        matches!(self, Self::InsufficientResources)
     }
 }
 
@@ -134,7 +130,7 @@ impl TopicStatus {
         S: Into<String>,
     {
         TopicStatus {
-            resolution: resolution,
+            resolution,
             replica_map: create_replica_map(replica_map),
             reason: reason.into(),
         }
