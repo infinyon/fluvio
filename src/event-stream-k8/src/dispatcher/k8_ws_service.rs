@@ -46,7 +46,7 @@ where
     }
 
     /// add/update
-    async fn apply(
+    pub async fn apply(
         &self,
         value: MetadataStoreObject<S, K8MetaItem>,
     ) -> Result<(), C::MetadataClientError>
@@ -78,12 +78,12 @@ where {
                 .apply(new_k8)
                 .await
                 .map(|_| ())
-                .map_err(|err| err.into())
+                .map_err(|err| err)
         }
     }
 
     /// only update the status
-    async fn update_status(
+    pub async fn update_status(
         &self,
         metadata: K8MetaItem,
         status: S::Status,
@@ -111,7 +111,7 @@ where {
     }
 
     /// update spec only
-    async fn update_spec(
+    pub async fn update_spec(
         &self,
         metadata: K8MetaItem,
         spec: S,
@@ -135,7 +135,7 @@ where {
         self.client.apply(k8_input).await.map(|_| ())
     }
 
-    async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+    pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
         self.client
             .delete_item::<S::K8Spec, _>(&meta)
             .await

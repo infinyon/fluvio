@@ -6,7 +6,7 @@ mod root_cli;
 mod spu;
 mod topic;
 mod output;
-mod profile;
+pub mod profile;
 mod tls;
 pub mod cluster;
 mod group;
@@ -22,9 +22,9 @@ pub use self::root_cli::run_cli;
 pub use output::Terminal;
 use output::*;
 
-const VERSION: &'static str = include_str!("VERSION");
+const VERSION: &str = include_str!("VERSION");
 
-const COMMAND_TEMPLATE: &'static str = "{about}
+const COMMAND_TEMPLATE: &str = "{about}
 
 {usage}
 
@@ -52,7 +52,7 @@ mod target {
 
     use structopt::StructOpt;
 
-    use flv_client::ClusterConfig;
+    use fluvio::ClusterConfig;
     use crate::tls::TlsOpt;
     use crate::CliError;
 

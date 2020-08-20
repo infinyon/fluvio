@@ -3,11 +3,11 @@ use flv_cli::run_cli;
 use flv_types::print_cli_err;
 
 fn main() {
-    flv_util::init_logger();
+    flv_util::init_tracer(None);
 
     match run_cli() {
         Ok(output) => {
-            if output.len() > 0 {
+            if !output.is_empty() {
                 println!("{}", output)
             }
         }

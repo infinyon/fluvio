@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 //!
 //! # Partition Spec
 //!
@@ -48,8 +50,8 @@ impl PartitionSpec {
 
 impl From<Vec<i32>> for PartitionSpec {
     fn from(replicas: Vec<i32>) -> Self {
-        if replicas.len() > 0 {
-            Self::new(replicas[0].clone(), replicas)
+        if !replicas.is_empty() {
+            Self::new(replicas[0], replicas)
         } else {
             Self::new(0, replicas)
         }

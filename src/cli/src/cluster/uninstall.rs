@@ -39,12 +39,10 @@ where
     println!("removing fluvio installation");
     if command.sys {
         remove_sys();
+    } else if command.local {
+        remove_local_cluster();
     } else {
-        if command.local {
-            remove_local_cluster();
-        } else {
-            remove_k8_cluster(&command).await?;
-        }
+        remove_k8_cluster(&command).await?;
     }
 
     let ns = &command.namespace;

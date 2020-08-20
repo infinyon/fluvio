@@ -11,7 +11,7 @@ use k8_client::new_shared;
 use flv_sc_core::start_main_loop;
 use crate::{ScOpt, operator::run_k8_operators};
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_k8_loop(opt: ScOpt) {
     // parse configuration (program exits on error)

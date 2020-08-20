@@ -44,6 +44,7 @@ pub struct ReplicaLeaderController<S> {
 }
 
 impl<S> ReplicaLeaderController<S> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         local_spu: SpuId,
         id: ReplicaKey,

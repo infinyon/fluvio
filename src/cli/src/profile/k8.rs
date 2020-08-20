@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 
-use flv_client::config::*;
+use fluvio::config::*;
 use k8_client::K8Client;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
@@ -63,7 +63,7 @@ pub async fn set_k8_context(opt: K8Opt) -> Result<String, IoError> {
         } else {
             return Err(IoError::new(
                 ErrorKind::Other,
-                format!("fluvio service is not deployed"),
+                "fluvio service is not deployed".to_string(),
             ));
         };
 
@@ -110,7 +110,7 @@ pub async fn discover_fluvio_addr(
     client: &K8Client,
     namespace: Option<String>,
 ) -> Result<Option<String>, IoError> {
-    let ns = namespace.unwrap_or("default".to_owned());
+    let ns = namespace.unwrap_or_else(|| "default".to_owned());
     let svc = match client
         .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("flv-sc-public", &ns))
         .await

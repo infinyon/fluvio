@@ -18,7 +18,7 @@ use crate::validator::LogValidationError;
 use crate::ConfigOption;
 use crate::StorageError;
 
-pub(crate) const MESSAGE_LOG_EXTENSION: &'static str = "log";
+pub(crate) const MESSAGE_LOG_EXTENSION: &str = "log";
 
 pub(crate) trait FileRecords {
     fn get_base_offset(&self) -> Offset;

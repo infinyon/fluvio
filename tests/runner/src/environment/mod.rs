@@ -51,10 +51,10 @@ mod common {
     pub fn create_driver(option: TestOption) -> Box<dyn EnvironmentDriver> {
         if option.use_k8_driver() {
             println!("using k8 environment driver");
-            Box::new(K8EnvironmentDriver::new(option.clone())) as Box<dyn EnvironmentDriver>
+            Box::new(K8EnvironmentDriver::new(option)) as Box<dyn EnvironmentDriver>
         } else {
             println!("using local environment driver");
-            Box::new(LocalEnvDriver::new(option.clone())) as Box<dyn EnvironmentDriver>
+            Box::new(LocalEnvDriver::new(option)) as Box<dyn EnvironmentDriver>
         }
     }
 }

@@ -9,8 +9,8 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use flv_util::socket_helpers::ServerAddress;
-use flv_client::ClusterConfig;
-use flv_client::metadata::spu::CustomSpuSpec;
+use fluvio::ClusterConfig;
+use fluvio::metadata::spu::CustomSpuSpec;
 
 use crate::error::CliError;
 use crate::target::ClusterTarget;
@@ -53,7 +53,7 @@ impl RegisterCustomSpuOpt {
                 id: self.id,
                 public_endpoint: ServerAddress::try_from(self.public_server)?.into(),
                 private_endpoint: ServerAddress::try_from(self.private_server)?.into(),
-                rack: self.rack.clone(),
+                rack: self.rack,
             },
         );
 

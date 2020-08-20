@@ -1,7 +1,6 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::mem::size_of;
-use std::mem::transmute;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::slice;
@@ -70,7 +69,7 @@ impl MutLogIndex {
 
         let ptr = {
             let b_slices: &[u8] = &m_file.mut_inner();
-            unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) }
+            b_slices.as_ptr() as *mut libc::c_void
         };
 
         Ok(MutLogIndex {
@@ -98,7 +97,7 @@ impl MutLogIndex {
 
         let ptr = {
             let b_slices: &[u8] = &m_file.mut_inner();
-            unsafe { transmute::<*const u8, *mut c_void>(b_slices.as_ptr()) }
+            b_slices.as_ptr() as *mut libc::c_void
         };
 
         trace!("opening mut index at: {:#?}, pos: {}", index_file_path, 0);
@@ -266,7 +265,7 @@ mod tests {
 
         let mut f = File::open(&test_file)?;
         let mut buffer = vec![0; 32];
-        f.read(&mut buffer)?;
+        f.read_exact(&mut buffer)?;
 
         // ensure offset,position are stored in the big endian format
         assert_eq!(buffer[0], 0);

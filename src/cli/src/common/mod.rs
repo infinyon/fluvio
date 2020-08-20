@@ -24,8 +24,9 @@ mod output {
     }
 
     impl OutputFormat {
+        #[allow(clippy::wrong_self_convention)]
         pub fn as_output(self) -> OutputType {
-            self.output.unwrap_or(OutputType::default())
+            self.output.unwrap_or_default()
         }
     }
 }

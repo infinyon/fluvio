@@ -5,7 +5,7 @@
 
 use structopt::StructOpt;
 
-use flv_client::ClusterConfig;
+use fluvio::ClusterConfig;
 use flv_metadata_cluster::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
@@ -61,7 +61,7 @@ mod output {
     use prettytable::format::Alignment;
     use tracing::debug;
 
-    use flv_client::metadata::objects::Metadata;
+    use fluvio::metadata::objects::Metadata;
     use flv_metadata_cluster::spg::SpuGroupSpec;
 
     use crate::error::CliError;
@@ -84,7 +84,7 @@ mod output {
     ) -> Result<(), CliError> {
         debug!("groups: {:#?}", list_spu_groups);
 
-        if list_spu_groups.len() > 0 {
+        if !list_spu_groups.is_empty() {
             out.render_list(&list_spu_groups, output_type)
         } else {
             t_println!(out, "no groups");

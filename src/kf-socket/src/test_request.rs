@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use std::io::Error as IoError;
 use std::convert::TryInto;
 

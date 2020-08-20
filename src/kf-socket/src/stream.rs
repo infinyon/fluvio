@@ -86,7 +86,7 @@ where
                 }
                 Err(err) => {
                     error!("error receiving response: {:?}", err);
-                    return Err(KfSocketError::IoError(err));
+                    Err(KfSocketError::IoError(err))
                 }
             }
         } else {

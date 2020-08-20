@@ -2,7 +2,7 @@ mod k8_dispatcher;
 mod k8_ws_service;
 
 pub use k8_dispatcher::*;
-use k8_ws_service::*;
+pub use k8_ws_service::*;
 
 mod k8_actions {
 
@@ -11,6 +11,7 @@ mod k8_actions {
     use crate::store::MetadataStoreObject;
 
     /// Actions to update World States
+    #[allow(clippy::large_enum_variant)]
     #[derive(Debug, PartialEq, Clone)]
     pub enum K8Action<S>
     where

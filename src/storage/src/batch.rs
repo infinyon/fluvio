@@ -194,7 +194,7 @@ where
         //trace!("opening batch stream on: {}",file);
         FileBatchStream {
             pos: 0,
-            file: file.into(),
+            file,
             invalid: None,
             data: PhantomData,
         }
@@ -212,7 +212,7 @@ where
         }
         Ok(FileBatchStream {
             pos,
-            file: file.into(),
+            file,
             invalid: None,
             data: PhantomData,
         })
@@ -234,7 +234,7 @@ where
             Ok(batch_res) => {
                 if let Some(ref batch) = batch_res {
                     trace!("batch founded, updating pos");
-                    self.pos = self.pos + batch.total_len() as Size;
+                    self.pos += batch.total_len() as Size;
                 } else {
                     trace!("no batch founded");
                 }

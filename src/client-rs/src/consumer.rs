@@ -63,7 +63,6 @@ impl Consumer {
         let topic_request = FetchableTopic {
             name: self.replica.topic.to_owned(),
             fetch_partitions: vec![partition],
-            ..Default::default()
         };
 
         let fetch_request = DefaultKfFetchRequest {

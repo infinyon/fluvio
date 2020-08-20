@@ -31,7 +31,7 @@ impl SpuValidation for SpuGroupObj {
 
         is_conflict(
             spu_store,
-            &self.metadata.uid,
+            self.metadata.uid.clone(),
             min_id,
             min_id + self.spec.replicas as SpuId,
         )

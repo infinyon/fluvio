@@ -7,8 +7,8 @@ use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
 
-use flv_client::metadata::objects::Metadata;
-use flv_client::metadata::spu::SpuSpec;
+use fluvio::metadata::objects::Metadata;
+use fluvio::metadata::spu::SpuSpec;
 
 use crate::error::CliError;
 use crate::OutputType;
@@ -27,7 +27,7 @@ pub fn format_spu_response_output<O>(
 where
     O: Terminal,
 {
-    if spus.len() > 0 {
+    if !spus.is_empty() {
         out.render_list(&spus, output_type)?;
     } else {
         t_println!(out, "no spu");

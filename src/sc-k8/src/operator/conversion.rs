@@ -41,7 +41,7 @@ pub fn convert_cluster_to_statefulset(
         api_version: StatefulSetSpec::api_version(),
         kind: StatefulSetSpec::kind(),
         metadata: InputObjectMeta {
-            name: statefulset_name.clone(),
+            name: statefulset_name,
             namespace: metadata.namespace().to_string(),
             owner_references: vec![owner_ref],
             ..Default::default()

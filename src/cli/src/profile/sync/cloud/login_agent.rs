@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 use std::fs;
 use std::path::{PathBuf, Path};
 
-use tracing::{info, warn, error};
+use tracing::{warn, error, debug, trace, instrument};
 use serde::{Deserialize, Serialize};
 use flv_types::defaults::CLI_CONFIG_PATH;
 use surf::http_types::StatusCode;
@@ -12,8 +12,9 @@ use serde_json::Error as JsonError;
 
 use serde::export::Formatter;
 use futures::io::Error;
+use fluvio::config::Cluster;
 
-const DEFAULT_AGENT_REMOTE: &'static str = "cloud.fluvio.io";
+const DEFAULT_AGENT_REMOTE: &str = "cloud.fluvio.io";
 
 /// An Agent for authenticating with Fluvio Cloud
 ///
@@ -55,7 +56,12 @@ impl LoginAgent {
 
     /// Configure a custom remote
     pub fn with_remote<S: Into<String>>(mut self, remote: S) -> Self {
-        self.remote = remote.into();
+        let remote = remote.into();
+        trace!(
+            remote = &*remote,
+            "LoginAgent configured with custom remote"
+        );
+        self.remote = remote;
         self
     }
 
@@ -68,7 +74,7 @@ impl LoginAgent {
         if let Some(mut login_path) = dirs::home_dir() {
             login_path.push(CLI_CONFIG_PATH);
             login_path.push("login");
-            Ok(login_path.into())
+            Ok(login_path)
         } else {
             Err(IoError::new(
                 ErrorKind::InvalidInput,
@@ -81,11 +87,14 @@ impl LoginAgent {
     ///
     /// Will fail if there is no saved session, or if the token
     /// in the saved session is expired.
-    pub async fn download_profile(&mut self) -> Result<(), CloudError> {
+    pub async fn download_profile(&mut self) -> Result<Cluster, CloudError> {
         // Check whether we have credentials in session or on disk
         let creds = match self.session.as_ref() {
             // First, try to get the token from the agent session
-            Some(creds) => creds,
+            Some(creds) => {
+                debug!("Using credentials from session");
+                creds
+            }
             None => {
                 // If that doesn't work, try to get the token from disk
                 let loaded_creds = Credentials::try_load(&self.path)?;
@@ -94,20 +103,30 @@ impl LoginAgent {
             }
         };
 
-        let _result = self.try_download_profile(creds).await?;
-        Ok(())
+        let cluster_profile = self.try_download_profile(creds).await?;
+        Ok(cluster_profile)
     }
 
     /// Attempts to download a Fluvio Cloud profile with the given credentials
-    async fn try_download_profile(&self, creds: &Credentials) -> Result<(), CloudError> {
-        let response = surf::get(format!("{}/api/v1/downloadProfile", &self.remote))
+    #[instrument(
+        skip(self, creds),
+        fields(
+            remote = &*self.remote,
+            path = "/api/v1/downloadProfile"
+        )
+    )]
+    async fn try_download_profile(&self, creds: &Credentials) -> Result<Cluster, CloudError> {
+        let mut response = surf::get(format!("{}/api/v1/downloadProfile", &self.remote))
             .set_header("Authorization", &*creds.token)
             .await?;
+        trace!("Response: {:#?}", &response);
+        debug!(status = response.status() as u16);
+
         match response.status() {
             StatusCode::Ok => {
-                info!("Successfully authenticated with token!");
-                error!("TODO, implement profile download");
-                Ok(())
+                debug!("Successfully authenticated with token");
+                let cluster: Cluster = response.body_json().await?;
+                Ok(cluster)
             }
             StatusCode::Unauthorized => {
                 warn!("Failed to download profile, token is expired or invalid");
@@ -117,7 +136,10 @@ impl LoginAgent {
                 warn!("Failed to download a profile for this user");
                 Err(CloudError::ProfileNotFound)
             }
-            _ => Err(CloudError::Unexpected),
+            e => {
+                error!("Got unexpected status code {:?}", e);
+                Err(CloudError::Unexpected)
+            }
         }
     }
 
@@ -125,6 +147,14 @@ impl LoginAgent {
     ///
     /// If this succeeds, the LoginAgent will save the Fluvio Cloud
     /// credentials in a session to be used later.
+    #[allow(clippy::unit_arg)]
+    #[instrument(err
+        skip(self, password),
+        fields(
+            remote = &*self.remote,
+            path = "/api/v1/loginUser",
+        ),
+    )]
     pub async fn authenticate(
         &mut self,
         email: String,
@@ -177,19 +207,17 @@ struct Credentials {
 impl Credentials {
     /// Try to load credentials from disk
     fn try_load<P: AsRef<Path>>(path: P) -> Result<Self, CloudError> {
-        let file_str =
-            fs::read_to_string(path).map_err(|e| CloudError::UnableToLoadCredentials(e))?;
+        let file_str = fs::read_to_string(path).map_err(CloudError::UnableToLoadCredentials)?;
         let creds: Credentials =
-            toml::from_str(&*file_str).map_err(|e| CloudError::UnableToParseCredentials(e))?;
+            toml::from_str(&*file_str).map_err(CloudError::UnableToParseCredentials)?;
         Ok(creds)
     }
 
     /// Try to save credentials to disk
     fn try_save<P: AsRef<Path>>(&self, path: P) -> Result<(), IoError> {
-        let parent = path.as_ref().parent().ok_or(IoError::new(
-            ErrorKind::NotFound,
-            "failed to open credentials folder",
-        ))?;
+        let parent = path.as_ref().parent().ok_or_else(|| {
+            IoError::new(ErrorKind::NotFound, "failed to open credentials folder")
+        })?;
         fs::create_dir_all(parent)?;
         // Serializing self can never fail because Credentials: Serialize
         fs::write(path, toml::to_string(self).unwrap().as_bytes())
@@ -278,7 +306,7 @@ mod tests {
 
     #[test]
     fn test_custom_remote() -> Result<(), IoError> {
-        let agent = LoginAgent::with_default_path()?.with_remote("localhost:3030");
+        let _agent = LoginAgent::with_default_path()?.with_remote("localhost:3030");
         Ok(())
     }
 }

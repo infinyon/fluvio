@@ -7,8 +7,8 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use flv_client::config::ClusterConfig;
-use flv_client::metadata::topic::TopicSpec;
+use fluvio::config::ClusterConfig;
+use fluvio::metadata::topic::TopicSpec;
 use crate::error::CliError;
 use crate::target::ClusterTarget;
 

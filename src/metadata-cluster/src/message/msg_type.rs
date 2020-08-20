@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 //!
 //! # Message Type
 //!
@@ -51,7 +53,7 @@ where
     pub fn new(typ: MsgType, content: C) -> Self {
         Message {
             header: typ,
-            content: content,
+            content,
         }
     }
 

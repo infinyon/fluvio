@@ -42,7 +42,7 @@ impl Context {
             topics: StoreContext::new(),
             spgs: StoreContext::new(),
             health: SpuStatusChannel::new(),
-            config: config,
+            config,
         }
     }
 

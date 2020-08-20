@@ -5,13 +5,13 @@ use futures::select;
 use futures::future::FutureExt;
 
 use flv_future_aio::timer::sleep;
-use flv_client::profile::ScConfig;
-use flv_client::SpuController;
-use flv_client::ReplicaLeader;
-use flv_client::FetchLogOption;
-use flv_client::FetchOffset;
-use flv_client::profile::TlsConfig;
-use flv_client::profile::TlsClientConfig;
+use fluvio::profile::ScConfig;
+use fluvio::SpuController;
+use fluvio::ReplicaLeader;
+use fluvio::FetchLogOption;
+use fluvio::FetchOffset;
+use fluvio::profile::TlsConfig;
+use fluvio::profile::TlsClientConfig;
 
 use crate::TestOption;
 use crate::tls::Cert;

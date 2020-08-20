@@ -87,15 +87,15 @@ sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
 
 You can run the development version of fluvio CLI by:
 ```
-$ target/debug/fluvio
+$ ./target/debug/fluvio
 ```
 
 You can assign an alias to simplify references to CLI like this:
 ```
-alias flvd=target/debug/fluvio
+alias fluvio=./target/debug/fluvio
 ```
 
-From now on, we will reference ```flvd``` instead of the release version.
+From now on, we will reference ```fluvio``` instead of the release version.
 
 
 ## Setting up Kubernetes Clusters and Installing system chart
@@ -125,12 +125,12 @@ make minikube_image
 
 You can install develop a version of fluvio using same installation command:
 ```
-flvd cluster install --develop
+fluvio cluster install --develop
 ```
 
 You can remove fluvio cluster by
 ```
-flvd cluster uninstall
+fluvio cluster uninstall
 ```
 
 Note that when you uninstall cluster, CLI will remove all related objects such as
@@ -152,7 +152,7 @@ It is recommended to use custom SPU when you are working on feature development.
 Local cluster of custom SPU can be created same manner previously:
 
 ```
-flvd cluster install --local --spu <spu>
+fluvio cluster install --local --spu <spu>
 ```
 
 where ```---spu``` is optional.  This will launch SC and SPU's using native build instead of docker images.
@@ -167,7 +167,7 @@ The logs for SC and SPU can be found in:
 Local cluster can be uninstalled as:
 
 ```
-flvd cluster uninstall --local
+fluvio cluster uninstall --local
 ```
 
 
@@ -217,3 +217,43 @@ It means your docker registry is not running
 ```
 docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
+
+If you face connection issues while creating minikube image while your docker registry is up running
+
+```
+$ make minikube_image
+Error response from daemon: Get http://localhost:5000/v2/: dial tcp 127.0.0.1:5000: connect: connection refused
+make[1]: *** [minikube] Error 1
+make: *** [spu_image] Error 2
+```
+Re-build i.e.delete and restart minikube cluster
+
+```
+minikube delete
+minikube start
+```
+
+
+###### Fluvio sys chart issues
+
+If you face issues while installing sys chart
+
+```
+$ fluvio cluster install --sys
+"fluvio" has been added to your repositories
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "fluvio" chart repository
+Update Complete. ⎈ Happy Helming!⎈ 
+Exited with status code: 1
+thread 'main' panicked at 'assertion failed: false', src/cli/src/cluster/util.rs:115:17
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the sys chart installation throws an error. Make sure the storage class is deleted.
+
+```
+ kubectl delete storageclass fluvio-spu
+ ```
+
+
+

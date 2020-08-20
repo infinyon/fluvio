@@ -33,8 +33,8 @@ pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
 
     debug!("using log dir: {}", log_dir);
 
-    if Path::new(&log_dir).exists() == false {
-        create_dir_all(&log_dir).map_err(|err| CliError::IoError(err))?;
+    if !Path::new(&log_dir).exists() {
+        create_dir_all(&log_dir).map_err(CliError::IoError)?;
     }
 
     // ensure we sync files before we launch servers
@@ -104,7 +104,6 @@ fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
             client_key: tls_config.client_key.clone(),
             client_cert: tls_config.client_cert.clone(),
             ca_cert: tls_config.ca_cert.clone(),
-            ..Default::default()
         }
     } else {
         TlsOpt::default()
@@ -141,10 +140,10 @@ async fn launch_spu(
 ) {
     use std::fs::File;
 
-    use flv_client::metadata::spu::SpuSpec;
-    use flv_client::metadata::spu::IngressPort;
-    use flv_client::metadata::spu::Endpoint;
-    use flv_client::metadata::spu::IngressAddr;
+    use fluvio::metadata::spu::SpuSpec;
+    use fluvio::metadata::spu::IngressPort;
+    use fluvio::metadata::spu::Endpoint;
+    use fluvio::metadata::spu::IngressAddr;
     use k8_obj_metadata::InputK8Obj;
     use k8_obj_metadata::InputObjectMeta;
     use k8_metadata_client::MetadataClient;

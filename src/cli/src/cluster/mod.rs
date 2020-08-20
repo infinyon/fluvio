@@ -15,6 +15,7 @@ pub use install::InstallCommand;
 use uninstall::UninstallCommand;
 use check::CheckCommand;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
 pub enum ClusterCommands {
@@ -88,11 +89,11 @@ mod k8_util {
                         println!("no sc {} found, can proceed to setup ", S::label());
                         return;
                     }
-                    _ => assert!(false, format!("error: {}", err)),
+                    _ => panic!("error: {}", err),
                 },
             };
         }
 
-        assert!(false, "waiting too many times, failing");
+        panic!("waiting too many times, failing")
     }
 }

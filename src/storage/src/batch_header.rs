@@ -122,7 +122,7 @@ mod tests {
             let header = batch.get_batch().get_header();
             assert_eq!(header.producer_id, 12);
         } else {
-            assert!(false, "batch not found");
+            panic!("batch not found")
         }
 
         Ok(())

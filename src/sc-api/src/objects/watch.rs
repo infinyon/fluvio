@@ -1,3 +1,5 @@
+#![allow(clippy::assign_op_pattern)]
+
 use std::fmt::Debug;
 
 use kf_protocol::derive::{Decode, Encode};

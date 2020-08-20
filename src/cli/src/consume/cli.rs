@@ -6,9 +6,9 @@
 
 use structopt::StructOpt;
 
-use flv_client::kf::api::Offset;
-use flv_client::ClusterConfig;
-use flv_client::params::MAX_FETCH_BYTES;
+use fluvio::kf::api::Offset;
+use fluvio::ClusterConfig;
+use fluvio::params::MAX_FETCH_BYTES;
 
 use crate::error::CliError;
 use crate::target::ClusterTarget;
@@ -73,7 +73,7 @@ impl ConsumeLogOpt {
             from_beginning: self.from_beginning,
             disable_continuous: self.disable_continuous,
             offset: self.offset,
-            max_bytes: max_bytes,
+            max_bytes,
             output: self.output,
             suppress_unknown: self.suppress_unknown,
         };

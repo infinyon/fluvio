@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 
-use flv_client::ClientError;
+use fluvio::ClientError;
 use crate::profile::CloudError;
 
 #[derive(Debug)]

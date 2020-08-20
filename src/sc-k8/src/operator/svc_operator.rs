@@ -72,9 +72,8 @@ impl SvcOperator {
             match event_r {
                 Ok(watch_event) => {
                     let result = self.process_event(watch_event).await;
-                    match result {
-                        Err(err) => error!("error processing k8 service event: {}", err),
-                        _ => {}
+                    if let Err(err) = result {
+                        error!("error processing k8 service event: {}", err)
                     }
                 }
                 Err(err) => error!("error in watch item: {}", err),
@@ -118,8 +117,7 @@ impl SvcOperator {
                 let spu = spu_wrapper.inner_owned();
                 let key = spu.key_owned();
                 let mut updated_spec = spu.spec;
-                updated_spec.public_endpoint.ingress =
-                    ingresses.into_iter().map(|addr| convert(addr)).collect();
+                updated_spec.public_endpoint.ingress = ingresses.into_iter().map(convert).collect();
                 self.spus.create_spec(key, updated_spec).await?;
             } else {
                 error!("no spu {} to update!!", spu_id);

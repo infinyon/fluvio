@@ -38,7 +38,7 @@ where
         trace!("inserting connection: {:#?}, returning", id);
         let mut ids = self.ids.write().expect("id lock must always lock");
         ids.insert(id.clone(), true);
-        self.clients.insert(id.clone(), socket);
+        self.clients.insert(id, socket);
     }
 
     /// get valid client.  return only client which is not stale
@@ -55,6 +55,15 @@ where
             trace!("no existing connection: {:#?}, returning", id);
             None
         }
+    }
+}
+
+impl<T> Default for SocketPool<T>
+where
+    T: Eq + PartialEq + Hash + Debug + Clone,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

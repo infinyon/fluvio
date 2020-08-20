@@ -7,6 +7,23 @@ on:
     branches: [master]
 
 jobs:
+  check_clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cancel Workflow Action
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: clippy
+          override: true
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
   check_fmt:
     name: check cargo fmt
     runs-on: ${{ matrix.os }}
@@ -62,7 +79,12 @@ jobs:
           kubectl get nodes
           kubectl config view
           helm version
-          sudo minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
+          minikube status
+      - name: Run minikube tunnel
+        run: |
+          minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
+          sleep 10
+          echo "tunnel status"
           cat /tmp/tunnel.out
       - name: Build
         run: |
@@ -87,7 +109,5 @@ jobs:
       - name: run smoke test run k8
         run: |
           export TARGET_CC=musl-gcc
-          sleep 5
-          cat /tmp/tunnel.out
-          # FLV_CMD=true make smoke-test-k8
+          FLV_CMD=true make smoke-test-k8
           

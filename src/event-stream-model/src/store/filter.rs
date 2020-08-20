@@ -10,7 +10,7 @@ impl KeyFilter<str> for str {
 
 impl KeyFilter<str> for Vec<String> {
     fn filter(&self, value: &str) -> bool {
-        if self.len() == 0 {
+        if self.is_empty() {
             return true;
         }
         self.iter().filter(|key| key.filter(value)).count() > 0

@@ -120,10 +120,7 @@ impl<S> ReplicaLeadersState<S> {
 
     #[allow(dead_code)]
     pub fn mailbox(&self, key: &ReplicaKey) -> Option<Sender<LeaderReplicaControllerCommand>> {
-        self.mailboxes
-            .read()
-            .get(key)
-            .map(|mailbox_guard| mailbox_guard.clone())
+        self.mailboxes.read().get(key).cloned()
     }
 }
 
