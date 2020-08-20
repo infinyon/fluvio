@@ -7,7 +7,7 @@ use std::io::Error as StdIoError;
 use futures::channel::mpsc::SendError;
 
 use kf_socket::KfSocketError;
-use flv_types::PartitionError;
+use fluvio_types::PartitionError;
 
 #[derive(Debug)]
 pub enum ScServerError {

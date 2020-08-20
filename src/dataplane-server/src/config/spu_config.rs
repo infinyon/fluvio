@@ -12,23 +12,23 @@ use std::env;
 use std::path::PathBuf;
 
 // defaults values
-use flv_types::defaults::SPU_PUBLIC_PORT;
-use flv_types::defaults::SPU_PRIVATE_PORT;
-use flv_types::defaults::SC_PRIVATE_PORT;
-use flv_types::defaults::SPU_LOG_BASE_DIR;
-use flv_types::defaults::SPU_LOG_SIZE;
-use flv_types::defaults::SPU_LOG_INDEX_MAX_BYTES;
-use flv_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
-use flv_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
-use flv_types::defaults::SPU_RETRY_SC_TIMEOUT_MS;
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
+use fluvio_types::defaults::SPU_PRIVATE_PORT;
+use fluvio_types::defaults::SC_PRIVATE_PORT;
+use fluvio_types::defaults::SPU_LOG_BASE_DIR;
+use fluvio_types::defaults::SPU_LOG_SIZE;
+use fluvio_types::defaults::SPU_LOG_INDEX_MAX_BYTES;
+use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
+use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
+use fluvio_types::defaults::SPU_RETRY_SC_TIMEOUT_MS;
 
 // environment variables
 
-use flv_types::defaults::SPU_MIN_IN_SYNC_REPLICAS;
-use flv_types::defaults::FLV_LOG_BASE_DIR;
-use flv_types::defaults::FLV_LOG_SIZE;
-use flv_types::SpuId;
-use flv_storage::ConfigOption;
+use fluvio_types::defaults::SPU_MIN_IN_SYNC_REPLICAS;
+use fluvio_types::defaults::FLV_LOG_BASE_DIR;
+use fluvio_types::defaults::FLV_LOG_SIZE;
+use fluvio_types::SpuId;
+use fluvio_storage::ConfigOption;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Replication {
@@ -111,7 +111,7 @@ impl Default for SpuConfig {
             replication: Replication::default(),
             sc_retry_ms: SPU_RETRY_SC_TIMEOUT_MS,
             log: Log::default(),
-            peer_max_bytes: flv_storage::FileReplica::PREFER_MAX_LEN,
+            peer_max_bytes: fluvio_storage::FileReplica::PREFER_MAX_LEN,
         }
     }
 }

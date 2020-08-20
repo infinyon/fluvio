@@ -8,8 +8,8 @@ use tracing::info;
 
 use kf_service::KfApiServer;
 use service_impl::PublicService;
-use spu_api::server::SpuServerRequest;
-use spu_api::server::SpuServerApiKey;
+use fluvio_dataplane_api::server::SpuServerRequest;
+use fluvio_dataplane_api::server::SpuServerApiKey;
 
 use crate::core::DefaultSharedGlobalContext;
 use kf_protocol::api::ReplicaKey;

@@ -5,11 +5,11 @@ use futures::FutureExt;
 
 use flv_future_core::test_async;
 use kf_socket::KfSocketError;
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::ReplicaKey;
 use kf_protocol::api::RequestMessage;
-use spu_api::offsets::FlvFetchOffsetsRequest;
-use spu_api::offsets::FetchOffsetTopic;
-use spu_api::offsets::FetchOffsetPartition;
+use fluvio_dataplane_api::offsets::FlvFetchOffsetsRequest;
+use fluvio_dataplane_api::offsets::FetchOffsetTopic;
+use fluvio_dataplane_api::offsets::FetchOffsetPartition;
 use kf_protocol::api::FlvErrorCode;
 
 use crate::tests::fixture::TestGenerator;

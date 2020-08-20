@@ -10,7 +10,7 @@ use futures::future::FutureExt;
 use error::ServerError;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 use utils::actions::Actions;
 
 

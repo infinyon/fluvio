@@ -1,8 +1,8 @@
 use kf_protocol::api::Request;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use flv_metadata_cluster::spu::SpuSpec;
-use flv_metadata_cluster::message::SpuMsg;
+use fluvio_metadata::spu::SpuSpec;
+use fluvio_metadata::message::SpuMsg;
 
 use crate::InternalSpuApi;
 

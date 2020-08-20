@@ -1,9 +1,9 @@
 use tracing::{trace, debug};
 use std::io::Error;
 
-use flv_metadata_cluster::store::KeyFilter;
-use sc_api::objects::*;
-use sc_api::topic::TopicSpec;
+use fluvio_metadata::store::KeyFilter;
+use fluvio_controlplane_api::objects::*;
+use fluvio_controlplane_api::topic::TopicSpec;
 
 use crate::core::Context;
 

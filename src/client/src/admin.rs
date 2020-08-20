@@ -3,8 +3,8 @@ use std::fmt::Display;
 
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;
-use flv_api_sc::objects::*;
-use flv_api_sc::AdminRequest;
+use fluvio_controlplane_api::objects::*;
+use fluvio_controlplane_api::AdminRequest;
 use kf_socket::*;
 
 use crate::client::*;

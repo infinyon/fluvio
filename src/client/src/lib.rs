@@ -18,31 +18,31 @@ pub use consumer::Consumer;
 pub mod metadata {
 
     pub mod topic {
-        pub use flv_api_sc::topic::*;
+        pub use fluvio_controlplane_api::topic::*;
     }
 
     pub mod spu {
-        pub use flv_api_sc::spu::*;
+        pub use fluvio_controlplane_api::spu::*;
     }
 
     pub mod spg {
-        pub use flv_api_sc::spg::*;
+        pub use fluvio_controlplane_api::spg::*;
     }
 
     pub mod partition {
-        pub use flv_api_sc::partition::*;
+        pub use fluvio_controlplane_api::partition::*;
     }
 
     pub mod objects {
-        pub use flv_api_sc::objects::*;
+        pub use fluvio_controlplane_api::objects::*;
     }
 
     pub mod core {
-        pub use flv_api_sc::core::*;
+        pub use fluvio_controlplane_api::core::*;
     }
 
     pub mod store {
-        pub use flv_api_sc::store::*;
+        pub use fluvio_controlplane_api::store::*;
     }
 }
 

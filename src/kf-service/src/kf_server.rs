@@ -30,7 +30,7 @@ use kf_socket::InnerKfSocket;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
-use flv_types::print_cli_err;
+use fluvio_types::print_cli_err;
 
 #[async_trait]
 pub trait SocketBuilder: Clone {

@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 
 use tracing::{debug, trace};
 
-use flv_metadata_cluster::k8::metadata::*;
-use flv_metadata_cluster::k8::core::config_map::ConfigMapSpec;
+use fluvio_metadata::k8::metadata::*;
+use fluvio_metadata::k8::core::config_map::ConfigMapSpec;
 use k8_client::metadata::MetadataClient;
 use k8_client::SharedK8Client;
 

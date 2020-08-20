@@ -11,9 +11,9 @@ use tracing::warn;
 use tracing::trace;
 use tracing::error;
 
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::ReplicaKey;
 use kf_protocol::api::RecordSet;
-use flv_storage::FileReplica;
+use fluvio_storage::FileReplica;
 use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;

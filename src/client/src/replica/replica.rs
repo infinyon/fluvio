@@ -1,4 +1,4 @@
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 #[derive(Debug)]
 pub struct ReplicaLeaderConfig {

@@ -8,11 +8,11 @@ use futures::channel::mpsc::Sender;
 
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
-use flv_types::SpuId;
-use flv_metadata_cluster::topic::TopicSpec;
-use flv_metadata_cluster::topic::TopicStatus;
-use flv_metadata_cluster::topic::TopicResolution;
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_types::SpuId;
+use fluvio_metadata::topic::TopicSpec;
+use fluvio_metadata::topic::TopicStatus;
+use fluvio_metadata::topic::TopicResolution;
+use fluvio_metadata::partition::ReplicaKey;
 use utils::SimpleConcurrentHashMap;
 
 use crate::core::common::test_fixtures::create_spu;

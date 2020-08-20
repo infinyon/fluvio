@@ -1,7 +1,7 @@
 use tracing::trace;
 use std::io::Error;
 
-use flv_types::Name;
+use fluvio_types::Name;
 
 use kf_protocol::message::metadata::{KfMetadataRequest, KfMetadataResponse};
 use kf_protocol::message::metadata::MetadataResponseTopic;

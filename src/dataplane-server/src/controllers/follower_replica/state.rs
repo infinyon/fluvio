@@ -14,13 +14,13 @@ use chashmap::CHashMap;
 use chashmap::ReadGuard;
 use chashmap::WriteGuard;
 
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::ReplicaKey;
 use kf_protocol::api::RecordSet;
-use flv_storage::FileReplica;
-use flv_storage::ConfigOption;
-use flv_storage::StorageError;
-use flv_storage::ReplicaStorage;
-use flv_types::SpuId;
+use fluvio_storage::FileReplica;
+use fluvio_storage::ConfigOption;
+use fluvio_storage::StorageError;
+use fluvio_storage::ReplicaStorage;
+use fluvio_types::SpuId;
 use flv_util::SimpleConcurrentBTreeMap;
 
 use crate::core::storage::create_replica_storage;

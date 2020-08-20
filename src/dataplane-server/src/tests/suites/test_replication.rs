@@ -8,8 +8,8 @@ use futures::FutureExt;
 use flv_future_core::test_async;
 use flv_future_core::sleep;
 use kf_socket::KfSocketError;
-use flv_metadata_cluster::partition::ReplicaKey;
-use flv_storage::ReplicaStorage;
+use fluvio_metadata::partition::ReplicaKey;
+use fluvio_storage::ReplicaStorage;
 
 use crate::tests::fixture::TestGenerator;
 use crate::tests::fixture::SpuTest;

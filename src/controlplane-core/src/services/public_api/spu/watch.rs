@@ -2,10 +2,10 @@ use std::io::Error;
 
 use tracing::{trace, debug};
 
-use sc_api::objects::*;
-use sc_api::spu::SpuSpec;
-use sc_api::objects::*;
-use flv_metadata_cluster::store::*;
+use fluvio_controlplane_api::objects::*;
+use fluvio_controlplane_api::spu::SpuSpec;
+use fluvio_controlplane_api::objects::*;
+use fluvio_metadata::store::*;
 use flv_future_aio::task::spawn;
 use kf_socket::*;
 

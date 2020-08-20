@@ -11,5 +11,5 @@ pub mod stores;
 pub use init::start_main_loop;
 
 pub mod dispatcher {
-    pub use flv_eventstream_dispatcher::*;
+    pub use fluvio_eventstream_dispatcher::*;
 }

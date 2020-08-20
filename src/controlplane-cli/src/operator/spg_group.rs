@@ -1,9 +1,9 @@
 use async_trait::async_trait;
-use flv_metadata_cluster::k8::metadata::K8Obj;
-use flv_metadata_cluster::spg::K8SpuGroupSpec;
-use flv_types::SpuId;
+use fluvio_metadata::k8::metadata::K8Obj;
+use fluvio_metadata::spg::K8SpuGroupSpec;
+use fluvio_types::SpuId;
 
-use flv_sc_core::stores::spu::*;
+use fluvio_controlplane::stores::spu::*;
 
 pub type SpuGroupObj = K8Obj<K8SpuGroupSpec>;
 

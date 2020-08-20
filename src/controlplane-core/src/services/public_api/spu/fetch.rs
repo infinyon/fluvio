@@ -2,10 +2,10 @@ use std::io::Error;
 
 use tracing::{trace, debug};
 
-use sc_api::objects::*;
-use sc_api::spu::SpuSpec;
-use sc_api::spu::CustomSpuSpec;
-use flv_metadata_cluster::store::*;
+use fluvio_controlplane_api::objects::*;
+use fluvio_controlplane_api::spu::SpuSpec;
+use fluvio_controlplane_api::spu::CustomSpuSpec;
+use fluvio_metadata::store::*;
 use crate::core::Context;
 
 pub async fn handle_fetch_custom_spu_request(

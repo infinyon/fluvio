@@ -3,7 +3,7 @@ mod conversion;
 mod spg_group;
 mod svc_operator;
 
-use flv_sc_core::core::SharedContext;
+use fluvio_controlplane::core::SharedContext;
 use k8_client::SharedK8Client;
 
 use spg_operator::SpgOperator;

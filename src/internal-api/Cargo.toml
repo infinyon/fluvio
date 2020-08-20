@@ -5,7 +5,7 @@ authors = ["fluvio.io"]
 edition = "2018"
 
 [lib]
-name = "flvuio_internal_api"
+name = "fluvio_internal_api"
 path = "src/lib.rs"
 
 [dependencies]

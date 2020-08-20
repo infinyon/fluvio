@@ -8,8 +8,8 @@ use crate::kf::api::ReplicaKey;
 use crate::kf::api::RecordSet;
 use crate::kf::api::PartitionOffset;
 use crate::kf::message::fetch::FetchablePartitionResponse;
-use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
-use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
+use fluvio_dataplane_api::server::fetch_offset::{FlvFetchOffsetsRequest};
+use fluvio_dataplane_api::server::fetch_offset::FetchOffsetPartitionResponse;
 
 use crate::ClientError;
 use crate::params::FetchOffset;

@@ -7,10 +7,10 @@ mod error;
 pub use error::StoreError;
 
 pub mod core {
-    pub use flv_eventstream_model::core::*;
+    pub use fluvio_eventstream_model::core::*;
 }
 
 pub mod k8 {
 
-    pub use flv_eventstream_model::k8::*;
+    pub use fluvio_eventstream_model::k8::*;
 }

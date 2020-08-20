@@ -1,8 +1,8 @@
 use std::fmt;
 
 use futures::channel::mpsc::SendError;
-use flv_types::PartitionError;
-use flv_storage::StorageError;
+use fluvio_types::PartitionError;
+use fluvio_storage::StorageError;
 use kf_socket::KfSocketError;
 
 #[derive(Debug)]

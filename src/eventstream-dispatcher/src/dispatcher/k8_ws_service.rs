@@ -10,7 +10,7 @@ use tracing::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use flv_types::log_on_err;
+use fluvio_types::log_on_err;
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 

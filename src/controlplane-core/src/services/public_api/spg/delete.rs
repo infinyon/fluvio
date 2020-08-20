@@ -3,7 +3,7 @@ use tracing::trace;
 
 use std::io::Error;
 
-use sc_api::FlvStatus;
+use fluvio_controlplane_api::FlvStatus;
 
 use crate::core::*;
 

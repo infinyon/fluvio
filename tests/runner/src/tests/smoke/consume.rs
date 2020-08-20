@@ -3,7 +3,7 @@
 use std::io;
 use std::io::Write;
 
-use utils::bin::get_fluvio;
+use fluvio_utils::bin::get_fluvio;
 
 use crate::cli::TestOption;
 use crate::util::CommandUtil;

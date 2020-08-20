@@ -6,7 +6,7 @@ use futures::io::AsyncWrite;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::ReplicaKey;
 use kf_protocol::fs::FileFetchResponse;
 use kf_protocol::fs::KfFileFetchRequest;
 use kf_protocol::fs::FilePartitionResponse;

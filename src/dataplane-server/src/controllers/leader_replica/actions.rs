@@ -1,8 +1,8 @@
 use std::fmt;
 
-use flv_metadata_cluster::partition::Replica;
+use fluvio_metadata::partition::Replica;
 use kf_protocol::api::Offset;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 #[derive(Debug)]
 pub enum LeaderReplicaControllerCommand {

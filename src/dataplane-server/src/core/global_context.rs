@@ -8,8 +8,8 @@ use std::fmt::Debug;
 
 use kf_socket::SharedSinkPool;
 use kf_socket::SinkPool;
-use flv_types::SpuId;
-use flv_storage::ReplicaStorage;
+use fluvio_types::SpuId;
+use fluvio_storage::ReplicaStorage;
 use flv_future_aio::sync::broadcast::Channel;
 
 use crate::config::SpuConfig;

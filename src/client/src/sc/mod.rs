@@ -3,7 +3,7 @@ mod controller {
     use futures::select;
     use futures::channel::mpsc::Sender;
 
-    use sc_api::client::*;
+    use fluvio_controlplane_api::client::*;
     use kf_socket::*;
     use flv_future_aio::task::spawn;
 

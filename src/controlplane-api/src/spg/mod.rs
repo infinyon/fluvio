@@ -1,4 +1,4 @@
-pub use flv_metadata_cluster::spg::*;
+pub use fluvio_metadata::spg::*;
 
 mod convert {
 

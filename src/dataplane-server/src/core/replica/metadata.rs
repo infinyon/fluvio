@@ -1,5 +1,5 @@
-use flv_metadata_cluster::partition::Replica;
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::Replica;
+use fluvio_metadata::partition::ReplicaKey;
 
 use crate::core::Spec;
 use crate::core::LocalStore;

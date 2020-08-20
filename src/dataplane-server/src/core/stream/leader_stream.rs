@@ -13,15 +13,15 @@ use futures::future::TryFutureExt;
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
 
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use internal_api::InternalApiResponse;
-use internal_api::InternalApiRequest;
-use internal_api::InternalKafkaApiEnum;
-use internal_api::FetchAckResponse;
+use fluvio_internal_api::InternalApiResponse;
+use fluvio_internal_api::InternalApiRequest;
+use fluvio_internal_api::InternalKafkaApiEnum;
+use fluvio_internal_api::FetchAckResponse;
 use flv_future_core::spawn;
 
 use crate::KfTcpStreamSplit;

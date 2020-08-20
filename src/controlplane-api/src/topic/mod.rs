@@ -1,4 +1,4 @@
-pub use flv_metadata_cluster::topic::*;
+pub use fluvio_metadata::topic::*;
 
 mod convert {
 

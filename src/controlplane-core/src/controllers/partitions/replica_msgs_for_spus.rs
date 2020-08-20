@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use kf_protocol::api::RequestMessage;
 
-use internal_api::messages::{ReplicaMsg, ReplicaMsgs};
-use internal_api::UpdateReplicaRequest;
+use fluvio_internal_api::messages::{ReplicaMsg, ReplicaMsgs};
+use fluvio_internal_api::UpdateReplicaRequest;
 
 use error::ServerError;
 use tracing::{debug, error, trace};

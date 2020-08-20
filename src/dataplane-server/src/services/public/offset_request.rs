@@ -4,13 +4,13 @@ use tracing::trace;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use spu_api::server::fetch_offset::FlvFetchOffsetsRequest;
-use spu_api::server::fetch_offset::FetchOffsetTopicResponse;
-use spu_api::server::fetch_offset::FlvFetchOffsetsResponse;
-use spu_api::server::fetch_offset::FetchOffsetPartitionResponse;
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_dataplane_api::server::fetch_offset::FlvFetchOffsetsRequest;
+use fluvio_dataplane_api::server::fetch_offset::FetchOffsetTopicResponse;
+use fluvio_dataplane_api::server::fetch_offset::FlvFetchOffsetsResponse;
+use fluvio_dataplane_api::server::fetch_offset::FetchOffsetPartitionResponse;
+use fluvio_metadata::partition::ReplicaKey;
 use kf_protocol::api::FlvErrorCode;
-use flv_storage::ReplicaStorage;
+use fluvio_storage::ReplicaStorage;
 
 use crate::core::DefaultSharedGlobalContext;
 

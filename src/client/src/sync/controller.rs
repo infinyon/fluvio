@@ -10,11 +10,11 @@ use tracing::error;
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;
 use kf_socket::AsyncResponse;
-use flv_api_sc::objects::WatchRequest;
-use flv_api_sc::objects::WatchResponse;
-use flv_api_sc::objects::MetadataUpdate;
-use flv_api_sc::objects::Metadata;
-use flv_api_sc::store::MetadataStoreObject;
+use fluvio_controlplane_api::objects::WatchRequest;
+use fluvio_controlplane_api::objects::WatchResponse;
+use fluvio_controlplane_api::objects::MetadataUpdate;
+use fluvio_controlplane_api::objects::Metadata;
+use fluvio_controlplane_api::store::MetadataStoreObject;
 
 use crate::metadata::core::Spec;
 

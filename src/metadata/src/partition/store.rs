@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tracing::debug;
 use async_trait::async_trait;
 
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 use crate::store::*;
 use crate::core::*;

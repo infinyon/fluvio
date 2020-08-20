@@ -6,7 +6,7 @@ use std::fmt;
 use std::io::Error as StdIoError;
 use futures::channel::mpsc::SendError;
 
-use flv_types::PartitionError;
+use fluvio_types::PartitionError;
 
 #[derive(Debug)]
 pub enum StoreError {

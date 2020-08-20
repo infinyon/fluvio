@@ -6,11 +6,11 @@ use kf_protocol::api::ResponseMessage;
 use kf_protocol::api::Request;
 use kf_protocol::message::produce::DefaultKfProduceRequest;
 use kf_protocol::message::fetch::DefaultKfFetchRequest;
-use spu_api::server::SpuServerApiKey;
-use spu_api::server::versions::ApiVersionKey;
-use spu_api::server::versions::ApiVersionsRequest;
-use spu_api::server::versions::ApiVersionsResponse;
-use spu_api::server::fetch_offset::FlvFetchOffsetsRequest;
+use fluvio_dataplane_api::server::SpuServerApiKey;
+use fluvio_dataplane_api::server::versions::ApiVersionKey;
+use fluvio_dataplane_api::server::versions::ApiVersionsRequest;
+use fluvio_dataplane_api::server::versions::ApiVersionsResponse;
+use fluvio_dataplane_api::server::fetch_offset::FlvFetchOffsetsRequest;
 
 pub async fn handle_kf_lookup_version_request(
     request: RequestMessage<ApiVersionsRequest>,

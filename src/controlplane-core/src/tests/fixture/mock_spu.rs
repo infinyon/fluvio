@@ -12,17 +12,17 @@ use futures::future::FutureExt;
 
 use futures::channel::mpsc::Receiver;
 
-use internal_api::InternalSpuApi;
-use internal_api::InternalSpuRequest;
-use internal_api::RegisterSpuRequest;
-use internal_api::UpdateSpuRequest;
-use internal_api::UpdateReplicaRequest;
-use internal_api::messages::SpuContent;
+use fluvio_internal_api::InternalSpuApi;
+use fluvio_internal_api::InternalSpuRequest;
+use fluvio_internal_api::RegisterSpuRequest;
+use fluvio_internal_api::UpdateSpuRequest;
+use fluvio_internal_api::UpdateReplicaRequest;
+use fluvio_internal_api::messages::SpuContent;
 use kf_protocol::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
-use flv_types::socket_helpers::EndPoint;
-use flv_types::SpuId;
+use fluvio_types::socket_helpers::EndPoint;
+use fluvio_types::SpuId;
 use utils::SimpleConcurrentHashMap;
 
 use flv_future_core::spawn;

@@ -3,7 +3,7 @@ use std::io::Error as IoError;
 
 use kf_protocol::api::ReplicaKey;
 use kf_socket::KfSocketError;
-use flv_api_sc::ApiError;
+use fluvio_controlplane_api::ApiError;
 
 #[derive(Debug)]
 pub enum ClientError {

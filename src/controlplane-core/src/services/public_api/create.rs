@@ -1,8 +1,8 @@
 use std::io::Error as IoError;
 
 use kf_protocol::api::*;
-use sc_api::FlvStatus;
-use sc_api::objects::*;
+use fluvio_controlplane_api::FlvStatus;
+use fluvio_controlplane_api::objects::*;
 
 use crate::core::*;
 

@@ -18,7 +18,7 @@ use std::sync::Arc;
 use futures::Future;
 
 use kf_socket::KfSocketError;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 /// Customize System Test
 pub trait ScTest: Sized {

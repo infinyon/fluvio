@@ -12,8 +12,8 @@ use tracing::debug;
 use tracing::info;
 use structopt::StructOpt;
 
-use flv_types::print_cli_err;
-use flv_types::SpuId;
+use fluvio_types::print_cli_err;
+use fluvio_types::SpuId;
 use flv_future_aio::net::tls::TlsAcceptor;
 use flv_future_aio::net::tls::AcceptorBuilder;
 
@@ -187,7 +187,7 @@ impl SpuOpt {
 /// find spu id from env, if not found, return error
 fn find_spu_id_from_env() -> Result<SpuId, IoError> {
     use std::env;
-    use flv_types::defaults::FLV_SPU_ID;
+    use fluvio_types::defaults::FLV_SPU_ID;
 
     if let Ok(id_str) = env::var(FLV_SPU_ID) {
         debug!("found spu id from env: {}", id_str);

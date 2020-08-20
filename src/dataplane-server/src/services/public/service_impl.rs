@@ -16,8 +16,8 @@ use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
 use kf_service::call_service;
 use kf_service::KfService;
-use spu_api::server::SpuServerApiKey;
-use spu_api::server::SpuServerRequest;
+use fluvio_dataplane_api::server::SpuServerApiKey;
+use fluvio_dataplane_api::server::SpuServerRequest;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
@@ -69,8 +69,8 @@ where
                             trace!("conn: {}, offset event from leader {:#?}", sink.id(),offset_event);
                             if offset_replica_list.contains(&offset_event.replica_id) {
 
-                                use spu_api::client::offset::ReplicaOffsetUpdateRequest;
-                                use spu_api::client::offset::ReplicaOffsetUpdate;
+                                use fluvio_dataplane_api::client::offset::ReplicaOffsetUpdateRequest;
+                                use fluvio_dataplane_api::client::offset::ReplicaOffsetUpdate;
                                 use kf_protocol::api::FlvErrorCode;
 
                                 debug!("conn: {}, sending replica: {} hw: {}, leo: {}",sink.id(),

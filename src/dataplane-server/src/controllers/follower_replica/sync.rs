@@ -18,7 +18,7 @@ use kf_protocol::api::ErrorCode;
 use kf_protocol::fs::KfFileRecordSet;
 use kf_protocol::fs::StoreValue;
 use kf_protocol::fs::FileWrite;
-use flv_storage::SlicePartitionResponse;
+use fluvio_storage::SlicePartitionResponse;
 use flv_future_aio::fs::AsyncFileSlice;
 
 use super::KfFollowerPeerApiEnum;

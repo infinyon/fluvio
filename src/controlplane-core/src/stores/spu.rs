@@ -1,6 +1,6 @@
-pub use flv_metadata_cluster::spu::store::*;
-pub use flv_metadata_cluster::spu::*;
-pub use flv_metadata_cluster::store::k8::K8MetaItem;
+pub use fluvio_metadata::spu::store::*;
+pub use fluvio_metadata::spu::*;
+pub use fluvio_metadata::store::k8::K8MetaItem;
 
 pub type SpuAdminMd = SpuMetadata<K8MetaItem>;
 pub type SpuAdminStore = SpuLocalStore<K8MetaItem>;

@@ -1,4 +1,4 @@
-use flv_metadata_cluster::message::*;
+use fluvio_metadata::message::*;
 
 // Test Actions - helps generate composite actions
 pub enum TAction {

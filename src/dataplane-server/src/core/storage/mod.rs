@@ -1,8 +1,8 @@
-use flv_storage::ConfigOption;
-use flv_storage::FileReplica;
-use flv_storage::StorageError;
-use flv_metadata_cluster::partition::ReplicaKey;
-use flv_types::SpuId;
+use fluvio_storage::ConfigOption;
+use fluvio_storage::FileReplica;
+use fluvio_storage::StorageError;
+use fluvio_metadata::partition::ReplicaKey;
+use fluvio_types::SpuId;
 
 fn default_config(spu_id: SpuId, config: &ConfigOption) -> ConfigOption {
     let base_dir = config.base_dir.join(format!("spu-logs-{}", spu_id));

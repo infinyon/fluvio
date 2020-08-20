@@ -1,7 +1,7 @@
 use std::fmt;
 
 use kf_protocol::derive::{Decode, Encode};
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 use crate::partition::ReplicaKey;
 use crate::core::*;
 use crate::store::MetadataStoreObject;

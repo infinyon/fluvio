@@ -1,5 +1,5 @@
 use flv_future_aio::task::main;
-use flv_storage::FileReplica;
+use fluvio_storage::FileReplica;
 
 use crate::config::{SpuConfig, SpuOpt};
 use crate::services::create_internal_server;

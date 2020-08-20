@@ -3,7 +3,7 @@
 //!
 //!
 
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 /// action for SPU controller to take
 #[derive(Debug, PartialEq, Clone)]

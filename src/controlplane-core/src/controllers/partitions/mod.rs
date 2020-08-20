@@ -6,7 +6,7 @@ pub use common::*;
 
 mod common {
 
-    use flv_metadata_cluster::partition::PartitionSpec;
+    use fluvio_metadata::partition::PartitionSpec;
     use crate::stores::actions::WSAction;
 
     pub type PartitionWSAction = WSAction<PartitionSpec>;

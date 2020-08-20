@@ -1,22 +1,22 @@
 /// convert spu group spec to statefulset for input
 use std::collections::HashMap;
 
-use flv_metadata_cluster::k8::metadata::*;
-use flv_metadata_cluster::k8::core::pod::ContainerSpec;
-use flv_metadata_cluster::k8::core::pod::ContainerPortSpec;
-use flv_metadata_cluster::k8::core::pod::PodSpec;
-use flv_metadata_cluster::k8::core::pod::VolumeMount;
-use flv_metadata_cluster::k8::core::pod::VolumeSpec;
-use flv_metadata_cluster::k8::core::pod::SecretVolumeSpec;
-use flv_metadata_cluster::k8::core::service::*;
-use flv_metadata_cluster::k8::app::stateful::*;
-use flv_metadata_cluster::spg::K8SpuGroupSpec;
+use fluvio_metadata::k8::metadata::*;
+use fluvio_metadata::k8::core::pod::ContainerSpec;
+use fluvio_metadata::k8::core::pod::ContainerPortSpec;
+use fluvio_metadata::k8::core::pod::PodSpec;
+use fluvio_metadata::k8::core::pod::VolumeMount;
+use fluvio_metadata::k8::core::pod::VolumeSpec;
+use fluvio_metadata::k8::core::pod::SecretVolumeSpec;
+use fluvio_metadata::k8::core::service::*;
+use fluvio_metadata::k8::app::stateful::*;
+use fluvio_metadata::spg::K8SpuGroupSpec;
 
-use flv_types::defaults::SPU_DEFAULT_NAME;
-use flv_types::defaults::SPU_PUBLIC_PORT;
-use flv_types::defaults::SPU_PRIVATE_PORT;
-use flv_types::defaults::SC_PRIVATE_PORT;
-use flv_types::defaults::PRODUCT_NAME;
+use fluvio_types::defaults::SPU_DEFAULT_NAME;
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
+use fluvio_types::defaults::SPU_PRIVATE_PORT;
+use fluvio_types::defaults::SC_PRIVATE_PORT;
+use fluvio_types::defaults::PRODUCT_NAME;
 
 use crate::cli::TlsConfig;
 

@@ -9,8 +9,8 @@ use kf_protocol::api::RecordSet;
 use kf_protocol::api::PartitionOffset;
 use kf_protocol::api::ReplicaKey;
 use kf_protocol::message::fetch::FetchablePartitionResponse;
-use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
-use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
+use fluvio_dataplane_api::server::fetch_offset::{FlvFetchOffsetsRequest};
+use fluvio_dataplane_api::server::fetch_offset::FetchOffsetPartitionResponse;
 
 use crate::ClientError;
 use crate::client::*;

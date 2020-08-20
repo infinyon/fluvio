@@ -14,9 +14,9 @@ pub use self::spus::SpuLocalStore;
 pub use self::replica::SharedReplicaLocalStore;
 
 use std::sync::Arc;
-use ::flv_storage::FileReplica;
+use ::fluvio_storage::FileReplica;
 use kf_socket::SinkPool;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 use crate::config::SpuConfig;
 
 pub type SharedGlobalContext<S> = Arc<GlobalContext<S>>;
@@ -29,7 +29,7 @@ pub use event::OffsetUpdateEvent;
 mod event {
 
     use kf_protocol::api::Offset;
-    use flv_metadata_cluster::partition::ReplicaKey;
+    use fluvio_metadata::partition::ReplicaKey;
 
     /// used for communicating change in offset for any replica
     #[derive(Debug, Clone)]

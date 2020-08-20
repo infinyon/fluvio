@@ -7,7 +7,7 @@
 use structopt::StructOpt;
 
 use fluvio::ClusterConfig;
-use flv_metadata_cluster::spu::SpuSpec;
+use fluvio_metadata::spu::SpuSpec;
 
 use crate::error::CliError;
 use crate::OutputType;

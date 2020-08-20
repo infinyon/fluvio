@@ -10,16 +10,16 @@ use kf_protocol::api::RecordSet;
 use kf_protocol::api::Offset;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Isolation;
-use flv_metadata_cluster::partition::ReplicaKey;
-use flv_metadata_cluster::partition::Replica;
-use internal_api::UpdateLrsRequest;
-use flv_storage::FileReplica;
-use flv_storage::ConfigOption;
-use flv_storage::StorageError;
-use flv_types::SpuId;
-use flv_types::log_on_err;
-use flv_storage::SlicePartitionResponse;
-use flv_storage::ReplicaStorage;
+use fluvio_metadata::partition::ReplicaKey;
+use fluvio_metadata::partition::Replica;
+use fluvio_internal_api::UpdateLrsRequest;
+use fluvio_storage::FileReplica;
+use fluvio_storage::ConfigOption;
+use fluvio_storage::StorageError;
+use fluvio_types::SpuId;
+use fluvio_types::log_on_err;
+use fluvio_storage::SlicePartitionResponse;
+use fluvio_storage::ReplicaStorage;
 use kf_socket::ExclusiveKfSink;
 
 use crate::core::storage::create_replica_storage;
@@ -401,7 +401,7 @@ impl LeaderReplicaState<FileReplica> {
 #[cfg(test)]
 mod test {
 
-    use flv_storage::ReplicaStorage;
+    use fluvio_storage::ReplicaStorage;
     use kf_protocol::api::Offset;
 
     use super::LeaderReplicaState;

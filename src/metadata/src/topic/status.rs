@@ -8,7 +8,7 @@ use std::fmt;
 
 use kf_protocol::derive::{Decode, Encode};
 
-use flv_types::{ReplicaMap, SpuId};
+use fluvio_types::{ReplicaMap, SpuId};
 
 // -----------------------------------
 // Data Structures

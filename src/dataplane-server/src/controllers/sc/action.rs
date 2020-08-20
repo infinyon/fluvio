@@ -1,4 +1,4 @@
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::ReplicaKey;
 
 #[derive(Debug)]
 pub enum SupervisorCommand {

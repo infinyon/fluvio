@@ -8,8 +8,8 @@ use tracing::trace;
 use std::io::Error;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
-use sc_api::FlvStatus;
-use sc_api::objects::*;
+use fluvio_controlplane_api::FlvStatus;
+use fluvio_controlplane_api::objects::*;
 
 use crate::core::*;
 

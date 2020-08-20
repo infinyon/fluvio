@@ -2,7 +2,7 @@ use std::io::Error;
 use tracing::debug;
 
 use kf_protocol::api::{RequestMessage, ResponseMessage};
-use sc_api::objects::*;
+use fluvio_controlplane_api::objects::*;
 
 use crate::core::*;
 

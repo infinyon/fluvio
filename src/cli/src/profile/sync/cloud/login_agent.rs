@@ -5,7 +5,7 @@ use std::path::{PathBuf, Path};
 
 use tracing::{warn, error, debug, trace, instrument};
 use serde::{Deserialize, Serialize};
-use flv_types::defaults::CLI_CONFIG_PATH;
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 use surf::http_types::StatusCode;
 use surf::Error as SurfError;
 use serde_json::Error as JsonError;

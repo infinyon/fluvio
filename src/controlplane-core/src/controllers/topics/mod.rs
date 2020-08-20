@@ -10,7 +10,7 @@ pub use common::*;
 
 mod common {
 
-    use ::flv_metadata_cluster::topic::TopicSpec;
+    use ::fluvio_metadata::topic::TopicSpec;
     use crate::stores::actions::WSAction;
 
     pub type TopicWSAction = WSAction<TopicSpec>;

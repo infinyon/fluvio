@@ -8,8 +8,8 @@ use std::io::Error as StdIoError;
 use futures::channel::mpsc::SendError;
 
 use k8_client::ClientError;
-use flv_types::PartitionError;
-use flv_types::SpuId;
+use fluvio_types::PartitionError;
+use fluvio_types::SpuId;
 
 #[derive(Debug)]
 pub enum ScK8Error {

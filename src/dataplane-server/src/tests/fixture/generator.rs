@@ -5,11 +5,11 @@ use std::env::temp_dir;
 use std::convert::TryInto;
 use std::sync::Arc;
 
-use flv_metadata_cluster::spu::Endpoint as MetadatEndPoint;
+use fluvio_metadata::spu::Endpoint as MetadatEndPoint;
 
-use flv_metadata_cluster::spu::SpuSpec;
+use fluvio_metadata::spu::SpuSpec;
 use utils::fixture::ensure_clean_dir;
-use flv_types::socket_helpers::EndPoint;
+use fluvio_types::socket_helpers::EndPoint;
 
 use crate::core::LocalSpu;
 use crate::config::SpuConfig;

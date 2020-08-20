@@ -8,7 +8,7 @@
 use flv_future_aio::task::main;
 
 use k8_client::new_shared;
-use flv_sc_core::start_main_loop;
+use fluvio_controlplane::start_main_loop;
 use crate::{ScOpt, operator::run_k8_operators};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -49,9 +49,9 @@ mod proxy {
 
     use tracing::info;
 
-    use flv_types::print_cli_err;
+    use fluvio_types::print_cli_err;
     use flv_future_aio::net::tls::TlsAcceptor;
-    use flv_sc_core::config::ScConfig;
+    use fluvio_controlplane::config::ScConfig;
     use flv_tls_proxy::start as proxy_start;
 
     pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {

@@ -10,15 +10,15 @@ use async_trait::async_trait;
 use async_channel::Sender;
 use futures::Stream;
 
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 use flv_future_aio::net::TcpStream;
 use kf_protocol::api::*;
-use flv_metadata_cluster::store::Epoch;
-use flv_metadata_cluster::spu::store::SpuLocalStorePolicy;
+use fluvio_metadata::store::Epoch;
+use fluvio_metadata::spu::store::SpuLocalStorePolicy;
 use kf_service::KfService;
 use kf_service::wait_for_request;
 use kf_socket::*;
-use internal_api::*;
+use fluvio_internal_api::*;
 
 use crate::core::*;
 use crate::stores::partition::*;
@@ -237,7 +237,7 @@ async fn send_spu_change(
     sink: &mut KfSink,
     spu_id: SpuId,
 ) -> Result<Epoch, KfSocketError> {
-    use flv_metadata_cluster::message::*;
+    use fluvio_metadata::message::*;
 
     let read_guard = ctx.spus().store().read().await;
     let changes = read_guard.changes_since(epoch);
@@ -280,7 +280,7 @@ async fn send_replica_change(
     sink: &mut KfSink,
     spu_id: SpuId,
 ) -> Result<Epoch, KfSocketError> {
-    use flv_metadata_cluster::message::*;
+    use fluvio_metadata::message::*;
 
     let read_guard = ctx.partitions().store().read().await;
     let changes = read_guard.changes_since(epoch);

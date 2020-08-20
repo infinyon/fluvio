@@ -5,13 +5,13 @@ use kf_protocol::Encoder;
 use kf_protocol::Decoder;
 use kf_protocol::api::Request;
 
-use flv_metadata_cluster::core::*;
-use flv_metadata_cluster::topic::TopicSpec;
-use flv_metadata_cluster::spu::*;
-use flv_metadata_cluster::spg::SpuGroupSpec;
-use flv_metadata_cluster::partition::PartitionSpec;
-use flv_metadata_cluster::store::Epoch;
-use flv_metadata_cluster::message::Message;
+use fluvio_metadata::core::*;
+use fluvio_metadata::topic::TopicSpec;
+use fluvio_metadata::spu::*;
+use fluvio_metadata::spg::SpuGroupSpec;
+use fluvio_metadata::partition::PartitionSpec;
+use fluvio_metadata::store::Epoch;
+use fluvio_metadata::message::Message;
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;

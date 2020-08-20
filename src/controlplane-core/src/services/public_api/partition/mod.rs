@@ -2,8 +2,8 @@ use std::io::Error;
 
 use tracing::{trace, debug};
 
-use sc_api::objects::*;
-use sc_api::partition::*;
+use fluvio_controlplane_api::objects::*;
+use fluvio_controlplane_api::partition::*;
 use crate::core::Context;
 
 pub async fn handle_fetch_request(

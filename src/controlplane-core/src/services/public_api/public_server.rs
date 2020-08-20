@@ -18,8 +18,8 @@ use kf_service::call_service;
 use kf_socket::InnerKfSocket;
 use kf_socket::KfSocketError;
 use kf_service::KfService;
-use sc_api::AdminPublicApiKey;
-use sc_api::AdminPublicRequest;
+use fluvio_controlplane_api::AdminPublicApiKey;
+use fluvio_controlplane_api::AdminPublicRequest;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::*;

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::Request;
-use flv_api_spu::server::versions::{ApiVersions, ApiVersionsRequest};
+use fluvio_dataplane_api::server::versions::{ApiVersions, ApiVersionsRequest};
 use kf_socket::*;
 use flv_future_aio::net::tls::AllDomainConnector;
 

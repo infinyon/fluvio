@@ -15,9 +15,9 @@ use tracing::info;
 use tracing::debug;
 use structopt::StructOpt;
 
-use flv_types::print_cli_err;
+use fluvio_types::print_cli_err;
 use k8_client::K8Config;
-use flv_sc_core::config::ScConfig;
+use fluvio_controlplane::config::ScConfig;
 use flv_future_aio::net::tls::TlsAcceptor;
 use flv_future_aio::net::tls::AcceptorBuilder;
 

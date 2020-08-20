@@ -14,7 +14,7 @@ use kf_protocol::api::Request;
 use kf_protocol::api::FlvErrorCode;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 use crate::InternalScKey;
 

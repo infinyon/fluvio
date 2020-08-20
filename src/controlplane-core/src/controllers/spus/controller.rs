@@ -13,7 +13,7 @@ use tracing::instrument;
 use async_channel::Receiver;
 
 use flv_future_aio::task::spawn;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 use crate::stores::actions::WSAction;
 use crate::core::SharedContext;
@@ -275,7 +275,7 @@ mod tests {
 
     use flv_future_core::test_async;
     use utils::actions::Actions;
-    use flv_metadata_cluster::spu::SpuSpec;
+    use fluvio_metadata::spu::SpuSpec;
 
     use crate::cli::ScConfig;
     use crate::core::ScMetadata;

@@ -15,11 +15,11 @@ use tracing::debug;
 use tracing::error;
 use tracing::trace;
 
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 use flv_future_core::spawn;
-use internal_api::InternalApiRequest;
-use internal_api::InternalApiResponse;
-use internal_api::InternalKafkaApiEnum;
+use fluvio_internal_api::InternalApiRequest;
+use fluvio_internal_api::InternalApiResponse;
+use fluvio_internal_api::InternalKafkaApiEnum;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::Decoder;
@@ -185,7 +185,7 @@ mod test {
     use futures::stream::StreamExt;
     use tracing::debug;
 
-    use flv_types::SpuId;
+    use fluvio_types::SpuId;
     use flv_future_aio::net::AsyncTcpListener;
     use flv_future_aio::net::AsyncTcpStream;
     use flv_future_core::sleep;

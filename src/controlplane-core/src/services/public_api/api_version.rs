@@ -5,10 +5,10 @@ use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
 use kf_protocol::api::Request;
 
-use sc_api::versions::ApiVersionKey;
-use sc_api::versions::{ApiVersionsRequest, ApiVersionsResponse};
-use sc_api::AdminPublicApiKey;
-use sc_api::objects::*;
+use fluvio_controlplane_api::versions::ApiVersionKey;
+use fluvio_controlplane_api::versions::{ApiVersionsRequest, ApiVersionsResponse};
+use fluvio_controlplane_api::AdminPublicApiKey;
+use fluvio_controlplane_api::objects::*;
 
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,

@@ -1,8 +1,8 @@
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
-use flv_metadata_cluster::message::ReplicaMsg;
-use flv_metadata_cluster::partition::Replica;
+use fluvio_metadata::message::ReplicaMsg;
+use fluvio_metadata::partition::Replica;
 use crate::InternalSpuApi;
 
 /// Changes to Replica Specs

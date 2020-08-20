@@ -11,7 +11,7 @@ use kf_protocol::message::produce::TopicProduceResponse;
 use kf_protocol::message::produce::PartitionProduceResponse;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use flv_metadata_cluster::partition::ReplicaKey;
+use fluvio_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
 

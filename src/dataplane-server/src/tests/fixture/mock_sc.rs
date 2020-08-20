@@ -10,9 +10,9 @@ use futures::future::BoxFuture;
 use futures::future::FutureExt;
 
 
-use internal_api::InternalScKey;
-use internal_api::InternalScRequest;
-use internal_api::RegisterSpuResponse;
+use fluvio_internal_api::InternalScKey;
+use fluvio_internal_api::InternalScRequest;
+use fluvio_internal_api::RegisterSpuResponse;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use kf_service::KfApiServer;

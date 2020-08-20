@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 use crate::spu::*;
 use crate::store::*;

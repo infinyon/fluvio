@@ -9,7 +9,7 @@ use std::slice::Iter;
 
 use kf_protocol::derive::{Decode, Encode};
 use kf_protocol::api::Offset;
-use flv_types::SpuId;
+use fluvio_types::SpuId;
 
 use super::ElectionPolicy;
 use super::ElectionScoring;

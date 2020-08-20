@@ -9,8 +9,8 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 
 use tracing::trace;
-use flv_types::{ReplicaMap, SpuId};
-use flv_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
+use fluvio_types::{ReplicaMap, SpuId};
+use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 
 use kf_protocol::Version;
 use kf_protocol::bytes::{Buf, BufMut};

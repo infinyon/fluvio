@@ -11,7 +11,7 @@ use tracing::debug;
 use tracing::error;
 use tracing::instrument;
 
-use flv_metadata_cluster::message::*;
+use fluvio_metadata::message::*;
 use kf_protocol::{Decoder, Encoder};
 
 use flv_util::actions::Actions;
@@ -239,8 +239,8 @@ where
 
 #[cfg(test)]
 pub mod test {
-    use flv_metadata_cluster::spu::SpuSpec;
-    use flv_metadata_cluster::message::SpuMsg;
+    use fluvio_metadata::spu::SpuSpec;
+    use fluvio_metadata::message::SpuMsg;
 
     use crate::core::SpuLocalStore;
     use crate::core::SpecChange;

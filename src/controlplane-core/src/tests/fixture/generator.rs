@@ -7,7 +7,7 @@ use futures::channel::mpsc::Sender;
 use futures::SinkExt;
 
 use error::ServerError;
-use flv_types::socket_helpers::EndPoint;
+use fluvio_types::socket_helpers::EndPoint;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use kf_protocol::api::Request;

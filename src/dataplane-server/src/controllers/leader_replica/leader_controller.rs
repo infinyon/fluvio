@@ -13,9 +13,9 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
-use flv_metadata_cluster::partition::ReplicaKey;
-use flv_storage::FileReplica;
-use flv_types::SpuId;
+use fluvio_metadata::partition::ReplicaKey;
+use fluvio_storage::FileReplica;
+use fluvio_types::SpuId;
 use kf_socket::ExclusiveKfSink;
 use flv_future_aio::sync::broadcast::Sender;
 

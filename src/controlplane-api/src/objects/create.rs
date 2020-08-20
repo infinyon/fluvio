@@ -35,9 +35,9 @@ mod create {
 
     use kf_protocol::Version;
     use kf_protocol::bytes::{Buf, BufMut};
-    use flv_metadata_cluster::topic::TopicSpec;
-    use flv_metadata_cluster::spu::CustomSpuSpec;
-    use flv_metadata_cluster::spg::SpuGroupSpec;
+    use fluvio_metadata::topic::TopicSpec;
+    use fluvio_metadata::spu::CustomSpuSpec;
+    use fluvio_metadata::spg::SpuGroupSpec;
     use super::*;
 
     const TOPIC: u8 = 0;

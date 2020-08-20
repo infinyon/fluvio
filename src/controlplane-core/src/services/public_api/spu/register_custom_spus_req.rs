@@ -7,10 +7,10 @@ use tracing::{debug, trace};
 use std::io::Error as IoError;
 
 use kf_protocol::api::FlvErrorCode;
-use flv_metadata_cluster::spu::store::SpuLocalStorePolicy;
-use sc_api::FlvStatus;
-use sc_api::spu::CustomSpuSpec;
-use sc_api::spu::SpuSpec;
+use fluvio_metadata::spu::store::SpuLocalStorePolicy;
+use fluvio_controlplane_api::FlvStatus;
+use fluvio_controlplane_api::spu::CustomSpuSpec;
+use fluvio_controlplane_api::spu::SpuSpec;
 use crate::core::*;
 
 pub struct RegisterCustomSpu {

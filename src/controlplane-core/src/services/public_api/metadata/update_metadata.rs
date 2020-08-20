@@ -9,7 +9,7 @@ use futures::io::AsyncWrite;
 
 use kf_protocol::api::*;
 use kf_protocol::Encoder;
-use sc_api::metadata::*;
+use fluvio_controlplane_api::metadata::*;
 use kf_socket::*;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 

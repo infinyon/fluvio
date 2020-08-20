@@ -13,7 +13,7 @@ use tracing::instrument;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use flv_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
+use fluvio_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
 

@@ -1,4 +1,4 @@
-pub use flv_metadata_cluster::partition::*;
+pub use fluvio_metadata::partition::*;
 
 mod convert {
 

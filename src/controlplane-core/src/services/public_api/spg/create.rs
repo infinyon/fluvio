@@ -8,8 +8,8 @@ use std::io::Error;
 
 use tracing::{debug, trace};
 
-use sc_api::FlvStatus;
-use sc_api::spg::*;
+use fluvio_controlplane_api::FlvStatus;
+use fluvio_controlplane_api::spg::*;
 
 use crate::core::*;
 

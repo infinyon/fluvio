@@ -15,8 +15,8 @@ use tracing::{debug, trace};
 
 use kf_protocol::api::FlvErrorCode;
 
-use sc_api::FlvStatus;
-use sc_api::topic::*;
+use fluvio_controlplane_api::FlvStatus;
+use fluvio_controlplane_api::topic::*;
 
 use crate::core::*;
 use crate::controllers::topics::generate_replica_map;

@@ -103,7 +103,7 @@ mod tests {
 
     use flv_future_core::test_async;
     use utils::actions::Actions;
-    use flv_metadata_cluster::spu::SpuSpec;
+    use fluvio_metadata::spu::SpuSpec;
 
     use crate::cli::ScConfig;
     use crate::core::ScMetadata;

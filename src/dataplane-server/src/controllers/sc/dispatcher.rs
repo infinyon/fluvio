@@ -20,19 +20,19 @@ use futures::sink::SinkExt;
 
 use flv_future_aio::task::spawn;
 use flv_future_aio::timer::sleep;
-use internal_api::InternalSpuApi;
-use internal_api::InternalSpuRequest;
-use internal_api::RegisterSpuRequest;
-use internal_api::UpdateSpuRequest;
-use internal_api::UpdateReplicaRequest;
-use flv_metadata_cluster::partition::Replica;
+use fluvio_internal_api::InternalSpuApi;
+use fluvio_internal_api::InternalSpuRequest;
+use fluvio_internal_api::RegisterSpuRequest;
+use fluvio_internal_api::UpdateSpuRequest;
+use fluvio_internal_api::UpdateReplicaRequest;
+use fluvio_metadata::partition::Replica;
 use kf_protocol::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use kf_socket::ExclusiveKfSink;
-use flv_storage::FileReplica;
-use flv_metadata_cluster::partition::ReplicaKey;
-use flv_types::log_on_err;
+use fluvio_storage::FileReplica;
+use fluvio_metadata::partition::ReplicaKey;
+use fluvio_types::log_on_err;
 use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;

@@ -6,8 +6,8 @@ use tracing::trace;
 use rand::thread_rng;
 use rand::Rng;
 
-use flv_types::*;
-use flv_metadata_cluster::topic::*;
+use fluvio_types::*;
+use fluvio_metadata::topic::*;
 
 use crate::stores::topic::*;
 use crate::stores::partition::*;
@@ -331,7 +331,7 @@ pub mod replica_map_test {
     use std::collections::BTreeMap;
 
     use flv_future_aio::test_async;
-    use flv_metadata_cluster::spu::store::SpuLocalStorePolicy;
+    use fluvio_metadata::spu::store::SpuLocalStorePolicy;
 
     use super::*;
 

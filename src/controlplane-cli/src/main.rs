@@ -3,6 +3,6 @@ use structopt::StructOpt;
 fn main() {
     flv_util::init_tracer(None);
 
-    let opt = flv_sc_k8::ScOpt::from_args();
-    flv_sc_k8::main_loop(opt);
+    let opt = fluvio_controlplane_cli::ScOpt::from_args();
+    fluvio_controlplane_cli::main_loop(opt);
 }

@@ -1,5 +1,5 @@
 [package]
-name = "flv-test"
+name = "fluvio-test"
 version = "1.0.1"
 authors = ["fluvio.io"]
 edition = "2018"

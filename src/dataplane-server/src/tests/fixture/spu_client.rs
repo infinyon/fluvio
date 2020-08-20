@@ -9,8 +9,8 @@ use kf_socket::KfSocket;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use flv_types::SpuId;
-use flv_metadata_cluster::spu::SpuSpec;
+use fluvio_types::SpuId;
+use fluvio_metadata::spu::SpuSpec;
 
 use super::mock_sc::SharedScContext;
 

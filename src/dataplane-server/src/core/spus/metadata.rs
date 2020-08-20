@@ -3,8 +3,8 @@
 //      >>> define what each element of SPU is used for
 //
 
-use flv_metadata_cluster::spu::SpuSpec;
-use flv_types::SpuId;
+use fluvio_metadata::spu::SpuSpec;
+use fluvio_types::SpuId;
 
 use crate::core::Spec;
 use crate::core::LocalStore;

@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tracing::debug;
 use tracing::warn;
 
-use flv_metadata_cluster::partition::*;
+use fluvio_metadata::partition::*;
 
 use crate::stores::partition::*;
 use crate::stores::spu::*;

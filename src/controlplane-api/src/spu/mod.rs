@@ -1,4 +1,4 @@
-pub use flv_metadata_cluster::spu::*;
+pub use fluvio_metadata::spu::*;
 
 mod convert {
 

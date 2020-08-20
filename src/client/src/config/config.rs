@@ -18,7 +18,7 @@ use dirs::home_dir;
 use serde::Deserialize;
 use serde::Serialize;
 
-use flv_types::defaults::{CLI_CONFIG_PATH};
+use fluvio_types::defaults::{CLI_CONFIG_PATH};
 use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::client::*;

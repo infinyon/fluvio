@@ -3,9 +3,9 @@ use std::io::Error;
 use tracing::debug;
 use tracing::trace;
 
-use sc_api::objects::*;
-use sc_api::spg::SpuGroupSpec;
-use flv_metadata_cluster::store::*;
+use fluvio_controlplane_api::objects::*;
+use fluvio_controlplane_api::spg::SpuGroupSpec;
+use fluvio_metadata::store::*;
 
 use crate::core::Context;
 

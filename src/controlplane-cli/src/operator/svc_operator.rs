@@ -7,14 +7,14 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use k8_client::ClientError;
-use flv_metadata_cluster::k8::metadata::*;
-use flv_metadata_cluster::k8::core::service::*;
+use fluvio_metadata::k8::metadata::*;
+use fluvio_metadata::k8::core::service::*;
 use k8_client::metadata::MetadataClient;
 use k8_client::SharedK8Client;
-use flv_metadata_cluster::spu::IngressAddr;
-use flv_metadata_cluster::spu::SpuSpec;
-use flv_sc_core::core::SharedContext;
-use flv_sc_core::stores::StoreContext;
+use fluvio_metadata::spu::IngressAddr;
+use fluvio_metadata::spu::SpuSpec;
+use fluvio_controlplane::core::SharedContext;
+use fluvio_controlplane::stores::StoreContext;
 use crate::ScK8Error;
 
 /// An operator to deal with Svc
