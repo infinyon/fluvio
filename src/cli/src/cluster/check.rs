@@ -40,24 +40,137 @@ pub struct CheckCommand {
     pre_install: bool,
 }
 
-// describe all checks needed pre installation in an enum
-#[derive(Debug)]
-enum InstallCheck {
-    LoadableConfig,
-    K8Version,
-    HelmVersion,
-    SysChart,
-    LoadBalancer,
-    CreateServicePermission,
-    CreateCrdPermission,
-    CreateServiceAccountPermission,
+use async_trait::async_trait;
+#[async_trait]
+trait InstallCheck {
+    /// perform check, if successful return success message, if fail, return fail message
+    async fn perform_check(&self) -> Result<String, String>;
 }
 
-// install check details such as success and failure message
-struct InstallCheckObject {
-    name: InstallCheck,
-    success_message: &'static str,
-    failed_message: &'static str,
+struct LoadableConfig;
+
+#[async_trait]
+impl InstallCheck for LoadableConfig {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_loadable_config() {
+            Ok(_) => Ok(
+                "Kubernetes config is loadable and cluster hostname is not an IP address"
+                    .to_string(),
+            ),
+            Err(err) => Err(format!(
+                "Kubernetes cluster not found\n        error: {}",
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct K8Version;
+
+#[async_trait]
+impl InstallCheck for K8Version {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_version() {
+            Ok(_) => Ok("Supported kubernetes version is installed".to_string()),
+            Err(err) => Err(format!(
+                "Supported kubernetes version v{} is not installed\n        error: {}",
+                MIN_KUBE_VERSION,
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct HelmVersion;
+
+#[async_trait]
+impl InstallCheck for HelmVersion {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_helm_version() {
+            Ok(_) => Ok("Supported helm version is installed".to_string()),
+            Err(err) => Err(format!(
+                "Supported helm version is not installed, > v{} is required\n        error: {}",
+                DEFAULT_HELM_VERSION,
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct SysChart;
+
+#[async_trait]
+impl InstallCheck for SysChart {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_sys_charts() {
+            Ok(_) => Ok("Fluvio system charts are installed".to_string()),
+            Err(err) => Err(format!(
+                "Compatible fluvio system charts are not installed, v{} is required\n        error: {}",
+                SYS_CHART_VERSION,
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct CreateServicePermission;
+
+#[async_trait]
+impl InstallCheck for CreateServicePermission {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_permission(RESOURCE_SERVICE) {
+            Ok(_) => Ok("Can create a Service".to_string()),
+            Err(err) => Err(format!(
+                "Cannot create a Service\n        error: {}",
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct CreateCrdPermission;
+
+#[async_trait]
+impl InstallCheck for CreateCrdPermission {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_permission(RESOURCE_CRD) {
+            Ok(_) => Ok("Can create CustomResourceDefinitions".to_string()),
+            Err(err) => Err(format!(
+                "Cannot create CustomResourceDefinitions\n        error: {}",
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct CreateServiceAccountPermission;
+
+#[async_trait]
+impl InstallCheck for CreateServiceAccountPermission {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_permission(RESOURCE_SERVICE_ACCOUNT) {
+            Ok(_) => Ok("Can create CustomResourceDefinitions".to_string()),
+            Err(err) => Err(format!(
+                "Cannot create CustomResourceDefinitions\n        error: {}",
+                err.to_string()
+            )),
+        }
+    }
+}
+
+struct LoadBalancer;
+
+#[async_trait]
+impl InstallCheck for LoadBalancer {
+    async fn perform_check(&self) -> Result<String, String> {
+        match check_load_balancer_status().await {
+            Ok(_) => Ok("Load Balancer is up".to_string()),
+            Err(err) => Err(format!(
+                "Load Balancer is down\n        error: {}",
+                err.to_string()
+            )),
+        }
+    }
 }
 
 pub async fn run_checks(opt: CheckCommand) -> Result<String, CliError> {
@@ -69,82 +182,31 @@ pub async fn run_checks(opt: CheckCommand) -> Result<String, CliError> {
 
 async fn run_preinstall_checks() -> Result<(), CliError> {
     // List of checks
-    let pre_install_checks: [InstallCheckObject; 8] = [
-        InstallCheckObject {
-            name: InstallCheck::LoadableConfig,
-            success_message:
-                "Kubernetes config is loadable and cluster hostname is not an IP address",
-            failed_message: "Failed to load kubernetes config",
-        },
-        InstallCheckObject {
-            name: InstallCheck::K8Version,
-            success_message: "Supported kubernetes version is installed",
-            failed_message: "Supported kubernetes version is not installed",
-        },
-        InstallCheckObject {
-            name: InstallCheck::HelmVersion,
-            success_message: "Supported helm version is installed",
-            failed_message: "Supported helm version is not installed, > v3.2.0 is required",
-        },
-        InstallCheckObject {
-            name: InstallCheck::SysChart,
-            success_message: "Fluvio system charts are installed",
-            failed_message: "Compatible fluvio system charts are not installed",
-        },
-        InstallCheckObject {
-            name: InstallCheck::CreateServicePermission,
-            success_message: "Can create a Service",
-            failed_message: "Cannot create a Service",
-        },
-        InstallCheckObject {
-            name: InstallCheck::CreateCrdPermission,
-            success_message: "Can create CustomResourceDefinitions",
-            failed_message: "Cannot create CustomResourceDefinitions",
-        },
-        InstallCheckObject {
-            name: InstallCheck::CreateServiceAccountPermission,
-            success_message: "Can create ServiceAccounts",
-            failed_message: "Cannot create ServiceAccounts",
-        },
-        InstallCheckObject {
-            name: InstallCheck::LoadBalancer,
-            success_message: "Load Balancer is up",
-            failed_message: "Load Balancer is down",
-        },
+    let checks: Vec<Box<dyn InstallCheck>> = vec![
+        Box::new(LoadableConfig),
+        Box::new(K8Version),
+        Box::new(HelmVersion),
+        Box::new(SysChart),
+        Box::new(CreateServicePermission),
+        Box::new(CreateCrdPermission),
+        Box::new(CreateServiceAccountPermission),
+        Box::new(LoadBalancer),
     ];
+
     // capture failures if any
-    let mut failures = Vec::with_capacity(4);
+    let mut failures = Vec::new();
     println!("\nRunning pre-install checks....\n");
 
-    // loop through checks
-    for check in pre_install_checks.iter() {
-        // perform check and catch the result
-        let res = match check.name {
-            InstallCheck::LoadableConfig => check_loadable_config(),
-            InstallCheck::K8Version => check_version(),
-            InstallCheck::HelmVersion => check_helm_version(),
-            InstallCheck::SysChart => check_sys_charts(),
-            InstallCheck::LoadBalancer => check_load_balancer_status().await,
-            InstallCheck::CreateServicePermission => check_permission(RESOURCE_SERVICE),
-            InstallCheck::CreateCrdPermission => check_permission(RESOURCE_CRD),
-            InstallCheck::CreateServiceAccountPermission => {
-                check_permission(RESOURCE_SERVICE_ACCOUNT)
-            }
-        };
-        // show success or failure message dereived from install check object depending on result
-        match res {
-            Ok(_) => {
-                let msg = format!("ok: {}", check.success_message);
+    for check in checks {
+        match check.perform_check().await {
+            Ok(success) => {
+                let msg = format!("ok: {}", success);
                 println!("✔️  {}", msg.green());
             }
-            Err(err) => {
-                let msg = format!(
-                    "failed: {} \n      error:{}",
-                    check.failed_message,
-                    err.to_string()
-                );
+            Err(failure) => {
+                let msg = format!("failed: {}", failure);
                 println!("❌ {}", msg.red());
-                failures.push(msg);
+                failures.push(failure);
             }
         }
     }
