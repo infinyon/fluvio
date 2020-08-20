@@ -45,6 +45,12 @@ install-fmt:
 check-fmt:
 	cargo +$(RUSTV) fmt -- --check
 
+install-clippy:
+	rustup component add clippy --toolchain $(RUSTV)
+
+check-clippy:
+	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
+
 # create secret for k8 in development mode
 k8-create-secret:
 	kubectl delete secret fluvio-ca --ignore-not-found=true
