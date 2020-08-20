@@ -1,4 +1,4 @@
-flvt=../target/debug/flv-test
+flvt=../target/debug/fluvio-test
 DRIVER=--local-driver
 COUNT=3000
 

@@ -24,16 +24,16 @@ build:
 
 # run local smoke test
 smoke-test:	build test-clean-up
-	FLV_CMD=true ./target/debug/flv-test --local-driver --log-dir /tmp
+	FLV_CMD=true ./target/debug/fluvio-test --local-driver --log-dir /tmp
 
 smoke-test-tls:	build test-clean-up
-	FLV_CMD=true ./target/debug/flv-test --tls --local-driver --log-dir /tmp --rust-log flv=debug
+	FLV_CMD=true ./target/debug/fluvio-test --tls --local-driver --log-dir /tmp --rust-log flv=debug
 
 smoke-test-k8:	build test-clean-up minikube_image
-	FLV_CMD=true ./target/debug/flv-test --develop --log-dir /tmp
+	FLV_CMD=true ./target/debug/fluvio-test --develop --log-dir /tmp
 
 smoke-test-k8-tls:	build test-clean-up minikube_image
-	FLV_CMD=true ./target/debug/flv-test --tls --develop --log-dir /tmp
+	FLV_CMD=true ./target/debug/fluvio-test --tls --develop --log-dir /tmp
 
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall

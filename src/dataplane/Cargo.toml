@@ -9,7 +9,7 @@ name = "fluvio_dataplane"
 path = "src/lib.rs"
 
 [[bin]]
-name = "fluvio-dataplane"
+name = "spu-server"
 path = "src/main.rs"
 doc = false
 
