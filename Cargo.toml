@@ -11,7 +11,7 @@ members = [
     "src/eventstream-model",
     "src/eventstream-dispatcher",
     "src/controlplane-api",
-    "src/controlplane-core",
+    "src/controlplane",
     "src/controlplane-cli",
     "src/dataplane-api",
     "src/dataplane-server",

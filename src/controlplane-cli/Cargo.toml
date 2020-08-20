@@ -28,7 +28,7 @@ flv-util = { version = "0.3.0" }
 fluvio-utils = { path = "../utils" }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-metadata = { features = ["k8"], path = "../metadata" }
-fluvio-controlplane = { path = "../controlplane-core" }
+fluvio-controlplane = { path = "../controlplane" }
 flv-tls-proxy = "0.1.0"
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
 k8-client = { version = "1.1.1" }
