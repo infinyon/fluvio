@@ -12,7 +12,7 @@ DOCKER_REGISTRY=infinyon
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
-FLVD=target/debug/fluvio
+FLUVIO_BIN=./target/debug/fluvio
 
 # install all tools required
 install_tools:
@@ -36,8 +36,8 @@ smoke-test-k8-tls:	build test-clean-up minikube_image
 	FLV_CMD=true ./target/debug/flv-test --tls --develop --log-dir /tmp
 
 test-clean-up:
-	$(FLVD) cluster uninstall
-	$(FLVD) cluster uninstall --local
+	$(FLUVIO_BIN) cluster uninstall
+	$(FLUVIO_BIN) cluster uninstall --local
 
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)
@@ -53,11 +53,11 @@ k8-create-secret:
 	kubectl create secret tls fluvio-tls --cert tls/certs/server.crt --key tls/certs/server.key
 
 k8-tls-list:
-	$(FLVD) topic list --tls --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key --sc fluvio.local:9003
+	$(FLUVIO_BIN) topic list --tls --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key --sc fluvio.local:9003
 
 # set k8 profile using tls
 k8-set-k8-profile-tls:
-	$(FLVD) profile set-k8-profile --tls --domain fluvio.local --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key
+	$(FLUVIO_BIN) profile set-k8-profile --tls --domain fluvio.local --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key
 
 run-all-unit-test:
 	cargo test --all
@@ -182,19 +182,19 @@ test-smoke:
 	make -C tests smoke-test
 
 install-local-tls:
-	$(FLVD) cluster install --local  \
+	$(FLUVIO_BIN) cluster install --local  \
 		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
 		--client-key tls/certs/client.key --domain fluvio.local
 	
 uninstall-local:
-	$(FLVD) cluster uninstall --local
+	$(FLUVIO_BIN) cluster uninstall --local
 
 install-k8-tls:
-	$(FLVD) cluster install --develop \
+	$(FLUVIO_BIN) cluster install --develop \
 		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
 		--client-key tls/certs/client.key --domain fluvio.local
 
 uninstall-k8:
-	$(FLVD) cluster uninstall
+	$(FLUVIO_BIN) cluster uninstall
