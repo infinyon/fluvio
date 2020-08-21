@@ -79,13 +79,16 @@ pub struct InstallCommand {
     #[structopt(flatten)]
     pub k8_config: K8Install,
 
+    #[structopt(long)]
+    pub skip_profile_creation: bool,
+
     /// number of SPU
     #[structopt(long, default_value = "1")]
-    spu: u16,
+    pub spu: u16,
 
     /// RUST_LOG options
     #[structopt(long)]
-    rust_log: Option<String>,
+    pub rust_log: Option<String>,
 
     /// log dir
     #[structopt(long)]

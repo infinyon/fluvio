@@ -318,7 +318,7 @@ pub struct Topic {
     replica: HashMap<String, String>,
 }
 
-#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Profile {
     pub cluster: String,
     pub topic: Option<String>,
