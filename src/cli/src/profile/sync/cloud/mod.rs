@@ -1,6 +1,8 @@
+mod http;
+mod login_agent;
+
 use std::io;
 use std::io::Write;
-mod login_agent;
 use structopt::StructOpt;
 pub use login_agent::CloudError;
 
