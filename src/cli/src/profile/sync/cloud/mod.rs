@@ -75,7 +75,10 @@ where
     Ok("".to_string())
 }
 
-fn save_cluster<O: Terminal>(_out: std::sync::Arc<O>, cluster: Cluster) -> Result<String, CliError> {
+fn save_cluster<O: Terminal>(
+    _out: std::sync::Arc<O>,
+    cluster: Cluster,
+) -> Result<String, CliError> {
     let mut config_file = ConfigFile::load_default_or_new()?;
     let config = config_file.mut_config();
     let profile = Profile::new("fluvio-cloud".to_string());
