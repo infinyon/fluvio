@@ -4,7 +4,7 @@ use structopt::StructOpt;
 use crate::{CliError, Terminal};
 use crate::t_println;
 use crate::COMMAND_TEMPLATE;
-use crate::profile::{set_k8_context, set_local_context};
+use crate::profile::{set_k8_context, discover_fluvio_addr, set_local_context};
 use crate::profile::sync::cloud::{CloudOpt, process_cloud};
 use crate::tls::TlsOpt;
 pub use cloud::CloudError;
@@ -61,8 +61,17 @@ pub async fn process_k8<O: Terminal>(
     out: std::sync::Arc<O>,
     opt: K8Opt,
 ) -> Result<String, CliError> {
-    match set_k8_context(opt).await {
-        Ok(msg) => t_println!(out, "{}", msg),
+    let external_addr = match discover_fluvio_addr(opt.namespace.as_deref()).await? {
+        Some(sc_addr) => sc_addr,
+        None => {
+            return Err(CliError::Other(
+                "fluvio service is not deployed".to_string(),
+            ))
+        }
+    };
+
+    match set_k8_context(opt, external_addr).await {
+        Ok(profile) => t_println!(out, "updated profile: {:#?}", profile),
         Err(err) => {
             eprintln!("config creation failed: {}", err);
         }

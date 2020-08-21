@@ -70,10 +70,10 @@ mod target {
         pub cluster: Option<String>,
 
         #[structopt(flatten)]
-        tls: TlsOpt,
+        pub tls: TlsOpt,
 
         #[structopt(flatten)]
-        profile: InlineProfile,
+        pub profile: InlineProfile,
     }
 
     impl ClusterTarget {

@@ -9,7 +9,7 @@ use structopt::StructOpt;
 use fluvio::config::{TlsConfig, TlsConfigPaths};
 
 /// Optional Tls Configuration to Client
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, StructOpt, Default, Clone)]
 pub struct TlsOpt {
     /// Enable TLS
     #[structopt(long)]
