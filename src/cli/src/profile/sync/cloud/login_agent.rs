@@ -3,18 +3,18 @@ use std::io::ErrorKind;
 use std::fs;
 use std::path::{PathBuf, Path};
 
-use tracing::{warn, error, debug, trace, instrument};
-use serde::{Deserialize, Serialize};
-use flv_types::defaults::CLI_CONFIG_PATH;
-use surf::http_types::StatusCode;
-use surf::Error as SurfError;
-use serde_json::Error as JsonError;
-
-use serde::export::Formatter;
 use futures::io::Error;
-use fluvio::config::Cluster;
+use tracing::{warn, debug, trace, instrument};
+use serde::{Deserialize, Serialize};
+use serde_json::Error as JsonError;
+use http_types::{Response, Request, StatusCode, Error as HttpError, Url};
 
-const DEFAULT_AGENT_REMOTE: &str = "cloud.fluvio.io";
+use fluvio::config::Cluster;
+use flv_types::defaults::CLI_CONFIG_PATH;
+use super::http::execute;
+use url::ParseError;
+
+const DEFAULT_AGENT_REMOTE: &str = "https://cloud.fluvio.io";
 
 /// An Agent for authenticating with Fluvio Cloud
 ///
@@ -116,9 +116,7 @@ impl LoginAgent {
         )
     )]
     async fn try_download_profile(&self, creds: &Credentials) -> Result<Cluster, CloudError> {
-        let mut response = surf::get(format!("{}/api/v1/downloadProfile", &self.remote))
-            .set_header("Authorization", &*creds.token)
-            .await?;
+        let mut response = download_profile(&self.remote, creds).await?;
         trace!("Response: {:#?}", &response);
         debug!(status = response.status() as u16);
 
@@ -128,17 +126,9 @@ impl LoginAgent {
                 let cluster: Cluster = response.body_json().await?;
                 Ok(cluster)
             }
-            StatusCode::Unauthorized => {
-                warn!("Failed to download profile, token is expired or invalid");
-                Err(CloudError::Unauthorized)
-            }
-            StatusCode::NotFound => {
-                warn!("Failed to download a profile for this user");
-                Err(CloudError::ProfileNotFound)
-            }
-            e => {
-                error!("Got unexpected status code {:?}", e);
-                Err(CloudError::Unexpected)
+            _ => {
+                warn!("Failed to download profile");
+                Err(CloudError::ProfileDownloadError)
             }
         }
     }
@@ -148,7 +138,7 @@ impl LoginAgent {
     /// If this succeeds, the LoginAgent will save the Fluvio Cloud
     /// credentials in a session to be used later.
     #[allow(clippy::unit_arg)]
-    #[instrument(err
+    #[instrument(
         skip(self, password),
         fields(
             remote = &*self.remote,
@@ -160,13 +150,7 @@ impl LoginAgent {
         email: String,
         password: String,
     ) -> Result<(), CloudError> {
-        let login = LoginRequest {
-            email: email.clone(),
-            password,
-        };
-        let mut response = surf::post(format!("{}/api/v1/loginUser", &self.remote))
-            .body_json(&login)?
-            .await?;
+        let mut response = login_user(&self.remote, email.clone(), password).await?;
 
         match response.status() {
             StatusCode::Ok => {
@@ -189,12 +173,6 @@ impl LoginAgent {
         self.session.replace(creds);
         Ok(())
     }
-}
-
-#[derive(Debug, Serialize)]
-struct LoginRequest {
-    email: String,
-    password: String,
 }
 
 #[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
@@ -224,48 +202,73 @@ impl Credentials {
     }
 }
 
+#[derive(Debug, Serialize)]
+struct LoginRequest {
+    email: String,
+    password: String,
+}
+
+async fn login_user(host: &str, email: String, password: String) -> Result<Response, CloudError> {
+    let url = Url::parse(&format!("{}/api/v1/loginUser", host))?;
+    let mut request = Request::post(url);
+    let login = LoginRequest { email, password };
+
+    // Always safe to serialize when Self: Serialize
+    let body = serde_json::to_string(&login).unwrap();
+    request.set_body(body);
+
+    let response = execute(request).await?;
+    Ok(response)
+}
+
+async fn download_profile(host: &str, creds: &Credentials) -> Result<Response, CloudError> {
+    let url = Url::parse(&format!("{}/api/v1/downloadProfile", host))?;
+    let mut request = Request::get(url);
+    request.append_header("Authorization", &*creds.token);
+
+    let response = execute(request).await?;
+    Ok(response)
+}
+
 #[derive(Debug)]
 pub enum CloudError {
+    /// Failed to download profile
+    ProfileDownloadError,
     /// Failed to authenticate using the given username
     AuthenticationError(String),
-    /// Fluvio Cloud token has expired or is invalid
-    Unauthorized,
     /// Failed to open Fluvio Cloud login file
     UnableToLoadCredentials(IoError),
     /// Failed to parse Fluvio Cloud token
     UnableToParseCredentials(toml::de::Error),
     /// Failed to make an http request
-    HttpError(SurfError),
+    HttpError(HttpError),
     /// Failed to do some IO.
     IoError(IoError),
     /// Failed to deserialize JSON
     JsonError(JsonError),
-    /// Failed to find a profile for this account
-    ProfileNotFound,
-    /// An unexpected error occurred
-    Unexpected,
+    /// Failed to parse request URL
+    UrlError(ParseError),
 }
 
 impl std::fmt::Display for CloudError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ProfileDownloadError => write!(f, "Failed to download profile"),
             Self::AuthenticationError(email) => write!(f, "Failed to login with email {}", email),
-            Self::Unauthorized => write!(f, "Fluvio Cloud token has expired"),
             Self::UnableToLoadCredentials(e) => write!(f, "Failed to open login file: {}", e),
             Self::UnableToParseCredentials(e) => {
                 write!(f, "Failed to read credentials toml: {}", e)
             }
-            Self::HttpError(surf) => write!(f, "Failed to make http request: {}", surf),
+            Self::HttpError(e) => write!(f, "Failed to make http request: {}", e),
             Self::IoError(e) => write!(f, "Io Error: {}", e),
             Self::JsonError(e) => write!(f, "JSON error: {}", e),
-            Self::ProfileNotFound => write!(f, "Failed to find a profile for this account"),
-            Self::Unexpected => write!(f, "An unexpected error occurred"),
+            Self::UrlError(e) => write!(f, "Failed to parse URL: {}", e),
         }
     }
 }
 
-impl From<SurfError> for CloudError {
-    fn from(error: SurfError) -> Self {
+impl From<HttpError> for CloudError {
+    fn from(error: HttpError) -> Self {
         Self::HttpError(error)
     }
 }
@@ -279,6 +282,12 @@ impl From<IoError> for CloudError {
 impl From<JsonError> for CloudError {
     fn from(error: JsonError) -> Self {
         Self::JsonError(error)
+    }
+}
+
+impl From<ParseError> for CloudError {
+    fn from(error: ParseError) -> Self {
+        Self::UrlError(error)
     }
 }
 

@@ -202,18 +202,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-native-tls"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e9e7a929bd34c68a82d58a4de7f86fffdaf97fb2af850162a7bb19dd7269b33"
-dependencies = [
- "async-std",
- "native-tls",
- "thiserror",
- "url",
-]
-
-[[package]]
 name = "async-std"
 version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -265,7 +253,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95fd83426b89b034bf4e9ceb9c533c2f2386b813fd3dcae0a425ec6f1837d78a"
 dependencies = [
- "futures 0.3.5",
+ "futures",
  "rustls 0.17.0",
  "webpki",
  "webpki-roots 0.19.0",
@@ -607,22 +595,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-foundation"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57d24c7a13c43e870e37c1556b74555437870a04514f7685f5b354e090567171"
-dependencies = [
- "core-foundation-sys",
- "libc",
-]
-
-[[package]]
-name = "core-foundation-sys"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3a71ab494c0b5b860bdc8407ae08978052417070c2ced38573a9157ad75b8ac"
-
-[[package]]
 name = "cpuid-bool"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -832,15 +804,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
-name = "encoding_rs"
-version = "0.8.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8ac63f94732332f44fe654443c46f6375d1939684c17b0afb6cb56b0456e171"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "enum_to_u8_slice_derive"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -919,7 +882,7 @@ dependencies = [
  "flv-future-aio",
  "flv-types",
  "flv-util 0.2.1",
- "futures 0.3.5",
+ "futures",
  "kf-protocol",
  "kf-socket",
  "serde",
@@ -957,6 +920,7 @@ dependencies = [
 name = "flv-cli"
 version = "0.1.0"
 dependencies = [
+ "async-h1",
  "async-trait",
  "bytes 0.5.6",
  "ctrlc",
@@ -969,7 +933,8 @@ dependencies = [
  "flv-spu",
  "flv-types",
  "flv-util 0.3.1",
- "futures 0.3.5",
+ "futures",
+ "http-types",
  "k8-client",
  "k8-config",
  "k8-metadata-client",
@@ -984,7 +949,6 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
- "surf",
  "toml",
  "tracing",
  "tracing-futures",
@@ -1004,7 +968,7 @@ dependencies = [
  "flv-future-aio",
  "flv-types",
  "flv-util 0.2.1",
- "futures 0.3.5",
+ "futures",
  "k8-metadata-client",
  "log",
  "serde",
@@ -1039,7 +1003,7 @@ dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "flv-util 0.2.1",
- "futures 0.3.5",
+ "futures",
  "futures-timer 2.0.2",
  "log",
  "memmap",
@@ -1085,7 +1049,7 @@ dependencies = [
  "flv-metadata-cluster",
  "flv-types",
  "flv-util 0.3.1",
- "futures 0.3.5",
+ "futures",
  "internal-api",
  "k8-metadata-client",
  "k8-obj-metadata",
@@ -1114,7 +1078,7 @@ dependencies = [
  "flv-tls-proxy",
  "flv-types",
  "flv-util 0.3.1",
- "futures 0.3.5",
+ "futures",
  "k8-client",
  "rand 0.7.3",
  "serde",
@@ -1140,7 +1104,7 @@ dependencies = [
  "flv-tls-proxy",
  "flv-types",
  "flv-util 0.3.1",
- "futures 0.3.5",
+ "futures",
  "internal-api",
  "kf-protocol",
  "kf-service",
@@ -1167,7 +1131,7 @@ dependencies = [
  "flv-future-aio",
  "flv-types",
  "flv-util 0.2.1",
- "futures 0.3.5",
+ "futures",
  "kf-protocol",
  "kf-socket",
  "libc",
@@ -1188,7 +1152,7 @@ dependencies = [
  "flv-future-aio",
  "flv-metadata-cluster",
  "flv-types",
- "futures 0.3.5",
+ "futures",
  "k8-client",
  "k8-metadata-client",
  "kf-protocol",
@@ -1205,7 +1169,7 @@ checksum = "6cd65b601a2cbf20ee5ae313c2b5a269285bf7a5a00f9b236c828d38360cc6e5"
 dependencies = [
  "async-std",
  "flv-future-aio",
- "futures 0.3.5",
+ "futures",
  "log",
 ]
 
@@ -1258,31 +1222,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
-name = "foreign-types"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
-dependencies = [
- "foreign-types-shared",
-]
-
-[[package]]
-name = "foreign-types-shared"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
-
-[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
-
-[[package]]
-name = "futures"
-version = "0.1.29"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b980f2816d6ee8673b6517b52cb0e808a180efc92e5c19d02cdda79066703ef"
 
 [[package]]
 name = "futures"
@@ -1396,7 +1339,6 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8764574ff08b701a084482c3c7031349104b07ac897393010494beaa18ce32c6"
 dependencies = [
- "futures 0.1.29",
  "futures-channel",
  "futures-core",
  "futures-io",
@@ -1409,7 +1351,6 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro-nested",
  "slab",
- "tokio-io",
 ]
 
 [[package]]
@@ -1544,36 +1485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "http"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28d569972648b2c512421b5f2a405ad6ac9666547189d0c5477a3f200f3e02f9"
-dependencies = [
- "bytes 0.5.6",
- "fnv",
- "itoa",
-]
-
-[[package]]
-name = "http-client"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdae064c76b75ced4793544e843478c8c9c2bebf16fe6913212df83e30dfdb46"
-dependencies = [
- "async-h1",
- "async-native-tls",
- "async-std",
- "futures 0.3.5",
- "http-types",
- "isahc 0.9.8",
- "js-sys",
- "log",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "http-types"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1683,36 +1594,13 @@ dependencies = [
  "futures-channel",
  "futures-io",
  "futures-util",
- "http 0.1.21",
+ "http",
  "lazy_static",
  "log",
  "serde",
  "serde_json",
  "slab",
  "sluice",
-]
-
-[[package]]
-name = "isahc"
-version = "0.9.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c7ae3a678e7d3bf240bfecc3ffda276db5db61e160c7639a196a1d944b2a5d4"
-dependencies = [
- "bytes 0.5.6",
- "crossbeam-channel",
- "crossbeam-utils",
- "curl",
- "curl-sys",
- "futures-channel",
- "futures-io",
- "futures-util",
- "http 0.2.1",
- "lazy_static",
- "log",
- "slab",
- "sluice",
- "tracing",
- "tracing-futures",
 ]
 
 [[package]]
@@ -1742,8 +1630,8 @@ dependencies = [
  "bytes 0.5.6",
  "curl",
  "flv-future-aio",
- "futures 0.3.5",
- "isahc 0.8.2",
+ "futures",
+ "isahc",
  "k8-config",
  "k8-diff",
  "k8-metadata-client",
@@ -1790,8 +1678,8 @@ checksum = "fe2060b72f43db9e5cd60db3e7801aa0c25fa8d4eced12d3bacfbed6f40bdc21"
 dependencies = [
  "async-trait",
  "flv-future-aio",
- "futures 0.3.5",
- "http 0.1.21",
+ "futures",
+ "http",
  "k8-diff",
  "k8-obj-metadata",
  "log",
@@ -1807,7 +1695,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1928f08244bb04c7ac1455f3fccb0e3ce193f25f61c06aed863371e46deb040"
 dependencies = [
- "http 0.1.21",
+ "http",
  "k8-obj-core",
  "k8-obj-metadata",
  "log",
@@ -1822,7 +1710,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dd20a0c2182b2e55fbbb90b3d887139164408efd9b720952a002d188a6580e0"
 dependencies = [
- "http 0.1.21",
+ "http",
  "k8-obj-metadata",
  "log",
  "serde",
@@ -1906,7 +1794,7 @@ checksum = "e8ef03620f77406bff96b68012375da9536f8f627ec461f6d86f761d8bcf4cfb"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
- "futures 0.3.5",
+ "futures",
  "kf-protocol-api",
  "kf-protocol-core",
  "kf-protocol-message",
@@ -1951,7 +1839,7 @@ dependencies = [
  "flv-future-aio",
  "flv-types",
  "flv-util 0.1.1",
- "futures 0.3.5",
+ "futures",
  "kf-protocol",
  "kf-socket",
  "log",
@@ -1973,7 +1861,7 @@ dependencies = [
  "event-listener",
  "flv-future-aio",
  "flv-util 0.1.1",
- "futures 0.3.5",
+ "futures",
  "kf-protocol",
  "log",
  "pin-utils",
@@ -2115,22 +2003,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mime"
-version = "0.3.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
-
-[[package]]
-name = "mime_guess"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2684d4c2e97d99848d30b324b00c8fcc7e5c897b7cbb5819b09e7c90e8baf212"
-dependencies = [
- "mime",
- "unicase",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2148,24 +2020,6 @@ dependencies = [
  "async-task",
  "concurrent-queue",
  "fastrand",
-]
-
-[[package]]
-name = "native-tls"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0d88c06fe90d5ee94048ba40409ef1d9315d86f6f38c2efdaad4fb50c58b2d"
-dependencies = [
- "lazy_static",
- "libc",
- "log",
- "openssl",
- "openssl-probe",
- "openssl-sys",
- "schannel",
- "security-framework",
- "security-framework-sys",
- "tempfile",
 ]
 
 [[package]]
@@ -2244,20 +2098,6 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
-
-[[package]]
-name = "openssl"
-version = "0.10.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d575eff3665419f9b83678ff2815858ad9d11567e082f5ac1814baba4e2bcb4"
-dependencies = [
- "bitflags",
- "cfg-if",
- "foreign-types",
- "lazy_static",
- "libc",
- "openssl-sys",
-]
 
 [[package]]
 name = "openssl-probe"
@@ -2728,15 +2568,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
-name = "remove_dir_all"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "ring"
 version = "0.16.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2859,29 +2690,6 @@ checksum = "e3042af939fca8c3453b7af0f1c66e533a15a86169e39de2657310ade8f98d3c"
 dependencies = [
  "ring",
  "untrusted",
-]
-
-[[package]]
-name = "security-framework"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64808902d7d99f78eaddd2b4e2509713babc3dc3c85ad6f4c447680f3c01e535"
-dependencies = [
- "bitflags",
- "core-foundation",
- "core-foundation-sys",
- "libc",
- "security-framework-sys",
-]
-
-[[package]]
-name = "security-framework-sys"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17bf11d99252f512695eb468de5516e5cf75455521e69dfe343f3b74e4748405"
-dependencies = [
- "core-foundation-sys",
- "libc",
 ]
 
 [[package]]
@@ -3206,28 +3014,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "502d53007c02d7605a05df1c1a73ee436952781653da5d0bf57ad608f66932c1"
 
 [[package]]
-name = "surf"
-version = "2.0.0-alpha.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68bf1412b095b3a54da6ec3a969e2663cb3cf535652cd97c02e99443a400fd7d"
-dependencies = [
- "async-std",
- "encoding_rs",
- "futures 0.3.5",
- "http-client",
- "http-types",
- "log",
- "mime",
- "mime_guess",
- "pin-project-lite",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "url",
- "web-sys",
-]
-
-[[package]]
 name = "syn"
 version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3267,20 +3053,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
 dependencies = [
  "unicode-xid 0.0.4",
-]
-
-[[package]]
-name = "tempfile"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a6e24d9338a0a5be79593e2fa15a648add6138caa803e2d5bc782c371732ca9"
-dependencies = [
- "cfg-if",
- "libc",
- "rand 0.7.3",
- "redox_syscall",
- "remove_dir_all",
- "winapi",
 ]
 
 [[package]]
@@ -3332,26 +3104,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 dependencies = [
  "unicode-width",
-]
-
-[[package]]
-name = "thiserror"
-version = "1.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dfdd070ccd8ccb78f4ad66bf1982dc37f620ef696c6b5028fe2ed83dd3d0d08"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd80fc12f73063ac132ac92aceea36734f04a1d93c1240c6944e23a3b8841793"
-dependencies = [
- "proc-macro2 1.0.19",
- "quote 1.0.7",
- "syn 1.0.38",
 ]
 
 [[package]]
@@ -3431,17 +3183,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-io"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57fc868aae093479e3131e3d165c93b1c7474109d13c90ec0dda2a1bbfff0674"
-dependencies = [
- "bytes 0.4.12",
- "futures 0.1.29",
- "log",
-]
-
-[[package]]
 name = "tokio-macros"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3483,7 +3224,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d79ca061b032d6ce30c660fded31189ca0b9922bf483cd70759f13a2d86786c"
 dependencies = [
  "cfg-if",
- "log",
  "tracing-attributes",
  "tracing-core",
 ]
@@ -3620,15 +3360,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
 dependencies = [
  "unic-common",
-]
-
-[[package]]
-name = "unicase"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
-dependencies = [
- "version_check",
 ]
 
 [[package]]

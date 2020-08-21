@@ -36,6 +36,10 @@ pub enum ProfileCommand {
     #[structopt(name = "delete")]
     Delete(DeleteOpt),
 
+    /// Delete the named cluster
+    #[structopt(name = "delete-cluster")]
+    DeleteCluster(DeleteClusterOpt),
+
     /// Switch to the named profile
     #[structopt(name = "switch")]
     Switch(SwitchOpt),
@@ -53,6 +57,16 @@ pub enum ProfileCommand {
 pub struct DeleteOpt {
     #[structopt(value_name = "profile name")]
     pub profile_name: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct DeleteClusterOpt {
+    /// The name of a cluster connection to delete
+    #[structopt(value_name = "cluster name")]
+    pub cluster_name: String,
+    /// Deletes a cluster even if its active
+    #[structopt(short, long)]
+    pub force: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -78,6 +92,9 @@ where
         }
         ProfileCommand::Delete(profile) => {
             process_delete(out, profile)?;
+        }
+        ProfileCommand::DeleteCluster(cluster) => {
+            process_delete_cluster(out, cluster)?;
         }
         ProfileCommand::Sync(profile) => {
             process_sync(out, profile).await?;
@@ -130,4 +147,62 @@ where
     }
 
     Ok("".to_string())
+}
+
+pub fn process_delete_cluster<O>(
+    _out: std::sync::Arc<O>,
+    opt: DeleteClusterOpt,
+) -> Result<String, CliError>
+where
+    O: Terminal,
+{
+    let cluster_name = opt.cluster_name;
+
+    let mut config_file = match ConfigFile::load(None) {
+        Ok(config_file) => config_file,
+        Err(e) => {
+            println!("No config can be found: {}", e);
+            return Ok("".to_string());
+        }
+    };
+
+    let config = config_file.mut_config();
+
+    // Check if the named cluster exists
+    if config.cluster(&cluster_name).is_none() {
+        println!("No profile named {} exists", &cluster_name);
+        return Ok("".to_string());
+    }
+
+    if !opt.force {
+        // Check whether there are any profiles that conflict with
+        // this cluster being deleted. That is, if any profiles reference it.
+        if let Err(profile_conflicts) = config.delete_cluster_check(&cluster_name) {
+            println!(
+                "The following profiles reference cluster {}:",
+                &cluster_name
+            );
+            for profile in profile_conflicts.iter() {
+                println!("  {}", profile);
+            }
+            println!("If you would still like to delete the cluster, use --force");
+            return Ok("".to_string());
+        }
+    }
+
+    let _deleted = match config.delete_cluster(&cluster_name) {
+        Some(deleted) => deleted,
+        None => {
+            println!("Cluster {} not found", &cluster_name);
+            return Ok("".to_string());
+        }
+    };
+
+    match config_file.save() {
+        Ok(_) => Ok(format!("Cluster {} deleted", &cluster_name)),
+        Err(e) => {
+            println!("Unable to save config file: {}", e);
+            Ok("".to_string())
+        }
+    }
 }
