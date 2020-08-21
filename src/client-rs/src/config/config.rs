@@ -252,9 +252,10 @@ impl Config {
     /// assert_eq!(conflicts, vec!["fluvio-cloud"]);
     /// ```
     pub fn delete_cluster_check(&mut self, cluster_name: &str) -> Result<(), Vec<&str>> {
-
         // Find all profiles that reference the named cluster
-        let conflicts: Vec<_> = self.profile.iter()
+        let conflicts: Vec<_> = self
+            .profile
+            .iter()
             .filter(|(_, profile)| &*profile.cluster == cluster_name)
             .map(|(name, _)| &**name)
             .collect();

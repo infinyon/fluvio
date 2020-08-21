@@ -149,7 +149,10 @@ where
     Ok("".to_string())
 }
 
-pub fn process_delete_cluster<O>(_out: std::sync::Arc<O>, opt: DeleteClusterOpt) -> Result<String, CliError>
+pub fn process_delete_cluster<O>(
+    _out: std::sync::Arc<O>,
+    opt: DeleteClusterOpt,
+) -> Result<String, CliError>
 where
     O: Terminal,
 {
@@ -175,7 +178,10 @@ where
         // Check whether there are any profiles that conflict with
         // this cluster being deleted. That is, if any profiles reference it.
         if let Err(profile_conflicts) = config.delete_cluster_check(&cluster_name) {
-            println!("The following profiles reference cluster {}:", &cluster_name);
+            println!(
+                "The following profiles reference cluster {}:",
+                &cluster_name
+            );
             for profile in profile_conflicts.iter() {
                 println!("  {}", profile);
             }
@@ -193,9 +199,7 @@ where
     };
 
     match config_file.save() {
-        Ok(_) => {
-            Ok(format!("Cluster {} deleted", &cluster_name))
-        }
+        Ok(_) => Ok(format!("Cluster {} deleted", &cluster_name)),
         Err(e) => {
             println!("Unable to save config file: {}", e);
             Ok("".to_string())
