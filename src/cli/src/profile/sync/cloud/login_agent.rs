@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 use std::fs;
 use std::path::{PathBuf, Path};
 
-use tracing::{warn, error, debug, trace, instrument};
+use tracing::{warn, debug, trace, instrument};
 use serde::{Deserialize, Serialize};
 use flv_types::defaults::CLI_CONFIG_PATH;
 use surf::http_types::StatusCode;
@@ -128,17 +128,9 @@ impl LoginAgent {
                 let cluster: Cluster = response.body_json().await?;
                 Ok(cluster)
             }
-            StatusCode::Unauthorized => {
-                warn!("Failed to download profile, token is expired or invalid");
-                Err(CloudError::Unauthorized)
-            }
-            StatusCode::NotFound => {
-                warn!("Failed to download a profile for this user");
-                Err(CloudError::ProfileNotFound)
-            }
-            e => {
-                error!("Got unexpected status code {:?}", e);
-                Err(CloudError::Unexpected)
+            _ => {
+                warn!("Failed to download profile");
+                Err(CloudError::ProfileDownloadError)
             }
         }
     }
@@ -148,7 +140,7 @@ impl LoginAgent {
     /// If this succeeds, the LoginAgent will save the Fluvio Cloud
     /// credentials in a session to be used later.
     #[allow(clippy::unit_arg)]
-    #[instrument(err
+    #[instrument(
         skip(self, password),
         fields(
             remote = &*self.remote,
@@ -226,10 +218,10 @@ impl Credentials {
 
 #[derive(Debug)]
 pub enum CloudError {
+    /// Failed to download profile
+    ProfileDownloadError,
     /// Failed to authenticate using the given username
     AuthenticationError(String),
-    /// Fluvio Cloud token has expired or is invalid
-    Unauthorized,
     /// Failed to open Fluvio Cloud login file
     UnableToLoadCredentials(IoError),
     /// Failed to parse Fluvio Cloud token
@@ -240,17 +232,13 @@ pub enum CloudError {
     IoError(IoError),
     /// Failed to deserialize JSON
     JsonError(JsonError),
-    /// Failed to find a profile for this account
-    ProfileNotFound,
-    /// An unexpected error occurred
-    Unexpected,
 }
 
 impl std::fmt::Display for CloudError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ProfileDownloadError => write!(f, "Failed to download profile"),
             Self::AuthenticationError(email) => write!(f, "Failed to login with email {}", email),
-            Self::Unauthorized => write!(f, "Fluvio Cloud token has expired"),
             Self::UnableToLoadCredentials(e) => write!(f, "Failed to open login file: {}", e),
             Self::UnableToParseCredentials(e) => {
                 write!(f, "Failed to read credentials toml: {}", e)
@@ -258,8 +246,6 @@ impl std::fmt::Display for CloudError {
             Self::HttpError(surf) => write!(f, "Failed to make http request: {}", surf),
             Self::IoError(e) => write!(f, "Io Error: {}", e),
             Self::JsonError(e) => write!(f, "JSON error: {}", e),
-            Self::ProfileNotFound => write!(f, "Failed to find a profile for this account"),
-            Self::Unexpected => write!(f, "An unexpected error occurred"),
         }
     }
 }

@@ -11,7 +11,6 @@ use crate::CliError;
 use crate::t_print;
 use crate::profile::sync::cloud::login_agent::LoginAgent;
 use fluvio::config::{Cluster, ConfigFile, Profile};
-use crate::profile::{process_switch, SwitchOpt};
 
 #[derive(Debug, StructOpt)]
 pub struct CloudOpt {
@@ -39,12 +38,12 @@ where
             let result = save_cluster(out.clone(), cluster)?;
             return Ok(result);
         }
-        // If the token is expired, continue to login
-        | Err(CloudError::Unauthorized)
         // If we have no token file, continue to login
         | Err(CloudError::UnableToLoadCredentials(_))
         // If we're unable to parse the token file, continue to login
         | Err(CloudError::UnableToParseCredentials(_)) => (),
+        // If we have other problems, try re-logging in
+        | Err(CloudError::ProfileDownloadError) => (),
         Err(other) => return Err(other.into()),
     }
 
@@ -63,30 +62,27 @@ where
     let password = rpassword::read_password_from_tty(Some("Password: "))?;
 
     agent.authenticate(email.to_owned(), password).await?;
-    if let Ok(cluster) = agent.download_profile().await {
-        let result = save_cluster(out, cluster)?;
-        return Ok(result);
+    match agent.download_profile().await {
+        Ok(cluster) => {
+            let result = save_cluster(out, cluster)?;
+            return Ok(result);
+        }
+        Err(e) => {
+            println!("{}", e);
+        }
     }
 
     Ok("".to_string())
 }
 
-fn save_cluster<O: Terminal>(out: std::sync::Arc<O>, cluster: Cluster) -> Result<String, CliError> {
+fn save_cluster<O: Terminal>(_out: std::sync::Arc<O>, cluster: Cluster) -> Result<String, CliError> {
     let mut config_file = ConfigFile::load_default_or_new()?;
+    let config = config_file.mut_config();
     let profile = Profile::new("fluvio-cloud".to_string());
-    config_file
-        .mut_config()
-        .add_cluster(cluster, "fluvio-cloud".to_string());
-    config_file
-        .mut_config()
-        .add_profile(profile, "fluvio-cloud".to_string());
+    config.add_cluster(cluster, "fluvio-cloud".to_string());
+    config.add_profile(profile, "fluvio-cloud".to_string());
     config_file.save()?;
     info!("Successfully saved fluvio-cloud profile");
-    process_switch(
-        out,
-        SwitchOpt {
-            profile_name: "fluvio-cloud".to_string(),
-        },
-    )?;
+    config_file.mut_config().set_current_profile("fluvio-cloud");
     Ok("Successfully saved fluvio-cloud profile".to_string())
 }
