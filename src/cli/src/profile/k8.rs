@@ -39,11 +39,11 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
     match config.mut_cluster(&profile_name) {
         Some(cluster) => {
-            cluster.set_addr(external_addr.clone());
+            cluster.set_addr(external_addr);
             cluster.tls = opt.tls.try_into_inline()?;
         }
         None => {
-            let mut local_cluster = Cluster::new(external_addr.clone());
+            let mut local_cluster = Cluster::new(external_addr);
             local_cluster.tls = opt.tls.try_into_inline()?;
             config.add_cluster(local_cluster, profile_name.clone());
         }
