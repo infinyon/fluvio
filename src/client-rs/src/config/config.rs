@@ -206,6 +206,67 @@ impl Config {
         }
     }
 
+    /// Deletes the named cluster, whether it is being used or not.
+    ///
+    /// You may want to check if the named cluster is active or not using
+    /// `delete_cluster_check`. Otherwise, you may remove a cluster that
+    /// is being used by the active profile.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::config::{Config, Cluster, Profile};
+    /// let mut config = Config::new();
+    /// let cluster = Cluster::new("https://cloud.fluvio.io".to_string());
+    /// config.add_cluster(cluster, "fluvio-cloud".to_string());
+    /// let profile = Profile::new("fluvio-cloud".to_string());
+    /// config.add_profile(profile, "fluvio-cloud".to_string());
+    ///
+    /// config.delete_cluster("fluvio-cloud").unwrap();
+    /// assert!(config.cluster("fluvio-cloud").is_none());
+    /// ```
+    pub fn delete_cluster(&mut self, cluster_name: &str) -> Option<Cluster> {
+        self.cluster.remove(cluster_name)
+    }
+
+    /// Checks whether it's safe to delete the named cluster
+    ///
+    /// If there are any profiles that reference the named cluster,
+    /// they are considered conflicts and the cluster is unsafe to delete.
+    /// When conflicts exist, the conflicting profile names are returned
+    /// in the `Err()` return value.
+    ///
+    /// If there are no profile conflicts, this returns with `Ok(())`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::config::{Config, Cluster, Profile};
+    /// let mut config = Config::new();
+    /// let cluster = Cluster::new("https://cloud.fluvio.io".to_string());
+    /// config.add_cluster(cluster, "fluvio-cloud".to_string());
+    /// let profile = Profile::new("fluvio-cloud".to_string());
+    /// config.add_profile(profile, "fluvio-cloud".to_string());
+    ///
+    /// let conflicts = config.delete_cluster_check("fluvio-cloud").unwrap_err();
+    /// assert_eq!(conflicts, vec!["fluvio-cloud"]);
+    /// ```
+    pub fn delete_cluster_check(&mut self, cluster_name: &str) -> Result<(), Vec<&str>> {
+        // Find all profiles that reference the named cluster
+        let conflicts: Vec<_> = self
+            .profile
+            .iter()
+            .filter(|(_, profile)| &*profile.cluster == cluster_name)
+            .map(|(name, _)| &**name)
+            .collect();
+
+        if !conflicts.is_empty() {
+            return Err(conflicts);
+        }
+
+        Ok(())
+    }
+
     pub fn mut_profile(&mut self, profile_name: &str) -> Option<&mut Profile> {
         self.profile.get_mut(profile_name)
     }
