@@ -327,23 +327,28 @@ async fn check_load_balancer_status() -> Result<(), IoError> {
             ))
         }
     };
-    if username == "minikube" {
-        // create dummy service
-        create_dummy_service()?;
-        if wait_for_service_exist(DEFAULT_NAMESPACE)
-            .await
-            .map_err(|err| IoError::new(ErrorKind::Other, err.to_string()))?
-            .is_some()
-        {
-            // IP found, everything good
-            delete_service()?;
-        } else {
-            delete_service()?;
+
+    // create dummy service
+    create_dummy_service()?;
+    if wait_for_service_exist(DEFAULT_NAMESPACE)
+        .await
+        .map_err(|err| IoError::new(ErrorKind::Other, err.to_string()))?
+        .is_some()
+    {
+        // IP found, everything good
+        delete_service()?;
+    } else {
+        delete_service()?;
+        if username == "minikube" {
             return Err(IoError::new(
                 ErrorKind::Other,
                 "Not able to find the tunnel, please ensure minikube tunnel is up".to_string(),
             ));
         }
+        return Err(IoError::new(
+            ErrorKind::Other,
+            "Service not available".to_string(),
+        ));
     }
 
     Ok(())
@@ -360,7 +365,7 @@ fn create_dummy_service() -> Result<(), IoError> {
         .map_err(|err| {
             IoError::new(
                 ErrorKind::Other,
-                format!("Error creating loadbalancer server: {}", err.to_string()),
+                format!("Error creating loadbalancer service: {}", err.to_string()),
             )
         })?;
     Ok(())
@@ -375,7 +380,7 @@ fn delete_service() -> Result<(), IoError> {
         .map_err(|err| {
             IoError::new(
                 ErrorKind::Other,
-                format!("Error deleting loadbalancer server: {}", err.to_string()),
+                format!("Error deleting loadbalancer service: {}", err.to_string()),
             )
         })?;
     Ok(())

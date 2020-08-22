@@ -29,7 +29,6 @@ pub fn get_binary(bin_name: &str) -> Result<Command, IoError> {
     }
 }
 
-#[allow(unused)]
 pub fn check_create_permission(resource: &str) -> Result<bool, IoError> {
     let check_command = Command::new("kubectl")
         .arg("auth")
