@@ -51,8 +51,9 @@ flv-types = { path ="../types", version = "0.2.0" }
 flv-spu = { path = "../spu-server", optional = true }
 flv-sc-k8 = { path = "../sc-k8", optional = true }
 rpassword = "5.0.0"
-surf = "2.0.0-alpha.4"
 dirs = "1.0.2"
+async-h1 = "2.1.2"
+http-types = "2.4.0"
 
 [dev-dependencies]
 flv-future-aio = { version = "2.3.1", features = ["fixture"] }

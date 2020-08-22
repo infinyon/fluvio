@@ -4,11 +4,14 @@ use semver::Version;
 use k8_client::K8Config;
 use k8_config::KubeContext;
 use std::io::ErrorKind;
-use std::net::{IpAddr};
+use std::net::IpAddr;
 use std::str::FromStr;
-use url::{Url};
+use url::Url;
+use tracing::*;
 
 use super::*;
+use crate::target::ClusterTarget;
+use crate::tls::TlsOpt;
 
 fn get_cluster_server_host(kc_config: KubeContext) -> Result<String, IoError> {
     if let Some(ctx) = kc_config.config.current_cluster() {
@@ -75,12 +78,8 @@ fn pre_install_check() -> Result<(), CliError> {
         ));
     }
 
-    let k8_config = K8Config::load().map_err(|err| {
-        IoError::new(
-            ErrorKind::Other,
-            format!("unable to load kube context {}", err),
-        )
-    })?;
+    let k8_config = K8Config::load()?;
+
     match k8_config {
         K8Config::Pod(_) => {
             // ignore server check for pod
@@ -121,11 +120,53 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         .map_err(|err| CliError::Other(err.to_string()))?
         .is_some()
     {
-        println!("fluvio is up");
-        set_profile(&opt).await?;
+        info!("fluvio is up");
+
+        let external_addr =
+            match crate::profile::discover_fluvio_addr(Some(&opt.k8_config.namespace)).await? {
+                Some(sc_addr) => sc_addr,
+                None => {
+                    return Err(CliError::Other(
+                        "fluvio service is not deployed".to_string(),
+                    ))
+                }
+            };
+
+        debug!("found sc, addr is: {}", external_addr);
+
+        let tls_config = &opt.tls;
+        let tls = if tls_config.tls {
+            TlsOpt {
+                tls: true,
+                domain: tls_config.domain.clone(),
+                enable_client_cert: true,
+                client_key: tls_config.client_key.clone(),
+                client_cert: tls_config.client_cert.clone(),
+                ca_cert: tls_config.ca_cert.clone(),
+            }
+        } else {
+            TlsOpt::default()
+        };
+
+        if !opt.skip_profile_creation {
+            set_profile(
+                external_addr.clone(),
+                tls.clone(),
+                Some(opt.k8_config.namespace.clone()),
+            )
+            .await?;
+        }
 
         if opt.spu > 0 {
-            create_spg(&opt).await?;
+            create_spg(
+                ClusterTarget {
+                    cluster: Some(external_addr),
+                    tls,
+                    ..Default::default()
+                },
+                &opt,
+            )
+            .await?;
         }
 
         Ok(())
@@ -277,37 +318,29 @@ pub fn install_sys(opt: InstallCommand) {
 }
 
 /// switch to profile
-async fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
+async fn set_profile(
+    external_addr: String,
+    tls: TlsOpt,
+    namespace: Option<String>,
+) -> Result<(), CliError> {
     use crate::profile::set_k8_context;
     use crate::profile::K8Opt;
-    use crate::tls::TlsOpt;
-
-    let tls_config = &opt.tls;
-    let tls = if tls_config.tls {
-        TlsOpt {
-            tls: true,
-            domain: tls_config.domain.clone(),
-            enable_client_cert: true,
-            client_key: tls_config.client_key.clone(),
-            client_cert: tls_config.client_cert.clone(),
-            ca_cert: tls_config.ca_cert.clone(),
-        }
-    } else {
-        TlsOpt::default()
-    };
 
     let config = K8Opt {
-        namespace: Some(opt.k8_config.namespace.clone()),
+        namespace,
         tls,
         ..Default::default()
     };
 
-    println!("{}", set_k8_context(config).await?);
+    println!(
+        "updated profile: {:#?}",
+        set_k8_context(config, external_addr).await?
+    );
 
     Ok(())
 }
 
-async fn create_spg(opt: &InstallCommand) -> Result<(), CliError> {
+async fn create_spg(target: ClusterTarget, opt: &InstallCommand) -> Result<(), CliError> {
     use crate::group::process_create_managed_spu_group;
     use crate::group::CreateManagedSpuGroupOpt;
 
@@ -315,6 +348,7 @@ async fn create_spg(opt: &InstallCommand) -> Result<(), CliError> {
     let group_opt = CreateManagedSpuGroupOpt {
         name: group_name.clone(),
         replicas: opt.spu,
+        target,
         ..Default::default()
     };
 
@@ -331,7 +365,7 @@ mod k8_util {
 
     use flv_future_aio::timer::sleep;
     use k8_client::ClientError;
-    use k8_client::load_and_share;
+    use k8_client::K8Client;
     use k8_obj_core::service::ServiceSpec;
     use k8_obj_metadata::InputObjectMeta;
     use k8_metadata_client::MetadataClient;
@@ -350,7 +384,7 @@ mod k8_util {
     }
 
     pub async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError> {
-        let client = load_and_share()?;
+        let client = K8Client::default()?;
 
         let input = InputObjectMeta::named("flv-sc-public", ns);
 
