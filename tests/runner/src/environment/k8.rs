@@ -55,7 +55,7 @@ fn print_sc_logs() {
     use std::process::Command;
 
     let _ = Command::new("kubectl")
-        .arg("log")
+        .arg("logs")
         .arg("flv-sc")
         .print()
         .inherit();
