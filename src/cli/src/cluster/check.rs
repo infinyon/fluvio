@@ -272,7 +272,14 @@ fn get_cluster_server_host() -> Result<String, IoError> {
                 ))
             }
         };
-        Ok(url.host().unwrap().to_string())
+        if let Some(host) = url.host() {
+            Ok(host.to_string())
+        } else {
+            Err(IoError::new(
+                ErrorKind::Other,
+                format!("no host found: {}", url),
+            ))
+        }
     } else {
         Err(IoError::new(ErrorKind::Other, "no context found"))
     }
