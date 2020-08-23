@@ -65,9 +65,5 @@ fn print_sc_logs() {
         .print()
         .inherit();
 
-        let _ = Command::new("kc")
-        .arg("get")
-        .arg("spu")
-        .print()
-        .inherit();
+    let _ = Command::new("kc").arg("get").arg("spu").print().inherit();
 }
