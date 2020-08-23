@@ -181,6 +181,13 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
                     "unable to detect fluvio service".to_owned(),
                 ));
             }
+
+            // print spu
+            let _ = Command::new("kubectl")
+                .arg("get")
+                .arg("spu")
+                .print()
+                .inherit();
         }
 
         Ok(())
