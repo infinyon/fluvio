@@ -29,6 +29,10 @@ impl EnvironmentDriver for K8EnvironmentDriver {
     }
 
     async fn install_cluster(&self) {
+
+        use std::time::Duration;
+        use flv_future_aio::timer::sleep;
+
         let mut cmd = get_fluvio().expect("fluvio not founded");
 
         cmd.arg("cluster")
@@ -45,6 +49,9 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         }
 
         cmd.print().inherit();
+
+
+        sleep(Duration::from_millis(2000)).await;
 
         // display sc pod
         print_sc_logs();
