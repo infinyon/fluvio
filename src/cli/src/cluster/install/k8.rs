@@ -440,7 +440,7 @@ mod k8_util {
                 .items
                 .iter()
                 .filter(|spu_obj| {
-                    spu_obj.spec.public_endpoint.ingress.is_empty() && spu_obj.status.is_online()
+                    !spu_obj.spec.public_endpoint.ingress.is_empty() && spu_obj.status.is_online()
                 })
                 .count();
 
