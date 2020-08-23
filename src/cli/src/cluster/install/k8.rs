@@ -167,6 +167,13 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
                 &opt,
             )
             .await?;
+
+            if !k8_util::wait_for_spu(&opt.k8_config.namespace).await? {
+                println!("too long to wait for spu to be ready");
+                return Err(CliError::Other(
+                    "unable to detect fluvio service".to_owned(),
+                ))
+            }
         }
 
         Ok(())
@@ -399,13 +406,13 @@ mod k8_util {
                         return Ok(Some(format!("{}:9003", addr.to_owned())));
                     } else {
                         println!("svc exists but no load balancer exist yet, continue wait");
-                        sleep(Duration::from_millis(3000)).await;
+                        sleep(Duration::from_millis(2000)).await;
                     }
                 }
                 Err(err) => match err {
                     K8ClientError::NotFound => {
                         println!("no svc found, sleeping ");
-                        sleep(Duration::from_millis(3000)).await;
+                        sleep(Duration::from_millis(2000)).await;
                     }
                     _ => panic!("error: {}", err),
                 },
@@ -416,5 +423,39 @@ mod k8_util {
         print_svc(ns);
 
         Ok(None)
+    }
+
+    /// wait until all spus are ready and have ingres
+    pub async fn wait_for_spu(ns: &str) -> Result<bool, ClientError> {
+        use flv_metadata_cluster::spu::SpuSpec;
+
+        let client = K8Client::default()?;
+
+        for i in 0..100u16 {
+            let items = client.retrieve_items::<SpuSpec, _>(ns).await?;
+            let spu_count = items.items.len();
+            // check for all items has ingress
+
+            let ready_spu = items
+                .items
+                .iter()
+                .filter(|spu_obj| {
+                    spu_obj.spec.public_endpoint.ingress.len() > 0 && spu_obj.status.is_online()
+                })
+                .count();
+
+            if spu_count == ready_spu {
+                println!("all spu: {} is ready", spu_count);
+                return Ok(true);
+            } else {
+                println!(
+                    "spu: {} out of {} ready, waiting: {}",
+                    ready_spu, spu_count, i
+                );
+                sleep(Duration::from_millis(2000)).await;
+            }
+        }
+
+        Ok(false)
     }
 }

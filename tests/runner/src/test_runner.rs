@@ -43,6 +43,7 @@ impl TestRunner {
 
     /// main entry point
     pub async fn run_test(&self) {
+        use std::process::Command;
         use crate::tests::create_test_driver;
 
         // at this point, cluster is up, we need to ensure clean shutdown of cluster
@@ -59,6 +60,13 @@ impl TestRunner {
         sleep(Duration::from_secs(1)).await; // sleep 1 second in just case
 
         let test_driver = create_test_driver(self.option.clone());
+
+
+        let _ = Command::new("kubectl")
+        .arg("get")
+        .arg("spu")
+        .print()
+        .inherit();
 
         test_driver.run().await;
     }
