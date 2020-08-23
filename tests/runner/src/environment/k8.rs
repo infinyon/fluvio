@@ -64,4 +64,10 @@ fn print_sc_logs() {
         .arg("flv-sc")
         .print()
         .inherit();
+
+        let _ = Command::new("kc")
+        .arg("get")
+        .arg("spu")
+        .print()
+        .inherit();
 }
