@@ -158,6 +158,13 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         }
 
         if opt.spu > 0 {
+            use std::time::Duration;
+            use flv_future_aio::timer::sleep;
+
+            // wait little bit for sc to spin up
+
+            sleep(Duration::from_millis(2000)).await;
+
             create_spg(
                 ClusterTarget {
                     cluster: Some(external_addr),

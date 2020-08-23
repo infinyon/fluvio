@@ -67,6 +67,8 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
     config_file.save()?;
 
+    println!("k8 profile set");
+
     Ok(new_profile)
 }
 
