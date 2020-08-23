@@ -220,15 +220,13 @@ impl SpgOperator {
 
             self.apply_spu(spg_obj, spg_spec, spg_name, &spu_name, i, spu_id)
                 .await;
-                
+
             if let Err(err) = self
                 .apply_spu_load_balancers(spg_obj, spg_spec, &spu_name)
                 .await
             {
                 error!("error trying to create load balancer for spu: {}", err);
             }
-
-            
         }
 
         Ok(())

@@ -65,5 +65,9 @@ fn print_sc_logs() {
         .print()
         .inherit();
 
-    let _ = Command::new("kubectl").arg("get").arg("spu").print().inherit();
+    let _ = Command::new("kubectl")
+        .arg("get")
+        .arg("spu")
+        .print()
+        .inherit();
 }
