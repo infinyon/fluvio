@@ -38,7 +38,6 @@ impl SvcOperator {
     }
 
     async fn outer_loop(mut self) {
-
         use std::time::Duration;
         use flv_future_aio::timer::sleep;
 

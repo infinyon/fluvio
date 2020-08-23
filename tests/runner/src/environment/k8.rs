@@ -48,8 +48,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         }
 
         if let Some(log) = &self.option.rust_log {
-            cmd.arg("--rust-log")
-                .arg(log);
+            cmd.arg("--rust-log").arg(log);
         }
 
         cmd.print().inherit();
