@@ -47,6 +47,11 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             cmd.arg("--develop");
         }
 
+        if let Some(log) = &self.option.rust_log {
+            cmd.arg("--rust-log")
+                .arg(log);
+        }
+
         cmd.print().inherit();
 
         sleep(Duration::from_millis(2000)).await;
