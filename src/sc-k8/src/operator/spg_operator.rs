@@ -218,15 +218,15 @@ impl SpgOperator {
             let spu_name = format!("{}-{}", spg_name, i);
             debug!("generating spu with name: {}", spu_name);
 
+            self.apply_spu(spg_obj, spg_spec, spg_name, &spu_name, i, spu_id)
+                .await;
+
             if let Err(err) = self
                 .apply_spu_load_balancers(spg_obj, spg_spec, &spu_name)
                 .await
             {
                 error!("error trying to create load balancer for spu: {}", err);
             }
-
-            self.apply_spu(spg_obj, spg_spec, spg_name, &spu_name, i, spu_id)
-                .await;
         }
 
         Ok(())

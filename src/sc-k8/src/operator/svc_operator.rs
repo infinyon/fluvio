@@ -38,6 +38,12 @@ impl SvcOperator {
     }
 
     async fn outer_loop(mut self) {
+        use std::time::Duration;
+        use flv_future_aio::timer::sleep;
+
+        // wait for 2 seconds so we don't have problem problem syncing with spu store
+        // this may go away if this is converted into regular operator
+        sleep(Duration::from_millis(2000)).await;
         info!("starting svc operator");
         loop {
             debug!("starting inner loop");

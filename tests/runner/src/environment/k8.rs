@@ -29,6 +29,9 @@ impl EnvironmentDriver for K8EnvironmentDriver {
     }
 
     async fn install_cluster(&self) {
+        use std::time::Duration;
+        use flv_future_aio::timer::sleep;
+
         let mut cmd = get_fluvio().expect("fluvio not founded");
 
         cmd.arg("cluster")
@@ -44,6 +47,31 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             cmd.arg("--develop");
         }
 
+        if let Some(log) = &self.option.rust_log {
+            cmd.arg("--rust-log").arg(log);
+        }
+
         cmd.print().inherit();
+
+        sleep(Duration::from_millis(2000)).await;
+
+        // display sc pod
+        print_sc_logs();
     }
+}
+
+fn print_sc_logs() {
+    use std::process::Command;
+
+    let _ = Command::new("kubectl")
+        .arg("logs")
+        .arg("flv-sc")
+        .print()
+        .inherit();
+
+    let _ = Command::new("kubectl")
+        .arg("get")
+        .arg("spu")
+        .print()
+        .inherit();
 }
