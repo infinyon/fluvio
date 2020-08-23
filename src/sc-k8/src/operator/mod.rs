@@ -24,5 +24,5 @@ pub fn run_k8_operators(
 ) {
     SpgOperator::new(k8_client.clone(), namespace.clone(), ctx.clone(), tls).run();
 
-    SvcOperator::run(k8_client, namespace, ctx);
+   // SvcOperator::run(k8_client, namespace, ctx);
 }
