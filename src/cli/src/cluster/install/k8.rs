@@ -172,7 +172,7 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
                 println!("too long to wait for spu to be ready");
                 return Err(CliError::Other(
                     "unable to detect fluvio service".to_owned(),
-                ))
+                ));
             }
         }
 
@@ -440,7 +440,7 @@ mod k8_util {
                 .items
                 .iter()
                 .filter(|spu_obj| {
-                    spu_obj.spec.public_endpoint.ingress.len() > 0 && spu_obj.status.is_online()
+                    spu_obj.spec.public_endpoint.ingress.is_empty() && spu_obj.status.is_online()
                 })
                 .count();
 
