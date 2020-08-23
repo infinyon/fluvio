@@ -13,6 +13,8 @@ use crate::CliError;
 use super::util::*;
 use std::path::PathBuf;
 
+pub use helm::installed_sys_charts;
+
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific release version
