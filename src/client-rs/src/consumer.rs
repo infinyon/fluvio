@@ -3,6 +3,8 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 use tracing::trace;
+use futures::Stream;
+use futures::stream::BoxStream;
 
 use crate::kf::api::ReplicaKey;
 use crate::kf::api::RecordSet;
@@ -10,6 +12,9 @@ use crate::kf::api::PartitionOffset;
 use crate::kf::message::fetch::FetchablePartitionResponse;
 use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
 use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
+use kf_protocol::message::fetch::DefaultKfFetchRequest;
+use kf_protocol::message::fetch::FetchPartition;
+use kf_protocol::message::fetch::FetchableTopic;
 
 use crate::ClientError;
 use crate::params::FetchOffset;
@@ -33,14 +38,13 @@ impl Consumer {
         &self.replica
     }
 
+    /// fetch logs once
     pub async fn fetch_logs_once(
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,
     ) -> Result<FetchablePartitionResponse<RecordSet>, ClientError> {
-        use kf_protocol::message::fetch::DefaultKfFetchRequest;
-        use kf_protocol::message::fetch::FetchPartition;
-        use kf_protocol::message::fetch::FetchableTopic;
+        
 
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
@@ -89,6 +93,52 @@ impl Consumer {
             Err(ClientError::PartitionNotFound(self.replica.to_owned()))
         }
     }
+
+    
+    /// fetch logs as stream
+    /// this will fetch continously
+    pub async fn fetch_logs_as_stream<'a>(
+        &'a mut self,
+        offset_option: FetchOffset,
+        option: FetchLogOption,
+    ) -> Result<BoxStream<'a,FetchablePartitionResponse<RecordSet>>, ClientError> {
+
+        debug!(
+            "starting fetch log once: {:#?} from replica: {}",
+            offset_option, self.replica,
+        );
+
+        let mut leader = self.pool.spu_leader(&self.replica).await?;
+
+        debug!("found spu leader {}", leader);
+
+        let offset = calc_offset(&mut leader, &self.replica, offset_option).await?;
+
+        let partition = FetchPartition {
+            partition_index: self.replica.partition,
+            fetch_offset: offset,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        let topic_request = FetchableTopic {
+            name: self.replica.topic.to_owned(),
+            fetch_partitions: vec![partition],
+        };
+
+        let fetch_request = DefaultKfFetchRequest {
+            topics: vec![topic_request],
+            isolation_level: option.isolation,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        
+
+        Err(ClientError::UnableToReadProfile)
+
+    }
+    
 }
 
 async fn fetch_offsets(
