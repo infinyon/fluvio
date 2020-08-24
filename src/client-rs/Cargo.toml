@@ -7,9 +7,9 @@ authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
 description = "The offical Fluvio driver for Rust"
 
-
 [dependencies]
 tracing = "0.1.19"
+tracing-futures = "0.2.4"
 dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"
@@ -24,7 +24,12 @@ tokio = { version = "0.2.21", features = ["macros"] }
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
 kf-protocol = { version = "2.0.0" } 
 flv-types = { version = "0.2.0", path ="../types" }
-flv-util = "0.2.0"
+flv-util = { version = "0.3.2", git = "https://github.com/infinyon/flv-util" }
 kf-socket = { version = "2.1.0", path = "../kf-socket" }
 flv-api-sc = { version = "2.0.0", path = "../sc-api", default-features=false}
 flv-api-spu = { version = "2.0.0", path = "../spu-api"}
+flv-metadata-cluster = { features = ["k8"], path = "../metadata-cluster" }
+
+[dev-dependencies]
+async-std = "1.6.3"
+flv-future-aio = { version = "2.2.1", features = ["fixture"] }

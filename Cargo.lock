@@ -883,6 +883,7 @@ name = "fluvio"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "async-std",
  "async-trait",
  "base64 0.12.3",
  "dashmap",
@@ -891,8 +892,9 @@ dependencies = [
  "flv-api-sc",
  "flv-api-spu",
  "flv-future-aio",
+ "flv-metadata-cluster",
  "flv-types",
- "flv-util 0.2.1",
+ "flv-util 0.3.2",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -901,6 +903,25 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-cluster"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "fluvio",
+ "flv-future-aio",
+ "flv-util 0.3.2",
+ "k8-client",
+ "k8-config",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -1219,6 +1240,18 @@ name = "flv-util"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61a4e1a536df6e2a5149046ed83edf6ad31ac2efbeeed44c3b6711c4c56b7feb"
+dependencies = [
+ "chrono",
+ "env_logger 0.7.1",
+ "log",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "flv-util"
+version = "0.3.2"
+source = "git+https://github.com/infinyon/flv-util#7ab800c3d6ddad3ae7fb10b7c36edf4b5cc74721"
 dependencies = [
  "chrono",
  "env_logger 0.7.1",

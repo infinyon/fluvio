@@ -3,11 +3,9 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
-use tracing::info;
-use base64::decode;
-use serde::Deserialize;
-use serde::Serialize;
-use base64::encode;
+use tracing::{info, debug};
+use base64::{encode, decode};
+use serde::{Deserialize, Serialize};
 
 use flv_future_aio::net::tls::AllDomainConnector;
 use flv_future_aio::net::tls::TlsDomainConnector;
@@ -79,6 +77,32 @@ pub struct TlsCerts {
     pub ca_cert: String,
 }
 
+impl TlsCerts {
+    /// Attempts to write the inline TLS certs into temporary files
+    ///
+    /// Returns a `TlsPaths` populated with the paths where the
+    /// temporary files were written.
+    pub fn try_into_temp_files(&self) -> Result<TlsPaths, IoError> {
+        use std::fs::write;
+        let tmp = std::env::temp_dir();
+
+        let tls_key = tmp.join("tls.key");
+        let tls_cert = tmp.join("tls.cert");
+        let ca_cert = tmp.join("ca.cert");
+
+        write(&tls_key, self.key.as_bytes())?;
+        write(&tls_cert, self.cert.as_bytes())?;
+        write(&ca_cert, self.ca_cert.as_bytes())?;
+
+        Ok(TlsPaths {
+            domain: self.domain.clone(),
+            key: tls_key,
+            cert: tls_cert,
+            ca_cert,
+        })
+    }
+}
+
 impl TryFrom<TlsPaths> for TlsCerts {
     type Error = IoError;
 
@@ -106,6 +130,54 @@ pub struct TlsPaths {
     pub ca_cert: PathBuf,
 }
 
+/// Converts pretty-printed base64 into actual base64.
+///
+/// OpenSSL generates PEM base64 in a way that has headers
+/// and footers surrounding the base64 encoding, as well as
+/// newlines to promote readability. This function takes
+/// those out in order to allow the base64 to be directly
+/// decoded.
+///
+/// If the given string has `-----BEGIN PRIVATE KEY-----`
+/// and newlines (i.e. it is pretty-printed), then this
+/// function returns the body of base64 between the headers
+/// with newlines stripped.
+fn try_strip_pkey_base64(pkey: &str) -> String {
+    let header_stripped = pkey.strip_prefix("-----BEGIN PRIVATE KEY-----")
+        .and_then(|pkey| pkey.strip_suffix("-----END PRIVATE KEY-----\n"));
+
+    match header_stripped {
+        // If there were no headers, return original string
+        None => pkey.to_owned(),
+        // If there were headers, then also strip newlines
+        Some(stripped) => stripped.replace("\n", ""),
+    }
+}
+
+/// Converts pretty-printed base64 into actual base64.
+///
+/// OpenSSL generates PEM base64 in a way that has headers
+/// and footers surrounding the base64 encoding, as well as
+/// newlines to promote readability. This function takes
+/// those out in order to allow the base64 to be directly
+/// decoded.
+///
+/// If the given string has `-----BEGIN CERTIFICATE-----`
+/// and newlines (i.e. it is pretty-printed), then this
+/// function returns the body of base64 between the headers
+/// with newlines stripped.
+fn try_strip_cert_base64(pkey: &str) -> String {
+    let header_stripped = pkey.strip_prefix("-----BEGIN CERTIFICATE-----")
+        .and_then(|pkey| pkey.strip_suffix("-----END CERTIFICATE-----\n"));
+
+    match header_stripped {
+        // If there were no headers, return original string
+        None => pkey.to_owned(),
+        // If there were headers, then also strip newlines
+        Some(stripped) => stripped.replace("\n", ""),
+    }
+}
+
 // TODO move this to AllDomainConnector
 impl TryFrom<TlsPolicy> for AllDomainConnector {
     type Error = IoError;
@@ -128,6 +200,8 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                     TlsConfig::Inline(certs) => certs,
                     TlsConfig::Files(cert_paths) => cert_paths.try_into()?,
                 };
+                // TODO remove this
+                debug!("Using TLS certs: {:#?}", tls);
                 let ca_cert = decode(tls.ca_cert).map_err(|err| {
                     IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
                 })?;
