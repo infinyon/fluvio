@@ -49,9 +49,10 @@ macro_rules! t_print_cli_err {
 }
 
 mod target {
-
+    use std::io::{ErrorKind, Error as IoError};
     use structopt::StructOpt;
 
+    use fluvio::config::ConfigFile;
     use fluvio::ClusterConfig;
     use crate::tls::TlsOpt;
     use crate::CliError;
@@ -80,32 +81,47 @@ mod target {
         /// try to create sc config
         pub fn load(self) -> Result<ClusterConfig, CliError> {
             let tls = self.tls.try_into_inline()?;
-            // check case when inline profile is used
-            if let Some(profile) = self.profile.profile {
-                if self.cluster.is_some() {
+
+            match (self.profile.profile, self.cluster, tls) {
+                // Profile and Cluster together is illegal
+                (Some(_profile), Some(_cluster), _) => {
                     Err(CliError::invalid_arg(
                         "cluster addr is not valid when profile is used",
                     ))
-                } else if tls.is_some() {
+                }
+                // Profile and TLS together is illegal
+                (Some(_profile), _, Some(_tls)) => {
                     Err(CliError::invalid_arg(
                         "tls is not valid when profile is is used",
                     ))
-                } else {
-                    ClusterConfig::lookup_profile(Some(profile)).map_err(|err| err.into())
                 }
-            } else {
-                // check if cluster address is used
-                if let Some(cluster) = self.cluster {
-                    Ok(ClusterConfig::new(cluster, tls))
-                } else {
-                    // check if tls is used
-                    if tls.is_some() {
-                        Err(CliError::invalid_arg(
-                            "tls is only valid if cluster addr is used",
-                        ))
-                    } else {
-                        ClusterConfig::lookup_profile(None).map_err(|err| err.into())
-                    }
+                // Using Profile
+                (Some(profile), _, _) => {
+                    let config_file = ConfigFile::load(None)?;
+                    let cluster = config_file.config()
+                        // NOTE: This will not fallback to current cluster like it did before
+                        // Current cluster will be used when no profile is given.
+                        .cluster_with_profile(&profile)
+                        .ok_or(IoError::new(ErrorKind::Other, "Cluster not found for profile"))?;
+                    Ok(cluster.clone())
+                }
+                // Using Cluster with TLS
+                (None, Some(cluster), Some(tls)) => {
+                    let cluster = ClusterConfig::new(cluster).with_tls(tls);
+                    Ok(cluster)
+                }
+                // TLS is illegal without Cluster
+                (None, None, Some(_tls)) => {
+                    Err(CliError::invalid_arg(
+                        "tls is only valid if cluster addr is used",
+                    ))
+                }
+                // If no profile or cluster are given, try to use the current cluster
+                _ => {
+                    let config_file = ConfigFile::load(None)?;
+                    let cluster =config_file.config().current_cluster()
+                        .ok_or(IoError::new(ErrorKind::Other, "Current cluster not found"))?;
+                    Ok(cluster.clone())
                 }
             }
         }

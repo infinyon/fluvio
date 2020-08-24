@@ -12,7 +12,7 @@ use crate::Terminal;
 use crate::CliError;
 use crate::t_print;
 use crate::profile::sync::cloud::login_agent::LoginAgent;
-use fluvio::config::{Cluster, ConfigFile, Profile};
+use fluvio::config::{ClusterConfig, ConfigFile, Profile};
 
 #[derive(Debug, StructOpt)]
 pub struct CloudOpt {
@@ -79,7 +79,7 @@ where
 
 fn save_cluster<O: Terminal>(
     _out: std::sync::Arc<O>,
-    cluster: Cluster,
+    cluster: ClusterConfig,
 ) -> Result<String, CliError> {
     let mut config_file = ConfigFile::load_default_or_new()?;
     let config = config_file.mut_config();

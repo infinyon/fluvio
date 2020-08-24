@@ -1,5 +1,7 @@
 use crate::TestOption;
 use super::message::*;
+use fluvio::config::ConfigFile;
+use fluvio::ClusterClient;
 
 pub async fn produce_message(option: &TestOption) {
     if option.produce.produce_iteration == 1 {
@@ -10,11 +12,14 @@ pub async fn produce_message(option: &TestOption) {
 }
 
 pub async fn produce_message_with_api(option: &TestOption) {
-    use fluvio::ClusterConfig;
     use fluvio::kf::api::ReplicaKey;
 
-    let config = ClusterConfig::lookup_profile(None).expect("connect");
-    let mut cluster = config.connect().await.expect("should connect");
+    let config = ConfigFile::load(None)
+        .expect("load config");
+    let cluster_config = config.config()
+        .current_cluster()
+        .expect("current cluster");
+    let mut cluster = ClusterClient::connect(cluster_config.clone()).await.expect("should connect");
     let replica: ReplicaKey = (option.topic_name.clone(), 0).into();
     let mut producer = cluster.producer(replica).await.expect("producer");
 

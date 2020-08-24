@@ -138,9 +138,9 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new(addr: String, connector: AllDomainConnector) -> Self {
+    pub fn new<S: Into<String>>(addr: S, connector: AllDomainConnector) -> Self {
         Self {
-            addr,
+            addr: addr.into(),
             client_id: "fluvio".to_owned(),
             connector,
         }

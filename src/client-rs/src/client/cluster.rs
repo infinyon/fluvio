@@ -4,13 +4,15 @@ use kf_socket::AllMultiplexerSocket;
 use kf_protocol::api::ReplicaKey;
 
 use crate::admin::AdminClient;
-use crate::Producer;
+use crate::{Producer, ClusterConfig};
 use crate::Consumer;
 use crate::ClientError;
 use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
+use flv_future_aio::net::tls::AllDomainConnector;
+use std::convert::TryFrom;
 
 /// Client connection to cluster
 pub struct ClusterClient {
@@ -29,6 +31,19 @@ impl ClusterClient {
             versions,
             spu_pool: None,
         }
+    }
+
+    pub async fn connect(config: ClusterConfig) -> Result<ClusterClient, ClientError> {
+        let connector = match config.tls {
+            None => AllDomainConnector::default_tcp(),
+            Some(tls) => TryFrom::try_from(tls)?,
+        };
+        let config = ClientConfig::new(config.addr, connector);
+        let inner_client = config.connect().await?;
+        debug!("connected to cluster at: {}", inner_client.config().addr());
+        let cluster = ClusterClient::new(inner_client);
+        //cluster.start_metadata_watch().await?;
+        Ok(cluster)
     }
 
     async fn create_serial_client(&mut self) -> SerialClient {

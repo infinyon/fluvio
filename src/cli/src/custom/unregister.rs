@@ -10,7 +10,7 @@ use structopt::StructOpt;
 
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::CustomSpuKey;
-use fluvio::ClusterConfig;
+use fluvio::{ClusterConfig, ClusterClient};
 
 use crate::target::ClusterTarget;
 use crate::error::CliError;
@@ -68,7 +68,7 @@ impl UnregisterCustomSpuOpt {
 pub async fn process_unregister_custom_spu(opt: UnregisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, delete_key) = opt.validate()?;
 
-    let mut client = target_server.connect().await?;
+    let mut client = ClusterClient::connect(target_server).await?;
     let mut admin = client.admin().await;
 
     admin.delete::<CustomSpuSpec, _>(delete_key).await?;

@@ -5,7 +5,7 @@
 
 use structopt::StructOpt;
 
-use fluvio::ClusterConfig;
+use fluvio::{ClusterConfig, ClusterClient};
 use flv_metadata_cluster::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
@@ -39,7 +39,7 @@ pub async fn process_list_managed_spu_groups<O: Terminal>(
 ) -> Result<(), CliError> {
     let (target_server, output) = opt.validate()?;
 
-    let mut client = target_server.connect().await?;
+    let mut client = ClusterClient::connect(target_server).await?;
     let mut admin = client.admin().await;
 
     let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;

@@ -14,20 +14,20 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, IoError> {
     let config = config_file.mut_config();
 
     // check if local cluster exists otherwise, create new one
-    match config.mut_cluster(LOCAL_PROFILE) {
+    match config.cluster_mut(LOCAL_PROFILE) {
         Some(cluster) => {
             cluster.addr = local_addr.clone();
             cluster.tls = local_config.tls.try_into_inline()?;
         }
         None => {
-            let mut local_cluster = Cluster::new(local_addr.clone());
+            let mut local_cluster = ClusterConfig::new(local_addr.clone());
             local_cluster.tls = local_config.tls.try_into_inline()?;
             config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
         }
     };
 
     // check if we local profile exits otherwise, create new one, then set it's cluster
-    match config.mut_profile(LOCAL_PROFILE) {
+    match config.profile_mut(LOCAL_PROFILE) {
         Some(profile) => {
             profile.set_cluster(LOCAL_PROFILE.to_owned());
         }
