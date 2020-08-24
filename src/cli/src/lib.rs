@@ -84,25 +84,24 @@ mod target {
 
             match (self.profile.profile, self.cluster, tls) {
                 // Profile and Cluster together is illegal
-                (Some(_profile), Some(_cluster), _) => {
-                    Err(CliError::invalid_arg(
-                        "cluster addr is not valid when profile is used",
-                    ))
-                }
+                (Some(_profile), Some(_cluster), _) => Err(CliError::invalid_arg(
+                    "cluster addr is not valid when profile is used",
+                )),
                 // Profile and TLS together is illegal
-                (Some(_profile), _, Some(_tls)) => {
-                    Err(CliError::invalid_arg(
-                        "tls is not valid when profile is is used",
-                    ))
-                }
+                (Some(_profile), _, Some(_tls)) => Err(CliError::invalid_arg(
+                    "tls is not valid when profile is is used",
+                )),
                 // Using Profile
                 (Some(profile), _, _) => {
                     let config_file = ConfigFile::load(None)?;
-                    let cluster = config_file.config()
+                    let cluster = config_file
+                        .config()
                         // NOTE: This will not fallback to current cluster like it did before
                         // Current cluster will be used when no profile is given.
                         .cluster_with_profile(&profile)
-                        .ok_or(IoError::new(ErrorKind::Other, "Cluster not found for profile"))?;
+                        .ok_or_else(|| {
+                            IoError::new(ErrorKind::Other, "Cluster not found for profile")
+                        })?;
                     Ok(cluster.clone())
                 }
                 // Using Cluster with TLS
@@ -111,16 +110,15 @@ mod target {
                     Ok(cluster)
                 }
                 // TLS is illegal without Cluster
-                (None, None, Some(_tls)) => {
-                    Err(CliError::invalid_arg(
-                        "tls is only valid if cluster addr is used",
-                    ))
-                }
+                (None, None, Some(_tls)) => Err(CliError::invalid_arg(
+                    "tls is only valid if cluster addr is used",
+                )),
                 // If no profile or cluster are given, try to use the current cluster
                 _ => {
                     let config_file = ConfigFile::load(None)?;
-                    let cluster =config_file.config().current_cluster()
-                        .ok_or(IoError::new(ErrorKind::Other, "Current cluster not found"))?;
+                    let cluster = config_file.config().current_cluster().ok_or_else(|| {
+                        IoError::new(ErrorKind::Other, "Current cluster not found")
+                    })?;
                     Ok(cluster.clone())
                 }
             }

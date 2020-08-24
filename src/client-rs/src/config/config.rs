@@ -279,7 +279,8 @@ impl Config {
 
     /// Returns the ClusterConfig belonging to the named profile.
     pub fn cluster_with_profile(&self, profile_name: &str) -> Option<&ClusterConfig> {
-        self.profile.get(profile_name)
+        self.profile
+            .get(profile_name)
             .and_then(|profile| self.cluster.get(&profile.cluster))
     }
 

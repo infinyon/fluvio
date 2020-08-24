@@ -9,14 +9,12 @@ use super::tls::TlsConfig;
 
 /// Public configuration for the cluster.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ClusterConfig {
     // TODO use a validated address type.
     // We don't want to have a "" address.
     pub addr: String,
     pub tls: Option<TlsConfig>,
-    // Prevent exhaustive destructuring
-    #[serde(skip)]
-    _0: (),
 }
 
 impl ClusterConfig {
@@ -25,7 +23,6 @@ impl ClusterConfig {
         Self {
             addr: addr.into(),
             tls: None,
-            _0: (),
         }
     }
 

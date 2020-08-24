@@ -14,12 +14,11 @@ pub async fn produce_message(option: &TestOption) {
 pub async fn produce_message_with_api(option: &TestOption) {
     use fluvio::kf::api::ReplicaKey;
 
-    let config = ConfigFile::load(None)
-        .expect("load config");
-    let cluster_config = config.config()
-        .current_cluster()
-        .expect("current cluster");
-    let mut cluster = ClusterClient::connect(cluster_config.clone()).await.expect("should connect");
+    let config = ConfigFile::load(None).expect("load config");
+    let cluster_config = config.config().current_cluster().expect("current cluster");
+    let mut cluster = ClusterClient::connect(cluster_config.clone())
+        .await
+        .expect("should connect");
     let replica: ReplicaKey = (option.topic_name.clone(), 0).into();
     let mut producer = cluster.producer(replica).await.expect("producer");
 

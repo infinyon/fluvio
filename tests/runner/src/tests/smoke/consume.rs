@@ -51,12 +51,14 @@ async fn validate_consume_message_api(option: &TestOption) {
     use fluvio::params::FetchLogOption;
     use fluvio::kf::api::ReplicaKey;
 
-    let config = ConfigFile::load(None)
-        .expect("load config");
-    let cluster_config = config.config()
+    let config = ConfigFile::load(None).expect("load config");
+    let cluster_config = config
+        .config()
         .current_cluster()
         .expect("get current cluster");
-    let mut cluster = ClusterClient::connect(cluster_config.clone()).await.expect("should connect");
+    let mut cluster = ClusterClient::connect(cluster_config.clone())
+        .await
+        .expect("should connect");
     let mut consumer = cluster
         .consumer(ReplicaKey::new(option.topic_name.to_owned(), 0))
         .await
