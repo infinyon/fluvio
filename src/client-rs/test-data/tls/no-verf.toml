@@ -6,4 +6,4 @@ cluster = "local"
 addr = "localhost:9003"
 
 [cluster.local.tls]
-cert_type = "NoVerification"
+tls_policy = "NoTls"

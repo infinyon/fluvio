@@ -6,7 +6,7 @@ use std::convert::TryInto;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::config::{TlsConfig, TlsConfigPaths};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths};
 
 /// Optional Tls Configuration to Client
 #[derive(Debug, StructOpt, Default, Clone)]
@@ -33,27 +33,27 @@ pub struct TlsOpt {
     pub ca_cert: Option<PathBuf>,
 }
 
-impl TryInto<Option<TlsConfigPaths>> for TlsOpt {
+impl TryInto<TlsPolicy> for TlsOpt {
     type Error = IoError;
 
-    fn try_into(self) -> Result<Option<TlsConfigPaths>, Self::Error> {
+    fn try_into(self) -> Result<TlsPolicy, Self::Error> {
         match (self.client_cert, self.client_key, self.ca_cert, self.domain) {
             _ if !self.tls => {
                 debug!("no optional tls");
-                Ok(None)
+                Ok(TlsPolicy::Disabled)
             }
             _ if !self.enable_client_cert => {
                 debug!("using no cert verification");
-                Ok(Some(TlsConfigPaths::NoVerification))
+                Ok(TlsPolicy::NoVerify)
             }
             (Some(client_cert), Some(client_key), Some(ca_cert), Some(domain)) => {
                 debug!("using tls and client cert");
-                Ok(Some(TlsConfigPaths::WithPaths {
-                    client_cert,
-                    client_key,
+                Ok(TlsPolicy::Verify(TlsConfig::Files(TlsPaths {
+                    cert: client_cert,
+                    key: client_key,
                     ca_cert,
                     domain,
-                }))
+                })))
             }
             (None, _, _, _) => Err(IoError::new(
                 ErrorKind::InvalidInput,
@@ -75,13 +75,13 @@ impl TryInto<Option<TlsConfigPaths>> for TlsOpt {
     }
 }
 
-impl TlsOpt {
-    pub fn try_into_inline(self) -> Result<Option<TlsConfig>, IoError> {
-        let maybe_tls_paths: Option<TlsConfigPaths> = self.try_into()?;
-        let maybe_tls_config = match maybe_tls_paths {
-            None => None,
-            Some(tls_paths) => Some(tls_paths.try_into()?),
-        };
-        Ok(maybe_tls_config)
-    }
-}
+// impl TlsOpt {
+//     pub fn try_into_inline(self) -> Result<Option<TlsConfig>, IoError> {
+//         let maybe_tls_paths: Option<TlsConfigPaths> = self.try_into()?;
+//         let maybe_tls_config = match maybe_tls_paths {
+//             None => None,
+//             Some(tls_paths) => Some(tls_paths.try_into()?),
+//         };
+//         Ok(maybe_tls_config)
+//     }
+// }

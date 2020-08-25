@@ -50,6 +50,7 @@ macro_rules! t_print_cli_err {
 
 mod target {
     use std::io::{ErrorKind, Error as IoError};
+    use std::convert::TryInto;
     use structopt::StructOpt;
 
     use fluvio::config::ConfigFile;
@@ -80,19 +81,22 @@ mod target {
     impl ClusterTarget {
         /// try to create sc config
         pub fn load(self) -> Result<ClusterConfig, CliError> {
-            let tls = self.tls.try_into_inline()?;
+            let tls = self.tls.try_into()?;
 
-            match (self.profile.profile, self.cluster, tls) {
+            use fluvio::config::TlsPolicy::*;
+            match (self.profile.profile, self.cluster) {
                 // Profile and Cluster together is illegal
-                (Some(_profile), Some(_cluster), _) => Err(CliError::invalid_arg(
+                (Some(_profile), Some(_cluster)) => Err(CliError::invalid_arg(
                     "cluster addr is not valid when profile is used",
                 )),
-                // Profile and TLS together is illegal
-                (Some(_profile), _, Some(_tls)) => Err(CliError::invalid_arg(
-                    "tls is not valid when profile is is used",
-                )),
-                // Using Profile
-                (Some(profile), _, _) => {
+                (Some(profile), _) => {
+                    // Specifying TLS is illegal when also giving a profile
+                    if let NoVerify | Verify(_) = tls {
+                        return Err(CliError::invalid_arg(
+                            "tls is not valid when profile is is used",
+                        ));
+                    }
+
                     let config_file = ConfigFile::load(None)?;
                     let cluster = config_file
                         .config()
@@ -104,17 +108,19 @@ mod target {
                         })?;
                     Ok(cluster.clone())
                 }
-                // Using Cluster with TLS
-                (None, Some(cluster), Some(tls)) => {
+                (None, Some(cluster)) => {
                     let cluster = ClusterConfig::new(cluster).with_tls(tls);
                     Ok(cluster)
                 }
-                // TLS is illegal without Cluster
-                (None, None, Some(_tls)) => Err(CliError::invalid_arg(
-                    "tls is only valid if cluster addr is used",
-                )),
-                // If no profile or cluster are given, try to use the current cluster
-                _ => {
+                (None, None) => {
+                    // TLS specification is illegal without Cluster
+                    if let NoVerify | Verify(_) = tls {
+                        return Err(CliError::invalid_arg(
+                            "tls is only valid if cluster addr is used",
+                        ));
+                    }
+
+                    // Try to use the default cluster from saved config
                     let config_file = ConfigFile::load(None)?;
                     let cluster = config_file.config().current_cluster().ok_or_else(|| {
                         IoError::new(ErrorKind::Other, "Current cluster not found")

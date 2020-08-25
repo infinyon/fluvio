@@ -6,10 +6,11 @@ cluster = "local"
 addr = "localhost:9003"
 
 [cluster.local.tls]
-cert_type = "File"
+tls_policy = "verify"
+tls_type = "Paths"
 
 [cluster.local.tls.cert]
-client_key = "/tmp/client.key"
-client_cert = "/tmp/client.cert"
+key = "/tmp/client.key"
+cert = "/tmp/client.cert"
 ca_cert = "/tmp/ca.cert"
 domain = "my_domain"

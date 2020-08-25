@@ -345,7 +345,7 @@ pub mod test {
     use super::*;
     use std::path::PathBuf;
     use std::env::temp_dir;
-    use crate::config::TlsConfig;
+    use crate::config::{TlsPolicy, TlsConfig, TlsCerts};
 
     #[test]
     fn test_default_path_arg() {
@@ -399,20 +399,20 @@ pub mod test {
     #[test]
     fn test_tls_save() {
         let mut config = Config::new_with_local_cluster("localhost:9003".to_owned());
-        let inline_tls_config = TlsConfig::WithCerts {
-            client_key: "ABCDEFF".to_owned(),
-            client_cert: "JJJJ".to_owned(),
+        let inline_tls_config = TlsConfig::Inline(TlsCerts {
+            key: "ABCDEFF".to_owned(),
+            cert: "JJJJ".to_owned(),
             ca_cert: "XXXXX".to_owned(),
             domain: "my_domain".to_owned(),
-        };
+        });
 
         println!("temp: {:#?}", temp_dir());
-        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = Some(inline_tls_config);
+        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = inline_tls_config.into();
         config
             .save_to(temp_dir().join("inline.toml"))
             .expect("save should succeed");
 
-        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = Some(TlsConfig::NoVerification);
+        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = TlsPolicy::Disabled;
         config
             .save_to(temp_dir().join("noverf.toml"))
             .expect("save should succeed");
