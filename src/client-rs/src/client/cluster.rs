@@ -34,10 +34,7 @@ impl ClusterClient {
     }
 
     pub async fn connect(config: ClusterConfig) -> Result<ClusterClient, ClientError> {
-        let connector = match config.tls {
-            None => AllDomainConnector::default_tcp(),
-            Some(tls) => TryFrom::try_from(tls)?,
-        };
+        let connector = AllDomainConnector::try_from(config.tls)?;
         let config = ClientConfig::new(config.addr, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
