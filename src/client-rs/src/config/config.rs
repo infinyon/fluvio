@@ -19,11 +19,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use flv_types::defaults::{CLI_CONFIG_PATH};
-use flv_future_aio::net::tls::AllDomainConnector;
-
-use crate::client::*;
-use crate::ClientError;
-use super::TlsConfig;
+use crate::{ClientError, ClusterConfig};
 
 pub struct ConfigFile {
     path: PathBuf,
@@ -96,10 +92,12 @@ impl ConfigFile {
         })
     }
 
+    /// Return a reference to the internal Config
     pub fn config(&self) -> &Config {
         &self.config
     }
 
+    /// Return a mutable reference to the internal Config
     pub fn mut_config(&mut self) -> &mut Config {
         &mut self.config
     }
@@ -119,7 +117,7 @@ pub struct Config {
     version: String,
     current_profile: Option<String>,
     profile: HashMap<String, Profile>,
-    cluster: HashMap<String, Cluster>,
+    cluster: HashMap<String, ClusterConfig>,
     client_id: Option<String>,
 }
 
@@ -133,7 +131,7 @@ impl Config {
 
     /// create new config with a single local cluster
     pub fn new_with_local_cluster(domain: String) -> Self {
-        let cluster = Cluster::new(domain);
+        let cluster = ClusterConfig::new(domain);
         let mut config = Self::new();
 
         config.cluster.insert(LOCAL_PROFILE.to_owned(), cluster);
@@ -146,7 +144,7 @@ impl Config {
     }
 
     /// add new cluster
-    pub fn add_cluster(&mut self, cluster: Cluster, name: String) {
+    pub fn add_cluster(&mut self, cluster: ClusterConfig, name: String) {
         self.cluster.insert(name, cluster);
     }
 
@@ -172,12 +170,6 @@ impl Config {
     /// current profile
     pub fn current_profile_name(&self) -> Option<&str> {
         self.current_profile.as_ref().map(|c| c.as_ref())
-    }
-
-    pub fn current_profile(&self) -> Option<&Profile> {
-        self.current_profile
-            .as_ref()
-            .and_then(|p| self.profile.get(p))
     }
 
     /// set current profile, if profile doesn't exists return false
@@ -215,9 +207,9 @@ impl Config {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::config::{Config, Cluster, Profile};
+    /// # use fluvio::config::{Config, ClusterConfig, Profile};
     /// let mut config = Config::new();
-    /// let cluster = Cluster::new("https://cloud.fluvio.io".to_string());
+    /// let cluster = ClusterConfig::new("https://cloud.fluvio.io".to_string());
     /// config.add_cluster(cluster, "fluvio-cloud".to_string());
     /// let profile = Profile::new("fluvio-cloud".to_string());
     /// config.add_profile(profile, "fluvio-cloud".to_string());
@@ -225,7 +217,7 @@ impl Config {
     /// config.delete_cluster("fluvio-cloud").unwrap();
     /// assert!(config.cluster("fluvio-cloud").is_none());
     /// ```
-    pub fn delete_cluster(&mut self, cluster_name: &str) -> Option<Cluster> {
+    pub fn delete_cluster(&mut self, cluster_name: &str) -> Option<ClusterConfig> {
         self.cluster.remove(cluster_name)
     }
 
@@ -241,9 +233,9 @@ impl Config {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::config::{Config, Cluster, Profile};
+    /// # use fluvio::config::{Config, ClusterConfig, Profile};
     /// let mut config = Config::new();
-    /// let cluster = Cluster::new("https://cloud.fluvio.io".to_string());
+    /// let cluster = ClusterConfig::new("https://cloud.fluvio.io".to_string());
     /// config.add_cluster(cluster, "fluvio-cloud".to_string());
     /// let profile = Profile::new("fluvio-cloud".to_string());
     /// config.add_profile(profile, "fluvio-cloud".to_string());
@@ -267,34 +259,38 @@ impl Config {
         Ok(())
     }
 
-    pub fn mut_profile(&mut self, profile_name: &str) -> Option<&mut Profile> {
+    /// Returns a reference to the current Profile if there is one.
+    pub fn current_profile(&self) -> Option<&Profile> {
+        self.current_profile
+            .as_ref()
+            .and_then(|p| self.profile.get(p))
+    }
+
+    /// Returns a mutable reference to the current Profile if there is one.
+    pub fn profile_mut(&mut self, profile_name: &str) -> Option<&mut Profile> {
         self.profile.get_mut(profile_name)
     }
 
-    /// find cluster specified in the profile or current cluster
-    pub fn current_cluster_or_with_profile(&self, profile_name: Option<&str>) -> Option<&Cluster> {
-        if let Some(profile) = profile_name {
-            if let Some(profile_info) = self.profile.get(profile) {
-                self.cluster.get(&profile_info.cluster)
-            } else {
-                None
-            }
-        } else {
-            self.current_cluster()
-        }
-    }
-
-    /// find current cluster
-    pub fn current_cluster(&self) -> Option<&Cluster> {
+    /// Returns the ClusterConfig belonging to the current profile.
+    pub fn current_cluster(&self) -> Option<&ClusterConfig> {
         self.current_profile()
             .and_then(|profile| self.cluster.get(&profile.cluster))
     }
 
-    pub fn cluster(&self, cluster_name: &str) -> Option<&Cluster> {
+    /// Returns the ClusterConfig belonging to the named profile.
+    pub fn cluster_with_profile(&self, profile_name: &str) -> Option<&ClusterConfig> {
+        self.profile
+            .get(profile_name)
+            .and_then(|profile| self.cluster.get(&profile.cluster))
+    }
+
+    /// Returns a reference to the named ClusterConfig.
+    pub fn cluster(&self, cluster_name: &str) -> Option<&ClusterConfig> {
         self.cluster.get(cluster_name)
     }
 
-    pub fn mut_cluster(&mut self, cluster_name: &str) -> Option<&mut Cluster> {
+    /// Returns a mutable reference to the named ClusterConfig.
+    pub fn cluster_mut(&mut self, cluster_name: &str) -> Option<&mut ClusterConfig> {
         self.cluster.get_mut(cluster_name)
     }
 
@@ -344,50 +340,12 @@ pub struct Replica {
     pub isolation: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct Cluster {
-    pub addr: String,
-    pub tls: Option<TlsConfig>,
-}
-
-impl From<String> for Cluster {
-    fn from(addr: String) -> Self {
-        Self {
-            addr,
-            ..Default::default()
-        }
-    }
-}
-
-impl Cluster {
-    /// default non tls local cluster
-    pub fn new(addr: String) -> Cluster {
-        Self {
-            addr,
-            ..Default::default()
-        }
-    }
-
-    pub fn addr(&self) -> &str {
-        &self.addr
-    }
-
-    pub fn set_addr(&mut self, addr: String) {
-        self.addr = addr;
-    }
-}
-
-impl From<Cluster> for ClientConfig {
-    fn from(cluster: Cluster) -> Self {
-        ClientConfig::new(cluster.addr, AllDomainConnector::default_tcp())
-    }
-}
-
 #[cfg(test)]
 pub mod test {
     use super::*;
     use std::path::PathBuf;
     use std::env::temp_dir;
+    use crate::config::TlsConfig;
 
     #[test]
     fn test_default_path_arg() {
@@ -449,12 +407,12 @@ pub mod test {
         };
 
         println!("temp: {:#?}", temp_dir());
-        config.mut_cluster(LOCAL_PROFILE).unwrap().tls = Some(inline_tls_config);
+        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = Some(inline_tls_config);
         config
             .save_to(temp_dir().join("inline.toml"))
             .expect("save should succeed");
 
-        config.mut_cluster(LOCAL_PROFILE).unwrap().tls = Some(TlsConfig::NoVerification);
+        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = Some(TlsConfig::NoVerification);
         config
             .save_to(temp_dir().join("noverf.toml"))
             .expect("save should succeed");

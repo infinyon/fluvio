@@ -8,6 +8,8 @@ use utils::bin::get_fluvio;
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
 use super::message::*;
+use fluvio::config::ConfigFile;
+use fluvio::ClusterClient;
 
 /// verify consumer thru CLI
 pub async fn validate_consume_message(option: &TestOption) {
@@ -45,13 +47,18 @@ fn validate_consume_message_cli(option: &TestOption) {
 async fn validate_consume_message_api(option: &TestOption) {
     // futures::stream::StreamExt;
 
-    use fluvio::ClusterConfig;
     use fluvio::params::FetchOffset;;
     use fluvio::params::FetchLogOption;
     use fluvio::kf::api::ReplicaKey;
 
-    let config = ClusterConfig::lookup_profile(None).expect("connect");
-    let mut cluster = config.connect().await.expect("should connect");
+    let config = ConfigFile::load(None).expect("load config");
+    let cluster_config = config
+        .config()
+        .current_cluster()
+        .expect("get current cluster");
+    let mut cluster = ClusterClient::connect(cluster_config.clone())
+        .await
+        .expect("should connect");
     let mut consumer = cluster
         .consumer(ReplicaKey::new(option.topic_name.to_owned(), 0))
         .await

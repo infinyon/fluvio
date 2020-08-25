@@ -5,7 +5,7 @@
 //!
 use structopt::StructOpt;
 
-use fluvio::ClusterConfig;
+use fluvio::{ClusterConfig, ClusterClient};
 use fluvio::metadata::spg::SpuGroupSpec;
 use crate::error::CliError;
 use crate::target::ClusterTarget;
@@ -43,7 +43,7 @@ pub async fn process_delete_managed_spu_group(
 ) -> Result<(), CliError> {
     let (target_server, name) = opt.validate()?;
 
-    let mut client = target_server.connect().await?;
+    let mut client = ClusterClient::connect(target_server).await?;
     let mut admin = client.admin().await;
     admin.delete::<SpuGroupSpec, _>(&name).await?;
     Ok(())

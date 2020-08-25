@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::ClusterConfig;
+use fluvio::{ClusterConfig, ClusterClient};
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::error::CliError;
@@ -118,7 +118,7 @@ pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliErro
 
     debug!("creating topic: {} spec: {:#?}", name, topic_spec);
 
-    let mut target = target_server.connect().await?;
+    let mut target = ClusterClient::connect(target_server).await?;
     let mut admin = target.admin().await;
 
     admin.create(name.clone(), dry_run, topic_spec).await?;
