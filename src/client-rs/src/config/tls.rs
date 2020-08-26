@@ -21,11 +21,13 @@ pub enum TlsPolicy {
     #[serde(rename = "disabled", alias = "disable")]
     Disabled,
     /// Use TLS, but do not verify certificates or domains
-    #[serde(rename = "no_verify", alias = "no_verification")]
-    NoVerify,
+    ///
+    /// Server must support anonymous TLS
+    #[serde(rename = "anonymous")]
+    Anonymous,
     /// Use TLS and verify certificates and domains
-    #[serde(rename = "verify")]
-    Verify(TlsConfig),
+    #[serde(rename = "verified", alias = "verify")]
+    Verified(TlsConfig),
 }
 
 impl Default for TlsPolicy {
@@ -36,7 +38,7 @@ impl Default for TlsPolicy {
 
 impl From<TlsConfig> for TlsPolicy {
     fn from(tls: TlsConfig) -> Self {
-        Self::Verify(tls)
+        Self::Verified(tls)
     }
 }
 
@@ -111,7 +113,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
     fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
         match config {
             TlsPolicy::Disabled => Ok(AllDomainConnector::default_tcp()),
-            TlsPolicy::NoVerify => {
+            TlsPolicy::Anonymous => {
                 info!("using anonymous tls");
                 Ok(AllDomainConnector::TlsAnonymous(
                     ConnectorBuilder::new()
@@ -120,7 +122,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                         .into(),
                 ))
             }
-            TlsPolicy::Verify(tls) => {
+            TlsPolicy::Verified(tls) => {
                 // Convert path certs to inline if necessary
                 let tls: TlsCerts = match tls {
                     TlsConfig::Inline(certs) => certs,

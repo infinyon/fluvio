@@ -91,7 +91,7 @@ mod target {
                 )),
                 (Some(profile), _) => {
                     // Specifying TLS is illegal when also giving a profile
-                    if let NoVerify | Verify(_) = tls {
+                    if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is not valid when profile is is used",
                         ));
@@ -114,7 +114,7 @@ mod target {
                 }
                 (None, None) => {
                     // TLS specification is illegal without Cluster
-                    if let NoVerify | Verify(_) = tls {
+                    if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is only valid if cluster addr is used",
                         ));
