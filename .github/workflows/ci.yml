@@ -96,14 +96,20 @@ jobs:
       - name: smoke test
         run: |
           FLV_CMD=true make smoke-test
-      - name: smoke test setup k8
+      - name: smoke test tls
+        run: |
+          FLV_CMD=true make smoke-test-tls
+      - name: setup smoke test k8
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           ./dev-tools/minikube-docker.sh 
           docker run -d -p 5000:5000 --restart=always --name registry registry:2
-      - name: run smoke test run k8
+      - name: smoke test k8
         run: |
           export TARGET_CC=musl-gcc
           FLV_CMD=true make smoke-test-k8
-          
+      - name: smoke test k8 tls
+        run: |
+          export TARGET_CC=musl-gcc
+          FLV_CMD=true make smoke-test-k8-tls
