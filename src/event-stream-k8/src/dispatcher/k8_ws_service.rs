@@ -110,9 +110,10 @@ where {
         self.client.update_status(&k8_input).await.map(|_| ())
     }
 
-    pub async fn backup_spec(&self,
-        metadata: K8MetaItem,
-        spec: S,
+    pub async fn backup_spec(
+        &self,
+        _metadata: K8MetaItem,
+        _spec: S,
     ) -> Result<(), C::MetadataClientError> {
         unimplemented!()
     }
