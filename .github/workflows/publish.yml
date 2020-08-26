@@ -1,8 +1,6 @@
 name: Publish Nightly Fluvio Docker Image
 
 on:
-  schedule:
-    - cron: '0 5 * * *' # run at 5AM UTC
   workflow_dispatch:
     tags:
       description: Force Publish Nightly
