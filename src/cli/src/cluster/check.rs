@@ -182,7 +182,7 @@ pub async fn run_checks(opt: CheckCommand) -> Result<String, CliError> {
 
 async fn run_preinstall_checks() -> Result<(), CliError> {
     // List of checks
-    let checks: Vec<Box<dyn InstallCheck>> = vec![
+    let checks: Vec<Box<dyn InstallCheck + 'static + Send + Sync>> = vec![
         Box::new(LoadableConfig),
         Box::new(K8Version),
         Box::new(HelmVersion),
