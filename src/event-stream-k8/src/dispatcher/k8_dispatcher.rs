@@ -228,6 +228,16 @@ where
                     K8Action::UpdateSpec((spec, meta))
                 }
             }
+            WSAction::BackupSpec((key, spec)) => {
+                let read_guard = self.ctx.store().read().await;
+                if let Some(obj) = read_guard.get(&key) {
+                    K8Action::BackupSpec((spec, obj.inner().ctx().item().clone()))
+                } else {
+                    // create new ctx
+                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
+                    K8Action::BackupSpec((spec, meta))
+                }
+            }
             WSAction::UpdateStatus((key, status)) => {
                 let read_guard = self.ctx.store().read().await;
                 if let Some(obj) = read_guard.get(&key) {

@@ -20,6 +20,7 @@ mod k8_actions {
         Apply(MetadataStoreObject<S, K8MetaItem>),
         UpdateStatus((S::Status, K8MetaItem)),
         UpdateSpec((S, K8MetaItem)),
+        BackupSpec((S, K8MetaItem)),
         Delete(K8MetaItem),
     }
 }

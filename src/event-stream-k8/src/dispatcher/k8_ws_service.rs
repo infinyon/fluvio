@@ -110,6 +110,13 @@ where {
         self.client.update_status(&k8_input).await.map(|_| ())
     }
 
+    pub async fn backup_spec(&self,
+        metadata: K8MetaItem,
+        spec: S,
+    ) -> Result<(), C::MetadataClientError> {
+        unimplemented!()
+    }
+
     /// update spec only
     pub async fn update_spec(
         &self,
@@ -149,6 +156,7 @@ where {
                 log_on_err!(self.update_status(meta, status).await)
             }
             K8Action::UpdateSpec((spec, meta)) => log_on_err!(self.update_spec(meta, spec).await),
+            K8Action::BackupSpec((spec, meta)) => log_on_err!(self.backup_spec(meta, spec).await),
             K8Action::Delete(meta) => log_on_err!(self.delete(meta).await),
         }
     }

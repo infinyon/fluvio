@@ -13,7 +13,7 @@ where
     Apply(MetadataStoreObject<S, K8MetaItem>),
     UpdateSpec((S::IndexKey, S)),
     UpdateStatus((S::IndexKey, S::Status)),
-
+    BackupSpec((S::IndexKey, S)),
     Delete(S::IndexKey),
 }
 
@@ -28,6 +28,7 @@ where
             Self::UpdateSpec((key, _)) => write!(f, "{} WS Update Spec: {}", S::LABEL, key),
             Self::UpdateStatus((key, _)) => write!(f, "{} WS Update Status: {}", S::LABEL, key),
             Self::Delete(key) => write!(f, "{} WS Delete: {}", S::LABEL, key),
+            Self::BackupSpec((key, _)) => write!(f, "{} WS Backup Spec: {}", S::LABEL, key)
         }
     }
 }
