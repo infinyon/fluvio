@@ -1,11 +1,9 @@
-name: Publish Nightly Fluvio Docker Image
+name: Publish Fluvio Docker Image
 
-on: 
-  schedule:
-    - cron: '0 5 * * *' # run at 5AM UTC
+on: [workflow_dispatch]
 jobs:
   publish:
-    name: Publish Nightly
+    name: Publish
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -19,4 +17,4 @@ jobs:
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Publish Fluvio Image
         run: |
-          make fluvio_image_nightly
+          make fluvio_image
