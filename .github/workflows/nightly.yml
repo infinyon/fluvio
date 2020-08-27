@@ -15,55 +15,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
-      - name: Start minikube
-        uses: manusa/actions-setup-minikube@v2.0.0
-        with:
-          minikube version: "v1.12.3"
-          kubernetes version: "v1.18.8"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Test Minikube
-        run: |
-          kubectl get nodes
-          kubectl config view
-          helm version
-          minikube status
-      - name: Run minikube tunnel
-        run: |
-          minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
-          sleep 10
-          echo "tunnel status"
-          cat /tmp/tunnel.out
-      - name: Build
-        run: |
-          cargo build
-      - name: setup context
-        run: |
-          ./target/debug/fluvio cluster set-minikube-context
-          kubectl config view
-          helm list
-      - name: install fluvio system chart
-        run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys
-      - name: smoke test
-        run: |
-          FLV_CMD=true make smoke-test
-      - name: smoke test tls
-        run: |
-          FLV_CMD=true make smoke-test-tls
-      - name: setup smoke test k8
+      - name: Install Musl Tools
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          ./dev-tools/minikube-docker.sh 
-          docker run -d -p 5000:5000 --restart=always --name registry registry:2
-      - name: smoke test k8
-        run: |
           export TARGET_CC=musl-gcc
-          FLV_CMD=true make smoke-test-k8
-      - name: smoke test k8 tls
-        run: |
-          export TARGET_CC=musl-gcc
-          FLV_CMD=true make smoke-test-k8-tls
       - name: Login to Docker Hub
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Publish Fluvio Image
