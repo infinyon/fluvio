@@ -117,14 +117,20 @@ linux-spu-server:	install_musl
 	cargo $(CARGO_BUILD) --bin spu-server  --target ${TARGET_LINUX}
 
 
-spu_image:	 linux-spu-server
+spu_image:	linux-spu-server
 	echo "Building SPU image with version: ${VERSION}"
 	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
 
-sc_image:	install_musl linux-spu-server
+sc_image:	linux-spu-server
 	echo "Building SC image with version: ${VERSION}"
 	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
-	
+
+fluvio_image: all_image
+	echo "Building Fluvio image with version: ${VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
+
+fluvio_image_nightly: VERSION=nightly
+fluvio_image_nightly: fluvio_image
 
 cargo_cache_dir:
 	mkdir -p .docker-cargo
