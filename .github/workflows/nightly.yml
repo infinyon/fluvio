@@ -15,6 +15,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+      - name: Install Musl Tools
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          export TARGET_CC=musl-gcc
       - name: Login to Docker Hub
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Publish Fluvio Image
