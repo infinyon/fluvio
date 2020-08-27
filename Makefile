@@ -132,6 +132,13 @@ fluvio_image: all_image
 fluvio_image_nightly: VERSION=nightly
 fluvio_image_nightly: fluvio_image
 
+make publish_fluvio_image: 
+	curl \
+	-X POST \
+	-H "Accept: application/vnd.github.v3+json" \
+	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
+	-d '{"ref":"master"}'
+
 cargo_cache_dir:
 	mkdir -p .docker-cargo
 
