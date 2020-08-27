@@ -136,6 +136,7 @@ make publish_fluvio_image:
 	curl \
 	-X POST \
 	-H "Accept: application/vnd.github.v3+json" \
+	-H "Authorization: $(GITHUB_ACCESS_TOKEN)" \
 	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
 	-d '{"ref":"master"}'
 
