@@ -262,7 +262,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 
     let mut cmd = Command::new("helm");
 
-    let registry = k8_config.registry.as_deref().unwrap_or( {
+    let registry = k8_config.registry.as_deref().unwrap_or({
         if opt.develop {
             "localhost:5000/infinyon"
         } else {
@@ -287,14 +287,12 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     }
 
     if opt.develop {
-        cmd
-            .arg("install")
-            .arg(&k8_config.install_name)
-            .arg(
-                k8_config
-                    .chart_location
-                    .as_deref()
-                    .unwrap_or("./k8-util/helm/fluvio-core"));
+        cmd.arg("install").arg(&k8_config.install_name).arg(
+            k8_config
+                .chart_location
+                .as_deref()
+                .unwrap_or("./k8-util/helm/fluvio-core"),
+        );
     } else {
         cmd.arg("install")
             .arg(&k8_config.install_name)
