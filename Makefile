@@ -127,7 +127,7 @@ sc_image:	linux-spu-server
 
 fluvio_image: all_image
 	echo "Building Fluvio image with version: ${VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
+	make push BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
 
 fluvio_image_nightly: VERSION=nightly
 fluvio_image_nightly: fluvio_image
