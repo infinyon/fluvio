@@ -3,6 +3,7 @@ name: Publish Latest Fluvio Docker Image
 on: 
   schedule:
     - cron: '0 5 * * *' # run at 5AM UTC
+  workflow_dispatch:
 jobs:
   publish:
     name: Publish Latest
