@@ -21,6 +21,10 @@ pub struct K8Install {
     #[structopt(long)]
     pub version: Option<String>,
 
+    /// k8: use custom docker registry
+    #[structopt(long)]
+    pub registry: Option<String>,
+
     /// k8
     #[structopt(long, default_value = "default")]
     pub namespace: String,
@@ -29,9 +33,9 @@ pub struct K8Install {
     #[structopt(long, default_value = "main")]
     pub group_name: String,
 
-    /// helm chart name
+    /// helm chart installation name
     #[structopt(long, default_value = "fluvio")]
-    pub chart_name: String,
+    pub install_name: String,
 
     #[structopt(long)]
     pub chart_location: Option<String>,

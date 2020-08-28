@@ -13,6 +13,8 @@ use super::*;
 use crate::target::ClusterTarget;
 use crate::tls::TlsOpt;
 
+const CORE_CHART_NAME: &str = "fluvio/fluvio-core";
+
 fn get_cluster_server_host(kc_config: KubeContext) -> Result<String, IoError> {
     if let Some(ctx) = kc_config.config.current_cluster() {
         let server_url = ctx.cluster.server.to_owned();
@@ -251,12 +253,6 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         crate::VERSION.to_owned()
     };
 
-    let registry = if opt.develop {
-        "localhost:5000/infinyon"
-    } else {
-        "infinyon"
-    };
-
     let k8_config = &opt.k8_config;
     let ns = &k8_config.namespace;
 
@@ -266,20 +262,17 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
 
     let mut cmd = Command::new("helm");
 
-    if opt.develop {
-        cmd.arg("install")
-            .arg(&k8_config.chart_name)
-            .arg(
-                k8_config
-                    .chart_location
-                    .as_deref()
-                    .unwrap_or("./k8-util/helm/fluvio-core"),
-            )
-            .arg("--set")
-            .arg(fluvio_version)
-            .arg("--set")
-            .arg(format!("registry={}", registry));
-    } else {
+    let registry = k8_config.registry.as_deref().unwrap_or( {
+        if opt.develop {
+            "localhost:5000/infinyon"
+        } else {
+            "infinyon"
+        }
+    });
+
+    // prepare chart if using release
+    if !opt.develop {
+        debug!("updating helm repo");
         const CORE_CHART_NAME: &str = "fluvio/fluvio-core";
         helm::repo_add(opt.k8_config.chart_location.as_deref());
         helm::repo_update();
@@ -291,20 +284,28 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
                 crate::VERSION
             )));
         }
+    }
 
-        cmd.arg("install")
-            .arg(&k8_config.chart_name)
-            .arg(CORE_CHART_NAME)
-            .arg("--version")
+    if opt.develop {
+        cmd
+            .arg("install")
+            .arg(&k8_config.install_name)
             .arg(
-                opt.k8_config
-                    .version
-                    .clone()
-                    .unwrap_or_else(|| crate::VERSION.to_owned()),
-            );
-    };
+                k8_config
+                    .chart_location
+                    .as_deref()
+                    .unwrap_or("./k8-util/helm/fluvio-core"));
+    } else {
+        cmd.arg("install")
+            .arg(&k8_config.install_name)
+            .arg(CORE_CHART_NAME);
+    }
 
-    cmd.arg("-n")
+    cmd.arg("--set")
+        .arg(fluvio_version)
+        .arg("--set")
+        .arg(format!("registry={}", registry))
+        .arg("-n")
         .arg(ns)
         .arg("--set")
         .arg(format!("cloud={}", k8_config.cloud));
