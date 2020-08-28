@@ -1,4 +1,4 @@
-NAME = $(REGISTRY)/fluvio-spu
+NAME = $(REGISTRY)/fluvio
 TAG = $(VERSION)
 BIN_DIR = ../../../target/x86_64-unknown-linux-musl/$(BIN_NAME)
 
