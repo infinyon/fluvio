@@ -94,6 +94,9 @@ all_image:	linux-spu-server spu_image linux-sc-server sc_image
 release_image:	MAKE_CMD=push
 release_image:	all_image
 
+release_image_latest: VERSION=latest
+release_image_latest: release_image
+
 develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
 develop_image: 	all_image
 develop_image:	CARGO_BUILD=build
@@ -127,10 +130,11 @@ sc_image:	linux-spu-server
 
 fluvio_image: all_image
 	echo "Building Fluvio image with version: ${VERSION}"
-	make push BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
 
-fluvio_image_nightly: VERSION=nightly
-fluvio_image_nightly: fluvio_image
+fluvio_image_latest: VERSION=latest
+fluvio_image_latest: MAKE_CMD=push
+fluvio_image_latest: fluvio_image
 
 make publish_fluvio_image: 
 	curl \
@@ -139,6 +143,8 @@ make publish_fluvio_image:
 	-H "Authorization: $(GITHUB_ACCESS_TOKEN)" \
 	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
 	-d '{"ref":"master"}'
+
+
 
 cargo_cache_dir:
 	mkdir -p .docker-cargo
