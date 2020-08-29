@@ -39,7 +39,7 @@ futures = { version = "0.3.4", features = ['async-await'] }
 flv-future-aio = { version = "2.2.1" }
 flv-util = { version = "0.3.1" }
 fluvio = { path = "../client-rs"}
-flv-metadata-cluster = { path = "../metadata-cluster", features = ["use_serde"]}
+flv-metadata-cluster = { path = "../metadata-cluster", features = ["use_serde", "k8"]}
 flv-api-sc = { version = "2.0.0", path = "../sc-api", features = ["use_serde"]}
 k8-client = { version = "1.1.0"}
 k8-config = { version = "1.1.0", features = ["context"]}
