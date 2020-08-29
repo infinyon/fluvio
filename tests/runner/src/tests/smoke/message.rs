@@ -3,6 +3,7 @@ use crate::TestOption;
 const VALUE: u8 = 65;
 
 /// generate test data based on iteration and option
+#[allow(clippy::all)]
 pub fn generate_message(_index: u16, option: &TestOption) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(option.produce.record_size);
 
