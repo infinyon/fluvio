@@ -42,7 +42,7 @@ pub struct CheckCommand {
 
 use async_trait::async_trait;
 #[async_trait]
-trait InstallCheck {
+trait InstallCheck: Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
     async fn perform_check(&self) -> Result<String, String>;
 }
