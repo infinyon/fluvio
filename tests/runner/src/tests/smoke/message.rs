@@ -7,7 +7,7 @@ pub fn generate_message(_index: u16, option: &TestOption) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(option.produce.record_size);
 
     for _ in 0..option.produce.record_size {
-        bytes.push(VALUE);
+        &bytes.push(VALUE);
     }
 
     bytes
