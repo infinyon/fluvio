@@ -1,5 +1,3 @@
-#![feature(generators)]
-
 mod kf_server;
 
 #[cfg(test)]

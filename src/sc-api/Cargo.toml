@@ -8,13 +8,13 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
 [features]
-use_serde = ["flv-metadata-cluster/use_serde","serde"]
+use_serde = ["flv-metadata-cluster/use_serde", "serde"]
 
 [dependencies]
 log = "0.4.8"
 tracing = "0.1.19"
-serde = { version ="1.0.0", features = ['derive'], optional = true }
-kf-protocol = { version = "2.0.0" } 
-flv-metadata-cluster = { version = "0.1.0", default-features = false, path = "../metadata-cluster"}
-flv-types = { version = "0.2.0", path ="../types" }
-flv-util = { version = "0.2.0"}
+serde = { version = "1.0.0", features = ['derive'], optional = true }
+kf-protocol = { version = "3.0.0" }
+flv-metadata-cluster = { version = "0.1.0", default-features = false, path = "../metadata-cluster" }
+flv-types = { version = "0.2.0", path = "../types" }
+flv-util = { version = "0.2.0" }
