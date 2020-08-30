@@ -1,4 +1,4 @@
-name: Publish Latest Fluvio Docker Image
+name: Publish Latest
 
 on: 
   schedule:
@@ -15,13 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Publish Helm chart
-        uses: helm/chart-releaser-action@v1.0.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        uses: stefanprodan/helm-gh-pages@master
         with:
-          version: 0.6.0-latest
+          token: ${{ secrets.GITHUB_TOKEN }}
           charts_dir: k8-util/helm/fluvio-core
           charts_url: https://infinyon.github.io/charts
+          branch: master
+          target_dir: charts
+          owner: infinyon
+          repository: infinyon.github.io
   publish_image:
     name: Publish Latest Image
     strategy:
