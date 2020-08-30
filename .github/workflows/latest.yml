@@ -5,8 +5,25 @@ on:
     - cron: '0 5 * * *' # run at 5AM UTC
   workflow_dispatch:
 jobs:
-  publish:
-    name: Publish Latest
+  publish_helm:
+    name: Publish Latest Chart
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [nightly]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Publish Helm chart
+        uses: helm/chart-releaser-action@v1.0.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          version: 0.6.0-latest
+          charts_dir: k8-util/helm/fluvio-core
+          charts_url: https://infinyon.github.io/charts
+  publish_image:
+    name: Publish Latest Image
     strategy:
       matrix:
         os: [ubuntu-latest]
