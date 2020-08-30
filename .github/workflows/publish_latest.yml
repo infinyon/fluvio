@@ -18,7 +18,7 @@ jobs:
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: k8-util/helm/fluvio-core
+          charts_dir: k8-util/helm
           charts_url: https://infinyon.github.io/charts
           branch: master
           target_dir: charts
