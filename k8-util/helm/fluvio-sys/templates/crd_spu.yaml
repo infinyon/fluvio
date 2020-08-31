@@ -40,15 +40,17 @@ spec:
                   type: object
                   required: ["port"]
                   properties:
-                    ingres:
+                    ingress:
                       type: array
                       items:
                         type: object
                         properties:
                           ip:
                             type: string
+                            nullable: true
                           hostname:
                             type: string
+                            nullable: true
                     port:
                       minimum: 1
                       maximum: 65535
