@@ -108,11 +108,24 @@ impl TryFrom<TlsPaths> for TlsCerts {
 
     fn try_from(paths: TlsPaths) -> Result<Self, Self::Error> {
         use std::fs::read;
+
+        let key = String::from_utf8(read(paths.key)?)
+            .map_err(|e| IoError::new(ErrorKind::Other, format!("failed to read key to string")))?;
+        let cert = String::from_utf8(read(paths.cert)?).map_err(|e| {
+            IoError::new(ErrorKind::Other, format!("failed to read cert to string"))
+        })?;
+        let ca_cert = String::from_utf8(read(paths.ca_cert)?).map_err(|e| {
+            IoError::new(
+                ErrorKind::Other,
+                format!("failed to read ca_cert to string"),
+            )
+        })?;
+
         Ok(Self {
+            key,
+            cert,
+            ca_cert,
             domain: paths.domain,
-            key: encode(&read(paths.key)?),
-            cert: encode(&read(paths.cert)?),
-            ca_cert: encode(&read(paths.ca_cert)?),
         })
     }
 }
@@ -128,54 +141,6 @@ pub struct TlsPaths {
     pub cert: PathBuf,
     /// Path to Certificate Authority certificate
     pub ca_cert: PathBuf,
-}
-
-/// Converts pretty-printed base64 into actual base64.
-///
-/// OpenSSL generates PEM base64 in a way that has headers
-/// and footers surrounding the base64 encoding, as well as
-/// newlines to promote readability. This function takes
-/// those out in order to allow the base64 to be directly
-/// decoded.
-///
-/// If the given string has `-----BEGIN PRIVATE KEY-----`
-/// and newlines (i.e. it is pretty-printed), then this
-/// function returns the body of base64 between the headers
-/// with newlines stripped.
-fn try_strip_pkey_base64(pkey: &str) -> String {
-    let header_stripped = pkey.strip_prefix("-----BEGIN PRIVATE KEY-----")
-        .and_then(|pkey| pkey.strip_suffix("-----END PRIVATE KEY-----\n"));
-
-    match header_stripped {
-        // If there were no headers, return original string
-        None => pkey.to_owned(),
-        // If there were headers, then also strip newlines
-        Some(stripped) => stripped.replace("\n", ""),
-    }
-}
-
-/// Converts pretty-printed base64 into actual base64.
-///
-/// OpenSSL generates PEM base64 in a way that has headers
-/// and footers surrounding the base64 encoding, as well as
-/// newlines to promote readability. This function takes
-/// those out in order to allow the base64 to be directly
-/// decoded.
-///
-/// If the given string has `-----BEGIN CERTIFICATE-----`
-/// and newlines (i.e. it is pretty-printed), then this
-/// function returns the body of base64 between the headers
-/// with newlines stripped.
-fn try_strip_cert_base64(pkey: &str) -> String {
-    let header_stripped = pkey.strip_prefix("-----BEGIN CERTIFICATE-----")
-        .and_then(|pkey| pkey.strip_suffix("-----END CERTIFICATE-----\n"));
-
-    match header_stripped {
-        // If there were no headers, return original string
-        None => pkey.to_owned(),
-        // If there were headers, then also strip newlines
-        Some(stripped) => stripped.replace("\n", ""),
-    }
 }
 
 // TODO move this to AllDomainConnector
@@ -194,28 +159,27 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                         .into(),
                 ))
             }
-            TlsPolicy::Verified(tls) => {
-                // Convert path certs to inline if necessary
-                let tls: TlsCerts = match tls {
-                    TlsConfig::Inline(certs) => certs,
-                    TlsConfig::Files(cert_paths) => cert_paths.try_into()?,
-                };
+            TlsPolicy::Verified(TlsConfig::Files(tls)) => {
+                println!("Using TLS files: {:#?}", tls);
+                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                    ConnectorBuilder::new()
+                        .load_client_certs(tls.cert, tls.key)?
+                        .load_ca_cert(tls.ca_cert)?
+                        .build(),
+                    tls.domain,
+                )))
+            }
+            TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
                 // TODO remove this
-                debug!("Using TLS certs: {:#?}", tls);
-                let ca_cert = decode(tls.ca_cert).map_err(|err| {
-                    IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
-                })?;
-                let client_key = decode(tls.key).map_err(|err| {
-                    IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
-                })?;
-                let client_cert = decode(tls.cert).map_err(|err| {
-                    IoError::new(ErrorKind::InvalidInput, format!("base 64 decode: {}", err))
-                })?;
+                println!("Using TLS certs: {:#?}", tls);
+                let ca_cert = tls.ca_cert.as_bytes();
+                let client_key = tls.key.as_bytes();
+                let client_cert = tls.cert.as_bytes();
 
                 Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
                     ConnectorBuilder::new()
-                        .load_client_certs_from_bytes(&client_cert, &client_key)?
-                        .load_ca_cert_from_bytes(&ca_cert)?
+                        .load_client_certs_from_bytes(client_cert, client_key)?
+                        .load_ca_cert_from_bytes(ca_cert)?
                         .build(),
                     tls.domain,
                 )))
