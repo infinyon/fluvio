@@ -128,7 +128,10 @@ sc_image:	linux-spu-server
 	echo "Building SC image with version: ${VERSION}"
 	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
 
-fluvio_image: all_image
+fluvio_cli: install_musl
+	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_LINUX}
+
+fluvio_image: fluvio_cli
 	echo "Building Fluvio image with version: ${VERSION}"
 	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
 

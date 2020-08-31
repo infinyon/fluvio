@@ -1,11 +1,6 @@
 FROM alpine:3.10
 
 # Copy Binaries
-COPY    spu-server  /fluvio/spu-server
-COPY    sc-k8-server  /fluvio/sc-k8-server
+COPY fluvio  fluvio
 
-# Allow the user to pass in an optional ${bin} argument to select which
-# binary to run; i.e. `spu-server` or `sc-k8-server`
-ENV bin "spu-server"
-
-CMD ["sh", "-c", "/fluvio/${bin}"]
+ENTRYPOINT [ "fluvio" ]

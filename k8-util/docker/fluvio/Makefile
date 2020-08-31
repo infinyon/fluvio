@@ -6,8 +6,7 @@ all: push
 
 copy_binaries:
 	mkdir -p target
-	cp	${BIN_DIR}/spu-server target
-	cp	${BIN_DIR}/sc-k8-server target
+	cp	${BIN_DIR}/fluvio target
 
 build:	copy_binaries
 	docker build -f Dockerfile.fluvio  -t $(NAME):$(TAG)  ./target
