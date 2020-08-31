@@ -45,6 +45,9 @@ install-fmt:
 check-fmt:
 	cargo +$(RUSTV) fmt -- --check
 
+check-helm-versions:
+	make check_version -C k8-util/helm
+
 install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 

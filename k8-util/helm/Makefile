@@ -11,7 +11,8 @@ TEST_LOG_LEVEL=debug
 TEST_NS=default
 TEST_NAME=fluviotest
 FLUVIO_VERSION=$(VERSION)
-SYS_VERSION=0.1.0
+CORE_VERSION=$(shell yq read fluvio-core/Chart.yaml version)
+SYS_VERSION=$(shell yq read fluvio-sys/Chart.yaml version)
 CHART_REPO=../../../infinyon.github.io
 CHART_SRC=./fluvio-core
 LOCAL_RGISTRY=localhost:5000/infinyon
@@ -26,6 +27,11 @@ update_version:
 	yq w -i fluvio-core/Chart.yaml version $(VERSION)
 	yq w -i fluvio-core/values.yaml fluvioVersion $(VERSION)
 
+check_version:
+	if [[ $(CORE_VERSION) == $(SYS_VERSION) && $(CORE_VERSION) == $(VERSION)-latest ]]; \
+	then echo "Helm versions are up-to-date with fluvio version $(VERSION)"; \
+	else echo "Helm versions do not match fluvio version $(VERSION)"; exit 1; \
+	fi
 
 install:	update_version
 	helm install $(NAME) $(CHART_SRC) -n $(NS) \
