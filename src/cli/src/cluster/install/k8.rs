@@ -296,7 +296,10 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     } else {
         cmd.arg("install")
             .arg(&k8_config.install_name)
-            .arg(CORE_CHART_NAME);
+            .arg(k8_config
+                .chart_location
+                .as_deref()
+                .unwrap_or(CORE_CHART_NAME));
     }
 
     cmd.arg("--set")
@@ -327,11 +330,24 @@ pub fn install_sys(opt: InstallCommand) {
     helm::repo_add(opt.k8_config.chart_location.as_deref());
     helm::repo_update();
 
-    Command::new("helm")
+    let mut cmd = Command::new("helm");
+    cmd
         .arg("install")
-        .arg("fluvio-sys")
-        .arg("fluvio/fluvio-sys")
-        .arg("--set")
+        .arg("fluvio-sys");
+
+    if opt.develop {
+        cmd.arg(
+            opt.k8_config.chart_location
+                .as_deref()
+                .unwrap_or("./k8-util/helm/fluvio-sys"));
+    } else {
+        cmd.arg(
+            opt.k8_config.chart_location
+                .as_deref()
+                .unwrap_or("fluvio/fluvio-sys"));
+    }
+        
+    cmd.arg("--set")
         .arg(format!("cloud={}", opt.k8_config.cloud))
         .inherit();
     println!("fluvio sys chart has been installed");
