@@ -24,7 +24,7 @@ build:
 
 # run local smoke test
 smoke-test:	build test-clean-up
-	FLV_CMD=true ./target/debug/flv-test --local-driver --log-dir /tmp --rust-log flv=debug,fluvio=debug
+	FLV_CMD=true ./target/debug/flv-test --local-driver --log-dir /tmp
 
 smoke-test-tls:	build test-clean-up
 	FLV_CMD=true ./target/debug/flv-test --tls --local-driver --log-dir /tmp --rust-log flv=debug

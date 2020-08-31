@@ -20,6 +20,9 @@ spec:
           type: object
           required: ["spec"]
           properties:
+            status:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             spec:
               required: ["spuId", "publicEndpoint", "privateEndpoint"]
               type: object

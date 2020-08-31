@@ -22,6 +22,9 @@ spec:
           required: ["spec"]
           type: object
           properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
               required: ["replicas"]

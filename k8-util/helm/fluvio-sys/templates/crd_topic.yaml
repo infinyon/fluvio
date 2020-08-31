@@ -18,6 +18,9 @@ spec:
           type: object
           required: ["spec"]
           properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
               properties:
@@ -53,7 +56,7 @@ spec:
                             type: array
                             items:
                               type: integer
-                              minimum: 0       
+                              minimum: 0
       subresources:
           status: {}
       additionalPrinterColumns:
