@@ -49,15 +49,17 @@ impl TopicController {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
+        debug!("starting topic controller loop");
         self.sync_topics().await;
 
         loop {
+            debug!("waiting for events");
             select! {
                 _ = self.spus.listen() => {
                     debug!("detected events spu store");
                 },
                 _ = self.topics.listen() => {
-
+                    debug!("detected topic changes. topic syncing");
                     self.sync_topics().await;
                 }
             }

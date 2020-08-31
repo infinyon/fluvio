@@ -21,6 +21,8 @@ spec:
             spec:
               type: object
               properties:
+                type:
+                  type: string
                 partitions:
                   type: integer
                   minimum: 1
