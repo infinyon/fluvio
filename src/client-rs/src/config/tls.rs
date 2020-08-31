@@ -65,6 +65,32 @@ impl From<TlsPaths> for TlsConfig {
 }
 
 /// TLS config with inline keys and certs
+///
+/// Keys and certs stored in the `TlsCerts` type should be PEM
+/// encoded, with text headers and a base64 encoded body. The
+/// stringified contents of a `TlsCerts` should have text resembling
+/// the following:
+///
+/// ```ignore
+/// -----BEGIN RSA PRIVATE KEY-----
+/// MIIJKAIBAAKCAgEAsqV4GUKER1wy4sbNvd6gHMp745L4x+ilVElk1ucWGT2akzA6
+/// TEvDiAKFF4txkEaLTECh1dUev6rB5HnboWxd5gdg1K4ck2wrZ3Jv2OTA0unXAkoA
+/// ...
+/// Jh/5Lo8/sj0GmoM6hZyrBZUWI4Q1/l8rgIyu0Lj8okoCmHwZiMrJDDsvdHqET8/n
+/// dyIzkH0j11JkN5EJR+U65PJHWPpU3WCAV+0tFzctmiB83e6O9iahZ3OflWs=
+/// -----END RSA PRIVATE KEY-----
+///
+/// And certificates should look something like this:
+///
+/// ```ignore
+/// -----BEGIN CERTIFICATE-----
+/// MIIGezCCBGOgAwIBAgIUTYr3REzVKe5JZl2JzLR+rKbv05UwDQYJKoZIhvcNAQEL
+/// BQAwYTELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRIwEAYDVQQHDAlTdW5ueXZh
+/// ...
+/// S6shmu+0il4xqv7pM82iYlaauEfcy0cpjimSQySKDA4S0KB3X8oe7SZqStTJEvtb
+/// IuH6soJvn4Mpk5MpTwBw1raCOoKSz2H4oE0B1dBAmQ==
+/// -----END CERTIFICATE-----
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TlsCerts {
     /// Domain name
@@ -185,5 +211,31 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                 )))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_convert_path_to_inline() {
+        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let certs_path = root_path.parent().unwrap().parent().unwrap().join("tls/certs");
+
+        let tls_paths = TlsPaths {
+            domain: "example.com".to_string(),
+            cert: certs_path.join("client.crt").to_owned(),
+            key: certs_path.join("client.key").to_owned(),
+            ca_cert: certs_path.join("ca.crt").to_owned(),
+        };
+        let tls_inline: TlsCerts = tls_paths.try_into().expect("should get certs");
+
+        assert!(tls_inline.key.starts_with("-----BEGIN RSA PRIVATE KEY-----"));
+        assert!(tls_inline.key.ends_with("-----END RSA PRIVATE KEY-----\n"));
+        assert!(tls_inline.cert.starts_with("-----BEGIN CERTIFICATE-----"));
+        assert!(tls_inline.cert.ends_with("-----END CERTIFICATE-----\n"));
+        assert!(tls_inline.ca_cert.starts_with("-----BEGIN CERTIFICATE-----"));
+        assert!(tls_inline.ca_cert.ends_with("-----END CERTIFICATE-----\n"));
     }
 }
