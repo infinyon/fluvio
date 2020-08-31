@@ -22,7 +22,7 @@ jobs:
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: check versions
-        run: make -s check-helm-versions
+        run: make -s check_version
   check_clippy:
     runs-on: ubuntu-latest
     steps:

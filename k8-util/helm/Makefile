@@ -29,8 +29,8 @@ update_version:
 
 check_version:
 	if [[ $(CORE_VERSION) == $(SYS_VERSION) && $(CORE_VERSION) == $(VERSION)-latest ]]; \
-	then echo "Helm versions are up-to-date with fluvio version $(VERSION)"; \
-	else echo "Helm versions do not match fluvio version $(VERSION)"; exit 1; \
+	then exit 0; \
+	else echo "versions do not match $(VERSION)"; exit 1; \
 	fi
 
 install:	update_version
