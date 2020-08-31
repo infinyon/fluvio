@@ -56,7 +56,7 @@ fn pre_install_check() -> Result<(), CliError> {
         )));
     }
 
-    const SYS_CHART_VERSION: &str = "0.1.0";
+    const SYS_CHART_VERSION: &str = "";
     const SYS_CHART_NAME: &str = "fluvio-sys";
 
     let sys_charts = helm::installed_sys_charts(SYS_CHART_NAME);
@@ -294,12 +294,12 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
                 .unwrap_or("./k8-util/helm/fluvio-core"),
         );
     } else {
-        cmd.arg("install")
-            .arg(&k8_config.install_name)
-            .arg(k8_config
+        cmd.arg("install").arg(&k8_config.install_name).arg(
+            k8_config
                 .chart_location
                 .as_deref()
-                .unwrap_or(CORE_CHART_NAME));
+                .unwrap_or(CORE_CHART_NAME),
+        );
     }
 
     cmd.arg("--set")
@@ -331,22 +331,24 @@ pub fn install_sys(opt: InstallCommand) {
     helm::repo_update();
 
     let mut cmd = Command::new("helm");
-    cmd
-        .arg("install")
-        .arg("fluvio-sys");
+    cmd.arg("install").arg("fluvio-sys");
 
     if opt.develop {
         cmd.arg(
-            opt.k8_config.chart_location
+            opt.k8_config
+                .chart_location
                 .as_deref()
-                .unwrap_or("./k8-util/helm/fluvio-sys"));
+                .unwrap_or("./k8-util/helm/fluvio-sys"),
+        );
     } else {
         cmd.arg(
-            opt.k8_config.chart_location
+            opt.k8_config
+                .chart_location
                 .as_deref()
-                .unwrap_or("fluvio/fluvio-sys"));
+                .unwrap_or("fluvio/fluvio-sys"),
+        );
     }
-        
+
     cmd.arg("--set")
         .arg(format!("cloud={}", opt.k8_config.cloud))
         .inherit();
