@@ -8,17 +8,17 @@ spec:
   serviceAccountName: {{ .Values.serviceAccount.name }}
   containers:
     - name: flv-sc
-      image: {{ .Values.registry }}/fluvio-sc:{{ .Values.fluvioVersion }}
+      image: {{ .Values.registry }}/fluvio:{{ .Values.fluvioVersion }}
       imagePullPolicy: {{ .Values.imagePolicy }}
       ports:
         - containerPort: 9003
       env:
         - name: RUST_LOG
           value: {{ .Values.scLog }}
-        - name:  SPU_IMAGE
-          value: {{ .Values.registry }}/fluvio-spu:{{ .Values.fluvioVersion }}
+        - name:  FLUVIO_IMAGE
+          value: {{ .Values.registry }}/fluvio:{{ .Values.fluvioVersion }}
   {{ if .Values.tls }}
-      command: ["/fluvio/sc-k8-server"]
+      command: ["fluvio", "run", "sc"]
       args:
         - --tls
         - --enable-client-cert
