@@ -12,4 +12,4 @@ log = "0.4.8"
 tracing = "0.1.19"
 bytes = "0.5.4"
 serde = { version ="1.0.103", features = ['derive'] }
-kf-protocol = { version = "2.0.1" } 
+kf-protocol = { version = "3.0.0" } 

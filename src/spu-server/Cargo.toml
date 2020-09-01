@@ -19,8 +19,8 @@ structopt = "0.3.5"
 toml = "0.5.5"
 futures = { version = "0.3.4" }
 async-trait = "0.1.21"
-serde_yaml =  "0.8.8"
-serde = { version ="1.0.103", features = ['derive'] }
+serde_yaml = "0.8.8"
+serde = { version = "1.0.103", features = ['derive'] }
 chrono = { version = "0.4.6", features = ["serde"] }
 chashmap = "2.2.0"
 pin-utils = "0.1.0-alpha.4"
@@ -28,18 +28,18 @@ regex = "1.3.1"
 tokio = { version = "0.2.21", features = ["macros"] }
 flv-future-aio = { version = "2.2.1" }
 flv-util = { version = "0.3.0" }
-kf-protocol = { version = "2.0.0" } 
+kf-protocol = { version = "3.0.0" }
 flv-tls-proxy = "0.1.0"
-kf-socket = {path = "../kf-socket"}
-kf-service = { path = "../kf-service"}
-internal-api = { path = "../internal-api"}
-spu-api = { path = "../spu-api",  package = "flv-api-spu"}
-flv-types = { path ="../types", version = "0.2.0"}
-utils = { path= "../utils"}
+kf-socket = { path = "../kf-socket" }
+kf-service = { path = "../kf-service" }
+internal-api = { path = "../internal-api" }
+spu-api = { path = "../spu-api", package = "flv-api-spu" }
+flv-types = { path = "../types", version = "0.2.0" }
+utils = { path = "../utils" }
 flv-metadata-cluster = { path = "../metadata-cluster" }
-flv-storage = { path = "../storage"}
+flv-storage = { path = "../storage" }
 
 
 [dev-dependencies]
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }
-utils = { path = "../utils", features=["fixture"]}
+utils = { path = "../utils", features = ["fixture"] }
