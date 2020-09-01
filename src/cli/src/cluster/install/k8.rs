@@ -13,7 +13,7 @@ use super::*;
 use crate::target::ClusterTarget;
 use crate::tls::TlsOpt;
 
-const CORE_CHART_NAME: &str = "fluvio/fluvio-core";
+const CORE_CHART_NAME: &str = "fluvio/fluvio-app";
 
 fn get_cluster_server_host(kc_config: KubeContext) -> Result<String, IoError> {
     if let Some(ctx) = kc_config.config.current_cluster() {
@@ -56,7 +56,7 @@ fn pre_install_check() -> Result<(), CliError> {
         )));
     }
 
-    const SYS_CHART_VERSION: &str = "0.1.0";
+    const SYS_CHART_VERSION: &str = "";
     const SYS_CHART_NAME: &str = "fluvio-sys";
 
     let sys_charts = helm::installed_sys_charts(SYS_CHART_NAME);
@@ -237,7 +237,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         copy_secrets(opt);
     }
 
-    let version = if opt.develop {
+    let image_version = if opt.develop {
         opt.k8_config.version.clone().unwrap_or_else(|| {
             // get git version
             let output = Command::new("git")
@@ -256,9 +256,9 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     let k8_config = &opt.k8_config;
     let ns = &k8_config.namespace;
 
-    println!("installing fluvio chart version: {}", version);
+    println!("installing fluvio app with image: {}", image_version);
 
-    let fluvio_version = format!("fluvioVersion={}", version);
+    let fluvio_version = format!("image.tag={}", image_version);
 
     let mut cmd = Command::new("helm");
 
@@ -273,7 +273,6 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     // prepare chart if using release
     if !opt.develop {
         debug!("updating helm repo");
-        const CORE_CHART_NAME: &str = "fluvio/fluvio-core";
         helm::repo_add(opt.k8_config.chart_location.as_deref());
         helm::repo_update();
 
@@ -291,18 +290,21 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
             k8_config
                 .chart_location
                 .as_deref()
-                .unwrap_or("./k8-util/helm/fluvio-core"),
+                .unwrap_or("./k8-util/helm/fluvio-app"),
         );
     } else {
-        cmd.arg("install")
-            .arg(&k8_config.install_name)
-            .arg(CORE_CHART_NAME);
+        cmd.arg("install").arg(&k8_config.install_name).arg(
+            k8_config
+                .chart_location
+                .as_deref()
+                .unwrap_or(CORE_CHART_NAME),
+        );
     }
 
     cmd.arg("--set")
         .arg(fluvio_version)
         .arg("--set")
-        .arg(format!("registry={}", registry))
+        .arg(format!("image.registry={}", registry))
         .arg("-n")
         .arg(ns)
         .arg("--set")
@@ -327,11 +329,26 @@ pub fn install_sys(opt: InstallCommand) {
     helm::repo_add(opt.k8_config.chart_location.as_deref());
     helm::repo_update();
 
-    Command::new("helm")
-        .arg("install")
-        .arg("fluvio-sys")
-        .arg("fluvio/fluvio-sys")
-        .arg("--set")
+    let mut cmd = Command::new("helm");
+    cmd.arg("install").arg("fluvio-sys");
+
+    if opt.develop {
+        cmd.arg(
+            opt.k8_config
+                .chart_location
+                .as_deref()
+                .unwrap_or("./k8-util/helm/fluvio-sys"),
+        );
+    } else {
+        cmd.arg(
+            opt.k8_config
+                .chart_location
+                .as_deref()
+                .unwrap_or("fluvio/fluvio-sys"),
+        );
+    }
+
+    cmd.arg("--set")
         .arg(format!("cloud={}", opt.k8_config.cloud))
         .inherit();
     println!("fluvio sys chart has been installed");

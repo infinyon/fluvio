@@ -11,7 +11,7 @@ TEST_LOG_LEVEL=debug
 TEST_NS=default
 TEST_NAME=fluviotest
 FLUVIO_VERSION=$(VERSION)
-CORE_VERSION=$(shell yq read fluvio-core/Chart.yaml version)
+CORE_VERSION=$(shell yq read fluvio-app/Chart.yaml version)
 SYS_VERSION=$(shell yq read fluvio-sys/Chart.yaml version)
 CHART_REPO=../../../infinyon.github.io
 CHART_SRC=./fluvio-core
@@ -53,10 +53,9 @@ install_mk_test:	REGISTRY=$(LOCAL_RGISTRY)
 install_mk_test:	test-install
 install_mk_test:	CLOUD=minikube
 
-install_sys_minikube:	CLOUD=minikube
-install_sys_minikube:	CHART_SRC=./fluvio-sys
-install_sys_minikube:	NAME=fluvio-sys
-install_sys_minikube:	install
+# install sys chart for local development
+install_sys_dev:	
+	helm install fluvio-sys ./fluvio-sys -n $(NS) --set cloud=$(CLOUD)
 
 
 install_minikube:	CLOUD=minikube

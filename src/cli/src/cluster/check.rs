@@ -25,7 +25,7 @@ use super::*;
 // constants
 const MIN_KUBE_VERSION: &str = "1.5.0";
 const DEFAULT_HELM_VERSION: &str = "3.2.0";
-const SYS_CHART_VERSION: &str = "0.1.0";
+const SYS_CHART_VERSION: &str = "0.2.0";
 const SYS_CHART_NAME: &str = "fluvio-sys";
 const DEFAULT_NAMESPACE: &str = "default";
 const DUMMY_LB_SERVICE: &str = "flv-dummy-service";

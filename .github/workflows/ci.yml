@@ -108,7 +108,7 @@ jobs:
           helm list
       - name: install fluvio system chart
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys
+          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
       - name: smoke test
         run: |
           FLV_CMD=true make smoke-test

@@ -8,15 +8,15 @@ spec:
   serviceAccountName: {{ .Values.serviceAccount.name }}
   containers:
     - name: flv-sc
-      image: {{ .Values.registry }}/fluvio-sc:{{ .Values.fluvioVersion }}
-      imagePullPolicy: {{ .Values.imagePolicy }}
+      image: {{ .Values.image.registry }}/fluvio-sc:{{ .Values.image.tag | default .Chart.AppVersion }}
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
       ports:
         - containerPort: 9003
       env:
         - name: RUST_LOG
           value: {{ .Values.scLog }}
         - name:  SPU_IMAGE
-          value: {{ .Values.registry }}/fluvio-spu:{{ .Values.fluvioVersion }}
+          value: {{ .Values.image.registry }}/fluvio-spu:{{ .Values.image.tag | default .Chart.AppVersion }}
   {{ if .Values.tls }}
       command: ["/fluvio/sc-k8-server"]
       args:
