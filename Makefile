@@ -1,4 +1,5 @@
 VERSION := $(shell cat VERSION)
+DOCKER_VERSION = $(VERSION)
 TOOLCHAIN = "./rust-toolchain"
 RUSTV = $(shell cat ${TOOLCHAIN})
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
@@ -97,8 +98,14 @@ all_image:	linux-spu-server spu_image linux-sc-server sc_image
 release_image:	MAKE_CMD=push
 release_image:	all_image
 
-release_image_latest: VERSION=latest
-release_image_latest: release_image
+release_image_chart_latest: DOCKER_VERSION=$(VERSION)-latest
+release_image_chart_latest: release_image
+
+release_image_ver_latest:	DOCKER_VERSION=latest
+release_image_ver_latest:	release_image
+
+release_image_latest:	release_image_chart_latest release_image_ver_latest
+
 
 develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
 develop_image: 	all_image
@@ -124,12 +131,12 @@ linux-spu-server:	install_musl
 
 
 spu_image:	linux-spu-server
-	echo "Building SPU image with version: ${VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
+	echo "Building SPU image with version: ${DOCKER_VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
 
 sc_image:	linux-spu-server
-	echo "Building SC image with version: ${VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
+	echo "Building SC image with version: ${DOCKER_VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
 
 fluvio_cli: install_musl
 	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_LINUX}
