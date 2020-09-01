@@ -3,14 +3,15 @@
 # Declare variables to be passed into your templates.
 
 cloud: minikube
-fluvioVersion: 0.5.1
-registry: infinyon
 scLog: info
 tls: false
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
-imagePolicy: IfNotPresent
+image:
+  registry: infinyon
+  tag:  ""
+  pullPolicy: IfNotPresent
 cert:
   caCert: fluvio-ca
   tls: fluvio-tls
