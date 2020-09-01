@@ -1730,9 +1730,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec729823c9ebd8221c62ff052ca3d2035511b718ae7f07f8d0a06b412827c44e"
+version = "4.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "kf-protocol-api",
  "kf-protocol-core",
@@ -1745,9 +1744,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-api"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0eb6c2e44311167ae640eb2c193f6306a49ba8278b16ebec2bf9044d792087be"
+version = "3.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "content_inspector",
  "crc32c",
@@ -1761,9 +1759,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-core"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "181d915d438db9198e5c45852ad2368a4999ed23146fcf62a516d5a58ffa2375"
+version = "0.2.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1775,8 +1772,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-derive"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f15e52706feb9b02a28c493d0a7a7d7e42c4ff874c7079e0fad3259cb82cf418"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "log",
  "proc-macro2 1.0.21",
@@ -1786,9 +1782,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-fs"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00f58f9f81d6bc7942b6794bf89250398eea893217b24a05a20ae56d4d79a1d8"
+version = "4.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
@@ -1801,9 +1796,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-message"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bdb6556c78a40fc8dd1883ae0b99bfcb2bf267b42538896ab1eccc24d8814b2"
+version = "3.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "content_inspector",
  "flv-util",
@@ -1817,9 +1811,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-transport"
-version = "2.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f01ca69cc33535286552750240be9f85847feb2c9088dc04354c6aee510afb5"
+version = "3.0.4"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
