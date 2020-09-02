@@ -11,7 +11,7 @@ pub fn repo_add(chart_location: Option<&str>) {
         .arg("repo")
         .arg("add")
         .arg("fluvio")
-        .arg(chart_location.unwrap_or("https://infinyon.github.io/charts"))
+        .arg(chart_location.unwrap_or("https://infinyon.github.io"))
         .inherit();
 }
 
@@ -33,7 +33,7 @@ pub struct SysChart {
 }
 
 pub fn check_chart_version_exists(name: &str, version: &str) -> bool {
-    let versions = core_chart_versions(name);
+    let versions = core_chart_versions(name,&version);
     versions
         .iter()
         .filter(|chart| chart.name == name && chart.version == version)
@@ -41,11 +41,13 @@ pub fn check_chart_version_exists(name: &str, version: &str) -> bool {
         > 0
 }
 
-fn core_chart_versions(name: &str) -> Vec<Chart> {
+fn core_chart_versions(name: &str,version: &str) -> Vec<Chart> {
     let mut cmd = Command::new("helm");
     cmd.arg("search")
         .arg("repo")
         .arg(name)
+        .arg("--version")
+        .arg(version)
         .arg("--output")
         .arg("json")
         .print();

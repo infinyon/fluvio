@@ -237,8 +237,30 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         copy_secrets(opt);
     }
 
+    // chart version can be overriden 
+    let chart_version = opt.k8_config.chart_version.as_deref().unwrap_or(crate::VERSION);
+
+   
+    // prepare chart if using release
+    if !opt.develop {
+        debug!("updating helm repo");
+        helm::repo_add(opt.k8_config.chart_location.as_deref());
+        helm::repo_update();
+
+        if !helm::check_chart_version_exists(CORE_CHART_NAME, chart_version) {
+            return Err(CliError::Other(format!(
+                "{}:{} not found in helm repo",
+                CORE_CHART_NAME,
+                crate::VERSION
+            )));
+        }
+    }
+
+    // compute image version
     let image_version = if opt.develop {
-        opt.k8_config.version.clone().unwrap_or_else(|| {
+        // if it is develop, if image version is not specified default to git log hash
+        opt.k8_config.image_version.clone().unwrap_or_else(|| {
+            
             // get git version
             let output = Command::new("git")
                 .args(&["log", "-1", "--pretty=format:\"%H\""])
@@ -248,9 +270,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
             version.trim_matches('"').to_owned()
         })
     } else {
-        helm::repo_add(opt.k8_config.chart_location.as_deref());
-        helm::repo_update();
-        crate::VERSION.to_owned()
+        opt.k8_config.image_version.clone().unwrap_or(chart_version.to_owned())
     };
 
     let k8_config = &opt.k8_config;
@@ -270,20 +290,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         }
     });
 
-    // prepare chart if using release
-    if !opt.develop {
-        debug!("updating helm repo");
-        helm::repo_add(opt.k8_config.chart_location.as_deref());
-        helm::repo_update();
-
-        if !helm::check_chart_version_exists(CORE_CHART_NAME, crate::VERSION) {
-            return Err(CliError::Other(format!(
-                "{}:{} not found in helm repo",
-                CORE_CHART_NAME,
-                crate::VERSION
-            )));
-        }
-    }
+    
 
     if opt.develop {
         cmd.arg("install").arg(&k8_config.install_name).arg(
@@ -301,7 +308,10 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         );
     }
 
-    cmd.arg("--set")
+    cmd
+        .arg("--version")
+        .arg(chart_version)
+        .arg("--set")
         .arg(fluvio_version)
         .arg("--set")
         .arg(format!("image.registry={}", registry))
