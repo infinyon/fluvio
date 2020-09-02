@@ -237,10 +237,13 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         copy_secrets(opt);
     }
 
-    // chart version can be overriden 
-    let chart_version = opt.k8_config.chart_version.as_deref().unwrap_or(crate::VERSION);
+    // chart version can be overriden
+    let chart_version = opt
+        .k8_config
+        .chart_version
+        .as_deref()
+        .unwrap_or(crate::VERSION);
 
-   
     // prepare chart if using release
     if !opt.develop {
         debug!("updating helm repo");
@@ -260,7 +263,6 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
     let image_version = if opt.develop {
         // if it is develop, if image version is not specified default to git log hash
         opt.k8_config.image_version.clone().unwrap_or_else(|| {
-            
             // get git version
             let output = Command::new("git")
                 .args(&["log", "-1", "--pretty=format:\"%H\""])
@@ -270,7 +272,10 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
             version.trim_matches('"').to_owned()
         })
     } else {
-        opt.k8_config.image_version.clone().unwrap_or(chart_version.to_owned())
+        opt.k8_config
+            .image_version
+            .clone()
+            .unwrap_or_else(|| chart_version.to_owned())
     };
 
     let k8_config = &opt.k8_config;
@@ -290,8 +295,6 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         }
     });
 
-    
-
     if opt.develop {
         cmd.arg("install").arg(&k8_config.install_name).arg(
             k8_config
@@ -308,8 +311,7 @@ fn install_core_app(opt: &InstallCommand) -> Result<(), CliError> {
         );
     }
 
-    cmd
-        .arg("--version")
+    cmd.arg("--version")
         .arg(chart_version)
         .arg("--set")
         .arg(fluvio_version)

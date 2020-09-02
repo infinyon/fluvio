@@ -33,7 +33,7 @@ pub struct SysChart {
 }
 
 pub fn check_chart_version_exists(name: &str, version: &str) -> bool {
-    let versions = core_chart_versions(name,&version);
+    let versions = core_chart_versions(name, &version);
     versions
         .iter()
         .filter(|chart| chart.name == name && chart.version == version)
@@ -41,7 +41,7 @@ pub fn check_chart_version_exists(name: &str, version: &str) -> bool {
         > 0
 }
 
-fn core_chart_versions(name: &str,version: &str) -> Vec<Chart> {
+fn core_chart_versions(name: &str, version: &str) -> Vec<Chart> {
     let mut cmd = Command::new("helm");
     cmd.arg("search")
         .arg("repo")
