@@ -63,13 +63,13 @@ generate-client-crt:	generate-client-csr
 
 # for non mac
 test-curl:
-	curl -v -s -k --key client.key --cert client.crt "https://127.0.0.1:8443/hello/world"
+	curl -v -s -k --key certs/client.key --cert certs/client.crt "https://127.0.0.1:443/index.html"
 
 install-curl-ssl:
 	 brew upgrade curl-openssl
 
 test-mac-curl:
-	 /usr/local/opt/curl-openssl/bin/curl -v -k -s --key certs/client.key --cert certs/client.crt "https://127.0.0.1:8443/hello/world"
+	 /usr/local/opt/curl-openssl/bin/curl -v -k -s --key certs/client.key --cert certs/client.crt "https://127.0.0.1:443/index.html"
 
 
 MAKE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
