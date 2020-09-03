@@ -1,16 +1,16 @@
 /// convert spu group spec to statefulset for input
 use std::collections::HashMap;
 
-use flv_metadata_cluster::k8::metadata::*;
-use flv_metadata_cluster::k8::core::pod::ContainerSpec;
-use flv_metadata_cluster::k8::core::pod::ContainerPortSpec;
-use flv_metadata_cluster::k8::core::pod::PodSpec;
-use flv_metadata_cluster::k8::core::pod::VolumeMount;
-use flv_metadata_cluster::k8::core::pod::VolumeSpec;
-use flv_metadata_cluster::k8::core::pod::SecretVolumeSpec;
-use flv_metadata_cluster::k8::core::service::*;
-use flv_metadata_cluster::k8::app::stateful::*;
-use flv_metadata_cluster::spg::K8SpuGroupSpec;
+use crate::k8::metadata::*;
+use crate::k8::core::pod::ContainerSpec;
+use crate::k8::core::pod::ContainerPortSpec;
+use crate::k8::core::pod::PodSpec;
+use crate::k8::core::pod::VolumeMount;
+use crate::k8::core::pod::VolumeSpec;
+use crate::k8::core::pod::SecretVolumeSpec;
+use crate::k8::core::service::*;
+use crate::k8::app::stateful::*;
+use crate::stores::spg::K8SpuGroupSpec;
 
 use flv_types::defaults::SPU_DEFAULT_NAME;
 use flv_types::defaults::SPU_PUBLIC_PORT;
