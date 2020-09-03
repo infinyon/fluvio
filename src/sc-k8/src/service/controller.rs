@@ -11,7 +11,7 @@ use crate::stores::spu::SpuSpec;
 use crate::k8::core::service::LoadBalancerIngress;
 use crate::stores::Epoch;
 
-use super::meta::SpuServicespec;
+use super::SpuServicespec;
 
 
 /// Controleller to sync Spu and Svc

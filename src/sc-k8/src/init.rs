@@ -14,6 +14,7 @@ use crate::{ScOpt, operator::run_k8_operators};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_k8_loop(opt: ScOpt) {
+
     // parse configuration (program exits on error)
     let (sc_config, k8_config, tls_option) = opt.parse_cli_or_exit();
 

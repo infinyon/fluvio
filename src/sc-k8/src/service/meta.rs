@@ -59,19 +59,19 @@ mod extended {
 
     use super::*;
 
-    /*
-    // to satisfy bounds for k8 dispatcher ws service
-    impl Into<SecretSpec> for InstallSpec {
-        fn into(self) -> SecretSpec {
-            panic!("use helm to install");
+    
+    // no need to convert back but need to satify bounds
+    impl Into<ServiceSpec> for SpuServicespec {
+        fn into(self) -> ServiceSpec {
+            panic!("no converting to service");
         }
     }
 
-    impl Into<SecretStatus> for InstallStatus {
-        fn into(self) -> SecretStatus {
-            panic!("use helm to install");
+    impl Into<ServiceStatus> for SpuServiceStatus {
+        fn into(self) -> ServiceStatus {
+            panic!("use converting to service status");
         }
-    }*/
+    }
 
 
     impl K8ExtendedSpec for SpuServicespec {
@@ -100,168 +100,3 @@ mod extended {
         }
     }
 }
-
-/*
-mod k8 {
-    use std::io::Error as IoError;
-    use std::ops::Deref;
-    use std::sync::Arc;
-
-    use tracing::debug;
-    use tracing::trace;
-    use serde::Deserialize;
-    use serde::Serialize;
-
-    use k8_obj_metadata::Crd;
-    use k8_obj_metadata::CrdNames;
-
-    use flv_operator::MetaItem;
-    use flv_operator::MetaItemLocalStore;
-    use flv_operator::StoreSpec;
-    use k8_obj_core::secret::SecretSpec;
-    use k8_obj_core::secret::SecretStatus;
-    use k8_obj_metadata::store::MetaItemContext;
-    use k8_obj_metadata::DefaultHeader;
-    use k8_obj_metadata::K8Obj;
-    use k8_obj_metadata::Spec;
-    use k8_obj_metadata::Status;
-    use k8_obj_core::service::ServiceSpec;
-
-
-    use crate::k8::GROUP;
-    use crate::k8::V1;
-
-    pub type InstallLocalStore = MetaItemLocalStore<HelmInstallSpec>;
-    pub type SharedInstallLocalStore = Arc<InstallLocalStore>;
-    pub type HelmInstallItem = MetaItem<HelmInstallSpec>;
-
-    pub type SecretLocalStore = MetaItemLocalStore<SecretWrapperSpec>;
-    pub type SharedSecreteLocalStore = Arc<SecretLocalStore>;
-    pub type SecreteItem = MetaItem<SecretWrapperSpec>;
-
-    pub type ServiceLocalStore = MetaItemLocalStore<ServiceSpec>;
-
-    const INSTALL_CRD: Crd = Crd {
-        group: GROUP,
-        version: V1,
-        names: CrdNames {
-            kind: "Installation",
-            plural: "installations",
-            singular: "installation",
-        },
-    };
-
-
-    #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
-    pub struct HelmInstallSpec {
-        pub namespace: String,
-    }
-
-    impl Spec for HelmInstallSpec {
-        type Status = HelmInstallStatus;
-        type Header = DefaultHeader;
-
-        fn metadata() -> &'static Crd {
-            &INSTALL_CRD
-        }
-    }
-
-    impl StoreSpec for HelmInstallSpec {
-        const LABEL: &'static str = "Install";
-
-        type K8Spec = Self;
-        type Status = HelmInstallStatus;
-        type Key = String;
-        type Owner = Self;
-
-        fn convert_from_k8(k8_obj: K8Obj<Self::K8Spec>) -> Result<Option<MetaItem<Self>>, IoError> {
-            let ctx = MetaItemContext::default().with_ctx(k8_obj.metadata.clone());
-            Ok(Some(MetaItem::new(
-                k8_obj.metadata.name,
-                k8_obj.spec,
-                k8_obj.status,
-                ctx,
-            )))
-        }
-    }
-
-    #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
-    pub struct SecretWrapperSpec(SecretSpec);
-
-    impl Deref for SecretWrapperSpec {
-        type Target = SecretSpec;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
-
-    impl StoreSpec for SecretWrapperSpec {
-        const LABEL: &'static str = "Secret";
-
-        type K8Spec = SecretSpec;
-        type Status = SecretStatus;
-        type Key = String;
-        type Owner = Self;
-
-        fn convert_from_k8(k8_obj: K8Obj<Self::K8Spec>) -> Result<Option<MetaItem<Self>>, IoError> {
-            // check if type if helm installation
-            if k8_obj.header.ty == "helm.sh/release.v1" {
-                let mut labels = &k8_obj.metadata.labels;
-                // let status = labels.remove("status").unwrap();
-                // let version = labels.remove("version").unwrap();
-                let name = labels.get("name").as_ref().unwrap().clone();
-
-                if name == "fluvio-sys" {
-                    debug!("ignoring system chart");
-                    Ok(None)
-                } else {
-                    let key = k8_obj.metadata.namespace.clone();
-                    debug!(
-                        "found helm secret: {} at: {}",
-                        name, key,
-                    );
-                    let ctx = MetaItemContext::default().with_ctx(k8_obj.metadata.clone());
-                    Ok(Some(MetaItem::new(
-                        key,
-                        SecretWrapperSpec(k8_obj.spec),
-                        k8_obj.status,
-                        ctx,
-                    )))
-                }
-
-
-            } else {
-                trace!(
-                    "ignoring secret: {}, {:#?}",
-                    k8_obj.metadata.name,
-                    k8_obj.header
-                );
-                Ok(None)
-            }
-        }
-    }
-
-    #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-    pub enum InstallResolution {
-        Init,
-        Provisioned,
-        Installed,
-    }
-
-    impl Default for InstallResolution {
-        fn default() -> Self {
-            Self::Init
-        }
-    }
-
-    #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
-    pub struct HelmInstallStatus {
-        pub resolution: InstallResolution,
-        pub public_host: Option<String>
-
-    }
-
-    impl Status for HelmInstallStatus {}
-}
-*/
