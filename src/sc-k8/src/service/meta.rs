@@ -12,7 +12,7 @@ use crate::k8::core::service::LoadBalancerIngress;
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpuServicespec {
-    pub spu_name: String
+    pub spu_name: String,
 }
 
 impl Spec for SpuServicespec {
@@ -33,18 +33,16 @@ impl fmt::Display for SpuServiceStatus {
 
 impl Status for SpuServiceStatus {}
 
-
-impl SpuServiceStatus  {
+impl SpuServiceStatus {
     pub fn ingress(&self) -> &Vec<LoadBalancerIngress> {
         &self.0.load_balancer.ingress
     }
 }
 
-
 mod extended {
 
-   // use std::io::Error as IoError;
-   // use std::io::ErrorKind;
+    // use std::io::Error as IoError;
+    // use std::io::ErrorKind;
 
     use tracing::debug;
 
@@ -56,10 +54,8 @@ mod extended {
     use crate::stores::k8::K8MetaItem;
     use crate::stores::MetadataStoreObject;
 
-
     use super::*;
 
-    
     // no need to convert back but need to satify bounds
     impl Into<ServiceSpec> for SpuServicespec {
         fn into(self) -> ServiceSpec {
@@ -73,7 +69,6 @@ mod extended {
         }
     }
 
-
     impl K8ExtendedSpec for SpuServicespec {
         type K8Spec = ServiceSpec;
         type K8Status = ServiceStatus;
@@ -81,22 +76,22 @@ mod extended {
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
-
-
             let labels = &k8_obj.metadata.labels;
 
             if let Some(name) = labels.get("fluvio.io/spu-name") {
+                debug!("detected spu service: {}", name);
 
-                    debug!("detected spu service: {}", name);
-
-                    Ok(MetadataStoreObject::new(name, SpuServicespec{
-                        spu_name: name.to_owned()
-                    }, SpuServiceStatus(k8_obj.status)))
+                Ok(MetadataStoreObject::new(
+                    name,
+                    SpuServicespec {
+                        spu_name: name.to_owned(),
+                    },
+                    SpuServiceStatus(k8_obj.status),
+                ))
             } else {
-                    debug!("skipping non acct fluvio {}", k8_obj.metadata.namespace);
-                    Err(K8ConvertError::Skip(k8_obj))
+                debug!("skipping non acct fluvio {}", k8_obj.metadata.namespace);
+                Err(K8ConvertError::Skip(k8_obj))
             }
-            
         }
     }
 }

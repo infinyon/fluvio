@@ -27,7 +27,6 @@ pub fn run_k8_operators(
 
     let svc_ctx: StoreContext<SpuServicespec> = StoreContext::new();
 
-    K8ClusterStateDispatcher::<SpuServicespec, _>::start(namespace, k8_client,svc_ctx.clone());
-    SpuServiceController::start(ctx,svc_ctx);
-
+    K8ClusterStateDispatcher::<SpuServicespec, _>::start(namespace, k8_client, svc_ctx.clone());
+    SpuServiceController::start(ctx, svc_ctx);
 }

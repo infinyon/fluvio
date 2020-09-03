@@ -13,7 +13,6 @@ use crate::stores::Epoch;
 
 use super::SpuServicespec;
 
-
 /// Controleller to sync Spu and Svc
 /// It is used to update SPU's public ip address from external load balancer service.
 /// External load balancer update external ip or hostname out of band.

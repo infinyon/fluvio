@@ -9,15 +9,13 @@ use futures::channel::mpsc::SendError;
 
 use k8_client::ClientError;
 use flv_types::PartitionError;
-use flv_types::SpuId;
 
 #[derive(Debug)]
 pub enum ScK8Error {
     IoError(StdIoError),
     ClientError(ClientError),
     SendError(SendError),
-    PartitionError(PartitionError),
-    UnknownSpu(SpuId),
+    PartitionError(PartitionError)
 }
 
 impl From<StdIoError> for ScK8Error {
@@ -50,7 +48,6 @@ impl fmt::Display for ScK8Error {
             Self::IoError(err) => write!(f, "{}", err),
             Self::SendError(err) => write!(f, "{}", err),
             Self::PartitionError(err) => write!(f, "{}", err),
-            Self::UnknownSpu(spu) => write!(f, "unknown spu: {}", spu),
             Self::ClientError(err) => write!(f, "{}", err),
         }
     }
