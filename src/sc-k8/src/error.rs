@@ -15,7 +15,7 @@ pub enum ScK8Error {
     IoError(StdIoError),
     ClientError(ClientError),
     SendError(SendError),
-    PartitionError(PartitionError)
+    PartitionError(PartitionError),
 }
 
 impl From<StdIoError> for ScK8Error {
