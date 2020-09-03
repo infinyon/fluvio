@@ -1085,7 +1085,6 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "flv-future-aio",
- "flv-metadata-cluster",
  "flv-sc-core",
  "flv-tls-proxy",
  "flv-types",
@@ -1095,6 +1094,7 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "structopt",
+ "tokio",
  "toml",
  "tracing",
  "tracing-futures",

@@ -237,3 +237,22 @@ install-k8-tls:
 
 uninstall-k8:
 	$(FLUVIO_BIN) cluster uninstall
+
+
+install-velero:
+	helm install vmware-tanzu/velero --namespace velero \
+		--set-file credentials.secretContents.cloud=<FULL PATH TO FILE> \
+		--set configuration.provider=<PROVIDER NAME> \
+		--set configuration.backupStorageLocation.name=<BACKUP STORAGE LOCATION NAME> \
+		--set configuration.backupStorageLocation.bucket=<BUCKET NAME> \
+		--set configuration.backupStorageLocation.config.region=<REGION> \
+		--set configuration.volumeSnapshotLocation.name=<VOLUME SNAPSHOT LOCATION NAME> \
+		--set configuration.volumeSnapshotLocation.config.region=<REGION> \
+		--set image.repository=velero/velero \
+		--set image.tag=v1.4.2 \
+		--set image.pullPolicy=IfNotPresent \
+		--set initContainers[0].name=velero-plugin-for-aws \
+		--set initContainers[0].image=velero/velero-plugin-for-aws:v1.1.0 \
+		--set initContainers[0].volumeMounts[0].mountPath=/target \
+		--set initContainers[0].volumeMounts[0].name=plugins \
+		--generate-name

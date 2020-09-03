@@ -1,9 +1,9 @@
 use async_trait::async_trait;
-use flv_metadata_cluster::k8::metadata::K8Obj;
-use flv_metadata_cluster::spg::K8SpuGroupSpec;
-use flv_types::SpuId;
 
-use flv_sc_core::stores::spu::*;
+use flv_types::SpuId;
+use crate::stores::spg::K8SpuGroupSpec;
+use crate::k8::metadata::K8Obj;
+use crate::stores::spu::*;
 
 pub type SpuGroupObj = K8Obj<K8SpuGroupSpec>;
 
