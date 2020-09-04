@@ -14,7 +14,7 @@ use crate::ClientError;
 
 /// Frame with request and response
 #[async_trait]
-pub trait SerialFrame: Sync + Send {
+pub(crate) trait SerialFrame: Sync + Send {
     /// client config
     fn config(&self) -> &ClientConfig;
 
@@ -40,7 +40,8 @@ pub trait SerialFrame: Sync + Send {
         R: Request + Send + Sync;
 }
 
-/// Socket with Versions
+/// This sockets knows about support versions
+/// Version information are automatically  insert into request
 pub struct VersionedSocket {
     socket: AllKfSocket,
     config: ClientConfig,
