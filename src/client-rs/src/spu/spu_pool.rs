@@ -16,10 +16,7 @@ pub struct SpuPool {
 impl SpuPool {
     /// create new spu pool from client config template and metadata store
     pub fn new(config: ClientConfig, metadata: MetadataStores) -> Self {
-        Self { 
-            metadata, 
-            config,
-        }
+        Self { metadata, config }
     }
 
     pub async fn spu_leader(&self, replica: &ReplicaKey) -> Result<VersionedSocket, ClientError> {

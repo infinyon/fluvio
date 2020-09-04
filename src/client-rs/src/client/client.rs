@@ -73,8 +73,6 @@ impl SerialFrame for VersionedSocket {
             .await
             .map(|res_msg| res_msg.response)
     }
-
-    
 }
 
 impl VersionedSocket {

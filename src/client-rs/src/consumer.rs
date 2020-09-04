@@ -44,8 +44,6 @@ impl Consumer {
         offset_option: FetchOffset,
         option: FetchLogOption,
     ) -> Result<FetchablePartitionResponse<RecordSet>, ClientError> {
-        
-
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
@@ -94,15 +92,13 @@ impl Consumer {
         }
     }
 
-    
     /// fetch logs as stream
     /// this will fetch continously
-    pub async fn fetch_logs_as_stream<'a>(
-        &'a mut self,
+    pub async fn fetch_logs_as_stream(
+        &mut self,
         offset_option: FetchOffset,
         _option: FetchLogOption,
-    ) -> Result<BoxStream<'a,FetchablePartitionResponse<RecordSet>>, ClientError> {
-
+    ) -> Result<BoxStream<'_, FetchablePartitionResponse<RecordSet>>, ClientError> {
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
@@ -127,7 +123,7 @@ impl Consumer {
             fetch_partitions: vec![partition],
         };
 
-        
+
         let fetch_request = DefaultKfFetchRequest {
             topics: vec![topic_request],
             isolation_level: option.isolation,
@@ -136,12 +132,8 @@ impl Consumer {
         };
         */
 
-        
-
         Err(ClientError::UnableToReadProfile)
-
     }
-    
 }
 
 async fn fetch_offsets(
