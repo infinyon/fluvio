@@ -10,7 +10,7 @@ pub mod config;
 pub mod params;
 
 pub use error::ClientError;
-pub use client::ClusterClient;
+pub use client::ClusterSocket;
 pub use config::ClusterConfig;
 pub use producer::Producer;
 pub use consumer::Consumer;

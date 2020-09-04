@@ -9,7 +9,7 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use flv_util::socket_helpers::ServerAddress;
-use fluvio::{ClusterConfig, ClusterClient};
+use fluvio::{ClusterConfig, ClusterSocket};
 use fluvio::metadata::spu::CustomSpuSpec;
 
 use crate::error::CliError;
@@ -68,7 +68,7 @@ impl RegisterCustomSpuOpt {
 pub async fn process_register_custom_spu(opt: RegisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, (name, spec)) = opt.validate()?;
 
-    let mut sc = ClusterClient::connect(target_server).await?;
+    let mut sc = ClusterSocket::connect(target_server).await?;
 
     let mut admin = sc.admin().await;
 

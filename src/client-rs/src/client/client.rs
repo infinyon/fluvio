@@ -12,9 +12,9 @@ use flv_future_aio::net::tls::AllDomainConnector;
 
 use crate::ClientError;
 
-/// Generic client trait
+/// Frame with request and response
 #[async_trait]
-pub trait Client: Sync + Send {
+pub(crate) trait SerialFrame: Sync + Send {
     /// client config
     fn config(&self) -> &ClientConfig;
 
@@ -40,21 +40,22 @@ pub trait Client: Sync + Send {
         R: Request + Send + Sync;
 }
 
-/// Client with socket connection
-pub struct RawClient {
+/// This sockets knows about support versions
+/// Version information are automatically  insert into request
+pub struct VersionedSocket {
     socket: AllKfSocket,
     config: ClientConfig,
     versions: Versions,
 }
 
-impl fmt::Display for RawClient {
+impl fmt::Display for VersionedSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "config {}", self.config)
     }
 }
 
 #[async_trait]
-impl Client for RawClient {
+impl SerialFrame for VersionedSocket {
     fn config(&self) -> &ClientConfig {
         &self.config
     }
@@ -75,7 +76,7 @@ impl Client for RawClient {
     }
 }
 
-impl RawClient {
+impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
         mut socket: AllKfSocket,
@@ -167,9 +168,9 @@ impl ClientConfig {
         self.addr = domain
     }
 
-    pub(crate) async fn connect(self) -> Result<RawClient, ClientError> {
+    pub(crate) async fn connect(self) -> Result<VersionedSocket, ClientError> {
         let socket = AllKfSocket::connect_with_connector(&self.addr, &self.connector).await?;
-        RawClient::connect(socket, self).await
+        VersionedSocket::connect(socket, self).await
     }
 }
 
@@ -193,15 +194,14 @@ impl Versions {
     }
 }
 
-/// Client that performs serial request and response
-/// This wraps Serial Multiplex Client
-pub struct SerialClient {
+/// Connection that perform request/response
+pub struct VersionedSerialSocket {
     socket: AllSerialSocket,
     config: ClientConfig,
     versions: Versions,
 }
 
-impl SerialClient {
+impl VersionedSerialSocket {
     pub fn new(socket: AllSerialSocket, config: ClientConfig, versions: Versions) -> Self {
         Self {
             socket,
@@ -212,7 +212,7 @@ impl SerialClient {
 }
 
 #[async_trait]
-impl Client for SerialClient {
+impl SerialFrame for VersionedSerialSocket {
     fn config(&self) -> &ClientConfig {
         &self.config
     }

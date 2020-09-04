@@ -7,7 +7,7 @@
 use structopt::StructOpt;
 
 use fluvio::ClusterConfig;
-use fluvio::ClusterClient;
+use fluvio::ClusterSocket;
 use flv_metadata_cluster::partition::*;
 
 use crate::error::CliError;
@@ -41,7 +41,7 @@ impl ListPartitionOpt {
     {
         let (target_server, output) = self.validate()?;
 
-        let mut client = ClusterClient::connect(target_server).await?;
+        let mut client = ClusterSocket::connect(target_server).await?;
         let mut admin = client.admin().await;
 
         let spus = admin.list::<PartitionSpec, _>(vec![]).await?;

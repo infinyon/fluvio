@@ -8,7 +8,7 @@ use structopt::StructOpt;
 
 use tracing::debug;
 
-use fluvio::ClusterClient;
+use fluvio::ClusterSocket;
 use fluvio::ClusterConfig;
 use fluvio::metadata::topic::TopicSpec;
 
@@ -67,7 +67,7 @@ where
 
     debug!("list topics {:#?} ", output_type);
 
-    let mut client = ClusterClient::connect(target_server).await?;
+    let mut client = ClusterSocket::connect(target_server).await?;
     let mut admin = client.admin().await;
 
     let topics = admin.list::<TopicSpec, _>(vec![]).await?;

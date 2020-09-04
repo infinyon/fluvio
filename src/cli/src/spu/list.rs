@@ -6,7 +6,7 @@
 
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterClient};
+use fluvio::{ClusterConfig, ClusterSocket};
 use flv_metadata_cluster::spu::SpuSpec;
 
 use crate::error::CliError;
@@ -50,7 +50,7 @@ where
 {
     let (target_server, output) = opt.validate()?;
 
-    let mut client = ClusterClient::connect(target_server).await?;
+    let mut client = ClusterSocket::connect(target_server).await?;
     let mut admin = client.admin().await;
 
     let spus = admin.list::<SpuSpec, _>(vec![]).await?;

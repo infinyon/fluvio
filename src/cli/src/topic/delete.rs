@@ -11,7 +11,7 @@ use fluvio::config::ClusterConfig;
 use fluvio::metadata::topic::TopicSpec;
 use crate::error::CliError;
 use crate::target::ClusterTarget;
-use fluvio::ClusterClient;
+use fluvio::ClusterSocket;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteTopicOpt {
@@ -42,7 +42,7 @@ pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliErro
 
     debug!("deleting topic: {}", name);
 
-    let mut client = ClusterClient::connect(target_server).await?;
+    let mut client = ClusterSocket::connect(target_server).await?;
     let mut admin = client.admin().await;
     admin.delete::<TopicSpec, _>(&name).await?;
     Ok(format!("topic \"{}\" deleted", name))

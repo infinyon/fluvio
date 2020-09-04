@@ -48,6 +48,8 @@ enum SharedSender {
 
 type Senders = Lock<HashMap<i32, SharedSender>>;
 
+/// Socket that can multiplex connections
+#[derive(Clone)]
 pub struct MultiplexerSocket<S> {
     correlation_id_counter: Lock<i32>,
     senders: Senders,

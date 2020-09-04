@@ -7,7 +7,7 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterClient};
+use fluvio::{ClusterConfig, ClusterSocket};
 use fluvio::metadata::spg::*;
 
 use crate::error::CliError;
@@ -82,7 +82,7 @@ pub async fn process_create_managed_spu_group(
 
     debug!("creating spg: {}, spec: {:#?}", name, spec);
 
-    let mut target = ClusterClient::connect(target_server).await?;
+    let mut target = ClusterSocket::connect(target_server).await?;
 
     let mut admin = target.admin().await;
 

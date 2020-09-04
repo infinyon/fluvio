@@ -14,16 +14,18 @@ use super::*;
 use flv_future_aio::net::tls::AllDomainConnector;
 use std::convert::TryFrom;
 
-/// Client connection to cluster
-pub struct ClusterClient {
+/// socket to Cluster
+pub struct ClusterSocket {
     socket: AllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
     spu_pool: Option<SpuPool>,
 }
 
-impl ClusterClient {
-    pub(crate) fn new(client: RawClient) -> Self {
+impl ClusterSocket {
+    /// private creation with  raw client
+    /// this  wraps with multiplexor
+    pub(crate) fn new(client: VersionedSocket) -> Self {
         let (socket, config, versions) = client.split();
         Self {
             socket: AllMultiplexerSocket::new(socket),
@@ -33,18 +35,21 @@ impl ClusterClient {
         }
     }
 
-    pub async fn connect(config: ClusterConfig) -> Result<ClusterClient, ClientError> {
+    /// create connection to Cluster
+    /// depends on policy, this will result in plain connection or TLS connection
+    pub async fn connect(config: ClusterConfig) -> Result<Self, ClientError> {
         let connector = AllDomainConnector::try_from(config.tls)?;
         let config = ClientConfig::new(config.addr, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
-        let cluster = ClusterClient::new(inner_client);
+        let cluster = Self::new(inner_client);
         //cluster.start_metadata_watch().await?;
         Ok(cluster)
     }
 
-    async fn create_serial_client(&mut self) -> SerialClient {
-        SerialClient::new(
+    /// create serial connection
+    async fn create_serial_client(&mut self) -> VersionedSerialSocket {
+        VersionedSerialSocket::new(
             self.socket.create_serial_socket().await,
             self.config.clone(),
             self.versions.clone(),
