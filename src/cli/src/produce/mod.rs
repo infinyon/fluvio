@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterClient};
+use fluvio::{ClusterConfig, ClusterSocket};
 
 use crate::target::ClusterTarget;
 use crate::CliError;
@@ -106,7 +106,7 @@ where
 
     let (target_server, (cfg, file_records)) = opt.validate()?;
 
-    let mut target = ClusterClient::connect(target_server).await?;
+    let mut target = ClusterSocket::connect(target_server).await?;
 
     let replica: ReplicaKey = (cfg.topic.clone(), cfg.partition).into();
     let producer = target.producer(replica).await?;

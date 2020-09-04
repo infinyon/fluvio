@@ -11,10 +11,10 @@ use crate::client::*;
 use crate::ClientError;
 
 /// adminstration interface
-pub struct AdminClient(SerialClient);
+pub struct AdminClient(VersionedSerialSocket);
 
 impl AdminClient {
-    pub(crate) fn new(client: SerialClient) -> Self {
+    pub(crate) fn new(client: VersionedSerialSocket) -> Self {
         Self(client)
     }
 

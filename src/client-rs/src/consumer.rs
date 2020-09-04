@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 use tracing::trace;
-use futures::Stream;
+//use futures::Stream;
 use futures::stream::BoxStream;
 
 use crate::kf::api::ReplicaKey;
@@ -19,8 +19,8 @@ use kf_protocol::message::fetch::FetchableTopic;
 use crate::ClientError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
-use crate::client::RawClient;
-use crate::client::Client;
+use crate::client::VersionedSocket;
+use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
 /// consume message from replica leader
@@ -100,7 +100,7 @@ impl Consumer {
     pub async fn fetch_logs_as_stream<'a>(
         &'a mut self,
         offset_option: FetchOffset,
-        option: FetchLogOption,
+        _option: FetchLogOption,
     ) -> Result<BoxStream<'a,FetchablePartitionResponse<RecordSet>>, ClientError> {
 
         debug!(
@@ -108,6 +108,7 @@ impl Consumer {
             offset_option, self.replica,
         );
 
+        /*
         let mut leader = self.pool.spu_leader(&self.replica).await?;
 
         debug!("found spu leader {}", leader);
@@ -126,12 +127,14 @@ impl Consumer {
             fetch_partitions: vec![partition],
         };
 
+        
         let fetch_request = DefaultKfFetchRequest {
             topics: vec![topic_request],
             isolation_level: option.isolation,
             max_bytes: option.max_bytes,
             ..Default::default()
         };
+        */
 
         
 
@@ -142,7 +145,7 @@ impl Consumer {
 }
 
 async fn fetch_offsets(
-    client: &mut RawClient,
+    client: &mut VersionedSocket,
     replica: &ReplicaKey,
 ) -> Result<FetchOffsetPartitionResponse, ClientError> {
     debug!("fetching offset for replica: {}", replica);
@@ -176,7 +179,7 @@ async fn fetch_offsets(
 /// depends on offset option, calculate offset
 
 async fn calc_offset(
-    client: &mut RawClient,
+    client: &mut VersionedSocket,
     replica: &ReplicaKey,
     offset: FetchOffset,
 ) -> Result<i64, ClientError> {

@@ -1,11 +1,10 @@
 use tracing::debug;
 
 use kf_protocol::api::ReplicaKey;
-
 use crate::ClientError;
 use crate::client::ClientConfig;
 use crate::sync::MetadataStores;
-use crate::client::RawClient;
+use crate::client::VersionedSocket;
 
 /// connection pool to spu
 #[derive(Clone)]
@@ -17,11 +16,13 @@ pub struct SpuPool {
 impl SpuPool {
     /// create new spu pool from client config template and metadata store
     pub fn new(config: ClientConfig, metadata: MetadataStores) -> Self {
-        Self { metadata, config }
+        Self { 
+            metadata, 
+            config,
+        }
     }
 
-    // find spu leader by replica
-    pub async fn spu_leader(&self, replica: &ReplicaKey) -> Result<RawClient, ClientError> {
+    pub async fn spu_leader(&self, replica: &ReplicaKey) -> Result<VersionedSocket, ClientError> {
         let partition = self.metadata.partitions().lookup_by_key(replica).await?;
         let spu = self
             .metadata
