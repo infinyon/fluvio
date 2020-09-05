@@ -16,16 +16,16 @@ use crate::client::Versions;
 struct SpuSocket {
     config: ClientConfig,
     socket: AllMultiplexerSocket,
-    versions: Versions
+    versions: Versions,
 }
 
 impl SpuSocket {
-
     async fn create_serial_socket(&mut self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
             self.socket.create_serial_socket().await,
             self.config.clone(),
-            self.versions.clone())
+            self.versions.clone(),
+        )
     }
 }
 
@@ -34,22 +34,24 @@ impl SpuSocket {
 pub struct SpuPool {
     config: ClientConfig,
     metadata: MetadataStores,
-    spu_clients: Arc<Mutex<HashMap<SpuId,SpuSocket>>>
+    spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
 
 impl SpuPool {
     /// create new spu pool from client config template and metadata store
     pub fn new(config: ClientConfig, metadata: MetadataStores) -> Self {
-        Self { 
-            metadata, 
+        Self {
+            metadata,
             config,
-            spu_clients: Arc::new(Mutex::new(HashMap::new()))
+            spu_clients: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
-    
     // find spu leader by replica
-    pub async fn create_serial_socket(&self, replica: &ReplicaKey) -> Result<VersionedSerialSocket, ClientError> {
+    pub async fn create_serial_socket(
+        &self,
+        replica: &ReplicaKey,
+    ) -> Result<VersionedSerialSocket, ClientError> {
         let partition = self.metadata.partitions().lookup_by_key(replica).await?;
 
         let leader_id = partition.spec.leader;
@@ -58,7 +60,7 @@ impl SpuPool {
         let mut client_lock = self.spu_clients.lock().await;
 
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
-            return Ok(spu_socket.create_serial_socket().await)
+            return Ok(spu_socket.create_serial_socket().await);
         }
 
         let spu = self
@@ -77,16 +79,13 @@ impl SpuPool {
         let mut spu_socket = SpuSocket {
             socket: AllMultiplexerSocket::new(socket),
             config,
-            versions
+            versions,
         };
 
         let serial_socket = spu_socket.create_serial_socket().await;
 
-        client_lock.insert(leader_id,spu_socket);
+        client_lock.insert(leader_id, spu_socket);
 
         Ok(serial_socket)
-
     }
-    
-
 }

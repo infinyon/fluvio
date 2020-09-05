@@ -208,8 +208,6 @@ impl fmt::Display for VersionedSerialSocket {
     }
 }
 
-
-
 impl VersionedSerialSocket {
     pub fn new(socket: AllSerialSocket, config: ClientConfig, versions: Versions) -> Self {
         Self {
