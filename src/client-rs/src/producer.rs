@@ -8,7 +8,6 @@ use kf_protocol::api::ReplicaKey;
 
 use crate::ClientError;
 use crate::spu::SpuPool;
-use crate::client::VersionedSocket;
 use crate::client::SerialFrame;
 
 /// produce message to replica leader
@@ -34,7 +33,7 @@ impl Producer {
             self.replica
         );
 
-        let spu_client = self.pool.spu_leader(&self.replica).await?;
+        let spu_client = self.pool.create_serial_socket(&self.replica).await?;
 
         debug!("connect to replica leader at: {}", spu_client);
 
@@ -43,8 +42,8 @@ impl Producer {
 }
 
 /// Sends record to a target server (Kf, SPU, or SC)
-async fn send_record_raw(
-    mut leader: VersionedSocket,
+async fn send_record_raw<F: SerialFrame>(
+    mut leader: F,
     replica: &ReplicaKey,
     record: Vec<u8>,
 ) -> Result<(), ClientError> {
