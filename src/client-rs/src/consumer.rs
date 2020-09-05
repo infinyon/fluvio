@@ -119,16 +119,12 @@ impl Consumer {
             fetch_partitions: vec![partition],
         };
 
-
         let _fetch_request = DefaultKfFetchRequest {
             topics: vec![topic_request],
             isolation_level: option.isolation,
             max_bytes: option.max_bytes,
             ..Default::default()
         };
-        
-
-
 
         /*
         let mut leader = self.pool.spu_leader(&self.replica).await?;
