@@ -101,8 +101,8 @@ where
         }
     }
 
-    /// create async request and return response stream with capacity
-    pub async fn send_with_async_response<R>(
+    /// create stream response
+    pub async fn create_stream<R>(
         &mut self,
         mut req_msg: RequestMessage<R>,
         queue_len: usize,
@@ -502,7 +502,7 @@ mod tests {
         // create async status
         let async_status_request = RequestMessage::new_request(AsyncStatusRequest { count: 2 });
         let mut status_response = multiplexer
-            .send_with_async_response(async_status_request, 10)
+            .create_stream(async_status_request, 10)
             .await
             .expect("response");
 
