@@ -1,5 +1,6 @@
 use std::default::Default;
 use std::fmt;
+use std::fmt::Display;
 
 use tracing::trace;
 use async_trait::async_trait;
@@ -14,7 +15,7 @@ use crate::ClientError;
 
 /// Frame with request and response
 #[async_trait]
-pub(crate) trait SerialFrame: Sync + Send {
+pub(crate) trait SerialFrame: Sync + Send + Display {
     /// client config
     fn config(&self) -> &ClientConfig;
 
@@ -200,6 +201,14 @@ pub struct VersionedSerialSocket {
     config: ClientConfig,
     versions: Versions,
 }
+
+impl fmt::Display for VersionedSerialSocket {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "config {}", self.config)
+    }
+}
+
+
 
 impl VersionedSerialSocket {
     pub fn new(socket: AllSerialSocket, config: ClientConfig, versions: Versions) -> Self {

@@ -19,7 +19,6 @@ use kf_protocol::message::fetch::FetchableTopic;
 use crate::ClientError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
-use crate::client::VersionedSocket;
 use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
@@ -49,7 +48,7 @@ impl Consumer {
             offset_option, self.replica,
         );
 
-        let mut leader = self.pool.spu_leader(&self.replica).await?;
+        let mut leader = self.pool.create_serial_socket(&self.replica).await?;
 
         debug!("found spu leader {}", leader);
 
@@ -136,8 +135,8 @@ impl Consumer {
     }
 }
 
-async fn fetch_offsets(
-    client: &mut VersionedSocket,
+async fn fetch_offsets<F: SerialFrame>(
+    client: &mut F,
     replica: &ReplicaKey,
 ) -> Result<FetchOffsetPartitionResponse, ClientError> {
     debug!("fetching offset for replica: {}", replica);
@@ -170,8 +169,8 @@ async fn fetch_offsets(
 
 /// depends on offset option, calculate offset
 
-async fn calc_offset(
-    client: &mut VersionedSocket,
+async fn calc_offset<F: SerialFrame>(
+    client: &mut F,
     replica: &ReplicaKey,
     offset: FetchOffset,
 ) -> Result<i64, ClientError> {
