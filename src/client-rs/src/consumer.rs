@@ -96,12 +96,39 @@ impl Consumer {
     pub async fn fetch_logs_as_stream(
         &mut self,
         offset_option: FetchOffset,
-        _option: FetchLogOption,
+        option: FetchLogOption,
     ) -> Result<BoxStream<'_, FetchablePartitionResponse<RecordSet>>, ClientError> {
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
         );
+
+        let mut serial_socket = self.pool.create_serial_socket(&self.replica).await?;
+        debug!("created serial socket {}", serial_socket);
+        let offset = calc_offset(&mut serial_socket, &self.replica, offset_option).await?;
+
+        let partition = FetchPartition {
+            partition_index: self.replica.partition,
+            fetch_offset: offset,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        let topic_request = FetchableTopic {
+            name: self.replica.topic.to_owned(),
+            fetch_partitions: vec![partition],
+        };
+
+
+        let fetch_request = DefaultKfFetchRequest {
+            topics: vec![topic_request],
+            isolation_level: option.isolation,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+        
+
+        
 
         /*
         let mut leader = self.pool.spu_leader(&self.replica).await?;

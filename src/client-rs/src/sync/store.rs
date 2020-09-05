@@ -49,7 +49,7 @@ impl MetadataStores {
         debug!("start watch for spu");
 
         let req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
-        let async_response = socket.send_with_async_response(req_msg, 10).await?;
+        let async_response = socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<SpuSpec>::start(self.spus.clone(), async_response);
 
@@ -66,7 +66,7 @@ impl MetadataStores {
         debug!("start watch for partition");
 
         let req_msg = RequestMessage::new_request(WatchRequest::Partition(0));
-        let async_response = socket.send_with_async_response(req_msg, 10).await?;
+        let async_response = socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<PartitionSpec>::start(self.partitions.clone(), async_response);
 
