@@ -10,6 +10,7 @@ mod context {
     use std::fmt::Display;
 
     use tracing::debug;
+    use tracing::warn;
 
     use event_listener::Event;
     use event_listener::EventListener;
@@ -87,7 +88,7 @@ mod context {
             use tokio::select;
             use flv_future_aio::timer::sleep;
 
-            const TIMER_DURATION: u64 = 60;
+            const TIMER_DURATION: u64 = 180;
 
             let mut time_left = Duration::from_secs(TIMER_DURATION);
 
@@ -103,10 +104,10 @@ mod context {
                     select! {
 
                         _ = sleep(time_left) => {
-                            debug!("timeout expired");
+                            warn!("store {}: look up timeout expired",S::LABEL);
                             return Err(ClientError::IoError(IoError::new(
                                 ErrorKind::TimedOut,
-                                format!("{} no value found",S::LABEL),
+                                format!("{} store lookup failed due to timeout",S::LABEL),
                             )))
                         },
 
