@@ -3,6 +3,8 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 use tracing::trace;
+//use futures::Stream;
+use futures::stream::BoxStream;
 
 use crate::kf::api::ReplicaKey;
 use crate::kf::api::RecordSet;
@@ -10,12 +12,14 @@ use crate::kf::api::PartitionOffset;
 use crate::kf::message::fetch::FetchablePartitionResponse;
 use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
 use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
+use kf_protocol::message::fetch::DefaultKfFetchRequest;
+use kf_protocol::message::fetch::FetchPartition;
+use kf_protocol::message::fetch::FetchableTopic;
 
 use crate::ClientError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
-use crate::client::RawClient;
-use crate::client::Client;
+use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
 /// consume message from replica leader
@@ -33,21 +37,18 @@ impl Consumer {
         &self.replica
     }
 
+    /// fetch logs once
     pub async fn fetch_logs_once(
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,
     ) -> Result<FetchablePartitionResponse<RecordSet>, ClientError> {
-        use kf_protocol::message::fetch::DefaultKfFetchRequest;
-        use kf_protocol::message::fetch::FetchPartition;
-        use kf_protocol::message::fetch::FetchableTopic;
-
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
         );
 
-        let mut leader = self.pool.spu_leader(&self.replica).await?;
+        let mut leader = self.pool.create_serial_socket(&self.replica).await?;
 
         debug!("found spu leader {}", leader);
 
@@ -89,10 +90,76 @@ impl Consumer {
             Err(ClientError::PartitionNotFound(self.replica.to_owned()))
         }
     }
+
+    /// fetch logs as stream
+    /// this will fetch continously
+    pub async fn fetch_logs_as_stream(
+        &mut self,
+        offset_option: FetchOffset,
+        option: FetchLogOption,
+    ) -> Result<BoxStream<'_, FetchablePartitionResponse<RecordSet>>, ClientError> {
+        debug!(
+            "starting fetch log once: {:#?} from replica: {}",
+            offset_option, self.replica,
+        );
+
+        let mut serial_socket = self.pool.create_serial_socket(&self.replica).await?;
+        debug!("created serial socket {}", serial_socket);
+        let offset = calc_offset(&mut serial_socket, &self.replica, offset_option).await?;
+
+        let partition = FetchPartition {
+            partition_index: self.replica.partition,
+            fetch_offset: offset,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        let topic_request = FetchableTopic {
+            name: self.replica.topic.to_owned(),
+            fetch_partitions: vec![partition],
+        };
+
+        let _fetch_request = DefaultKfFetchRequest {
+            topics: vec![topic_request],
+            isolation_level: option.isolation,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        /*
+        let mut leader = self.pool.spu_leader(&self.replica).await?;
+
+        debug!("found spu leader {}", leader);
+
+        let offset = calc_offset(&mut leader, &self.replica, offset_option).await?;
+
+        let partition = FetchPartition {
+            partition_index: self.replica.partition,
+            fetch_offset: offset,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+
+        let topic_request = FetchableTopic {
+            name: self.replica.topic.to_owned(),
+            fetch_partitions: vec![partition],
+        };
+
+
+        let fetch_request = DefaultKfFetchRequest {
+            topics: vec![topic_request],
+            isolation_level: option.isolation,
+            max_bytes: option.max_bytes,
+            ..Default::default()
+        };
+        */
+
+        Err(ClientError::UnableToReadProfile)
+    }
 }
 
-async fn fetch_offsets(
-    client: &mut RawClient,
+async fn fetch_offsets<F: SerialFrame>(
+    client: &mut F,
     replica: &ReplicaKey,
 ) -> Result<FetchOffsetPartitionResponse, ClientError> {
     debug!("fetching offset for replica: {}", replica);
@@ -125,8 +192,8 @@ async fn fetch_offsets(
 
 /// depends on offset option, calculate offset
 
-async fn calc_offset(
-    client: &mut RawClient,
+async fn calc_offset<F: SerialFrame>(
+    client: &mut F,
     replica: &ReplicaKey,
     offset: FetchOffset,
 ) -> Result<i64, ClientError> {

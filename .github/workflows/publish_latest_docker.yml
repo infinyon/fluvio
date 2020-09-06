@@ -1,29 +1,10 @@
-name: Publish Latest
+name: Publish Latest Docker
 
 on: 
-  schedule:
-    - cron: '0 5 * * *' # run at 5AM UTC
+  push:
+    branches: [master]
   workflow_dispatch:
 jobs:
-  publish_helm:
-    name: Publish Latest Chart
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [nightly]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Publish Helm chart
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: k8-util/helm
-          charts_url: https://infinyon.github.io/charts
-          branch: master
-          target_dir: charts
-          owner: infinyon
-          repository: infinyon.github.io
   publish_image:
     name: Publish Latest Image
     strategy:

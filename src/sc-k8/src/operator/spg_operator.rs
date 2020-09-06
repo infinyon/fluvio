@@ -11,20 +11,20 @@ use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
 use k8_client::ClientError;
-use flv_metadata_cluster::k8::metadata::*;
-use flv_metadata_cluster::k8::core::service::*;
-use flv_metadata_cluster::spg::K8SpuGroupSpec;
-use flv_metadata_cluster::spg::SpuGroupStatus;
-use flv_metadata_cluster::spg::SpuEndpointTemplate;
-use flv_metadata_cluster::spu::*;
 use k8_client::metadata::MetadataClient;
 use k8_client::metadata::ApplyResult;
 use k8_client::SharedK8Client;
 use flv_types::defaults::SPU_PUBLIC_PORT;
 use flv_types::defaults::SPU_DEFAULT_NAME;
 use flv_types::SpuId;
-use flv_sc_core::stores::spu::SpuAdminStore;
-use flv_sc_core::core::SharedContext;
+use crate::k8::metadata::*;
+use crate::k8::core::service::*;
+use crate::stores::spg::K8SpuGroupSpec;
+use crate::stores::spg::SpuGroupStatus;
+use crate::stores::spg::SpuEndpointTemplate;
+use crate::stores::spu::*;
+use crate::stores::spu::SpuAdminStore;
+use crate::core::SharedContext;
 
 use crate::cli::TlsConfig;
 use super::convert_cluster_to_statefulset;

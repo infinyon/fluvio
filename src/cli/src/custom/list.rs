@@ -5,7 +5,7 @@
 //!
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterClient};
+use fluvio::{ClusterConfig, ClusterSocket};
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::metadata::objects::Metadata;
@@ -50,7 +50,7 @@ where
 {
     let (target_server, output_type) = opt.validate()?;
 
-    let mut client = ClusterClient::connect(target_server).await?;
+    let mut client = ClusterSocket::connect(target_server).await?;
     let mut admin = client.admin().await;
 
     let custom_spus = admin.list::<CustomSpuSpec, _>(vec![]).await?;

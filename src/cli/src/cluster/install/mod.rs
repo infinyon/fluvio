@@ -17,9 +17,13 @@ pub use helm::installed_sys_charts;
 
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
-    /// k8: use specific release version
+    /// k8: use specific chart version
     #[structopt(long)]
-    pub version: Option<String>,
+    pub chart_version: Option<String>,
+
+    /// k8: use specific image version
+    #[structopt(long)]
+    pub image_version: Option<String>,
 
     /// k8: use custom docker registry
     #[structopt(long)]

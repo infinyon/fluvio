@@ -1,7 +1,46 @@
+FLUVIO_BIN=../target/debug/fluvio
+
 
 clean-cert:
 	mkdir -p certs
 	rm -rf certs/*
+
+
+# create secret for k8 in development mode
+k8-create-secret:
+	kubectl delete secret fluvio-ca --ignore-not-found=true
+	kubectl delete secret fluvio-tls --ignore-not-found=true
+	kubectl create secret generic fluvio-ca --from-file certs/ca.crt
+	kubectl create secret tls fluvio-tls --cert certs/server.crt --key certs/server.key
+
+
+k8-tls-list:
+	$(FLUVIO_BIN) topic list --tls --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key --sc fluvio.local:9003
+
+# set k8 profile using tls
+k8-set-k8-profile-tls:
+	$(FLUVIO_BIN) profile set-k8-profile --tls --domain fluvio.local --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key
+
+
+install-local-tls:
+	$(FLUVIO_BIN) cluster install --local  \
+		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
+		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
+		--client-key tls/certs/client.key --domain fluvio.local
+	
+uninstall-local:
+	$(FLUVIO_BIN) cluster uninstall --local
+
+install-k8-tls:
+	$(FLUVIO_BIN) cluster install --develop \
+		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
+		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
+		--client-key tls/certs/client.key --domain fluvio.local
+
+uninstall-k8:
+	$(FLUVIO_BIN) cluster uninstall
+
+
 
 
 generate-certs:	clean-cert	generate-ca-crt generate-server-crt generate-client-crt

@@ -1,5 +1,6 @@
 MAKE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 VERSION := $(shell cat $(MAKE_DIR)/../../VERSION)
+CHART_VERSION = $(VERSION)
 GIT_VERSION=$(shell git log -1 --pretty=format:"%H")
 REGISTRY=infinyon
 CLOUD=minikube
@@ -13,8 +14,8 @@ TEST_NAME=fluviotest
 FLUVIO_VERSION=$(VERSION)
 CORE_VERSION=$(shell yq read fluvio-app/Chart.yaml version)
 SYS_VERSION=$(shell yq read fluvio-sys/Chart.yaml version)
-CHART_REPO=../../../infinyon.github.io
-CHART_SRC=./fluvio-core
+CHART_REPO=../../../infinyon.github.io/docs
+CHART_SRC=./fluvio-app
 LOCAL_RGISTRY=localhost:5000/infinyon
 
 dry-run:
@@ -89,15 +90,19 @@ uninstall:
 	helm uninstall $(NAME) -n $(NS)
 
 
-package-core:	cleanup	update_version
-	echo "Installing $(VERSION) core helm package"
-	helm package ./fluvio-core
-	mv fluvio-core-$(VERSION).tgz $(CHART_REPO)/charts
+package-app:	cleanup
+	echo "Installing $(CHART_VERSION) core helm package"
+	helm package --version $(CHART_VERSION) --app-version $(CHART_VERSION) ./fluvio-app
+	mv fluvio-app-$(CHART_VERSION).tgz $(CHART_REPO)/docs
 	cd $(CHART_REPO); helm repo index charts
+
+
+package-app-latest:	CHART_VERSION=$(VERSION)-latest
+package-app-latest:	package-app
 
 package-sys:	cleanup
 	helm package ./fluvio-sys
-	mv fluvio-sys-$(SYS_VERSION).tgz $(CHART_REPO)/charts
+	mv fluvio-sys-$(SYS_VERSION).tgz $(CHART_REPO)/docs
 	cd $(CHART_REPO); helm repo index charts
 
 cleanup:
@@ -105,7 +110,7 @@ cleanup:
 
 
 add_repo:
-	 helm repo add fluvio https://infinyon.github.io/charts
+	 helm repo add fluvio https://infinyon.github.io
 	 helm repo update
 
 install_repo_minikube_sys:

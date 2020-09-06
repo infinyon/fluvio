@@ -9,7 +9,7 @@ use crate::cli::TestOption;
 use crate::util::CommandUtil;
 use super::message::*;
 use fluvio::config::ConfigFile;
-use fluvio::ClusterClient;
+use fluvio::ClusterSocket;
 
 /// verify consumer thru CLI
 pub async fn validate_consume_message(option: &TestOption) {
@@ -56,7 +56,7 @@ async fn validate_consume_message_api(option: &TestOption) {
         .config()
         .current_cluster()
         .expect("get current cluster");
-    let mut cluster = ClusterClient::connect(cluster_config.clone())
+    let mut cluster = ClusterSocket::connect(cluster_config.clone())
         .await
         .expect("should connect");
     let mut consumer = cluster

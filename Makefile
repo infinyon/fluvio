@@ -1,4 +1,5 @@
 VERSION := $(shell cat VERSION)
+DOCKER_VERSION = $(VERSION)
 TOOLCHAIN = "./rust-toolchain"
 RUSTV = $(shell cat ${TOOLCHAIN})
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
@@ -13,31 +14,40 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
+TEST_BIN=FLV_CMD=true ./target/debug/flv-test
 
 # install all tools required
-install_tools:
+install_tools_mac:
 	brew install yq
 	brew install helm
 
 build:
 	cargo build
 
-# run local smoke test
-smoke-test:	build test-clean-up
-	FLV_CMD=true ./target/debug/flv-test --local-driver --log-dir /tmp
+#
+# List of smoke test steps.  This is used by CI
+#
+
+smoke-test:	test-clean-up
+	$(TEST_BIN) --local-driver --log-dir /tmp
 
 smoke-test-tls:	build test-clean-up
-	FLV_CMD=true ./target/debug/flv-test --tls --local-driver --log-dir /tmp --rust-log flv=debug
+	$(TEST_BIN) --tls --local-driver --log-dir /tmp --rust-log flv=debug
 
 smoke-test-k8:	build test-clean-up minikube_image
-	FLV_CMD=true ./target/debug/flv-test --develop --log-dir /tmp
+	$(TEST_BIN)	--develop --log-dir /tmp
 
 smoke-test-k8-tls:	build test-clean-up minikube_image
-	FLV_CMD=true ./target/debug/flv-test --tls --develop --log-dir /tmp
+	$(TEST_BIN) --tls --develop --log-dir /tmp
 
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall
 	$(FLUVIO_BIN) cluster uninstall --local
+
+
+#
+#  Various Lint tools
+#	
 
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)
@@ -54,19 +64,6 @@ install-clippy:
 check-clippy:
 	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
 
-# create secret for k8 in development mode
-k8-create-secret:
-	kubectl delete secret fluvio-ca --ignore-not-found=true
-	kubectl delete secret fluvio-tls --ignore-not-found=true
-	kubectl create secret generic fluvio-ca --from-file tls/certs/ca.crt
-	kubectl create secret tls fluvio-tls --cert tls/certs/server.crt --key tls/certs/server.key
-
-k8-tls-list:
-	$(FLUVIO_BIN) topic list --tls --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key --sc fluvio.local:9003
-
-# set k8 profile using tls
-k8-set-k8-profile-tls:
-	$(FLUVIO_BIN) profile set-k8-profile --tls --domain fluvio.local --enable-client-cert --ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt --client-key tls/certs/client.key
 
 run-all-unit-test:
 	cargo test --all
@@ -77,19 +74,23 @@ install_musl:
 clean_build:
 	rm -rf /tmp/cli-*
 
+
+#
+# List of steps for creating fluvio binary
 # create binaries for CLI
-release_cli_darwin: 
-	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_DARWIN}
-	mkdir -p /tmp/$(CLI_BUILD)_${TARGET_DARWIN}
-	cp target/${TARGET_DARWIN}/release/fluvio /tmp/$(CLI_BUILD)_${TARGET_DARWIN}
-	cd /tmp;tar -czvf cli-${TARGET_DARWIN}-release.tar.gz $(CLI_BUILD)_${TARGET_DARWIN};rm -rf $(CLI_BUILD)_${TARGET_DARWIN}
+release_cli:
+	rustup target add ${BUILD_TARGET}
+	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${BUILD_TARGET}
+	mkdir -p /tmp/$(CLI_BUILD)_${BUILD_TARGET}
+	cp target/${BUILD_TARGET}/release/fluvio /tmp/$(CLI_BUILD)_${BUILD_TARGET}
+	cd /tmp;tar -czvf cli-${BUILD_TARGET}-release.tar.gz $(CLI_BUILD)_${BUILD_TARGET};rm -rf $(CLI_BUILD)_${BUILD_TARGET}
 
-release_cli_linux:
-	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_LINUX}
-	mkdir -p /tmp/$(CLI_BUILD)_${TARGET_LINUX}
-	cp target/${TARGET_LINUX}/release/fluvio /tmp/$(CLI_BUILD)_${TARGET_LINUX}
-	cd /tmp;tar -czvf cli-${TARGET_LINUX}-release.tar.gz $(CLI_BUILD)_${TARGET_LINUX};rm -rf $(CLI_BUILD)_${TARGET_LINUX}
 
+release_cli_darwin: BUILD_TARGET=${TARGET_DARWIN}
+release_cli_darwin:	release_cli
+	
+release_cli_linux:	BUILD_TARGET=${TARGET_LINUX}
+release_cli_linux:	release_cli
 
 all_image:	linux-spu-server spu_image linux-sc-server sc_image
 
@@ -97,8 +98,17 @@ all_image:	linux-spu-server spu_image linux-sc-server sc_image
 release_image:	MAKE_CMD=push
 release_image:	all_image
 
-release_image_latest: VERSION=latest
-release_image_latest: release_image
+release_image_chart_latest: DOCKER_VERSION=$(VERSION)-latest
+release_image_chart_latest: release_image
+
+release_image_ver_latest:	DOCKER_VERSION=latest
+release_image_ver_latest:	release_image
+
+release_image_ver_nightly:	DOCKER_VERSION=nightly
+release_image_ver_nightly:	release_image
+
+release_image_latest:	release_image_chart_latest release_image_ver_latest
+
 
 develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
 develop_image: 	all_image
@@ -124,12 +134,12 @@ linux-spu-server:	install_musl
 
 
 spu_image:	linux-spu-server
-	echo "Building SPU image with version: ${VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
+	echo "Building SPU image with version: ${DOCKER_VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
 
 sc_image:	linux-spu-server
-	echo "Building SC image with version: ${VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
+	echo "Building SC image with version: ${DOCKER_VERSION}"
+	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
 
 fluvio_cli: install_musl
 	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_LINUX}
@@ -199,34 +209,3 @@ delete_release:
 # helm targets
 helm_package:
 	make -C k8-util/helm package-core
-
-
-# install using local helm chart and current code
-helm_minikube_dev_install:	minikube_image	
-	cd k8-util/helm; make install_minikube_dev
-
-
-helm_uninstall_dev:
-	helm uninstall fluvio
-
-
-test-smoke:
-	make -C tests smoke-test
-
-install-local-tls:
-	$(FLUVIO_BIN) cluster install --local  \
-		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
-		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
-		--client-key tls/certs/client.key --domain fluvio.local
-	
-uninstall-local:
-	$(FLUVIO_BIN) cluster uninstall --local
-
-install-k8-tls:
-	$(FLUVIO_BIN) cluster install --develop \
-		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
-		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
-		--client-key tls/certs/client.key --domain fluvio.local
-
-uninstall-k8:
-	$(FLUVIO_BIN) cluster uninstall
