@@ -38,7 +38,21 @@ impl TestRunner {
 
         // wait until topic is created, this is hack for now until we have correct
         // implementation of find topic
-        sleep(Duration::from_secs(2)).await
+        sleep(Duration::from_secs(5)).await;
+
+        // print topic and partition status
+
+        get_fluvio()
+            .expect("fluvio not founded")
+            .arg("topic")
+            .arg("list")
+            .wait_and_check();
+
+        get_fluvio()
+            .expect("fluvio not founded")
+            .arg("partition")
+            .arg("list")
+            .wait_and_check();
     }
 
     /// main entry point
@@ -56,7 +70,7 @@ impl TestRunner {
             println!("no topic initialized");
         }
 
-        sleep(Duration::from_secs(1)).await; // sleep 1 second in just case
+        sleep(Duration::from_secs(1)).await; // sleep 5 second in just case
 
         let test_driver = create_test_driver(self.option.clone());
 
