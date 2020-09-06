@@ -1,12 +1,12 @@
-name: Publish Latest Docker
+name: Publish Nightly Docker
 
 on: 
-  push:
-    branches: [master]
+  schedule:
+    - cron: '0 5 * * *' # run at 5AM UTC
   workflow_dispatch:
 jobs:
-  publish_image:
-    name: Publish Latest Image
+  publish_nightly_image:
+    name: Publish Nightly Image
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -25,4 +25,4 @@ jobs:
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Publish Fluvio Images
         run: |
-          make release_image_latest
+          make release_image_ver_nightly
