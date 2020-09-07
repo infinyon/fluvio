@@ -21,6 +21,7 @@ use super::SpuServerApiKey;
 use super::fetch_offset::FlvFetchOffsetsRequest;
 use super::versions::ApiVersionsRequest;
 use super::register_replica::RegisterSyncReplicaRequest;
+use super::stream_fetch::FileStreamFetchRequest;
 
 /// Request to Spu Server
 #[derive(Debug, Encode)]
@@ -32,6 +33,7 @@ pub enum SpuServerRequest {
     KfProduceRequest(RequestMessage<DefaultKfProduceRequest>),
     KfFileFetchRequest(RequestMessage<KfFileFetchRequest>),
     FlvFetchOffsetsRequest(RequestMessage<FlvFetchOffsetsRequest>),
+    FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     RegisterSyncReplicaRequest(RequestMessage<RegisterSyncReplicaRequest>),
 }
 
@@ -66,7 +68,8 @@ impl KfRequestMessage for SpuServerRequest {
             }
             SpuServerApiKey::RegisterSyncReplicaRequest => {
                 api_decode!(Self, RegisterSyncReplicaRequest, src, header)
-            }
+            },
+            SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header)
         }
     }
 }
