@@ -148,6 +148,9 @@ where
                                     let (_, sync_request) = request.get_header_request();
                                     debug!("registered offset sync request: {:#?}",sync_request);
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
+                                },
+                                SpuServerRequest::FileStreamFetchRequest(request) => {
+                                    panic!("not done yet");
                                 }
 
                             }
