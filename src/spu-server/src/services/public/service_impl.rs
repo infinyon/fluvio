@@ -153,7 +153,7 @@ where
                                     debug!("registered offset sync request: {:#?}",sync_request);
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
                                 },
-                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone()).await?
+                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone())
 
                             }
                         } else {

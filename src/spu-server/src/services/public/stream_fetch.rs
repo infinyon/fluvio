@@ -10,6 +10,7 @@ use tokio::select;
 
 use flv_future_aio::sync::broadcast::RecvError;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
+use flv_future_aio::task::spawn;
 
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
@@ -39,17 +40,15 @@ pub struct StreamFetchHandler<S> {
 
 impl<S> StreamFetchHandler<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
+    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     InnerKfSink<S>: ZeroCopyWrite,
 {
     /// handle fluvio continuous fetch request
-    pub async fn handle_stream_fetch(
+    pub fn handle_stream_fetch(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         kf_sink: InnerExclusiveKfSink<S>,
-    ) -> Result<(), KfSocketError>
-    where
-        InnerKfSink<S>: ZeroCopyWrite,
+    ) 
     {
         // first get receiver to offset update channel to we don't missed events
 
@@ -67,7 +66,7 @@ where
             max_bytes
         );
 
-        let mut handler = Self {
+        let handler = Self {
             ctx,
             isolation,
             replica,
@@ -76,11 +75,14 @@ where
             kf_sink,
         };
 
-        handler.process(current_offset).await
+        spawn(async move {
+            handler.process(current_offset).await
+        });
+       
     }
 
     async fn process(
-        &mut self,
+        mut self,
         starting_offset: Offset,
     ) -> Result<(), KfSocketError> {
         let mut current_offset =
