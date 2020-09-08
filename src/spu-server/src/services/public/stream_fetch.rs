@@ -1,12 +1,13 @@
+use std::sync::Arc;
+
 use tracing::debug;
 use tracing::trace;
 use tracing::warn;
 use tracing::error;
-
-
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 use tokio::select;
+use event_listener::Event;
 
 use flv_future_aio::sync::broadcast::RecvError;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
@@ -36,6 +37,7 @@ pub struct StreamFetchHandler<S> {
     max_bytes: u32,
     header: RequestHeader,
     kf_sink: InnerExclusiveKfSink<S>,
+    end_event: Arc<Event>,
 }
 
 impl<S> StreamFetchHandler<S>
@@ -48,6 +50,7 @@ where
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         kf_sink: InnerExclusiveKfSink<S>,
+        end_event: Arc<Event>,
     ) 
     {
         // first get receiver to offset update channel to we don't missed events
@@ -73,6 +76,7 @@ where
             header,
             max_bytes,
             kf_sink,
+            end_event
         };
 
         spawn(async move {
@@ -110,6 +114,12 @@ where
             );
 
             select! {
+
+                _ = self.end_event.listen() => {
+                    debug!("stream fetch: {}, connection has been terminated, terminating",self.kf_sink.id());
+                    break;
+                },
+
                 offset_event_res = receiver.recv() => {
 
                     match offset_event_res {
@@ -161,7 +171,7 @@ where
             }
         }
 
-        debug!("conn: {}, done with cf loop exiting", self.kf_sink.id());
+        debug!("conn: {}, done with stream fetch loop exiting", self.kf_sink.id());
 
         Ok(())
     }

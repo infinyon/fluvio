@@ -9,6 +9,7 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 use futures::stream::StreamExt;
 use tokio::select;
+use event_listener::Event;
 
 use kf_protocol::api::RequestMessage;
 use kf_socket::InnerKfSocket;
@@ -62,6 +63,8 @@ where
         let mut offset_replica_list: OffsetReplicaList = HashSet::new();
 
         let mut receiver = context.offset_channel().receiver();
+
+        let end_event = Arc::new(Event::new());
 
         loop {
             select! {
@@ -153,7 +156,7 @@ where
                                     debug!("registered offset sync request: {:#?}",sync_request);
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
                                 },
-                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone())
+                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone(),end_event.clone())
 
                             }
                         } else {
@@ -169,6 +172,8 @@ where
 
             }
         }
+
+        end_event.notify(usize::MAX);
 
         debug!("conn: {}, loop terminated ", s_sink.id());
         Ok(())

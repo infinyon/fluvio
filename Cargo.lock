@@ -1116,6 +1116,7 @@ dependencies = [
  "bytes 0.5.6",
  "chashmap",
  "chrono",
+ "event-listener",
  "flv-api-spu",
  "flv-future-aio",
  "flv-metadata-cluster",
