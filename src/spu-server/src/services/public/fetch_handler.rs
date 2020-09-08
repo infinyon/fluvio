@@ -4,6 +4,7 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
 use kf_socket::InnerKfSink;
+use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
 use flv_metadata_cluster::partition::ReplicaKey;
@@ -19,7 +20,7 @@ use crate::core::DefaultSharedGlobalContext;
 pub async fn handle_fetch_request<S>(
     request: RequestMessage<KfFileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
-    sink: &mut InnerKfSink<S>,
+    sink: InnerExclusiveKfSink<S>,
 ) -> Result<(), KfSocketError>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
@@ -64,8 +65,10 @@ where
     let response =
         RequestMessage::<KfFileFetchRequest>::response_with_header(&header, fetch_response);
     trace!("sending back file fetch response: {:#?}", response);
-    sink.encode_file_slices(&response, header.api_version())
+    let mut inner = sink.lock().await;
+    inner.encode_file_slices(&response, header.api_version())
         .await?;
+    drop(inner);
     trace!("finish sending fetch response");
 
     Ok(())
