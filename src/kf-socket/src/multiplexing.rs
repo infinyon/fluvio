@@ -12,7 +12,7 @@ use tracing::trace;
 use bytes::BytesMut;
 use futures::io::{AsyncRead, AsyncWrite};
 use futures::StreamExt;
-use async_lock::Lock;
+use async_mutex::Mutex;
 use event_listener::Event;
 use async_channel::Sender;
 use async_channel::Receiver;
@@ -36,7 +36,7 @@ use crate::InnerExclusiveKfSink;
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 pub type AllMultiplexerSocket = MultiplexerSocket<AllTcpStream>;
 
-type SharedMsg = (Lock<Option<BytesMut>>, Arc<Event>);
+type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
 
 /// Handle different way to multiplex
 enum SharedSender {
@@ -46,12 +46,12 @@ enum SharedSender {
     Queue(Sender<BytesMut>),
 }
 
-type Senders = Lock<HashMap<i32, SharedSender>>;
+type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
 
 /// Socket that can multiplex connections
 #[derive(Clone)]
 pub struct MultiplexerSocket<S> {
-    correlation_id_counter: Lock<i32>,
+    correlation_id_counter: Arc<Mutex<i32>>,
     senders: Senders,
     sink: InnerExclusiveKfSink<S>,
 }
@@ -66,8 +66,8 @@ where
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
-            correlation_id_counter: Lock::new(1),
-            senders: Lock::new(HashMap::new()),
+            correlation_id_counter: Arc::new(Mutex::new(1)),
+            senders: Arc::new(Mutex::new(HashMap::new())),
             sink: InnerExclusiveKfSink::new(sink),
         };
 
@@ -89,7 +89,7 @@ where
     /// create socket to perform request and response
     pub async fn create_serial_socket(&mut self) -> SerialSocket<S> {
         let correlation_id = self.next_correlation_id().await;
-        let bytes_lock: SharedMsg = (Lock::new(None), Arc::new(Event::new()));
+        let bytes_lock: SharedMsg = (Arc::new(Mutex::new(None)), Arc::new(Event::new()));
 
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));

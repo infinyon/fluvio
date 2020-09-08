@@ -1,17 +1,20 @@
+use std::sync::Arc;
+
 use tracing::debug;
 use tracing::trace;
 use tracing::warn;
 use tracing::error;
-
-use futures::stream::StreamExt;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 use tokio::select;
+use event_listener::Event;
 
 use flv_future_aio::sync::broadcast::RecvError;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
-use kf_socket::InnerKfStream;
+use flv_future_aio::task::spawn;
+
 use kf_socket::InnerKfSink;
+use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::RequestHeader;
@@ -19,39 +22,35 @@ use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
 use flv_metadata_cluster::partition::ReplicaKey;
 use kf_protocol::fs::FilePartitionResponse;
-use spu_api::server::continous_fetch::FileFlvContinuousFetchRequest;
-use spu_api::server::continous_fetch::FlvContinuousFetchResponse;
-use spu_api::server::SpuServerApiKey;
-use spu_api::server::SpuServerRequest;
+use spu_api::server::stream_fetch::FileStreamFetchRequest;
+use spu_api::server::stream_fetch::StreamFetchResponse;
 
 use crate::core::DefaultSharedGlobalContext;
 
 /// continuous fetch handler
 /// while client is active, it continuously send back new records
-pub struct CfHandler<S> {
+pub struct StreamFetchHandler<S> {
     ctx: DefaultSharedGlobalContext,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
     header: RequestHeader,
-    kf_sink: InnerKfSink<S>,
+    kf_sink: InnerExclusiveKfSink<S>,
+    end_event: Arc<Event>,
 }
 
-impl<S> CfHandler<S>
+impl<S> StreamFetchHandler<S>
 where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
+    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     InnerKfSink<S>: ZeroCopyWrite,
 {
     /// handle fluvio continuous fetch request
-    pub async fn handle_continuous_fetch_request(
-        request: RequestMessage<FileFlvContinuousFetchRequest>,
+    pub fn handle_stream_fetch(
+        request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
-        kf_sink: InnerKfSink<S>,
-        kf_stream: InnerKfStream<S>,
-    ) -> Result<(), KfSocketError>
-    where
-        InnerKfSink<S>: ZeroCopyWrite,
-    {
+        kf_sink: InnerExclusiveKfSink<S>,
+        end_event: Arc<Event>,
+    ) {
         // first get receiver to offset update channel to we don't missed events
 
         let (header, msg) = request.get_header_request();
@@ -68,23 +67,20 @@ where
             max_bytes
         );
 
-        let mut handler = Self {
+        let handler = Self {
             ctx,
             isolation,
             replica,
             header,
             max_bytes,
             kf_sink,
+            end_event,
         };
 
-        handler.process(current_offset, kf_stream).await
+        spawn(async move { handler.process(current_offset).await });
     }
 
-    async fn process(
-        &mut self,
-        starting_offset: Offset,
-        mut kf_stream: InnerKfStream<S>,
-    ) -> Result<(), KfSocketError> {
+    async fn process(mut self, starting_offset: Offset) -> Result<(), KfSocketError> {
         let mut current_offset =
             if let Some(offset) = self.send_back_records(starting_offset).await? {
                 offset
@@ -99,8 +95,6 @@ where
         let mut receiver = self.ctx.offset_channel().receiver();
         //pin_mut!(receiver);
 
-        let mut api_stream = kf_stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
-
         let mut counter: i32 = 0;
         loop {
             counter += 1;
@@ -111,6 +105,12 @@ where
             );
 
             select! {
+
+                _ = self.end_event.listen() => {
+                    debug!("stream fetch: {}, connection has been terminated, terminating",self.kf_sink.id());
+                    break;
+                },
+
                 offset_event_res = receiver.recv() => {
 
                     match offset_event_res {
@@ -159,20 +159,13 @@ where
 
 
                 },
-
-                msg = api_stream.next() => {
-                    if let Some(content) = msg {
-                        debug!("conn: {}, received msg: {:#?}, continue processing",self.kf_sink.id(),content);
-                    } else {
-                        debug!("conn: {}, client has disconnected, ending continuous fetching: {}",self.kf_sink.id(),self.replica);
-                        break;
-                    }
-
-                }
             }
         }
 
-        debug!("conn: {}, done with cf loop exiting", self.kf_sink.id());
+        debug!(
+            "conn: {}, done with stream fetch loop exiting",
+            self.kf_sink.id()
+        );
 
         Ok(())
     }
@@ -202,12 +195,12 @@ where
                 hw,
                 leo,
             );
-            let response = FlvContinuousFetchResponse {
+            let response = StreamFetchResponse {
                 topic: self.replica.topic.clone(),
                 partition: partition_response,
             };
 
-            let response = RequestMessage::<FileFlvContinuousFetchRequest>::response_with_header(
+            let response = RequestMessage::<FileStreamFetchRequest>::response_with_header(
                 &self.header,
                 response,
             );
@@ -217,7 +210,8 @@ where
                 response
             );
 
-            self.kf_sink
+            let mut inner_sink = self.kf_sink.lock().await;
+            inner_sink
                 .encode_file_slices(&response, self.header.api_version())
                 .await?;
 

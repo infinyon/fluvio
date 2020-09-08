@@ -15,9 +15,9 @@ bytes = "0.5.4"
 futures = { version = "0.3.4" }
 pin-utils = "0.1.0-alpha.4"
 chashmap = "2.2.0"
-async-lock = "1.1.2"
+async-mutex = "1.3.0"
 event-listener = "2.0.0"
-async-channel = "1.1.0"
+async-channel = "1.4.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 tokio-util = { version = "0.3.1", features = ["codec","compat"]} 
 async-trait = "0.1.21"

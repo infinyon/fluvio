@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::sync::Arc;
 
 #[cfg(unix)]
 use std::os::unix::io::RawFd;
@@ -7,6 +8,8 @@ use std::os::unix::io::AsRawFd;
 use tracing::trace;
 use tracing::debug;
 use bytes::Bytes;
+use async_mutex::Mutex;
+use async_mutex::MutexGuard;
 
 use futures::sink::SinkExt;
 use futures::stream::SplitSink;
@@ -154,11 +157,9 @@ impl<S> AsRawFd for InnerKfSink<S> {
     }
 }
 
-use async_lock::Lock;
-
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct InnerExclusiveKfSink<S> {
-    inner: Lock<InnerKfSink<S>>,
+    inner: Arc<Mutex<InnerKfSink<S>>>,
     fd: RawFd,
 }
 
@@ -166,7 +167,7 @@ impl<S> InnerExclusiveKfSink<S> {
     pub fn new(sink: InnerKfSink<S>) -> Self {
         let fd = sink.id();
         InnerExclusiveKfSink {
-            inner: Lock::new(sink),
+            inner: Arc::new(Mutex::new(sink)),
             fd,
         }
     }
@@ -176,6 +177,10 @@ impl<S> InnerExclusiveKfSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
+    pub async fn lock(&self) -> MutexGuard<'_, InnerKfSink<S>> {
+        self.inner.lock().await
+    }
+
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), KfSocketError>
     where
         RequestMessage<R>: KfEncoder + Default + Debug,
@@ -184,6 +189,7 @@ where
         inner_sink.send_request(req_msg).await
     }
 
+    /// helper method to send back response
     pub async fn send_response<P>(
         &mut self,
         resp_msg: &ResponseMessage<P>,
