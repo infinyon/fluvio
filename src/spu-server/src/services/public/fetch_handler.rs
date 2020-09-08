@@ -66,7 +66,8 @@ where
         RequestMessage::<KfFileFetchRequest>::response_with_header(&header, fetch_response);
     trace!("sending back file fetch response: {:#?}", response);
     let mut inner = sink.lock().await;
-    inner.encode_file_slices(&response, header.api_version())
+    inner
+        .encode_file_slices(&response, header.api_version())
         .await?;
     drop(inner);
     trace!("finish sending fetch response");

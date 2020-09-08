@@ -68,8 +68,8 @@ impl KfRequestMessage for SpuServerRequest {
             }
             SpuServerApiKey::RegisterSyncReplicaRequest => {
                 api_decode!(Self, RegisterSyncReplicaRequest, src, header)
-            },
-            SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header)
+            }
+            SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
         }
     }
 }

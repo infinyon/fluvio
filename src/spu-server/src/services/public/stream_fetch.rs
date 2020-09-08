@@ -25,7 +25,6 @@ use kf_protocol::fs::FilePartitionResponse;
 use spu_api::server::stream_fetch::FileStreamFetchRequest;
 use spu_api::server::stream_fetch::StreamFetchResponse;
 
-
 use crate::core::DefaultSharedGlobalContext;
 
 /// continuous fetch handler
@@ -51,8 +50,7 @@ where
         ctx: DefaultSharedGlobalContext,
         kf_sink: InnerExclusiveKfSink<S>,
         end_event: Arc<Event>,
-    ) 
-    {
+    ) {
         // first get receiver to offset update channel to we don't missed events
 
         let (header, msg) = request.get_header_request();
@@ -76,19 +74,13 @@ where
             header,
             max_bytes,
             kf_sink,
-            end_event
+            end_event,
         };
 
-        spawn(async move {
-            handler.process(current_offset).await
-        });
-       
+        spawn(async move { handler.process(current_offset).await });
     }
 
-    async fn process(
-        mut self,
-        starting_offset: Offset,
-    ) -> Result<(), KfSocketError> {
+    async fn process(mut self, starting_offset: Offset) -> Result<(), KfSocketError> {
         let mut current_offset =
             if let Some(offset) = self.send_back_records(starting_offset).await? {
                 offset
@@ -102,7 +94,6 @@ where
 
         let mut receiver = self.ctx.offset_channel().receiver();
         //pin_mut!(receiver);
-
 
         let mut counter: i32 = 0;
         loop {
@@ -171,7 +162,10 @@ where
             }
         }
 
-        debug!("conn: {}, done with stream fetch loop exiting", self.kf_sink.id());
+        debug!(
+            "conn: {}, done with stream fetch loop exiting",
+            self.kf_sink.id()
+        );
 
         Ok(())
     }

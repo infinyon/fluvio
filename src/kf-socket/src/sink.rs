@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-
 #[cfg(unix)]
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
@@ -158,8 +157,6 @@ impl<S> AsRawFd for InnerKfSink<S> {
     }
 }
 
-
-
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct InnerExclusiveKfSink<S> {
     inner: Arc<Mutex<InnerKfSink<S>>>,
@@ -176,13 +173,11 @@ impl<S> InnerExclusiveKfSink<S> {
     }
 }
 
-
-
 impl<S> InnerExclusiveKfSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    pub async fn lock(&self) -> MutexGuard<'_,InnerKfSink<S>> {
+    pub async fn lock(&self) -> MutexGuard<'_, InnerKfSink<S>> {
         self.inner.lock().await
     }
 
@@ -207,7 +202,6 @@ where
         inner_sink.send_response(resp_msg, version).await
     }
 
-    
     pub fn id(&self) -> RawFd {
         self.fd
     }

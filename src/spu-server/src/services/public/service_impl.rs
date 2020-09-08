@@ -29,7 +29,6 @@ use super::offset_request::handle_offset_request;
 use super::stream_fetch::StreamFetchHandler;
 use super::OffsetReplicaList;
 
-
 #[derive(Debug)]
 pub struct PublicService {}
 
