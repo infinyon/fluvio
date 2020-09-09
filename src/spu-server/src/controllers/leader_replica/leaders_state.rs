@@ -1,11 +1,12 @@
 use std::sync::Arc;
-
+use std::collections::HashMap;
 
 use chashmap::CHashMap;
 use chashmap::ReadGuard;
 use chashmap::WriteGuard;
 use async_channel::Sender;
 use async_channel::SendError;
+use async_rwlock::RwLock;
 use tracing::debug;
 use tracing::warn;
 use tracing::trace;
@@ -18,7 +19,7 @@ use kf_protocol::fs::FilePartitionResponse;
 use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
 use kf_protocol::api::ErrorCode;
-use flv_util::SimpleConcurrentBTreeMap;
+
 
 use crate::InternalServerError;
 
@@ -32,14 +33,14 @@ pub type SharedReplicaLeadersState<S> = Arc<ReplicaLeadersState<S>>;
 #[derive(Debug)]
 pub struct ReplicaLeadersState<S> {
     replicas: CHashMap<ReplicaKey, LeaderReplicaState<S>>,
-    mailboxes: SimpleConcurrentBTreeMap<ReplicaKey, Sender<LeaderReplicaControllerCommand>>,
+    mailboxes: RwLock<HashMap<ReplicaKey, Sender<LeaderReplicaControllerCommand>>>,
 }
 
 impl<S> Default for ReplicaLeadersState<S> {
     fn default() -> Self {
         ReplicaLeadersState {
             replicas: CHashMap::default(),
-            mailboxes: SimpleConcurrentBTreeMap::new(),
+            mailboxes: RwLock::new(HashMap::new())
         }
     }
 }
@@ -67,14 +68,14 @@ impl<S> ReplicaLeadersState<S> {
         self.replicas.get_mut(key)
     }
 
-    pub fn insert_replica(
+    pub async fn insert_replica(
         &self,
         key: ReplicaKey,
         leader: LeaderReplicaState<S>,
         mailbox: Sender<LeaderReplicaControllerCommand>,
     ) -> Option<LeaderReplicaState<S>> {
         trace!("adding insert leader state: {}", key);
-        if let Some(old_mailbox) = self.mailboxes.write().insert(key.clone(), mailbox) {
+        if let Some(old_mailbox) = self.mailboxes.write().await.insert(key.clone(), mailbox) {
             error!("closing left over mailbox for leader");
             old_mailbox.close();
         }
@@ -83,9 +84,9 @@ impl<S> ReplicaLeadersState<S> {
 
     /// remove leader replica
     /// we also remove mailbox and close it's channel which will terminated the controller
-    pub fn remove_replica(&self, key: &ReplicaKey) -> Option<LeaderReplicaState<S>> {
+    pub async fn remove_replica(&self, key: &ReplicaKey) -> Option<LeaderReplicaState<S>> {
         if let Some(replica) = self.replicas.remove(key) {
-            if let Some(mailbox) = self.mailboxes.write().remove(key) {
+            if let Some(mailbox) = self.mailboxes.write().await.remove(key) {
                 debug!("closing old leader mailbox: {}", key);
                 mailbox.close();
             } else {
@@ -104,7 +105,7 @@ impl<S> ReplicaLeadersState<S> {
         replica: &ReplicaKey,
         command: LeaderReplicaControllerCommand,
     ) -> Result<bool, SendError<LeaderReplicaControllerCommand>> {
-        match self.mailbox(replica) {
+        match self.mailbox(replica).await {
             Some(mailbox) => {
                 trace!(
                     "sending message to leader replica: {:#?} controller: {:#?}",
@@ -118,9 +119,9 @@ impl<S> ReplicaLeadersState<S> {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn mailbox(&self, key: &ReplicaKey) -> Option<Sender<LeaderReplicaControllerCommand>> {
-        self.mailboxes.read().get(key).cloned()
+
+    pub async fn mailbox(&self, key: &ReplicaKey) -> Option<Sender<LeaderReplicaControllerCommand>> {
+        self.mailboxes.read().await.get(key).cloned()
     }
 }
 
