@@ -98,8 +98,9 @@ jobs:
         with:
           minikube-version: 1.12.3
           k8s-version: 1.18.8
-      - name: Test Minikube
+      - name: Setup Minikube
         run: |
+          minikube start
           kubectl get nodes
           kubectl config view
           helm version
