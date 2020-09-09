@@ -13,6 +13,7 @@ tracing = "0.1.19"
 dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"
+async-rwlock = "1.1.0"
 base64 = { version = "0.12.0"}
 futures = { version = "0.3.4", features = ['async-await'] }
 async-trait = "0.1.30"

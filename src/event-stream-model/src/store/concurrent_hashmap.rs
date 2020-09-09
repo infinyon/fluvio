@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::collections::BTreeMap;
 use std::hash::Hash;
-use flv_future_aio::sync::RwLock;
-use flv_future_aio::sync::RwLockReadGuard;
-use flv_future_aio::sync::RwLockWriteGuard;
+use async_rwlock::RwLock;
+use async_rwlock::RwLockReadGuard;
+use async_rwlock::RwLockWriteGuard;
 
 /// inefficient but simple concurrent hashmap
 /// this should be only used in a test
