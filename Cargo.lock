@@ -202,6 +202,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-rwlock"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f8978b5ae008b5177da07a1bf1bfbe428f9bdb970c3fca0e92ed1c1930d7f34"
+dependencies = [
+ "async-mutex",
+ "event-listener",
+]
+
+[[package]]
 name = "async-std"
 version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -890,6 +900,7 @@ version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-mutex",
+ "async-rwlock",
  "async-trait",
  "base64 0.12.3",
  "dashmap",
@@ -1000,6 +1011,7 @@ dependencies = [
 name = "flv-eventstream-model"
 version = "0.1.0"
 dependencies = [
+ "async-rwlock",
  "flv-future-aio",
  "flv-types",
  "flv-util 0.2.1",
@@ -1112,6 +1124,8 @@ dependencies = [
 name = "flv-spu"
 version = "1.0.0"
 dependencies = [
+ "async-channel",
+ "async-rwlock",
  "async-trait",
  "bytes 0.5.6",
  "chashmap",
