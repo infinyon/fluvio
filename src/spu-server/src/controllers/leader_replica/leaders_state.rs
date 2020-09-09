@@ -20,7 +20,6 @@ use kf_protocol::api::Offset;
 use kf_protocol::api::Isolation;
 use kf_protocol::api::ErrorCode;
 
-
 use crate::InternalServerError;
 
 use super::LeaderReplicaState;
@@ -40,7 +39,7 @@ impl<S> Default for ReplicaLeadersState<S> {
     fn default() -> Self {
         ReplicaLeadersState {
             replicas: CHashMap::default(),
-            mailboxes: RwLock::new(HashMap::new())
+            mailboxes: RwLock::new(HashMap::new()),
         }
     }
 }
@@ -119,8 +118,10 @@ impl<S> ReplicaLeadersState<S> {
         }
     }
 
-
-    pub async fn mailbox(&self, key: &ReplicaKey) -> Option<Sender<LeaderReplicaControllerCommand>> {
+    pub async fn mailbox(
+        &self,
+        key: &ReplicaKey,
+    ) -> Option<Sender<LeaderReplicaControllerCommand>> {
         self.mailboxes.read().await.get(key).cloned()
     }
 }

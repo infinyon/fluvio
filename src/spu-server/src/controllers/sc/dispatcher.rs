@@ -375,7 +375,8 @@ impl ScDispatcher<FileReplica> {
                     if new_replica.leader != old_replica.leader {
                         if new_replica.leader == local_id {
                             // we become leader
-                            self.promote_replica(new_replica, old_replica, shared_sc_sink.clone()).await;
+                            self.promote_replica(new_replica, old_replica, shared_sc_sink.clone())
+                                .await;
                         } else {
                             // we are follower
                             // if we were leader before, we demote out self
@@ -411,7 +412,8 @@ impl ScDispatcher<FileReplica> {
         match LeaderReplicaState::create_file_replica(replica, &storage_log).await {
             Ok(leader_replica) => {
                 debug!("file replica for leader is created: {}", storage_log);
-                self.spawn_leader_controller(replica_id, leader_replica, shared_sc_sink).await;
+                self.spawn_leader_controller(replica_id, leader_replica, shared_sc_sink)
+                    .await;
             }
             Err(err) => {
                 error!("error creating storage foer leader replica {:#?}", err);
@@ -474,10 +476,11 @@ impl ScDispatcher<FileReplica> {
 
         let (sender, receiver) = bounded(10);
 
-        if let Some(old_replica) =
-            self.ctx
-                .leaders_state()
-                .insert_replica(replica_id.clone(), leader_state, sender).await
+        if let Some(old_replica) = self
+            .ctx
+            .leaders_state()
+            .insert_replica(replica_id.clone(), leader_state, sender)
+            .await
         {
             error!(
                 "there was existing replica when creating new leader replica: {}",
@@ -540,7 +543,8 @@ impl ScDispatcher<FileReplica> {
                 new_replica.replicas,
             );
 
-            self.spawn_leader_controller(new_replica.id, leader_state, shared_sc_sink).await;
+            self.spawn_leader_controller(new_replica.id, leader_state, shared_sc_sink)
+                .await;
         }
     }
 
@@ -549,7 +553,9 @@ impl ScDispatcher<FileReplica> {
     pub async fn demote_replica(&self, replica: Replica) {
         debug!("demoting replica: {}", replica);
 
-        if let Some(leader_replica_state) = self.ctx.leaders_state().remove_replica(&replica.id).await {
+        if let Some(leader_replica_state) =
+            self.ctx.leaders_state().remove_replica(&replica.id).await
+        {
             drop(leader_replica_state);
             // for now, we re-scan file replica
             self.add_follower_replica(replica).await;

@@ -37,7 +37,7 @@ impl From<PartitionError> for InternalServerError {
     }
 }
 
-impl <T>From<SendError<T>> for InternalServerError {
+impl<T> From<SendError<T>> for InternalServerError {
     fn from(error: SendError<T>) -> Self {
         InternalServerError::SendError(error.to_string())
     }
