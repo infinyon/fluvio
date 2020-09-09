@@ -96,8 +96,8 @@ jobs:
       - name: Start minikube
         uses: opsgang/ga-setup-minikube@v0.1.1
         with:
-          minikube-version: "v1.12.3"
-          k8s-version: "v1.18.8"
+          minikube-version: 1.12.3
+          k8s-version: 1.18.8
       - name: Test Minikube
         run: |
           kubectl get nodes
