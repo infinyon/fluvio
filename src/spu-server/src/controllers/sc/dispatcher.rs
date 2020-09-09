@@ -10,12 +10,11 @@ use tracing::warn;
 use tracing::instrument;
 use flv_util::print_cli_err;
 
-use futures::channel::mpsc::Receiver;
-use futures::channel::mpsc::Sender;
-use futures::channel::mpsc::channel;
+use async_channel::Receiver;
+use async_channel::Sender;
+use async_channel::bounded;
+use tokio::select;
 use futures::StreamExt;
-use futures::FutureExt;
-use futures::select;
 use futures::sink::SinkExt;
 
 use flv_future_aio::task::spawn;
@@ -63,8 +62,8 @@ pub struct ScDispatcher<S> {
 
 impl<S> ScDispatcher<S> {
     pub fn new(ctx: SharedGlobalContext<S>, max_bytes: u32) -> Self {
-        let (termination_sender, termination_receiver) = channel(1);
-        let (supervisor_command_sender, _supervisor_command_receiver) = channel(100);
+        let (termination_sender, termination_receiver) = bounded(1);
+        let (supervisor_command_sender, _supervisor_command_receiver) = bounded(100);
         Self {
             termination_receiver,
             termination_sender,
@@ -241,7 +240,7 @@ impl ScDispatcher<FileReplica> {
             let connect_future = KfSocket::connect(&sc_endpoint);
 
             select! {
-                socket_res = connect_future.fuse() => {
+                socket_res = connect_future => {
                     match socket_res {
                         Ok(socket) => {
                             debug!("connected to sc for spu: {}",spu_id);
@@ -473,7 +472,7 @@ impl ScDispatcher<FileReplica> {
     ) {
         debug!("spawning new leader controller");
 
-        let (sender, receiver) = channel(10);
+        let (sender, receiver) = bounded(10);
 
         if let Some(old_replica) =
             self.ctx

@@ -4,11 +4,9 @@ use std::time::Duration;
 use tracing::debug;
 use tracing::warn;
 use tracing::error;
-use futures::channel::mpsc::Receiver;
-use futures::future::FutureExt;
+use async_channel::Receiver;
 use futures::future::join3;
 use futures::future::join;
-use futures::select;
 use futures::stream::StreamExt;
 
 use flv_future_aio::task::spawn;
@@ -88,6 +86,8 @@ impl ReplicaLeaderController<FileReplica> {
     }
 
     async fn dispatch_loop(mut self) {
+        use tokio::select;
+
         leader_debug!(self, "starting");
         self.send_status_to_sc().await;
         self.sync_followers().await;
@@ -96,7 +96,7 @@ impl ReplicaLeaderController<FileReplica> {
 
             select! {
 
-                _ = (sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC))).fuse() => {
+                _ = sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC)) => {
 
 
                     self.sync_followers().await;

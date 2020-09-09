@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
+
 use chashmap::CHashMap;
 use chashmap::ReadGuard;
 use chashmap::WriteGuard;
-use futures::channel::mpsc::Sender;
-use futures::channel::mpsc::SendError;
-use futures::SinkExt;
+use async_channel::Sender;
+use async_channel::SendError;
 use tracing::debug;
 use tracing::warn;
 use tracing::trace;
@@ -74,9 +74,9 @@ impl<S> ReplicaLeadersState<S> {
         mailbox: Sender<LeaderReplicaControllerCommand>,
     ) -> Option<LeaderReplicaState<S>> {
         trace!("adding insert leader state: {}", key);
-        if let Some(mut old_mailbox) = self.mailboxes.write().insert(key.clone(), mailbox) {
+        if let Some(old_mailbox) = self.mailboxes.write().insert(key.clone(), mailbox) {
             error!("closing left over mailbox for leader");
-            old_mailbox.close_channel();
+            old_mailbox.close();
         }
         self.replicas.insert(key, leader)
     }
@@ -85,9 +85,9 @@ impl<S> ReplicaLeadersState<S> {
     /// we also remove mailbox and close it's channel which will terminated the controller
     pub fn remove_replica(&self, key: &ReplicaKey) -> Option<LeaderReplicaState<S>> {
         if let Some(replica) = self.replicas.remove(key) {
-            if let Some(mut mailbox) = self.mailboxes.write().remove(key) {
+            if let Some(mailbox) = self.mailboxes.write().remove(key) {
                 debug!("closing old leader mailbox: {}", key);
-                mailbox.close_channel();
+                mailbox.close();
             } else {
                 error!("no mailbox found for removing: {}", key);
             }
@@ -103,9 +103,9 @@ impl<S> ReplicaLeadersState<S> {
         &self,
         replica: &ReplicaKey,
         command: LeaderReplicaControllerCommand,
-    ) -> Result<bool, SendError> {
+    ) -> Result<bool, SendError<LeaderReplicaControllerCommand>> {
         match self.mailbox(replica) {
-            Some(mut mailbox) => {
+            Some(mailbox) => {
                 trace!(
                     "sending message to leader replica: {:#?} controller: {:#?}",
                     replica,

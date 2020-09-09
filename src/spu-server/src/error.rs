@@ -1,6 +1,7 @@
 use std::fmt;
 
-use futures::channel::mpsc::SendError;
+use async_channel::SendError;
+
 use flv_types::PartitionError;
 use flv_storage::StorageError;
 use kf_socket::KfSocketError;
@@ -9,7 +10,7 @@ use kf_socket::KfSocketError;
 pub enum InternalServerError {
     StorageError(StorageError),
     PartitionError(PartitionError),
-    SendError(SendError),
+    SendError(String),
     SocketError(KfSocketError),
 }
 
@@ -36,9 +37,9 @@ impl From<PartitionError> for InternalServerError {
     }
 }
 
-impl From<SendError> for InternalServerError {
-    fn from(error: SendError) -> Self {
-        InternalServerError::SendError(error)
+impl <T>From<SendError<T>> for InternalServerError {
+    fn from(error: SendError<T>) -> Self {
+        InternalServerError::SendError(error.to_string())
     }
 }
 
