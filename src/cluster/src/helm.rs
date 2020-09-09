@@ -55,7 +55,8 @@ impl HelmClient {
             .collect();
 
         let mut command = Command::new("helm");
-        command.args(&["install", name, chart])
+        command
+            .args(&["install", name, chart])
             .args(&["--namespace", namespace])
             .args(sets);
 

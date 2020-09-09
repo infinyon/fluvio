@@ -5,27 +5,6 @@ use serde::Deserialize;
 
 use super::*;
 
-pub fn repo_add(chart_location: Option<&str>) {
-    // add repo
-    Command::new("helm")
-        .arg("repo")
-        .arg("add")
-        .arg("fluvio")
-        .arg(chart_location.unwrap_or("https://infinyon.github.io"))
-        .inherit();
-}
-
-pub fn repo_update() {
-    // add repo
-    Command::new("helm").arg("repo").arg("update").inherit();
-}
-
-#[derive(Debug, Deserialize)]
-struct Chart {
-    name: String,
-    version: String,
-}
-
 #[derive(Debug, Deserialize)]
 pub struct SysChart {
     pub name: String,

@@ -532,8 +532,12 @@ impl ClusterInstaller {
         let install_settings = &[("cloud", &*self.config.cloud)];
         match &self.config.chart_location {
             ChartLocation::Remote(chart_location) => {
-                debug!(chart_location = &**chart_location, "Using remote helm chart:");
-                self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
+                debug!(
+                    chart_location = &**chart_location,
+                    "Using remote helm chart:"
+                );
+                self.helm_client
+                    .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
                 self.helm_client.install(
                     &self.config.namespace,
@@ -545,7 +549,10 @@ impl ClusterInstaller {
             }
             ChartLocation::Local(chart_location) => {
                 let chart_location = chart_location.to_string_lossy();
-                debug!(chart_location = chart_location.as_ref(), "Using local helm chart:");
+                debug!(
+                    chart_location = chart_location.as_ref(),
+                    "Using local helm chart:"
+                );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_SYS_REPO,
@@ -563,7 +570,10 @@ impl ClusterInstaller {
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
     fn install_app(&self) -> Result<(), ClusterError> {
-        trace!("Installing fluvio with the following configuration: {:#?}", &self.config);
+        trace!(
+            "Installing fluvio with the following configuration: {:#?}",
+            &self.config
+        );
 
         // If configured with TLS, copy certs to server
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
@@ -597,7 +607,8 @@ impl ClusterInstaller {
         match &self.config.chart_location {
             // For remote, we add a repo pointing to the chart location.
             ChartLocation::Remote(chart_location) => {
-                self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
+                self.helm_client
+                    .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
                 if !self
                     .helm_client
@@ -608,7 +619,10 @@ impl ClusterInstaller {
                         &self.config.chart_name, &self.config.chart_version,
                     )));
                 }
-                debug!(chart_location = &**chart_location, "Using remote helm chart:");
+                debug!(
+                    chart_location = &**chart_location,
+                    "Using remote helm chart:"
+                );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_APP_REPO,
@@ -620,7 +634,10 @@ impl ClusterInstaller {
             // For local, we do not use a repo but install from the chart location directly.
             ChartLocation::Local(chart_location) => {
                 let chart_location = chart_location.to_string_lossy();
-                debug!(chart_location = chart_location.as_ref(), "Using local helm chart:");
+                debug!(
+                    chart_location = chart_location.as_ref(),
+                    "Using local helm chart:"
+                );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_APP_REPO,
@@ -628,7 +645,7 @@ impl ClusterInstaller {
                     Some(&self.config.chart_version),
                     &install_settings,
                 )?;
-            },
+            }
         }
 
         info!("Fluvio app chart has been installed");
