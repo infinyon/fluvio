@@ -877,18 +877,3 @@ impl ClusterInstaller {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_install_prod() {
-        let installer = ClusterInstaller::new()
-            .with_chart_version("0.6.0-latest")
-            .build()
-            .unwrap();
-        let result = async_std::task::block_on(installer.install_fluvio()).unwrap();
-        println!("{}", result);
-    }
-}
