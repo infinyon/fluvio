@@ -140,11 +140,11 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
     match opt.k8_config.chart_location {
         // If a chart location is given, use it
         Some(chart_location) => {
-            builder = builder.with_chart_location(chart_location);
+            builder = builder.with_local_chart(chart_location);
         }
         // If we're in develop mode (but no explicit chart location), use hardcoded local path
         None if opt.develop => {
-            builder = builder.with_chart_location("./k8-util/helm/fluvio-app");
+            builder = builder.with_local_chart("./k8-util/helm/fluvio-app");
         }
         _ => (),
     }
@@ -174,31 +174,11 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallCommand) {
-    helm::repo_add(opt.k8_config.chart_location.as_deref());
-    helm::repo_update();
-
-    let mut cmd = Command::new("helm");
-    cmd.arg("install").arg("fluvio-sys");
-
-    if opt.develop {
-        cmd.arg(
-            opt.k8_config
-                .chart_location
-                .as_deref()
-                .unwrap_or("./k8-util/helm/fluvio-sys"),
-        );
-    } else {
-        cmd.arg(
-            opt.k8_config
-                .chart_location
-                .as_deref()
-                .unwrap_or("fluvio/fluvio-sys"),
-        );
-    }
-
-    cmd.arg("--set")
-        .arg(format!("cloud={}", opt.k8_config.cloud))
-        .inherit();
+pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
+    let installer = ClusterInstaller::new()
+        .with_namespace(opt.k8_config.namespace)
+        .build()?;
+    installer._install_sys()?;
     println!("fluvio sys chart has been installed");
+    Ok(())
 }

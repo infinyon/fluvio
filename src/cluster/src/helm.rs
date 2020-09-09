@@ -46,6 +46,7 @@ impl HelmClient {
         namespace: &str,
         name: &str,
         chart: &str,
+        version: Option<&str>,
         opts: &[(&str, &str)],
     ) -> Result<(), IoError> {
         let sets: Vec<_> = opts
@@ -53,11 +54,16 @@ impl HelmClient {
             .flat_map(|(key, val)| vec!["--set".to_string(), format!("{}={}", key, val)])
             .collect();
 
-        Command::new("helm")
-            .args(&["install", name, chart])
-            .args(&["-n", namespace])
-            .args(sets)
-            .inherit();
+        let mut command = Command::new("helm");
+        command.args(&["install", name, chart])
+            .args(&["--namespace", namespace])
+            .args(sets);
+
+        if let Some(version) = version {
+            command.args(&["--version", version]);
+        }
+
+        command.inherit();
         Ok(())
     }
 
@@ -78,9 +84,11 @@ impl HelmClient {
     }
 
     /// Searches the repo for the named helm chart
-    pub fn search_repo(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
+    pub fn search_repo(&self, chart: &str, version: &str) -> Result<Vec<Chart>, IoError> {
         let output = Command::new("helm")
-            .args(&["search", "repo", chart, "--output", "json"])
+            .args(&["search", "repo", chart])
+            .args(&["--version", version])
+            .args(&["--output", "json"])
             .print()
             .output()?;
 
@@ -94,7 +102,7 @@ impl HelmClient {
 
     /// Checks that a given version of a given chart exists in the repo.
     pub fn chart_version_exists(&self, name: &str, version: &str) -> Result<bool, IoError> {
-        let versions = self.search_repo(name)?;
+        let versions = self.search_repo(name, version)?;
         let count = versions
             .iter()
             .filter(|chart| chart.name == name && chart.version == version)
