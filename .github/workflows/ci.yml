@@ -93,20 +93,24 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
-      - name: Start minikube
-        uses: opsgang/ga-setup-minikube@v0.1.1
-        with:
-          minikube-version: 1.12.3
-          k8s-version: 1.18.8
+      - name: Install Minikube on Linux
+        if: startsWith(matrix.os,'ubuntu')
+        run:  |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+      - name: Install Minikube on Mac
+        if: startsWith(matrix.os, 'macOS')
+        run:  brew install minikube
       - name: Setup Minikube
-        run: |
-          minikube start
+        run:  minikube start
       - name: Test minikube
         run: |
           kubectl get nodes
           kubectl config view
-          helm version
-          minikube status
+      - name: Test Helm
+        run: helm version
+      - name: Minikube Status
+        run: minikube status
       - name: Run minikube tunnel
         run: |
           minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
