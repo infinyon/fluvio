@@ -3,19 +3,20 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 use tracing::trace;
-//use futures::Stream;
-use futures::stream::BoxStream;
 
+
+use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
+use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
+use flv_api_spu::server::stream_fetch::DefaultStreamFetchRequest;
+use kf_socket::AsyncResponse;
+
+use crate::kf::message::fetch::DefaultKfFetchRequest;
+use crate::kf::message::fetch::FetchPartition;
+use crate::kf::message::fetch::FetchableTopic;
+use crate::kf::message::fetch::FetchablePartitionResponse;
 use crate::kf::api::ReplicaKey;
 use crate::kf::api::RecordSet;
 use crate::kf::api::PartitionOffset;
-use crate::kf::message::fetch::FetchablePartitionResponse;
-use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
-use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
-use kf_protocol::message::fetch::DefaultKfFetchRequest;
-use kf_protocol::message::fetch::FetchPartition;
-use kf_protocol::message::fetch::FetchableTopic;
-
 use crate::ClientError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
@@ -97,7 +98,7 @@ impl Consumer {
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,
-    ) -> Result<BoxStream<'_, FetchablePartitionResponse<RecordSet>>, ClientError> {
+    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, ClientError> {
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
@@ -106,55 +107,18 @@ impl Consumer {
         let mut serial_socket = self.pool.create_serial_socket(&self.replica).await?;
         debug!("created serial socket {}", serial_socket);
         let offset = calc_offset(&mut serial_socket, &self.replica, offset_option).await?;
+        drop(serial_socket);
 
-        let partition = FetchPartition {
-            partition_index: self.replica.partition,
+        let stream_request = DefaultStreamFetchRequest {
+            topic: self.replica.topic.to_owned(),
+            partition: self.replica.partition,
             fetch_offset: offset,
+            isolation: option.isolation,
             max_bytes: option.max_bytes,
             ..Default::default()
         };
-
-        let topic_request = FetchableTopic {
-            name: self.replica.topic.to_owned(),
-            fetch_partitions: vec![partition],
-        };
-
-        let _fetch_request = DefaultKfFetchRequest {
-            topics: vec![topic_request],
-            isolation_level: option.isolation,
-            max_bytes: option.max_bytes,
-            ..Default::default()
-        };
-
-        /*
-        let mut leader = self.pool.spu_leader(&self.replica).await?;
-
-        debug!("found spu leader {}", leader);
-
-        let offset = calc_offset(&mut leader, &self.replica, offset_option).await?;
-
-        let partition = FetchPartition {
-            partition_index: self.replica.partition,
-            fetch_offset: offset,
-            max_bytes: option.max_bytes,
-            ..Default::default()
-        };
-
-        let topic_request = FetchableTopic {
-            name: self.replica.topic.to_owned(),
-            fetch_partitions: vec![partition],
-        };
-
-
-        let fetch_request = DefaultKfFetchRequest {
-            topics: vec![topic_request],
-            isolation_level: option.isolation,
-            max_bytes: option.max_bytes,
-            ..Default::default()
-        };
-        */
-
-        Err(ClientError::UnableToReadProfile)
+       
+         self.pool.create_stream(&self.replica, stream_request).await
     }
 }
 
