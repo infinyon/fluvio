@@ -94,11 +94,10 @@ jobs:
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
       - name: Start minikube
-        uses: manusa/actions-setup-minikube@v2.0.0
+        uses: opsgang/ga-setup-minikube@v0.1.1
         with:
-          minikube version: "v1.12.3"
-          kubernetes version: "v1.18.8"
-          github token: ${{ secrets.GITHUB_TOKEN }}
+          minikube-version: "v1.12.3"
+          k8s-version: "v1.18.8"
       - name: Test Minikube
         run: |
           kubectl get nodes
