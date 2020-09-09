@@ -14,7 +14,7 @@ use kf_protocol::Version;
 use kf_protocol::Encoder;
 use kf_protocol::Decoder;
 use kf_protocol::api::Request;
-use kf_protocol::api::DefaultRecord;
+use kf_protocol::api::RecordSet;
 use kf_protocol::api::Isolation;
 use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
@@ -23,9 +23,9 @@ use kf_protocol::fs::KfFileRecordSet;
 use kf_protocol::fs::FileWrite;
 use kf_protocol::message::fetch::FetchablePartitionResponse;
 
-pub type DefaultStreamFetchResponse = StreamFetchResponse<DefaultRecord>;
+pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
 pub type FileStreamFetchRequest = StreamFetchRequest<KfFileRecordSet>;
-pub type DefaultStreamFetchRequest = StreamFetchRequest<DefaultRecord>;
+pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 
 use super::SpuServerApiKey;
 
