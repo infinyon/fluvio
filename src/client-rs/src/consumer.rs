@@ -4,7 +4,6 @@ use std::io::ErrorKind;
 use tracing::debug;
 use tracing::trace;
 
-
 use flv_api_spu::server::fetch_offset::{FlvFetchOffsetsRequest};
 use flv_api_spu::server::fetch_offset::FetchOffsetPartitionResponse;
 use flv_api_spu::server::stream_fetch::DefaultStreamFetchRequest;
@@ -117,8 +116,8 @@ impl Consumer {
             max_bytes: option.max_bytes,
             ..Default::default()
         };
-       
-         self.pool.create_stream(&self.replica, stream_request).await
+
+        self.pool.create_stream(&self.replica, stream_request).await
     }
 }
 

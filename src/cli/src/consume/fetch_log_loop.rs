@@ -27,14 +27,11 @@ use super::process_fetch_topic_response;
 pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
     mut consumer: Consumer,
-    mut opt: ConsumeLogConfig,
+    opt: ConsumeLogConfig,
 ) -> Result<(), CliError>
 where
     O: Terminal,
 {
-    // force to be non continuous
-    opt.disable_continuous = true;
-
     debug!("starting fetch loop: {:#?}", opt);
 
     // attach sender to Ctrl-C event handler
@@ -80,11 +77,11 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        
-        let mut log_stream = consumer.fetch_logs_as_stream(initial_offset, fetch_option).await?;
+        let mut log_stream = consumer
+            .fetch_logs_as_stream(initial_offset, fetch_option)
+            .await?;
 
         while let Ok(response) = log_stream.next().await {
-
             let partition = response.partition;
             debug!(
                 "got response: LSO: {} batchs: {}",
@@ -99,9 +96,6 @@ where
                 break;
             }
         }
-        
-        
-        
 
         debug!("fetch loop exited");
     }
