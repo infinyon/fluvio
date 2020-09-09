@@ -101,6 +101,7 @@ jobs:
       - name: Setup Minikube
         run: |
           minikube start
+      - name: Test minikube
           kubectl get nodes
           kubectl config view
           helm version
