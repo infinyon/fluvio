@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
+use std::str::from_utf8;
 
 use tracing::{info, warn, debug, trace, instrument};
 use fluvio::{ClusterConfig, ClusterSocket};
@@ -466,6 +467,44 @@ impl ClusterInstaller {
         }
     }
 
+    /// Create the namespace where fluvio will be installed;
+    /// `fluvio` is the default namespace for fluvio installations;
+    #[instrument(
+        skip(self),
+        fields(namespace = &*self.config.namespace),
+    )]
+    pub async fn create_namespace(&self) -> Result<(), ClusterError> {
+        info!("Creating namespace {}", &self.config.namespace);
+        Command::new("kubectl")
+            .args(&["create", "namespace", &self.config.namespace])
+            .inherit();
+
+        loop {
+            let mut namespace_exists = false;
+            if let Ok(output) = Command::new("kubectl").args(&["get", "namespace"]).output() {
+                if !output.stderr.is_empty() {
+                    warn!("failed to get namespaces");
+                    return Err(ClusterError::Other(format!(
+                        "Unable to retrieve namespaces: {}",
+                        from_utf8(&output.stderr)?
+                    )));
+                }
+
+                for row in from_utf8(&output.stdout)?.split("\n") {
+                    if row.contains(&self.config.namespace) {
+                        namespace_exists = true;
+                    }
+                }
+            }
+
+            if namespace_exists {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
     /// Installs Fluvio according to the installer's configuration
     ///
     /// Returns the external address of the new cluster's SC
@@ -474,6 +513,7 @@ impl ClusterInstaller {
         fields(namespace = &*self.config.namespace),
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
+        self.create_namespace().await?;
         self.install_app()?;
 
         let namespace = &self.config.namespace;

@@ -1,4 +1,5 @@
 use std::io::Error as IoError;
+use std::str::Utf8Error;
 use serde::export::Formatter;
 use fluvio::ClientError;
 use flv_future_aio::io::Error;
@@ -16,6 +17,8 @@ pub enum ClusterError {
     K8ConfigError(K8ConfigError),
     /// An error occurred with the Kubernetes client.
     K8ClientError(K8ClientError),
+    /// An utf8 parsing error;
+    Utf8Error(Utf8Error),
     /// A different kind of error occurred.
     Other(String),
 }
@@ -27,6 +30,7 @@ impl std::fmt::Display for ClusterError {
             Self::ClientError(err) => write!(f, "{}", err),
             Self::K8ConfigError(err) => write!(f, "{}", err),
             Self::K8ClientError(err) => write!(f, "{}", err),
+            Self::Utf8Error(err) => write!(f, "{}", err),
             Self::Other(err) => write!(f, "{}", err),
         }
     }
@@ -53,5 +57,11 @@ impl From<K8ConfigError> for ClusterError {
 impl From<K8ClientError> for ClusterError {
     fn from(err: K8ClientError) -> Self {
         Self::K8ClientError(err)
+    }
+}
+
+impl From<Utf8Error> for ClusterError {
+    fn from(err: Utf8Error) -> Self {
+        Self::Utf8Error(err)
     }
 }
