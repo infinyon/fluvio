@@ -116,15 +116,12 @@ develop_image:	CARGO_BUILD=build
 develop_image:	BIN_NAME=debug
 
 local_image:	develop_image
-local_image:	DOCKER_REGISTRY=localhost:5000/infinyon
+
 
 minikube_image:	local_image
 minikube_image:	MAKE_CMD=minikube
 
 
-aws_dev_image:	develop_image
-aws_dev_image:	MAKE_CMD=push
-aws_dev_image:	DOCKER_REGISTRY=$(AWS_ECR)
 
 linux-sc-server:	install_musl
 	cargo $(CARGO_BUILD) --bin sc-k8-server  --target ${TARGET_LINUX}
