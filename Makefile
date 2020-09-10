@@ -117,7 +117,10 @@ develop_image:	BIN_NAME=debug
 
 local_image:	develop_image
 
+set_minikube_docker:
+	eval $$(minikube docker-env)	
 
+minikube_image:	set_minikube_docker
 minikube_image:	local_image
 minikube_image:	MAKE_CMD=minikube
 
