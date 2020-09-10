@@ -6,10 +6,10 @@ cluster = "local"
 addr = "localhost:9003"
 
 [cluster.local.tls]
-tls_policy = "WithTls"
-tls_type = "Inline"
+tls_policy = "verified"
+tls_source = "inline"
 
-[cluster.local.tls.cert]
+[cluster.local.tls.certs]
 key = "ABCDEFF"
 cert = "JJJJ"
 ca_cert = "XXXXX"

@@ -58,12 +58,6 @@ mod target {
     use crate::tls::TlsOpt;
     use crate::CliError;
 
-    #[derive(Debug, StructOpt, Default)]
-    pub struct InlineProfile {
-        #[structopt(short = "P", long, value_name = "profile")]
-        pub profile: Option<String>,
-    }
-
     /// server configuration
     #[derive(Debug, StructOpt, Default)]
     pub struct ClusterTarget {
@@ -74,8 +68,8 @@ mod target {
         #[structopt(flatten)]
         pub tls: TlsOpt,
 
-        #[structopt(flatten)]
-        pub profile: InlineProfile,
+        #[structopt(short = "P", long, value_name = "profile")]
+        pub profile: Option<String>,
     }
 
     impl ClusterTarget {
@@ -84,14 +78,14 @@ mod target {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
-            match (self.profile.profile, self.cluster) {
+            match (self.profile, self.cluster) {
                 // Profile and Cluster together is illegal
                 (Some(_profile), Some(_cluster)) => Err(CliError::invalid_arg(
                     "cluster addr is not valid when profile is used",
                 )),
                 (Some(profile), _) => {
                     // Specifying TLS is illegal when also giving a profile
-                    if let NoVerify | Verify(_) = tls {
+                    if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is not valid when profile is is used",
                         ));
@@ -114,7 +108,7 @@ mod target {
                 }
                 (None, None) => {
                     // TLS specification is illegal without Cluster
-                    if let NoVerify | Verify(_) = tls {
+                    if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is only valid if cluster addr is used",
                         ));

@@ -2,6 +2,7 @@ use std::fmt;
 use std::io::Error as IoError;
 
 use fluvio::ClientError;
+use fluvio_cluster::ClusterError;
 use crate::profile::CloudError;
 
 #[derive(Debug)]
@@ -10,6 +11,7 @@ pub enum CliError {
     IoError(IoError),
     ClientError(ClientError),
     CloudError(CloudError),
+    ClusterError(ClusterError),
     K8ConfigError(k8_config::ConfigError),
     K8ClientError(k8_client::ClientError),
     Other(String),
@@ -39,6 +41,12 @@ impl From<CloudError> for CliError {
     }
 }
 
+impl From<ClusterError> for CliError {
+    fn from(error: ClusterError) -> Self {
+        Self::ClusterError(error)
+    }
+}
+
 impl From<k8_config::ConfigError> for CliError {
     fn from(error: k8_config::ConfigError) -> Self {
         Self::K8ConfigError(error)
@@ -58,6 +66,7 @@ impl fmt::Display for CliError {
             Self::IoError(err) => write!(f, "{}", err),
             Self::ClientError(err) => write!(f, "{}", err),
             Self::CloudError(err) => write!(f, "{}", err),
+            Self::ClusterError(err) => write!(f, "{}", err),
             Self::K8ConfigError(err) => write!(f, "{}", err),
             Self::K8ClientError(err) => write!(f, "{}", err),
             Self::Other(msg) => write!(f, "{}", msg),
