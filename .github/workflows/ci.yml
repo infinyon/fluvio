@@ -143,7 +143,6 @@ jobs:
         if: startsWith(matrix.os, 'macOS')
         run: |
           brew install filosottile/musl-cross/musl-cross
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: Set up docker registry
         run: |
           ./dev-tools/minikube-docker.sh 
