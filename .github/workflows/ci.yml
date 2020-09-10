@@ -134,10 +134,18 @@ jobs:
       - name: smoke test tls
         run: |
           FLV_CMD=true make smoke-test-tls
-      - name: setup smoke test k8
+      - name: Install musl-tools for Linux
+        if: startsWith(matrix.os,'ubuntu')
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+      - name: Install musl-tools for mac
+        if: startsWith(matrix.os, 'macOS')
+        run: |
+          brew install filosottile/musl-cross/musl-cross
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+      - name: Set up docker registry
+        run: |
           ./dev-tools/minikube-docker.sh 
           docker run -d -p 5000:5000 --restart=always --name registry registry:2
       - name: smoke test k8
