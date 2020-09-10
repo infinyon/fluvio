@@ -30,7 +30,7 @@ pub struct K8Install {
     pub registry: Option<String>,
 
     /// k8
-    #[structopt(long, default_value = "default")]
+    #[structopt(long, default_value = "fluvio")]
     pub namespace: String,
 
     /// k8

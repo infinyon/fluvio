@@ -7,7 +7,7 @@ use tracing::debug;
 
 #[derive(Debug, StructOpt)]
 pub struct UninstallCommand {
-    #[structopt(long, default_value = "default")]
+    #[structopt(long, default_value = "fluvio")]
     namespace: String,
 
     #[structopt(long, default_value = "fluvio")]

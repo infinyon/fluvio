@@ -177,7 +177,7 @@ async fn launch_spu(
         spu_spec,
         InputObjectMeta {
             name: format!("custom-spu-{}", spu_id),
-            namespace: "default".to_owned(),
+            namespace: "fluvio".to_owned(),
             ..Default::default()
         },
     );

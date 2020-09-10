@@ -31,7 +31,7 @@ impl ::std::default::Default for ScConfig {
             public_endpoint: format!("0.0.0.0:{}", SC_PUBLIC_PORT),
             private_endpoint: format!("0.0.0.0:{}", SC_PRIVATE_PORT),
             run_k8_dispatchers: true,
-            namespace: "default".to_owned(),
+            namespace: "fluvio".to_owned(),
         }
     }
 }

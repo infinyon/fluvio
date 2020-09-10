@@ -75,7 +75,7 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
 /// find fluvio addr
 pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>, CliError> {
-    let ns = namespace.unwrap_or("default");
+    let ns = namespace.unwrap_or("fluvio");
     let svc = match K8Client::default()?
         .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("flv-sc-public", ns))
         .await

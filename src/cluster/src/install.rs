@@ -21,7 +21,7 @@ use k8_obj_metadata::InputObjectMeta;
 use crate::ClusterError;
 use crate::helm::HelmClient;
 
-const DEFAULT_NAMESPACE: &str = "default";
+const DEFAULT_NAMESPACE: &str = "fluvio";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
@@ -100,7 +100,7 @@ impl ClusterInstallerBuilder {
 
     /// Sets the Kubernetes namespace to install Fluvio into.
     ///
-    /// The default namespace is "default".
+    /// The default namespace is "fluvio".
     pub fn with_namespace<S: Into<String>>(mut self, namespace: S) -> Self {
         self.namespace = namespace.into();
         self

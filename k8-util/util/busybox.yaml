@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: busybox
-  namespace: default
+  namespace: fluvio
 spec:
   containers:
   - name: busybox
