@@ -110,6 +110,7 @@ jobs:
         run:  minikube start
       - name: Test minikube
         run: |
+          minikube profile list
           kubectl get nodes
           kubectl config view
       - name: Test Helm
