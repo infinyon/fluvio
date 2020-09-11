@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
-name = "flv-storage"
-version = "1.0.0"
+name = "fluvio-storage"
+version = "0.1.0"
 authors = ["fluvio.io"]
 
 [[bin]]
@@ -17,18 +17,20 @@ bytes = "0.5.3"
 futures = { version = "0.3.4" }
 pin-utils = "0.1.0-alpha.4"
 async-trait = "0.1.18"
-structopt = { version = "0.3.5", optional = true}
-serde = { version ="1.0.103", features = ['derive'] }
-kf-protocol = { version = "2.0.0" } 
-kf-socket = { path = "../kf-socket"}
-flv-future-aio = { version = "2.2.1" }
-utils = { path= "../utils", optional = false }
-flv-types = { path ="../types", version = "0.2.0" }
+structopt = { version = "0.3.5", optional = true }
+serde = { version = "1.0.103", features = ['derive'] }
+
+# Fluvio dependencies
+fluvio-types = { path = "../types", version = "0.1.0" }
+kf-socket = { path = "../kf-socket" }
+kf-protocol = { version = "2.0.0" }
 flv-util = { version = "0.3.2" }
+flv-future-aio = { version = "2.2.1" }
+utils = { path = "../utils", optional = false }
 
 [dev-dependencies]
-flv-future-aio = { version = "2.2.1", features=["fixture"]}
-flv-util = { version = "0.3.2", features = ["fixture"]}
+flv-util = { version = "0.3.2", features = ["fixture"] }
+flv-future-aio = { version = "2.2.1", features = ["fixture"] }
 
 [features]
 cli = ["structopt"]

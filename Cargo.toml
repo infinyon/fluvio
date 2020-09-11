@@ -3,35 +3,23 @@ cargo-features = ["strip"]
 [workspace]
 members = [
     "src/cli",
-    "src/client-rs",
+    "src/client",
     "src/cluster",
-    "src/internal-api",
-    "src/kf-socket",
+    "src/controlplane",
+    "src/controlplane-metadata",
     "src/kf-service",
-    "src/metadata-cluster",
-    "src/event-stream-model",
-    "src/event-stream-k8",
-    "src/sc-api",
-    "src/sc-core",
-    "src/sc-k8",
-    "src/spu-api",
-    "src/spu-server",
+    "src/kf-socket",
+    "src/sc",
+    "src/sc-schema",
+    "src/spu",
+    "src/spu-schema",
     "src/storage",
+    "src/stream-dispatcher",
+    "src/stream-model",
     "src/types",
     "src/utils",
     "tests/runner",
 ]
-
-[patch.crates-io]
-#k8-client = { path = "../k8-api/src/k8-client" }
-#k8-metadata-client = { path = "../k8-api/src/k8-metadata-client"}
-#k8-obj-core = { path = "../k8-api/src/k8-obj-core"}
-#k8-obj-app = { path = "../k8-api/src/k8-obj-app"}
-#k8-obj-metadata = { path = "../k8-api/src/k8-obj-metadata"}
-#k8-config = { path = "../k8-api/src/k8-config"}
-#k8-diff = { path = "../k8-api/src/k8-diff"}
-#flv-future-aio = { path = "../flv-future/src/future-aio"}
-
 
 # profile to make image sizer smaller
 # comment out for now

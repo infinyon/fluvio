@@ -6,7 +6,7 @@
 use structopt::StructOpt;
 
 use fluvio::{ClusterConfig, ClusterSocket};
-use flv_metadata_cluster::spg::SpuGroupSpec;
+use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
 use crate::error::CliError;
@@ -62,7 +62,7 @@ mod output {
     use tracing::debug;
 
     use fluvio::metadata::objects::Metadata;
-    use flv_metadata_cluster::spg::SpuGroupSpec;
+    use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
     use crate::error::CliError;
     use crate::output::OutputType;

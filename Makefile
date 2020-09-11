@@ -92,7 +92,7 @@ release_cli_darwin:	release_cli
 release_cli_linux:	BUILD_TARGET=${TARGET_LINUX}
 release_cli_linux:	release_cli
 
-all_image:	linux-spu-server spu_image linux-sc-server sc_image
+all_image:	linux-fluvio-spu spu_image linux-sc-server sc_image
 
 # create docker images for release
 release_image:	MAKE_CMD=push
@@ -123,17 +123,17 @@ minikube_image:	MAKE_CMD=minikube
 
 
 linux-sc-server:	install_musl
-	cargo $(CARGO_BUILD) --bin sc-k8-server  --target ${TARGET_LINUX}
+	cargo $(CARGO_BUILD) --bin fluvio-sc-k8 --target ${TARGET_LINUX}
 
-linux-spu-server:	install_musl
-	cargo $(CARGO_BUILD) --bin spu-server  --target ${TARGET_LINUX}
+linux-fluvio-spu:	install_musl
+	cargo $(CARGO_BUILD) --bin fluvio-spu --target ${TARGET_LINUX}
 
 
-spu_image:	linux-spu-server
+spu_image:	linux-fluvio-spu
 	echo "Building SPU image with version: ${DOCKER_VERSION}"
 	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
 
-sc_image:	linux-spu-server
+sc_image:	linux-fluvio-spu
 	echo "Building SC image with version: ${DOCKER_VERSION}"
 	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
 

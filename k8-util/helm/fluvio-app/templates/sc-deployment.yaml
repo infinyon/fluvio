@@ -18,7 +18,7 @@ spec:
         - name:  SPU_IMAGE
           value: {{ .Values.image.registry }}/fluvio-spu:{{ .Values.image.tag | default .Chart.AppVersion }}
   {{ if .Values.tls }}
-      command: ["/fluvio/sc-k8-server"]
+      command: ["/fluvio/fluvio-sc-k8"]
       args:
         - --tls
         - --enable-client-cert

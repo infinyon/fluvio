@@ -1,0 +1,52 @@
+[package]
+name = "fluvio-spu"
+edition = "2018"
+version = "0.1.0"
+authors = ["fluvio.io"]
+
+[lib]
+name = "fluvio_spu"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fluvio-spu"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+log = "0.4.8"
+tracing = "0.1.19"
+tracing-futures = "0.2.4"
+bytes = "0.5.3"
+structopt = "0.3.5"
+toml = "0.5.5"
+futures = { version = "0.3.4" }
+async-trait = "0.1.21"
+serde_yaml = "0.8.8"
+serde = { version = "1.0.103", features = ['derive'] }
+chrono = { version = "0.4.6", features = ["serde"] }
+chashmap = "2.2.0"
+pin-utils = "0.1.0-alpha.4"
+regex = "1.3.1"
+tokio = { version = "0.2.21", features = ["macros"] }
+async-channel = "1.4.2"
+async-rwlock = "1.1.0"
+event-listener = "2.4.0"
+
+# Fluvio dependencies
+fluvio-types = { path = "../types", version = "0.1.0" }
+fluvio-storage = { path = "../storage" }
+fluvio-controlplane = { path = "../controlplane" }
+fluvio-controlplane-metadata = { path = "../controlplane-metadata" }
+fluvio-spu-schema = { path = "../spu-schema" }
+kf-protocol = { version = "2.0.0" }
+kf-socket = { path = "../kf-socket" }
+kf-service = { path = "../kf-service" }
+flv-util = { version = "0.3.0" }
+flv-tls-proxy = "0.1.0"
+flv-future-aio = { version = "2.2.1" }
+utils = { path = "../utils" }
+
+[dev-dependencies]
+flv-future-aio = { version = "2.2.1", features = ["fixture"] }
+utils = { path = "../utils", features = ["fixture"] }

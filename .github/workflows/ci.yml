@@ -23,19 +23,21 @@ jobs:
   #         access_token: ${{ secrets.GITHUB_TOKEN }}
   #     - name: check versions
   #       run: make -s check_version
-  version_check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Install cargo-cvm
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-cvm
-          version: latest
-      - name: Check Versions
-        run: cargo cvm -x
+
+#  version_check:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Install cargo-cvm
+#        uses: actions-rs/install@v0.1
+#        with:
+#          crate: cargo-cvm
+#          version: latest
+#      - name: Check Versions
+#        run: cargo cvm -x
+
   check_clippy:
     runs-on: ubuntu-latest
     steps:

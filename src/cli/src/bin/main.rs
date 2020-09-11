@@ -1,6 +1,5 @@
-use flv_cli::run_cli;
-
-use flv_types::print_cli_err;
+use fluvio_cli::run_cli;
+use fluvio_types::print_cli_err;
 
 fn main() {
     flv_util::init_tracer(None);
