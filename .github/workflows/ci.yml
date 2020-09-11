@@ -143,11 +143,11 @@ jobs:
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           export TARGET_CC=musl-gcc
-      - name: Install musl-tools for mac
-        if: startsWith(matrix.os, 'macOS')
-        run: |
-          brew install filosottile/musl-cross/musl-cross
-          export TARGET_CC=x86_64-linux-musl-gcc
-      - name: smoke test k8 tls
-        run: |
-          FLV_CMD=true make smoke-test-k8-tls
+      #- name: Install musl-tools for mac
+      #  if: startsWith(matrix.os, 'macOS')
+      #  run: |
+      #    brew install filosottile/musl-cross/musl-cross
+      #    export TARGET_CC=x86_64-linux-musl-gcc
+      - name: smoke test k8 tls for linux
+        if: startsWith(matrix.os,'ubuntu')
+        run: FLV_CMD=true make smoke-test-k8-tls
