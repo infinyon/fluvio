@@ -134,18 +134,15 @@ jobs:
       - name: smoke test tls
         run: |
           FLV_CMD=true make smoke-test-tls
-      - name: Install musl-tools for Linux
-        if: startsWith(matrix.os,'ubuntu')
+      - name: mac smoke test for k8 tls
+        if: startsWith(matrix.os, 'macOS')
+        run: |
+          brew install filosottile/musl-cross/musl-cross
+          export TARGET_CC=x86_64-linux-musl-gcc
+          FLV_CMD=true make smoke-test-k8-tls
+      - name: linux smoke test for k8 tls
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           export TARGET_CC=musl-gcc
-      - name: Install musl-tools for mac
-        if: startsWith(matrix.os, 'macOS')
-        run: |
-          brew install filosottile/musl-cross/musl-cross
-          export TARGET_CC=musl-gcc
-      - name: smoke test k8 tls
-        run: |
-          export TARGET_CC=x86_64-linux-musl-gcc
           FLV_CMD=true make smoke-test-k8-tls
