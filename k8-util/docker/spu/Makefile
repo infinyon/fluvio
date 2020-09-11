@@ -14,6 +14,5 @@ build:	copy_binaries
 push:	build
 	docker push $(NAME):$(TAG)
 
-minikube:	push
-	eval $$(minikube docker-env); \
-	docker pull $(NAME):$(TAG);
+minikube:	copy_binaries
+	eval $$(minikube docker-env); docker build -f Dockerfile.spu  -t $(NAME):$(TAG)  ./target
