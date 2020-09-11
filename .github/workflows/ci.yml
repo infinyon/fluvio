@@ -147,4 +147,5 @@ jobs:
           export TARGET_CC=musl-gcc
       - name: smoke test k8 tls
         run: |
+          export TARGET_CC=x86_64-linux-musl-gcc
           FLV_CMD=true make smoke-test-k8-tls
