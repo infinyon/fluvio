@@ -105,14 +105,7 @@ Please follow instruction on INSTALL.md for setting up kubernetes clusters and i
 
 ## Deploying development version of Fluvio cluster to Kubernetes
 
-Please ensure local docker registry is running:
 
-```
-./dev-tools/minikube-docker.sh 
-```
-```
- docker run -d -p 5000:5000 --restart=always --name registry registry:2
-```
 Set the following environment variable:
 
 ```
