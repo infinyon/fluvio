@@ -158,7 +158,7 @@ impl PartitionStatus {
             .replicas
             .iter()
             .filter_map(move |s| {
-                if s.spu == spu {
+                if s.spu != spu {
                     Some(s.to_owned())
                 } else {
                     None
