@@ -2,10 +2,10 @@
 
 To run SPU with default parameters.
 ```
-./target/debug/spu-server
+./target/debug/fluvio-spu
 ```
 
 Run server with debug flag
 ```
-RUST_LOG=debug ./target/debug/spu-server
+RUST_LOG=debug ./target/debug/fluvio-spu
 ```

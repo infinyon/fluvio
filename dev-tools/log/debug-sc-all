@@ -2,4 +2,4 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 RELATIVE_PATH="$DIR"/../../target/debug
 
-RUST_LOG=kf=trace,sc=trace,flv=trace "$RELATIVE_PATH"/sc-k8-server
+RUST_LOG=kf=trace,sc=trace,flv=trace "$RELATIVE_PATH"/fluvio-sc-k8
