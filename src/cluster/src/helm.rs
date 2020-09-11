@@ -101,6 +101,23 @@ impl HelmClient {
         })
     }
 
+    /// Get all the available versions
+    pub fn get_versions(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
+        let output = Command::new("helm")
+            .args(&["search", "repo"])
+            .args(&["--versions", chart])
+            .args(&["--output", "json"])
+            .print()
+            .output()?;
+
+        serde_json::from_slice(&output.stdout).map_err(|_| {
+            IoError::new(
+                ErrorKind::InvalidData,
+                "failed to fetch helm chart versions",
+            )
+        })
+    }
+
     /// Checks that a given version of a given chart exists in the repo.
     pub fn chart_version_exists(&self, name: &str, version: &str) -> Result<bool, IoError> {
         let versions = self.search_repo(name, version)?;
@@ -116,9 +133,9 @@ impl HelmClient {
 #[derive(Debug, Deserialize)]
 pub struct Chart {
     /// The chart name
-    name: String,
+    pub name: String,
     /// The chart version
-    version: String,
+    pub version: String,
 }
 
 /// A representation of an installed chart.
