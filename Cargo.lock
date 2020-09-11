@@ -906,10 +906,10 @@ dependencies = [
  "dashmap",
  "dirs 1.0.5",
  "event-listener",
- "flv-api-sc",
- "flv-api-spu",
+ "fluvio-sc-schema",
+ "fluvio-spu-schema",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
  "flv-util 0.3.2",
  "futures",
  "kf-protocol",
@@ -923,50 +923,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-cluster"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "fluvio",
- "flv-future-aio",
- "flv-metadata-cluster",
- "flv-util 0.3.2",
- "k8-client",
- "k8-config",
- "k8-obj-core",
- "k8-obj-metadata",
- "serde",
- "serde_json",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "flv-api-sc"
-version = "2.0.0"
-dependencies = [
- "flv-metadata-cluster",
- "flv-types",
- "flv-util 0.3.2",
- "kf-protocol",
- "log",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "flv-api-spu"
-version = "2.0.0"
-dependencies = [
- "bytes 0.5.6",
- "kf-protocol",
- "log",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "flv-cli"
+name = "fluvio-cli"
 version = "0.1.0"
 dependencies = [
  "async-h1",
@@ -977,12 +934,12 @@ dependencies = [
  "dirs 1.0.5",
  "fluvio",
  "fluvio-cluster",
- "flv-api-sc",
+ "fluvio-controlplane-metadata",
+ "fluvio-sc",
+ "fluvio-sc-schema",
+ "fluvio-spu",
+ "fluvio-types",
  "flv-future-aio",
- "flv-metadata-cluster",
- "flv-sc-k8",
- "flv-spu",
- "flv-types",
  "flv-util 0.3.2",
  "futures",
  "http-types",
@@ -1008,17 +965,182 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-eventstream-dispatcher"
+name = "fluvio-cluster"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "fluvio",
+ "fluvio-controlplane-metadata",
+ "flv-future-aio",
+ "flv-util 0.3.2",
+ "k8-client",
+ "k8-config",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-controlplane"
+version = "0.1.0"
+dependencies = [
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
+ "kf-protocol",
+ "log",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-controlplane-metadata"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "fluvio-stream-model",
+ "fluvio-types",
+ "flv-future-aio",
+ "flv-util 0.3.2",
+ "k8-obj-app",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "kf-protocol",
+ "log",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-sc"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-lock",
+ "async-trait",
+ "base64 0.11.0",
+ "chashmap",
+ "event-listener",
+ "fluvio-controlplane",
+ "fluvio-controlplane-metadata",
+ "fluvio-sc-schema",
+ "fluvio-stream-dispatcher",
+ "fluvio-types",
+ "flv-future-aio",
+ "flv-tls-proxy",
+ "flv-util 0.3.2",
+ "futures",
+ "k8-client",
+ "k8-metadata-client",
+ "k8-obj-metadata",
+ "kf-protocol",
+ "kf-service",
+ "kf-socket",
+ "log",
+ "rand 0.7.3",
+ "regex",
+ "serde",
+ "structopt",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-futures",
+ "utils",
+]
+
+[[package]]
+name = "fluvio-sc-schema"
+version = "0.1.0"
+dependencies = [
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
+ "flv-util 0.2.1",
+ "kf-protocol",
+ "log",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-spu"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-rwlock",
+ "async-trait",
+ "bytes 0.5.6",
+ "chashmap",
+ "chrono",
+ "event-listener",
+ "fluvio-controlplane",
+ "fluvio-controlplane-metadata",
+ "fluvio-spu-schema",
+ "fluvio-storage",
+ "fluvio-types",
+ "flv-future-aio",
+ "flv-tls-proxy",
+ "flv-util 0.3.2",
+ "futures",
+ "kf-protocol",
+ "kf-service",
+ "kf-socket",
+ "log",
+ "pin-utils",
+ "regex",
+ "serde",
+ "serde_yaml",
+ "structopt",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-futures",
+ "utils",
+]
+
+[[package]]
+name = "fluvio-spu-schema"
+version = "0.1.0"
+dependencies = [
+ "bytes 0.5.6",
+ "kf-protocol",
+ "log",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-storage"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes 0.5.6",
+ "fluvio-types",
+ "flv-future-aio",
+ "flv-util 0.3.2",
+ "futures",
+ "kf-protocol",
+ "kf-socket",
+ "libc",
+ "pin-utils",
+ "serde",
+ "structopt",
+ "tracing",
+ "utils",
+]
+
+[[package]]
+name = "fluvio-stream-dispatcher"
 version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-lock",
  "async-trait",
  "event-listener",
- "flv-eventstream-model",
+ "fluvio-stream-model",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util 0.2.1",
  "futures",
  "k8-metadata-client",
  "log",
@@ -1029,17 +1151,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-eventstream-model"
+name = "fluvio-stream-model"
 version = "0.1.0"
 dependencies = [
  "async-rwlock",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util 0.2.1",
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
  "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-types"
+version = "0.2.0"
+dependencies = [
  "tracing",
 ]
 
@@ -1068,145 +1197,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-metadata-cluster"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "flv-eventstream-model",
- "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
- "k8-obj-app",
- "k8-obj-core",
- "k8-obj-metadata",
- "kf-protocol",
- "log",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "flv-sc-core"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "async-lock",
- "async-trait",
- "base64 0.11.0",
- "chashmap",
- "event-listener",
- "flv-api-sc",
- "flv-eventstream-dispatcher",
- "flv-future-aio",
- "flv-metadata-cluster",
- "flv-types",
- "flv-util 0.3.2",
- "futures",
- "internal-api",
- "k8-metadata-client",
- "k8-obj-metadata",
- "kf-protocol",
- "kf-service",
- "kf-socket",
- "log",
- "rand 0.7.3",
- "regex",
- "serde",
- "tokio",
- "toml",
- "tracing",
- "tracing-futures",
- "utils",
-]
-
-[[package]]
-name = "flv-sc-k8"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "flv-future-aio",
- "flv-sc-core",
- "flv-tls-proxy",
- "flv-types",
- "flv-util 0.3.2",
- "futures",
- "k8-client",
- "rand 0.7.3",
- "serde",
- "structopt",
- "tokio",
- "toml",
- "tracing",
- "tracing-futures",
- "utils",
-]
-
-[[package]]
-name = "flv-spu"
-version = "1.0.0"
-dependencies = [
- "async-channel",
- "async-rwlock",
- "async-trait",
- "bytes 0.5.6",
- "chashmap",
- "chrono",
- "event-listener",
- "flv-api-spu",
- "flv-future-aio",
- "flv-metadata-cluster",
- "flv-storage",
- "flv-tls-proxy",
- "flv-types",
- "flv-util 0.3.2",
- "futures",
- "internal-api",
- "kf-protocol",
- "kf-service",
- "kf-socket",
- "log",
- "pin-utils",
- "regex",
- "serde",
- "serde_yaml",
- "structopt",
- "tokio",
- "toml",
- "tracing",
- "tracing-futures",
- "utils",
-]
-
-[[package]]
-name = "flv-storage"
-version = "1.0.0"
-dependencies = [
- "async-trait",
- "bytes 0.5.6",
- "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
- "futures",
- "kf-protocol",
- "kf-socket",
- "libc",
- "pin-utils",
- "serde",
- "structopt",
- "tracing",
- "utils",
-]
-
-[[package]]
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
  "flv-future-aio",
- "flv-metadata-cluster",
- "flv-types",
  "futures",
  "k8-client",
  "k8-metadata-client",
@@ -1226,13 +1225,6 @@ dependencies = [
  "flv-future-aio",
  "futures",
  "log",
-]
-
-[[package]]
-name = "flv-types"
-version = "0.2.2"
-dependencies = [
- "tracing",
 ]
 
 [[package]]
@@ -1615,17 +1607,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6854dd77ddc4f9ba1a448f487e27843583d407648150426a30c2ea3a2c39490a"
 
 [[package]]
-name = "internal-api"
-version = "1.0.0"
-dependencies = [
- "flv-metadata-cluster",
- "flv-types",
- "kf-protocol",
- "log",
- "tracing",
-]
-
-[[package]]
 name = "iovec"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1884,8 +1865,8 @@ version = "3.0.0"
 dependencies = [
  "async-trait",
  "event-listener",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
  "flv-util 0.3.2",
  "futures",
  "kf-protocol",
@@ -3492,7 +3473,7 @@ dependencies = [
 name = "utils"
 version = "0.3.0"
 dependencies = [
- "flv-types",
+ "fluvio-types",
  "rand 0.7.3",
  "regex",
  "tracing",

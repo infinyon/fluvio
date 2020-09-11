@@ -4,6 +4,10 @@ name = "kf-service"
 version = "3.0.0"
 authors = ["fluvio.io"]
 
+[lib]
+name = "kf_service"
+path = "src/lib.rs"
+
 [dependencies]
 log = "0.4.8"
 tracing = "0.1.18"
@@ -13,10 +17,13 @@ async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
+
+# Fluvio dependencies
+fluvio-types = { version = "0.2.0", path = "../types" }
+kf-socket = { version = "2.0.0", path = "../kf-socket" }
 kf-protocol = { version = "3.0.0" }
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
-kf-socket = { version = "2.0.0", path = "../kf-socket" }
-flv-types = { version = "0.2.0", path = "../types" }
+
 
 [dev-dependencies]
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }

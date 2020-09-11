@@ -1,5 +1,4 @@
 FROM alpine
 
-COPY    sc-k8-server  /fluvio/sc-k8-server
-
-CMD ["/fluvio/sc-k8-server"]
+COPY fluvio-sc-k8 /fluvio/fluvio-sc-k8
+CMD ["/fluvio/fluvio-sc-k8"]

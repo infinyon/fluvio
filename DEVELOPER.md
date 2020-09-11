@@ -172,7 +172,7 @@ This guide helps users to solve issues they might face during the setup process.
 If you face cross-compilation errors while creating minikube image, for example
 
 ```
-cargo build --bin spu-server --target x86_64-unknown-linux-musl
+cargo build --bin fluvio-spu --target x86_64-unknown-linux-musl
 error: linker `x86_64-linux-musl-gcc` not found
  |
  = note: No such file or directory (os error 2)
