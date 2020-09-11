@@ -134,10 +134,12 @@ jobs:
       - name: smoke test tls
         run: |
           FLV_CMD=true make smoke-test-tls
+      - name: setup mul for mac
+        if: startsWith(matrix.os, 'macOS')
+        run: brew install filosottile/musl-cross/musl-cross
       - name: mac smoke test for k8 tls
         if: startsWith(matrix.os, 'macOS')
         run: |
-          brew install filosottile/musl-cross/musl-cross
           export TARGET_CC=x86_64-linux-musl-gcc
           FLV_CMD=true make smoke-test-k8-tls
       - name: Install Linux musl-gcc
