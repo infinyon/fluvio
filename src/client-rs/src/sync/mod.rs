@@ -14,7 +14,7 @@ mod context {
 
     use event_listener::Event;
     use event_listener::EventListener;
-    use flv_future_aio::sync::RwLockReadGuard;
+    use async_rwlock::RwLockReadGuard;
 
     use crate::ClientError;
     use crate::metadata::core::Spec;

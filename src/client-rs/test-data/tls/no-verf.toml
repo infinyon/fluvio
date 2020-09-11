@@ -6,4 +6,4 @@ cluster = "local"
 addr = "localhost:9003"
 
 [cluster.local.tls]
-tls_policy = "NoTls"
+tls_policy = "disabled"

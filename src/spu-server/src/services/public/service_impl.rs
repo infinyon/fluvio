@@ -9,6 +9,7 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 use futures::stream::StreamExt;
 use tokio::select;
+use event_listener::Event;
 
 use kf_protocol::api::RequestMessage;
 use kf_socket::InnerKfSocket;
@@ -25,6 +26,7 @@ use super::api_versions::handle_kf_lookup_version_request;
 use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
+use super::stream_fetch::StreamFetchHandler;
 use super::OffsetReplicaList;
 
 #[derive(Debug)]
@@ -52,12 +54,16 @@ where
     where
         InnerKfSink<S>: ZeroCopyWrite,
     {
-        let (mut sink, mut stream) = socket.split();
+        let (sink, mut stream) = socket.split();
+
+        let mut s_sink = sink.as_shared();
         let mut api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
 
         let mut offset_replica_list: OffsetReplicaList = HashSet::new();
 
         let mut receiver = context.offset_channel().receiver();
+
+        let end_event = Arc::new(Event::new());
 
         loop {
             select! {
@@ -66,14 +72,14 @@ where
                     match offset_event_res {
 
                         Ok(offset_event) => {
-                            trace!("conn: {}, offset event from leader {:#?}", sink.id(),offset_event);
+                            trace!("conn: {}, offset event from leader {:#?}", s_sink.id(),offset_event);
                             if offset_replica_list.contains(&offset_event.replica_id) {
 
                                 use spu_api::client::offset::ReplicaOffsetUpdateRequest;
                                 use spu_api::client::offset::ReplicaOffsetUpdate;
                                 use kf_protocol::api::FlvErrorCode;
 
-                                debug!("conn: {}, sending replica: {} hw: {}, leo: {}",sink.id(),
+                                debug!("conn: {}, sending replica: {} hw: {}, leo: {}",s_sink.id(),
                                     offset_event.replica_id,
                                     offset_event.hw,
                                     offset_event.leo);
@@ -87,7 +93,7 @@ where
                                         hw: offset_event.hw
                                     }]
                                 };
-                                sink.send_request(&RequestMessage::new_request(req)).await?;
+                                s_sink.send_request(&RequestMessage::new_request(req)).await?;
 
                             }
                         },
@@ -98,11 +104,11 @@ where
 
                             match err {
                                 RecvError::Closed => {
-                                    warn!("conn: {}, lost connection to event channel, closing conn",sink.id());
+                                    warn!("conn: {}, lost connection to event channel, closing conn",s_sink.id());
                                     break;
                                 },
                                 RecvError::Lagged(lag) => {
-                                    warn!("conn: {}, lagging: {}",sink.id(),lag);
+                                    warn!("conn: {}, lagging: {}",s_sink.id(),lag);
                                 }
                             }
 
@@ -117,12 +123,12 @@ where
                     if let Some(msg) = api_msg {
 
                         if let Ok(req_message) = msg {
-                            trace!("conn: {}, received request: {:#?}",sink.id(),req_message);
+                            trace!("conn: {}, received request: {:#?}",s_sink.id(),req_message);
                             match req_message {
                                 SpuServerRequest::ApiVersionsRequest(request) => call_service!(
                                     request,
                                     handle_kf_lookup_version_request(request),
-                                    sink,
+                                    s_sink,
                                     "kf api version handler"
                                 ),
 
@@ -130,15 +136,15 @@ where
                                 SpuServerRequest::KfProduceRequest(request) => call_service!(
                                     request,
                                     handle_produce_request(request,context.clone()),
-                                    sink,
+                                    s_sink,
                                     "ks produce request handler"
                                 ),
-                                SpuServerRequest::KfFileFetchRequest(request) => handle_fetch_request(request,context.clone(),&mut sink).await?,
+                                SpuServerRequest::KfFileFetchRequest(request) => handle_fetch_request(request,context.clone(),s_sink.clone()).await?,
 
                                 SpuServerRequest::FlvFetchOffsetsRequest(request) => call_service!(
                                     request,
                                     handle_offset_request(request,context.clone()),
-                                    sink,
+                                    s_sink,
                                     "handling offset fetch request"
                                 ),
 
@@ -148,15 +154,16 @@ where
                                     let (_, sync_request) = request.get_header_request();
                                     debug!("registered offset sync request: {:#?}",sync_request);
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
-                                }
+                                },
+                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone(),end_event.clone())
 
                             }
                         } else {
-                            tracing::debug!("conn: {} msg can't be decoded, ending connection",sink.id());
+                            tracing::debug!("conn: {} msg can't be decoded, ending connection",s_sink.id());
                             break;
                         }
                     } else {
-                        tracing::debug!("conn: {}, no content, end of connection", sink.id());
+                        tracing::debug!("conn: {}, no content, end of connection", s_sink.id());
                         break;
                     }
 
@@ -165,7 +172,9 @@ where
             }
         }
 
-        debug!("conn: {}, loop terminated ", sink.id());
+        end_event.notify(usize::MAX);
+
+        debug!("conn: {}, loop terminated ", s_sink.id());
         Ok(())
     }
 }

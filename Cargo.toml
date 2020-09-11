@@ -2,6 +2,7 @@
 members = [
     "src/cli",
     "src/client-rs",
+    "src/cluster",
     "src/internal-api",
     "src/kf-socket",
     "src/kf-service",

@@ -41,6 +41,7 @@ pub struct K8Install {
     #[structopt(long, default_value = "fluvio")]
     pub install_name: String,
 
+    /// Local path to a helm chart to install
     #[structopt(long)]
     pub chart_location: Option<String>,
 
@@ -130,7 +131,7 @@ where
     use local::install_local;
 
     if command.sys {
-        install_sys(command);
+        install_sys(command)?;
     } else if command.local {
         #[cfg(feature = "cluster_components")]
         install_local(command).await?;

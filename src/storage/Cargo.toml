@@ -10,7 +10,6 @@ path = "src/bin/cli.rs"
 doc = false
 required-features = ["cli"]
 
-
 [dependencies]
 tracing = "0.1.19"
 libc = "0.2.58"
@@ -23,14 +22,13 @@ serde = { version = "1.0.103", features = ['derive'] }
 kf-protocol = { version = "3.0.0" }
 kf-socket = { path = "../kf-socket" }
 flv-future-aio = { version = "2.2.1" }
-utils = { path = "../utils", optional = false }
-flv-types = { path = "../types", version = "0.2.0" }
-flv-util = { version = "0.2.0" }
+utils = { path= "../utils", optional = false }
+flv-types = { path ="../types", version = "0.2.0" }
+flv-util = { version = "0.3.2" }
 
 [dev-dependencies]
-flv-future-aio = { version = "2.2.1", features = ["fixture"] }
-flv-util = { version = "0.2.0", features = ["fixture"] }
-
+flv-future-aio = { version = "2.2.1", features=["fixture"]}
+flv-util = { version = "0.3.2", features = ["fixture"]}
 
 [features]
 cli = ["structopt"]

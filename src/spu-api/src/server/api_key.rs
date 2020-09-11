@@ -13,6 +13,7 @@ pub enum SpuServerApiKey {
     KfFetch = 1,
 
     FlvFetchOffsets = 1002,
+    StreamFetch = 1003,
     RegisterSyncReplicaRequest = 1004,
 }
 

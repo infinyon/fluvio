@@ -44,11 +44,11 @@ impl TryInto<TlsPolicy> for TlsOpt {
             }
             _ if !self.enable_client_cert => {
                 debug!("using no cert verification");
-                Ok(TlsPolicy::NoVerify)
+                Ok(TlsPolicy::Anonymous)
             }
             (Some(client_cert), Some(client_key), Some(ca_cert), Some(domain)) => {
                 debug!("using tls and client cert");
-                Ok(TlsPolicy::Verify(TlsConfig::Files(TlsPaths {
+                Ok(TlsPolicy::Verified(TlsConfig::Files(TlsPaths {
                     cert: client_cert,
                     key: client_key,
                     ca_cert,
