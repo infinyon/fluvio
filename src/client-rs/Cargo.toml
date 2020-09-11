@@ -24,7 +24,7 @@ event-listener = "2.2.0"
 async-mutex = "1.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 flv-future-aio = { version = "2.4.1", features = ["tls"] }
-kf-protocol = { version = "2.0.0" } 
+kf-protocol = { version = "3.0.0" } 
 flv-types = { version = "0.2.0", path ="../types" }
 flv-util = "0.3.2"
 kf-socket = { version = "2.1.0", path = "../kf-socket" }

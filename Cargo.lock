@@ -912,7 +912,7 @@ dependencies = [
  "flv-types",
  "flv-util 0.3.2",
  "futures",
- "kf-protocol 2.0.3",
+ "kf-protocol",
  "kf-socket",
  "serde",
  "serde_json",
@@ -948,7 +948,7 @@ dependencies = [
  "flv-metadata-cluster",
  "flv-types",
  "flv-util 0.3.2",
- "kf-protocol 2.0.3",
+ "kf-protocol",
  "log",
  "serde",
  "tracing",
@@ -959,7 +959,7 @@ name = "flv-api-spu"
 version = "2.0.0"
 dependencies = [
  "bytes 0.5.6",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "log",
  "serde",
  "tracing",
@@ -1079,7 +1079,7 @@ dependencies = [
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "log",
  "serde",
  "tracing",
@@ -1105,7 +1105,7 @@ dependencies = [
  "internal-api",
  "k8-metadata-client",
  "k8-obj-metadata",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "kf-service",
  "kf-socket",
  "log",
@@ -1161,7 +1161,7 @@ dependencies = [
  "flv-util 0.3.2",
  "futures",
  "internal-api",
- "kf-protocol 2.0.3",
+ "kf-protocol",
  "kf-service",
  "kf-socket",
  "log",
@@ -1187,7 +1187,7 @@ dependencies = [
  "flv-types",
  "flv-util 0.3.2",
  "futures",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "kf-socket",
  "libc",
  "pin-utils",
@@ -1210,7 +1210,7 @@ dependencies = [
  "futures",
  "k8-client",
  "k8-metadata-client",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "log",
  "structopt",
  "utils",
@@ -1620,7 +1620,7 @@ version = "1.0.0"
 dependencies = [
  "flv-metadata-cluster",
  "flv-types",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "log",
  "tracing",
 ]
@@ -1787,47 +1787,16 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94d5178c5e37c8352f67cc5cd2c5b95f0ff239501f336adc43dfdd3728e0de20"
-dependencies = [
- "kf-protocol-api 1.0.4",
- "kf-protocol-core 0.1.2",
- "kf-protocol-derive 0.1.1",
- "kf-protocol-fs 2.0.1",
- "kf-protocol-message 1.0.2",
- "kf-protocol-transport 2.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "log",
-]
-
-[[package]]
-name = "kf-protocol"
 version = "3.0.0"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#3ec9e31b2d32327c587c5ce23a0decbae2ab737e"
 dependencies = [
- "kf-protocol-api 2.0.0",
- "kf-protocol-core 0.2.0",
- "kf-protocol-derive 0.2.0",
- "kf-protocol-fs 3.0.0",
- "kf-protocol-message 2.0.0",
- "kf-protocol-transport 2.0.3 (git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable)",
+ "kf-protocol-api",
+ "kf-protocol-core",
+ "kf-protocol-derive",
+ "kf-protocol-fs",
+ "kf-protocol-message",
+ "kf-protocol-transport",
  "log",
-]
-
-[[package]]
-name = "kf-protocol-api"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5519b99ec41c8ee07ca23ad65c46f8b3fc603ef8da6a7e4b645b6a9173b861db"
-dependencies = [
- "content_inspector",
- "crc32c",
- "flv-util 0.1.1",
- "kf-protocol-core 0.1.2",
- "kf-protocol-derive 0.1.1",
- "log",
- "paste",
- "serde",
 ]
 
 [[package]]
@@ -1838,23 +1807,10 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "flv-util 0.1.1",
- "kf-protocol-core 0.2.0",
- "kf-protocol-derive 0.2.0",
+ "kf-protocol-core",
+ "kf-protocol-derive",
  "log",
  "paste",
- "serde",
-]
-
-[[package]]
-name = "kf-protocol-core"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "181d915d438db9198e5c45852ad2368a4999ed23146fcf62a516d5a58ffa2375"
-dependencies = [
- "bytes 0.5.6",
- "log",
- "num-derive",
- "num-traits",
  "serde",
 ]
 
@@ -1868,18 +1824,6 @@ dependencies = [
  "num-derive",
  "num-traits",
  "serde",
-]
-
-[[package]]
-name = "kf-protocol-derive"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04d755345d3b2d384a694c68b5f299d29664847de02982fe00640c731ccc2bbe"
-dependencies = [
- "log",
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
 ]
 
 [[package]]
@@ -1895,47 +1839,16 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-fs"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8ef03620f77406bff96b68012375da9536f8f627ec461f6d86f761d8bcf4cfb"
-dependencies = [
- "bytes 0.5.6",
- "flv-future-aio",
- "futures",
- "kf-protocol-api 1.0.4",
- "kf-protocol-core 0.1.2",
- "kf-protocol-message 1.0.2",
- "log",
-]
-
-[[package]]
-name = "kf-protocol-fs"
 version = "3.0.0"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#3ec9e31b2d32327c587c5ce23a0decbae2ab737e"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
  "futures",
- "kf-protocol-api 2.0.0",
- "kf-protocol-core 0.2.0",
- "kf-protocol-message 2.0.0",
+ "kf-protocol-api",
+ "kf-protocol-core",
+ "kf-protocol-message",
  "log",
-]
-
-[[package]]
-name = "kf-protocol-message"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8dc4adddeb3a44e29f02acd70ae0737009ac7fb8f6ecc8d18a89d876956ea8"
-dependencies = [
- "content_inspector",
- "flv-util 0.2.1",
- "kf-protocol-api 1.0.4",
- "kf-protocol-core 0.1.2",
- "kf-protocol-derive 0.1.1",
- "log",
- "paste",
- "serde",
 ]
 
 [[package]]
@@ -1945,9 +1858,9 @@ source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_s
 dependencies = [
  "content_inspector",
  "flv-util 0.2.1",
- "kf-protocol-api 2.0.0",
- "kf-protocol-core 0.2.0",
- "kf-protocol-derive 0.2.0",
+ "kf-protocol-api",
+ "kf-protocol-core",
+ "kf-protocol-derive",
  "log",
  "paste",
  "serde",
@@ -1960,20 +1873,7 @@ source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_s
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
- "kf-protocol-core 0.2.0",
- "log",
- "tokio-util",
-]
-
-[[package]]
-name = "kf-protocol-transport"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "013331a05c5e2989d2387ff3976485b3416042766dba999f1678ebb830a13f87"
-dependencies = [
- "bytes 0.5.6",
- "flv-future-aio",
- "kf-protocol-core 0.1.2",
+ "kf-protocol-core",
  "log",
  "tokio-util",
 ]
@@ -1988,7 +1888,7 @@ dependencies = [
  "flv-types",
  "flv-util 0.3.2",
  "futures",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "kf-socket",
  "log",
  "pin-utils",
@@ -2010,7 +1910,7 @@ dependencies = [
  "flv-future-aio",
  "flv-util 0.3.2",
  "futures",
- "kf-protocol 3.0.0",
+ "kf-protocol",
  "log",
  "pin-utils",
  "tokio",
