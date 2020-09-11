@@ -83,6 +83,8 @@ jobs:
       - name: Run unit tests
         run: cargo test
 
+  
+
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
@@ -111,12 +113,43 @@ jobs:
       - name: Test minikube
         run: |
           minikube profile list
-          kubectl get nodes
+      - name: Build
+        run: |
+          cargo build
+      - name: setup context
+        run: |
+          ./target/debug/fluvio cluster set-minikube-context
           kubectl config view
-      - name: Test Helm
-        run: helm version
-      - name: Minikube Status
-        run: minikube status
+      - name: install fluvio system chart
+        run: |
+          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+      - name: smoke test tls
+        run: |
+          FLV_CMD=true make smoke-test-tls
+
+
+  k8_cluster_test:
+    name: Kubernetes cluster test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [nightly]
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+      - name: Install Minikube on Linux
+        uses: manusa/actions-setup-minikube@v2.0.0
+        with:
+          minikube version: "v1.12.3"
+          kubernetes version: "v1.18.8"
+          github token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
       - name: Run minikube tunnel
         run: |
           minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
@@ -134,20 +167,9 @@ jobs:
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
-      - name: smoke test tls
-        run: |
-          FLV_CMD=true make smoke-test-tls
       - name: Install musl-tools for Linux
-        if: startsWith(matrix.os,'ubuntu')
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          export TARGET_CC=musl-gcc
-      #- name: Install musl-tools for mac
-      #  if: startsWith(matrix.os, 'macOS')
-      #  run: |
-      #    brew install filosottile/musl-cross/musl-cross
-      #    export TARGET_CC=x86_64-linux-musl-gcc
-      - name: smoke test k8 tls for linux
-        if: startsWith(matrix.os,'ubuntu')
+      - name: smoke test k8 tls
         run: FLV_CMD=true make smoke-test-k8-tls
