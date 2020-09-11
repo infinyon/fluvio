@@ -93,11 +93,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
-      - name: Install docker on Mac
-        if: startsWith(matrix.os, 'macOS')
-        run: | 
-          brew install docker-machine docker
-          docker version
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
