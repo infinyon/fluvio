@@ -1117,7 +1117,6 @@ dependencies = [
  "bytes 0.5.6",
  "fluvio-types",
  "flv-future-aio",
- "flv-util 0.2.1",
  "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "kf-protocol",

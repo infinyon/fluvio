@@ -24,7 +24,7 @@ serde = { version = "1.0.103", features = ['derive'] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 kf-socket = { path = "../kf-socket" }
 kf-protocol = { version = "2.0.0" }
-flv-util = { version = "0.2.0" }
+flv-util = { version = "0.3.2" }
 flv-future-aio = { version = "2.2.1" }
 utils = { path = "../utils", optional = false }
 
