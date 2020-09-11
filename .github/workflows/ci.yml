@@ -95,7 +95,9 @@ jobs:
         uses: actions-rs/toolchain@v1
       - name: Install docker on Mac
         if: startsWith(matrix.os, 'macOS')
-        run: brew cask install docker
+        run: | 
+          brew cask install docker
+          docker version
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
@@ -108,7 +110,7 @@ jobs:
         run:  brew install minikube
       - name: Setup Minikube for Mac
         if: startsWith(matrix.os, 'macOS')
-        run:  minikube start
+        run:  minikube start 
       - name: Test minikube
         run: |
           kubectl get nodes
