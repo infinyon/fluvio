@@ -5,6 +5,7 @@ edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
+description = "Tools for installing and managing Fluvio clusters"
 build = "build.rs"
 
 [lib]
@@ -23,7 +24,7 @@ serde_json = "1.0.57"
 fluvio = { path = "../client" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", features = ["k8"] }
 flv-future-aio = "2.3.1"
-flv-util = { version = "0.3.2", git = "https://github.com/infinyon/flv-util" }
+flv-util = "0.3.2"
 k8-config = { version = "1.1.0", features = ["context"] }
 k8-client = "1.1.0"
 k8-obj-core = "1.1.0"

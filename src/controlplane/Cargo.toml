@@ -1,8 +1,10 @@
 [package]
 name = "fluvio-controlplane"
 version = "0.1.0"
-authors = ["fluvio.io"]
 edition = "2018"
+license = "Apache-2.0"
+authors = ["fluvio.io"]
+repository = "https://github.com/infinyon/fluvio"
 
 [lib]
 name = "fluvio_controlplane"

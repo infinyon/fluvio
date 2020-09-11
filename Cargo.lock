@@ -910,7 +910,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "flv-future-aio",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -940,7 +940,7 @@ dependencies = [
  "fluvio-spu",
  "fluvio-types",
  "flv-future-aio",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "http-types",
  "k8-client",
@@ -972,7 +972,7 @@ dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
  "flv-future-aio",
- "flv-util 0.3.2 (git+https://github.com/infinyon/flv-util)",
+ "flv-util 0.3.2",
  "k8-client",
  "k8-config",
  "k8-obj-core",
@@ -1002,7 +1002,7 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-future-aio",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
@@ -1029,7 +1029,7 @@ dependencies = [
  "fluvio-types",
  "flv-future-aio",
  "flv-tls-proxy",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "k8-client",
  "k8-metadata-client",
@@ -1080,7 +1080,7 @@ dependencies = [
  "fluvio-types",
  "flv-future-aio",
  "flv-tls-proxy",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "kf-protocol",
  "kf-service",
@@ -1117,7 +1117,7 @@ dependencies = [
  "bytes 0.5.6",
  "fluvio-types",
  "flv-future-aio",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -1254,18 +1254,6 @@ name = "flv-util"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5cf735c988038ec59ba1dd5515770ad67a35688328ed99fd867e133dfe8c69b"
-dependencies = [
- "chrono",
- "env_logger 0.7.1",
- "log",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "flv-util"
-version = "0.3.2"
-source = "git+https://github.com/infinyon/flv-util#7ab800c3d6ddad3ae7fb10b7c36edf4b5cc74721"
 dependencies = [
  "chrono",
  "env_logger 0.7.1",
@@ -1886,7 +1874,7 @@ dependencies = [
  "event-listener",
  "fluvio-types",
  "flv-future-aio",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -1908,7 +1896,7 @@ dependencies = [
  "chashmap",
  "event-listener",
  "flv-future-aio",
- "flv-util 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flv-util 0.3.2",
  "futures",
  "kf-protocol",
  "log",
