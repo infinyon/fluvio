@@ -95,13 +95,16 @@ jobs:
         uses: actions-rs/toolchain@v1
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
-        run:  |
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+        uses: manusa/actions-setup-minikube@v2.0.0
+        with:
+          minikube version: "v1.12.3"
+          kubernetes version: "v1.18.8"
+          github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Minikube on Mac
         if: startsWith(matrix.os, 'macOS')
         run:  brew install minikube
-      - name: Setup Minikube
+      - name: Setup Minikube for Mac
+        if: startsWith(matrix.os, 'macOS')
         run:  minikube start
       - name: Test minikube
         run: |
@@ -139,15 +142,15 @@ jobs:
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          export TARGET_CC=musl-gcc
       - name: Install musl-tools for mac
         if: startsWith(matrix.os, 'macOS')
         run: |
           brew install filosottile/musl-cross/musl-cross
+          export TARGET_CC=x86_64-linux-musl-gcc
       - name: smoke test k8
         run: |
-          export TARGET_CC=musl-gcc
           FLV_CMD=true make smoke-test-k8
       - name: smoke test k8 tls
         run: |
-          export TARGET_CC=musl-gcc
           FLV_CMD=true make smoke-test-k8-tls
