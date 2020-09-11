@@ -93,6 +93,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+      - name: Install docker on Mac
+        if: startsWith(matrix.os, 'macOS')
+        run: brew cask install docker
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
@@ -140,9 +143,12 @@ jobs:
           brew install filosottile/musl-cross/musl-cross
           export TARGET_CC=x86_64-linux-musl-gcc
           FLV_CMD=true make smoke-test-k8-tls
-      - name: linux smoke test for k8 tls
+      - name: Install Linux musl-gcc
+        if: startsWith(matrix.os,'ubuntu')
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          export TARGET_CC=musl-gcc
+      - name: linux smoke test for k8 tls
+        if: startsWith(matrix.os,'ubuntu')
+        run: |
           FLV_CMD=true make smoke-test-k8-tls
