@@ -97,6 +97,7 @@ jobs:
         if: startsWith(matrix.os, 'macOS')
         run: | 
           brew cask install docker
+          ls -l /usr/local/bin/docker*
           docker version
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
