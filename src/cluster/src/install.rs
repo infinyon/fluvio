@@ -791,6 +791,17 @@ impl ClusterInstaller {
         })?;
         debug!("Using TLS from paths: {:?}", paths);
 
+        // Try uninstalling secrets first to prevent duplication error
+        Command::new("kubectl")
+            .args(&["delete", "secret", "fluvio-ca", "--ignore-not-found=true"])
+            .args(&["--namespace", &self.config.namespace])
+            .inherit();
+
+        Command::new("kubectl")
+            .args(&["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
+            .args(&["--namespace", &self.config.namespace])
+            .inherit();
+
         Command::new("kubectl")
             .args(&["create", "secret", "generic", "fluvio-ca"])
             .args(&["--from-file", ca_cert])
