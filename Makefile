@@ -116,14 +116,10 @@ develop_image:	CARGO_BUILD=build
 develop_image:	BIN_NAME=debug
 
 local_image:	develop_image
+local_image:	DOCKER_REGISTRY=localhost:5000/infinyon
 
-set_minikube_docker:
-	eval $$(minikube docker-env)	
-
-minikube_image:	set_minikube_docker
 minikube_image:	local_image
 minikube_image:	MAKE_CMD=minikube
-
 
 
 linux-sc-server:	install_musl
