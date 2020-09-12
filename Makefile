@@ -32,7 +32,7 @@ smoke-test:	test-clean-up
 	$(TEST_BIN) --local-driver --log-dir /tmp
 
 smoke-test-tls:	build test-clean-up
-	$(TEST_BIN) --tls --local-driver --log-dir /tmp --rust-log flv=debug
+	$(TEST_BIN) --tls --local-driver --log-dir /tmp
 
 smoke-test-k8:	build test-clean-up minikube_image
 	$(TEST_BIN)	--develop --log-dir /tmp

@@ -24,7 +24,7 @@ serde_json = "1.0.57"
 fluvio = { path = "../client" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", features = ["k8"] }
 flv-future-aio = "2.3.1"
-flv-util = "0.3.2"
+flv-util = "0.4.0"
 k8-config = { version = "1.1.0", features = ["context"] }
 k8-client = "1.1.0"
 k8-obj-core = "1.1.0"

@@ -27,9 +27,9 @@ tokio = { version = "0.2.21", features = ["macros"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-stream-model = { features = ["k8"], path = "../stream-model" }
 k8-metadata-client = { version = "1.0.1" }
-flv-util = { version = "0.2.0" }
+flv-util = { version = "0.4.0" }
 flv-future-aio = { version = "2.3.0", features = ["unstable"] }
 
 [dev-dependencies]
-flv-util = { version = "0.2.0", features = ["fixture"] }
+flv-util = { version = "0.4.0", features = ["fixture"] }
 flv-future-aio = { version = "2.3.0", features = ["fixture"] }

@@ -26,4 +26,4 @@ flv-future-aio = { version = "2.2.1", features = ["tls"] }
 
 [dev-dependencies]
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }
-flv-util = { version = "0.3.2" }
+flv-util = { version = "0.4.0" }
