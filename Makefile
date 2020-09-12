@@ -1,6 +1,6 @@
 VERSION := $(shell cat VERSION)
 DOCKER_VERSION = $(VERSION)
-TOOLCHAIN = "./rust-toolchain"
+TOOLCHAIN = stable
 RUSTV = $(shell cat ${TOOLCHAIN})
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
 CARGO_BUILD=build --release
@@ -50,7 +50,7 @@ test-clean-up:
 #	
 
 install-fmt:
-	rustup component add rustfmt --toolchain $(RUSTV)
+	rustup component add rustfmt
 
 check-fmt:
 	cargo +$(RUSTV) fmt -- --check
