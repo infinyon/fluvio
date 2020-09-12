@@ -1,6 +1,5 @@
 VERSION := $(shell cat VERSION)
 DOCKER_VERSION = $(VERSION)
-TOOLCHAIN = stable
 RUSTV = stable
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
 CARGO_BUILD=build --release
