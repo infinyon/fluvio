@@ -39,7 +39,11 @@ jobs:
 #        run: cargo cvm -x
 
   check_clippy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
     steps:
       - uses: actions/checkout@v1
       - name: Cancel Workflow Action
@@ -47,8 +51,6 @@ jobs:
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - name: check clippy
         run: make check-clippy
   check_fmt:
