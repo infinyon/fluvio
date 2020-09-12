@@ -61,7 +61,7 @@ check_version:
 install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
-check-clippy:
+check-clippy:	install-clippy
 	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
 
 

@@ -48,7 +48,7 @@ jobs:
           access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/toolchain@v1
         with:
-          components: clippy
+          toolchain: stable
       - name: check clippy
         run: make check-clippy
   check_fmt:
@@ -57,13 +57,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-
+        rust: [stable]
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
-        with:
-          components: rustfmt
       - name: check fmt
         run: make check-fmt
 
@@ -73,6 +71,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
+        rust: [stable]
 
     steps:
       - uses: actions/checkout@v2
