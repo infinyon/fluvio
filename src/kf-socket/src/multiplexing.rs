@@ -544,7 +544,6 @@ mod tests {
 
     #[test_async]
     async fn test_multiplexing() -> Result<(), KfSocketError> {
-
         debug!("start testing");
         let addr = "127.0.0.1:6000";
 
