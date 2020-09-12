@@ -91,7 +91,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest,macOS-latest]
-        rust: [nightly]
+        rust: [stable]
 
     steps:
       - uses: actions/checkout@v2
@@ -134,7 +134,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [nightly]
+        rust: [stable]
     
     steps:
       - uses: actions/checkout@v2
