@@ -101,8 +101,8 @@ jobs:
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
         with:
-          minikube version: "v1.12.3"
-          kubernetes version: "v1.18.8"
+          minikube version: "v1.13.0"
+          kubernetes version: "v1.19.0"
           github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Minikube on Mac
         if: startsWith(matrix.os, 'macOS')
@@ -143,8 +143,8 @@ jobs:
       - name: Install Minikube on Linux
         uses: manusa/actions-setup-minikube@v2.0.0
         with:
-          minikube version: "v1.12.3"
-          kubernetes version: "v1.18.8"
+          minikube version: "v1.13.0"
+          kubernetes version: "v1.19.0"
           github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Test minikube
         run: |
