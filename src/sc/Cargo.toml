@@ -48,9 +48,9 @@ kf-socket = { path = "../kf-socket" }
 kf-service = { path = "../kf-service" }
 flv-future-aio = { version = "2.3.0", features = ["tls", "unstable"] }
 flv-tls-proxy = "0.1.0"
-flv-util = { version = "0.3.0" }
+flv-util = { version = "0.4.0" }
 utils = { path = "../utils" }
 
 [dev-dependencies]
 flv-future-aio = { version = "2.3.0", features = ["fixture"] }
-flv-util = { version = "0.3.0", features = ["fixture"] }
+flv-util = { version = "0.4.0", features = ["fixture"] }
