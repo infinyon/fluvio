@@ -50,7 +50,11 @@ jobs:
         uses: styfle/cancel-workflow-action@0.4.1
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions-rs/toolchain@v1
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: check clippy
         run: make check-clippy
   check_fmt:
@@ -64,6 +68,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: check fmt
         run: make check-fmt
 
@@ -79,6 +86,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Show rustup
         run: rustup show
       - name: Run unit tests
@@ -98,6 +108,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
@@ -141,6 +154,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Install Minikube on Linux
         uses: manusa/actions-setup-minikube@v2.0.0
         with:
