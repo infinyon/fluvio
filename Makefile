@@ -29,7 +29,7 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --local-driver --log-dir /tmp
+	$(TEST_BIN) --local-driver --log-dir /tmp --rust-log DEBUG
 
 smoke-test-tls:	build test-clean-up
 	$(TEST_BIN) --tls --local-driver --log-dir /tmp
