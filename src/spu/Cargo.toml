@@ -39,7 +39,7 @@ fluvio-storage = { path = "../storage" }
 fluvio-controlplane = { path = "../controlplane" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata" }
 fluvio-spu-schema = { path = "../spu-schema" }
-kf-protocol = { version = "2.0.0" }
+kf-protocol = { version = "3.0.0" }
 kf-socket = { path = "../kf-socket" }
 kf-service = { path = "../kf-service" }
 flv-util = { version = "0.4.0" }

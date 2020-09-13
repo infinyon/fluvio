@@ -17,4 +17,4 @@ tracing = "0.1.19"
 # Fluvio dependencies
 fluvio-types = { path ="../types" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata"}
-kf-protocol = { version = "2.0.0" }
+kf-protocol = { version = "3.0.0" }

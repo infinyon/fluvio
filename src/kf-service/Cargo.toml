@@ -21,7 +21,7 @@ tokio = { version = "0.2.21", features = ["macros"] }
 # Fluvio dependencies
 fluvio-types = { version = "0.1.0", path = "../types" }
 kf-socket = { version = "2.0.0", path = "../kf-socket" }
-kf-protocol = { version = "2.0.0" }
+kf-protocol = { version = "3.0.0" }
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
 
 [dev-dependencies]
