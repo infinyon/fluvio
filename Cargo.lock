@@ -1730,8 +1730,13 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol"
+<<<<<<< HEAD
 version = "4.0.0"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+version = "3.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "kf-protocol-api",
  "kf-protocol-core",
@@ -1744,8 +1749,13 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-api"
+<<<<<<< HEAD
 version = "3.0.0"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+version = "2.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "content_inspector",
  "crc32c",
@@ -1760,7 +1770,11 @@ dependencies = [
 [[package]]
 name = "kf-protocol-core"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1772,7 +1786,11 @@ dependencies = [
 [[package]]
 name = "kf-protocol-derive"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "log",
  "proc-macro2 1.0.21",
@@ -1782,8 +1800,13 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-fs"
+<<<<<<< HEAD
 version = "4.0.0"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+version = "3.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
@@ -1796,8 +1819,13 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-message"
+<<<<<<< HEAD
 version = "3.0.0"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+version = "2.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "content_inspector",
  "flv-util",
@@ -1811,8 +1839,13 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-transport"
+<<<<<<< HEAD
 version = "3.0.4"
 source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
+=======
+version = "2.0.3"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#770cd8f23549ba0deba9fe90dcb420020b2cd34e"
+>>>>>>> update
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
