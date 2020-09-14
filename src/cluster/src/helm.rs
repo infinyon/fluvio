@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 
 use serde::Deserialize;
 use flv_util::cmd::CommandExt;
-
+/// Client to manage helm operations
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct HelmClient {}
@@ -102,7 +102,7 @@ impl HelmClient {
     }
 
     /// Get all the available versions
-    pub fn get_versions(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
+    pub fn versions(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
         let output = Command::new("helm")
             .args(&["search", "repo"])
             .args(&["--versions", chart])
@@ -133,9 +133,18 @@ impl HelmClient {
 #[derive(Debug, Deserialize)]
 pub struct Chart {
     /// The chart name
-    pub name: String,
+    name: String,
     /// The chart version
-    pub version: String,
+    version: String,
+}
+
+impl Chart {
+    pub fn version(&self) -> String {
+        self.version.to_string()
+    }
+    pub fn name(&self) -> String {
+        self.name.to_string()
+    }
 }
 
 /// A representation of an installed chart.
