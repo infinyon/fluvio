@@ -6,4 +6,4 @@ ARG1=${1}
 ARG2=${2}
 ARG3=${3}
 
-RUST_LOG=kf=debug,sc=debug,flv=debug  "$RELATIVE_PATH"/fluvio-spu -i "$ARG1" -p 0.0.0.0:"$ARG2" -v 0.0.0.0:"$ARG3"
+RUST_LOG=debug  cargo run --bin  fluvio-spu -- -i "$ARG1" -p 0.0.0.0:"$ARG2" -v 0.0.0.0:"$ARG3"

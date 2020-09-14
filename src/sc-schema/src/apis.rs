@@ -8,6 +8,7 @@ use kf_protocol::derive::Encode;
 use kf_protocol::derive::Decode;
 
 /// API call from client to SPU
+#[fluvio_kf(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum AdminPublicApiKey {
