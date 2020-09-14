@@ -17,11 +17,9 @@ impl Default for TestKafkaApiEnum {
     }
 }
 
-
 #[test]
 fn test_conversion() {
-    let key: u16 =  1000;
+    let key: u16 = 1000;
     let key_enum: TestKafkaApiEnum = key.try_into().expect("conversion");
-    assert_eq!(key_enum,TestKafkaApiEnum::Echo);
-
+    assert_eq!(key_enum, TestKafkaApiEnum::Echo);
 }

@@ -14,7 +14,6 @@ use kf_protocol::api::RequestHeader;
 
 use super::fetch_stream_request::FetchStreamRequest;
 
-
 #[fluvio_kf(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
