@@ -1731,7 +1731,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol"
 version = "3.0.0"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "kf-protocol-api",
  "kf-protocol-core",
@@ -1745,7 +1745,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-api"
 version = "2.0.0"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "content_inspector",
  "crc32c",
@@ -1760,7 +1760,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-core"
 version = "0.1.2"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1772,7 +1772,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-derive"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "log",
  "proc-macro2 1.0.21",
@@ -1783,7 +1783,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-fs"
 version = "3.0.0"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
@@ -1797,7 +1797,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-message"
 version = "2.0.0"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "content_inspector",
  "flv-util",
@@ -1812,7 +1812,7 @@ dependencies = [
 [[package]]
 name = "kf-protocol-transport"
 version = "2.0.4"
-source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#8cf8b4bd459c4c5b57730f5f62970c6f6270f5e6"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=enum_change#bd7879cba044621d92c3e1f3888935520fa2146c"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
@@ -1842,7 +1842,7 @@ dependencies = [
 
 [[package]]
 name = "kf-socket"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1995,11 +1995,12 @@ dependencies = [
 
 [[package]]
 name = "miniz_oxide"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d7559a8a40d0f97e1edea3220f698f78b1c5ab67532e49f68fde3910323b722"
+checksum = "c60c0dfe32c10b43a144bad8fc83538c52f58302c92300ea7ec7bf7b38d5a7b9"
 dependencies = [
  "adler",
+ "autocfg",
 ]
 
 [[package]]
