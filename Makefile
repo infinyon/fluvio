@@ -1,7 +1,6 @@
 VERSION := $(shell cat VERSION)
 DOCKER_VERSION = $(VERSION)
-TOOLCHAIN = "./rust-toolchain"
-RUSTV = $(shell cat ${TOOLCHAIN})
+RUSTV = stable
 RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
 CARGO_BUILD=build --release
 BIN_NAME=release
@@ -29,8 +28,7 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --local-driver --log-dir /tmp --rust-log TRACE
-
+	$(TEST_BIN) --local-driver --log-dir /tmp
 smoke-test-tls:	build test-clean-up
 	$(TEST_BIN) --tls --local-driver --log-dir /tmp
 
@@ -61,7 +59,7 @@ check_version:
 install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
-check-clippy:
+check-clippy:	install-clippy
 	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
 
 

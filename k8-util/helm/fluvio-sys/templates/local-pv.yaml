@@ -3,6 +3,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: fluvio-spu-pv
+  labels:
+    storageclass: fluvio-spu
 spec:
   capacity:
     storage: {{ .Values.localPVStorageSize }}

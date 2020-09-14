@@ -39,33 +39,40 @@ jobs:
 #        run: cargo cvm -x
 
   check_clippy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
     steps:
       - uses: actions/checkout@v1
       - name: Cancel Workflow Action
         uses: styfle/cancel-workflow-action@0.4.1
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions-rs/toolchain@v1
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
         with:
-          components: clippy
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: check clippy
-        run: make check-clippy
+        run: make check-clippy RUSTV=${{ matrix.rust }}
   check_fmt:
     name: check cargo fmt
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-
+        rust: [stable]
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
-          components: rustfmt
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: check fmt
-        run: make check-fmt
+        run: make check-fmt RUSTV=${{ matrix.rust }}
 
   unit_test:
     name: Unit test
@@ -73,15 +80,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
+        rust: [stable]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Show rustup
         run: rustup show
       - name: Run unit tests
-        run: cargo test
+        run:  make run-all-unit-test
 
   
 
@@ -91,12 +102,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest,macOS-latest]
-        rust: [nightly]
+        rust: [stable]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
@@ -134,12 +148,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [nightly]
+        rust: [stable]
     
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Install Minikube on Linux
         uses: manusa/actions-setup-minikube@v2.0.0
         with:
