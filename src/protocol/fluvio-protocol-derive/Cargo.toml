@@ -1,0 +1,22 @@
+[package]
+name = "fluvio-protocol-derive"
+version = "0.1.0"
+edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description =  "Procedure macro to encode/decode fluvio protocol"
+repository = "https://github.com/infinyon/fluvio-protocol"
+license = "Apache-2.0"
+categories = ["encoding"]
+
+[lib]
+proc-macro = true
+doctest = false
+
+[dependencies]
+proc-macro2 = "1.0.0"
+quote = "1.0.0"
+log = "0.4.8"
+
+[dependencies.syn]
+version = "1.0.0"
+features = ["full"]

@@ -1,0 +1,21 @@
+[package]
+name = "fluvio-protocol-api"
+edition = "2018"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "fluvio protocol API definitions"
+repository = "https://github.com/infinyon/fluvio-protocol"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
+
+
+[dependencies]
+log = "0.4.8"
+crc32c = { version = "0.5" }
+content_inspector = "0.2.4"
+serde = { version ="1.0.103", features = ['derive'] }
+paste = "0.1.5"
+fluvio-protocol = { version = "0.1.0", path = "../fluvio-protocol-core", package = "fluvio-protocol-core" }
+fluvio-protocol-derive = { version = "0.1.0", path = "../fluvio-protocol-derive" }
+flv-util = { version = "0.4.0"}
+
