@@ -35,4 +35,4 @@ fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features 
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
 flv-future-aio = { version = "2.4.1", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
-kf-protocol = { version = "3.0.0" }
+kf-protocol = { version = "4.0.0" }

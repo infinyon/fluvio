@@ -154,7 +154,17 @@ impl PartitionStatus {
         }
         // delete any old status for leader in the follower
         let spu = self.leader.spu;
-        self.replicas.drain_filter(move |s| s.spu == spu);
+        self.replicas = self
+            .replicas
+            .iter()
+            .filter_map(move |s| {
+                if s.spu != spu {
+                    Some(s.to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect();
         self.update_lrs();
     }
 

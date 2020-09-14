@@ -1,5 +1,3 @@
-#![feature(generators)]
-
 mod error;
 mod pooling;
 mod socket;

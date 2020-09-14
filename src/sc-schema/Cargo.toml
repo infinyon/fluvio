@@ -22,5 +22,5 @@ serde = { version = "1.0.0", features = ['derive'], optional = true }
 # Fluvio dependencies
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-controlplane-metadata = { version = "0.1.0", default-features = false, path = "../controlplane-metadata" }
-kf-protocol = { version = "3.0.0" }
+kf-protocol = { version = "4.0.0" }
 flv-util = { version = "0.4.0" }
