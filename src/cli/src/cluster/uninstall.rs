@@ -1,7 +1,7 @@
 use crate::Terminal;
 
 use crate::CliError;
-
+use k8_client::{K8Client, K8Config};
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -70,7 +70,7 @@ where
     Ok("".to_owned())
 }
 
-fn remove_objects(object_type: &str, namespace: &str) {
+fn remove_objects(object_type: &str, namespace: &str, selector: Option<&str>) {
     println!("deleting all {} in: {}", object_type, namespace);
     Command::new("kubectl")
         .arg("delete")
