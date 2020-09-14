@@ -1,0 +1,26 @@
+[package]
+name = "fluvio-protocol-fs"
+version = "0.1.0"
+edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "zero copy file semantics for fluvio protocol"
+repository = "https://github.com/infinyon/fluvio-protocol"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
+
+[[bin]]
+name = "file_send"
+path = "src/bin/file_send.rs"
+doc = false
+required-features = ["cli"]
+
+
+
+[dependencies]
+log = "0.4.8"
+bytes = "0.5.3"
+futures = { version = "0.3.4" }
+flv-future-aio = { version = "2.1.0" }
+fluvio-protocol-core = { version = "0.1.0", path = "../fluvio-protocol-core"}
+fluvio-protocol-kf = { version = "0.1.0", path = "../fluvio-protocol-kf"}
+fluvio-protocol-api = { version = "0.1.0", path = "../fluvio-protocol-api"}

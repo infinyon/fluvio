@@ -1,0 +1,26 @@
+[package]
+name = "fluvio-protocol"
+edition = "2018"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio streaming protocol"
+repository = "https://github.com/infinyon/fluvio-protocol"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
+
+[features]
+derive = ["fluvio-protocol-derive"]
+api = ["fluvio-protocol-api"]
+kf = ["fluvio-protocol-kf"]
+codec = ["fluvio-protocol-codec"]
+
+[dependencies]
+fluvio-protocol-core = { version = "0.1.0", path = "fluvio-protocol-core" }
+fluvio-protocol-derive = { version = "0.1.0", path = "fluvio-protocol-derive", optional = true}
+fluvio-protocol-api = { version = "0.1.0", path = "fluvio-protocol-api", optional = true}
+fluvio-protocol-kf = { version = "0.1.0", path = "fluvio-protocol-kf", optional = true}
+fluvio-protocol-codec = { version = "0.1.0", path = "fluvio-protocol-codec", optional = true}
+fluvio-protocol-fs = { version = "0.1.0", path = "fluvio-protocol-fs"}
+
+[dev-dependencies]
+flv-util = { version = "0.4.0"}

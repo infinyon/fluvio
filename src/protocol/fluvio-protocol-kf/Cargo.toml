@@ -1,0 +1,24 @@
+[package]
+name = "fluvio-protocol-kf"
+edition = "2018"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio protocol implementation of Kafka messages"
+repository = "https://github.com/infinyon/fluvio-protocol"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
+
+
+[dependencies]
+log = "0.4.8"
+content_inspector = "0.2.4"
+serde = { version ="1.0.103", features = ['derive'] }
+paste = "0.1.5"
+fluvio-protocol-derive = { version = "0.1.0", path = "../fluvio-protocol-derive" }
+fluivo-protocol = { version = "0.1.0", path = "../fluvio-protocol-core", package = "fluvio-protocol-core" }
+fluvio-protocol-api = { version = "0.1.0", path = "../fluvio-protocol-api"}
+flv-util = { version = "0.4.0" }
+
+#[build-dependencies]
+#kf-protocol-build = { path = "../kf-protocol-build"}
+
