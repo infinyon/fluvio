@@ -87,7 +87,7 @@ impl KfRequestMessage for TestApiRequest {
         Self::ApiKey: Sized,
         T: Buf,
     {
-        tracing::debug!("decoding test api request: {:#?}",header);
+        tracing::debug!("decoding test api request: {:#?}", header);
 
         match header.api_key().try_into()? {
             TestKafkaApiEnum::Echo => api_decode!(TestApiRequest, EchoRequest, src, header),
