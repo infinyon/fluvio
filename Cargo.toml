@@ -5,6 +5,7 @@ members = [
     "src/cluster",
     "src/controlplane",
     "src/controlplane-metadata",
+    "src/dataplane-protocol",
     "src/kf-service",
     "src/kf-socket",
     "src/sc",

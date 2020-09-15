@@ -1,0 +1,27 @@
+[package]
+name = "dataplane-protocol"
+version = "0.1.0"
+edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "data plane protocol"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+categories = ["encoding","api-bindings"]
+
+[[bin]]
+name = "file_send"
+path = "src/bin/file_send.rs"
+doc = false
+required-features = ["cli"]
+
+
+
+[dependencies]
+log = "0.4.8"
+bytes = "0.5.3"
+futures = { version = "0.3.4" }
+content_inspector = "0.2.4"
+crc32c = { version = "0.5" }
+flv-future-aio = { version = "2.1.0" }
+fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only', features=["derive","api"]}
+flv-util = { version = "0.4.0"}
