@@ -1,4 +1,7 @@
 mod codec;
 
-pub use self::codec::KfCodec;
+pub use self::codec::FluvioCodec;
 
+mod core {
+    pub use fluvio_protocol::*;
+}

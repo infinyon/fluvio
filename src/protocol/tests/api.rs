@@ -1,15 +1,15 @@
 use std::io::Cursor;
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::derive::KfDefault;
-use kf_protocol::derive::RequestApi;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::derive::Encode;
+use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::derive::RequestApi;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
 
-#[derive(Encode, Decode, KfDefault, RequestApi, Debug)]
-#[fluvio_kf(
+#[derive(Encode, Decode, FluvioDefault, RequestApi, Debug)]
+#[fluvio(
     api_min_version = 5,
     api_max_version = 6,
     api_key = 10,
@@ -18,27 +18,27 @@ use kf_protocol::Encoder;
 pub struct TestRequest {
     pub value: i8,
 
-    #[fluvio_kf(min_version = 1, max_version = 1)]
+    #[fluvio(min_version = 1, max_version = 1)]
     pub value2: i8,
 
-    #[fluvio_kf(min_version = 1, default = "-1")]
+    #[fluvio(min_version = 1, default = "-1")]
     pub value3: i8,
 }
 
-#[derive(Encode, Decode, KfDefault, Debug)]
+#[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct TestResponse {
     pub value: i8,
 
-    #[fluvio_kf(min_version = 1, max_version = 1)]
+    #[fluvio(min_version = 1, max_version = 1)]
     pub value2: i8,
 
-    #[fluvio_kf(min_version = 1)]
+    #[fluvio(min_version = 1)]
     pub value3: i8,
 }
 
-#[derive(Encode, Decode, KfDefault, Debug)]
+#[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct KfMetadataResponse {
-    #[fluvio_kf(min_version = 2)]
+    #[fluvio(min_version = 2)]
     pub cluster_id: Option<String>,
 }
 

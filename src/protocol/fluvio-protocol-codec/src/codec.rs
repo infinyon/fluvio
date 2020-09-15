@@ -8,21 +8,21 @@ use bytes::BytesMut;
 use tokio_util::codec::Decoder;
 use tokio_util::codec::Encoder;
 
-use kf_protocol::Decoder as KDecoder;
+use crate::core::Decoder as FluvioDecoder;
 
 /// Implement Kafka codec as in https://kafka.apache.org/protocol#The_Messages_ListOffsets
 /// First 4 bytes are size of the message.  Then total buffer = 4 + message content
 ///
 #[derive(Debug, Default)]
-pub struct KfCodec {}
+pub struct FluvioCodec {}
 
-impl KfCodec {
+impl FluvioCodec {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl Decoder for KfCodec {
+impl Decoder for FluvioCodec {
     type Item = BytesMut;
     type Error = IoError;
 
@@ -36,10 +36,10 @@ impl Decoder for KfCodec {
             let mut src = Cursor::new(&*bytes);
             let mut packet_len: i32 = 0;
             packet_len.decode(&mut src, 0)?;
-            trace!("KCodec Decoder: received buffer: {}, message size: {}", len, packet_len);
+            trace!("Decoder: received buffer: {}, message size: {}", len, packet_len);
             if (packet_len + 4) as usize <= bytes.len() {
                 trace!(
-                    "KCodec Decoder: all packets are in buffer len: {}, excess {}",
+                    "Decoder: all packets are in buffer len: {}, excess {}",
                     packet_len + 4,
                     bytes.len() - (packet_len + 4) as usize
                 );
@@ -48,14 +48,14 @@ impl Decoder for KfCodec {
                 Ok(Some(message))
             } else {
                 trace!(
-                    "KCodec Decoder buffer len: {} is less than packet+4: {}, waiting",
+                    "Decoder buffer len: {} is less than packet+4: {}, waiting",
                     len,
                     packet_len + 4
                 );
                 Ok(None)
             }
         } else {
-            trace!("KCodec Decoder received raw bytes len: {} less than 4 not enough for size", len);
+            trace!("Decoder received raw bytes len: {} less than 4 not enough for size", len);
             Ok(None)
         }
     }
@@ -63,12 +63,12 @@ impl Decoder for KfCodec {
 
 /// Implement encoder for Kafka Codec
 /// This is straight pass thru, actual encoding is done file slice
-impl Encoder<Bytes> for KfCodec {
+impl Encoder<Bytes> for FluvioCodec {
 
     type Error = IoError;
 
     fn encode(&mut self, data: Bytes, buf: &mut BytesMut) -> Result<(), IoError> {
-        trace!("KCodec Encoder: Encoding raw data with {} bytes", data.len());
+        trace!("Encoder: Encoding raw data with {} bytes", data.len());
         buf.put(data);
         Ok(())
     }
@@ -92,11 +92,11 @@ mod test {
     use flv_future_aio::net::TcpStream;
     use flv_future_aio::timer::sleep;
     use flv_future_aio::test_async;
-    use kf_protocol::Decoder as KDecoder;
-    use kf_protocol::Encoder as KEncoder;
+    use fluvio_protocol::Decoder as FluvioDecoder;
+    use fluvio_protocol::Encoder as FluvioEncoder;
     use log::debug;
 
-    use super::KfCodec;
+    use super::FluvioCodec;
 
     #[test_async]
     async fn test_async_tcp() -> Result<(), Error> {
@@ -113,7 +113,7 @@ mod test {
                 debug!("server: got connection from client");
                 let tcp_stream = stream.expect("stream");
 
-                let framed = Framed::new(tcp_stream.compat(), KfCodec {});
+                let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
                 let (mut sink, _) = framed.split();
 
                 let data: Vec<u8> = vec![0x1, 0x02, 0x03, 0x04, 0x5];
@@ -178,7 +178,7 @@ mod test {
             debug!("client: trying to connect");
             let tcp_stream = TcpStream::connect(&addr).await.expect("connect");
             debug!("client: got connection. waiting");
-            let framed = Framed::new(tcp_stream.compat(), KfCodec {});
+            let framed = Framed::new(tcp_stream.compat(), FluvioCodec{});
             let (_, mut stream) = framed.split();
             for _ in 0..3u16 {
                 if let Some(value) = stream.next().await {

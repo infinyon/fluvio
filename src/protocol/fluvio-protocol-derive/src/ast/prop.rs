@@ -15,7 +15,7 @@ pub(crate) struct Prop {
     /// Note: `None` is encoded as "-1" so it's i16.
     pub max_version: Option<i16>,
     /// Sets this value to the field when it isn't present in the buffer.
-    /// Example: `#[fluvio_kf(default = "-1")]`
+    /// Example: `#[fluvio(default = "-1")]`
     pub default_value: Option<String>,
 }
 
@@ -32,7 +32,7 @@ impl Prop {
         for attribute in &field.attrs {
             if attribute.path.is_ident("varint") {
                 prop.varint = true;
-            } else if attribute.path.is_ident("fluvio_kf") {
+            } else if attribute.path.is_ident("fluvio") {
                 if let Ok(Meta::List(list)) = attribute.parse_meta() {
                     for kf_attr in list.nested {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
@@ -51,7 +51,7 @@ impl Prop {
                                 }
                             } else {
                                 log::warn!(
-                                    "#[fluvio_kf({})] does nothing on {}.",
+                                    "#[fluvio({})] does nothing on {}.",
                                     name_value.to_token_stream().to_string(),
                                     prop.field_name
                                 )

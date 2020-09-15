@@ -9,11 +9,11 @@ use std::path::Path;
 use log::debug;
 use log::trace;
 
-use kf_protocol::bytes::Buf;
-use kf_protocol::bytes::BufMut;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
-use kf_protocol::Version;
+use crate::core::bytes::Buf;
+use crate::core::bytes::BufMut;
+use crate::core::Decoder;
+use crate::core::Encoder;
+use crate::core::Version;
 
 use crate::RequestHeader;
 
@@ -26,7 +26,7 @@ pub struct ResponseMessage<P> {
 
 impl<P> ResponseMessage<P> {
 
-
+    #[allow(unused)]
     pub fn from_header(header: &RequestHeader,response: P) -> Self  {
         Self::new(header.correlation_id(),response)
     }
@@ -70,7 +70,7 @@ impl<P> ResponseMessage<P>
         let mut f = File::open(file_name)?;
         let mut buffer: [u8; 1000] = [0; 1000];
 
-        f.read(&mut buffer)?;
+        f.read_exact(&mut buffer)?;
         let data = buffer.to_vec();
 
         let mut src = Cursor::new(&data);

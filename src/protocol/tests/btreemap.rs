@@ -1,10 +1,11 @@
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::io::Error;
+
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::derive::Encode;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
 
 #[derive(Encode, Default, Decode, Debug)]
 pub struct MapHolder {

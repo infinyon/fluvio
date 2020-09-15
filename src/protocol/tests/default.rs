@@ -1,12 +1,12 @@
-use kf_protocol::derive::KfDefault;
+use fluvio_protocol::derive::FluvioDefault;
 
-#[derive(KfDefault, Debug)]
+#[derive(FluvioDefault, Debug)]
 struct TestRecord {
     value: i8,
     value2: i8,
-    #[fluvio_kf(default = "4")]
+    #[fluvio(default = "4")]
     value3: i8,
-    #[fluvio_kf(default = "-1")]
+    #[fluvio(default = "-1")]
     value4: i16,
 }
 

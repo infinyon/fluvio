@@ -1,8 +1,8 @@
 use std::io::Cursor;
 
-use kf_protocol::derive::Decode;
-use kf_protocol::Decoder;
-use kf_protocol::DecoderVarInt;
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::DecoderVarInt;
 
 #[derive(Decode, Default, Debug)]
 pub struct SimpleRecord {

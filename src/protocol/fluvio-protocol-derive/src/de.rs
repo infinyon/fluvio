@@ -16,8 +16,8 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             let ident = &kf_struct.struct_ident;
             let (impl_generics, ty_generics, where_clause) = kf_struct.generics.split_for_impl();
             quote! {
-                impl #impl_generics kf_protocol::Decoder for #ident #ty_generics #where_clause {
-                    fn decode<T>(&mut self, src: &mut T,version: kf_protocol::Version) -> Result<(),std::io::Error> where T: kf_protocol::bytes::Buf {
+                impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
+                    fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
                         log::trace!("decoding struct: {}",stringify!(#ident));
                         #field_tokens
                         Ok(())
@@ -36,8 +36,8 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             let enum_tokens = generate_variant_tokens(&int_type);
             let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
             let res = quote! {
-                impl #impl_generics kf_protocol::Decoder for #ident #ty_generics #where_clause {
-                    fn decode<T>(&mut self, src: &mut T,version: kf_protocol::Version) -> Result<(),std::io::Error> where T: kf_protocol::bytes::Buf {
+                impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
+                    fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
                         #enum_tokens
                         Ok(())
                     }

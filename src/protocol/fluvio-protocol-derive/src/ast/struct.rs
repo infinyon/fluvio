@@ -1,13 +1,13 @@
 use crate::ast::prop::Prop;
 use syn::{Fields, Generics, Ident, ItemStruct};
 
-pub(crate) struct KfStruct {
+pub(crate) struct FluvioStruct {
     pub struct_ident: Ident,
     pub props: Vec<Prop>,
     pub generics: Generics,
 }
 
-impl KfStruct {
+impl FluvioStruct {
     pub fn from_ast(item: &ItemStruct) -> syn::Result<Self> {
         let struct_ident = item.ident.clone();
         let props: Vec<Prop> = if let Fields::Named(fields) = &item.fields {
@@ -21,7 +21,7 @@ impl KfStruct {
         };
         let generics = item.generics.clone();
 
-        Ok(KfStruct {
+        Ok(FluvioStruct {
             struct_ident,
             props,
             generics,

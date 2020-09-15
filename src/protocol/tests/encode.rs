@@ -1,6 +1,6 @@
-use kf_protocol::derive::Encode;
-use kf_protocol::Encoder;
-use kf_protocol::EncoderVarInt;
+use fluvio_protocol::derive::Encode;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::EncoderVarInt;
 
 #[derive(Encode, Default, Debug)]
 pub struct SimpleRecord {

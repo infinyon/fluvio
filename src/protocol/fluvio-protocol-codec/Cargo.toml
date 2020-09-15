@@ -3,13 +3,14 @@ name = "fluvio-protocol-codec"
 edition = "2018"
 version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-description = "Transport frame encoder and decoder for fluvio protocol"
+description = "Frame encoder and decoder for fluvio protocol"
 repository = "https://github.com/infinyon/fluvio-protocol"
 license = "Apache-2.0"
 categories = ["encoding","api-bindings"]
 
 [dependencies]
 log = "0.4.8"
+bytes = "0.5.6"
 tokio-util = { version = "0.3.1", features = ["codec","compat"]}
 flv-future-aio = { version = "2.1.0" }
 fluvio-protocol = { version = "0.1.0", path = "../fluvio-protocol-core", package = "fluvio-protocol-core" }

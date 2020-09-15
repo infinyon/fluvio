@@ -15,14 +15,14 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             let encoded_field_tokens = parse_struct_props_encoding(&kf_struct.props, ident);
             let size_field_tokens = parse_struct_props_size(&kf_struct.props, &ident);
             quote! {
-                impl #impl_generics kf_protocol::Encoder for #ident #ty_generics #where_clause {
-                    fn encode<T>(&self, dest: &mut T, version: kf_protocol::Version) -> Result<(),std::io::Error> where T: kf_protocol::bytes::BufMut {
+                impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
+                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
                         log::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
                         #encoded_field_tokens
                         Ok(())
                     }
 
-                    fn write_size(&self, version: kf_protocol::Version) -> usize {
+                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
                         log::trace!("write size for struct: {} version {}",stringify!(#ident),version);
                         let mut len: usize = 0;
                         #size_field_tokens
@@ -37,14 +37,14 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             let encoded_variant_tokens = parse_enum_variants_encoding(&kf_enum.props, ident, attrs);
             let size_variant_tokens = parse_enum_variants_size(&kf_enum.props, ident, attrs);
             quote! {
-                impl #impl_generics kf_protocol::Encoder for #ident #ty_generics #where_clause {
-                    fn encode<T>(&self, dest: &mut T, version: kf_protocol::Version) -> Result<(),std::io::Error> where T: kf_protocol::bytes::BufMut {
+                impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
+                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
                         log::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
                         #encoded_variant_tokens
                         Ok(())
                     }
 
-                    fn write_size(&self, version: kf_protocol::Version) -> usize {
+                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
                         log::trace!("write size for struct: {} version {}",stringify!(#ident),version);
                         #size_variant_tokens
                     }
@@ -93,13 +93,13 @@ fn parse_struct_props_size(props: &[Prop], struct_ident: &Ident) -> TokenStream 
             quote! {
                 let write_size = self.#fname.var_write_size();
                 log::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);
-                len = len + write_size;
+                len += write_size;
             }
         } else {
             let base = quote! {
                 let write_size = self.#fname.write_size(version);
                 log::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);
-                len = len + write_size;
+                len += write_size;
             };
             prop.version_check_token_stream(base)
         }
@@ -125,7 +125,7 @@ fn parse_enum_variants_encoding(
         let id = &format_ident!("{}", prop.variant_name);
         // #[cfg(feature = "discriminant_panic")] {
         //     if prop.discriminant.is_some() && prop.tag.is_none() && !attrs.encode_discriminant {
-        //         compiler_error!("feature[discriminant_panic]: either #[fluvio_kf(encode_discriminant)] or #[fluvio_kf(tag = ..)] is required on enum: {}", stringify!(#enum_ident));
+        //         compiler_error!("feature[discriminant_panic]: either #[fluvio(encode_discriminant)] or #[fluvio(tag = ..)] is required on enum: {}", stringify!(#enum_ident));
         //     }
         // }
         let field_idx = if let Some(tag) = &prop.tag {

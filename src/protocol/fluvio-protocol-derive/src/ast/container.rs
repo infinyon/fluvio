@@ -20,7 +20,7 @@ impl ContainerAttributes {
         for attribute in attributes {
             if attribute.path.is_ident("varint") {
                 cont_attr.varint = true;
-            } else if attribute.path.is_ident("fluvio_kf") {
+            } else if attribute.path.is_ident("fluvio") {
                 if let Ok(Meta::List(list)) = attribute.parse_meta() {
                     for kf_attr in list.nested {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
@@ -43,7 +43,7 @@ impl ContainerAttributes {
                                 }
                             } else {
                                 log::warn!(
-                                    "#[fluvio_kf({})] does nothing on the container.",
+                                    "#[fluvio({})] does nothing on the container.",
                                     name_value.to_token_stream().to_string()
                                 )
                             }
@@ -54,7 +54,7 @@ impl ContainerAttributes {
                                 cont_attr.encode_discriminant = true;
                             } else {
                                 log::warn!(
-                                    "#[fluvio_kf({})] does nothing on the container.",
+                                    "#[fluvio({})] does nothing on the container.",
                                     path.to_token_stream().to_string()
                                 )
                             }
