@@ -41,7 +41,7 @@ impl HelmClient {
     /// Installs the given chart under the given name.
     ///
     /// The `opts` are passed to helm as `--set` arguments.
-    pub fn install(
+    pub(crate) fn install(
         &self,
         namespace: &str,
         name: &str,
@@ -69,7 +69,7 @@ impl HelmClient {
     }
 
     /// Adds a new helm repo with the given chart name and chart location
-    pub fn repo_add(&self, chart: &str, location: &str) -> Result<(), IoError> {
+    pub(crate) fn repo_add(&self, chart: &str, location: &str) -> Result<(), IoError> {
         Command::new("helm")
             .args(&["repo", "add", chart, location])
             .stdout(Stdio::inherit())
@@ -79,13 +79,13 @@ impl HelmClient {
     }
 
     /// Updates the local helm repository
-    pub fn repo_update(&self) -> Result<(), IoError> {
+    pub(crate) fn repo_update(&self) -> Result<(), IoError> {
         Command::new("helm").args(&["repo", "update"]).inherit();
         Ok(())
     }
 
     /// Searches the repo for the named helm chart
-    pub fn search_repo(&self, chart: &str, version: &str) -> Result<Vec<Chart>, IoError> {
+    pub(crate) fn search_repo(&self, chart: &str, version: &str) -> Result<Vec<Chart>, IoError> {
         let output = Command::new("helm")
             .args(&["search", "repo", chart])
             .args(&["--version", version])
@@ -106,7 +106,7 @@ impl HelmClient {
         let output = Command::new("helm")
             .args(&["search", "repo"])
             .args(&["--versions", chart])
-            .args(&["--output", "json"])
+            .args(&["--output", "json", "--devel"])
             .print()
             .output()?;
 
@@ -119,7 +119,7 @@ impl HelmClient {
     }
 
     /// Checks that a given version of a given chart exists in the repo.
-    pub fn chart_version_exists(&self, name: &str, version: &str) -> Result<bool, IoError> {
+    pub(crate) fn chart_version_exists(&self, name: &str, version: &str) -> Result<bool, IoError> {
         let versions = self.search_repo(name, version)?;
         let count = versions
             .iter()
@@ -139,11 +139,11 @@ pub struct Chart {
 }
 
 impl Chart {
-    pub fn version(&self) -> String {
-        self.version.to_string()
+    pub fn version(&self) -> &str {
+        &self.version
     }
-    pub fn name(&self) -> String {
-        self.name.to_string()
+    pub fn name(&self) -> &str {
+        &self.version
     }
 }
 
