@@ -2,7 +2,7 @@ use crate::CliError;
 use super::*;
 use fluvio_cluster::HelmClient;
 
-const DEFAULT_CHART_NAME: &str = "fluvio/fluvio-core";
+const DEFAULT_CHART_NAME: &str = "fluvio/fluvio-app";
 
 #[derive(Debug, StructOpt)]
 pub enum ReleasesCommand {
