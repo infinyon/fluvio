@@ -49,8 +49,7 @@ where
     remove_objects("spugroups", ns, None);
     remove_objects("spus", ns, None);
     remove_objects("topics", ns, None);
-    remove_objects("persistentvolumeclaims", ns, Some("fluvio-spu"));
-    remove_objects("persistentvolumes", ns, Some("fluvio-spu"));
+    remove_objects("persistentvolumeclaims", ns, Some("app=spu"));
 
     // delete secrets
     Command::new("kubectl")
