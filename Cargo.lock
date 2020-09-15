@@ -988,9 +988,10 @@ dependencies = [
 name = "fluvio-controlplane"
 version = "0.1.0"
 dependencies = [
+ "dataplane-protocol",
  "fluvio-controlplane-metadata",
+ "fluvio-protocol",
  "fluvio-types",
- "kf-protocol",
  "log",
  "tracing",
 ]

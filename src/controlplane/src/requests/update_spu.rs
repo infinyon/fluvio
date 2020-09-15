@@ -1,8 +1,8 @@
 #![allow(clippy::assign_op_pattern)]
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::Decode;
+use dataplane_protocol::derive::Encode;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::message::SpuMsg;
 

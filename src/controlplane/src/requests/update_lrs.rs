@@ -2,13 +2,13 @@
 
 use std::fmt;
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-
-use crate::InternalScKey;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::Decode;
+use dataplane_protocol::derive::Encode;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::ReplicaStatus;
+
+use crate::InternalScKey;
 
 /// Live Replica Status
 /// First lrs is leader by convention but should not be relied upon
