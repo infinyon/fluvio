@@ -53,7 +53,7 @@ fn generate_encoder(data: &DataStruct, name: &Ident) -> TokenStream {
             let definition = quote! {
 
                 #[derive(Encode,Decode,RequestApi,Debug)]
-                #[fluvio_kf(default)]
+                #[fluvio(default)]
                 pub struct #name {
                     #(#fields_code)*
                 }
@@ -104,7 +104,7 @@ fn generate_encoder(data: &DataStruct, name: &Ident) -> TokenStream {
 
 fn generate_request_trait_impl(name: &Ident, attrs: &[Attribute]) -> TokenStream {
     // check if we have api version
-    let version_meta = if let Some(version) = find_attr(attrs, "fluvio_kf") {
+    let version_meta = if let Some(version) = find_attr(attrs, "fluvio") {
         version
     } else {
         return quote! {};

@@ -4,13 +4,13 @@ use std::io::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use kf_protocol::bytes::Buf;
-use kf_protocol::bytes::BufMut;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
-use kf_protocol::Version;
+use fluvio_protocol::bytes::Buf;
+use fluvio_protocol::bytes::BufMut;
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::derive::Encode;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::Version;
 
 // manual encode
 pub enum Mix {
@@ -139,9 +139,9 @@ fn test_enum_decode() {
 #[derive(Encode, Decode, PartialEq, Debug)]
 #[repr(u8)]
 pub enum EnumExprTest {
-    #[fluvio_kf(tag = 5)]
+    #[fluvio(tag = 5)]
     D = 5,
-    #[fluvio_kf(tag = 10)]
+    #[fluvio(tag = 10)]
     E = 10,
 }
 
@@ -176,9 +176,9 @@ fn test_enum_expr_decode() {
 #[derive(Encode, Decode, PartialEq, Debug)]
 #[repr(u16)]
 pub enum WideEnum {
-    #[fluvio_kf(tag = 5)]
+    #[fluvio(tag = 5)]
     D = 5,
-    #[fluvio_kf(tag = 10)]
+    #[fluvio(tag = 10)]
     E = 10,
 }
 
@@ -207,11 +207,11 @@ fn test_try_decode() {
 
 #[derive(Encode, Decode, PartialEq, Debug)]
 pub enum GlColor {
-    #[fluvio_kf(tag = 1)]
+    #[fluvio(tag = 1)]
     GlTextureRedType = 0x8C10,
-    #[fluvio_kf(tag = 0)]
+    #[fluvio(tag = 0)]
     GlTextureGreenType = 0x8C11,
-    #[fluvio_kf(tag = 2)]
+    #[fluvio(tag = 2)]
     GlTextureBlueType = 0x8C12,
 }
 
@@ -236,7 +236,7 @@ fn test_gl_colors() {
     assert_eq!(dest[1], 2);
 }
 
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug)]
 enum EvenOdd {
   Even = 2,
@@ -264,7 +264,7 @@ fn test_encode_discriminant() {
 }
 
 
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum TestWideEnum {
@@ -289,7 +289,7 @@ fn test_simple_conversion() {
 
 
 
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[repr(i16)]
 #[derive(PartialEq, Debug,Encode, Decode)]
 pub enum TestErrorCode {

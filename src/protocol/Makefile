@@ -1,12 +1,17 @@
-test-all:	test-crates test-transport
+build:
+	cargo build --all-features 
+
+test-all:	test-crates test-codec
 
 test-crates:
 	cargo test
-	cargo test -p kf-protocol-api
-	cargo test -p kf-protocol-core
-	cargo test -p kf-protocol-derive
-	cargo test -p kf-protocol-fs
+	cargo test -p fluvio-protocol-api
+	cargo test -p fluvio-protocol-core
+	cargo test -p fluvio-protocol-derive
 
 
-test-transport:
-	cd kf-protocol-transport; cargo test
+# can't test codec as package due to dev-dependencies
+test-codec:
+	cd fluvio-protocol-codec;cargo test
+
+

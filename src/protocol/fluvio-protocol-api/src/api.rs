@@ -12,11 +12,13 @@ use std::convert::TryFrom;
 use log::trace;
 use log::debug;
 
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
-use kf_protocol::bytes::Buf;
-use kf_protocol_derive::Decode;
-use kf_protocol_derive::Encode;
+
+
+use crate::core::Decoder;
+use crate::core::Encoder;
+use crate::derive::Decode;
+use crate::derive::Encode;
+use crate::core::bytes::Buf;
 
 
 pub trait Request: Encoder + Decoder + Debug {
@@ -32,7 +34,7 @@ pub trait Request: Encoder + Decoder + Debug {
 }
 
 
-pub trait KfRequestMessage: Sized + Default 
+pub trait ApiMessage: Sized + Default 
 
 {
         type ApiKey: Decoder + Debug ;
@@ -59,7 +61,7 @@ pub trait KfRequestMessage: Sized + Default
                 let mut f = File::open(file_name)?;
                 let mut buffer: [u8; 1000] = [0; 1000];
 
-                f.read(&mut buffer)?;
+                f.read_exact(&mut buffer)?;
 
                 let data = buffer.to_vec();
                 let mut src = Cursor::new(&data);
@@ -81,7 +83,8 @@ pub trait KfRequestMessage: Sized + Default
 
 }
 
-pub trait KfApiKey: Sized + Encoder + Decoder + TryFrom<u16> {
+
+pub trait ApiKey: Sized + Encoder + Decoder + TryFrom<u16> {
     
 }
 

@@ -6,13 +6,13 @@ use syn::spanned::Spanned;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub(crate) struct KfEnum {
+pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
     pub props: Vec<EnumProp>,
     pub generics: Generics,
 }
 
-impl KfEnum {
+impl FluvioEnum {
     pub fn from_ast(item: ItemEnum) -> syn::Result<Self> {
         
         let enum_ident = item.ident;
@@ -24,7 +24,7 @@ impl KfEnum {
 
         let generics = item.generics;
 
-        Ok(KfEnum {
+        Ok(FluvioEnum {
             enum_ident,
             props,
             generics,
@@ -65,7 +65,7 @@ impl EnumProp {
         prop.variant_name = variant_ident.to_string();
         // Find all supported field level attributes in one go.
         for attribute in &variant.attrs {
-            if attribute.path.is_ident("fluvio_kf") {
+            if attribute.path.is_ident("fluvio") {
                 if let Ok(Meta::List(list)) = attribute.parse_meta() {
                     for kf_attr in list.nested {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {

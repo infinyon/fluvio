@@ -12,6 +12,3 @@ categories = ["encoding"]
 [dependencies]
 bytes = "0.5.6"
 log = "0.4.8"
-#num-traits = "0.2.6"
-#num-derive = "0.2.4"
-#serde = { version ="1.0.103", features = ['derive'] }

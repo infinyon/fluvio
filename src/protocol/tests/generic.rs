@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 use std::io::Cursor;
 
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::derive::Encode;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct GenericRecord<R>

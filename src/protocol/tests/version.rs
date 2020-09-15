@@ -1,16 +1,16 @@
 use std::io::Cursor;
 
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::derive::Encode;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
 
 #[derive(Encode, Decode, Default, Debug)]
 struct TestRecord {
     value: i8,
-    #[fluvio_kf(min_version = 1, max_version = 1)]
+    #[fluvio(min_version = 1, max_version = 1)]
     value2: i8,
-    #[fluvio_kf(min_version = 1)]
+    #[fluvio(min_version = 1)]
     value3: i8,
 }
 

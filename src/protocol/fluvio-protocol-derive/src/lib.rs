@@ -15,14 +15,14 @@ use self::ser::generate_encode_trait_impls;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
-/// Custom derive for decoding structure or enum from bytes using Kafka protocol format.
-/// This assumes all fields implement kafka decode traits.
+/// Custom derive for decoding structure or enum from bytes using fluvio protocol format.
+/// This assumes all fields implement fluvio decode traits.
 ///
 /// # Examples
 ///
 /// ```
-/// use kf_protocol::Decoder;
-/// use kf_protocol::derive::Decode;
+/// use fluvio_protocol::Decoder;
+/// use fluvio_protocol::derive::Decode;
 ///
 /// #[derive(Decode)]
 /// pub struct SimpleRecord {
@@ -72,11 +72,11 @@ use syn::parse_macro_input;
 /// Container level applies to struct.
 /// For field attributes
 /// * `#[varint]` force decode using varint format.
-/// * `#fluvio_kf(min_version = <version>)]` decodes only if version is equal or greater than min_version
-/// * `#fluvio_kf(max_version = <version>)]`decodes only if version is less or equal than max_version
+/// * `#fluvio(min_version = <version>)]` decodes only if version is equal or greater than min_version
+/// * `#fluvio(max_version = <version>)]`decodes only if version is less or equal than max_version
 ///
-#[proc_macro_derive(Decode, attributes(varint, fluvio_kf))]
-pub fn kf_decode(tokens: TokenStream) -> TokenStream {
+#[proc_macro_derive(Decode, attributes(varint, fluvio))]
+pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_decode_trait_impls(&input);
 
@@ -89,8 +89,8 @@ pub fn kf_decode(tokens: TokenStream) -> TokenStream {
 /// # Examples
 ///
 /// ```
-/// use kf_protocol::Encoder;
-/// use kf_protocol::derive::Encode;
+/// use fluvio_protocol::Encoder;
+/// use fluvio_protocol::derive::Encode;
 ///
 /// #[derive(Encode)]
 /// pub struct SimpleRecord {
@@ -114,8 +114,8 @@ pub fn kf_decode(tokens: TokenStream) -> TokenStream {
 ///
 ///
 ///
-#[proc_macro_derive(Encode, attributes(varint, fluvio_kf))]
-pub fn kf_encode(tokens: TokenStream) -> TokenStream {
+#[proc_macro_derive(Encode, attributes(varint, fluvio))]
+pub fn fluvio_encode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_encode_trait_impls(&input);
 
@@ -123,7 +123,7 @@ pub fn kf_encode(tokens: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn kf_api(tokens: TokenStream) -> TokenStream {
+pub fn fluvio_api(tokens: TokenStream) -> TokenStream {
     let inputs = parse_macro_input![tokens as syn::DeriveInput];
 
     let expanded = parse_and_generate_api(&inputs);
@@ -131,17 +131,17 @@ pub fn kf_api(tokens: TokenStream) -> TokenStream {
 }
 
 /// Custom derive for implementing Request trait.
-/// This derives requires `fluvio_kf`
+/// This derives requires `fluvio`
 ///
 /// # Examples
 ///
 /// ```
-/// use kf_protocol::derive::Decode;
-/// use kf_protocol::derive::Encode;
-/// use kf_protocol::api::Request;
-/// use kf_protocol::derive::RequestApi;
+/// use fluvio_protocol::derive::Decode;
+/// use fluvio_protocol::derive::Encode;
+/// use fluvio_protocol::api::Request;
+/// use fluvio_protocol::derive::RequestApi;
 ///
-/// #[fluvio_kf(default,api_min_version = 5, api_max_version = 6, api_key = 10, response = "SimpleResponse")]
+/// #[fluvio(default,api_min_version = 5, api_max_version = 6, api_key = 10, response = "SimpleResponse")]
 /// #[derive(Request,Encode,Decode,Default)]
 /// pub struct SimpleRequest {
 ///     val: u8
@@ -149,22 +149,22 @@ pub fn kf_api(tokens: TokenStream) -> TokenStream {
 ///
 ///
 /// #[derive(Encode,Decode,Default)]
-/// #[fluvio_kf(default)]
+/// #[fluvio(default)]
 /// pub struct TestResponse {
 ///     pub value: i8,
 /// }
 ///
 /// ```
 ///
-/// RequestApi derives respects following attributes in `fluvio_kf`
+/// RequestApi derives respects following attributes in `fluvio`
 ///
 /// * `api_min_version`:  min version that API supports.  This is required
 /// * `api_max_version`:  max version that API supports.  This is optional.
 /// * `api_key`:  API number.  This is required
 /// * `response`:  Response struct.  This is required
 ///
-#[proc_macro_derive(RequestApi, attributes(varint, fluvio_kf))]
-pub fn kf_request(tokens: TokenStream) -> TokenStream {
+#[proc_macro_derive(RequestApi, attributes(varint, fluvio))]
+pub fn fluvio_request(tokens: TokenStream) -> TokenStream {
     let inputs = parse_macro_input![tokens as syn::DeriveInput];
 
     let expanded = generate_request_traits(&inputs);
@@ -177,10 +177,10 @@ pub fn kf_request(tokens: TokenStream) -> TokenStream {
 /// Example:
 ///
 /// ```
-/// #[derive(KfDefault)]
-/// #[fluvio_kf(default)]
+/// #[derive(FluvioDefault)]
+/// #[fluvio(default)]
 /// pub struct SimpleRecord {
-///     #[fluvio_kf(default = "-1" )]
+///     #[fluvio(default = "-1" )]
 ///     val: u8
 /// }
 ///
@@ -189,8 +189,8 @@ pub fn kf_request(tokens: TokenStream) -> TokenStream {
 /// ```
 ///
 /// `default` assignment can be any Rust expression.
-#[proc_macro_derive(KfDefault, attributes(fluvio_kf))]
-pub fn kf_default(tokens: TokenStream) -> TokenStream {
+#[proc_macro_derive(FluvioDefault, attributes(fluvio))]
+pub fn fluvio_default(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_default_trait_impls(&input);
 

@@ -11,16 +11,16 @@ categories = ["encoding","api-bindings"]
 [features]
 derive = ["fluvio-protocol-derive"]
 api = ["fluvio-protocol-api"]
-kf = ["fluvio-protocol-kf"]
 codec = ["fluvio-protocol-codec"]
+
 
 [dependencies]
 fluvio-protocol-core = { version = "0.1.0", path = "fluvio-protocol-core" }
 fluvio-protocol-derive = { version = "0.1.0", path = "fluvio-protocol-derive", optional = true}
 fluvio-protocol-api = { version = "0.1.0", path = "fluvio-protocol-api", optional = true}
-fluvio-protocol-kf = { version = "0.1.0", path = "fluvio-protocol-kf", optional = true}
 fluvio-protocol-codec = { version = "0.1.0", path = "fluvio-protocol-codec", optional = true}
-fluvio-protocol-fs = { version = "0.1.0", path = "fluvio-protocol-fs"}
 
 [dev-dependencies]
 flv-util = { version = "0.4.0"}
+fluvio-protocol = { version = "0.1.0", features = ["derive","api"], path = "."}
+log = "0.4.8"

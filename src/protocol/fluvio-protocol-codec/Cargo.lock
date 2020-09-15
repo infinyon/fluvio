@@ -97,6 +97,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c17772156ef2829aadc587461c7753af20b7e8db1529bc66855add962a3b35d3"
 
 [[package]]
+name = "async-test-derive"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b832fea31d5e45973923a3de29695f1bec7b6c8ecaa05a8ae518e33704dfac2"
+dependencies = [
+ "log",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -218,35 +230,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c85295147490b8fcf2ea3d104080a105a8b2c63f9c319e82c02d8e952388919"
 
 [[package]]
-name = "fluvio-protocol"
-version = "0.1.0"
-dependencies = [
- "fluvio-protocol",
- "fluvio-protocol-api",
- "fluvio-protocol-codec",
- "fluvio-protocol-core",
- "fluvio-protocol-derive",
- "flv-util",
- "log",
-]
-
-[[package]]
-name = "fluvio-protocol-api"
-version = "0.1.0"
-dependencies = [
- "fluvio-protocol-core",
- "fluvio-protocol-derive",
- "flv-util",
- "log",
-]
-
-[[package]]
 name = "fluvio-protocol-codec"
 version = "0.1.0"
 dependencies = [
  "bytes",
  "fluvio-protocol-core",
  "flv-future-aio",
+ "flv-util",
+ "futures",
  "log",
  "tokio-util",
 ]
@@ -260,22 +251,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-protocol-derive"
-version = "0.1.0"
-dependencies = [
- "log",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "flv-future-aio"
 version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f97affbe276a743321d92577bc939bcb247bbe532557c5618f7319d7357d1fbb"
 dependencies = [
  "async-std",
+ "async-test-derive",
  "async-trait",
  "bytes",
  "flv-util",

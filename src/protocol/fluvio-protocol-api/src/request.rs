@@ -5,15 +5,15 @@ use std::fmt::Display;
 
 use log::trace;
 
-use kf_protocol::bytes::Buf;
-use kf_protocol::bytes::BufMut;
-use kf_protocol::Decoder;
-use kf_protocol::Encoder;
-use kf_protocol::Version;
+use crate::core::bytes::Buf;
+use crate::core::bytes::BufMut;
+use crate::core::Decoder;
+use crate::core::Encoder;
+use crate::core::Version;
 
-use crate::Request;
-use crate::RequestHeader;
-use crate::ResponseMessage;
+use crate::api::Request;
+use crate::api::RequestHeader;
+use crate::response::ResponseMessage;
 
 /// Start of API request
 #[derive(Debug)]
@@ -23,6 +23,7 @@ pub struct RequestMessage<R> {
 }
 
 impl<R> RequestMessage<R> {
+    #[allow(unused)]
     pub fn get_mut_header(&mut self) -> &mut RequestHeader {
         &mut self.header
     }
@@ -57,11 +58,13 @@ where
 {
     /// create with header, this assume header is constructed from higher request
     /// no api key check is performed since it is already done
+    #[allow(unused)]
     pub fn new(header: RequestHeader, request: R) -> Self {
         Self { header, request }
     }
 
     /// create from request, header is implicilty created from key in the request
+    #[allow(unused)]
     pub fn new_request(request: R) -> Self {
         let mut header = RequestHeader::new(R::API_KEY);
         header.set_api_version(R::DEFAULT_API_VERSION);
@@ -69,14 +72,18 @@ where
         Self { header, request }
     }
 
+    #[allow(unused)]
     pub fn get_header_request(self) -> (RequestHeader, R) {
         (self.header, self.request)
     }
 
+    #[allow(unused)]
+    #[allow(unused)]
     pub fn request(&self) -> &R {
         &self.request
     }
 
+    #[allow(unused)]
     pub fn new_response(&self, response: R::Response) -> ResponseMessage<R::Response> {
         Self::response_with_header(&self.header, response)
     }
@@ -88,6 +95,7 @@ where
         ResponseMessage::new(header.into(), response)
     }
 
+    #[allow(unused)]
     pub fn decode_response<T>(
         &self,
         src: &mut T,
@@ -99,6 +107,7 @@ where
         ResponseMessage::decode_from(src, version)
     }
 
+    #[allow(unused)]
     pub fn decode_response_from_file<H: AsRef<Path>>(
         &self,
         file_name: H,
@@ -108,6 +117,7 @@ where
     }
 
     /// helper function to set client id
+    #[allow(unused)]
     pub fn set_client_id<T>(mut self, client_id: T) -> Self
     where
         T: Into<String>,
@@ -162,26 +172,38 @@ mod test {
     use std::io::Cursor;
     use std::io::Error as IoError;
     use std::convert::TryInto;
-    use kf_protocol::bytes::Buf;
-    use kf_protocol::bytes::BufMut;
-    use kf_protocol::Decoder;
-    use kf_protocol::Encoder;
-    use kf_protocol::Version;
-    use kf_protocol_derive::Encode;
-    use kf_protocol_derive::Decode;
+    use crate::core::bytes::Buf;
+    use crate::core::bytes::BufMut;
+    use crate::core::Decoder;
+    use crate::core::Encoder;
+    use crate::core::Version;
+    use crate::derive::Encode;
+    use crate::derive::Decode;
 
     use super::RequestHeader;
     use super::RequestMessage;
-    use crate::KfRequestMessage;
+    use crate::ApiMessage;
 
     use crate::Request;
-    use crate::AllKfApiKey;
+    
+    #[fluvio(encode_discriminant)]
+    #[derive(PartialEq, Debug, Clone, Copy, Encode, Decode)]
+    #[repr(u16)]
+    pub enum TestApiKey {
+        ApiVersion = 0
+    }
+
+    impl Default for TestApiKey {
+        fn default() -> TestApiKey {
+            TestApiKey::ApiVersion
+        }
+    }
 
     #[derive(Decode, Encode, Debug, Default)]
     pub struct ApiVersionRequest {}
 
     impl Request for ApiVersionRequest {
-        const API_KEY: u16 = AllKfApiKey::ApiVersion as u16;
+        const API_KEY: u16 = TestApiKey::ApiVersion as u16;
 
         type Response = ApiVersionResponse;
     }
@@ -263,7 +285,7 @@ mod test {
         }
     }
 
-    impl KfRequestMessage for TestApiRequest {
+    impl ApiMessage for TestApiRequest {
         type ApiKey = TestApiEnum;
 
         fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
