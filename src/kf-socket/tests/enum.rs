@@ -1,9 +1,8 @@
 use std::convert::TryInto;
 
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
+use dataplane_protocol::derive::{ Decode, Encode};
 
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum TestKafkaApiEnum {

@@ -18,13 +18,14 @@ use tokio_util::compat::Compat;
 
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 use flv_future_aio::bytes::BytesMut;
-use kf_protocol::Version;
-use kf_protocol::Encoder as KfEncoder;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::ResponseMessage;
-use kf_protocol::transport::KfCodec;
-use kf_protocol::fs::FileWrite;
-use kf_protocol::fs::StoreValue;
+use dataplane_protocol::core::Version;
+use dataplane_protocol::core::Encoder as KfEncoder;
+use dataplane_protocol::api::RequestMessage;
+use dataplane_protocol::api::ResponseMessage;
+use dataplane_protocol::FileWrite;
+use dataplane_protocol::StoreValue;
+use fluvio_protocol::codec::FluvioCodec;
+
 use tokio_util::codec::Framed;
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::net::tls::AllTcpStream;
@@ -37,7 +38,7 @@ pub type AllKfSink = InnerKfSink<AllTcpStream>;
 pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
 pub type ExclusiveAllKfSink = InnerExclusiveKfSink<AllTcpStream>;
 
-type SplitFrame<S> = SplitSink<Framed<Compat<S>, KfCodec>, Bytes>;
+type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
 
 #[derive(Debug)]
 pub struct InnerKfSink<S> {
@@ -239,8 +240,8 @@ mod tests {
     use flv_future_aio::zero_copy::ZeroCopyWrite;
     use flv_future_aio::net::TcpListener;
     use flv_future_aio::bytes::Bytes;
-    use kf_protocol::Decoder;
-    use kf_protocol::Encoder;
+    use dataplane_protocol::core::Decoder;
+    use dataplane_protocol::core::Encoder;
     use crate::KfSocket;
     use crate::KfSocketError;
 

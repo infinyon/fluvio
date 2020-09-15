@@ -27,7 +27,9 @@ async-trait = "0.1.21"
 
 # Fluvio dependencies
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
-kf-protocol = { version = "4.0.0" }
+fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only', features = ["derive", "api","codec"] }
+dataplane-protocol = { version = "0.1.0", path = "../dataplane-protocol"}
+
 
 [dev-dependencies]
 log = "0.4.8"
