@@ -10,21 +10,21 @@ use std::marker::PhantomData;
 use log::trace;
 use bytes::BytesMut;
 
-use kf_protocol::Version;
-use kf_protocol::Encoder;
-use kf_protocol::Decoder;
-use kf_protocol::api::Request;
-use kf_protocol::api::RecordSet;
-use kf_protocol::api::Isolation;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::fs::StoreValue;
-use kf_protocol::fs::KfFileRecordSet;
-use kf_protocol::fs::FileWrite;
-use kf_protocol::message::fetch::FetchablePartitionResponse;
+use fluvio_protocol::Version;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::derive::Decode;
+use fluvio_protocol::derive::Encode;
+use dataplane_protocol::StoreValue;
+use dataplane_protocol::record::FileRecordSet;
+use dataplane_protocol::FileWrite;
+use dataplane_protocol::fetch::FetchablePartitionResponse;
+use dataplane_protocol::record::RecordSet;
+use dataplane_protocol::Isolation;
 
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
-pub type FileStreamFetchRequest = StreamFetchRequest<KfFileRecordSet>;
+pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 
 use super::SpuServerApiKey;
@@ -62,7 +62,7 @@ where
     pub partition: FetchablePartitionResponse<R>,
 }
 
-impl FileWrite for StreamFetchResponse<KfFileRecordSet> {
+impl FileWrite for StreamFetchResponse<FileRecordSet> {
     fn file_encode(
         &self,
         src: &mut BytesMut,

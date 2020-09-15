@@ -5,14 +5,14 @@ use tracing::trace;
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use kf_protocol::bytes::Buf;
-use kf_protocol::derive::Encode;
+use fluvio_protocol::bytes::Buf;
+use fluvio_protocol::derive::Encode;
 
-use kf_protocol::api::KfRequestMessage;
+use fluvio_protocol::api::RequestMessage;
 
-use kf_protocol::api::api_decode;
-use kf_protocol::api::RequestHeader;
-use kf_protocol::api::RequestMessage;
+use fluvio_protocol::api::api_decode;
+use fluvio_protocol::api::RequestHeader;
+use fluvio_protocol::api::ApiMessage;
 
 use super::SpuClientApiKey;
 use super::offset::ReplicaOffsetUpdateRequest;
@@ -29,7 +29,7 @@ impl Default for SpuClientRequest {
     }
 }
 
-impl KfRequestMessage for SpuClientRequest {
+impl ApiMessage for SpuClientRequest {
     type ApiKey = SpuClientApiKey;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>

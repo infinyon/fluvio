@@ -254,7 +254,7 @@ dependencies = [
  "log",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -277,7 +277,7 @@ checksum = "687c230d85c0a52504709705fc8a53e4a692b83a2184f03dae73e38e1e93a783"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -1016,7 +1016,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#1be90c0c5fac06abe945fa539fc3d518b2e5a8f4"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-core",
@@ -1026,7 +1026,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-api"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#1be90c0c5fac06abe945fa539fc3d518b2e5a8f4"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -1037,7 +1037,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-core"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#1be90c0c5fac06abe945fa539fc3d518b2e5a8f4"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1046,12 +1046,12 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-derive"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#1be90c0c5fac06abe945fa539fc3d518b2e5a8f4"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
 dependencies = [
  "log",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -1145,7 +1145,8 @@ name = "fluvio-spu-schema"
 version = "0.1.0"
 dependencies = [
  "bytes 0.5.6",
- "kf-protocol",
+ "dataplane-protocol",
+ "fluvio-protocol",
  "log",
  "serde",
  "tracing",
@@ -1363,7 +1364,7 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -1832,7 +1833,7 @@ dependencies = [
  "log",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -2313,7 +2314,7 @@ dependencies = [
  "pest_meta",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -2344,7 +2345,7 @@ checksum = "2c0e815c3ee9a031fdf5af21c10aa17c573c9c6a566328d99e3936c34e36461f"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -2417,7 +2418,7 @@ dependencies = [
  "proc-macro-error-attr",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
  "version_check",
 ]
 
@@ -2787,7 +2788,7 @@ checksum = "f630a6370fd8e457873b4bd2ffdae75408bc291ba72be773772a4c2a065d9ae8"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3000,7 +3001,7 @@ dependencies = [
  "quote 1.0.7",
  "serde",
  "serde_derive",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3016,7 +3017,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha1",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3052,7 +3053,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3085,9 +3086,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "963f7d3cc59b59b9325165add223142bbf1df27655d07789f109896d353d8350"
+checksum = "6690e3e9f692504b941dc6c3b188fd28df054f7fb8469ab40680df52fdcc842b"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
@@ -3209,7 +3210,7 @@ dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
  "standback",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3239,7 +3240,7 @@ checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3285,7 +3286,7 @@ checksum = "80e0ccfc3378da0cce270c946b676a376943f5cd16aeba64568e7939806f4ada"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
 ]
 
 [[package]]
@@ -3577,7 +3578,7 @@ dependencies = [
  "log",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
  "wasm-bindgen-shared",
 ]
 
@@ -3611,7 +3612,7 @@ checksum = "f249f06ef7ee334cc3b8ff031bfc11ec99d00f34d86da7498396dc1e3b1498fe"
 dependencies = [
  "proc-macro2 1.0.21",
  "quote 1.0.7",
- "syn 1.0.40",
+ "syn 1.0.41",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -3662,9 +3663,9 @@ dependencies = [
 
 [[package]]
 name = "wepoll-sys-stjepang"
-version = "1.0.6"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fd319e971980166b53e17b1026812ad66c6b54063be879eb182342b55284694"
+checksum = "1fdfbb03f290ca0b27922e8d48a0997b4ceea12df33269b9f75e713311eb178d"
 dependencies = [
  "cc",
 ]

@@ -14,11 +14,13 @@ use crate::derive::FluvioDefault;
 
 use crate::api::Request;
 use crate::record::FileRecordSet;
+use crate::record::RecordSet;
 use crate::FileWrite;
 use crate::StoreValue;
 
 use super::ProduceResponse;
 
+pub type DefaultProduceRequest = ProduceRequest<RecordSet>;
 pub type FileProduceRequest = ProduceRequest<FileRecordSet>;
 pub type FileTopicRequest = TopicProduceData<FileRecordSet>;
 pub type FilePartitionRequest = PartitionProduceData<FileRecordSet>;
