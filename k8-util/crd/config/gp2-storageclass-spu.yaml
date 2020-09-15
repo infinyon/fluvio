@@ -4,8 +4,6 @@ metadata:
   name: fluvio-spu
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
-  labels:
-    storageclass: fluvio-spu
 provisioner: kubernetes.io/aws-ebs
 parameters:
   type: gp2

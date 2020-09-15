@@ -2,8 +2,6 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: fluvio-pvc
-  labels:
-    storageclass: fluvio-spu
 spec:
   accessModes:
     - ReadWriteOnce
