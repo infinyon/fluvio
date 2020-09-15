@@ -1,7 +1,7 @@
 use tracing::debug;
 
 use kf_socket::AllMultiplexerSocket;
-use kf_protocol::api::ReplicaKey;
+use dataplane_protocol::ReplicaKey;
 
 use crate::admin::AdminClient;
 use crate::{Producer, ClusterConfig};

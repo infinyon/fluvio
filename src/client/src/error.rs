@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 
-use kf_protocol::api::ReplicaKey;
+use dataplane_protocol::ReplicaKey;
 use kf_socket::KfSocketError;
 use fluvio_sc_schema::ApiError;
 

@@ -21,6 +21,8 @@ use crate::StoreValue;
 use super::ProduceResponse;
 
 pub type DefaultProduceRequest = ProduceRequest<RecordSet>;
+pub type DefaultPartitionRequest = PartitionProduceData<RecordSet>;
+pub type DefaultTopicRequest = TopicProduceData<RecordSet>;
 pub type FileProduceRequest = ProduceRequest<FileRecordSet>;
 pub type FileTopicRequest = TopicProduceData<FileRecordSet>;
 pub type FilePartitionRequest = PartitionProduceData<FileRecordSet>;
