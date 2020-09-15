@@ -4,9 +4,9 @@
 //!
 use std::fmt::Debug;
 
-use fluvio_protocol::api::Request;
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::Decode;
+use dataplane_protocol::derive::Encode;
 use dataplane_protocol::ReplicaKey;
 
 use super::SpuServerApiKey;

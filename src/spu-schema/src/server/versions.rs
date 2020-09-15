@@ -5,8 +5,8 @@
 //! SPU supports Kafka as well as Fluvio specific APIs.
 //!
 
-use fluvio_protocol::api::Request;
-use fluvio_protocol::derive::{Decode, Encode};
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::{Decode, Encode};
 use dataplane_protocol::ErrorCode;
 
 use super::SpuServerApiKey;

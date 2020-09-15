@@ -4,9 +4,9 @@
 //! API that allows CLI to fetch topic offsets.
 use std::fmt;
 
-use fluvio_protocol::api::Request;
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::Decode;
+use dataplane_protocol::derive::Encode;
 use dataplane_protocol::PartitionOffset;
 use dataplane_protocol::ReplicaKey;
 
@@ -122,7 +122,6 @@ impl PartitionOffset for FetchOffsetPartitionResponse {
         self.start_offset
     }
 }
-
 
 impl Request for FetchOffsetsRequest {
     const API_KEY: u16 = SpuServerApiKey::FetchOffsets as u16;

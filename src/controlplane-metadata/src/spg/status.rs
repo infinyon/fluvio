@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use kf_protocol::derive::*;
+use dataplane_protocol::derive::*;
 
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(

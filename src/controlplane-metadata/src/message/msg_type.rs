@@ -9,8 +9,8 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;
 
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::{Decoder, Encoder};
+use dataplane_protocol::derive::{Decode, Encode};
+use dataplane_protocol::core::{Decoder, Encoder};
 
 use crate::store::actions::*;
 use crate::core::*;

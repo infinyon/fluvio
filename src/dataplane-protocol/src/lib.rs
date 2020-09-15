@@ -9,6 +9,10 @@ pub mod produce;
 pub use common::*;
 pub use error_code::*;
 
+pub mod bytes {
+    pub use fluvio_protocol::bytes::*;
+}
+
 pub mod core {
     pub use fluvio_protocol::*;
 }
@@ -20,7 +24,6 @@ pub mod derive {
 pub mod api {
     pub use fluvio_protocol::api::*;
 }
-
 
 pub use store::*;
 

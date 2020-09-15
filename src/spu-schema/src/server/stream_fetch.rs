@@ -10,12 +10,12 @@ use std::marker::PhantomData;
 use log::trace;
 use bytes::BytesMut;
 
-use fluvio_protocol::Version;
-use fluvio_protocol::Encoder;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::api::Request;
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
+use dataplane_protocol::core::Version;
+use dataplane_protocol::core::Encoder;
+use dataplane_protocol::core::Decoder;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::Decode;
+use dataplane_protocol::derive::Encode;
 use dataplane_protocol::StoreValue;
 use dataplane_protocol::record::FileRecordSet;
 use dataplane_protocol::FileWrite;

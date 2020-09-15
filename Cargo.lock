@@ -1000,6 +1000,8 @@ name = "fluvio-controlplane-metadata"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "dataplane-protocol",
+ "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-future-aio",
@@ -1007,7 +1009,6 @@ dependencies = [
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
- "kf-protocol",
  "log",
  "serde",
  "tracing",
@@ -1095,10 +1096,11 @@ dependencies = [
 name = "fluvio-sc-schema"
 version = "0.1.0"
 dependencies = [
+ "dataplane-protocol",
  "fluvio-controlplane-metadata",
+ "fluvio-protocol",
  "fluvio-types",
  "flv-util",
- "kf-protocol",
  "log",
  "serde",
  "tracing",

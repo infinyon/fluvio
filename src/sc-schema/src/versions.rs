@@ -7,9 +7,9 @@
 //! SC supports Kafka as well as Fluvio specific APIs.
 //!
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::api::FlvErrorCode;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::{Decode, Encode};
+use dataplane_protocol::ErrorCode;
 
 use crate::AdminPublicApiKey;
 
@@ -43,7 +43,7 @@ impl Request for ApiVersionsRequest {
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct ApiVersionsResponse {
-    pub error_code: FlvErrorCode,
+    pub error_code: ErrorCode,
     pub api_keys: Vec<ApiVersionKey>,
 }
 

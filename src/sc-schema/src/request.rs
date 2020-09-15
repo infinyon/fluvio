@@ -9,14 +9,14 @@ use std::io::Error as IoError;
 
 use tracing::debug;
 
-use kf_protocol::bytes::Buf;
+use dataplane_protocol::bytes::Buf;
 
-use kf_protocol::api::KfRequestMessage;
-use kf_protocol::api::RequestHeader;
-use kf_protocol::api::RequestMessage;
+use dataplane_protocol::api::ApiMessage;
+use dataplane_protocol::api::RequestHeader;
+use dataplane_protocol::api::RequestMessage;
 
-use kf_protocol::api::api_decode;
-use kf_protocol::derive::Encode;
+use dataplane_protocol::api::api_decode;
+use dataplane_protocol::derive::Encode;
 
 use super::versions::ApiVersionsRequest;
 use super::objects::*;
@@ -40,7 +40,7 @@ impl Default for AdminPublicRequest {
     }
 }
 
-impl KfRequestMessage for AdminPublicRequest {
+impl ApiMessage for AdminPublicRequest {
     type ApiKey = AdminPublicApiKey;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>

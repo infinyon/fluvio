@@ -17,10 +17,10 @@ use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::{Decoder, Encoder};
-use kf_protocol::bytes::{Buf, BufMut};
-use kf_protocol::Version;
+use dataplane_protocol::derive::{Decode, Encode};
+use dataplane_protocol::core::{Decoder, Encoder};
+use dataplane_protocol::bytes::{Buf, BufMut};
+use dataplane_protocol::core::Version;
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 #[cfg_attr(

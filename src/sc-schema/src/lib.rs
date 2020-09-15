@@ -14,7 +14,7 @@ pub use response::*;
 pub use admin::*;
 
 pub mod errors {
-    pub use kf_protocol::api::FlvErrorCode;
+    pub use dataplane_protocol::ErrorCode;
 }
 
 pub mod core {
@@ -28,7 +28,7 @@ pub mod store {
 /// Error from api call
 #[derive(Debug)]
 pub enum ApiError {
-    Code(kf_protocol::api::FlvErrorCode, Option<String>),
+    Code(dataplane_protocol::ErrorCode, Option<String>),
     NoResourceFounded(String),
 }
 
@@ -49,7 +49,7 @@ impl std::fmt::Display for ApiError {
 
 mod admin {
 
-    use kf_protocol::api::Request;
+    use dataplane_protocol::api::Request;
 
     pub trait AdminRequest: Request {}
 }

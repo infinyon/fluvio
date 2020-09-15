@@ -58,10 +58,10 @@ mod custom_metadata {
 
     use tracing::trace;
 
-    use kf_protocol::Encoder;
-    use kf_protocol::Decoder;
-    use kf_protocol::Version;
-    use kf_protocol::bytes::{Buf, BufMut};
+    use dataplane_protocol::core::Encoder;
+    use dataplane_protocol::core::Decoder;
+    use dataplane_protocol::core::Version;
+    use dataplane_protocol::bytes::{Buf, BufMut};
 
     use crate::core::*;
 

@@ -6,7 +6,7 @@ pub mod store;
 
 pub use self::spec::*;
 pub use self::status::*;
-pub use kf_protocol::api::ReplicaKey;
+pub use dataplane_protocol::ReplicaKey;
 pub use self::policy::*;
 pub use self::replica::*;
 
