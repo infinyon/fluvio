@@ -22,5 +22,7 @@ fluvio-protocol-codec = { version = "0.1.0", path = "fluvio-protocol-codec", opt
 
 [dev-dependencies]
 flv-util = { version = "0.4.0"}
-fluvio-protocol = { version = "0.1.0", features = ["derive","api"], path = "."}
+fluvio-protocol-derive = { version = "0.1.0", path = "fluvio-protocol-derive"}
+fluvio-protocol-core = { version = "0.1.0", path = "fluvio-protocol-core" }
+fluvio-protocol-api = { version = "0.1.0", path = "fluvio-protocol-api" }
 log = "0.4.8"

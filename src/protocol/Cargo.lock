@@ -221,7 +221,6 @@ checksum = "5c85295147490b8fcf2ea3d104080a105a8b2c63f9c319e82c02d8e952388919"
 name = "fluvio-protocol"
 version = "0.1.0"
 dependencies = [
- "fluvio-protocol",
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
  "fluvio-protocol-core",

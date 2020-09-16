@@ -1,4 +1,4 @@
-use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol_derive::FluvioDefault;
 
 #[derive(FluvioDefault, Debug)]
 struct TestRecord {

@@ -1,9 +1,7 @@
 use std::io::Cursor;
 
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::Encoder;
+use fluvio_protocol_derive::{ Decode, Encode} ;
+use fluvio_protocol_core::{ Decoder, Encoder};
 
 #[derive(Encode, Decode, Default, Debug)]
 struct TestRecord {
