@@ -1,3 +1,5 @@
+#![feature(external_doc)]
+
 //! The official Rust client library for writing streaming applications with Fluvio
 //!
 //! Fluvio is a high performance, low latency data streaming platform built for developers.
@@ -7,6 +9,10 @@
 //! where it is recorded and saved for later usage. When you consume a message, you are
 //! reading a previously-stored message from that same Fluvio cluster. Let's get started
 //! with a quick example where we produce and consume some messages.
+//! 
+//! # Prerequisites
+//! 
+//! [Install Fluvio](#installation)
 //!
 //! # Fluvio Echo
 //!
@@ -36,6 +42,7 @@
 //!     }
 //! });
 //! ```
+#![doc(include = "../../../website/kubernetes/INSTALL.md")]
 
 use futures::Stream;
 use futures::task::{Context, Poll};
