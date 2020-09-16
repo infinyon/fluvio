@@ -143,7 +143,7 @@ impl Chart {
         &self.version
     }
     pub fn name(&self) -> &str {
-        &self.version
+        &self.name
     }
 }
 
