@@ -9,7 +9,7 @@ use fluvio_types::defaults::SPU_LOG_INDEX_MAX_BYTES;
 use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 
-use kf_protocol::api::Size;
+use dataplane_protocol::Size;
 
 // common option
 #[derive(Debug, Clone, PartialEq, Deserialize)]

@@ -18,13 +18,9 @@ use futures::io::AsyncSeekExt;
 use pin_utils::unsafe_pinned;
 
 use flv_future_aio::fs::File;
-use kf_protocol::api::Batch;
-use kf_protocol::api::BatchRecords;
-use kf_protocol::api::DefaultBatchRecords;
-use kf_protocol::api::BATCH_PREAMBLE_SIZE;
-use kf_protocol::api::BATCH_HEADER_SIZE;
-use kf_protocol::api::Size;
-use kf_protocol::api::Offset;
+use dataplane_protocol::batch::{ Batch, BatchRecords, DefaultBatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE };
+use dataplane_protocol::Size;
+use dataplane_protocol::Offset;
 
 use crate::StorageError;
 

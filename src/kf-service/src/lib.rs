@@ -3,7 +3,7 @@ mod kf_server;
 #[cfg(test)]
 pub mod test_request;
 
-pub use kf_protocol::transport::KfCodec;
+pub use fluvio_protocol::codec::FluvioCodec;
 pub use self::kf_server::KfApiServer;
 pub use self::kf_server::KfService;
 

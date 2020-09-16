@@ -6,11 +6,9 @@ use tracing::trace;
 use tracing::error;
 
 use flv_future_aio::fs::create_dir_all;
-use kf_protocol::api::ErrorCode;
-use kf_protocol::api::DefaultBatch;
-use kf_protocol::api::Offset;
-use kf_protocol::api::Size;
-use kf_protocol::api::RecordSet;
+use dataplane_protocol::{ ErrorCode, Offset, Size };
+use dataplane_protocol::batch::DefaultBatch;
+use dataplane_protocol::record::RecordSet;
 
 use crate::checkpoint::CheckPoint;
 use crate::range_map::SegmentList;
@@ -335,13 +333,11 @@ mod tests {
     use std::io::Cursor;
 
     use flv_future_aio::test_async;
-    use kf_protocol::api::DefaultBatch;
-    use kf_protocol::api::Offset;
-    use kf_protocol::Decoder;
-    use kf_protocol::Encoder;
-    use kf_protocol::api::ErrorCode;
-    use kf_protocol::fs::FilePartitionResponse;
-    use kf_protocol::api::RecordSet;
+    use dataplane_protocol::batch::DefaultBatch;
+    use dataplane_protocol::{ Offset, ErrorCode };
+    use dataplane_protocol::core::{Decoder,Encoder};
+    use dataplane_protocol::fetch::FilePartitionResponse;
+    use dataplane_protocol::record::RecordSet;
     use flv_util::fixture::ensure_clean_dir;
 
     use super::FileReplica;

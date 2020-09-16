@@ -17,26 +17,32 @@ use crate::derive::Decode;
 #[repr(i16)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 pub enum ErrorCode {
+
+    UnknownServerError = -1,
+
     // Not an error
     None = 0,
 
+    OffsetOutOfRange = 1,
+
+
     // Spu errors
-    SpuError = 1,
-    SpuRegisterationFailed = 2,
-    SpuOffline = 3,
-    SpuNotFound = 4,
-    SpuAlreadyExists = 5,
+    SpuError = 1000,
+    SpuRegisterationFailed = 1001,
+    SpuOffline = 1002,
+    SpuNotFound = 1003,
+    SpuAlreadyExists = 1004,
 
     // Topic errors
-    TopicError = 6,
-    TopicNotFound = 7,
-    TopicAlreadyExists = 8,
-    TopicPendingInitialization = 9,
-    TopicInvalidConfiguration = 10,
+    TopicError = 2000,
+    TopicNotFound = 2001,
+    TopicAlreadyExists = 2002,
+    TopicPendingInitialization = 2003,
+    TopicInvalidConfiguration = 2004,
 
     // Partition errors
-    PartitionPendingInitialization = 11,
-    PartitionNotLeader = 12,
+    PartitionPendingInitialization = 3000,
+    PartitionNotLeader = 3001,
 }
 
 impl Default for ErrorCode {

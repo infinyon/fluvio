@@ -1175,11 +1175,12 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
+ "dataplane-protocol",
+ "fluvio-protocol",
  "fluvio-types",
  "flv-future-aio",
  "flv-util",
  "futures",
- "kf-protocol",
  "kf-socket",
  "libc",
  "pin-utils",
@@ -1899,12 +1900,13 @@ name = "kf-service"
 version = "3.0.0"
 dependencies = [
  "async-trait",
+ "dataplane-protocol",
  "event-listener",
+ "fluvio-protocol",
  "fluvio-types",
  "flv-future-aio",
  "flv-util",
  "futures",
- "kf-protocol",
  "kf-socket",
  "log",
  "pin-utils",
