@@ -7,8 +7,8 @@ use std::fmt::Display;
 use tracing::debug;
 use tracing::error;
 
-use dataplane_protocol::core::Encoder;
-use dataplane_protocol::core::Decoder;
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
 use kf_socket::AsyncResponse;
 use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;

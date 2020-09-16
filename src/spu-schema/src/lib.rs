@@ -3,5 +3,5 @@
 pub mod server;
 pub mod client;
 pub mod errors {
-    pub use dataplane_protocol::ErrorCode;
+    pub use dataplane::ErrorCode;
 }

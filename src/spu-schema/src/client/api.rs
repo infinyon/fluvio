@@ -5,14 +5,14 @@ use tracing::trace;
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use dataplane_protocol::bytes::Buf;
-use dataplane_protocol::derive::Encode;
+use dataplane::bytes::Buf;
+use dataplane::derive::Encode;
 
-use dataplane_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 
-use dataplane_protocol::api::api_decode;
-use dataplane_protocol::api::RequestHeader;
-use dataplane_protocol::api::ApiMessage;
+use dataplane::api::api_decode;
+use dataplane::api::RequestHeader;
+use dataplane::api::ApiMessage;
 
 use super::SpuClientApiKey;
 use super::offset::ReplicaOffsetUpdateRequest;

@@ -12,7 +12,7 @@ use tracing::trace;
 use pin_utils::unsafe_unpinned;
 
 use flv_future_aio::fs::MemoryMappedFile;
-use dataplane_protocol::{Offset, Size};
+use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;
 use crate::util::log_path_get_offset;

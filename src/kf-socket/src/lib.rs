@@ -18,9 +18,9 @@ pub use sink::*;
 pub use socket::*;
 pub use multiplexing::*;
 
-use dataplane_protocol::api::Request;
-use dataplane_protocol::api::RequestMessage;
-use dataplane_protocol::api::ResponseMessage;
+use dataplane::api::Request;
+use dataplane::api::RequestMessage;
+use dataplane::api::ResponseMessage;
 
 /// send request and return response from calling server at socket addr
 pub async fn send_and_receive<R>(

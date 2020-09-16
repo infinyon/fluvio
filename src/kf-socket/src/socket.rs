@@ -9,9 +9,9 @@ use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use futures::io::{AsyncRead, AsyncWrite};
 
-use dataplane_protocol::api::Request;
-use dataplane_protocol::api::RequestMessage;
-use dataplane_protocol::api::ResponseMessage;
+use dataplane::api::Request;
+use dataplane::api::RequestMessage;
+use dataplane::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
 
 use flv_future_aio::net::TcpStream;

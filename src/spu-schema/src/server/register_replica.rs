@@ -4,10 +4,10 @@
 //!
 use std::fmt::Debug;
 
-use dataplane_protocol::api::Request;
-use dataplane_protocol::derive::Decode;
-use dataplane_protocol::derive::Encode;
-use dataplane_protocol::ReplicaKey;
+use dataplane::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::ReplicaKey;
 
 use super::SpuServerApiKey;
 

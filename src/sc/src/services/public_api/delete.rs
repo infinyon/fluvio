@@ -7,7 +7,7 @@
 use tracing::trace;
 use std::io::Error;
 
-use dataplane_protocol::api::{RequestMessage, ResponseMessage};
+use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::*;
 

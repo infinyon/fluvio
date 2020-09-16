@@ -13,7 +13,7 @@ use std::io::Error as IoError;
 
 use tracing::{debug, trace};
 
-use dataplane_protocol::ErrorCode;
+use dataplane::ErrorCode;
 
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::*;

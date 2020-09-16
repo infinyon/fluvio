@@ -129,7 +129,7 @@ pub(crate) mod test {
     use super::KfSocketError;
     use super::SocketPool;
     use crate::test_request::EchoRequest;
-    use dataplane_protocol::api::RequestMessage;
+    use dataplane::api::RequestMessage;
 
     type TestPooling = SocketPool<String>;
 

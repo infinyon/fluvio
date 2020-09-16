@@ -1,5 +1,5 @@
-use dataplane_protocol::derive::Encode;
-use dataplane_protocol::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::derive::Decode;
 
 /// Api Key for Spu Server API
 #[fluvio(encode_discriminant)]

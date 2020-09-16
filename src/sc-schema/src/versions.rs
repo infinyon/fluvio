@@ -7,9 +7,9 @@
 //! SC supports Kafka as well as Fluvio specific APIs.
 //!
 
-use dataplane_protocol::api::Request;
-use dataplane_protocol::derive::{Decode, Encode};
-use dataplane_protocol::ErrorCode;
+use dataplane::api::Request;
+use dataplane::derive::{Decode, Encode};
+use dataplane::ErrorCode;
 
 use crate::AdminPublicApiKey;
 

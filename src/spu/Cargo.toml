@@ -39,8 +39,8 @@ fluvio-storage = { path = "../storage" }
 fluvio-controlplane = { path = "../controlplane" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata" }
 fluvio-spu-schema = { path = "../spu-schema" }
-fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only'}
-dataplane-protocol = { version = "0.1.0", path = "../dataplane-protocol"}
+fluvio-protocol = { version = "0.1.0" }
+dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 kf-socket = { path = "../kf-socket" }
 kf-service = { path = "../kf-service" }
 flv-util = { version = "0.4.0" }

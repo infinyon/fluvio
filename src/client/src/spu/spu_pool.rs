@@ -4,9 +4,9 @@ use std::sync::Arc;
 use tracing::debug;
 use async_mutex::Mutex;
 
-use dataplane_protocol::ReplicaKey;
-use dataplane_protocol::api::Request;
-use dataplane_protocol::api::RequestMessage;
+use dataplane::ReplicaKey;
+use dataplane::api::Request;
+use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 use kf_socket::AllMultiplexerSocket;
 use kf_socket::AsyncResponse;

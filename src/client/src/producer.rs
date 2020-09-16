@@ -4,7 +4,7 @@ use std::io::ErrorKind;
 use tracing::debug;
 use tracing::trace;
 
-use dataplane_protocol::ReplicaKey;
+use dataplane::ReplicaKey;
 
 use crate::ClientError;
 use crate::spu::SpuPool;
@@ -47,11 +47,11 @@ async fn send_record_raw<F: SerialFrame>(
     replica: &ReplicaKey,
     record: Vec<u8>,
 ) -> Result<(), ClientError> {
-    use dataplane_protocol::produce::DefaultProduceRequest;
-    use dataplane_protocol::produce::DefaultPartitionRequest;
-    use dataplane_protocol::produce::DefaultTopicRequest;
-    use dataplane_protocol::batch::DefaultBatch;
-    use dataplane_protocol::record::DefaultRecord;
+    use dataplane::produce::DefaultProduceRequest;
+    use dataplane::produce::DefaultPartitionRequest;
+    use dataplane::produce::DefaultTopicRequest;
+    use dataplane::batch::DefaultBatch;
+    use dataplane::record::DefaultRecord;
 
     // build produce log request message
     let mut request = DefaultProduceRequest::default();

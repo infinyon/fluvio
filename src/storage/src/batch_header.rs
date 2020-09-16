@@ -8,10 +8,10 @@ use std::pin::Pin;
 
 use pin_utils::pin_mut;
 
-use dataplane_protocol::core::{Version, Decoder, Encoder};
-use dataplane_protocol::bytes::Buf;
-use dataplane_protocol::bytes::BufMut;
-use dataplane_protocol::batch::BatchRecords;
+use dataplane::core::{Version, Decoder, Encoder};
+use dataplane::bytes::Buf;
+use dataplane::bytes::BufMut;
+use dataplane::batch::BatchRecords;
 
 use crate::batch::FileBatchStream;
 use crate::batch::FileBatchPos;

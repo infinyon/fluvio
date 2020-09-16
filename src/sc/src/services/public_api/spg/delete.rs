@@ -9,7 +9,7 @@ use crate::core::*;
 
 /// Handler for delete spu group request
 pub async fn handle_delete_spu_group(name: String, ctx: SharedContext) -> Result<Status, Error> {
-    use dataplane_protocol::ErrorCode;
+    use dataplane::ErrorCode;
 
     debug!("delete spg group: {}", name);
 

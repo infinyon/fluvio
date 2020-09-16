@@ -14,7 +14,7 @@ pub use response::*;
 pub use admin::*;
 
 pub mod errors {
-    pub use dataplane_protocol::ErrorCode;
+    pub use dataplane::ErrorCode;
 }
 
 pub mod core {
@@ -28,7 +28,7 @@ pub mod store {
 /// Error from api call
 #[derive(Debug)]
 pub enum ApiError {
-    Code(dataplane_protocol::ErrorCode, Option<String>),
+    Code(dataplane::ErrorCode, Option<String>),
     NoResourceFounded(String),
 }
 
@@ -49,7 +49,7 @@ impl std::fmt::Display for ApiError {
 
 mod admin {
 
-    use dataplane_protocol::api::Request;
+    use dataplane::api::Request;
 
     pub trait AdminRequest: Request {}
 }

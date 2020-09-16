@@ -43,7 +43,7 @@ impl MetadataStores {
         &self,
         socket: &mut AllMultiplexerSocket,
     ) -> Result<(), KfSocketError> {
-        use dataplane_protocol::api::RequestMessage;
+        use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for spu");
@@ -60,7 +60,7 @@ impl MetadataStores {
         &self,
         socket: &mut AllMultiplexerSocket,
     ) -> Result<(), KfSocketError> {
-        use dataplane_protocol::api::RequestMessage;
+        use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for partition");

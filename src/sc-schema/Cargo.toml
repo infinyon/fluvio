@@ -23,5 +23,5 @@ serde = { version = "1.0.0", features = ['derive'], optional = true }
 fluvio-types = { version = "0.1.0", path = "../types" }
 flv-util = { version = "0.4.0" }
 fluvio-controlplane-metadata = { version = "0.1.0", default-features = false, path = "../controlplane-metadata" }
-fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only', features = ["derive", "api"] }
-dataplane-protocol = { version = "0.1.0", path = "../dataplane-protocol"}
+fluvio-protocol = { version = "0.1.0" }
+dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

@@ -1,7 +1,7 @@
 use std::fmt;
 
 use fluvio_controlplane_metadata::partition::Replica;
-use dataplane_protocol::Offset;
+use dataplane::Offset;
 use fluvio_types::SpuId;
 
 #[derive(Debug)]

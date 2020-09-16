@@ -5,9 +5,9 @@ use std::io::Read;
 use std::path::Path;
 use std::env::temp_dir;
 
-use dataplane_protocol::record::DefaultRecord;
-use dataplane_protocol::batch::DefaultBatch;
-use dataplane_protocol::Size;
+use dataplane::record::DefaultRecord;
+use dataplane::batch::DefaultBatch;
+use dataplane::Size;
 
 use crate::ConfigOption;
 

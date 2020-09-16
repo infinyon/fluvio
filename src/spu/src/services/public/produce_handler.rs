@@ -4,12 +4,12 @@ use tracing::warn;
 use tracing::trace;
 use tracing::error;
 
-use dataplane_protocol::ErrorCode;
-use dataplane_protocol::produce::{
+use dataplane::ErrorCode;
+use dataplane::produce::{
     DefaultProduceRequest, ProduceResponse, TopicProduceResponse, PartitionProduceResponse,
 };
-use dataplane_protocol::api::RequestMessage;
-use dataplane_protocol::api::ResponseMessage;
+use dataplane::api::RequestMessage;
+use dataplane::api::ResponseMessage;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;

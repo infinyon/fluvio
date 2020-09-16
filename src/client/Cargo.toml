@@ -18,7 +18,7 @@ dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"
 async-rwlock = "1.1.0"
-base64 = { version = "0.12.0"}
+base64 = { version = "0.12.0" }
 futures = { version = "0.3.4", features = ['async-await'] }
 async-trait = "0.1.30"
 serde = { version = "1.0.110", features = ['derive'] }
@@ -35,5 +35,5 @@ fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features 
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
 flv-future-aio = { version = "2.4.1", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
-fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only', features = ["derive", "api"] }
-dataplane-protocol = { version = "0.1.0", path = "../dataplane-protocol"}
+fluvio-protocol = { version = "0.1.0" }
+dataplane = { path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

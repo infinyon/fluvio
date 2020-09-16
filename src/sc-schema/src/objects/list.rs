@@ -7,10 +7,10 @@ use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use dataplane_protocol::derive::{Decode, Encode};
-use dataplane_protocol::core::Encoder;
-use dataplane_protocol::core::Decoder;
-use dataplane_protocol::api::Request;
+use dataplane::derive::{Decode, Encode};
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::api::Request;
 
 use fluvio_controlplane_metadata::core::*;
 use fluvio_controlplane_metadata::topic::TopicSpec;
@@ -140,10 +140,10 @@ mod encoding {
 
     use tracing::trace;
 
-    use dataplane_protocol::core::Encoder;
-    use dataplane_protocol::core::Decoder;
-    use dataplane_protocol::core::Version;
-    use dataplane_protocol::bytes::{Buf, BufMut};
+    use dataplane::core::Encoder;
+    use dataplane::core::Decoder;
+    use dataplane::core::Version;
+    use dataplane::bytes::{Buf, BufMut};
 
     use super::*;
 

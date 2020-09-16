@@ -13,10 +13,10 @@ use tracing::trace;
 use tracing::error;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use dataplane_protocol::record::RecordSet;
+use dataplane::record::RecordSet;
 use fluvio_storage::FileReplica;
-use dataplane_protocol::fetch::FilePartitionResponse;
-use dataplane_protocol::{Offset, Isolation, ErrorCode};
+use dataplane::fetch::FilePartitionResponse;
+use dataplane::{Offset, Isolation, ErrorCode};
 
 use crate::InternalServerError;
 

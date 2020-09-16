@@ -9,14 +9,14 @@ use std::io::Error as IoError;
 
 use tracing::debug;
 
-use dataplane_protocol::bytes::Buf;
+use dataplane::bytes::Buf;
 
-use dataplane_protocol::api::ApiMessage;
-use dataplane_protocol::api::RequestHeader;
-use dataplane_protocol::api::RequestMessage;
+use dataplane::api::ApiMessage;
+use dataplane::api::RequestHeader;
+use dataplane::api::RequestMessage;
 
-use dataplane_protocol::api::api_decode;
-use dataplane_protocol::derive::Encode;
+use dataplane::api::api_decode;
+use dataplane::derive::Encode;
 
 use super::versions::ApiVersionsRequest;
 use super::objects::*;

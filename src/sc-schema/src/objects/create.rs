@@ -2,10 +2,10 @@
 
 use std::fmt::Debug;
 
-use dataplane_protocol::derive::{Decode, Encode};
-use dataplane_protocol::core::Encoder;
-use dataplane_protocol::core::Decoder;
-use dataplane_protocol::api::Request;
+use dataplane::derive::{Decode, Encode};
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::api::Request;
 
 use crate::Status;
 use crate::AdminPublicApiKey;
@@ -36,8 +36,8 @@ mod create {
 
     use tracing::trace;
 
-    use dataplane_protocol::core::Version;
-    use dataplane_protocol::bytes::{Buf, BufMut};
+    use dataplane::core::Version;
+    use dataplane::bytes::{Buf, BufMut};
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_controlplane_metadata::spu::CustomSpuSpec;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;

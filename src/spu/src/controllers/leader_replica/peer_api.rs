@@ -3,10 +3,10 @@ use std::convert::TryInto;
 
 use tracing::trace;
 
-use dataplane_protocol::bytes::Buf;
-use dataplane_protocol::core::Decoder;
-use dataplane_protocol::derive::Encode;
-use dataplane_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
+use dataplane::bytes::Buf;
+use dataplane::core::Decoder;
+use dataplane::derive::Encode;
+use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::LeaderPeerApiEnum;
 use super::UpdateOffsetRequest;

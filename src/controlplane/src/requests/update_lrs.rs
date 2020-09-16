@@ -2,9 +2,9 @@
 
 use std::fmt;
 
-use dataplane_protocol::api::Request;
-use dataplane_protocol::derive::Decode;
-use dataplane_protocol::derive::Encode;
+use dataplane::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::ReplicaStatus;
 

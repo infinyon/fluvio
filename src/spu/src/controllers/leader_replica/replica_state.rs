@@ -6,9 +6,9 @@ use tracing::error;
 use tracing::warn;
 
 use kf_socket::SinkPool;
-use dataplane_protocol::record::RecordSet;
-use dataplane_protocol::{Offset, Isolation};
-use dataplane_protocol::api::RequestMessage;
+use dataplane::record::RecordSet;
+use dataplane::{Offset, Isolation};
+use dataplane::api::RequestMessage;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::Replica;
@@ -403,7 +403,7 @@ impl LeaderReplicaState<FileReplica> {
 mod test {
 
     use fluvio_storage::ReplicaStorage;
-    use dataplane_protocol::Offset;
+    use dataplane::Offset;
 
     use super::LeaderReplicaState;
 

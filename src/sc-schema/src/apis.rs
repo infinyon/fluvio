@@ -4,8 +4,8 @@
 //! Stores Api Keys supported by the SC.
 //!
 
-use dataplane_protocol::derive::Encode;
-use dataplane_protocol::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::derive::Decode;
 
 /// API call from client to SPU
 #[fluvio(encode_discriminant)]

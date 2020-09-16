@@ -1,9 +1,9 @@
-use dataplane_protocol::api::Request;
-use dataplane_protocol::derive::Decode;
-use dataplane_protocol::derive::Encode;
-use dataplane_protocol::ReplicaKey;
-use dataplane_protocol::Offset;
-use dataplane_protocol::ErrorCode;
+use dataplane::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::ReplicaKey;
+use dataplane::Offset;
+use dataplane::ErrorCode;
 
 use super::SpuClientApiKey;
 

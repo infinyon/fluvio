@@ -14,7 +14,7 @@ use flv_future_aio::timer::sleep;
 use kf_socket::KfSocket;
 use kf_socket::KfSink;
 use kf_socket::KfSocketError;
-use dataplane_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use flv_util::log_on_err;

@@ -16,9 +16,9 @@ use flv_future_aio::task::spawn;
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;
-use dataplane_protocol::api::{RequestMessage, RequestHeader};
-use dataplane_protocol::{Offset, Isolation, ReplicaKey};
-use dataplane_protocol::fetch::FilePartitionResponse;
+use dataplane::api::{RequestMessage, RequestHeader};
+use dataplane::{Offset, Isolation, ReplicaKey};
+use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::FileStreamFetchRequest;
 use fluvio_spu_schema::server::stream_fetch::StreamFetchResponse;
 

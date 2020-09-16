@@ -8,11 +8,11 @@ use std::io::ErrorKind;
 
 use tracing::trace;
 
-use dataplane_protocol::core::Encoder;
-use dataplane_protocol::core::Decoder;
-use dataplane_protocol::core::Version;
-use dataplane_protocol::bytes::{Buf, BufMut};
-use dataplane_protocol::api::Request;
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::core::Version;
+use dataplane::bytes::{Buf, BufMut};
+use dataplane::api::Request;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;

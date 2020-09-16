@@ -12,6 +12,6 @@ pub use self::requests::update_replica::*;
 pub use self::requests::register_spu::*;
 pub use self::requests::update_lrs::*;
 
-use dataplane_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 
 pub type UpdateSpuRequestMessage = RequestMessage<UpdateSpuRequest>;

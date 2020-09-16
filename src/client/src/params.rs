@@ -3,8 +3,8 @@
 //!
 //!
 
-use dataplane_protocol::Offset;
-use dataplane_protocol::Isolation;
+use dataplane::Offset;
+use dataplane::Isolation;
 
 pub const MAX_FETCH_BYTES: u32 = 1000000;
 

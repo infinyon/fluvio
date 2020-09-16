@@ -30,7 +30,7 @@ pub async fn handle_create_spu_group_request(
 
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 async fn process_custom_spu_request(ctx: &Context, name: String, spg_spec: SpuGroupSpec) -> Status {
-    use dataplane_protocol::ErrorCode;
+    use dataplane::ErrorCode;
 
     if let Err(err) = ctx.spgs().create_spec(name.clone(), spg_spec).await {
         let error = Some(err.to_string());

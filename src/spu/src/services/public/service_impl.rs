@@ -11,7 +11,7 @@ use futures::stream::StreamExt;
 use tokio::select;
 use event_listener::Event;
 
-use dataplane_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 use kf_socket::InnerKfSocket;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
@@ -77,7 +77,7 @@ where
 
                                 use fluvio_spu_schema::client::offset::ReplicaOffsetUpdateRequest;
                                 use fluvio_spu_schema::client::offset::ReplicaOffsetUpdate;
-                                use dataplane_protocol::ErrorCode;
+                                use dataplane::ErrorCode;
 
                                 debug!("conn: {}, sending replica: {} hw: {}, leo: {}",s_sink.id(),
                                     offset_event.replica_id,

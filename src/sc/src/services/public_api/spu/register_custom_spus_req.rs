@@ -6,7 +6,7 @@
 use tracing::{debug, trace};
 use std::io::Error as IoError;
 
-use dataplane_protocol::ErrorCode;
+use dataplane::ErrorCode;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::CustomSpuSpec;

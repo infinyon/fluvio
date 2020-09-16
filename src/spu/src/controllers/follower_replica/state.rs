@@ -15,7 +15,7 @@ use chashmap::ReadGuard;
 use chashmap::WriteGuard;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use dataplane_protocol::record::RecordSet;
+use dataplane::record::RecordSet;
 use fluvio_storage::FileReplica;
 use fluvio_storage::ConfigOption;
 use fluvio_storage::StorageError;

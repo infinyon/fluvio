@@ -6,8 +6,8 @@ use futures::io::AsyncWrite;
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;
-use dataplane_protocol::api::RequestMessage;
-use dataplane_protocol::fetch::{
+use dataplane::api::RequestMessage;
+use dataplane::fetch::{
     FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse,
 };
 use fluvio_controlplane_metadata::partition::ReplicaKey;
