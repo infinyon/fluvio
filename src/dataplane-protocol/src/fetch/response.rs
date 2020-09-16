@@ -184,7 +184,7 @@ impl<R> FetchResponse<R>
 where
     R: Encoder + Decoder + Debug,
 {
-    pub fn find_topic(&self, topic: &String) -> Option<&FetchableTopicResponse<R>>
+    pub fn find_topic(&self, topic: &str) -> Option<&FetchableTopicResponse<R>>
     where
         R: Debug,
     {

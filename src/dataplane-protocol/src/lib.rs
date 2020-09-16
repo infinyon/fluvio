@@ -1,4 +1,6 @@
 #[allow(clippy::assign_op_pattern)]
+#[allow(clippy::len_without_is_empty)]
+#[allow(clippy::should_implement_trait)]
 
 mod common;
 mod error_code;

@@ -1,3 +1,6 @@
+#[allow(clippy::len_without_is_empty)]
+#[allow(clippy::should_implement_trait)]
+
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -79,7 +82,7 @@ impl DefaultAsyncBuffer {
                 format!("text: '{}'", self)
             }
         } else {
-            format!("empty: (0 bytes)")
+            "empty: (0 bytes)".to_string()
         }
     }
 }
@@ -218,7 +221,7 @@ impl Decoder for RecordSet {
                     }
                 },
             }
-            count = count + 1;
+            count += 1;
         }
 
         Ok(())
@@ -249,7 +252,7 @@ impl Encoder for RecordSet {
         trace!("Record Set encode len: {}", length);
         length.encode(dest, version)?;
 
-        dest.put_slice(&mut out);
+        dest.put_slice(&out);
         Ok(())
     }
 }

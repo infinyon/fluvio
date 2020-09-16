@@ -98,7 +98,7 @@ where
 impl Batch<DefaultBatchRecords> {
     /// add new record, this will update the offset to correct
     pub fn add_record(&mut self, mut record: DefaultRecord) {
-        let last_offset_delta = if self.records.len() == 0 {
+        let last_offset_delta = if self.records.is_empty() {
             0
         } else {
             self.records.len() as Offset

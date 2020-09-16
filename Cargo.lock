@@ -1019,7 +1019,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#06b533227f255bf4773f7abdcef526ae2424c8fc"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
@@ -1030,7 +1030,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-api"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#06b533227f255bf4773f7abdcef526ae2424c8fc"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -1041,7 +1041,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-codec"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#06b533227f255bf4773f7abdcef526ae2424c8fc"
 dependencies = [
  "bytes 0.5.6",
  "fluvio-protocol-core",
@@ -1053,7 +1053,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-core"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#06b533227f255bf4773f7abdcef526ae2424c8fc"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1062,7 +1062,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-derive"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#6142eb4c50e43dfd2e3ddc55d5483d93bbf7685d"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=fluvio_only#06b533227f255bf4773f7abdcef526ae2424c8fc"
 dependencies = [
  "log",
  "proc-macro2",
