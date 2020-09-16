@@ -106,15 +106,3 @@ pub struct FetchPartition {
     /// not be honored.
     pub max_bytes: i32,
 }
-
-#[cfg(test)]
-mod test {
-
-    use super::DefaultFetchRequest;
-
-    #[test]
-    fn test_request() {
-        let _ = DefaultFetchRequest::default();
-        assert!(true);
-    }
-}
