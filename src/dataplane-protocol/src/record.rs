@@ -1,6 +1,3 @@
-#[allow(clippy::len_without_is_empty)]
-#[allow(clippy::should_implement_trait)]
-
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -473,6 +470,8 @@ mod test {
 }
 
 mod file {
+
+    #[allow(clippy::should_implement_trait)]
     use std::fmt;
     use std::io::Error as IoError;
 
