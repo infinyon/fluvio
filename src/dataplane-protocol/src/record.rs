@@ -471,7 +471,6 @@ mod test {
 
 mod file {
 
-    #[allow(clippy::should_implement_trait)]
     use std::fmt;
     use std::io::Error as IoError;
 
