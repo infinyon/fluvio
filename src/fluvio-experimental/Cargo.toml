@@ -10,5 +10,8 @@ nightly = []
 [dependencies]
 futures = "0.3.5"
 
+# Fluvio dependencies
+fluvio = { path = "../client" }
+
 [dev-dependencies]
 async-std = "1.6.3"

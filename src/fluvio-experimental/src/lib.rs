@@ -48,29 +48,59 @@ feature = "nightly",
 doc(include = "../../../website/kubernetes/INSTALL.md")
 )]
 
+use std::pin::Pin;
+use std::ops::RangeBounds;
 use futures::Stream;
 use futures::task::{Context, Poll};
-use std::pin::Pin;
-use std::ops::{Range, RangeTo, RangeFrom, RangeToInclusive, RangeFull, RangeBounds};
+use fluvio::{ClusterSocket, ClientError};
+use fluvio::config::ConfigFile;
+use fluvio::metadata::topic::{TopicSpec, TopicReplicaParam};
 
 type Offset = u64;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(Debug)]
-pub enum FluvioError {}
+pub enum FluvioError {
+    ClusterSocket,
+    ClientError(ClientError),
+    IoError(std::io::Error),
+}
+
+impl From<std::io::Error> for FluvioError {
+    fn from(error: std::io::Error) -> Self {
+        Self::IoError(error)
+    }
+}
+
+impl From<ClientError> for FluvioError {
+    fn from(error: ClientError) -> Self {
+        Self::ClientError(error)
+    }
+}
 
 /// An interface for interacting with Fluvio streaming
-pub struct FluvioClient {}
+pub struct FluvioClient {
+    config: ConfigFile,
+    socket: ClusterSocket,
+}
 
 impl FluvioClient {
     /// Creates a new Fluvio client with default configurations
-    pub fn new() -> Result<Self, FluvioError> {
-        todo!()
+    pub async fn new() -> Result<Self, FluvioError> {
+        let config_file = FluvioConfig::load_default_or_new()?;
+        Self::from_config(config_file).await
     }
 
     /// Creates a new Fluvio client with the given configuration
-    pub fn from_config(config: FluvioConfig) -> Result<Self, FluvioError> {
-        todo!()
+    pub async fn from_config(config_file: FluvioConfig) -> Result<Self, FluvioError> {
+        let config = config_file.config();
+        let cluster_config = config.current_cluster()
+            .ok_or(FluvioError::ClusterSocket)?;
+        let socket = ClusterSocket::connect(cluster_config).await?;
+        Ok(Self {
+            config: config_file,
+            socket,
+        })
     }
 
     /// Creates a new Topic with the given options
@@ -104,26 +134,44 @@ impl FluvioClient {
     /// # };
     /// ```
     pub async fn create_topic<T: Into<TopicConfig>>(
-        &self,
-        config: T,
+        &mut self,
+        topic_config: T,
     ) -> Result<Topic, FluvioError> {
-        todo!()
+        let config = topic_config.into();
+        let topic_spec = config.to_spec();
+        let mut admin = self.socket.admin().await;
+        admin.create(config.name.clone(), false, topic_spec).await?;
+        Ok(Topic {
+            config,
+            socket: &mut self.socket,
+        })
     }
 
     /// Queries Fluvio for the existing Topics and returns them
-    pub async fn get_topics(&self) -> Result<Vec<TopicConfig>, FluvioError> {
-        todo!()
+    pub async fn get_topics(&mut self) -> Result<Vec<TopicDetails>, FluvioError> {
+        let mut admin = self.socket.admin().await;
+        let metadata = admin.list::<TopicSpec, _>(vec![]).await?;
+        let topics = metadata.into_iter()
+            .map(|topic_metadata| {
+                TopicDetails {
+                    name: topic_metadata.name,
+                    partitions: topic_metadata.spec.partitions(),
+                    replication: topic_metadata.spec.replication_factor(),
+                }
+            })
+            .collect();
+        Ok(topics)
     }
 }
 
 /// Configuration options for connecting to Fluvio
-pub struct FluvioConfig {}
+pub type FluvioConfig = fluvio::config::ConfigFile;
 
 /// Describes configuration options for a new or existing Topic
 pub struct TopicConfig {
     name: String,
-    partitions: u16,
-    replication: u16,
+    partitions: i32,
+    replication: i32,
 }
 
 impl<S: Into<String>> From<S> for TopicConfig {
@@ -143,21 +191,37 @@ impl TopicConfig {
     }
 
     /// Sets the number of partitions for this Topic to be divided into
-    pub fn with_partitions(mut self, partitions: u16) -> Self {
+    pub fn with_partitions(mut self, partitions: i32) -> Self {
         self.partitions = partitions;
         self
     }
 
     /// Sets the number of replicas for this Topic to be copied into
-    pub fn with_replicas(mut self, replicas: u16) -> Self {
+    pub fn with_replicas(mut self, replicas: i32) -> Self {
         self.replication = replicas;
         self
     }
+
+    fn to_spec(&self) -> TopicSpec {
+        TopicSpec::Computed(TopicReplicaParam::new(
+            self.partitions,
+            self.replication,
+            false,
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct TopicDetails {
+    name: String,
+    partitions: Option<i32>,
+    replication: Option<i32>,
 }
 
 /// A handle to a Fluvio Topic, which may be streamed from or to
-pub struct Topic {
+pub struct Topic<'a> {
     config: TopicConfig,
+    socket: &'a mut ClusterSocket,
 }
 
 impl Topic {

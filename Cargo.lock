@@ -1035,6 +1035,7 @@ name = "fluvio-experimental"
 version = "0.1.0"
 dependencies = [
  "async-std",
+ "fluvio",
  "futures",
 ]
 

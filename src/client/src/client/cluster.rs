@@ -37,9 +37,9 @@ impl ClusterSocket {
 
     /// create connection to Cluster
     /// depends on policy, this will result in plain connection or TLS connection
-    pub async fn connect(config: ClusterConfig) -> Result<Self, ClientError> {
-        let connector = AllDomainConnector::try_from(config.tls)?;
-        let config = ClientConfig::new(config.addr, connector);
+    pub async fn connect(config: &ClusterConfig) -> Result<Self, ClientError> {
+        let connector = AllDomainConnector::try_from(&config.tls)?;
+        let config = ClientConfig::new(&config.addr, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
         let cluster = Self::new(inner_client);
