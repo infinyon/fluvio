@@ -1037,6 +1037,7 @@ dependencies = [
  "async-std",
  "fluvio",
  "futures",
+ "serde_json",
 ]
 
 [[package]]

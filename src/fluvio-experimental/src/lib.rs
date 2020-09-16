@@ -55,6 +55,9 @@ use futures::task::{Context, Poll};
 use fluvio::{ClusterSocket, ClientError};
 use fluvio::config::ConfigFile;
 use fluvio::metadata::topic::{TopicSpec, TopicReplicaParam};
+use fluvio::kf::api::ReplicaKey;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
 
 type Offset = u64;
 
@@ -136,7 +139,7 @@ impl FluvioClient {
     pub async fn create_topic<T: Into<TopicConfig>>(
         &mut self,
         topic_config: T,
-    ) -> Result<Topic, FluvioError> {
+    ) -> Result<Topic<'_>, FluvioError> {
         let config = topic_config.into();
         let topic_spec = config.to_spec();
         let mut admin = self.socket.admin().await;
@@ -211,6 +214,7 @@ impl TopicConfig {
     }
 }
 
+/// A description of a Topic used to display to the user
 #[derive(Debug)]
 pub struct TopicDetails {
     name: String,
@@ -224,7 +228,7 @@ pub struct Topic<'a> {
     socket: &'a mut ClusterSocket,
 }
 
-impl Topic {
+impl Topic<'_> {
     // NOTE: In the future it'd be nice to have some sort of Trait to represent
     // Fluvio message types. At that point in time, we can create new methods with
     // better names such as `produce` and `consume`. These v1 methods are intentionally
@@ -232,19 +236,64 @@ impl Topic {
     // future without making breaking changes.
     /// Sends a String as a message to this Topic
     ///
+    /// Messages must be accompanied by a "key", which is used to determine which
+    /// partition will be responsible for processing this message. A key should
+    /// be a piece of information derived from the message itself.
+    ///
+    /// For example, let's say you're keeping track of the transactions for a bank
+    /// account. Each message represents a credit or debit to a certain account.
+    /// Let's say your message is formatted as JSON and looks like the following:
+    ///
+    /// ```json
+    /// {
+    ///     "account": "alice",
+    ///     "credit": 100
+    /// }
+    /// ```
+    ///
+    /// In your banking system, you want to make sure that all of the transactions
+    /// for a particular account are processed in order. In order to achieve this,
+    /// all of the events belonging to a particular account must all be processed
+    /// by the same partition. In order for Fluvio to know how to keep all of the
+    /// events from that account together, you should use the account name as the
+    /// key when producing those messages to the topic.
+    ///
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_experimental::Topic;
-    /// async fn produce_my_message(topic: &Topic) {
-    ///     topic.produce_string_message("Hello, Fluvio!").await.unwrap();
+    /// use serde::Serialize;
+    /// use fluvio_experimental::{Topic, FluvioError};
+    ///
+    /// #[derive(Serialize)]
+    /// struct BankMessage {
+    ///     account: String,
+    ///     credit: u32,
+    /// }
+    ///
+    /// async fn produce_my_message(topic: &Topic) -> Result<(), FluvioError> {
+    ///     let bank_transaction = BankMessage {
+    ///         account: "alice".to_string(),
+    ///         credit: 100,
+    ///     };
+    ///     let message = serde_json::to_string(&bank_transaction).unwrap();
+    ///     topic.produce_string_message(&bank_transaction.account, message).await?;
+    ///     Ok(())
     /// }
     /// ```
     pub async fn produce_string_message<S: Into<String>>(
         &self,
+        key: &str,
         message: S,
     ) -> Result<(), FluvioError> {
-        todo!()
+        let partition = 0; // TODO calculate partition from key
+        let replica = ReplicaKey {
+            topic: self.config.name.clone(),
+            partition,
+        };
+        let mut producer = self.socket.producer(replica).await?;
+        let message = message.into();
+        producer.send_record(message.into_bytes()).await?;
+        Ok(())
     }
 
     // NOTE: In the future it'd be nice to have some sort of Trait to represent
