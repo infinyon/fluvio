@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "src/fluvio-experimental",
     "src/cli",
     "src/client",
     "src/cluster",
