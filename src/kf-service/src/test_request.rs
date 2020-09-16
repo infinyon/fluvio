@@ -9,7 +9,9 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
 use flv_future_aio::zero_copy::ZeroCopyWrite;
-use dataplane_protocol::api::{ ApiMessage,Request, RequestMessage, ResponseMessage, RequestHeader, api_decode };
+use dataplane_protocol::api::{
+    ApiMessage, Request, RequestMessage, ResponseMessage, RequestHeader, api_decode,
+};
 use dataplane_protocol::bytes::Buf;
 use dataplane_protocol::derive::Decode;
 use dataplane_protocol::derive::Encode;

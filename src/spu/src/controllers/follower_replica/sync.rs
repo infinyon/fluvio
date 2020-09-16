@@ -9,9 +9,9 @@ use std::marker::PhantomData;
 use bytes::BytesMut;
 use tracing::trace;
 
-use dataplane_protocol::core::{Encoder, Decoder, Version };
-use dataplane_protocol::derive:: { Decode, Encode };
-use dataplane_protocol::record:: { RecordSet, FileRecordSet };
+use dataplane_protocol::core::{Encoder, Decoder, Version};
+use dataplane_protocol::derive::{Decode, Encode};
+use dataplane_protocol::record::{RecordSet, FileRecordSet};
 use dataplane_protocol::api::Request;
 use dataplane_protocol::ErrorCode;
 use dataplane_protocol::StoreValue;

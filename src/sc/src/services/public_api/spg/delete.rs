@@ -20,11 +20,7 @@ pub async fn handle_delete_spu_group(name: String, ctx: SharedContext) -> Result
             Status::new_ok(name)
         }
     } else {
-        Status::new(
-            name,
-            ErrorCode::SpuNotFound,
-            Some("not found".to_owned()),
-        )
+        Status::new(name, ErrorCode::SpuNotFound, Some("not found".to_owned()))
     };
 
     trace!("flv delete spu group resp {:#?}", status);

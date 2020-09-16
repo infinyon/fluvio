@@ -23,7 +23,6 @@ pub type FileFetchResponse = FetchResponse<FileRecordSet>;
 pub type FileTopicResponse = FetchableTopicResponse<FileRecordSet>;
 pub type FilePartitionResponse = FetchablePartitionResponse<FileRecordSet>;
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchResponse<R>
 where
@@ -34,7 +33,6 @@ where
     #[fluvio(min_version = 1, ignorable)]
     pub throttle_time_ms: i32,
 
-    
     #[fluvio(min_version = 7)]
     pub error_code: ErrorCode,
 
@@ -45,8 +43,6 @@ where
     /// The response topics.
     pub topics: Vec<FetchableTopicResponse<R>>,
 }
-
-
 
 impl<R> FetchResponse<R>
 where
@@ -71,8 +67,6 @@ where
     }
 }
 
-
-
 impl FileWrite for FileFetchResponse {
     fn file_encode(
         &self,
@@ -93,7 +87,6 @@ impl FileWrite for FileFetchResponse {
     }
 }
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchableTopicResponse<R>
 where
@@ -106,8 +99,6 @@ where
     pub partitions: Vec<FetchablePartitionResponse<R>>,
     pub data: PhantomData<R>,
 }
-
-
 
 impl FileWrite for FileTopicResponse {
     fn file_encode(
@@ -122,7 +113,6 @@ impl FileWrite for FileTopicResponse {
         Ok(())
     }
 }
-
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchablePartitionResponse<R>
@@ -156,8 +146,6 @@ where
     pub records: R,
 }
 
-
-
 impl FileWrite for FilePartitionResponse {
     fn file_encode(
         &self,
@@ -177,7 +165,6 @@ impl FileWrite for FilePartitionResponse {
     }
 }
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct AbortedTransaction {
     /// The producer id associated with the aborted transaction.
@@ -188,7 +175,6 @@ pub struct AbortedTransaction {
     #[fluvio(min_version = 4)]
     pub first_offset: i64,
 }
-
 
 // -----------------------------------
 // Implementation

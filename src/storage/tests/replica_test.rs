@@ -10,8 +10,10 @@ use futures::future::join;
 use flv_future_aio::test_async;
 use flv_future_aio::timer::sleep;
 use flv_future_aio::net::TcpListener;
-use dataplane_protocol::fetch:: { FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse,
-    FileFetchRequest, FilePartitionResponse, FileTopicResponse};
+use dataplane_protocol::fetch::{
+    FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
+    FilePartitionResponse, FileTopicResponse,
+};
 use dataplane_protocol::api::RequestMessage;
 use dataplane_protocol::batch::DefaultBatch;
 use dataplane_protocol::record::DefaultRecord;

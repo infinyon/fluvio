@@ -1,6 +1,7 @@
+#[allow(clippy::assign_op_pattern)]
+
 use std::convert::TryFrom;
 use std::fmt;
-
 
 use crate::derive::Decode;
 use crate::derive::Encode;
@@ -22,18 +23,15 @@ impl Default for Isolation {
     }
 }
 
-
-
-
 #[derive(Hash, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
 pub struct ReplicaKey {
     pub topic: String,
     pub partition: i32,
 }
 
-unsafe impl Send for ReplicaKey{}
+unsafe impl Send for ReplicaKey {}
 
-unsafe impl Sync for ReplicaKey{}
+unsafe impl Sync for ReplicaKey {}
 
 impl ReplicaKey {
     pub fn new<S, P>(topic: S, partition: P) -> Self
@@ -76,8 +74,6 @@ impl TryFrom<String> for ReplicaKey {
     }
 }
 
-
-
 #[derive(Debug)]
 pub enum PartitionError {
     InvalidSyntax(String),
@@ -93,16 +89,12 @@ impl fmt::Display for PartitionError {
 
 /// Offset information about Partition
 pub trait PartitionOffset {
-
     /// last offset that was committed
     fn last_stable_offset(&self) -> i64;
 
     // beginning offset for the partition
     fn start_offset(&self) -> i64;
-
-
 }
-
 
 // returns a tuple (topic_name, idx)
 pub fn decompose_partition_name(partition_name: &str) -> Result<(String, i32), PartitionError> {

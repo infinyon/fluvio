@@ -13,7 +13,6 @@ use dataplane_protocol::api::api_decode;
 use dataplane_protocol::api::RequestHeader;
 use dataplane_protocol::api::RequestMessage;
 
-
 use dataplane_protocol::produce::DefaultProduceRequest;
 
 use dataplane_protocol::fetch::FileFetchRequest;
@@ -58,15 +57,12 @@ impl ApiMessage for SpuServerRequest {
             // Mixed
             SpuServerApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
 
-            
             SpuServerApiKey::Produce => {
                 let request = DefaultProduceRequest::decode_from(src, header.api_version())?;
                 Ok(Self::ProduceRequest(RequestMessage::new(header, request)))
             }
             SpuServerApiKey::Fetch => api_decode!(Self, FileFetchRequest, src, header),
-            SpuServerApiKey::FetchOffsets => {
-                api_decode!(Self, FetchOffsetsRequest, src, header)
-            }
+            SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
             SpuServerApiKey::RegisterSyncReplicaRequest => {
                 api_decode!(Self, RegisterSyncReplicaRequest, src, header)
             }

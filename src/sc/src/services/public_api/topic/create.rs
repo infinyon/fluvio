@@ -45,11 +45,7 @@ pub async fn handle_create_topics_request(
 }
 
 /// Validate topic, takes advantage of the validation routines inside topic action workflow
-async fn validate_topic_request(
-    name: &str,
-    topic_spec: &TopicSpec,
-    metadata: &Context,
-) -> Status {
+async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &Context) -> Status {
     debug!("validating topic: {}", name);
 
     let topics = metadata.topics().store();

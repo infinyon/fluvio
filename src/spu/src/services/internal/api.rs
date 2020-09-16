@@ -5,9 +5,9 @@ use tracing::trace;
 
 use dataplane_protocol::bytes::Buf;
 use dataplane_protocol::core::Decoder;
-use dataplane_protocol::derive:: { Encode, Decode };
+use dataplane_protocol::derive::{Encode, Decode};
 
-use dataplane_protocol::api::{RequestMessage, ApiMessage, RequestHeader };
+use dataplane_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::fetch_stream_request::FetchStreamRequest;
 

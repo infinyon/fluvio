@@ -13,10 +13,9 @@ use tokio_util::codec::Framed;
 use tokio_util::compat::Compat;
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::net::tls::AllTcpStream;
-use dataplane_protocol::api::{ Request, RequestMessage, ResponseMessage, ApiMessage };
+use dataplane_protocol::api::{Request, RequestMessage, ResponseMessage, ApiMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use dataplane_protocol::core::Decoder as FluvioDecoder;
-
 
 use crate::KfSocketError;
 

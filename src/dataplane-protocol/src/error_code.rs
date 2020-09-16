@@ -4,7 +4,6 @@
 //! Error code definitions described here.
 //!
 
-
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use crate::derive::Encode;
 use crate::derive::Decode;
@@ -17,7 +16,6 @@ use crate::derive::Decode;
 #[repr(i16)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 pub enum ErrorCode {
-
     UnknownServerError = -1,
 
     // Not an error
@@ -53,11 +51,10 @@ impl Default for ErrorCode {
 }
 
 impl ErrorCode {
-
     pub fn is_ok(&self) -> bool {
         match self {
             Self::None => true,
-            _ => false
+            _ => false,
         }
     }
 

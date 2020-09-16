@@ -66,7 +66,7 @@ mod tests {
     use flv_future_aio::timer::sleep;
     use flv_future_aio::net::TcpListener;
     use dataplane_protocol::api::RequestMessage;
-    
+
     use crate::KfSocket;
     use crate::KfSocketError;
     use crate::test_request::EchoRequest;

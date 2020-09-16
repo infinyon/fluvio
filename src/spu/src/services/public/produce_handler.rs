@@ -5,7 +5,9 @@ use tracing::trace;
 use tracing::error;
 
 use dataplane_protocol::ErrorCode;
-use dataplane_protocol::produce::{ DefaultProduceRequest,ProduceResponse, TopicProduceResponse, PartitionProduceResponse};
+use dataplane_protocol::produce::{
+    DefaultProduceRequest, ProduceResponse, TopicProduceResponse, PartitionProduceResponse,
+};
 use dataplane_protocol::api::RequestMessage;
 use dataplane_protocol::api::ResponseMessage;
 use fluvio_controlplane_metadata::partition::ReplicaKey;

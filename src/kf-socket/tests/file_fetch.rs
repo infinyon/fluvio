@@ -13,12 +13,14 @@ use flv_future_aio::fs::util as file_util;
 use flv_future_aio::fs::AsyncFile;
 use flv_future_aio::net::TcpListener;
 use dataplane_protocol::core::Encoder;
-use dataplane_protocol::api::{ Request,ResponseMessage, RequestMessage};
+use dataplane_protocol::api::{Request, ResponseMessage, RequestMessage};
 use dataplane_protocol::batch::DefaultBatch;
 use dataplane_protocol::record::DefaultRecord;
-use dataplane_protocol::fetch::{ DefaultFetchRequest,FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse };
+use dataplane_protocol::fetch::{
+    DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
+    FileTopicResponse,
+};
 use kf_socket::KfSocketError;
-
 
 use flv_util::fixture::ensure_clean_file;
 use kf_socket::KfSocket;

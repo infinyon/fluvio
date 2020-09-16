@@ -1,7 +1,5 @@
-
 use std::fmt::Debug;
 use std::marker::PhantomData;
-
 
 use crate::Isolation;
 use crate::api::Request;
@@ -20,13 +18,11 @@ use super::FetchResponse;
 pub type DefaultFetchRequest = FetchRequest<RecordSet>;
 pub type FileFetchRequest = FetchRequest<FileRecordSet>;
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchRequest<R>
 where
     R: Encoder + Decoder + Default + Debug,
 {
-    
     /// The maximum time in milliseconds to wait for the response.
     pub max_wait: i32,
 
@@ -46,7 +42,6 @@ where
     #[fluvio(min_version = 4)]
     pub isolation_level: Isolation,
 
-
     /// The topics to fetch.
     pub topics: Vec<FetchableTopic>,
 
@@ -56,7 +51,6 @@ where
 
     pub data: PhantomData<R>,
 }
-
 
 impl<R> Request for FetchRequest<R>
 where
@@ -70,8 +64,6 @@ where
 
     type Response = FetchResponse<R>;
 }
-
-
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchableTopic {
@@ -114,7 +106,6 @@ pub struct FetchPartition {
     /// not be honored.
     pub max_bytes: i32,
 }
-
 
 #[cfg(test)]
 mod test {

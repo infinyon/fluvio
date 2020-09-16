@@ -18,7 +18,9 @@ use futures::io::AsyncSeekExt;
 use pin_utils::unsafe_pinned;
 
 use flv_future_aio::fs::File;
-use dataplane_protocol::batch::{ Batch, BatchRecords, DefaultBatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE };
+use dataplane_protocol::batch::{
+    Batch, BatchRecords, DefaultBatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE,
+};
 use dataplane_protocol::Size;
 use dataplane_protocol::Offset;
 

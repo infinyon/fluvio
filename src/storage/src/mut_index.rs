@@ -12,7 +12,7 @@ use tracing::error;
 
 use flv_future_aio::fs::File;
 use flv_future_aio::fs::MemoryMappedMutFile;
-use dataplane_protocol::{ Offset, Size };
+use dataplane_protocol::{Offset, Size};
 
 use crate::util::generate_file_name;
 use crate::ConfigOption;

@@ -49,7 +49,6 @@ where
     pub data: PhantomData<R>,
 }
 
-
 impl<R> Request for ProduceRequest<R>
 where
     R: Debug + Decoder + Encoder,
@@ -62,8 +61,6 @@ where
 
     type Response = ProduceResponse;
 }
-
-
 
 impl FileWrite for FileProduceRequest {
     fn file_encode(
@@ -109,7 +106,6 @@ impl FileWrite for FilePartitionRequest {
     }
 }
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct TopicProduceData<R>
 where
@@ -122,7 +118,6 @@ where
     pub partitions: Vec<PartitionProduceData<R>>,
     pub data: PhantomData<R>,
 }
-
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct PartitionProduceData<R>

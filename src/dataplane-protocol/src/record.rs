@@ -27,7 +27,6 @@ pub type DefaultRecord = Record<DefaultAsyncBuffer>;
 
 pub use file::*;
 
-
 /// slice that can works in Async Context
 pub trait AsyncBuffer {
     fn len(&self) -> usize;
@@ -180,7 +179,7 @@ impl Decoder for RecordSet {
     where
         T: Buf,
     {
-        trace!("raw buffer len: {}",src.remaining());
+        trace!("raw buffer len: {}", src.remaining());
         let mut len: i32 = 0;
         len.decode(src, version)?;
         trace!("Record sets decoded content len: {}", len);
@@ -188,7 +187,11 @@ impl Decoder for RecordSet {
         if src.remaining() < len as usize {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
-                format!("expected message len: {} but founded {}",len,src.remaining())
+                format!(
+                    "expected message len: {} but founded {}",
+                    len,
+                    src.remaining()
+                ),
             ));
         }
 
@@ -196,25 +199,28 @@ impl Decoder for RecordSet {
 
         let mut count = 0;
         while buf.remaining() > 0 {
-            trace!("decoding batches: {}, remaining bytes: {}",count,buf.remaining());
+            trace!(
+                "decoding batches: {}, remaining bytes: {}",
+                count,
+                buf.remaining()
+            );
             let mut batch = DefaultBatch::default();
             match batch.decode(&mut buf, version) {
                 Ok(_) => self.batches.push(batch),
                 Err(err) => match err.kind() {
                     ErrorKind::UnexpectedEof => {
                         warn!("not enough bytes for batch: {}", buf.remaining());
-                        return Ok(())
+                        return Ok(());
                     }
                     _ => {
                         warn!("problem decoding batch: {}", err);
-                        return Ok(())
+                        return Ok(());
                     }
                 },
             }
             count = count + 1;
         }
 
-        
         Ok(())
     }
 }
@@ -425,8 +431,6 @@ mod test {
     /// test decoding of records when one of the batch was truncated
     #[test]
     fn test_decode_batch_truncation() {
-
-
         use super::RecordSet;
         use crate::batch::DefaultBatch;
         use crate::record::DefaultRecord;
@@ -437,7 +441,7 @@ mod test {
             batch.records.push(record);
             batch
         }
-       
+
         // add 3 batches
         let batches = RecordSet::default()
             .add(create_batch())
@@ -447,27 +451,23 @@ mod test {
         const TRUNCATED: usize = 10;
 
         let mut bytes = batches.as_bytes(0).expect("bytes");
-    
+
         let original_len = bytes.len();
-        let _ = bytes.split_off(original_len-TRUNCATED); // truncate record sets
-        let body = bytes.split_off(4);  // split off body so we can manipulate len
+        let _ = bytes.split_off(original_len - TRUNCATED); // truncate record sets
+        let body = bytes.split_off(4); // split off body so we can manipulate len
 
         let new_len = (original_len - TRUNCATED - 4) as i32;
         let mut out = vec![];
         new_len.encode(&mut out, 0).expect("encoding");
         out.extend_from_slice(&body);
 
-        assert_eq!(out.len(),original_len - TRUNCATED);
+        assert_eq!(out.len(), original_len - TRUNCATED);
 
         println!("decoding...");
         let decoded_batches = RecordSet::decode_from(&mut Cursor::new(out), 0).expect("decoding");
         assert_eq!(decoded_batches.batches.len(), 2);
     }
 }
-
-
-
-
 
 mod file {
     use std::fmt;
@@ -487,7 +487,6 @@ mod file {
 
     #[derive(Default, Debug)]
     pub struct FileRecordSet(AsyncFileSlice);
-
 
     impl fmt::Display for FileRecordSet {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -514,7 +513,6 @@ mod file {
             Self(slice)
         }
     }
-
 
     impl Encoder for FileRecordSet {
         fn write_size(&self, _version: Version) -> usize {
@@ -554,5 +552,4 @@ mod file {
             Ok(())
         }
     }
-    
 }

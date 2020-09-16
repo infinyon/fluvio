@@ -6,7 +6,7 @@ use tracing::trace;
 use tracing::error;
 
 use flv_future_aio::fs::create_dir_all;
-use dataplane_protocol::{ ErrorCode, Offset, Size };
+use dataplane_protocol::{ErrorCode, Offset, Size};
 use dataplane_protocol::batch::DefaultBatch;
 use dataplane_protocol::record::RecordSet;
 
@@ -334,8 +334,8 @@ mod tests {
 
     use flv_future_aio::test_async;
     use dataplane_protocol::batch::DefaultBatch;
-    use dataplane_protocol::{ Offset, ErrorCode };
-    use dataplane_protocol::core::{Decoder,Encoder};
+    use dataplane_protocol::{Offset, ErrorCode};
+    use dataplane_protocol::core::{Decoder, Encoder};
     use dataplane_protocol::fetch::FilePartitionResponse;
     use dataplane_protocol::record::RecordSet;
     use flv_util::fixture::ensure_clean_dir;

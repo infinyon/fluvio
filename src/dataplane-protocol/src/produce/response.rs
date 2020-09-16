@@ -1,4 +1,3 @@
-
 use crate::derive::Encode;
 use crate::derive::Decode;
 use crate::derive::FluvioDefault;
@@ -17,12 +16,21 @@ pub struct ProduceResponse {
 }
 
 impl ProduceResponse {
-
     /// Find partition in Response
-    pub fn find_partition_response(&self, topic: &str, partition: i32) -> Option<&PartitionProduceResponse> {
-
-        if let Some(response) = self.responses.iter().find(|response| response.name == topic) {
-             response.partitions.iter().find( |part_response| part_response.partition_index == partition)
+    pub fn find_partition_response(
+        &self,
+        topic: &str,
+        partition: i32,
+    ) -> Option<&PartitionProduceResponse> {
+        if let Some(response) = self
+            .responses
+            .iter()
+            .find(|response| response.name == topic)
+        {
+            response
+                .partitions
+                .iter()
+                .find(|part_response| part_response.partition_index == partition)
         } else {
             None
         }
@@ -38,7 +46,7 @@ pub struct TopicProduceResponse {
     pub partitions: Vec<PartitionProduceResponse>,
 }
 
-#[derive(Encode, Decode,FluvioDefault, Debug)]
+#[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct PartitionProduceResponse {
     /// The partition index.
     pub partition_index: i32,

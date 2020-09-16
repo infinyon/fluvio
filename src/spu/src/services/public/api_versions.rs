@@ -1,7 +1,7 @@
 use std::io::Error;
 use tracing::debug;
 
-use dataplane_protocol::api::{ RequestMessage, ResponseMessage, Request };
+use dataplane_protocol::api::{RequestMessage, ResponseMessage, Request};
 use dataplane_protocol::produce::DefaultProduceRequest;
 use dataplane_protocol::fetch::DefaultFetchRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;

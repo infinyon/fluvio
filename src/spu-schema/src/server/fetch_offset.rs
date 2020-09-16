@@ -30,7 +30,6 @@ impl Request for FetchOffsetsRequest {
     type Response = FetchOffsetsResponse;
 }
 
-
 impl FetchOffsetsRequest {
     /// create request with a single topic and partition
     pub fn new(topic: String, partition: i32) -> Self {
@@ -129,4 +128,3 @@ impl PartitionOffset for FetchOffsetPartitionResponse {
         self.start_offset
     }
 }
-

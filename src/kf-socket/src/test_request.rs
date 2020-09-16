@@ -3,10 +3,9 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
-use dataplane_protocol::api::{ ApiMessage, RequestMessage, RequestHeader, api_decode, Request};
+use dataplane_protocol::api::{ApiMessage, RequestMessage, RequestHeader, api_decode, Request};
 use dataplane_protocol::bytes::Buf;
-use dataplane_protocol::derive::{ Decode, Encode};
-
+use dataplane_protocol::derive::{Decode, Encode};
 
 #[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]

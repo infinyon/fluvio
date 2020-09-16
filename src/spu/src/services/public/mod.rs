@@ -15,7 +15,6 @@ use dataplane_protocol::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
 
-
 pub type OffsetReplicaList = std::collections::HashSet<ReplicaKey>;
 
 pub(crate) type PublicApiServer =

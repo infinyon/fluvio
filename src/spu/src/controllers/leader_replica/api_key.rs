@@ -1,4 +1,4 @@
-use dataplane_protocol::derive::{ Encode, Decode };
+use dataplane_protocol::derive::{Encode, Decode};
 
 #[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]

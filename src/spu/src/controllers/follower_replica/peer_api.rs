@@ -7,7 +7,7 @@ use dataplane_protocol::bytes::Buf;
 use dataplane_protocol::core::Decoder;
 use dataplane_protocol::derive::Encode;
 
-use dataplane_protocol::api::{ RequestMessage, ApiMessage, RequestHeader };
+use dataplane_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::FollowerPeerApiEnum;
 use super::DefaultSyncRequest;

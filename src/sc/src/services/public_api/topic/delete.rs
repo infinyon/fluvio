@@ -13,10 +13,7 @@ use fluvio_sc_schema::Status;
 use crate::core::*;
 
 /// Handler for delete topic request
-pub async fn handle_delete_topic(
-    topic_name: String,
-    ctx: SharedContext,
-) -> Result<Status, Error> {
+pub async fn handle_delete_topic(topic_name: String, ctx: SharedContext) -> Result<Status, Error> {
     debug!("api request: delete topic '{}'", topic_name);
 
     let status = if ctx.topics().store().value(&topic_name).await.is_some() {

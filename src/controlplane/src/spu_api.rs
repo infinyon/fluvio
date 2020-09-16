@@ -12,7 +12,6 @@ use dataplane_protocol::derive::Decode;
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
 
-
 #[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]

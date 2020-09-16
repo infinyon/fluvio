@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 
-use dataplane_protocol::api::{ RequestMessage, ResponseMessage };
+use dataplane_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::*;
 
