@@ -1,7 +1,6 @@
 use crate::Terminal;
 
 use crate::CliError;
-
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -47,10 +46,10 @@ where
 
     let ns = &command.namespace;
 
-    remove_objects("spugroups", ns);
-    remove_objects("spus", ns);
-    remove_objects("topics", ns);
-    remove_objects("persistentvolumeclaims", ns);
+    remove_objects("spugroups", ns, None);
+    remove_objects("spus", ns, None);
+    remove_objects("topics", ns, None);
+    remove_objects("persistentvolumeclaims", ns, Some("app=spu"));
 
     // delete secrets
     Command::new("kubectl")
@@ -70,15 +69,26 @@ where
     Ok("".to_owned())
 }
 
-fn remove_objects(object_type: &str, namespace: &str) {
-    println!("deleting all {} in: {}", object_type, namespace);
-    Command::new("kubectl")
-        .arg("delete")
-        .arg(object_type)
-        .arg("--all")
-        .arg("--namespace")
-        .arg(namespace)
-        .inherit();
+fn remove_objects(object_type: &str, namespace: &str, selector: Option<&str>) {
+    let mut cmd = Command::new("kubectl");
+
+    cmd.arg("delete");
+    cmd.arg(object_type);
+    cmd.arg("--namespace");
+    cmd.arg(namespace);
+
+    if let Some(label) = selector {
+        println!(
+            "deleting label '{}' object {} in: {}",
+            label, object_type, namespace
+        );
+        cmd.arg("--selector").arg(label);
+    } else {
+        println!("deleting all {} in: {}", object_type, namespace);
+        cmd.arg("--all");
+    }
+
+    cmd.inherit();
 }
 
 fn remove_local_cluster() {

@@ -252,7 +252,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b832fea31d5e45973923a3de29695f1bec7b6c8ecaa05a8ae518e33704dfac2"
 dependencies = [
  "log",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -275,7 +275,7 @@ version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "687c230d85c0a52504709705fc8a53e4a692b83a2184f03dae73e38e1e93a783"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -617,7 +617,7 @@ dependencies = [
  "percent-encoding 2.1.0",
  "rand 0.7.3",
  "sha2",
- "time 0.2.18",
+ "time 0.2.19",
  "version_check",
 ]
 
@@ -854,19 +854,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "env_logger"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
-dependencies = [
- "atty",
- "humantime",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
 name = "error-chain"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -906,11 +893,11 @@ dependencies = [
  "dashmap",
  "dirs 1.0.5",
  "event-listener",
- "flv-api-sc",
- "flv-api-spu",
+ "fluvio-sc-schema",
+ "fluvio-spu-schema",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -923,50 +910,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-cluster"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "fluvio",
- "flv-future-aio",
- "flv-metadata-cluster",
- "flv-util 0.3.2",
- "k8-client",
- "k8-config",
- "k8-obj-core",
- "k8-obj-metadata",
- "serde",
- "serde_json",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "flv-api-sc"
-version = "2.0.0"
-dependencies = [
- "flv-metadata-cluster",
- "flv-types",
- "flv-util 0.3.2",
- "kf-protocol",
- "log",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "flv-api-spu"
-version = "2.0.0"
-dependencies = [
- "bytes 0.5.6",
- "kf-protocol",
- "log",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "flv-cli"
+name = "fluvio-cli"
 version = "0.1.0"
 dependencies = [
  "async-h1",
@@ -977,13 +921,13 @@ dependencies = [
  "dirs 1.0.5",
  "fluvio",
  "fluvio-cluster",
- "flv-api-sc",
+ "fluvio-controlplane-metadata",
+ "fluvio-sc",
+ "fluvio-sc-schema",
+ "fluvio-spu",
+ "fluvio-types",
  "flv-future-aio",
- "flv-metadata-cluster",
- "flv-sc-k8",
- "flv-spu",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util",
  "futures",
  "http-types",
  "k8-client",
@@ -1008,74 +952,44 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-eventstream-dispatcher"
+name = "fluvio-cluster"
 version = "0.1.0"
 dependencies = [
- "async-channel",
- "async-lock",
- "async-trait",
- "event-listener",
- "flv-eventstream-model",
+ "async-std",
+ "fluvio",
+ "fluvio-controlplane-metadata",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
- "futures",
- "k8-metadata-client",
- "log",
+ "flv-util",
+ "k8-client",
+ "k8-config",
+ "k8-obj-core",
+ "k8-obj-metadata",
  "serde",
- "tokio",
+ "serde_json",
  "tracing",
  "tracing-futures",
 ]
 
 [[package]]
-name = "flv-eventstream-model"
+name = "fluvio-controlplane"
 version = "0.1.0"
 dependencies = [
- "async-rwlock",
- "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
- "k8-obj-app",
- "k8-obj-core",
- "k8-obj-metadata",
- "serde",
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
+ "kf-protocol",
+ "log",
  "tracing",
 ]
 
 [[package]]
-name = "flv-future-aio"
-version = "2.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45c13326a094e19de2d0d42d30236a01bfcc041c28a4a617afc9605564a22b4"
-dependencies = [
- "async-std",
- "async-test-derive",
- "async-tls",
- "async-trait",
- "bytes 0.5.6",
- "flv-util 0.2.1",
- "futures",
- "futures-timer 2.0.2",
- "log",
- "memmap",
- "nix",
- "pin-project",
- "pin-utils",
- "rustls 0.17.0",
- "tokio",
- "webpki",
-]
-
-[[package]]
-name = "flv-metadata-cluster"
+name = "fluvio-controlplane-metadata"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "flv-eventstream-model",
+ "fluvio-stream-model",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util",
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
@@ -1086,7 +1000,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-sc-core"
+name = "fluvio-sc"
 version = "0.1.0"
 dependencies = [
  "async-channel",
@@ -1095,14 +1009,16 @@ dependencies = [
  "base64 0.11.0",
  "chashmap",
  "event-listener",
- "flv-api-sc",
- "flv-eventstream-dispatcher",
+ "fluvio-controlplane",
+ "fluvio-controlplane-metadata",
+ "fluvio-sc-schema",
+ "fluvio-stream-dispatcher",
+ "fluvio-types",
  "flv-future-aio",
- "flv-metadata-cluster",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-tls-proxy",
+ "flv-util",
  "futures",
- "internal-api",
+ "k8-client",
  "k8-metadata-client",
  "k8-obj-metadata",
  "kf-protocol",
@@ -1111,27 +1027,6 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "regex",
- "serde",
- "tokio",
- "toml",
- "tracing",
- "tracing-futures",
- "utils",
-]
-
-[[package]]
-name = "flv-sc-k8"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "flv-future-aio",
- "flv-sc-core",
- "flv-tls-proxy",
- "flv-types",
- "flv-util 0.3.2",
- "futures",
- "k8-client",
- "rand 0.7.3",
  "serde",
  "structopt",
  "tokio",
@@ -1142,8 +1037,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-spu"
-version = "1.0.0"
+name = "fluvio-sc-schema"
+version = "0.1.0"
+dependencies = [
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
+ "flv-util",
+ "kf-protocol",
+ "log",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-spu"
+version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1152,15 +1060,15 @@ dependencies = [
  "chashmap",
  "chrono",
  "event-listener",
- "flv-api-spu",
+ "fluvio-controlplane",
+ "fluvio-controlplane-metadata",
+ "fluvio-spu-schema",
+ "fluvio-storage",
+ "fluvio-types",
  "flv-future-aio",
- "flv-metadata-cluster",
- "flv-storage",
  "flv-tls-proxy",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util",
  "futures",
- "internal-api",
  "kf-protocol",
  "kf-service",
  "kf-socket",
@@ -1178,14 +1086,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-storage"
-version = "1.0.0"
+name = "fluvio-spu-schema"
+version = "0.1.0"
+dependencies = [
+ "bytes 0.5.6",
+ "kf-protocol",
+ "log",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-storage"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -1198,15 +1117,82 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-stream-dispatcher"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-lock",
+ "async-trait",
+ "event-listener",
+ "fluvio-stream-model",
+ "fluvio-types",
+ "flv-future-aio",
+ "flv-util",
+ "futures",
+ "k8-metadata-client",
+ "log",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-stream-model"
+version = "0.1.0"
+dependencies = [
+ "async-rwlock",
+ "fluvio-types",
+ "flv-future-aio",
+ "flv-util",
+ "k8-obj-app",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-types"
+version = "0.1.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
+name = "flv-future-aio"
+version = "2.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f97affbe276a743321d92577bc939bcb247bbe532557c5618f7319d7357d1fbb"
+dependencies = [
+ "async-std",
+ "async-test-derive",
+ "async-tls",
+ "async-trait",
+ "bytes 0.5.6",
+ "flv-util",
+ "futures",
+ "futures-timer 2.0.2",
+ "memmap",
+ "nix",
+ "pin-project",
+ "pin-utils",
+ "rustls 0.17.0",
+ "tokio",
+ "tracing",
+ "webpki",
+]
+
+[[package]]
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
  "flv-future-aio",
- "flv-metadata-cluster",
- "flv-types",
  "futures",
  "k8-client",
  "k8-metadata-client",
@@ -1229,43 +1215,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-types"
-version = "0.2.2"
-dependencies = [
- "tracing",
-]
-
-[[package]]
 name = "flv-util"
-version = "0.1.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63dfd9a699e5b73d0163b7abd4019c0e37c7293c68b822dfb12cae2ca753703d"
+checksum = "e624a59053c74ff6756238651ec1bdd51180c5c80ba917ec22866b06bae89dd7"
 dependencies = [
- "chrono",
- "env_logger 0.6.2",
- "log",
-]
-
-[[package]]
-name = "flv-util"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d86d88e0fd6a90e453fb257f9f65819b6b1179fc888fadff6bb1aba1eb84707"
-dependencies = [
- "chrono",
- "env_logger 0.7.1",
- "log",
-]
-
-[[package]]
-name = "flv-util"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5cf735c988038ec59ba1dd5515770ad67a35688328ed99fd867e133dfe8c69b"
-dependencies = [
- "chrono",
- "env_logger 0.7.1",
- "log",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1352,7 +1306,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0b5a30a4328ab5473878237c447333c093297bded83a4983d10f4deea240d39"
 dependencies = [
  "proc-macro-hack",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -1429,9 +1383,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
+checksum = "fc587bc0ec293155d5bfa6b9891ec18a1e330c234f896ea47fbada4cadbe47e6"
 dependencies = [
  "cfg-if",
  "libc",
@@ -1615,17 +1569,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6854dd77ddc4f9ba1a448f487e27843583d407648150426a30c2ea3a2c39490a"
 
 [[package]]
-name = "internal-api"
-version = "1.0.0"
-dependencies = [
- "flv-metadata-cluster",
- "flv-types",
- "kf-protocol",
- "log",
- "tracing",
-]
-
-[[package]]
 name = "iovec"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1787,9 +1730,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94d5178c5e37c8352f67cc5cd2c5b95f0ff239501f336adc43dfdd3728e0de20"
+version = "4.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "kf-protocol-api",
  "kf-protocol-core",
@@ -1802,13 +1744,12 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-api"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5519b99ec41c8ee07ca23ad65c46f8b3fc603ef8da6a7e4b645b6a9173b861db"
+version = "3.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "content_inspector",
  "crc32c",
- "flv-util 0.1.1",
+ "flv-util",
  "kf-protocol-core",
  "kf-protocol-derive",
  "log",
@@ -1818,9 +1759,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-core"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "181d915d438db9198e5c45852ad2368a4999ed23146fcf62a516d5a58ffa2375"
+version = "0.2.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1831,21 +1771,19 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-derive"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04d755345d3b2d384a694c68b5f299d29664847de02982fe00640c731ccc2bbe"
+version = "0.2.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "log",
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
+ "proc-macro2 1.0.21",
+ "quote 1.0.7",
+ "syn 1.0.40",
 ]
 
 [[package]]
 name = "kf-protocol-fs"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8ef03620f77406bff96b68012375da9536f8f627ec461f6d86f761d8bcf4cfb"
+version = "4.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
@@ -1858,12 +1796,11 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-message"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8dc4adddeb3a44e29f02acd70ae0737009ac7fb8f6ecc8d18a89d876956ea8"
+version = "3.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "content_inspector",
- "flv-util 0.2.1",
+ "flv-util",
  "kf-protocol-api",
  "kf-protocol-core",
  "kf-protocol-derive",
@@ -1874,9 +1811,8 @@ dependencies = [
 
 [[package]]
 name = "kf-protocol-transport"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "013331a05c5e2989d2387ff3976485b3416042766dba999f1678ebb830a13f87"
+version = "3.0.4"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"
 dependencies = [
  "bytes 0.5.6",
  "flv-future-aio",
@@ -1891,9 +1827,9 @@ version = "3.0.0"
 dependencies = [
  "async-trait",
  "event-listener",
+ "fluvio-types",
  "flv-future-aio",
- "flv-types",
- "flv-util 0.3.2",
+ "flv-util",
  "futures",
  "kf-protocol",
  "kf-socket",
@@ -1906,7 +1842,7 @@ dependencies = [
 
 [[package]]
 name = "kf-socket"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1915,7 +1851,7 @@ dependencies = [
  "chashmap",
  "event-listener",
  "flv-future-aio",
- "flv-util 0.3.2",
+ "flv-util",
  "futures",
  "kf-protocol",
  "log",
@@ -1942,9 +1878,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.76"
+version = "0.2.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
+checksum = "f2f96b10ec2560088a8e76961b00d47107b3a625fecb76dedb29ee7ccbf98235"
 
 [[package]]
 name = "libnghttp2-sys"
@@ -2044,7 +1980,7 @@ dependencies = [
  "base64 0.10.1",
  "bitflags",
  "enum_to_u8_slice_derive",
- "env_logger 0.6.2",
+ "env_logger",
  "lazy_static",
  "libc",
  "parking_lot 0.9.0",
@@ -2059,11 +1995,12 @@ dependencies = [
 
 [[package]]
 name = "miniz_oxide"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d7559a8a40d0f97e1edea3220f698f78b1c5ab67532e49f68fde3910323b722"
+checksum = "c60c0dfe32c10b43a144bad8fc83538c52f58302c92300ea7ec7bf7b38d5a7b9"
 dependencies = [
  "adler",
+ "autocfg",
 ]
 
 [[package]]
@@ -2319,7 +2256,7 @@ checksum = "99b8db626e31e5b81787b9783425769681b347011cc59471e33ea46d2ea0cf55"
 dependencies = [
  "pest",
  "pest_meta",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -2350,7 +2287,7 @@ version = "0.4.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c0e815c3ee9a031fdf5af21c10aa17c573c9c6a566328d99e3936c34e36461f"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -2423,7 +2360,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
 dependencies = [
  "proc-macro-error-attr",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
  "version_check",
@@ -2435,7 +2372,7 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "version_check",
 ]
@@ -2463,9 +2400,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.20"
+version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "175c513d55719db99da20232b06cda8bab6b83ec2d04e3283edf0213c37c1a29"
+checksum = "36e28516df94f3dd551a587da5357459d9b36d945a7c37c3557928c1c2ff2a2c"
 dependencies = [
  "unicode-xid 0.2.1",
 ]
@@ -2497,7 +2434,7 @@ version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa563d17ecb180e500da1cfd2b028310ac758de548efdd203e18f283af693f37"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
 ]
 
 [[package]]
@@ -2780,20 +2717,20 @@ checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
 
 [[package]]
 name = "serde"
-version = "1.0.115"
+version = "1.0.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54c9a88f2da7238af84b5101443f0c0d0a3bbdc455e34a5c9497b1903ed55d5"
+checksum = "96fe57af81d28386a513cbc6858332abc6117cfdb5999647c6444b8f43a370a5"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.115"
+version = "1.0.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "609feed1d0a73cc36a0182a840a9b37b4a82f0b1150369f0536a9e3f2a31dc48"
+checksum = "f630a6370fd8e457873b4bd2ffdae75408bc291ba72be773772a4c2a065d9ae8"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -2953,9 +2890,9 @@ checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
 
 [[package]]
 name = "socket2"
-version = "0.3.12"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03088793f677dce356f3ccc2edb1b314ad191ab702a5de3faf49304f7e104918"
+checksum = "b1fa70dc5c8104ec096f4fe7ede7a221d35ae13dcd19ba1ad9a81d2cab9a1c44"
 dependencies = [
  "cfg-if",
  "libc",
@@ -3004,7 +2941,7 @@ version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c87a60a40fccc84bef0652345bbbbbe20a605bf5d0ce81719fc476f5c03b50ef"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "serde",
  "serde_derive",
@@ -3018,7 +2955,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58fa5ff6ad0d98d1ffa8cb115892b6e69d67799f6763e162a1c9db421dc22e11"
 dependencies = [
  "base-x",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "serde",
  "serde_derive",
@@ -3058,7 +2995,7 @@ checksum = "5e2513111825077552a6751dfad9e11ce0fba07d7276a3943a037d7e93e64c5f"
 dependencies = [
  "heck",
  "proc-macro-error",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -3097,7 +3034,7 @@ version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "963f7d3cc59b59b9325165add223142bbf1df27655d07789f109896d353d8350"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "unicode-xid 0.2.1",
 ]
@@ -3184,9 +3121,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.2.18"
+version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12785163ae8a1cbb52a5db39af4a5baabd3fe49f07f76f952f89d7e89e5ce531"
+checksum = "80c1a1fd93112fc50b11c43a1def21f926be3c18884fad676ea879572da070a1"
 dependencies = [
  "const_fn",
  "libc",
@@ -3214,7 +3151,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5c3be1edfad6027c69f5491cf4cb310d1a71ecd6af742788c6ff8bced86b8fa"
 dependencies = [
  "proc-macro-hack",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "standback",
  "syn 1.0.40",
@@ -3245,7 +3182,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -3291,7 +3228,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80e0ccfc3378da0cce270c946b676a376943f5cd16aeba64568e7939806f4ada"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
 ]
@@ -3328,9 +3265,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-serde"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6ccba2f8f16e0ed268fc765d9b7ff22e965e7185d32f8f1ec8294fe17d86e79"
+checksum = "fb65ea441fbb84f9f6748fd496cf7f63ec9af5bca94dd86456978d055e8eb28b"
 dependencies = [
  "serde",
  "tracing-core",
@@ -3338,9 +3275,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.11"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abd165311cc4d7a555ad11cc77a37756df836182db0d81aac908c8184c584f40"
+checksum = "82bb5079aa76438620837198db8a5c529fb9878c730bc2b28179b0241cf04c10"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",
@@ -3499,7 +3436,7 @@ dependencies = [
 name = "utils"
 version = "0.3.0"
 dependencies = [
- "flv-types",
+ "fluvio-types",
  "rand 0.7.3",
  "regex",
  "tracing",
@@ -3583,7 +3520,7 @@ dependencies = [
  "bumpalo",
  "lazy_static",
  "log",
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
  "wasm-bindgen-shared",
@@ -3617,7 +3554,7 @@ version = "0.2.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f249f06ef7ee334cc3b8ff031bfc11ec99d00f34d86da7498396dc1e3b1498fe"
 dependencies = [
- "proc-macro2 1.0.20",
+ "proc-macro2 1.0.21",
  "quote 1.0.7",
  "syn 1.0.40",
  "wasm-bindgen-backend",

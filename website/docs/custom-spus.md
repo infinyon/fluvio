@@ -54,7 +54,7 @@ $ alias SC-PRIVATE="kubectl get svc flv-sc-internal -o jsonpath='{.status.loadBa
 The next steps must be performed in the following sequence:
 
 1. Register **custom-spu** with the **SC**
-2. Run **spu-server** binary compiled above
+2. Run **fluvio-spu** binary compiled above
 
 
 ## Custom-SPU CLI
@@ -123,7 +123,7 @@ custom-spu 'custom-spu-200' registered successfully
 Run **spu_server** :
 
 ```bash
-$ spu-server --id 200 --sc-controller `SC-PRIVATE`:9004
+$ fluvio-spu --id 200 --sc-controller `SC-PRIVATE`:9004
 starting custom-spu services (id:200)
 ```
 

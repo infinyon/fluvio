@@ -1,9 +1,6 @@
 #!/bin/sh
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-RELATIVE_PATH="$DIR"/../../target/debug
-
 ARG1=${1}
 ARG2=${2}
 ARG3=${3}
 
-RUST_LOG=kf=trace,sc=trace,flv=trace "$RELATIVE_PATH"/spu-server -i "$ARG1" -p 0.0.0.0:"$ARG2" -v 0.0.0.0:"$ARG3"
+RUST_LOG=kf=trace,fluvio=trace cargo run --bin  fluvio-spu -- -i "$ARG1" -p 0.0.0.0:"$ARG2" -v 0.0.0.0:"$ARG3"

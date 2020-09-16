@@ -23,47 +23,56 @@ jobs:
   #         access_token: ${{ secrets.GITHUB_TOKEN }}
   #     - name: check versions
   #       run: make -s check_version
-  version_check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Install cargo-cvm
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-cvm
-          version: latest
-      - name: Check Versions
-        run: cargo cvm -x
+
+#  version_check:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Install cargo-cvm
+#        uses: actions-rs/install@v0.1
+#        with:
+#          crate: cargo-cvm
+#          version: latest
+#      - name: Check Versions
+#        run: cargo cvm -x
+
   check_clippy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
     steps:
       - uses: actions/checkout@v1
       - name: Cancel Workflow Action
         uses: styfle/cancel-workflow-action@0.4.1
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions-rs/toolchain@v1
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
         with:
-          components: clippy
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: check clippy
-        run: make check-clippy
+        run: make check-clippy RUSTV=${{ matrix.rust }}
   check_fmt:
     name: check cargo fmt
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-
+        rust: [stable]
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
-          components: rustfmt
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: check fmt
-        run: make check-fmt
+        run: make check-fmt RUSTV=${{ matrix.rust }}
 
   unit_test:
     name: Unit test
@@ -71,34 +80,43 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
+        rust: [stable]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Show rustup
         run: rustup show
       - name: Run unit tests
-        run: cargo test
+        run:  make run-all-unit-test
+
+  
 
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        rust: [nightly]
+        os: [ubuntu-latest,macOS-latest]
+        rust: [stable]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
         with:
-          minikube version: "v1.12.3"
-          kubernetes version: "v1.18.8"
+          minikube version: "v1.13.0"
+          kubernetes version: "v1.19.0"
           github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Minikube on Mac
         if: startsWith(matrix.os, 'macOS')
@@ -108,12 +126,47 @@ jobs:
         run:  minikube start
       - name: Test minikube
         run: |
-          kubectl get nodes
+          minikube profile list
+      - name: Build
+        run: |
+          cargo build
+      - name: setup context
+        run: |
+          ./target/debug/fluvio cluster set-minikube-context
           kubectl config view
-      - name: Test Helm
-        run: helm version
-      - name: Minikube Status
-        run: minikube status
+      - name: install fluvio system chart
+        run: |
+          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+      - name: smoke test tls
+        run: |
+          FLV_CMD=true make smoke-test-tls
+
+
+  k8_cluster_test:
+    name: Kubernetes cluster test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Install Minikube on Linux
+        uses: manusa/actions-setup-minikube@v2.0.0
+        with:
+          minikube version: "v1.13.0"
+          kubernetes version: "v1.19.0"
+          github token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
       - name: Run minikube tunnel
         run: |
           minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
@@ -131,26 +184,9 @@ jobs:
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
-      - name: smoke test
-        run: |
-          FLV_CMD=true make smoke-test
-      - name: smoke test tls
-        run: |
-          FLV_CMD=true make smoke-test-tls
       - name: Install musl-tools for Linux
-        if: startsWith(matrix.os,'ubuntu')
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          export TARGET_CC=musl-gcc
-      - name: Install musl-tools for mac
-        if: startsWith(matrix.os, 'macOS')
-        run: |
-          brew install filosottile/musl-cross/musl-cross
-          export TARGET_CC=x86_64-linux-musl-gcc
-      - name: smoke test k8
-        run: |
-          FLV_CMD=true make smoke-test-k8
       - name: smoke test k8 tls
-        run: |
-          FLV_CMD=true make smoke-test-k8-tls
+        run: FLV_CMD=true make smoke-test-k8-tls

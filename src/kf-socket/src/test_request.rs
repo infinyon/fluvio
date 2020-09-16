@@ -12,6 +12,7 @@ use kf_protocol::derive::Decode;
 use kf_protocol::derive::Encode;
 use kf_protocol::api::Request;
 
+#[fluvio_kf(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum TestKafkaApiEnum {
@@ -86,6 +87,8 @@ impl KfRequestMessage for TestApiRequest {
         Self::ApiKey: Sized,
         T: Buf,
     {
+        tracing::debug!("decoding test api request: {:#?}", header);
+
         match header.api_key().try_into()? {
             TestKafkaApiEnum::Echo => api_decode!(TestApiRequest, EchoRequest, src, header),
             TestKafkaApiEnum::Status => {

@@ -26,6 +26,7 @@ use crate::KfService;
 use crate::call_service;
 use crate::api_loop;
 
+#[fluvio_kf(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub(crate) enum TestKafkaApiEnum {
