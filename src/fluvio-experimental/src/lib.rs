@@ -42,6 +42,8 @@ use futures::task::{Context, Poll};
 use std::pin::Pin;
 use std::ops::{Range, RangeTo, RangeFrom, RangeToInclusive, RangeFull, RangeBounds};
 
+type Offset = u64;
+
 /// Possible errors that may arise when using Fluvio
 #[derive(Debug)]
 pub enum FluvioError {}
@@ -151,6 +153,15 @@ impl Topic {
     // overly-specific to refer to Strings so that we can deprecate them in the
     // future without making breaking changes.
     /// Sends a String as a message to this Topic
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use fluvio_experimental::Topic;
+    /// async fn produce_my_message(topic: &Topic) {
+    ///     topic.produce_string_message("Hello, Fluvio!").await.unwrap();
+    /// }
+    /// ```
     pub async fn produce_string_message<S: Into<String>>(&self, message: S) -> Result<(), FluvioError> {
         todo!()
     }
@@ -161,6 +172,19 @@ impl Topic {
     // overly-specific to refer to Strings so that we can deprecate them in the
     // future without making breaking changes.
     /// Creates a Stream that yields new String messages as they arrive on this Topic
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use futures::StreamExt;
+    /// use fluvio_experimental::Topic;
+    /// async fn print_messages(topic: &Topic) {
+    ///     let mut consumer_stream = topic.consume_string_messages();
+    ///     while let Some(event) = consumer_stream.next().await {
+    ///         println!("Received event: {}", event);
+    ///     }
+    /// }
+    /// ```
     pub fn consume_string_messages(&self) -> TopicStringConsumer {
         todo!()
     }
@@ -180,6 +204,17 @@ impl Topic {
     pub async fn fetch_string_messages<R: RangeBounds<Offset>>(&self, range: R) -> Result<Vec<String>, FluvioError> {
         todo!()
     }
+
+    pub fn partition(&self, partition: u16) -> Partition {
+        Partition {
+            partition,
+            topic: self.config.name.clone(),
+        }
+    }
+
+    pub fn partition_by_key(&self, key: &str) -> Partition {
+        todo!()
+    }
 }
 
 /// A Stream that yields new events received from a specific Topic
@@ -193,4 +228,27 @@ impl Stream for TopicStringConsumer {
     }
 }
 
-type Offset = u64;
+pub struct Partition {
+    topic: String,
+    partition: u16,
+}
+
+impl Partition {
+    pub fn consume_string_messages(&self) -> PartitionStringConsumer {
+        todo!()
+    }
+
+    pub async fn fetch_string_messages<R: RangeBounds<Offset>>(&self, range: R) -> Result<Vec<String>, FluvioError> {
+        todo!()
+    }
+}
+
+pub struct PartitionStringConsumer {}
+
+impl Stream for PartitionStringConsumer {
+    type Item = String;
+
+    fn poll_next(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        todo!()
+    }
+}
