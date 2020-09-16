@@ -1,5 +1,4 @@
 #[allow(clippy::assign_op_pattern)]
-
 use std::convert::TryFrom;
 use std::fmt;
 
