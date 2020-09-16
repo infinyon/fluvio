@@ -13,9 +13,9 @@ use std::io::Error as IoError;
 
 use tracing::{debug, trace};
 
-use kf_protocol::api::FlvErrorCode;
+use dataplane_protocol::ErrorCode;
 
-use fluvio_sc_schema::FlvStatus;
+use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::*;
 
 use crate::core::*;
@@ -30,7 +30,7 @@ pub async fn handle_create_topics_request(
     dry_run: bool,
     topic_spec: TopicSpec,
     ctx: SharedContext,
-) -> Result<FlvStatus, IoError> {
+) -> Result<Status, IoError> {
     debug!("api request: create topic '{}'", name);
 
     // validate topic request
@@ -49,16 +49,16 @@ async fn validate_topic_request(
     name: &str,
     topic_spec: &TopicSpec,
     metadata: &Context,
-) -> FlvStatus {
+) -> Status {
     debug!("validating topic: {}", name);
 
     let topics = metadata.topics().store();
     let spus = metadata.spus().store();
     // check if topic already exists
     if topics.contains_key(name).await {
-        return FlvStatus::new(
+        return Status::new(
             name.to_string(),
-            FlvErrorCode::TopicAlreadyExists,
+            ErrorCode::TopicAlreadyExists,
             Some(format!("topic '{}' already defined", name)),
         );
     }
@@ -68,22 +68,22 @@ async fn validate_topic_request(
             let next_state = validate_computed_topic_parameters(param);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
-                FlvStatus::new(
+                Status::new(
                     name.to_string(),
-                    FlvErrorCode::TopicError,
+                    ErrorCode::TopicError,
                     Some(next_state.reason),
                 )
             } else {
                 let next_state = generate_replica_map(spus, param).await;
                 trace!("validating, generate replica map topic: {:#?}", next_state);
                 if next_state.resolution.no_resource() {
-                    FlvStatus::new(
+                    Status::new(
                         name.to_string(),
-                        FlvErrorCode::TopicError,
+                        ErrorCode::TopicError,
                         Some(next_state.reason),
                     )
                 } else {
-                    FlvStatus::new_ok(name.to_owned())
+                    Status::new_ok(name.to_owned())
                 }
             }
         }
@@ -91,22 +91,22 @@ async fn validate_topic_request(
             let next_state = validate_assigned_topic_parameters(partition_map);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
-                FlvStatus::new(
+                Status::new(
                     name.to_string(),
-                    FlvErrorCode::TopicError,
+                    ErrorCode::TopicError,
                     Some(next_state.reason),
                 )
             } else {
                 let next_state = update_replica_map_for_assigned_topic(partition_map, spus).await;
                 trace!("validating, assign replica map topic: {:#?}", next_state);
                 if next_state.resolution.is_invalid() {
-                    FlvStatus::new(
+                    Status::new(
                         name.to_string(),
-                        FlvErrorCode::TopicError,
+                        ErrorCode::TopicError,
                         Some(next_state.reason),
                     )
                 } else {
-                    FlvStatus::new_ok(name.to_owned())
+                    Status::new_ok(name.to_owned())
                 }
             }
         }
@@ -114,12 +114,12 @@ async fn validate_topic_request(
 }
 
 /// Process topic, converts topic spec to K8 and sends to KV store
-async fn process_topic_request(ctx: &Context, name: String, topic_spec: TopicSpec) -> FlvStatus {
+async fn process_topic_request(ctx: &Context, name: String, topic_spec: TopicSpec) -> Status {
     if let Err(err) = create_topic(ctx, name.clone(), topic_spec).await {
         let error = Some(err.to_string());
-        FlvStatus::new(name, FlvErrorCode::TopicError, error)
+        Status::new(name, ErrorCode::TopicError, error)
     } else {
-        FlvStatus::new_ok(name)
+        Status::new_ok(name)
     }
 }
 

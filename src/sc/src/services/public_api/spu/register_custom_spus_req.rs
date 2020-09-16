@@ -6,9 +6,9 @@
 use tracing::{debug, trace};
 use std::io::Error as IoError;
 
-use kf_protocol::api::FlvErrorCode;
+use dataplane_protocol::ErrorCode;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_sc_schema::FlvStatus;
+use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::CustomSpuSpec;
 use fluvio_sc_schema::spu::SpuSpec;
 use crate::core::*;
@@ -26,7 +26,7 @@ impl RegisterCustomSpu {
         spec: CustomSpuSpec,
         dry_run: bool,
         ctx: SharedContext,
-    ) -> FlvStatus {
+    ) -> Status {
         debug!("api request: create custom-spu '{}({})'", name, spec.id);
 
         let cmd = Self { name, spec, ctx };
@@ -38,7 +38,7 @@ impl RegisterCustomSpu {
         }
 
         if dry_run {
-            return FlvStatus::default();
+            return Status::default();
         }
 
         let status = cmd.process_custom_spu_request().await;
@@ -49,7 +49,7 @@ impl RegisterCustomSpu {
     }
 
     /// Validate custom_spu requests (one at a time)
-    async fn validate_custom_spu_request(&self) -> Result<(), FlvStatus> {
+    async fn validate_custom_spu_request(&self) -> Result<(), Status> {
         debug!("validating custom-spu: {}({})", self.name, self.spec.id);
 
         // look-up SPU by name or id to check if already exists
@@ -62,9 +62,9 @@ impl RegisterCustomSpu {
                 .await
                 .is_some()
         {
-            Err(FlvStatus::new(
+            Err(Status::new(
                 self.name.to_owned(),
-                FlvErrorCode::SpuAlreadyExists,
+                ErrorCode::SpuAlreadyExists,
                 Some(format!(
                     "spu '{}({})' already defined",
                     self.name, self.spec.id
@@ -76,12 +76,12 @@ impl RegisterCustomSpu {
     }
 
     /// Process custom spu, converts spu spec to K8 and sends to KV store
-    async fn process_custom_spu_request(&self) -> FlvStatus {
+    async fn process_custom_spu_request(&self) -> Status {
         if let Err(err) = self.register_custom_spu().await {
             let error = Some(err.to_string());
-            FlvStatus::new(self.name.to_owned(), FlvErrorCode::SpuError, error)
+            Status::new(self.name.to_owned(), ErrorCode::SpuError, error)
         } else {
-            FlvStatus::new_ok(self.name.to_owned())
+            Status::new_ok(self.name.to_owned())
         }
     }
 

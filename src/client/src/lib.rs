@@ -47,3 +47,6 @@ pub mod metadata {
     }
 }
 
+pub mod dataplane {
+    pub use dataplane_protocol::*;
+}

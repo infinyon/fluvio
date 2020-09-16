@@ -26,7 +26,7 @@ pub enum ErrorCode {
     OffsetOutOfRange = 1,
     NotLeaderForPartition = 6,
     StorageError = 56,
-    
+
     // Spu errors
     SpuError = 1000,
     SpuRegisterationFailed = 1001,
@@ -85,8 +85,8 @@ mod test {
     use super::ErrorCode;
 
     #[test]
-    fn test_flv_error_code_from_conversion() {
-        let erro_code: ErrorCode = (2 as i16).try_into().expect("convert");
+    fn test_error_code_from_conversion() {
+        let erro_code: ErrorCode = (1001 as i16).try_into().expect("convert");
         assert_eq!(erro_code, ErrorCode::SpuRegisterationFailed);
     }
 }

@@ -7,7 +7,7 @@ use dataplane_protocol::core::Encoder;
 use dataplane_protocol::core::Decoder;
 use dataplane_protocol::api::Request;
 
-use crate::FlvStatus;
+use crate::Status;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -23,7 +23,7 @@ pub struct CreateRequest {
 impl Request for CreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
     const DEFAULT_API_VERSION: i16 = 0;
-    type Response = FlvStatus;
+    type Response = Status;
 }
 
 impl AdminRequest for CreateRequest {}

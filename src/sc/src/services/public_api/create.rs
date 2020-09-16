@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 
-use kf_protocol::api::*;
-use fluvio_sc_schema::FlvStatus;
+use dataplane_protocol::api::{ RequestMessage, ResponseMessage };
+use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::*;
 
 use crate::core::*;
@@ -10,7 +10,7 @@ use crate::core::*;
 pub async fn handle_create_request(
     request: RequestMessage<CreateRequest>,
     ctx: SharedContext,
-) -> Result<ResponseMessage<FlvStatus>, IoError> {
+) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();
 
     let dry_run = req.dry_run;

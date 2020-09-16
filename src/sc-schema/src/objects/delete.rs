@@ -20,7 +20,7 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::core::Removable;
 
-use crate::FlvStatus;
+use crate::Status;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -61,7 +61,7 @@ impl AdminRequest for DeleteRequest {}
 impl Request for DeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;
     const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvStatus;
+    type Response = Status;
 }
 
 impl Encoder for DeleteRequest {

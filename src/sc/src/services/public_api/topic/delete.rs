@@ -7,8 +7,8 @@
 use tracing::{debug, trace};
 use std::io::Error;
 
-use kf_protocol::api::FlvErrorCode;
-use fluvio_sc_schema::FlvStatus;
+use dataplane_protocol::ErrorCode;
+use fluvio_sc_schema::Status;
 
 use crate::core::*;
 
@@ -16,24 +16,24 @@ use crate::core::*;
 pub async fn handle_delete_topic(
     topic_name: String,
     ctx: SharedContext,
-) -> Result<FlvStatus, Error> {
+) -> Result<Status, Error> {
     debug!("api request: delete topic '{}'", topic_name);
 
     let status = if ctx.topics().store().value(&topic_name).await.is_some() {
         if let Err(err) = ctx.topics().delete(topic_name.clone()).await {
-            FlvStatus::new(
+            Status::new(
                 topic_name.clone(),
-                FlvErrorCode::TopicError,
+                ErrorCode::TopicError,
                 Some(err.to_string()),
             )
         } else {
-            FlvStatus::new_ok(topic_name.clone())
+            Status::new_ok(topic_name.clone())
         }
     } else {
         // topic does not exist
-        FlvStatus::new(
+        Status::new(
             topic_name.clone(),
-            FlvErrorCode::TopicNotFound,
+            ErrorCode::TopicNotFound,
             Some("not found".to_owned()),
         )
     };

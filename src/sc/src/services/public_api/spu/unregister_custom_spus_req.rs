@@ -7,8 +7,8 @@
 use tracing::{debug, trace};
 use std::io::Error;
 
-use kf_protocol::api::FlvErrorCode;
-use fluvio_sc_schema::FlvStatus;
+use dataplane_protocol::ErrorCode;
+use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::*;
 
 use crate::stores::spu::*;
@@ -18,7 +18,7 @@ use crate::core::*;
 pub async fn handle_un_register_custom_spu_request(
     key: CustomSpuKey,
     ctx: SharedContext,
-) -> Result<FlvStatus, Error> {
+) -> Result<Status, Error> {
     let spu_store = ctx.spus().store();
     let status = match key {
         CustomSpuKey::Name(spu_name) => {
@@ -29,9 +29,9 @@ pub async fn handle_un_register_custom_spu_request(
                 un_register_custom_spu(&ctx, spu.inner_owned()).await
             } else {
                 // spu does not exist
-                FlvStatus::new(
+                Status::new(
                     spu_name.clone(),
-                    FlvErrorCode::SpuNotFound,
+                    ErrorCode::SpuNotFound,
                     Some("not found".to_owned()),
                 )
             }
@@ -44,9 +44,9 @@ pub async fn handle_un_register_custom_spu_request(
                 un_register_custom_spu(&ctx, spu).await
             } else {
                 // spu does not exist
-                FlvStatus::new(
+                Status::new(
                     format!("spu-{}", spu_id),
-                    FlvErrorCode::SpuNotFound,
+                    ErrorCode::SpuNotFound,
                     Some("not found".to_owned()),
                 )
             }
@@ -59,26 +59,26 @@ pub async fn handle_un_register_custom_spu_request(
 }
 
 /// Generate for delete custom spu operation and return result.
-async fn un_register_custom_spu(ctx: &Context, spu: SpuAdminMd) -> FlvStatus {
+async fn un_register_custom_spu(ctx: &Context, spu: SpuAdminMd) -> Status {
     let spu_name = spu.key_owned();
 
     // must be Custom Spu
     if !spu.spec.is_custom() {
-        return FlvStatus::new(
+        return Status::new(
             spu_name,
-            FlvErrorCode::SpuError,
+            ErrorCode::SpuError,
             Some("expected 'Custom' spu, found 'Managed' spu".to_owned()),
         );
     }
 
     // delete custom spec and return result
     if let Err(err) = ctx.spus().delete(spu_name.clone()).await {
-        FlvStatus::new(
+        Status::new(
             spu_name,
-            FlvErrorCode::SpuError,
+            ErrorCode::SpuError,
             Some(format!("error deleting: {}", err)),
         )
     } else {
-        FlvStatus::new_ok(spu_name.clone())
+        Status::new_ok(spu_name.clone())
     }
 }

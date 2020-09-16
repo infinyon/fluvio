@@ -31,7 +31,7 @@ mod process {
     where
         O: Terminal,
     {
-        use fluvio::kf::api::ReplicaKey;
+        use fluvio::dataplane::ReplicaKey;
 
         let (target_server, cfg) = opt.validate()?;
 

@@ -62,7 +62,7 @@ mod display {
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::partition::*;
-    use fluvio::kf::api::*;
+    use fluvio::dataplane::PartitionError;
 
     use crate::error::CliError;
     use crate::OutputType;

@@ -20,8 +20,6 @@ members = [
     "tests/runner",
 ]
 
-[patch.crates-io]
-kf-protocol =  { git = 'https://github.com/infinyon/flv-kf-protocol.git', branch = 'change_to_stable', version = "4.0.0" }
 
 
 # profile to make image sizer smaller

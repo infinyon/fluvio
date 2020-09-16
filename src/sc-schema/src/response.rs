@@ -12,13 +12,13 @@ use dataplane_protocol::ErrorCode;
 use crate::ApiError;
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvStatus {
+pub struct Status {
     pub name: String,
     pub error_code: ErrorCode,
     pub error_message: Option<String>,
 }
 
-impl FlvStatus {
+impl Status {
     pub fn new_ok(name: String) -> Self {
         Self {
             name,
