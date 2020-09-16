@@ -1,11 +1,10 @@
 #![allow(clippy::assign_op_pattern)]
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
+use dataplane_protocol::api::Request;
+use dataplane_protocol::derive::{ Decode, Encode };
 use fluvio_types::SpuId;
 
-use super::KfSPUPeerApiEnum;
+use super::SPUPeerApiEnum;
 
 #[derive(Decode, Encode, Debug, Default)]
 pub struct FetchStreamRequest {
@@ -15,7 +14,7 @@ pub struct FetchStreamRequest {
 }
 
 impl Request for FetchStreamRequest {
-    const API_KEY: u16 = KfSPUPeerApiEnum::FetchStream as u16;
+    const API_KEY: u16 = SPUPeerApiEnum::FetchStream as u16;
     type Response = FetchStreamResponse;
 }
 

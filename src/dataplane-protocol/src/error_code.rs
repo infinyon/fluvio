@@ -24,8 +24,9 @@ pub enum ErrorCode {
     None = 0,
 
     OffsetOutOfRange = 1,
-
-
+    NotLeaderForPartition = 6,
+    StorageError = 56,
+    
     // Spu errors
     SpuError = 1000,
     SpuRegisterationFailed = 1001,

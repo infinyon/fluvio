@@ -6,19 +6,16 @@ use futures::io::AsyncWrite;
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;
-use kf_protocol::api::RequestMessage;
+use dataplane_protocol::api::RequestMessage;
+use dataplane_protocol::fetch::{ FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse };
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use kf_protocol::fs::FileFetchResponse;
-use kf_protocol::fs::KfFileFetchRequest;
-use kf_protocol::fs::FilePartitionResponse;
-use kf_protocol::fs::FileTopicResponse;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 
 /// perform log fetch request using zero copy write
 pub async fn handle_fetch_request<S>(
-    request: RequestMessage<KfFileFetchRequest>,
+    request: RequestMessage<FileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
     sink: InnerExclusiveKfSink<S>,
 ) -> Result<(), KfSocketError>
@@ -63,7 +60,7 @@ where
     }
 
     let response =
-        RequestMessage::<KfFileFetchRequest>::response_with_header(&header, fetch_response);
+        RequestMessage::<FileFetchRequest>::response_with_header(&header, fetch_response);
     trace!("sending back file fetch response: {:#?}", response);
     let mut inner = sink.lock().await;
     inner

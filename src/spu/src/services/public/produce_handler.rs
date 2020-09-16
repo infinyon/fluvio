@@ -4,25 +4,22 @@ use tracing::warn;
 use tracing::trace;
 use tracing::error;
 
-use kf_protocol::api::ErrorCode;
-use kf_protocol::message::produce::DefaultKfProduceRequest;
-use kf_protocol::message::produce::KfProduceResponse;
-use kf_protocol::message::produce::TopicProduceResponse;
-use kf_protocol::message::produce::PartitionProduceResponse;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::ResponseMessage;
+use dataplane_protocol::ErrorCode;
+use dataplane_protocol::produce::{ DefaultProduceRequest,ProduceResponse, TopicProduceResponse, PartitionProduceResponse};
+use dataplane_protocol::api::RequestMessage;
+use dataplane_protocol::api::ResponseMessage;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
 
 pub async fn handle_produce_request(
-    request: RequestMessage<DefaultKfProduceRequest>,
+    request: RequestMessage<DefaultProduceRequest>,
     ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<KfProduceResponse>, Error> {
+) -> Result<ResponseMessage<ProduceResponse>, Error> {
     let (header, produce_request) = request.get_header_request();
     trace!("handling produce request: {:#?}", produce_request);
 
-    let mut response = KfProduceResponse::default();
+    let mut response = ProduceResponse::default();
 
     //let ack = produce_request.acks;
 
@@ -57,7 +54,7 @@ pub async fn handle_produce_request(
                 }
                 Err(err) => {
                     error!("error: {:#?} writing to replica: {}", err, rep_id);
-                    partition_response.error_code = ErrorCode::KafkaStorageError;
+                    partition_response.error_code = ErrorCode::StorageError;
                 }
             }
 
@@ -69,5 +66,5 @@ pub async fn handle_produce_request(
 
     trace!("produce request completed");
 
-    Ok(RequestMessage::<DefaultKfProduceRequest>::response_with_header(&header, response))
+    Ok(RequestMessage::<DefaultProduceRequest>::response_with_header(&header, response))
 }

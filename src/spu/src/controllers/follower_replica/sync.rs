@@ -9,26 +9,22 @@ use std::marker::PhantomData;
 use bytes::BytesMut;
 use tracing::trace;
 
-use kf_protocol::Encoder;
-use kf_protocol::Decoder;
-use kf_protocol::Version;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::RecordSet;
-use kf_protocol::api::Request;
-use kf_protocol::api::ErrorCode;
-use kf_protocol::fs::KfFileRecordSet;
-use kf_protocol::fs::StoreValue;
-use kf_protocol::fs::FileWrite;
+use dataplane_protocol::core::{Encoder, Decoder, Version };
+use dataplane_protocol::derive:: { Decode, Encode };
+use dataplane_protocol::record:: { RecordSet, FileRecordSet };
+use dataplane_protocol::api::Request;
+use dataplane_protocol::ErrorCode;
+use dataplane_protocol::StoreValue;
+use dataplane_protocol::FileWrite;
 use fluvio_storage::SlicePartitionResponse;
 use flv_future_aio::fs::AsyncFileSlice;
 
-use super::KfFollowerPeerApiEnum;
+use super::FollowerPeerApiEnum;
 
-pub type FileSyncRequest = SyncRequest<KfFileRecordSet>;
+pub type FileSyncRequest = SyncRequest<FileRecordSet>;
 pub type DefaultSyncRequest = SyncRequest<RecordSet>;
-pub type PeerFilePartitionResponse = PeerFetchablePartitionResponse<KfFileRecordSet>;
-pub type PeerFileTopicResponse = PeerFetchableTopicResponse<KfFileRecordSet>;
+pub type PeerFilePartitionResponse = PeerFetchablePartitionResponse<FileRecordSet>;
+pub type PeerFileTopicResponse = PeerFetchableTopicResponse<FileRecordSet>;
 
 /// used for sending records and commits
 /// re purpose topic response since it has records and commit offsets
@@ -60,7 +56,7 @@ impl<R> Request for SyncRequest<R>
 where
     R: Encoder + Decoder + Debug,
 {
-    const API_KEY: u16 = KfFollowerPeerApiEnum::SyncRecords as u16;
+    const API_KEY: u16 = FollowerPeerApiEnum::SyncRecords as u16;
     const DEFAULT_API_VERSION: i16 = 7;
     type Response = SyncResponse;
 }

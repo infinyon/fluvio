@@ -1,11 +1,9 @@
 use std::io::Error;
 use tracing::debug;
 
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::ResponseMessage;
-use kf_protocol::api::Request;
-use kf_protocol::message::produce::DefaultKfProduceRequest;
-use kf_protocol::message::fetch::DefaultKfFetchRequest;
+use dataplane_protocol::api::{ RequestMessage, ResponseMessage, Request };
+use dataplane_protocol::produce::DefaultProduceRequest;
+use dataplane_protocol::fetch::DefaultFetchRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::versions::ApiVersionKey;
 use fluvio_spu_schema::server::versions::ApiVersionsRequest;
@@ -21,17 +19,17 @@ pub async fn handle_kf_lookup_version_request(
 
     // Kafka
     response.api_keys.push(make_version_key(
-        SpuServerApiKey::KfProduce,
-        DefaultKfProduceRequest::MIN_API_VERSION,
-        DefaultKfProduceRequest::MAX_API_VERSION,
+        SpuServerApiKey::Produce,
+        DefaultProduceRequest::MIN_API_VERSION,
+        DefaultProduceRequest::MAX_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
-        SpuServerApiKey::KfFetch,
-        DefaultKfFetchRequest::MIN_API_VERSION,
-        DefaultKfFetchRequest::MAX_API_VERSION,
+        SpuServerApiKey::Fetch,
+        DefaultFetchRequest::MIN_API_VERSION,
+        DefaultFetchRequest::MAX_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
-        SpuServerApiKey::FlvFetchOffsets,
+        SpuServerApiKey::FetchOffsets,
         FetchOffsetsRequest::DEFAULT_API_VERSION,
         FetchOffsetsRequest::DEFAULT_API_VERSION,
     ));

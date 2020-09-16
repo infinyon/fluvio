@@ -11,7 +11,7 @@ use futures::stream::StreamExt;
 use tokio::select;
 use event_listener::Event;
 
-use kf_protocol::api::RequestMessage;
+use dataplane_protocol::api::RequestMessage;
 use kf_socket::InnerKfSocket;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocketError;
@@ -77,7 +77,7 @@ where
 
                                 use fluvio_spu_schema::client::offset::ReplicaOffsetUpdateRequest;
                                 use fluvio_spu_schema::client::offset::ReplicaOffsetUpdate;
-                                use kf_protocol::api::FlvErrorCode;
+                                use dataplane_protocol::ErrorCode;
 
                                 debug!("conn: {}, sending replica: {} hw: {}, leo: {}",s_sink.id(),
                                     offset_event.replica_id,
@@ -87,7 +87,7 @@ where
                                 let req = ReplicaOffsetUpdateRequest {
                                     offsets: vec![ReplicaOffsetUpdate {
                                         replica: offset_event.replica_id,
-                                        error_code: FlvErrorCode::None,
+                                        error_code: ErrorCode::None,
                                         start_offset: 0,
                                         leo: offset_event.leo,
                                         hw: offset_event.hw
@@ -133,15 +133,15 @@ where
                                 ),
 
                                 // Kafka
-                                SpuServerRequest::KfProduceRequest(request) => call_service!(
+                                SpuServerRequest::ProduceRequest(request) => call_service!(
                                     request,
                                     handle_produce_request(request,context.clone()),
                                     s_sink,
                                     "ks produce request handler"
                                 ),
-                                SpuServerRequest::KfFileFetchRequest(request) => handle_fetch_request(request,context.clone(),s_sink.clone()).await?,
+                                SpuServerRequest::FileFetchRequest(request) => handle_fetch_request(request,context.clone(),s_sink.clone()).await?,
 
-                                SpuServerRequest::FlvFetchOffsetsRequest(request) => call_service!(
+                                SpuServerRequest::FetchOffsetsRequest(request) => call_service!(
                                     request,
                                     handle_offset_request(request,context.clone()),
                                     s_sink,

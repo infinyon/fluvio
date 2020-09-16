@@ -24,6 +24,13 @@ pub struct FetchOffsetsRequest {
     pub topics: Vec<FetchOffsetTopic>,
 }
 
+impl Request for FetchOffsetsRequest {
+    const API_KEY: u16 = SpuServerApiKey::FetchOffsets as u16;
+    const DEFAULT_API_VERSION: i16 = 0;
+    type Response = FetchOffsetsResponse;
+}
+
+
 impl FetchOffsetsRequest {
     /// create request with a single topic and partition
     pub fn new(topic: String, partition: i32) -> Self {
@@ -58,12 +65,12 @@ pub struct FetchOffsetPartition {
 // -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvFetchOffsetsResponse {
+pub struct FetchOffsetsResponse {
     /// Each topic offset in the response.
     pub topics: Vec<FetchOffsetTopicResponse>,
 }
 
-impl FlvFetchOffsetsResponse {
+impl FetchOffsetsResponse {
     pub fn find_partition(self, replica: &ReplicaKey) -> Option<FetchOffsetPartitionResponse> {
         for topic_res in self.topics {
             if topic_res.name == replica.topic {
@@ -123,8 +130,3 @@ impl PartitionOffset for FetchOffsetPartitionResponse {
     }
 }
 
-impl Request for FetchOffsetsRequest {
-    const API_KEY: u16 = SpuServerApiKey::FetchOffsets as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
-    type Response = FlvFetchOffsetsResponse;
-}

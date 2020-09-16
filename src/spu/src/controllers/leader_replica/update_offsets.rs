@@ -1,12 +1,11 @@
 #![allow(clippy::assign_op_pattern)]
 
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::Request;
-use kf_protocol::api::Offset;
+use dataplane_protocol::derive::{ Decode, Encode };
+use dataplane_protocol::api::Request;
+use dataplane_protocol::Offset;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-use super::KfLeaderPeerApiEnum;
+use super::LeaderPeerApiEnum;
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct UpdateOffsetRequest {
@@ -14,7 +13,7 @@ pub struct UpdateOffsetRequest {
 }
 
 impl Request for UpdateOffsetRequest {
-    const API_KEY: u16 = KfLeaderPeerApiEnum::UpdateOffsets as u16;
+    const API_KEY: u16 = LeaderPeerApiEnum::UpdateOffsets as u16;
     const DEFAULT_API_VERSION: i16 = 0;
     type Response = UpdateOffsetResponse;
 }

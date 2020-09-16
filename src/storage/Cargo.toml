@@ -25,7 +25,7 @@ fluvio-types = { path = "../types", version = "0.1.0" }
 kf-socket = { path = "../kf-socket" }
 flv-util = { version = "0.4.0" }
 flv-future-aio = { version = "2.2.1" }
-fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only', features = ["derive", "api"] }
+fluvio-protocol = { version = "0.1.0", git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'fluvio_only' }
 dataplane-protocol = { version = "0.1.0", path = "../dataplane-protocol"}
 utils = { path = "../utils", optional = false }
 

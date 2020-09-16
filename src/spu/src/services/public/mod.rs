@@ -11,9 +11,10 @@ use kf_service::KfApiServer;
 use service_impl::PublicService;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
+use dataplane_protocol::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
-use kf_protocol::api::ReplicaKey;
+
 
 pub type OffsetReplicaList = std::collections::HashSet<ReplicaKey>;
 
