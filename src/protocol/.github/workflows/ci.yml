@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  check_clippy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cancel Workflow Action
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: check clippy
+        run: make check-clippy RUSTV=${{ matrix.rust }}
+  check_fmt:
+    name: check cargo fmt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: check fmt
+        run: make check-fmt RUSTV=${{ matrix.rust }}
+
+  smoke_test:
+    name: Smoke test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        rust: [stable]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ${{ matrix.rust }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Run unit tests
+      run:  make test-all
+

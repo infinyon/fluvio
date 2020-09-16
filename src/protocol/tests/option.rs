@@ -1,8 +1,7 @@
 use std::io::Cursor;
 
-use fluvio_protocol_derive::{ Decode, Encode};
-use fluvio_protocol_core::{ Decoder, Encoder};
-
+use fluvio_protocol_core::{Decoder, Encoder};
+use fluvio_protocol_derive::{Decode, Encode};
 
 #[derive(Encode, Default, Decode, Debug)]
 pub struct Parent {

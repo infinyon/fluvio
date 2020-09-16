@@ -13,7 +13,6 @@ pub mod derive {
     pub use fluvio_protocol_derive::*;
 }
 
-
 #[cfg(feature = "api")]
 pub mod api {
     pub use fluvio_protocol_api::*;
