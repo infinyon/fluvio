@@ -10,17 +10,13 @@ use futures::future::join;
 use flv_future_aio::test_async;
 use flv_future_aio::timer::sleep;
 use flv_future_aio::net::TcpListener;
-use kf_protocol::message::fetch::FetchPartition;
-use kf_protocol::message::fetch::FetchableTopic;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::DefaultBatch;
-use kf_protocol::api::DefaultRecord;
-use kf_protocol::message::fetch::DefaultKfFetchRequest;
-use kf_protocol::api::Offset;
-use kf_protocol::fs::FileFetchResponse;
-use kf_protocol::fs::KfFileFetchRequest;
-use kf_protocol::fs::FilePartitionResponse;
-use kf_protocol::fs::FileTopicResponse;
+use dataplane_protocol::fetch:: { FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse,
+    FileFetchRequest, FilePartitionResponse, FileTopicResponse};
+use dataplane_protocol::api::RequestMessage;
+use dataplane_protocol::batch::DefaultBatch;
+use dataplane_protocol::record::DefaultRecord;
+use dataplane_protocol::Offset;
+
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use flv_util::fixture::ensure_clean_dir;
@@ -73,7 +69,7 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 }
 
 async fn handle_response(socket: &mut KfSocket, replica: &FileReplica) {
-    let request: Result<RequestMessage<KfFileFetchRequest>, KfSocketError> = socket
+    let request: Result<RequestMessage<FileFetchRequest>, KfSocketError> = socket
         .get_mut_stream()
         .next_request_item()
         .await
@@ -102,7 +98,7 @@ async fn handle_response(socket: &mut KfSocket, replica: &FileReplica) {
     topic_response.partitions.push(part_response);
     response.topics.push(topic_response);
 
-    let response = RequestMessage::<KfFileFetchRequest>::response_with_header(&header, response);
+    let response = RequestMessage::<FileFetchRequest>::response_with_header(&header, response);
     socket
         .get_mut_sink()
         .encode_file_slices(&response, 10)
@@ -137,7 +133,7 @@ async fn test_fetch(addr: &str, iteration: i16, offset: i64, expected_batch_len:
         .expect("should connect to server");
 
     debug!("testing fetch: {}", iteration);
-    let mut request = DefaultKfFetchRequest::default();
+    let mut request = DefaultFetchRequest::default();
     let mut topic_request = FetchableTopic::default();
     topic_request.name = "testsimple".to_owned();
     let mut part_request = FetchPartition::default();

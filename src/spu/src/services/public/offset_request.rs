@@ -4,7 +4,7 @@ use tracing::trace;
 
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
-use fluvio_spu_schema::server::fetch_offset::FlvFetchOffsetsRequest;
+use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetTopicResponse;
 use fluvio_spu_schema::server::fetch_offset::FlvFetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
@@ -15,7 +15,7 @@ use fluvio_storage::ReplicaStorage;
 use crate::core::DefaultSharedGlobalContext;
 
 pub async fn handle_offset_request(
-    req_msg: RequestMessage<FlvFetchOffsetsRequest>,
+    req_msg: RequestMessage<FetchOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<FlvFetchOffsetsResponse>, IoError> {
     let request = req_msg.request();

@@ -10,7 +10,7 @@ use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::versions::ApiVersionKey;
 use fluvio_spu_schema::server::versions::ApiVersionsRequest;
 use fluvio_spu_schema::server::versions::ApiVersionsResponse;
-use fluvio_spu_schema::server::fetch_offset::FlvFetchOffsetsRequest;
+use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 
 pub async fn handle_kf_lookup_version_request(
     request: RequestMessage<ApiVersionsRequest>,
@@ -32,8 +32,8 @@ pub async fn handle_kf_lookup_version_request(
     ));
     response.api_keys.push(make_version_key(
         SpuServerApiKey::FlvFetchOffsets,
-        FlvFetchOffsetsRequest::DEFAULT_API_VERSION,
-        FlvFetchOffsetsRequest::DEFAULT_API_VERSION,
+        FetchOffsetsRequest::DEFAULT_API_VERSION,
+        FetchOffsetsRequest::DEFAULT_API_VERSION,
     ));
 
     Ok(request.new_response(response))

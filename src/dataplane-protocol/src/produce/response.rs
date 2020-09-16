@@ -16,6 +16,19 @@ pub struct ProduceResponse {
     pub throttle_time_ms: i32,
 }
 
+impl ProduceResponse {
+
+    /// Find partition in Response
+    pub fn find_partition_response(&self, topic: &str, partition: i32) -> Option<&PartitionProduceResponse> {
+
+        if let Some(response) = self.responses.iter().find(|response| response.name == topic) {
+             response.partitions.iter().find( |part_response| part_response.partition_index == partition)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct TopicProduceResponse {
     /// The topic name
