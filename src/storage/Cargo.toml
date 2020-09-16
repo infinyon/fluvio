@@ -23,14 +23,16 @@ serde = { version = "1.0.103", features = ['derive'] }
 # Fluvio dependencies
 fluvio-types = { path = "../types", version = "0.1.0" }
 kf-socket = { path = "../kf-socket" }
-kf-protocol = { version = "4.0.0" }
 flv-util = { version = "0.4.0" }
 flv-future-aio = { version = "2.2.1" }
+fluvio-protocol = { version = "0.1.0" }
+dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 utils = { path = "../utils", optional = false }
 
 [dev-dependencies]
 flv-util = { version = "0.4.0", features = ["fixture"] }
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }
+
 
 [features]
 cli = ["structopt"]

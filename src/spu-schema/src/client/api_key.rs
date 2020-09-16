@@ -1,8 +1,8 @@
-use kf_protocol::derive::Encode;
-use kf_protocol::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::derive::Decode;
 
 /// Api Key for Spu Client API (from server to client)
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum SpuClientApiKey {

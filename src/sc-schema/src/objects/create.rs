@@ -2,12 +2,12 @@
 
 use std::fmt::Debug;
 
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::Encoder;
-use kf_protocol::Decoder;
-use kf_protocol::api::Request;
+use dataplane::derive::{Decode, Encode};
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::api::Request;
 
-use crate::FlvStatus;
+use crate::Status;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -23,7 +23,7 @@ pub struct CreateRequest {
 impl Request for CreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
     const DEFAULT_API_VERSION: i16 = 0;
-    type Response = FlvStatus;
+    type Response = Status;
 }
 
 impl AdminRequest for CreateRequest {}
@@ -36,8 +36,8 @@ mod create {
 
     use tracing::trace;
 
-    use kf_protocol::Version;
-    use kf_protocol::bytes::{Buf, BufMut};
+    use dataplane::core::Version;
+    use dataplane::bytes::{Buf, BufMut};
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_controlplane_metadata::spu::CustomSpuSpec;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;

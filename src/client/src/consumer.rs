@@ -4,18 +4,17 @@ use std::io::ErrorKind;
 use tracing::debug;
 use tracing::trace;
 
-use fluvio_spu_schema::server::fetch_offset::{FlvFetchOffsetsRequest};
+use kf_socket::AsyncResponse;
+use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
-use kf_socket::AsyncResponse;
-
-use crate::kf::message::fetch::DefaultKfFetchRequest;
-use crate::kf::message::fetch::FetchPartition;
-use crate::kf::message::fetch::FetchableTopic;
-use crate::kf::message::fetch::FetchablePartitionResponse;
-use crate::kf::api::ReplicaKey;
-use crate::kf::api::RecordSet;
-use crate::kf::api::PartitionOffset;
+use dataplane::fetch::DefaultFetchRequest;
+use dataplane::fetch::FetchPartition;
+use dataplane::fetch::FetchableTopic;
+use dataplane::fetch::FetchablePartitionResponse;
+use dataplane::ReplicaKey;
+use dataplane::record::RecordSet;
+use dataplane::PartitionOffset;
 use crate::ClientError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
@@ -66,7 +65,7 @@ impl Consumer {
             fetch_partitions: vec![partition],
         };
 
-        let fetch_request = DefaultKfFetchRequest {
+        let fetch_request = DefaultFetchRequest {
             topics: vec![topic_request],
             isolation_level: option.isolation,
             max_bytes: option.max_bytes,
@@ -128,7 +127,7 @@ async fn fetch_offsets<F: SerialFrame>(
     debug!("fetching offset for replica: {}", replica);
 
     let response = client
-        .send_receive(FlvFetchOffsetsRequest::new(
+        .send_receive(FetchOffsetsRequest::new(
             replica.topic.to_owned(),
             replica.partition,
         ))

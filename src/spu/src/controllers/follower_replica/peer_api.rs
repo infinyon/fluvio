@@ -3,15 +3,13 @@ use std::convert::TryInto;
 
 use tracing::trace;
 
-use kf_protocol::bytes::Buf;
-use kf_protocol::Decoder;
-use kf_protocol::derive::Encode;
+use dataplane::bytes::Buf;
+use dataplane::core::Decoder;
+use dataplane::derive::Encode;
 
-use kf_protocol::api::KfRequestMessage;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::RequestHeader;
+use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
-use super::KfFollowerPeerApiEnum;
+use super::FollowerPeerApiEnum;
 use super::DefaultSyncRequest;
 
 #[derive(Debug, Encode)]
@@ -25,8 +23,8 @@ impl Default for FollowerPeerRequest {
     }
 }
 
-impl KfRequestMessage for FollowerPeerRequest {
-    type ApiKey = KfFollowerPeerApiEnum;
+impl ApiMessage for FollowerPeerRequest {
+    type ApiKey = FollowerPeerApiEnum;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
     where
@@ -37,7 +35,7 @@ impl KfRequestMessage for FollowerPeerRequest {
         trace!("decoding with header: {:#?}", header);
         let version = header.api_version();
         match header.api_key().try_into()? {
-            KfFollowerPeerApiEnum::SyncRecords => Ok(FollowerPeerRequest::SyncRecords(
+            FollowerPeerApiEnum::SyncRecords => Ok(FollowerPeerRequest::SyncRecords(
                 RequestMessage::new(header, DefaultSyncRequest::decode_from(src, version)?),
             )),
         }

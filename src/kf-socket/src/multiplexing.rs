@@ -22,10 +22,10 @@ use tokio::select;
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::net::tls::AllTcpStream;
 use flv_future_aio::timer::sleep;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::Request;
-use kf_protocol::api::RequestHeader;
-use kf_protocol::Decoder;
+use dataplane::api::RequestMessage;
+use dataplane::api::Request;
+use dataplane::api::RequestHeader;
+use dataplane::core::Decoder;
 
 use crate::KfSocketError;
 use crate::InnerKfStream;
@@ -399,7 +399,7 @@ mod tests {
     use flv_future_aio::task::spawn;
     use flv_future_aio::timer::sleep;
     use flv_future_aio::net::TcpListener;
-    use kf_protocol::api::RequestMessage;
+    use dataplane::api::RequestMessage;
 
     use crate::KfSocket;
     use crate::KfSocketError;

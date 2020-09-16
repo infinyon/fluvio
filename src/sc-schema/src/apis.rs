@@ -4,11 +4,11 @@
 //! Stores Api Keys supported by the SC.
 //!
 
-use kf_protocol::derive::Encode;
-use kf_protocol::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::derive::Decode;
 
 /// API call from client to SPU
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum AdminPublicApiKey {

@@ -28,7 +28,7 @@ pub use event::OffsetUpdateEvent;
 
 mod event {
 
-    use kf_protocol::api::Offset;
+    use dataplane::Offset;
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
     /// used for communicating change in offset for any replica

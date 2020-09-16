@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::num::ParseIntError;
 use std::fmt;
 
-use kf_protocol::api::Offset;
+use dataplane::Offset;
 
 /// given parent directory, base offset, extension, generate path
 pub fn generate_file_name<P>(parent_dir: P, base_offset: Offset, extension: &str) -> PathBuf

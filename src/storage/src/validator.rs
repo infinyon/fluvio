@@ -6,7 +6,7 @@ use futures::stream::StreamExt;
 use tracing::warn;
 use tracing::trace;
 
-use kf_protocol::api::Offset;
+use dataplane::Offset;
 use flv_future_aio::fs::util as file_util;
 
 use crate::BatchHeaderStream;
@@ -125,9 +125,9 @@ mod tests {
     use flv_future_aio::fs::BoundedFileOption;
     use flv_future_aio::test_async;
     use flv_util::fixture::ensure_clean_file;
-    use kf_protocol::api::DefaultRecord;
-    use kf_protocol::api::DefaultBatch;
-    use kf_protocol::api::Offset;
+    use dataplane::record::DefaultRecord;
+    use dataplane::batch::DefaultBatch;
+    use dataplane::Offset;
 
     use crate::mut_records::MutFileRecords;
     use crate::ConfigOption;

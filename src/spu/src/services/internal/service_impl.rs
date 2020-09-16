@@ -9,7 +9,7 @@ use kf_socket::KfSocketError;
 use flv_future_aio::net::TcpStream;
 
 use super::SpuPeerRequest;
-use super::KfSPUPeerApiEnum;
+use super::SPUPeerApiEnum;
 
 use super::fetch_stream::handle_fetch_stream_request;
 use crate::core::DefaultSharedGlobalContext;
@@ -34,7 +34,7 @@ impl KfService<TcpStream> for InternalService {
         socket: KfSocket,
     ) -> Result<(), KfSocketError> {
         let (sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<SpuPeerRequest, KfSPUPeerApiEnum>();
+        let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();
 
         api_loop!(
             api_stream,

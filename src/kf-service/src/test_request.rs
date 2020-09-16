@@ -9,15 +9,11 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
 use flv_future_aio::zero_copy::ZeroCopyWrite;
-use kf_protocol::api::KfRequestMessage;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::ResponseMessage;
-use kf_protocol::api::RequestHeader;
-use kf_protocol::api::api_decode;
-use kf_protocol::bytes::Buf;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::Request;
+use dataplane::api::{ApiMessage, Request, RequestMessage, ResponseMessage, RequestHeader, api_decode};
+use dataplane::bytes::Buf;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+
 use kf_socket::InnerKfSink;
 use kf_socket::InnerKfSocket;
 use kf_socket::KfSocketError;
@@ -26,7 +22,7 @@ use crate::KfService;
 use crate::call_service;
 use crate::api_loop;
 
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub(crate) enum TestKafkaApiEnum {
@@ -84,7 +80,7 @@ impl Default for TestApiRequest {
     }
 }
 
-impl KfRequestMessage for TestApiRequest {
+impl ApiMessage for TestApiRequest {
     type ApiKey = TestKafkaApiEnum;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>

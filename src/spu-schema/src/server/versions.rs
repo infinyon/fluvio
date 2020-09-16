@@ -5,9 +5,9 @@
 //! SPU supports Kafka as well as Fluvio specific APIs.
 //!
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::api::FlvErrorCode;
+use dataplane::api::Request;
+use dataplane::derive::{Decode, Encode};
+use dataplane::ErrorCode;
 
 use super::SpuServerApiKey;
 
@@ -26,7 +26,7 @@ pub struct ApiVersionsRequest {}
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct ApiVersionsResponse {
-    pub error_code: FlvErrorCode,
+    pub error_code: ErrorCode,
     pub api_keys: Vec<ApiVersionKey>,
 }
 

@@ -4,13 +4,13 @@
 //! API that allows CLI to fetch topic offsets.
 use std::fmt;
 
-use kf_protocol::api::Request;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::PartitionOffset;
-use kf_protocol::api::ReplicaKey;
+use dataplane::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::PartitionOffset;
+use dataplane::ReplicaKey;
 
-use crate::errors::FlvErrorCode;
+use crate::errors::ErrorCode;
 use super::SpuServerApiKey;
 
 // -----------------------------------
@@ -19,12 +19,18 @@ use super::SpuServerApiKey;
 
 /// Fetch offsets
 #[derive(Decode, Encode, Default, Debug)]
-pub struct FlvFetchOffsetsRequest {
+pub struct FetchOffsetsRequest {
     /// Each topic in the request.
     pub topics: Vec<FetchOffsetTopic>,
 }
 
-impl FlvFetchOffsetsRequest {
+impl Request for FetchOffsetsRequest {
+    const API_KEY: u16 = SpuServerApiKey::FetchOffsets as u16;
+    const DEFAULT_API_VERSION: i16 = 0;
+    type Response = FetchOffsetsResponse;
+}
+
+impl FetchOffsetsRequest {
     /// create request with a single topic and partition
     pub fn new(topic: String, partition: i32) -> Self {
         Self {
@@ -58,12 +64,12 @@ pub struct FetchOffsetPartition {
 // -----------------------------------
 
 #[derive(Encode, Decode, Default, Debug)]
-pub struct FlvFetchOffsetsResponse {
+pub struct FetchOffsetsResponse {
     /// Each topic offset in the response.
     pub topics: Vec<FetchOffsetTopicResponse>,
 }
 
-impl FlvFetchOffsetsResponse {
+impl FetchOffsetsResponse {
     pub fn find_partition(self, replica: &ReplicaKey) -> Option<FetchOffsetPartitionResponse> {
         for topic_res in self.topics {
             if topic_res.name == replica.topic {
@@ -91,7 +97,7 @@ pub struct FetchOffsetTopicResponse {
 #[derive(Encode, Decode, Default, Debug)]
 pub struct FetchOffsetPartitionResponse {
     /// The partition error code, None for no error
-    pub error_code: FlvErrorCode,
+    pub error_code: ErrorCode,
 
     /// The partition index.
     pub partition_index: i32,
@@ -121,14 +127,4 @@ impl PartitionOffset for FetchOffsetPartitionResponse {
     fn start_offset(&self) -> i64 {
         self.start_offset
     }
-}
-
-// -----------------------------------
-// Implementation - KfListOffsetRequest
-// -----------------------------------
-
-impl Request for FlvFetchOffsetsRequest {
-    const API_KEY: u16 = SpuServerApiKey::FlvFetchOffsets as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
-    type Response = FlvFetchOffsetsResponse;
 }

@@ -6,7 +6,7 @@
 
 use structopt::StructOpt;
 
-use fluvio::kf::api::Offset;
+use fluvio::dataplane::Offset;
 use fluvio::ClusterConfig;
 use fluvio::params::MAX_FETCH_BYTES;
 

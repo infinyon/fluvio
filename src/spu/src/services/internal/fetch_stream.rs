@@ -1,6 +1,6 @@
 use tracing::debug;
 
-use kf_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 

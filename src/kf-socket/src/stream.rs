@@ -13,10 +13,9 @@ use tokio_util::codec::Framed;
 use tokio_util::compat::Compat;
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::net::tls::AllTcpStream;
-use kf_protocol::api::Request;
-use kf_protocol::transport::KfCodec;
-use kf_protocol::Decoder as KfDecoder;
-use kf_protocol::api::*;
+use dataplane::api::{Request, RequestMessage, ResponseMessage, ApiMessage};
+use fluvio_protocol::codec::FluvioCodec;
+use dataplane::core::Decoder as FluvioDecoder;
 
 use crate::KfSocketError;
 
@@ -24,7 +23,7 @@ pub type KfStream = InnerKfStream<TcpStream>;
 #[allow(unused)]
 pub type AllKfStream = InnerKfStream<AllTcpStream>;
 
-type FrameStream<S> = SplitStream<Framed<Compat<S>, KfCodec>>;
+type FrameStream<S> = SplitStream<Framed<Compat<S>, FluvioCodec>>;
 
 /// inner kf stream which is generic over stream
 #[derive(Debug)]
@@ -43,7 +42,7 @@ where
         &mut self,
     ) -> impl Stream<Item = Result<RequestMessage<R>, KfSocketError>> + '_
     where
-        RequestMessage<R>: KfDecoder + Debug,
+        RequestMessage<R>: FluvioDecoder + Debug,
     {
         (&mut self.0).map(|req_bytes_r| match req_bytes_r {
             Ok(req_bytes) => {
@@ -58,7 +57,7 @@ where
     /// as server, get next request from client
     pub async fn next_request_item<R>(&mut self) -> Option<Result<RequestMessage<R>, KfSocketError>>
     where
-        RequestMessage<R>: KfDecoder + Debug,
+        RequestMessage<R>: FluvioDecoder + Debug,
     {
         let mut stream = self.request_stream();
         stream.next().await
@@ -101,8 +100,8 @@ where
     /// as server, get api request (PublicRequest, InternalRequest, etc)
     pub fn api_stream<R, A>(&mut self) -> impl Stream<Item = Result<R, KfSocketError>> + '_
     where
-        R: KfRequestMessage<ApiKey = A>,
-        A: KfDecoder + Debug,
+        R: ApiMessage<ApiKey = A>,
+        A: FluvioDecoder + Debug,
     {
         (&mut self.0).map(|req_bytes_r| match req_bytes_r {
             Ok(req_bytes) => {
@@ -116,8 +115,8 @@ where
 
     pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, KfSocketError>>
     where
-        R: KfRequestMessage<ApiKey = A>,
-        A: KfDecoder + Debug,
+        R: ApiMessage<ApiKey = A>,
+        A: FluvioDecoder + Debug,
     {
         let mut stream = self.api_stream();
         stream.next().await

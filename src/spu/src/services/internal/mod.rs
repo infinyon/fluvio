@@ -12,11 +12,11 @@ use crate::core::DefaultSharedGlobalContext;
 
 pub use self::fetch_stream_request::FetchStreamRequest;
 pub use self::fetch_stream_request::FetchStreamResponse;
-pub use self::api::KfSPUPeerApiEnum;
+pub use self::api::SPUPeerApiEnum;
 pub use self::api::SpuPeerRequest;
 
 pub(crate) type InternalApiServer =
-    KfApiServer<SpuPeerRequest, KfSPUPeerApiEnum, DefaultSharedGlobalContext, InternalService>;
+    KfApiServer<SpuPeerRequest, SPUPeerApiEnum, DefaultSharedGlobalContext, InternalService>;
 
 // start server
 pub fn create_internal_server(addr: String, ctx: DefaultSharedGlobalContext) -> InternalApiServer {

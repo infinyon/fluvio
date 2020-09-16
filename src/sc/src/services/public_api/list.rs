@@ -1,7 +1,7 @@
 use std::io::Error;
 use tracing::debug;
 
-use kf_protocol::api::{RequestMessage, ResponseMessage};
+use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::objects::*;
 
 use crate::core::*;

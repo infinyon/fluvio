@@ -8,7 +8,7 @@ pub(crate) use self::follower_controller::ReplicaFollowerController;
 pub use self::state::FollowersState;
 pub use self::state::FollowerReplicaState;
 pub use self::state::SharedFollowersState;
-pub use self::api_key::KfFollowerPeerApiEnum;
+pub use self::api_key::FollowerPeerApiEnum;
 pub use self::peer_api::FollowerPeerRequest;
 pub use self::sync::PeerFileTopicResponse;
 pub use self::sync::PeerFilePartitionResponse;

@@ -1,19 +1,18 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
-use kf_protocol::api::api_decode;
-use kf_protocol::api::KfRequestMessage;
-use kf_protocol::api::RequestHeader;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::bytes::Buf;
-use kf_protocol::derive::Encode;
-use kf_protocol::derive::Decode;
+use dataplane::api::api_decode;
+use dataplane::api::ApiMessage;
+use dataplane::api::RequestHeader;
+use dataplane::api::RequestMessage;
+use dataplane::bytes::Buf;
+use dataplane::derive::Encode;
+use dataplane::derive::Decode;
 
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
 
-/// API call from SC to SPU
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum InternalSpuApi {
@@ -46,7 +45,7 @@ impl InternalSpuRequest {
     }
 }
 
-impl KfRequestMessage for InternalSpuRequest {
+impl ApiMessage for InternalSpuRequest {
     type ApiKey = InternalSpuApi;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>

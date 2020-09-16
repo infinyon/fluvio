@@ -2,26 +2,25 @@ use std::io::Error as IoError;
 
 use tracing::trace;
 
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::ResponseMessage;
-use fluvio_spu_schema::server::fetch_offset::FlvFetchOffsetsRequest;
+use dataplane::api::{RequestMessage, ResponseMessage};
+use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetTopicResponse;
-use fluvio_spu_schema::server::fetch_offset::FlvFetchOffsetsResponse;
+use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use kf_protocol::api::FlvErrorCode;
+use dataplane::ErrorCode;
 use fluvio_storage::ReplicaStorage;
 
 use crate::core::DefaultSharedGlobalContext;
 
 pub async fn handle_offset_request(
-    req_msg: RequestMessage<FlvFetchOffsetsRequest>,
+    req_msg: RequestMessage<FetchOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<FlvFetchOffsetsResponse>, IoError> {
+) -> Result<ResponseMessage<FetchOffsetsResponse>, IoError> {
     let request = req_msg.request();
     trace!("handling flv fetch request: {:#?}", request);
 
-    let mut response = FlvFetchOffsetsResponse::default();
+    let mut response = FetchOffsetsResponse::default();
 
     for topic_request in &request.topics {
         let topic = &topic_request.name;
@@ -37,12 +36,12 @@ pub async fn handle_offset_request(
             if let Some(replica) = ctx.leaders_state().get_replica(&rep_id) {
                 trace!("offset fetch request for replica found: {}", rep_id);
                 let storage = replica.storage();
-                partition_response.error_code = FlvErrorCode::None;
+                partition_response.error_code = ErrorCode::None;
                 partition_response.start_offset = storage.get_log_start_offset();
                 partition_response.last_stable_offset = storage.get_hw();
             } else {
                 trace!("offset fetch request is not found: {}", rep_id);
-                partition_response.error_code = FlvErrorCode::PartitionNotLeader;
+                partition_response.error_code = ErrorCode::PartitionNotLeader;
             }
 
             topic_response.partitions.push(partition_response);

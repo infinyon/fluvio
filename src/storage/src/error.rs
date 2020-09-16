@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::fmt;
 
-use kf_protocol::api::DefaultBatch;
+use dataplane::batch::DefaultBatch;
 use flv_future_aio::fs::BoundedFileSinkError;
 use flv_future_aio::zero_copy::SendFileError;
 use kf_socket::KfSocketError;

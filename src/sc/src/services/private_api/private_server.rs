@@ -12,7 +12,7 @@ use futures::Stream;
 
 use fluvio_types::SpuId;
 use flv_future_aio::net::TcpStream;
-use kf_protocol::api::*;
+use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use kf_service::KfService;

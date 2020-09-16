@@ -14,7 +14,7 @@ use flv_future_aio::timer::sleep;
 use kf_socket::KfSocket;
 use kf_socket::KfSink;
 use kf_socket::KfSocketError;
-use kf_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use flv_util::log_on_err;
@@ -28,7 +28,7 @@ use crate::core::SharedSpuConfig;
 
 use super::FollowerReplicaControllerCommand;
 use super::FollowerReplicaState;
-use super::KfFollowerPeerApiEnum;
+use super::FollowerPeerApiEnum;
 use super::DefaultSyncRequest;
 use super::FollowerPeerRequest;
 use super::SharedFollowersState;
@@ -140,7 +140,7 @@ impl ReplicaFollowerController<FileReplica> {
     async fn stream_loop(&mut self, mut socket: KfSocket) -> Result<bool, KfSocketError> {
         self.send_fetch_stream_request(&mut socket).await?;
         let (mut sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<FollowerPeerRequest, KfFollowerPeerApiEnum>();
+        let mut api_stream = stream.api_stream::<FollowerPeerRequest, FollowerPeerApiEnum>();
 
         // sync offsets
         self.sync_all_offsets_to_leader(&mut sink).await;

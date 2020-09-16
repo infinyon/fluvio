@@ -8,11 +8,11 @@ use std::io::ErrorKind;
 
 use tracing::trace;
 
-use kf_protocol::Encoder;
-use kf_protocol::Decoder;
-use kf_protocol::Version;
-use kf_protocol::bytes::{Buf, BufMut};
-use kf_protocol::api::Request;
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::core::Version;
+use dataplane::bytes::{Buf, BufMut};
+use dataplane::api::Request;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;
@@ -20,7 +20,7 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::core::Removable;
 
-use crate::FlvStatus;
+use crate::Status;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -61,7 +61,7 @@ impl AdminRequest for DeleteRequest {}
 impl Request for DeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;
     const DEFAULT_API_VERSION: i16 = 1;
-    type Response = FlvStatus;
+    type Response = Status;
 }
 
 impl Encoder for DeleteRequest {

@@ -14,10 +14,10 @@ use tracing::trace;
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 
-use kf_protocol::Version;
-use kf_protocol::bytes::{Buf, BufMut};
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::{Decoder, Encoder};
+use dataplane::core::Version;
+use dataplane::bytes::{Buf, BufMut};
+use dataplane::derive::{Decode, Encode};
+use dataplane::core::{Decoder, Encoder};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(

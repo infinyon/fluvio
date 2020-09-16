@@ -13,23 +13,31 @@ path = "src/lib.rs"
 
 [features]
 use_serde = ["serde"]
-k8 = ["use_serde","k8-obj-metadata","k8-obj-core","k8-obj-app","fluvio-stream-model/k8"]
+k8 = [
+    "use_serde",
+    "k8-obj-metadata",
+    "k8-obj-core",
+    "k8-obj-app",
+    "fluvio-stream-model/k8",
+]
 
 [dependencies]
 log = "0.4.8"
 tracing = "0.1.19"
-serde = { version ="1.0.0", features = ['derive'], optional = true }
+serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
 
 # Fluvio dependencies
-fluvio-types = { path ="../types", version = "0.1.0" }
+flv-util = { version = "0.4.0" }
+flv-future-aio = { version = "2.3.0" }
+fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-stream-model = { path = "../stream-model" }
 k8-obj-app = { version = "1.1.0", optional = true }
-k8-obj-core = { version = "1.1.0", optional = true}
+k8-obj-core = { version = "1.1.0", optional = true }
 k8-obj-metadata = { version = "1.0.0", optional = true }
-kf-protocol =  "4.0.0"
-flv-util = { version = "0.4.0" }
-flv-future-aio = { version = "2.3.0"}
+fluvio-protocol = { version = "0.1.0" }
+dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+
 
 [dev-dependencies]
-flv-future-aio = { version = "2.3.0", features=["fixture"]}
+flv-future-aio = { version = "2.3.0", features = ["fixture"] }

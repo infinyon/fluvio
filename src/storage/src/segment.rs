@@ -6,9 +6,8 @@ use futures::stream::StreamExt;
 use tracing::debug;
 use tracing::trace;
 
-use kf_protocol::api::DefaultBatch;
-use kf_protocol::api::Offset;
-use kf_protocol::api::Size;
+use dataplane::batch::DefaultBatch;
+use dataplane::{Offset, Size};
 use flv_future_aio::fs::AsyncFileSlice;
 use flv_future_aio::fs::util as file_util;
 
@@ -367,9 +366,9 @@ mod tests {
 
     use flv_future_aio::test_async;
     use flv_util::fixture::ensure_new_dir;
-    use kf_protocol::api::DefaultBatch;
-    use kf_protocol::api::Size;
-    use kf_protocol::Decoder;
+    use dataplane::batch::DefaultBatch;
+    use dataplane::Size;
+    use dataplane::core::Decoder;
 
     use super::MutableSegment;
     use crate::fixture::create_batch_with_producer;

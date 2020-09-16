@@ -24,8 +24,8 @@ use flv_future_aio::net::TcpListener;
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 use flv_future_aio::task::spawn;
-use kf_protocol::api::KfRequestMessage;
-use kf_protocol::Decoder as KfDecoder;
+use dataplane::api::ApiMessage;
+use dataplane::core::Decoder as FluvioDecoder;
 use kf_socket::InnerKfSocket;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocket;
@@ -121,9 +121,9 @@ where
 
 impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
 where
-    R: KfRequestMessage<ApiKey = A> + Send + Debug + 'static,
+    R: ApiMessage<ApiKey = A> + Send + Debug + 'static,
     C: Clone + Sync + Send + Debug + 'static,
-    A: Send + KfDecoder + Debug + 'static,
+    A: Send + FluvioDecoder + Debug + 'static,
     S: KfService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
     T: SocketBuilder + Send + Debug + 'static,
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
@@ -229,7 +229,7 @@ mod test {
     use flv_future_aio::timer::sleep;
     use flv_future_aio::test_async;
 
-    use kf_protocol::api::RequestMessage;
+    use dataplane::api::RequestMessage;
     use kf_socket::KfSocket;
     use kf_socket::KfSocketError;
 

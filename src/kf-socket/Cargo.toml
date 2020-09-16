@@ -27,11 +27,13 @@ async-trait = "0.1.21"
 
 # Fluvio dependencies
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
-kf-protocol = { version = "4.0.0" }
+fluvio-protocol = { version = "0.1.0",  features = ["derive", "api", "codec"] }
+dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+
 
 [dev-dependencies]
 log = "0.4.8"
 
 # Fluvio dependencies
-flv-util = { version = "0.4.0", features = ["fixture"]}
+flv-util = { version = "0.4.0", features = ["fixture"] }
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }

@@ -4,7 +4,7 @@ use std::io::ErrorKind;
 use tracing::debug;
 use tracing::trace;
 
-use kf_protocol::api::ReplicaKey;
+use dataplane::ReplicaKey;
 
 use crate::ClientError;
 use crate::spu::SpuPool;
@@ -47,16 +47,16 @@ async fn send_record_raw<F: SerialFrame>(
     replica: &ReplicaKey,
     record: Vec<u8>,
 ) -> Result<(), ClientError> {
-    use kf_protocol::message::produce::DefaultKfProduceRequest;
-    use kf_protocol::message::produce::DefaultKfPartitionRequest;
-    use kf_protocol::message::produce::DefaultKfTopicRequest;
-    use kf_protocol::api::DefaultBatch;
-    use kf_protocol::api::DefaultRecord;
+    use dataplane::produce::DefaultProduceRequest;
+    use dataplane::produce::DefaultPartitionRequest;
+    use dataplane::produce::DefaultTopicRequest;
+    use dataplane::batch::DefaultBatch;
+    use dataplane::record::DefaultRecord;
 
     // build produce log request message
-    let mut request = DefaultKfProduceRequest::default();
-    let mut topic_request = DefaultKfTopicRequest::default();
-    let mut partition_request = DefaultKfPartitionRequest::default();
+    let mut request = DefaultProduceRequest::default();
+    let mut topic_request = DefaultTopicRequest::default();
+    let mut partition_request = DefaultPartitionRequest::default();
 
     debug!(
         "send record {} bytes to: replica: {}, {}",
