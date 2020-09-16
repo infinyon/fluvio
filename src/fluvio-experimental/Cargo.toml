@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 futures = "0.3.5"
+
+[dev-dependencies]
+async-std = "1.6.3"
