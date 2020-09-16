@@ -466,7 +466,7 @@ impl ClusterInstaller {
         }
     }
 
-    /// Get all available versions of fluvio chart
+    /// Get all the available versions of fluvio chart
     pub fn versions() -> Result<Vec<Chart>, ClusterError> {
         let helm_client = HelmClient::new()?;
         let versions = helm_client.versions(DEFAULT_CHART_APP_NAME)?;
