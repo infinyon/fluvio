@@ -102,7 +102,7 @@ impl HelmClient {
     }
 
     /// Get all the available versions
-    pub fn versions(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
+    pub(crate) fn versions(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
         let output = Command::new("helm")
             .args(&["search", "repo"])
             .args(&["--versions", chart])

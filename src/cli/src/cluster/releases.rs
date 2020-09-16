@@ -1,8 +1,6 @@
 use crate::CliError;
 use super::*;
-use fluvio_cluster::HelmClient;
-
-const DEFAULT_CHART_NAME: &str = "fluvio/fluvio-app";
+use fluvio_cluster::ClusterInstaller;
 
 #[derive(Debug, StructOpt)]
 pub enum ReleasesCommand {
@@ -19,8 +17,7 @@ pub fn process_releases(opt: ReleasesCommand) -> Result<String, CliError> {
 }
 
 fn list_releases() -> Result<(), CliError> {
-    let helm_client = HelmClient::new()?;
-    let versions = helm_client.versions(DEFAULT_CHART_NAME)?;
+    let versions = ClusterInstaller::versions()?;
     if !versions.is_empty() {
         println!("VERSION");
         for chart in &versions {
