@@ -4,13 +4,9 @@ use std::io::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use fluvio_protocol::bytes::Buf;
-use fluvio_protocol::bytes::BufMut;
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::Encoder;
-use fluvio_protocol::Version;
+use fluvio_protocol_core::bytes::{ Buf, BufMut};
+use fluvio_protocol_derive::{ Decode, Encode};
+use fluvio_protocol_core::{ Decoder, Encoder, Version};
 
 // manual encode
 pub enum Mix {
@@ -239,9 +235,10 @@ fn test_gl_colors() {
 #[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug)]
 enum EvenOdd {
-  Even = 2,
-  Odd = 1,
-} impl Default for EvenOdd {
+    Even = 2,
+    Odd = 1,
+}
+impl Default for EvenOdd {
     fn default() -> Self {
         Self::Even
     }
@@ -263,7 +260,6 @@ fn test_encode_discriminant() {
     assert_eq!(dest[1], 1);
 }
 
-
 #[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
@@ -277,25 +273,20 @@ impl Default for TestWideEnum {
     }
 }
 
-
 #[test]
 fn test_simple_conversion() {
-    let key: u16 =  1000;
+    let key: u16 = 1000;
     let key_enum: TestWideEnum = key.try_into().expect("conversion");
-    assert_eq!(key_enum,TestWideEnum::Echo);
-
+    assert_eq!(key_enum, TestWideEnum::Echo);
 }
-
-
-
 
 #[fluvio(encode_discriminant)]
 #[repr(i16)]
-#[derive(PartialEq, Debug,Encode, Decode)]
+#[derive(PartialEq, Debug, Encode, Decode)]
 pub enum TestErrorCode {
     // The server experienced an unexpected error when processing the request
     UnknownServerError = -1,
-    None = 0
+    None = 0,
 }
 
 impl Default for TestErrorCode {
@@ -303,7 +294,6 @@ impl Default for TestErrorCode {
         TestErrorCode::None
     }
 }
-
 
 #[test]
 fn test_error_code_from_conversion2() {

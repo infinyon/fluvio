@@ -2,10 +2,8 @@ use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::io::Error;
 
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::Encoder;
+use fluvio_protocol_derive::{ Decode, Encode };
+use fluvio_protocol_core::{ Decoder, Encoder };
 
 #[derive(Encode, Default, Decode, Debug)]
 pub struct MapHolder {

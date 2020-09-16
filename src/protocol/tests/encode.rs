@@ -1,6 +1,5 @@
-use fluvio_protocol::derive::Encode;
-use fluvio_protocol::Encoder;
-use fluvio_protocol::EncoderVarInt;
+use fluvio_protocol_derive::Encode;
+use fluvio_protocol_core::{Encoder, EncoderVarInt };
 
 #[derive(Encode, Default, Debug)]
 pub struct SimpleRecord {
