@@ -11,7 +11,7 @@ To test CLI binary:
 ```
 $ fluvio version
 
-version is: 0.4.1
+version is: 0.6.0
 ```
 
 Fluvio can be installed in any Kubernetes cluster.  For running in your laptop, it is recommended to use minikube.  There is special instruction for minikube for or cluster which uses IP address.  After minikube is setup, please follow regular kubernetes installation sections
