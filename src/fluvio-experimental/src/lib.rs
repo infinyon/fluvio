@@ -1,4 +1,4 @@
-#![feature(external_doc)]
+#![cfg_attr(feature = "nightly", feature(external_doc))]
 
 //! The official Rust client library for writing streaming applications with Fluvio
 //!
@@ -9,10 +9,11 @@
 //! where it is recorded and saved for later usage. When you consume a message, you are
 //! reading a previously-stored message from that same Fluvio cluster. Let's get started
 //! with a quick example where we produce and consume some messages.
-//! 
+//!
 //! # Prerequisites
-//! 
+//!
 //! [Install Fluvio](#installation)
+//!
 //!
 //! # Fluvio Echo
 //!
@@ -42,7 +43,10 @@
 //!     }
 //! });
 //! ```
-#![doc(include = "../../../website/kubernetes/INSTALL.md")]
+#![cfg_attr(
+feature = "nightly",
+doc(include = "../../../website/kubernetes/INSTALL.md")
+)]
 
 use futures::Stream;
 use futures::task::{Context, Poll};
@@ -99,7 +103,10 @@ impl FluvioClient {
     /// let topic: Topic = client.create_topic(topic_config).await.unwrap();
     /// # };
     /// ```
-    pub async fn create_topic<T: Into<TopicConfig>>(&self, config: T) -> Result<Topic, FluvioError> {
+    pub async fn create_topic<T: Into<TopicConfig>>(
+        &self,
+        config: T,
+    ) -> Result<Topic, FluvioError> {
         todo!()
     }
 
@@ -169,7 +176,10 @@ impl Topic {
     ///     topic.produce_string_message("Hello, Fluvio!").await.unwrap();
     /// }
     /// ```
-    pub async fn produce_string_message<S: Into<String>>(&self, message: S) -> Result<(), FluvioError> {
+    pub async fn produce_string_message<S: Into<String>>(
+        &self,
+        message: S,
+    ) -> Result<(), FluvioError> {
         todo!()
     }
 
@@ -208,7 +218,10 @@ impl Topic {
     /// topic.fetch_string_messages(..100);
     /// # };
     /// ```
-    pub async fn fetch_string_messages<R: RangeBounds<Offset>>(&self, range: R) -> Result<Vec<String>, FluvioError> {
+    pub async fn fetch_string_messages<R: RangeBounds<Offset>>(
+        &self,
+        range: R,
+    ) -> Result<Vec<String>, FluvioError> {
         todo!()
     }
 
