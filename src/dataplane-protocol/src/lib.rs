@@ -1,3 +1,5 @@
+#[allow(clippy::assign_op_pattern)]
+
 mod common;
 mod error_code;
 
