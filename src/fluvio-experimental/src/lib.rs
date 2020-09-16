@@ -1,3 +1,42 @@
+//! The official Rust client library for writing streaming applications with Fluvio
+//!
+//! Fluvio is a high performance, low latency data streaming platform built for developers.
+//!
+//! When writing streaming applications, two of your core behaviors are producing messages
+//! and consuming messages. When you produce a message, you send it to a Fluvio cluster
+//! where it is recorded and saved for later usage. When you consume a message, you are
+//! reading a previously-stored message from that same Fluvio cluster. Let's get started
+//! with a quick example where we produce and consume some messages.
+//!
+//! # Fluvio Echo
+//!
+//! The easiest way to see Fluvio in action is to produce some messages and to consume
+//! them right away. In this sense, we can use Fluvio to make an "echo service".
+//!
+//! All messages in Fluvio are sent in a sort of category called a `Topic`. You can think
+//! of a Topic as a named folder where you want to store some files, which would be your
+//! messages. If you're familiar with relational databases, you can think of a Topic as
+//! being similar to a database table, but for streaming.
+//!
+//! As the application developer, you get to decide what Topics you create and which
+//! messages you send to them. For the echo example, we'll create a Topic called `echo`.
+//!
+//! ```no_run
+//! # use fluvio_experimental::FluvioClient;
+//! let client = FluvioClient::new().unwrap();
+//! async_std::task::block_on(async {
+//!     // Create a new Fluvio topic called "echo"
+//!     let topic = client.create_topic("echo").await.unwrap();
+//!     // Send a message to the echo topic
+//!     topic.produce_string_message("Hello, Fluvio!").await.unwrap();
+//!     // Fetch all of the messages in the "echo" topic and print them
+//!     let messages = topic.fetch_string_messages(..).await.unwrap();
+//!     for message in &messages {
+//!         println!("{}", message);
+//!     }
+//! });
+//! ```
+
 use futures::Stream;
 use futures::task::{Context, Poll};
 use std::pin::Pin;
