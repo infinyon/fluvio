@@ -96,6 +96,7 @@ impl Prop {
 
         if let Some(max) = self.max_version {
             quote! {
+                #[allow(clippy::double_comparisons)]
                 if version >= #min && version <= #max {
                     #field_stream
                 } else {
