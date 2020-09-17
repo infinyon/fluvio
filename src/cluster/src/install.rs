@@ -19,7 +19,7 @@ use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
 
 use crate::ClusterError;
-use crate::helm::HelmClient;
+use crate::helm::{HelmClient, Chart};
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -466,6 +466,12 @@ impl ClusterInstaller {
         }
     }
 
+    /// Get all the available versions of fluvio chart
+    pub fn versions() -> Result<Vec<Chart>, ClusterError> {
+        let helm_client = HelmClient::new()?;
+        let versions = helm_client.versions(DEFAULT_CHART_APP_NAME)?;
+        Ok(versions)
+    }
     /// Installs Fluvio according to the installer's configuration
     ///
     /// Returns the external address of the new cluster's SC
