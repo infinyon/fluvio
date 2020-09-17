@@ -19,15 +19,21 @@ pub async fn produce_message_with_api(option: &TestOption) {
     let mut cluster = ClusterSocket::connect(cluster_config.clone())
         .await
         .expect("should connect");
-    let replica: ReplicaKey = (option.topic_name.clone(), 0).into();
-    let mut producer = cluster.producer(replica).await.expect("producer");
 
-    for i in 0..option.produce.produce_iteration {
-        let message = generate_message(i, option);
+    let replication = option.replication();
+    
+    for i in 0..replication {
+        let topic_name = option.topic_name(i);
+        let replica: ReplicaKey = (topic_name.clone(), 0).into();
+        let mut producer = cluster.producer(replica).await.expect("producer");
 
-        producer.send_record(message).await.expect("message sent");
+        for i in 0..option.produce.produce_iteration {
+            let message = generate_message(i, option);
 
-        println!("message sent: {}", i);
+            producer.send_record(message).await.expect("message sent");
+
+            println!("topic: {}, message sent: {}", topic_name,i);
+        }
     }
 }
 
@@ -47,12 +53,22 @@ mod cli {
 
         let produce_count = option.produce.produce_iteration;
         for i in 0..produce_count {
-            produce_message(i, &option.topic_name, option);
+            produce_message(i, option);
             //sleep(Duration::from_millis(10)).await
         }
     }
 
-    fn produce_message(_index: u16, topic_name: &str, option: &TestOption) {
+    fn produce_message(_index: u16, option: &TestOption) {
+
+        let replication = option.replication();
+
+        for  i in 0..replication {
+            produce_message_inner(&option.topic_name(i),option);
+        }
+
+    }
+
+    fn produce_message_inner(topic_name: &str, option: &TestOption) {
         use std::io;
 
         let mut child = get_fluvio()

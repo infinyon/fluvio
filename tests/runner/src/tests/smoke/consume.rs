@@ -21,27 +21,33 @@ pub async fn validate_consume_message(option: &TestOption) {
 }
 
 fn validate_consume_message_cli(option: &TestOption) {
-    let topic_name = &option.topic_name;
+    
+    
+    let replication = option.replication();
 
-    let output = get_fluvio()
-        .expect("fluvio not founded")
-        .arg("consume")
-        .arg(topic_name)
-        .arg("--partition")
-        .arg("0")
-        .arg("-B")
-        .arg("-d")
-        .print()
-        .output()
-        .expect("no output");
+    for i in 0..replication {
 
-    // io::stdout().write_all(&output.stdout).unwrap();
-    io::stderr().write_all(&output.stderr).unwrap();
+        let topic_name = option.topic_name(i); 
+        let output = get_fluvio()
+            .expect("fluvio not founded")
+            .arg("consume")
+            .arg(&topic_name)
+            .arg("--partition")
+            .arg("0")
+            .arg("-B")
+            .arg("-d")
+            .print()
+            .output()
+            .expect("no output");
 
-    let msg = output.stdout.as_slice();
-    validate_message(0, option, &msg[0..msg.len() - 1]);
+        // io::stdout().write_all(&output.stdout).unwrap();
+        io::stderr().write_all(&output.stderr).unwrap();
 
-    println!("consume message validated!");
+        let msg = output.stdout.as_slice();
+        validate_message(0, option, &msg[0..msg.len() - 1]);
+
+        println!("topic: {}, consume message validated!",topic_name);
+    }
 }
 
 async fn validate_consume_message_api(option: &TestOption) {
@@ -59,21 +65,32 @@ async fn validate_consume_message_api(option: &TestOption) {
     let mut cluster = ClusterSocket::connect(cluster_config.clone())
         .await
         .expect("should connect");
-    let mut consumer = cluster
-        .consumer(ReplicaKey::new(option.topic_name.to_owned(), 0))
-        .await
-        .expect("consumer");
 
-    println!("retrieving messages");
-    let response = consumer
-        .fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default())
-        .await
-        .expect("records");
-    println!("message received");
-    let batches = response.records.batches;
+    
+    let replication = option.replication();
 
-    assert_eq!(batches.len(), option.produce.produce_iteration as usize);
-    println!("consume message validated!");
+    for i in 0..replication {
+
+        let topic_name = option.topic_name(i);
+        let mut consumer = cluster
+            .consumer(ReplicaKey::new(topic_name.to_owned(), 0))
+            .await
+            .expect("consumer");
+
+        println!("retrieving messages");
+        let response = consumer
+            .fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default())
+            .await
+            .expect("records");
+        println!("message received");
+        let batches = response.records.batches;
+
+        assert_eq!(batches.len(), option.produce.produce_iteration as usize);
+        println!("consume message validated!");
+    }
+
+
+
     /*
     let mut log_stream = leader.fetch_logs(FetchOffset::Earliest(None), FetchLogOption::default());
 

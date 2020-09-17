@@ -20,21 +20,25 @@ impl TestRunner {
         // wait until SPU come online
         sleep(Duration::from_secs(1)).await;
 
-        let topic_name = &self.option.topic_name;
+        // create topics per replication
+        let replication = self.option.replication();
 
-        println!("creating test topic: <{}>", topic_name);
+        for i in 0..replication {
 
-        get_fluvio()
-            .expect("fluvio not founded")
-            .arg("topic")
-            .arg("create")
-            .arg(topic_name)
-            .arg("--replication")
-            .arg(self.option.replication().to_string())
-            .rust_log(self.option.rust_log.as_deref())
-            .wait_and_check();
+            let topic_name = self.option.topic_name(i);
+            println!("creating test topic: <{}>", topic_name);
+            get_fluvio()
+                .expect("fluvio not founded")
+                .arg("topic")
+                .arg("create")
+                .arg(&topic_name)
+                .arg("--replication")
+                .arg(self.option.replication().to_string())
+                .rust_log(self.option.rust_log.as_deref())
+                .wait_and_check();
 
-        println!("topic created");
+            println!("topic: {}, created",topic_name);
+        }
 
         // wait until topic is created, this is hack for now until we have correct
         // implementation of find topic
