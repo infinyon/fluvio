@@ -18,12 +18,12 @@ use tokio_util::compat::Compat;
 
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 use flv_future_aio::bytes::BytesMut;
-use dataplane::core::Version;
-use dataplane::core::Encoder as KfEncoder;
-use dataplane::api::RequestMessage;
-use dataplane::api::ResponseMessage;
-use dataplane::FileWrite;
-use dataplane::StoreValue;
+use fluvio_protocol::Version;
+use fluvio_protocol::Encoder as KfEncoder;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::api::ResponseMessage;
+use fluvio_protocol::store::FileWrite;
+use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::codec::FluvioCodec;
 
 use tokio_util::codec::Framed;
@@ -240,8 +240,7 @@ mod tests {
     use flv_future_aio::zero_copy::ZeroCopyWrite;
     use flv_future_aio::net::TcpListener;
     use flv_future_aio::bytes::Bytes;
-    use dataplane::core::Decoder;
-    use dataplane::core::Encoder;
+    use fluvio_protocol::{Decoder, Encoder};
     use crate::KfSocket;
     use crate::KfSocketError;
 

@@ -1013,26 +1013,27 @@ dependencies = [
  "flv-future-aio",
  "flv-util",
  "futures",
+ "kf-socket",
  "log",
 ]
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01235650f4980c3367c01810fec0478dfcd0d10e4951fd6450a27faeb594d1de"
+version = "0.1.1"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
+ "flv-future-aio",
+ "log",
 ]
 
 [[package]]
 name = "fluvio-protocol-api"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9e7db93c435c1357e2bd83914e32942515608588239d4a326b835b2e2f7c4e4"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -1043,8 +1044,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-codec"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a546b096a31a32d60695721dd86ba88c19eae55cf65990a69426a3cab7a9ef60"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
 dependencies = [
  "bytes 0.5.6",
  "fluvio-protocol-core",
@@ -1056,8 +1056,7 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-core"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b87eb252268040aa1e9696dbb61fc5b7f61c013db73e8c96e69a5632ad2f6e2"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1065,9 +1064,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84a121f83fd8bcfc9690dcfb46d0e96dad771b22aa6e85f26db63added233d70"
+version = "0.1.1"
+source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
 dependencies = [
  "log",
  "proc-macro2",
@@ -1815,7 +1813,6 @@ version = "3.0.0"
 dependencies = [
  "async-trait",
  "event-listener",
- "fluvio-dataplane-protocol",
  "fluvio-protocol",
  "fluvio-types",
  "flv-future-aio",
@@ -1839,7 +1836,6 @@ dependencies = [
  "bytes 0.5.6",
  "chashmap",
  "event-listener",
- "fluvio-dataplane-protocol",
  "fluvio-protocol",
  "flv-future-aio",
  "flv-util",

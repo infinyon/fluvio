@@ -15,8 +15,8 @@ use crate::derive::FluvioDefault;
 use crate::api::Request;
 use crate::record::FileRecordSet;
 use crate::record::RecordSet;
-use crate::FileWrite;
-use crate::StoreValue;
+use crate::store::FileWrite;
+use crate::store::StoreValue;
 
 use super::ProduceResponse;
 

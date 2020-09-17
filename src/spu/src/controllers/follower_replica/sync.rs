@@ -14,8 +14,8 @@ use dataplane::derive::{Decode, Encode};
 use dataplane::record::{RecordSet, FileRecordSet};
 use dataplane::api::Request;
 use dataplane::ErrorCode;
-use dataplane::StoreValue;
-use dataplane::FileWrite;
+use dataplane::store::StoreValue;
+use dataplane::store::FileWrite;
 use fluvio_storage::SlicePartitionResponse;
 use flv_future_aio::fs::AsyncFileSlice;
 

@@ -15,8 +15,8 @@ use crate::derive::FluvioDefault;
 use crate::record::RecordSet;
 use crate::record::FileRecordSet;
 use crate::ErrorCode;
-use crate::FileWrite;
-use crate::StoreValue;
+use crate::store::FileWrite;
+use crate::store::StoreValue;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
 pub type FileFetchResponse = FetchResponse<FileRecordSet>;
