@@ -22,3 +22,6 @@ pub mod api {
 pub mod codec {
     pub use fluvio_protocol_codec::FluvioCodec;
 }
+
+#[cfg(feature = "store")]
+pub mod store;
