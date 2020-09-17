@@ -13,7 +13,7 @@ pub async fn produce_message(option: &TestOption) {
 pub async fn produce_message_with_api(option: &TestOption) {
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
-
+    
     for i in 0..replication {
         let topic_name = option.topic_name(i);
         let producer = client.topic_producer(&topic_name).await.expect("producer");
@@ -51,11 +51,13 @@ mod cli {
     }
 
     fn produce_message(_index: u16, option: &TestOption) {
+
         let replication = option.replication();
 
-        for i in 0..replication {
-            produce_message_inner(&option.topic_name(i), option);
+        for  i in 0..replication {
+            produce_message_inner(&option.topic_name(i),option);
         }
+
     }
 
     fn produce_message_inner(topic_name: &str, option: &TestOption) {

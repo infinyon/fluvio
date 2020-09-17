@@ -36,7 +36,7 @@ impl TestRunner {
                 .rust_log(self.option.rust_log.as_deref())
                 .wait_and_check();
 
-            println!("topic: {}, created", topic_name);
+            println!("topic: {}, created",topic_name);
         }
 
         // wait until topic is created, this is hack for now until we have correct
