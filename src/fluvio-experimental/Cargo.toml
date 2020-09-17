@@ -5,6 +5,7 @@ authors = ["Nick Mosher <nicholastmosher@gmail.com>"]
 edition = "2018"
 
 [features]
+unstable = []
 nightly = []
 
 [dependencies]

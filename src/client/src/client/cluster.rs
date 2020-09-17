@@ -73,7 +73,7 @@ impl ClusterSocket {
     }
 
     /// initialize spu pool and return clone of the pool
-    async fn init_spu_pool(&mut self) -> Result<SpuPool, ClientError> {
+    pub async fn init_spu_pool(&mut self) -> Result<SpuPool, ClientError> {
         debug!("init metadata store");
         let metadata = MetadataStores::new(&mut self.socket).await?;
         let pool = SpuPool::new(self.config.clone(), metadata);

@@ -4,7 +4,7 @@ mod admin;
 mod consumer;
 mod producer;
 mod sync;
-mod spu;
+pub mod spu;
 
 pub mod config;
 pub mod params;
