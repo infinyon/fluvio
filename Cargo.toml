@@ -20,9 +20,6 @@ members = [
     "tests/runner",
 ]
 
-[patch.crates-io]
-fluvio-protocol =  { git = 'https://github.com/infinyon/fluvio-protocol.git', branch = 'zero', version = "0.1.1" }
-
 
 # profile to make image sizer smaller
 # comment out for now

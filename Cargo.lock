@@ -1020,7 +1020,8 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e063601319f19a907a0024fcb6d5d4d73559dc4144387f71f64e63576aff6316"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
@@ -1033,7 +1034,8 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-api"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9e7db93c435c1357e2bd83914e32942515608588239d4a326b835b2e2f7c4e4"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -1044,7 +1046,8 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-codec"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a546b096a31a32d60695721dd86ba88c19eae55cf65990a69426a3cab7a9ef60"
 dependencies = [
  "bytes 0.5.6",
  "fluvio-protocol-core",
@@ -1056,7 +1059,8 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-core"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b87eb252268040aa1e9696dbb61fc5b7f61c013db73e8c96e69a5632ad2f6e2"
 dependencies = [
  "bytes 0.5.6",
  "log",
@@ -1065,7 +1069,8 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-derive"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/fluvio-protocol.git?branch=zero#510165ad3b1ef1acb8436db67bbe6fe3370c1902"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fa0af14b0a687ffff20252d6bee29f1922f11e695425c0d283bc64187fcadfd"
 dependencies = [
  "log",
  "proc-macro2",
