@@ -219,12 +219,13 @@ checksum = "5c85295147490b8fcf2ea3d104080a105a8b2c63f9c319e82c02d8e952388919"
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
+ "flv-future-aio",
  "flv-util",
  "log",
 ]
