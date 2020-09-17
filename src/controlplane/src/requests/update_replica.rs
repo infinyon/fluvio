@@ -1,8 +1,8 @@
 #![allow(clippy::assign_op_pattern)]
 
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::api::Request;
 use fluvio_controlplane_metadata::message::ReplicaMsg;
 use fluvio_controlplane_metadata::partition::Replica;
 use crate::InternalSpuApi;

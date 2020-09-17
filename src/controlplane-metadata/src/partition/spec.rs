@@ -5,7 +5,7 @@
 //!
 //!
 use fluvio_types::SpuId;
-use kf_protocol::derive::{Decode, Encode};
+use dataplane::derive::{Decode, Encode};
 
 /// Spec for Partition
 /// Each partition has replicas spread among SPU

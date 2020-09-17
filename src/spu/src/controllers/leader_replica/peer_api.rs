@@ -3,14 +3,12 @@ use std::convert::TryInto;
 
 use tracing::trace;
 
-use kf_protocol::bytes::Buf;
-use kf_protocol::Decoder;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::KfRequestMessage;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::RequestHeader;
+use dataplane::bytes::Buf;
+use dataplane::core::Decoder;
+use dataplane::derive::Encode;
+use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
-use super::KfLeaderPeerApiEnum;
+use super::LeaderPeerApiEnum;
 use super::UpdateOffsetRequest;
 
 #[derive(Debug, Encode)]
@@ -24,8 +22,8 @@ impl Default for LeaderPeerRequest {
     }
 }
 
-impl KfRequestMessage for LeaderPeerRequest {
-    type ApiKey = KfLeaderPeerApiEnum;
+impl ApiMessage for LeaderPeerRequest {
+    type ApiKey = LeaderPeerApiEnum;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
     where
@@ -36,7 +34,7 @@ impl KfRequestMessage for LeaderPeerRequest {
         trace!("decoding with header: {:#?}", header);
         let version = header.api_version();
         match header.api_key().try_into()? {
-            KfLeaderPeerApiEnum::UpdateOffsets => Ok(LeaderPeerRequest::UpdateOffsets(
+            LeaderPeerApiEnum::UpdateOffsets => Ok(LeaderPeerRequest::UpdateOffsets(
                 RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
             )),
         }

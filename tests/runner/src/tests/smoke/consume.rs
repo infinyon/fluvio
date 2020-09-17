@@ -49,7 +49,7 @@ async fn validate_consume_message_api(option: &TestOption) {
 
     use fluvio::params::FetchOffset;;
     use fluvio::params::FetchLogOption;
-    use fluvio::kf::api::ReplicaKey;
+    use dataplane::ReplicaKey;
 
     let config = ConfigFile::load(None).expect("load config");
     let cluster_config = config

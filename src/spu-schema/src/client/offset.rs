@@ -1,10 +1,10 @@
-use kf_protocol::api::Request;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
-use kf_protocol::api::ReplicaKey;
-use kf_protocol::api::Offset;
+use dataplane::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::ReplicaKey;
+use dataplane::Offset;
+use dataplane::ErrorCode;
 
-use crate::errors::FlvErrorCode;
 use super::SpuClientApiKey;
 
 // -----------------------------------
@@ -20,7 +20,7 @@ pub struct ReplicaOffsetUpdateRequest {
 #[derive(Decode, Encode, Default, Debug)]
 pub struct ReplicaOffsetUpdate {
     pub replica: ReplicaKey,
-    pub error_code: FlvErrorCode,
+    pub error_code: ErrorCode,
     /// beginning offset for replica
     pub start_offset: Offset,
     /// offset for last record

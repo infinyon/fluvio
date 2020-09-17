@@ -11,10 +11,9 @@ use flv_future_aio::fs::AsyncFileSlice;
 use flv_future_aio::fs::BoundedFileSink;
 use flv_future_aio::fs::BoundedFileOption;
 use flv_future_aio::fs::BoundedFileSinkError;
-use kf_protocol::api::DefaultBatch;
-use kf_protocol::api::Offset;
-use kf_protocol::api::Size;
-use kf_protocol::Encoder;
+use dataplane::batch::DefaultBatch;
+use dataplane::{Offset, Size};
+use dataplane::core::Encoder;
 
 use crate::util::generate_file_name;
 use crate::validator::validate;
@@ -141,8 +140,8 @@ mod tests {
     use std::io::Cursor;
 
     use flv_future_aio::test_async;
-    use kf_protocol::api::DefaultBatch;
-    use kf_protocol::Decoder;
+    use dataplane::batch::DefaultBatch;
+    use dataplane::core::Decoder;
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutFileRecords;

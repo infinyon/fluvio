@@ -12,18 +12,15 @@ use flv_future_aio::timer::sleep;
 use flv_future_aio::fs::util as file_util;
 use flv_future_aio::fs::AsyncFile;
 use flv_future_aio::net::TcpListener;
-use kf_protocol::Encoder;
-use kf_protocol::api::Request;
-use kf_protocol::api::ResponseMessage;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::DefaultBatch;
-use kf_protocol::api::DefaultRecord;
-use kf_protocol::message::fetch::DefaultKfFetchRequest;
+use dataplane::core::Encoder;
+use dataplane::api::{Request, ResponseMessage, RequestMessage};
+use dataplane::batch::DefaultBatch;
+use dataplane::record::DefaultRecord;
+use dataplane::fetch::{
+    DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
+    FileTopicResponse,
+};
 use kf_socket::KfSocketError;
-use kf_protocol::fs::FileFetchResponse;
-use kf_protocol::fs::KfFileFetchRequest;
-use kf_protocol::fs::FilePartitionResponse;
-use kf_protocol::fs::FileTopicResponse;
 
 use flv_util::fixture::ensure_clean_file;
 use kf_socket::KfSocket;
@@ -64,7 +61,7 @@ async fn test_server(addr: &str) -> Result<(), KfSocketError> {
     let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
     let mut socket: KfSocket = incoming_stream.into();
 
-    let fetch_request: Result<RequestMessage<KfFileFetchRequest>, KfSocketError> = socket
+    let fetch_request: Result<RequestMessage<FileFetchRequest>, KfSocketError> = socket
         .get_mut_stream()
         .next_request_item()
         .await
@@ -87,12 +84,12 @@ async fn test_server(addr: &str) -> Result<(), KfSocketError> {
 
     debug!(
         "response message write size: {}",
-        resp_msg.write_size(KfFileFetchRequest::DEFAULT_API_VERSION)
+        resp_msg.write_size(FileFetchRequest::DEFAULT_API_VERSION)
     );
 
     socket
         .get_mut_sink()
-        .encode_file_slices(&resp_msg, KfFileFetchRequest::DEFAULT_API_VERSION)
+        .encode_file_slices(&resp_msg, FileFetchRequest::DEFAULT_API_VERSION)
         .await?;
     debug!("server: finish sending out");
     Ok(())
@@ -104,7 +101,7 @@ async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
     let mut socket = KfSocket::connect(addr).await?;
     debug!("client: connect to test server and waiting...");
 
-    let req_msg: RequestMessage<DefaultKfFetchRequest> = RequestMessage::default();
+    let req_msg: RequestMessage<DefaultFetchRequest> = RequestMessage::default();
     let res_msg = socket.send(&req_msg).await?;
 
     debug!("output: {:#?}", res_msg);

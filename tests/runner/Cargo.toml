@@ -15,8 +15,8 @@ async-trait = "0.1.21"
 fluvio = { path = "../../src/client" }
 fluvio-types = { path = "../../src/types", version = "0.1.0" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../../src/controlplane-metadata" }
+dataplane = { version = "0.1.0", path = "../../src/dataplane-protocol", package = "fluvio-dataplane-protocol"}
+utils = { path = "../../src/utils" }
 k8-client = { version = "1.1.1" }
 k8-metadata-client = { version = "1.0.1" }
-kf-protocol = { version = "4.0.0" }
 flv-future-aio = { version = "2.2.1", features = ["fixture"] }
-utils = { path = "../../src/utils" }

@@ -102,7 +102,7 @@ where
     O: Terminal,
 {
     use tracing::debug;
-    use fluvio::kf::api::ReplicaKey;
+    use fluvio::dataplane::ReplicaKey;
 
     let (target_server, (cfg, file_records)) = opt.validate()?;
 

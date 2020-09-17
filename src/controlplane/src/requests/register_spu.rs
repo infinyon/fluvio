@@ -12,10 +12,10 @@
 //!
 //! In subsequent releases, Register SPU will carry additional credentials for mTLS
 //!
-use kf_protocol::api::Request;
-use kf_protocol::api::FlvErrorCode;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
+use dataplane::api::Request;
+use dataplane::ErrorCode;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
 use fluvio_types::SpuId;
 
 use crate::InternalScKey;
@@ -36,7 +36,7 @@ impl Request for RegisterSpuRequest {
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct RegisterSpuResponse {
-    error_code: FlvErrorCode,
+    error_code: ErrorCode,
     error_message: Option<String>,
 }
 
@@ -61,14 +61,14 @@ impl RegisterSpuRequest {
 impl RegisterSpuResponse {
     pub fn ok() -> Self {
         RegisterSpuResponse {
-            error_code: FlvErrorCode::None,
+            error_code: ErrorCode::None,
             error_message: None,
         }
     }
 
     pub fn failed_registeration() -> Self {
         RegisterSpuResponse {
-            error_code: FlvErrorCode::SpuRegisterationFailed,
+            error_code: ErrorCode::SpuRegisterationFailed,
             error_message: None,
         }
     }

@@ -8,11 +8,8 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
 use kf_socket::InnerExclusiveKfSink;
-use kf_protocol::Encoder;
-use kf_protocol::Decoder;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::RequestHeader;
-use kf_protocol::api::ResponseMessage;
+use dataplane::core::{Encoder, Decoder};
+use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_sc_schema::objects::Metadata;

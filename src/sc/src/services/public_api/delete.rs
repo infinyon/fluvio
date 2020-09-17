@@ -7,8 +7,8 @@
 use tracing::trace;
 use std::io::Error;
 
-use kf_protocol::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::FlvStatus;
+use dataplane::api::{RequestMessage, ResponseMessage};
+use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::*;
 
 use crate::core::*;
@@ -17,7 +17,7 @@ use crate::core::*;
 pub async fn handle_delete_request(
     request: RequestMessage<DeleteRequest>,
     ctx: SharedContext,
-) -> Result<ResponseMessage<FlvStatus>, Error> {
+) -> Result<ResponseMessage<Status>, Error> {
     let (header, req) = request.get_header_request();
 
     let status = match req {

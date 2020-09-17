@@ -1,8 +1,8 @@
 use std::convert::TryInto;
 use std::fmt::Display;
 
-use kf_protocol::Encoder;
-use kf_protocol::Decoder;
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminRequest;
 use kf_socket::*;

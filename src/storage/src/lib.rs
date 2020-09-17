@@ -27,10 +27,9 @@ pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub(crate) use crate::segment::SegmentSlice;
 
-use kf_protocol::api::ErrorCode;
-use kf_protocol::api::Offset;
+use dataplane::{ErrorCode, Offset};
+use dataplane::fetch::FilePartitionResponse;
 use flv_future_aio::fs::AsyncFileSlice;
-use kf_protocol::fs::FilePartitionResponse;
 
 pub trait Captures<'a> {}
 impl<'a, T: ?Sized> Captures<'a> for T {}

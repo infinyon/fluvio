@@ -7,8 +7,8 @@
 use tracing::debug;
 use serde_json::Value;
 
-use fluvio::kf::api::RecordSet;
-use fluvio::kf::message::fetch::FetchablePartitionResponse;
+use fluvio::dataplane::record::RecordSet;
+use fluvio::dataplane::fetch::FetchablePartitionResponse;
 
 use crate::error::CliError;
 use crate::common::{bytes_to_hex_dump, hex_dump_separator};

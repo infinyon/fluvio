@@ -3,7 +3,8 @@
 //!
 //!
 
-use kf_protocol::api::*;
+use dataplane::Offset;
+use dataplane::Isolation;
 
 pub const MAX_FETCH_BYTES: u32 = 1000000;
 

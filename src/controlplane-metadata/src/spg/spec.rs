@@ -1,6 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
-use kf_protocol::derive::{Decode, Encode};
+use dataplane::derive::{Decode, Encode};
 
 #[derive(Encode, Decode, Default, Debug, PartialEq, Clone)]
 #[cfg_attr(

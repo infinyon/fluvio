@@ -4,10 +4,10 @@
 //!
 use std::fmt::Debug;
 
-use kf_protocol::api::Request;
-use kf_protocol::api::ReplicaKey;
-use kf_protocol::derive::Decode;
-use kf_protocol::derive::Encode;
+use dataplane::api::Request;
+use dataplane::derive::Decode;
+use dataplane::derive::Encode;
+use dataplane::ReplicaKey;
 
 use super::SpuServerApiKey;
 

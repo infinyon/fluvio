@@ -47,12 +47,6 @@ pub mod metadata {
     }
 }
 
-pub mod kf {
-    pub mod api {
-        pub use kf_protocol::api::*;
-    }
-
-    pub mod message {
-        pub use kf_protocol::message::*;
-    }
+pub mod dataplane {
+    pub use dataplane::*;
 }

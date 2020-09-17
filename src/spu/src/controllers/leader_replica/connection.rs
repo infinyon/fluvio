@@ -12,7 +12,7 @@ use crate::core::DefaultSharedGlobalContext;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
-use super::KfLeaderPeerApiEnum;
+use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;
 use super::UpdateOffsetRequest;
 use super::ReplicaOffsetRequest;
@@ -51,7 +51,7 @@ impl LeaderConnection {
             self.ctx.local_spu_id()
         );
 
-        let mut api_stream = stream.api_stream::<LeaderPeerRequest, KfLeaderPeerApiEnum>();
+        let mut api_stream = stream.api_stream::<LeaderPeerRequest, LeaderPeerApiEnum>();
 
         api_loop!(
             api_stream,

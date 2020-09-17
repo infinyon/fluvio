@@ -8,8 +8,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use kf_protocol::derive::{Decode, Encode};
-
+use dataplane::derive::{Decode, Encode};
 use fluvio_types::{ReplicaMap, SpuId};
 
 // -----------------------------------

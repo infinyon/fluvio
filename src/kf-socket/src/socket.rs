@@ -9,10 +9,10 @@ use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use futures::io::{AsyncRead, AsyncWrite};
 
-use kf_protocol::api::Request;
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::ResponseMessage;
-use kf_protocol::transport::KfCodec;
+use dataplane::api::Request;
+use dataplane::api::RequestMessage;
+use dataplane::api::ResponseMessage;
+use fluvio_protocol::codec::FluvioCodec;
 
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::net::TcpDomainConnector;
@@ -82,7 +82,7 @@ where
     }
 
     pub fn from_stream(tcp_stream: S, raw_fd: RawFd) -> Self {
-        let framed = Framed::new(tcp_stream.compat(), KfCodec {});
+        let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
         let (sink, stream) = framed.split();
         Self::new(InnerKfSink::new(sink, raw_fd), stream.into())
     }

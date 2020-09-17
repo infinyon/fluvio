@@ -12,7 +12,7 @@ pub async fn produce_message(option: &TestOption) {
 }
 
 pub async fn produce_message_with_api(option: &TestOption) {
-    use fluvio::kf::api::ReplicaKey;
+    use dataplane::ReplicaKey;
 
     let config = ConfigFile::load(None).expect("load config");
     let cluster_config = config.config().current_cluster().expect("current cluster");

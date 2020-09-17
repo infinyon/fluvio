@@ -25,7 +25,7 @@ use fluvio_controlplane::RegisterSpuRequest;
 use fluvio_controlplane::UpdateSpuRequest;
 use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_controlplane_metadata::partition::Replica;
-use kf_protocol::api::RequestMessage;
+use dataplane::api::RequestMessage;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
 use kf_socket::ExclusiveKfSink;

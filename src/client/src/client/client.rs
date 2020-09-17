@@ -5,8 +5,8 @@ use std::fmt::Display;
 use tracing::trace;
 use async_trait::async_trait;
 
-use kf_protocol::api::RequestMessage;
-use kf_protocol::api::Request;
+use dataplane::api::RequestMessage;
+use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
 use kf_socket::*;
 use flv_future_aio::net::tls::AllDomainConnector;

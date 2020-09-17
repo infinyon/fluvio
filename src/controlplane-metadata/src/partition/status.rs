@@ -9,8 +9,8 @@ use std::collections::HashSet;
 use std::fmt;
 use std::slice::Iter;
 
-use kf_protocol::derive::{Decode, Encode};
-use kf_protocol::api::Offset;
+use dataplane::derive::{Decode, Encode};
+use dataplane::Offset;
 use fluvio_types::SpuId;
 
 use super::ElectionPolicy;

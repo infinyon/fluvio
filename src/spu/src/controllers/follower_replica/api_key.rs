@@ -1,15 +1,14 @@
-use kf_protocol::derive::Encode;
-use kf_protocol::derive::Decode;
+use dataplane::derive::{Encode, Decode};
 
-#[fluvio_kf(encode_discriminant)]
+#[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
-pub enum KfFollowerPeerApiEnum {
+pub enum FollowerPeerApiEnum {
     SyncRecords = 0,
 }
 
-impl Default for KfFollowerPeerApiEnum {
-    fn default() -> KfFollowerPeerApiEnum {
-        KfFollowerPeerApiEnum::SyncRecords
+impl Default for FollowerPeerApiEnum {
+    fn default() -> Self {
+        Self::SyncRecords
     }
 }

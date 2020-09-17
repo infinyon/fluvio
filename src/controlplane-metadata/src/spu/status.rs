@@ -7,7 +7,7 @@
 //!
 use std::fmt;
 
-use kf_protocol::derive::{Decode, Encode};
+use dataplane::derive::{Decode, Encode};
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]

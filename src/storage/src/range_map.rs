@@ -9,7 +9,7 @@ use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
-use kf_protocol::api::Offset;
+use dataplane::Offset;
 
 use crate::segment::ReadSegment;
 use crate::StorageError;
@@ -124,7 +124,7 @@ mod tests {
     use std::path::PathBuf;
 
     use flv_future_aio::test_async;
-    use kf_protocol::api::Offset;
+    use dataplane::Offset;
     use flv_util::fixture::ensure_new_dir;
 
     use super::SegmentList;

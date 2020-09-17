@@ -5,9 +5,9 @@ use std::io::Read;
 use std::path::Path;
 use std::env::temp_dir;
 
-use kf_protocol::api::DefaultRecord;
-use kf_protocol::api::DefaultBatch;
-use kf_protocol::api::Size;
+use dataplane::record::DefaultRecord;
+use dataplane::batch::DefaultBatch;
+use dataplane::Size;
 
 use crate::ConfigOption;
 
