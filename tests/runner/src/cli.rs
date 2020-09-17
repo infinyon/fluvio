@@ -38,12 +38,12 @@ pub struct TestOption {
     #[structopt(long)]
     disable_topic_setup: bool,
 
-    #[structopt(short, long, default_value = "1")]
+    #[structopt(short, long)]
     /// replication count, number of spu will be same as replication count, unless overridden
-    replication: u16,
+    replication: Option<u16>,
 
     /// topic name used for testing
-    #[structopt(short("t"), long, default_value = "topic1")]
+    #[structopt(short("t"), long, default_value = "topic")]
     pub topic_name: String,
 
     /// number of spu
@@ -104,7 +104,7 @@ impl TestOption {
     }
 
     pub fn replication(&self) -> u16 {
-        self.replication
+        self.replication.unwrap_or_else(|| self.spu)
     }
 
     pub fn produce(&self) -> bool {
@@ -118,5 +118,10 @@ impl TestOption {
 
     pub fn develop_mode(&self) -> bool {
         self.develop
+    }
+
+    /// topic name based on index
+    pub fn topic_name(&self, index: u16) -> String {
+        format!("{}{}", self.topic_name, index)
     }
 }
