@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
+use std::net::IpAddr;
+use std::str::FromStr;
 
 use tracing::{info, warn, debug, trace, instrument};
 use fluvio::{ClusterConfig, ClusterSocket};
@@ -13,13 +15,15 @@ use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use flv_util::cmd::CommandExt;
 use flv_future_aio::timer::sleep;
 use k8_client::{K8Client, ClientError as K8ClientError};
-use k8_config::K8Config;
+use k8_config::{K8Config, KubeContext};
 use k8_client::metadata::MetadataClient;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
+use url::Url;
+use semver::Version;
 
 use crate::ClusterError;
-use crate::helm::{HelmClient, Chart};
+use crate::helm::{HelmClient, Chart, InstalledChart};
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -30,6 +34,8 @@ const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_CHART_REMOTE: &str = "https://infinyon.github.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
+const DEFAULT_HELM_VERSION: &str = "3.2.0";
+const SYS_CHART_VERSION: &str = "0.2.0";
 
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug)]
@@ -472,6 +478,103 @@ impl ClusterInstaller {
         let versions = helm_client.versions(DEFAULT_CHART_APP_NAME)?;
         Ok(versions)
     }
+
+    /// Get installed system chart
+    pub fn sys_charts() -> Result<Vec<InstalledChart>, ClusterError> {
+        let helm_client = HelmClient::new()?;
+        let sys_charts = helm_client.installed_sys_charts(DEFAULT_CHART_SYS_REPO)?;
+        Ok(sys_charts)
+    }
+
+    // Getting server hostname from K8 context
+    fn get_cluster_server_host(&self, kc_config: KubeContext) -> Result<String, IoError> {
+        if let Some(ctx) = kc_config.config.current_cluster() {
+            let server_url = ctx.cluster.server.to_owned();
+            let url = match Url::parse(&server_url) {
+                Ok(url) => url,
+                Err(e) => {
+                    return Err(IoError::new(
+                        ErrorKind::Other,
+                        format!("error parsing server url {}", e.to_string()),
+                    ))
+                }
+            };
+            Ok(url.host().unwrap().to_string())
+        } else {
+            Err(IoError::new(ErrorKind::Other, "no context found"))
+        }
+    }
+
+    /// Runs pre install checks
+    ///  1. Check if compatible helm version is installed
+    ///  2. Check if compatible sys charts are installed
+    ///  3. Check if the K8 config hostname is not an IP address
+    fn pre_install_check(&self) -> Result<(), ClusterError> {
+        // check helm version
+        let version_text_trimmed = self.helm_client.get_helm_version()?;
+        if Version::parse(&version_text_trimmed) < Version::parse(DEFAULT_HELM_VERSION) {
+            return Err(ClusterError::Other(format!(
+                "Helm version {} is not compatible with fluvio platform, please install version >= {}",
+                version_text_trimmed, DEFAULT_HELM_VERSION
+            )));
+        }
+
+        // check installed system chart version
+        let sys_charts = self
+            .helm_client
+            .installed_sys_charts(DEFAULT_CHART_SYS_REPO)?;
+        if sys_charts.len() == 1 {
+            let installed_chart = sys_charts.first().unwrap();
+            let installed_chart_version = installed_chart.app_version.clone();
+            // checking version of chart found
+            if Version::parse(&installed_chart_version) < Version::parse(SYS_CHART_VERSION) {
+                return Err(ClusterError::Other(format!(
+                    "Fluvio system chart {} is not compatible with fluvio platform, please install version >= {}",
+                    installed_chart_version, SYS_CHART_VERSION
+                )));
+            }
+        } else if sys_charts.is_empty() {
+            return Err(ClusterError::Other(
+                "Fluvio system chart is not installed, please install fluvio-sys first".to_string(),
+            ));
+        } else {
+            return Err(ClusterError::Other(
+                "Multiple fluvio system charts found".to_string(),
+            ));
+        }
+
+        // check k8 config hostname is not an IP address
+        let k8_config = K8Config::load()?;
+        match k8_config {
+            K8Config::Pod(_) => {
+                // ignore server check for pod
+            }
+            K8Config::KubeConfig(config) => {
+                let server_host = match self.get_cluster_server_host(config) {
+                    Ok(server) => server,
+                    Err(e) => {
+                        return Err(ClusterError::Other(format!(
+                            "error fetching server from kube context {}",
+                            e.to_string()
+                        )))
+                    }
+                };
+                if !server_host.trim().is_empty() {
+                    if IpAddr::from_str(&server_host).is_ok() {
+                        return Err(ClusterError::Other(
+                            format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
+                        ));
+                    };
+                } else {
+                    return Err(ClusterError::Other(
+                        "Cluster in kubectl context cannot have empty hostname".to_owned(),
+                    ));
+                }
+            }
+        };
+        Ok(())
+    }
+
     /// Installs Fluvio according to the installer's configuration
     ///
     /// Returns the external address of the new cluster's SC
@@ -480,6 +583,8 @@ impl ClusterInstaller {
         fields(namespace = &*self.config.namespace),
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
+        // perform pre install checks
+        self.pre_install_check()?;
         self.install_app()?;
 
         let namespace = &self.config.namespace;
