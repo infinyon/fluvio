@@ -65,7 +65,7 @@ mod tests {
     use flv_future_aio::test_async;
     use flv_future_aio::timer::sleep;
     use flv_future_aio::net::TcpListener;
-    use dataplane::api::RequestMessage;
+    use fluvio_protocol::api::RequestMessage;
 
     use crate::KfSocket;
     use crate::KfSocketError;

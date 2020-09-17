@@ -23,7 +23,6 @@ fluvio-types = { version = "0.1.0", path = "../types" }
 flv-future-aio = { version = "2.2.1", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
 fluvio-protocol = { version = "0.1.0", features = ["derive", "api", "codec"] }
-dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 
 [dev-dependencies]

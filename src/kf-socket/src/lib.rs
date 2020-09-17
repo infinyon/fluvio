@@ -18,9 +18,9 @@ pub use sink::*;
 pub use socket::*;
 pub use multiplexing::*;
 
-use dataplane::api::Request;
-use dataplane::api::RequestMessage;
-use dataplane::api::ResponseMessage;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::api::ResponseMessage;
 
 /// send request and return response from calling server at socket addr
 pub async fn send_and_receive<R>(

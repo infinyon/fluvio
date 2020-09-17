@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::env::temp_dir;
 use std::time::Duration;
 
-use tracing::debug;
+use log::debug;
 use futures::io::AsyncWriteExt;
 use futures::future::join;
 use futures::stream::StreamExt;
@@ -12,11 +12,11 @@ use flv_future_aio::timer::sleep;
 use flv_future_aio::fs::util as file_util;
 use flv_future_aio::fs::AsyncFile;
 use flv_future_aio::net::TcpListener;
-use dataplane::core::Encoder;
-use dataplane::api::{Request, ResponseMessage, RequestMessage};
-use dataplane::batch::DefaultBatch;
-use dataplane::record::DefaultRecord;
-use dataplane::fetch::{
+use fluvio_protocol::Encoder;
+use fluvio_protocol::api::{Request, ResponseMessage, RequestMessage};
+use fluvio_dataplane_protocol::batch::DefaultBatch;
+use fluvio_dataplane_protocol::record::DefaultRecord;
+use fluvio_dataplane_protocol::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,
 };

@@ -483,8 +483,8 @@ mod file {
     use crate::core::Decoder;
     use crate::core::Encoder;
     use crate::core::Version;
-    use crate::FileWrite;
-    use crate::StoreValue;
+    use crate::store::FileWrite;
+    use crate::store::StoreValue;
 
     #[derive(Default, Debug)]
     pub struct FileRecordSet(AsyncFileSlice);

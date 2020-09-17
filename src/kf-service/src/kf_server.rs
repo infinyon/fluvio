@@ -24,8 +24,8 @@ use flv_future_aio::net::TcpListener;
 use flv_future_aio::net::TcpStream;
 use flv_future_aio::zero_copy::ZeroCopyWrite;
 use flv_future_aio::task::spawn;
-use dataplane::api::ApiMessage;
-use dataplane::core::Decoder as FluvioDecoder;
+use fluvio_protocol::api::ApiMessage;
+use fluvio_protocol::Decoder as FluvioDecoder;
 use kf_socket::InnerKfSocket;
 use kf_socket::InnerKfSink;
 use kf_socket::KfSocket;
@@ -229,7 +229,7 @@ mod test {
     use flv_future_aio::timer::sleep;
     use flv_future_aio::test_async;
 
-    use dataplane::api::RequestMessage;
+    use fluvio_protocol::api::RequestMessage;
     use kf_socket::KfSocket;
     use kf_socket::KfSocketError;
 
