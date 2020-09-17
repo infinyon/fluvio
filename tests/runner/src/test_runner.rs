@@ -24,7 +24,6 @@ impl TestRunner {
         let replication = self.option.replication();
 
         for i in 0..replication {
-
             let topic_name = self.option.topic_name(i);
             println!("creating test topic: <{}>", topic_name);
             get_fluvio()
@@ -37,7 +36,7 @@ impl TestRunner {
                 .rust_log(self.option.rust_log.as_deref())
                 .wait_and_check();
 
-            println!("topic: {}, created",topic_name);
+            println!("topic: {}, created", topic_name);
         }
 
         // wait until topic is created, this is hack for now until we have correct
