@@ -120,8 +120,8 @@ impl TestOption {
         self.develop
     }
 
-    /// topic name based on index
-    pub fn topic_name(&self, index: u16) -> String {
-        format!("{}{}", self.topic_name, index)
+    /// topic name based on index 
+    pub fn topic_name(&self,index: u16) -> String {
+        format!("{}{}",self.topic_name,index)
     }
 }

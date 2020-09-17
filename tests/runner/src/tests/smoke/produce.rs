@@ -21,7 +21,7 @@ pub async fn produce_message_with_api(option: &TestOption) {
         .expect("should connect");
 
     let replication = option.replication();
-
+    
     for i in 0..replication {
         let topic_name = option.topic_name(i);
         let replica: ReplicaKey = (topic_name.clone(), 0).into();
@@ -32,7 +32,7 @@ pub async fn produce_message_with_api(option: &TestOption) {
 
             producer.send_record(message).await.expect("message sent");
 
-            println!("topic: {}, message sent: {}", topic_name, i);
+            println!("topic: {}, message sent: {}", topic_name,i);
         }
     }
 }
@@ -59,11 +59,13 @@ mod cli {
     }
 
     fn produce_message(_index: u16, option: &TestOption) {
+
         let replication = option.replication();
 
-        for i in 0..replication {
-            produce_message_inner(&option.topic_name(i), option);
+        for  i in 0..replication {
+            produce_message_inner(&option.topic_name(i),option);
         }
+
     }
 
     fn produce_message_inner(topic_name: &str, option: &TestOption) {
