@@ -16,7 +16,7 @@ mod context {
     use event_listener::EventListener;
     use async_rwlock::RwLockReadGuard;
 
-    use crate::ClientError;
+    use crate::FluvioError;
     use crate::metadata::core::Spec;
     use crate::metadata::store::LocalStore;
     use crate::metadata::store::EpochMap;
@@ -58,7 +58,7 @@ mod context {
         pub async fn lookup_by_key(
             &self,
             key: &S::IndexKey,
-        ) -> Result<MetadataStoreObject<S, String>, ClientError>
+        ) -> Result<MetadataStoreObject<S, String>, FluvioError>
         where
             S: 'static,
             S::IndexKey: Display,
@@ -72,7 +72,7 @@ mod context {
         pub async fn lookup_and_wait<'a, F>(
             &'a self,
             search: F,
-        ) -> Result<MetadataStoreObject<S, String>, ClientError>
+        ) -> Result<MetadataStoreObject<S, String>, FluvioError>
         where
             S: 'static,
             S::IndexKey: Display,
@@ -105,7 +105,7 @@ mod context {
 
                         _ = sleep(time_left) => {
                             warn!("store {}: look up timeout expired",S::LABEL);
-                            return Err(ClientError::IoError(IoError::new(
+                            return Err(FluvioError::IoError(IoError::new(
                                 ErrorKind::TimedOut,
                                 format!("{} store lookup failed due to timeout",S::LABEL),
                             )))
@@ -136,7 +136,7 @@ mod context {
         pub async fn look_up_by_id(
             &self,
             id: i32,
-        ) -> Result<MetadataStoreObject<SpuSpec, String>, ClientError> {
+        ) -> Result<MetadataStoreObject<SpuSpec, String>, FluvioError> {
             self.lookup_and_wait(|g| {
                 for spu in g.values() {
                     if spu.spec.id == id {

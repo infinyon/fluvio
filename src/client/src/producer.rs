@@ -6,27 +6,24 @@ use tracing::trace;
 
 use dataplane::ReplicaKey;
 
-use crate::ClientError;
+use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::client::SerialFrame;
 
 /// produce message to replica leader
-pub struct Producer {
+pub struct PartitionProducer {
     replica: ReplicaKey,
     pool: SpuPool,
 }
 
-impl Producer {
-    pub fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
+impl PartitionProducer {
+    pub(crate) fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
         Self { replica, pool }
     }
 
-    pub fn replica(&self) -> &ReplicaKey {
-        &self.replica
-    }
-
     /// send records to spu leader for replica
-    pub async fn send_record(&mut self, record: Vec<u8>) -> Result<(), ClientError> {
+    pub async fn send_record<B: AsRef<[u8]>>(&mut self, buffer: B) -> Result<(), FluvioError> {
+        let record = buffer.as_ref().to_owned();
         debug!(
             "sending records: {} bytes to: {}",
             record.len(),
@@ -46,7 +43,7 @@ async fn send_record_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
     record: Vec<u8>,
-) -> Result<(), ClientError> {
+) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
     use dataplane::produce::DefaultTopicRequest;
@@ -88,14 +85,14 @@ async fn send_record_raw<F: SerialFrame>(
     match response.find_partition_response(&replica.topic, replica.partition) {
         Some(partition_response) => {
             if partition_response.error_code.is_error() {
-                return Err(ClientError::IoError(IoError::new(
+                return Err(FluvioError::IoError(IoError::new(
                     ErrorKind::Other,
                     partition_response.error_code.to_sentence(),
                 )));
             }
             Ok(())
         }
-        None => Err(ClientError::IoError(IoError::new(
+        None => Err(FluvioError::IoError(IoError::new(
             ErrorKind::Other,
             "unknown error",
         ))),

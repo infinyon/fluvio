@@ -5,11 +5,10 @@ use std::io::Write;
 
 use utils::bin::get_fluvio;
 
+use fluvio::Fluvio;
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
 use super::message::*;
-use fluvio::config::ConfigFile;
-use fluvio::ClusterSocket;
 
 /// verify consumer thru CLI
 pub async fn validate_consume_message(option: &TestOption) {
@@ -48,18 +47,10 @@ fn validate_consume_message_cli(option: &TestOption) {
 }
 
 async fn validate_consume_message_api(option: &TestOption) {
-    // futures::stream::StreamExt;
-
-    use fluvio::params::FetchOffset;;
+    use fluvio::params::FetchOffset;
     use fluvio::params::FetchLogOption;
-    use dataplane::ReplicaKey;
 
-    let config = ConfigFile::load(None).expect("load config");
-    let cluster_config = config
-        .config()
-        .current_cluster()
-        .expect("get current cluster");
-    let mut cluster = ClusterSocket::connect(cluster_config.clone())
+    let mut client = Fluvio::connect()
         .await
         .expect("should connect");
 
@@ -67,8 +58,8 @@ async fn validate_consume_message_api(option: &TestOption) {
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
-        let mut consumer = cluster
-            .consumer(ReplicaKey::new(topic_name.to_owned(), 0))
+        let mut consumer = client
+            .partition_consumer(topic_name, 0)
             .await
             .expect("consumer");
 

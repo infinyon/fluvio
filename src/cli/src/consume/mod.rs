@@ -21,7 +21,7 @@ mod process {
 
     use super::ConsumeLogOpt;
     use super::fetch_log_loop;
-    use fluvio::ClusterSocket;
+    use fluvio::Fluvio;
 
     /// Process Consume log cli request
     pub async fn process_consume_log<O>(
@@ -31,15 +31,12 @@ mod process {
     where
         O: Terminal,
     {
-        use fluvio::dataplane::ReplicaKey;
-
         let (target_server, cfg) = opt.validate()?;
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
-        let replica: ReplicaKey = (cfg.topic.clone(), cfg.partition).into();
-        let mut target = ClusterSocket::connect(target_server).await?;
-        let consumer = target.consumer(replica).await?;
+        let mut target = Fluvio::connect_with_config(&target_server).await?;
+        let consumer = target.partition_consumer(&cfg.topic, cfg.partition).await?;
         fetch_log_loop(out, consumer, cfg).await?;
 
         Ok("".to_owned())

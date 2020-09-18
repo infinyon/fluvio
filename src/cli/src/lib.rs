@@ -55,8 +55,8 @@ mod target {
     use std::convert::TryInto;
     use structopt::StructOpt;
 
+    use fluvio::FluvioConfig;
     use fluvio::config::ConfigFile;
-    use fluvio::ClusterConfig;
     use crate::tls::TlsOpt;
     use crate::CliError;
 
@@ -76,7 +76,7 @@ mod target {
 
     impl ClusterTarget {
         /// try to create sc config
-        pub fn load(self) -> Result<ClusterConfig, CliError> {
+        pub fn load(self) -> Result<FluvioConfig, CliError> {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
@@ -105,7 +105,7 @@ mod target {
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {
-                    let cluster = ClusterConfig::new(cluster).with_tls(tls);
+                    let cluster = FluvioConfig::new(cluster).with_tls(tls);
                     Ok(cluster)
                 }
                 (None, None) => {

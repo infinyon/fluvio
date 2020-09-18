@@ -3,48 +3,107 @@ use tracing::debug;
 use kf_socket::AllMultiplexerSocket;
 use dataplane::ReplicaKey;
 
-use crate::admin::AdminClient;
-use crate::{Producer, ClusterConfig};
-use crate::Consumer;
-use crate::ClientError;
+use crate::admin::FluvioAdmin;
+use crate::PartitionProducer;
+use crate::PartitionConsumer;
+use crate::FluvioError;
+use crate::FluvioConfig;
 use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
 use flv_future_aio::net::tls::AllDomainConnector;
 use std::convert::TryFrom;
+use crate::config::ConfigFile;
 
-/// socket to Cluster
-pub struct ClusterSocket {
+/// An interface for interacting with Fluvio streaming
+pub struct Fluvio {
     socket: AllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
-    spu_pool: Option<SpuPool>,
+    spu_pool: SpuPool,
 }
 
-impl ClusterSocket {
-    /// private creation with  raw client
-    /// this  wraps with multiplexor
-    pub(crate) fn new(client: VersionedSocket) -> Self {
-        let (socket, config, versions) = client.split();
-        Self {
-            socket: AllMultiplexerSocket::new(socket),
-            config,
-            versions,
-            spu_pool: None,
-        }
+impl Fluvio {
+    /// Creates a new Fluvio client with default configurations
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError};
+    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// let fluvio = Fluvio::connect().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect() -> Result<Self, FluvioError> {
+        let config_file = ConfigFile::load_default_or_new()?;
+        let cluster_config = config_file.config().current_cluster()
+            .ok_or(FluvioError::ConfigError(format!("failed to load cluster config")))?;
+        Self::connect_with_config(cluster_config).await
     }
 
-    /// create connection to Cluster
-    /// depends on policy, this will result in plain connection or TLS connection
-    pub async fn connect(config: ClusterConfig) -> Result<Self, ClientError> {
-        let connector = AllDomainConnector::try_from(config.tls)?;
-        let config = ClientConfig::new(config.addr, connector);
+    /// Creates a new Fluvio client with the given configuration
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError, FluvioConfig};
+    /// use fluvio::config::ConfigFile;
+    /// # async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// let config_file = ConfigFile::load_default_or_new()?;
+    /// let config = config_file.config().current_cluster().unwrap();
+    /// let fluvio = Fluvio::connect_with_config(&config).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
+        let connector = AllDomainConnector::try_from(&config.tls)?;
+        let config = ClientConfig::new(&config.addr, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
-        let cluster = Self::new(inner_client);
-        //cluster.start_metadata_watch().await?;
-        Ok(cluster)
+
+        let (socket, config, versions) = inner_client.split();
+        let mut socket = AllMultiplexerSocket::new(socket);
+
+        let metadata = MetadataStores::new(&mut socket).await?;
+        let spu_pool = SpuPool::new(config.clone(), metadata);
+
+        Ok(Self {
+            socket,
+            config,
+            versions,
+            spu_pool,
+        })
+    }
+
+    /// create new producer for topic/partition
+    pub async fn partition_producer<S: Into<String>>(&mut self, topic: S, partition: i32) -> Result<PartitionProducer, FluvioError> {
+        let replica = ReplicaKey::new(topic, partition);
+        debug!("creating producer, replica: {}", replica);
+        Ok(PartitionProducer::new(replica, self.spu_pool.clone()))
+    }
+
+    /// create new consumer for topic/partition
+    pub async fn partition_consumer<S: Into<String>>(&mut self, topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+        let replica = ReplicaKey::new(topic, partition);
+        debug!("creating consumer, replica: {}", replica);
+        Ok(PartitionConsumer::new(replica, self.spu_pool.clone()))
+    }
+
+    /// Provides an interface for managing a Fluvio cluster
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError};
+    /// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
+    /// let admin = fluvio.admin().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn admin(&mut self) -> FluvioAdmin {
+        FluvioAdmin::new(self.create_serial_client().await)
     }
 
     /// create serial connection
@@ -54,42 +113,5 @@ impl ClusterSocket {
             self.config.clone(),
             self.versions.clone(),
         )
-    }
-
-    /// create new admin client
-    pub async fn admin(&mut self) -> AdminClient {
-        AdminClient::new(self.create_serial_client().await)
-    }
-
-    /// create new producer for topic/partition
-    pub async fn producer(&mut self, replica: ReplicaKey) -> Result<Producer, ClientError> {
-        debug!("creating producer, replica: {}", replica);
-        if let Some(pool) = &self.spu_pool {
-            Ok(Producer::new(replica, pool.clone()))
-        } else {
-            let pool = self.init_spu_pool().await?;
-            Ok(Producer::new(replica, pool))
-        }
-    }
-
-    /// initialize spu pool and return clone of the pool
-    async fn init_spu_pool(&mut self) -> Result<SpuPool, ClientError> {
-        debug!("init metadata store");
-        let metadata = MetadataStores::new(&mut self.socket).await?;
-        let pool = SpuPool::new(self.config.clone(), metadata);
-        self.spu_pool.replace(pool.clone());
-        Ok(pool)
-    }
-
-    /// create new consumer for topic/partition
-    pub async fn consumer(&mut self, replica: ReplicaKey) -> Result<Consumer, ClientError> {
-        debug!("creating consumer, replica: {}", replica);
-
-        if let Some(pool) = &self.spu_pool {
-            Ok(Consumer::new(replica, pool.clone()))
-        } else {
-            let pool = self.init_spu_pool().await?;
-            Ok(Consumer::new(replica, pool))
-        }
     }
 }

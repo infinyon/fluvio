@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Error as JsonError;
 use http_types::{Response, Request, StatusCode, Error as HttpError, Url};
 
-use fluvio::ClusterConfig;
+use fluvio::FluvioConfig;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 use url::ParseError;
 use super::http::execute;
@@ -87,7 +87,7 @@ impl LoginAgent {
     ///
     /// Will fail if there is no saved session, or if the token
     /// in the saved session is expired.
-    pub async fn download_profile(&mut self) -> Result<ClusterConfig, CloudError> {
+    pub async fn download_profile(&mut self) -> Result<FluvioConfig, CloudError> {
         // Check whether we have credentials in session or on disk
         let creds = match self.session.as_ref() {
             // First, try to get the token from the agent session
@@ -115,7 +115,7 @@ impl LoginAgent {
             path = "/api/v1/downloadProfile"
         )
     )]
-    async fn try_download_profile(&self, creds: &Credentials) -> Result<ClusterConfig, CloudError> {
+    async fn try_download_profile(&self, creds: &Credentials) -> Result<FluvioConfig, CloudError> {
         let mut response = download_profile(&self.remote, creds).await?;
         trace!("Response: {:#?}", &response);
         debug!(status = response.status() as u16);
@@ -123,8 +123,8 @@ impl LoginAgent {
         match response.status() {
             StatusCode::Ok => {
                 debug!("Successfully authenticated with token");
-                let cluster: ClusterConfig = response.body_json().await?;
-                Ok(cluster)
+                let config: FluvioConfig = response.body_json().await?;
+                Ok(config)
             }
             _ => {
                 warn!("Failed to download profile");

@@ -5,7 +5,7 @@
 
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
@@ -25,7 +25,7 @@ pub struct ListManagedSpuGroupsOpt {
 
 impl ListManagedSpuGroupsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(ClusterConfig, OutputType), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -39,7 +39,7 @@ pub async fn process_list_managed_spu_groups<O: Terminal>(
 ) -> Result<(), CliError> {
     let (target_server, output) = opt.validate()?;
 
-    let mut client = ClusterSocket::connect(target_server).await?;
+    let mut client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;

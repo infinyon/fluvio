@@ -19,7 +19,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use fluvio_types::defaults::{CLI_CONFIG_PATH};
-use crate::{ClientError, ClusterConfig};
+use crate::{FluvioConfig, FluvioError};
 
 pub struct ConfigFile {
     path: PathBuf,
@@ -53,16 +53,16 @@ impl ConfigFile {
     }
 
     /// try to load from default locations
-    pub fn load(optional_path: Option<String>) -> Result<Self, ClientError> {
+    pub fn load(optional_path: Option<String>) -> Result<Self, FluvioError> {
         Self::from_file(Self::default_file_path(optional_path)?)
     }
 
     /// read from file
-    fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, ClientError> {
+    fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
         let file_str: String = read_to_string(path_ref).map_err(|err| {
             debug!("failed to read profile on path: {:#?}, {} ", path_ref, err);
-            ClientError::UnableToReadProfile
+            FluvioError::UnableToReadProfile
         })?;
         let config = toml::from_str(&file_str)
             .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
@@ -117,7 +117,7 @@ pub struct Config {
     version: String,
     current_profile: Option<String>,
     profile: HashMap<String, Profile>,
-    cluster: HashMap<String, ClusterConfig>,
+    cluster: HashMap<String, FluvioConfig>,
     client_id: Option<String>,
 }
 
@@ -131,7 +131,7 @@ impl Config {
 
     /// create new config with a single local cluster
     pub fn new_with_local_cluster(domain: String) -> Self {
-        let cluster = ClusterConfig::new(domain);
+        let cluster = FluvioConfig::new(domain);
         let mut config = Self::new();
 
         config.cluster.insert(LOCAL_PROFILE.to_owned(), cluster);
@@ -144,7 +144,7 @@ impl Config {
     }
 
     /// add new cluster
-    pub fn add_cluster(&mut self, cluster: ClusterConfig, name: String) {
+    pub fn add_cluster(&mut self, cluster: FluvioConfig, name: String) {
         self.cluster.insert(name, cluster);
     }
 
@@ -207,9 +207,10 @@ impl Config {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::config::{Config, ClusterConfig, Profile};
+    /// # use fluvio::FluvioConfig;
+    /// # use fluvio::config::{Config, Profile};
     /// let mut config = Config::new();
-    /// let cluster = ClusterConfig::new("https://cloud.fluvio.io".to_string());
+    /// let cluster = FluvioConfig::new("https://cloud.fluvio.io".to_string());
     /// config.add_cluster(cluster, "fluvio-cloud".to_string());
     /// let profile = Profile::new("fluvio-cloud".to_string());
     /// config.add_profile(profile, "fluvio-cloud".to_string());
@@ -217,7 +218,7 @@ impl Config {
     /// config.delete_cluster("fluvio-cloud").unwrap();
     /// assert!(config.cluster("fluvio-cloud").is_none());
     /// ```
-    pub fn delete_cluster(&mut self, cluster_name: &str) -> Option<ClusterConfig> {
+    pub fn delete_cluster(&mut self, cluster_name: &str) -> Option<FluvioConfig> {
         self.cluster.remove(cluster_name)
     }
 
@@ -233,9 +234,10 @@ impl Config {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::config::{Config, ClusterConfig, Profile};
+    /// # use fluvio::FluvioConfig;
+    /// # use fluvio::config::{Config, Profile};
     /// let mut config = Config::new();
-    /// let cluster = ClusterConfig::new("https://cloud.fluvio.io".to_string());
+    /// let cluster = FluvioConfig::new("https://cloud.fluvio.io".to_string());
     /// config.add_cluster(cluster, "fluvio-cloud".to_string());
     /// let profile = Profile::new("fluvio-cloud".to_string());
     /// config.add_profile(profile, "fluvio-cloud".to_string());
@@ -271,26 +273,26 @@ impl Config {
         self.profile.get_mut(profile_name)
     }
 
-    /// Returns the ClusterConfig belonging to the current profile.
-    pub fn current_cluster(&self) -> Option<&ClusterConfig> {
+    /// Returns the FluvioConfig belonging to the current profile.
+    pub fn current_cluster(&self) -> Option<&FluvioConfig> {
         self.current_profile()
             .and_then(|profile| self.cluster.get(&profile.cluster))
     }
 
-    /// Returns the ClusterConfig belonging to the named profile.
-    pub fn cluster_with_profile(&self, profile_name: &str) -> Option<&ClusterConfig> {
+    /// Returns the FluvioConfig belonging to the named profile.
+    pub fn cluster_with_profile(&self, profile_name: &str) -> Option<&FluvioConfig> {
         self.profile
             .get(profile_name)
             .and_then(|profile| self.cluster.get(&profile.cluster))
     }
 
-    /// Returns a reference to the named ClusterConfig.
-    pub fn cluster(&self, cluster_name: &str) -> Option<&ClusterConfig> {
+    /// Returns a reference to the named FluvioConfig.
+    pub fn cluster(&self, cluster_name: &str) -> Option<&FluvioConfig> {
         self.cluster.get(cluster_name)
     }
 
-    /// Returns a mutable reference to the named ClusterConfig.
-    pub fn cluster_mut(&mut self, cluster_name: &str) -> Option<&mut ClusterConfig> {
+    /// Returns a mutable reference to the named FluvioConfig.
+    pub fn cluster_mut(&mut self, cluster_name: &str) -> Option<&mut FluvioConfig> {
         self.cluster.get_mut(cluster_name)
     }
 

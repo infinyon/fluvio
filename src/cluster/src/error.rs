@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 use serde::export::Formatter;
-use fluvio::ClientError;
+use fluvio::FluvioError;
 use flv_future_aio::io::Error;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
@@ -11,7 +11,7 @@ pub enum ClusterError {
     /// An IO error occurred, such as opening a file or running a command.
     IoError(IoError),
     /// An error occurred with the Fluvio client.
-    ClientError(ClientError),
+    ClientError(FluvioError),
     /// An error occurred with the Kubernetes config.
     K8ConfigError(K8ConfigError),
     /// An error occurred with the Kubernetes client.
@@ -38,8 +38,8 @@ impl From<IoError> for ClusterError {
     }
 }
 
-impl From<ClientError> for ClusterError {
-    fn from(err: ClientError) -> Self {
+impl From<FluvioError> for ClusterError {
+    fn from(err: FluvioError) -> Self {
         Self::ClientError(err)
     }
 }

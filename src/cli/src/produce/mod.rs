@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 
 use crate::target::ClusterTarget;
 use crate::CliError;
@@ -72,7 +72,7 @@ impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
     pub fn validate(
         self,
-    ) -> Result<(ClusterConfig, (ProduceLogConfig, Option<FileRecord>)), CliError> {
+    ) -> Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>)), CliError> {
         let target_server = self.target.load()?;
 
         let file_records = if let Some(record_per_line) = self.record_per_line {
@@ -102,14 +102,12 @@ where
     O: Terminal,
 {
     use tracing::debug;
-    use fluvio::dataplane::ReplicaKey;
 
     let (target_server, (cfg, file_records)) = opt.validate()?;
 
-    let mut target = ClusterSocket::connect(target_server).await?;
+    let mut target = Fluvio::connect_with_config(&target_server).await?;
 
-    let replica: ReplicaKey = (cfg.topic.clone(), cfg.partition).into();
-    let producer = target.producer(replica).await?;
+    let producer = target.partition_producer(&cfg.topic, cfg.partition).await?;
 
     debug!("got producer");
     if let Some(records) = file_records {
@@ -133,7 +131,7 @@ mod produce {
     use flv_future_aio::io::BufReader;
     use flv_future_aio::io::AsyncBufReadExt;
     use fluvio_types::{print_cli_err, print_cli_ok};
-    use fluvio::Producer;
+    use fluvio::PartitionProducer;
 
     use crate::t_println;
 
@@ -142,7 +140,7 @@ mod produce {
     pub type RecordTuples = Vec<(String, Vec<u8>)>;
 
     pub async fn produce_file_records<O: Terminal>(
-        mut producer: Producer,
+        mut producer: PartitionProducer,
         out: std::sync::Arc<O>,
         _cfg: ProduceLogConfig,
         file: FileRecord,
@@ -157,7 +155,7 @@ mod produce {
 
     /// Dispatch records based on the content of the record tuples variable
     pub async fn produce_from_stdin<O: Terminal>(
-        mut producer: Producer,
+        mut producer: PartitionProducer,
         _out: std::sync::Arc<O>,
         opt: ProduceLogConfig,
     ) -> Result<(), CliError> {
@@ -180,7 +178,7 @@ mod produce {
 
     /// Process record and print success or error
     /// TODO: Add version handling for SPU
-    async fn process_record(spu: &mut Producer, record: Vec<u8>) {
+    async fn process_record(spu: &mut PartitionProducer, record: Vec<u8>) {
         match spu.send_record(record).await {
             Ok(()) => {
                 debug!("record send success");

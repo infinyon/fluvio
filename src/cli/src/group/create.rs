@@ -7,7 +7,7 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::*;
 
 use crate::error::CliError;
@@ -45,7 +45,7 @@ pub struct CreateManagedSpuGroupOpt {
 
 impl CreateManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and create spu group config.
-    fn validate(self) -> Result<(ClusterConfig, (String, SpuGroupSpec)), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, (String, SpuGroupSpec)), CliError> {
         let target_server = self.target.load()?;
 
         let storage = self.storage_size.map(|storage_size| StorageConfig {
@@ -82,7 +82,7 @@ pub async fn process_create_managed_spu_group(
 
     debug!("creating spg: {}, spec: {:#?}", name, spec);
 
-    let mut target = ClusterSocket::connect(target_server).await?;
+    let mut target = Fluvio::connect_with_config(&target_server).await?;
 
     let mut admin = target.admin().await;
 

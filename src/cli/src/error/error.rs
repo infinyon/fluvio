@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 
-use fluvio::ClientError;
+use fluvio::FluvioError;
 use fluvio_cluster::ClusterError;
 use crate::profile::CloudError;
 
@@ -9,7 +9,7 @@ use crate::profile::CloudError;
 pub enum CliError {
     InvalidArg(String),
     IoError(IoError),
-    ClientError(ClientError),
+    ClientError(FluvioError),
     CloudError(CloudError),
     ClusterError(ClusterError),
     K8ConfigError(k8_config::ConfigError),
@@ -29,8 +29,8 @@ impl From<IoError> for CliError {
     }
 }
 
-impl From<ClientError> for CliError {
-    fn from(error: ClientError) -> Self {
+impl From<FluvioError> for CliError {
+    fn from(error: FluvioError) -> Self {
         Self::ClientError(error)
     }
 }

@@ -1,7 +1,6 @@
+use fluvio::Fluvio;
 use crate::TestOption;
 use super::message::*;
-use fluvio::config::ConfigFile;
-use fluvio::ClusterSocket;
 
 pub async fn produce_message(option: &TestOption) {
     if option.produce.produce_iteration == 1 {
@@ -12,11 +11,7 @@ pub async fn produce_message(option: &TestOption) {
 }
 
 pub async fn produce_message_with_api(option: &TestOption) {
-    use dataplane::ReplicaKey;
-
-    let config = ConfigFile::load(None).expect("load config");
-    let cluster_config = config.config().current_cluster().expect("current cluster");
-    let mut cluster = ClusterSocket::connect(cluster_config.clone())
+    let mut client = Fluvio::connect()
         .await
         .expect("should connect");
 
@@ -24,8 +19,10 @@ pub async fn produce_message_with_api(option: &TestOption) {
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
-        let replica: ReplicaKey = (topic_name.clone(), 0).into();
-        let mut producer = cluster.producer(replica).await.expect("producer");
+        let mut producer = client
+            .partition_producer(&topic_name, 0)
+            .await
+            .expect("producer");
 
         for i in 0..option.produce.produce_iteration {
             let message = generate_message(i, option);

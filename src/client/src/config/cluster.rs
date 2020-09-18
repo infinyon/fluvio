@@ -7,11 +7,11 @@ use serde::{Serialize, Deserialize};
 
 use crate::config::TlsPolicy;
 
-/// Public configuration for the cluster.
+/// Public configuration for Fluvio.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-pub struct ClusterConfig {
-    /// The address to connect to the cluster
+pub struct FluvioConfig {
+    /// The address to connect to the Fluvio cluster
     // TODO use a validated address type.
     // We don't want to have a "" address.
     pub addr: String,
@@ -22,7 +22,7 @@ pub struct ClusterConfig {
     pub tls: TlsPolicy,
 }
 
-impl ClusterConfig {
+impl FluvioConfig {
     /// Create a new cluster configuration with no TLS.
     pub fn new<S: Into<String>>(addr: S) -> Self {
         Self {

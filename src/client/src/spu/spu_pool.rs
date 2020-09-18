@@ -10,7 +10,7 @@ use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 use kf_socket::AllMultiplexerSocket;
 use kf_socket::AsyncResponse;
-use crate::ClientError;
+use crate::FluvioError;
 use crate::client::ClientConfig;
 use crate::sync::MetadataStores;
 use crate::client::VersionedSerialSocket;
@@ -36,7 +36,7 @@ impl SpuSocket {
     async fn create_stream<R: Request>(
         &mut self,
         request: R,
-    ) -> Result<AsyncResponse<R>, ClientError> {
+    ) -> Result<AsyncResponse<R>, FluvioError> {
         let req_msg = RequestMessage::new_request(request);
         self.socket
             .create_stream(req_msg, DEFAULT_STREAM_QUEUE_SIZE)
@@ -64,7 +64,7 @@ impl SpuPool {
     }
 
     /// create new spu socket
-    async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, ClientError> {
+    async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
         debug!("connecting to spu: {}", spu.spec);
@@ -85,7 +85,7 @@ impl SpuPool {
     pub async fn create_serial_socket(
         &self,
         replica: &ReplicaKey,
-    ) -> Result<VersionedSerialSocket, ClientError> {
+    ) -> Result<VersionedSerialSocket, FluvioError> {
         let partition = self.metadata.partitions().lookup_by_key(replica).await?;
 
         let leader_id = partition.spec.leader;
@@ -109,7 +109,7 @@ impl SpuPool {
         &self,
         replica: &ReplicaKey,
         request: R,
-    ) -> Result<AsyncResponse<R>, ClientError> {
+    ) -> Result<AsyncResponse<R>, FluvioError> {
         let partition = self.metadata.partitions().lookup_by_key(replica).await?;
 
         let leader_id = partition.spec.leader;

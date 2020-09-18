@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::error::CliError;
@@ -74,7 +74,7 @@ pub struct CreateTopicOpt {
 
 impl CreateTopicOpt {
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(ClusterConfig, (String, TopicSpec)), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, (String, TopicSpec)), CliError> {
         use fluvio::metadata::topic::PartitionMaps;
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
@@ -118,7 +118,7 @@ pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliErro
 
     debug!("creating topic: {} spec: {:#?}", name, topic_spec);
 
-    let mut target = ClusterSocket::connect(target_server).await?;
+    let mut target = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = target.admin().await;
 
     admin.create(name.clone(), dry_run, topic_spec).await?;

@@ -10,7 +10,7 @@ use std::io::ErrorKind;
 use tracing::debug;
 
 use fluvio::params::*;
-use fluvio::Consumer;
+use fluvio::PartitionConsumer;
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -26,7 +26,7 @@ use super::process_fetch_topic_response;
 #[allow(clippy::neg_multiply)]
 pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
-    mut consumer: Consumer,
+    mut consumer: PartitionConsumer,
     opt: ConsumeLogConfig,
 ) -> Result<(), CliError>
 where

@@ -8,7 +8,7 @@ use std::net::IpAddr;
 use std::str::FromStr;
 
 use tracing::{info, warn, debug, trace, instrument};
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
@@ -587,9 +587,9 @@ impl ClusterInstaller {
             sleep(Duration::from_millis(2000)).await;
 
             // Create a managed SPU cluster
-            let cluster = ClusterConfig::new(sc_address.clone())
+            let cluster = FluvioConfig::new(sc_address.clone())
                 .with_tls(self.config.client_tls_policy.clone());
-            self.create_managed_spu_group(cluster).await?;
+            self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
             if !self.wait_for_spu(namespace).await? {
@@ -912,7 +912,7 @@ impl ClusterInstaller {
                 cluster.tls = self.config.server_tls_policy.clone();
             }
             None => {
-                let mut local_cluster = ClusterConfig::new(external_addr);
+                let mut local_cluster = FluvioConfig::new(external_addr);
                 local_cluster.tls = self.config.server_tls_policy.clone();
                 config.add_cluster(local_cluster, profile_name.clone());
             }
@@ -958,10 +958,10 @@ impl ClusterInstaller {
         skip(self, cluster),
         fields(cluster_addr = &*cluster.addr)
     )]
-    async fn create_managed_spu_group(&self, cluster: ClusterConfig) -> Result<(), ClusterError> {
+    async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), ClusterError> {
         let name = self.config.group_name.clone();
-        let mut target = ClusterSocket::connect(cluster).await?;
-        let mut admin = target.admin().await;
+        let mut fluvio = Fluvio::connect_with_config(cluster).await?;
+        let mut admin = fluvio.admin().await;
         admin
             .create(name, false, self.config.spu_spec.clone())
             .await?;

@@ -15,25 +15,21 @@ use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::ReplicaKey;
 use dataplane::record::RecordSet;
 use dataplane::PartitionOffset;
-use crate::ClientError;
+use crate::FluvioError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
 use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
 /// consume message from replica leader
-pub struct Consumer {
+pub struct PartitionConsumer {
     replica: ReplicaKey,
     pool: SpuPool,
 }
 
-impl Consumer {
-    pub fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
+impl PartitionConsumer {
+    pub(crate) fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
         Self { replica, pool }
-    }
-
-    pub fn replica(&self) -> &ReplicaKey {
-        &self.replica
     }
 
     /// fetch logs once
@@ -41,7 +37,7 @@ impl Consumer {
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,
-    ) -> Result<FetchablePartitionResponse<RecordSet>, ClientError> {
+    ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
@@ -86,7 +82,7 @@ impl Consumer {
             );
             Ok(partition_response)
         } else {
-            Err(ClientError::PartitionNotFound(self.replica.to_owned()))
+            Err(FluvioError::PartitionNotFound(self.replica.topic.clone(), self.replica.partition))
         }
     }
 
@@ -96,7 +92,7 @@ impl Consumer {
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,
-    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, ClientError> {
+    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
             offset_option, self.replica,
@@ -123,7 +119,7 @@ impl Consumer {
 async fn fetch_offsets<F: SerialFrame>(
     client: &mut F,
     replica: &ReplicaKey,
-) -> Result<FetchOffsetPartitionResponse, ClientError> {
+) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
     let response = client
@@ -158,7 +154,7 @@ async fn calc_offset<F: SerialFrame>(
     client: &mut F,
     replica: &ReplicaKey,
     offset: FetchOffset,
-) -> Result<i64, ClientError> {
+) -> Result<i64, FluvioError> {
     Ok(match offset {
         FetchOffset::Offset(inner_offset) => inner_offset,
         FetchOffset::Earliest(relative_offset) => {

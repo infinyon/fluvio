@@ -21,7 +21,7 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, IoError> {
             cluster.tls = local_config.tls.try_into()?;
         }
         None => {
-            let mut local_cluster = ClusterConfig::new(local_addr.clone());
+            let mut local_cluster = FluvioConfig::new(local_addr.clone());
             local_cluster.tls = local_config.tls.try_into()?;
             config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
         }

@@ -8,12 +8,38 @@ use fluvio_sc_schema::AdminRequest;
 use kf_socket::*;
 
 use crate::client::*;
-use crate::ClientError;
+use crate::FluvioError;
 
-/// adminstration interface
-pub struct AdminClient(VersionedSerialSocket);
+/// An interface for managing a Fluvio cluster
+///
+/// Most applications will not require administrator functionality. The
+/// `FluvioAdmin` interface is used to create, edit, and manage Topics
+/// and other operational items. Think of the difference between regular
+/// clients of a Database and its administrators. Regular clients may be
+/// applications which are reading and writing data to and from tables
+/// that exist in the database. Database administrators would be the
+/// ones actually creating, editing, or deleting tables. The same thing
+/// goes for Fluvio administrators.
+///
+/// If you _are_ writing an application whose purpose is to manage a
+/// Fluvio cluster for you, you can gain access to the `FluvioAdmin`
+/// client via the regular `Fluvio` client.
+///
+/// # Example
+///
+/// Note that this may fail if you are not authorized as a Fluvio
+/// administrator for the cluster you are connected to.
+///
+/// ```no_run
+/// # use fluvio_experimental::{Fluvio, FluvioError};
+/// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
+/// let admin = fluvio.admin().await?;
+/// # Ok(())
+/// # }
+/// ```
+pub struct FluvioAdmin(VersionedSerialSocket);
 
-impl AdminClient {
+impl FluvioAdmin {
     pub(crate) fn new(client: VersionedSerialSocket) -> Self {
         Self(client)
     }
@@ -31,7 +57,7 @@ impl AdminClient {
         name: String,
         dry_run: bool,
         spec: S,
-    ) -> Result<(), ClientError>
+    ) -> Result<(), FluvioError>
     where
         S: Into<AllCreatableSpec>,
     {
@@ -48,7 +74,7 @@ impl AdminClient {
 
     /// delete object by key
     /// key is depend on spec, most are string but some allow multiple types
-    pub async fn delete<S, K>(&mut self, key: K) -> Result<(), ClientError>
+    pub async fn delete<S, K>(&mut self, key: K) -> Result<(), FluvioError>
     where
         S: DeleteSpec,
         K: Into<S::DeleteKey>,
@@ -58,7 +84,7 @@ impl AdminClient {
         Ok(())
     }
 
-    pub async fn list<S, F>(&mut self, filters: F) -> Result<Vec<Metadata<S>>, ClientError>
+    pub async fn list<S, F>(&mut self, filters: F) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: ListSpec + Encoder + Decoder,
         S::Status: Encoder + Decoder,

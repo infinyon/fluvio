@@ -194,10 +194,10 @@ pub struct TlsPaths {
 }
 
 // TODO move this to AllDomainConnector
-impl TryFrom<TlsPolicy> for AllDomainConnector {
+impl TryFrom<&TlsPolicy> for AllDomainConnector {
     type Error = IoError;
 
-    fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
+    fn try_from(config: &TlsPolicy) -> Result<Self, Self::Error> {
         match config {
             TlsPolicy::Disabled => Ok(AllDomainConnector::default_tcp()),
             TlsPolicy::Anonymous => {
@@ -216,10 +216,10 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                 );
                 Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
                     ConnectorBuilder::new()
-                        .load_client_certs(tls.cert, tls.key)?
-                        .load_ca_cert(tls.ca_cert)?
+                        .load_client_certs(&tls.cert, &tls.key)?
+                        .load_ca_cert(&tls.ca_cert)?
                         .build(),
-                    tls.domain,
+                    tls.domain.clone(),
                 )))
             }
             TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
@@ -232,7 +232,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                         .load_client_certs_from_bytes(tls.cert.as_bytes(), tls.key.as_bytes())?
                         .load_ca_cert_from_bytes(tls.ca_cert.as_bytes())?
                         .build(),
-                    tls.domain,
+                    tls.domain.clone(),
                 )))
             }
         }
