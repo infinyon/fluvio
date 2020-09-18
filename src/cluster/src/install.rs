@@ -514,7 +514,7 @@ impl ClusterInstaller {
             // Create a managed SPU cluster
             let cluster = ClusterConfig::new(sc_address.clone())
                 .with_tls(self.config.client_tls_policy.clone());
-            self.create_managed_spu_group(cluster).await?;
+            self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
             if !self.wait_for_spu(namespace).await? {
@@ -883,7 +883,7 @@ impl ClusterInstaller {
         skip(self, cluster),
         fields(cluster_addr = &*cluster.addr)
     )]
-    async fn create_managed_spu_group(&self, cluster: ClusterConfig) -> Result<(), ClusterError> {
+    async fn create_managed_spu_group(&self, cluster: &ClusterConfig) -> Result<(), ClusterError> {
         let name = self.config.group_name.clone();
         let mut target = ClusterSocket::connect(cluster).await?;
         let mut admin = target.admin().await;

@@ -1,4 +1,4 @@
-use fluvio_experimental::{FluvioError, FluvioClient};
+use fluvio_experimental::{FluvioError, Fluvio};
 
 fn main() {
     if let Err(e) = async_std::task::block_on(run()) {
@@ -7,8 +7,8 @@ fn main() {
 }
 
 async fn run() -> Result<(), FluvioError> {
-    let mut client = FluvioClient::new().await?;
-    let topics = client.get_topics().await?;
+    let mut client = Fluvio::connect().await?;
+    let topics = client.list_topics().await?;
     for topic in &topics {
         println!("Topic: {:?}", topic);
     }

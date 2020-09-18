@@ -14,6 +14,7 @@ pub use client::ClusterSocket;
 pub use config::ClusterConfig;
 pub use producer::Producer;
 pub use consumer::Consumer;
+pub use admin::AdminClient;
 
 /// re-export metadata from sc-api
 pub mod metadata {

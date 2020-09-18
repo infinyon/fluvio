@@ -14,7 +14,6 @@
 //!
 //! [Install Fluvio](#installation)
 //!
-//!
 //! # Fluvio Echo
 //!
 //! The easiest way to see Fluvio in action is to produce some messages and to consume
@@ -29,9 +28,9 @@
 //! messages you send to them. For the echo example, we'll create a Topic called `echo`.
 //!
 //! ```no_run
-//! # use fluvio_experimental::{FluvioClient, FluvioError};
+//! # use fluvio_experimental::{Fluvio, FluvioError};
 //! # async fn do_example() -> Result<(), FluvioError> {
-//! let mut fluvio = FluvioClient::new().await?;
+//! let mut fluvio = Fluvio::connect().await?;
 //! // Create a new Fluvio topic called "echo"
 //! let mut topic = fluvio.create_topic("echo").await?;
 //! // Send a message to the echo topic
@@ -49,14 +48,12 @@ feature = "nightly",
 doc(include = "../../../website/kubernetes/INSTALL.md")
 )]
 
-use std::ops::RangeBounds;
-use fluvio::{ClusterSocket, ClientError, Consumer, Producer};
+use fluvio::{AdminClient, ClusterSocket, ClientError, Consumer, Producer as InternalProducer};
 use fluvio::config::ConfigFile;
 use fluvio::metadata::topic::{TopicSpec, TopicReplicaParam};
 use fluvio::metadata::partition::ReplicaKey;
 use fluvio::spu::SpuPool;
-
-type Offset = i64;
+use futures::AsyncWrite;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(Debug)]
@@ -78,21 +75,79 @@ impl From<ClientError> for FluvioError {
     }
 }
 
+/// Creates a `PartitionProducer` for sending events to Fluvio.
+///
+/// # Example
+///
+/// ```no_run
+/// # use fluvio_experimental as fluvio;
+/// # use fluvio_experimental::FluvioError;
+/// # async fn do_get_producer() -> Result<(), FluvioError> {
+/// let producer = fluvio::partition_producer("my-topic", 0).await?;
+/// producer.produce_buffer("Hello, world!").await?;
+/// # Ok(())
+/// # }
+/// ```
+pub async fn partition_producer<S: Into<String>>(topic: S, partition: i32) -> Result<PartitionProducer, FluvioError> {
+    let mut fluvio = Fluvio::connect().await?;
+    let producer = fluvio.partition_producer(topic, partition)?;
+    Ok(producer)
+}
+
+/// Creates a `PartitionConsumer` for receiving events from Fluvio
+///
+/// # Example
+///
+/// ```no_run
+/// # use fluvio_experimental as fluvio;
+/// # use fluvio_experimental::FluvioError;
+/// # async fn do_get_consumer() -> Result<(), FluvioError> {
+/// let consumer = fluvio::partition_consumer("my-topic", 0).await?;
+/// # Ok(())
+/// # }
+/// ```
+pub async fn partition_consumer<S: Into<String>>(topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+    let mut fluvio = Fluvio::connect().await?;
+    let consumer = fluvio.partition_consumer(topic, partition)?;
+    Ok(consumer)
+}
+
 /// An interface for interacting with Fluvio streaming
-pub struct FluvioClient {
+pub struct Fluvio {
     config: ConfigFile,
     socket: ClusterSocket,
 }
 
-impl FluvioClient {
+impl Fluvio {
     /// Creates a new Fluvio client with default configurations
-    pub async fn new() -> Result<Self, FluvioError> {
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_experimental::{Fluvio, FluvioError};
+    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// let fluvio = Fluvio::connect().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect() -> Result<Self, FluvioError> {
         let config_file = FluvioConfig::load_default_or_new()?;
-        Self::from_config(config_file).await
+        Self::connect_with_config(config_file).await
     }
 
     /// Creates a new Fluvio client with the given configuration
-    pub async fn from_config(config_file: FluvioConfig) -> Result<Self, FluvioError> {
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_experimental::{Fluvio, FluvioError, FluvioConfig};
+    /// # async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// let config = FluvioConfig::load_default_or_new()?;
+    /// let fluvio = Fluvio::connect_with_config(config).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect_with_config(config_file: FluvioConfig) -> Result<Self, FluvioError> {
         let config = config_file.config();
         let cluster_config = config.current_cluster()
             .ok_or(FluvioError::ClusterSocket)?;
@@ -103,6 +158,72 @@ impl FluvioClient {
         })
     }
 
+    /// Provides an interface for managing a Fluvio cluster
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_experimental::{Fluvio, FluvioError};
+    /// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
+    /// let admin = fluvio.admin().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn admin(&mut self) -> Result<FluvioAdmin, FluvioError> {
+        let admin = self.socket.admin().await;
+        Ok(FluvioAdmin { admin })
+    }
+
+    /// Creates a producer that sends messages to a specific partition in a topic
+    pub fn partition_producer<S: Into<String>>(&mut self, topic: S, partition: i32) -> Result<PartitionProducer, FluvioError> {
+        let replica_key = ReplicaKey::new(topic, partition);
+        let internal_producer = self.socket.producer(replica_key).await?;
+        Ok(PartitionProducer { producer: internal_producer })
+    }
+
+    /// Creates a consumer that receives messages from a specific partition in a topic
+    pub fn partition_consumer<S: Into<String>>(&mut self, topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+        let replica_key = ReplicaKey::new(topic, partition);
+        let internal_consumer = self.socket.consumer(replica_key).await?;
+        Ok(PartitionConsumer { consumer: internal_consumer })
+    }
+}
+
+/// Configuration options for connecting to Fluvio
+pub type FluvioConfig = fluvio::config::ConfigFile;
+
+/// An interface for managing a Fluvio cluster
+///
+/// Most applications will not require administrator functionality. The
+/// `FluvioAdmin` interface is used to create, edit, and manage Topics
+/// and other operational items. Think of the difference between regular
+/// clients of a Database and its administrators. Regular clients may be
+/// applications which are reading and writing data to and from tables
+/// that exist in the database. Database administrators would be the
+/// ones actually creating, editing, or deleting tables. The same thing
+/// goes for Fluvio administrators.
+///
+/// If you _are_ writing an application whose purpose is to manage a
+/// Fluvio cluster for you, you can gain access to the `FluvioAdmin`
+/// client via the regular `Fluvio` client.
+///
+/// # Example
+///
+/// Note that this may fail if you are not authorized as a Fluvio
+/// administrator for the cluster you are connected to.
+///
+/// ```no_run
+/// # use fluvio_experimental::{Fluvio, FluvioError};
+/// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
+/// let admin = fluvio.admin().await?;
+/// # Ok(())
+/// # }
+/// ```
+pub struct FluvioAdmin {
+    admin: AdminClient,
+}
+
+impl FluvioAdmin {
     /// Creates a new Topic with the given options
     ///
     /// # Example
@@ -111,9 +232,9 @@ impl FluvioClient {
     /// This will use default configuration options.
     ///
     /// ```no_run
-    /// # use fluvio_experimental::{FluvioClient, Topic, FluvioError};
-    /// # async fn do_create_topic(fluvio: &mut FluvioClient) -> Result<(), FluvioError> {
-    /// let topic: Topic = fluvio.create_topic("my-topic").await.unwrap();
+    /// # use fluvio_experimental::{FluvioAdmin, FluvioError, TopicDetails};
+    /// # async fn do_create_topic(fluvio_admin: &mut FluvioAdmin) -> Result<(), FluvioError> {
+    /// let topic: TopicDetails = fluvio_admin.create_topic("my-topic").await.unwrap();
     /// # Ok(())
     /// # }
     /// ```
@@ -124,27 +245,26 @@ impl FluvioClient {
     /// pass it a full `TopicConfig`.
     ///
     /// ```no_run
-    /// # use fluvio_experimental::{FluvioClient, TopicConfig, Topic, FluvioError};
-    /// # async fn do_create_topic(fluvio: &mut FluvioClient) -> Result<(), FluvioError> {
+    /// # use fluvio_experimental::{FluvioAdmin, FluvioError, TopicConfig, TopicDetails};
+    /// # async fn do_create_topic(fluvio_admin: &mut FluvioAdmin) -> Result<(), FluvioError> {
     /// let topic_config = TopicConfig::new("my-topic")
     ///     .with_partitions(2)
     ///     .with_replicas(3);
-    /// let topic: Topic = fluvio.create_topic(topic_config).await?;
+    /// let topic: TopicDetails = fluvio_admin.create_topic(topic_config).await?;
     /// # Ok(())
     /// # }
     /// ```
     pub async fn create_topic<T: Into<TopicConfig>>(
         &mut self,
         topic_config: T,
-    ) -> Result<Topic, FluvioError> {
+    ) -> Result<TopicDetails, FluvioError> {
         let config = topic_config.into();
         let topic_spec = config.to_spec();
-        let mut admin = self.socket.admin().await;
-        admin.create(config.name.clone(), false, topic_spec).await?;
-        let pool = self.socket.init_spu_pool().await?;
-        Ok(Topic {
-            config,
-            pool,
+        self.admin.create(config.name.clone(), false, topic_spec).await?;
+        Ok(TopicDetails {
+            name: config.name,
+            partitions: topic_spec.partitions(),
+            replication: topic_spec.replication_factor(),
         })
     }
 
@@ -153,16 +273,16 @@ impl FluvioClient {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio_experimental::{FluvioError, FluvioClient};
-    /// # async fn do_get_topics(client: &mut FluvioClient) -> Result<(), FluvioError> {
-    /// let topics = client.get_topics().await?;
+    /// # use fluvio_experimental::{FluvioAdmin, FluvioError};
+    /// # async fn do_get_topics(fluvio_admin: &mut FluvioAdmin) -> Result<(), FluvioError> {
+    /// let topics = fluvio_admin.list_topics().await?;
     /// for topic in &topics {
     ///     println!("Found topic: {}", topic.get_name());
     /// }
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn get_topics(&mut self) -> Result<Vec<TopicDetails>, FluvioError> {
+    pub async fn list_topics(&mut self) -> Result<Vec<TopicDetails>, FluvioError> {
         let mut admin = self.socket.admin().await;
         let metadata = admin.list::<TopicSpec, _>(vec![]).await?;
         let topics = metadata.into_iter()
@@ -177,9 +297,6 @@ impl FluvioClient {
         Ok(topics)
     }
 }
-
-/// Configuration options for connecting to Fluvio
-pub type FluvioConfig = fluvio::config::ConfigFile;
 
 /// Describes configuration options for a new or existing Topic
 pub struct TopicConfig {
@@ -216,6 +333,7 @@ impl TopicConfig {
         self
     }
 
+    /// Converts the public TopicConfig to the internal TopicSpec
     fn to_spec(&self) -> TopicSpec {
         TopicSpec::Computed(TopicReplicaParam::new(
             self.partitions,
@@ -240,280 +358,197 @@ impl TopicDetails {
     }
 }
 
-/// A Topic is a logical unit of streaming that reflects your application's domain
-pub struct Topic {
-    config: TopicConfig,
-    pool: SpuPool,
+enum OffsetInner {
+    Absolute(i64),
+    FromBeginning(i64),
+    FromEnd(i64),
 }
 
-impl Topic {
-    /// Sends a String as a message to a partition in this `Topic`
+/// Describes the location of an event stored in a Fluvio partition
+///
+/// All Fluvio events are stored as a log inside a partition. A log
+/// is just an ordered list, and an `Offset` is just a way to select
+/// an item from that list. There are several ways that an `Offset`
+/// may identify an element from a log. Suppose you sent the first
+/// 10 multiples of `11` to your partition. The various offset types
+/// would look like this:
+///
+/// ```text
+///         Partition Log: [ 00, 11, 22, 33, 44, 55, 66 ]
+///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
+///  FromBeginning Offset:    0,  1,  2,  3,  4,  5,  6
+///        FromEnd Offset:    6,  5,  4,  3,  2,  1,  0
+/// ```
+///
+/// When a new partition is created, it always starts counting new
+/// events at the `Absolute` offset of 0. An absolute offset is a
+/// unique index that represents the event's distance from the very
+/// beginning of the partition. The absolute offset of an event never
+/// changes.
+///
+/// Sometimes when a partition gets very large, Fluvio will begin
+/// deleting events from the beginning of the log in order to save
+/// space. Whenever it does this, it keeps track of the latest
+/// non-deleted event. This allows the `FromBeginning` offset to
+/// select an event which is a certain number of places in front of
+/// the deleted range. For example, let's say that the first two
+/// events from our partition were deleted. Our new offsets would
+/// look like this:
+///
+/// ```text
+///                          These events were deleted!
+///                          |
+///                          vvvvvv
+///         Partition Log: [ .., .., 22, 33, 44, 55, 66 ]
+///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
+///  FromBeginning Offset:            0,  1,  2,  3,  4
+///        FromEnd Offset:    6,  5,  4,  3,  2,  1,  0
+/// ```
+///
+/// Just like the `FromBeginning` offset may change if events are deleted,
+/// the `FromEnd` offset will change when new events are added. Let's take
+/// a look:
+///
+/// ```text
+///                                        These events were added!
+///                                                               |
+///                                                      vvvvvvvvvv
+///         Partition Log: [ .., .., 22, 33, 44, 55, 66, 77, 88, 99 ]
+///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6,  7,  8,  9
+///  FromBeginning Offset:            0,  1,  2,  3,  4,  5,  6,  7
+///        FromEnd Offset:    9,  8,  7,  6,  5,  4,  3,  2,  1,  0
+/// ```
+///
+pub struct Offset {
+    offset: OffsetInner,
+}
+
+impl Offset {
+    /// Creates an absolute offset with the given index
+    ///
+    /// The index must not be less than zero.
     ///
     /// # Example
     ///
-    /// ```no_run
-    /// # use fluvio_experimental::{FluvioError, Topic};
-    /// # async fn do_produce_message(topic: &mut Topic) -> Result<(), FluvioError> {
-    /// topic.produce_string_message(0, "Hello, Fluvio!").await?;
-    /// # Ok(())
-    /// # }
     /// ```
-    pub async fn produce_string_message<S: Into<String>>(&mut self, partition: i32, message: S) -> Result<(), FluvioError> {
-        let replica = ReplicaKey {
-            topic: self.config.name.clone(),
-            partition,
-        };
-        let mut producer = Producer::new(replica, self.pool.clone());
-        let message = message.into();
-        producer.send_record(message.into_bytes()).await?;
-        Ok(())
-    }
-
-    // NOTE: In the future it'd be nice to have some sort of Trait to represent
-    // Fluvio message types. At that point in time, we can create new methods with
-    // better names such as `produce` and `consume`. These v1 methods are intentionally
-    // overly-specific to refer to Strings so that we can deprecate them in the
-    // future without making breaking changes.
-    /// Sends a String as a message to this Topic
-    ///
-    /// Messages must be accompanied by a "key", which is used to determine which
-    /// partition will be responsible for processing this message. A key should
-    /// be a piece of information derived from the message itself.
-    ///
-    /// For example, let's say you're keeping track of the transactions for a bank
-    /// account. Each message represents a credit or debit to a certain account.
-    /// Let's say your message is formatted as JSON and looks like the following:
-    ///
-    /// ```json
-    /// {
-    ///     "account": "alice",
-    ///     "credit": 100
-    /// }
+    /// # use fluvio_experimental::Offset;
+    /// assert!(Offset::absolute(100).is_some());
+    /// assert!(Offset::absolute(0).is_some());
+    /// assert!(Offset::absolute(-10).is_none());
     /// ```
-    ///
-    /// In your banking system, you want to make sure that all of the transactions
-    /// for a particular account are processed in order. In order to achieve this,
-    /// all of the events belonging to a particular account must all be processed
-    /// by the same partition. In order for Fluvio to know how to keep all of the
-    /// events from that account together, you should use the account name as the
-    /// key when producing those messages to the topic.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use serde::Serialize;
-    /// use fluvio_experimental::{Topic, FluvioError};
-    ///
-    /// #[derive(Serialize)]
-    /// struct BankMessage {
-    ///     account: String,
-    ///     credit: u32,
-    /// }
-    ///
-    /// async fn produce_my_message(topic: &mut Topic) -> Result<(), FluvioError> {
-    ///     let transaction = BankMessage {
-    ///         account: "alice".to_string(),
-    ///         credit: 100,
-    ///     };
-    ///     let message = serde_json::to_string(&transaction).unwrap();
-    ///     topic.produce_string_message_by_key(&transaction.account, message).await?;
-    ///     Ok(())
-    /// }
-    /// ```
-    #[cfg(feature = "unstable")]
-    pub async fn produce_string_message_by_key<S: Into<String>>(
-        &mut self,
-        key: &str,
-        message: S,
-    ) -> Result<(), FluvioError> {
-        let partition = 0; // TODO calculate partition from key
-        self.produce_string_message(partition, message).await?;
-        Ok(())
-    }
-
-    // // NOTE: In the future it'd be nice to have some sort of Trait to represent
-    // // Fluvio message types. At that point in time, we can create new methods with
-    // // better names such as `produce` and `consume`. These v1 methods are intentionally
-    // // overly-specific to refer to Strings so that we can deprecate them in the
-    // // future without making breaking changes.
-    // /// Creates a Stream that yields new String messages as they arrive on this Topic
-    // ///
-    // /// # Example
-    // ///
-    // /// ```no_run
-    // /// # use futures::StreamExt;
-    // /// # use fluvio_experimental::Topic;
-    // /// # async fn do_consume_string_messages(topic: &Topic) {
-    // /// let mut consumer_stream = topic.consume_string_messages();
-    // /// while let Some(event) = consumer_stream.next().await {
-    // ///     println!("Received event: {}", event);
-    // /// }
-    // /// # }
-    // /// ```
-    // pub fn consume_string_messages(&self) -> TopicStringConsumer {
-    //     todo!()
-    // }
-
-    // /// Fetch a batch of messages in a given range
-    // ///
-    // /// # Example
-    // ///
-    // /// ```no_run
-    // /// # use fluvio_experimental::FluvioClient;
-    // /// # async {
-    // /// let client = FluvioClient::new().unwrap();
-    // /// let topic = client.create_topic("my-topic").await.unwrap();
-    // ///
-    // /// // Fetching uses the Range syntax.
-    // /// topic.fetch_string_messages(-10..);
-    // /// # };
-    // /// ```
-    // pub async fn fetch_string_messages<R: RangeBounds<Offset>>(
-    //     &mut self,
-    //     range: R,
-    // ) -> Result<Vec<String>, FluvioError> {
-    //     let consumer = Consumer {
-    //         pool: self.pool.clone(),
-    //         replica:
-    //     }
-    //     todo!()
-    // }
-
-    /// Creates a handle for interacting with a given Partition of this Topic.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_experimental::{Topic, FluvioError};
-    /// # async fn do_partition(topic: &mut Topic) -> Result<(), FluvioError> {
-    /// let partition = topic.partition(0)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn partition(&mut self, partition: i32) -> Result<Partition, FluvioError> {
-        let replica = ReplicaKey {
-            topic: self.config.name.clone(),
-            partition,
-        };
-        Ok(Partition {
-            topic: self.config.name.clone(),
-            pool: self.pool.clone(),
-            replica,
-            partition,
+    pub fn absolute(index: i64) -> Option<Offset> {
+        if index < 0 {
+            return None;
+        }
+        Some(Self {
+            offset: OffsetInner::Absolute(index),
         })
     }
 
-    #[cfg(feature = "unstable")]
-    fn partition_by_key(&self, key: &str) -> Partition {
-        todo!()
+    /// Creates a relative offset starting at the beginning of the saved log
+    ///
+    /// A relative `FromBeginning` offset will not always match an `Absolute`
+    /// offset. In order to save space, Fluvio may sometimes delete events
+    /// from the beginning of the log. When this happens, the `FromBeginning`
+    /// relative offset starts counting from the first non-deleted log entry.
+    ///
+    /// ```text
+    ///                          These events were deleted!
+    ///                          |
+    ///                          vvvvvv
+    ///         Partition Log: [ .., .., 22, 33, 44, 55, 66 ]
+    ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
+    ///  FromBeginning Offset:            0,  1,  2,  3,  4
+    /// ```
+    ///
+    /// The offset must not be less than zero.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_experimental::Offset;
+    /// assert!(Offset::from_beginning(10).is_some());
+    /// assert!(Offset::from_beginning(0).is_some());
+    /// assert!(Offset::from_beginning(-10).is_none());
+    /// ```
+    pub fn from_beginning(offset: i64) -> Option<Offset> {
+        if offset < 0 {
+            return None;
+        }
+        Some(Self {
+            offset: OffsetInner::FromBeginning(offset),
+        })
+    }
+
+    /// Creates a relative offset counting backwards from the end of the log
+    ///
+    /// A relative `FromEnd` offset will begin counting from the last
+    /// "stable committed" event entry in the log. Increasing the offset will
+    /// select events in reverse chronological order from the most recent event
+    /// towards the earliest event. Therefore, a relative `FromEnd` offset may
+    /// refer to different entries depending on when a query is made.
+    ///
+    /// For example, `Offset::from_end(3)` will refer to the event with content
+    /// `33` at this point in time:
+    ///
+    /// ```text
+    ///         Partition Log: [ .., .., 22, 33, 44, 55, 66 ]
+    ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
+    ///        FromEnd Offset:    6,  5,  4,  3,  2,  1,  0
+    /// ```
+    ///
+    /// But when these new events are added, `Offset::from_end(3)` will refer to
+    /// the event with content `66`:
+    ///
+    /// ```text
+    ///                                        These events were added!
+    ///                                                               |
+    ///                                                      vvvvvvvvvv
+    ///         Partition Log: [ .., .., 22, 33, 44, 55, 66, 77, 88, 99 ]
+    ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6,  7,  8,  9
+    ///        FromEnd Offset:    9,  8,  7,  6,  5,  4,  3,  2,  1,  0
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_experimental::Offset;
+    /// assert!(Offset::from_end(10).is_some());
+    /// assert!(Offset::from_end(0).is_some());
+    /// assert!(Offset::from_end(-10).is_none());
+    /// ```
+    pub fn from_end(offset: i64) -> Option<Offset> {
+        if offset < 0 {
+            return None;
+        }
+        Some(Self {
+            offset: OffsetInner::FromEnd(offset),
+        })
     }
 }
 
-/// A Partition is a unit of streaming that enables messages to be sent in parallel.
-///
-/// You can think of a partition as a fraction of a `Topic`. Every message that is
-/// produced to a topic will be assigned to a partition, which is responsible for
-/// streaming and storing that message. The thing that makes partitions special is
-/// that separate partitions may be processed by entirely different machines. This
-/// ultimately allows you to increase the potential throughput of your topic.
-///
-/// ```text
-/// +-------+-----------+
-/// |       | Partition |
-/// | Topic |-----------+
-/// |       | Partition |
-/// +-------+-----------+
-/// ```
-///
-/// Having more than one partition for a topic changes the ordering semantics of
-/// your topic. All of the messages belonging to a single partition will arrive and
-/// be stored in order. However, there is no ordering guarantee for messages that
-/// belong to different partitions.
-///
-/// # Example
-///
-/// Suppose you have a service for scanning admissions tickets at sporting events.
-/// Your system has a barcode scanner that reads a number from each ticket and
-/// produces them to a topic called `admissions`. Lets say this topic has two
-/// partitions, and that you send all of the even ticket numbers to one partition
-/// and all of the odd ticket numbers to the other partition.
-///
-/// ```text
-/// +--------------------+----------------------------+
-/// |                    | Partition 0 (even tickets) |
-/// | Topic (admissions) |----------------------------+
-/// |                    | Partition 1 (odd tickets)  |
-/// +--------------------+----------------------------+
-/// ```
-///
-/// The code to produce ticket numbers from your barcode scanner to the `admissions`
-/// topic might look something like this:
-///
-/// ```no_run
-/// # struct Barcode;
-/// # impl Barcode {
-/// #     async fn next(&mut self) -> Option<u32> { unimplemented!() }
-/// # }
-/// # use fluvio_experimental::{FluvioError, Topic};
-/// # async fn do_produce_tickets(admissions_topic: &mut Topic, barcode_scanner: &mut Barcode) -> Result<(), FluvioError> {
-/// let mut even_partition = admissions_topic.partition(0)?;
-/// let mut odd_partition = admissions_topic.partition(1)?;
-///
-/// while let Some(ticket_number) = barcode_scanner.next().await {
-///     if ticket_number % 2 == 0 {
-///         even_partition.produce_string_message(format!("{}", ticket_number)).await?;
-///     } else {
-///         odd_partition.produce_string_message(format!("{}", ticket_number)).await?;
-///     }
-/// }
-/// # Ok(())
-/// # }
-/// ```
-///
-/// Game night arrives, and your first few fans in line have the following ticket numbers
-///
-/// ```text
-/// 12, 13, 55, 89, 90, 44, 23
-/// ```
-///
-/// Those ticket numbers would be sent to the `admissions` topic like this
-///
-/// ```text
-/// +--------------------+----------------------------+
-/// |                    | Partition 0 (even tickets) |
-/// |                    | [ 12, 90, 44 ]             |
-/// | Topic (admissions) |----------------------------+
-/// |                    | Partition 1 (odd tickets)  |
-/// |                    | [ 13, 55, 89, 23 ]         |
-/// +--------------------+----------------------------+
-/// ```
-///
-/// Notice that all of the even-numbered tickets are stored in the order that they
-/// arrived in, and that the same is true for the odd-numbered tickets. However, it is
-/// important to realize that there is no longer any ordering guarantee between even
-/// and odd tickets. It would be impossible to tell whether ticket `12` arrived before
-/// or after ticket `89`.
-pub struct Partition {
-    topic: String,
-    pool: SpuPool,
-    replica: ReplicaKey,
-    partition: i32,
+/// Doc TODO. Replaces FetchLogOption
+pub struct FetchConfig {
+
 }
 
-impl Partition {
-    // pub fn consume_string_messages(&self) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
-    //     let mut consumer = Consumer::new(self.replica.clone(), self.pool.clone());
-    //     let stream = consumer.fetch_logs_as_stream().await?;
-    // }
+/// A Producer that sends messages to a specific partition of a topic
+pub struct PartitionProducer {
+    producer: InternalProducer,
+}
 
-    pub async fn fetch_string_messages<R: RangeBounds<Offset>>(&self, range: R) -> Result<Vec<String>, FluvioError> {
-        todo!()
-    }
-
-    /// Produces a string message to this partition
-    pub async fn produce_string_message<S: Into<String>>(&mut self, message: S) -> Result<(), FluvioError> {
-        let mut producer = Producer::new(self.replica.clone(), self.pool.clone());
-        producer.send_record(message.into().into_bytes()).await?;
+impl PartitionProducer {
+    pub async fn produce_buffer<B: AsRef<[u8]>>(&self, buffer: B) -> Result<(), FluvioError> {
+        let record = buffer.as_ref().to_owned();
+        self.producer.send_record(record).await?;
         Ok(())
     }
+}
+
+/// Doc: TODO
+pub struct PartitionConsumer {
+    consumer: Consumer,
+}
+
+impl PartitionConsumer {
 }

@@ -26,7 +26,7 @@ impl Producer {
     }
 
     /// send records to spu leader for replica
-    pub async fn send_record(&mut self, record: Vec<u8>) -> Result<(), ClientError> {
+    pub async fn send_record(&self, record: Vec<u8>) -> Result<(), ClientError> {
         debug!(
             "sending records: {} bytes to: {}",
             record.len(),
