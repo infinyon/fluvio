@@ -5,7 +5,6 @@ authors = ["fluvio.io"]
 edition = "2018"
 
 [dependencies]
-log = "0.4.8"
 bytes = "0.5.3"
 futures = { version = "0.3.4" }
 structopt = "0.3.5"
@@ -19,4 +18,4 @@ dataplane = { version = "0.1.0", path = "../../src/dataplane-protocol", package 
 utils = { path = "../../src/utils" }
 k8-client = { version = "1.1.1" }
 k8-metadata-client = { version = "1.0.1" }
-flv-future-aio = { version = "2.2.1", features = ["fixture"] }
+flv-future-aio = { version = "3.0.0", features = ["fixture"] }

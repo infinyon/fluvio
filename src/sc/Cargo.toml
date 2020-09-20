@@ -18,9 +18,6 @@ k8 = ["k8-client"]
 
 [dependencies]
 rand = "0.7.2"
-log = "0.4.8"
-tracing = "0.1.19"
-tracing-futures = "0.2.4"
 toml = "0.5.5"
 serde = { version = "1.0.103", features = ['derive'] }
 futures = { version = "0.3.1" }
@@ -47,11 +44,11 @@ fluvio-protocol = { version = "0.1.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 kf-socket = { path = "../kf-socket" }
 kf-service = { path = "../kf-service" }
-flv-future-aio = { version = "2.3.0", features = ["tls", "unstable"] }
+flv-future-aio = { version = "3.0.0", features = ["tls", "unstable"] }
 flv-tls-proxy = "0.1.0"
-flv-util = { version = "0.4.0" }
+flv-util = { version = "0.5.0" }
 utils = { path = "../utils" }
 
 [dev-dependencies]
-flv-future-aio = { version = "2.3.0", features = ["fixture"] }
-flv-util = { version = "0.4.0", features = ["fixture"] }
+flv-future-aio = { version = "3.0.0", features = ["fixture"] }
+flv-util = { version = "0.5.0", features = ["fixture"] }

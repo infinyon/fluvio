@@ -11,7 +11,6 @@ doc = false
 required-features = ["cli"]
 
 [dependencies]
-tracing = "0.1.19"
 libc = "0.2.58"
 bytes = "0.5.3"
 futures = { version = "0.3.4" }
@@ -24,14 +23,14 @@ serde = { version = "1.0.103", features = ['derive'] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 kf-socket = { path = "../kf-socket" }
 flv-util = { version = "0.4.0" }
-flv-future-aio = { version = "2.2.1" }
+flv-future-aio = { version = "3.0.0" }
 fluvio-protocol = { version = "0.1.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 utils = { path = "../utils", optional = false }
 
 [dev-dependencies]
-flv-util = { version = "0.4.0", features = ["fixture"] }
-flv-future-aio = { version = "2.2.1", features = ["fixture"] }
+flv-util = { version = "0.5.0", features = ["fixture"] }
+flv-future-aio = { version = "3.0.0", features = ["fixture"] }
 
 
 [features]
