@@ -9,9 +9,6 @@ name = "kf_service"
 path = "src/lib.rs"
 
 [dependencies]
-log = "0.4.8"
-tracing = "0.1.18"
-tracing-futures = "0.2.4"
 futures = { version = "0.3.4", features = ["async-await"] }
 async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
@@ -20,11 +17,11 @@ tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
 fluvio-types = { version = "0.1.0", path = "../types" }
-flv-future-aio = { version = "2.2.1", features = ["tls"] }
+flv-future-aio = { version = "3.0.0", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
 fluvio-protocol = { version = "0.1.0", features = ["derive", "api", "codec"] }
 
 
 [dev-dependencies]
-flv-future-aio = { version = "2.2.1", features = ["fixture"] }
-flv-util = { version = "0.4.0" }
+flv-future-aio = { version = "3.0.0", features = ["fixture"] }
+flv-util = { version = "0.5.0" }

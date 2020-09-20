@@ -25,8 +25,6 @@ rustc_version = "0.2.3"
 
 [dependencies]
 colored = "2.0.0"
-tracing = "0.1.19"
-tracing-futures = "0.2.4"
 url = "2.1.1"
 semver = "0.10.0"
 bytes = "0.5.3"
@@ -58,9 +56,8 @@ k8-config = { version = "1.1.0", features = ["context"] }
 k8-obj-core = { version = "1.1.0" }
 k8-obj-metadata = { version = "1.0.0" }
 k8-metadata-client = { version = "1.0.0" }
-flv-future-aio = { version = "2.2.1" }
-flv-util = { version = "0.4.0" }
+flv-future-aio = { version = "3.0.0" }
 utils = { path = "../utils" }
 
 [dev-dependencies]
-flv-future-aio = { version = "2.3.1", features = ["fixture"] }
+flv-future-aio = { version = "3.0.0", features = ["fixture"] }

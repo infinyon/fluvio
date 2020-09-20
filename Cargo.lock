@@ -3579,3 +3579,8 @@ checksum = "39f0c922f1a334134dc2f7a8b67dc5d25f0735263feec974345ff706bcf20b0d"
 dependencies = [
  "linked-hash-map",
 ]
+
+[[patch.unused]]
+name = "kf-protocol"
+version = "4.0.0"
+source = "git+https://github.com/infinyon/flv-kf-protocol.git?branch=change_to_stable#dc36ebd542b5be829965e65c4f73e9565eab2bed"

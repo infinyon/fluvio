@@ -12,8 +12,6 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [dependencies]
-tracing = "0.1.19"
-tracing-futures = "0.2.4"
 dirs = "1.0.2"
 toml = "0.5.5"
 dashmap = "3.11.4"
@@ -29,11 +27,11 @@ async-mutex = "1.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
-flv-util = "0.4.0"
+flv-util = "0.5.0"
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
-flv-future-aio = { version = "2.4.1", features = ["tls"] }
+flv-future-aio = { version = "3.0.0", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
 fluvio-protocol = { version = "0.1.0" }
 dataplane = { path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

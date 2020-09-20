@@ -20,6 +20,9 @@ members = [
     "tests/runner",
 ]
 
+[patch.crates-io]
+flv-future-aio =  { git = 'https://github.com/infinyon/flv-future-aio.git', branch = 'cleanup_dependencies', version = "3.0.0" }
+
 
 # profile to make image sizer smaller
 # comment out for now
