@@ -1,3 +1,5 @@
+#![type_length_limit = "1113484"]
+
 mod common;
 mod error;
 mod consume;
