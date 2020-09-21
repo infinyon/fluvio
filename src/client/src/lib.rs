@@ -91,6 +91,7 @@ mod client;
 mod admin;
 mod consumer;
 mod producer;
+mod offset;
 mod sync;
 mod spu;
 
@@ -101,6 +102,7 @@ pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::TopicProducer;
 pub use consumer::PartitionConsumer;
+pub use offset::Offset;
 
 pub use crate::admin::FluvioAdmin;
 pub use crate::client::Fluvio;

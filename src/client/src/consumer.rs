@@ -1,12 +1,6 @@
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-
 use tracing::debug;
-use tracing::trace;
 
 use kf_socket::AsyncResponse;
-use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
-use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
 use dataplane::fetch::DefaultFetchRequest;
 use dataplane::fetch::FetchPartition;
@@ -14,9 +8,8 @@ use dataplane::fetch::FetchableTopic;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::ReplicaKey;
 use dataplane::record::RecordSet;
-use dataplane::PartitionOffset;
 use crate::FluvioError;
-use crate::params::FetchOffset;
+use crate::offset::Offset;
 use crate::params::FetchLogOption;
 use crate::client::SerialFrame;
 use crate::spu::SpuPool;
@@ -76,11 +69,11 @@ impl PartitionConsumer {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer, FluvioError, Offset};
     /// # use fluvio::params::{FetchOffset, FetchLogOption};
     /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// // Fetch records starting from the earliest ones saved
-    /// let offset = FetchOffset::Earliest(None);
+    /// let offset = Offset::from_beginning(0).unwrap();
     /// // Use default fetching configurations
     /// let fetch_config = FetchLogOption::default();
     ///
@@ -102,7 +95,7 @@ impl PartitionConsumer {
     /// [`FetchLogOption`]: params/struct.FetchLogOption.html
     pub async fn fetch(
         &self,
-        offset: FetchOffset,
+        offset: Offset,
         option: FetchLogOption,
     ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
         let replica = ReplicaKey::new(&self.topic, self.partition);
@@ -115,7 +108,7 @@ impl PartitionConsumer {
 
         debug!("found spu leader {}", leader);
 
-        let offset = calc_offset(&mut leader, &replica, offset).await?;
+        let offset = offset.to_absolute(&mut leader, &self.topic, self.partition).await?;
 
         let partition = FetchPartition {
             partition_index: self.partition,
@@ -193,7 +186,7 @@ impl PartitionConsumer {
     /// [`FetchLogOption`]: params/struct.FetchLogOption.html
     pub async fn stream(
         &self,
-        offset_option: FetchOffset,
+        offset_option: Offset,
         option: FetchLogOption,
     ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
         let replica = ReplicaKey::new(&self.topic, self.partition);
@@ -204,7 +197,7 @@ impl PartitionConsumer {
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
         debug!("created serial socket {}", serial_socket);
-        let offset = calc_offset(&mut serial_socket, &replica, offset_option).await?;
+        let offset = offset_option.to_absolute(&mut serial_socket, &self.topic, self.partition).await?;
         drop(serial_socket);
 
         let stream_request = DefaultStreamFetchRequest {
@@ -218,58 +211,6 @@ impl PartitionConsumer {
 
         self.pool.create_stream(&replica, stream_request).await
     }
-}
-
-async fn fetch_offsets<F: SerialFrame>(
-    client: &mut F,
-    replica: &ReplicaKey,
-) -> Result<FetchOffsetPartitionResponse, FluvioError> {
-    debug!("fetching offset for replica: {}", replica);
-
-    let response = client
-        .send_receive(FetchOffsetsRequest::new(
-            replica.topic.to_owned(),
-            replica.partition,
-        ))
-        .await?;
-
-    trace!(
-        "receive fetch response replica: {}, {:#?}",
-        replica,
-        response
-    );
-
-    match response.find_partition(&replica) {
-        Some(partition_response) => {
-            debug!("replica: {}, fetch offset: {}", replica, partition_response);
-            Ok(partition_response)
-        }
-        None => Err(IoError::new(
-            ErrorKind::InvalidData,
-            format!("no replica offset for: {}", replica),
-        )
-        .into()),
-    }
-}
-
-/// depends on offset option, calculate offset
-
-async fn calc_offset<F: SerialFrame>(
-    client: &mut F,
-    replica: &ReplicaKey,
-    offset: FetchOffset,
-) -> Result<i64, FluvioError> {
-    Ok(match offset {
-        FetchOffset::Offset(inner_offset) => inner_offset,
-        FetchOffset::Earliest(relative_offset) => {
-            let offsets = fetch_offsets(client, replica).await?;
-            offsets.start_offset() + relative_offset.unwrap_or(0)
-        }
-        FetchOffset::Latest(relative_offset) => {
-            let offsets = fetch_offsets(client, replica).await?;
-            offsets.last_stable_offset() - relative_offset.unwrap_or(0)
-        }
-    })
 }
 
 /// compute total bytes in record set

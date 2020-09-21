@@ -11,6 +11,7 @@ use tracing::debug;
 
 use fluvio::params::*;
 use fluvio::PartitionConsumer;
+use fluvio::Offset;
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -46,17 +47,25 @@ where
     }
 
     // compute offset
-    let initial_offset = if opt.from_beginning {
-        FetchOffset::Earliest(opt.offset)
+    let maybe_initial_offset = if opt.from_beginning {
+        Offset::from_beginning(opt.offset.unwrap_or(0))
     } else if let Some(offset) = opt.offset {
         // if it is negative, we start from end
         if offset < 0 {
-            FetchOffset::Latest(Some(offset * -1))
+            Offset::from_end(offset * -1)
         } else {
-            FetchOffset::Offset(offset)
+            Offset::absolute(offset)
         }
     } else {
-        FetchOffset::Latest(None)
+        Offset::from_end(0)
+    };
+
+    let initial_offset = match maybe_initial_offset {
+        Some(offset) => offset,
+        None => {
+            // This should only apply in the `-B` case
+            return Err(CliError::InvalidArg("Illegal offset, negative numbers not allowed".to_string()));
+        }
     };
 
     let fetch_option = FetchLogOption {

@@ -42,15 +42,6 @@ pub struct PartitionParam {
     pub epoch: i32,
 }
 
-#[derive(Debug)]
-pub enum FetchOffset {
-    Earliest(Option<i64>),
-    /// earliest + offset
-    Latest(Option<i64>),
-    /// latest - offset
-    Offset(i64),
-}
-
 #[derive(Default)]
 pub struct FetchLogOption {
     pub max_bytes: i32,
