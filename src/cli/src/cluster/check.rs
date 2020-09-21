@@ -24,7 +24,7 @@ use crate::CliError;
 use super::*;
 
 // constants
-const MIN_KUBE_VERSION: &str = "1.5.0";
+const MIN_KUBE_VERSION: &str = "1.7.0";
 const DEFAULT_HELM_VERSION: &str = "3.2.0";
 const SYS_CHART_VERSION: &str = "0.2.0";
 const DEFAULT_NAMESPACE: &str = "default";
@@ -486,22 +486,13 @@ fn check_sys_charts() -> Result<(), IoError> {
             ),
         )
     })?;
-    if sys_charts.len() == 1 {
-        let installed_chart = sys_charts.first().unwrap();
-        let installed_chart_version = installed_chart.app_version.clone();
-        // checking version of chart found
-        if Version::parse(&installed_chart_version) < Version::parse(SYS_CHART_VERSION) {
-            return Err(IoError::new(ErrorKind::Other, format!(
-                "Fluvio system chart {} is not compatible with fluvio platform, please install version >= {}",
-                installed_chart_version, SYS_CHART_VERSION
-            )));
-        }
-    } else if sys_charts.is_empty() {
+
+    if sys_charts.is_empty() {
         return Err(IoError::new(
             ErrorKind::Other,
             "Fluvio system chart not found, please install fluvio-sys first".to_string(),
         ));
-    } else {
+    } else if sys_charts.len() > 1 {
         return Err(IoError::new(
             ErrorKind::Other,
             "Multiple fluvio system charts found".to_string(),

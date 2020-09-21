@@ -128,8 +128,11 @@ impl HelmClient {
         Ok(count > 0)
     }
 
-    /// Returns the list of installed sys charts
-    pub(crate) fn installed_sys_charts(&self, name: &str) -> Result<Vec<InstalledChart>, IoError> {
+    /// Returns the list of installed charts by name
+    pub(crate) fn get_installed_chart_by_name(
+        &self,
+        name: &str,
+    ) -> Result<Vec<InstalledChart>, IoError> {
         let output = Command::new("helm")
             .arg("list")
             .arg("--filter")
