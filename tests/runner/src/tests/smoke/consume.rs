@@ -50,13 +50,12 @@ async fn validate_consume_message_api(option: &TestOption) {
     use fluvio::params::FetchOffset;
     use fluvio::params::FetchLogOption;
 
-    let mut client = Fluvio::connect().await.expect("should connect");
-
+    let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
-        let mut consumer = client.consumer(topic_name, 0).await.expect("consumer");
+        let consumer = client.partition_consumer(topic_name, 0).await.expect("consumer");
 
         println!("retrieving messages");
         let response = consumer

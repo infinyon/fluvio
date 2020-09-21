@@ -62,8 +62,8 @@ pub mod params;
 
 pub use error::FluvioError;
 pub use config::FluvioConfig;
-pub use producer::Producer;
-pub use consumer::Consumer;
+pub use producer::TopicProducer;
+pub use consumer::PartitionConsumer;
 
 pub use crate::admin::FluvioAdmin;
 pub use crate::client::Fluvio;

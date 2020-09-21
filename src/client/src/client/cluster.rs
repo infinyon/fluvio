@@ -1,20 +1,19 @@
+use std::convert::TryFrom;
+
 use tracing::debug;
-
 use kf_socket::AllMultiplexerSocket;
-use dataplane::ReplicaKey;
+use flv_future_aio::net::tls::AllDomainConnector;
 
+use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
-use crate::Producer;
-use crate::Consumer;
+use crate::TopicProducer;
+use crate::PartitionConsumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
-use flv_future_aio::net::tls::AllDomainConnector;
-use std::convert::TryFrom;
-use crate::config::ConfigFile;
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
@@ -79,26 +78,63 @@ impl Fluvio {
         })
     }
 
-    /// create new producer for topic/partition
-    pub async fn producer<S: Into<String>>(
-        &mut self,
+    /// Creates a new `TopicProducer` for the given topic name
+    ///
+    /// Currently, producers are scoped to a specific Fluvio topic.
+    /// That means when you send events via a producer, you must specify
+    /// which partition each event should go to.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError};
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// let producer = fluvio.topic_producer("my-topic").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn topic_producer<S: Into<String>>(
+        &self,
         topic: S,
-        partition: i32,
-    ) -> Result<Producer, FluvioError> {
-        let replica = ReplicaKey::new(topic, partition);
-        debug!("creating producer, replica: {}", replica);
-        Ok(Producer::new(replica, self.spu_pool.clone()))
+    ) -> Result<TopicProducer, FluvioError> {
+        let topic = topic.into();
+        debug!(topic = &*topic, "Creating producer");
+        Ok(TopicProducer::new(topic, self.spu_pool.clone()))
     }
 
-    /// create new consumer for topic/partition
-    pub async fn consumer<S: Into<String>>(
-        &mut self,
+    /// Creates a new `PartitionConsumer` for the given topic and partition
+    ///
+    /// Currently, consumers are scoped to both a specific Fluvio topic
+    /// _and_ to a particular partition within that topic. That means that
+    /// if you have a topic with multiple partitions, then in order to receive
+    /// all of the events in all of the partitions, you will need to create
+    /// one consumer per partition.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError};
+    /// # use fluvio::params::{FetchOffset, FetchLogOption};
+    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// let consumer_one = fluvio.partition_consumer("my-topic", 0).await?;
+    /// let consumer_two = fluvio.partition_consumer("my-topic", 1).await?;
+    ///
+    /// let offset_one = FetchOffset::Earliest(None);
+    /// let records_one = consumer_one.fetch(offset_one, FetchLogOption::default()).await?;
+    ///
+    /// let offset_two = FetchOffset::Earliest(None);
+    /// let records_two = consumer_two.fetch(offset_two, FetchLogOption::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn partition_consumer<S: Into<String>>(
+        &self,
         topic: S,
         partition: i32,
-    ) -> Result<Consumer, FluvioError> {
-        let replica = ReplicaKey::new(topic, partition);
-        debug!("creating consumer, replica: {}", replica);
-        Ok(Consumer::new(replica, self.spu_pool.clone()))
+    ) -> Result<PartitionConsumer, FluvioError> {
+        let topic = topic.into();
+        debug!(topic = &*topic, "Creating consumer");
+        Ok(PartitionConsumer::new(topic, partition, self.spu_pool.clone()))
     }
 
     /// Provides an interface for managing a Fluvio cluster

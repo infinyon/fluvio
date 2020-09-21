@@ -11,19 +11,16 @@ pub async fn produce_message(option: &TestOption) {
 }
 
 pub async fn produce_message_with_api(option: &TestOption) {
-    let mut client = Fluvio::connect().await.expect("should connect");
-
+    let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
-        let mut producer = client.producer(&topic_name, 0).await.expect("producer");
+        let producer = client.topic_producer(&topic_name).await.expect("producer");
 
         for i in 0..option.produce.produce_iteration {
             let message = generate_message(i, option);
-
-            producer.send_record(message).await.expect("message sent");
-
+            producer.send_record(message, 0).await.expect("message sent");
             println!("topic: {}, message sent: {}", topic_name, i);
         }
     }

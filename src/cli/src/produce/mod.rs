@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use tracing::debug;
 use structopt::StructOpt;
 
 use fluvio::{Fluvio, FluvioConfig};
@@ -101,13 +102,9 @@ pub async fn process_produce_record<O>(
 where
     O: Terminal,
 {
-    use tracing::debug;
-
     let (target_server, (cfg, file_records)) = opt.validate()?;
-
-    let mut target = Fluvio::connect_with_config(&target_server).await?;
-
-    let producer = target.producer(&cfg.topic, cfg.partition).await?;
+    let target = Fluvio::connect_with_config(&target_server).await?;
+    let producer = target.topic_producer(&cfg.topic).await?;
 
     debug!("got producer");
     if let Some(records) = file_records {
@@ -121,7 +118,6 @@ where
 
 #[allow(clippy::module_inception)]
 mod produce {
-
     use tracing::debug;
     use futures::stream::StreamExt;
 
@@ -131,7 +127,7 @@ mod produce {
     use flv_future_aio::io::BufReader;
     use flv_future_aio::io::AsyncBufReadExt;
     use fluvio_types::{print_cli_err, print_cli_ok};
-    use fluvio::Producer;
+    use fluvio::TopicProducer;
 
     use crate::t_println;
 
@@ -140,22 +136,22 @@ mod produce {
     pub type RecordTuples = Vec<(String, Vec<u8>)>;
 
     pub async fn produce_file_records<O: Terminal>(
-        mut producer: Producer,
+        mut producer: TopicProducer,
         out: std::sync::Arc<O>,
-        _cfg: ProduceLogConfig,
+        cfg: ProduceLogConfig,
         file: FileRecord,
     ) -> Result<(), CliError> {
         let tuples = file_to_records(file).await?;
         for r_tuple in tuples {
             t_println!(out, "{}", r_tuple.0);
-            process_record(&mut producer, r_tuple.1).await;
+            process_record(&mut producer, cfg.partition, r_tuple.1).await;
         }
         Ok(())
     }
 
     /// Dispatch records based on the content of the record tuples variable
     pub async fn produce_from_stdin<O: Terminal>(
-        mut producer: Producer,
+        mut producer: TopicProducer,
         _out: std::sync::Arc<O>,
         opt: ProduceLogConfig,
     ) -> Result<(), CliError> {
@@ -165,7 +161,7 @@ mod produce {
             let text = line?;
             debug!("read lines {} bytes", text);
             let record = text.as_bytes().to_vec();
-            process_record(&mut producer, record).await;
+            process_record(&mut producer, opt.partition, record).await;
             if !opt.continuous {
                 return Ok(());
             }
@@ -178,8 +174,8 @@ mod produce {
 
     /// Process record and print success or error
     /// TODO: Add version handling for SPU
-    async fn process_record(spu: &mut Producer, record: Vec<u8>) {
-        match spu.send_record(record).await {
+    async fn process_record(producer: &mut TopicProducer, partition: i32, record: Vec<u8>) {
+        match producer.send_record(record, partition).await {
             Ok(()) => {
                 debug!("record send success");
                 print_cli_ok!()

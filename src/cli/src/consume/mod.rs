@@ -13,7 +13,6 @@ use logs_output::process_fetch_topic_response;
 pub use process::process_consume_log;
 
 mod process {
-
     use tracing::debug;
 
     use crate::CliError;
@@ -35,8 +34,8 @@ mod process {
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
-        let mut target = Fluvio::connect_with_config(&target_server).await?;
-        let consumer = target.consumer(&cfg.topic, cfg.partition).await?;
+        let target = Fluvio::connect_with_config(&target_server).await?;
+        let consumer = target.partition_consumer(&cfg.topic, cfg.partition).await?;
         fetch_log_loop(out, consumer, cfg).await?;
 
         Ok("".to_owned())
