@@ -19,7 +19,7 @@ use kf_service::call_service;
 use kf_service::KfService;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::SpuServerRequest;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
@@ -100,7 +100,7 @@ where
 
                         Err(err) => {
 
-                            use flv_future_aio::sync::broadcast::RecvError;
+                            use fluvio_future::sync::broadcast::RecvError;
 
                             match err {
                                 RecvError::Closed => {

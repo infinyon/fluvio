@@ -1,4 +1,4 @@
-use flv_future_aio::task::main;
+use fluvio_future::task::main;
 use fluvio_storage::FileReplica;
 
 use crate::config::{SpuConfig, SpuOpt};
@@ -75,7 +75,7 @@ mod proxy {
     use tracing::info;
 
     use flv_util::print_cli_err;
-    use flv_future_aio::net::tls::TlsAcceptor;
+    use fluvio_future::tls::TlsAcceptor;
     use crate::config::SpuConfig;
     use flv_tls_proxy::start as proxy_start;
 

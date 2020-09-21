@@ -3,12 +3,12 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::path::Path;
 
-use tracing::debug;
+use log::debug;
 
-use flv_future_aio::fs::File;
-use flv_future_aio::fs::util as file_util;
-use flv_future_aio::fs::AsyncFileSlice;
-use flv_future_aio::fs::AsyncFile;
+use fluvio_future::fs::File;
+use fluvio_future::fs::util as file_util;
+use fluvio_future::fs::AsyncFileSlice;
+use fluvio_future::fs::AsyncFile;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;

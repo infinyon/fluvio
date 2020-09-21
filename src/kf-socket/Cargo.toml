@@ -13,6 +13,7 @@ name = "kf_socket"
 path = "src/lib.rs"
 
 [dependencies]
+log = "0.4.0"
 bytes = "0.5.4"
 futures = { version = "0.3.4" }
 pin-utils = "0.1.0-alpha.4"
@@ -25,10 +26,10 @@ tokio-util = { version = "0.3.1", features = ["codec", "compat"] }
 async-trait = "0.1.21"
 
 # Fluvio dependencies
-flv-future-aio = { version = "3.0.0", features = ["tls"] }
-fluvio-protocol = { version = "0.1.0",  features = ["derive", "api", "codec","store"] }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["tls", "net", "zero_copy"] }
+fluvio-protocol = { version = "0.1.0", features = ["derive", "api", "codec", "store"] }
 
 
 [dev-dependencies]
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
-flv-future-aio = { version = "3.0.0", features = ["fixture"] }

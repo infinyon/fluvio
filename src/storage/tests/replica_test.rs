@@ -7,9 +7,9 @@ use tracing::debug;
 use futures::stream::StreamExt;
 use futures::future::join;
 
-use flv_future_aio::test_async;
-use flv_future_aio::timer::sleep;
-use flv_future_aio::net::TcpListener;
+use fluvio_future::test_async;
+use fluvio_future::timer::sleep;
+use fluvio_future::net::TcpListener;
 use dataplane::fetch::{
     FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
     FilePartitionResponse, FileTopicResponse,

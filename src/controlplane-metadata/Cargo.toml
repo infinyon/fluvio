@@ -28,8 +28,8 @@ serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
 
 # Fluvio dependencies
-flv-util = { version = "0.4.0" }
-flv-future-aio = { version = "3.0.0" }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename' }
+flv-util = { version = "0.5.0" }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-stream-model = { path = "../stream-model" }
 k8-obj-app = { version = "1.1.0", optional = true }
@@ -40,4 +40,4 @@ dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluv
 
 
 [dev-dependencies]
-flv-future-aio = { version = "3.0.0", features = ["fixture"] }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }

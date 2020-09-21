@@ -6,9 +6,9 @@ use std::io::Cursor;
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use tracing::debug;
-use tracing::error;
-use tracing::trace;
+use log::debug;
+use log::error;
+use log::trace;
 use bytes::BytesMut;
 use futures::io::{AsyncRead, AsyncWrite};
 use futures::StreamExt;
@@ -19,9 +19,9 @@ use async_channel::Receiver;
 use async_channel::bounded;
 use tokio::select;
 
-use flv_future_aio::net::TcpStream;
-use flv_future_aio::net::tls::AllTcpStream;
-use flv_future_aio::timer::sleep;
+use fluvio_future::net::TcpStream;
+use fluvio_future::tls::AllTcpStream;
+use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
@@ -301,7 +301,7 @@ impl MultiPlexingResponseDispatcher {
     where
         S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
     {
-        use flv_future_aio::task::spawn;
+        use fluvio_future::task::spawn;
 
         let dispatcher = Self { senders };
 
@@ -390,15 +390,15 @@ mod tests {
 
     use std::time::Duration;
 
-    use tracing::debug;
+    use log::debug;
     use futures::stream::StreamExt;
     use futures::future::join;
     use futures::future::join3;
 
-    use flv_future_aio::test_async;
-    use flv_future_aio::task::spawn;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::net::TcpListener;
+    use fluvio_future::test_async;
+    use fluvio_future::task::spawn;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::net::TcpListener;
     use fluvio_protocol::api::RequestMessage;
 
     use crate::KfSocket;

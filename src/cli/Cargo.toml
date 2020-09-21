@@ -44,6 +44,13 @@ async-h1 = "2.1.2"
 http-types = "2.4.0"
 
 # Fluvio dependencies
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fs","io"] }
+k8-client = { version = "1.1.0" }
+k8-config = { version = "1.1.0", features = ["context"] }
+k8-obj-core = { version = "1.1.0" }
+k8-obj-metadata = { version = "1.0.0" }
+k8-metadata-client = { version = "1.0.0" }
+utils = { path = "../utils" }
 fluvio = { path = "../client" }
 fluvio-sc = { path = "../sc", optional = true, features = ["k8"] }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", features = ["use_serde"] }
@@ -51,13 +58,6 @@ fluvio-spu = { path = "../spu", optional = true }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", features = ["use_serde", "k8"] }
 fluvio-cluster = { path = "../cluster" }
 fluvio-types = { path = "../types", version = "0.1.0" }
-k8-client = { version = "1.1.0" }
-k8-config = { version = "1.1.0", features = ["context"] }
-k8-obj-core = { version = "1.1.0" }
-k8-obj-metadata = { version = "1.0.0" }
-k8-metadata-client = { version = "1.0.0" }
-flv-future-aio = { version = "3.0.0" }
-utils = { path = "../utils" }
 
 [dev-dependencies]
-flv-future-aio = { version = "3.0.0", features = ["fixture"] }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }

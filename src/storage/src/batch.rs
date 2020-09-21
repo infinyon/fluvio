@@ -17,7 +17,7 @@ use futures::io::AsyncReadExt;
 use futures::io::AsyncSeekExt;
 use pin_utils::unsafe_pinned;
 
-use flv_future_aio::fs::File;
+use fluvio_future::fs::File;
 use dataplane::batch::{
     Batch, BatchRecords, DefaultBatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE,
 };
@@ -294,7 +294,7 @@ mod tests {
 
     use futures::stream::StreamExt;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
 
     use crate::ConfigOption;

@@ -23,8 +23,7 @@ serde_json = "1.0.57"
 # Fluvio dependencies
 fluvio = { path = "../client" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", features = ["k8"] }
-flv-future-aio = "0.3.0"
-flv-util = "0.5.0"
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename' }
 k8-config = { version = "1.1.0", features = ["context"] }
 k8-client = "1.1.0"
 k8-obj-core = "1.1.0"

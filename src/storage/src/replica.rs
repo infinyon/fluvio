@@ -5,7 +5,7 @@ use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
-use flv_future_aio::fs::create_dir_all;
+use fluvio_future::fs::create_dir_all;
 use dataplane::{ErrorCode, Offset, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
@@ -254,7 +254,7 @@ impl FileReplica {
                 match slice {
                     Ok(slice) => match slice {
                         Some(slice) => {
-                            use flv_future_aio::fs::AsyncFileSlice;
+                            use fluvio_future::fs::AsyncFileSlice;
 
                             let limited_slice = if slice.len() > max_len as u64 {
                                 debug!(
@@ -332,7 +332,7 @@ mod tests {
     use std::fs::metadata;
     use std::io::Cursor;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use dataplane::batch::DefaultBatch;
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};

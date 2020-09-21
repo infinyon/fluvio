@@ -14,8 +14,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use fluvio_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;

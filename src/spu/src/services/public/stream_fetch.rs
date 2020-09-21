@@ -9,9 +9,9 @@ use futures::io::AsyncWrite;
 use tokio::select;
 use event_listener::Event;
 
-use flv_future_aio::sync::broadcast::RecvError;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
-use flv_future_aio::task::spawn;
+use fluvio_future::sync::broadcast::RecvError;
+use fluvio_future::zero_copy::ZeroCopyWrite;
+use fluvio_future::task::spawn;
 
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;

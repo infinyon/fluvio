@@ -133,7 +133,7 @@ impl TopicReducer {
 
 #[cfg(test)]
 mod test2 {
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use fluvio_controlplane_metadata::topic::{TopicResolution, TopicStatus};
     use fluvio_controlplane_metadata::topic::PENDING_REASON;
 

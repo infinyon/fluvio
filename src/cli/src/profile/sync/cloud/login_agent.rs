@@ -294,7 +294,7 @@ impl From<ParseError> for CloudError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
 
     #[test_async]
     async fn test_save_credentials() -> Result<(), IoError> {

@@ -335,7 +335,7 @@ where
 #[cfg(test)]
 pub mod test {
     use crate::spu::{SpuSpec, SpuStatus};
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
 
     use crate::store::actions::*;
     use super::DefaultSpuMd;

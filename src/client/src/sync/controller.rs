@@ -40,7 +40,7 @@ where
     <Metadata<S> as TryInto<MetadataStoreObject<S, String>>>::Error: Display,
 {
     pub fn start(store: StoreContext<S>, watch_response: AsyncResponse<WatchRequest>) {
-        use flv_future_aio::task::spawn;
+        use fluvio_future::task::spawn;
 
         let controller = Self { store };
 

@@ -7,11 +7,11 @@ use futures::io::AsyncWriteExt;
 use futures::future::join;
 use futures::stream::StreamExt;
 
-use flv_future_aio::test_async;
-use flv_future_aio::timer::sleep;
-use flv_future_aio::fs::util as file_util;
-use flv_future_aio::fs::AsyncFile;
-use flv_future_aio::net::TcpListener;
+use fluvio_future::test_async;
+use fluvio_future::timer::sleep;
+use fluvio_future::fs::util as file_util;
+use fluvio_future::fs::AsyncFile;
+use fluvio_future::net::TcpListener;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::{Request, ResponseMessage, RequestMessage};
 use fluvio_dataplane_protocol::batch::DefaultBatch;

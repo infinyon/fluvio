@@ -11,7 +11,7 @@ use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
-use flv_future_aio::net::tls::AllDomainConnector;
+use fluvio_future::net::tls::AllDomainConnector;
 use std::convert::TryFrom;
 
 /// socket to Cluster

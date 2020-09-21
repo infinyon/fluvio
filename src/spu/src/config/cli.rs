@@ -14,8 +14,8 @@ use structopt::StructOpt;
 
 use fluvio_types::print_cli_err;
 use fluvio_types::SpuId;
-use flv_future_aio::net::tls::TlsAcceptor;
-use flv_future_aio::net::tls::AcceptorBuilder;
+use fluvio_future::net::tls::TlsAcceptor;
+use fluvio_future::net::tls::AcceptorBuilder;
 
 use super::SpuConfig;
 

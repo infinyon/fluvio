@@ -43,11 +43,11 @@ fluvio-protocol = { version = "0.1.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 kf-socket = { path = "../kf-socket" }
 kf-service = { path = "../kf-service" }
-flv-util = { version = "0.5.0" }
 flv-tls-proxy = "0.1.0"
-flv-future-aio = { version = "3.0.0" }
+flv-util = { version = "0.5.0" }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["tls"] }
 utils = { path = "../utils" }
 
 [dev-dependencies]
-flv-future-aio = { version = "3.0.0", features = ["fixture"] }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
 utils = { path = "../utils", features = ["fixture"] }

@@ -192,7 +192,7 @@ where
 #[cfg(test)]
 pub mod test {
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use super::*;
 
     #[test_async]

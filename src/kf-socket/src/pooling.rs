@@ -6,7 +6,7 @@ use std::sync::RwLock;
 
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
-use tracing::trace;
+use log::trace;
 
 use crate::KfSocket;
 use crate::KfSocketError;
@@ -118,12 +118,12 @@ pub(crate) mod test {
 
     use futures::future::join;
     use futures::stream::StreamExt;
-    use tracing::debug;
-    use tracing::error;
+    use log::debug;
+    use log::error;
 
-    use flv_future_aio::net::TcpListener;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::test_async;
+    use fluvio_future::net::TcpListener;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
 
     use super::KfSocket;
     use super::KfSocketError;

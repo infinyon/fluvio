@@ -6,11 +6,11 @@ use tracing::debug;
 use tracing::trace;
 use futures::io::AsyncWriteExt;
 
-use flv_future_aio::fs::File;
-use flv_future_aio::fs::AsyncFileSlice;
-use flv_future_aio::fs::BoundedFileSink;
-use flv_future_aio::fs::BoundedFileOption;
-use flv_future_aio::fs::BoundedFileSinkError;
+use fluvio_future::fs::File;
+use fluvio_future::fs::AsyncFileSlice;
+use fluvio_future::fs::BoundedFileSink;
+use fluvio_future::fs::BoundedFileOption;
+use fluvio_future::fs::BoundedFileSinkError;
 use dataplane::batch::DefaultBatch;
 use dataplane::{Offset, Size};
 use dataplane::core::Encoder;
@@ -139,7 +139,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Cursor;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use dataplane::batch::DefaultBatch;
     use dataplane::core::Decoder;
     use flv_util::fixture::ensure_clean_file;

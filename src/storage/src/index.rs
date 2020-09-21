@@ -11,7 +11,7 @@ use tracing::debug;
 use tracing::trace;
 use pin_utils::unsafe_unpinned;
 
-use flv_future_aio::fs::MemoryMappedFile;
+use fluvio_future::fs::MemoryMappedFile;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;

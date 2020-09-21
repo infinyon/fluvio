@@ -11,7 +11,7 @@ use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use flv_util::cmd::CommandExt;
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 use k8_client::{K8Client, ClientError as K8ClientError};
 use k8_config::K8Config;
 use k8_client::metadata::MetadataClient;

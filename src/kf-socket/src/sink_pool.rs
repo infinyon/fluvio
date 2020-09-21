@@ -4,7 +4,7 @@ use std::hash::Hash;
 
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
-use tracing::trace;
+use log::trace;
 
 use crate::KfSink;
 
@@ -57,14 +57,14 @@ mod tests {
 
     use std::time::Duration;
 
-    use tracing::debug;
-    use tracing::info;
+    use log::debug;
+    use log::info;
     use futures::stream::StreamExt;
     use futures::future::join;
 
-    use flv_future_aio::test_async;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::net::TcpListener;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::net::TcpListener;
     use fluvio_protocol::api::RequestMessage;
 
     use crate::KfSocket;

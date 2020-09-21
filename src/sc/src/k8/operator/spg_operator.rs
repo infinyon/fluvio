@@ -22,7 +22,7 @@ use crate::core::SharedContext;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::defaults::SPU_DEFAULT_NAME;
 use fluvio_types::SpuId;
-use flv_future_aio::task::spawn;
+use fluvio_future::task::spawn;
 
 use k8_client::ClientError;
 use k8_client::metadata::MetadataClient;
