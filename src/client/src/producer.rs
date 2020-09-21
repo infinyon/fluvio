@@ -21,10 +21,7 @@ pub struct TopicProducer {
 
 impl TopicProducer {
     pub(crate) fn new(topic: String, pool: SpuPool) -> Self {
-        Self {
-            topic,
-            pool,
-        }
+        Self { topic, pool }
     }
 
     /// Sends an event to a specific partition within this producer's topic
@@ -43,14 +40,14 @@ impl TopicProducer {
         skip(self, buffer),
         fields(topic = &*self.topic),
     )]
-    pub async fn send_record<B: AsRef<[u8]>>(&self, buffer: B, partition: i32) -> Result<(), FluvioError> {
+    pub async fn send_record<B: AsRef<[u8]>>(
+        &self,
+        buffer: B,
+        partition: i32,
+    ) -> Result<(), FluvioError> {
         let record = buffer.as_ref();
         let replica = ReplicaKey::new(&self.topic, partition);
-        debug!(
-            "sending records: {} bytes to: {}",
-            record.len(),
-            &replica
-        );
+        debug!("sending records: {} bytes to: {}", record.len(), &replica);
 
         let spu_client = self.pool.create_serial_socket(&replica).await?;
 

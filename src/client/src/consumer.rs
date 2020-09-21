@@ -58,7 +58,11 @@ pub struct PartitionConsumer {
 
 impl PartitionConsumer {
     pub(crate) fn new(topic: String, partition: i32, pool: SpuPool) -> Self {
-        Self { topic, partition, pool }
+        Self {
+            topic,
+            partition,
+            pool,
+        }
     }
 
     /// Fetches events from a particular offset in a given partition
@@ -102,9 +106,7 @@ impl PartitionConsumer {
 
         debug!("received fetch logs for {}", &replica);
 
-        if let Some(partition_response) =
-            response.find_partition(&self.topic, self.partition)
-        {
+        if let Some(partition_response) = response.find_partition(&self.topic, self.partition) {
             debug!(
                 "found partition response with: {} batches: {} bytes",
                 partition_response.records.batches.len(),

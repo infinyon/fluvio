@@ -134,7 +134,11 @@ impl Fluvio {
     ) -> Result<PartitionConsumer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
-        Ok(PartitionConsumer::new(topic, partition, self.spu_pool.clone()))
+        Ok(PartitionConsumer::new(
+            topic,
+            partition,
+            self.spu_pool.clone(),
+        ))
     }
 
     /// Provides an interface for managing a Fluvio cluster

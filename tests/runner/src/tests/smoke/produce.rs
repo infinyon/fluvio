@@ -20,7 +20,10 @@ pub async fn produce_message_with_api(option: &TestOption) {
 
         for i in 0..option.produce.produce_iteration {
             let message = generate_message(i, option);
-            producer.send_record(message, 0).await.expect("message sent");
+            producer
+                .send_record(message, 0)
+                .await
+                .expect("message sent");
             println!("topic: {}, message sent: {}", topic_name, i);
         }
     }
