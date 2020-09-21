@@ -41,7 +41,7 @@
 //!
 //! ```no_run
 //! use std::time::Duration;
-//! use fluvio::{Fluvio, FluvioError};
+//! use fluvio::FluvioError;
 //! use fluvio::params::{FetchOffset, FetchLogOption};
 //!
 //! async_std::task::spawn(produce_records());
