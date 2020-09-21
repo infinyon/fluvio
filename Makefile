@@ -14,6 +14,7 @@ TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
 TEST_BIN=FLV_CMD=true ./target/debug/flv-test
+DEFAULT_SPU=3
 
 # install all tools required
 install_tools_mac:
@@ -28,15 +29,16 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --local-driver --log-dir /tmp
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --local-driver --log-dir /tmp
+
 smoke-test-tls:	build test-clean-up
-	$(TEST_BIN) --tls --local-driver --log-dir /tmp
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --tls --local-driver --log-dir /tmp
 
 smoke-test-k8:	build test-clean-up minikube_image
-	$(TEST_BIN)	--develop --log-dir /tmp
+	$(TEST_BIN)	--spu ${DEFAULT_SPU} --develop --log-dir /tmp
 
 smoke-test-k8-tls:	build test-clean-up minikube_image
-	$(TEST_BIN) --tls --develop --log-dir /tmp
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --tls --develop --log-dir /tmp
 
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall

@@ -1028,6 +1028,7 @@ dependencies = [
  "flv-future-aio",
  "flv-util 0.4.0",
  "futures",
+ "kf-socket",
  "log",
 ]
 
@@ -1041,6 +1042,8 @@ dependencies = [
  "fluvio-protocol-codec",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
+ "flv-future-aio",
+ "log",
 ]
 
 [[package]]
@@ -1841,7 +1844,6 @@ version = "3.0.0"
 dependencies = [
  "async-trait",
  "event-listener",
- "fluvio-dataplane-protocol",
  "fluvio-protocol",
  "fluvio-types",
  "flv-future-aio",
@@ -1865,7 +1867,6 @@ dependencies = [
  "bytes 0.5.6",
  "chashmap",
  "event-listener",
- "fluvio-dataplane-protocol",
  "fluvio-protocol",
  "flv-future-aio",
  "flv-util 0.4.0",

@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use dataplane::derive::{Decode, Encode};
+use fluvio_protocol::derive::{Decode, Encode};
 
 #[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
