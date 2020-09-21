@@ -18,6 +18,6 @@ pub(crate) fn get_cluster_server_host(kc_config: KubeContext) -> Result<String, 
         };
         Ok(url.host().unwrap().to_string())
     } else {
-        Err(ClusterError::Other(format!("no context found")))
+        Err(ClusterError::Other("no context found".to_string()))
     }
 }
