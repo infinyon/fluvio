@@ -1,14 +1,17 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
+use tracing::debug;
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminRequest;
+use flv_future_aio::net::tls::AllDomainConnector;
 use kf_socket::*;
 
 use crate::client::*;
-use crate::FluvioError;
+use crate::{FluvioError, FluvioConfig};
+use crate::config::ConfigFile;
 
 /// An interface for managing a Fluvio cluster
 ///
@@ -42,6 +45,69 @@ pub struct FluvioAdmin(VersionedSerialSocket);
 impl FluvioAdmin {
     pub(crate) fn new(client: VersionedSerialSocket) -> Self {
         Self(client)
+    }
+
+    /// Creates a new admin connection using default configurations
+    ///
+    /// This will attempt to read a Fluvio cluster configuration from
+    /// your `~/.fluvio/config` file, or create one with default settings
+    /// if you don't have one. If you want to specify a configuration,
+    /// see [`connect_with_config`] instead.
+    ///
+    /// The admin interface requires you to have administrator privileges
+    /// on the cluster which you are connecting to. If you don't have the
+    /// appropriate privileges, this connection will fail.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{FluvioAdmin, FluvioError};
+    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// let admin = FluvioAdmin::connect().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`connect_with_config`]: ./struct.FluvioAdmin.html#method.connect_with_config
+    pub async fn connect() -> Result<Self, FluvioError> {
+        let config_file = ConfigFile::load_default_or_new()?;
+        let cluster_config = config_file
+            .config()
+            .current_cluster()
+            .ok_or_else(|| FluvioError::ConfigError("failed to load cluster config".to_string()))?;
+        Self::connect_with_config(cluster_config).await
+    }
+
+    /// Creates a new admin connection using custom configurations
+    ///
+    /// The admin interface requires you to have administrator privileges
+    /// on the cluster which you are connecting to. If you don't have the
+    /// appropriate privileges, this connection will fail.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{FluvioAdmin, FluvioError};
+    /// use fluvio::config::ConfigFile;
+    /// #  async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// let config_file = ConfigFile::load_default_or_new()?;
+    /// let fluvio_config = config_file.config().current_cluster().unwrap();
+    /// let admin = FluvioAdmin::connect_with_config(fluvio_config).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
+        let connector = AllDomainConnector::try_from(config.tls.clone())?;
+        let config = ClientConfig::new(&config.addr, connector);
+        let inner_client = config.connect().await?;
+        debug!("connected to cluster at: {}", inner_client.config().addr());
+
+        let (socket, config, versions) = inner_client.split();
+        let mut socket = AllMultiplexerSocket::new(socket);
+        let socket = socket.create_serial_socket().await;
+
+        let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
+        Ok(Self(versioned_socket))
     }
 
     async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
