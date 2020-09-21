@@ -63,7 +63,7 @@ async fn validate_consume_message_api(option: &TestOption) {
 
         println!("retrieving messages");
         let response = consumer
-            .fetch_logs_once(FetchOffset::Earliest(None), FetchLogOption::default())
+            .fetch(FetchOffset::Earliest(None), FetchLogOption::default())
             .await
             .expect("records");
         println!("message received");

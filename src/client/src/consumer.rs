@@ -33,21 +33,21 @@ impl Consumer {
     }
 
     /// fetch logs once
-    pub async fn fetch_logs_once(
+    pub async fn fetch(
         &mut self,
-        offset_option: FetchOffset,
+        offset: FetchOffset,
         option: FetchLogOption,
     ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
-            offset_option, self.replica,
+            offset, self.replica,
         );
 
         let mut leader = self.pool.create_serial_socket(&self.replica).await?;
 
         debug!("found spu leader {}", leader);
 
-        let offset = calc_offset(&mut leader, &self.replica, offset_option).await?;
+        let offset = calc_offset(&mut leader, &self.replica, offset).await?;
 
         let partition = FetchPartition {
             partition_index: self.replica.partition,
@@ -91,7 +91,7 @@ impl Consumer {
 
     /// fetch logs as stream
     /// this will fetch continously
-    pub async fn fetch_logs_as_stream(
+    pub async fn stream(
         &mut self,
         offset_option: FetchOffset,
         option: FetchLogOption,

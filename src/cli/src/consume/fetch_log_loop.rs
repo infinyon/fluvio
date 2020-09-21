@@ -66,7 +66,7 @@ where
 
     if opt.disable_continuous {
         let response = consumer
-            .fetch_logs_once(initial_offset, fetch_option)
+            .fetch(initial_offset, fetch_option)
             .await?;
 
         debug!(
@@ -78,7 +78,7 @@ where
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
         let mut log_stream = consumer
-            .fetch_logs_as_stream(initial_offset, fetch_option)
+            .stream(initial_offset, fetch_option)
             .await?;
 
         while let Ok(response) = log_stream.next().await {
