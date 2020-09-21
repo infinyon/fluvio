@@ -21,6 +21,7 @@
 mod helm;
 mod install;
 mod error;
+mod check;
 
 pub use install::ClusterInstaller;
 pub use install::ClusterInstallerBuilder;

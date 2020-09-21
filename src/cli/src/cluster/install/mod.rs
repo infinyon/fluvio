@@ -3,8 +3,6 @@ mod k8;
 #[cfg(feature = "cluster_components")]
 mod local;
 
-mod helm;
-
 use structopt::StructOpt;
 
 use crate::Terminal;
@@ -12,8 +10,6 @@ use crate::CliError;
 
 use super::util::*;
 use std::path::PathBuf;
-
-pub use helm::installed_sys_charts;
 
 #[derive(Debug, StructOpt)]
 pub struct K8Install {

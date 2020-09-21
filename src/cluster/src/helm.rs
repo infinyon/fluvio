@@ -127,6 +127,40 @@ impl HelmClient {
             .count();
         Ok(count > 0)
     }
+
+    /// Returns the list of installed charts by name
+    pub(crate) fn get_installed_chart_by_name(
+        &self,
+        name: &str,
+    ) -> Result<Vec<InstalledChart>, IoError> {
+        let output = Command::new("helm")
+            .arg("list")
+            .arg("--filter")
+            .arg(name)
+            .arg("--output")
+            .arg("json")
+            .print()
+            .output()?;
+
+        serde_json::from_slice(&output.stdout)
+            .map_err(|_| IoError::new(ErrorKind::InvalidData, "failed to fetch sys chart versions"))
+    }
+
+    /// get helm package version
+    pub(crate) fn get_helm_version(&self) -> Result<String, IoError> {
+        let helm_version = Command::new("helm")
+            .arg("version")
+            .arg("--short")
+            .output()
+            .map_err(|err| {
+                IoError::new(
+                    ErrorKind::InvalidData,
+                    format!("Helm package manager not found: {}", err.to_string()),
+                )
+            })?;
+        let version_text = String::from_utf8(helm_version.stdout).unwrap();
+        Ok(version_text[1..].trim().to_string())
+    }
 }
 
 /// A representation of a chart definition in a repo.
