@@ -88,10 +88,10 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-    use flv_future_aio::net::TcpListener;
-    use flv_future_aio::net::TcpStream;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::test_async;
+    use fluvio_future::net::TcpListener;
+    use fluvio_future::net::TcpStream;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
     use fluvio_protocol::Decoder as FluvioDecoder;
     use fluvio_protocol::Encoder as FluvioEncoder;
     use log::debug;
@@ -159,12 +159,12 @@ mod test {
                     // split buf into two segments, decode should reassembly them
                     let buf2 = buf.split_off(5);
                     sink.send(Bytes::from(buf)).await.expect("sending");
-                    flv_future_aio::timer::sleep(time::Duration::from_millis(10)).await;
+                    fluvio_future::timer::sleep(time::Duration::from_millis(10)).await;
                     sink.send(Bytes::from(buf2)).await.expect("sending");
 
                 }
                 
-                flv_future_aio::timer::sleep(time::Duration::from_millis(50)).await;
+                fluvio_future::timer::sleep(time::Duration::from_millis(50)).await;
                 debug!("finishing. terminating server");
                 return Ok(()) as Result<(), Error>;
             }
