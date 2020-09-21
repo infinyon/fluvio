@@ -19,7 +19,7 @@ use super::*;
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
     socket: AllMultiplexerSocket,
-    config: ClientConfig,
+    pub config: ClientConfig,
     versions: Versions,
     spu_pool: SpuPool,
 }
