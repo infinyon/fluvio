@@ -22,12 +22,12 @@ use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
 /// consume message from replica leader
-pub struct PartitionConsumer {
+pub struct Consumer {
     replica: ReplicaKey,
     pool: SpuPool,
 }
 
-impl PartitionConsumer {
+impl Consumer {
     pub(crate) fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
         Self { replica, pool }
     }

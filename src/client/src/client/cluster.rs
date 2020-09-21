@@ -4,8 +4,8 @@ use kf_socket::AllMultiplexerSocket;
 use dataplane::ReplicaKey;
 
 use crate::admin::FluvioAdmin;
-use crate::PartitionProducer;
-use crate::PartitionConsumer;
+use crate::Producer;
+use crate::Consumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::sync::MetadataStores;
@@ -84,10 +84,10 @@ impl Fluvio {
         &mut self,
         topic: S,
         partition: i32,
-    ) -> Result<PartitionProducer, FluvioError> {
+    ) -> Result<Producer, FluvioError> {
         let replica = ReplicaKey::new(topic, partition);
         debug!("creating producer, replica: {}", replica);
-        Ok(PartitionProducer::new(replica, self.spu_pool.clone()))
+        Ok(Producer::new(replica, self.spu_pool.clone()))
     }
 
     /// create new consumer for topic/partition
@@ -95,10 +95,10 @@ impl Fluvio {
         &mut self,
         topic: S,
         partition: i32,
-    ) -> Result<PartitionConsumer, FluvioError> {
+    ) -> Result<Consumer, FluvioError> {
         let replica = ReplicaKey::new(topic, partition);
         debug!("creating consumer, replica: {}", replica);
-        Ok(PartitionConsumer::new(replica, self.spu_pool.clone()))
+        Ok(Consumer::new(replica, self.spu_pool.clone()))
     }
 
     /// Provides an interface for managing a Fluvio cluster

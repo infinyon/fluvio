@@ -131,7 +131,7 @@ mod produce {
     use flv_future_aio::io::BufReader;
     use flv_future_aio::io::AsyncBufReadExt;
     use fluvio_types::{print_cli_err, print_cli_ok};
-    use fluvio::PartitionProducer;
+    use fluvio::Producer;
 
     use crate::t_println;
 
@@ -140,7 +140,7 @@ mod produce {
     pub type RecordTuples = Vec<(String, Vec<u8>)>;
 
     pub async fn produce_file_records<O: Terminal>(
-        mut producer: PartitionProducer,
+        mut producer: Producer,
         out: std::sync::Arc<O>,
         _cfg: ProduceLogConfig,
         file: FileRecord,
@@ -155,7 +155,7 @@ mod produce {
 
     /// Dispatch records based on the content of the record tuples variable
     pub async fn produce_from_stdin<O: Terminal>(
-        mut producer: PartitionProducer,
+        mut producer: Producer,
         _out: std::sync::Arc<O>,
         opt: ProduceLogConfig,
     ) -> Result<(), CliError> {
@@ -178,7 +178,7 @@ mod produce {
 
     /// Process record and print success or error
     /// TODO: Add version handling for SPU
-    async fn process_record(spu: &mut PartitionProducer, record: Vec<u8>) {
+    async fn process_record(spu: &mut Producer, record: Vec<u8>) {
         match spu.send_record(record).await {
             Ok(()) => {
                 debug!("record send success");

@@ -11,12 +11,12 @@ use crate::spu::SpuPool;
 use crate::client::SerialFrame;
 
 /// produce message to replica leader
-pub struct PartitionProducer {
+pub struct Producer {
     replica: ReplicaKey,
     pool: SpuPool,
 }
 
-impl PartitionProducer {
+impl Producer {
     pub(crate) fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
         Self { replica, pool }
     }
