@@ -65,9 +65,7 @@ where
     };
 
     if opt.disable_continuous {
-        let response = consumer
-            .fetch(initial_offset, fetch_option)
-            .await?;
+        let response = consumer.fetch(initial_offset, fetch_option).await?;
 
         debug!(
             "got a single response: LSO: {} batches: {}",
@@ -77,9 +75,7 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        let mut log_stream = consumer
-            .stream(initial_offset, fetch_option)
-            .await?;
+        let mut log_stream = consumer.stream(initial_offset, fetch_option).await?;
 
         while let Ok(response) = log_stream.next().await {
             let partition = response.partition;

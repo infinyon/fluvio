@@ -17,10 +17,7 @@ pub async fn produce_message_with_api(option: &TestOption) {
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
-        let mut producer = client
-            .producer(&topic_name, 0)
-            .await
-            .expect("producer");
+        let mut producer = client.producer(&topic_name, 0).await.expect("producer");
 
         for i in 0..option.produce.produce_iteration {
             let message = generate_message(i, option);
