@@ -26,7 +26,8 @@ use crate::config::ConfigFile;
 ///
 /// If you _are_ writing an application whose purpose is to manage a
 /// Fluvio cluster for you, you can gain access to the `FluvioAdmin`
-/// client via the regular `Fluvio` client.
+/// client via the regular [`Fluvio`] client, or through the [`connect`]
+/// or [`connect_with_config`] functions.
 ///
 /// # Example
 ///
@@ -40,6 +41,10 @@ use crate::config::ConfigFile;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// [`Fluvio`]: ./struct.Fluvio.html
+/// [`connect`]: ./struct.FluvioAdmin.html#method.connect
+/// [`connect_with_config`]: ./struct.FluvioAdmin.html#method.connect_with_config
 pub struct FluvioAdmin(VersionedSerialSocket);
 
 impl FluvioAdmin {

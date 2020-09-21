@@ -21,7 +21,7 @@ use crate::params::FetchLogOption;
 use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
-/// An interface for consuming events from a particular topic
+/// An interface for consuming events from a particular partition
 ///
 /// There are two ways to consume events: by "fetching" events
 /// and by "streaming" events. Fetching involves specifying a
@@ -34,8 +34,8 @@ use crate::spu::SpuPool;
 ///
 /// # Creating a Consumer
 ///
-/// You can create a `Consumer` via the [`partition_consumer`] method
-/// on the [`Fluvio`] client, like so:
+/// You can create a `PartitionConsumer` via the [`partition_consumer`]
+/// method on the [`Fluvio`] client, like so:
 ///
 /// ```no_run
 /// # use fluvio::{Fluvio, FluvioError};
@@ -65,7 +65,41 @@ impl PartitionConsumer {
         }
     }
 
-    /// Fetches events from a particular offset in a given partition
+    /// Fetches events from a particular offset in the consumer's partition
+    ///
+    /// A `Fetch` is one of the two ways to consume events in Fluvio.
+    /// It is a batch request for records from a particular offset in
+    /// the partition. You specify the range of records to retrieve
+    /// using a [`FetchOffset`] and a [`FetchLogOption`], and receive
+    /// the events as a list of records.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::params::{FetchOffset, FetchLogOption};
+    /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// // Fetch records starting from the earliest ones saved
+    /// let offset = FetchOffset::Earliest(None);
+    /// // Use default fetching configurations
+    /// let fetch_config = FetchLogOption::default();
+    ///
+    /// let response = consumer.fetch(offset, fetch_config).await?;
+    /// for batch in response.records.batches {
+    ///     for record in batch.records {
+    ///         if let Some(record) = record.value.inner_value() {
+    ///             let string = String::from_utf8(record)
+    ///                 .expect("record should be a string");
+    ///             println!("Got record: {}", string);
+    ///         }
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`FetchOffset`]: params/enum.FetchOffset.html
+    /// [`FetchLogOption`]: params/struct.FetchLogOption.html
     pub async fn fetch(
         &self,
         offset: FetchOffset,
@@ -121,10 +155,44 @@ impl PartitionConsumer {
         }
     }
 
-    /// fetch logs as stream
-    /// this will fetch continously
+    /// Continuously streams events from a particular offset in the consumer's partition
+    ///
+    /// Streaming is one of the two ways to consume events in Fluvio.
+    /// It is a continuous request for new records arriving in a partition,
+    /// beginning at a particular offset. You specify the starting point of the
+    /// stream using a [`FetchOffset`] and a [`FetchLogOption`], and periodically
+    /// receive events, either individually or in batches.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::params::{FetchOffset, FetchLogOption};
+    /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// // Start streaming events from the beginning of the partition
+    /// let offset = FetchOffset::Earliest(None);
+    /// // Use the default streaming settings
+    /// let fetch_config = FetchLogOption::default();
+    /// let mut stream = consumer.stream(offset, fetch_config).await?;
+    /// while let Ok(event) = stream.next().await {
+    ///     for batch in event.partition.records.batches {
+    ///         for record in batch.records {
+    ///             if let Some(record) = record.value.inner_value() {
+    ///                 let string = String::from_utf8(record)
+    ///                     .expect("record should be a string");
+    ///                 println!("Got event: {}", string);
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`FetchOffset`]: params/enum.FetchOffset.html
+    /// [`FetchLogOption`]: params/struct.FetchLogOption.html
     pub async fn stream(
-        &mut self,
+        &self,
         offset_option: FetchOffset,
         option: FetchLogOption,
     ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {

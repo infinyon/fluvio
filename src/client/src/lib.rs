@@ -68,6 +68,66 @@ pub use consumer::PartitionConsumer;
 pub use crate::admin::FluvioAdmin;
 pub use crate::client::Fluvio;
 
+/// Creates a producer that sends events to the named topic
+///
+/// This is a shortcut function that uses the current profile
+/// settings. If you need to specify any custom configurations,
+/// try directly creating a [`Fluvio`] client object instead.
+///
+/// # Example
+///
+/// ```no_run
+/// # use fluvio::FluvioError;
+/// # async fn do_produce() -> Result<(), FluvioError> {
+/// let producer = fluvio::producer("my-topic").await?;
+/// producer.send_record("Hello, world!", 0).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Fluvio`]: ./struct.Fluvio.html
+pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, FluvioError> {
+    let fluvio = Fluvio::connect().await?;
+    let producer = fluvio.topic_producer(topic).await?;
+    Ok(producer)
+}
+
+/// Creates a producer that receives events from the given topic and partition
+///
+/// This is a shortcut function that uses the current profile
+/// settings. If you need to specify any custom configurations,
+/// try directly creating a [`Fluvio`] client object instead.
+///
+/// # Example
+///
+/// ```no_run
+/// # use fluvio::FluvioError;
+/// use fluvio::params::{FetchOffset, FetchLogOption};
+/// #  async fn do_consume() -> Result<(), FluvioError> {
+/// let consumer = fluvio::consumer("my-topic", 0).await?;
+/// let mut stream = consumer.stream(FetchOffset::Earliest(None), FetchLogOption::default()).await?;
+/// while let Ok(event) = stream.next().await {
+///     for batch in event.partition.records.batches {
+///         for record in batch.records {
+///             if let Some(record) = record.value.inner_value() {
+///                 let string = String::from_utf8(record)
+///                     .expect("record should be a string");
+///                 println!("Got record: {}", string);
+///             }
+///         }
+///     }
+/// }
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Fluvio`]: ./struct.Fluvio.html
+pub async fn consumer<S: Into<String>>(topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+    let fluvio = Fluvio::connect().await?;
+    let consumer = fluvio.partition_consumer(topic, partition).await?;
+    Ok(consumer)
+}
+
 /// re-export metadata from sc-api
 pub mod metadata {
 

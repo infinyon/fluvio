@@ -26,7 +26,7 @@ use super::process_fetch_topic_response;
 #[allow(clippy::neg_multiply)]
 pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
-    mut consumer: PartitionConsumer,
+    consumer: PartitionConsumer,
     opt: ConsumeLogConfig,
 ) -> Result<(), CliError>
 where
