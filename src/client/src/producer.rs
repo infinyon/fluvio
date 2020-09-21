@@ -23,7 +23,7 @@ impl Producer {
 
     /// send records to spu leader for replica
     pub async fn send_record<B: AsRef<[u8]>>(&mut self, buffer: B) -> Result<(), FluvioError> {
-        let record = buffer.as_ref().to_owned();
+        let record = buffer.as_ref();
         debug!(
             "sending records: {} bytes to: {}",
             record.len(),
@@ -42,7 +42,7 @@ impl Producer {
 async fn send_record_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
-    record: Vec<u8>,
+    record: &[u8],
 ) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;

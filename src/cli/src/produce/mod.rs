@@ -107,7 +107,7 @@ where
 
     let mut target = Fluvio::connect_with_config(&target_server).await?;
 
-    let producer = target.partition_producer(&cfg.topic, cfg.partition).await?;
+    let producer = target.producer(&cfg.topic, cfg.partition).await?;
 
     debug!("got producer");
     if let Some(records) = file_records {

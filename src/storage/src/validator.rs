@@ -147,7 +147,7 @@ mod tests {
         for _ in 0..records {
             let mut record = DefaultRecord::default();
             let bytes: Vec<u8> = vec![10, 20];
-            record.value = Some(bytes).into();
+            record.value = bytes.into();
             batches.add_record(record);
         }
         batches

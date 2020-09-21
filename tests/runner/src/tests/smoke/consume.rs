@@ -57,7 +57,7 @@ async fn validate_consume_message_api(option: &TestOption) {
     for i in 0..replication {
         let topic_name = option.topic_name(i);
         let mut consumer = client
-            .partition_consumer(topic_name, 0)
+            .consumer(topic_name, 0)
             .await
             .expect("consumer");
 

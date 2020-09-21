@@ -80,7 +80,7 @@ impl Fluvio {
     }
 
     /// create new producer for topic/partition
-    pub async fn partition_producer<S: Into<String>>(
+    pub async fn producer<S: Into<String>>(
         &mut self,
         topic: S,
         partition: i32,
@@ -91,7 +91,7 @@ impl Fluvio {
     }
 
     /// create new consumer for topic/partition
-    pub async fn partition_consumer<S: Into<String>>(
+    pub async fn consumer<S: Into<String>>(
         &mut self,
         topic: S,
         partition: i32,

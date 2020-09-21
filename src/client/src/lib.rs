@@ -1,4 +1,4 @@
-//! The official Rust client library for writing streaming applications with Fluvio
+//! The Rust client library for writing streaming applications with Fluvio
 //!
 //! Fluvio is a high performance, low latency data streaming platform built for developers.
 //!
@@ -23,7 +23,8 @@
 //! being similar to a database table, but for streaming.
 //!
 //! As the application developer, you get to decide what Topics you create and which
-//! messages you send to them. For the echo example, we'll create a Topic called `echo`.
+//! messages you send to them. We need to set up a Topic before running our code. For the
+//! echo example, we'll call our topic `echo`.
 //!
 //! # Example
 //!
