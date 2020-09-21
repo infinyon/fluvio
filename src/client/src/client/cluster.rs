@@ -24,7 +24,11 @@ pub struct Fluvio {
 }
 
 impl Fluvio {
-    /// Creates a new Fluvio client with default configurations
+    /// Creates a new Fluvio client using the current profile from `~/.fluvio/config`
+    ///
+    /// If there is no current profile or the `~/.fluvio/config` file does not exist,
+    /// then this will create a new profile with default settings and set it as
+    /// current, then try to connect to the cluster using those settings.
     ///
     /// # Example
     ///

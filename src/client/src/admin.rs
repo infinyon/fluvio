@@ -47,7 +47,7 @@ impl FluvioAdmin {
         Self(client)
     }
 
-    /// Creates a new admin connection using default configurations
+    /// Creates a new admin connection using the current profile from `~/.fluvio/config`
     ///
     /// This will attempt to read a Fluvio cluster configuration from
     /// your `~/.fluvio/config` file, or create one with default settings
