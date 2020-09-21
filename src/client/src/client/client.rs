@@ -157,6 +157,7 @@ impl ClientConfig {
     }
 
     /// set client id
+    #[allow(unused)]
     pub fn set_client_id<S>(mut self, id: S) -> Self
     where
         S: Into<String>,

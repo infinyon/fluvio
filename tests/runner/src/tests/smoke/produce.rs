@@ -11,9 +11,7 @@ pub async fn produce_message(option: &TestOption) {
 }
 
 pub async fn produce_message_with_api(option: &TestOption) {
-    let mut client = Fluvio::connect()
-        .await
-        .expect("should connect");
+    let mut client = Fluvio::connect().await.expect("should connect");
 
     let replication = option.replication();
 

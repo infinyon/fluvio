@@ -82,7 +82,10 @@ impl PartitionConsumer {
             );
             Ok(partition_response)
         } else {
-            Err(FluvioError::PartitionNotFound(self.replica.topic.clone(), self.replica.partition))
+            Err(FluvioError::PartitionNotFound(
+                self.replica.topic.clone(),
+                self.replica.partition,
+            ))
         }
     }
 

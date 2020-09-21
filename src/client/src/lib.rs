@@ -40,11 +40,12 @@
 //! # use fluvio::{Fluvio, FluvioError};
 //! # async fn do_init_fluvio() -> Result<(), FluvioError> {
 //! let fluvio = Fluvio::connect().await?;
+//! # Ok(())
 //! # }
 //! ```
 #![cfg_attr(
-feature = "nightly",
-doc(include = "../../../website/kubernetes/INSTALL.md")
+    feature = "nightly",
+    doc(include = "../../../website/kubernetes/INSTALL.md")
 )]
 
 mod error;

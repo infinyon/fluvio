@@ -38,8 +38,10 @@ impl Fluvio {
     /// ```
     pub async fn connect() -> Result<Self, FluvioError> {
         let config_file = ConfigFile::load_default_or_new()?;
-        let cluster_config = config_file.config().current_cluster()
-            .ok_or(FluvioError::ConfigError(format!("failed to load cluster config")))?;
+        let cluster_config = config_file
+            .config()
+            .current_cluster()
+            .ok_or_else(|| FluvioError::ConfigError("failed to load cluster config".to_string()))?;
         Self::connect_with_config(cluster_config).await
     }
 
@@ -78,14 +80,22 @@ impl Fluvio {
     }
 
     /// create new producer for topic/partition
-    pub async fn partition_producer<S: Into<String>>(&mut self, topic: S, partition: i32) -> Result<PartitionProducer, FluvioError> {
+    pub async fn partition_producer<S: Into<String>>(
+        &mut self,
+        topic: S,
+        partition: i32,
+    ) -> Result<PartitionProducer, FluvioError> {
         let replica = ReplicaKey::new(topic, partition);
         debug!("creating producer, replica: {}", replica);
         Ok(PartitionProducer::new(replica, self.spu_pool.clone()))
     }
 
     /// create new consumer for topic/partition
-    pub async fn partition_consumer<S: Into<String>>(&mut self, topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+    pub async fn partition_consumer<S: Into<String>>(
+        &mut self,
+        topic: S,
+        partition: i32,
+    ) -> Result<PartitionConsumer, FluvioError> {
         let replica = ReplicaKey::new(topic, partition);
         debug!("creating consumer, replica: {}", replica);
         Ok(PartitionConsumer::new(replica, self.spu_pool.clone()))
@@ -98,7 +108,7 @@ impl Fluvio {
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError};
     /// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
-    /// let admin = fluvio.admin().await?;
+    /// let admin = fluvio.admin().await;
     /// # Ok(())
     /// # }
     /// ```

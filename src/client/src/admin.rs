@@ -31,9 +31,9 @@ use crate::FluvioError;
 /// administrator for the cluster you are connected to.
 ///
 /// ```no_run
-/// # use fluvio_experimental::{Fluvio, FluvioError};
+/// # use fluvio::{Fluvio, FluvioError};
 /// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
-/// let admin = fluvio.admin().await?;
+/// let admin = fluvio.admin().await;
 /// # Ok(())
 /// # }
 /// ```

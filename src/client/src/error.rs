@@ -39,7 +39,9 @@ impl fmt::Display for FluvioError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::TopicNotFound(topic) => write!(f, "topic: {} not found", topic),
-            Self::PartitionNotFound(topic, partition) => write!(f, "partition <{}-{}> not found", topic, partition),
+            Self::PartitionNotFound(topic, partition) => {
+                write!(f, "partition <{}-{}> not found", topic, partition)
+            }
             Self::Other(msg) => write!(f, "{}", msg),
             Self::IoError(err) => write!(f, "{}", err),
             Self::KfSocketError(err) => write!(f, "{:#?}", err),

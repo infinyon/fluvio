@@ -92,7 +92,7 @@ impl From<TlsPaths> for TlsConfig {
 /// stringified contents of a `TlsCerts` should have text resembling
 /// the following:
 ///
-/// ```ignore
+/// ```text
 /// -----BEGIN RSA PRIVATE KEY-----
 /// MIIJKAIBAAKCAgEAsqV4GUKER1wy4sbNvd6gHMp745L4x+ilVElk1ucWGT2akzA6
 /// TEvDiAKFF4txkEaLTECh1dUev6rB5HnboWxd5gdg1K4ck2wrZ3Jv2OTA0unXAkoA
@@ -104,7 +104,7 @@ impl From<TlsPaths> for TlsConfig {
 ///
 /// And certificates should look something like this:
 ///
-/// ```ignore
+/// ```text
 /// -----BEGIN CERTIFICATE-----
 /// MIIGezCCBGOgAwIBAgIUTYr3REzVKe5JZl2JzLR+rKbv05UwDQYJKoZIhvcNAQEL
 /// BQAwYTELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRIwEAYDVQQHDAlTdW5ueXZh
