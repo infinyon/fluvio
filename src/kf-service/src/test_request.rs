@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
-use flv_future_aio::zero_copy::ZeroCopyWrite;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_protocol::api::{
     ApiMessage, Request, RequestMessage, ResponseMessage, RequestHeader, api_decode,
 };

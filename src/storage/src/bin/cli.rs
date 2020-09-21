@@ -3,8 +3,8 @@ use std::io::Error as IoError;
 
 use structopt::StructOpt;
 
-use flv_future_aio::task::run_block_on;
-use flv_future_aio::fs::util as fs_util;
+use fluvio_future::task::run_block_on;
+use fluvio_future::fs::util as fs_util;
 
 use fluvio_storage::DefaultFileBatchStream;
 use fluvio_storage::LogIndex;

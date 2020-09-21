@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use serde::export::Formatter;
-use fluvio::FluvioError;
-use flv_future_aio::io::Error;
+use fluvio::ClientError;
+use fluvio_future::io::Error;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
 

@@ -490,7 +490,7 @@ mod file {
     use bytes::BufMut;
     use bytes::BytesMut;
 
-    use flv_future_aio::fs::AsyncFileSlice;
+    use fluvio_future::file_slice::AsyncFileSlice;
     use crate::core::bytes::Buf;
     use crate::core::Decoder;
     use crate::core::Encoder;

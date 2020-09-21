@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
 
-use tracing::trace;
-use tracing::debug;
+use log::trace;
+use log::debug;
 use bytes::Bytes;
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
@@ -16,8 +16,8 @@ use futures::stream::SplitSink;
 use futures::io::{AsyncRead, AsyncWrite};
 use tokio_util::compat::Compat;
 
-use flv_future_aio::zero_copy::ZeroCopyWrite;
-use flv_future_aio::bytes::BytesMut;
+use fluvio_future::zero_copy::ZeroCopyWrite;
+use bytes::BytesMut;
 use fluvio_protocol::Version;
 use fluvio_protocol::Encoder as KfEncoder;
 use fluvio_protocol::api::RequestMessage;
@@ -27,8 +27,8 @@ use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::codec::FluvioCodec;
 
 use tokio_util::codec::Framed;
-use flv_future_aio::net::TcpStream;
-use flv_future_aio::net::tls::AllTcpStream;
+use fluvio_future::net::TcpStream;
+use fluvio_future::tls::AllTcpStream;
 
 use crate::KfSocketError;
 
@@ -226,20 +226,20 @@ mod tests {
     use std::fs::remove_file;
     use std::env::temp_dir;
 
-    use tracing::debug;
-    use tracing::info;
+    use log::debug;
+    use log::info;
     use futures::stream::StreamExt;
     use futures::future::join;
     use futures::io::AsyncWriteExt;
     use futures::sink::SinkExt;
 
-    use flv_future_aio::test_async;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::fs::util;
-    use flv_future_aio::fs::AsyncFile;
-    use flv_future_aio::zero_copy::ZeroCopyWrite;
-    use flv_future_aio::net::TcpListener;
-    use flv_future_aio::bytes::Bytes;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::fs::util;
+    use fluvio_future::fs::AsyncFileExtension;
+    use fluvio_future::zero_copy::ZeroCopyWrite;
+    use fluvio_future::net::TcpListener;
+    use fluvio_protocol::bytes::Bytes;
     use fluvio_protocol::{Decoder, Encoder};
     use crate::KfSocket;
     use crate::KfSocketError;

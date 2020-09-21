@@ -5,7 +5,7 @@ mod controller {
 
     use fluvio_sc_schema::client::*;
     use kf_socket::*;
-    use flv_future_aio::task::spawn;
+    use fluvio_future::task::spawn;
 
     use crate::client::ScClient;
 
@@ -55,7 +55,7 @@ mod controller {
                 use futures::FutureExt;
                 use futures::StreamExt;
 
-                use flv_future_aio::timer::sleep;
+                use fluvio_future::timer::sleep;
 
                 debug!("waiting for request from sc");
 

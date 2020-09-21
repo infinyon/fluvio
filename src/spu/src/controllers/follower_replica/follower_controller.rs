@@ -9,8 +9,8 @@ use futures::select;
 use futures::StreamExt;
 use futures::FutureExt;
 
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use kf_socket::KfSocket;
 use kf_socket::KfSink;
 use kf_socket::KfSocketError;

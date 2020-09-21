@@ -6,17 +6,17 @@ authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "data plane protocol"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
-categories = ["encoding","api-bindings"]
-
+categories = ["encoding", "api-bindings"]
 
 
 [dependencies]
+log = "0.4.0"
 bytes = "0.5.3"
 futures = { version = "0.3.4" }
 content_inspector = "0.2.4"
 crc32c = { version = "0.5" }
-flv-future-aio = { version = "3.0.0" }
-fluvio-protocol = { version = "0.1.0", features=["derive","api","store"]}
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename' }
+fluvio-protocol = { version = "0.1.0", features = ["derive", "api", "store"] }
 flv-util = { version = "0.5.0"}
 
 [dev-dependencies]

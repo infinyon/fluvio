@@ -1,5 +1,5 @@
 use std::time::Duration;
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 
 use utils::bin::get_fluvio;
 

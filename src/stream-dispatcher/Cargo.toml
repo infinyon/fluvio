@@ -13,6 +13,8 @@ path = "src/lib.rs"
 
 [dependencies]
 log = "0.4.8"
+tracing = "0.1.0"
+tracing-futures = "0.2.0"
 serde = { version = "1.0.103", features = ['derive'] }
 futures = { version = "0.3.1" }
 async-trait = "0.1.21"
@@ -25,9 +27,8 @@ tokio = { version = "0.2.21", features = ["macros"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-stream-model = { features = ["k8"], path = "../stream-model" }
 k8-metadata-client = { version = "1.0.1" }
-flv-util = { version = "0.5.0" }
-flv-future-aio = { version = "3.0.0", features = ["unstable"] }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename' }
 
 [dev-dependencies]
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
-flv-future-aio = { version = "3.0.0", features = ["fixture"] }

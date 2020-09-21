@@ -17,8 +17,8 @@ use tokio::select;
 use futures::StreamExt;
 use futures::sink::SinkExt;
 
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use fluvio_controlplane::InternalSpuApi;
 use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;

@@ -9,13 +9,13 @@ use futures::future::join3;
 use futures::future::join;
 use futures::stream::StreamExt;
 
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
 use kf_socket::ExclusiveKfSink;
-use flv_future_aio::sync::broadcast::Sender;
+use fluvio_future::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;
 use crate::core::OffsetUpdateEvent;

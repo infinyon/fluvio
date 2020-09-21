@@ -12,9 +12,9 @@ use futures::io::AsyncSeekExt;
 use tracing::debug;
 use tracing::trace;
 
-use flv_future_aio::fs::File;
-use flv_future_aio::fs::metadata;
-use flv_future_aio::fs::util;
+use fluvio_future::fs::File;
+use fluvio_future::fs::metadata;
+use fluvio_future::fs::util;
 
 use crate::ConfigOption;
 
@@ -155,7 +155,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Error as IoError;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
 
     use crate::ConfigOption;

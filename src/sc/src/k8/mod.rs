@@ -8,7 +8,7 @@
 mod operator;
 mod service;
 
-use flv_future_aio::task::main;
+use fluvio_future::task::main;
 use k8_client::new_shared;
 
 use operator::run_k8_operators;
@@ -50,11 +50,11 @@ pub fn main_k8_loop(opt: ScOpt) {
 
 mod proxy {
     use std::process;
-    use tracing::info;
+    use log::info;
 
     use crate::config::ScConfig;
     use fluvio_types::print_cli_err;
-    use flv_future_aio::net::tls::TlsAcceptor;
+    use fluvio_future::net::tls::TlsAcceptor;
     use flv_tls_proxy::start as proxy_start;
 
     pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {

@@ -20,7 +20,7 @@ use kf_socket::KfSocketError;
 use kf_service::KfService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 
 use crate::core::*;
 

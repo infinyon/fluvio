@@ -27,11 +27,10 @@ async-mutex = "1.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
-flv-util = "0.5.0"
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["tls"] }
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
-flv-future-aio = { version = "3.0.0", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
 fluvio-protocol = { version = "0.1.0" }
 dataplane = { path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

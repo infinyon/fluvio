@@ -121,11 +121,11 @@ mod produce {
     use tracing::debug;
     use futures::stream::StreamExt;
 
-    use flv_future_aio::fs::File;
-    use flv_future_aio::io::stdin;
-    use flv_future_aio::io::ReadExt;
-    use flv_future_aio::io::BufReader;
-    use flv_future_aio::io::AsyncBufReadExt;
+    use fluvio_future::fs::File;
+    use fluvio_future::io::stdin;
+    use fluvio_future::io::ReadExt;
+    use fluvio_future::io::BufReader;
+    use fluvio_future::io::AsyncBufReadExt;
     use fluvio_types::{print_cli_err, print_cli_ok};
     use fluvio::TopicProducer;
 

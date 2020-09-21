@@ -29,7 +29,7 @@ pub(crate) use crate::segment::SegmentSlice;
 
 use dataplane::{ErrorCode, Offset};
 use dataplane::fetch::FilePartitionResponse;
-use flv_future_aio::fs::AsyncFileSlice;
+use fluvio_future::fs::AsyncFileSlice;
 
 pub trait Captures<'a> {}
 impl<'a, T: ?Sized> Captures<'a> for T {}

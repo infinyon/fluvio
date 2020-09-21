@@ -186,8 +186,8 @@ mod test {
     use tracing::debug;
 
     use fluvio_types::SpuId;
-    use flv_future_aio::net::AsyncTcpListener;
-    use flv_future_aio::net::AsyncTcpStream;
+    use fluvio_future::net::AsyncTcpListener;
+    use fluvio_future::net::AsyncTcpStream;
     use flv_future_core::sleep;
     use flv_future_core::test_async;
 

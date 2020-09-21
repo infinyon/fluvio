@@ -80,7 +80,7 @@ mod k8_util {
     use k8_obj_metadata::InputObjectMeta;
     use k8_metadata_client::MetadataClient;
     use k8_obj_metadata::Spec;
-    use flv_future_aio::timer::sleep;
+    use fluvio_future::timer::sleep;
     use k8_client::ClientError as K8ClientError;
 
     // wait for i8 objects appear

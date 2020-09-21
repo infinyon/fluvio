@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 
 use crate::cli::TestOption;
 use crate::environment::EnvironmentDriver;

@@ -1,6 +1,6 @@
 use std::fmt;
 use std::io::Error as IoError;
-use flv_future_aio::zero_copy::SendFileError;
+use fluvio_future::zero_copy::SendFileError;
 
 #[derive(Debug)]
 pub enum KfSocketError {

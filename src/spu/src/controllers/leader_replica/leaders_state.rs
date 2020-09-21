@@ -188,8 +188,8 @@ mod test_channel {
     use futures::SinkExt;
     use futures::StreamExt;
 
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
 
     async fn receiver_tst(mut receiver: Receiver<u16>) {
         // sleep to let sender send messages

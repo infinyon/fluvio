@@ -16,16 +16,17 @@ use_serde = ["serde"]
 k8 = ["use_serde", "k8-obj-metadata", "k8-obj-core", "k8-obj-app"]
 
 [dependencies]
+tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-rwlock = "1.1.0"
 
 # Fluvio dependencies
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["net"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 k8-obj-app = { version = "1.1.0", optional = true }
 k8-obj-core = { version = "1.1.0", optional = true }
 k8-obj-metadata = { version = "1.0.0", optional = true }
-flv-util = { version = "0.5.0" }
-flv-future-aio = { version = "3.0.0" }
+
 
 [dev-dependencies]
-flv-future-aio = { version = "3.0.0", features = ["fixture"] }
+fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }

@@ -9,7 +9,7 @@ use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
 use kf_socket::*;
-use flv_future_aio::net::tls::AllDomainConnector;
+use fluvio_future::net::tls::AllDomainConnector;
 
 use crate::FluvioError;
 
