@@ -2,9 +2,9 @@ use std::io::Error as IoError;
 
 use log::trace;
 
-use flv_future_aio::bytes::Bytes;
-use flv_future_aio::bytes::BytesMut;
-use flv_future_aio::fs::AsyncFileSlice;
+use bytes::Bytes;
+use bytes::BytesMut;
+use fluvio_future::file_slice::AsyncFileSlice;
 
 use crate::api::Request;
 use crate::api::RequestMessage;
