@@ -44,11 +44,9 @@
 //! use fluvio::{Fluvio, FluvioError};
 //! use fluvio::params::{FetchOffset, FetchLogOption};
 //!
-//! fn main() {
-//!     async_std::task::spawn(produce_records());
-//!     if let Err(e) = async_std::task::block_on(consume_records()) {
-//!         println!("Error: {}", e);
-//!     }
+//! async_std::task::spawn(produce_records());
+//! if let Err(e) = async_std::task::block_on(consume_records()) {
+//!     println!("Error: {}", e);
 //! }
 //!
 //! async fn produce_records() -> Result<(), FluvioError> {
@@ -79,7 +77,6 @@
 //!     }
 //!     Ok(())
 //! }
-//!
 //! ```
 //!
 //! [Fluvio CLI]: https://nightly.fluvio.io/docs/cli/
@@ -162,7 +159,10 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// ```
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
-pub async fn consumer<S: Into<String>>(topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+pub async fn consumer<S: Into<String>>(
+    topic: S,
+    partition: i32,
+) -> Result<PartitionConsumer, FluvioError> {
     let fluvio = Fluvio::connect().await?;
     let consumer = fluvio.partition_consumer(topic, partition).await?;
     Ok(consumer)
