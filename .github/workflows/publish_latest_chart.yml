@@ -1,25 +1,30 @@
-name: Publish Latest Chart
+name: Publish Helm Chart
 
-on: 
+on:
+  push:
+    branches: [master]
   workflow_dispatch:
+
 jobs:
   publish_helm:
-    name: Publish Latest Chart
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-    runs-on: ${{ matrix.os }}
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
     steps:
+      - name: Install Helm
+        run: |
+          mkdir -p $HOME/bin && \
+          cd $(mktemp -d) && \
+          curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar zx && \
+          mv linux-amd64/helm $HOME/bin && \
+          chmod +x $HOME/bin/helm
+        env:
+          HELM_VERSION: v3.3.3
+      - name: Install Helm Push plugin
+        run: helm plugin install https://github.com/chartmuseum/helm-push.git
+      - name: Helm Add Repo
+        run: helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
       - uses: actions/checkout@v2
-      - name: Publish Helm chart
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: k8-util/helm
-          charts_url: https://infinyon.github.io/charts
-          branch: master
-          target_dir: charts
-          owner: infinyon
-          repository: infinyon.github.io
-  
+      - name: Push Sys Chart
+        run: helm push k8-util/helm/fluvio-sys --version="$(git log -1 --pretty=format:%h)" chartmuseum
+      - name: Push App Chart
+        run: helm push k8-util/helm/fluvio-app --version="$(git log -1 --pretty=format:%h)" chartmuseum
