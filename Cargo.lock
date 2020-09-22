@@ -1210,7 +1210,6 @@ dependencies = [
  "serde",
  "structopt",
  "tracing",
- "utils",
 ]
 
 [[package]]
