@@ -38,14 +38,14 @@ pub(crate) enum OffsetInner {
 /// beginning of the partition. The absolute offset of an event never
 /// changes.
 ///
-/// Sometimes when a partition gets very large, Fluvio will begin
-/// deleting events from the beginning of the log in order to save
-/// space. Whenever it does this, it keeps track of the latest
-/// non-deleted event. This allows the `FromBeginning` offset to
-/// select an event which is a certain number of places in front of
-/// the deleted range. For example, let's say that the first two
-/// events from our partition were deleted. Our new offsets would
-/// look like this:
+/// Fluvio allows you to set a retention policy that determines how
+/// long your events should live. Once an event has outlived your
+/// retention policy, Fluvio may delete it to save resources. Whenever
+/// it does this, it keeps track of the latest non-deleted event. This
+/// allows the `FromBeginning` offset to select an event which is a
+/// certain number of places in front of the deleted range. For example,
+/// let's say that the first two events from our partition were deleted.
+/// Our new offsets would look like this:
 ///
 /// ```text
 ///                          These events were deleted!
