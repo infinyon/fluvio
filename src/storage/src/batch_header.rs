@@ -2,8 +2,8 @@ use std::io::Error as IoError;
 use std::task::Context;
 use std::task::Poll;
 
-use futures::Future;
-use futures::Stream;
+use futures_lite::Future;
+use futures_lite::Stream;
 use std::pin::Pin;
 
 use pin_utils::pin_mut;
@@ -70,7 +70,7 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use futures::stream::StreamExt;
+    use futures_lite::StreamExt;
 
     use fluvio_future::fs::util as file_util;
     use flv_util::fixture::ensure_clean_file;

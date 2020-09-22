@@ -4,7 +4,7 @@ use std::path::Path;
 
 use tracing::debug;
 use tracing::trace;
-use futures::io::AsyncWriteExt;
+use futures_lite::io::AsyncWriteExt;
 
 use fluvio_future::fs::File;
 use fluvio_future::file_slice::AsyncFileSlice;

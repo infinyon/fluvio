@@ -16,8 +16,8 @@ path = "src/lib.rs"
 log = "0.4.0"
 tracing = "0.1.19"
 bytes = "0.5.4"
-futures = { version = "0.3.4" }
-pin-utils = "0.1.0-alpha.4"
+futures-util = { version = "0.3.5", features = ["sink"] }
+pin-utils = "0.1.0"
 chashmap = "2.2.0"
 async-mutex = "1.3.0"
 event-listener = "2.0.0"

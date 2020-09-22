@@ -10,9 +10,9 @@ use bytes::Bytes;
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
 
-use futures::sink::SinkExt;
-use futures::stream::SplitSink;
-use futures::io::{AsyncRead, AsyncWrite};
+use futures_util::sink::SinkExt;
+use futures_util::stream::SplitSink;
+use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio_util::compat::Compat;
 
 use fluvio_future::zero_copy::ZeroCopyWrite;
@@ -227,10 +227,10 @@ mod tests {
 
     use tracing::debug;
     use tracing::info;
-    use futures::stream::StreamExt;
-    use futures::future::join;
-    use futures::io::AsyncWriteExt;
-    use futures::sink::SinkExt;
+    use futures_util::stream::StreamExt;
+    use futures_util::future::join;
+    use futures_util::io::AsyncWriteExt;
+    use futures_util::sink::SinkExt;
     use bytes::Bytes;
     use async_net::TcpListener;
 

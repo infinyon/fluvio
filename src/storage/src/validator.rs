@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::fmt;
 use std::path::Path;
 
-use futures::stream::StreamExt;
+use futures_lite::StreamExt;
 use tracing::warn;
 use tracing::trace;
 
@@ -119,7 +119,7 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use futures::io::AsyncWriteExt;
+    use futures_lite::io::AsyncWriteExt;
 
     use fluvio_future::fs::BoundedFileSink;
     use fluvio_future::fs::BoundedFileOption;

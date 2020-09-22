@@ -4,8 +4,8 @@ use std::env::temp_dir;
 use std::time::Duration;
 
 use tracing::debug;
-use futures::stream::StreamExt;
-use futures::future::join;
+use futures_lite::StreamExt;
+use futures_lite::future::zip;
 
 use fluvio_future::test_async;
 use fluvio_future::timer::sleep;
@@ -178,7 +178,7 @@ async fn test_client(addr: &str) {
 async fn test_replica_fetch() -> Result<(), StorageError> {
     let addr = "127.0.0.1:9911";
 
-    let _r = join(test_client(addr), test_server(addr)).await;
+    let _r = zip(test_client(addr), test_server(addr)).await;
 
     Ok(())
 }
