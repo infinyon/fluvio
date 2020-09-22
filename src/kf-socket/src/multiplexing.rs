@@ -10,8 +10,8 @@ use tracing::debug;
 use tracing::error;
 use tracing::trace;
 use bytes::BytesMut;
-use futures::io::{AsyncRead, AsyncWrite};
-use futures::StreamExt;
+use futures_util::io::{AsyncRead, AsyncWrite};
+use futures_util::stream::StreamExt;
 use async_mutex::Mutex;
 use event_listener::Event;
 use async_channel::Sender;
@@ -391,9 +391,9 @@ mod tests {
     use std::time::Duration;
 
     use tracing::debug;
-    use futures::stream::StreamExt;
-    use futures::future::join;
-    use futures::future::join3;
+    use futures_util::stream::StreamExt;
+    use futures_util::future::join;
+    use futures_util::future::join3;
 
     use fluvio_future::test_async;
     use fluvio_future::task::spawn;

@@ -5,10 +5,10 @@ use std::io::ErrorKind;
 
 use tracing::trace;
 use tracing::error;
-use futures::io::{AsyncRead, AsyncWrite};
-use futures::Stream;
-use futures::stream::StreamExt;
-use futures::stream::SplitStream;
+use futures_util::io::{AsyncRead, AsyncWrite};
+use futures_util::stream::Stream;
+use futures_util::stream::StreamExt;
+use futures_util::stream::SplitStream;
 use tokio_util::codec::Framed;
 use tokio_util::compat::Compat;
 use fluvio_future::net::TcpStream;

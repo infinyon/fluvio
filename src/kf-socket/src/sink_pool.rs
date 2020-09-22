@@ -59,8 +59,8 @@ mod tests {
 
     use tracing::debug;
     use tracing::info;
-    use futures::stream::StreamExt;
-    use futures::future::join;
+    use futures_util::stream::StreamExt;
+    use futures_util::future::join;
 
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;

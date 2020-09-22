@@ -6,9 +6,9 @@ use std::io::SeekFrom;
 
 use bytes::Buf;
 use bytes::BufMut;
-use futures::io::AsyncReadExt;
-use futures::io::AsyncWriteExt;
-use futures::io::AsyncSeekExt;
+use futures_lite::io::AsyncReadExt;
+use futures_lite::io::AsyncWriteExt;
+use futures_lite::io::AsyncSeekExt;
 use tracing::debug;
 use tracing::trace;
 

@@ -4,10 +4,10 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 
 use tracing::debug;
-use futures::stream::StreamExt;
+use futures_util::StreamExt;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
-use futures::io::{AsyncRead, AsyncWrite};
+use futures_util::io::{AsyncRead, AsyncWrite};
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;

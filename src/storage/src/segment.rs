@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
 
-use futures::stream::StreamExt;
+use futures_lite::StreamExt;
 use tracing::debug;
 use tracing::trace;
 

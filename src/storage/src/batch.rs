@@ -10,11 +10,11 @@ use std::task::Poll;
 
 use tracing::trace;
 use tracing::debug;
-use futures::Future;
-use futures::FutureExt;
-use futures::Stream;
-use futures::io::AsyncReadExt;
-use futures::io::AsyncSeekExt;
+use futures_lite::Future;
+use futures_lite::FutureExt;
+use futures_lite::Stream;
+use futures_lite::io::AsyncReadExt;
+use futures_lite::io::AsyncSeekExt;
 use pin_utils::unsafe_pinned;
 
 use fluvio_future::fs::File;
@@ -292,7 +292,7 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use futures::stream::StreamExt;
+    use futures_lite::StreamExt;
 
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
