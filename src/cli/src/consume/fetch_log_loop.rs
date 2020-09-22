@@ -6,10 +6,11 @@
 
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::convert::TryFrom;
 
 use tracing::debug;
 
-use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
+use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -46,31 +47,27 @@ where
 
     // compute offset
     let maybe_initial_offset = if opt.from_beginning {
-        Offset::from_beginning(opt.offset.unwrap_or(0))
-    } else if let Some(offset) = opt.offset {
+        let big_offset = opt.offset.unwrap_or(0);
+        // Try to convert to u32
+        u32::try_from(big_offset).ok()
+            .map(|num| Offset::from_beginning(num))
+    } else if let Some(big_offset) = opt.offset {
         // if it is negative, we start from end
-        if offset < 0 {
-            Offset::from_end(offset * -1)
+        if big_offset < 0 {
+            // Try to convert to u32
+            u32::try_from(big_offset * -1).ok()
+                .map(|num| Offset::from_end(num))
         } else {
-            Offset::absolute(offset)
+            Offset::absolute(big_offset).ok()
         }
     } else {
-        Offset::from_end(0)
+        Some(Offset::end())
     };
 
     let initial_offset = match maybe_initial_offset {
-        Ok(offset) => offset,
-        Err(FluvioError::NegativeOffset(err)) => {
-            // This should only apply in the `-B` case
-            return Err(CliError::InvalidArg(format!(
-                "Negative offsets are illegal: got {}",
-                err
-            )));
-        }
-        _ => {
-            return Err(CliError::Other(
-                "an unknown offset error occurred".to_string(),
-            ))
+        Some(offset) => offset,
+        None => {
+            return Err(CliError::InvalidArg(format!("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive")));
         }
     };
 

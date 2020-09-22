@@ -5,7 +5,7 @@ use std::io::Write;
 
 use utils::bin::get_fluvio;
 
-use fluvio::{Fluvio, Offset, ConsumerConfig};
+use fluvio::{Fluvio, Offset};
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
 use super::message::*;
@@ -59,10 +59,7 @@ async fn validate_consume_message_api(option: &TestOption) {
 
         println!("retrieving messages");
         let response = consumer
-            .fetch_with_config(
-                Offset::from_beginning(0).unwrap(),
-                ConsumerConfig::default(),
-            )
+            .fetch(Offset::beginning())
             .await
             .expect("records");
         println!("message received");

@@ -129,28 +129,93 @@ impl Offset {
     ///         Partition Log: [ .., .., 22, 33, 44, 55, 66 ]
     ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
     ///  FromBeginning Offset:            0,  1,  2,  3,  4
+    ///                                   ^
+    ///                                   |
+    ///                 Offset::beginning()
     /// ```
-    ///
-    /// The offset must not be less than zero.
     ///
     /// # Example
     ///
     /// ```
     /// # use fluvio::Offset;
-    /// assert!(Offset::from_beginning(10).is_ok());
-    /// assert!(Offset::from_beginning(0).is_ok());
-    /// assert!(Offset::from_beginning(-10).is_err());
+    /// let offset: Offset = Offset::beginning();
     /// ```
-    pub fn from_beginning(offset: i64) -> Result<Offset, FluvioError> {
-        if offset < 0 {
-            return Err(FluvioError::NegativeOffset(offset));
-        }
-        Ok(Self {
-            inner: OffsetInner::FromBeginning(offset),
-        })
+    pub fn beginning() -> Offset {
+        Self::from_beginning(0)
     }
 
-    /// Creates a relative offset counting backwards from the end of the log
+    /// Creates a relative offset a fixed distance after the oldest log entry
+    ///
+    /// A relative `FromBeginning` offset will not always match an `Absolute`
+    /// offset. In order to save space, Fluvio may sometimes delete events
+    /// from the beginning of the log. When this happens, the `FromBeginning`
+    /// relative offset starts counting from the first non-deleted log entry.
+    ///
+    /// ```text
+    ///                          These events were deleted!
+    ///                          |
+    ///                          vvvvvv
+    ///         Partition Log: [ .., .., 22, 33, 44, 55, 66 ]
+    ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
+    ///  FromBeginning Offset:            0,  1,  2,  3,  4
+    ///                                                   ^
+    ///                                                   |
+    ///                           Offset::from_beginning(4)
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::Offset;
+    /// // Creates an offset pointing 4 places after the oldest log entry
+    /// let offset: Offset = Offset::from_beginning(4);
+    /// ```
+    pub fn from_beginning(offset: u32) -> Offset {
+        Self {
+            inner: OffsetInner::FromBeginning(offset as i64),
+        }
+    }
+
+    /// Creates a relative offset pointing to the newest log entry
+    ///
+    /// A relative `FromEnd` offset will point to the last "stable committed"
+    /// event entry in the log. Since a log may continue growing at any time,
+    /// a `FromEnd` offset may refer to different entries depending on when a
+    /// query is made.
+    ///
+    /// For example, `Offset::end()` will refer to the event with content
+    /// `66` at this point in time:
+    ///
+    /// ```text
+    ///         Partition Log: [ .., .., 22, 33, 44, 55, 66 ]
+    ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6
+    ///        FromEnd Offset:    6,  5,  4,  3,  2,  1,  0
+    /// ```
+    ///
+    /// But when these new events are added, `Offset::end()` will refer to the
+    /// event with content `99`.
+    ///
+    /// ```text
+    ///                                        These events were added!
+    ///                                                               |
+    ///                                                      vvvvvvvvvv
+    ///         Partition Log: [ .., .., 22, 33, 44, 55, 66, 77, 88, 99 ]
+    ///       Absolute Offset:    0,  1,  2,  3,  4,  5,  6,  7,  8,  9
+    ///        FromEnd Offset:    9,  8,  7,  6,  5,  4,  3,  2,  1,  0
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::Offset;
+    /// // Creates an offset pointing to the latest log entry
+    /// let offset: Offset = Offset::end();
+    /// ```
+    pub fn end() -> Offset {
+        Offset::from_end(0)
+    }
+
+    /// Creates a relative offset a fixed distance before the newest log entry
     ///
     /// A relative `FromEnd` offset will begin counting from the last
     /// "stable committed" event entry in the log. Increasing the offset will
@@ -183,17 +248,13 @@ impl Offset {
     ///
     /// ```
     /// # use fluvio::Offset;
-    /// assert!(Offset::from_end(10).is_ok());
-    /// assert!(Offset::from_end(0).is_ok());
-    /// assert!(Offset::from_end(-10).is_err());
+    /// // Creates an offset pointing 3 places before the latest log entry
+    /// let offset: Offset = Offset::from_end(3);
     /// ```
-    pub fn from_end(offset: i64) -> Result<Offset, FluvioError> {
-        if offset < 0 {
-            return Err(FluvioError::NegativeOffset(offset));
+    pub fn from_end(offset: u32) -> Offset {
+        Self {
+            inner: OffsetInner::FromEnd(offset as i64),
         }
-        Ok(Self {
-            inner: OffsetInner::FromEnd(offset),
-        })
     }
 
     /// Converts this offset into an absolute offset
