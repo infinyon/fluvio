@@ -1,3 +1,4 @@
+#![type_length_limit="6685544"]
 mod setup;
 mod cli;
 mod tests;

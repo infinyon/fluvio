@@ -1,4 +1,4 @@
-#![type_length_limit = "2102494"]
+#![type_length_limit="1127839"]
 
 mod common;
 mod error;
