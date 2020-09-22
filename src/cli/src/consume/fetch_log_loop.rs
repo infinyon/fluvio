@@ -49,14 +49,12 @@ where
     let maybe_initial_offset = if opt.from_beginning {
         let big_offset = opt.offset.unwrap_or(0);
         // Try to convert to u32
-        u32::try_from(big_offset).ok()
-            .map(|num| Offset::from_beginning(num))
+        u32::try_from(big_offset).ok().map(Offset::from_beginning)
     } else if let Some(big_offset) = opt.offset {
         // if it is negative, we start from end
         if big_offset < 0 {
             // Try to convert to u32
-            u32::try_from(big_offset * -1).ok()
-                .map(|num| Offset::from_end(num))
+            u32::try_from(big_offset * -1).ok().map(Offset::from_end)
         } else {
             Offset::absolute(big_offset).ok()
         }
@@ -67,7 +65,7 @@ where
     let initial_offset = match maybe_initial_offset {
         Some(offset) => offset,
         None => {
-            return Err(CliError::InvalidArg(format!("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive")));
+            return Err(CliError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()));
         }
     };
 

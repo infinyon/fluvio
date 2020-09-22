@@ -58,10 +58,7 @@ async fn validate_consume_message_api(option: &TestOption) {
             .expect("consumer");
 
         println!("retrieving messages");
-        let response = consumer
-            .fetch(Offset::beginning())
-            .await
-            .expect("records");
+        let response = consumer.fetch(Offset::beginning()).await.expect("records");
         println!("message received");
         let batches = response.records.batches;
 
