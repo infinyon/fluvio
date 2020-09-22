@@ -1,5 +1,5 @@
 #![recursion_limit = "512"]
-#![type_length_limit = "6685544"]
+#![type_length_limit = "6722804"]
 
 mod error;
 mod start;

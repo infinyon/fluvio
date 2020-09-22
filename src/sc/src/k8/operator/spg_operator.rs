@@ -7,7 +7,7 @@ use tracing::info;
 use tracing::trace;
 use tracing::warn;
 use tracing::instrument;
-use futures::stream::StreamExt;
+use futures_util::stream::StreamExt;
 
 use crate::cli::TlsConfig;
 use crate::dispatcher::k8::metadata::*;

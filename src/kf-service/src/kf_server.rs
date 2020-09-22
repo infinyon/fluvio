@@ -5,13 +5,12 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::process;
 
-#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use futures::StreamExt;
+use futures_util::StreamExt;
 use event_listener::Event;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 
 use tracing::error;
 use tracing::info;

@@ -4,8 +4,8 @@ use std::fmt::Debug;
 use tracing::debug;
 use tracing::error;
 use event_listener::Event;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 
 use kf_socket::InnerExclusiveKfSink;
 use dataplane::core::{Encoder, Decoder};
