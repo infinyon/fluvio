@@ -62,9 +62,16 @@ where
         Ok(offset) => offset,
         Err(FluvioError::NegativeOffset(err)) => {
             // This should only apply in the `-B` case
-            return Err(CliError::InvalidArg(format!("Negative offsets are illegal: got {}", err)));
+            return Err(CliError::InvalidArg(format!(
+                "Negative offsets are illegal: got {}",
+                err
+            )));
         }
-        _ => return Err(CliError::Other("an unknown offset error occurred".to_string())),
+        _ => {
+            return Err(CliError::Other(
+                "an unknown offset error occurred".to_string(),
+            ))
+        }
     };
 
     let fetch_config = {
