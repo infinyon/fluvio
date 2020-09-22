@@ -4,9 +4,6 @@
 //!
 
 use dataplane::Offset;
-use dataplane::Isolation;
-
-pub const MAX_FETCH_BYTES: u32 = 1000000;
 
 /// Fetch Logs parameters
 #[derive(Debug)]
@@ -40,10 +37,4 @@ pub struct PartitionParam {
     pub partition_idx: i32,
     pub offset: Offset,
     pub epoch: i32,
-}
-
-#[derive(Default)]
-pub struct FetchLogOption {
-    pub max_bytes: i32,
-    pub isolation: Isolation,
 }

@@ -5,7 +5,7 @@ use std::io::Write;
 
 use utils::bin::get_fluvio;
 
-use fluvio::{Fluvio, Offset};
+use fluvio::{Fluvio, Offset, ConsumerConfig};
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
 use super::message::*;
@@ -47,8 +47,6 @@ fn validate_consume_message_cli(option: &TestOption) {
 }
 
 async fn validate_consume_message_api(option: &TestOption) {
-    use fluvio::params::FetchLogOption;
-
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
 
@@ -61,7 +59,7 @@ async fn validate_consume_message_api(option: &TestOption) {
 
         println!("retrieving messages");
         let response = consumer
-            .fetch(Offset::from_beginning(0).unwrap(), FetchLogOption::default())
+            .fetch_with_config(Offset::from_beginning(0).unwrap(), ConsumerConfig::default())
             .await
             .expect("records");
         println!("message received");

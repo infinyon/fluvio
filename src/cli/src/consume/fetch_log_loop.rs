@@ -9,9 +9,7 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 
-use fluvio::params::*;
-use fluvio::PartitionConsumer;
-use fluvio::Offset;
+use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -68,13 +66,16 @@ where
         }
     };
 
-    let fetch_option = FetchLogOption {
-        max_bytes: opt.max_bytes,
-        ..Default::default()
+    let fetch_config = {
+        let mut config = ConsumerConfig::default();
+        if let Some(max_bytes) = opt.max_bytes {
+            config = config.with_max_bytes(max_bytes);
+        }
+        config
     };
 
     if opt.disable_continuous {
-        let response = consumer.fetch(initial_offset, fetch_option).await?;
+        let response = consumer.fetch_with_config(initial_offset, fetch_config).await?;
 
         debug!(
             "got a single response: LSO: {} batches: {}",
@@ -84,7 +85,7 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        let mut log_stream = consumer.stream(initial_offset, fetch_option).await?;
+        let mut log_stream = consumer.stream_with_config(initial_offset, fetch_config).await?;
 
         while let Ok(response) = log_stream.next().await {
             let partition = response.partition;

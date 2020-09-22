@@ -8,7 +8,6 @@ use structopt::StructOpt;
 
 use fluvio::FluvioConfig;
 use fluvio::dataplane::Offset;
-use fluvio::params::MAX_FETCH_BYTES;
 
 use crate::error::CliError;
 use crate::target::ClusterTarget;
@@ -64,7 +63,6 @@ impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
     pub fn validate(self) -> Result<(FluvioConfig, ConsumeLogConfig), CliError> {
         let target_server = self.target.load()?;
-        let max_bytes = self.max_bytes.unwrap_or(MAX_FETCH_BYTES as i32);
 
         // consume log specific configurations
         let consume_log_cfg = ConsumeLogConfig {
@@ -73,7 +71,7 @@ impl ConsumeLogOpt {
             from_beginning: self.from_beginning,
             disable_continuous: self.disable_continuous,
             offset: self.offset,
-            max_bytes,
+            max_bytes: self.max_bytes,
             output: self.output,
             suppress_unknown: self.suppress_unknown,
         };
@@ -91,7 +89,7 @@ pub struct ConsumeLogConfig {
     pub from_beginning: bool,
     pub disable_continuous: bool,
     pub offset: Option<Offset>,
-    pub max_bytes: i32,
+    pub max_bytes: Option<i32>,
     pub output: ConsumeOutputType,
     pub suppress_unknown: bool,
 }
