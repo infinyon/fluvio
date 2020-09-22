@@ -29,7 +29,7 @@ macro_rules! call_service {
 macro_rules! api_loop {
     ( $api_stream:ident, $($matcher:pat => $result:expr),*) => {{
 
-        use futures::stream::StreamExt;
+        use futures_util::stream::StreamExt;
         loop {
 
             tracing::debug!("waiting for next api request");
@@ -53,7 +53,7 @@ macro_rules! api_loop {
 
     ( $api_stream:ident, $debug_msg:expr, $($matcher:pat => $result:expr),*) => {{
 
-        use futures::stream::StreamExt;
+        use futures_util::stream::StreamExt;
         loop {
 
             tracing::debug!("waiting for next api request: {}",$debug_msg);
@@ -80,7 +80,7 @@ macro_rules! api_loop {
 #[macro_export]
 macro_rules! wait_for_request {
     ( $api_stream:ident, $matcher:pat => $result:expr) => {{
-        use futures::stream::StreamExt;
+        use futures_util::stream::StreamExt;
 
         if let Some(msg) = $api_stream.next().await {
             if let Ok(req_message) = msg {

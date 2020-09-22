@@ -7,9 +7,9 @@ use std::collections::HashSet;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
-use futures::channel::mpsc::Sender;
-use futures::channel::mpsc::Receiver;
-use futures::channel::mpsc::channel;
+use async_channel::Sender;
+use async_channel::Receiver;
+use async_channel::bounded as channel;
 use chashmap::CHashMap;
 use chashmap::ReadGuard;
 use chashmap::WriteGuard;
@@ -112,12 +112,12 @@ impl<S> FollowersState<S> {
                 "no more followers for follower controller: {}, terminating it",
                 leader
             );
-            if let Some(mut old_mailbox) = self.mailboxes.write().remove(leader) {
+            if let Some(old_mailbox) = self.mailboxes.write().remove(leader) {
                 debug!(
                     "removed mailbox for follower controller and closing it {}",
                     leader
                 );
-                old_mailbox.close_channel();
+                old_mailbox.close();
             } else {
                 error!("there was no mailbox to close controller: {}", leader);
             }
@@ -138,9 +138,9 @@ impl<S> FollowersState<S> {
         let (sender, receiver) = channel(10);
         let mut write_mailbox = self.mailboxes.write();
         debug!("inserting mailbox for follower controller: {}", spu);
-        if let Some(mut old_mailbox) = write_mailbox.insert(spu, sender.clone()) {
+        if let Some(old_mailbox) = write_mailbox.insert(spu, sender.clone()) {
             debug!("there was old mailbox: {}, terminating it", spu);
-            old_mailbox.close_channel();
+            old_mailbox.close();
         }
         (sender, receiver)
     }

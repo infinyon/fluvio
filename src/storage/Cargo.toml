@@ -18,7 +18,6 @@ tracing = "0.1.19"
 libc = "0.2.58"
 bytes = "0.5.3"
 futures-lite = "1.7.0"
-# futures = { version = "0.3.4" }
 pin-utils = "0.1.0-alpha.4"
 async-trait = "0.1.18"
 structopt = { version = "0.3.5", optional = true }

@@ -8,7 +8,7 @@ use tracing::error;
 use tracing::debug;
 use async_trait::async_trait;
 use async_channel::Sender;
-use futures::Stream;
+use futures_util::stream::Stream;
 
 use fluvio_types::SpuId;
 use fluvio_future::net::TcpStream;
@@ -132,7 +132,7 @@ async fn dispatch_loop(
 
     loop {
         use tokio::select;
-        use futures::stream::StreamExt;
+        use futures_util::stream::StreamExt;
         use fluvio_future::timer::sleep;
 
         let health_time = Instant::now();

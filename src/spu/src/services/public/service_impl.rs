@@ -5,9 +5,9 @@ use tracing::debug;
 use tracing::trace;
 use tracing::warn;
 use async_trait::async_trait;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
-use futures::stream::StreamExt;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
+use futures_util::stream::StreamExt;
 use tokio::select;
 use event_listener::Event;
 

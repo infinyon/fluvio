@@ -1,7 +1,7 @@
 use tracing::trace;
 use tracing::debug;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
