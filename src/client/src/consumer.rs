@@ -34,8 +34,7 @@ use crate::spu::SpuPool;
 /// # use fluvio::{Fluvio, Offset, ConsumerConfig, FluvioError};
 /// # async fn do_create_consumer(fluvio: &Fluvio) -> Result<(), FluvioError> {
 /// let consumer = fluvio.partition_consumer("my-topic", 0).await?;
-/// let offset = Offset::from_beginning(0).unwrap();
-/// let records = consumer.fetch(offset).await?;
+/// let records = consumer.fetch(Offset::beginning()).await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -73,10 +72,7 @@ impl PartitionConsumer {
     /// ```no_run
     /// # use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
     /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// // Fetch records starting from the earliest ones saved
-    /// let offset = Offset::from_beginning(0).unwrap();
-    ///
-    /// let response = consumer.fetch(offset).await?;
+    /// let response = consumer.fetch(Offset::beginning()).await?;
     /// for batch in response.records.batches {
     ///     for record in batch.records {
     ///         if let Some(record) = record.value.inner_value() {
@@ -119,13 +115,11 @@ impl PartitionConsumer {
     /// ```no_run
     /// # use fluvio::{PartitionConsumer, FluvioError, Offset, ConsumerConfig};
     /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// // Fetch records starting from the earliest ones saved
-    /// let offset = Offset::from_beginning(0).unwrap();
     /// // Use custom fetching configurations
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
     ///
-    /// let response = consumer.fetch_with_config(offset, fetch_config).await?;
+    /// let response = consumer.fetch_with_config(Offset::beginning(), fetch_config).await?;
     /// for batch in response.records.batches {
     ///     for record in batch.records {
     ///         if let Some(record) = record.value.inner_value() {
@@ -216,9 +210,7 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// // Start streaming events from the beginning of the partition
-    /// let offset = Offset::from_beginning(0).unwrap();
-    /// let mut stream = consumer.stream(offset).await?;
+    /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Ok(event) = stream.next().await {
     ///     for batch in event.partition.records.batches {
     ///         for record in batch.records {
@@ -265,11 +257,10 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// // Start streaming events from the beginning of the partition
-    /// let offset = Offset::from_beginning(0).unwrap();
-    /// // Use the default streaming settings
-    /// let fetch_config = ConsumerConfig::default();
-    /// let mut stream = consumer.stream_with_config(offset, fetch_config).await?;
+    /// // Use a custom max_bytes value in the config
+    /// let fetch_config = ConsumerConfig::default()
+    ///     .with_max_bytes(1000);
+    /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Ok(event) = stream.next().await {
     ///     for batch in event.partition.records.batches {
     ///         for record in batch.records {

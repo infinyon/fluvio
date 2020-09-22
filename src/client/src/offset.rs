@@ -80,13 +80,11 @@ pub(crate) enum OffsetInner {
 /// ```
 /// use fluvio::Offset;
 /// let absolute_offset = Offset::absolute(5).unwrap();
-/// let offset_from_beginning = Offset::from_beginning(100).unwrap();
-/// let offset_from_end = Offset::from_end(10).unwrap();
+/// let offset_from_beginning = Offset::from_beginning(100);
+/// let offset_from_end = Offset::from_end(10);
 ///
-/// // Negative offsets will give None
+/// // Negative values are not allowed for absolute offsets
 /// assert!(Offset::absolute(-10).is_err());
-/// assert!(Offset::from_beginning(-15).is_err());
-/// assert!(Offset::from_end(-20).is_err());
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Offset {

@@ -59,8 +59,7 @@
 //!
 //! async fn consume_records() -> Result<(), FluvioError> {
 //!     let consumer = fluvio::consumer("echo", 0).await?;
-//!     let offset = Offset::from_beginning(0).unwrap();
-//!     let mut stream = consumer.stream(offset).await?;
+//!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
 //!     while let Ok(event) = stream.next().await {
 //!         for batch in event.partition.records.batches {
@@ -141,8 +140,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// # use fluvio::{ConsumerConfig, FluvioError, Offset};
 /// #  async fn do_consume() -> Result<(), FluvioError> {
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
-/// let offset = Offset::from_beginning(0).unwrap();
-/// let mut stream = consumer.stream(offset).await?;
+/// let mut stream = consumer.stream(Offset::beginning()).await?;
 /// while let Ok(event) = stream.next().await {
 ///     for batch in event.partition.records.batches {
 ///         for record in batch.records {

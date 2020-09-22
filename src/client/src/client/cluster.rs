@@ -123,11 +123,8 @@ impl Fluvio {
     /// let consumer_one = fluvio.partition_consumer("my-topic", 0).await?;
     /// let consumer_two = fluvio.partition_consumer("my-topic", 1).await?;
     ///
-    /// let offset_one = Offset::from_beginning(0).unwrap();
-    /// let records_one = consumer_one.fetch(offset_one).await?;
-    ///
-    /// let offset_two = Offset::from_beginning(0).unwrap();
-    /// let records_two = consumer_two.fetch(offset_two).await?;
+    /// let records_one = consumer_one.fetch(Offset::beginning()).await?;
+    /// let records_two = consumer_two.fetch(Offset::beginning()).await?;
     /// # Ok(())
     /// # }
     /// ```
