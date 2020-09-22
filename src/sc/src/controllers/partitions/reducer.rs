@@ -18,7 +18,7 @@ type PartitionWSAction = WSAction<PartitionSpec>;
 
 /// Given This is a generated partition from TopicController, It will try to allocate assign replicas
 /// to live SPU.
-/// ```ignore
+/// ```text
 ///     Spec
 ///           name: Topic0-0
 ///           replication: 2

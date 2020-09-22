@@ -7,7 +7,7 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::target::ClusterTarget;
@@ -36,7 +36,7 @@ pub struct DescribeTopicsOpt {
 
 impl DescribeTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(ClusterConfig, (String, OutputType)), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, (String, OutputType)), CliError> {
         let target_server = self.target.load()?;
 
         // transfer config parameters
@@ -63,7 +63,7 @@ where
 
     debug!("describe topic: {}, {}", topic, output_type);
 
-    let mut client = ClusterSocket::connect(target_server).await?;
+    let mut client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;

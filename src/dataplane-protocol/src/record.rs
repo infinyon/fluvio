@@ -84,12 +84,6 @@ impl DefaultAsyncBuffer {
     }
 }
 
-impl From<Option<Vec<u8>>> for DefaultAsyncBuffer {
-    fn from(val: Option<Vec<u8>>) -> Self {
-        Self::new(val)
-    }
-}
-
 impl AsyncBuffer for DefaultAsyncBuffer {
     fn len(&self) -> usize {
         match self.0 {
@@ -125,6 +119,13 @@ impl From<String> for DefaultAsyncBuffer {
 
 impl From<Vec<u8>> for DefaultAsyncBuffer {
     fn from(value: Vec<u8>) -> Self {
+        Self(Some(value))
+    }
+}
+
+impl<'a> From<&'a [u8]> for DefaultAsyncBuffer {
+    fn from(bytes: &'a [u8]) -> Self {
+        let value = bytes.to_owned();
         Self(Some(value))
     }
 }
@@ -327,6 +328,17 @@ where
     fn from(value: Vec<u8>) -> Self {
         let mut record = Record::default();
         record.value = value.into();
+        record
+    }
+}
+
+impl<'a, B> From<&'a [u8]> for Record<B>
+where
+    B: From<&'a [u8]> + Default,
+{
+    fn from(slice: &'a [u8]) -> Self {
+        let mut record = Record::default();
+        record.value = B::from(slice);
         record
     }
 }

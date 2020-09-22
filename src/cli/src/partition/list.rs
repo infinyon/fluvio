@@ -6,8 +6,7 @@
 
 use structopt::StructOpt;
 
-use fluvio::ClusterConfig;
-use fluvio::ClusterSocket;
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio_controlplane_metadata::partition::*;
 
 use crate::error::CliError;
@@ -28,7 +27,7 @@ pub struct ListPartitionOpt {
 
 impl ListPartitionOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(ClusterConfig, OutputType), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -41,7 +40,7 @@ impl ListPartitionOpt {
     {
         let (target_server, output) = self.validate()?;
 
-        let mut client = ClusterSocket::connect(target_server).await?;
+        let mut client = Fluvio::connect_with_config(&target_server).await?;
         let mut admin = client.admin().await;
 
         let spus = admin.list::<PartitionSpec, _>(vec![]).await?;

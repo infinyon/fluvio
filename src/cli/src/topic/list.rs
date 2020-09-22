@@ -8,8 +8,7 @@ use structopt::StructOpt;
 
 use tracing::debug;
 
-use fluvio::ClusterSocket;
-use fluvio::ClusterConfig;
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::Terminal;
@@ -44,7 +43,7 @@ pub struct ListTopicsOpt {
 
 impl ListTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(ClusterConfig, OutputType), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.unwrap_or_default()))
@@ -67,7 +66,7 @@ where
 
     debug!("list topics {:#?} ", output_type);
 
-    let mut client = ClusterSocket::connect(target_server).await?;
+    let mut client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let topics = admin.list::<TopicSpec, _>(vec![]).await?;

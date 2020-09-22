@@ -37,3 +37,6 @@ flv-future-aio = { version = "2.4.1", features = ["tls"] }
 kf-socket = { version = "3.0.0", path = "../kf-socket" }
 fluvio-protocol = { version = "0.1.0" }
 dataplane = { path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+
+[dev-dependencies]
+async-std = "1.6.4"

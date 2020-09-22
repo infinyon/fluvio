@@ -15,53 +15,117 @@ use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::ReplicaKey;
 use dataplane::record::RecordSet;
 use dataplane::PartitionOffset;
-use crate::ClientError;
+use crate::FluvioError;
 use crate::params::FetchOffset;
 use crate::params::FetchLogOption;
 use crate::client::SerialFrame;
 use crate::spu::SpuPool;
 
-/// consume message from replica leader
-pub struct Consumer {
-    replica: ReplicaKey,
+/// An interface for consuming events from a particular partition
+///
+/// There are two ways to consume events: by "fetching" events
+/// and by "streaming" events. Fetching involves specifying a
+/// range of events that you want to consume via their [`Offset`].
+/// A fetch is a sort of one-time batch operation: you'll receive
+/// all of the events in your range all at once. When you consume
+/// events via Streaming, you specify a starting [`Offset`] and
+/// receive an object that will continuously yield new events as
+/// they arrive.
+///
+/// # Creating a Consumer
+///
+/// You can create a `PartitionConsumer` via the [`partition_consumer`]
+/// method on the [`Fluvio`] client, like so:
+///
+/// ```no_run
+/// # use fluvio::{Fluvio, FluvioError};
+/// # use fluvio::params::{FetchOffset, FetchLogOption};
+/// # async fn do_create_consumer(fluvio: &Fluvio) -> Result<(), FluvioError> {
+/// let consumer = fluvio.partition_consumer("my-topic", 0).await?;
+/// let records = consumer.fetch(FetchOffset::Earliest(None), FetchLogOption::default()).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Offset`]: ./struct.Offset.html
+/// [`partition_consumer`]: ./struct.Fluvio#method.partition_consumer
+/// [`Fluvio`]: ./struct.Fluvio
+pub struct PartitionConsumer {
+    topic: String,
+    partition: i32,
     pool: SpuPool,
 }
 
-impl Consumer {
-    pub fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
-        Self { replica, pool }
+impl PartitionConsumer {
+    pub(crate) fn new(topic: String, partition: i32, pool: SpuPool) -> Self {
+        Self {
+            topic,
+            partition,
+            pool,
+        }
     }
 
-    pub fn replica(&self) -> &ReplicaKey {
-        &self.replica
-    }
-
-    /// fetch logs once
-    pub async fn fetch_logs_once(
-        &mut self,
-        offset_option: FetchOffset,
+    /// Fetches events from a particular offset in the consumer's partition
+    ///
+    /// A `Fetch` is one of the two ways to consume events in Fluvio.
+    /// It is a batch request for records from a particular offset in
+    /// the partition. You specify the range of records to retrieve
+    /// using a [`FetchOffset`] and a [`FetchLogOption`], and receive
+    /// the events as a list of records.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::params::{FetchOffset, FetchLogOption};
+    /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// // Fetch records starting from the earliest ones saved
+    /// let offset = FetchOffset::Earliest(None);
+    /// // Use default fetching configurations
+    /// let fetch_config = FetchLogOption::default();
+    ///
+    /// let response = consumer.fetch(offset, fetch_config).await?;
+    /// for batch in response.records.batches {
+    ///     for record in batch.records {
+    ///         if let Some(record) = record.value.inner_value() {
+    ///             let string = String::from_utf8(record)
+    ///                 .expect("record should be a string");
+    ///             println!("Got record: {}", string);
+    ///         }
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`FetchOffset`]: params/enum.FetchOffset.html
+    /// [`FetchLogOption`]: params/struct.FetchLogOption.html
+    pub async fn fetch(
+        &self,
+        offset: FetchOffset,
         option: FetchLogOption,
-    ) -> Result<FetchablePartitionResponse<RecordSet>, ClientError> {
+    ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
+        let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
-            offset_option, self.replica,
+            offset, &replica,
         );
 
-        let mut leader = self.pool.create_serial_socket(&self.replica).await?;
+        let mut leader = self.pool.create_serial_socket(&replica).await?;
 
         debug!("found spu leader {}", leader);
 
-        let offset = calc_offset(&mut leader, &self.replica, offset_option).await?;
+        let offset = calc_offset(&mut leader, &replica, offset).await?;
 
         let partition = FetchPartition {
-            partition_index: self.replica.partition,
+            partition_index: self.partition,
             fetch_offset: offset,
             max_bytes: option.max_bytes,
             ..Default::default()
         };
 
         let topic_request = FetchableTopic {
-            name: self.replica.topic.to_owned(),
+            name: self.topic.to_owned(),
             fetch_partitions: vec![partition],
         };
 
@@ -74,11 +138,9 @@ impl Consumer {
 
         let response = leader.send_receive(fetch_request).await?;
 
-        debug!("received fetch logs for {}", self.replica);
+        debug!("received fetch logs for {}", &replica);
 
-        if let Some(partition_response) =
-            response.find_partition(&self.replica.topic, self.replica.partition)
-        {
+        if let Some(partition_response) = response.find_partition(&self.topic, self.partition) {
             debug!(
                 "found partition response with: {} batches: {} bytes",
                 partition_response.records.batches.len(),
@@ -86,44 +148,82 @@ impl Consumer {
             );
             Ok(partition_response)
         } else {
-            Err(ClientError::PartitionNotFound(self.replica.to_owned()))
+            Err(FluvioError::PartitionNotFound(
+                self.topic.clone(),
+                self.partition,
+            ))
         }
     }
 
-    /// fetch logs as stream
-    /// this will fetch continously
-    pub async fn fetch_logs_as_stream(
-        &mut self,
+    /// Continuously streams events from a particular offset in the consumer's partition
+    ///
+    /// Streaming is one of the two ways to consume events in Fluvio.
+    /// It is a continuous request for new records arriving in a partition,
+    /// beginning at a particular offset. You specify the starting point of the
+    /// stream using a [`FetchOffset`] and a [`FetchLogOption`], and periodically
+    /// receive events, either individually or in batches.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::params::{FetchOffset, FetchLogOption};
+    /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// // Start streaming events from the beginning of the partition
+    /// let offset = FetchOffset::Earliest(None);
+    /// // Use the default streaming settings
+    /// let fetch_config = FetchLogOption::default();
+    /// let mut stream = consumer.stream(offset, fetch_config).await?;
+    /// while let Ok(event) = stream.next().await {
+    ///     for batch in event.partition.records.batches {
+    ///         for record in batch.records {
+    ///             if let Some(record) = record.value.inner_value() {
+    ///                 let string = String::from_utf8(record)
+    ///                     .expect("record should be a string");
+    ///                 println!("Got event: {}", string);
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`FetchOffset`]: params/enum.FetchOffset.html
+    /// [`FetchLogOption`]: params/struct.FetchLogOption.html
+    pub async fn stream(
+        &self,
         offset_option: FetchOffset,
         option: FetchLogOption,
-    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, ClientError> {
+    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
+        let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
-            offset_option, self.replica,
+            offset_option, &replica,
         );
 
-        let mut serial_socket = self.pool.create_serial_socket(&self.replica).await?;
+        let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
         debug!("created serial socket {}", serial_socket);
-        let offset = calc_offset(&mut serial_socket, &self.replica, offset_option).await?;
+        let offset = calc_offset(&mut serial_socket, &replica, offset_option).await?;
         drop(serial_socket);
 
         let stream_request = DefaultStreamFetchRequest {
-            topic: self.replica.topic.to_owned(),
-            partition: self.replica.partition,
+            topic: self.topic.to_owned(),
+            partition: self.partition,
             fetch_offset: offset,
             isolation: option.isolation,
             max_bytes: option.max_bytes,
             ..Default::default()
         };
 
-        self.pool.create_stream(&self.replica, stream_request).await
+        self.pool.create_stream(&replica, stream_request).await
     }
 }
 
 async fn fetch_offsets<F: SerialFrame>(
     client: &mut F,
     replica: &ReplicaKey,
-) -> Result<FetchOffsetPartitionResponse, ClientError> {
+) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
     let response = client
@@ -158,7 +258,7 @@ async fn calc_offset<F: SerialFrame>(
     client: &mut F,
     replica: &ReplicaKey,
     offset: FetchOffset,
-) -> Result<i64, ClientError> {
+) -> Result<i64, FluvioError> {
     Ok(match offset {
         FetchOffset::Offset(inner_offset) => inner_offset,
         FetchOffset::Earliest(relative_offset) => {

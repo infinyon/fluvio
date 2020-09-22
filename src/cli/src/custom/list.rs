@@ -5,7 +5,7 @@
 //!
 use structopt::StructOpt;
 
-use fluvio::{ClusterConfig, ClusterSocket};
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::metadata::objects::Metadata;
@@ -33,7 +33,7 @@ pub struct ListCustomSpusOpt {
 
 impl ListCustomSpusOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(ClusterConfig, OutputType), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -50,7 +50,7 @@ where
 {
     let (target_server, output_type) = opt.validate()?;
 
-    let mut client = ClusterSocket::connect(target_server).await?;
+    let mut client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let custom_spus = admin.list::<CustomSpuSpec, _>(vec![]).await?;

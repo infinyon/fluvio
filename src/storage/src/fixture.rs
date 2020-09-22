@@ -26,7 +26,7 @@ pub fn create_batch_with_producer(producer: i64, records: u16) -> DefaultBatch {
     for _ in 0..records {
         let mut record = DefaultRecord::default();
         let bytes: Vec<u8> = vec![10, 20];
-        record.value = Some(bytes).into();
+        record.value = bytes.into();
         batches.add_record(record);
     }
 

@@ -7,11 +7,10 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::config::ClusterConfig;
+use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
 use crate::error::CliError;
 use crate::target::ClusterTarget;
-use fluvio::ClusterSocket;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteTopicOpt {
@@ -24,7 +23,7 @@ pub struct DeleteTopicOpt {
 
 impl DeleteTopicOpt {
     /// Validate cli options. Generate target-server and delete-topic configuration.
-    fn validate(self) -> Result<(ClusterConfig, String), CliError> {
+    fn validate(self) -> Result<(FluvioConfig, String), CliError> {
         let target_server = self.target.load()?;
 
         // return server separately from config
@@ -42,7 +41,7 @@ pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliErro
 
     debug!("deleting topic: {}", name);
 
-    let mut client = ClusterSocket::connect(target_server).await?;
+    let mut client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
     admin.delete::<TopicSpec, _>(&name).await?;
     Ok(format!("topic \"{}\" deleted", name))

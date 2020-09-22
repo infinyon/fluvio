@@ -10,7 +10,7 @@ use std::io::ErrorKind;
 use tracing::debug;
 
 use fluvio::params::*;
-use fluvio::Consumer;
+use fluvio::PartitionConsumer;
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -26,7 +26,7 @@ use super::process_fetch_topic_response;
 #[allow(clippy::neg_multiply)]
 pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
-    mut consumer: Consumer,
+    consumer: PartitionConsumer,
     opt: ConsumeLogConfig,
 ) -> Result<(), CliError>
 where
@@ -65,9 +65,7 @@ where
     };
 
     if opt.disable_continuous {
-        let response = consumer
-            .fetch_logs_once(initial_offset, fetch_option)
-            .await?;
+        let response = consumer.fetch(initial_offset, fetch_option).await?;
 
         debug!(
             "got a single response: LSO: {} batches: {}",
@@ -77,9 +75,7 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        let mut log_stream = consumer
-            .fetch_logs_as_stream(initial_offset, fetch_option)
-            .await?;
+        let mut log_stream = consumer.stream(initial_offset, fetch_option).await?;
 
         while let Ok(response) = log_stream.next().await {
             let partition = response.partition;

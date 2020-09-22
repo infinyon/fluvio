@@ -1,43 +1,59 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use tracing::debug;
-use tracing::trace;
-
+use tracing::{debug, trace, instrument};
 use dataplane::ReplicaKey;
 
-use crate::ClientError;
+use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::client::SerialFrame;
 
-/// produce message to replica leader
-pub struct Producer {
-    replica: ReplicaKey,
+/// An interface for producing events to a particular topic
+///
+/// A `TopicProducer` allows you to send events to the specific
+/// topic it was initialized for. Once you have a `TopicProducer`,
+/// you can send events to the topic, choosing which partition
+/// each event should be delivered to.
+pub struct TopicProducer {
+    topic: String,
     pool: SpuPool,
 }
 
-impl Producer {
-    pub fn new(replica: ReplicaKey, pool: SpuPool) -> Self {
-        Self { replica, pool }
+impl TopicProducer {
+    pub(crate) fn new(topic: String, pool: SpuPool) -> Self {
+        Self { topic, pool }
     }
 
-    pub fn replica(&self) -> &ReplicaKey {
-        &self.replica
-    }
+    /// Sends an event to a specific partition within this producer's topic
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{TopicProducer, FluvioError};
+    /// # async fn do_send_record(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// let partition = 0;
+    /// producer.send_record("Hello, Fluvio!", partition).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[instrument(
+        skip(self, buffer),
+        fields(topic = &*self.topic),
+    )]
+    pub async fn send_record<B: AsRef<[u8]>>(
+        &self,
+        buffer: B,
+        partition: i32,
+    ) -> Result<(), FluvioError> {
+        let record = buffer.as_ref();
+        let replica = ReplicaKey::new(&self.topic, partition);
+        debug!("sending records: {} bytes to: {}", record.len(), &replica);
 
-    /// send records to spu leader for replica
-    pub async fn send_record(&mut self, record: Vec<u8>) -> Result<(), ClientError> {
-        debug!(
-            "sending records: {} bytes to: {}",
-            record.len(),
-            self.replica
-        );
-
-        let spu_client = self.pool.create_serial_socket(&self.replica).await?;
+        let spu_client = self.pool.create_serial_socket(&replica).await?;
 
         debug!("connect to replica leader at: {}", spu_client);
 
-        send_record_raw(spu_client, &self.replica, record).await
+        send_record_raw(spu_client, &replica, record).await
     }
 }
 
@@ -45,8 +61,8 @@ impl Producer {
 async fn send_record_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
-    record: Vec<u8>,
-) -> Result<(), ClientError> {
+    record: &[u8],
+) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
     use dataplane::produce::DefaultTopicRequest;
@@ -88,14 +104,14 @@ async fn send_record_raw<F: SerialFrame>(
     match response.find_partition_response(&replica.topic, replica.partition) {
         Some(partition_response) => {
             if partition_response.error_code.is_error() {
-                return Err(ClientError::IoError(IoError::new(
+                return Err(FluvioError::IoError(IoError::new(
                     ErrorKind::Other,
                     partition_response.error_code.to_sentence(),
                 )));
             }
             Ok(())
         }
-        None => Err(ClientError::IoError(IoError::new(
+        None => Err(FluvioError::IoError(IoError::new(
             ErrorKind::Other,
             "unknown error",
         ))),

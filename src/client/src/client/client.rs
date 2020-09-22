@@ -11,7 +11,7 @@ use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
 use kf_socket::*;
 use flv_future_aio::net::tls::AllDomainConnector;
 
-use crate::ClientError;
+use crate::FluvioError;
 
 /// Frame with request and response
 #[async_trait]
@@ -82,7 +82,7 @@ impl VersionedSocket {
     pub async fn connect(
         mut socket: AllKfSocket,
         config: ClientConfig,
-    ) -> Result<Self, ClientError> {
+    ) -> Result<Self, FluvioError> {
         // now get versions
         // Query for API versions
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
@@ -157,6 +157,7 @@ impl ClientConfig {
     }
 
     /// set client id
+    #[allow(unused)]
     pub fn set_client_id<S>(mut self, id: S) -> Self
     where
         S: Into<String>,
@@ -169,7 +170,7 @@ impl ClientConfig {
         self.addr = domain
     }
 
-    pub(crate) async fn connect(self) -> Result<VersionedSocket, ClientError> {
+    pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
         let socket = AllKfSocket::connect_with_connector(&self.addr, &self.connector).await?;
         VersionedSocket::connect(socket, self).await
     }

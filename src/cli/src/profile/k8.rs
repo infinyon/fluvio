@@ -44,7 +44,7 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
             cluster.tls = opt.tls.try_into()?;
         }
         None => {
-            let mut local_cluster = ClusterConfig::new(external_addr);
+            let mut local_cluster = FluvioConfig::new(external_addr);
             local_cluster.tls = opt.tls.try_into()?;
             config.add_cluster(local_cluster, profile_name.clone());
         }
