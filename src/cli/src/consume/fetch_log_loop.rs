@@ -62,7 +62,9 @@ where
         Some(offset) => offset,
         None => {
             // This should only apply in the `-B` case
-            return Err(CliError::InvalidArg("Illegal offset, negative numbers not allowed".to_string()));
+            return Err(CliError::InvalidArg(
+                "Illegal offset, negative numbers not allowed".to_string(),
+            ));
         }
     };
 
@@ -75,7 +77,9 @@ where
     };
 
     if opt.disable_continuous {
-        let response = consumer.fetch_with_config(initial_offset, fetch_config).await?;
+        let response = consumer
+            .fetch_with_config(initial_offset, fetch_config)
+            .await?;
 
         debug!(
             "got a single response: LSO: {} batches: {}",
@@ -85,7 +89,9 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        let mut log_stream = consumer.stream_with_config(initial_offset, fetch_config).await?;
+        let mut log_stream = consumer
+            .stream_with_config(initial_offset, fetch_config)
+            .await?;
 
         while let Ok(response) = log_stream.next().await {
             let partition = response.partition;

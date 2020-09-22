@@ -92,8 +92,13 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`fetch_with_config`]: struct.PartitionConsumer.html#method.fetch_with_config
-    pub async fn fetch(&self, offset: Offset) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
-        let records = self.fetch_with_config(offset, ConsumerConfig::default()).await?;
+    pub async fn fetch(
+        &self,
+        offset: Offset,
+    ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
+        let records = self
+            .fetch_with_config(offset, ConsumerConfig::default())
+            .await?;
         Ok(records)
     }
 
@@ -152,7 +157,9 @@ impl PartitionConsumer {
 
         debug!("found spu leader {}", leader);
 
-        let offset = offset.to_absolute(&mut leader, &self.topic, self.partition).await?;
+        let offset = offset
+            .to_absolute(&mut leader, &self.topic, self.partition)
+            .await?;
 
         let partition = FetchPartition {
             partition_index: self.partition,
@@ -229,8 +236,13 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
-    pub async fn stream(&self, offset: Offset) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
-        let result = self.stream_with_config(offset, ConsumerConfig::default()).await?;
+    pub async fn stream(
+        &self,
+        offset: Offset,
+    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
+        let result = self
+            .stream_with_config(offset, ConsumerConfig::default())
+            .await?;
         Ok(result)
     }
 
@@ -287,7 +299,9 @@ impl PartitionConsumer {
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
         debug!("created serial socket {}", serial_socket);
-        let offset = offset.to_absolute(&mut serial_socket, &self.topic, self.partition).await?;
+        let offset = offset
+            .to_absolute(&mut serial_socket, &self.topic, self.partition)
+            .await?;
         drop(serial_socket);
 
         let stream_request = DefaultStreamFetchRequest {

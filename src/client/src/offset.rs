@@ -213,8 +213,14 @@ impl Offset {
     ///
     /// Note that calculating relative offsets requires connecting to Fluvio, and
     /// therefore it is `async` and returns a `Result`.
-    pub(crate) async fn to_absolute<F, S: Into<String>>(&self, client: &mut F, topic: S, partition: i32) -> Result<i64, FluvioError>
-        where F: SerialFrame,
+    pub(crate) async fn to_absolute<F, S: Into<String>>(
+        &self,
+        client: &mut F,
+        topic: S,
+        partition: i32,
+    ) -> Result<i64, FluvioError>
+    where
+        F: SerialFrame,
     {
         let offset = match self.inner {
             OffsetInner::Absolute(offset) => offset,
@@ -262,6 +268,6 @@ async fn fetch_offsets<F: SerialFrame>(
             ErrorKind::InvalidData,
             format!("no replica offset for: {}", replica),
         )
-            .into()),
+        .into()),
     }
 }
