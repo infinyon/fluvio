@@ -11,7 +11,7 @@ use tracing::trace;
 use tracing::error;
 
 use fluvio_future::fs::File;
-use fluvio_future::fs::MemoryMappedMutFile;
+use fluvio_future::fs::mmap::MemoryMappedMutFile;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;

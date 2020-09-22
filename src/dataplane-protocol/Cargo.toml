@@ -15,9 +15,9 @@ bytes = "0.5.3"
 futures = { version = "0.3.4" }
 content_inspector = "0.2.4"
 crc32c = { version = "0.5" }
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename' }
-fluvio-protocol = { version = "0.1.0", features = ["derive", "api", "store"] }
-flv-util = { version = "0.5.0"}
+fluvio-future = { version = "0.1.0" }
+fluvio-protocol = { version = "0.2.0", features = ["derive", "api", "store"] }
+flv-util = { version = "0.5.0" }
 
 [dev-dependencies]
 kf-socket = { version = "3.0.0", path = "../kf-socket" }

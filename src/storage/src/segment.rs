@@ -8,7 +8,7 @@ use tracing::trace;
 
 use dataplane::batch::DefaultBatch;
 use dataplane::{Offset, Size};
-use fluvio_future::fs::AsyncFileSlice;
+use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::util as file_util;
 
 use crate::BatchHeaderStream;

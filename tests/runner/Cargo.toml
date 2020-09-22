@@ -11,7 +11,7 @@ structopt = "0.3.5"
 async-trait = "0.1.21"
 
 # Fluvio dependencies
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
+fluvio-future = { version = "0.1.0", features = ["subscriber","fixture"] }
 fluvio = { path = "../../src/client" }
 fluvio-types = { path = "../../src/types", version = "0.1.0" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../../src/controlplane-metadata" }

@@ -8,11 +8,10 @@ use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 use tokio::select;
 use event_listener::Event;
+use tokio::sync::broadcast::RecvError;
 
-use fluvio_future::sync::broadcast::RecvError;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
-
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;

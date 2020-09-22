@@ -7,7 +7,7 @@ use tracing::trace;
 use futures::io::AsyncWriteExt;
 
 use fluvio_future::fs::File;
-use fluvio_future::fs::AsyncFileSlice;
+use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::BoundedFileSink;
 use fluvio_future::fs::BoundedFileOption;
 use fluvio_future::fs::BoundedFileSinkError;

@@ -13,11 +13,11 @@ use event_listener::Event;
 use futures::io::AsyncRead;
 use futures::io::AsyncWrite;
 
-use log::error;
-use log::info;
-use log::trace;
-use log::debug;
-use log::instrument;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::debug;
+use tracing::instrument;
 use async_trait::async_trait;
 
 use fluvio_future::net::TcpListener;
