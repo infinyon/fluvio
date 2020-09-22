@@ -3,9 +3,9 @@ use std::env::temp_dir;
 use std::time::Duration;
 
 use log::debug;
-use futures::io::AsyncWriteExt;
-use futures::future::join;
-use futures::stream::StreamExt;
+use futures_util::io::AsyncWriteExt;
+use futures_util::future::join;
+use futures_util::stream::StreamExt;
 
 use fluvio_future::test_async;
 use fluvio_future::timer::sleep;
