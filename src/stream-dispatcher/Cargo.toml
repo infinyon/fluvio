@@ -27,8 +27,8 @@ tokio = { version = "0.2.21", features = ["macros"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-stream-model = { features = ["k8"], path = "../stream-model" }
 k8-metadata-client = { version = "1.0.1" }
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename' }
+fluvio-future = { version = "0.1.0" }
 
 [dev-dependencies]
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
+fluvio-future = { version = "0.1.0", features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }

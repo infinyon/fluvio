@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 use std::fs;
 use std::path::{PathBuf, Path};
 
-use futures::io::Error;
+//use futures::io::Error;
 use tracing::{warn, debug, trace, instrument};
 use serde::{Deserialize, Serialize};
 use serde_json::Error as JsonError;
@@ -274,7 +274,7 @@ impl From<HttpError> for CloudError {
 }
 
 impl From<IoError> for CloudError {
-    fn from(error: Error) -> Self {
+    fn from(error: IoError) -> Self {
         Self::IoError(error)
     }
 }

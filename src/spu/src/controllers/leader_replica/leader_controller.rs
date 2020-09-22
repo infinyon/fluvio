@@ -15,7 +15,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
 use kf_socket::ExclusiveKfSink;
-use fluvio_future::sync::broadcast::Sender;
+use tokio::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;
 use crate::core::OffsetUpdateEvent;

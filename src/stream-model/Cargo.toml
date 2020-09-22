@@ -21,7 +21,7 @@ serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-rwlock = "1.1.0"
 
 # Fluvio dependencies
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["net"] }
+fluvio-future = { version = "0.1.0", features = ["net"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 k8-obj-app = { version = "1.1.0", optional = true }
 k8-obj-core = { version = "1.1.0", optional = true }
@@ -29,4 +29,4 @@ k8-obj-metadata = { version = "1.0.0", optional = true }
 
 
 [dev-dependencies]
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
+fluvio-future = { version = "0.1.0", features = ["fixture"] }

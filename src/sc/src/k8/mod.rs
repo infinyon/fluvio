@@ -54,7 +54,7 @@ mod proxy {
 
     use crate::config::ScConfig;
     use fluvio_types::print_cli_err;
-    use fluvio_future::net::tls::TlsAcceptor;
+    use fluvio_future::tls::TlsAcceptor;
     use flv_tls_proxy::start as proxy_start;
 
     pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {

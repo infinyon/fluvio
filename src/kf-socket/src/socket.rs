@@ -3,7 +3,7 @@ use std::os::unix::io::AsRawFd;
 #[cfg(unix)]
 use std::os::unix::io::RawFd;
 
-use log::debug;
+use tracing::debug;
 use futures::stream::StreamExt;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;

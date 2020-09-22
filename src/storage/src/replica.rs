@@ -254,7 +254,7 @@ impl FileReplica {
                 match slice {
                     Ok(slice) => match slice {
                         Some(slice) => {
-                            use fluvio_future::fs::AsyncFileSlice;
+                            use fluvio_future::file_slice::AsyncFileSlice;
 
                             let limited_slice = if slice.len() > max_len as u64 {
                                 debug!(

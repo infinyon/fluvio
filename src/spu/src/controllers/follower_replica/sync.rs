@@ -17,7 +17,7 @@ use dataplane::ErrorCode;
 use dataplane::store::StoreValue;
 use dataplane::store::FileWrite;
 use fluvio_storage::SlicePartitionResponse;
-use fluvio_future::fs::AsyncFileSlice;
+use fluvio_future::file_slice::AsyncFileSlice;
 
 use super::FollowerPeerApiEnum;
 

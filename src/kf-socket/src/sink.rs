@@ -1,12 +1,11 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[cfg(unix)]
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
 
-use log::trace;
-use log::debug;
+use tracing::trace;
+use tracing::debug;
 use bytes::Bytes;
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
@@ -226,20 +225,20 @@ mod tests {
     use std::fs::remove_file;
     use std::env::temp_dir;
 
-    use log::debug;
-    use log::info;
+    use tracing::debug;
+    use tracing::info;
     use futures::stream::StreamExt;
     use futures::future::join;
     use futures::io::AsyncWriteExt;
     use futures::sink::SinkExt;
+    use bytes::Bytes;
+    use async_net::TcpListener;
 
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
     use fluvio_future::zero_copy::ZeroCopyWrite;
-    use fluvio_future::net::TcpListener;
-    use fluvio_protocol::bytes::Bytes;
     use fluvio_protocol::{Decoder, Encoder};
     use crate::KfSocket;
     use crate::KfSocketError;

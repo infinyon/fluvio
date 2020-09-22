@@ -6,12 +6,15 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
+
+
 use kf_socket::SharedSinkPool;
 use kf_socket::SinkPool;
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
-use fluvio_future::sync::broadcast::Channel;
 
+
+use crate::core::broadcast::Channel;
 use crate::config::SpuConfig;
 use crate::controllers::leader_replica::SharedReplicaLeadersState;
 use crate::controllers::follower_replica::FollowersState;

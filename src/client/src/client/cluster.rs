@@ -14,7 +14,7 @@ use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
-use fluvio_future::net::tls::AllDomainConnector;
+use fluvio_future::tls::AllDomainConnector;
 use std::convert::TryFrom;
 
 /// An interface for interacting with Fluvio streaming

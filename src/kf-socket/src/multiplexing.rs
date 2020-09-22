@@ -6,9 +6,9 @@ use std::io::Cursor;
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use log::debug;
-use log::error;
-use log::trace;
+use tracing::debug;
+use tracing::error;
+use tracing::trace;
 use bytes::BytesMut;
 use futures::io::{AsyncRead, AsyncWrite};
 use futures::StreamExt;
@@ -390,7 +390,7 @@ mod tests {
 
     use std::time::Duration;
 
-    use log::debug;
+    use tracing::debug;
     use futures::stream::StreamExt;
     use futures::future::join;
     use futures::future::join3;

@@ -25,6 +25,8 @@ rustc_version = "0.2.3"
 
 [dependencies]
 colored = "2.0.0"
+tracing = "0.1.19"
+tracing-futures = "0.2.4"
 url = "2.1.1"
 semver = "0.10.0"
 bytes = "0.5.3"
@@ -37,14 +39,16 @@ serde_json = "1.0.39"
 serde_yaml = "0.8.8"
 async-trait = "0.1.21"
 ctrlc = "3.1.3"
-futures = { version = "0.3.4", features = ['async-await'] }
+futures-lite = { version = "1.7.0" }
 rpassword = "5.0.0"
 dirs = "1.0.2"
 async-h1 = "2.1.2"
 http-types = "2.4.0"
 
 # Fluvio dependencies
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fs","io"] }
+
+flv-util = { version = "0.5.0" }
+fluvio-future = { version = "0.1.0", features = ["fs", "io","subscriber"] }
 k8-client = { version = "1.1.0" }
 k8-config = { version = "1.1.0", features = ["context"] }
 k8-obj-core = { version = "1.1.0" }
@@ -60,4 +64,4 @@ fluvio-cluster = { path = "../cluster" }
 fluvio-types = { path = "../types", version = "0.1.0" }
 
 [dev-dependencies]
-fluvio-future = { git = 'https://github.com/infinyon/future-aio.git', branch = 'rename', features = ["fixture"] }
+fluvio-future = { version = "0.1.0", features = ["fixture"] }

@@ -100,7 +100,7 @@ where
 
                         Err(err) => {
 
-                            use fluvio_future::sync::broadcast::RecvError;
+                            use tokio::sync::broadcast::RecvError;
 
                             match err {
                                 RecvError::Closed => {

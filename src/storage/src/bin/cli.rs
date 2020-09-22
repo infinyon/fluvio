@@ -21,7 +21,7 @@ enum Main {
 }
 
 fn main() {
-    flv_util::init_logger();
+    fluvio_future::subscriber::init_logger();
 
     let opt = Main::from_args();
 

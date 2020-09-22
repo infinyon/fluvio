@@ -11,7 +11,7 @@ use tracing::debug;
 use tracing::trace;
 use pin_utils::unsafe_unpinned;
 
-use fluvio_future::fs::MemoryMappedFile;
+use fluvio_future::fs::mmap::MemoryMappedFile;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_index_search() {
-        flv_util::init_logger();
+        fluvio_future::subscriber::init_logger();
 
         // offset increase by 4000
         let indexes = [
