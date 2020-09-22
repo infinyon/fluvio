@@ -15,6 +15,7 @@ pub enum FluvioError {
     ApiError(ApiError),
     UnableToReadProfile,
     ConfigError(String),
+    NegativeOffset(i64),
 }
 
 impl From<IoError> for FluvioError {
@@ -48,6 +49,7 @@ impl fmt::Display for FluvioError {
             Self::ApiError(err) => write!(f, "{}", err),
             Self::UnableToReadProfile => write!(f, "No configuration has been provided"),
             Self::ConfigError(err) => write!(f, "Config error: {}", err),
+            Self::NegativeOffset(err) => write!(f, "Negative offsets are illegal. Got: {}", err),
         }
     }
 }

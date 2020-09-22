@@ -84,9 +84,9 @@ pub(crate) enum OffsetInner {
 /// let offset_from_end = Offset::from_end(10).unwrap();
 ///
 /// // Negative offsets will give None
-/// assert_eq!(Offset::absolute(-10), None);
-/// assert_eq!(Offset::from_beginning(-15), None);
-/// assert_eq!(Offset::from_end(-20), None);
+/// assert!(Offset::absolute(-10).is_err());
+/// assert!(Offset::from_beginning(-15).is_err());
+/// assert!(Offset::from_end(-20).is_err());
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Offset {
@@ -102,15 +102,15 @@ impl Offset {
     ///
     /// ```
     /// # use fluvio::Offset;
-    /// assert!(Offset::absolute(100).is_some());
-    /// assert!(Offset::absolute(0).is_some());
-    /// assert!(Offset::absolute(-10).is_none());
+    /// assert!(Offset::absolute(100).is_ok());
+    /// assert!(Offset::absolute(0).is_ok());
+    /// assert!(Offset::absolute(-10).is_err());
     /// ```
-    pub fn absolute(index: i64) -> Option<Offset> {
+    pub fn absolute(index: i64) -> Result<Offset, FluvioError> {
         if index < 0 {
-            return None;
+            return Err(FluvioError::NegativeOffset(index));
         }
-        Some(Self {
+        Ok(Self {
             inner: OffsetInner::Absolute(index),
         })
     }
@@ -137,15 +137,15 @@ impl Offset {
     ///
     /// ```
     /// # use fluvio::Offset;
-    /// assert!(Offset::from_beginning(10).is_some());
-    /// assert!(Offset::from_beginning(0).is_some());
-    /// assert!(Offset::from_beginning(-10).is_none());
+    /// assert!(Offset::from_beginning(10).is_ok());
+    /// assert!(Offset::from_beginning(0).is_ok());
+    /// assert!(Offset::from_beginning(-10).is_err());
     /// ```
-    pub fn from_beginning(offset: i64) -> Option<Offset> {
+    pub fn from_beginning(offset: i64) -> Result<Offset, FluvioError> {
         if offset < 0 {
-            return None;
+            return Err(FluvioError::NegativeOffset(offset));
         }
-        Some(Self {
+        Ok(Self {
             inner: OffsetInner::FromBeginning(offset),
         })
     }
@@ -183,15 +183,15 @@ impl Offset {
     ///
     /// ```
     /// # use fluvio::Offset;
-    /// assert!(Offset::from_end(10).is_some());
-    /// assert!(Offset::from_end(0).is_some());
-    /// assert!(Offset::from_end(-10).is_none());
+    /// assert!(Offset::from_end(10).is_ok());
+    /// assert!(Offset::from_end(0).is_ok());
+    /// assert!(Offset::from_end(-10).is_err());
     /// ```
-    pub fn from_end(offset: i64) -> Option<Offset> {
+    pub fn from_end(offset: i64) -> Result<Offset, FluvioError> {
         if offset < 0 {
-            return None;
+            return Err(FluvioError::NegativeOffset(offset));
         }
-        Some(Self {
+        Ok(Self {
             inner: OffsetInner::FromEnd(offset),
         })
     }

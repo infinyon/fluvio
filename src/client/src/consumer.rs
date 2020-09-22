@@ -236,6 +236,7 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
+    /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
     pub async fn stream(
         &self,
         offset: Offset,

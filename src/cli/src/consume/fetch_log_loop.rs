@@ -9,7 +9,7 @@ use std::io::ErrorKind;
 
 use tracing::debug;
 
-use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
+use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -59,13 +59,12 @@ where
     };
 
     let initial_offset = match maybe_initial_offset {
-        Some(offset) => offset,
-        None => {
+        Ok(offset) => offset,
+        Err(FluvioError::NegativeOffset(err)) => {
             // This should only apply in the `-B` case
-            return Err(CliError::InvalidArg(
-                "Illegal offset, negative numbers not allowed".to_string(),
-            ));
+            return Err(CliError::InvalidArg(format!("Negative offsets are illegal: got {}", err)));
         }
+        _ => return Err(CliError::Other("an unknown offset error occurred".to_string())),
     };
 
     let fetch_config = {
