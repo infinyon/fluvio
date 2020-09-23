@@ -1,8 +1,8 @@
 #![allow(clippy::assign_op_pattern)]
 
-use std::sync::Arc;
-use std::io::Error as IoError;
 use std::convert::TryInto;
+use std::io::Error as IoError;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use futures_util::io::AsyncRead;
@@ -10,19 +10,19 @@ use futures_util::io::AsyncWrite;
 
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_protocol::api::{
-    ApiMessage, Request, RequestMessage, ResponseMessage, RequestHeader, api_decode,
+    api_decode, ApiMessage, Request, RequestHeader, RequestMessage, ResponseMessage,
 };
 use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::Decode;
 use fluvio_protocol::derive::Encode;
 
-use fluvio_socket::InnerKfSink;
-use fluvio_socket::InnerKfSocket;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::InnerFlvSink;
+use fluvio_socket::InnerFlvSocket;
 
-use crate::KfService;
-use crate::call_service;
 use crate::api_loop;
+use crate::call_service;
+use crate::KfService;
 
 #[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
@@ -137,10 +137,10 @@ where
     async fn respond(
         self: Arc<Self>,
         _context: Self::Context,
-        socket: InnerKfSocket<S>,
-    ) -> Result<(), KfSocketError>
+        socket: InnerFlvSocket<S>,
+    ) -> Result<(), FlvSocketError>
     where
-        InnerKfSink<S>: ZeroCopyWrite,
+        InnerFlvSink<S>: ZeroCopyWrite,
     {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
@@ -155,7 +155,7 @@ where
             ),
             TestApiRequest::SaveRequest(_request) =>  {
                 drop(api_stream);
-                //let _orig_socket: KfSocket  = (sink,stream).into();
+                //let _orig_socket: FlvSocket  = (sink,stream).into();
                 break;
             }
         );

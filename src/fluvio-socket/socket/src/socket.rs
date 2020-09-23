@@ -1,51 +1,49 @@
-#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
-#[cfg(unix)]
 use std::os::unix::io::RawFd;
 
-use tracing::debug;
+use futures_util::io::{AsyncRead, AsyncWrite};
 use futures_util::StreamExt;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
-use futures_util::io::{AsyncRead, AsyncWrite};
+use tracing::debug;
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
 
-use fluvio_future::net::TcpStream;
-use fluvio_future::net::TcpDomainConnector;
 use fluvio_future::net::DefaultTcpDomainConnector;
+use fluvio_future::net::TcpDomainConnector;
+use fluvio_future::net::TcpStream;
 use fluvio_future::tls::AllTcpStream;
 
-use crate::InnerKfSink;
+use super::FlvSocketError;
+use crate::InnerFlvSink;
 use crate::InnerKfStream;
-use super::KfSocketError;
 
-pub type KfSocket = InnerKfSocket<TcpStream>;
-pub type AllKfSocket = InnerKfSocket<AllTcpStream>;
+pub type FlvSocket = InnerFlvSocket<TcpStream>;
+pub type AllFlvSocket = InnerFlvSocket<AllTcpStream>;
 
-/// KfSocket is high level socket that can send and receive kf-protocol
+/// FlvSocket is high level socket that can send and receive kf-protocol
 #[derive(Debug)]
-pub struct InnerKfSocket<S> {
-    sink: InnerKfSink<S>,
+pub struct InnerFlvSocket<S> {
+    sink: InnerFlvSink<S>,
     stream: InnerKfStream<S>,
     stale: bool,
 }
 
-unsafe impl<S> Sync for InnerKfSocket<S> {}
+unsafe impl<S> Sync for InnerFlvSocket<S> {}
 
-impl<S> InnerKfSocket<S> {
-    pub fn new(sink: InnerKfSink<S>, stream: InnerKfStream<S>) -> Self {
-        InnerKfSocket {
+impl<S> InnerFlvSocket<S> {
+    pub fn new(sink: InnerFlvSink<S>, stream: InnerKfStream<S>) -> Self {
+        Self {
             sink,
             stream,
             stale: false,
         }
     }
 
-    pub fn split(self) -> (InnerKfSink<S>, InnerKfStream<S>) {
+    pub fn split(self) -> (InnerFlvSink<S>, InnerKfStream<S>) {
         (self.sink, self.stream)
     }
 
@@ -58,7 +56,7 @@ impl<S> InnerKfSocket<S> {
         self.stale
     }
 
-    pub fn get_mut_sink(&mut self) -> &mut InnerKfSink<S> {
+    pub fn get_mut_sink(&mut self) -> &mut InnerFlvSink<S> {
         &mut self.sink
     }
 
@@ -67,12 +65,15 @@ impl<S> InnerKfSocket<S> {
     }
 }
 
-impl<S> InnerKfSocket<S>
+impl<S> InnerFlvSocket<S>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
 {
     /// connect to target address with connector
-    pub async fn connect_with_connector<C>(addr: &str, connector: &C) -> Result<Self, KfSocketError>
+    pub async fn connect_with_connector<C>(
+        addr: &str,
+        connector: &C,
+    ) -> Result<Self, FlvSocketError>
     where
         C: TcpDomainConnector<WrapperStream = S>,
     {
@@ -84,14 +85,14 @@ where
     pub fn from_stream(tcp_stream: S, raw_fd: RawFd) -> Self {
         let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
         let (sink, stream) = framed.split();
-        Self::new(InnerKfSink::new(sink, raw_fd), stream.into())
+        Self::new(InnerFlvSink::new(sink, raw_fd), stream.into())
     }
 
     /// as client, send request and wait for reply from server
     pub async fn send<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, KfSocketError>
+    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
         R: Request,
     {
@@ -101,20 +102,20 @@ where
     }
 }
 
-impl<S> From<(InnerKfSink<S>, InnerKfStream<S>)> for InnerKfSocket<S> {
-    fn from(pair: (InnerKfSink<S>, InnerKfStream<S>)) -> Self {
+impl<S> From<(InnerFlvSink<S>, InnerKfStream<S>)> for InnerFlvSocket<S> {
+    fn from(pair: (InnerFlvSink<S>, InnerKfStream<S>)) -> Self {
         let (sink, stream) = pair;
-        InnerKfSocket::new(sink, stream)
+        Self::new(sink, stream)
     }
 }
 
-impl KfSocket {
-    pub async fn connect(addr: &str) -> Result<Self, KfSocketError> {
+impl FlvSocket {
+    pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
         Self::connect_with_connector(addr, &DefaultTcpDomainConnector::new()).await
     }
 }
 
-impl From<TcpStream> for KfSocket {
+impl From<TcpStream> for FlvSocket {
     fn from(tcp_stream: TcpStream) -> Self {
         let fd = tcp_stream.as_raw_fd();
         Self::from_stream(tcp_stream, fd)

@@ -1,30 +1,30 @@
+use fluvio_future::zero_copy::SendFileError;
 use std::fmt;
 use std::io::Error as IoError;
-use fluvio_future::zero_copy::SendFileError;
 
 #[derive(Debug)]
-pub enum KfSocketError {
+pub enum FlvSocketError {
     IoError(IoError),
     SendFileError(SendFileError),
 }
 
-impl From<IoError> for KfSocketError {
+impl From<IoError> for FlvSocketError {
     fn from(error: IoError) -> Self {
-        KfSocketError::IoError(error)
+        FlvSocketError::IoError(error)
     }
 }
 
-impl From<SendFileError> for KfSocketError {
+impl From<SendFileError> for FlvSocketError {
     fn from(error: SendFileError) -> Self {
-        KfSocketError::SendFileError(error)
+        FlvSocketError::SendFileError(error)
     }
 }
 
-impl fmt::Display for KfSocketError {
+impl fmt::Display for FlvSocketError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            KfSocketError::IoError(err) => write!(f, "{}", err),
-            KfSocketError::SendFileError(err) => write!(f, "{:#?}", err),
+            FlvSocketError::IoError(err) => write!(f, "{}", err),
+            FlvSocketError::SendFileError(err) => write!(f, "{:#?}", err),
         }
     }
 }

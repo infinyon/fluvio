@@ -1,6 +1,6 @@
-use std::sync::Arc;
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::Arc;
 
 use chashmap::CHashMap;
 use chashmap::WriteGuard;
@@ -57,25 +57,25 @@ mod tests {
 
     use std::time::Duration;
 
+    use futures_util::future::join;
+    use futures_util::stream::StreamExt;
     use tracing::debug;
     use tracing::info;
-    use futures_util::stream::StreamExt;
-    use futures_util::future::join;
 
+    use fluvio_future::net::TcpListener;
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
-    use fluvio_future::net::TcpListener;
     use fluvio_protocol::api::RequestMessage;
 
-    use crate::KfSocket;
-    use crate::KfSocketError;
+    use super::SinkPool;
     use crate::test_request::EchoRequest;
     use crate::test_request::EchoResponse;
     use crate::test_request::TestApiRequest;
     use crate::test_request::TestKafkaApiEnum;
-    use super::SinkPool;
+    use crate::FlvSocket;
+    use crate::FlvSocketError;
 
-    async fn test_server(addr: &str) -> Result<(), KfSocketError> {
+    async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
         let sink_pool: SinkPool<u16> = SinkPool::new();
 
         let listener = TcpListener::bind(addr).await?;
@@ -84,7 +84,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let socket: KfSocket = incoming_stream.into();
+        let socket: FlvSocket = incoming_stream.into();
 
         let (sink, mut stream) = socket.split();
         let id: u16 = 0;
@@ -120,10 +120,10 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
+    async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
         sleep(Duration::from_millis(20)).await;
         debug!("client: trying to connect");
-        let mut socket = KfSocket::connect(&addr).await?;
+        let mut socket = FlvSocket::connect(&addr).await?;
         info!("client: connect to test server and waiting...");
 
         let request = RequestMessage::new_request(EchoRequest::new("hello".to_owned()));
@@ -132,7 +132,7 @@ mod tests {
     }
 
     #[test_async]
-    async fn test_sink_pool() -> Result<(), KfSocketError> {
+    async fn test_sink_pool() -> Result<(), FlvSocketError> {
         let addr = "127.0.0.1:5999";
 
         let _r = join(setup_client(addr), test_server(addr)).await;

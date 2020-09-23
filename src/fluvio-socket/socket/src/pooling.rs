@@ -8,8 +8,8 @@ use chashmap::CHashMap;
 use chashmap::WriteGuard;
 use tracing::trace;
 
-use crate::KfSocket;
-use crate::KfSocketError;
+use crate::FlvSocket;
+use crate::FlvSocketError;
 
 /// pooling of sockets
 #[derive(Debug)]
@@ -17,14 +17,14 @@ pub struct SocketPool<T>
 where
     T: Eq + Hash,
 {
-    clients: CHashMap<T, KfSocket>,
+    clients: CHashMap<T, FlvSocket>,
     ids: RwLock<HashMap<T, bool>>,
 }
 
 impl<T> SocketPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone,
-    KfSocket: Sync,
+    FlvSocket: Sync,
 {
     #[allow(dead_code)]
     pub fn new() -> Self {
@@ -34,7 +34,7 @@ where
         }
     }
 
-    pub fn insert_socket(&self, id: T, socket: KfSocket) {
+    pub fn insert_socket(&self, id: T, socket: FlvSocket) {
         trace!("inserting connection: {:#?}, returning", id);
         let mut ids = self.ids.write().expect("id lock must always lock");
         ids.insert(id.clone(), true);
@@ -42,7 +42,7 @@ where
     }
 
     /// get valid client.  return only client which is not stale
-    pub fn get_socket(&self, id: &T) -> Option<WriteGuard<'_, T, KfSocket>> {
+    pub fn get_socket(&self, id: &T) -> Option<WriteGuard<'_, T, FlvSocket>> {
         if let Some(client) = self.clients.get_mut(id) {
             trace!("got existing connection: {:#?}, returning", id);
             if client.is_stale() {
@@ -70,10 +70,10 @@ where
 impl<T> SocketPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone + ToString,
-    KfSocket: Sync,
+    FlvSocket: Sync,
 {
     /// make connection where id can be used as address
-    pub async fn make_connection(&self, id: T) -> Result<(), KfSocketError> {
+    pub async fn make_connection(&self, id: T) -> Result<(), FlvSocketError> {
         let addr = id.to_string();
         self.make_connection_with_addr(id, &addr).await
     }
@@ -82,12 +82,12 @@ where
 impl<T> SocketPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone,
-    KfSocket: Sync,
+    FlvSocket: Sync,
 {
     /// make connection with addres as separate parameter
-    pub async fn make_connection_with_addr(&self, id: T, addr: &str) -> Result<(), KfSocketError> {
+    pub async fn make_connection_with_addr(&self, id: T, addr: &str) -> Result<(), FlvSocketError> {
         trace!("creating new connection: {:#?}", addr);
-        let client = KfSocket::connect(addr).await?;
+        let client = FlvSocket::connect(addr).await?;
         trace!("got connection to server: {:#?}", &id);
         self.insert_socket(id.clone(), client);
         trace!("finish connection to server: {:#?}", &id);
@@ -99,7 +99,7 @@ where
         &'a self,
         id: T,
         addr: &'a str,
-    ) -> Result<Option<WriteGuard<'a, T, KfSocket>>, KfSocketError> {
+    ) -> Result<Option<WriteGuard<'a, T, FlvSocket>>, FlvSocketError> {
         if let Some(socket) = self.get_socket(&id) {
             return Ok(Some(socket));
         }
@@ -122,11 +122,11 @@ pub(crate) mod test {
     use tracing::error;
 
     use fluvio_future::net::TcpListener;
-    use fluvio_future::timer::sleep;
     use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
 
-    use super::KfSocket;
-    use super::KfSocketError;
+    use super::FlvSocket;
+    use super::FlvSocketError;
     use super::SocketPool;
     use crate::test_request::EchoRequest;
     use fluvio_protocol::api::RequestMessage;
@@ -136,7 +136,7 @@ pub(crate) mod test {
     pub(crate) async fn server_loop(
         socket_addr: &SocketAddr,
         id: u16,
-    ) -> Result<(), KfSocketError> {
+    ) -> Result<(), FlvSocketError> {
         debug!("server: {}-{} ready to bind", socket_addr, id);
         let listener = TcpListener::bind(&socket_addr).await?;
         debug!(
@@ -151,7 +151,7 @@ pub(crate) mod test {
             );
 
             let stream = stream?;
-            let mut socket: KfSocket = stream.into();
+            let mut socket: FlvSocket = stream.into();
 
             let msg: RequestMessage<EchoRequest> = RequestMessage::new_request(EchoRequest {
                 msg: "Hello".to_owned(),
@@ -174,7 +174,7 @@ pub(crate) mod test {
     }
 
     /// create server and
-    async fn create_server(addr: String, _client_count: u16) -> Result<(), KfSocketError> {
+    async fn create_server(addr: String, _client_count: u16) -> Result<(), FlvSocketError> {
         let socket_addr = addr.parse::<SocketAddr>().expect("parse");
 
         {
@@ -191,7 +191,7 @@ pub(crate) mod test {
         client_pool: &TestPooling,
         addr: String,
         id: u16,
-    ) -> Result<(), KfSocketError> {
+    ) -> Result<(), FlvSocketError> {
         debug!(
             "client: {}-{} client start: sleeping for 100 second to give server chances",
             &addr, id
@@ -237,7 +237,7 @@ pub(crate) mod test {
         }
     }
 
-    async fn test_client(client_pool: &TestPooling, addr: String) -> Result<(), KfSocketError> {
+    async fn test_client(client_pool: &TestPooling, addr: String) -> Result<(), FlvSocketError> {
         client_check(client_pool, addr.clone(), 0)
             .await
             .expect("should finished");
@@ -249,7 +249,7 @@ pub(crate) mod test {
         Ok(())
     }
     #[test_async]
-    async fn test_pool() -> Result<(), KfSocketError> {
+    async fn test_pool() -> Result<(), FlvSocketError> {
         let count = 1;
 
         // create fake server, anything will do since we only

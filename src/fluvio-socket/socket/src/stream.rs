@@ -1,23 +1,23 @@
-use std::io::Cursor;
 use std::fmt::Debug;
+use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use tracing::trace;
-use tracing::error;
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::Stream;
-use futures_util::stream::StreamExt;
-use futures_util::stream::SplitStream;
-use tokio_util::codec::Framed;
-use tokio_util::compat::Compat;
 use fluvio_future::net::TcpStream;
 use fluvio_future::tls::AllTcpStream;
-use fluvio_protocol::api::{Request, RequestMessage, ResponseMessage, ApiMessage};
+use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
+use futures_util::io::{AsyncRead, AsyncWrite};
+use futures_util::stream::SplitStream;
+use futures_util::stream::Stream;
+use futures_util::stream::StreamExt;
+use tokio_util::codec::Framed;
+use tokio_util::compat::Compat;
+use tracing::error;
+use tracing::trace;
 
-use crate::KfSocketError;
+use crate::FlvSocketError;
 
 pub type KfStream = InnerKfStream<TcpStream>;
 #[allow(unused)]
@@ -40,7 +40,7 @@ where
     /// as server, get stream of request coming from client
     pub fn request_stream<R>(
         &mut self,
-    ) -> impl Stream<Item = Result<RequestMessage<R>, KfSocketError>> + '_
+    ) -> impl Stream<Item = Result<RequestMessage<R>, FlvSocketError>> + '_
     where
         RequestMessage<R>: FluvioDecoder + Debug,
     {
@@ -55,7 +55,9 @@ where
     }
 
     /// as server, get next request from client
-    pub async fn next_request_item<R>(&mut self) -> Option<Result<RequestMessage<R>, KfSocketError>>
+    pub async fn next_request_item<R>(
+        &mut self,
+    ) -> Option<Result<RequestMessage<R>, FlvSocketError>>
     where
         RequestMessage<R>: FluvioDecoder + Debug,
     {
@@ -67,7 +69,7 @@ where
     pub async fn next_response<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, KfSocketError>
+    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
         R: Request,
     {
@@ -85,12 +87,12 @@ where
                 }
                 Err(err) => {
                     error!("error receiving response: {:?}", err);
-                    Err(KfSocketError::IoError(err))
+                    Err(FlvSocketError::IoError(err))
                 }
             }
         } else {
             error!("no more response. server has terminated connection");
-            Err(KfSocketError::IoError(IoError::new(
+            Err(FlvSocketError::IoError(IoError::new(
                 ErrorKind::UnexpectedEof,
                 "server has terminated connection",
             )))
@@ -98,7 +100,7 @@ where
     }
 
     /// as server, get api request (PublicRequest, InternalRequest, etc)
-    pub fn api_stream<R, A>(&mut self) -> impl Stream<Item = Result<R, KfSocketError>> + '_
+    pub fn api_stream<R, A>(&mut self) -> impl Stream<Item = Result<R, FlvSocketError>> + '_
     where
         R: ApiMessage<ApiKey = A>,
         A: FluvioDecoder + Debug,
@@ -113,7 +115,7 @@ where
         })
     }
 
-    pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, KfSocketError>>
+    pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, FlvSocketError>>
     where
         R: ApiMessage<ApiKey = A>,
         A: FluvioDecoder + Debug,
