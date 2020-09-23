@@ -6,7 +6,7 @@ use chashmap::CHashMap;
 use chashmap::WriteGuard;
 use tracing::trace;
 
-use crate::KfSink;
+use crate::FlvSink;
 
 pub type SharedSinkPool<T> = Arc<SinkPool<T>>;
 
@@ -14,12 +14,12 @@ pub type SharedSinkPool<T> = Arc<SinkPool<T>>;
 /// where you only need to keep track of sink
 /// no attemp to keep id indexes
 #[derive(Debug)]
-pub struct SinkPool<T>(CHashMap<T, KfSink>);
+pub struct SinkPool<T>(CHashMap<T, FlvSink>);
 
 impl<T> SinkPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone,
-    KfSink: Sync,
+    FlvSink: Sync,
 {
     pub fn new_shared() -> SharedSinkPool<T> {
         Arc::new(Self::new())
@@ -28,7 +28,7 @@ where
         Self(CHashMap::new())
     }
 
-    pub fn insert_sink(&self, id: T, socket: KfSink) {
+    pub fn insert_sink(&self, id: T, socket: FlvSink) {
         trace!("inserting sink at: {:#?}", id);
         self.0.insert(id, socket);
     }
@@ -38,7 +38,7 @@ where
     }
 
     /// get sink
-    pub fn get_sink<'a>(&'a self, id: &T) -> Option<WriteGuard<'a, T, KfSink>> {
+    pub fn get_sink<'a>(&'a self, id: &T) -> Option<WriteGuard<'a, T, FlvSink>> {
         self.0.get_mut(id)
     }
 }

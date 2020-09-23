@@ -1,5 +1,8 @@
 RUSTV = stable
 
+build:
+	cargo build --all
+
 test-all:
 	cargo test --all
 

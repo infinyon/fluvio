@@ -3,8 +3,8 @@ mod server;
 #[cfg(test)]
 pub mod test_request;
 
-pub use fluvio_protocol::codec::FluvioCodec;
 pub use self::server::*;
+pub use fluvio_protocol::codec::FluvioCodec;
 
 #[macro_export]
 macro_rules! call_service {

@@ -1,11 +1,11 @@
 #![allow(clippy::assign_op_pattern)]
 
-use std::io::Error as IoError;
 use std::convert::TryInto;
+use std::io::Error as IoError;
 
 use log::debug;
 
-use fluvio_protocol::api::{ApiMessage, RequestMessage, RequestHeader, api_decode, Request};
+use fluvio_protocol::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
 use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::{Decode, Encode};
 

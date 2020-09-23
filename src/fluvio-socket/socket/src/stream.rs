@@ -19,17 +19,17 @@ use tracing::trace;
 
 use crate::FlvSocketError;
 
-pub type KfStream = InnerKfStream<TcpStream>;
+pub type FlvStream = InnerFlvStream<TcpStream>;
 #[allow(unused)]
-pub type AllKfStream = InnerKfStream<AllTcpStream>;
+pub type AllFlvStream = InnerFlvStream<AllTcpStream>;
 
 type FrameStream<S> = SplitStream<Framed<Compat<S>, FluvioCodec>>;
 
-/// inner kf stream which is generic over stream
+/// inner flv stream which is generic over stream
 #[derive(Debug)]
-pub struct InnerKfStream<S>(FrameStream<S>);
+pub struct InnerFlvStream<S>(FrameStream<S>);
 
-impl<S> InnerKfStream<S>
+impl<S> InnerFlvStream<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
@@ -153,8 +153,8 @@ where
     }
 }
 
-impl<S> From<FrameStream<S>> for InnerKfStream<S> {
+impl<S> From<FrameStream<S>> for InnerFlvStream<S> {
     fn from(stream: FrameStream<S>) -> Self {
-        InnerKfStream(stream)
+        InnerFlvStream(stream)
     }
 }

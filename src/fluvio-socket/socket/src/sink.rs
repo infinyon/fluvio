@@ -22,7 +22,7 @@ use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::store::FileWrite;
 use fluvio_protocol::store::StoreValue;
-use fluvio_protocol::Encoder as KfEncoder;
+use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
 
 use fluvio_future::net::TcpStream;
@@ -31,11 +31,11 @@ use tokio_util::codec::Framed;
 
 use crate::FlvSocketError;
 
-pub type KfSink = InnerFlvSink<TcpStream>;
+pub type FlvSink = InnerFlvSink<TcpStream>;
 #[allow(unused)]
-pub type AllKfSink = InnerFlvSink<AllTcpStream>;
-pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
-pub type ExclusiveAllKfSink = InnerExclusiveKfSink<AllTcpStream>;
+pub type AllFlvSink = InnerFlvSink<AllTcpStream>;
+pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
+pub type ExclusiveAllFlvSink = InnerExclusiveFlvSink<AllTcpStream>;
 
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
 
@@ -60,8 +60,8 @@ impl<S> InnerFlvSink<S> {
 
     /// convert to shared sink
     #[allow(clippy::wrong_self_convention)]
-    pub fn as_shared(self) -> InnerExclusiveKfSink<S> {
-        InnerExclusiveKfSink::new(self)
+    pub fn as_shared(self) -> InnerExclusiveFlvSink<S> {
+        InnerExclusiveFlvSink::new(self)
     }
 }
 
@@ -75,7 +75,7 @@ where
         req_msg: &RequestMessage<R>,
     ) -> Result<(), FlvSocketError>
     where
-        RequestMessage<R>: KfEncoder + Default + Debug,
+        RequestMessage<R>: FlvEncoder + Default + Debug,
     {
         trace!("sending one way request: {:#?}", &req_msg);
         (&mut self.inner).send(req_msg.as_bytes(0)?).await?;
@@ -89,7 +89,7 @@ where
         version: Version,
     ) -> Result<(), FlvSocketError>
     where
-        ResponseMessage<P>: KfEncoder + Default + Debug,
+        ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
         trace!("sending response {:#?}", &resp_msg);
         (&mut self.inner).send(resp_msg.as_bytes(version)?).await?;
@@ -158,22 +158,22 @@ impl<S> AsRawFd for InnerFlvSink<S> {
 }
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-pub struct InnerExclusiveKfSink<S> {
+pub struct InnerExclusiveFlvSink<S> {
     inner: Arc<Mutex<InnerFlvSink<S>>>,
     fd: RawFd,
 }
 
-impl<S> InnerExclusiveKfSink<S> {
+impl<S> InnerExclusiveFlvSink<S> {
     pub fn new(sink: InnerFlvSink<S>) -> Self {
         let fd = sink.id();
-        InnerExclusiveKfSink {
+        InnerExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
             fd,
         }
     }
 }
 
-impl<S> InnerExclusiveKfSink<S>
+impl<S> InnerExclusiveFlvSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
@@ -183,7 +183,7 @@ where
 
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), FlvSocketError>
     where
-        RequestMessage<R>: KfEncoder + Default + Debug,
+        RequestMessage<R>: FlvEncoder + Default + Debug,
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_request(req_msg).await
@@ -196,7 +196,7 @@ where
         version: Version,
     ) -> Result<(), FlvSocketError>
     where
-        ResponseMessage<P>: KfEncoder + Default + Debug,
+        ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_response(resp_msg, version).await
@@ -207,7 +207,7 @@ where
     }
 }
 
-impl<S> Clone for InnerExclusiveKfSink<S> {
+impl<S> Clone for InnerExclusiveFlvSink<S> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),

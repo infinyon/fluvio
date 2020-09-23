@@ -1,10 +1,10 @@
 [package]
 name = "fluvio-socket"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-description = "Provide TCP socket wrapper using kafka protocol"
-repository = "https://github.com/infinyon/fluvio"
+description = "Provide TCP socket wrapper using fluvio protocol"
+repository = "https://github.com/infinyon/fluvio-protocol"
 license = "Apache-2.0"
 categories = ["encoding"]
 
