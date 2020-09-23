@@ -11,6 +11,7 @@ use crate::core::Decoder;
 use crate::core::Encoder;
 use crate::core::Version;
 use crate::derive::Decode;
+use crate::derive::Encode;
 
 use crate::Offset;
 use crate::Size;
@@ -164,7 +165,7 @@ where
     }
 }
 
-#[derive(Debug, Decode)]
+#[derive(Debug, Decode,Encode)]
 pub struct BatchHeader {
     pub partition_leader_epoch: i32,
     pub magic: i8,
@@ -217,6 +218,14 @@ mod test {
     use crate::core::Encoder;
     use crate::record::DefaultRecord;
     use crate::batch::DefaultBatch;
+    use super::BatchHeader;
+    use super::BATCH_HEADER_SIZE;
+
+    #[test]
+    fn test_batch_size() {
+        let header = BatchHeader::default();
+        assert_eq!(header.write_size(0),BATCH_HEADER_SIZE);
+    }
 
     #[test]
     fn test_encode_and_decode_batch() -> Result<(), IoError> {

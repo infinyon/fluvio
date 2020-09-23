@@ -125,6 +125,7 @@ where
         start_offset: Offset,
         max_offset_opt: Option<Offset>,
     ) -> Result<Option<AsyncFileSlice>, StorageError> {
+        trace!("record slice at: {}",start_offset);
         match self.find_offset_position(start_offset).await? {
             Some(start_pos) => {
                 trace!(
@@ -434,7 +435,7 @@ mod tests {
         let seg1_metadata = metadata(test_dir.join(SEG_INDEX)).expect("read metadata");
         assert_eq!(seg1_metadata.len(), 1000);
 
-        assert!((active_segment.find_offset_position(10).await?).is_none());
+        assert!((active_segment.find_offset_position(10).await.expect("offset")).is_none());
         let offset_position = (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
@@ -452,9 +453,9 @@ mod tests {
 
         let base_offset = 20;
 
-        let mut seg_sink = MutableSegment::create(base_offset, &option).await?;
+        let mut active_segment = MutableSegment::create(base_offset, &option).await?;
 
-        seg_sink.send(create_batch_with_producer(100, 4)).await?;
+        active_segment.send(create_batch_with_producer(100, 4)).await?;
 
         // each record contains 9 bytes
 
@@ -470,12 +471,12 @@ mod tests {
         let seg1_metadata = metadata(test_dir.join(SEG_INDEX))?;
         assert_eq!(seg1_metadata.len(), 1000);
 
-        assert!((seg_sink.find_offset_position(10).await?).is_none());
-        let offset_position = (seg_sink.find_offset_position(20).await?).expect("offset exists");
+        assert!((active_segment.find_offset_position(10).await?).is_none());
+        let offset_position = (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 85);
-        assert!((seg_sink.find_offset_position(30).await?).is_none());
+        assert!((active_segment.find_offset_position(30).await?).is_none());
 
         Ok(())
     }
