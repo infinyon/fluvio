@@ -170,7 +170,7 @@ where
     C: MetadataItem,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use flv_future_aio::task::run_block_on;
+        use fluvio_future::task::run_block_on;
         let len = run_block_on(async { self.read().await.len() });
         write!(f, "{} Store count: {}", S::LABEL, len)
     }

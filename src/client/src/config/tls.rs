@@ -6,9 +6,9 @@ use std::path::PathBuf;
 use tracing::info;
 use serde::{Deserialize, Serialize};
 
-use flv_future_aio::net::tls::AllDomainConnector;
-use flv_future_aio::net::tls::TlsDomainConnector;
-use flv_future_aio::net::tls::ConnectorBuilder;
+use fluvio_future::tls::AllDomainConnector;
+use fluvio_future::tls::TlsDomainConnector;
+use fluvio_future::tls::ConnectorBuilder;
 
 /// Describes whether or not to use TLS and how
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

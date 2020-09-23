@@ -70,15 +70,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ahash"
-version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8fd72866655d1904d6b0997d0b07ba561047d070fbe29de039031c641b61217"
-dependencies = [
- "const-random",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -140,7 +131,7 @@ version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d373d78ded7d0b3fa8039375718cde0aace493f2e34fb60f51cbf567562ca801"
 dependencies = [
- "async-task 4.0.1",
+ "async-task 4.0.2",
  "concurrent-queue",
  "fastrand",
  "futures-lite",
@@ -149,10 +140,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-global-executor"
-version = "1.1.1"
+name = "async-fs"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffd4f132a18f3fe7329c7b907047684f1b06174a900c559b661b2da8bb9cad5f"
+checksum = "e3572236ba37147ca2b674a0bd5afd20aec0cd925ab125ab6fad6543960f9002"
+dependencies = [
+ "blocking",
+ "futures-lite",
+]
+
+[[package]]
+name = "async-global-executor"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5586e693d02f9b439742e9d5d68bd64d923c6861954f7d78f91001a0e152d589"
 dependencies = [
  "async-executor",
  "async-io",
@@ -179,9 +180,9 @@ dependencies = [
 
 [[package]]
 name = "async-io"
-version = "1.1.2"
+version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64c629684e697f58c0e99e5e2d84a840e3b336afbcfdbac7b44c3b1e222c2fd8"
+checksum = "a9951f92a2b4f7793f8fc06a80bdb89b62c618c993497d4606474fb8c34941b5"
 dependencies = [
  "concurrent-queue",
  "fastrand",
@@ -206,18 +207,30 @@ dependencies = [
 
 [[package]]
 name = "async-mutex"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66941c2577c4fa351e4ce5fdde8f86c69b88d623f3b955be1bc7362a23434632"
+checksum = "479db852db25d9dbf6204e6cb6253698f175c15726470f78af0d918e99d6156e"
 dependencies = [
  "event-listener",
 ]
 
 [[package]]
-name = "async-rwlock"
-version = "1.2.1"
+name = "async-net"
+version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "806b1cc0828c2b1611ccbdd743fc0cc7af09009e62c95a0501c1e5da7b142a22"
+checksum = "fb04482b77baa38d59d56aee0a7b4266600ab28e2b8be7af03508f6a30ecbdcf"
+dependencies = [
+ "async-io",
+ "blocking",
+ "fastrand",
+ "futures-lite",
+]
+
+[[package]]
+name = "async-rwlock"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "261803dcc39ba9e72760ba6e16d0199b1eef9fc44e81bffabbebb9f5aea3906c"
 dependencies = [
  "async-mutex",
  "event-listener",
@@ -259,32 +272,21 @@ checksum = "c17772156ef2829aadc587461c7753af20b7e8db1529bc66855add962a3b35d3"
 
 [[package]]
 name = "async-task"
-version = "4.0.1"
+version = "4.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6725e96011a83fae25074a8734932e8d67763522839be7473dcfe8a0d6a378b1"
-
-[[package]]
-name = "async-test-derive"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b832fea31d5e45973923a3de29695f1bec7b6c8ecaa05a8ae518e33704dfac2"
-dependencies = [
- "log",
- "proc-macro2",
- "quote 1.0.7",
- "syn 1.0.41",
-]
+checksum = "8ab27c1aa62945039e44edaeee1dc23c74cc0c303dd5fe0fb462a184f1c3a518"
 
 [[package]]
 name = "async-tls"
-version = "0.7.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95fd83426b89b034bf4e9ceb9c533c2f2386b813fd3dcae0a425ec6f1837d78a"
+checksum = "d85a97c4a0ecce878efd3f945f119c78a646d8975340bca0398f9bb05c30cc52"
 dependencies = [
- "futures",
- "rustls 0.17.0",
+ "futures-core",
+ "futures-io",
+ "rustls 0.18.1",
  "webpki",
- "webpki-roots 0.19.0",
+ "webpki-roots 0.20.0",
 ]
 
 [[package]]
@@ -583,26 +585,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const-random"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f1af9ac737b2dd2d577701e59fd09ba34822f6f2ebdb30a7647405d9e55e16a"
-dependencies = [
- "const-random-macro",
- "proc-macro-hack",
-]
-
-[[package]]
-name = "const-random-macro"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25e4c606eb459dd29f7c57b2e0879f2b6f14ee130918c2b78ccb58a9624e6c7a"
-dependencies = [
- "getrandom",
- "proc-macro-hack",
-]
-
-[[package]]
 name = "const_fn"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -759,17 +741,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "3.11.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f260e2fc850179ef410018660006951c1b55b79e8087e87111a2c388994b9b5"
-dependencies = [
- "ahash",
- "cfg-if",
- "num_cpus",
-]
-
-[[package]]
 name = "data-encoding"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -850,6 +821,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
+name = "encoding_rs"
+version = "0.8.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a51b8cf747471cb9499b6d59e59b0444f4c90eba8968c4e44874e92b5b64ace2"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "enum_to_u8_slice_derive"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -884,9 +864,9 @@ dependencies = [
 
 [[package]]
 name = "event-listener"
-version = "2.4.0"
+version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1cd41440ae7e4734bbd42302f63eaba892afc93a3912dad84006247f0dedb0e"
+checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 
 [[package]]
 name = "fake-simd"
@@ -910,17 +890,14 @@ dependencies = [
  "async-std",
  "async-trait",
  "base64 0.12.3",
- "dashmap",
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-spu-schema",
  "fluvio-types",
- "flv-future-aio",
- "flv-util",
- "futures",
  "kf-socket",
  "serde",
  "serde_json",
@@ -943,13 +920,13 @@ dependencies = [
  "fluvio",
  "fluvio-cluster",
  "fluvio-controlplane-metadata",
+ "fluvio-future",
  "fluvio-sc",
  "fluvio-sc-schema",
  "fluvio-spu",
  "fluvio-types",
- "flv-future-aio",
  "flv-util",
- "futures",
+ "futures-lite",
  "http-types",
  "k8-client",
  "k8-config",
@@ -976,10 +953,9 @@ dependencies = [
 name = "fluvio-cluster"
 version = "0.1.0"
 dependencies = [
- "async-std",
  "fluvio",
  "fluvio-controlplane-metadata",
- "flv-future-aio",
+ "fluvio-future",
  "flv-util",
  "k8-client",
  "k8-config",
@@ -1011,10 +987,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
- "flv-future-aio",
  "flv-util",
  "k8-obj-app",
  "k8-obj-core",
@@ -1031,33 +1007,59 @@ dependencies = [
  "bytes 0.5.6",
  "content_inspector",
  "crc32c",
+ "fluvio-future",
  "fluvio-protocol",
- "flv-future-aio",
  "flv-util",
- "futures",
+ "futures-util",
  "kf-socket",
  "log",
 ]
 
 [[package]]
-name = "fluvio-protocol"
+name = "fluvio-future"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e063601319f19a907a0024fcb6d5d4d73559dc4144387f71f64e63576aff6316"
+checksum = "5587c8485fcb8a2a435bc7745d09a047ffde71afa5c8928f8fbe99b519a62c62"
 dependencies = [
+ "async-fs",
+ "async-io",
+ "async-net",
+ "async-std",
+ "async-tls",
+ "async-trait",
+ "fluvio-test-derive",
+ "futures-lite",
+ "log",
+ "memmap",
+ "nix",
+ "pin-project",
+ "pin-utils",
+ "rustls 0.18.1",
+ "tracing",
+ "tracing-subscriber",
+ "webpki",
+]
+
+[[package]]
+name = "fluvio-protocol"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5378886be367e1bbaa5b9400e2ed09aaa768a854787d2e2abd5644dec4119d70"
+dependencies = [
+ "bytes 0.5.6",
+ "fluvio-future",
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
- "flv-future-aio",
  "log",
 ]
 
 [[package]]
 name = "fluvio-protocol-api"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9e7db93c435c1357e2bd83914e32942515608588239d4a326b835b2e2f7c4e4"
+checksum = "66bb46225f77d4cfbad80803726d8375610db258212ae84873f70a9458c932df"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -1067,13 +1069,12 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-codec"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a546b096a31a32d60695721dd86ba88c19eae55cf65990a69426a3cab7a9ef60"
+checksum = "2b24aefa4cd4fa185411fd093df2b0cb4114f07eb05fea1f5df15659ec62383a"
 dependencies = [
  "bytes 0.5.6",
  "fluvio-protocol-core",
- "flv-future-aio",
  "log",
  "tokio-util",
 ]
@@ -1113,14 +1114,14 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-stream-dispatcher",
  "fluvio-types",
- "flv-future-aio",
  "flv-tls-proxy",
  "flv-util",
- "futures",
+ "futures-util",
  "k8-client",
  "k8-metadata-client",
  "k8-obj-metadata",
@@ -1146,7 +1147,6 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-protocol",
  "fluvio-types",
- "flv-util",
  "log",
  "serde",
  "tracing",
@@ -1166,14 +1166,14 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
- "flv-future-aio",
  "flv-tls-proxy",
  "flv-util",
- "futures",
+ "futures-util",
  "kf-service",
  "kf-socket",
  "log",
@@ -1208,18 +1208,17 @@ dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
- "flv-future-aio",
  "flv-util",
- "futures",
+ "futures-lite",
  "kf-socket",
  "libc",
  "pin-utils",
  "serde",
  "structopt",
  "tracing",
- "utils",
 ]
 
 [[package]]
@@ -1230,9 +1229,9 @@ dependencies = [
  "async-lock",
  "async-trait",
  "event-listener",
+ "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
- "flv-future-aio",
  "flv-util",
  "futures",
  "k8-metadata-client",
@@ -1248,9 +1247,8 @@ name = "fluvio-stream-model"
 version = "0.1.0"
 dependencies = [
  "async-rwlock",
+ "fluvio-future",
  "fluvio-types",
- "flv-future-aio",
- "flv-util",
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
@@ -1259,34 +1257,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-test-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc9e4cb09caa5ff039928399ef5aa99206fd1b9a59df208cf6d94e2764fe5ce0"
+dependencies = [
+ "proc-macro2",
+ "quote 1.0.7",
+ "syn 1.0.41",
+]
+
+[[package]]
 name = "fluvio-types"
 version = "0.1.0"
 dependencies = [
  "tracing",
-]
-
-[[package]]
-name = "flv-future-aio"
-version = "2.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f97affbe276a743321d92577bc939bcb247bbe532557c5618f7319d7357d1fbb"
-dependencies = [
- "async-std",
- "async-test-derive",
- "async-tls",
- "async-trait",
- "bytes 0.5.6",
- "flv-util",
- "futures",
- "futures-timer",
- "memmap",
- "nix",
- "pin-project",
- "pin-utils",
- "rustls 0.17.0",
- "tokio",
- "tracing",
- "webpki",
 ]
 
 [[package]]
@@ -1298,36 +1283,34 @@ dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-types",
- "flv-future-aio",
- "futures",
+ "futures-util",
  "k8-client",
  "k8-metadata-client",
- "log",
  "structopt",
  "utils",
 ]
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cd65b601a2cbf20ee5ae313c2b5a269285bf7a5a00f9b236c828d38360cc6e5"
+checksum = "ee19ae1d48d098a24a8708233777f9a6d81e52fc26806c43bd714f11f30b08be"
 dependencies = [
- "async-std",
- "flv-future-aio",
- "futures",
+ "fluvio-future",
+ "futures-lite",
+ "futures-util",
  "log",
 ]
 
 [[package]]
 name = "flv-util"
-version = "0.4.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e624a59053c74ff6756238651ec1bdd51180c5c80ba917ec22866b06bae89dd7"
+checksum = "93c99c73681898acc4936b20fffe7da175748339fcb6aec683630d5225b152d8"
 dependencies = [
- "tracing",
- "tracing-subscriber",
+ "log",
 ]
 
 [[package]]
@@ -1392,9 +1375,9 @@ checksum = "de27142b013a8e869c14957e6d2edeef89e97c289e69d042ee3a49acd8b51789"
 
 [[package]]
 name = "futures-lite"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b77e08e656f472d8ea84c472fa8b0a7a917883048e1cf2d4e34a323cd0aaf63"
+checksum = "0db18c5f58083b54b0c416638ea73066722c2815c1e54dd8ba85ee3def593c3a"
 dependencies = [
  "fastrand",
  "futures-core",
@@ -1431,12 +1414,6 @@ checksum = "bdb66b5f09e22019b1ab0830f7785bcea8e7a42148683f99214f73f8ec21a626"
 dependencies = [
  "once_cell",
 ]
-
-[[package]]
-name = "futures-timer"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1de7508b218029b0f01662ed8f61b1c964b3ae99d6f25462d0f55a595109df6"
 
 [[package]]
 name = "futures-util"
@@ -1590,6 +1567,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28d569972648b2c512421b5f2a405ad6ac9666547189d0c5477a3f200f3e02f9"
+dependencies = [
+ "bytes 0.5.6",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-types"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1675,26 +1663,29 @@ dependencies = [
 
 [[package]]
 name = "isahc"
-version = "0.8.2"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c45d8c41e6f0b5aa495fd2577e6068e100f57eb87c4b353b0dab20bb53a56035"
+checksum = "4ecedb6ed2615f66b14d9790bad67f8d45dfaffe01464681fb868fe90ca20c41"
 dependencies = [
- "bytes 0.4.12",
- "chrono",
+ "bytes 0.5.6",
  "crossbeam-channel",
  "crossbeam-utils",
  "curl",
  "curl-sys",
+ "encoding_rs",
  "futures-channel",
  "futures-io",
  "futures-util",
- "http",
+ "http 0.2.1",
  "lazy_static",
  "log",
+ "mime",
  "serde",
  "serde_json",
  "slab",
  "sluice",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -1714,30 +1705,32 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f48732b34e74c5291730acdfaa89e9e0e2df3257e4ac2d3ab8d96db503b23b3"
+checksum = "aa62bbf9afa8e887da4137e9b3cb728f0852b18a8c2ea3198da9d056cbbfc9d9"
 dependencies = [
- "async-std",
  "async-trait",
- "base64 0.11.0",
+ "base64 0.12.3",
  "bytes 0.5.6",
  "curl",
- "flv-future-aio",
- "futures",
+ "fluvio-future",
+ "futures-util",
  "isahc",
  "k8-config",
  "k8-diff",
  "k8-metadata-client",
  "k8-obj-core",
  "k8-obj-metadata",
- "log",
  "openssl-sys",
  "pin-utils",
  "rand 0.7.3",
+ "rustls 0.18.1",
  "serde",
  "serde_json",
  "serde_qs 0.5.2",
+ "tracing",
+ "tracing-futures",
+ "webpki",
 ]
 
 [[package]]
@@ -1766,21 +1759,21 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe2060b72f43db9e5cd60db3e7801aa0c25fa8d4eced12d3bacfbed6f40bdc21"
+checksum = "9d8d0eb309f2f0fbf05a0449aad056c6c41a8392929fe0c56fa690e71e45081f"
 dependencies = [
  "async-trait",
- "flv-future-aio",
- "futures",
- "http",
+ "futures-util",
+ "http 0.1.21",
  "k8-diff",
  "k8-obj-metadata",
- "log",
  "pin-utils",
  "serde",
  "serde_json",
  "serde_qs 0.5.2",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -1789,7 +1782,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1928f08244bb04c7ac1455f3fccb0e3ce193f25f61c06aed863371e46deb040"
 dependencies = [
- "http",
+ "http 0.1.21",
  "k8-obj-core",
  "k8-obj-metadata",
  "log",
@@ -1804,7 +1797,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dd20a0c2182b2e55fbbb90b3d887139164408efd9b720952a002d188a6580e0"
 dependencies = [
- "http",
+ "http 0.1.21",
  "k8-obj-metadata",
  "log",
  "serde",
@@ -1830,11 +1823,10 @@ version = "3.0.0"
 dependencies = [
  "async-trait",
  "event-listener",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
- "flv-future-aio",
- "flv-util",
- "futures",
+ "futures-util",
  "kf-socket",
  "log",
  "pin-utils",
@@ -1849,14 +1841,15 @@ version = "3.0.0"
 dependencies = [
  "async-channel",
  "async-mutex",
+ "async-net",
  "async-trait",
  "bytes 0.5.6",
  "chashmap",
  "event-listener",
+ "fluvio-future",
  "fluvio-protocol",
- "flv-future-aio",
  "flv-util",
- "futures",
+ "futures-util",
  "log",
  "pin-utils",
  "tokio",
@@ -1995,6 +1988,12 @@ dependencies = [
  "webpki",
  "webpki-roots 0.17.0",
 ]
+
+[[package]]
+name = "mime"
+version = "0.3.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 
 [[package]]
 name = "miniz_oxide"
@@ -2575,11 +2574,11 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.17.0"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0d4a31f5d68413404705d6982529b0e11a9aacd4839d1d6222ee3b8cb4015e1"
+checksum = "5d1126dcf58e93cee7d098dbda643b5f92ed724f1f6a63007c1116eed6700c81"
 dependencies = [
- "base64 0.11.0",
+ "base64 0.12.3",
  "log",
  "ring",
  "sct",
@@ -3143,6 +3142,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d79ca061b032d6ce30c660fded31189ca0b9922bf483cd70759f13a2d86786c"
 dependencies = [
  "cfg-if",
+ "log",
  "tracing-attributes",
  "tracing-core",
 ]
@@ -3517,9 +3517,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.19.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8eff4b7516a57307f9349c64bf34caa34b940b66fed4b2fb3136cb7386e5739"
+checksum = "0f20dea7535251981a9670857150d571846545088359b28e4951d350bdaf179f"
 dependencies = [
  "webpki",
 ]

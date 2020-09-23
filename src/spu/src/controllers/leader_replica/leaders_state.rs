@@ -181,15 +181,14 @@ mod test_channel {
 
     use std::time::Duration;
 
-    use futures::channel::mpsc::Sender;
-    use futures::channel::mpsc::Receiver;
-    use futures::channel::mpsc::channel;
-    use futures::future::join;
-    use futures::SinkExt;
-    use futures::StreamExt;
+    use async_channel::Sender;
+    use async_channel::Receiver;
+    use async_channel::bounded as channel;
+    use futures_util::future::join;
+    use futures_util::StreamExt;
 
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
 
     async fn receiver_tst(mut receiver: Receiver<u16>) {
         // sleep to let sender send messages
@@ -202,13 +201,13 @@ mod test_channel {
     }
 
     async fn sender_test(orig_mailbox: Sender<u16>) {
-        let mut mailbox = orig_mailbox.clone();
+        let mailbox = orig_mailbox.clone();
         assert!(!mailbox.is_closed());
         sleep(Duration::from_millis(1)).await;
         mailbox.send(10).await.expect("send");
         mailbox.send(11).await.expect("send");
         mailbox.send(12).await.expect("send");
-        mailbox.disconnect();
+        mailbox.close();
         assert!(mailbox.is_closed());
         // wait 30 millisecond to allow test of receiver
         sleep(Duration::from_millis(30)).await;

@@ -25,13 +25,12 @@ serde_json = "1.0.57"
 # Fluvio dependencies
 fluvio = { path = "../client" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", features = ["k8"] }
-flv-future-aio = "2.3.1"
-flv-util = "0.4.0"
+fluvio-future = { version = "0.1.0" }
+flv-util = "0.5.0"
 k8-config = { version = "1.1.0", features = ["context"] }
 k8-client = "1.1.0"
 k8-obj-core = "1.1.0"
 k8-obj-metadata = "1.0.0"
 
 [dev-dependencies]
-# Needed for doc-tests
-async-std = "1.6.3"
+fluvio-future = { version = "0.1.0", features =["task"]}

@@ -4,8 +4,8 @@ use std::fmt::Debug;
 use tracing::debug;
 use tracing::error;
 use event_listener::Event;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 
 use kf_socket::InnerExclusiveKfSink;
 use dataplane::core::{Encoder, Decoder};
@@ -14,7 +14,7 @@ use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_sc_schema::objects::Metadata;
 use fluvio_sc_schema::objects::MetadataUpdate;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -83,7 +83,7 @@ where
         store: StoreContext<S>,
         header: RequestHeader,
     ) {
-        use flv_future_aio::task::spawn;
+        use fluvio_future::task::spawn;
 
         let controller = Self {
             response_sink,

@@ -4,7 +4,8 @@
 
 use std::fmt;
 use std::io::Error as IoError;
-use futures::channel::mpsc::SendError;
+
+//use async_channel::SendError;
 
 use fluvio_types::PartitionError;
 use k8_client::ClientError;
@@ -13,7 +14,7 @@ use kf_socket::KfSocketError;
 #[derive(Debug)]
 pub enum ScError {
     IoError(IoError),
-    SendError(SendError),
+    //   SendError(SendError),
     ClientError(ClientError),
     SocketError(KfSocketError),
     PartitionError(PartitionError),
@@ -23,7 +24,7 @@ impl fmt::Display for ScError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::IoError(err) => write!(f, "{}", err),
-            Self::SendError(err) => write!(f, "{}", err),
+            //    Self::SendError(err) => write!(f, "{}", err),
             Self::ClientError(err) => write!(f, "{}", err),
             Self::SocketError(err) => write!(f, "{}", err),
             Self::PartitionError(err) => write!(f, "{}", err),
@@ -37,11 +38,13 @@ impl From<IoError> for ScError {
     }
 }
 
+/*
 impl From<SendError> for ScError {
     fn from(error: SendError) -> Self {
         Self::SendError(error)
     }
 }
+*/
 
 impl From<ClientError> for ScError {
     fn from(error: ClientError) -> Self {

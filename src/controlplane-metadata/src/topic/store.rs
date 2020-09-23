@@ -97,7 +97,7 @@ where
 #[cfg(test)]
 mod test {
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use crate::topic::store::DefaultTopicMd;
     use crate::topic::TopicStatus;
     use crate::topic::TopicResolution;
@@ -215,7 +215,7 @@ mod test {
 #[cfg(test)]
 pub mod test2 {
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
 
     use crate::store::actions::LSUpdate;
     use crate::store::DefaultMetadataObject;

@@ -330,7 +330,7 @@ pub mod replica_map_test {
 
     use std::collections::BTreeMap;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 
     use super::*;

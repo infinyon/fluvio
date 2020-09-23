@@ -8,10 +8,10 @@ use tracing::error;
 use tracing::debug;
 use async_trait::async_trait;
 use async_channel::Sender;
-use futures::Stream;
+use futures_util::stream::Stream;
 
 use fluvio_types::SpuId;
-use flv_future_aio::net::TcpStream;
+use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
@@ -132,8 +132,8 @@ async fn dispatch_loop(
 
     loop {
         use tokio::select;
-        use futures::stream::StreamExt;
-        use flv_future_aio::timer::sleep;
+        use futures_util::stream::StreamExt;
+        use fluvio_future::timer::sleep;
 
         let health_time = Instant::now();
         debug!(

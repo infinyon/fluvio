@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[cfg(unix)]
 use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
 
@@ -11,13 +10,13 @@ use bytes::Bytes;
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
 
-use futures::sink::SinkExt;
-use futures::stream::SplitSink;
-use futures::io::{AsyncRead, AsyncWrite};
+use futures_util::sink::SinkExt;
+use futures_util::stream::SplitSink;
+use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio_util::compat::Compat;
 
-use flv_future_aio::zero_copy::ZeroCopyWrite;
-use flv_future_aio::bytes::BytesMut;
+use fluvio_future::zero_copy::ZeroCopyWrite;
+use bytes::BytesMut;
 use fluvio_protocol::Version;
 use fluvio_protocol::Encoder as KfEncoder;
 use fluvio_protocol::api::RequestMessage;
@@ -27,8 +26,8 @@ use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::codec::FluvioCodec;
 
 use tokio_util::codec::Framed;
-use flv_future_aio::net::TcpStream;
-use flv_future_aio::net::tls::AllTcpStream;
+use fluvio_future::net::TcpStream;
+use fluvio_future::tls::AllTcpStream;
 
 use crate::KfSocketError;
 
@@ -228,18 +227,18 @@ mod tests {
 
     use tracing::debug;
     use tracing::info;
-    use futures::stream::StreamExt;
-    use futures::future::join;
-    use futures::io::AsyncWriteExt;
-    use futures::sink::SinkExt;
+    use futures_util::stream::StreamExt;
+    use futures_util::future::join;
+    use futures_util::io::AsyncWriteExt;
+    use futures_util::sink::SinkExt;
+    use bytes::Bytes;
+    use async_net::TcpListener;
 
-    use flv_future_aio::test_async;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::fs::util;
-    use flv_future_aio::fs::AsyncFile;
-    use flv_future_aio::zero_copy::ZeroCopyWrite;
-    use flv_future_aio::net::TcpListener;
-    use flv_future_aio::bytes::Bytes;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::fs::util;
+    use fluvio_future::fs::AsyncFileExtension;
+    use fluvio_future::zero_copy::ZeroCopyWrite;
     use fluvio_protocol::{Decoder, Encoder};
     use crate::KfSocket;
     use crate::KfSocketError;

@@ -14,11 +14,10 @@ use async_channel::Receiver;
 use async_channel::Sender;
 use async_channel::bounded;
 use tokio::select;
-use futures::StreamExt;
-use futures::sink::SinkExt;
+use futures_util::stream::StreamExt;
 
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use fluvio_controlplane::InternalSpuApi;
 use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
@@ -569,7 +568,7 @@ impl ScDispatcher<FileReplica> {
         let leader = &replica.leader;
         debug!("trying to adding follower replica: {}", replica);
 
-        if let Some(mut sender) = self.ctx.followers_state().mailbox(leader) {
+        if let Some(sender) = self.ctx.followers_state().mailbox(leader) {
             debug!(
                 "existing follower controller exists: {}, send request to controller",
                 replica
@@ -585,7 +584,7 @@ impl ScDispatcher<FileReplica> {
                 "no existing follower controller exists for {},need to spin up",
                 replica
             );
-            let (mut sender, receiver) = self.ctx.followers_state().insert_mailbox(*leader);
+            let (sender, receiver) = self.ctx.followers_state().insert_mailbox(*leader);
             let follower_controller = ReplicaFollowerController::new(
                 *leader,
                 receiver,
@@ -607,7 +606,7 @@ impl ScDispatcher<FileReplica> {
         let leader = &replica.leader;
         debug!("trying to adding follower replica: {}", replica);
 
-        if let Some(mut sender) = self.ctx.followers_state().mailbox(leader) {
+        if let Some(sender) = self.ctx.followers_state().mailbox(leader) {
             debug!(
                 "existing follower controller exists: {}, send update request to controller",
                 replica

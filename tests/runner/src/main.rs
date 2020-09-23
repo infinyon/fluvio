@@ -1,3 +1,4 @@
+#![type_length_limit = "6685544"]
 mod setup;
 mod cli;
 mod tests;
@@ -10,11 +11,11 @@ pub use cli::*;
 pub use tls::*;
 
 fn main() {
-    use flv_future_aio::task::run_block_on;
+    use fluvio_future::task::run_block_on;
     use setup::Setup;
     use test_runner::TestRunner;
 
-    flv_future_aio::util::init_logger();
+    fluvio_future::subscriber::init_logger();
 
     let option = TestOption::parse_cli_or_exit();
 

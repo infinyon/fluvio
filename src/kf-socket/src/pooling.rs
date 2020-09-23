@@ -116,14 +116,14 @@ pub(crate) mod test {
     use std::net::SocketAddr;
     use std::time::Duration;
 
-    use futures::future::join;
-    use futures::stream::StreamExt;
+    use futures_util::future::join;
+    use futures_util::stream::StreamExt;
     use tracing::debug;
     use tracing::error;
 
-    use flv_future_aio::net::TcpListener;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::test_async;
+    use fluvio_future::net::TcpListener;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
 
     use super::KfSocket;
     use super::KfSocketError;

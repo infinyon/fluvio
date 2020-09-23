@@ -119,13 +119,13 @@ where
 #[allow(clippy::module_inception)]
 mod produce {
     use tracing::debug;
-    use futures::stream::StreamExt;
+    use futures_lite::StreamExt;
 
-    use flv_future_aio::fs::File;
-    use flv_future_aio::io::stdin;
-    use flv_future_aio::io::ReadExt;
-    use flv_future_aio::io::BufReader;
-    use flv_future_aio::io::AsyncBufReadExt;
+    use fluvio_future::fs::File;
+    use fluvio_future::io::stdin;
+    use fluvio_future::io::ReadExt;
+    use futures_lite::io::BufReader;
+    use futures_lite::io::AsyncBufReadExt;
     use fluvio_types::{print_cli_err, print_cli_ok};
     use fluvio::TopicProducer;
 

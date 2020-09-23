@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use semver::Version;
 use k8_client::K8Config;
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 use k8_client::ClientError;
 use k8_client::load_and_share;
 use k8_obj_core::service::ServiceSpec;

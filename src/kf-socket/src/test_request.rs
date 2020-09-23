@@ -3,6 +3,8 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
+use log::debug;
+
 use fluvio_protocol::api::{ApiMessage, RequestMessage, RequestHeader, api_decode, Request};
 use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::{Decode, Encode};
@@ -82,7 +84,7 @@ impl ApiMessage for TestApiRequest {
         Self::ApiKey: Sized,
         T: Buf,
     {
-        tracing::debug!("decoding test api request: {:#?}", header);
+        debug!("decoding test api request: {:#?}", header);
 
         match header.api_key().try_into()? {
             TestKafkaApiEnum::Echo => api_decode!(TestApiRequest, EchoRequest, src, header),

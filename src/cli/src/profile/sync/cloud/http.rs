@@ -12,7 +12,7 @@ pub async fn execute(req: Request) -> Result<Response, Error> {
         .next()
         .ok_or_else(|| Error::from_str(StatusCode::BadRequest, "missing valid address"))?;
 
-    let raw_stream = flv_future_aio::net::TcpStream::connect(addr).await?;
+    let raw_stream = fluvio_future::net::TcpStream::connect(addr).await?;
     let result = client::connect(raw_stream, req).await;
 
     debug!("http result: {:#?}", result);

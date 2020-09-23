@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 
 use crate::cli::TestOption;
 use crate::environment::EnvironmentDriver;
@@ -38,6 +38,6 @@ impl Setup {
 
         self.env_driver.install_cluster().await;
 
-        sleep(Duration::from_millis(2000)).await;
+        sleep(Duration::from_millis(5000)).await;
     }
 }

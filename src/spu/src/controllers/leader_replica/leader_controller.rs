@@ -5,17 +5,17 @@ use tracing::debug;
 use tracing::warn;
 use tracing::error;
 use async_channel::Receiver;
-use futures::future::join3;
-use futures::future::join;
-use futures::stream::StreamExt;
+use futures_util::future::join3;
+use futures_util::future::join;
+use futures_util::stream::StreamExt;
 
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
 use kf_socket::ExclusiveKfSink;
-use flv_future_aio::sync::broadcast::Sender;
+use tokio::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;
 use crate::core::OffsetUpdateEvent;

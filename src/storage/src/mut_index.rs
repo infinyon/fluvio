@@ -10,8 +10,8 @@ use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
-use flv_future_aio::fs::File;
-use flv_future_aio::fs::MemoryMappedMutFile;
+use fluvio_future::fs::File;
+use fluvio_future::fs::mmap::MemoryMappedMutFile;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;
@@ -239,7 +239,7 @@ mod tests {
     use std::io::Error as IoError;
     use std::io::Read;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutLogIndex;
