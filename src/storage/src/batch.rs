@@ -85,6 +85,7 @@ where
         pos: Size,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
         let mut bytes = vec![0u8; BATCH_FILE_HEADER_SIZE];
+
         let read_len = file.read(&mut bytes).await?;
         trace!(
             "file batch: read preamble and header {} bytes out of {}",
@@ -100,9 +101,11 @@ where
         if read_len < BATCH_FILE_HEADER_SIZE {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
-                "not enough for header",
+                format!("expected: {} but only {} bytes read",BATCH_FILE_HEADER_SIZE,read_len)
             ));
         }
+
+        
 
         let mut cursor = Cursor::new(bytes);
         let mut batch = Batch::default();
@@ -319,11 +322,11 @@ mod tests {
 
         let option = default_option(test_dir.clone());
 
-        let mut seg_sink = MutableSegment::create(300, &option).await?;
+        let mut active_segment = MutableSegment::create(300, &option).await?;
 
-        seg_sink.send(create_batch()).await?;
+        active_segment.send(create_batch()).await?;
 
-        let mut stream_factory = seg_sink
+        let mut stream_factory = active_segment
             .open_default_batch_stream()
             .await
             .expect("open full batch stream");
@@ -339,6 +342,8 @@ mod tests {
             &Some(vec![10, 20])
         );
         assert_eq!(batch1.get_batch().records[1].get_offset_delta(), 1);
+
+       // let batch2 = stream.next().await.expect("batch");
 
         Ok(())
     }
@@ -364,15 +369,15 @@ mod tests {
         let _ = stream.next().await.expect("batch");
 
         // this line cause panic in rust with generator resumed after completion'
-        // let batch2 = stream.next().await.expect("batch");
-        /*
+        let batch2 = stream.next().await.expect("batch");
+        
         assert_eq!(batch2.get_batch().get_base_offset(),302);
         assert_eq!(batch2.get_batch().get_header().producer_id,25);
         assert_eq!(batch2.get_batch().records.len(),2);
         assert_eq!(batch2.get_pos(),79);
         assert_eq!(batch2.get_batch().records[0].get_offset_delta(),0);
         assert!((stream.next().await).is_none());
-        */
+        
 
         Ok(())
     }
