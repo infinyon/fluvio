@@ -2,7 +2,7 @@ use fluvio_cli::run_cli;
 use fluvio_types::print_cli_err;
 
 fn main() {
-    flv_util::init_tracer(None);
+    fluvio_future::subscriber::init_tracer(None);
 
     match run_cli() {
         Ok(output) => {

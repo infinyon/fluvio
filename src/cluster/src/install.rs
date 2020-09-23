@@ -13,7 +13,7 @@ use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use flv_util::cmd::CommandExt;
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 use k8_client::{K8Client, ClientError as K8ClientError};
 use k8_config::{K8Config};
 use k8_client::metadata::MetadataClient;
@@ -399,7 +399,7 @@ impl ClusterInstallerBuilder {
 ///     .expect("should initialize installer");
 ///
 /// // Installing Fluvio is asynchronous, so you'll need an async runtime
-/// let result = async_std::task::block_on(async {
+/// let result = fluvio_future::task::run_block_on(async {
 ///     installer.install_fluvio().await
 /// });
 /// ```

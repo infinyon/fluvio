@@ -123,7 +123,7 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use dataplane::Offset;
     use flv_util::fixture::ensure_new_dir;
 

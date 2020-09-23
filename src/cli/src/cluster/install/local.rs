@@ -5,7 +5,7 @@ use std::io::Error as IoError;
 use tracing::debug;
 
 use k8_client::SharedK8Client;
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 
 use crate::CliError;
 

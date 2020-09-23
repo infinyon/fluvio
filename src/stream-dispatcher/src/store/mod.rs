@@ -101,7 +101,7 @@ mod context {
             use tokio::select;
             use tracing::debug;
             use tracing::warn;
-            use flv_future_aio::timer::sleep;
+            use fluvio_future::timer::sleep;
 
             const MAX_WAIT_TIME: u64 = 5;
 
@@ -162,7 +162,7 @@ mod context {
             use tokio::select;
             use tracing::debug;
             use tracing::warn;
-            use flv_future_aio::timer::sleep;
+            use fluvio_future::timer::sleep;
 
             const MAX_WAIT_TIME: u64 = 5;
 

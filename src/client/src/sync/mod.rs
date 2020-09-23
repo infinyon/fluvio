@@ -86,7 +86,7 @@ mod context {
             use std::io::ErrorKind;
 
             use tokio::select;
-            use flv_future_aio::timer::sleep;
+            use fluvio_future::timer::sleep;
 
             const TIMER_DURATION: u64 = 180;
 

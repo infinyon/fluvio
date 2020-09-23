@@ -2,12 +2,11 @@ use std::io::Error as IoError;
 use std::fmt;
 use std::path::Path;
 
-use futures::stream::StreamExt;
 use tracing::warn;
 use tracing::trace;
 
 use dataplane::Offset;
-use flv_future_aio::fs::util as file_util;
+use fluvio_future::fs::util as file_util;
 
 use crate::BatchHeaderStream;
 use crate::util::log_path_get_offset;
@@ -119,11 +118,11 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use futures::io::AsyncWriteExt;
+    use futures_lite::io::AsyncWriteExt;
 
-    use flv_future_aio::fs::BoundedFileSink;
-    use flv_future_aio::fs::BoundedFileOption;
-    use flv_future_aio::test_async;
+    use fluvio_future::fs::BoundedFileSink;
+    use fluvio_future::fs::BoundedFileOption;
+    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
     use dataplane::record::DefaultRecord;
     use dataplane::batch::DefaultBatch;

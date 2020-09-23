@@ -39,3 +39,33 @@ mod event {
         pub hw: Offset,
     }
 }
+
+mod broadcast {
+
+    pub use tokio::sync::broadcast::Receiver;
+    pub use tokio::sync::broadcast::Sender;
+    pub use tokio::sync::broadcast::channel;
+    pub use tokio::sync::broadcast::RecvError;
+
+    #[derive(Debug)]
+    pub struct Channel<T> {
+        receiver: Receiver<T>,
+        sender: Sender<T>,
+    }
+
+    impl<T> Channel<T> {
+        pub fn new(capacity: usize) -> Self {
+            let (sender, receiver) = channel(capacity);
+            Self { receiver, sender }
+        }
+
+        /// create new clone of sender
+        pub fn receiver(&self) -> Receiver<T> {
+            self.sender.subscribe()
+        }
+
+        pub fn sender(&self) -> Sender<T> {
+            self.sender.clone()
+        }
+    }
+}

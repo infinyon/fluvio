@@ -4,12 +4,12 @@ use std::env::temp_dir;
 use std::time::Duration;
 
 use tracing::debug;
-use futures::stream::StreamExt;
-use futures::future::join;
+use futures_lite::StreamExt;
+use futures_lite::future::zip;
 
-use flv_future_aio::test_async;
-use flv_future_aio::timer::sleep;
-use flv_future_aio::net::TcpListener;
+use fluvio_future::test_async;
+use fluvio_future::timer::sleep;
+use fluvio_future::net::TcpListener;
 use dataplane::fetch::{
     FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
     FilePartitionResponse, FileTopicResponse,
@@ -178,7 +178,7 @@ async fn test_client(addr: &str) {
 async fn test_replica_fetch() -> Result<(), StorageError> {
     let addr = "127.0.0.1:9911";
 
-    let _r = join(test_client(addr), test_server(addr)).await;
+    let _r = zip(test_client(addr), test_server(addr)).await;
 
     Ok(())
 }

@@ -4,7 +4,7 @@
 
 use tracing::debug;
 
-use flv_future_aio::task::spawn;
+use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
 use crate::stores::*;

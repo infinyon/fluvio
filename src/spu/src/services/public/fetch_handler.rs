@@ -1,7 +1,7 @@
 use tracing::trace;
 use tracing::debug;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
@@ -9,7 +9,7 @@ use kf_socket::KfSocketError;
 use dataplane::api::RequestMessage;
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 

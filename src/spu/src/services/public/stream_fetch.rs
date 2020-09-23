@@ -4,15 +4,14 @@ use tracing::debug;
 use tracing::trace;
 use tracing::warn;
 use tracing::error;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 use tokio::select;
 use event_listener::Event;
+use tokio::sync::broadcast::RecvError;
 
-use flv_future_aio::sync::broadcast::RecvError;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
-use flv_future_aio::task::spawn;
-
+use fluvio_future::zero_copy::ZeroCopyWrite;
+use fluvio_future::task::spawn;
 use kf_socket::InnerKfSink;
 use kf_socket::InnerExclusiveKfSink;
 use kf_socket::KfSocketError;

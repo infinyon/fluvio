@@ -4,13 +4,13 @@ use tracing::trace;
 use tracing::error;
 use tracing::debug;
 
-use futures::channel::mpsc::Receiver;
-use futures::select;
-use futures::StreamExt;
-use futures::FutureExt;
+use tokio::select;
+use futures_util::StreamExt;
+use futures_util::FutureExt;
+use async_channel::Receiver;
 
-use flv_future_aio::task::spawn;
-use flv_future_aio::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_future::timer::sleep;
 use kf_socket::KfSocket;
 use kf_socket::KfSink;
 use kf_socket::KfSocketError;
@@ -246,7 +246,7 @@ impl ReplicaFollowerController<FileReplica> {
                         return None
                     }
                 },
-                socket_res = connect_future.fuse() => {
+                socket_res = connect_future => {
                     match socket_res {
                         Ok(socket) => {
                             trace!("connected to leader: {}",self.leader_id);

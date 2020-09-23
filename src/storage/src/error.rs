@@ -2,8 +2,8 @@ use std::io::Error as IoError;
 use std::fmt;
 
 use dataplane::batch::DefaultBatch;
-use flv_future_aio::fs::BoundedFileSinkError;
-use flv_future_aio::zero_copy::SendFileError;
+use fluvio_future::fs::BoundedFileSinkError;
+use fluvio_future::zero_copy::SendFileError;
 use kf_socket::KfSocketError;
 
 use crate::util::OffsetError;

@@ -1,5 +1,5 @@
 use std::time::Duration;
-use flv_future_aio::timer::sleep;
+use fluvio_future::timer::sleep;
 
 use utils::bin::get_fluvio;
 
@@ -73,7 +73,7 @@ impl TestRunner {
             println!("no topic initialized");
         }
 
-        sleep(Duration::from_secs(1)).await; // sleep 5 second in just case
+        sleep(Duration::from_secs(5)).await; // sleep 5 second in just case
 
         let test_driver = create_test_driver(self.option.clone());
 

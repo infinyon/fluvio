@@ -18,5 +18,5 @@ bytes = "0.5.4"
 serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
-fluvio-protocol = { version = "0.1.0" }
+fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

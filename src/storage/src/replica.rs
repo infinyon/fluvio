@@ -5,7 +5,7 @@ use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
-use flv_future_aio::fs::create_dir_all;
+use fluvio_future::fs::create_dir_all;
 use dataplane::{ErrorCode, Offset, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
@@ -213,13 +213,12 @@ impl FileReplica {
     ) where
         P: SlicePartitionResponse,
     {
-        trace!(
-            "read records to response from: {} max: {:#?}",
-            start_offset,
-            max_offset
+        let high_watermark = self.get_hw();
+        debug!(
+            "read records at: {}, max: max: {:#?}, hw: {}",
+            start_offset, max_offset, high_watermark,
         );
 
-        let high_watermark = self.get_hw();
         response.set_hw(high_watermark);
         response.set_last_stable_offset(high_watermark);
         response.set_log_start_offset(self.get_log_start_offset());
@@ -254,7 +253,7 @@ impl FileReplica {
                 match slice {
                     Ok(slice) => match slice {
                         Some(slice) => {
-                            use flv_future_aio::fs::AsyncFileSlice;
+                            use fluvio_future::file_slice::AsyncFileSlice;
 
                             let limited_slice = if slice.len() > max_len as u64 {
                                 debug!(
@@ -332,7 +331,7 @@ mod tests {
     use std::fs::metadata;
     use std::io::Cursor;
 
-    use flv_future_aio::test_async;
+    use fluvio_future::test_async;
     use dataplane::batch::DefaultBatch;
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};
@@ -345,7 +344,6 @@ mod tests {
     use crate::fixture::read_bytes_from_file;
     use crate::ConfigOption;
     use crate::StorageError;
-    use crate::SegmentSlice;
     use crate::ReplicaStorage;
 
     const TEST_SEG_NAME: &str = "00000000000000000020.log";
@@ -384,8 +382,18 @@ mod tests {
             .expect("test replica");
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
-        replica.send(create_batch()).await?;
-        replica.update_high_watermark(10).await?;
+        assert_eq!(replica.get_leo(), START_OFFSET);
+        assert_eq!(replica.get_hw(), START_OFFSET);
+
+        replica.send(create_batch()).await.expect("send");
+        assert_eq!(replica.get_leo(), START_OFFSET + 2); // 2 batches
+        assert_eq!(replica.get_hw(), START_OFFSET); // hw should not change since we have not committed them
+
+        replica
+            .update_high_watermark(10)
+            .await
+            .expect("high watermaerk");
+        assert_eq!(replica.get_hw(), 10); // hw should set to whatever we passed
 
         let test_file = option.base_dir.join("test-0").join(TEST_SEG_NAME);
         debug!("using test file: {:#?}", test_file);
@@ -397,31 +405,14 @@ mod tests {
         assert_eq!(batch.get_header().last_offset_delta, 1);
         assert_eq!(batch.records.len(), 2);
 
-        // find segment
+        // there should not be any segment for offset 0 since base offset is 20
         let segment = replica.find_segment(0);
         assert!(segment.is_none());
 
-        let segment = replica.find_segment(20);
-        match segment.unwrap() {
-            SegmentSlice::MutableSegment(_) => debug!("should be active segment"),
-            SegmentSlice::Segment(_) => panic!("cannot be inactive"),
-        }
-
-        let segment = replica.find_segment(21);
-        assert!(segment.is_some());
-        match segment.unwrap() {
-            SegmentSlice::MutableSegment(_) => debug!("should be active segment"),
-            SegmentSlice::Segment(_) => panic!("cannot be inactive"),
-        }
-
-        replica.send(create_batch()).await?;
-
-        let segment = replica.find_segment(30);
-        assert!(segment.is_some());
-        match segment.unwrap() {
-            SegmentSlice::MutableSegment(_) => debug!("should be active segment"),
-            SegmentSlice::Segment(_) => panic!("cannot be inactive"),
-        }
+        // segment with offset 20 should be active segment
+        assert!(replica.find_segment(20).unwrap().is_active());
+        assert!(replica.find_segment(21).unwrap().is_active());
+        assert!(replica.find_segment(30).is_some()); // any higher offset should result in current segment
 
         Ok(())
     }
@@ -436,6 +427,10 @@ mod tests {
             .await
             .expect("test replica");
 
+        assert_eq!(replica.get_leo(), 0);
+        assert_eq!(replica.get_hw(), 0);
+
+        // reading empty replica should return empyt records
         let mut empty_response = FilePartitionResponse::default();
         replica
             .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut empty_response)
@@ -443,11 +438,16 @@ mod tests {
         assert_eq!(empty_response.records.len(), 0);
         assert_eq!(empty_response.error_code, ErrorCode::None);
 
+        // write batches
         let batch = create_batch();
         let batch_len = batch.write_size(0);
         debug!("batch len: {}", batch_len);
-        replica.send(batch).await?;
+        replica.send(batch).await.expect("write");
 
+        assert_eq!(replica.get_leo(), 2); // 2
+        assert_eq!(replica.get_hw(), 0);
+
+        // read records
         let mut partition_response = FilePartitionResponse::default();
         replica
             .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)

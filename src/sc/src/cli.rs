@@ -17,8 +17,8 @@ use structopt::StructOpt;
 
 use fluvio_types::print_cli_err;
 use k8_client::K8Config;
-use flv_future_aio::net::tls::TlsAcceptor;
-use flv_future_aio::net::tls::AcceptorBuilder;
+use fluvio_future::tls::TlsAcceptor;
+use fluvio_future::tls::AcceptorBuilder;
 
 use crate::error::ScError;
 use crate::config::ScConfig;

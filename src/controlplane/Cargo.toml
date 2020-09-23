@@ -17,5 +17,5 @@ tracing = "0.1.19"
 # Fluvio dependencies
 fluvio-types = { path = "../types" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata" }
-fluvio-protocol = { version = "0.1.0" }
+fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

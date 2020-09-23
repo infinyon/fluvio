@@ -5,10 +5,10 @@ use std::path::Path;
 
 use tracing::debug;
 
-use flv_future_aio::fs::File;
-use flv_future_aio::fs::util as file_util;
-use flv_future_aio::fs::AsyncFileSlice;
-use flv_future_aio::fs::AsyncFile;
+use fluvio_future::fs::File;
+use fluvio_future::fs::util as file_util;
+use fluvio_future::file_slice::AsyncFileSlice;
+use fluvio_future::fs::AsyncFileExtension;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;

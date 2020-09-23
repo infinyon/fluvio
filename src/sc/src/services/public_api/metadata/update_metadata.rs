@@ -11,7 +11,7 @@ use kf_protocol::api::*;
 use kf_protocol::Encoder;
 use fluvio_sc_schema::metadata::*;
 use kf_socket::*;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 
 
 use crate::core::*;
@@ -84,7 +84,7 @@ where
     }
 
     pub fn run(self) {
-        use flv_future_aio::task::spawn;
+        use fluvio_future::task::spawn;
 
         spawn(self.dispatch_loop());
     }

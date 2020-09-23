@@ -12,7 +12,7 @@ use tracing::instrument;
 
 use async_channel::Receiver;
 
-use flv_future_aio::task::spawn;
+use fluvio_future::task::spawn;
 use fluvio_types::SpuId;
 
 use crate::stores::actions::WSAction;
@@ -61,7 +61,7 @@ impl SpuController {
     #[instrument(skip(self))]
     async fn dispatch_loop(mut self) {
         use tokio::select;
-        use flv_future_aio::timer::sleep;
+        use fluvio_future::timer::sleep;
 
         self.sync_store().await;
 

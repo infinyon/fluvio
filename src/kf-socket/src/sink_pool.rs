@@ -59,12 +59,12 @@ mod tests {
 
     use tracing::debug;
     use tracing::info;
-    use futures::stream::StreamExt;
-    use futures::future::join;
+    use futures_util::stream::StreamExt;
+    use futures_util::future::join;
 
-    use flv_future_aio::test_async;
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::net::TcpListener;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::net::TcpListener;
     use fluvio_protocol::api::RequestMessage;
 
     use crate::KfSocket;

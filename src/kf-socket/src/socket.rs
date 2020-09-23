@@ -4,20 +4,20 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 
 use tracing::debug;
-use futures::stream::StreamExt;
+use futures_util::StreamExt;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
-use futures::io::{AsyncRead, AsyncWrite};
+use futures_util::io::{AsyncRead, AsyncWrite};
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
 
-use flv_future_aio::net::TcpStream;
-use flv_future_aio::net::TcpDomainConnector;
-use flv_future_aio::net::DefaultTcpDomainConnector;
-use flv_future_aio::net::tls::AllTcpStream;
+use fluvio_future::net::TcpStream;
+use fluvio_future::net::TcpDomainConnector;
+use fluvio_future::net::DefaultTcpDomainConnector;
+use fluvio_future::tls::AllTcpStream;
 
 use crate::InnerKfSink;
 use crate::InnerKfStream;

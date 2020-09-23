@@ -7,7 +7,7 @@ use tracing::info;
 use tracing::trace;
 use tracing::warn;
 use tracing::instrument;
-use futures::stream::StreamExt;
+use futures_util::stream::StreamExt;
 
 use crate::cli::TlsConfig;
 use crate::dispatcher::k8::metadata::*;
@@ -22,7 +22,7 @@ use crate::core::SharedContext;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::defaults::SPU_DEFAULT_NAME;
 use fluvio_types::SpuId;
-use flv_future_aio::task::spawn;
+use fluvio_future::task::spawn;
 
 use k8_client::ClientError;
 use k8_client::metadata::MetadataClient;

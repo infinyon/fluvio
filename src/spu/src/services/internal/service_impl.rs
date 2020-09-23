@@ -6,7 +6,7 @@ use kf_service::api_loop;
 use kf_service::KfService;
 use kf_socket::KfSocket;
 use kf_socket::KfSocketError;
-use flv_future_aio::net::TcpStream;
+use fluvio_future::net::TcpStream;
 
 use super::SpuPeerRequest;
 use super::SPUPeerApiEnum;

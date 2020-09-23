@@ -9,7 +9,7 @@ use super::TestDriver;
 mod runner {
 
     use std::time::Duration;
-    use flv_future_aio::timer::sleep;
+    use fluvio_future::timer::sleep;
 
     use async_trait::async_trait;
 
@@ -33,7 +33,7 @@ mod runner {
                 println!("produce skipped");
             }
 
-            sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(5)).await;
 
             if self.option.test_consumer() {
                 super::consume::validate_consume_message(&self.option).await;
@@ -50,7 +50,7 @@ mod runner {
             //use futures::future::join_all;
             //use futures::future::join;
 
-            //use flv_future_aio::task::run_block_on;
+            //use fluvio_future::task::run_block_on;
 
             //let mut listen_consumer_test = vec ![];
 

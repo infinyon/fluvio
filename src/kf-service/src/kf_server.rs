@@ -5,13 +5,12 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::process;
 
-#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use futures::StreamExt;
+use futures_util::StreamExt;
 use event_listener::Event;
-use futures::io::AsyncRead;
-use futures::io::AsyncWrite;
+use futures_util::io::AsyncRead;
+use futures_util::io::AsyncWrite;
 
 use tracing::error;
 use tracing::info;
@@ -20,10 +19,10 @@ use tracing::debug;
 use tracing::instrument;
 use async_trait::async_trait;
 
-use flv_future_aio::net::TcpListener;
-use flv_future_aio::net::TcpStream;
-use flv_future_aio::zero_copy::ZeroCopyWrite;
-use flv_future_aio::task::spawn;
+use fluvio_future::net::TcpListener;
+use fluvio_future::net::TcpStream;
+use fluvio_future::zero_copy::ZeroCopyWrite;
+use fluvio_future::task::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
 use kf_socket::InnerKfSocket;
@@ -226,8 +225,8 @@ mod test {
     use tracing::debug;
     use tracing::trace;
 
-    use flv_future_aio::timer::sleep;
-    use flv_future_aio::test_async;
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
 
     use fluvio_protocol::api::RequestMessage;
     use kf_socket::KfSocket;
