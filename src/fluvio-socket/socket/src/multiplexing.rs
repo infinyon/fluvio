@@ -1,36 +1,36 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::io::Cursor;
 use std::marker::PhantomData;
+use std::sync::Arc;
 use std::time::Duration;
 
+use async_channel::bounded;
+use async_channel::Receiver;
+use async_channel::Sender;
+use async_mutex::Mutex;
+use bytes::BytesMut;
+use event_listener::Event;
+use futures_util::io::{AsyncRead, AsyncWrite};
+use futures_util::stream::StreamExt;
+use tokio::select;
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
-use bytes::BytesMut;
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::StreamExt;
-use async_mutex::Mutex;
-use event_listener::Event;
-use async_channel::Sender;
-use async_channel::Receiver;
-use async_channel::bounded;
-use tokio::select;
 
 use fluvio_future::net::TcpStream;
-use fluvio_future::tls::AllTcpStream;
 use fluvio_future::timer::sleep;
-use fluvio_protocol::api::RequestMessage;
+use fluvio_future::tls::AllTcpStream;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
+use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::Decoder;
 
-use crate::KfSocketError;
-use crate::InnerKfStream;
-use crate::InnerKfSocket;
+use crate::FlvSocketError;
 use crate::InnerExclusiveKfSink;
+use crate::InnerFlvSocket;
+use crate::InnerKfStream;
 
 #[allow(unused)]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
@@ -62,7 +62,7 @@ where
 {
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
-    pub fn new(socket: InnerKfSocket<S>) -> Self {
+    pub fn new(socket: InnerFlvSocket<S>) -> Self {
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
@@ -106,7 +106,7 @@ where
         &mut self,
         mut req_msg: RequestMessage<R>,
         queue_len: usize,
-    ) -> Result<AsyncResponse<R>, KfSocketError>
+    ) -> Result<AsyncResponse<R>, FlvSocketError>
     where
         R: Request,
     {
@@ -142,7 +142,7 @@ impl<R> AsyncResponse<R>
 where
     R: Request,
 {
-    pub async fn next(&mut self) -> Result<R::Response, KfSocketError> {
+    pub async fn next(&mut self) -> Result<R::Response, FlvSocketError> {
         debug!(
             "waiting for async response: {} correlation: {}",
             R::API_KEY,
@@ -156,14 +156,17 @@ where
             Ok(response)
         } else {
             error!("no more response. server has terminated connection");
-            Err(KfSocketError::IoError(IoError::new(
+            Err(FlvSocketError::IoError(IoError::new(
                 ErrorKind::UnexpectedEof,
                 "server has terminated connection",
             )))
         }
     }
 
-    pub async fn next_timeout(&mut self, time_out: Duration) -> Result<R::Response, KfSocketError> {
+    pub async fn next_timeout(
+        &mut self,
+        time_out: Duration,
+    ) -> Result<R::Response, FlvSocketError> {
         debug!(
             "waiting for async response: {} correlation: {}",
             R::API_KEY,
@@ -172,7 +175,7 @@ where
         select! {
             _ = (sleep(time_out)) => {
                 debug!("async socket timeout expired: {},",self.correlation_id);
-                Err(KfSocketError::IoError(IoError::new(
+                Err(FlvSocketError::IoError(IoError::new(
                     ErrorKind::TimedOut,
                     format!("time out in async time out: {}",self.correlation_id),
                 )))
@@ -186,7 +189,7 @@ where
                     Ok(response)
                 } else {
                     error!("no more response. server has terminated connection");
-                    Err(KfSocketError::IoError(IoError::new(
+                    Err(FlvSocketError::IoError(IoError::new(
                         ErrorKind::UnexpectedEof,
                         "server has terminated connection",
                     )))
@@ -213,7 +216,7 @@ where
     pub async fn send_and_receive<R>(
         &mut self,
         mut req_msg: RequestMessage<R>,
-    ) -> Result<R::Response, KfSocketError>
+    ) -> Result<R::Response, FlvSocketError>
     where
         R: Request,
     {
@@ -230,7 +233,7 @@ where
                 drop(guard);
             }
             None => {
-                return Err(KfSocketError::IoError(IoError::new(
+                return Err(FlvSocketError::IoError(IoError::new(
                     ErrorKind::BrokenPipe,
                     "invalid socket, try creating new one",
                 )))
@@ -249,7 +252,7 @@ where
         select! {
             _ = sleep(Duration::from_secs(5)) => {
                 debug!("serial socket: timeout happen, id: {}",self.correlation_id);
-                Err(KfSocketError::IoError(IoError::new(
+                Err(FlvSocketError::IoError(IoError::new(
                     ErrorKind::TimedOut,
                     format!("time out in send and request: {}",self.correlation_id),
                 )))
@@ -271,14 +274,14 @@ where
                             Ok(response)
                         } else {
                             debug!("serial socket: value is empty, something bad happened");
-                            Err(KfSocketError::IoError(IoError::new(
+                            Err(FlvSocketError::IoError(IoError::new(
                                 ErrorKind::UnexpectedEof,
                                 "connection is closed".to_string(),
                             )))
                         }
 
                     },
-                    None =>  Err(KfSocketError::IoError(IoError::new(
+                    None =>  Err(FlvSocketError::IoError(IoError::new(
                         ErrorKind::BrokenPipe,
                         "locked failed, socket is in bad state"
                     )))
@@ -343,7 +346,7 @@ impl MultiPlexingResponseDispatcher {
     }
 
     /// send message to correct receiver
-    pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), KfSocketError> {
+    pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), FlvSocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
@@ -357,7 +360,7 @@ impl MultiPlexingResponseDispatcher {
                             serial_sender.1.notify(1);
                             Ok(())
                         }
-                        None => Err(KfSocketError::IoError(IoError::new(
+                        None => Err(FlvSocketError::IoError(IoError::new(
                             ErrorKind::BrokenPipe,
                             format!(
                                 "failed locking, abandoning sending to socket: {}",
@@ -367,14 +370,14 @@ impl MultiPlexingResponseDispatcher {
                     }
                 }
                 SharedSender::Queue(queue_sender) => queue_sender.send(msg).await.map_err(|_| {
-                    KfSocketError::IoError(IoError::new(
+                    FlvSocketError::IoError(IoError::new(
                         ErrorKind::BrokenPipe,
                         format!("problem sending to queue socket: {}", correlation_id),
                     ))
                 }),
             }
         } else {
-            Err(KfSocketError::IoError(IoError::new(
+            Err(FlvSocketError::IoError(IoError::new(
                 ErrorKind::BrokenPipe,
                 format!(
                     "no socket receiver founded for {}, abandoning sending",
@@ -390,22 +393,22 @@ mod tests {
 
     use std::time::Duration;
 
-    use tracing::debug;
-    use futures_util::stream::StreamExt;
     use futures_util::future::join;
     use futures_util::future::join3;
+    use futures_util::stream::StreamExt;
+    use tracing::debug;
 
-    use fluvio_future::test_async;
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
     use fluvio_future::net::TcpListener;
+    use fluvio_future::task::spawn;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
     use fluvio_protocol::api::RequestMessage;
 
-    use crate::KfSocket;
-    use crate::KfSocketError;
-    use crate::ExclusiveKfSink;
     use super::MultiplexerSocket;
     use crate::test_request::*;
+    use crate::ExclusiveKfSink;
+    use crate::FlvSocket;
+    use crate::FlvSocketError;
 
     async fn test_server(addr: &str) {
         let listener = TcpListener::bind(addr).await.expect("binding");
@@ -414,7 +417,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let socket: KfSocket = incoming_stream.into();
+        let socket: FlvSocket = incoming_stream.into();
 
         let (sink, mut stream) = socket.split();
 
@@ -492,7 +495,7 @@ mod tests {
 
         sleep(Duration::from_millis(20)).await;
         debug!("client: trying to connect");
-        let socket = KfSocket::connect(&addr).await.expect("connect");
+        let socket = FlvSocket::connect(&addr).await.expect("connect");
         debug!("client: connected to test server and waiting...");
         sleep(Duration::from_millis(20)).await;
         let mut multiplexer = MultiplexerSocket::new(socket);
@@ -543,7 +546,7 @@ mod tests {
     }
 
     #[test_async]
-    async fn test_multiplexing() -> Result<(), KfSocketError> {
+    async fn test_multiplexing() -> Result<(), FlvSocketError> {
         debug!("start testing");
         let addr = "127.0.0.1:6000";
 

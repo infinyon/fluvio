@@ -1,11 +1,10 @@
-mod kf_server;
+mod server;
 
 #[cfg(test)]
 pub mod test_request;
 
 pub use fluvio_protocol::codec::FluvioCodec;
-pub use self::kf_server::KfApiServer;
-pub use self::kf_server::KfService;
+pub use self::server::*;
 
 #[macro_export]
 macro_rules! call_service {

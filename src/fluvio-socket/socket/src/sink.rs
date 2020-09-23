@@ -1,53 +1,53 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use std::os::unix::io::RawFd;
 use std::os::unix::io::AsRawFd;
+use std::os::unix::io::RawFd;
 
-use tracing::trace;
-use tracing::debug;
-use bytes::Bytes;
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
+use bytes::Bytes;
+use tracing::debug;
+use tracing::trace;
 
+use futures_util::io::{AsyncRead, AsyncWrite};
 use futures_util::sink::SinkExt;
 use futures_util::stream::SplitSink;
-use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio_util::compat::Compat;
 
-use fluvio_future::zero_copy::ZeroCopyWrite;
 use bytes::BytesMut;
-use fluvio_protocol::Version;
-use fluvio_protocol::Encoder as KfEncoder;
+use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
+use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::store::FileWrite;
 use fluvio_protocol::store::StoreValue;
-use fluvio_protocol::codec::FluvioCodec;
+use fluvio_protocol::Encoder as KfEncoder;
+use fluvio_protocol::Version;
 
-use tokio_util::codec::Framed;
 use fluvio_future::net::TcpStream;
 use fluvio_future::tls::AllTcpStream;
+use tokio_util::codec::Framed;
 
-use crate::KfSocketError;
+use crate::FlvSocketError;
 
-pub type KfSink = InnerKfSink<TcpStream>;
+pub type KfSink = InnerFlvSink<TcpStream>;
 #[allow(unused)]
-pub type AllKfSink = InnerKfSink<AllTcpStream>;
+pub type AllKfSink = InnerFlvSink<AllTcpStream>;
 pub type ExclusiveKfSink = InnerExclusiveKfSink<TcpStream>;
 pub type ExclusiveAllKfSink = InnerExclusiveKfSink<AllTcpStream>;
 
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
 
 #[derive(Debug)]
-pub struct InnerKfSink<S> {
+pub struct InnerFlvSink<S> {
     inner: SplitFrame<S>,
     fd: RawFd,
 }
 
-impl<S> InnerKfSink<S> {
+impl<S> InnerFlvSink<S> {
     pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
-        InnerKfSink { fd, inner }
+        InnerFlvSink { fd, inner }
     }
 
     pub fn get_mut_tcp_sink(&mut self) -> &mut SplitFrame<S> {
@@ -65,7 +65,7 @@ impl<S> InnerKfSink<S> {
     }
 }
 
-impl<S> InnerKfSink<S>
+impl<S> InnerFlvSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
@@ -73,7 +73,7 @@ where
     pub async fn send_request<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<(), KfSocketError>
+    ) -> Result<(), FlvSocketError>
     where
         RequestMessage<R>: KfEncoder + Default + Debug,
     {
@@ -87,7 +87,7 @@ where
         &mut self,
         resp_msg: &ResponseMessage<P>,
         version: Version,
-    ) -> Result<(), KfSocketError>
+    ) -> Result<(), FlvSocketError>
     where
         ResponseMessage<P>: KfEncoder + Default + Debug,
     {
@@ -97,7 +97,7 @@ where
     }
 }
 
-impl<S> InnerKfSink<S>
+impl<S> InnerFlvSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
     Self: ZeroCopyWrite,
@@ -107,7 +107,7 @@ where
         &mut self,
         msg: &T,
         version: Version,
-    ) -> Result<(), KfSocketError>
+    ) -> Result<(), FlvSocketError>
     where
         T: FileWrite,
     {
@@ -122,7 +122,7 @@ where
     }
 
     /// write store values to socket
-    async fn write_store_values(&mut self, values: Vec<StoreValue>) -> Result<(), KfSocketError> {
+    async fn write_store_values(&mut self, values: Vec<StoreValue>) -> Result<(), FlvSocketError> {
         trace!("writing store values to socket values: {}", values.len());
 
         for value in values {
@@ -151,7 +151,7 @@ where
     }
 }
 
-impl<S> AsRawFd for InnerKfSink<S> {
+impl<S> AsRawFd for InnerFlvSink<S> {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
@@ -159,12 +159,12 @@ impl<S> AsRawFd for InnerKfSink<S> {
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct InnerExclusiveKfSink<S> {
-    inner: Arc<Mutex<InnerKfSink<S>>>,
+    inner: Arc<Mutex<InnerFlvSink<S>>>,
     fd: RawFd,
 }
 
 impl<S> InnerExclusiveKfSink<S> {
-    pub fn new(sink: InnerKfSink<S>) -> Self {
+    pub fn new(sink: InnerFlvSink<S>) -> Self {
         let fd = sink.id();
         InnerExclusiveKfSink {
             inner: Arc::new(Mutex::new(sink)),
@@ -177,11 +177,11 @@ impl<S> InnerExclusiveKfSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    pub async fn lock(&self) -> MutexGuard<'_, InnerKfSink<S>> {
+    pub async fn lock(&self) -> MutexGuard<'_, InnerFlvSink<S>> {
         self.inner.lock().await
     }
 
-    pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), KfSocketError>
+    pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), FlvSocketError>
     where
         RequestMessage<R>: KfEncoder + Default + Debug,
     {
@@ -194,7 +194,7 @@ where
         &mut self,
         resp_msg: &ResponseMessage<P>,
         version: Version,
-    ) -> Result<(), KfSocketError>
+    ) -> Result<(), FlvSocketError>
     where
         ResponseMessage<P>: KfEncoder + Default + Debug,
     {
@@ -219,29 +219,29 @@ impl<S> Clone for InnerExclusiveKfSink<S> {
 #[cfg(test)]
 mod tests {
 
+    use std::env::temp_dir;
+    use std::fs::remove_file;
     use std::io::Cursor;
     use std::path::Path;
     use std::time::Duration;
-    use std::fs::remove_file;
-    use std::env::temp_dir;
 
-    use tracing::debug;
-    use tracing::info;
-    use futures_util::stream::StreamExt;
+    use async_net::TcpListener;
+    use bytes::Bytes;
     use futures_util::future::join;
     use futures_util::io::AsyncWriteExt;
     use futures_util::sink::SinkExt;
-    use bytes::Bytes;
-    use async_net::TcpListener;
+    use futures_util::stream::StreamExt;
+    use tracing::debug;
+    use tracing::info;
 
-    use fluvio_future::test_async;
-    use fluvio_future::timer::sleep;
+    use crate::FlvSocket;
+    use crate::FlvSocketError;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
     use fluvio_future::zero_copy::ZeroCopyWrite;
     use fluvio_protocol::{Decoder, Encoder};
-    use crate::KfSocket;
-    use crate::KfSocketError;
 
     pub fn ensure_clean_file<P>(path: P)
     where
@@ -255,14 +255,14 @@ mod tests {
         }
     }
 
-    async fn test_server(addr: &str) -> Result<(), KfSocketError> {
+    async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
         let listener = TcpListener::bind(&addr).await?;
         debug!("server is running");
         let mut incoming = listener.incoming();
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let mut socket: KfSocket = incoming_stream.into();
+        let mut socket: FlvSocket = incoming_stream.into();
         let raw_tcp_sink = socket.get_mut_sink().get_mut_tcp_sink();
 
         // encode message
@@ -291,10 +291,10 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
+    async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
         sleep(Duration::from_millis(50)).await;
         debug!("client: trying to connect");
-        let mut socket = KfSocket::connect(&addr).await?;
+        let mut socket = FlvSocket::connect(&addr).await?;
         info!("client: connect to test server and waiting...");
         let stream = socket.get_mut_stream();
         let next_value = stream.get_mut_tcp_stream().next().await;
@@ -314,7 +314,7 @@ mod tests {
         Ok(())
     }
     // set up sample file for testing
-    async fn setup_data() -> Result<(), KfSocketError> {
+    async fn setup_data() -> Result<(), FlvSocketError> {
         let test_file_path = temp_dir().join("socket_zero_copy");
         ensure_clean_file(&test_file_path);
         debug!("creating test file: {:#?}", test_file_path);
@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[test_async]
-    async fn test_sink_copy() -> Result<(), KfSocketError> {
+    async fn test_sink_copy() -> Result<(), FlvSocketError> {
         setup_data().await?;
 
         let addr = "127.0.0.1:9999";
