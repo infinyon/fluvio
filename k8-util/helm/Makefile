@@ -110,7 +110,7 @@ cleanup:
 
 
 add_repo:
-	 helm repo add fluvio https://infinyon.github.io
+	 helm repo add fluvio https://charts.fluvio.io/
 	 helm repo update
 
 install_repo_minikube_sys:
