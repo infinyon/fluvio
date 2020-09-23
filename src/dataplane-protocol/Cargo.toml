@@ -20,4 +20,4 @@ fluvio-protocol = { version = "0.2.0", features = ["derive", "api", "store"] }
 flv-util = { version = "0.5.0" }
 
 [dev-dependencies]
-kf-socket = { version = "3.0.0", path = "../kf-socket" }
+fluvio-socket = { version = "0.1.0", path = "../kf-socket" }

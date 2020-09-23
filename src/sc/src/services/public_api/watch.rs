@@ -7,7 +7,7 @@ use event_listener::Event;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
-use kf_socket::InnerExclusiveKfSink;
+use fluvio_socket::InnerExclusiveKfSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::WatchRequest;

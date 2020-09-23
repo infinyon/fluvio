@@ -4,7 +4,7 @@ use tracing::info;
 use tracing::instrument;
 
 use private_server::ScInternalService;
-use kf_service::KfApiServer;
+use fluvio_service::KfApiServer;
 
 use crate::core::SharedContext;
 

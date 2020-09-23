@@ -12,9 +12,9 @@ use tokio::sync::broadcast::RecvError;
 
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
-use kf_socket::InnerKfSink;
-use kf_socket::InnerExclusiveKfSink;
-use kf_socket::KfSocketError;
+use fluvio_socket::InnerKfSink;
+use fluvio_socket::InnerExclusiveKfSink;
+use fluvio_socket::KfSocketError;
 use dataplane::api::{RequestMessage, RequestHeader};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;

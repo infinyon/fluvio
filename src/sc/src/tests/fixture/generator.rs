@@ -8,8 +8,8 @@ use futures::SinkExt;
 
 use error::ServerError;
 use fluvio_types::socket_helpers::EndPoint;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSocketError;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;

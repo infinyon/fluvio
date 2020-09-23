@@ -11,9 +11,9 @@ use async_channel::Receiver;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use kf_socket::KfSocket;
-use kf_socket::KfSink;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSink;
+use fluvio_socket::KfSocketError;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;

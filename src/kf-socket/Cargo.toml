@@ -1,6 +1,6 @@
 [package]
-name = "kf-socket"
-version = "3.0.0"
+name = "fluvio-socket"
+version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper using kafka protocol"
@@ -9,7 +9,7 @@ license = "Apache-2.0"
 categories = ["encoding"]
 
 [lib]
-name = "kf_socket"
+name = "fluvio_socket"
 path = "src/lib.rs"
 
 [dependencies]

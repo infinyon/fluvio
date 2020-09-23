@@ -16,9 +16,9 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::Decode;
 use fluvio_protocol::derive::Encode;
 
-use kf_socket::InnerKfSink;
-use kf_socket::InnerKfSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::InnerKfSink;
+use fluvio_socket::InnerKfSocket;
+use fluvio_socket::KfSocketError;
 
 use crate::KfService;
 use crate::call_service;

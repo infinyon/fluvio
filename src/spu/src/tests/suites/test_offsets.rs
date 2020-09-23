@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 
 use flv_future_core::test_async;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use kf_protocol::api::RequestMessage;
 use fluvio_spu_schema::offsets::FlvFetchOffsetsRequest;

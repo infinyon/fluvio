@@ -12,11 +12,11 @@ use tokio::select;
 use event_listener::Event;
 
 use dataplane::api::RequestMessage;
-use kf_socket::InnerKfSocket;
-use kf_socket::InnerKfSink;
-use kf_socket::KfSocketError;
-use kf_service::call_service;
-use kf_service::KfService;
+use fluvio_socket::InnerKfSocket;
+use fluvio_socket::InnerKfSink;
+use fluvio_socket::KfSocketError;
+use fluvio_service::call_service;
+use fluvio_service::KfService;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;

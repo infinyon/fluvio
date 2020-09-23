@@ -14,7 +14,7 @@ use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
-use kf_socket::ExclusiveKfSink;
+use fluvio_socket::ExclusiveKfSink;
 use tokio::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;

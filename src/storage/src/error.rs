@@ -4,7 +4,7 @@ use std::fmt;
 use dataplane::batch::DefaultBatch;
 use fluvio_future::fs::BoundedFileSinkError;
 use fluvio_future::zero_copy::SendFileError;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 
 use crate::util::OffsetError;
 use crate::validator::LogValidationError;

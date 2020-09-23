@@ -1,7 +1,7 @@
 use tracing::debug;
 
-use kf_socket::AllMultiplexerSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::AllMultiplexerSocket;
+use fluvio_socket::KfSocketError;
 
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;

@@ -1,8 +1,8 @@
 use tracing::debug;
 
 use dataplane::api::RequestMessage;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSocketError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::controllers::leader_replica::LeaderConnection;

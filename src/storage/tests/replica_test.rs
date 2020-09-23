@@ -19,8 +19,8 @@ use dataplane::batch::DefaultBatch;
 use dataplane::record::DefaultRecord;
 use dataplane::Offset;
 
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSocketError;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::StorageError;
 use fluvio_storage::FileReplica;

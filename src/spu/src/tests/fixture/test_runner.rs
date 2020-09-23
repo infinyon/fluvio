@@ -10,8 +10,8 @@ use futures::channel::mpsc::channel;
 use futures::channel::mpsc::Sender;
 
 use flv_future_core::sleep;
-use kf_socket::KfSocketError;
-use kf_socket::KfSink;
+use fluvio_socket::KfSocketError;
+use fluvio_socket::KfSink;
 use kf_protocol::api::Offset;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::message::produce::DefaultKfProduceRequest;

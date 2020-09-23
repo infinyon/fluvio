@@ -5,7 +5,7 @@ mod fetch_stream_request;
 
 use tracing::info;
 
-use kf_service::KfApiServer;
+use fluvio_service::KfApiServer;
 use service_impl::InternalService;
 
 use crate::core::DefaultSharedGlobalContext;

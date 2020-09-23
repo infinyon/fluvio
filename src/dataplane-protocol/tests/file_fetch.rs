@@ -20,10 +20,10 @@ use fluvio_dataplane_protocol::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,
 };
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 
 use flv_util::fixture::ensure_clean_file;
-use kf_socket::KfSocket;
+use fluvio_socket::KfSocket;
 
 /// create sample batches with message
 fn create_batches(records: u16) -> DefaultBatch {

@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use futures::Future;
 
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 /// Customize System Test

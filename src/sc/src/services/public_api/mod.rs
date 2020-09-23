@@ -16,7 +16,7 @@ mod context {
     use tracing::info;
     use tracing::instrument;
 
-    use kf_service::KfApiServer;
+    use fluvio_service::KfApiServer;
 
     use crate::core::*;
     use super::public_server::PublicService;

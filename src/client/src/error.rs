@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 use fluvio_sc_schema::ApiError;
 
 /// Possible errors that may arise when using Fluvio

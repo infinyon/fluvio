@@ -2,10 +2,10 @@ use tracing::trace;
 use tracing::error;
 use tracing::debug;
 use tracing::warn;
-use kf_socket::KfSocketError;
-use kf_socket::KfStream;
-use kf_socket::KfSocket;
-use kf_service::api_loop;
+use fluvio_socket::KfSocketError;
+use fluvio_socket::KfStream;
+use fluvio_socket::KfSocket;
+use fluvio_service::api_loop;
 use fluvio_types::SpuId;
 
 use crate::core::DefaultSharedGlobalContext;

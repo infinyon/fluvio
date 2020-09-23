@@ -7,7 +7,7 @@ use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminRequest;
 use fluvio_future::tls::AllDomainConnector;
-use kf_socket::*;
+use fluvio_socket::*;
 
 use crate::client::*;
 use crate::{FluvioError, FluvioConfig};

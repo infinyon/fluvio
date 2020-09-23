@@ -15,7 +15,7 @@ pub use self::replica::SharedReplicaLocalStore;
 
 use std::sync::Arc;
 use ::fluvio_storage::FileReplica;
-use kf_socket::SinkPool;
+use fluvio_socket::SinkPool;
 use fluvio_types::SpuId;
 use crate::config::SpuConfig;
 

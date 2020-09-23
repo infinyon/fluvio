@@ -7,7 +7,7 @@ mod stream_fetch;
 
 use tracing::info;
 
-use kf_service::KfApiServer;
+use fluvio_service::KfApiServer;
 use service_impl::PublicService;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;

@@ -3,7 +3,7 @@ use std::fmt;
 use async_channel::SendError;
 use fluvio_types::PartitionError;
 use fluvio_storage::StorageError;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 
 #[derive(Debug)]
 pub enum InternalServerError {

@@ -25,10 +25,10 @@ use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use kf_socket::InnerKfSocket;
-use kf_socket::InnerKfSink;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::InnerKfSocket;
+use fluvio_socket::InnerKfSink;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSocketError;
 use fluvio_types::print_cli_err;
 
 #[async_trait]
@@ -229,8 +229,8 @@ mod test {
     use fluvio_future::test_async;
 
     use fluvio_protocol::api::RequestMessage;
-    use kf_socket::KfSocket;
-    use kf_socket::KfSocketError;
+    use fluvio_socket::KfSocket;
+    use fluvio_socket::KfSocketError;
 
     use crate::test_request::EchoRequest;
     use crate::test_request::SharedTestContext;

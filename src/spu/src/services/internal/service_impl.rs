@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use kf_service::api_loop;
-use kf_service::KfService;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
+use fluvio_service::api_loop;
+use fluvio_service::KfService;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSocketError;
 use fluvio_future::net::TcpStream;
 
 use super::SpuPeerRequest;

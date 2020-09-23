@@ -5,7 +5,7 @@ use tracing::trace;
 use tracing::error;
 use tracing::warn;
 
-use kf_socket::SinkPool;
+use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
@@ -20,7 +20,7 @@ use fluvio_types::SpuId;
 use fluvio_types::log_on_err;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
-use kf_socket::ExclusiveKfSink;
+use fluvio_socket::ExclusiveKfSink;
 
 use crate::core::storage::create_replica_storage;
 use crate::controllers::follower_replica::FileSyncRequest;

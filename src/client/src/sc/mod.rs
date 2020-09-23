@@ -4,7 +4,7 @@ mod controller {
     use futures::channel::mpsc::Sender;
 
     use fluvio_sc_schema::client::*;
-    use kf_socket::*;
+    use fluvio_socket::*;
     use fluvio_future::task::spawn;
 
     use crate::client::ScClient;

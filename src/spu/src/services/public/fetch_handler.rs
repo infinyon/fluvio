@@ -3,9 +3,9 @@ use tracing::debug;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
-use kf_socket::InnerKfSink;
-use kf_socket::InnerExclusiveKfSink;
-use kf_socket::KfSocketError;
+use fluvio_socket::InnerKfSink;
+use fluvio_socket::InnerExclusiveKfSink;
+use fluvio_socket::KfSocketError;
 use dataplane::api::RequestMessage;
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;

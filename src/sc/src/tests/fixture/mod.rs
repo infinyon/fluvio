@@ -1,8 +1,8 @@
- mod generator;
- mod test_runner;
- mod mock_spu;
- mod mock_kv;
- mod mock_cm;
+mod generator;
+mod test_runner;
+mod mock_spu;
+mod mock_kv;
+mod mock_cm;
 
 pub use generator::TestGenerator;
 pub use generator::ScClient;
@@ -17,19 +17,18 @@ use std::sync::Arc;
 
 use futures::Future;
 
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 use fluvio_types::SpuId;
 
 /// Customize System Test
 pub trait ScTest: Sized {
-
-    type ResponseFuture: Send +  Future<Output=Result<(),KfSocketError>>;
+    type ResponseFuture: Send + Future<Output = Result<(), KfSocketError>>;
 
     /// environment configuration
     fn env_configuration(&self) -> TestGenerator;
 
-    fn topics(&self) -> Vec<(String,Vec<Vec<SpuId>>)> ;
+    fn topics(&self) -> Vec<(String, Vec<Vec<SpuId>>)>;
 
     /// main entry point
-    fn main_test(&self,runner: Arc<ScTestRunner<Self>>) -> Self::ResponseFuture;
+    fn main_test(&self, runner: Arc<ScTestRunner<Self>>) -> Self::ResponseFuture;
 }

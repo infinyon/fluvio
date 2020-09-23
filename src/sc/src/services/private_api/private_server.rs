@@ -15,9 +15,9 @@ use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use kf_service::KfService;
-use kf_service::wait_for_request;
-use kf_socket::*;
+use fluvio_service::KfService;
+use fluvio_service::wait_for_request;
+use fluvio_socket::*;
 use fluvio_controlplane::*;
 
 use crate::core::*;

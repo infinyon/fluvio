@@ -896,9 +896,9 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
- "kf-socket",
  "serde",
  "serde_json",
  "tokio",
@@ -1009,9 +1009,9 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-socket",
  "flv-util",
  "futures-util",
- "kf-socket",
  "log",
 ]
 
@@ -1117,6 +1117,8 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
+ "fluvio-service",
+ "fluvio-socket",
  "fluvio-stream-dispatcher",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1125,8 +1127,6 @@ dependencies = [
  "k8-client",
  "k8-metadata-client",
  "k8-obj-metadata",
- "kf-service",
- "kf-socket",
  "log",
  "rand 0.7.3",
  "regex",
@@ -1153,6 +1153,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-service"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "event-listener",
+ "fluvio-future",
+ "fluvio-protocol",
+ "fluvio-socket",
+ "fluvio-types",
+ "futures-util",
+ "log",
+ "pin-utils",
+ "tokio",
+ "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-socket"
+version = "0.1.0"
+dependencies = [
+ "async-channel",
+ "async-mutex",
+ "async-net",
+ "async-trait",
+ "bytes 0.5.6",
+ "chashmap",
+ "event-listener",
+ "fluvio-future",
+ "fluvio-protocol",
+ "flv-util",
+ "futures-util",
+ "log",
+ "pin-utils",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-spu"
 version = "0.1.0"
 dependencies = [
@@ -1168,14 +1208,14 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-service",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "kf-service",
- "kf-socket",
  "log",
  "pin-utils",
  "regex",
@@ -1210,10 +1250,10 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-socket",
  "fluvio-types",
  "flv-util",
  "futures-lite",
- "kf-socket",
  "libc",
  "pin-utils",
  "serde",
@@ -1815,46 +1855,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.4.6",
-]
-
-[[package]]
-name = "kf-service"
-version = "3.0.0"
-dependencies = [
- "async-trait",
- "event-listener",
- "fluvio-future",
- "fluvio-protocol",
- "fluvio-types",
- "futures-util",
- "kf-socket",
- "log",
- "pin-utils",
- "tokio",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "kf-socket"
-version = "3.0.0"
-dependencies = [
- "async-channel",
- "async-mutex",
- "async-net",
- "async-trait",
- "bytes 0.5.6",
- "chashmap",
- "event-listener",
- "fluvio-future",
- "fluvio-protocol",
- "flv-util",
- "futures-util",
- "log",
- "pin-utils",
- "tokio",
- "tokio-util",
- "tracing",
 ]
 
 [[package]]

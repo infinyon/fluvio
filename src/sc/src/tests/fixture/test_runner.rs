@@ -7,7 +7,7 @@ use futures::future::join;
 use futures::channel::mpsc::Sender;
 
 use flv_future_core::sleep;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::topic::TopicStatus;

@@ -13,11 +13,11 @@ use futures::future::FutureExt;
 use fluvio_controlplane::InternalScKey;
 use fluvio_controlplane::InternalScRequest;
 use fluvio_controlplane::RegisterSpuResponse;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
-use kf_service::KfApiServer;
-use kf_service::KfService;
-use kf_service::wait_for_request;
+use fluvio_socket::KfSocket;
+use fluvio_socket::KfSocketError;
+use fluvio_service::KfApiServer;
+use fluvio_service::KfService;
+use fluvio_service::wait_for_request;
 
 
 use super::SpuTest;

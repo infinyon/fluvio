@@ -4,8 +4,8 @@ use std::net::SocketAddr;
 use tracing::debug;
 use futures::channel::mpsc::Sender;
 
-use kf_socket::KfSocketError;
-use kf_socket::KfSocket;
+use fluvio_socket::KfSocketError;
+use fluvio_socket::KfSocket;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;

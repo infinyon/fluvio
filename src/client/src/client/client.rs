@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
-use kf_socket::*;
+use fluvio_socket::*;
 use fluvio_future::tls::AllDomainConnector;
 
 use crate::FluvioError;

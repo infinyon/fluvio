@@ -9,7 +9,7 @@ use std::io::Error as IoError;
 
 use fluvio_types::PartitionError;
 use k8_client::ClientError;
-use kf_socket::KfSocketError;
+use fluvio_socket::KfSocketError;
 
 #[derive(Debug)]
 pub enum ScError {

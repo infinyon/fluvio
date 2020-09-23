@@ -7,7 +7,7 @@ use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::objects::*;
 use fluvio_controlplane_metadata::store::*;
 use fluvio_future::task::spawn;
-use kf_socket::*;
+use fluvio_socket::*;
 
 use crate::core::SharedContext;
 
