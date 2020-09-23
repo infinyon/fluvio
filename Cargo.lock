@@ -821,6 +821,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
+name = "encoding_rs"
+version = "0.8.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a51b8cf747471cb9499b6d59e59b0444f4c90eba8968c4e44874e92b5b64ace2"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "enum_to_u8_slice_derive"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -916,7 +925,7 @@ dependencies = [
  "fluvio-sc-schema",
  "fluvio-spu",
  "fluvio-types",
- "flv-util 0.5.1",
+ "flv-util",
  "futures-lite",
  "http-types",
  "k8-client",
@@ -947,7 +956,7 @@ dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
  "fluvio-future",
- "flv-util 0.5.1",
+ "flv-util",
  "k8-client",
  "k8-config",
  "k8-obj-core",
@@ -982,7 +991,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
- "flv-util 0.5.1",
+ "flv-util",
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
@@ -1000,7 +1009,7 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
- "flv-util 0.5.1",
+ "flv-util",
  "futures-util",
  "kf-socket",
  "log",
@@ -1054,7 +1063,7 @@ checksum = "66bb46225f77d4cfbad80803726d8375610db258212ae84873f70a9458c932df"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
- "flv-util 0.5.1",
+ "flv-util",
  "log",
 ]
 
@@ -1111,7 +1120,7 @@ dependencies = [
  "fluvio-stream-dispatcher",
  "fluvio-types",
  "flv-tls-proxy",
- "flv-util 0.5.1",
+ "flv-util",
  "futures-util",
  "k8-client",
  "k8-metadata-client",
@@ -1163,7 +1172,7 @@ dependencies = [
  "fluvio-storage",
  "fluvio-types",
  "flv-tls-proxy",
- "flv-util 0.5.1",
+ "flv-util",
  "futures-util",
  "kf-service",
  "kf-socket",
@@ -1202,7 +1211,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
- "flv-util 0.5.1",
+ "flv-util",
  "futures-lite",
  "kf-socket",
  "libc",
@@ -1223,7 +1232,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
- "flv-util 0.5.1",
+ "flv-util",
  "futures",
  "k8-metadata-client",
  "log",
@@ -1266,26 +1275,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "flv-future-aio"
-version = "2.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f97affbe276a743321d92577bc939bcb247bbe532557c5618f7319d7357d1fbb"
-dependencies = [
- "async-std",
- "async-trait",
- "bytes 0.5.6",
- "flv-util 0.4.0",
- "futures",
- "futures-timer",
- "memmap",
- "nix",
- "pin-project",
- "pin-utils",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
@@ -1313,16 +1302,6 @@ dependencies = [
  "futures-lite",
  "futures-util",
  "log",
-]
-
-[[package]]
-name = "flv-util"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e624a59053c74ff6756238651ec1bdd51180c5c80ba917ec22866b06bae89dd7"
-dependencies = [
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -1435,12 +1414,6 @@ checksum = "bdb66b5f09e22019b1ab0830f7785bcea8e7a42148683f99214f73f8ec21a626"
 dependencies = [
  "once_cell",
 ]
-
-[[package]]
-name = "futures-timer"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1de7508b218029b0f01662ed8f61b1c964b3ae99d6f25462d0f55a595109df6"
 
 [[package]]
 name = "futures-util"
@@ -1594,6 +1567,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28d569972648b2c512421b5f2a405ad6ac9666547189d0c5477a3f200f3e02f9"
+dependencies = [
+ "bytes 0.5.6",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-types"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1679,26 +1663,29 @@ dependencies = [
 
 [[package]]
 name = "isahc"
-version = "0.8.2"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c45d8c41e6f0b5aa495fd2577e6068e100f57eb87c4b353b0dab20bb53a56035"
+checksum = "4ecedb6ed2615f66b14d9790bad67f8d45dfaffe01464681fb868fe90ca20c41"
 dependencies = [
- "bytes 0.4.12",
- "chrono",
+ "bytes 0.5.6",
  "crossbeam-channel",
  "crossbeam-utils",
  "curl",
  "curl-sys",
+ "encoding_rs",
  "futures-channel",
  "futures-io",
  "futures-util",
- "http",
+ "http 0.2.1",
  "lazy_static",
  "log",
+ "mime",
  "serde",
  "serde_json",
  "slab",
  "sluice",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -1718,30 +1705,32 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f48732b34e74c5291730acdfaa89e9e0e2df3257e4ac2d3ab8d96db503b23b3"
+checksum = "aa62bbf9afa8e887da4137e9b3cb728f0852b18a8c2ea3198da9d056cbbfc9d9"
 dependencies = [
- "async-std",
  "async-trait",
- "base64 0.11.0",
+ "base64 0.12.3",
  "bytes 0.5.6",
  "curl",
- "flv-future-aio",
- "futures",
+ "fluvio-future",
+ "futures-util",
  "isahc",
  "k8-config",
  "k8-diff",
  "k8-metadata-client",
  "k8-obj-core",
  "k8-obj-metadata",
- "log",
  "openssl-sys",
  "pin-utils",
  "rand 0.7.3",
+ "rustls 0.18.1",
  "serde",
  "serde_json",
  "serde_qs 0.5.2",
+ "tracing",
+ "tracing-futures",
+ "webpki",
 ]
 
 [[package]]
@@ -1770,21 +1759,21 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe2060b72f43db9e5cd60db3e7801aa0c25fa8d4eced12d3bacfbed6f40bdc21"
+checksum = "9d8d0eb309f2f0fbf05a0449aad056c6c41a8392929fe0c56fa690e71e45081f"
 dependencies = [
  "async-trait",
- "flv-future-aio",
- "futures",
- "http",
+ "futures-util",
+ "http 0.1.21",
  "k8-diff",
  "k8-obj-metadata",
- "log",
  "pin-utils",
  "serde",
  "serde_json",
  "serde_qs 0.5.2",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -1793,7 +1782,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1928f08244bb04c7ac1455f3fccb0e3ce193f25f61c06aed863371e46deb040"
 dependencies = [
- "http",
+ "http 0.1.21",
  "k8-obj-core",
  "k8-obj-metadata",
  "log",
@@ -1808,7 +1797,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dd20a0c2182b2e55fbbb90b3d887139164408efd9b720952a002d188a6580e0"
 dependencies = [
- "http",
+ "http 0.1.21",
  "k8-obj-metadata",
  "log",
  "serde",
@@ -1859,7 +1848,7 @@ dependencies = [
  "event-listener",
  "fluvio-future",
  "fluvio-protocol",
- "flv-util 0.5.1",
+ "flv-util",
  "futures-util",
  "log",
  "pin-utils",
@@ -1999,6 +1988,12 @@ dependencies = [
  "webpki",
  "webpki-roots 0.17.0",
 ]
+
+[[package]]
+name = "mime"
+version = "0.3.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 
 [[package]]
 name = "miniz_oxide"
@@ -3147,6 +3142,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d79ca061b032d6ce30c660fded31189ca0b9922bf483cd70759f13a2d86786c"
 dependencies = [
  "cfg-if",
+ "log",
  "tracing-attributes",
  "tracing-core",
 ]
