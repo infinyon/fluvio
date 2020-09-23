@@ -14,7 +14,7 @@ use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
-use fluvio_socket::ExclusiveKfSink;
+use fluvio_socket::ExclusiveFlvSink;
 use tokio::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;
@@ -36,7 +36,7 @@ pub struct ReplicaLeaderController<S> {
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
     leaders_state: SharedReplicaLeadersState<S>,
     follower_sinks: SharedSpuSinks,
-    sc_sink: Arc<ExclusiveKfSink>,
+    sc_sink: Arc<ExclusiveFlvSink>,
     offset_sender: Sender<OffsetUpdateEvent>,
     max_bytes: u32,
 }
@@ -49,7 +49,7 @@ impl<S> ReplicaLeaderController<S> {
         controller_receiver: Receiver<LeaderReplicaControllerCommand>,
         leaders_state: SharedReplicaLeadersState<S>,
         follower_sinks: SharedSpuSinks,
-        sc_sink: Arc<ExclusiveKfSink>,
+        sc_sink: Arc<ExclusiveFlvSink>,
         offset_sender: Sender<OffsetUpdateEvent>,
         max_bytes: u32,
     ) -> Self {

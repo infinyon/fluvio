@@ -3,9 +3,9 @@ use tracing::debug;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
-use fluvio_socket::InnerKfSink;
-use fluvio_socket::InnerExclusiveKfSink;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::InnerFlvSink;
+use fluvio_socket::InnerExclusiveFlvSink;
+use fluvio_socket::FlvSocketError;
 use dataplane::api::RequestMessage;
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
@@ -17,11 +17,11 @@ use crate::core::DefaultSharedGlobalContext;
 pub async fn handle_fetch_request<S>(
     request: RequestMessage<FileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
-    sink: InnerExclusiveKfSink<S>,
-) -> Result<(), KfSocketError>
+    sink: InnerExclusiveFlvSink<S>,
+) -> Result<(), FlvSocketError>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
-    InnerKfSink<S>: ZeroCopyWrite,
+    InnerFlvSink<S>: ZeroCopyWrite,
 {
     let (header, fetch_request) = request.get_header_request();
     let mut fetch_response = FileFetchResponse::default();

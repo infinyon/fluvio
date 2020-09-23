@@ -19,8 +19,8 @@ use fluvio_controlplane::UpdateSpuRequest;
 use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_controlplane::messages::SpuContent;
 use kf_protocol::api::RequestMessage;
-use fluvio_socket::KfSocket;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSocketError;
 use fluvio_types::socket_helpers::EndPoint;
 use fluvio_types::SpuId;
 use utils::SimpleConcurrentHashMap;
@@ -84,7 +84,7 @@ impl SpuGlobalContext {
 
         MockSpuController::run(self.clone(), test_runner, receiver);
 
-        // KfApiServer::new(addr, self.clone(), MockInternalService::new(test_runner,self.clone()))
+        // FlvApiServer::new(addr, self.clone(), MockInternalService::new(test_runner,self.clone()))
     }
 }
 
@@ -135,7 +135,7 @@ where
     }
 
     /// process api stream from socket
-    async fn stream_loop(&mut self, mut socket: KfSocket) -> Result<(), KfSocketError> {
+    async fn stream_loop(&mut self, mut socket: FlvSocket) -> Result<(), FlvSocketError> {
         self.send_spu_registeration(&mut socket).await?;
 
         let (mut _sink, mut stream) = socket.split();
@@ -181,8 +181,8 @@ where
 
     async fn send_spu_registeration<'a>(
         &'a self,
-        socket: &'a mut KfSocket,
-    ) -> Result<(), KfSocketError> {
+        socket: &'a mut FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let spu_id = self.ctx.id();
         debug!("sending spu registeration: {}", spu_id);
         let mut message = RequestMessage::new_request(RegisterSpuRequest::new(spu_id));
@@ -197,7 +197,7 @@ where
 
     /// connect to sc if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_sc(&mut self) -> Option<KfSocket> {
+    async fn create_socket_to_sc(&mut self) -> Option<FlvSocket> {
         let spu_id = self.ctx.id();
         let sc_config = self.test_runner.test().env_configuration().sc_config();
         let addr = sc_config.private_endpoint.addr;
@@ -208,7 +208,7 @@ where
                 addr,
                 spu_id
             );
-            let connect_future = KfSocket::fusable_connect(&addr);
+            let connect_future = FlvSocket::fusable_connect(&addr);
 
             select! {
                 socket_res = connect_future.fuse() => {

@@ -16,7 +16,7 @@ mod context {
     use tracing::info;
     use tracing::instrument;
 
-    use fluvio_service::KfApiServer;
+    use fluvio_service::FlvApiServer;
 
     use crate::core::*;
     use super::public_server::PublicService;
@@ -31,7 +31,7 @@ mod context {
         let addr = ctx.config().public_endpoint.clone();
         info!("start public api service");
 
-        let server = KfApiServer::new(addr, ctx, PublicService::new());
+        let server = FlvApiServer::new(addr, ctx, PublicService::new());
         server.run();
     }
 }

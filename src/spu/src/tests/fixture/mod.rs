@@ -11,12 +11,12 @@ use std::sync::Arc;
 
 use futures::Future;
 
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 /// Customize System Test
 pub trait SpuTest: Sized {
-    type ResponseFuture: Send + Future<Output = Result<(), KfSocketError>>;
+    type ResponseFuture: Send + Future<Output = Result<(), FlvSocketError>>;
 
     /// environment configuration
     fn env_configuration(&self) -> TestGenerator;

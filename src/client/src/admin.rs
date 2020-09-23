@@ -115,7 +115,7 @@ impl FluvioAdmin {
         Ok(Self(versioned_socket))
     }
 
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: AdminRequest + Send + Sync,
     {

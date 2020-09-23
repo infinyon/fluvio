@@ -3,9 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use fluvio_service::api_loop;
-use fluvio_service::KfService;
-use fluvio_socket::KfSocket;
-use fluvio_socket::KfSocketError;
+use fluvio_service::FlvService;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSocketError;
 use fluvio_future::net::TcpStream;
 
 use super::SpuPeerRequest;
@@ -24,15 +24,15 @@ impl InternalService {
 }
 
 #[async_trait]
-impl KfService<TcpStream> for InternalService {
+impl FlvService<TcpStream> for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
 
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        socket: KfSocket,
-    ) -> Result<(), KfSocketError> {
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();
 
@@ -42,7 +42,7 @@ impl KfService<TcpStream> for InternalService {
             SpuPeerRequest::FetchStream(request) => {
 
                 drop(api_stream);
-                let orig_socket: KfSocket  = (sink,stream).into();
+                let orig_socket: FlvSocket  = (sink,stream).into();
                 handle_fetch_stream_request(request, context, orig_socket).await?;
                 break;
 

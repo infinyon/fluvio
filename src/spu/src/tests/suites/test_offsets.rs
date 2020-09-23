@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 
 use flv_future_core::test_async;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use kf_protocol::api::RequestMessage;
 use fluvio_spu_schema::offsets::FlvFetchOffsetsRequest;
@@ -25,7 +25,7 @@ fn test_repl_id() -> ReplicaKey {
 
 struct OffsetsFetchTest {}
 
-async fn test_fetch(runner: Arc<SpuTestRunner<OffsetsFetchTest>>) -> Result<(), KfSocketError> {
+async fn test_fetch(runner: Arc<SpuTestRunner<OffsetsFetchTest>>) -> Result<(), FlvSocketError> {
     // verify invalid request
     let mut request = FlvFetchOffsetsRequest::default();
     let mut topic = FetchOffsetTopic::default();
@@ -84,7 +84,7 @@ async fn test_fetch(runner: Arc<SpuTestRunner<OffsetsFetchTest>>) -> Result<(), 
 }
 
 impl SpuTest for OffsetsFetchTest {
-    type ResponseFuture = BoxFuture<'static, Result<(), KfSocketError>>;
+    type ResponseFuture = BoxFuture<'static, Result<(), FlvSocketError>>;
 
     fn env_configuration(&self) -> TestGenerator {
         TestGenerator::default()
@@ -108,7 +108,7 @@ impl SpuTest for OffsetsFetchTest {
 }
 
 #[test_async]
-async fn flv_offset_fetch_test() -> Result<(), KfSocketError> {
+async fn flv_offset_fetch_test() -> Result<(), FlvSocketError> {
     let test = OffsetsFetchTest {};
     SpuTestRunner::run("offset fetch test".to_owned(), test)
         .await

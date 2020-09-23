@@ -13,10 +13,10 @@ use futures::future::FutureExt;
 use fluvio_controlplane::InternalScKey;
 use fluvio_controlplane::InternalScRequest;
 use fluvio_controlplane::RegisterSpuResponse;
-use fluvio_socket::KfSocket;
-use fluvio_socket::KfSocketError;
-use fluvio_service::KfApiServer;
-use fluvio_service::KfService;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSocketError;
+use fluvio_service::FlvApiServer;
+use fluvio_service::FlvService;
 use fluvio_service::wait_for_request;
 
 
@@ -26,7 +26,7 @@ use super::SpuTestRunner;
 
 pub type SharedScContext = Arc<ScGlobalContext>;
 
-pub(crate) type MockScServer<T> = KfApiServer<
+pub(crate) type MockScServer<T> = FlvApiServer<
         InternalScRequest,
         InternalScKey,
         SharedScContext,
@@ -49,7 +49,7 @@ impl ScGlobalContext {
         
         info!("starting mock SC service at: {:#?}", addr);
 
-        KfApiServer::new(addr, self.clone(), MockInternalService::new(test_runner))
+        FlvApiServer::new(addr, self.clone(), MockInternalService::new(test_runner))
     }
 }
 
@@ -67,8 +67,8 @@ impl <T>MockInternalService<T> where T: SpuTest + Sync + Send+ 'static {
     async fn handle(
         self: Arc<Self>,
         _context: SharedScContext,
-        socket: KfSocket,
-    ) -> Result<(), KfSocketError> {
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError> {
 
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
@@ -95,15 +95,15 @@ impl <T>MockInternalService<T> where T: SpuTest + Sync + Send+ 'static {
 }
 
 
-impl <T>KfService for MockInternalService<T> where T: SpuTest + Sync + Send + 'static {
+impl <T>FlvService for MockInternalService<T> where T: SpuTest + Sync + Send + 'static {
     type Context = SharedScContext;
     type Request = InternalScRequest;
-    type ResponseFuture = BoxFuture<'static,Result<(),KfSocketError>>;
+    type ResponseFuture = BoxFuture<'static,Result<(),FlvSocketError>>;
 
     fn respond(
         self: Arc<Self>,
         context: SharedScContext,
-        socket: KfSocket,
+        socket: FlvSocket,
     ) -> Self::ResponseFuture {
         self.handle(context, socket).boxed()
     }

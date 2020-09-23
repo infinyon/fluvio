@@ -7,7 +7,7 @@ use event_listener::Event;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
-use fluvio_socket::InnerExclusiveKfSink;
+use fluvio_socket::InnerExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::WatchRequest;
@@ -27,7 +27,7 @@ use crate::stores::StoreContext;
 pub fn handle_watch_request<T>(
     request: RequestMessage<WatchRequest>,
     ctx: SharedContext,
-    sink: InnerExclusiveKfSink<T>,
+    sink: InnerExclusiveFlvSink<T>,
     end_event: Arc<Event>,
 ) where
     T: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
@@ -59,7 +59,7 @@ struct WatchController<T, S>
 where
     S: Spec,
 {
-    response_sink: InnerExclusiveKfSink<T>,
+    response_sink: InnerExclusiveFlvSink<T>,
     store: StoreContext<S>,
     epoch: Epoch,
     header: RequestHeader,
@@ -78,7 +78,7 @@ where
     /// start watch controller
     fn update(
         epoch: Epoch,
-        response_sink: InnerExclusiveKfSink<T>,
+        response_sink: InnerExclusiveFlvSink<T>,
         end_event: Arc<Event>,
         store: StoreContext<S>,
         header: RequestHeader,

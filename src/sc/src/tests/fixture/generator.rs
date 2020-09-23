@@ -8,8 +8,8 @@ use futures::SinkExt;
 
 use error::ServerError;
 use fluvio_types::socket_helpers::EndPoint;
-use fluvio_socket::KfSocket;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSocketError;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
@@ -169,7 +169,7 @@ impl ScClient {
     }
 
      #[allow(dead_code)]
-    pub async fn send_to_internal_server<'a,R>(&'a self, req_msg: &'a RequestMessage<R>) -> Result<(), KfSocketError> where R: Request,
+    pub async fn send_to_internal_server<'a,R>(&'a self, req_msg: &'a RequestMessage<R>) -> Result<(), FlvSocketError> where R: Request,
     {
         
         let end_point = &self.config().private_endpoint;
@@ -177,7 +177,7 @@ impl ScClient {
             "client: trying to connect to private endpoint: {}",
             end_point
         );
-        let mut socket = KfSocket::connect(&end_point.addr).await?;
+        let mut socket = FlvSocket::connect(&end_point.addr).await?;
         debug!("connected to internal endpoint {}", end_point);
         let res_msg = socket.send(&req_msg).await?;
         debug!("response: {:#?}", res_msg);
@@ -185,7 +185,7 @@ impl ScClient {
     }
 
     #[allow(dead_code)]
-    pub async fn send_to_public_server<'a,R>(&'a self, req_msg: &'a RequestMessage<R>) -> Result<ResponseMessage<R::Response>, KfSocketError>
+    pub async fn send_to_public_server<'a,R>(&'a self, req_msg: &'a RequestMessage<R>) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
         R: Request,
     {
@@ -196,7 +196,7 @@ impl ScClient {
             end_point
         );
 
-        let mut socket = KfSocket::connect(&end_point.addr).await?;
+        let mut socket = FlvSocket::connect(&end_point.addr).await?;
         debug!("connected to public end point {:#?}", end_point);
         let res_msg = socket.send(&req_msg).await?;
         debug!("response: {:#?}", res_msg);

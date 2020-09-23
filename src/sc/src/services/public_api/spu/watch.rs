@@ -13,7 +13,7 @@ use crate::core::SharedContext;
 
 
 pub struct WatchController<S> {
-    response_sink: InnerExclusiveKfSink<S>,
+    response_sink: InnerExclusiveFlvSink<S>,
     context: SharedContext,
     metadata_request: WatchMetadataRequest,
     header: RequestHeader,
@@ -26,7 +26,7 @@ where
 {
     pub fn handle_metadata_update(
         request: RequestMessage<WatchMetadataRequest>,
-        response_sink: InnerExclusiveKfSink<S>,
+        response_sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<Event>,
         context: SharedContext,
     ) {

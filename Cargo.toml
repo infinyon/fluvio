@@ -6,8 +6,6 @@ members = [
     "src/controlplane",
     "src/controlplane-metadata",
     "src/dataplane-protocol",
-    "src/kf-service",
-    "src/kf-socket",
     "src/sc",
     "src/sc-schema",
     "src/spu",

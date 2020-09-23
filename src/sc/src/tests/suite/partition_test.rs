@@ -8,7 +8,7 @@ use futures::future::FutureExt;
 
 use flv_future_core::test_async;
 use flv_future_core::sleep;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_types::SpuId;
 
 use crate::tests::fixture::ScTestRunner;
@@ -18,7 +18,7 @@ use crate::tests::fixture::TestGenerator;
 struct ReplicationTest {}
 
 impl ScTest for ReplicationTest {
-    type ResponseFuture = BoxFuture<'static, Result<(), KfSocketError>>;
+    type ResponseFuture = BoxFuture<'static, Result<(), FlvSocketError>>;
 
     fn env_configuration(&self) -> TestGenerator {
         TestGenerator::default()
@@ -46,7 +46,7 @@ impl ScTest for ReplicationTest {
 
 /// test spu online and offline
 #[test_async]
-async fn replication_test() -> Result<(), KfSocketError> {
+async fn replication_test() -> Result<(), FlvSocketError> {
     let test = ReplicationTest {};
     ScTestRunner::run("replication test".to_owned(), test)
         .await

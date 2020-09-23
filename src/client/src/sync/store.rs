@@ -1,7 +1,7 @@
 use tracing::debug;
 
 use fluvio_socket::AllMultiplexerSocket;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;
@@ -18,7 +18,7 @@ pub struct MetadataStores {
 
 impl MetadataStores {
     /// crete store and set up sync controllers
-    pub async fn new(socket: &mut AllMultiplexerSocket) -> Result<Self, KfSocketError> {
+    pub async fn new(socket: &mut AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
             spus: StoreContext::new(),
             partitions: StoreContext::new(),
@@ -42,7 +42,7 @@ impl MetadataStores {
     pub async fn start_watch_for_spu(
         &self,
         socket: &mut AllMultiplexerSocket,
-    ) -> Result<(), KfSocketError> {
+    ) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
@@ -59,7 +59,7 @@ impl MetadataStores {
     pub async fn start_watch_for_partition(
         &self,
         socket: &mut AllMultiplexerSocket,
-    ) -> Result<(), KfSocketError> {
+    ) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 

@@ -17,12 +17,12 @@ use std::sync::Arc;
 
 use futures::Future;
 
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_types::SpuId;
 
 /// Customize System Test
 pub trait ScTest: Sized {
-    type ResponseFuture: Send + Future<Output = Result<(), KfSocketError>>;
+    type ResponseFuture: Send + Future<Output = Result<(), FlvSocketError>>;
 
     /// environment configuration
     fn env_configuration(&self) -> TestGenerator;

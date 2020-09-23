@@ -12,9 +12,9 @@ use tokio::sync::broadcast::RecvError;
 
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
-use fluvio_socket::InnerKfSink;
-use fluvio_socket::InnerExclusiveKfSink;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::InnerFlvSink;
+use fluvio_socket::InnerExclusiveFlvSink;
+use fluvio_socket::FlvSocketError;
 use dataplane::api::{RequestMessage, RequestHeader};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
@@ -31,20 +31,20 @@ pub struct StreamFetchHandler<S> {
     isolation: Isolation,
     max_bytes: u32,
     header: RequestHeader,
-    kf_sink: InnerExclusiveKfSink<S>,
+    kf_sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<Event>,
 }
 
 impl<S> StreamFetchHandler<S>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
-    InnerKfSink<S>: ZeroCopyWrite,
+    InnerFlvSink<S>: ZeroCopyWrite,
 {
     /// handle fluvio continuous fetch request
     pub fn handle_stream_fetch(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
-        kf_sink: InnerExclusiveKfSink<S>,
+        kf_sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<Event>,
     ) {
         // first get receiver to offset update channel to we don't missed events
@@ -76,7 +76,7 @@ where
         spawn(async move { handler.process(current_offset).await });
     }
 
-    async fn process(mut self, starting_offset: Offset) -> Result<(), KfSocketError> {
+    async fn process(mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
         let mut current_offset =
             if let Some(offset) = self.send_back_records(starting_offset).await? {
                 offset
@@ -166,7 +166,10 @@ where
         Ok(())
     }
 
-    async fn send_back_records(&mut self, offset: Offset) -> Result<Option<Offset>, KfSocketError> {
+    async fn send_back_records(
+        &mut self,
+        offset: Offset,
+    ) -> Result<Option<Offset>, FlvSocketError> {
         let mut partition_response = FilePartitionResponse::default();
         partition_response.partition_index = self.replica.partition;
 

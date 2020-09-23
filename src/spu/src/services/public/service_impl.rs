@@ -12,11 +12,11 @@ use tokio::select;
 use event_listener::Event;
 
 use dataplane::api::RequestMessage;
-use fluvio_socket::InnerKfSocket;
-use fluvio_socket::InnerKfSink;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::InnerFlvSink;
+use fluvio_socket::FlvSocketError;
 use fluvio_service::call_service;
-use fluvio_service::KfService;
+use fluvio_service::FlvService;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
@@ -39,7 +39,7 @@ impl PublicService {
 }
 
 #[async_trait]
-impl<S> KfService<S> for PublicService
+impl<S> FlvService<S> for PublicService
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
@@ -49,10 +49,10 @@ where
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        socket: InnerKfSocket<S>,
-    ) -> Result<(), KfSocketError>
+        socket: InnerFlvSocket<S>,
+    ) -> Result<(), FlvSocketError>
     where
-        InnerKfSink<S>: ZeroCopyWrite,
+        InnerFlvSink<S>: ZeroCopyWrite,
     {
         let (sink, mut stream) = socket.split();
 

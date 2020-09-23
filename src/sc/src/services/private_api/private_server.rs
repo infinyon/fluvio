@@ -15,7 +15,7 @@ use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_service::KfService;
+use fluvio_service::FlvService;
 use fluvio_service::wait_for_request;
 use fluvio_socket::*;
 use fluvio_controlplane::*;
@@ -37,15 +37,15 @@ impl ScInternalService {
 }
 
 #[async_trait]
-impl KfService<TcpStream> for ScInternalService {
+impl FlvService<TcpStream> for ScInternalService {
     type Context = SharedContext;
     type Request = InternalScRequest;
 
     async fn respond(
         self: Arc<Self>,
         context: SharedContext,
-        socket: KfSocket,
-    ) -> Result<(), KfSocketError> {
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
 
@@ -115,10 +115,10 @@ impl KfService<TcpStream> for ScInternalService {
 async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,
-    mut api_stream: impl Stream<Item = Result<InternalScRequest, KfSocketError>> + Unpin,
-    mut sink: KfSink,
+    mut api_stream: impl Stream<Item = Result<InternalScRequest, FlvSocketError>> + Unpin,
+    mut sink: FlvSink,
     health_sender: Sender<SpuAction>,
-) -> Result<(), KfSocketError> {
+) -> Result<(), FlvSocketError> {
     let mut spu_epoch = context.spus().store().init_epoch().epoch();
     let mut partition_epoch = context.partitions().store().init_epoch().epoch();
 
@@ -234,9 +234,9 @@ async fn send_lrs_update(ctx: &SharedContext, lrs_req: UpdateLrsRequest) {
 async fn send_spu_change(
     epoch: Epoch,
     ctx: &SharedContext,
-    sink: &mut KfSink,
+    sink: &mut FlvSink,
     spu_id: SpuId,
-) -> Result<Epoch, KfSocketError> {
+) -> Result<Epoch, FlvSocketError> {
     use fluvio_controlplane_metadata::message::*;
 
     let read_guard = ctx.spus().store().read().await;
@@ -277,9 +277,9 @@ async fn send_spu_change(
 async fn send_replica_change(
     epoch: Epoch,
     ctx: &SharedContext,
-    sink: &mut KfSink,
+    sink: &mut FlvSink,
     spu_id: SpuId,
-) -> Result<Epoch, KfSocketError> {
+) -> Result<Epoch, FlvSocketError> {
     use fluvio_controlplane_metadata::message::*;
 
     let read_guard = ctx.partitions().store().read().await;

@@ -4,7 +4,7 @@ use std::fmt;
 use dataplane::batch::DefaultBatch;
 use fluvio_future::fs::BoundedFileSinkError;
 use fluvio_future::zero_copy::SendFileError;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 
 use crate::util::OffsetError;
 use crate::validator::LogValidationError;
@@ -16,7 +16,7 @@ pub enum StorageError {
     OffsetError(OffsetError),
     LogValidationError(LogValidationError),
     SendFileError(SendFileError),
-    SocketError(KfSocketError),
+    SocketError(FlvSocketError),
 }
 
 impl fmt::Display for StorageError {
@@ -65,8 +65,8 @@ impl From<SendFileError> for StorageError {
     }
 }
 
-impl From<KfSocketError> for StorageError {
-    fn from(error: KfSocketError) -> Self {
+impl From<FlvSocketError> for StorageError {
+    fn from(error: FlvSocketError) -> Self {
         StorageError::SocketError(error)
     }
 }

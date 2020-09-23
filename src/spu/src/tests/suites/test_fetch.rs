@@ -5,7 +5,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 
 use flv_future_core::test_async;
-use fluvio_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use kf_protocol::api::DefaultRecord;
 
@@ -22,7 +22,7 @@ fn test_repl_id() -> ReplicaKey {
 
 struct SimpleFetchTest {}
 
-async fn test_fetch(runner: Arc<SpuTestRunner<SimpleFetchTest>>) -> Result<(), KfSocketError> {
+async fn test_fetch(runner: Arc<SpuTestRunner<SimpleFetchTest>>) -> Result<(), FlvSocketError> {
     let _replica = test_repl_id();
     //   runner.send_metadata_to_all(&replica).await.expect("send metadata");
 
@@ -71,7 +71,7 @@ async fn test_fetch(runner: Arc<SpuTestRunner<SimpleFetchTest>>) -> Result<(), K
 }
 
 impl SpuTest for SimpleFetchTest {
-    type ResponseFuture = BoxFuture<'static, Result<(), KfSocketError>>;
+    type ResponseFuture = BoxFuture<'static, Result<(), FlvSocketError>>;
 
     fn env_configuration(&self) -> TestGenerator {
         TestGenerator::default()
@@ -95,7 +95,7 @@ impl SpuTest for SimpleFetchTest {
 }
 
 #[test_async]
-async fn simple_fetch_test() -> Result<(), KfSocketError> {
+async fn simple_fetch_test() -> Result<(), FlvSocketError> {
     let test = SimpleFetchTest {};
     SpuTestRunner::run("fetch test".to_owned(), test)
         .await

@@ -20,7 +20,7 @@ use fluvio_types::SpuId;
 use fluvio_types::log_on_err;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
-use fluvio_socket::ExclusiveKfSink;
+use fluvio_socket::ExclusiveFlvSink;
 
 use crate::core::storage::create_replica_storage;
 use crate::controllers::follower_replica::FileSyncRequest;
@@ -251,7 +251,7 @@ where
         UpdateLrsRequest::new(self.replica_id.clone(), leader, replicas)
     }
 
-    pub async fn send_status_to_sc(&self, sc_sink: &ExclusiveKfSink) {
+    pub async fn send_status_to_sc(&self, sc_sink: &ExclusiveFlvSink) {
         let mut message = RequestMessage::new_request(self.as_lrs_request());
         message.get_mut_header().set_client_id(format!(
             "spu: {}, replica: {}",
