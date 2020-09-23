@@ -6,11 +6,11 @@
 
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::convert::TryFrom;
 
 use tracing::debug;
 
-use fluvio::params::*;
-use fluvio::PartitionConsumer;
+use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 
 use crate::error::CliError;
 use crate::Terminal;
@@ -46,26 +46,41 @@ where
     }
 
     // compute offset
-    let initial_offset = if opt.from_beginning {
-        FetchOffset::Earliest(opt.offset)
-    } else if let Some(offset) = opt.offset {
+    let maybe_initial_offset = if opt.from_beginning {
+        let big_offset = opt.offset.unwrap_or(0);
+        // Try to convert to u32
+        u32::try_from(big_offset).ok().map(Offset::from_beginning)
+    } else if let Some(big_offset) = opt.offset {
         // if it is negative, we start from end
-        if offset < 0 {
-            FetchOffset::Latest(Some(offset * -1))
+        if big_offset < 0 {
+            // Try to convert to u32
+            u32::try_from(big_offset * -1).ok().map(Offset::from_end)
         } else {
-            FetchOffset::Offset(offset)
+            Offset::absolute(big_offset).ok()
         }
     } else {
-        FetchOffset::Latest(None)
+        Some(Offset::end())
     };
 
-    let fetch_option = FetchLogOption {
-        max_bytes: opt.max_bytes,
-        ..Default::default()
+    let initial_offset = match maybe_initial_offset {
+        Some(offset) => offset,
+        None => {
+            return Err(CliError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()));
+        }
+    };
+
+    let fetch_config = {
+        let mut config = ConsumerConfig::default();
+        if let Some(max_bytes) = opt.max_bytes {
+            config = config.with_max_bytes(max_bytes);
+        }
+        config
     };
 
     if opt.disable_continuous {
-        let response = consumer.fetch(initial_offset, fetch_option).await?;
+        let response = consumer
+            .fetch_with_config(initial_offset, fetch_config)
+            .await?;
 
         debug!(
             "got a single response: LSO: {} batches: {}",
@@ -75,7 +90,9 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        let mut log_stream = consumer.stream(initial_offset, fetch_option).await?;
+        let mut log_stream = consumer
+            .stream_with_config(initial_offset, fetch_config)
+            .await?;
 
         while let Ok(response) = log_stream.next().await {
             let partition = response.partition;

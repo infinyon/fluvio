@@ -41,8 +41,7 @@
 //!
 //! ```no_run
 //! use std::time::Duration;
-//! use fluvio::FluvioError;
-//! use fluvio::params::{FetchOffset, FetchLogOption};
+//! use fluvio::{Offset, FluvioError};
 //!
 //! async_std::task::spawn(produce_records());
 //! if let Err(e) = async_std::task::block_on(consume_records()) {
@@ -60,9 +59,7 @@
 //!
 //! async fn consume_records() -> Result<(), FluvioError> {
 //!     let consumer = fluvio::consumer("echo", 0).await?;
-//!     let offset = FetchOffset::Earliest(None);
-//!     let fetch_config = FetchLogOption::default();
-//!     let mut stream = consumer.stream(offset, fetch_config).await?;
+//!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
 //!     while let Ok(event) = stream.next().await {
 //!         for batch in event.partition.records.batches {
@@ -89,18 +86,20 @@
 mod error;
 mod client;
 mod admin;
+mod params;
 mod consumer;
 mod producer;
+mod offset;
 mod sync;
 mod spu;
 
 pub mod config;
-pub mod params;
 
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::TopicProducer;
-pub use consumer::PartitionConsumer;
+pub use consumer::{PartitionConsumer, ConsumerConfig};
+pub use offset::Offset;
 
 pub use crate::admin::FluvioAdmin;
 pub use crate::client::Fluvio;
@@ -138,11 +137,10 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// # Example
 ///
 /// ```no_run
-/// # use fluvio::FluvioError;
-/// use fluvio::params::{FetchOffset, FetchLogOption};
+/// # use fluvio::{ConsumerConfig, FluvioError, Offset};
 /// #  async fn do_consume() -> Result<(), FluvioError> {
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
-/// let mut stream = consumer.stream(FetchOffset::Earliest(None), FetchLogOption::default()).await?;
+/// let mut stream = consumer.stream(Offset::beginning()).await?;
 /// while let Ok(event) = stream.next().await {
 ///     for batch in event.partition.records.batches {
 ///         for record in batch.records {

@@ -94,6 +94,7 @@ impl Fluvio {
     /// # use fluvio::{Fluvio, FluvioError};
     /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
     /// let producer = fluvio.topic_producer("my-topic").await?;
+    /// producer.send_record("Hello, Fluvio!", 0).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -117,17 +118,13 @@ impl Fluvio {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{Fluvio, FluvioError};
-    /// # use fluvio::params::{FetchOffset, FetchLogOption};
+    /// # use fluvio::{Fluvio, Offset, FluvioError};
     /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> Result<(), FluvioError> {
     /// let consumer_one = fluvio.partition_consumer("my-topic", 0).await?;
     /// let consumer_two = fluvio.partition_consumer("my-topic", 1).await?;
     ///
-    /// let offset_one = FetchOffset::Earliest(None);
-    /// let records_one = consumer_one.fetch(offset_one, FetchLogOption::default()).await?;
-    ///
-    /// let offset_two = FetchOffset::Earliest(None);
-    /// let records_two = consumer_two.fetch(offset_two, FetchLogOption::default()).await?;
+    /// let records_one = consumer_one.fetch(Offset::beginning()).await?;
+    /// let records_two = consumer_two.fetch(Offset::beginning()).await?;
     /// # Ok(())
     /// # }
     /// ```
