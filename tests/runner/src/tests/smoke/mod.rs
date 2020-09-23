@@ -33,7 +33,7 @@ mod runner {
                 println!("produce skipped");
             }
 
-            sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(5)).await;
 
             if self.option.test_consumer() {
                 super::consume::validate_consume_message(&self.option).await;
