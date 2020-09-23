@@ -6,7 +6,7 @@ use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminRequest;
-use flv_future_aio::net::tls::AllDomainConnector;
+use fluvio_future::tls::AllDomainConnector;
 use kf_socket::*;
 
 use crate::client::*;

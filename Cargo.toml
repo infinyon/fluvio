@@ -20,10 +20,6 @@ members = [
     "tests/runner",
 ]
 
-#[replace]
-# fluvio-future =  { git = 'https://github.com/infinyon/future-aio.git', branch = 'cleanup_dependencies', version = "3.0.0" }
-#fluvio-future = { path = "../future-aio" }
-
 # profile to make image sizer smaller
 # comment out for now
 [profile.release]

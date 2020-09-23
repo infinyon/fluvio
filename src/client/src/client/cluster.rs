@@ -1,8 +1,9 @@
 use std::convert::TryFrom;
 
 use tracing::debug;
-use kf_socket::AllMultiplexerSocket;
 
+use kf_socket::AllMultiplexerSocket;
+use fluvio_future::tls::AllDomainConnector;
 
 use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
@@ -14,8 +15,8 @@ use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
-use fluvio_future::tls::AllDomainConnector;
-use std::convert::TryFrom;
+
+
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
