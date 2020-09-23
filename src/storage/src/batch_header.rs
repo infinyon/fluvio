@@ -1,12 +1,5 @@
 use std::io::Error as IoError;
-use std::task::Context;
-use std::task::Poll;
 
-use futures_lite::Future;
-use futures_lite::Stream;
-use std::pin::Pin;
-
-use pin_utils::pin_mut;
 
 use dataplane::core::{Version, Decoder, Encoder};
 use dataplane::bytes::Buf;
@@ -53,24 +46,12 @@ impl Encoder for FileEmptyRecords {
     }
 }
 
-/// need to create separate implementation of batch stream
-/// for specific implementation due to problem with compiler
-impl Stream for FileBatchStream<FileEmptyRecords> {
-    type Item = BatchHeaderPos;
-
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let ft = self.inner_next();
-        pin_mut!(ft);
-        ft.poll(cx)
-    }
-}
 
 #[cfg(test)]
 mod tests {
 
     use std::env::temp_dir;
 
-    use futures_lite::StreamExt;
 
     use fluvio_future::fs::util as file_util;
     use flv_util::fixture::ensure_clean_file;

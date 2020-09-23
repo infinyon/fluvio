@@ -31,3 +31,6 @@ k8-config = { version = "1.1.0", features = ["context"] }
 k8-client = "1.1.0"
 k8-obj-core = "1.1.0"
 k8-obj-metadata = "1.0.0"
+
+[dev-dependencies]
+fluvio-future = { version = "0.1.0", features =["task"]}

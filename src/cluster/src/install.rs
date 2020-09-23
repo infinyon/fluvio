@@ -399,7 +399,7 @@ impl ClusterInstallerBuilder {
 ///     .expect("should initialize installer");
 ///
 /// // Installing Fluvio is asynchronous, so you'll need an async runtime
-/// let result = async_std::task::block_on(async {
+/// let result = fluvio_future::task::run_block_on(async {
 ///     installer.install_fluvio().await
 /// });
 /// ```
