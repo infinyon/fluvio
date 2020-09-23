@@ -2,7 +2,6 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
 
-use futures_lite::StreamExt;
 use tracing::debug;
 use tracing::trace;
 
@@ -106,8 +105,10 @@ where
         &self,
         start_pos: Size,
     ) -> Result<BatchHeaderStream, StorageError> {
-        trace!("opening batch headere stream at: {}", start_pos);
+        trace!("opening batch header: {:#?} at: {}", self.msg_log.get_path(),start_pos);
         let file = file_util::open(self.msg_log.get_path()).await?;
+       // let metadata = file.metadata().await?;
+       // debug!("batch file len: {}",metadata.len());
         BatchHeaderStream::new_with_pos(file, start_pos).await
     }
 
@@ -188,7 +189,6 @@ where
         trace!("found relative pos: {}", position);
 
         let mut header_stream = self.open_batch_header_stream(position).await?;
-        trace!("iterating header stream");
         while let Some(batch_pos) = header_stream.next().await {
             let last_offset = batch_pos.get_last_offset();
             if last_offset >= offset {
@@ -427,6 +427,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME)).expect("read bytes");
         debug!("read {} bytes", bytes.len());
 
+        // read batches from raw bytes to see if it can be parsed
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
@@ -435,6 +436,7 @@ mod tests {
         let seg1_metadata = metadata(test_dir.join(SEG_INDEX)).expect("read metadata");
         assert_eq!(seg1_metadata.len(), 1000);
 
+        // this should return none since we are trying find offset before start offset
         assert!((active_segment.find_offset_position(10).await.expect("offset")).is_none());
         let offset_position = (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);

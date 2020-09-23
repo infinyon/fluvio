@@ -139,9 +139,12 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Cursor;
 
+    use tracing::debug;
+
     use fluvio_future::test_async;
     use dataplane::batch::DefaultBatch;
     use dataplane::core::Decoder;
+    use dataplane::core::Encoder;
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutFileRecords;
@@ -153,7 +156,7 @@ mod tests {
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
 
     #[test_async]
-    async fn test_sink_msg() -> Result<(), StorageError> {
+    async fn test_write_records() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         ensure_clean_file(&test_file);
 
@@ -162,12 +165,17 @@ mod tests {
             segment_max_bytes: 1000,
             ..Default::default()
         };
-        let mut msg_sink = MutFileRecords::create(100, &options).await?;
+        let mut msg_sink = MutFileRecords::create(100, &options).await.expect("create");
 
-        msg_sink.send(create_batch()).await?;
+        let batch = create_batch();
+        let write_size = batch.write_size(0);
+        debug!("write size: {}",write_size);        // for now, this is 79 bytes
+        msg_sink.send(create_batch()).await.expect("create");
 
-        let bytes = read_bytes_from_file(&test_file)?;
-        assert_eq!(bytes.len(), 79, "should be 70 bytes");
+        let bytes = read_bytes_from_file(&test_file).expect("read bytes");
+        assert_eq!(bytes.len(), write_size,"incorrect size for write");
+
+        
 
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
@@ -181,10 +189,11 @@ mod tests {
 
         msg_sink.send(create_batch()).await?;
         let bytes = read_bytes_from_file(&test_file)?;
-        assert_eq!(bytes.len(), 158, "should be 158 bytes");
+        assert_eq!(bytes.len(), write_size*2, "should be 158 bytes");
 
         let old_msg_sink = MutFileRecords::open(100, &options).await?;
         assert_eq!(old_msg_sink.get_base_offset(), 100);
+        
         Ok(())
     }
 }

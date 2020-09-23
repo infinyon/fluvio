@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 use std::fmt;
 use std::path::Path;
 
-use futures_lite::StreamExt;
 use tracing::warn;
 use tracing::trace;
 
