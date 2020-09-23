@@ -137,9 +137,14 @@ jobs:
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
-      - name: smoke test tls
+      - name: smoke test tls for linux
+        if: startsWith(matrix.os,'ubuntu')
         run: |
           FLV_CMD=true make smoke-test-tls
+      - name: smoke test tls
+        if: startsWith(matrix.os, 'macOS')
+        run: |
+          FLV_CMD=true make smoke-test-tls DEFAULT_SPU=1
 
 
   k8_cluster_test:
