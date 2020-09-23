@@ -19,23 +19,23 @@ use fluvio_future::tls::AllTcpStream;
 
 use super::FlvSocketError;
 use crate::InnerFlvSink;
-use crate::InnerKfStream;
+use crate::InnerFlvStream;
 
 pub type FlvSocket = InnerFlvSocket<TcpStream>;
 pub type AllFlvSocket = InnerFlvSocket<AllTcpStream>;
 
-/// FlvSocket is high level socket that can send and receive kf-protocol
+/// FlvSocket is high level socket that can send and receive fluvio protocol
 #[derive(Debug)]
 pub struct InnerFlvSocket<S> {
     sink: InnerFlvSink<S>,
-    stream: InnerKfStream<S>,
+    stream: InnerFlvStream<S>,
     stale: bool,
 }
 
 unsafe impl<S> Sync for InnerFlvSocket<S> {}
 
 impl<S> InnerFlvSocket<S> {
-    pub fn new(sink: InnerFlvSink<S>, stream: InnerKfStream<S>) -> Self {
+    pub fn new(sink: InnerFlvSink<S>, stream: InnerFlvStream<S>) -> Self {
         Self {
             sink,
             stream,
@@ -43,7 +43,7 @@ impl<S> InnerFlvSocket<S> {
         }
     }
 
-    pub fn split(self) -> (InnerFlvSink<S>, InnerKfStream<S>) {
+    pub fn split(self) -> (InnerFlvSink<S>, InnerFlvStream<S>) {
         (self.sink, self.stream)
     }
 
@@ -60,7 +60,7 @@ impl<S> InnerFlvSocket<S> {
         &mut self.sink
     }
 
-    pub fn get_mut_stream(&mut self) -> &mut InnerKfStream<S> {
+    pub fn get_mut_stream(&mut self) -> &mut InnerFlvStream<S> {
         &mut self.stream
     }
 }
@@ -102,8 +102,8 @@ where
     }
 }
 
-impl<S> From<(InnerFlvSink<S>, InnerKfStream<S>)> for InnerFlvSocket<S> {
-    fn from(pair: (InnerFlvSink<S>, InnerKfStream<S>)) -> Self {
+impl<S> From<(InnerFlvSink<S>, InnerFlvStream<S>)> for InnerFlvSocket<S> {
+    fn from(pair: (InnerFlvSink<S>, InnerFlvStream<S>)) -> Self {
         let (sink, stream) = pair;
         Self::new(sink, stream)
     }

@@ -28,9 +28,9 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::Decoder;
 
 use crate::FlvSocketError;
-use crate::InnerExclusiveKfSink;
+use crate::InnerExclusiveFlvSink;
 use crate::InnerFlvSocket;
-use crate::InnerKfStream;
+use crate::InnerFlvStream;
 
 #[allow(unused)]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
@@ -53,7 +53,7 @@ type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
 pub struct MultiplexerSocket<S> {
     correlation_id_counter: Arc<Mutex<i32>>,
     senders: Senders,
-    sink: InnerExclusiveKfSink<S>,
+    sink: InnerExclusiveFlvSink<S>,
 }
 
 impl<S> MultiplexerSocket<S>
@@ -68,7 +68,7 @@ where
         let multiplexer = Self {
             correlation_id_counter: Arc::new(Mutex::new(1)),
             senders: Arc::new(Mutex::new(HashMap::new())),
-            sink: InnerExclusiveKfSink::new(sink),
+            sink: InnerExclusiveFlvSink::new(sink),
         };
 
         MultiPlexingResponseDispatcher::run(stream, multiplexer.senders.clone());
@@ -205,7 +205,7 @@ pub type AllSerialSocket = SerialSocket<AllTcpStream>;
 /// this can be only created from multiplex socket
 pub struct SerialSocket<S> {
     correlation_id: i32,
-    sink: InnerExclusiveKfSink<S>,
+    sink: InnerExclusiveFlvSink<S>,
     receiver: SharedMsg,
 }
 
@@ -294,13 +294,13 @@ where
     }
 }
 
-/// This decodes kf streams and multiplex into different slots
+/// This decodes fluvio protocol based streams and multiplex into different slots
 struct MultiPlexingResponseDispatcher {
     senders: Senders,
 }
 
 impl MultiPlexingResponseDispatcher {
-    pub fn run<S>(stream: InnerKfStream<S>, senders: Senders)
+    pub fn run<S>(stream: InnerFlvStream<S>, senders: Senders)
     where
         S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
     {
@@ -312,7 +312,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    async fn dispatcher_loop<S>(mut self, mut stream: InnerKfStream<S>)
+    async fn dispatcher_loop<S>(mut self, mut stream: InnerFlvStream<S>)
     where
         S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
     {
@@ -406,7 +406,7 @@ mod tests {
 
     use super::MultiplexerSocket;
     use crate::test_request::*;
-    use crate::ExclusiveKfSink;
+    use crate::ExclusiveFlvSink;
     use crate::FlvSocket;
     use crate::FlvSocketError;
 
@@ -421,7 +421,7 @@ mod tests {
 
         let (sink, mut stream) = socket.split();
 
-        let shared_sink = ExclusiveKfSink::new(sink);
+        let shared_sink = ExclusiveFlvSink::new(sink);
 
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 

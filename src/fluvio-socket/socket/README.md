@@ -1,16 +1,16 @@
-# kf-protocol
+# fluvio-protocol
 
 Provide TCP socket wrapper using kafka protocol
 
-# build kafka send utility
+# build fluvio send utility
 
-build kafka-send utilty
+build fluvio-send utilty
 
 ```cargo build --all-features```
 
-invoking kafka-send utility to send api request sample data
+invoking fluvio-send utility to send api request sample data
 
-```../target/debug/kafka-send data/apirequest.bin```
+```../target/debug/fluvio-send data/apirequest.bin```
 
 ## License
 
