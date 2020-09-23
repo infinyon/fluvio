@@ -165,7 +165,7 @@ where
     }
 }
 
-#[derive(Debug, Decode,Encode)]
+#[derive(Debug, Decode, Encode)]
 pub struct BatchHeader {
     pub partition_leader_epoch: i32,
     pub magic: i8,
@@ -224,7 +224,7 @@ mod test {
     #[test]
     fn test_batch_size() {
         let header = BatchHeader::default();
-        assert_eq!(header.write_size(0),BATCH_HEADER_SIZE);
+        assert_eq!(header.write_size(0), BATCH_HEADER_SIZE);
     }
 
     #[test]

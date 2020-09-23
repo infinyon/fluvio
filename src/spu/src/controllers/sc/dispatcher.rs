@@ -16,7 +16,6 @@ use async_channel::bounded;
 use tokio::select;
 use futures_util::stream::StreamExt;
 
-
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use fluvio_controlplane::InternalSpuApi;

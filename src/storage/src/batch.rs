@@ -5,12 +5,10 @@ use std::io::SeekFrom;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-
 use tracing::trace;
 use tracing::debug;
 use futures_lite::io::AsyncReadExt;
 use futures_lite::io::AsyncSeekExt;
-
 
 use fluvio_future::fs::File;
 use dataplane::batch::{
@@ -96,11 +94,12 @@ where
         if read_len < BATCH_FILE_HEADER_SIZE {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
-                format!("expected: {} but only {} bytes read",BATCH_FILE_HEADER_SIZE,read_len)
+                format!(
+                    "expected: {} but only {} bytes read",
+                    BATCH_FILE_HEADER_SIZE, read_len
+                ),
             ));
         }
-
-        
 
         let mut cursor = Cursor::new(bytes);
         let mut batch = Batch::default();
@@ -245,7 +244,6 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
 
@@ -279,7 +277,10 @@ mod tests {
 
         let mut active_segment = MutableSegment::create(300, &option).await?;
 
-        active_segment.send(create_batch()).await.expect("writing batches");
+        active_segment
+            .send(create_batch())
+            .await
+            .expect("writing batches");
 
         let mut batch_stream = active_segment
             .open_batch_header_stream(0)
@@ -289,7 +290,7 @@ mod tests {
         let batch = batch1.get_batch();
         assert_eq!(batch.get_base_offset(), 300);
         assert_eq!(batch.get_header().producer_id, 12);
-        assert_eq!(batch1.get_last_offset(),301);
+        assert_eq!(batch1.get_last_offset(), 301);
         Ok(())
     }
 
@@ -303,20 +304,20 @@ mod tests {
         let mut active_segment = MutableSegment::create(300, &option).await?;
 
         active_segment.send(create_batch()).await?;
-        active_segment.send(create_batch_with_producer(25, 2)).await?;
+        active_segment
+            .send(create_batch_with_producer(25, 2))
+            .await?;
 
         let mut batch_stream = active_segment
             .open_batch_header_stream(0)
             .await
             .expect("open file batch stream");
-        
+
         let batch1 = batch_stream.next().await.expect("batch");
-        assert_eq!(batch1.get_last_offset(),301);
+        assert_eq!(batch1.get_last_offset(), 301);
         let batch2 = batch_stream.next().await.expect("batch");
-        assert_eq!(batch2.get_last_offset(),303);
-        
+        assert_eq!(batch2.get_last_offset(), 303);
 
         Ok(())
     }
-    
 }
