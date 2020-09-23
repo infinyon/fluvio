@@ -213,9 +213,11 @@ impl FileReplica {
     ) where
         P: SlicePartitionResponse,
     {
-        
         let high_watermark = self.get_hw();
-        debug!("read records at: {}, max: max: {:#?}, hw: {}", start_offset, max_offset, high_watermark, );
+        debug!(
+            "read records at: {}, max: max: {:#?}, hw: {}",
+            start_offset, max_offset, high_watermark,
+        );
 
         response.set_hw(high_watermark);
         response.set_last_stable_offset(high_watermark);
@@ -380,15 +382,18 @@ mod tests {
             .expect("test replica");
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
-        assert_eq!(replica.get_leo(),START_OFFSET);
-        assert_eq!(replica.get_hw(),START_OFFSET);
+        assert_eq!(replica.get_leo(), START_OFFSET);
+        assert_eq!(replica.get_hw(), START_OFFSET);
 
         replica.send(create_batch()).await.expect("send");
-        assert_eq!(replica.get_leo(),START_OFFSET+2);   // 2 batches
-        assert_eq!(replica.get_hw(),START_OFFSET);  // hw should not change since we have not committed them
+        assert_eq!(replica.get_leo(), START_OFFSET + 2); // 2 batches
+        assert_eq!(replica.get_hw(), START_OFFSET); // hw should not change since we have not committed them
 
-        replica.update_high_watermark(10).await.expect("high watermaerk");
-        assert_eq!(replica.get_hw(),10);    // hw should set to whatever we passed
+        replica
+            .update_high_watermark(10)
+            .await
+            .expect("high watermaerk");
+        assert_eq!(replica.get_hw(), 10); // hw should set to whatever we passed
 
         let test_file = option.base_dir.join("test-0").join(TEST_SEG_NAME);
         debug!("using test file: {:#?}", test_file);
@@ -407,7 +412,7 @@ mod tests {
         // segment with offset 20 should be active segment
         assert!(replica.find_segment(20).unwrap().is_active());
         assert!(replica.find_segment(21).unwrap().is_active());
-        assert!(replica.find_segment(30).is_some());      // any higher offset should result in current segment
+        assert!(replica.find_segment(30).is_some()); // any higher offset should result in current segment
 
         Ok(())
     }
@@ -423,7 +428,7 @@ mod tests {
             .expect("test replica");
 
         assert_eq!(replica.get_leo(), 0);
-        assert_eq!(replica.get_hw(),0);
+        assert_eq!(replica.get_hw(), 0);
 
         // reading empty replica should return empyt records
         let mut empty_response = FilePartitionResponse::default();
@@ -439,9 +444,8 @@ mod tests {
         debug!("batch len: {}", batch_len);
         replica.send(batch).await.expect("write");
 
-        assert_eq!(replica.get_leo(),2);        // 2
-        assert_eq!(replica.get_hw(),0);
-
+        assert_eq!(replica.get_leo(), 2); // 2
+        assert_eq!(replica.get_hw(), 0);
 
         // read records
         let mut partition_response = FilePartitionResponse::default();

@@ -14,7 +14,7 @@ use kf_socket::KfSocketError;
 #[derive(Debug)]
 pub enum ScError {
     IoError(IoError),
- //   SendError(SendError),
+    //   SendError(SendError),
     ClientError(ClientError),
     SocketError(KfSocketError),
     PartitionError(PartitionError),
@@ -24,7 +24,7 @@ impl fmt::Display for ScError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::IoError(err) => write!(f, "{}", err),
-        //    Self::SendError(err) => write!(f, "{}", err),
+            //    Self::SendError(err) => write!(f, "{}", err),
             Self::ClientError(err) => write!(f, "{}", err),
             Self::SocketError(err) => write!(f, "{}", err),
             Self::PartitionError(err) => write!(f, "{}", err),

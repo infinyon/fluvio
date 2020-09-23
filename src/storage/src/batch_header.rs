@@ -1,6 +1,5 @@
 use std::io::Error as IoError;
 
-
 use dataplane::core::{Version, Decoder, Encoder};
 use dataplane::bytes::Buf;
 use dataplane::bytes::BufMut;
@@ -46,12 +45,10 @@ impl Encoder for FileEmptyRecords {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
 
     use std::env::temp_dir;
-
 
     use fluvio_future::fs::util as file_util;
     use flv_util::fixture::ensure_clean_file;

@@ -169,13 +169,11 @@ mod tests {
 
         let batch = create_batch();
         let write_size = batch.write_size(0);
-        debug!("write size: {}",write_size);        // for now, this is 79 bytes
+        debug!("write size: {}", write_size); // for now, this is 79 bytes
         msg_sink.send(create_batch()).await.expect("create");
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
-        assert_eq!(bytes.len(), write_size,"incorrect size for write");
-
-        
+        assert_eq!(bytes.len(), write_size, "incorrect size for write");
 
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
@@ -189,11 +187,11 @@ mod tests {
 
         msg_sink.send(create_batch()).await?;
         let bytes = read_bytes_from_file(&test_file)?;
-        assert_eq!(bytes.len(), write_size*2, "should be 158 bytes");
+        assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
         let old_msg_sink = MutFileRecords::open(100, &options).await?;
         assert_eq!(old_msg_sink.get_base_offset(), 100);
-        
+
         Ok(())
     }
 }

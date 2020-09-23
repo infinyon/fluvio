@@ -48,7 +48,7 @@ impl<'a> SegmentSlice<'a> {
     pub fn is_active(&'a self) -> bool {
         match self {
             Self::MutableSegment(_) => true,
-            Self::Segment(_) => false
+            Self::Segment(_) => false,
         }
     }
 }
@@ -105,10 +105,14 @@ where
         &self,
         start_pos: Size,
     ) -> Result<BatchHeaderStream, StorageError> {
-        trace!("opening batch header: {:#?} at: {}", self.msg_log.get_path(),start_pos);
+        trace!(
+            "opening batch header: {:#?} at: {}",
+            self.msg_log.get_path(),
+            start_pos
+        );
         let file = file_util::open(self.msg_log.get_path()).await?;
-       // let metadata = file.metadata().await?;
-       // debug!("batch file len: {}",metadata.len());
+        // let metadata = file.metadata().await?;
+        // debug!("batch file len: {}",metadata.len());
         BatchHeaderStream::new_with_pos(file, start_pos).await
     }
 
@@ -126,7 +130,7 @@ where
         start_offset: Offset,
         max_offset_opt: Option<Offset>,
     ) -> Result<Option<AsyncFileSlice>, StorageError> {
-        trace!("record slice at: {}",start_offset);
+        trace!("record slice at: {}", start_offset);
         match self.find_offset_position(start_offset).await? {
             Some(start_pos) => {
                 trace!(
@@ -206,8 +210,6 @@ where
 }
 
 impl Segment<LogIndex, FileRecordsSlice> {
-
-
     pub async fn open_for_read(
         base_offset: Offset,
         option: &ConfigOption,
@@ -235,8 +237,6 @@ impl Unpin for Segment<MutLogIndex, MutFileRecords> {}
 
 /// Implementation for Active segment
 impl Segment<MutLogIndex, MutFileRecords> {
-
-
     // create segment on base directory
     pub async fn create(
         base_offset: Offset,
@@ -349,7 +349,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
                 let last_offset_delta = self.msg_log.get_item_last_offset_delta();
                 trace!("flushing: last offset delta: {}", last_offset_delta);
                 self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
-                debug!("send flushed leo: {}",self.end_offset);
+                debug!("send flushed leo: {}", self.end_offset);
                 Ok(())
             }
             Err(err) => Err(err),
@@ -416,11 +416,16 @@ mod tests {
 
         let base_offset = 20;
 
-        let mut active_segment = MutableSegment::create(base_offset, &option).await.expect("create");
+        let mut active_segment = MutableSegment::create(base_offset, &option)
+            .await
+            .expect("create");
         assert_eq!(active_segment.get_end_offset(), 20);
 
         // batch of 1
-        active_segment.send(create_batch_with_producer(100, 1)).await.expect("write");
+        active_segment
+            .send(create_batch_with_producer(100, 1))
+            .await
+            .expect("write");
         assert_eq!(active_segment.get_end_offset(), 21);
 
         // check to see if batch is written
@@ -437,8 +442,13 @@ mod tests {
         assert_eq!(seg1_metadata.len(), 1000);
 
         // this should return none since we are trying find offset before start offset
-        assert!((active_segment.find_offset_position(10).await.expect("offset")).is_none());
-        let offset_position = (active_segment.find_offset_position(20).await?).expect("offset exists");
+        assert!((active_segment
+            .find_offset_position(10)
+            .await
+            .expect("offset"))
+        .is_none());
+        let offset_position =
+            (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 70 - 12);
@@ -457,7 +467,9 @@ mod tests {
 
         let mut active_segment = MutableSegment::create(base_offset, &option).await?;
 
-        active_segment.send(create_batch_with_producer(100, 4)).await?;
+        active_segment
+            .send(create_batch_with_producer(100, 4))
+            .await?;
 
         // each record contains 9 bytes
 
@@ -474,7 +486,8 @@ mod tests {
         assert_eq!(seg1_metadata.len(), 1000);
 
         assert!((active_segment.find_offset_position(10).await?).is_none());
-        let offset_position = (active_segment.find_offset_position(20).await?).expect("offset exists");
+        let offset_position =
+            (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 85);

@@ -40,7 +40,6 @@ mod event {
     }
 }
 
-
 mod broadcast {
 
     pub use tokio::sync::broadcast::Receiver;
@@ -48,22 +47,16 @@ mod broadcast {
     pub use tokio::sync::broadcast::channel;
     pub use tokio::sync::broadcast::RecvError;
 
-
     #[derive(Debug)]
     pub struct Channel<T> {
         receiver: Receiver<T>,
-        sender: Sender<T>
+        sender: Sender<T>,
     }
 
-    impl <T>Channel<T> {
-
+    impl<T> Channel<T> {
         pub fn new(capacity: usize) -> Self {
-
-            let (sender,receiver) = channel(capacity);
-            Self {
-                receiver,
-                sender
-            }
+            let (sender, receiver) = channel(capacity);
+            Self { receiver, sender }
         }
 
         /// create new clone of sender
@@ -71,13 +64,8 @@ mod broadcast {
             self.sender.subscribe()
         }
 
-
         pub fn sender(&self) -> Sender<T> {
             self.sender.clone()
         }
-
-    
     }
-
-
 }
