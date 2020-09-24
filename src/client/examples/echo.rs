@@ -11,7 +11,6 @@ fn main() {
 }
 
 async fn produce() -> Result<(), FluvioError> {
-    println!("Creating producer");
     let producer = fluvio::producer(TOPIC).await?;
 
     for i in 0..10 {
@@ -27,13 +26,10 @@ async fn produce() -> Result<(), FluvioError> {
 }
 
 async fn consume() -> Result<(), FluvioError> {
-    println!("Creating consumer");
     let consumer = fluvio::consumer(TOPIC, 0).await?;
-    println!("Creating stream");
     let mut stream = consumer.stream(Offset::beginning()).await?;
 
     while let Ok(event) = stream.next().await {
-        println!("Received Event");
         for batch in event.partition.records.batches {
             for record in batch.records {
                 if let Some(record) = record.value.inner_value() {
@@ -45,7 +41,6 @@ async fn consume() -> Result<(), FluvioError> {
                 }
             }
         }
-        println!("Handled event");
     }
 
     Ok(())
