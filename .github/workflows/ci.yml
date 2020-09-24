@@ -168,6 +168,8 @@ jobs:
           minikube version: "v1.13.0"
           kubernetes version: "v1.19.0"
           github token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Helm version
+        run:  helm version
       - name: Test minikube
         run: |
           minikube profile list
