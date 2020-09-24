@@ -100,6 +100,7 @@ fn main() {
     }
 }
 
+/// Produces 10 "Hello, Fluvio" events, followed by a "Done!" event
 async fn produce() -> Result<(), FluvioError> {
     let producer = fluvio::producer(TOPIC).await?;
 
@@ -115,6 +116,7 @@ async fn produce() -> Result<(), FluvioError> {
     Ok(())
 }
 
+/// Consumes events until a "Done!" event is read
 async fn consume() -> Result<(), FluvioError> {
     let consumer = fluvio::consumer(TOPIC, 0).await?;
     let mut stream = consumer.stream(Offset::beginning()).await?;
