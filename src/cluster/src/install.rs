@@ -120,7 +120,7 @@ impl ClusterInstallerBuilder {
     /// # Example
     ///
     /// Suppose you would like to install version `0.6.0` of Fluvio from
-    /// Docker Hub, where the image is tagged as `infinyon/fluvio-sc:0.6.0`.
+    /// Docker Hub, where the image is tagged as `infinyon/fluvio:0.6.0`.
     /// You can do that like this:
     ///
     /// ```no_run
@@ -150,7 +150,7 @@ impl ClusterInstallerBuilder {
     /// docker run -d -p 5000:5000 --restart=always --name registry registry:2
     /// ```
     ///
-    /// Suppose you tagged your image as `infinyon/fluvio-sc:0.1.0` and pushed it
+    /// Suppose you tagged your image as `infinyon/fluvio:0.1.0` and pushed it
     /// to your `localhost:5000` registry. Your image is now located at
     /// `localhost:5000/infinyon`. You can specify that to the installer like so:
     ///
