@@ -7,7 +7,7 @@ use futures::future::join;
 use futures::channel::mpsc::Sender;
 
 use flv_future_core::sleep;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::topic::TopicStatus;
@@ -42,7 +42,7 @@ impl<T> ScTestRunner<T>
 where
     T: ScTest + Send + Sync + 'static,
 {
-    pub async fn run(client_id: String, test: T) -> Result<(), KfSocketError> {
+    pub async fn run(client_id: String, test: T) -> Result<(), FlvSocketError> {
         debug!("starting sc test harness");
         let generator = test.env_configuration();
 

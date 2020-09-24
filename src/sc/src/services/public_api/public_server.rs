@@ -13,11 +13,11 @@ use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use event_listener::Event;
 
-use kf_service::api_loop;
-use kf_service::call_service;
-use kf_socket::InnerKfSocket;
-use kf_socket::KfSocketError;
-use kf_service::KfService;
+use fluvio_service::api_loop;
+use fluvio_service::call_service;
+use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::FlvSocketError;
+use fluvio_service::FlvService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
@@ -34,7 +34,7 @@ impl PublicService {
 }
 
 #[async_trait]
-impl<S> KfService<S> for PublicService
+impl<S> FlvService<S> for PublicService
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
@@ -44,8 +44,8 @@ where
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
-        socket: InnerKfSocket<S>,
-    ) -> Result<(), KfSocketError> {
+        socket: InnerFlvSocket<S>,
+    ) -> Result<(), FlvSocketError> {
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();

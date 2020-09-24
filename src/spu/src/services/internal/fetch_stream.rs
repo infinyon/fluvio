@@ -1,8 +1,8 @@
 use tracing::debug;
 
 use dataplane::api::RequestMessage;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSocketError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::controllers::leader_replica::LeaderConnection;
@@ -12,8 +12,8 @@ use super::FetchStreamResponse;
 pub(crate) async fn handle_fetch_stream_request(
     req_msg: RequestMessage<FetchStreamRequest>,
     ctx: DefaultSharedGlobalContext,
-    mut socket: KfSocket,
-) -> Result<(), KfSocketError> {
+    mut socket: FlvSocket,
+) -> Result<(), FlvSocketError> {
     let request = &req_msg.request;
     let follower_id = request.spu_id;
     debug!(
@@ -30,5 +30,5 @@ pub(crate) async fn handle_fetch_stream_request(
 
     LeaderConnection::handle(ctx, follower_id, socket).await?;
 
-    Ok(()) as Result<(), KfSocketError>
+    Ok(()) as Result<(), FlvSocketError>
 }

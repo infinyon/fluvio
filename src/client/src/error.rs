@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_sc_schema::ApiError;
 
 /// Possible errors that may arise when using Fluvio
@@ -11,7 +11,7 @@ pub enum FluvioError {
     PartitionNotFound(String, i32),
     Other(String),
     IoError(IoError),
-    KfSocketError(KfSocketError),
+    FlvSocketError(FlvSocketError),
     ApiError(ApiError),
     UnableToReadProfile,
     ConfigError(String),
@@ -24,9 +24,9 @@ impl From<IoError> for FluvioError {
     }
 }
 
-impl From<KfSocketError> for FluvioError {
-    fn from(error: KfSocketError) -> Self {
-        Self::KfSocketError(error)
+impl From<FlvSocketError> for FluvioError {
+    fn from(error: FlvSocketError) -> Self {
+        Self::FlvSocketError(error)
     }
 }
 
@@ -45,7 +45,7 @@ impl fmt::Display for FluvioError {
             }
             Self::Other(msg) => write!(f, "{}", msg),
             Self::IoError(err) => write!(f, "{}", err),
-            Self::KfSocketError(err) => write!(f, "{:#?}", err),
+            Self::FlvSocketError(err) => write!(f, "{:#?}", err),
             Self::ApiError(err) => write!(f, "{}", err),
             Self::UnableToReadProfile => write!(f, "No configuration has been provided"),
             Self::ConfigError(err) => write!(f, "Config error: {}", err),

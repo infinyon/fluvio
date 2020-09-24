@@ -6,8 +6,8 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use kf_socket::SharedSinkPool;
-use kf_socket::SinkPool;
+use fluvio_socket::SharedSinkPool;
+use fluvio_socket::SinkPool;
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 

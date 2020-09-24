@@ -11,9 +11,9 @@ use async_channel::Receiver;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use kf_socket::KfSocket;
-use kf_socket::KfSink;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSink;
+use fluvio_socket::FlvSocketError;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
@@ -137,7 +137,7 @@ impl ReplicaFollowerController<FileReplica> {
         follower_debug!(self, "shutting down");
     }
 
-    async fn stream_loop(&mut self, mut socket: KfSocket) -> Result<bool, KfSocketError> {
+    async fn stream_loop(&mut self, mut socket: FlvSocket) -> Result<bool, FlvSocketError> {
         self.send_fetch_stream_request(&mut socket).await?;
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<FollowerPeerRequest, FollowerPeerApiEnum>();
@@ -210,7 +210,7 @@ impl ReplicaFollowerController<FileReplica> {
         }
     }
 
-    async fn write_to_follower_replica(&self, sink: &mut KfSink, req: DefaultSyncRequest) {
+    async fn write_to_follower_replica(&self, sink: &mut FlvSink, req: DefaultSyncRequest) {
         follower_debug!(self, "handling sync request from req {}", req);
 
         let offsets = self.followers_state.send_records(req).await;
@@ -219,7 +219,7 @@ impl ReplicaFollowerController<FileReplica> {
 
     /// connect to leader, if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_leader(&mut self) -> Option<KfSocket> {
+    async fn create_socket_to_leader(&mut self) -> Option<FlvSocket> {
         let leader_spu = self.get_spu().await;
         let leader_endpoint = leader_spu.private_endpoint.to_string();
         loop {
@@ -228,7 +228,7 @@ impl ReplicaFollowerController<FileReplica> {
                 "trying to create socket to leader at: {}",
                 leader_endpoint
             );
-            let connect_future = KfSocket::connect(&leader_endpoint);
+            let connect_future = FlvSocket::connect(&leader_endpoint);
 
             select! {
                 msg = self.receiver.next() => {
@@ -264,7 +264,10 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     /// send request to establish peer to peer communication to leader
-    async fn send_fetch_stream_request(&self, socket: &mut KfSocket) -> Result<(), KfSocketError> {
+    async fn send_fetch_stream_request(
+        &self,
+        socket: &mut FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let local_spu_id = self.local_spu_id();
         trace!(
             "follower: {}, sending fetch stream for leader: {}",
@@ -331,13 +334,13 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     /// send offset to leader, so it can chronize
-    async fn sync_all_offsets_to_leader(&self, sink: &mut KfSink) {
+    async fn sync_all_offsets_to_leader(&self, sink: &mut FlvSink) {
         self.sync_offsets_to_leader(sink, self.followers_state.replica_offsets(&self.leader_id))
             .await;
     }
 
     /// send follower offset to leader
-    async fn sync_offsets_to_leader(&self, sink: &mut KfSink, offsets: UpdateOffsetRequest) {
+    async fn sync_offsets_to_leader(&self, sink: &mut FlvSink, offsets: UpdateOffsetRequest) {
         let req_msg = RequestMessage::new_request(offsets)
             .set_client_id(format!("follower_id: {}", self.config.id()));
 

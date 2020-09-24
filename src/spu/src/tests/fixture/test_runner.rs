@@ -10,8 +10,8 @@ use futures::channel::mpsc::channel;
 use futures::channel::mpsc::Sender;
 
 use flv_future_core::sleep;
-use kf_socket::KfSocketError;
-use kf_socket::KfSink;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::FlvSink;
 use kf_protocol::api::Offset;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::message::produce::DefaultKfProduceRequest;
@@ -54,7 +54,7 @@ impl<T> SpuTestRunner<T>
 where
     T: SpuTest + Send + Sync + 'static,
 {
-    pub async fn run(client_id: String, test: T) -> Result<(), KfSocketError> {
+    pub async fn run(client_id: String, test: T) -> Result<(), FlvSocketError> {
         debug!("starting test harnerss");
         let generator = test.env_configuration();
 
@@ -196,9 +196,9 @@ where
 
     pub async fn send_metadata_to_spu<'a>(
         &'a self,
-        sink: &'a mut KfSink,
+        sink: &'a mut FlvSink,
         target_spu: SpuId,
-    ) -> Result<(), KfSocketError> {
+    ) -> Result<(), FlvSocketError> {
         let mut spu_metadata = self.spu_metadata();
 
         for replica in self.test.replicas() {
@@ -246,7 +246,7 @@ where
         RequestMessage::new_request(req).set_client_id(self.client_id.clone())
     }
 
-    pub fn <S>(
+    pub fn test<S>(
         &self,
         offset: Offset,
         topic: S,

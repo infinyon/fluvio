@@ -9,7 +9,7 @@ use tracing::error;
 
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
-use kf_socket::AsyncResponse;
+use fluvio_socket::AsyncResponse;
 use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_sc_schema::objects::MetadataUpdate;

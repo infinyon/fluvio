@@ -25,9 +25,9 @@ use fluvio_controlplane::UpdateSpuRequest;
 use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
-use kf_socket::KfSocket;
-use kf_socket::KfSocketError;
-use kf_socket::ExclusiveKfSink;
+use fluvio_socket::FlvSocket;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::ExclusiveFlvSink;
 use fluvio_storage::FileReplica;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::log_on_err;
@@ -137,13 +137,13 @@ impl ScDispatcher<FileReplica> {
 
     /// dispatch sc request
     #[instrument(skip(self, socket))]
-    async fn sc_request_loop(&mut self, socket: KfSocket) -> Result<(), KfSocketError> {
+    async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
         use tokio::select;
 
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
-        let shared_sink = Arc::new(ExclusiveKfSink::new(sink));
+        let shared_sink = Arc::new(ExclusiveFlvSink::new(sink));
 
         debug!("entering sc request loop");
 
@@ -189,7 +189,7 @@ impl ScDispatcher<FileReplica> {
     /// register local spu to sc
     async fn send_spu_registeration(
         &self,
-        socket: &mut KfSocket,
+        socket: &mut FlvSocket,
     ) -> Result<bool, InternalServerError> {
         let local_spu_id = self.ctx.local_spu_id();
 
@@ -223,7 +223,7 @@ impl ScDispatcher<FileReplica> {
 
     /// connect to sc if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_sc(&mut self) -> Option<KfSocket> {
+    async fn create_socket_to_sc(&mut self) -> Option<FlvSocket> {
         let spu_id = self.ctx.local_spu_id();
         let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
@@ -236,7 +236,7 @@ impl ScDispatcher<FileReplica> {
                 sc_endpoint,
                 spu_id
             );
-            let connect_future = KfSocket::connect(&sc_endpoint);
+            let connect_future = FlvSocket::connect(&sc_endpoint);
 
             select! {
                 socket_res = connect_future => {
@@ -266,7 +266,7 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
-        shared_sc_sink: Arc<ExclusiveKfSink>,
+        shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
@@ -301,7 +301,7 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
-        _shared_sc_sink: Arc<ExclusiveKfSink>,
+        _shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
@@ -333,7 +333,7 @@ impl ScDispatcher<FileReplica> {
     async fn apply_replica_actions(
         &self,
         actions: Actions<SpecChange<Replica>>,
-        shared_sc_sink: Arc<ExclusiveKfSink>,
+        shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) {
         if actions.count() == 0 {
             debug!("no replica actions to process. ignoring");
@@ -402,7 +402,7 @@ impl ScDispatcher<FileReplica> {
         skip(self, replica, shared_sc_sink),
         fields(replica_id = &*format!("{}", replica.id))
     )]
-    async fn add_leader_replica(&self, replica: Replica, shared_sc_sink: Arc<ExclusiveKfSink>) {
+    async fn add_leader_replica(&self, replica: Replica, shared_sc_sink: Arc<ExclusiveFlvSink>) {
         debug!("adding new leader replica");
 
         let storage_log = self.ctx.config().storage().new_config();
@@ -469,7 +469,7 @@ impl ScDispatcher<FileReplica> {
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
-        shared_sc_sink: Arc<ExclusiveKfSink>,
+        shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) {
         debug!("spawning new leader controller");
 
@@ -521,7 +521,7 @@ impl ScDispatcher<FileReplica> {
         &self,
         new_replica: Replica,
         old_replica: Replica,
-        shared_sc_sink: Arc<ExclusiveKfSink>,
+        shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) {
         debug!("promoting replica: {} from: {}", new_replica, old_replica);
 

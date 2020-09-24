@@ -896,9 +896,9 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
- "kf-socket",
  "serde",
  "serde_json",
  "tokio",
@@ -1009,9 +1009,9 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-socket",
  "flv-util",
  "futures-util",
- "kf-socket",
  "log",
 ]
 
@@ -1117,6 +1117,8 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
+ "fluvio-service",
+ "fluvio-socket",
  "fluvio-stream-dispatcher",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1125,8 +1127,6 @@ dependencies = [
  "k8-client",
  "k8-metadata-client",
  "k8-obj-metadata",
- "kf-service",
- "kf-socket",
  "log",
  "rand 0.7.3",
  "regex",
@@ -1153,6 +1153,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-service"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02eaf670c4291c757e2ca67e37b02423e13181489f6c9763e5514572064cc939"
+dependencies = [
+ "async-trait",
+ "event-listener",
+ "fluvio-future",
+ "fluvio-protocol",
+ "fluvio-socket",
+ "futures-util",
+ "log",
+ "pin-utils",
+ "tokio",
+ "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-socket"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5ab7810c4cbf992f247d61920817068002edf1a3203c9776f9436ec4f947765"
+dependencies = [
+ "async-channel",
+ "async-mutex",
+ "async-net",
+ "async-trait",
+ "bytes 0.5.6",
+ "chashmap",
+ "event-listener",
+ "fluvio-future",
+ "fluvio-protocol",
+ "futures-util",
+ "log",
+ "pin-utils",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-spu"
 version = "0.1.0"
 dependencies = [
@@ -1168,14 +1210,14 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-service",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "kf-service",
- "kf-socket",
  "log",
  "pin-utils",
  "regex",
@@ -1210,10 +1252,10 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-socket",
  "fluvio-types",
  "flv-util",
  "futures-lite",
- "kf-socket",
  "libc",
  "pin-utils",
  "serde",
@@ -1815,46 +1857,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.4.6",
-]
-
-[[package]]
-name = "kf-service"
-version = "3.0.0"
-dependencies = [
- "async-trait",
- "event-listener",
- "fluvio-future",
- "fluvio-protocol",
- "fluvio-types",
- "futures-util",
- "kf-socket",
- "log",
- "pin-utils",
- "tokio",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "kf-socket"
-version = "3.0.0"
-dependencies = [
- "async-channel",
- "async-mutex",
- "async-net",
- "async-trait",
- "bytes 0.5.6",
- "chashmap",
- "event-listener",
- "fluvio-future",
- "fluvio-protocol",
- "flv-util",
- "futures-util",
- "log",
- "pin-utils",
- "tokio",
- "tokio-util",
- "tracing",
 ]
 
 [[package]]
@@ -2913,9 +2915,9 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "structopt"
-version = "0.3.17"
+version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cc388d94ffabf39b5ed5fadddc40147cb21e605f53db6f8f36a625d27489ac5"
+checksum = "a33f6461027d7f08a13715659b2948e1602c31a3756aeae9378bfe7518c72e82"
 dependencies = [
  "clap",
  "lazy_static",
@@ -2924,9 +2926,9 @@ dependencies = [
 
 [[package]]
 name = "structopt-derive"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e2513111825077552a6751dfad9e11ce0fba07d7276a3943a037d7e93e64c5f"
+checksum = "c92e775028122a4b3dd55d58f14fc5120289c69bee99df1d117ae30f84b225c9"
 dependencies = [
  "heck",
  "proc-macro-error",

@@ -7,13 +7,13 @@ use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::objects::*;
 use fluvio_controlplane_metadata::store::*;
 use fluvio_future::task::spawn;
-use kf_socket::*;
+use fluvio_socket::*;
 
 use crate::core::SharedContext;
 
 
 pub struct WatchController<S> {
-    response_sink: InnerExclusiveKfSink<S>,
+    response_sink: InnerExclusiveFlvSink<S>,
     context: SharedContext,
     metadata_request: WatchMetadataRequest,
     header: RequestHeader,
@@ -26,7 +26,7 @@ where
 {
     pub fn handle_metadata_update(
         request: RequestMessage<WatchMetadataRequest>,
-        response_sink: InnerExclusiveKfSink<S>,
+        response_sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<Event>,
         context: SharedContext,
     ) {

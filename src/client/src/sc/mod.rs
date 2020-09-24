@@ -4,7 +4,7 @@ mod controller {
     use futures::channel::mpsc::Sender;
 
     use fluvio_sc_schema::client::*;
-    use kf_socket::*;
+    use fluvio_socket::*;
     use fluvio_future::task::spawn;
 
     use crate::client::ScClient;
@@ -12,7 +12,7 @@ mod controller {
     const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60;
 
     pub struct ScManager {
-        shared_sink: ExclusiveAllKfSink,
+        shared_sink: ExclusiveAllFlvSink,
     }
 
     impl ScManager {
@@ -21,7 +21,7 @@ mod controller {
             let (socket, _, _) = inner.split();
             let (sink, stream) = socket.split();
 
-            let shared_sink = ExclusiveAllKfSink::new(sink);
+            let shared_sink = ExclusiveAllFlvSink::new(sink);
 
             ScRequestDispatcher::run(stream);
 
@@ -34,11 +34,11 @@ mod controller {
     /// first is metadata
     /// second other admin API, this assumes that admin call are ordered
     pub struct ScRequestDispatcher {
-        stream: AllKfStream,
+        stream: AllFlvStream,
     }
 
     impl ScRequestDispatcher {
-        pub fn run(stream: AllKfStream) {
+        pub fn run(stream: AllFlvStream) {
             let dispatcher = Self { stream };
 
             debug!("spawning sc request dispatcher");

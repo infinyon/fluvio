@@ -3,14 +3,14 @@ use std::fmt;
 use async_channel::SendError;
 use fluvio_types::PartitionError;
 use fluvio_storage::StorageError;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 
 #[derive(Debug)]
 pub enum InternalServerError {
     StorageError(StorageError),
     PartitionError(PartitionError),
     SendError(String),
-    SocketError(KfSocketError),
+    SocketError(FlvSocketError),
 }
 
 impl fmt::Display for InternalServerError {
@@ -42,8 +42,8 @@ impl<T> From<SendError<T>> for InternalServerError {
     }
 }
 
-impl From<KfSocketError> for InternalServerError {
-    fn from(error: KfSocketError) -> Self {
+impl From<FlvSocketError> for InternalServerError {
+    fn from(error: FlvSocketError) -> Self {
         InternalServerError::SocketError(error)
     }
 }

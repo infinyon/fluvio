@@ -20,10 +20,10 @@ use fluvio_dataplane_protocol::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,
 };
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 
 use flv_util::fixture::ensure_clean_file;
-use kf_socket::KfSocket;
+use fluvio_socket::FlvSocket;
 
 /// create sample batches with message
 fn create_batches(records: u16) -> DefaultBatch {
@@ -52,16 +52,16 @@ async fn setup_batch_file() -> Result<(), IoError> {
     Ok(())
 }
 
-async fn test_server(addr: &str) -> Result<(), KfSocketError> {
+async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
     let listener = TcpListener::bind(addr).await?;
     debug!("server is running");
     let mut incoming = listener.incoming();
     let incoming_stream = incoming.next().await;
     debug!("server: got connection");
     let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-    let mut socket: KfSocket = incoming_stream.into();
+    let mut socket: FlvSocket = incoming_stream.into();
 
-    let fetch_request: Result<RequestMessage<FileFetchRequest>, KfSocketError> = socket
+    let fetch_request: Result<RequestMessage<FileFetchRequest>, FlvSocketError> = socket
         .get_mut_stream()
         .next_request_item()
         .await
@@ -95,10 +95,10 @@ async fn test_server(addr: &str) -> Result<(), KfSocketError> {
     Ok(())
 }
 
-async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
+async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
     sleep(Duration::from_millis(50)).await;
     debug!("client: trying to connect");
-    let mut socket = KfSocket::connect(addr).await?;
+    let mut socket = FlvSocket::connect(addr).await?;
     debug!("client: connect to test server and waiting...");
 
     let req_msg: RequestMessage<DefaultFetchRequest> = RequestMessage::default();
@@ -121,7 +121,7 @@ async fn setup_client(addr: &str) -> Result<(), KfSocketError> {
 
 /// test server where it is sending out file copy
 #[test_async]
-async fn test_save_fetch() -> Result<(), KfSocketError> {
+async fn test_save_fetch() -> Result<(), FlvSocketError> {
     // create fetch and save
     setup_batch_file().await?;
 

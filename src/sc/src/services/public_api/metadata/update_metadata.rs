@@ -10,7 +10,7 @@ use futures::io::AsyncWrite;
 use kf_protocol::api::*;
 use kf_protocol::Encoder;
 use fluvio_sc_schema::metadata::*;
-use kf_socket::*;
+use fluvio_socket::*;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 
 
@@ -22,7 +22,7 @@ use crate::core::*;
 
 ///
 pub struct ClientMetadataController<S> {
-    response_sink: InnerExclusiveKfSink<S>,
+    response_sink: InnerExclusiveFlvSink<S>,
     context: SharedContext,
     metadata_request: WatchMetadataRequest,
     header: RequestHeader,
@@ -35,7 +35,7 @@ where
 {
     pub fn handle_metadata_update(
         request: RequestMessage<WatchMetadataRequest>,
-        response_sink: InnerExclusiveKfSink<S>,
+        response_sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<Event>,
         context: SharedContext,
     ) {
@@ -52,7 +52,7 @@ where
     }
 
     /// send response using correlation id and version from request
-    async fn send_response<P>(&mut self, response: P) -> Result<(), KfSocketError>
+    async fn send_response<P>(&mut self, response: P) -> Result<(), FlvSocketError>
     where
         ResponseMessage<P>: Encoder + Default + Debug,
     {
@@ -65,7 +65,7 @@ where
     }
 
     /// send out all metadata to client
-    async fn update_all(&mut self) -> Result<(), KfSocketError> {
+    async fn update_all(&mut self) -> Result<(), FlvSocketError> {
         /*
         let spus = self.context.spus().clone_values().await;
         let partitions = self.context.partitions().clone_values().await;

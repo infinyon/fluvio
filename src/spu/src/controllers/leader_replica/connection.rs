@@ -2,10 +2,10 @@ use tracing::trace;
 use tracing::error;
 use tracing::debug;
 use tracing::warn;
-use kf_socket::KfSocketError;
-use kf_socket::KfStream;
-use kf_socket::KfSocket;
-use kf_service::api_loop;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::FlvStream;
+use fluvio_socket::FlvSocket;
+use fluvio_service::api_loop;
 use fluvio_types::SpuId;
 
 use crate::core::DefaultSharedGlobalContext;
@@ -28,8 +28,8 @@ impl LeaderConnection {
     pub async fn handle(
         ctx: DefaultSharedGlobalContext,
         follower_id: SpuId,
-        socket: KfSocket,
-    ) -> Result<(), KfSocketError> {
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let (sink, stream) = socket.split();
         ctx.follower_sinks().insert_sink(follower_id, sink);
 
@@ -44,7 +44,7 @@ impl LeaderConnection {
         Ok(())
     }
 
-    async fn main_loop(&self, mut stream: KfStream) -> Result<(), KfSocketError> {
+    async fn main_loop(&self, mut stream: FlvStream) -> Result<(), FlvSocketError> {
         trace!(
             "starting connection handling from follower: {} for leader: {}",
             self.follower_id,

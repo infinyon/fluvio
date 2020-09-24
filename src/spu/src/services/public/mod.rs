@@ -7,7 +7,7 @@ mod stream_fetch;
 
 use tracing::info;
 
-use kf_service::KfApiServer;
+use fluvio_service::FlvApiServer;
 use service_impl::PublicService;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
@@ -18,7 +18,7 @@ use crate::core::DefaultSharedGlobalContext;
 pub type OffsetReplicaList = std::collections::HashSet<ReplicaKey>;
 
 pub(crate) type PublicApiServer =
-    KfApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
+    FlvApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
 
 // start server
 pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> PublicApiServer {
@@ -28,5 +28,5 @@ pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> Pu
         addr
     );
 
-    KfApiServer::new(addr, ctx, PublicService::new())
+    FlvApiServer::new(addr, ctx, PublicService::new())
 }
