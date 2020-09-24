@@ -1,0 +1,13 @@
+last_offset_file = "~/data/consumer.offset"
+
+[database]
+ip_or_host = "localhost"
+port = 3306
+user = "root"
+password = "root"
+
+[filters]
+exclude_dbs = ["mysql", "sys"]
+
+[fluvio]
+topic = "rust-mysql-cdc"

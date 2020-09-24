@@ -1,0 +1,15 @@
+mysql_resource_name = "mysql-docker-80"
+binlog_index_file = "~/mysql-data/mysql-80/binlog.index"
+
+[database]
+ip_or_host = "0.0.0.0"
+port = 3380
+user = "root"
+password = "root"
+
+[filters]
+include_dbs = [ "flvTest" ]
+
+[fluvio]
+topic = "rust-mysql-cdc"
+replicas = 2

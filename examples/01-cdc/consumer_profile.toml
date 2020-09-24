@@ -1,0 +1,29 @@
+##
+# CDC Consumer Profile
+##
+
+##
+# File to save last read offset of the Fluvio stream. If consumer restarts, it resumes reading from this offset.
+##
+last_offset_file = "~/mysql-cdc/consumer.offset"
+
+##
+# Mysql database settings
+##
+[database]
+ip_or_host = "0.0.0.0"
+port = 3090
+user = "fluvio"
+password ="fluvio4cdc!"
+
+##
+# Filters to include or exclude databases
+##
+[filters]
+include_dbs = ["flvDb"]
+
+##
+# Fluvio streaming settings
+##
+[fluvio]
+topic ="rust-mysql-cdc"

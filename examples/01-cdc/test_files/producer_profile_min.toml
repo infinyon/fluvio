@@ -1,0 +1,6 @@
+mysql_resource_name = "mysql-local"
+binlog_index_file = "/usr/local/var/mysql/binlog.index"
+
+[database]
+ip_or_host = "localhost"
+user = "root"

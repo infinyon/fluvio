@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "examples/00-echo",
+    "examples/01-cdc",
     "src/cli",
     "src/client",
     "src/cluster",

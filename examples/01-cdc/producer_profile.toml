@@ -1,0 +1,35 @@
+##
+# CDC Producer Profile
+##
+
+##
+# Universal Resource Name - urn - used to construct URI: flv://<urn>/<database>/<table>
+##
+mysql_resource_name = "mysql-srv1"
+
+##
+# Binlog Index file - path of the MYSQL binlog index file
+##
+binlog_index_file = "~/mysql-cdc/mysql-producer/binlog.index"
+
+##
+# Mysql database settings
+##
+[database]
+ip_or_host = "0.0.0.0"
+port = 3080
+user = "fluvio"
+password ="fluvio4cdc!"
+
+##
+# Filters to include or exclude databases
+##
+[filters]
+include_dbs = ["flvDb", "flvDb2"]
+
+##
+# Fluvio streaming settings (defaults):
+## 
+[fluvio]
+topic ="rust-mysql-cdc"
+replicas = 1
