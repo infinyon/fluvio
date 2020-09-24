@@ -1,5 +1,5 @@
 VERSION := $(shell cat VERSION)
-RUST_VERSION=stable
+RUSTV=stable
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
 GITHUB_TAG=$(VERSION)
