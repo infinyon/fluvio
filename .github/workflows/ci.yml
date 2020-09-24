@@ -56,7 +56,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: check clippy
-        run: make check-clippy RUSTV=${{ matrix.rust }}
+        run: make check-clippy RUST_VERSION=${{ matrix.rust }}
   check_fmt:
     name: check cargo fmt
     runs-on: ${{ matrix.os }}
@@ -72,7 +72,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: check fmt
-        run: make check-fmt RUSTV=${{ matrix.rust }}
+        run: make check-fmt RUST_VERSION=${{ matrix.rust }}
 
   unit_test:
     name: Unit test

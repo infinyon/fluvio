@@ -7,18 +7,11 @@ on:
 jobs:
   publish_image:
     name: Publish Latest Image
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install ${{ matrix.rust }}
+      - name: Install Rust
         uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
       - name: Install Musl Tools
         run: |
           sudo apt install -y musl-tools
@@ -28,5 +21,6 @@ jobs:
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Publish Fluvio Images
         run: |
-          make release_image_chart_latest
-          make release_image_ver_latest
+          make release_image
+          docker tag infinyon/fluvio:$(git rev-parse HEAD) infinyon/fluvio:latest
+          docker push infinyon/fluvio:latest
