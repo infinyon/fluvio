@@ -86,12 +86,14 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
         let producer = client.topic_producer(&topic_name).await.expect("producer");
 
         for i in 0..option.produce.produce_iteration {
-            let message = generate_message(base_offset + i as i64, &topic_name, &option);
+            let offset = base_offset + i as i64;
+            let message = generate_message(offset, &topic_name, &option);
+            let len = message.len();
             producer
                 .send_record(message, 0)
                 .await
                 .expect("message sent");
-            println!("topic: {}, message sent: {}", topic_name, i);
+            println!("produced message topic: {}, offset: {},len: {}", topic_name, offset,len);
         }
     }
 }

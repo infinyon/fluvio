@@ -18,7 +18,7 @@ pub async fn validate_consume_message(option: &TestOption,offsets: Offsets) {
     if option.produce.produce_iteration == 1 {
         validate_consume_message_cli(option,offsets);
     } else {
-        validate_consume_message_api(option).await;
+        validate_consume_message_api(offsets,option).await;
     }
 }
 
@@ -51,36 +51,52 @@ fn validate_consume_message_cli(option: &TestOption,offsets: Offsets) {
     }
 }
 
-async fn validate_consume_message_api(option: &TestOption) {
+async fn validate_consume_message_api(offsets: Offsets,option: &TestOption) {
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
+        let base_offset = offsets.get(&topic_name).expect("offsets");
+        println!("starting fetch stream for: {} at: {}",topic_name,base_offset);
+        
         let consumer = client
-            .partition_consumer(topic_name, 0)
+            .partition_consumer(topic_name.clone(), 0)
             .await
             .expect("consumer");
 
-        let mut stream = consumer.stream(Offset::beginning()).await.expect("start from beginning");
+        let mut stream = consumer.stream(Offset::absolute(*base_offset).unwrap()).await.expect("start from beginning");
 
+        let mut total_records: u16 = 0;
         while let Ok(event) = stream.next().await {
-            for batch in event.partition.records.batches {
+            let batches = event.partition.records.batches;
+            println!("consumer: received batches {}",batches.len() );
+            for batch in batches {
+                let mut offset = batch.base_offset;
                 for record in batch.records {
-                    if let Some(record) = record.value.inner_value() {
-                        let string = String::from_utf8(record).unwrap();
-                        
+                    if let Some(bytes) = record.value.inner_value() {
+                       validate_message(offset,&topic_name,option, &bytes); 
+                       offset += 1;   
+                       total_records += 1;
+                       println!("consumer: records: {}, validated offset: {}",total_records,offset); 
+                       assert_eq!(offset, base_offset + total_records as i64);  
+                       if total_records  == option.produce.produce_iteration {
+                           break;
+                       }             
                     }
                 }
             }
         }
 
+        
+        /*
         println!("retrieving messages");
         let response = consumer.fetch(Offset::beginning()).await.expect("records");
         println!("message received");
         let batches = response.records.batches;
 
         assert_eq!(batches.len(), option.produce.produce_iteration as usize);
+        */
         println!("consume message validated!");
     }
 

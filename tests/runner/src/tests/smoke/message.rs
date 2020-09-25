@@ -26,13 +26,14 @@ pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u
     let prefix = message.as_bytes();
     let prefix_len = prefix.len();
 
+    assert_eq!(data.len(), option.produce.record_size + prefix_len);
+
     // check prefix
     for i in 0..prefix_len {
         assert_eq!(data[i],prefix[i]);
     }
 
-    
-    assert_eq!(data.len(), option.produce.record_size + prefix_len);
+
     for i in 0..option.produce.record_size {
         assert_eq!(data[i+prefix_len], VALUE);
     }
