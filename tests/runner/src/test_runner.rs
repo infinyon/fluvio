@@ -74,7 +74,6 @@ impl TestRunner {
             println!("no topic initialized");
         }
 
-
         let test_driver = create_test_driver(self.option.clone());
 
         test_driver.run().await;

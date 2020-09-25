@@ -22,14 +22,13 @@ fn main() {
     let test_runner = TestRunner::new(option.clone());
 
     run_block_on(async move {
-
         if option.setup() {
             let mut setup = Setup::new(option);
             setup.setup().await;
         } else {
             println!("no setup");
         }
-        
+
         test_runner.run_test().await;
     });
 }

@@ -34,7 +34,6 @@ pub struct TestOption {
     #[structopt(long)]
     disable_consume: bool,
 
-
     #[structopt(short, long)]
     /// replication count, number of spu will be same as replication count, unless overridden
     replication: Option<u16>,

@@ -93,7 +93,10 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
                 .send_record(message, 0)
                 .await
                 .expect("message sent");
-            println!("produced message topic: {}, offset: {},len: {}", topic_name, offset,len);
+            println!(
+                "produced message topic: {}, offset: {},len: {}",
+                topic_name, offset, len
+            );
         }
     }
 }
