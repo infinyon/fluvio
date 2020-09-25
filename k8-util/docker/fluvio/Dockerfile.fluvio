@@ -1,6 +1,0 @@
-FROM alpine:3.10
-
-# Copy Binaries
-COPY fluvio  fluvio
-
-ENTRYPOINT [ "fluvio" ]

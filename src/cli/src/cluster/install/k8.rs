@@ -47,11 +47,9 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         Some(registry) => {
             builder = builder.with_image_registry(registry);
         }
-        // If we're in develop mode (but no explicit registry), use localhost:5000 registry
-        None if opt.develop => {
-            builder = builder.with_image_registry("localhost:5000/infinyon");
+        None => {
+            builder = builder.with_image_registry("infinyon");
         }
-        _ => (),
     }
 
     if let Some(chart_version) = opt.k8_config.chart_version {

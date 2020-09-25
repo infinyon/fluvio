@@ -97,7 +97,9 @@ fn generate_stateful(
     let mut volumes = vec![];
 
     let mut args = vec![
-        "/fluvio/fluvio-spu".to_owned(),
+        "/fluvio".to_owned(),
+        "run".to_owned(),
+        "spu".to_owned(),
         "--sc-addr".to_owned(),
         format!(
             "flv-sc-internal.{}.svc.cluster.local:{}",
