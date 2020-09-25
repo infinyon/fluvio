@@ -14,7 +14,7 @@ TEST_NAME=fluviotest
 FLUVIO_VERSION=$(VERSION)
 CORE_VERSION=$(shell yq read fluvio-app/Chart.yaml version)
 SYS_VERSION=$(shell yq read fluvio-sys/Chart.yaml version)
-CHART_REPO=../../../infinyon.github.io/docs
+CHART_REPO=../../../charts.fluvio.io/docs
 CHART_SRC=./fluvio-app
 
 dry-run:
