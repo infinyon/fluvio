@@ -105,18 +105,13 @@ jobs:
         rust: [stable]
 
     steps:
+      - uses: actions/checkout@v2
       - name: Install Helm
-        run: |
-          cd $(mktemp -d) && \
-          curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar zx && \
-          helm_bin=$(which helm) &&\
-          sudo rm $helm_bin &&\
-          sudo mv linux-amd64/helm $helm_bin && \
-          chmod +x $helm_bin
+        run: dev-tools/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
+          OS: ${{ matrix.os }}
       - run: helm version
-      - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -167,18 +162,13 @@ jobs:
         rust: [stable]
     
     steps:
+    - uses: actions/checkout@v2
     - name: Install Helm
-      run: |
-        cd $(mktemp -d) && \
-        curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar zx && \
-        helm_bin=$(which helm) &&\
-        sudo rm $helm_bin &&\
-        sudo mv linux-amd64/helm $helm_bin && \
-        chmod +x $helm_bin
+      run: dev-tools/ci-replace-helm.sh
       env:
         HELM_VERSION: v3.3.4
+        OS: ${{ matrix.os }}
     - run: helm version
-    - uses: actions/checkout@v2
     - name: Install ${{ matrix.rust }}
       uses: actions-rs/toolchain@v1
       with:
