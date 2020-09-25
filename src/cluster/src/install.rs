@@ -31,7 +31,7 @@ const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
-const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io/";
+const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_HELM_VERSION: &str = "3.2.0";
@@ -224,7 +224,7 @@ impl ClusterInstallerBuilder {
 
     /// Sets a remote helm chart location to search for Fluvio charts.
     ///
-    /// This is the default case, with the default location being `https://charts.fluvio.io/`,
+    /// This is the default case, with the default location being `https://charts.fluvio.io`,
     /// where official Fluvio helm charts are located. Remote helm charts are expected
     /// to be a valid URL.
     ///
@@ -236,7 +236,7 @@ impl ClusterInstallerBuilder {
     /// ```no_run
     /// use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
-    ///     .with_remote_chart("https://charts.fluvio.io/")
+    ///     .with_remote_chart("https://charts.fluvio.io")
     ///     .build()
     ///     .unwrap();
     /// ```
