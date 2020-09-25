@@ -10,20 +10,16 @@ jobs:
     name: Publish Helm Chart
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Install Helm
-        run: |
-          mkdir -p $HOME/bin && \
-          cd $(mktemp -d) && \
-          curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar zx && \
-          mv linux-amd64/helm $HOME/bin && \
-          chmod +x $HOME/bin/helm
+        run: dev-tools/ci-replace-helm.sh
         env:
-          HELM_VERSION: v3.3.3
+          HELM_VERSION: v3.3.4
+          OS: ${{ matrix.os }}
       - name: Install Helm Push plugin
         run: helm plugin install https://github.com/chartmuseum/helm-push.git
       - name: Helm Add Repo
         run: helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-      - uses: actions/checkout@v2
       - name: Push Sys Chart
         run: helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)-latest" --force chartmuseum
       - name: Push App Chart
