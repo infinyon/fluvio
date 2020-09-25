@@ -9,14 +9,14 @@ use std::io::Error as IoError;
 
 use fluvio_types::PartitionError;
 use k8_client::ClientError;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 
 #[derive(Debug)]
 pub enum ScError {
     IoError(IoError),
     //   SendError(SendError),
     ClientError(ClientError),
-    SocketError(KfSocketError),
+    SocketError(FlvSocketError),
     PartitionError(PartitionError),
 }
 
@@ -52,8 +52,8 @@ impl From<ClientError> for ScError {
     }
 }
 
-impl From<KfSocketError> for ScError {
-    fn from(error: KfSocketError) -> Self {
+impl From<FlvSocketError> for ScError {
+    fn from(error: FlvSocketError) -> Self {
         Self::SocketError(error)
     }
 }

@@ -7,7 +7,7 @@ use futures::FutureExt;
 
 use flv_future_core::test_async;
 use flv_future_core::sleep;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::ReplicaStorage;
 
@@ -36,7 +36,7 @@ impl FollowReplicationTest {
 // simple replication to a sigle follower
 async fn inner_test(
     runner: Arc<SpuTestRunner<FollowReplicationTest>>,
-) -> Result<(), KfSocketError> {
+) -> Result<(), FlvSocketError> {
     let leader_spu = runner.leader_spec();
     let leader_gtx = runner.leader_gtx();
     let _replica = test_repl_id();
@@ -124,7 +124,7 @@ async fn inner_test(
 }
 
 impl SpuTest for FollowReplicationTest {
-    type ResponseFuture = BoxFuture<'static, Result<(), KfSocketError>>;
+    type ResponseFuture = BoxFuture<'static, Result<(), FlvSocketError>>;
 
     fn env_configuration(&self) -> TestGenerator {
         TestGenerator::default()
@@ -148,7 +148,7 @@ impl SpuTest for FollowReplicationTest {
 }
 
 #[test_async]
-async fn follower_replication_test_2() -> Result<(), KfSocketError> {
+async fn follower_replication_test_2() -> Result<(), FlvSocketError> {
     // Todo: fix the intermittent failures (over 50%)
     //    SpuTestRunner::run("replication with 2 followers".to_owned(),FollowReplicationTest::new(2,6000)).await.expect("test runner should not failer");
 
@@ -156,7 +156,7 @@ async fn follower_replication_test_2() -> Result<(), KfSocketError> {
 }
 
 #[test_async]
-async fn follower_replication_test_3() -> Result<(), KfSocketError> {
+async fn follower_replication_test_3() -> Result<(), FlvSocketError> {
     // Todo: fix the intermittent failures (over 50%)
     //    SpuTestRunner::run("replication with 3 followers".to_owned(),FollowReplicationTest::new(3,6100)).await.expect("test runner should not failer");
     Ok(())

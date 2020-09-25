@@ -4,8 +4,8 @@ use std::net::SocketAddr;
 use tracing::debug;
 use futures::channel::mpsc::Sender;
 
-use kf_socket::KfSocketError;
-use kf_socket::KfSocket;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::FlvSocket;
 use kf_protocol::api::Request;
 use kf_protocol::api::RequestMessage;
 use kf_protocol::api::ResponseMessage;
@@ -33,7 +33,7 @@ impl SpuServer {
     pub async fn send_to_internal_server<'a, R>(
         &'a self,
         req_msg: &'a RequestMessage<R>,
-    ) -> Result<(), KfSocketError>
+    ) -> Result<(), FlvSocketError>
     where
         R: Request,
     {
@@ -42,7 +42,7 @@ impl SpuServer {
             self.private_endpoint
         );
         let socket: SocketAddr = (&self.spec().private_endpoint).try_into()?;
-        let mut socket = KfSocket::connect(&socket).await?;
+        let mut socket = FlvSocket::connect(&socket).await?;
         debug!(
             "connected to internal endpoint {:#?}",
             self.spec().private_endpoint
@@ -55,7 +55,7 @@ impl SpuServer {
     pub async fn send_to_public_server<'a, R>(
         &'a self,
         req_msg: &'a RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, KfSocketError>
+    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
         R: Request,
     {
@@ -64,7 +64,7 @@ impl SpuServer {
             self.0.public_endpoint
         );
         let socket: SocketAddr = (&self.spec().public_endpoint).try_into()?;
-        let mut socket = KfSocket::connect(&socket).await?;
+        let mut socket = FlvSocket::connect(&socket).await?;
         debug!(
             "connected to public end point {:#?}",
             self.spec().public_endpoint

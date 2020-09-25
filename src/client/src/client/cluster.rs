@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use tracing::debug;
 
-use kf_socket::AllMultiplexerSocket;
+use fluvio_socket::AllMultiplexerSocket;
 use fluvio_future::tls::AllDomainConnector;
 
 use crate::config::ConfigFile;

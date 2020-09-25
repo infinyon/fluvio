@@ -9,7 +9,7 @@ use futures::SinkExt;
 
 use flv_future_core::test_async;
 use flv_future_core::sleep;
-use kf_socket::KfSocketError;
+use fluvio_socket::FlvSocketError;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::spu::SpuResolution;
 
@@ -22,7 +22,7 @@ const BASE_ID: i32 = 7100;
 struct SimpleInternalTest {}
 
 impl ScTest for SimpleInternalTest {
-    type ResponseFuture = BoxFuture<'static, Result<(), KfSocketError>>;
+    type ResponseFuture = BoxFuture<'static, Result<(), FlvSocketError>>;
 
     fn env_configuration(&self) -> TestGenerator {
         TestGenerator::default()
@@ -79,7 +79,7 @@ impl ScTest for SimpleInternalTest {
 
 /// test spu online and offline
 #[test_async]
-async fn connection_test() -> Result<(), KfSocketError> {
+async fn connection_test() -> Result<(), FlvSocketError> {
     let test = SimpleInternalTest {};
     ScTestRunner::run("connection test".to_owned(), test)
         .await

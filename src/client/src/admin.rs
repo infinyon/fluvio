@@ -7,7 +7,7 @@ use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminRequest;
 use fluvio_future::tls::AllDomainConnector;
-use kf_socket::*;
+use fluvio_socket::*;
 
 use crate::client::*;
 use crate::{FluvioError, FluvioConfig};
@@ -115,7 +115,7 @@ impl FluvioAdmin {
         Ok(Self(versioned_socket))
     }
 
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: AdminRequest + Send + Sync,
     {

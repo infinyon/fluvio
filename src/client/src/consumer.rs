@@ -1,6 +1,6 @@
 use tracing::debug;
 
-use kf_socket::AsyncResponse;
+use fluvio_socket::AsyncResponse;
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
 use dataplane::Isolation;
 use dataplane::ReplicaKey;

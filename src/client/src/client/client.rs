@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
-use kf_socket::*;
+use fluvio_socket::*;
 use fluvio_future::tls::AllDomainConnector;
 
 use crate::FluvioError;
@@ -36,7 +36,7 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
     }
 
     /// send and receive
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync;
 }
@@ -44,7 +44,7 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: AllKfSocket,
+    socket: AllFlvSocket,
     config: ClientConfig,
     versions: Versions,
 }
@@ -62,7 +62,7 @@ impl SerialFrame for VersionedSocket {
     }
 
     /// send and wait for reply
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -80,7 +80,7 @@ impl SerialFrame for VersionedSocket {
 impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
-        mut socket: AllKfSocket,
+        mut socket: AllFlvSocket,
         config: ClientConfig,
     ) -> Result<Self, FluvioError> {
         // now get versions
@@ -97,12 +97,12 @@ impl VersionedSocket {
         })
     }
 
-    pub fn split(self) -> (AllKfSocket, ClientConfig, Versions) {
+    pub fn split(self) -> (AllFlvSocket, ClientConfig, Versions) {
         (self.socket, self.config, self.versions)
     }
 
     /// send request only
-    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, KfSocketError>
+    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -171,7 +171,7 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = AllKfSocket::connect_with_connector(&self.addr, &self.connector).await?;
+        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
         VersionedSocket::connect(socket, self).await
     }
 }
@@ -226,7 +226,7 @@ impl SerialFrame for VersionedSerialSocket {
     }
 
     /// send and wait for reply serially
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, KfSocketError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
