@@ -23,7 +23,7 @@
 //! a simple example. In a real-world application, the producer and consumer
 //! may be different programs on different machines.
 //!
-//! Messages must be sent to a specific [Topic], which is a sort of category
+//! Messages must be sent to a specific Topic, which is a sort of category
 //! for your events. For our echo example, we'll create a topic called "echo".
 //!
 //! To create your topic, run this on the command line:
