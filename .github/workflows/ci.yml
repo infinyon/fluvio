@@ -105,6 +105,17 @@ jobs:
         rust: [stable]
 
     steps:
+      - name: Install Helm
+        run: |
+          cd $(mktemp -d) && \
+          curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar zx && \
+          helm_bin=$(which helm) &&\
+          sudo rm $helm_bin &&\
+          sudo mv linux-amd64/helm $helm_bin && \
+          chmod +x $helm_bin
+        env:
+          HELM_VERSION: v3.3.4
+      - run: helm version
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -115,8 +126,8 @@ jobs:
         if: startsWith(matrix.os,'ubuntu')
         uses: manusa/actions-setup-minikube@v2.0.0
         with:
-          minikube version: "v1.13.0"
-          kubernetes version: "v1.19.0"
+          minikube version: "v1.13.1"
+          kubernetes version: "v1.19.2"
           github token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Minikube on Mac
         if: startsWith(matrix.os, 'macOS')
@@ -156,42 +167,53 @@ jobs:
         rust: [stable]
     
     steps:
-      - uses: actions/checkout@v2
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Install Minikube on Linux
-        uses: manusa/actions-setup-minikube@v2.0.0
-        with:
-          minikube version: "v1.13.0"
-          kubernetes version: "v1.19.0"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Test minikube
-        run: |
-          minikube profile list
-          minikube status
-      - name: Run minikube tunnel
-        run: |
-          minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
-          sleep 10
-          echo "tunnel status"
-          cat /tmp/tunnel.out
-      - name: Build
-        run: |
-          cargo build
-      - name: setup context
-        run: |
-          ./target/debug/fluvio cluster set-minikube-context
-          kubectl config view
-          helm list
-      - name: install fluvio system chart
-        run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
-      - name: Install musl-tools for Linux
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-      - name: smoke test k8 tls
-        run: FLV_CMD=true make smoke-test-k8-tls
+    - name: Install Helm
+      run: |
+        cd $(mktemp -d) && \
+        curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar zx && \
+        helm_bin=$(which helm) &&\
+        sudo rm $helm_bin &&\
+        sudo mv linux-amd64/helm $helm_bin && \
+        chmod +x $helm_bin
+      env:
+        HELM_VERSION: v3.3.4
+    - run: helm version
+    - uses: actions/checkout@v2
+    - name: Install ${{ matrix.rust }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Install Minikube on Linux
+      uses: manusa/actions-setup-minikube@v2.0.0
+      with:
+        minikube version: "v1.13.1"
+        kubernetes version: "v1.19.2"
+        github token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Test minikube
+      run: |
+        minikube profile list
+        minikube status
+    - name: Run minikube tunnel
+      run: |
+        minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
+        sleep 10
+        echo "tunnel status"
+        cat /tmp/tunnel.out
+    - name: Build
+      run: |
+        cargo build
+    - name: setup context
+      run: |
+        ./target/debug/fluvio cluster set-minikube-context
+        kubectl config view
+        helm list
+    - name: install fluvio system chart
+      run: |
+        FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+    - name: Install musl-tools for Linux
+      run: |
+        sudo apt install -y musl-tools
+        sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+    - name: smoke test k8 tls
+      run: FLV_CMD=true make smoke-test-k8-tls

@@ -142,8 +142,12 @@ impl HelmClient {
             .print()
             .output()?;
 
-        serde_json::from_slice(&output.stdout)
-            .map_err(|_| IoError::new(ErrorKind::InvalidData, "failed to fetch sys chart versions"))
+        serde_json::from_slice(&output.stdout).map_err(|err| {
+            IoError::new(
+                ErrorKind::InvalidData,
+                format!("failed to fetch sys chart versions: {}", err),
+            )
+        })
     }
 
     /// get helm package version
