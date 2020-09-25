@@ -154,17 +154,3 @@ Make sure you set the following environment variable
 ```
 export TARGET_CC=x86_64-linux-musl-gcc
 ```
-
-###### Connection issues
-
-If you face issues while connecting to the registry
-
-```
-Get http://localhost:5000/v2/: dial tcp [::1]:5000: connect: connection refused
-```
-
-It means your docker registry is not running
-
-```
-docker run -d -p 5000:5000 --restart=always --name registry registry:2
-```

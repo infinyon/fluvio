@@ -1,4 +1,0 @@
-FROM alpine:3.10
-
-COPY fluvio-spu /fluvio/fluvio-spu
-CMD ["/fluvio/fluvio-spu"]

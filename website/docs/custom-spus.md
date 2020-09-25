@@ -11,10 +11,9 @@ weight: 50
 
 ## Generate and Deploy a Custom-SPU binary
 
-Fluvio publishes and maintains SPU images in Docker Container format, other binary formats must be compiled from source code. Docker images are published at:
+Fluvio publishes and maintains images in Docker Container format, other binary formats must be compiled from source code. Docker images are published at:
 
-* [fluvio-sc](https://hub.docker.com/r/infinyon/fluvio-sc)
-* [fluvio-spu](https://hub.docker.com/r/infinyon/fluvio-spu)
+* [fluvio](https://hub.docker.com/r/infinyon/fluvio)
 
 While **fluvio-spu** container can be used as a **Custom-SPU**, it is more common to compile an SPU image from source code directly on target.
 

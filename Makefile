@@ -1,10 +1,5 @@
 VERSION := $(shell cat VERSION)
-DOCKER_VERSION = $(VERSION)
-RUSTV = stable
-RUST_DOCKER_IMAGE=fluvio/rust-tool:${RUSTV}
-CARGO_BUILD=build --release
-BIN_NAME=release
-MAKE_CMD=build
+RUSTV=stable
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
 GITHUB_TAG=$(VERSION)
@@ -80,7 +75,7 @@ clean_build:
 # create binaries for CLI
 release_cli:
 	rustup target add ${BUILD_TARGET}
-	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${BUILD_TARGET}
+	cd src/cli;cargo build --release --bin fluvio --target ${BUILD_TARGET}
 	mkdir -p /tmp/$(CLI_BUILD)_${BUILD_TARGET}
 	cp target/${BUILD_TARGET}/release/fluvio /tmp/$(CLI_BUILD)_${BUILD_TARGET}
 	cd /tmp;tar -czvf cli-${BUILD_TARGET}-release.tar.gz $(CLI_BUILD)_${BUILD_TARGET};rm -rf $(CLI_BUILD)_${BUILD_TARGET}
@@ -92,59 +87,24 @@ release_cli_darwin:	release_cli
 release_cli_linux:	BUILD_TARGET=${TARGET_LINUX}
 release_cli_linux:	release_cli
 
-all_image:	linux-fluvio-spu spu_image linux-sc-server sc_image
+# create docker image
+release_image:	RELEASE=true
+release_image:	fluvio_image
 
-# create docker images for release
-release_image:	MAKE_CMD=push
-release_image:	all_image
+minikube_image:	MINIKUBE_DOCKER_ENV=true
+minikube_image:	fluvio_image
 
-release_image_chart_latest: DOCKER_VERSION=$(VERSION)-latest
-release_image_chart_latest: release_image
+fluvio_image: CARGO_PROFILE=$(if $(RELEASE),release,debug)
+fluvio_image: fluvio_bin_linux
+	echo "Building Fluvio image with version: $(VERSION)"
+	export CARGO_PROFILE=$(if $(RELEASE),release,debug); \
+	export MINIKUBE_DOCKER_ENV=$(MINIKUBE_DOCKER_ENV); \
+	export DOCKER_TAG=$(shell git rev-parse HEAD); \
+	k8-util/docker/build.sh
 
-release_image_ver_latest:	DOCKER_VERSION=latest
-release_image_ver_latest:	release_image
-
-release_image_ver_nightly:	DOCKER_VERSION=nightly
-release_image_ver_nightly:	release_image
-
-
-develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
-develop_image: 	all_image
-develop_image:	CARGO_BUILD=build
-develop_image:	BIN_NAME=debug
-
-local_image:	develop_image
-local_image:	DOCKER_REGISTRY=localhost:5000/infinyon
-
-minikube_image:	local_image
-minikube_image:	MAKE_CMD=minikube
-
-
-linux-sc-server:	install_musl
-	cargo $(CARGO_BUILD) --bin fluvio-sc-k8 --target ${TARGET_LINUX}
-
-linux-fluvio-spu:	install_musl
-	cargo $(CARGO_BUILD) --bin fluvio-spu --target ${TARGET_LINUX}
-
-
-spu_image:	linux-fluvio-spu
-	echo "Building SPU image with version: ${DOCKER_VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/spu
-
-sc_image:	linux-fluvio-spu
-	echo "Building SC image with version: ${DOCKER_VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${DOCKER_VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/sc
-
-fluvio_cli: install_musl
-	cd src/cli;cargo build --release --bin fluvio --features cluster_components --target ${TARGET_LINUX}
-
-fluvio_image: fluvio_cli
-	echo "Building Fluvio image with version: ${VERSION}"
-	make build BIN_NAME=$(BIN_NAME) $(MAKE_CMD) VERSION=${VERSION} REGISTRY=${DOCKER_REGISTRY} -C k8-util/docker/fluvio
-
-fluvio_image_latest: VERSION=latest
-fluvio_image_latest: MAKE_CMD=push
-fluvio_image_latest: fluvio_image
+fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
+fluvio_bin_linux: install_musl
+	cargo build $(RELEASE_FLAG) --bin fluvio --target $(TARGET_LINUX)
 
 make publish_fluvio_image: 
 	curl \
@@ -153,19 +113,6 @@ make publish_fluvio_image:
 	-H "Authorization: $(GITHUB_ACCESS_TOKEN)" \
 	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
 	-d '{"ref":"master"}'
-
-
-
-cargo_cache_dir:
-	mkdir -p .docker-cargo
-
-
-# run test in docker
-docker_linux_test:	cargo_cache_dir
-	 docker run --rm --volume ${PWD}:/src --workdir /src  \
-	 	-e USER -e CARGO_HOME=/src/.docker-cargo \
-		-e CARGO_TARGET_DIR=/src/target-docker \
-	  	${RUST_DOCKER_IMAGE} cargo test
 
 
 # create releases
