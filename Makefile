@@ -105,9 +105,7 @@ release_image_ver_latest:	DOCKER_VERSION=latest
 release_image_ver_latest:	release_image
 
 release_image_ver_nightly:	DOCKER_VERSION=nightly
-release_image_ver_nightly:	cd
-
-release_image_latest:	release_image_chart_latest release_image_ver_latest
+release_image_ver_nightly:	release_image
 
 
 develop_image:	VERSION=$(shell git log -1 --pretty=format:"%H")
