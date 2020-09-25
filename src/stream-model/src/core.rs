@@ -14,6 +14,9 @@ mod context {
         type UId: PartialEq;
 
         fn uid(&self) -> &Self::UId;
+
+        /// update revision if make sense
+        fn update_revision(&mut self,revision: String);
     }
 
     impl MetadataItem for String {
@@ -21,6 +24,10 @@ mod context {
 
         fn uid(&self) -> &Self::UId {
             &self
+        }
+
+        fn update_revision(&mut self,_revision: String) {
+            // nothing
         }
     }
 
@@ -39,6 +46,10 @@ mod context {
     impl<C> MetadataContext<C> {
         pub fn item(&self) -> &C {
             &self.item
+        }
+
+        pub fn item_mut(&mut self) -> &mut C {
+            &mut self.item
         }
 
         pub fn item_owned(self) -> C {
@@ -77,6 +88,10 @@ pub mod k8 {
         type UId = String;
         fn uid(&self) -> &Self::UId {
             &self.uid
+        }
+
+        fn update_revision(&mut self,revision: String) {
+            self.resource_version = revision;
         }
     }
 }

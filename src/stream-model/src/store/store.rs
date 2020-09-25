@@ -79,7 +79,7 @@ where
 
     /// write guard, this is private, use sync API to make changes
     #[inline(always)]
-    async fn write<'a>(
+    pub async fn write<'a>(
         &'_ self,
     ) -> RwLockWriteGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.write().await

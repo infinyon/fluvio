@@ -520,14 +520,16 @@ dependencies = [
 
 [[package]]
 name = "chrono"
-version = "0.4.15"
+version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "942f72db697d8767c22d46a598e01f2d3b475501ea43d0db4f16d90259182d0b"
+checksum = "9942f5f46d88ae2926edcd93a8a5b24151133cf6dc4e5f4c3fadb1c532ac8041"
 dependencies = [
+ "libc",
  "num-integer",
  "num-traits",
  "serde",
  "time 0.1.44",
+ "winapi",
 ]
 
 [[package]]
@@ -937,10 +939,10 @@ dependencies = [
  "futures-lite",
  "http-types",
  "k8-client",
- "k8-config",
- "k8-metadata-client",
- "k8-obj-core",
- "k8-obj-metadata",
+ "k8-config 1.1.2",
+ "k8-metadata-client 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-core 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prettytable-rs",
  "rand 0.7.3",
  "rpassword",
@@ -966,9 +968,9 @@ dependencies = [
  "fluvio-future",
  "flv-util",
  "k8-client",
- "k8-config",
- "k8-obj-core",
- "k8-obj-metadata",
+ "k8-config 1.1.2",
+ "k8-obj-core 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "semver 0.10.0",
  "serde",
  "serde_json",
@@ -1001,8 +1003,8 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "k8-obj-app",
- "k8-obj-core",
- "k8-obj-metadata",
+ "k8-obj-core 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "serde",
  "tracing",
@@ -1133,8 +1135,8 @@ dependencies = [
  "flv-util",
  "futures-util",
  "k8-client",
- "k8-metadata-client",
- "k8-obj-metadata",
+ "k8-metadata-client 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "rand 0.7.3",
  "regex",
@@ -1284,7 +1286,7 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "futures",
- "k8-metadata-client",
+ "k8-metadata-client 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "serde",
  "tokio",
@@ -1300,8 +1302,8 @@ dependencies = [
  "fluvio-future",
  "fluvio-types",
  "k8-obj-app",
- "k8-obj-core",
- "k8-obj-metadata",
+ "k8-obj-core 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "tracing",
 ]
@@ -1337,7 +1339,7 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "k8-client",
- "k8-metadata-client",
+ "k8-metadata-client 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt",
  "utils",
 ]
@@ -1606,6 +1608,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hostfile"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2733206bcc0550a15b450c64d8aa859f486d7281c4c0c36ef904b361960d658"
+
+[[package]]
 name = "http"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1755,9 +1763,7 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa62bbf9afa8e887da4137e9b3cb728f0852b18a8c2ea3198da9d056cbbfc9d9"
+version = "2.0.0"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -1766,11 +1772,11 @@ dependencies = [
  "fluvio-future",
  "futures-util",
  "isahc",
- "k8-config",
- "k8-diff",
- "k8-metadata-client",
- "k8-obj-core",
- "k8-obj-metadata",
+ "k8-config 1.2.0",
+ "k8-diff 0.1.0",
+ "k8-metadata-client 1.0.2",
+ "k8-obj-core 1.1.0",
+ "k8-obj-metadata 1.0.0",
  "openssl-sys",
  "pin-utils",
  "rand 0.7.3",
@@ -1797,6 +1803,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "k8-config"
+version = "1.2.0"
+dependencies = [
+ "dirs 2.0.2",
+ "hostfile",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tracing",
+]
+
+[[package]]
+name = "k8-diff"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
 name = "k8-diff"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1810,14 +1837,31 @@ dependencies = [
 [[package]]
 name = "k8-metadata-client"
 version = "1.0.2"
+dependencies = [
+ "async-trait",
+ "futures-util",
+ "http 0.1.21",
+ "k8-diff 0.1.0",
+ "k8-obj-metadata 1.0.0",
+ "pin-utils",
+ "serde",
+ "serde_json",
+ "serde_qs 0.5.2",
+ "tracing",
+ "tracing-futures",
+]
+
+[[package]]
+name = "k8-metadata-client"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d8d0eb309f2f0fbf05a0449aad056c6c41a8392929fe0c56fa690e71e45081f"
 dependencies = [
  "async-trait",
  "futures-util",
  "http 0.1.21",
- "k8-diff",
- "k8-obj-metadata",
+ "k8-diff 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pin-utils",
  "serde",
  "serde_json",
@@ -1833,8 +1877,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1928f08244bb04c7ac1455f3fccb0e3ce193f25f61c06aed863371e46deb040"
 dependencies = [
  "http 0.1.21",
- "k8-obj-core",
- "k8-obj-metadata",
+ "k8-obj-core 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "serde",
  "serde_json",
@@ -1844,15 +1888,37 @@ dependencies = [
 [[package]]
 name = "k8-obj-core"
 version = "1.1.0"
+dependencies = [
+ "http 0.1.21",
+ "k8-obj-metadata 1.0.0",
+ "serde",
+ "serde_json",
+ "serde_qs 0.4.6",
+ "tracing",
+]
+
+[[package]]
+name = "k8-obj-core"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dd20a0c2182b2e55fbbb90b3d887139164408efd9b720952a002d188a6580e0"
 dependencies = [
  "http 0.1.21",
- "k8-obj-metadata",
+ "k8-obj-metadata 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "serde",
  "serde_json",
  "serde_qs 0.4.6",
+]
+
+[[package]]
+name = "k8-obj-metadata"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_qs 0.4.6",
+ "tracing",
 ]
 
 [[package]]
@@ -2099,9 +2165,9 @@ checksum = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 
 [[package]]
 name = "openssl-src"
-version = "111.10.2+1.1.1g"
+version = "111.11.0+1.1.1h"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a287fdb22e32b5b60624d4a5a7a02dbe82777f730ec0dbc42a0554326fef5a70"
+checksum = "380fe324132bea01f45239fadfec9343adb044615f29930d039bec1ae7b9fa5b"
 dependencies = [
  "cc",
 ]
@@ -2366,9 +2432,9 @@ checksum = "eba180dafb9038b050a4c280019bbedf9f2467b61e5d892dcad585bb57aadc5a"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.21"
+version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36e28516df94f3dd551a587da5357459d9b36d945a7c37c3557928c1c2ff2a2c"
+checksum = "e4b93dba1818d32e781f9d008edd577bab215e83ef50e8a1ddf1ad301b19a09f"
 dependencies = [
  "unicode-xid 0.2.1",
 ]
