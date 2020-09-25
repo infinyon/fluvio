@@ -43,10 +43,10 @@ impl ListPartitionOpt {
         let mut client = Fluvio::connect_with_config(&target_server).await?;
         let mut admin = client.admin().await;
 
-        let spus = admin.list::<PartitionSpec, _>(vec![]).await?;
+        let partitions = admin.list::<PartitionSpec, _>(vec![]).await?;
 
         // format and dump to screen
-        display::format_partition_response_output(out, spus, output)?;
+        display::format_partition_response_output(out, partitions, output)?;
         Ok("".to_owned())
     }
 }
