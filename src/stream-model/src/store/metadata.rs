@@ -89,6 +89,10 @@ where
         &self.ctx
     }
 
+    pub fn ctx_mut(&mut self) -> &mut MetadataContext<C> {
+        &mut self.ctx
+    }
+
     pub fn ctx_owned(&self) -> MetadataContext<C> {
         self.ctx.clone()
     }

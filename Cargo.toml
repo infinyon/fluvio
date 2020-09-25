@@ -18,6 +18,10 @@ members = [
     "tests/runner",
 ]
 
+[patch.crates-io]
+k8-client = { path = "../k8-api/src/k8-client" }
+
+
 # profile to make image sizer smaller
 # comment out for now
 [profile.release]

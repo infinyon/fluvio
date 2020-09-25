@@ -10,11 +10,12 @@ use tracing::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use fluvio_types::log_on_err;
+
 use k8_metadata_client::MetadataClient;
 use k8_metadata_client::SharedClient;
 
 use crate::k8::metadata::InputK8Obj;
+use crate::k8::metadata::K8Obj;
 use crate::core::Spec;
 use crate::store::k8::K8ExtendedSpec;
 use crate::store::k8::K8MetaItem;
@@ -22,7 +23,7 @@ use crate::k8::metadata::Spec as K8Spec;
 use crate::k8::metadata::UpdateK8ObjStatus;
 
 use crate::store::*;
-use super::k8_actions::K8Action;
+
 
 pub struct K8WSUpdateService<C, S> {
     client: SharedClient<C>,
@@ -49,8 +50,7 @@ where
     pub async fn apply(
         &self,
         value: MetadataStoreObject<S, K8MetaItem>,
-    ) -> Result<(), C::MetadataClientError>
-where {
+    ) -> Result<(), C::MetadataClientError> {
         debug!("K8 Adding {}:{}", S::LABEL, value.key());
         trace!("adding KV {:#?} to k8 kv", value);
 
@@ -87,8 +87,7 @@ where {
         &self,
         metadata: K8MetaItem,
         status: S::Status,
-    ) -> Result<(), C::MetadataClientError>
-where {
+    ) -> Result<K8Obj<S::K8Spec>, C::MetadataClientError> {
         debug!(
             "K8 Update Status: {} key: {} value: {}",
             S::LABEL,
@@ -107,7 +106,7 @@ where {
             ..Default::default()
         };
 
-        self.client.update_status(&k8_input).await.map(|_| ())
+        self.client.update_status(&k8_input).await
     }
 
     /// update spec only
@@ -115,8 +114,7 @@ where {
         &self,
         metadata: K8MetaItem,
         spec: S,
-    ) -> Result<(), C::MetadataClientError>
-where {
+    ) -> Result<(), C::MetadataClientError> {
         debug!("K8 Update Spec: {} key: {}", S::LABEL, metadata.name);
         trace!("K8 Update Spec: {:#?}", spec);
 
@@ -142,14 +140,4 @@ where {
             .map(|_| ())
     }
 
-    pub async fn process(&self, action: K8Action<S>) {
-        match action {
-            K8Action::Apply(value) => log_on_err!(self.apply(value).await),
-            K8Action::UpdateStatus((status, meta)) => {
-                log_on_err!(self.update_status(meta, status).await)
-            }
-            K8Action::UpdateSpec((spec, meta)) => log_on_err!(self.update_spec(meta, spec).await),
-            K8Action::Delete(meta) => log_on_err!(self.delete(meta).await),
-        }
-    }
 }

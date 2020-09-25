@@ -159,7 +159,7 @@ where
                     match msg {
                         Ok(action) => {
                             debug!("store: received ws action: {}", action);
-                           self.process_ws_action(action).await;
+                            self.process_ws_action(action).await;
                         },
                         Err(err) => {
                             error!("WS channel error: {}", err);
@@ -213,46 +213,74 @@ where
 
     #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
-        use super::k8_actions::K8Action;
         use crate::k8::metadata::ObjectMeta;
+        use crate::core::MetadataItem;
 
-        let k8_action = match action {
-            WSAction::Apply(obj) => K8Action::Apply(obj),
+        match action {
+            WSAction::Apply(obj) => {
+                if let Err(err) = self.ws_update_service.apply(obj).await {
+                    error!("error: {}, applying {}", S::LABEL, err);
+                }
+            }
             WSAction::UpdateSpec((key, spec)) => {
                 let read_guard = self.ctx.store().read().await;
-                if let Some(obj) = read_guard.get(&key) {
-                    K8Action::UpdateSpec((spec, obj.inner().ctx().item().clone()))
+                let (spec, metadata) = if let Some(obj) = read_guard.get(&key) {
+                    (spec, obj.inner().ctx().item().clone())
                 } else {
                     // create new ctx
                     let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
-                    K8Action::UpdateSpec((spec, meta))
+                    (spec, meta)
+                };
+                if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
+                    error!("error: {}, update spec {}", S::LABEL, err);
                 }
             }
             WSAction::UpdateStatus((key, status)) => {
                 let read_guard = self.ctx.store().read().await;
-                if let Some(obj) = read_guard.get(&key) {
-                    K8Action::UpdateStatus((status, obj.inner().ctx().item().clone()))
+                let meta = if let Some(obj) = read_guard.get(&key) {
+                    obj.inner().ctx().item().clone()
                 } else {
-                    // create new ctx
-                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
-                    K8Action::UpdateStatus((status, meta))
+                    error!("update status: {} without existing item: {}", S::LABEL, key);
+                    return;
+                };
+                drop(read_guard);
+                match self.ws_update_service.update_status(meta, status).await {
+                    Ok(item) => {
+                        let updated_version = item.metadata.resource_version;
+                        debug!(
+                            "Update Status:  {}, key: {}, new revision: {}",
+                            S::LABEL,
+                            item.metadata.name,
+                            updated_version
+                        );
+                        let write_guard = self.ctx.store().write().await;
+                        if let Some(obj) = write_guard.get_mut(&key) {
+                            obj.inner_mut().ctx_mut().item_mut().update_revision(updated_version);
+                        }
+                    }
+                    Err(err) => {
+                        error!("error: {}, update status {}", S::LABEL, err);
+                    }
                 }
             }
             WSAction::Delete(key) => {
                 let read_guard = self.ctx.store().read().await;
                 if let Some(obj) = read_guard.get(&key) {
-                    K8Action::Delete(obj.inner().ctx().item().clone())
+                    if let Err(err) = self
+                        .ws_update_service
+                        .delete(obj.inner().ctx().item().clone())
+                        .await
+                    {
+                        error!("error: {}, deleting {}", S::LABEL, err);
+                    }
                 } else {
                     error!(
                         key = &*format!("{}", key),
                         "Store: trying to delete non existent key",
                     );
-                    return;
                 }
             }
-        };
-
-        self.ws_update_service.process(k8_action).await
+        }
     }
 }
 
