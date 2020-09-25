@@ -7,7 +7,7 @@ const VALUE: u8 = 65;
 pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(option.produce.record_size);
 
-    let message = format!("{}:{}",topic,offset);
+    let message = format!("{}:{}", topic, offset);
     for p in message.as_bytes() {
         bytes.push(*p);
     }
@@ -21,8 +21,7 @@ pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8
 /// validate the message
 #[allow(clippy::needless_range_loop)]
 pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u8]) {
-
-    let message = format!("{}:{}",topic,offset);
+    let message = format!("{}:{}", topic, offset);
     let prefix = message.as_bytes();
     let prefix_len = prefix.len();
 
@@ -30,11 +29,10 @@ pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u
 
     // check prefix
     for i in 0..prefix_len {
-        assert_eq!(data[i],prefix[i]);
+        assert_eq!(data[i], prefix[i]);
     }
 
-
     for i in 0..option.produce.record_size {
-        assert_eq!(data[i+prefix_len], VALUE);
+        assert_eq!(data[i + prefix_len], VALUE);
     }
 }

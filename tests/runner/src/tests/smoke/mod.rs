@@ -8,7 +8,6 @@ use super::TestDriver;
 
 mod runner {
 
-
     use async_trait::async_trait;
 
     use crate::TestOption;
@@ -25,12 +24,8 @@ mod runner {
         }
 
         async fn produce_and_consume_cli(&self) {
-
-
-
             let start_offsets = super::produce::produce_message(&self.option).await;
-            super::consume::validate_consume_message(&self.option,start_offsets).await;
-            
+            super::consume::validate_consume_message(&self.option, start_offsets).await;
         }
     }
 
@@ -38,11 +33,8 @@ mod runner {
     impl TestDriver for SmokeTestRunner {
         /// run tester
         async fn run(&self) {
-           
-
             println!("start testing...");
 
-            
             self.produce_and_consume_cli().await;
         }
     }
