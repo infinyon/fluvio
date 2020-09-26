@@ -253,7 +253,7 @@ where
                             item.metadata.name,
                             updated_version
                         );
-                        let write_guard = self.ctx.store().write().await;
+                        let mut write_guard = self.ctx.store().write().await;
                         if let Some(obj) = write_guard.get_mut(&key) {
                             obj.inner_mut().ctx_mut().item_mut().update_revision(updated_version);
                         }
