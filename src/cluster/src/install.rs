@@ -746,6 +746,8 @@ impl ClusterInstaller {
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
     async fn discover_sc_address(&self, ns: &str) -> Result<Option<String>, ClusterError> {
+        use k8_client::http::StatusCode;
+
         let result = self
             .kube_client
             .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("flv-sc-public", ns))
@@ -753,7 +755,7 @@ impl ClusterInstaller {
 
         let svc = match result {
             Ok(svc) => svc,
-            Err(k8_client::ClientError::NotFound) => return Ok(None),
+            Err(k8_client::ClientError::Client(status)) if status == StatusCode::NOT_FOUND => return Ok(None),
             Err(err) => {
                 return Err(ClusterError::Other(format!(
                     "unable to look up fluvio service in k8: {}",
@@ -789,6 +791,8 @@ impl ClusterInstaller {
     /// Wait until the Fluvio SC public service appears in Kubernetes
     #[instrument(skip(self, ns))]
     async fn wait_for_sc_service(&self, ns: &str) -> Result<Option<String>, ClusterError> {
+        use k8_client::http::StatusCode;
+
         let input = InputObjectMeta::named("flv-sc-public", ns);
 
         for i in 0..100u16 {
@@ -811,7 +815,7 @@ impl ClusterInstaller {
                     }
                 }
                 Err(err) => match err {
-                    K8ClientError::NotFound => {
+                    K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
                         debug!(attempt = i, "No SC service found, sleeping");
                         sleep(Duration::from_millis(2000)).await;
                     }
