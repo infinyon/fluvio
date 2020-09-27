@@ -45,6 +45,7 @@ mod extended {
     // use std::io::ErrorKind;
 
     use tracing::debug;
+    use tracing::trace;
 
     use crate::dispatcher::k8::core::service::ServiceSpec;
     use crate::dispatcher::k8::core::service::ServiceStatus;
@@ -80,6 +81,7 @@ mod extended {
 
             if let Some(name) = labels.get("fluvio.io/spu-name") {
                 debug!("detected spu service: {}", name);
+                trace!("converting k8 spu service: {:#?}",k8_obj);
 
                 Ok(MetadataStoreObject::new(
                     name,
