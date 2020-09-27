@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::core::*;
+use crate::core::{Spec, MetadataContext, MetadataItem};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, String>;
 
@@ -112,6 +112,11 @@ where
             None => false,
         }
     }
+
+    pub fn is_newer(&self, another: &Self) -> bool {
+        self.ctx.item().is_newer(another.ctx().item())
+    }
+
 }
 
 impl<S, C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S, C>

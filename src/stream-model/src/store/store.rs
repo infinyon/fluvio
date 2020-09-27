@@ -298,8 +298,8 @@ where
             match dry_run_change {
                 LSUpdate::Mod(new_kv_value) => {
                     if let Some(old_value) = read_guard.get(new_kv_value.key()) {
-                        if old_value.inner() != &new_kv_value {
-                            // existing but different, transform into mod
+                        if new_kv_value.is_newer(old_value) {
+                            // only replace if new kv is newer than old
                             actual_changes.push(LSUpdate::Mod(new_kv_value));
                         }
                     } else {
@@ -330,6 +330,7 @@ where
             match change {
                 LSUpdate::Mod(new_kv_value) => {
                     if write_guard.insert_meta(new_kv_value).is_some() {
+                        
                         mod_cnt += 1;
                     } else {
                         // there was no existing, so this is new

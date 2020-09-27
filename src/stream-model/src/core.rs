@@ -6,17 +6,18 @@ pub use k8::*;
 
 mod context {
 
-    use std::fmt::Debug;
+    use std::fmt;
+    use std::fmt::Display;
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
-    pub trait MetadataItem: Clone + Default + Debug {
+    pub trait MetadataItem: Clone + Default + fmt::Debug {
         type UId: PartialEq;
 
         fn uid(&self) -> &Self::UId;
 
-        /// update revision if make sense
-        fn update_revision(&mut self,revision: String);
+        /// checkif item is newer
+        fn is_newer(&self,another: &Self) -> bool;
     }
 
     impl MetadataItem for String {
@@ -26,8 +27,9 @@ mod context {
             &self
         }
 
-        fn update_revision(&mut self,_revision: String) {
-            // nothing
+
+        fn is_newer(&self,_another: &Self) -> bool {
+            true
         }
     }
 
@@ -75,10 +77,20 @@ mod context {
             }
         }
     }
+
+    impl<C> Display for MetadataContext<C>
+    where
+        C: MetadataItem
+    {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{:#?}", self.item)
+        }
+    }
 }
 
 #[cfg(feature = "k8")]
 pub mod k8 {
+
 
     use crate::k8::metadata::ObjectMeta;
 
@@ -90,10 +102,12 @@ pub mod k8 {
             &self.uid
         }
 
-        fn update_revision(&mut self,revision: String) {
-            self.resource_version = revision;
+        fn is_newer(&self,another: &Self) -> bool {
+            self.resource_version > another.resource_version
         }
     }
+
+    
 }
 
 mod core_model {

@@ -97,6 +97,8 @@ where
     async fn inner_loop(&mut self) {
         use tokio::select;
 
+        info!("begin new reconcillation loop");
+
         let mut resume_stream: Option<String> = None;
         // retrieve all items from K8 store first
         match self.retrieve_all_k8_items().await {
@@ -214,7 +216,7 @@ where
     #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use crate::k8::metadata::ObjectMeta;
-        use crate::core::MetadataItem;
+        
 
         match action {
             WSAction::Apply(obj) => {
@@ -244,22 +246,51 @@ where
                     return;
                 };
                 drop(read_guard);
-                match self.ws_update_service.update_status(meta, status).await {
+                debug!(
+                    "{} begin update status key: {}, revision: {}",
+                    S::LABEL,
+                    key,
+                    meta.resource_version
+                );
+                match self
+                    .ws_update_service
+                    .update_status(meta, status.clone())
+                    .await
+                {
                     Ok(item) => {
-                        let updated_version = item.metadata.resource_version;
+                        //println!("updated status item: {:#?}", item);
+                        
+                        use crate::store::actions::LSUpdate;
+                        
                         debug!(
-                            "Update Status:  {}, key: {}, new revision: {}",
+                            "{} k8 update Status: {}, rev: {},stats: {:#?}",
                             S::LABEL,
                             item.metadata.name,
-                            updated_version
+                            item.metadata.resource_version,
+                            item.status,
+                            
                         );
-                        let mut write_guard = self.ctx.store().write().await;
-                        if let Some(obj) = write_guard.get_mut(&key) {
-                            obj.inner_mut().ctx_mut().item_mut().update_revision(updated_version);
+
+                        match convert::k8_obj_to_kv_obj(item) {
+                            Ok(updated_item) => {
+                                let changes = vec![LSUpdate::Mod(updated_item)];
+
+                                if self.ctx.store().apply_changes(changes).await.is_some() {
+                                    self.ctx.event().notify(usize::MAX);
+                                } 
+                            },
+                            Err(err) => error!("{},error  converting back: {:#?}",S::LABEL,err)
                         }
+                        
                     }
                     Err(err) => {
-                        error!("error: {}, update status {}", S::LABEL, err);
+                        error!(
+                            "{}, update status err: {}, key: {}, status: {:#?}",
+                            S::LABEL,
+                            err,
+                            key,
+                            status
+                        );
                     }
                 }
             }
@@ -436,7 +467,7 @@ mod convert {
     ///
     /// Translates K8 object into Internal metadata object
     ///
-    fn k8_obj_to_kv_obj<S>(
+    pub fn k8_obj_to_kv_obj<S>(
         k8_obj: K8Obj<S::K8Spec>,
     ) -> Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>>
     where
