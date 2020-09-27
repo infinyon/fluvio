@@ -70,7 +70,7 @@ where
 
             self.client.apply(new_k8).await.map(|_| ())
         } else {
-            let new_k8 = InputK8Obj::new(k8_spec, ctx.item_owned().into());
+            let new_k8 = InputK8Obj::new(k8_spec, ctx.item().inner().clone().into());
 
             trace!("adding k8 {:#?} ", new_k8);
 
@@ -101,7 +101,7 @@ where
         let k8_input: UpdateK8ObjStatus<S::K8Spec> = UpdateK8ObjStatus {
             api_version: S::K8Spec::api_version(),
             kind: S::K8Spec::kind(),
-            metadata: metadata.into(),
+            metadata: metadata.inner().clone().into(),
             status: k8_status,
             ..Default::default()
         };
@@ -125,7 +125,7 @@ where
         let k8_input: InputK8Obj<S::K8Spec> = InputK8Obj {
             api_version: S::K8Spec::api_version(),
             kind: S::K8Spec::kind(),
-            metadata: metadata.into(),
+            metadata: metadata.inner().clone().into(),
             spec: k8_spec,
             ..Default::default()
         };
@@ -135,7 +135,7 @@ where
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
         self.client
-            .delete_item::<S::K8Spec, _>(&meta)
+            .delete_item::<S::K8Spec, _>(meta.inner())
             .await
             .map(|_| ())
     }

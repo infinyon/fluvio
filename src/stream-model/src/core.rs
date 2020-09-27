@@ -1,8 +1,6 @@
 pub use core_model::*;
 pub use context::*;
 
-#[cfg(feature = "k8")]
-pub use k8::*;
 
 mod context {
 
@@ -88,27 +86,6 @@ mod context {
     }
 }
 
-#[cfg(feature = "k8")]
-pub mod k8 {
-
-
-    use crate::k8::metadata::ObjectMeta;
-
-    use super::*;
-
-    impl MetadataItem for ObjectMeta {
-        type UId = String;
-        fn uid(&self) -> &Self::UId {
-            &self.uid
-        }
-
-        fn is_newer(&self,another: &Self) -> bool {
-            self.resource_version > another.resource_version
-        }
-    }
-
-    
-}
 
 mod core_model {
 

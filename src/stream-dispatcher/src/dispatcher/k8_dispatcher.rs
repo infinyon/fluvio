@@ -215,7 +215,7 @@ where
 
     #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
-        use crate::k8::metadata::ObjectMeta;
+        use crate::store::k8::K8MetaItem;
         
 
         match action {
@@ -230,7 +230,7 @@ where
                     (spec, obj.inner().ctx().item().clone())
                 } else {
                     // create new ctx
-                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
+                    let meta = K8MetaItem::new(key.to_string(), self.namespace.named().to_owned()).into();
                     (spec, meta)
                 };
                 if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
