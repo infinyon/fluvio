@@ -62,7 +62,7 @@ impl SpuServiceController {
     }
 
     #[instrument(skip(self))]
-    /// synchronize when service change
+    /// svc has been changed, update spu
     async fn sync_service_to_spu(&mut self) {
         let read_guard = self.services.store().read().await;
         let changes = read_guard.changes_since(self.service_epoch);
@@ -71,10 +71,10 @@ impl SpuServiceController {
 
         let (updates, deletes) = changes.parts();
         debug!(
-            "received service epoch: {}, updates: {},deletes: {}",
-            self.service_epoch,
+            "received service changes updates: {},deletes: {},epoch: {}",
             updates.len(),
-            deletes.len()
+            deletes.len(),
+            self.service_epoch,
         );
 
         for svc_md in updates.into_iter() {
@@ -87,6 +87,7 @@ impl SpuServiceController {
                 // apply ingress
                 let spu_ingress = svc_ingresses.iter().map(convert).collect();
                 if spu_ingress != spu.spec.public_endpoint.ingress {
+                    debug!("updating spu:{} public end point: {:#?}",spu_id,spu_ingress);
                     spu.spec.public_endpoint.ingress = spu_ingress;
                     if let Err(err) = self
                         .spus
@@ -95,6 +96,8 @@ impl SpuServiceController {
                     {
                         error!("error applying spec: {}", err);
                     }
+                } else {
+                    debug!("detected no spu: {} ingress changes",spu_id);
                 }
             } else {
                 debug!("no spu exists: {},skipping", spu_id);
@@ -103,7 +106,7 @@ impl SpuServiceController {
     }
 
     #[instrument(skip(self))]
-    /// synchronize when service change
+    /// spu has been changed, sync with existing services
     async fn sync_spu_to_service(&mut self) {
         let read_guard = self.spus.store().read().await;
         let changes = read_guard.changes_since(self.spu_epoch);
@@ -112,10 +115,10 @@ impl SpuServiceController {
 
         let (updates, deletes) = changes.parts();
         debug!(
-            "received spu epoch: {}, updates: {},deletes: {}",
-            self.spu_epoch,
+            "received spu changes updates: {},deletes: {},epoch: {}, ",
             updates.len(),
-            deletes.len()
+            deletes.len(),
+            self.spu_epoch,
         );
 
         for spu_md in updates.into_iter() {
@@ -130,13 +133,16 @@ impl SpuServiceController {
                     svc_ingresses.iter().map(convert).collect();
                 if &computed_spu_ingress != spu_ingress {
                     let mut update_spu = spu_md.spec.clone();
+                    debug!("updating spu:{} public end point: {:#?} from svc: {}",spu_id,computed_spu_ingress,svc.key());
                     update_spu.public_endpoint.ingress = computed_spu_ingress;
                     if let Err(err) = self.spus.create_spec(spu_id.to_owned(), update_spu).await {
                         error!("error applying spec: {}", err);
                     }
+                } else {
+                    debug!("detected no spu: {} ingress changes with svc: {}",spu_id,svc.key());
                 }
             } else {
-                debug!("no svc exists: {},skipping", spu_id);
+                debug!("no svc exists for spu {},skipping", spu_id);
             }
         }
     }
