@@ -77,19 +77,37 @@ mod extended {
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
+            use std::convert::TryInto;
+            use std::io::Error as IoError;
+            use std::io::ErrorKind;
+
             let labels = &k8_obj.metadata.labels;
 
             if let Some(name) = labels.get("fluvio.io/spu-name") {
                 debug!("detected spu service: {}", name);
                 trace!("converting k8 spu service: {:#?}",k8_obj);
 
-                Ok(MetadataStoreObject::new(
-                    name,
-                    SpuServicespec {
-                        spu_name: name.to_owned(),
+                let ctx_result: Result<K8MetaItem,_> = k8_obj.metadata.clone().try_into();
+                match ctx_result {
+                    Ok(ctx_item) => {
+                        let mut meta = MetadataStoreObject::new(
+                            name,
+                            SpuServicespec {
+                                spu_name: name.to_owned(),
+                            },
+                            SpuServiceStatus(k8_obj.status),
+                        );
+                        meta.set_ctx(ctx_item.into());
+                        Ok(meta)
                     },
-                    SpuServiceStatus(k8_obj.status),
-                ))
+                    Err(err) => {
+                        Err(K8ConvertError::KeyConvertionError(IoError::new(
+                            ErrorKind::InvalidData,
+                            format!("error converting metadata: {:#?}", err),
+                        )))
+                    }
+                }
+                
             } else {
                 debug!("skipping non acct fluvio {}", k8_obj.metadata.namespace);
                 Err(K8ConvertError::Skip(k8_obj))

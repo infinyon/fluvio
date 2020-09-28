@@ -7,6 +7,7 @@ use std::hash::Hash;
 
 use tracing::debug;
 use tracing::error;
+use tracing::trace;
 use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
@@ -329,8 +330,8 @@ where
         for change in actual_changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
+    
                     if write_guard.insert_meta(new_kv_value).is_some() {
-                        
                         mod_cnt += 1;
                     } else {
                         // there was no existing, so this is new

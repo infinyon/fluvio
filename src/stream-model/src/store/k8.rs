@@ -36,6 +36,10 @@ impl K8MetaItem  {
         &self.inner
     }
 
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
 }
 
 impl Deref for K8MetaItem {
@@ -53,6 +57,7 @@ impl MetadataItem for K8MetaItem {
         &self.inner.uid
     }
 
+    #[inline]
     fn is_newer(&self, another: &Self) -> bool {
         self.revision > another.revision
     }
@@ -123,6 +128,7 @@ where
             let ctx_item_result: Result<K8MetaItem,_> = k8_obj.metadata.try_into();
             match ctx_item_result {
                 Ok(ctx_item) => {
+                 //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
                     let ctx: MetadataContext<K8MetaItem> = ctx_item.into();
                     let local_kv =
                         MetadataStoreObject::new(key, local_spec, local_status).with_context(ctx);
