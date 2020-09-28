@@ -43,7 +43,7 @@ pub struct TestOption {
     pub topic_name: String,
 
     /// if this is turn on, consumer waits for producer to finish before starts consumption
-    /// if iterations are long then consumer may receive large number of batches 
+    /// if iterations are long then consumer may receive large number of batches
     #[structopt(long)]
     pub consumer_wait: bool,
     /// number of spu

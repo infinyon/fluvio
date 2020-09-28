@@ -14,11 +14,9 @@ use operator::run_k8_operators;
 
 use crate::cli::ScOpt;
 
-
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_k8_loop(opt: ScOpt) {
-
     use std::time::Duration;
 
     use fluvio_future::task::run_block_on;

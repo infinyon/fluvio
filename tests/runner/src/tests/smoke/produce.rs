@@ -2,26 +2,21 @@ use std::collections::HashMap;
 
 use fluvio::Fluvio;
 
-
 use crate::TestOption;
 use super::message::*;
 
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(option: &TestOption) -> Offsets {
-
-    use fluvio_future::task::spawn;    // get initial offsets for each of the topic
+    use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&option).await;
 
     if option.produce.produce_iteration == 1 {
         cli::produce_message_with_cli(option, offsets.clone()).await;
+    } else if option.consumer_wait {
+        produce_message_with_api(offsets.clone(), option.clone()).await;
     } else {
-        if option.consumer_wait {
-            produce_message_with_api(offsets.clone(), option.clone()).await
-        } else {
-            spawn(produce_message_with_api(offsets.clone(), option.clone()));
-        }
-        
+        spawn(produce_message_with_api(offsets.clone(), option.clone()));
     }
 
     offsets
