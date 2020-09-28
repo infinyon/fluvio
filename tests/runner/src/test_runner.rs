@@ -44,24 +44,27 @@ impl TestRunner {
 
         for _ in 0..60u16 {
             use fluvio_controlplane_metadata::partition::PartitionSpec;
-            
+
             let partitions = admin
                 .list::<PartitionSpec, _>(vec![])
                 .await
                 .expect("get partitions status");
 
-            let live_partitions = partitions.iter().filter(| par | 
-                par.status.is_online()
-            ).count();
+            let live_partitions = partitions
+                .iter()
+                .filter(|par| par.status.is_online())
+                .count();
 
             if live_partitions != replication as usize {
-                println!("partition {} of out of {} is ready, sleeping",live_partitions,replication);
+                println!(
+                    "partition {} of out of {} is ready, sleeping",
+                    live_partitions, replication
+                );
                 sleep(Duration::from_secs(1)).await;
-            }  else {
-                println!("all {} partitions are live",live_partitions);
+            } else {
+                println!("all {} partitions are live", live_partitions);
                 break;
-            }      
-            
+            }
         }
 
         // print topic and partition status
