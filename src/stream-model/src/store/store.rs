@@ -7,7 +7,6 @@ use std::hash::Hash;
 
 use tracing::debug;
 use tracing::error;
-use tracing::trace;
 use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
