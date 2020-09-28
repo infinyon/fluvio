@@ -755,7 +755,9 @@ impl ClusterInstaller {
 
         let svc = match result {
             Ok(svc) => svc,
-            Err(k8_client::ClientError::Client(status)) if status == StatusCode::NOT_FOUND => return Ok(None),
+            Err(k8_client::ClientError::Client(status)) if status == StatusCode::NOT_FOUND => {
+                return Ok(None)
+            }
             Err(err) => {
                 return Err(ClusterError::Other(format!(
                     "unable to look up fluvio service in k8: {}",

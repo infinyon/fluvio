@@ -84,7 +84,9 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
     {
         Ok(svc) => svc,
         Err(err) => match err {
-            k8_client::ClientError::Client(status) if status == StatusCode::NOT_FOUND => return Ok(None),
+            k8_client::ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
+                return Ok(None)
+            }
             _ => {
                 return Err(CliError::Other(format!(
                     "unable to look up fluvio service in k8: {}",

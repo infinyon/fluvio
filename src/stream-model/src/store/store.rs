@@ -329,7 +329,6 @@ where
         for change in actual_changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
-    
                     if write_guard.insert_meta(new_kv_value).is_some() {
                         mod_cnt += 1;
                     } else {

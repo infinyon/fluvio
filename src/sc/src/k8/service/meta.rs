@@ -85,9 +85,9 @@ mod extended {
 
             if let Some(name) = labels.get("fluvio.io/spu-name") {
                 debug!("detected spu service: {}", name);
-                trace!("converting k8 spu service: {:#?}",k8_obj);
+                trace!("converting k8 spu service: {:#?}", k8_obj);
 
-                let ctx_result: Result<K8MetaItem,_> = k8_obj.metadata.clone().try_into();
+                let ctx_result: Result<K8MetaItem, _> = k8_obj.metadata.clone().try_into();
                 match ctx_result {
                     Ok(ctx_item) => {
                         let mut meta = MetadataStoreObject::new(
@@ -99,15 +99,12 @@ mod extended {
                         );
                         meta.set_ctx(ctx_item.into());
                         Ok(meta)
-                    },
-                    Err(err) => {
-                        Err(K8ConvertError::KeyConvertionError(IoError::new(
-                            ErrorKind::InvalidData,
-                            format!("error converting metadata: {:#?}", err),
-                        )))
                     }
+                    Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
+                        ErrorKind::InvalidData,
+                        format!("error converting metadata: {:#?}", err),
+                    ))),
                 }
-                
             } else {
                 debug!("skipping non acct fluvio {}", k8_obj.metadata.namespace);
                 Err(K8ConvertError::Skip(k8_obj))

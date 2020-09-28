@@ -16,19 +16,20 @@ use crate::core::{Spec, MetadataItem, MetadataContext};
 
 pub type K8MetadataContext = MetadataContext<K8MetaItem>;
 
-#[derive(Debug, Default,Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct K8MetaItem {
     revision: u64,
     inner: ObjectMeta,
 }
 
-impl K8MetaItem  {
-
-    pub fn new<S>(name: S,name_space: S) -> Self 
-    where S: Into<String> {
+impl K8MetaItem {
+    pub fn new<S>(name: S, name_space: S) -> Self
+    where
+        S: Into<String>,
+    {
         Self {
             revision: 0,
-            inner: ObjectMeta::new(name,name_space)
+            inner: ObjectMeta::new(name, name_space),
         }
     }
 
@@ -39,7 +40,6 @@ impl K8MetaItem  {
     pub fn revision(&self) -> u64 {
         self.revision
     }
-
 }
 
 impl Deref for K8MetaItem {
@@ -49,7 +49,6 @@ impl Deref for K8MetaItem {
         &self.inner
     }
 }
-
 
 impl MetadataItem for K8MetaItem {
     type UId = String;
@@ -67,14 +66,11 @@ impl TryFrom<ObjectMeta> for K8MetaItem {
     type Error = ParseIntError;
 
     fn try_from(value: ObjectMeta) -> Result<Self, Self::Error> {
-
         if value.resource_version.is_empty() {
-            return Ok(
-                Self {
-                    revision: 0,
-                    inner: value
-                }
-            )
+            return Ok(Self {
+                revision: 0,
+                inner: value,
+            });
         }
         let revision: u64 = value.resource_version.parse()?;
 
@@ -125,10 +121,10 @@ where
             let local_spec = k8_obj.spec.into();
             let local_status = k8_obj.status.into();
 
-            let ctx_item_result: Result<K8MetaItem,_> = k8_obj.metadata.try_into();
+            let ctx_item_result: Result<K8MetaItem, _> = k8_obj.metadata.try_into();
             match ctx_item_result {
                 Ok(ctx_item) => {
-                 //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
+                    //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
                     let ctx: MetadataContext<K8MetaItem> = ctx_item.into();
                     let local_kv =
                         MetadataStoreObject::new(key, local_spec, local_status).with_context(ctx);

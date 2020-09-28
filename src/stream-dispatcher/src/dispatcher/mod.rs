@@ -4,8 +4,6 @@ mod k8_ws_service;
 pub use k8_dispatcher::*;
 pub use k8_ws_service::*;
 
-
-
 /*
 mod delta{
 
@@ -15,7 +13,7 @@ mod delta{
 
     use crate::core::Spec;
 
-    /// WS ActionQueue 
+    /// WS ActionQueue
     pub struct WSActionQueue<S> where S: Spec {
 
         entries: RwLock<HashMap<S::IndexKey,S>>
@@ -28,11 +26,11 @@ mod delta{
             Self{}
         }
 
-        
+
     }
 
 
-    #[cfg(test)]    
+    #[cfg(test)]
     mod test {
 
         use super::WSActionQueue;

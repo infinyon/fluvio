@@ -216,7 +216,6 @@ where
     #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use crate::store::k8::K8MetaItem;
-        
 
         match action {
             WSAction::Apply(obj) => {
@@ -230,7 +229,8 @@ where
                     (spec, obj.inner().ctx().item().clone())
                 } else {
                     // create new ctx
-                    let meta = K8MetaItem::new(key.to_string(), self.namespace.named().to_owned()).into();
+                    let meta =
+                        K8MetaItem::new(key.to_string(), self.namespace.named().to_owned());
                     (spec, meta)
                 };
                 if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
@@ -259,16 +259,15 @@ where
                 {
                     Ok(item) => {
                         //println!("updated status item: {:#?}", item);
-                        
+
                         use crate::store::actions::LSUpdate;
-                        
+
                         debug!(
                             "{} k8 update Status: {}, rev: {},stats: {:#?}",
                             S::LABEL,
                             item.metadata.name,
                             item.metadata.resource_version,
                             item.status,
-                            
                         );
 
                         match convert::k8_obj_to_kv_obj(item) {
@@ -277,11 +276,10 @@ where
 
                                 if self.ctx.store().apply_changes(changes).await.is_some() {
                                     self.ctx.event().notify(usize::MAX);
-                                } 
-                            },
-                            Err(err) => error!("{},error  converting back: {:#?}",S::LABEL,err)
+                                }
+                            }
+                            Err(err) => error!("{},error  converting back: {:#?}", S::LABEL, err),
                         }
-                        
                     }
                     Err(err) => {
                         error!(

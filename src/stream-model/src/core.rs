@@ -1,7 +1,6 @@
 pub use core_model::*;
 pub use context::*;
 
-
 mod context {
 
     use std::fmt;
@@ -15,7 +14,7 @@ mod context {
         fn uid(&self) -> &Self::UId;
 
         /// checkif item is newer
-        fn is_newer(&self,another: &Self) -> bool;
+        fn is_newer(&self, another: &Self) -> bool;
     }
 
     impl MetadataItem for String {
@@ -25,8 +24,7 @@ mod context {
             &self
         }
 
-
-        fn is_newer(&self,_another: &Self) -> bool {
+        fn is_newer(&self, _another: &Self) -> bool {
             true
         }
     }
@@ -78,14 +76,13 @@ mod context {
 
     impl<C> Display for MetadataContext<C>
     where
-        C: MetadataItem
+        C: MetadataItem,
     {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{:#?}", self.item)
         }
     }
 }
-
 
 mod core_model {
 

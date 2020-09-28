@@ -99,10 +99,14 @@ impl SpuServiceController {
             let svc_ingresses = svc_md.status.ingress();
 
             if let Some(mut spu) = self.spus.store().value(spu_id).await {
-                debug!("trying sync service: {}, with: spu: {}",svc_md.key(),spu_id);
-                trace!("svc ingress: {:#?}",svc_ingresses);
+                debug!(
+                    "trying sync service: {}, with: spu: {}",
+                    svc_md.key(),
+                    spu_id
+                );
+                trace!("svc ingress: {:#?}", svc_ingresses);
                 let spu_ingress = svc_ingresses.iter().map(convert).collect();
-                trace!("spu ingress: {:#?}",spu_ingress);
+                trace!("spu ingress: {:#?}", spu_ingress);
                 if spu_ingress != spu.spec.public_endpoint.ingress {
                     debug!(
                         "updating spu:{} public end point: {:#?}",
@@ -120,7 +124,11 @@ impl SpuServiceController {
                     debug!("detected no spu: {} ingress changes", spu_id);
                 }
             } else {
-                debug!("no sync service: {}, with: spu: {} because spu doesn't exist",svc_md.key(),spu_id);
+                debug!(
+                    "no sync service: {}, with: spu: {} because spu doesn't exist",
+                    svc_md.key(),
+                    spu_id
+                );
             }
         }
     }
