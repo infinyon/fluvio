@@ -160,7 +160,9 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     // wait for list of spu
     for _ in 0..30u16 {
         let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
-        let live_spus = spus.iter().filter(|spu| spu.status.is_online()).count();
+        let live_spus = spus.iter().filter(|spu| spu.status.is_online()
+            && !spu.spec.public_endpoint.ingress.is_empty()
+        ).count();
         if live_spus == spu as usize {
             println!("{} spus provisioned", spus.len());
             return Ok(());

@@ -17,8 +17,7 @@ impl TestRunner {
     }
 
     async fn setup_topic(&self) {
-        // wait until SPU come online
-        sleep(Duration::from_secs(1)).await;
+        use fluvio::{Fluvio};
 
         // create topics per replication
         let replication = self.option.replication();
@@ -39,9 +38,31 @@ impl TestRunner {
             println!("topic: {}, created", topic_name);
         }
 
-        // wait until topic is created, this is hack for now until we have correct
-        // implementation of find topic
-        sleep(Duration::from_secs(5)).await;
+        // wait until all partitions are provisioned
+        let mut client = Fluvio::connect().await.expect("should connect");
+        let mut admin = client.admin().await;
+
+        for _ in 0..60u16 {
+            use fluvio_controlplane_metadata::partition::PartitionSpec;
+            
+            let partitions = admin
+                .list::<PartitionSpec, _>(vec![])
+                .await
+                .expect("get partitions status");
+
+            let live_partitions = partitions.iter().filter(| par | 
+                par.status.is_online()
+            ).count();
+
+            if live_partitions != replication as usize {
+                println!("partition {} of out of {} is ready, sleeping",live_partitions,replication);
+                sleep(Duration::from_secs(1)).await;
+            }  else {
+                println!("all {} partitions are live",live_partitions);
+                break;
+            }      
+            
+        }
 
         // print topic and partition status
 
@@ -69,7 +90,6 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-            sleep(Duration::from_secs(5)).await; // sleep 5 second in just case
         } else {
             println!("no topic initialized");
         }
