@@ -136,14 +136,14 @@ where
         confirm_spu(spu).await?;
     } else {
         install_core(command).await?;
+        confirm_spu(spu).await?;
     }
 
     Ok("".to_owned())
 }
 
 /// check to ensure spu are all running
-async fn confirm_spu(spu: u16) -> Result<(),CliError> {
-
+async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     use std::time::Duration;
 
     use fluvio_future::timer::sleep;
@@ -151,25 +151,28 @@ async fn confirm_spu(spu: u16) -> Result<(),CliError> {
     use fluvio_cluster::ClusterError;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
+    println!("waiting for spu to be provisioned");
+
     let mut client = Fluvio::connect().await.expect("sc ");
-    
+
     let mut admin = client.admin().await;
 
-    let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
-
-    assert_eq!(spus.len(),spu as usize);
-
+    // wait for list of spu
     for _ in 0..30u16 {
-    
+        let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
         let live_spus = spus.iter().filter(|spu| spu.status.is_online()).count();
         if live_spus == spu as usize {
+            println!("{} spus provisioned", spus.len());
             return Ok(());
         } else {
-            println!("{} out of spu: {} up, waiting 1 sec",live_spus,spus.len());
+            println!("{} out of spu: {} up, waiting 1 sec", live_spus, spu);
             sleep(Duration::from_secs(1)).await;
         }
     }
 
     println!("waited too long,bailing out");
-    Err(CliError::ClusterError(ClusterError::Other(format!("not able to provision:{} spu",spu))))
+    Err(CliError::ClusterError(ClusterError::Other(format!(
+        "not able to provision:{} spu",
+        spu
+    ))))
 }

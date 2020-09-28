@@ -833,7 +833,7 @@ impl ClusterInstaller {
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, ClusterError> {
         // Try waiting for SPUs for 100 cycles
-        for i in 0..100u16 {
+        for i in 0..30u16 {
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
@@ -856,7 +856,7 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                sleep(Duration::from_millis(2000)).await;
+                sleep(Duration::from_millis(1000)).await;
             }
         }
 
