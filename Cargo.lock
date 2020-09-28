@@ -1608,6 +1608,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hostfile"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2733206bcc0550a15b450c64d8aa859f486d7281c4c0c36ef904b361960d658"
+
+[[package]]
 name = "http"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1787,15 +1793,17 @@ dependencies = [
 
 [[package]]
 name = "k8-config"
-version = "1.1.2"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80ffdf19d8d09733044a611dfa660be0cc2a07e190bcdc2e9bf2eb08a84af0d7"
+checksum = "83fd3c29e5808dad171aa1dc92ac56cb734b8d1e24fade735e0373a8d12a7945"
 dependencies = [
  "dirs 2.0.2",
- "log",
+ "hostfile",
  "serde",
+ "serde_json",
  "serde_yaml",
  "tera",
+ "tracing",
 ]
 
 [[package]]

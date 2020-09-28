@@ -14,20 +14,18 @@ pub struct SetMinikubeContext {
 mod context {
 
     use super::*;
+    use k8_config::context::MinikubeContext;
 
     /// Performs following
     ///     add  IP address to /etc/host
     ///     create new kubectl cluster and context which uses minikube name
     pub fn process_minikube_context(ctx: SetMinikubeContext) -> Result<String, CliError> {
-        use k8_config::context::Option;
-        use k8_config::context::create_dns_context;
+        let mut context = MinikubeContext::try_from_system()?;
 
-        let mut option = Option::default();
         if let Some(name) = ctx.name {
-            option.ctx_name = name;
+            context = context.with_name(name);
         }
-
-        create_dns_context(option);
+        context.save()?;
 
         Ok("".to_owned())
     }
