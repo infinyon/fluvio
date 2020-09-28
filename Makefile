@@ -31,10 +31,10 @@ smoke-test-tls:	build test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local-driver --log-dir /tmp
 
 smoke-test-k8:	build test-clean-up minikube_image
-	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop --log-dir /tmp
+	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop
 
 smoke-test-k8-tls:	build test-clean-up minikube_image
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --log-dir /tmp
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop
 
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall
