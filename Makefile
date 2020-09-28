@@ -9,7 +9,7 @@ TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
 TEST_BIN=FLV_CMD=true ./target/debug/flv-test
-DEFAULT_SPU=1
+DEFAULT_SPU=3
 DEFAULT_ITERATION=1
 
 # install all tools required
