@@ -97,6 +97,8 @@ where
     async fn inner_loop(&mut self) {
         use tokio::select;
 
+        info!("begin new reconcillation loop");
+
         let mut resume_stream: Option<String> = None;
         // retrieve all items from K8 store first
         match self.retrieve_all_k8_items().await {
@@ -159,7 +161,7 @@ where
                     match msg {
                         Ok(action) => {
                             debug!("store: received ws action: {}", action);
-                           self.process_ws_action(action).await;
+                            self.process_ws_action(action).await;
                         },
                         Err(err) => {
                             error!("WS channel error: {}", err);
@@ -213,46 +215,100 @@ where
 
     #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
-        use super::k8_actions::K8Action;
-        use crate::k8::metadata::ObjectMeta;
+        use crate::store::k8::K8MetaItem;
 
-        let k8_action = match action {
-            WSAction::Apply(obj) => K8Action::Apply(obj),
+        match action {
+            WSAction::Apply(obj) => {
+                if let Err(err) = self.ws_update_service.apply(obj).await {
+                    error!("error: {}, applying {}", S::LABEL, err);
+                }
+            }
             WSAction::UpdateSpec((key, spec)) => {
                 let read_guard = self.ctx.store().read().await;
-                if let Some(obj) = read_guard.get(&key) {
-                    K8Action::UpdateSpec((spec, obj.inner().ctx().item().clone()))
+                let (spec, metadata) = if let Some(obj) = read_guard.get(&key) {
+                    (spec, obj.inner().ctx().item().clone())
                 } else {
                     // create new ctx
-                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
-                    K8Action::UpdateSpec((spec, meta))
+                    let meta = K8MetaItem::new(key.to_string(), self.namespace.named().to_owned());
+                    (spec, meta)
+                };
+                if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
+                    error!("error: {}, update spec {}", S::LABEL, err);
                 }
             }
             WSAction::UpdateStatus((key, status)) => {
                 let read_guard = self.ctx.store().read().await;
-                if let Some(obj) = read_guard.get(&key) {
-                    K8Action::UpdateStatus((status, obj.inner().ctx().item().clone()))
+                let meta = if let Some(obj) = read_guard.get(&key) {
+                    obj.inner().ctx().item().clone()
                 } else {
-                    // create new ctx
-                    let meta = ObjectMeta::new(key.to_string(), self.namespace.named().to_owned());
-                    K8Action::UpdateStatus((status, meta))
+                    error!("update status: {} without existing item: {}", S::LABEL, key);
+                    return;
+                };
+                drop(read_guard);
+                debug!(
+                    "{} begin update status key: {}, revision: {}",
+                    S::LABEL,
+                    key,
+                    meta.resource_version
+                );
+                match self
+                    .ws_update_service
+                    .update_status(meta, status.clone())
+                    .await
+                {
+                    Ok(item) => {
+                        //println!("updated status item: {:#?}", item);
+
+                        use crate::store::actions::LSUpdate;
+
+                        debug!(
+                            "{} k8 update Status: {}, rev: {},stats: {:#?}",
+                            S::LABEL,
+                            item.metadata.name,
+                            item.metadata.resource_version,
+                            item.status,
+                        );
+
+                        match convert::k8_obj_to_kv_obj(item) {
+                            Ok(updated_item) => {
+                                let changes = vec![LSUpdate::Mod(updated_item)];
+
+                                if self.ctx.store().apply_changes(changes).await.is_some() {
+                                    self.ctx.event().notify(usize::MAX);
+                                }
+                            }
+                            Err(err) => error!("{},error  converting back: {:#?}", S::LABEL, err),
+                        }
+                    }
+                    Err(err) => {
+                        error!(
+                            "{}, update status err: {}, key: {}, status: {:#?}",
+                            S::LABEL,
+                            err,
+                            key,
+                            status
+                        );
+                    }
                 }
             }
             WSAction::Delete(key) => {
                 let read_guard = self.ctx.store().read().await;
                 if let Some(obj) = read_guard.get(&key) {
-                    K8Action::Delete(obj.inner().ctx().item().clone())
+                    if let Err(err) = self
+                        .ws_update_service
+                        .delete(obj.inner().ctx().item().clone())
+                        .await
+                    {
+                        error!("error: {}, deleting {}", S::LABEL, err);
+                    }
                 } else {
                     error!(
                         key = &*format!("{}", key),
                         "Store: trying to delete non existent key",
                     );
-                    return;
                 }
             }
-        };
-
-        self.ws_update_service.process(k8_action).await
+        }
     }
 }
 
@@ -408,7 +464,7 @@ mod convert {
     ///
     /// Translates K8 object into Internal metadata object
     ///
-    fn k8_obj_to_kv_obj<S>(
+    pub fn k8_obj_to_kv_obj<S>(
         k8_obj: K8Obj<S::K8Spec>,
     ) -> Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>>
     where

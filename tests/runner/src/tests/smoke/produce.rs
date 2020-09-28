@@ -1,30 +1,102 @@
+use std::collections::HashMap;
+
 use fluvio::Fluvio;
+use fluvio_future::task::spawn;
+
 use crate::TestOption;
 use super::message::*;
 
-pub async fn produce_message(option: &TestOption) {
+type Offsets = HashMap<String, i64>;
+
+pub async fn produce_message(option: &TestOption) -> Offsets {
+    // get initial offsets for each of the topic
+    let offsets = offsets::find_offsets(&option).await;
+
     if option.produce.produce_iteration == 1 {
-        cli::produce_message_with_cli(option).await;
+        cli::produce_message_with_cli(option, offsets.clone()).await;
     } else {
-        produce_message_with_api(option).await;
+        spawn(produce_message_with_api(offsets.clone(), option.clone()));
+    }
+
+    offsets
+}
+
+mod offsets {
+
+    use std::collections::HashMap;
+
+    use fluvio::{Fluvio, FluvioAdmin};
+
+    use fluvio_controlplane_metadata::partition::PartitionSpec;
+    use fluvio_controlplane_metadata::partition::ReplicaKey;
+
+    use super::TestOption;
+
+    pub async fn find_offsets(option: &TestOption) -> HashMap<String, i64> {
+        let replication = option.replication();
+
+        let mut offsets = HashMap::new();
+
+        let mut client = Fluvio::connect().await.expect("should connect");
+        let mut admin = client.admin().await;
+
+        for i in 0..replication {
+            let topic_name = option.topic_name(i);
+            // find last offset
+            let offset = last_leo(&mut admin, &topic_name).await;
+            println!("found topic: {} offset: {}", topic_name, offset);
+            offsets.insert(topic_name, offset);
+        }
+
+        offsets
+    }
+
+    async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
+        use std::convert::TryInto;
+
+        let partitions = admin
+            .list::<PartitionSpec, _>(vec![])
+            .await
+            .expect("get partitions status");
+
+        for partition in partitions {
+            let replica: ReplicaKey = partition
+                .name
+                .clone()
+                .try_into()
+                .expect("canot parse partition");
+
+            if replica.topic == topic && replica.partition == 0 {
+                return partition.status.leader.leo;
+            }
+        }
+
+        panic!("cannot found partition 0 for topic: {}", topic);
     }
 }
 
-pub async fn produce_message_with_api(option: &TestOption) {
+pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
 
     for i in 0..replication {
         let topic_name = option.topic_name(i);
+
+        let base_offset = *offsets.get(&topic_name).expect("offsets");
         let producer = client.topic_producer(&topic_name).await.expect("producer");
 
         for i in 0..option.produce.produce_iteration {
-            let message = generate_message(i, option);
+            let offset = base_offset + i as i64;
+            let message = generate_message(offset, &topic_name, &option);
+            let len = message.len();
             producer
                 .send_record(message, 0)
                 .await
                 .expect("message sent");
-            println!("topic: {}, message sent: {}", topic_name, i);
+            println!(
+                "produced message topic: {}, offset: {},len: {}",
+                topic_name, offset, len
+            );
         }
     }
 }
@@ -40,26 +112,33 @@ mod cli {
 
     use super::*;
 
-    pub async fn produce_message_with_cli(option: &TestOption) {
+    pub async fn produce_message_with_cli(option: &TestOption, offsets: Offsets) {
         println!("starting produce");
 
         let produce_count = option.produce.produce_iteration;
         for i in 0..produce_count {
-            produce_message(i, option);
+            produce_message_replication(i, &offsets, option);
             //sleep(Duration::from_millis(10)).await
         }
     }
 
-    fn produce_message(_index: u16, option: &TestOption) {
+    fn produce_message_replication(iteration: u16, offsets: &Offsets, option: &TestOption) {
         let replication = option.replication();
 
         for i in 0..replication {
-            produce_message_inner(&option.topic_name(i), option);
+            produce_message_inner(iteration, &option.topic_name(i), offsets, option);
         }
     }
 
-    fn produce_message_inner(topic_name: &str, option: &TestOption) {
+    fn produce_message_inner(
+        _iteration: u16,
+        topic_name: &str,
+        offsets: &Offsets,
+        option: &TestOption,
+    ) {
         use std::io;
+
+        let base_offset = *offsets.get(topic_name).expect("offsets");
 
         let mut child = get_fluvio()
             .expect("no fluvio")
@@ -72,7 +151,7 @@ mod cli {
             .expect("no child");
 
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        let msg = generate_message(0, option);
+        let msg = generate_message(base_offset, topic_name, option);
         stdin
             .write_all(msg.as_slice())
             .expect("Failed to write to stdin");

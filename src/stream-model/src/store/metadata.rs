@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::core::*;
+use crate::core::{Spec, MetadataContext, MetadataItem};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, String>;
 
@@ -89,6 +89,10 @@ where
         &self.ctx
     }
 
+    pub fn ctx_mut(&mut self) -> &mut MetadataContext<C> {
+        &mut self.ctx
+    }
+
     pub fn ctx_owned(&self) -> MetadataContext<C> {
         self.ctx.clone()
     }
@@ -107,6 +111,10 @@ where
             Some(parent) => parent.uid() == uid,
             None => false,
         }
+    }
+
+    pub fn is_newer(&self, another: &Self) -> bool {
+        self.ctx.item().is_newer(another.ctx().item())
     }
 }
 

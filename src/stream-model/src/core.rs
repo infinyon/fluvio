@@ -1,19 +1,20 @@
 pub use core_model::*;
 pub use context::*;
 
-#[cfg(feature = "k8")]
-pub use k8::*;
-
 mod context {
 
-    use std::fmt::Debug;
+    use std::fmt;
+    use std::fmt::Display;
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
-    pub trait MetadataItem: Clone + Default + Debug {
+    pub trait MetadataItem: Clone + Default + fmt::Debug {
         type UId: PartialEq;
 
         fn uid(&self) -> &Self::UId;
+
+        /// checkif item is newer
+        fn is_newer(&self, another: &Self) -> bool;
     }
 
     impl MetadataItem for String {
@@ -21,6 +22,10 @@ mod context {
 
         fn uid(&self) -> &Self::UId {
             &self
+        }
+
+        fn is_newer(&self, _another: &Self) -> bool {
+            true
         }
     }
 
@@ -39,6 +44,10 @@ mod context {
     impl<C> MetadataContext<C> {
         pub fn item(&self) -> &C {
             &self.item
+        }
+
+        pub fn item_mut(&mut self) -> &mut C {
+            &mut self.item
         }
 
         pub fn item_owned(self) -> C {
@@ -64,19 +73,13 @@ mod context {
             }
         }
     }
-}
 
-#[cfg(feature = "k8")]
-pub mod k8 {
-
-    use crate::k8::metadata::ObjectMeta;
-
-    use super::*;
-
-    impl MetadataItem for ObjectMeta {
-        type UId = String;
-        fn uid(&self) -> &Self::UId {
-            &self.uid
+    impl<C> Display for MetadataContext<C>
+    where
+        C: MetadataItem,
+    {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{:#?}", self.item)
         }
     }
 }
