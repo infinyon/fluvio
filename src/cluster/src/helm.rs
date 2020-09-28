@@ -58,6 +58,7 @@ impl HelmClient {
         command
             .args(&["install", name, chart])
             .args(&["--namespace", namespace])
+            .args(&["--devel"])
             .args(sets);
 
         if let Some(version) = version {
