@@ -11,6 +11,9 @@ description = "The offical Fluvio driver for Rust"
 name = "fluvio"
 path = "src/lib.rs"
 
+[features]
+admin = ["fluvio-sc-schema/use_serde"]
+
 [dependencies]
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
@@ -29,7 +32,7 @@ tokio = { version = "0.2.21", features = ["macros"] }
 # Fluvio dependencies
 fluvio-future = { version = "0.1.0", features = ["tls"] }
 fluvio-types = { version = "0.1.0", path = "../types" }
-fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", features = ["use_serde"] }
+fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
 fluvio-socket = { version = "0.1.0" }
 fluvio-protocol = { version = "0.2.0" }
