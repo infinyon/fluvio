@@ -46,10 +46,6 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
     steps:
-      - name: Cancel Workflow Action
-        uses: styfle/cancel-workflow-action@0.5.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -66,10 +62,6 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
     steps:
-      - name: Cancel Workflow Action
-        uses: styfle/cancel-workflow-action@0.5.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -88,10 +80,6 @@ jobs:
         rust: [stable]
 
     steps:
-      - name: Cancel Workflow Action
-        uses: styfle/cancel-workflow-action@0.5.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -114,10 +102,6 @@ jobs:
         rust: [stable]
 
     steps:
-      - name: Cancel Workflow Action
-        uses: styfle/cancel-workflow-action@0.5.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Install Helm
         run: dev-tools/ci-replace-helm.sh
@@ -160,11 +144,11 @@ jobs:
       - name: smoke test tls for linux
         if: startsWith(matrix.os,'ubuntu')
         run: |
-          FLV_CMD=true make smoke-test-tls
+          FLV_CMD=true make smoke-test
       - name: smoke test tls
         if: startsWith(matrix.os, 'macOS')
         run: |
-          FLV_CMD=true make smoke-test-tls DEFAULT_SPU=1
+          FLV_CMD=true make smoke-test DEFAULT_SPU=1
 
 
   k8_cluster_test:
@@ -176,10 +160,6 @@ jobs:
         rust: [stable]
     
     steps:
-      - name: Cancel Workflow Action
-        uses: styfle/cancel-workflow-action@0.5.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Install Helm
         run: dev-tools/ci-replace-helm.sh
@@ -225,4 +205,4 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: smoke test k8 tls
         run: | 
-          FLV_CMD=true make smoke-test-k8-tls
+          FLV_CMD=true make smoke-test-k8
