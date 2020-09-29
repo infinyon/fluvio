@@ -7,7 +7,7 @@ use structopt::StructOpt;
 
 use crate::Terminal;
 use crate::CliError;
-pub use tls::TlsOpt;
+use tls::TlsOpt;
 
 use super::util::*;
 

@@ -7,7 +7,7 @@ use fluvio::config::{TlsPolicy, TlsPaths};
 
 /// Optional Tls Configuration to Client
 #[derive(Debug, StructOpt, Default, Clone)]
-pub struct TlsOpt {
+pub struct TlsClientOpt {
     /// Enable TLS
     #[structopt(long)]
     pub tls: bool,
@@ -33,8 +33,8 @@ pub struct TlsOpt {
     pub client_key: Option<PathBuf>,
 }
 
-impl From<TlsOpt> for TlsPolicy {
-    fn from(opt: TlsOpt) -> Self {
+impl From<TlsClientOpt> for TlsPolicy {
+    fn from(opt: TlsClientOpt) -> Self {
         if !opt.tls {
             debug!("no optional tls");
             return TlsPolicy::Disabled;

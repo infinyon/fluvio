@@ -6,7 +6,7 @@ use crate::t_println;
 use crate::COMMAND_TEMPLATE;
 use crate::profile::{set_k8_context, discover_fluvio_addr, set_local_context};
 use crate::profile::sync::cloud::{CloudOpt, process_cloud};
-use crate::tls::TlsOpt;
+use crate::tls::TlsClientOpt;
 pub use cloud::CloudError;
 
 #[derive(Debug, StructOpt)]
@@ -34,7 +34,7 @@ pub struct K8Opt {
     pub name: Option<String>,
 
     #[structopt(flatten)]
-    pub tls: TlsOpt,
+    pub tls: TlsClientOpt,
 }
 
 #[derive(Debug, Default, StructOpt)]
@@ -43,7 +43,7 @@ pub struct LocalOpt {
     pub local: String,
 
     #[structopt(flatten)]
-    pub tls: TlsOpt,
+    pub tls: TlsClientOpt,
 }
 
 pub async fn process_sync<O: Terminal>(

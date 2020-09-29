@@ -93,11 +93,11 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
 /// set local profile
 fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
     use crate::profile::set_local_context;
-    use crate::tls::TlsOpt;
+    use crate::tls::TlsClientOpt;
 
     let tls_config = &opt.tls;
     let tls = if tls_config.tls {
-        TlsOpt {
+        TlsClientOpt {
             tls: true,
             domain: tls_config.domain.clone(),
             enable_client_cert: true,
@@ -106,7 +106,7 @@ fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
             ca_cert: tls_config.ca_cert.clone(),
         }
     } else {
-        TlsOpt::default()
+        TlsClientOpt::default()
     };
 
     let local = LocalOpt {

@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::convert::TryInto;
 use std::process::Command;
 
 use fluvio_cluster::ClusterInstaller;
@@ -7,7 +8,7 @@ use fluvio::config::TlsPolicy;
 use super::*;
 
 pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
-    let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.into();
+    let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
         .with_namespace(opt.k8_config.namespace)
