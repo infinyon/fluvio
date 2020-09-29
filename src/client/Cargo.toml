@@ -11,6 +11,9 @@ description = "The offical Fluvio driver for Rust"
 name = "fluvio"
 path = "src/lib.rs"
 
+[features]
+admin = ["fluvio-sc-schema/use_serde"]
+
 [dependencies]
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
