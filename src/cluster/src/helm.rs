@@ -134,10 +134,11 @@ impl HelmClient {
         &self,
         name: &str,
     ) -> Result<Vec<InstalledChart>, IoError> {
+        let exact_match = format!("^{}$", name);
         let output = Command::new("helm")
             .arg("list")
             .arg("--filter")
-            .arg(name)
+            .arg(exact_match)
             .arg("--output")
             .arg("json")
             .print()

@@ -513,6 +513,16 @@ impl ClusterInstaller {
             ));
         }
 
+        // check if cluster is already installed
+        let app_charts = self
+            .helm_client
+            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO)?;
+        if !app_charts.is_empty() {
+            return Err(ClusterError::Other(
+                "Fluvio cluster is already installed".to_string(),
+            ));
+        }
+
         // check k8 config hostname is not an IP address
         let k8_config = K8Config::load()?;
         match k8_config {
