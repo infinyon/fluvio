@@ -66,10 +66,13 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
             Some(policy)
         })();
 
-        policy.ok_or_else(|| CliError::Other(
-            "Missing required args after --tls:\
-  --domain, --ca-cert, --client-cert, --client-key".to_string()
-        ))
+        policy.ok_or_else(|| {
+            CliError::Other(
+                "Missing required args after --tls:\
+  --domain, --ca-cert, --client-cert, --client-key"
+                    .to_string(),
+            )
+        })
     }
 }
 
@@ -84,10 +87,14 @@ mod tests {
             "test", // First arg is treated as binary name
             "--tls",
             "--enable-client-cert",
-            "--domain", "fluvio.io",
-            "--ca-cert", "/tmp/certs/ca.crt",
-            "--client-cert", "/tmp/certs/client.crt",
-            "--client-key", "/tmp/certs/client.key",
+            "--domain",
+            "fluvio.io",
+            "--ca-cert",
+            "/tmp/certs/ca.crt",
+            "--client-cert",
+            "/tmp/certs/client.crt",
+            "--client-key",
+            "/tmp/certs/client.key",
         ]);
         let policy: TlsPolicy = tls_opt.try_into().unwrap();
 
