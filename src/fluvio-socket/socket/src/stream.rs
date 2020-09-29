@@ -85,17 +85,14 @@ where
                     trace!("receive response: {:#?}", &response);
                     Ok(response)
                 }
-                Err(err) => {
-                    error!("error receiving response: {:?}", err);
-                    Err(FlvSocketError::IoError(err))
+                Err(source) => {
+                    error!("error receiving response: {:?}", source);
+                    Err(FlvSocketError::IoError { source })
                 }
             }
         } else {
             error!("no more response. server has terminated connection");
-            Err(FlvSocketError::IoError(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "server has terminated connection",
-            )))
+            Err(IoError::new(ErrorKind::UnexpectedEof, "server has terminated connection").into())
         }
     }
 
