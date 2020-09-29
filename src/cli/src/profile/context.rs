@@ -1,5 +1,4 @@
 use std::io::Error as IoError;
-use std::convert::TryInto;
 
 use fluvio::config::*;
 
@@ -18,11 +17,11 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, IoError> {
     match config.cluster_mut(LOCAL_PROFILE) {
         Some(cluster) => {
             cluster.addr = local_addr.clone();
-            cluster.tls = local_config.tls.try_into()?;
+            cluster.tls = local_config.tls.into();
         }
         None => {
             let mut local_cluster = FluvioConfig::new(local_addr.clone());
-            local_cluster.tls = local_config.tls.try_into()?;
+            local_cluster.tls = local_config.tls.into();
             config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
         }
     };

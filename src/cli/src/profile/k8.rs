@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use tracing::*;
 use fluvio::config::*;
 use k8_client::K8Client;
@@ -41,11 +39,11 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
     match config.cluster_mut(&profile_name) {
         Some(cluster) => {
             cluster.addr = external_addr;
-            cluster.tls = opt.tls.try_into()?;
+            cluster.tls = opt.tls.into();
         }
         None => {
             let mut local_cluster = FluvioConfig::new(external_addr);
-            local_cluster.tls = opt.tls.try_into()?;
+            local_cluster.tls = opt.tls.into();
             config.add_cluster(local_cluster, profile_name.clone());
         }
     };

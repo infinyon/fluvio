@@ -1,15 +1,15 @@
-mod k8;
-
 #[cfg(feature = "cluster_components")]
 mod local;
+mod k8;
+mod tls;
 
 use structopt::StructOpt;
 
 use crate::Terminal;
 use crate::CliError;
+pub use tls::TlsOpt;
 
 use super::util::*;
-use std::path::PathBuf;
 
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
@@ -44,37 +44,6 @@ pub struct K8Install {
     /// k8
     #[structopt(long, default_value = "minikube")]
     pub cloud: String,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct TlsOpt {
-    /// tls
-    #[structopt(long)]
-    tls: bool,
-
-    /// TLS: path to server certificate
-    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
-    pub server_cert: Option<PathBuf>,
-
-    /// TLS: path to server private key
-    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
-    pub server_key: Option<PathBuf>,
-
-    /// TLS: domain
-    #[structopt(long, required_if("tls", "true"))]
-    pub domain: Option<String>,
-
-    /// TLS: client cert
-    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
-    pub client_cert: Option<PathBuf>,
-
-    /// TLS: client key
-    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
-    pub client_key: Option<PathBuf>,
-
-    /// TLS: ca cert
-    #[structopt(long, required_if("tls", "true"), parse(from_os_str))]
-    pub ca_cert: Option<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]

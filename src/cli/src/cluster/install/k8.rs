@@ -1,15 +1,20 @@
-use std::process::Command;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use super::*;
+use std::process::Command;
+
 use fluvio_cluster::ClusterInstaller;
+use fluvio::config::TlsPolicy;
+use super::*;
 
 pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
+    let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.into();
+
     let mut builder = ClusterInstaller::new()
         .with_namespace(opt.k8_config.namespace)
         .with_group_name(opt.k8_config.group_name)
         .with_spu_replicas(opt.spu)
-        .with_save_profile(!opt.skip_profile_creation);
+        .with_save_profile(!opt.skip_profile_creation)
+        .with_tls(client, server);
 
     match opt.k8_config.image_version {
         // If an image tag is given, use it

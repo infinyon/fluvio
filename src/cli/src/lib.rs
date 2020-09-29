@@ -52,7 +52,6 @@ macro_rules! t_print_cli_err {
 
 mod target {
     use std::io::{ErrorKind, Error as IoError};
-    use std::convert::TryInto;
     use structopt::StructOpt;
 
     use fluvio::FluvioConfig;
@@ -77,7 +76,7 @@ mod target {
     impl ClusterTarget {
         /// try to create sc config
         pub fn load(self) -> Result<FluvioConfig, CliError> {
-            let tls = self.tls.try_into()?;
+            let tls = self.tls.into();
 
             use fluvio::config::TlsPolicy::*;
             match (self.profile, self.cluster) {
