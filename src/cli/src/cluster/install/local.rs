@@ -1,6 +1,5 @@
 use std::time::Duration;
 use std::process::Stdio;
-use std::io::Error as IoError;
 
 use tracing::debug;
 
@@ -91,7 +90,7 @@ fn launch_sc(option: &InstallCommand, log_dir: &str) {
 }
 
 /// set local profile
-fn set_profile(opt: &InstallCommand) -> Result<(), IoError> {
+fn set_profile(opt: &InstallCommand) -> Result<(), CliError> {
     use crate::profile::set_local_context;
     use crate::tls::TlsClientOpt;
 

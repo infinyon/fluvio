@@ -72,7 +72,10 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             Some((client_policy, server_policy))
         })();
 
-        policies.ok_or_else(|| CliError::Other("When --tls is used, all other TLS options must be provided".to_string()))
+        policies.ok_or_else(|| CliError::Other(
+            "Missing required args after --tls:\
+  --domain, --ca-cert, --client-cert, --client-key, --server-cert, --server-key".to_string()
+        ))
     }
 }
 
@@ -115,8 +118,8 @@ mod tests {
     }
 
     #[test]
-    fn test_no_none() {
-        let tls_opt = TlsOpt::from_iter(vec![
+    fn test_missing_opts() {
+        let tls_opt: TlsOpt = TlsOpt::from_iter(vec![
             "test", // First arg is treated as binary name
             "--tls",
         ]);

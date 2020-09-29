@@ -1,13 +1,13 @@
-use std::io::Error as IoError;
+use std::convert::TryInto;
 
 use fluvio::config::*;
 
-use crate::Terminal;
+use crate::{Terminal, CliError};
 use crate::t_println;
 use crate::profile::sync::LocalOpt;
 
 /// create new local cluster and profile
-pub fn set_local_context(local_config: LocalOpt) -> Result<String, IoError> {
+pub fn set_local_context(local_config: LocalOpt) -> Result<String, CliError> {
     let local_addr = local_config.local;
     let mut config_file = ConfigFile::load_default_or_new()?;
 
@@ -17,11 +17,11 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, IoError> {
     match config.cluster_mut(LOCAL_PROFILE) {
         Some(cluster) => {
             cluster.addr = local_addr.clone();
-            cluster.tls = local_config.tls.into();
+            cluster.tls = local_config.tls.try_into()?;
         }
         None => {
             let mut local_cluster = FluvioConfig::new(local_addr.clone());
-            local_cluster.tls = local_config.tls.into();
+            local_cluster.tls = local_config.tls.try_into()?;
             config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
         }
     };
