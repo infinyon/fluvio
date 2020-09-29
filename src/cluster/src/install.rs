@@ -89,6 +89,33 @@ pub struct ClusterInstallerBuilder {
 }
 
 impl ClusterInstallerBuilder {
+    /// Creates a builder initialized to the default settings
+    fn new() -> Self {
+        let spu_spec = SpuGroupSpec {
+            replicas: 1,
+            min_id: 0,
+            ..SpuGroupSpec::default()
+        };
+
+        ClusterInstallerBuilder {
+            namespace: DEFAULT_NAMESPACE.to_string(),
+            image_tag: None,
+            image_registry: DEFAULT_REGISTRY.to_string(),
+            chart_version: crate::VERSION.to_string(),
+            chart_name: DEFAULT_CHART_APP_NAME.to_string(),
+            chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
+            group_name: DEFAULT_GROUP_NAME.to_string(),
+            cloud: DEFAULT_CLOUD_NAME.to_string(),
+            save_profile: false,
+            install_sys: true,
+            update_context: true,
+            spu_spec,
+            rust_log: None,
+            server_tls_policy: TlsPolicy::Disabled,
+            client_tls_policy: TlsPolicy::Disabled,
+        }
+    }
+
     /// Creates a [`ClusterInstaller`] with the current configuration.
     ///
     /// This may fail if there is a problem conencting to Kubernetes or
@@ -101,7 +128,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .build()
     ///     .expect("should create ClusterInstaller");
     /// ```
@@ -123,7 +150,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_namespace("my-namespace")
     ///     .build()
     ///     .expect("should build installer");
@@ -147,7 +174,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_image_tag("0.6.0")
     ///     .build()
     ///     .unwrap();
@@ -180,7 +207,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_image_registry("localhost:5000/infinyon")
     ///     .build()
     ///     .unwrap();
@@ -207,7 +234,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_chart_version("0.6.0")
     ///     .build()
     ///     .unwrap();
@@ -233,7 +260,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_local_chart("./k8-util/helm")
     ///     .build()
     ///     .unwrap();
@@ -258,7 +285,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_remote_chart("https://charts.fluvio.io")
     ///     .build()
     ///     .unwrap();
@@ -276,7 +303,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_group_name("orange")
     ///     .build()
     ///     .unwrap();
@@ -292,7 +319,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_save_profile(true)
     ///     .build()
     ///     .unwrap();
@@ -310,7 +337,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_system_chart(false)
     ///     .build()
     ///     .unwrap();
@@ -328,7 +355,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_update_context(false)
     ///     .build()
     ///     .unwrap();
@@ -344,7 +371,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_spu_replicas(2)
     ///     .build()
     ///     .unwrap();
@@ -360,7 +387,7 @@ impl ClusterInstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_rust_log("debug")
     ///     .build()
     ///     .unwrap();
@@ -397,7 +424,7 @@ impl ClusterInstallerBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_tls(client, server)
     ///     .build()
     ///     .unwrap();
@@ -470,12 +497,12 @@ impl ClusterInstallerBuilder {
 ///
 /// ```no_run
 /// # use fluvio_cluster::ClusterInstaller;
-/// let installer = ClusterInstaller::new()
+/// let installer = ClusterInstaller::builder()
 ///     .build()
 ///     .expect("should initialize installer");
 ///
 /// // Installing Fluvio is asynchronous, so you'll need an async runtime
-/// let result = fluvio_future::task::run_block_on(async {
+/// let result = async_std::task::block_on(async {
 ///     installer.install_fluvio().await
 /// });
 /// ```
@@ -493,6 +520,29 @@ pub struct ClusterInstaller {
 }
 
 impl ClusterInstaller {
+    /// Creates a `ClusterInstaller` with default installation settings
+    ///
+    /// This will fail if there is trouble connecting to Kubernetes or
+    /// if the `helm` executable is not locally installed.
+    ///
+    /// To customize the installation settings, use the [`builder()`]
+    /// function to create a [`ClusterInstallerBuilder`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new().unwrap();
+    /// async_std::task::block_on(installer.install_fluvio()).unwrap();
+    /// ```
+    pub fn new() -> Result<Self, ClusterError> {
+        Ok(Self {
+            config: ClusterInstallerBuilder::new(),
+            kube_client: K8Client::default()?,
+            helm_client: HelmClient::new()?,
+        })
+    }
+
     /// Creates a default [`ClusterInstallerBuilder`] which can build a `ClusterInstaller`
     ///
     /// # Example
@@ -501,7 +551,7 @@ impl ClusterInstaller {
     ///
     /// ```no_run
     /// use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new().build().unwrap();
+    /// let installer = ClusterInstaller::builder().build().unwrap();
     /// ```
     ///
     /// Building a `ClusterInstaller` may fail if there is trouble connecting to
@@ -514,7 +564,7 @@ impl ClusterInstaller {
     ///
     /// ```no_run
     /// use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// let installer = ClusterInstaller::builder()
     ///     .with_namespace("my_namespace")
     ///     .with_rust_log("debug")
     ///     .build()
@@ -525,31 +575,8 @@ impl ClusterInstaller {
     /// [`.build()`]: ./struct.ClusterInstallerBuilder.html#build
     /// [`with_namespace`]: ./struct.ClusterInstallerBuilder.html#method.with_namespace
     /// [`with_rust_log`]: ./struct.ClusterInstallerBuilder.html#method.with_rust_log
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> ClusterInstallerBuilder {
-        let spu_spec = SpuGroupSpec {
-            replicas: 1,
-            min_id: 0,
-            ..SpuGroupSpec::default()
-        };
-
-        ClusterInstallerBuilder {
-            namespace: DEFAULT_NAMESPACE.to_string(),
-            image_tag: None,
-            image_registry: DEFAULT_REGISTRY.to_string(),
-            chart_version: crate::VERSION.to_string(),
-            chart_name: DEFAULT_CHART_APP_NAME.to_string(),
-            chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
-            group_name: DEFAULT_GROUP_NAME.to_string(),
-            cloud: DEFAULT_CLOUD_NAME.to_string(),
-            save_profile: false,
-            install_sys: true,
-            update_context: false,
-            spu_spec,
-            rust_log: None,
-            server_tls_policy: TlsPolicy::Disabled,
-            client_tls_policy: TlsPolicy::Disabled,
-        }
+    pub fn builder() -> ClusterInstallerBuilder {
+        ClusterInstallerBuilder::new()
     }
 
     /// Get all the available versions of fluvio chart

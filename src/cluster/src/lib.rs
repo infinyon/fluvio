@@ -10,8 +10,8 @@
 //!
 //! ```no_run
 //! use fluvio_cluster::ClusterInstaller;
-//! let installer = ClusterInstaller::new().build().unwrap();
-//! fluvio_future::task::run_block_on(installer.install_fluvio()).unwrap();
+//! let installer = ClusterInstaller::new().unwrap();
+//! async_std::task::block_on(installer.install_fluvio()).unwrap();
 //! ```
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html

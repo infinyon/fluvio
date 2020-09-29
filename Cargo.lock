@@ -1002,6 +1002,7 @@ dependencies = [
 name = "fluvio-cluster"
 version = "0.1.3"
 dependencies = [
+ "async-std",
  "fluvio",
  "fluvio-controlplane-metadata",
  "fluvio-future",

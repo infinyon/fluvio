@@ -10,7 +10,7 @@ use super::*;
 pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
-    let mut builder = ClusterInstaller::new()
+    let mut builder = ClusterInstaller::builder()
         .with_namespace(opt.k8_config.namespace)
         .with_group_name(opt.k8_config.group_name)
         .with_spu_replicas(opt.spu)
@@ -70,7 +70,7 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
 }
 
 pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
-    let installer = ClusterInstaller::new()
+    let installer = ClusterInstaller::builder()
         .with_namespace(opt.k8_config.namespace)
         .build()?;
     installer._install_sys()?;
