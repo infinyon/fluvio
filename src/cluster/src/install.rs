@@ -592,7 +592,10 @@ impl ClusterInstaller {
             self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
-            if !self.wait_for_spu(namespace).await? {
+            if !self
+                .wait_for_spu(namespace, self.config.spu_spec.replicas)
+                .await?
+            {
                 warn!("SPU took too long to get ready");
                 return Err(ClusterError::Other(
                     "SPU took too long to get ready".to_string(),
@@ -797,7 +800,7 @@ impl ClusterInstaller {
 
         let input = InputObjectMeta::named("flv-sc-public", ns);
 
-        for i in 0..100u16 {
+        for i in 0..30u16 {
             match self
                 .kube_client
                 .retrieve_item::<ServiceSpec, _>(&input)
@@ -813,12 +816,14 @@ impl ClusterInstaller {
                             attempt = i,
                             "SC service exists but no load balancer exist yet, continue wait"
                         );
-                        sleep(Duration::from_millis(2000)).await;
+                        println!("waiting for sc service up come up: {}", i);
+                        sleep(Duration::from_millis(1000)).await;
                     }
                 }
                 Err(err) => match err {
                     K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
                         debug!(attempt = i, "No SC service found, sleeping");
+                        println!("no SC service found, sleeping");
                         sleep(Duration::from_millis(2000)).await;
                     }
                     _ => panic!("error: {}", err),
@@ -831,9 +836,9 @@ impl ClusterInstaller {
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
-    async fn wait_for_spu(&self, ns: &str) -> Result<bool, ClusterError> {
+    async fn wait_for_spu(&self, ns: &str, spu: u16) -> Result<bool, ClusterError> {
         // Try waiting for SPUs for 100 cycles
-        for i in 0..100u16 {
+        for i in 0..30u16 {
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
@@ -846,7 +851,7 @@ impl ClusterInstaller {
                 })
                 .count();
 
-            if spu_count == ready_spu {
+            if spu as usize == ready_spu {
                 info!(spu_count, "All SPUs are ready");
                 return Ok(true);
             } else {
@@ -856,7 +861,8 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                sleep(Duration::from_millis(2000)).await;
+                println!("{} of {} spu ready", ready_spu, spu);
+                sleep(Duration::from_millis(1000)).await;
             }
         }
 

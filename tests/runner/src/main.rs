@@ -15,6 +15,7 @@ fn main() {
     use setup::Setup;
     use test_runner::TestRunner;
 
+    println!("Start running fluvio test runner");
     fluvio_future::subscriber::init_logger();
 
     let option = TestOption::parse_cli_or_exit();

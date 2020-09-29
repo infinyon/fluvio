@@ -10,7 +10,7 @@ CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
 TEST_BIN=FLV_CMD=true ./target/debug/flv-test
 DEFAULT_SPU=1
-DEFAULT_ITERATION=1
+DEFAULT_ITERATION=10
 
 # install all tools required
 install_tools_mac:
@@ -27,13 +27,13 @@ build:
 smoke-test:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local-driver --log-dir /tmp
 
-smoke-test-tls:	build test-clean-up
+smoke-test-tls:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local-driver --log-dir /tmp
 
-smoke-test-k8:	build test-clean-up minikube_image
+smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop
 
-smoke-test-k8-tls:	build test-clean-up minikube_image
+smoke-test-k8-tls:	test-clean-up minikube_image
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop
 
 test-clean-up:
