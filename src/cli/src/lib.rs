@@ -57,7 +57,7 @@ mod target {
 
     use fluvio::FluvioConfig;
     use fluvio::config::ConfigFile;
-    use crate::tls::TlsOpt;
+    use crate::tls::TlsClientOpt;
     use crate::CliError;
 
     /// server configuration
@@ -68,7 +68,7 @@ mod target {
         pub cluster: Option<String>,
 
         #[structopt(flatten)]
-        pub tls: TlsOpt,
+        pub tls: TlsClientOpt,
 
         #[structopt(short = "P", long, value_name = "profile")]
         pub profile: Option<String>,
