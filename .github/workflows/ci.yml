@@ -160,7 +160,7 @@ jobs:
       - name: smoke test tls for linux
         if: startsWith(matrix.os,'ubuntu')
         run: |
-          FLV_CMD=true make smoke-test
+          FLV_CMD=true make smoke-test-tls
       - name: smoke test tls
         if: startsWith(matrix.os, 'macOS')
         run: |
