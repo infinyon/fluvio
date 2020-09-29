@@ -50,7 +50,7 @@ jobs:
         uses: styfle/cancel-workflow-action@0.5.0
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -161,12 +161,10 @@ jobs:
         if: startsWith(matrix.os,'ubuntu')
         run: |
           FLV_CMD=true make smoke-test-tls
-          make test-clean-up
       - name: smoke test tls
         if: startsWith(matrix.os, 'macOS')
         run: |
           FLV_CMD=true make smoke-test-tls DEFAULT_SPU=1
-          make test-clean-up
 
 
   k8_cluster_test:
@@ -228,4 +226,3 @@ jobs:
       - name: smoke test k8 tls
         run: | 
           FLV_CMD=true make smoke-test-k8-tls
-          make test-clean-up
