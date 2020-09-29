@@ -1,4 +1,3 @@
-use fluvio_future::task::main;
 use fluvio_storage::FileReplica;
 
 use crate::config::{SpuConfig, SpuOpt};
@@ -15,12 +14,16 @@ type FileReplicaContext = GlobalContext<FileReplica>;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop(opt: SpuOpt) {
+    use std::time::Duration;
+
+    use fluvio_future::task::run_block_on;
+    use fluvio_future::timer::sleep;
     // parse configuration (program exits on error)
     let (spu_config, tls_acceptor_option) = opt.process_spu_cli_or_exit();
 
     println!("starting spu server (id:{})", spu_config.id);
 
-    main(async move {
+    run_block_on(async move {
         let (_ctx, internal_server, public_server) =
             create_services(spu_config.clone(), true, true);
 
@@ -32,6 +35,11 @@ pub fn main_loop(opt: SpuOpt) {
         }
 
         println!("SPU Version: {} started successfully", VERSION);
+
+        // infinite loop
+        loop {
+            sleep(Duration::from_secs(60)).await;
+        }
     });
 }
 

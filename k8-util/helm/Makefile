@@ -14,7 +14,6 @@ TEST_NAME=fluviotest
 FLUVIO_VERSION=$(VERSION)
 CORE_VERSION=$(shell yq read fluvio-app/Chart.yaml version)
 SYS_VERSION=$(shell yq read fluvio-sys/Chart.yaml version)
-CHART_REPO=../../../infinyon.github.io/docs
 CHART_SRC=./fluvio-app
 
 dry-run:
@@ -86,28 +85,12 @@ test_uninstall:	NS=$(TEST_NS)
 uninstall:
 	helm uninstall $(NAME) -n $(NS)
 
-
-package-app:	cleanup
-	echo "Installing $(CHART_VERSION) core helm package"
-	helm package --version $(CHART_VERSION) --app-version $(CHART_VERSION) ./fluvio-app
-	mv fluvio-app-$(CHART_VERSION).tgz $(CHART_REPO)/docs
-	cd $(CHART_REPO); helm repo index charts
-
-
-package-app-latest:	CHART_VERSION=$(VERSION)-latest
-package-app-latest:	package-app
-
-package-sys:	cleanup
-	helm package ./fluvio-sys
-	mv fluvio-sys-$(SYS_VERSION).tgz $(CHART_REPO)/docs
-	cd $(CHART_REPO); helm repo index charts
-
 cleanup:
 	rm -rf *.tgz
 
 
 add_repo:
-	 helm repo add fluvio https://infinyon.github.io
+	 helm repo add fluvio https://charts.fluvio.io
 	 helm repo update
 
 install_repo_minikube_sys:

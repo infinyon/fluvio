@@ -123,6 +123,8 @@ where
     use k8::install_sys;
     use k8::install_core;
 
+    let spu = command.spu;
+
     #[cfg(feature = "cluster_components")]
     use local::install_local;
 
@@ -131,9 +133,49 @@ where
     } else if command.local {
         #[cfg(feature = "cluster_components")]
         install_local(command).await?;
+        confirm_spu(spu).await?;
     } else {
         install_core(command).await?;
+        confirm_spu(spu).await?;
     }
 
     Ok("".to_owned())
+}
+
+/// check to ensure spu are all running
+async fn confirm_spu(spu: u16) -> Result<(), CliError> {
+    use std::time::Duration;
+
+    use fluvio_future::timer::sleep;
+    use fluvio::Fluvio;
+    use fluvio_cluster::ClusterError;
+    use fluvio_controlplane_metadata::spu::SpuSpec;
+
+    println!("waiting for spu to be provisioned");
+
+    let mut client = Fluvio::connect().await.expect("sc ");
+
+    let mut admin = client.admin().await;
+
+    // wait for list of spu
+    for _ in 0..30u16 {
+        let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
+        let live_spus = spus
+            .iter()
+            .filter(|spu| spu.status.is_online() && !spu.spec.public_endpoint.ingress.is_empty())
+            .count();
+        if live_spus == spu as usize {
+            println!("{} spus provisioned", spus.len());
+            return Ok(());
+        } else {
+            println!("{} out of spu: {} up, waiting 1 sec", live_spus, spu);
+            sleep(Duration::from_secs(1)).await;
+        }
+    }
+
+    println!("waited too long,bailing out");
+    Err(CliError::ClusterError(ClusterError::Other(format!(
+        "not able to provision:{} spu",
+        spu
+    ))))
 }
