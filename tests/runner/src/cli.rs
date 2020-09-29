@@ -34,18 +34,18 @@ pub struct TestOption {
     #[structopt(long)]
     disable_consume: bool,
 
-    /// disable set up topics
-    #[structopt(long)]
-    disable_topic_setup: bool,
-
     #[structopt(short, long)]
     /// replication count, number of spu will be same as replication count, unless overridden
     replication: Option<u16>,
 
-    /// topic name used for testing
+    /// base topic name used.  if replication > 1, then topic name will be named: topic<replication>
     #[structopt(short("t"), long, default_value = "topic")]
     pub topic_name: String,
 
+    /// if this is turn on, consumer waits for producer to finish before starts consumption
+    /// if iterations are long then consumer may receive large number of batches
+    #[structopt(long)]
+    pub consumer_wait: bool,
     /// number of spu
     #[structopt(short, long, default_value = "1")]
     pub spu: u16,
@@ -88,11 +88,11 @@ impl TestOption {
 
     // do the setup (without cleanup)
     pub fn setup(&self) -> bool {
-        self.disable_install
+        !self.disable_install
     }
 
     pub fn init_topic(&self) -> bool {
-        !self.disable_topic_setup
+        !self.disable_install
     }
 
     pub fn terminate_after_consumer_test(&self) -> bool {

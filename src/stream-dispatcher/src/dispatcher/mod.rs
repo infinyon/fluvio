@@ -4,22 +4,56 @@ mod k8_ws_service;
 pub use k8_dispatcher::*;
 pub use k8_ws_service::*;
 
-mod k8_actions {
+/*
+mod delta{
+
+    use std::collections::HashMap;
+
+    use async_rwlock::RwLock;
 
     use crate::core::Spec;
-    use crate::store::k8::K8MetaItem;
-    use crate::store::MetadataStoreObject;
 
-    /// Actions to update World States
-    #[allow(clippy::large_enum_variant)]
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum K8Action<S>
-    where
-        S: Spec,
-    {
-        Apply(MetadataStoreObject<S, K8MetaItem>),
-        UpdateStatus((S::Status, K8MetaItem)),
-        UpdateSpec((S, K8MetaItem)),
-        Delete(K8MetaItem),
+    /// WS ActionQueue
+    pub struct WSActionQueue<S> where S: Spec {
+
+        entries: RwLock<HashMap<S::IndexKey,S>>
     }
+
+
+    impl WSActionQueue  {
+
+        pub fn new() -> Self {
+            Self{}
+        }
+
+
+    }
+
+
+    #[cfg(test)]
+    mod test {
+
+        use super::WSActionQueue;
+
+        struct TestSpec {
+            pub name: String
+        }
+
+        struct TestStatus {
+
+        }
+
+
+
+
+        fn test_insert() {
+
+            let fifo = WSActionQueue::new();
+
+
+        }
+
+    }
+
 }
+*/

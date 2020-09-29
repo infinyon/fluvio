@@ -82,6 +82,10 @@ impl<T> EpochCounter<T> {
         &self.inner
     }
 
+    pub fn inner_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+
     pub fn inner_owned(self) -> T {
         self.inner
     }
@@ -125,6 +129,12 @@ mod old_map {
 
         fn deref(&self) -> &Self::Target {
             &self.map
+        }
+    }
+
+    impl<K, V> DerefMut for EpochMap<K, V> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.map
         }
     }
 

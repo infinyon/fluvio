@@ -8,23 +8,27 @@
 mod operator;
 mod service;
 
-use fluvio_future::task::main;
 use k8_client::new_shared;
 
 use operator::run_k8_operators;
 
 use crate::cli::ScOpt;
-use crate::init::start_main_loop;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_k8_loop(opt: ScOpt) {
+    use std::time::Duration;
+
+    use fluvio_future::task::run_block_on;
+    use fluvio_future::timer::sleep;
+
+    use crate::init::start_main_loop;
     // parse configuration (program exits on error)
     let (sc_config, k8_config, tls_option) = opt.parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
 
-    main(async move {
+    run_block_on(async move {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
@@ -45,6 +49,11 @@ pub fn main_k8_loop(opt: ScOpt) {
         }
 
         println!("Streaming Controller started successfully");
+
+        // do inifinite loop
+        loop {
+            sleep(Duration::from_secs(60)).await;
+        }
     });
 }
 

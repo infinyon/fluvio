@@ -4,9 +4,13 @@ const VALUE: u8 = 65;
 
 /// generate test data based on iteration and option
 #[allow(clippy::all)]
-pub fn generate_message(_index: u16, option: &TestOption) -> Vec<u8> {
+pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(option.produce.record_size);
 
+    let message = format!("{}:{}", topic, offset);
+    for p in message.as_bytes() {
+        bytes.push(*p);
+    }
     for _ in 0..option.produce.record_size {
         bytes.push(VALUE);
     }
@@ -16,9 +20,19 @@ pub fn generate_message(_index: u16, option: &TestOption) -> Vec<u8> {
 
 /// validate the message
 #[allow(clippy::needless_range_loop)]
-pub fn validate_message(_index: u16, option: &TestOption, data: &[u8]) {
-    assert_eq!(data.len(), option.produce.record_size);
+pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u8]) {
+    let message = format!("{}:{}", topic, offset);
+    let prefix = message.as_bytes();
+    let prefix_len = prefix.len();
+
+    assert_eq!(data.len(), option.produce.record_size + prefix_len);
+
+    // check prefix
+    for i in 0..prefix_len {
+        assert_eq!(data[i], prefix[i]);
+    }
+
     for i in 0..option.produce.record_size {
-        assert_eq!(data[i], VALUE);
+        assert_eq!(data[i + prefix_len], VALUE);
     }
 }

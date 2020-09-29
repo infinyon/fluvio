@@ -79,7 +79,7 @@ where
 
     /// write guard, this is private, use sync API to make changes
     #[inline(always)]
-    async fn write<'a>(
+    pub async fn write<'a>(
         &'_ self,
     ) -> RwLockWriteGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.write().await
@@ -298,8 +298,8 @@ where
             match dry_run_change {
                 LSUpdate::Mod(new_kv_value) => {
                     if let Some(old_value) = read_guard.get(new_kv_value.key()) {
-                        if old_value.inner() != &new_kv_value {
-                            // existing but different, transform into mod
+                        if new_kv_value.is_newer(old_value) {
+                            // only replace if new kv is newer than old
                             actual_changes.push(LSUpdate::Mod(new_kv_value));
                         }
                     } else {

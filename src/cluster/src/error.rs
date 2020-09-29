@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 use serde::export::Formatter;
 
 use fluvio::FluvioError;
-use fluvio_future::io::Error;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
 
@@ -34,7 +33,7 @@ impl std::fmt::Display for ClusterError {
 }
 
 impl From<IoError> for ClusterError {
-    fn from(err: Error) -> Self {
+    fn from(err: IoError) -> Self {
         Self::IoError(err)
     }
 }

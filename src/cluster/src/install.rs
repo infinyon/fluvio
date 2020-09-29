@@ -31,7 +31,7 @@ const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
-const DEFAULT_CHART_REMOTE: &str = "https://infinyon.github.io";
+const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_HELM_VERSION: &str = "3.2.0";
@@ -224,7 +224,7 @@ impl ClusterInstallerBuilder {
 
     /// Sets a remote helm chart location to search for Fluvio charts.
     ///
-    /// This is the default case, with the default location being `https://infinyon.github.io`,
+    /// This is the default case, with the default location being `https://charts.fluvio.io`,
     /// where official Fluvio helm charts are located. Remote helm charts are expected
     /// to be a valid URL.
     ///
@@ -236,7 +236,7 @@ impl ClusterInstallerBuilder {
     /// ```no_run
     /// use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
-    ///     .with_remote_chart("https://infinyon.github.io")
+    ///     .with_remote_chart("https://charts.fluvio.io")
     ///     .build()
     ///     .unwrap();
     /// ```
@@ -592,7 +592,10 @@ impl ClusterInstaller {
             self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
-            if !self.wait_for_spu(namespace).await? {
+            if !self
+                .wait_for_spu(namespace, self.config.spu_spec.replicas)
+                .await?
+            {
                 warn!("SPU took too long to get ready");
                 return Err(ClusterError::Other(
                     "SPU took too long to get ready".to_string(),
@@ -746,6 +749,8 @@ impl ClusterInstaller {
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
     async fn discover_sc_address(&self, ns: &str) -> Result<Option<String>, ClusterError> {
+        use k8_client::http::StatusCode;
+
         let result = self
             .kube_client
             .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("flv-sc-public", ns))
@@ -753,7 +758,9 @@ impl ClusterInstaller {
 
         let svc = match result {
             Ok(svc) => svc,
-            Err(k8_client::ClientError::NotFound) => return Ok(None),
+            Err(k8_client::ClientError::Client(status)) if status == StatusCode::NOT_FOUND => {
+                return Ok(None)
+            }
             Err(err) => {
                 return Err(ClusterError::Other(format!(
                     "unable to look up fluvio service in k8: {}",
@@ -789,9 +796,11 @@ impl ClusterInstaller {
     /// Wait until the Fluvio SC public service appears in Kubernetes
     #[instrument(skip(self, ns))]
     async fn wait_for_sc_service(&self, ns: &str) -> Result<Option<String>, ClusterError> {
+        use k8_client::http::StatusCode;
+
         let input = InputObjectMeta::named("flv-sc-public", ns);
 
-        for i in 0..100u16 {
+        for i in 0..30u16 {
             match self
                 .kube_client
                 .retrieve_item::<ServiceSpec, _>(&input)
@@ -807,12 +816,14 @@ impl ClusterInstaller {
                             attempt = i,
                             "SC service exists but no load balancer exist yet, continue wait"
                         );
-                        sleep(Duration::from_millis(2000)).await;
+                        println!("waiting for sc service up come up: {}", i);
+                        sleep(Duration::from_millis(1000)).await;
                     }
                 }
                 Err(err) => match err {
-                    K8ClientError::NotFound => {
+                    K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
                         debug!(attempt = i, "No SC service found, sleeping");
+                        println!("no SC service found, sleeping");
                         sleep(Duration::from_millis(2000)).await;
                     }
                     _ => panic!("error: {}", err),
@@ -825,9 +836,9 @@ impl ClusterInstaller {
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
-    async fn wait_for_spu(&self, ns: &str) -> Result<bool, ClusterError> {
+    async fn wait_for_spu(&self, ns: &str, spu: u16) -> Result<bool, ClusterError> {
         // Try waiting for SPUs for 100 cycles
-        for i in 0..100u16 {
+        for i in 0..30u16 {
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
@@ -840,7 +851,7 @@ impl ClusterInstaller {
                 })
                 .count();
 
-            if spu_count == ready_spu {
+            if spu as usize == ready_spu {
                 info!(spu_count, "All SPUs are ready");
                 return Ok(true);
             } else {
@@ -850,7 +861,8 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                sleep(Duration::from_millis(2000)).await;
+                println!("{} of {} spu ready", ready_spu, spu);
+                sleep(Duration::from_millis(1000)).await;
             }
         }
 

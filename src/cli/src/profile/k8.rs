@@ -75,6 +75,8 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
 /// find fluvio addr
 pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>, CliError> {
+    use k8_client::http::StatusCode;
+
     let ns = namespace.unwrap_or("default");
     let svc = match K8Client::default()?
         .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("flv-sc-public", ns))
@@ -82,7 +84,9 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
     {
         Ok(svc) => svc,
         Err(err) => match err {
-            k8_client::ClientError::NotFound => return Ok(None),
+            k8_client::ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
+                return Ok(None)
+            }
             _ => {
                 return Err(CliError::Other(format!(
                     "unable to look up fluvio service in k8: {}",

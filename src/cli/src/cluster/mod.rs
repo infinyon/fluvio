@@ -85,6 +85,8 @@ mod k8_util {
 
     // wait for i8 objects appear
     pub async fn wait_for_delete<S: Spec>(client: SharedK8Client, input: &InputObjectMeta) {
+        use k8_client::http::StatusCode;
+
         for i in 0..100u16 {
             println!("checking to see if {} is deleted, count: {}", S::label(), i);
             match client.retrieve_item::<S, _>(input).await {
@@ -93,7 +95,7 @@ mod k8_util {
                     sleep(Duration::from_millis(10000)).await;
                 }
                 Err(err) => match err {
-                    K8ClientError::NotFound => {
+                    K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
                         println!("no sc {} found, can proceed to setup ", S::label());
                         return;
                     }

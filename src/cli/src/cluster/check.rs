@@ -297,6 +297,7 @@ fn compute_user_name() -> Result<String, IoError> {
 
 async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError> {
     use k8_metadata_client::MetadataClient;
+    use k8_client::http::StatusCode;
 
     let client = load_and_share()?;
 
@@ -313,7 +314,7 @@ async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError>
                 }
             }
             Err(err) => match err {
-                K8ClientError::NotFound => {
+                K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
                     sleep(Duration::from_millis(3000)).await;
                 }
                 _ => panic!("error: {}", err),
