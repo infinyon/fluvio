@@ -104,16 +104,16 @@ async fn send_record_raw<F: SerialFrame>(
     match response.find_partition_response(&replica.topic, replica.partition) {
         Some(partition_response) => {
             if partition_response.error_code.is_error() {
-                return Err(FluvioError::IoError(IoError::new(
+                return Err(IoError::new(
                     ErrorKind::Other,
                     partition_response.error_code.to_sentence(),
-                )));
+                ).into());
             }
             Ok(())
         }
-        None => Err(FluvioError::IoError(IoError::new(
+        None => Err(IoError::new(
             ErrorKind::Other,
             "unknown error",
-        ))),
+        ).into()),
     }
 }

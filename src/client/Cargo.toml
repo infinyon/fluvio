@@ -28,13 +28,14 @@ async-channel = "1.1.0"
 event-listener = "2.2.0"
 async-mutex = "1.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
+thiserror = "1.0.20"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.1.0", features = ["tls"] }
+fluvio-future = { version = "0.1.2", features = ["tls"] }
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
-fluvio-socket = { version = "0.1.0" }
+fluvio-socket = { version = "0.1.2" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 

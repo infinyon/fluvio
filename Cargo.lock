@@ -904,6 +904,7 @@ dependencies = [
  "fluvio-types",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "toml",
  "tracing",
@@ -1154,6 +1155,7 @@ dependencies = [
  "fluvio-types",
  "log",
  "serde",
+ "thiserror",
  "tracing",
 ]
 

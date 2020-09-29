@@ -60,9 +60,12 @@ impl ConfigFile {
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref).map_err(|err| {
-            debug!("failed to read profile on path: {:#?}, {} ", path_ref, err);
-            FluvioError::UnableToReadProfile
+        let file_str: String = read_to_string(path_ref).map_err(|source| {
+            debug!("failed to read profile on path: {:#?}, {} ", path_ref, source);
+            FluvioError::UnableToReadProfile {
+                path: path_ref.to_owned(),
+                source,
+            }
         })?;
         let config = toml::from_str(&file_str)
             .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
