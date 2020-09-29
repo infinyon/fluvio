@@ -349,7 +349,7 @@ pub enum SpuType {
 
 impl Default for SpuType {
     fn default() -> Self {
-        SpuType::Managed
+        SpuType::Custom
     }
 }
 
