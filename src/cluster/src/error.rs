@@ -1,5 +1,5 @@
 use std::io::Error as IoError;
-use serde::export::Formatter;
+use thiserror::Error;
 
 use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
@@ -7,72 +7,58 @@ use k8_client::{ClientError as K8ClientError};
 use crate::helm::HelmError;
 
 /// The types of errors that can occur during cluster management
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ClusterError {
     /// An IO error occurred, such as opening a file or running a command.
-    IoError(IoError),
+    #[error("IO error: {source}")]
+    IoError {
+        #[from]
+        /// The underlying IO error
+        source: IoError,
+    },
     /// An error occurred with the Fluvio client.
-    ClientError(FluvioError),
+    #[error("Fluvio client error: {source}")]
+    FluvioError {
+        #[from]
+        /// The underlying Fluvio error
+        source: FluvioError,
+    },
     /// An error occurred with the Kubernetes config.
-    K8ConfigError(K8ConfigError),
+    #[error("Kubernetes config error: {source}")]
+    K8ConfigError {
+        #[from]
+        /// The underlying Kubernetes config error
+        source: K8ConfigError,
+    },
     /// An error occurred with the Kubernetes client.
-    K8ClientError(K8ClientError),
+    #[error("Kubernetes client error: {source}")]
+    K8ClientError {
+        #[from]
+        /// The underlying Kubernetes client error
+        source: K8ClientError,
+    },
     /// An error occurred while running helm.
-    HelmError(HelmError),
+    #[error("Helm client error: {source}")]
+    HelmError {
+        #[from]
+        /// The underlying Helm client error
+        source: HelmError,
+    },
     /// The installed version of helm is incompatible
-    IncompatibleHelmVersion(String, String),
+    #[error("Must have helm version {required} or later. You have {installed}")]
+    IncompatibleHelmVersion {
+        /// The currently-installed helm version
+        installed: String,
+        /// The minimum required helm version
+        required: String,
+    },
     /// The fluvio-sys chart is not installed
+    #[error("The fluvio-sys chart is not installed")]
     MissingSystemChart,
     /// Need to update minikube context
+    #[error("The minikube context is not active or does not match your minikube ip")]
     InvalidMinikubeContext,
     /// A different kind of error occurred.
+    #[error("An unknown error occurred: {0}")]
     Other(String),
-}
-
-impl std::fmt::Display for ClusterError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::IoError(err) => write!(f, "{}", err),
-            Self::ClientError(err) => write!(f, "{}", err),
-            Self::K8ConfigError(err) => write!(f, "{}", err),
-            Self::K8ClientError(err) => write!(f, "{}", err),
-            Self::HelmError(err) => write!(f, "{}", err),
-            Self::IncompatibleHelmVersion(current, min) => {
-                write!(f, "Helm version {} is not compatible with fluvio platform, please install version >= {}", current, min)
-            },
-            Self::MissingSystemChart => write!(f, "Fluvio system chart 'fluvio-sys' is not installed"),
-            Self::InvalidMinikubeContext => write!(f, "The current Kubernetes config will not work with minikube"),
-            Self::Other(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-impl From<IoError> for ClusterError {
-    fn from(err: IoError) -> Self {
-        Self::IoError(err)
-    }
-}
-
-impl From<FluvioError> for ClusterError {
-    fn from(err: FluvioError) -> Self {
-        Self::ClientError(err)
-    }
-}
-
-impl From<K8ConfigError> for ClusterError {
-    fn from(err: K8ConfigError) -> Self {
-        Self::K8ConfigError(err)
-    }
-}
-
-impl From<K8ClientError> for ClusterError {
-    fn from(err: K8ClientError) -> Self {
-        Self::K8ClientError(err)
-    }
-}
-
-impl From<HelmError> for ClusterError {
-    fn from(error: HelmError) -> Self {
-        Self::HelmError(error)
-    }
 }
