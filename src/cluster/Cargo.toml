@@ -21,6 +21,7 @@ tracing = "0.1.19"
 tracing-futures = "0.2.4"
 serde = "1.0.115"
 serde_json = "1.0.57"
+thiserror = "1.0.20"
 
 # Fluvio dependencies
 fluvio = { path = "../client" }
