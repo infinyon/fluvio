@@ -11,6 +11,7 @@ FLUVIO_BIN=./target/debug/fluvio
 TEST_BIN=FLV_CMD=true ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=1
+DEFAULT_LOG=info
 
 # install all tools required
 install_tools_mac:
@@ -25,16 +26,16 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local-driver --log-dir /tmp
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local-driver --log-dir /tmp --rust-log ${DEFAULT_LOG}
 
 smoke-test-tls:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local-driver --log-dir /tmp
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local-driver --log-dir /tmp --rust-log ${DEFAULT_LOG}
 
 smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop
+	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop --rust-log ${DEFAULT_LOG}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
 
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall
