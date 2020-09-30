@@ -1,9 +1,37 @@
 use std::io::Error as IoError;
-use std::io::ErrorKind;
+use std::string::FromUtf8Error;
 use std::process::{Command, Stdio};
 
+use tracing::instrument;
+use thiserror::Error;
 use serde::Deserialize;
 use flv_util::cmd::CommandExt;
+
+#[derive(Error, Debug)]
+pub enum HelmError {
+    #[error(
+        r#"Unable to find 'helm' executable
+  Please make sure helm is installed and in your PATH.
+  See https://helm.sh/docs/intro/install/ for more help"#
+    )]
+    HelmNotInstalled {
+        #[from]
+        source: IoError,
+    },
+    #[error("Failed to read helm client version: {0}")]
+    HelmVersionNotFound(String),
+    #[error("Failed to parse helm output as UTF8: {source}")]
+    Utf8Error {
+        #[from]
+        source: FromUtf8Error,
+    },
+    #[error("Failed to parse JSON from helm output: {source}")]
+    Serde {
+        #[from]
+        source: serde_json::Error,
+    },
+}
+
 /// Client to manage helm operations
 #[derive(Debug)]
 #[non_exhaustive]
@@ -13,25 +41,22 @@ impl HelmClient {
     /// Creates a Rust client to manage our helm needs.
     ///
     /// This only succeeds if the helm command can be found.
-    pub fn new() -> Result<Self, IoError> {
-        let output = Command::new("helm").arg("version").print().output()?;
+    pub fn new() -> Result<Self, HelmError> {
+        let output = Command::new("helm")
+            .arg("version")
+            .print()
+            .output()
+            .map_err(|source| HelmError::HelmNotInstalled { source })?;
 
         // Convert command output into a string
-        let out_str = String::from_utf8(output.stdout).map_err(|e| {
-            IoError::new(
-                ErrorKind::InvalidData,
-                format!("failed to parse helm output as string: {}", e),
-            )
-        })?;
+        let out_str =
+            String::from_utf8(output.stdout).map_err(|source| HelmError::Utf8Error { source })?;
 
         // Check that the version command gives a version.
         // In the future, we can parse the version string and check
         // for compatible CLI client version.
         if !out_str.contains("version") {
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                "failed to get helm version",
-            ));
+            return Err(HelmError::HelmVersionNotFound(out_str));
         }
 
         // If checks succeed, create Helm client
@@ -41,6 +66,7 @@ impl HelmClient {
     /// Installs the given chart under the given name.
     ///
     /// The `opts` are passed to helm as `--set` arguments.
+    #[instrument(skip(self, version, opts))]
     pub(crate) fn install(
         &self,
         namespace: &str,
@@ -48,7 +74,7 @@ impl HelmClient {
         chart: &str,
         version: Option<&str>,
         opts: &[(&str, &str)],
-    ) -> Result<(), IoError> {
+    ) -> Result<(), HelmError> {
         let sets: Vec<_> = opts
             .iter()
             .flat_map(|(key, val)| vec!["--set".to_string(), format!("{}={}", key, val)])
@@ -70,7 +96,8 @@ impl HelmClient {
     }
 
     /// Adds a new helm repo with the given chart name and chart location
-    pub(crate) fn repo_add(&self, chart: &str, location: &str) -> Result<(), IoError> {
+    #[instrument(skip(self))]
+    pub(crate) fn repo_add(&self, chart: &str, location: &str) -> Result<(), HelmError> {
         Command::new("helm")
             .args(&["repo", "add", chart, location])
             .stdout(Stdio::inherit())
@@ -80,13 +107,15 @@ impl HelmClient {
     }
 
     /// Updates the local helm repository
-    pub(crate) fn repo_update(&self) -> Result<(), IoError> {
+    #[instrument(skip(self))]
+    pub(crate) fn repo_update(&self) -> Result<(), HelmError> {
         Command::new("helm").args(&["repo", "update"]).inherit();
         Ok(())
     }
 
     /// Searches the repo for the named helm chart
-    pub(crate) fn search_repo(&self, chart: &str, version: &str) -> Result<Vec<Chart>, IoError> {
+    #[instrument(skip(self))]
+    pub(crate) fn search_repo(&self, chart: &str, version: &str) -> Result<Vec<Chart>, HelmError> {
         let output = Command::new("helm")
             .args(&["search", "repo", chart])
             .args(&["--version", version])
@@ -94,16 +123,12 @@ impl HelmClient {
             .print()
             .output()?;
 
-        serde_json::from_slice(&output.stdout).map_err(|_| {
-            IoError::new(
-                ErrorKind::InvalidData,
-                "failed to parse helm chart versions",
-            )
-        })
+        serde_json::from_slice(&output.stdout).map_err(|source| HelmError::Serde { source })
     }
 
     /// Get all the available versions
-    pub(crate) fn versions(&self, chart: &str) -> Result<Vec<Chart>, IoError> {
+    #[instrument(skip(self))]
+    pub(crate) fn versions(&self, chart: &str) -> Result<Vec<Chart>, HelmError> {
         let output = Command::new("helm")
             .args(&["search", "repo"])
             .args(&["--versions", chart])
@@ -111,16 +136,16 @@ impl HelmClient {
             .print()
             .output()?;
 
-        serde_json::from_slice(&output.stdout).map_err(|_| {
-            IoError::new(
-                ErrorKind::InvalidData,
-                "failed to fetch helm chart versions",
-            )
-        })
+        serde_json::from_slice(&output.stdout).map_err(|source| HelmError::Serde { source })
     }
 
     /// Checks that a given version of a given chart exists in the repo.
-    pub(crate) fn chart_version_exists(&self, name: &str, version: &str) -> Result<bool, IoError> {
+    #[instrument(skip(self))]
+    pub(crate) fn chart_version_exists(
+        &self,
+        name: &str,
+        version: &str,
+    ) -> Result<bool, HelmError> {
         let versions = self.search_repo(name, version)?;
         let count = versions
             .iter()
@@ -130,10 +155,11 @@ impl HelmClient {
     }
 
     /// Returns the list of installed charts by name
+    #[instrument(skip(self))]
     pub(crate) fn get_installed_chart_by_name(
         &self,
         name: &str,
-    ) -> Result<Vec<InstalledChart>, IoError> {
+    ) -> Result<Vec<InstalledChart>, HelmError> {
         let exact_match = format!("^{}$", name);
         let output = Command::new("helm")
             .arg("list")
@@ -144,27 +170,19 @@ impl HelmClient {
             .print()
             .output()?;
 
-        serde_json::from_slice(&output.stdout).map_err(|err| {
-            IoError::new(
-                ErrorKind::InvalidData,
-                format!("failed to fetch sys chart versions: {}", err),
-            )
-        })
+        serde_json::from_slice(&output.stdout).map_err(|source| HelmError::Serde { source })
     }
 
     /// get helm package version
-    pub(crate) fn get_helm_version(&self) -> Result<String, IoError> {
+    #[instrument(skip(self))]
+    pub(crate) fn get_helm_version(&self) -> Result<String, HelmError> {
         let helm_version = Command::new("helm")
             .arg("version")
             .arg("--short")
             .output()
-            .map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("Helm package manager not found: {}", err.to_string()),
-                )
-            })?;
-        let version_text = String::from_utf8(helm_version.stdout).unwrap();
+            .map_err(|source| HelmError::HelmNotInstalled { source })?;
+        let version_text = String::from_utf8(helm_version.stdout)
+            .map_err(|source| HelmError::Utf8Error { source })?;
         Ok(version_text[1..].trim().to_string())
     }
 }
