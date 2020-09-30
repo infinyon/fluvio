@@ -915,6 +915,7 @@ dependencies = [
 name = "fluvio-cli"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-h1",
  "async-trait",
  "bytes 0.5.6",

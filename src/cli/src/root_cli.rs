@@ -120,11 +120,11 @@ enum Root {
     Completions(CompletionShell),
 }
 
-pub fn run_cli() -> Result<String, CliError> {
+pub fn run_cli() -> anyhow::Result<String> {
     run_block_on(async move {
         let terminal = Arc::new(PrintTerminal::new());
 
-        match Root::from_args() {
+        let result = match Root::from_args() {
             Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await,
             Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await,
             Root::SPU(spu) => process_spu(terminal.clone(), spu).await,
@@ -138,7 +138,9 @@ pub fn run_cli() -> Result<String, CliError> {
             Root::Run(opt) => process_run(opt),
             Root::Version(_) => process_version_cmd(),
             Root::Completions(shell) => process_completions_cmd(shell),
-        }
+        };
+        let output = result?;
+        Ok(output)
     })
 }
 
