@@ -33,7 +33,7 @@ pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     debug!("using log dir: {}", log_dir);
 
     if !Path::new(&log_dir).exists() {
-        create_dir_all(&log_dir).map_err(CliError::IoError)?;
+        create_dir_all(&log_dir)?;
     }
 
     // ensure we sync files before we launch servers

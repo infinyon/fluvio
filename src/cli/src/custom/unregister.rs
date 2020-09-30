@@ -49,10 +49,10 @@ impl UnregisterCustomSpuOpt {
         } else if let Some(id) = self.id {
             CustomSpuKey::Id(id)
         } else {
-            return Err(CliError::IoError(IoError::new(
+            return Err(IoError::new(
                 ErrorKind::Other,
                 "missing custom SPU name or id",
-            )));
+            ).into());
         };
 
         // return server separately from config
