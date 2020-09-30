@@ -7,32 +7,32 @@ use crate::profile::CloudError;
 
 #[derive(Error, Debug)]
 pub enum CliError {
-    #[error("IO error: {source}")]
+    #[error("IO error")]
     IoError {
         #[from]
         source: IoError,
     },
-    #[error("Fluvio client error: {source}")]
+    #[error("Fluvio client error")]
     ClientError {
         #[from]
         source: FluvioError,
     },
-    #[error("Fluvio Cloud error: {source}")]
+    #[error("Fluvio Cloud error")]
     CloudError {
         #[from]
         source: CloudError,
     },
-    #[error("Fluvio cluster error: {source}")]
+    #[error("Fluvio cluster error")]
     ClusterError {
         #[from]
         source: ClusterError,
     },
-    #[error("Kubernetes config error: {source}")]
+    #[error("Kubernetes config error")]
     K8ConfigError {
         #[from]
         source: k8_config::ConfigError,
     },
-    #[error("Kubernetes client error: {source}")]
+    #[error("Kubernetes client error")]
     K8ClientError {
         #[from]
         source: k8_client::ClientError,

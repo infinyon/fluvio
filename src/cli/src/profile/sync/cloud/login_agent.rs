@@ -242,34 +242,34 @@ pub enum CloudError {
     #[error("Failed to authenticate with username: {0}")]
     AuthenticationError(String),
     /// Failed to open Fluvio Cloud login file
-    #[error("Failed to load cloud credentials: {source}")]
+    #[error("Failed to load cloud credentials")]
     UnableToLoadCredentials {
         source: IoError,
     },
     /// Failed to parse Fluvio Cloud token
-    #[error("Failed to parse login token from file: {source}")]
+    #[error("Failed to parse login token from file")]
     UnableToParseCredentials {
         source: TomlError,
     },
     /// Failed to make an http request
-    #[error("Failed to make HTTP request to Fluvio cloud: {source}")]
+    #[error("Failed to make HTTP request to Fluvio cloud")]
     HttpError {
         source: HttpError,
     },
     /// Failed to do some IO.
-    #[error("IO error: {source}")]
+    #[error("IO error")]
     IoError {
         #[from]
         source: IoError,
     },
     /// Failed to deserialize JSON
-    #[error("Failed to read JSON: {source}")]
+    #[error("Failed to read JSON")]
     JsonError {
         #[from]
         source: JsonError,
     },
     /// Failed to parse request URL
-    #[error("Failed to parse URL: {source}")]
+    #[error("Failed to parse URL")]
     UrlError {
         #[from]
         source: ParseError,
