@@ -139,7 +139,7 @@ async fn launch_spu(
 ) {
     use std::fs::File;
 
-    use fluvio::metadata::spu::SpuSpec;
+    use fluvio::metadata::spu::{SpuSpec, SpuType};
     use fluvio::metadata::spu::IngressPort;
     use fluvio::metadata::spu::Endpoint;
     use fluvio::metadata::spu::IngressAddr;
@@ -156,6 +156,7 @@ async fn launch_spu(
 
     let spu_spec = SpuSpec {
         id: spu_id,
+        spu_type: SpuType::Custom,
         public_endpoint: IngressPort {
             port: public_port,
             ingress: vec![IngressAddr {
