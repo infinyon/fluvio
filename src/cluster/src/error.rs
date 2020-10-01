@@ -10,35 +10,35 @@ use crate::helm::HelmError;
 #[derive(Error, Debug)]
 pub enum ClusterError {
     /// An IO error occurred, such as opening a file or running a command.
-    #[error("IO error: {source}")]
+    #[error(transparent)]
     IoError {
         #[from]
         /// The underlying IO error
         source: IoError,
     },
     /// An error occurred with the Fluvio client.
-    #[error("Fluvio client error: {source}")]
+    #[error("Fluvio client error")]
     FluvioError {
         #[from]
         /// The underlying Fluvio error
         source: FluvioError,
     },
     /// An error occurred with the Kubernetes config.
-    #[error("Kubernetes config error: {source}")]
+    #[error("Kubernetes config error")]
     K8ConfigError {
         #[from]
         /// The underlying Kubernetes config error
         source: K8ConfigError,
     },
     /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error: {source}")]
+    #[error("Kubernetes client error")]
     K8ClientError {
         #[from]
         /// The underlying Kubernetes client error
         source: K8ClientError,
     },
     /// An error occurred while running helm.
-    #[error("Helm client error: {source}")]
+    #[error("Helm client error")]
     HelmError {
         #[from]
         /// The underlying Helm client error
