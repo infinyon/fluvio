@@ -55,7 +55,7 @@ mod process {
     pub async fn process_cluster<O>(
         out: std::sync::Arc<O>,
         cmd: ClusterCommands,
-    ) -> anyhow::Result<String>
+    ) -> eyre::Result<String>
     where
         O: Terminal,
     {

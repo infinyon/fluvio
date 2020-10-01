@@ -25,7 +25,7 @@ mod cli {
         pub(crate) async fn process_partition<O>(
             self,
             out: std::sync::Arc<O>,
-        ) -> anyhow::Result<String>
+        ) -> eyre::Result<String>
         where
             O: Terminal,
         {

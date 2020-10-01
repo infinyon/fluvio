@@ -78,7 +78,7 @@ pub struct SwitchOpt {
 pub async fn process_profile<O>(
     out: std::sync::Arc<O>,
     profile_command: ProfileCommand,
-) -> anyhow::Result<String>
+) -> eyre::Result<String>
 where
     O: Terminal,
 {

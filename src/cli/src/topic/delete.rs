@@ -22,7 +22,7 @@ pub struct DeleteTopicOpt {
 
 impl DeleteTopicOpt {
     /// Validate cli options. Generate target-server and delete-topic configuration.
-    fn validate(self) -> anyhow::Result<(FluvioConfig, String)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, String)> {
         let target_server = self.target.load()?;
 
         // return server separately from config
@@ -35,7 +35,7 @@ impl DeleteTopicOpt {
 // -----------------------------------
 
 /// Process delete topic cli request
-pub async fn process_delete_topic(opt: DeleteTopicOpt) -> anyhow::Result<String> {
+pub async fn process_delete_topic(opt: DeleteTopicOpt) -> eyre::Result<String> {
     let (target_server, name) = opt.validate()?;
 
     debug!("deleting topic: {}", name);

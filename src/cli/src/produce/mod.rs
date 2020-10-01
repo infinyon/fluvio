@@ -72,7 +72,7 @@ impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
     pub fn validate(
         self,
-    ) -> anyhow::Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>))> {
+    ) -> eyre::Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>))> {
         let target_server = self.target.load()?;
 
         let file_records = if let Some(record_per_line) = self.record_per_line {
@@ -97,7 +97,7 @@ impl ProduceLogOpt {
 pub async fn process_produce_record<O>(
     out: std::sync::Arc<O>,
     opt: ProduceLogOpt,
-) -> anyhow::Result<String>
+) -> eyre::Result<String>
 where
     O: Terminal,
 {

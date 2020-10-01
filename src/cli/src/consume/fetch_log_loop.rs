@@ -6,7 +6,7 @@
 use std::convert::TryFrom;
 
 use tracing::debug;
-use anyhow::anyhow;
+use eyre::eyre;
 
 use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 
@@ -26,7 +26,7 @@ pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
     consumer: PartitionConsumer,
     opt: ConsumeLogConfig,
-) -> anyhow::Result<()>
+) -> eyre::Result<()>
 where
     O: Terminal,
 {
@@ -37,7 +37,7 @@ where
         debug!("detected control c, setting end");
         std::process::exit(0);
     }) {
-        return Err(anyhow!("CTRL-C handler can't be initialized {}", err));
+        return Err(eyre!("CTRL-C handler can't be initialized {}", err));
     }
 
     // compute offset

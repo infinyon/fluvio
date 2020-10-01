@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use anyhow::Context;
+use eyre::Context;
 
 use fluvio::config::*;
 
@@ -46,7 +46,7 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, CliError> {
     Ok(format!("local context is set to: {}", local_addr))
 }
 
-pub fn view_profile<O>(out: std::sync::Arc<O>) -> anyhow::Result<()>
+pub fn view_profile<O>(out: std::sync::Arc<O>) -> eyre::Result<()>
 where
     O: Terminal,
 {

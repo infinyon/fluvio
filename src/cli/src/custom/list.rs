@@ -32,7 +32,7 @@ pub struct ListCustomSpusOpt {
 
 impl ListCustomSpusOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -43,7 +43,7 @@ impl ListCustomSpusOpt {
 pub async fn process_list_custom_spus<O>(
     out: std::sync::Arc<O>,
     opt: ListCustomSpusOpt,
-) -> anyhow::Result<()>
+) -> eyre::Result<()>
 where
     O: Terminal,
 {

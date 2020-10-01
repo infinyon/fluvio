@@ -48,7 +48,7 @@ mod cli {
     pub(crate) async fn process_custom_spu<O: Terminal>(
         out: std::sync::Arc<O>,
         custom_spu_opt: CustomSpuOpt,
-    ) -> anyhow::Result<String> {
+    ) -> eyre::Result<String> {
         match custom_spu_opt {
             CustomSpuOpt::Create(custom_spu_opt) => {
                 process_register_custom_spu(custom_spu_opt).await?

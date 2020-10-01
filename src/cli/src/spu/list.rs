@@ -31,7 +31,7 @@ pub struct ListSpusOpt {
 
 impl ListSpusOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -43,7 +43,7 @@ impl ListSpusOpt {
 // -----------------------------------
 
 /// Process list spus cli request
-pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> anyhow::Result<()>
+pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> eyre::Result<()>
 where
     O: Terminal,
 {

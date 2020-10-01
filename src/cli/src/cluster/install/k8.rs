@@ -1,12 +1,12 @@
 use std::convert::TryInto;
 use std::process::Command;
-use anyhow::Context;
+use eyre::Context;
 
 use fluvio_cluster::ClusterInstaller;
 use fluvio::config::TlsPolicy;
 use super::*;
 
-pub async fn install_core(opt: InstallCommand) -> anyhow::Result<()> {
+pub async fn install_core(opt: InstallCommand) -> eyre::Result<()> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -66,7 +66,7 @@ pub async fn install_core(opt: InstallCommand) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallCommand) -> anyhow::Result<()> {
+pub fn install_sys(opt: InstallCommand) -> eyre::Result<()> {
     let installer = ClusterInstaller::new()
         .with_namespace(opt.k8_config.namespace)
         .build()?;

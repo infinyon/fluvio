@@ -58,7 +58,7 @@ mod cli {
     pub(crate) async fn process_topic<O>(
         out: std::sync::Arc<O>,
         topic_opt: TopicOpt,
-    ) -> anyhow::Result<String>
+    ) -> eyre::Result<String>
     where
         O: Terminal,
     {

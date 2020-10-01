@@ -59,7 +59,7 @@ pub struct ConsumeLogOpt {
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
-    pub fn validate(self) -> anyhow::Result<(FluvioConfig, ConsumeLogConfig)> {
+    pub fn validate(self) -> eyre::Result<(FluvioConfig, ConsumeLogConfig)> {
         let target_server = self.target.load()?;
 
         // consume log specific configurations

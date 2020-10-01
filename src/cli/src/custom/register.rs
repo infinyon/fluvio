@@ -42,7 +42,7 @@ pub struct RegisterCustomSpuOpt {
 
 impl RegisterCustomSpuOpt {
     /// Validate cli options. Generate target-server and register custom spu config.
-    fn validate(self) -> anyhow::Result<(FluvioConfig, (String, CustomSpuSpec))> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, (String, CustomSpuSpec))> {
         let target = self.target.load()?;
 
         // register custom spu config
@@ -64,7 +64,7 @@ impl RegisterCustomSpuOpt {
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_register_custom_spu(opt: RegisterCustomSpuOpt) -> anyhow::Result<()> {
+pub async fn process_register_custom_spu(opt: RegisterCustomSpuOpt) -> eyre::Result<()> {
     let (target_server, (name, spec)) = opt.validate()?;
 
     let mut sc = Fluvio::connect_with_config(&target_server).await?;

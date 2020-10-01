@@ -24,7 +24,7 @@ mod process {
     pub async fn process_consume_log<O>(
         out: std::sync::Arc<O>,
         opt: ConsumeLogOpt,
-    ) -> anyhow::Result<String>
+    ) -> eyre::Result<String>
     where
         O: Terminal,
     {

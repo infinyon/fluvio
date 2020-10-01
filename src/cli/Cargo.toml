@@ -45,7 +45,8 @@ dirs = "1.0.2"
 async-h1 = "2.1.2"
 http-types = "2.4.0"
 thiserror = "1.0.20"
-anyhow = "1.0.32"
+eyre = "0.6.1"
+color-eyre = "0.5.5"
 
 # Fluvio dependencies
 

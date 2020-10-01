@@ -49,7 +49,7 @@ mod cli {
     pub(crate) async fn process_spu_group<O: Terminal>(
         out: std::sync::Arc<O>,
         spu_group_opt: SpuGroupOpt,
-    ) -> anyhow::Result<String> {
+    ) -> eyre::Result<String> {
         match spu_group_opt {
             SpuGroupOpt::Create(spu_group_opt) => {
                 process_create_managed_spu_group(spu_group_opt).await?

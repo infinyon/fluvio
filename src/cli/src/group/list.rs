@@ -24,7 +24,7 @@ pub struct ListManagedSpuGroupsOpt {
 
 impl ListManagedSpuGroupsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -35,7 +35,7 @@ impl ListManagedSpuGroupsOpt {
 pub async fn process_list_managed_spu_groups<O: Terminal>(
     out: std::sync::Arc<O>,
     opt: ListManagedSpuGroupsOpt,
-) -> anyhow::Result<()> {
+) -> eyre::Result<()> {
     let (target_server, output) = opt.validate()?;
 
     let mut client = Fluvio::connect_with_config(&target_server).await?;

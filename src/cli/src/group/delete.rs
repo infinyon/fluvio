@@ -25,7 +25,7 @@ pub struct DeleteManagedSpuGroupOpt {
 
 impl DeleteManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and delete spu group configuration.
-    fn validate(self) -> anyhow::Result<(FluvioConfig, String)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, String)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.name))
@@ -37,7 +37,7 @@ impl DeleteManagedSpuGroupOpt {
 // -----------------------------------
 
 /// Process delete custom-spu cli request
-pub async fn process_delete_managed_spu_group(opt: DeleteManagedSpuGroupOpt) -> anyhow::Result<()> {
+pub async fn process_delete_managed_spu_group(opt: DeleteManagedSpuGroupOpt) -> eyre::Result<()> {
     let (target_server, name) = opt.validate()?;
 
     let mut client = Fluvio::connect_with_config(&target_server).await?;

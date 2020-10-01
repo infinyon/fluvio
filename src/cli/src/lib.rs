@@ -53,7 +53,7 @@ macro_rules! t_print_cli_err {
 mod target {
     use std::convert::TryInto;
     use structopt::StructOpt;
-    use anyhow::anyhow;
+    use eyre::eyre;
 
     use fluvio::FluvioConfig;
     use fluvio::config::ConfigFile;
@@ -76,7 +76,7 @@ mod target {
 
     impl ClusterTarget {
         /// try to create sc config
-        pub fn load(self) -> anyhow::Result<FluvioConfig> {
+        pub fn load(self) -> eyre::Result<FluvioConfig> {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
@@ -101,7 +101,7 @@ mod target {
                         // NOTE: This will not fallback to current cluster like it did before
                         // Current cluster will be used when no profile is given.
                         .cluster_with_profile(&profile)
-                        .ok_or_else(|| anyhow!("Cluster not found for profile {}", &profile))?;
+                        .ok_or_else(|| eyre!("Cluster not found for profile {}", &profile))?;
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {

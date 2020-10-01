@@ -120,7 +120,7 @@ enum Root {
     Completions(CompletionShell),
 }
 
-pub fn run_cli() -> anyhow::Result<String> {
+pub fn run_cli() -> eyre::Result<String> {
     run_block_on(async move {
         let terminal = Arc::new(PrintTerminal::new());
 

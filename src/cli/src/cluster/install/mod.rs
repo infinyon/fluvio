@@ -84,7 +84,7 @@ pub struct InstallCommand {
 pub async fn process_install<O>(
     _out: std::sync::Arc<O>,
     command: InstallCommand,
-) -> anyhow::Result<String>
+) -> eyre::Result<String>
 where
     O: Terminal,
 {
@@ -111,7 +111,7 @@ where
 }
 
 /// check to ensure spu are all running
-async fn confirm_spu(spu: u16) -> anyhow::Result<()> {
+async fn confirm_spu(spu: u16) -> eyre::Result<()> {
     use std::time::Duration;
 
     use fluvio_future::timer::sleep;

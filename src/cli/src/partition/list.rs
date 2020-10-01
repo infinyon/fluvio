@@ -26,14 +26,14 @@ pub struct ListPartitionOpt {
 
 impl ListPartitionOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
     }
 
     /// perform actions
-    pub async fn process<O>(self, out: std::sync::Arc<O>) -> anyhow::Result<String>
+    pub async fn process<O>(self, out: std::sync::Arc<O>) -> eyre::Result<String>
     where
         O: Terminal,
     {

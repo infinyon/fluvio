@@ -42,7 +42,7 @@ pub struct ListTopicsOpt {
 
 impl ListTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.unwrap_or_default()))
@@ -57,7 +57,7 @@ impl ListTopicsOpt {
 pub async fn process_list_topics<O>(
     out: std::sync::Arc<O>,
     opt: ListTopicsOpt,
-) -> anyhow::Result<String>
+) -> eyre::Result<String>
 where
     O: Terminal,
 {

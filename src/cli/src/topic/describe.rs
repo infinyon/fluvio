@@ -35,7 +35,7 @@ pub struct DescribeTopicsOpt {
 
 impl DescribeTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> anyhow::Result<(FluvioConfig, (String, OutputType))> {
+    fn validate(self) -> eyre::Result<(FluvioConfig, (String, OutputType))> {
         let target_server = self.target.load()?;
 
         // transfer config parameters
@@ -54,7 +54,7 @@ impl DescribeTopicsOpt {
 pub async fn process_describe_topics<O>(
     out: std::sync::Arc<O>,
     opt: DescribeTopicsOpt,
-) -> anyhow::Result<String>
+) -> eyre::Result<String>
 where
     O: Terminal,
 {

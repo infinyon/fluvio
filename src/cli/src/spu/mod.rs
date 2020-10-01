@@ -28,7 +28,7 @@ mod cli {
     pub(crate) async fn process_spu<O>(
         out: std::sync::Arc<O>,
         spu_opt: SpuOpt,
-    ) -> anyhow::Result<String>
+    ) -> eyre::Result<String>
     where
         O: Terminal,
     {

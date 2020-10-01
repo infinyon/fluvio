@@ -25,3 +25,8 @@ members = [
 lto = true
 codegen-units = 1
 incremental = false
+
+# Used to make eyre faster on debug builds
+# See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
+[profile.dev.package.backtrace]
+opt-level = 3
