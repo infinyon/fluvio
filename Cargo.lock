@@ -1775,6 +1775,8 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aacbda3bfaf41c34933590864f6b3671424d09752fe2fcf16ffdcb850459e0ba"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -1803,6 +1805,8 @@ dependencies = [
 [[package]]
 name = "k8-config"
 version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebff5fc2cbe34ff9a48c55935b91edb3b319254c64eb2df9697c311d1f737be6"
 dependencies = [
  "dirs 2.0.2",
  "hostfile",
@@ -1817,6 +1821,8 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4ba5c6e373d248914c5cef3a3e16d78ffe65812c5926dc39a42487479ed1d27"
 dependencies = [
  "serde",
  "serde_json",
@@ -1826,6 +1832,8 @@ dependencies = [
 [[package]]
 name = "k8-metadata-client"
 version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d8d0eb309f2f0fbf05a0449aad056c6c41a8392929fe0c56fa690e71e45081f"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -1858,23 +1866,27 @@ dependencies = [
 [[package]]
 name = "k8-obj-core"
 version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd20a0c2182b2e55fbbb90b3d887139164408efd9b720952a002d188a6580e0"
 dependencies = [
  "http 0.1.21",
  "k8-obj-metadata",
+ "log",
  "serde",
  "serde_json",
  "serde_qs 0.4.6",
- "tracing",
 ]
 
 [[package]]
 name = "k8-obj-metadata"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a7be721d4601216d055730997b41509b58c18cdfb7f11da1fe76e2dd2f102aa"
 dependencies = [
+ "log",
  "serde",
  "serde_json",
  "serde_qs 0.4.6",
- "tracing",
 ]
 
 [[package]]
