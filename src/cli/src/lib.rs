@@ -119,8 +119,7 @@ mod target {
                     // Try to use the default cluster from saved config
                     let config_file = ConfigFile::load(None)?;
                     let cluster = config_file.config()
-                        .current_cluster()
-                        .ok_or_else(|| anyhow!("Config has no 'current' profile"))?;
+                        .current_cluster()?;
                     Ok(cluster.clone())
                 }
             }
