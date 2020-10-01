@@ -70,9 +70,7 @@ pub struct ProduceLogOpt {
 
 impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
-    pub fn validate(
-        self,
-    ) -> eyre::Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>))> {
+    pub fn validate(self) -> eyre::Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>))> {
         let target_server = self.target.load()?;
 
         let file_records = if let Some(record_per_line) = self.record_per_line {
