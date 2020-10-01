@@ -6,6 +6,7 @@ mod tls;
 use structopt::StructOpt;
 
 use crate::Terminal;
+use crate::CliError;
 use tls::TlsOpt;
 
 use super::util::*;
@@ -84,7 +85,7 @@ pub struct InstallCommand {
 pub async fn process_install<O>(
     _out: std::sync::Arc<O>,
     command: InstallCommand,
-) -> eyre::Result<String>
+) -> Result<String, CliError>
 where
     O: Terminal,
 {
@@ -111,7 +112,7 @@ where
 }
 
 /// check to ensure spu are all running
-async fn confirm_spu(spu: u16) -> eyre::Result<()> {
+async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     use std::time::Duration;
 
     use fluvio_future::timer::sleep;

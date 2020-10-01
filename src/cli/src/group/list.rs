@@ -9,6 +9,7 @@ use fluvio::{Fluvio, FluvioConfig};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 use crate::output::OutputType;
+use crate::error::CliError;
 use crate::Terminal;
 use crate::common::OutputFormat;
 use crate::target::ClusterTarget;
@@ -24,7 +25,7 @@ pub struct ListManagedSpuGroupsOpt {
 
 impl ListManagedSpuGroupsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -35,7 +36,7 @@ impl ListManagedSpuGroupsOpt {
 pub async fn process_list_managed_spu_groups<O: Terminal>(
     out: std::sync::Arc<O>,
     opt: ListManagedSpuGroupsOpt,
-) -> eyre::Result<()> {
+) -> Result<(), CliError> {
     let (target_server, output) = opt.validate()?;
 
     let mut client = Fluvio::connect_with_config(&target_server).await?;
@@ -43,8 +44,7 @@ pub async fn process_list_managed_spu_groups<O: Terminal>(
 
     let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
 
-    output::spu_group_response_to_output(out, lists, output)?;
-    Ok(())
+    output::spu_group_response_to_output(out, lists, output)
 }
 
 mod output {

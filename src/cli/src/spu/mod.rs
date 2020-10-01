@@ -13,6 +13,7 @@ mod cli {
     use structopt::StructOpt;
 
     use crate::COMMAND_TEMPLATE;
+    use crate::error::CliError;
     use crate::Terminal;
 
     #[derive(Debug, StructOpt)]
@@ -28,7 +29,7 @@ mod cli {
     pub(crate) async fn process_spu<O>(
         out: std::sync::Arc<O>,
         spu_opt: SpuOpt,
-    ) -> eyre::Result<String>
+    ) -> Result<String, CliError>
     where
         O: Terminal,
     {

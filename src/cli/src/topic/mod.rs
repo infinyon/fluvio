@@ -22,6 +22,7 @@ mod cli {
 
     use crate::COMMAND_TEMPLATE;
     use crate::Terminal;
+    use crate::CliError;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "topic", about = "Topic operations")]
@@ -58,7 +59,7 @@ mod cli {
     pub(crate) async fn process_topic<O>(
         out: std::sync::Arc<O>,
         topic_opt: TopicOpt,
-    ) -> eyre::Result<String>
+    ) -> Result<String, CliError>
     where
         O: Terminal,
     {

@@ -9,6 +9,7 @@ use structopt::StructOpt;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
+use crate::error::CliError;
 use crate::OutputType;
 use crate::Terminal;
 use crate::target::ClusterTarget;
@@ -31,7 +32,7 @@ pub struct ListSpusOpt {
 
 impl ListSpusOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -43,7 +44,7 @@ impl ListSpusOpt {
 // -----------------------------------
 
 /// Process list spus cli request
-pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> eyre::Result<()>
+pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> Result<(), CliError>
 where
     O: Terminal,
 {

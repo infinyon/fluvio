@@ -9,7 +9,9 @@ use structopt::StructOpt;
 use fluvio::FluvioConfig;
 use fluvio::dataplane::Offset;
 
+use crate::error::CliError;
 use crate::target::ClusterTarget;
+
 use super::ConsumeOutputType;
 
 #[derive(Debug, StructOpt)]
@@ -59,7 +61,7 @@ pub struct ConsumeLogOpt {
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
-    pub fn validate(self) -> eyre::Result<(FluvioConfig, ConsumeLogConfig)> {
+    pub fn validate(self) -> Result<(FluvioConfig, ConsumeLogConfig), CliError> {
         let target_server = self.target.load()?;
 
         // consume log specific configurations

@@ -9,6 +9,7 @@ use structopt::StructOpt;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
+use crate::error::CliError;
 use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
@@ -22,7 +23,7 @@ pub struct DeleteTopicOpt {
 
 impl DeleteTopicOpt {
     /// Validate cli options. Generate target-server and delete-topic configuration.
-    fn validate(self) -> eyre::Result<(FluvioConfig, String)> {
+    fn validate(self) -> Result<(FluvioConfig, String), CliError> {
         let target_server = self.target.load()?;
 
         // return server separately from config
@@ -35,7 +36,7 @@ impl DeleteTopicOpt {
 // -----------------------------------
 
 /// Process delete topic cli request
-pub async fn process_delete_topic(opt: DeleteTopicOpt) -> eyre::Result<String> {
+pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliError> {
     let (target_server, name) = opt.validate()?;
 
     debug!("deleting topic: {}", name);

@@ -9,6 +9,7 @@ use structopt::StructOpt;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_controlplane_metadata::partition::*;
 
+use crate::error::CliError;
 use crate::OutputType;
 use crate::Terminal;
 use crate::target::ClusterTarget;
@@ -26,14 +27,14 @@ pub struct ListPartitionOpt {
 
 impl ListPartitionOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> eyre::Result<(FluvioConfig, OutputType)> {
+    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
     }
 
     /// perform actions
-    pub async fn process<O>(self, out: std::sync::Arc<O>) -> eyre::Result<String>
+    pub async fn process<O>(self, out: std::sync::Arc<O>) -> Result<String, CliError>
     where
         O: Terminal,
     {

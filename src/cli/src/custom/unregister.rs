@@ -3,14 +3,17 @@
 //!
 //! CLI tree to generate Delete Custom SPUs
 //!
+use std::io::Error as IoError;
+use std::io::ErrorKind;
+
 use structopt::StructOpt;
-use eyre::eyre;
 
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::CustomSpuKey;
 use fluvio::{Fluvio, FluvioConfig};
 
 use crate::target::ClusterTarget;
+use crate::error::CliError;
 
 // -----------------------------------
 // CLI Options
@@ -37,7 +40,7 @@ pub struct UnregisterCustomSpuOpt {
 
 impl UnregisterCustomSpuOpt {
     /// Validate cli options. Generate target-server and unregister custom spu config.
-    fn validate(self) -> eyre::Result<(FluvioConfig, CustomSpuKey)> {
+    fn validate(self) -> Result<(FluvioConfig, CustomSpuKey), CliError> {
         let target_server = self.target.load()?;
 
         // custom spu
@@ -46,7 +49,10 @@ impl UnregisterCustomSpuOpt {
         } else if let Some(id) = self.id {
             CustomSpuKey::Id(id)
         } else {
-            return Err(eyre!("Missing custom SPU name or id"));
+            return Err(IoError::new(
+                ErrorKind::Other,
+                "missing custom SPU name or id",
+            ).into());
         };
 
         // return server separately from config
@@ -59,7 +65,7 @@ impl UnregisterCustomSpuOpt {
 // -----------------------------------
 
 /// Process unregister custom-spu cli request
-pub async fn process_unregister_custom_spu(opt: UnregisterCustomSpuOpt) -> eyre::Result<()> {
+pub async fn process_unregister_custom_spu(opt: UnregisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, delete_key) = opt.validate()?;
 
     let mut client = Fluvio::connect_with_config(&target_server).await?;

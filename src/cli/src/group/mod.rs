@@ -20,6 +20,7 @@ mod cli {
     use list::process_list_managed_spu_groups;
 
     use crate::COMMAND_TEMPLATE;
+    use crate::error::CliError;
     use crate::Terminal;
 
     #[derive(Debug, StructOpt)]
@@ -49,16 +50,16 @@ mod cli {
     pub(crate) async fn process_spu_group<O: Terminal>(
         out: std::sync::Arc<O>,
         spu_group_opt: SpuGroupOpt,
-    ) -> eyre::Result<String> {
+    ) -> Result<String, CliError> {
         match spu_group_opt {
             SpuGroupOpt::Create(spu_group_opt) => {
-                process_create_managed_spu_group(spu_group_opt).await?
+                process_create_managed_spu_group(spu_group_opt).await?;
             }
             SpuGroupOpt::Delete(spu_group_opt) => {
-                process_delete_managed_spu_group(spu_group_opt).await?
+                process_delete_managed_spu_group(spu_group_opt).await?;
             }
             SpuGroupOpt::List(spu_group_opt) => {
-                process_list_managed_spu_groups(out, spu_group_opt).await?
+                process_list_managed_spu_groups(out, spu_group_opt).await?;
             }
         }
         Ok("".to_string())

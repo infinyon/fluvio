@@ -7,7 +7,7 @@ use crate::profile::CloudError;
 
 #[derive(Error, Debug)]
 pub enum CliError {
-    #[error(transparent)]
+    #[error("IO error")]
     IoError {
         #[from]
         source: IoError,

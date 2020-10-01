@@ -10,6 +10,7 @@ use structopt::StructOpt;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::*;
 
+use crate::error::CliError;
 use crate::target::ClusterTarget;
 
 // -----------------------------------
@@ -44,7 +45,7 @@ pub struct CreateManagedSpuGroupOpt {
 
 impl CreateManagedSpuGroupOpt {
     /// Validate cli options. Generate target-server and create spu group config.
-    fn validate(self) -> eyre::Result<(FluvioConfig, (String, SpuGroupSpec))> {
+    fn validate(self) -> Result<(FluvioConfig, (String, SpuGroupSpec)), CliError> {
         let target_server = self.target.load()?;
 
         let storage = self.storage_size.map(|storage_size| StorageConfig {
@@ -74,7 +75,9 @@ impl CreateManagedSpuGroupOpt {
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_create_managed_spu_group(opt: CreateManagedSpuGroupOpt) -> eyre::Result<()> {
+pub async fn process_create_managed_spu_group(
+    opt: CreateManagedSpuGroupOpt,
+) -> Result<(), CliError> {
     let (target_server, (name, spec)) = opt.validate()?;
 
     debug!("creating spg: {}, spec: {:#?}", name, spec);
