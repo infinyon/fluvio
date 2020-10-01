@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use anyhow::Context;
 
 use fluvio::config::*;
 
@@ -45,14 +46,14 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, CliError> {
     Ok(format!("local context is set to: {}", local_addr))
 }
 
-pub fn view_profile<O>(out: std::sync::Arc<O>)
+pub fn view_profile<O>(out: std::sync::Arc<O>) -> anyhow::Result<()>
 where
     O: Terminal,
 {
-    match ConfigFile::load(None) {
-        Ok(config_file) => t_println!(out, "{:#?}", config_file.config()),
-        Err(_) => t_println!(out, "no profile can be founded"),
-    }
+    let config_file = ConfigFile::load(None)
+        .context("Failed to read Fluvio config file")?;
+    t_println!(out, "{:#?}", config_file.config());
+    Ok(())
 }
 
 pub fn display_current_profile<O>(out: std::sync::Arc<O>)

@@ -124,22 +124,21 @@ pub fn run_cli() -> anyhow::Result<String> {
     run_block_on(async move {
         let terminal = Arc::new(PrintTerminal::new());
 
-        let result = match Root::from_args() {
-            Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await,
-            Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await,
-            Root::SPU(spu) => process_spu(terminal.clone(), spu).await,
-            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await,
-            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await,
-            Root::Topic(topic) => process_topic(terminal.clone(), topic).await,
-            Root::Partition(partition) => partition.process_partition(terminal.clone()).await,
-            Root::Profile(profile) => process_profile(terminal.clone(), profile).await,
-            Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await,
+        let output = match Root::from_args() {
+            Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await?,
+            Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await?,
+            Root::SPU(spu) => process_spu(terminal.clone(), spu).await?,
+            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await?,
+            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await?,
+            Root::Topic(topic) => process_topic(terminal.clone(), topic).await?,
+            Root::Partition(partition) => partition.process_partition(terminal.clone()).await?,
+            Root::Profile(profile) => process_profile(terminal.clone(), profile).await?,
+            Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
             #[cfg(feature = "cluster_components")]
-            Root::Run(opt) => process_run(opt),
-            Root::Version(_) => process_version_cmd(),
-            Root::Completions(shell) => process_completions_cmd(shell),
+            Root::Run(opt) => process_run(opt)?,
+            Root::Version(_) => process_version_cmd()?,
+            Root::Completions(shell) => process_completions_cmd(shell)?,
         };
-        let output = result?;
         Ok(output)
     })
 }
