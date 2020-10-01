@@ -107,13 +107,11 @@ async fn send_record_raw<F: SerialFrame>(
                 return Err(IoError::new(
                     ErrorKind::Other,
                     partition_response.error_code.to_sentence(),
-                ).into());
+                )
+                .into());
             }
             Ok(())
         }
-        None => Err(IoError::new(
-            ErrorKind::Other,
-            "unknown error",
-        ).into()),
+        None => Err(IoError::new(ErrorKind::Other, "unknown error").into()),
     }
 }

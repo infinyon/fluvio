@@ -50,8 +50,7 @@ pub fn view_profile<O>(out: std::sync::Arc<O>) -> anyhow::Result<()>
 where
     O: Terminal,
 {
-    let config_file = ConfigFile::load(None)
-        .context("Failed to read Fluvio config file")?;
+    let config_file = ConfigFile::load(None).context("Failed to read Fluvio config file")?;
     t_println!(out, "{:#?}", config_file.config());
     Ok(())
 }

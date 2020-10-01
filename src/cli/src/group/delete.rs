@@ -37,9 +37,7 @@ impl DeleteManagedSpuGroupOpt {
 // -----------------------------------
 
 /// Process delete custom-spu cli request
-pub async fn process_delete_managed_spu_group(
-    opt: DeleteManagedSpuGroupOpt,
-) -> anyhow::Result<()> {
+pub async fn process_delete_managed_spu_group(opt: DeleteManagedSpuGroupOpt) -> anyhow::Result<()> {
     let (target_server, name) = opt.validate()?;
 
     let mut client = Fluvio::connect_with_config(&target_server).await?;

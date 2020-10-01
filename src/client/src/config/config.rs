@@ -37,9 +37,7 @@ pub enum ConfigError {
     #[error("Config has no active profile")]
     NoActiveProfile,
     #[error("No cluster config for profile {profile}")]
-    NoClusterForProfile {
-        profile: String,
-    }
+    NoClusterForProfile { profile: String },
 }
 
 pub struct ConfigFile {
@@ -83,10 +81,10 @@ impl ConfigFile {
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref)
-            .map_err(|source| ConfigError::ConfigFileError { source })?;
-        let config = toml::from_str(&file_str)
-            .map_err(|source| ConfigError::TomlError { source })?;
+        let file_str: String =
+            read_to_string(path_ref).map_err(|source| ConfigError::ConfigFileError { source })?;
+        let config =
+            toml::from_str(&file_str).map_err(|source| ConfigError::TomlError { source })?;
         Ok(Self::new(path_ref.to_owned(), config))
     }
 
@@ -127,7 +125,8 @@ impl ConfigFile {
     pub fn save(&self) -> Result<(), FluvioError> {
         create_dir_all(self.path.parent().unwrap())
             .map_err(|source| ConfigError::ConfigFileError { source })?;
-        self.config.save_to(&self.path)
+        self.config
+            .save_to(&self.path)
             .map_err(|source| ConfigError::ConfigFileError { source })?;
         Ok(())
     }
@@ -287,7 +286,8 @@ impl Config {
 
     /// Returns a reference to the current Profile if there is one.
     pub fn current_profile(&self) -> Result<&Profile, FluvioError> {
-        let profile = self.current_profile
+        let profile = self
+            .current_profile
             .as_ref()
             .and_then(|p| self.profile.get(p))
             .ok_or(ConfigError::NoActiveProfile)?;

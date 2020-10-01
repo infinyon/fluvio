@@ -142,8 +142,5 @@ async fn confirm_spu(spu: u16) -> anyhow::Result<()> {
     }
 
     println!("waited too long,bailing out");
-    Err(ClusterError::Other(format!(
-        "not able to provision:{} spu",
-        spu
-    )).into())
+    Err(ClusterError::Other(format!("not able to provision:{} spu", spu)).into())
 }

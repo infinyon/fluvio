@@ -82,17 +82,17 @@ mod target {
             use fluvio::config::TlsPolicy::*;
             match (self.profile, self.cluster) {
                 // Profile and Cluster together is illegal
-                (Some(_profile), Some(_cluster)) => {
-                    return Err(CliError::invalid_arg(
-                        "cluster addr is not valid when profile is used",
-                    ).into());
-                },
+                (Some(_profile), Some(_cluster)) => Err(CliError::invalid_arg(
+                    "cluster addr is not valid when profile is used",
+                )
+                .into()),
                 (Some(profile), _) => {
                     // Specifying TLS is illegal when also giving a profile
                     if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is not valid when profile is is used",
-                        ).into());
+                        )
+                        .into());
                     }
 
                     let config_file = ConfigFile::load(None)?;
@@ -101,7 +101,7 @@ mod target {
                         // NOTE: This will not fallback to current cluster like it did before
                         // Current cluster will be used when no profile is given.
                         .cluster_with_profile(&profile)
-                        .ok_or_else(|| anyhow!( "Cluster not found for profile {}", &profile))?;
+                        .ok_or_else(|| anyhow!("Cluster not found for profile {}", &profile))?;
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {
@@ -113,13 +113,13 @@ mod target {
                     if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is only valid if cluster addr is used",
-                        ).into());
+                        )
+                        .into());
                     }
 
                     // Try to use the default cluster from saved config
                     let config_file = ConfigFile::load(None)?;
-                    let cluster = config_file.config()
-                        .current_cluster()?;
+                    let cluster = config_file.config().current_cluster()?;
                     Ok(cluster.clone())
                 }
             }

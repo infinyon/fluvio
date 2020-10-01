@@ -74,9 +74,7 @@ impl CreateManagedSpuGroupOpt {
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_create_managed_spu_group(
-    opt: CreateManagedSpuGroupOpt,
-) -> anyhow::Result<()> {
+pub async fn process_create_managed_spu_group(opt: CreateManagedSpuGroupOpt) -> anyhow::Result<()> {
     let (target_server, (name, spec)) = opt.validate()?;
 
     debug!("creating spg: {}, spec: {:#?}", name, spec);

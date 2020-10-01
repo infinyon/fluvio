@@ -243,19 +243,13 @@ pub enum CloudError {
     AuthenticationError(String),
     /// Failed to open Fluvio Cloud login file
     #[error("Failed to load cloud credentials")]
-    UnableToLoadCredentials {
-        source: IoError,
-    },
+    UnableToLoadCredentials { source: IoError },
     /// Failed to parse Fluvio Cloud token
     #[error("Failed to parse login token from file")]
-    UnableToParseCredentials {
-        source: TomlError,
-    },
+    UnableToParseCredentials { source: TomlError },
     /// Failed to make an http request
     #[error("Failed to make HTTP request to Fluvio cloud")]
-    HttpError {
-        source: HttpError,
-    },
+    HttpError { source: HttpError },
     /// Failed to do some IO.
     #[error("IO error")]
     IoError {
@@ -285,7 +279,7 @@ pub struct HttpError {
 impl From<http_types::Error> for CloudError {
     fn from(inner: http_types::Error) -> Self {
         Self::HttpError {
-            source: HttpError { inner }
+            source: HttpError { inner },
         }
     }
 }

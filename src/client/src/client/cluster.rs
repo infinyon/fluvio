@@ -42,9 +42,7 @@ impl Fluvio {
     /// ```
     pub async fn connect() -> Result<Self, FluvioError> {
         let config_file = ConfigFile::load_default_or_new()?;
-        let cluster_config = config_file
-            .config()
-            .current_cluster()?;
+        let cluster_config = config_file.config().current_cluster()?;
         Self::connect_with_config(cluster_config).await
     }
 
