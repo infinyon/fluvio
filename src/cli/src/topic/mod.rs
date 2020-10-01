@@ -22,7 +22,6 @@ mod cli {
 
     use crate::COMMAND_TEMPLATE;
     use crate::Terminal;
-    use crate::CliError;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "topic", about = "Topic operations")]
@@ -59,17 +58,18 @@ mod cli {
     pub(crate) async fn process_topic<O>(
         out: std::sync::Arc<O>,
         topic_opt: TopicOpt,
-    ) -> Result<String, CliError>
+    ) -> anyhow::Result<String>
     where
         O: Terminal,
     {
-        match topic_opt {
-            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await,
-            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await,
+        let output = match topic_opt {
+            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await?,
+            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await?,
             TopicOpt::Describe(describe_topics_opt) => {
-                process_describe_topics(out, describe_topics_opt).await
+                process_describe_topics(out, describe_topics_opt).await?
             }
-            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await,
-        }
+            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await?,
+        };
+        Ok(output)
     }
 }

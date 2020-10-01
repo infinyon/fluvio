@@ -5,7 +5,6 @@ mod unregister;
 pub use cli::*;
 
 mod cli {
-
     use structopt::StructOpt;
 
     use register::RegisterCustomSpuOpt;
@@ -18,7 +17,6 @@ mod cli {
     use list::process_list_custom_spus;
 
     use crate::COMMAND_TEMPLATE;
-    use crate::error::CliError;
     use crate::Terminal;
 
     use super::*;
@@ -50,18 +48,19 @@ mod cli {
     pub(crate) async fn process_custom_spu<O: Terminal>(
         out: std::sync::Arc<O>,
         custom_spu_opt: CustomSpuOpt,
-    ) -> Result<String, CliError> {
-        (match custom_spu_opt {
+    ) -> anyhow::Result<String> {
+        match custom_spu_opt {
             CustomSpuOpt::Create(custom_spu_opt) => {
-                process_register_custom_spu(custom_spu_opt).await
+                process_register_custom_spu(custom_spu_opt).await?
             }
             CustomSpuOpt::Delete(custom_spu_opt) => {
-                process_unregister_custom_spu(custom_spu_opt).await
+                process_unregister_custom_spu(custom_spu_opt).await?
             }
             CustomSpuOpt::List(custom_spu_opt) => {
-                process_list_custom_spus(out, custom_spu_opt).await
+                process_list_custom_spus(out, custom_spu_opt).await?
             }
-        })
-        .map(|_| format!(""))
+        }
+
+        Ok("".to_string())
     }
 }

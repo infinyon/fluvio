@@ -1,13 +1,12 @@
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::convert::TryInto;
 use std::process::Command;
+use anyhow::Context;
 
 use fluvio_cluster::ClusterInstaller;
 use fluvio::config::TlsPolicy;
 use super::*;
 
-pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
+pub async fn install_core(opt: InstallCommand) -> anyhow::Result<()> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -25,12 +24,8 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         // If we're in develop mode (but no explicit tag), use current git hash
         None if opt.develop => {
             let output = Command::new("git").args(&["rev-parse", "HEAD"]).output()?;
-            let git_hash = String::from_utf8(output.stdout).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("failed to get git hash: {}", e),
-                )
-            })?;
+            let git_hash = String::from_utf8(output.stdout)
+                .context("Failed to read current git hash for image tag")?;
             builder = builder.with_image_tag(git_hash.trim());
         }
         _ => (),
@@ -71,7 +66,7 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
+pub fn install_sys(opt: InstallCommand) -> anyhow::Result<()> {
     let installer = ClusterInstaller::new()
         .with_namespace(opt.k8_config.namespace)
         .build()?;

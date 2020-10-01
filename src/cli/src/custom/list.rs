@@ -10,7 +10,6 @@ use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::metadata::objects::Metadata;
 
-use crate::error::CliError;
 use crate::Terminal;
 use crate::OutputType;
 use crate::spu::format_spu_response_output;
@@ -33,7 +32,7 @@ pub struct ListCustomSpusOpt {
 
 impl ListCustomSpusOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
+    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.as_output()))
@@ -44,7 +43,7 @@ impl ListCustomSpusOpt {
 pub async fn process_list_custom_spus<O>(
     out: std::sync::Arc<O>,
     opt: ListCustomSpusOpt,
-) -> Result<(), CliError>
+) -> anyhow::Result<()>
 where
     O: Terminal,
 {

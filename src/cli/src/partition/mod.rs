@@ -7,7 +7,6 @@ mod cli {
 
     use crate::COMMAND_TEMPLATE;
     use crate::Terminal;
-    use crate::CliError;
 
     use super::list::ListPartitionOpt;
 
@@ -26,7 +25,7 @@ mod cli {
         pub(crate) async fn process_partition<O>(
             self,
             out: std::sync::Arc<O>,
-        ) -> Result<String, CliError>
+        ) -> anyhow::Result<String>
         where
             O: Terminal,
         {

@@ -14,7 +14,6 @@ use structopt::StructOpt;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
 
-use crate::error::CliError;
 use crate::target::ClusterTarget;
 
 // -----------------------------------
@@ -74,7 +73,7 @@ pub struct CreateTopicOpt {
 
 impl CreateTopicOpt {
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(FluvioConfig, (String, TopicSpec)), CliError> {
+    fn validate(self) -> anyhow::Result<(FluvioConfig, (String, TopicSpec))> {
         use fluvio::metadata::topic::PartitionMaps;
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
@@ -111,7 +110,7 @@ impl CreateTopicOpt {
 // -----------------------------------
 
 /// Process create topic cli request
-pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliError> {
+pub async fn process_create_topic(opt: CreateTopicOpt) -> anyhow::Result<String> {
     let dry_run = opt.dry_run;
 
     let (target_server, (name, topic_spec)) = opt.validate()?;

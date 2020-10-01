@@ -51,9 +51,9 @@ macro_rules! t_print_cli_err {
 }
 
 mod target {
-    use std::io::{ErrorKind, Error as IoError};
     use std::convert::TryInto;
     use structopt::StructOpt;
+    use anyhow::anyhow;
 
     use fluvio::FluvioConfig;
     use fluvio::config::ConfigFile;
@@ -76,21 +76,23 @@ mod target {
 
     impl ClusterTarget {
         /// try to create sc config
-        pub fn load(self) -> Result<FluvioConfig, CliError> {
+        pub fn load(self) -> anyhow::Result<FluvioConfig> {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
             match (self.profile, self.cluster) {
                 // Profile and Cluster together is illegal
-                (Some(_profile), Some(_cluster)) => Err(CliError::invalid_arg(
-                    "cluster addr is not valid when profile is used",
-                )),
+                (Some(_profile), Some(_cluster)) => {
+                    return Err(CliError::invalid_arg(
+                        "cluster addr is not valid when profile is used",
+                    ).into());
+                },
                 (Some(profile), _) => {
                     // Specifying TLS is illegal when also giving a profile
                     if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is not valid when profile is is used",
-                        ));
+                        ).into());
                     }
 
                     let config_file = ConfigFile::load(None)?;
@@ -99,9 +101,7 @@ mod target {
                         // NOTE: This will not fallback to current cluster like it did before
                         // Current cluster will be used when no profile is given.
                         .cluster_with_profile(&profile)
-                        .ok_or_else(|| {
-                            IoError::new(ErrorKind::Other, "Cluster not found for profile")
-                        })?;
+                        .ok_or_else(|| anyhow!( "Cluster not found for profile {}", &profile))?;
                     Ok(cluster.clone())
                 }
                 (None, Some(cluster)) => {
@@ -113,14 +113,14 @@ mod target {
                     if let Anonymous | Verified(_) = tls {
                         return Err(CliError::invalid_arg(
                             "tls is only valid if cluster addr is used",
-                        ));
+                        ).into());
                     }
 
                     // Try to use the default cluster from saved config
                     let config_file = ConfigFile::load(None)?;
-                    let cluster = config_file.config().current_cluster().ok_or_else(|| {
-                        IoError::new(ErrorKind::Other, "Current cluster not found")
-                    })?;
+                    let cluster = config_file.config()
+                        .current_cluster()
+                        .ok_or_else(|| anyhow!("Config has no 'current' profile"))?;
                     Ok(cluster.clone())
                 }
             }

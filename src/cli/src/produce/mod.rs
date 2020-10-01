@@ -6,7 +6,6 @@ use structopt::StructOpt;
 use fluvio::{Fluvio, FluvioConfig};
 
 use crate::target::ClusterTarget;
-use crate::CliError;
 use crate::Terminal;
 
 /// Produce log configuration parameters
@@ -73,7 +72,7 @@ impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
     pub fn validate(
         self,
-    ) -> Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>)), CliError> {
+    ) -> anyhow::Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>))> {
         let target_server = self.target.load()?;
 
         let file_records = if let Some(record_per_line) = self.record_per_line {
@@ -98,7 +97,7 @@ impl ProduceLogOpt {
 pub async fn process_produce_record<O>(
     out: std::sync::Arc<O>,
     opt: ProduceLogOpt,
-) -> Result<String, CliError>
+) -> anyhow::Result<String>
 where
     O: Terminal,
 {
@@ -130,7 +129,7 @@ mod produce {
     use fluvio::TopicProducer;
 
     use crate::t_println;
-
+    use crate::error::CliError;
     use super::*;
 
     pub type RecordTuples = Vec<(String, Vec<u8>)>;

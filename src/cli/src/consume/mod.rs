@@ -15,18 +15,16 @@ pub use process::process_consume_log;
 mod process {
     use tracing::debug;
 
-    use crate::CliError;
+    use fluvio::Fluvio;
     use crate::Terminal;
-
     use super::ConsumeLogOpt;
     use super::fetch_log_loop;
-    use fluvio::Fluvio;
 
     /// Process Consume log cli request
     pub async fn process_consume_log<O>(
         out: std::sync::Arc<O>,
         opt: ConsumeLogOpt,
-    ) -> Result<String, CliError>
+    ) -> anyhow::Result<String>
     where
         O: Terminal,
     {

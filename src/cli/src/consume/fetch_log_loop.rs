@@ -3,12 +3,10 @@
 //!
 //! Fetch logs from SPU
 //!
-
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::convert::TryFrom;
 
 use tracing::debug;
+use anyhow::anyhow;
 
 use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 
@@ -28,7 +26,7 @@ pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
     consumer: PartitionConsumer,
     opt: ConsumeLogConfig,
-) -> Result<(), CliError>
+) -> anyhow::Result<()>
 where
     O: Terminal,
 {
@@ -39,10 +37,7 @@ where
         debug!("detected control c, setting end");
         std::process::exit(0);
     }) {
-        return Err(IoError::new(
-            ErrorKind::InvalidData,
-            format!("CTRL-C handler can't be initialized {}", err),
-        ).into());
+        return Err(anyhow!("CTRL-C handler can't be initialized {}", err));
     }
 
     // compute offset
@@ -65,7 +60,9 @@ where
     let initial_offset = match maybe_initial_offset {
         Some(offset) => offset,
         None => {
-            return Err(CliError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()));
+            return Err(CliError::InvalidArg(
+                "Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()
+            ).into());
         }
     };
 

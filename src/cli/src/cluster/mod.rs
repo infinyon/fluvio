@@ -43,10 +43,7 @@ pub enum ClusterCommands {
 }
 
 mod process {
-
-    use crate::CliError;
     use crate::Terminal;
-
     use super::*;
 
     use install::process_install;
@@ -58,17 +55,18 @@ mod process {
     pub async fn process_cluster<O>(
         out: std::sync::Arc<O>,
         cmd: ClusterCommands,
-    ) -> Result<String, CliError>
+    ) -> anyhow::Result<String>
     where
         O: Terminal,
     {
-        match cmd {
-            ClusterCommands::SetMinikubeContext(ctx) => process_minikube_context(ctx),
-            ClusterCommands::Install(install) => process_install(out, install).await,
-            ClusterCommands::Uninstall(uninstall) => process_uninstall(out, uninstall).await,
-            ClusterCommands::Check(check) => run_checks(check).await,
-            ClusterCommands::Releases(releases) => process_releases(releases),
-        }
+        let output = match cmd {
+            ClusterCommands::SetMinikubeContext(ctx) => process_minikube_context(ctx)?,
+            ClusterCommands::Install(install) => process_install(out, install).await?,
+            ClusterCommands::Uninstall(uninstall) => process_uninstall(out, uninstall).await?,
+            ClusterCommands::Check(check) => run_checks(check).await?,
+            ClusterCommands::Releases(releases) => process_releases(releases)?,
+        };
+        Ok(output)
     }
 }
 

@@ -12,7 +12,6 @@ use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::Terminal;
-use crate::error::CliError;
 use crate::OutputType;
 use crate::target::ClusterTarget;
 
@@ -43,7 +42,7 @@ pub struct ListTopicsOpt {
 
 impl ListTopicsOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
+    fn validate(self) -> anyhow::Result<(FluvioConfig, OutputType)> {
         let target_server = self.target.load()?;
 
         Ok((target_server, self.output.unwrap_or_default()))
@@ -58,7 +57,7 @@ impl ListTopicsOpt {
 pub async fn process_list_topics<O>(
     out: std::sync::Arc<O>,
     opt: ListTopicsOpt,
-) -> Result<String, CliError>
+) -> anyhow::Result<String>
 where
     O: Terminal,
 {
