@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
 use tracing::{info, warn, debug, trace, instrument};
@@ -14,6 +14,7 @@ use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use flv_util::cmd::CommandExt;
 use fluvio_future::timer::sleep;
+use fluvio_future::net::{TcpStream, resolve};
 use k8_client::{K8Client, ClientError as K8ClientError};
 use k8_config::{K8Config};
 use k8_client::metadata::MetadataClient;
@@ -371,6 +372,24 @@ impl ClusterInstallerBuilder {
 
         self.client_tls_policy = client_policy;
         self.server_tls_policy = server_policy;
+        self
+    }
+
+    /// Sets the K8 cluster cloud environment.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_cloud("minikube")
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    ///
+    /// [`RUST_LOG`]: https://docs.rs/tracing-subscriber/0.2.11/tracing_subscriber/filter/struct.EnvFilter.html
+    pub fn with_cloud<S: Into<String>>(mut self, cloud: S) -> Self {
+        self.cloud = cloud.into();
         self
     }
 }
@@ -820,7 +839,7 @@ impl ClusterInstaller {
                     // check if load balancer status exists
                     if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
                         debug!(addr, "Found SC service load balancer");
-                        return Ok(Some(format!("{}:9003", addr.to_owned())));
+                        return Ok(self.wait_for_sc_port_check(&addr).await?);
                     } else {
                         debug!(
                             attempt = i,
@@ -844,11 +863,55 @@ impl ClusterInstaller {
         Ok(None)
     }
 
+    /// Wait until the Fluvio SC public service appears in Kubernetes
+    async fn wait_for_sc_port_check(&self, addr: &str) -> Result<Option<String>, ClusterError> {
+        for i in 0..30u16 {
+            info!(attempt = i, "waiting for sc port check");
+            let sock_addr_string = format!("{}:9003", addr);
+            let sock_addr = self.wait_for_sc_dns(&sock_addr_string).await?;
+            if let Ok(_) = TcpStream::connect(&*sock_addr).await {
+                return Ok(Some(sock_addr_string));
+            }
+            let sleep_ms = 1000 * 2u64.pow(i as u32);
+            info!(
+                attempt = i,
+                "sc port 9003 closed, sleeping for {} ms", sleep_ms
+            );
+            sleep(Duration::from_millis(sleep_ms)).await
+        }
+
+        Ok(None)
+    }
+
+    /// Wait until the Fluvio SC public service appears in Kubernetes
+    async fn wait_for_sc_dns(
+        &self,
+        sock_addr_string: &str,
+    ) -> Result<Vec<SocketAddr>, ClusterError> {
+        for i in 0..30u16 {
+            info!(attempt = i, "waiting for sc dns resolution");
+            match resolve(sock_addr_string).await {
+                Ok(sock_addr) => return Ok(sock_addr),
+                Err(err) => {
+                    let sleep_ms = 1000 * 2u64.pow(i as u32);
+                    info!(
+                        attempt = i,
+                        "dns resoultion failed {}, sleeping for {} ms", err, sleep_ms
+                    );
+                    sleep(Duration::from_millis(sleep_ms)).await
+                }
+            }
+        }
+
+        Err(ClusterError::Other("unable to resolve DNS".to_owned()))
+    }
+
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str, spu: u16) -> Result<bool, ClusterError> {
         // Try waiting for SPUs for 100 cycles
         for i in 0..30u16 {
+            debug!("retrieving spu specs");
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
@@ -871,8 +934,12 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                println!("{} of {} spu ready", ready_spu, spu);
-                sleep(Duration::from_millis(1000)).await;
+                let sleep_ms = 1000 * 2u64.pow(i as u32);
+                info!(
+                    attempt = i,
+                    "{} of {} spu ready, sleeping for {} ms", ready_spu, spu, sleep_ms
+                );
+                sleep(Duration::from_millis(sleep_ms)).await;
             }
         }
 
