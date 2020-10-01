@@ -33,9 +33,9 @@ mod cli {
     where
         O: Terminal,
     {
-        (match spu_opt {
-            SpuOpt::List(spu_opt) => process_list_spus(out, spu_opt).await,
-        })
-        .map(|_| format!(""))
+        match spu_opt {
+            SpuOpt::List(spu_opt) => process_list_spus(out, spu_opt).await?,
+        }
+        Ok("".to_string())
     }
 }

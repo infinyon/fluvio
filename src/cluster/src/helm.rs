@@ -18,14 +18,14 @@ pub enum HelmError {
         #[from]
         source: IoError,
     },
-    #[error("Failed to read helm client version: {0}")]
+    #[error("failed to read helm client version: {0}")]
     HelmVersionNotFound(String),
-    #[error("Failed to parse helm output as UTF8: {source}")]
+    #[error("failed to parse helm output as UTF8")]
     Utf8Error {
         #[from]
         source: FromUtf8Error,
     },
-    #[error("Failed to parse JSON from helm output: {source}")]
+    #[error("failed to parse JSON from helm output")]
     Serde {
         #[from]
         source: serde_json::Error,

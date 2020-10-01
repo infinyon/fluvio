@@ -9,7 +9,6 @@ use std::io::ErrorKind;
 use std::convert::TryFrom;
 
 use tracing::debug;
-
 use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 
 use crate::error::CliError;
@@ -39,10 +38,11 @@ where
         debug!("detected control c, setting end");
         std::process::exit(0);
     }) {
-        return Err(CliError::IoError(IoError::new(
+        return Err(IoError::new(
             ErrorKind::InvalidData,
             format!("CTRL-C handler can't be initialized {}", err),
-        )));
+        )
+        .into());
     }
 
     // compute offset

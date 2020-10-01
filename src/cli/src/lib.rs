@@ -118,9 +118,7 @@ mod target {
 
                     // Try to use the default cluster from saved config
                     let config_file = ConfigFile::load(None)?;
-                    let cluster = config_file.config().current_cluster().ok_or_else(|| {
-                        IoError::new(ErrorKind::Other, "Current cluster not found")
-                    })?;
+                    let cluster = config_file.config().current_cluster()?;
                     Ok(cluster.clone())
                 }
             }

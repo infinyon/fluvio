@@ -8,6 +8,7 @@ pub mod objects;
 mod request;
 mod response;
 
+use thiserror::Error;
 pub use apis::*;
 pub use request::*;
 pub use response::*;
@@ -26,25 +27,12 @@ pub mod store {
 }
 
 /// Error from api call
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ApiError {
+    #[error("Received error code: {0:#?} ({1:?})")]
     Code(dataplane::ErrorCode, Option<String>),
-    NoResourceFounded(String),
-}
-
-impl std::fmt::Display for ApiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Self::Code(code, msg_opt) => {
-                if let Some(msg) = msg_opt {
-                    write!(f, "{:#?} {}", code, msg)
-                } else {
-                    write!(f, "{:#?}", code)
-                }
-            }
-            Self::NoResourceFounded(msg) => write!(f, "no resource founded {}", msg),
-        }
-    }
+    #[error("No resource found: {0}")]
+    NoResourceFound(String),
 }
 
 mod admin {

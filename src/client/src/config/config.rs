@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::fs::File;
 use std::fs::create_dir_all;
+use thiserror::Error;
 
 use tracing::debug;
 use dirs::home_dir;
@@ -20,6 +21,24 @@ use serde::Serialize;
 
 use fluvio_types::defaults::{CLI_CONFIG_PATH};
 use crate::{FluvioConfig, FluvioError};
+
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error(transparent)]
+    ConfigFileError {
+        #[from]
+        source: IoError,
+    },
+    #[error("Failed to deserialize Fluvio config")]
+    TomlError {
+        #[from]
+        source: toml::de::Error,
+    },
+    #[error("Config has no active profile")]
+    NoActiveProfile,
+    #[error("No cluster config for profile {profile}")]
+    NoClusterForProfile { profile: String },
+}
 
 pub struct ConfigFile {
     path: PathBuf,
@@ -54,18 +73,18 @@ impl ConfigFile {
 
     /// try to load from default locations
     pub fn load(optional_path: Option<String>) -> Result<Self, FluvioError> {
-        Self::from_file(Self::default_file_path(optional_path)?)
+        let path = Self::default_file_path(optional_path)
+            .map_err(|source| ConfigError::ConfigFileError { source })?;
+        Self::from_file(path)
     }
 
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref).map_err(|err| {
-            debug!("failed to read profile on path: {:#?}, {} ", path_ref, err);
-            FluvioError::UnableToReadProfile
-        })?;
-        let config = toml::from_str(&file_str)
-            .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))?;
+        let file_str: String =
+            read_to_string(path_ref).map_err(|source| ConfigError::ConfigFileError { source })?;
+        let config =
+            toml::from_str(&file_str).map_err(|source| ConfigError::TomlError { source })?;
         Ok(Self::new(path_ref.to_owned(), config))
     }
 
@@ -103,9 +122,13 @@ impl ConfigFile {
     }
 
     // save to file
-    pub fn save(&self) -> Result<(), IoError> {
-        create_dir_all(self.path.parent().unwrap())?;
-        self.config.save_to(&self.path)
+    pub fn save(&self) -> Result<(), FluvioError> {
+        create_dir_all(self.path.parent().unwrap())
+            .map_err(|source| ConfigError::ConfigFileError { source })?;
+        self.config
+            .save_to(&self.path)
+            .map_err(|source| ConfigError::ConfigFileError { source })?;
+        Ok(())
     }
 }
 
@@ -262,10 +285,13 @@ impl Config {
     }
 
     /// Returns a reference to the current Profile if there is one.
-    pub fn current_profile(&self) -> Option<&Profile> {
-        self.current_profile
+    pub fn current_profile(&self) -> Result<&Profile, FluvioError> {
+        let profile = self
+            .current_profile
             .as_ref()
             .and_then(|p| self.profile.get(p))
+            .ok_or(ConfigError::NoActiveProfile)?;
+        Ok(profile)
     }
 
     /// Returns a mutable reference to the current Profile if there is one.
@@ -274,9 +300,14 @@ impl Config {
     }
 
     /// Returns the FluvioConfig belonging to the current profile.
-    pub fn current_cluster(&self) -> Option<&FluvioConfig> {
-        self.current_profile()
-            .and_then(|profile| self.cluster.get(&profile.cluster))
+    pub fn current_cluster(&self) -> Result<&FluvioConfig, FluvioError> {
+        let profile = self.current_profile()?;
+        let maybe_cluster = self.cluster.get(&profile.cluster);
+        let cluster = maybe_cluster.ok_or_else(|| {
+            let profile = profile.cluster.clone();
+            ConfigError::NoClusterForProfile { profile }
+        })?;
+        Ok(cluster)
     }
 
     /// Returns the FluvioConfig belonging to the named profile.

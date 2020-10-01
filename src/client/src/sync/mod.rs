@@ -105,10 +105,10 @@ mod context {
 
                         _ = sleep(time_left) => {
                             warn!("store {}: look up timeout expired",S::LABEL);
-                            return Err(FluvioError::IoError(IoError::new(
+                            return Err(IoError::new(
                                 ErrorKind::TimedOut,
                                 format!("{} store lookup failed due to timeout",S::LABEL),
-                            )))
+                            ).into())
                         },
 
                         _ = self.listen() => {

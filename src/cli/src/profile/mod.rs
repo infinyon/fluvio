@@ -78,14 +78,14 @@ pub struct SwitchOpt {
 pub async fn process_profile<O>(
     out: std::sync::Arc<O>,
     profile_command: ProfileCommand,
-) -> Result<String, CliError>
+) -> eyre::Result<String>
 where
     O: Terminal,
 {
     use context::*;
 
     match profile_command {
-        ProfileCommand::View => view_profile(out),
+        ProfileCommand::View => view_profile(out)?,
         ProfileCommand::DisplayCurrent => display_current_profile(out),
         ProfileCommand::Switch(profile) => {
             process_switch(out, profile)?;

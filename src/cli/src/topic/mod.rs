@@ -63,13 +63,14 @@ mod cli {
     where
         O: Terminal,
     {
-        match topic_opt {
-            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await,
-            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await,
+        let output = match topic_opt {
+            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await?,
+            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await?,
             TopicOpt::Describe(describe_topics_opt) => {
-                process_describe_topics(out, describe_topics_opt).await
+                process_describe_topics(out, describe_topics_opt).await?
             }
-            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await,
-        }
+            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await?,
+        };
+        Ok(output)
     }
 }

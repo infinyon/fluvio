@@ -43,9 +43,9 @@ where
             return Ok(result);
         }
         // If we have no token file, continue to login
-        | Err(CloudError::UnableToLoadCredentials(_))
+        | Err(CloudError::UnableToLoadCredentials { .. })
         // If we're unable to parse the token file, continue to login
-        | Err(CloudError::UnableToParseCredentials(_)) => (),
+        | Err(CloudError::UnableToParseCredentials { .. }) => (),
         // If we have other problems, try re-logging in
         | Err(CloudError::ProfileDownloadError) => (),
         Err(other) => return Err(other.into()),

@@ -2,12 +2,14 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fs;
 use std::path::{PathBuf, Path};
+use thiserror::Error;
 
 //use futures::io::Error;
 use tracing::{warn, debug, trace, instrument};
 use serde::{Deserialize, Serialize};
 use serde_json::Error as JsonError;
-use http_types::{Response, Request, StatusCode, Error as HttpError, Url};
+use toml::de::Error as TomlError;
+use http_types::{Response, Request, StatusCode, Url};
 
 use fluvio::FluvioConfig;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
@@ -185,9 +187,10 @@ struct Credentials {
 impl Credentials {
     /// Try to load credentials from disk
     fn try_load<P: AsRef<Path>>(path: P) -> Result<Self, CloudError> {
-        let file_str = fs::read_to_string(path).map_err(CloudError::UnableToLoadCredentials)?;
-        let creds: Credentials =
-            toml::from_str(&*file_str).map_err(CloudError::UnableToParseCredentials)?;
+        let file_str = fs::read_to_string(path)
+            .map_err(|source| CloudError::UnableToLoadCredentials { source })?;
+        let creds: Credentials = toml::from_str(&*file_str)
+            .map_err(|source| CloudError::UnableToParseCredentials { source })?;
         Ok(creds)
     }
 
@@ -230,64 +233,54 @@ async fn download_profile(host: &str, creds: &Credentials) -> Result<Response, C
     Ok(response)
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum CloudError {
     /// Failed to download profile
+    #[error("Failed to download cloud profile")]
     ProfileDownloadError,
     /// Failed to authenticate using the given username
+    #[error("Failed to authenticate with username: {0}")]
     AuthenticationError(String),
     /// Failed to open Fluvio Cloud login file
-    UnableToLoadCredentials(IoError),
+    #[error("Failed to load cloud credentials")]
+    UnableToLoadCredentials { source: IoError },
     /// Failed to parse Fluvio Cloud token
-    UnableToParseCredentials(toml::de::Error),
+    #[error("Failed to parse login token from file")]
+    UnableToParseCredentials { source: TomlError },
     /// Failed to make an http request
-    HttpError(HttpError),
+    #[error("Failed to make HTTP request to Fluvio cloud")]
+    HttpError { source: HttpError },
     /// Failed to do some IO.
-    IoError(IoError),
+    #[error("IO error")]
+    IoError {
+        #[from]
+        source: IoError,
+    },
     /// Failed to deserialize JSON
-    JsonError(JsonError),
+    #[error("Failed to read JSON")]
+    JsonError {
+        #[from]
+        source: JsonError,
+    },
     /// Failed to parse request URL
-    UrlError(ParseError),
+    #[error("Failed to parse URL")]
+    UrlError {
+        #[from]
+        source: ParseError,
+    },
 }
 
-impl std::fmt::Display for CloudError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ProfileDownloadError => write!(f, "Failed to download profile"),
-            Self::AuthenticationError(email) => write!(f, "Failed to login with email {}", email),
-            Self::UnableToLoadCredentials(e) => write!(f, "Failed to open login file: {}", e),
-            Self::UnableToParseCredentials(e) => {
-                write!(f, "Failed to read credentials toml: {}", e)
-            }
-            Self::HttpError(e) => write!(f, "Failed to make http request: {}", e),
-            Self::IoError(e) => write!(f, "Io Error: {}", e),
-            Self::JsonError(e) => write!(f, "JSON error: {}", e),
-            Self::UrlError(e) => write!(f, "Failed to parse URL: {}", e),
+#[derive(Error, Debug)]
+#[error("An HTTP error occurred: {inner}")]
+pub struct HttpError {
+    inner: http_types::Error,
+}
+
+impl From<http_types::Error> for CloudError {
+    fn from(inner: http_types::Error) -> Self {
+        Self::HttpError {
+            source: HttpError { inner },
         }
-    }
-}
-
-impl From<HttpError> for CloudError {
-    fn from(error: HttpError) -> Self {
-        Self::HttpError(error)
-    }
-}
-
-impl From<IoError> for CloudError {
-    fn from(error: IoError) -> Self {
-        Self::IoError(error)
-    }
-}
-
-impl From<JsonError> for CloudError {
-    fn from(error: JsonError) -> Self {
-        Self::JsonError(error)
-    }
-}
-
-impl From<ParseError> for CloudError {
-    fn from(error: ParseError) -> Self {
-        Self::UrlError(error)
     }
 }
 
