@@ -41,7 +41,8 @@ where
         return Err(IoError::new(
             ErrorKind::InvalidData,
             format!("CTRL-C handler can't be initialized {}", err),
-        ).into());
+        )
+        .into());
     }
 
     // compute offset
