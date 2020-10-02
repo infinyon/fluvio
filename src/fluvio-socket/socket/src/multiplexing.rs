@@ -78,7 +78,7 @@ where
 
     /// get next available correlation to use
     //  use lock to ensure update happens in orderly manner
-    async fn next_correlation_id(&mut self) -> i32 {
+    async fn next_correlation_id(&self) -> i32 {
         let mut guard = self.correlation_id_counter.lock().await;
         let current_value = *guard;
         // update to new
@@ -87,7 +87,7 @@ where
     }
 
     /// create socket to perform request and response
-    pub async fn create_serial_socket(&mut self) -> SerialSocket<S> {
+    pub async fn create_serial_socket(&self) -> SerialSocket<S> {
         let correlation_id = self.next_correlation_id().await;
         let bytes_lock: SharedMsg = (Arc::new(Mutex::new(None)), Arc::new(Event::new()));
 
@@ -103,7 +103,7 @@ where
 
     /// create stream response
     pub async fn create_stream<R>(
-        &mut self,
+        &self,
         mut req_msg: RequestMessage<R>,
         queue_len: usize,
     ) -> Result<AsyncResponse<R>, FlvSocketError>
@@ -496,7 +496,7 @@ mod tests {
         let socket = FlvSocket::connect(&addr).await.expect("connect");
         debug!("client: connected to test server and waiting...");
         sleep(Duration::from_millis(20)).await;
-        let mut multiplexer = MultiplexerSocket::new(socket);
+        let multiplexer = MultiplexerSocket::new(socket);
         let mut slow = multiplexer.create_serial_socket().await;
         let mut fast = multiplexer.create_serial_socket().await;
 
