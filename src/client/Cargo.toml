@@ -35,7 +35,7 @@ fluvio-future = { version = "0.1.2", features = ["tls"] }
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
-fluvio-socket = { version = "0.1.2" }
+fluvio-socket = { version = "0.1.3" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
