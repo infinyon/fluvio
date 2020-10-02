@@ -151,12 +151,12 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn admin(&mut self) -> FluvioAdmin {
+    pub async fn admin(&self) -> FluvioAdmin {
         FluvioAdmin::new(self.create_serial_client().await)
     }
 
     /// create serial connection
-    async fn create_serial_client(&mut self) -> VersionedSerialSocket {
+    async fn create_serial_client(&self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
             self.socket.create_serial_socket().await,
             self.config.clone(),
