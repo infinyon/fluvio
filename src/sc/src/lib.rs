@@ -1,4 +1,4 @@
-#![type_length_limit = "6685544"]
+#![type_length_limit = "1324680"]
 
 #[cfg(feature = "k8")]
 pub mod k8;

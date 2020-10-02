@@ -58,6 +58,18 @@ pub enum ClusterError {
     /// Need to update minikube context
     #[error("The minikube context is not active or does not match your minikube ip")]
     InvalidMinikubeContext,
+    /// Timed out when waiting for SC service.
+    #[error("Timed out when waiting for SC service")]
+    SCServiceTimeout,
+    /// Timed out when waiting for SC port check.
+    #[error("Timed out when waiting for SC port check")]
+    SCPortCheckTimeout,
+    /// Timed out when waiting for DNS resolution.
+    #[error("Timed out when waiting for DNS resolution")]
+    SCDNSTimeout,
+    /// Timed out when waiting for SPU.
+    #[error("Timed out when waiting for SPU")]
+    SPUTimeout,
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),
