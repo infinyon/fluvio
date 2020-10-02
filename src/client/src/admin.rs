@@ -105,7 +105,7 @@ impl FluvioAdmin {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
-        let mut socket = AllMultiplexerSocket::new(socket);
+        let socket = AllMultiplexerSocket::new(socket);
         let socket = socket.create_serial_socket().await;
 
         let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
