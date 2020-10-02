@@ -16,7 +16,7 @@ name = "fluvio-sc-k8"
 path = "src/bin/k8.rs"
 
 [features]
-default = []
+default = ["k8"]
 k8 = ["k8-client"]
 
 [dependencies]
