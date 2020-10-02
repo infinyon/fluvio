@@ -24,8 +24,8 @@ serde_json = "1.0.57"
 thiserror = "1.0.20"
 
 # Fluvio dependencies
-fluvio = { path = "../client" }
-fluvio-controlplane-metadata = { path = "../controlplane-metadata", features = ["k8"] }
+fluvio = { version = "0.1.0", path = "../client" }
+fluvio-controlplane-metadata = { version = "0.1.0", path = "../controlplane-metadata", features = ["k8"] }
 fluvio-future = { version = "0.1.0" }
 flv-util = "0.5.0"
 k8-config = { version = "1.3.0", features = ["context"] }
