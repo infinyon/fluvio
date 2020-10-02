@@ -1,6 +1,6 @@
 # fluvio-protocol
 
-Provide TCP socket wrapper using kafka protocol
+Provide TCP socket wrapper for Fluvio protocol
 
 # build fluvio send utility
 
