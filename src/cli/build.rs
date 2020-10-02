@@ -1,4 +1,3 @@
-use std::fs;
 use std::process::Command;
 use rustc_version::version_meta;
 
@@ -51,9 +50,4 @@ fn main() {
             println!("cargo:rustc-env=RUSTC_VERSION={}", semver);
         }
     }
-
-    println!("cargo:rerun-if-changed=src/VERSION");
-    println!("cargo:rerun-if-changed=../../VERSION");
-    println!("cargo:rerun-if-changed=build.rs");
-    fs::copy("../../VERSION", "src/VERSION").expect("version copy");
 }
