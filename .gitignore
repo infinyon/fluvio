@@ -5,4 +5,3 @@ target/
 target-docker
 .vscode/tasks.json
 .idea/
-VERSION

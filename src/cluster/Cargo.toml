@@ -6,7 +6,7 @@ license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 repository = "https://github.com/infinyon/fluvio"
 description = "Tools for installing and managing Fluvio clusters"
-build = "build.rs"
+
 
 [lib]
 name = "fluvio_cluster"
