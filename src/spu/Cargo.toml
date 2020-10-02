@@ -36,10 +36,10 @@ event-listener = "2.4.0"
 
 # Fluvio dependencies
 fluvio-types = { path = "../types", version = "0.1.0" }
-fluvio-storage = { path = "../storage" }
-fluvio-controlplane = { path = "../controlplane" }
-fluvio-controlplane-metadata = { path = "../controlplane-metadata" }
-fluvio-spu-schema = { path = "../spu-schema" }
+fluvio-storage = { path = "../storage", version = "0.1.0" }
+fluvio-controlplane = { path = "../controlplane", version = "0.1.0" }
+fluvio-controlplane-metadata = { path = "../controlplane-metadata", version = "0.1.0" }
+fluvio-spu-schema = { path = "../spu-schema", version = "0.1.0" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.1.0" }
@@ -47,8 +47,7 @@ fluvio-service = { version = "0.1.0" }
 flv-tls-proxy = "0.2.0"
 flv-util = { version = "0.5.0" }
 fluvio-future = { version = "0.1.0", features = ["tls","subscriber"] }
-utils = { path = "../utils" }
+utils = { version = "0.1.0", path = "../utils", package = "fluvio-system-util" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.1.0", features = ["fixture","subscriber"] }
-utils = { path = "../utils", features = ["fixture"] }

@@ -1,8 +1,11 @@
 [package]
-name = "utils"
-version = "0.3.0"
+name = "fluvio-system-util"
+version = "0.1.0"
 authors = ["fluvio.io"]
 edition = "2018"
+description = "Utilities for Fluvio System components"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
 
 [features]
 default = []
