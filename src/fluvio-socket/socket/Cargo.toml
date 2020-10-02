@@ -4,7 +4,7 @@ version = "0.1.3"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper using fluvio protocol"
-repository = "https://github.com/infinyon/fluvio-protocol"
+repository = "https://github.com/infinyon/fluvio-socket"
 license = "Apache-2.0"
 categories = ["encoding"]
 
