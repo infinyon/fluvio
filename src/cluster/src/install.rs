@@ -15,8 +15,8 @@ use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use flv_util::cmd::CommandExt;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::{TcpStream, resolve};
-use k8_client::{K8Client, ClientError as K8ClientError};
-use k8_config::{K8Config};
+use k8_client::K8Client;
+use k8_config::K8Config;
 use k8_client::metadata::MetadataClient;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
@@ -588,15 +588,9 @@ impl ClusterInstaller {
 
         let namespace = &self.config.namespace;
         let sc_address = match self.wait_for_sc_service(namespace).await {
-            Ok(Some(addr)) => {
+            Ok(addr) => {
                 info!(addr = &*addr, "Fluvio SC is up");
                 addr
-            }
-            Ok(None) => {
-                warn!("Timed out when waiting for SC service");
-                return Err(ClusterError::Other(
-                    "Timed out when waiting for SC service".to_string(),
-                ));
             }
             Err(err) => {
                 warn!("Unable to detect Fluvio service. If you're running on Minikube, make sure you have the tunnel up!");
@@ -621,15 +615,8 @@ impl ClusterInstaller {
             self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
-            if !self
-                .wait_for_spu(namespace, self.config.spu_spec.replicas)
-                .await?
-            {
-                warn!("SPU took too long to get ready");
-                return Err(ClusterError::Other(
-                    "SPU took too long to get ready".to_string(),
-                ));
-            }
+            self.wait_for_spu(namespace, self.config.spu_spec.replicas)
+                .await?;
         }
 
         Ok(sc_address)
@@ -788,14 +775,10 @@ impl ClusterInstaller {
         let svc = match result {
             Ok(svc) => svc,
             Err(k8_client::ClientError::Client(status)) if status == StatusCode::NOT_FOUND => {
-                return Ok(None)
+                info!("no SC service found");
+                return Ok(None);
             }
-            Err(err) => {
-                return Err(ClusterError::Other(format!(
-                    "unable to look up fluvio service in k8: {}",
-                    err
-                )))
-            }
+            Err(err) => return Err(ClusterError::from(err)),
         };
 
         let ingress_addr = svc
@@ -806,7 +789,7 @@ impl ClusterInstaller {
             .find(|_| true)
             .and_then(|ingress| ingress.host_or_ip().to_owned());
 
-        let address = ingress_addr.and_then(|addr| {
+        let sock_addr = ingress_addr.and_then(|addr| {
             svc.spec
                 .ports
                 .iter()
@@ -815,72 +798,45 @@ impl ClusterInstaller {
                 .map(|target_port| format!("{}:{}", addr, target_port))
         });
 
-        if let Some(address) = &address {
-            debug!(addr = &**address, "Discovered SC address");
-        }
-
-        Ok(address)
+        Ok(sock_addr)
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     #[instrument(skip(self, ns))]
-    async fn wait_for_sc_service(&self, ns: &str) -> Result<Option<String>, ClusterError> {
-        use k8_client::http::StatusCode;
-
-        let input = InputObjectMeta::named("flv-sc-public", ns);
-
-        for i in 0..30u16 {
-            match self
-                .kube_client
-                .retrieve_item::<ServiceSpec, _>(&input)
-                .await
-            {
-                Ok(svc) => {
-                    // check if load balancer status exists
-                    if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
-                        debug!(addr, "Found SC service load balancer");
-                        return Ok(self.wait_for_sc_port_check(&addr).await?);
-                    } else {
-                        debug!(
-                            attempt = i,
-                            "SC service exists but no load balancer exist yet, continue wait"
-                        );
-                        println!("waiting for sc service up come up: {}", i);
-                        sleep(Duration::from_millis(1000)).await;
-                    }
-                }
-                Err(err) => match err {
-                    K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
-                        debug!(attempt = i, "No SC service found, sleeping");
-                        println!("no SC service found, sleeping");
-                        sleep(Duration::from_millis(2000)).await;
-                    }
-                    _ => panic!("error: {}", err),
-                },
-            };
-        }
-
-        Ok(None)
-    }
-
-    /// Wait until the Fluvio SC public service appears in Kubernetes
-    async fn wait_for_sc_port_check(&self, addr: &str) -> Result<Option<String>, ClusterError> {
-        for i in 0..30u16 {
-            info!(attempt = i, "waiting for sc port check");
-            let sock_addr_string = format!("{}:9003", addr);
-            let sock_addr = self.wait_for_sc_dns(&sock_addr_string).await?;
-            if let Ok(_) = TcpStream::connect(&*sock_addr).await {
-                return Ok(Some(sock_addr_string));
+    async fn wait_for_sc_service(&self, ns: &str) -> Result<String, ClusterError> {
+        info!("waiting for SC service");
+        for i in 0..12 {
+            if let Some(sock_addr) = self.discover_sc_address(ns).await? {
+                info!(%sock_addr, "found SC service load balancer, discovered SC address");
+                self.wait_for_sc_port_check(&sock_addr).await?;
+                return Ok(sock_addr);
             }
+
             let sleep_ms = 1000 * 2u64.pow(i as u32);
             info!(
                 attempt = i,
-                "sc port 9003 closed, sleeping for {} ms", sleep_ms
+                "no SC service found, sleeping for {} ms", sleep_ms
             );
             sleep(Duration::from_millis(sleep_ms)).await
         }
 
-        Ok(None)
+        Err(ClusterError::SCServiceTimeout)
+    }
+
+    /// Wait until the Fluvio SC public service appears in Kubernetes
+    async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), ClusterError> {
+        info!(sock_addr = %sock_addr_str, "waiting for SC port check");
+        for i in 0..12 {
+            let sock_addr = self.wait_for_sc_dns(&sock_addr_str).await?;
+            if TcpStream::connect(&*sock_addr).await.is_ok() {
+                return Ok(());
+            }
+            let sleep_ms = 1000 * 2u64.pow(i as u32);
+            info!(attempt = i, "sc port closed, sleeping for {} ms", sleep_ms);
+            sleep(Duration::from_millis(sleep_ms)).await
+        }
+
+        Err(ClusterError::SCPortCheckTimeout)
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
@@ -888,29 +844,29 @@ impl ClusterInstaller {
         &self,
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, ClusterError> {
-        for i in 0..30u16 {
-            info!(attempt = i, "waiting for sc dns resolution");
+        info!("waiting for SC dns resolution");
+        for i in 0..12 {
             match resolve(sock_addr_string).await {
                 Ok(sock_addr) => return Ok(sock_addr),
                 Err(err) => {
                     let sleep_ms = 1000 * 2u64.pow(i as u32);
                     info!(
                         attempt = i,
-                        "dns resoultion failed {}, sleeping for {} ms", err, sleep_ms
+                        "SC dns resoultion failed {}, sleeping for {} ms", err, sleep_ms
                     );
                     sleep(Duration::from_millis(sleep_ms)).await
                 }
             }
         }
 
-        Err(ClusterError::Other("unable to resolve DNS".to_owned()))
+        Err(ClusterError::SCDNSTimeout)
     }
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str, spu: u16) -> Result<bool, ClusterError> {
-        // Try waiting for SPUs for 100 cycles
-        for i in 0..30u16 {
+        info!("waiting for SPU");
+        for i in 0..12 {
             debug!("retrieving spu specs");
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
@@ -943,7 +899,7 @@ impl ClusterInstaller {
             }
         }
 
-        Ok(false)
+        Err(ClusterError::SPUTimeout)
     }
 
     /// Install server-side TLS by uploading secrets to kubernetes
