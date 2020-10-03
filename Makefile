@@ -80,7 +80,7 @@ release:	update_version release_image helm_publish_app publish_cli
 # update version
 update_version:
 	cp VERSION	src/cli/src
-	cp VERSION 	src/cluster/src
+
 
 # need to bump up version
 publish_cli:

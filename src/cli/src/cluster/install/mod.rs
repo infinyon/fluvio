@@ -3,7 +3,9 @@ mod local;
 mod k8;
 mod tls;
 
+use fmt::Display;
 use structopt::StructOpt;
+use std::{fmt, str::FromStr};
 
 use crate::Terminal;
 use crate::CliError;
@@ -11,11 +13,35 @@ use tls::TlsOpt;
 
 use super::util::*;
 
+#[derive(Debug)]
+pub struct DefaultVersion(String);
+
+
+impl Default for DefaultVersion {
+    fn default() -> Self {
+        Self(crate::VERSION.to_string())
+    }    
+}
+
+impl Display for DefaultVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"{}",self.0)
+    }
+}
+
+impl FromStr for DefaultVersion {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
+    }
+}
+
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific chart version
-    #[structopt(long)]
-    pub chart_version: Option<String>,
+    #[structopt(long,default_value)]
+    pub chart_version: DefaultVersion,
 
     /// k8: use specific image version
     #[structopt(long)]

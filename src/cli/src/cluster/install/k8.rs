@@ -58,9 +58,8 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         }
     }
 
-    if let Some(chart_version) = opt.k8_config.chart_version {
-        builder = builder.with_chart_version(chart_version);
-    }
+    builder = builder.with_chart_version(opt.k8_config.chart_version.to_string());
+    
 
     if let Some(rust_log) = opt.rust_log {
         builder = builder.with_rust_log(rust_log);
