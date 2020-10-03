@@ -74,6 +74,19 @@ clean_build:
 	rm -rf /tmp/cli-*
 
 
+
+release:	update_version release_image helm_publish_app publish_cli
+
+# update version
+update_version:
+	cp VERSION	src/cli/src
+	cp VERSION 	src/cluster/src
+
+# need to bump up version
+publish_cli:
+	cd src/cli;caro publish
+
+
 #
 # List of steps for creating fluvio binary
 # create binaries for CLI
@@ -125,10 +138,12 @@ make publish_fluvio_image:
 helm_install_plugin:
 	helm plugin install https://github.com/chartmuseum/helm-push.git
 
+
 helm_login:
+	helm repo remove fluvio
 	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
 
-helm_publish_app:
+helm_publish_app:	helm_login
 	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
 
 
