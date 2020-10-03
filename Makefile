@@ -1,8 +1,10 @@
 VERSION := $(shell cat VERSION)
 RUSTV=stable
+DOCKER_TAG=$(VERSION)
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
 GITHUB_TAG=$(VERSION)
+GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_REGISTRY=infinyon
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
@@ -92,6 +94,8 @@ release_cli_linux:	release_cli
 # create docker image
 release_image:	RELEASE=true
 release_image:	fluvio_image
+	docker tag infinyon/fluvio:$(GIT_COMMIT) infinyon/fluvio:$(VERSION)
+	docker push infinyon/fluvio:$(VERSION)
 
 minikube_image:	MINIKUBE_DOCKER_ENV=true
 minikube_image:	fluvio_image
@@ -101,8 +105,9 @@ fluvio_image: fluvio_bin_linux
 	echo "Building Fluvio image with version: $(VERSION)"
 	export CARGO_PROFILE=$(if $(RELEASE),release,debug); \
 	export MINIKUBE_DOCKER_ENV=$(MINIKUBE_DOCKER_ENV); \
-	export DOCKER_TAG=$(shell git rev-parse HEAD); \
+	export DOCKER_TAG=$(GIT_COMMIT); \
 	k8-util/docker/build.sh
+
 
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
