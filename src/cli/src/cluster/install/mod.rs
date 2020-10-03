@@ -16,16 +16,15 @@ use super::util::*;
 #[derive(Debug)]
 pub struct DefaultVersion(String);
 
-
 impl Default for DefaultVersion {
     fn default() -> Self {
         Self(crate::VERSION.to_string())
-    }    
+    }
 }
 
 impl Display for DefaultVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{}",self.0)
+        write!(f, "{}", self.0)
     }
 }
 
@@ -40,7 +39,7 @@ impl FromStr for DefaultVersion {
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific chart version
-    #[structopt(long,default_value)]
+    #[structopt(long, default_value)]
     pub chart_version: DefaultVersion,
 
     /// k8: use specific image version
