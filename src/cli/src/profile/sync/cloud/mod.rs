@@ -16,6 +16,8 @@ use crate::CliError;
 use crate::t_print;
 use crate::profile::sync::cloud::login_agent::LoginAgent;
 
+const FLUVIO_CLOUD_PROFILE: &str = "fluvio-cloud";
+
 #[derive(Debug, StructOpt)]
 pub struct CloudOpt {
     /// Fluvio Cloud email to use for logging in.
@@ -85,11 +87,11 @@ fn save_cluster<O: Terminal>(
 ) -> Result<String, CliError> {
     let mut config_file = ConfigFile::load_default_or_new()?;
     let config = config_file.mut_config();
-    let profile = Profile::new("fluvio-cloud".to_string());
-    config.add_cluster(cluster, "fluvio-cloud".to_string());
-    config.add_profile(profile, "fluvio-cloud".to_string());
+    let profile = Profile::new(FLUVIO_CLOUD_PROFILE.to_string());
+    config.add_cluster(cluster, FLUVIO_CLOUD_PROFILE.to_string());
+    config.add_profile(profile, FLUVIO_CLOUD_PROFILE.to_string());
+    config.set_current_profile(FLUVIO_CLOUD_PROFILE);
     config_file.save()?;
     info!("Successfully saved fluvio-cloud profile");
-    config_file.mut_config().set_current_profile("fluvio-cloud");
     Ok("Successfully saved fluvio-cloud profile".to_string())
 }
