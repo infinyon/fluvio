@@ -117,13 +117,13 @@ release_image:	fluvio_image
 latest_image:	RELEASE=true
 latest_image:	fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
-    docker push $(DOCKER_IMAGE):latest
+	docker push $(DOCKER_IMAGE):latest
 
 # publish docker image as nightly
 nightly_image:	RELEASE=true
 nightly_image:	fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):nightly
-    docker push $(DOCKER_IMAGE):nightly
+	docker push $(DOCKER_IMAGE):nightly
 
 # publish docker image to minikube environment
 minikube_image:	MINIKUBE_DOCKER_ENV=true
