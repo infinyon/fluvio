@@ -84,7 +84,7 @@ update_version:
 
 # need to bump up version
 publish_cli:
-	cd src/cli;caro publish
+	cd src/cli;cargo publish
 
 
 #
