@@ -1,8 +1,10 @@
 VERSION := $(shell cat VERSION)
 RUSTV=stable
+DOCKER_TAG=$(VERSION)
 GITHUB_USER=infinyon
 GITHUB_REPO=fluvio
 GITHUB_TAG=$(VERSION)
+GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_REGISTRY=infinyon
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
@@ -72,6 +74,19 @@ clean_build:
 	rm -rf /tmp/cli-*
 
 
+
+release:	update_version release_image helm_publish_app publish_cli
+
+# update version
+update_version:
+	cp VERSION	src/cli/src
+
+
+# need to bump up version
+publish_cli:
+	cd src/cli;cargo publish
+
+
 #
 # List of steps for creating fluvio binary
 # create binaries for CLI
@@ -92,6 +107,8 @@ release_cli_linux:	release_cli
 # create docker image
 release_image:	RELEASE=true
 release_image:	fluvio_image
+	docker tag infinyon/fluvio:$(GIT_COMMIT) infinyon/fluvio:$(VERSION)
+	docker push infinyon/fluvio:$(VERSION)
 
 minikube_image:	MINIKUBE_DOCKER_ENV=true
 minikube_image:	fluvio_image
@@ -101,8 +118,9 @@ fluvio_image: fluvio_bin_linux
 	echo "Building Fluvio image with version: $(VERSION)"
 	export CARGO_PROFILE=$(if $(RELEASE),release,debug); \
 	export MINIKUBE_DOCKER_ENV=$(MINIKUBE_DOCKER_ENV); \
-	export DOCKER_TAG=$(shell git rev-parse HEAD); \
+	export DOCKER_TAG=$(GIT_COMMIT); \
 	k8-util/docker/build.sh
+
 
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
@@ -115,6 +133,18 @@ make publish_fluvio_image:
 	-H "Authorization: $(GITHUB_ACCESS_TOKEN)" \
 	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
 	-d '{"ref":"master"}'
+
+
+helm_install_plugin:
+	helm plugin install https://github.com/chartmuseum/helm-push.git
+
+
+helm_login:
+	helm repo remove fluvio
+	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
+
+helm_publish_app:	helm_login
+	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
 
 
 # create releases

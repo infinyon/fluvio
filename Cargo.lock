@@ -561,9 +561,9 @@ dependencies = [
 
 [[package]]
 name = "color-eyre"
-version = "0.5.5"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "beae3fcb8e4494aaf14ef64a78509215edd4ac824114a679e4c799cd7c07ad2a"
+checksum = "f2a5123db5af8349c41c43ed0e5dca1cd56c911ea0c4ce6e6ff30f159fa5d27e"
 dependencies = [
  "backtrace",
  "color-spantrace",
@@ -949,7 +949,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "async-h1",
  "async-trait",
@@ -993,7 +993,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
