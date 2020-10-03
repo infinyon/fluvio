@@ -6,6 +6,7 @@ GITHUB_REPO=fluvio
 GITHUB_TAG=$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_REGISTRY=infinyon
+DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
@@ -104,15 +105,32 @@ release_cli_darwin:	release_cli
 release_cli_linux:	BUILD_TARGET=${TARGET_LINUX}
 release_cli_linux:	release_cli
 
-# create docker image
+# publish docker image for release
+# this just retag image build from fluvio_image
 release_image:	RELEASE=true
 release_image:	fluvio_image
-	docker tag infinyon/fluvio:$(GIT_COMMIT) infinyon/fluvio:$(VERSION)
-	docker push infinyon/fluvio:$(VERSION)
+	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(VERSION)
+	docker push $(DOCKER_IMAGE):$(VERSION)
 
+
+# publish docker image as latest
+latest_image:	RELEASE=true
+latest_image:	fluvio_image
+	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
+    docker push $(DOCKER_IMAGE):latest
+
+# publish docker image as nightly
+nightly_image:	RELEASE=true
+nightly_image:	fluvio_image
+	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):nightly
+    docker push $(DOCKER_IMAGE):nightly
+
+# publish docker image to minikube environment
 minikube_image:	MINIKUBE_DOCKER_ENV=true
 minikube_image:	fluvio_image
 
+# build docker image for fluvio using release mode
+# this will tag with current git tag
 fluvio_image: CARGO_PROFILE=$(if $(RELEASE),release,debug)
 fluvio_image: fluvio_bin_linux
 	echo "Building Fluvio image with version: $(VERSION)"
