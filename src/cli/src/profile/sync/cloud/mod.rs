@@ -88,8 +88,8 @@ fn save_cluster<O: Terminal>(
     let profile = Profile::new("fluvio-cloud".to_string());
     config.add_cluster(cluster, "fluvio-cloud".to_string());
     config.add_profile(profile, "fluvio-cloud".to_string());
+    config.set_current_profile("fluvio-cloud");
     config_file.save()?;
     info!("Successfully saved fluvio-cloud profile");
-    config_file.mut_config().set_current_profile("fluvio-cloud");
     Ok("Successfully saved fluvio-cloud profile".to_string())
 }
