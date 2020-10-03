@@ -55,6 +55,9 @@ pub enum ClusterError {
     /// The fluvio-sys chart is not installed
     #[error("The fluvio-sys chart is not installed")]
     MissingSystemChart,
+    /// Fluvio is already correctly installed
+    #[error("The fluvio-app chart is already installed")]
+    AlreadyInstalled,
     /// Need to update minikube context
     #[error("The minikube context is not active or does not match your minikube ip")]
     InvalidMinikubeContext,

@@ -562,6 +562,37 @@ impl ClusterInstaller {
         Ok(sys_charts)
     }
 
+    /// Checks if all of the prerequisites for installing Fluvio are met
+    ///
+    /// This will attempt to automatically fix any missing prerequisites,
+    /// depending on the installer configuration. See the following options
+    /// for more details:
+    ///
+    /// - [`with_system_chart`]
+    /// - [`with_update_context`]
+    ///
+    /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
+    /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
+    fn pre_install(&self) -> Result<(), ClusterError> {
+
+        // Continue fixing pre-check errors until we resolve all problems
+        // or there is an error that we cannot fix
+        loop {
+            let check_error = match self.pre_install_check() {
+                // This is the successful exit case. If all pre-checks succeed,
+                // we can continue the installation process normally
+                Ok(_) => return Ok(()),
+                Err(err) => err,
+            };
+
+            // If this returns an error, we require user intervention
+            self.pre_install_fix(check_error)?;
+
+            // If we reach this point, the fix succeeded.
+            // In this case, continue the loop to check for more errors
+        }
+    }
+
     /// Runs pre install checks
     ///  1. Check if compatible helm version is installed
     ///  2. Check if compatible sys charts are installed
@@ -593,9 +624,7 @@ impl ClusterInstaller {
             .helm_client
             .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO)?;
         if !app_charts.is_empty() {
-            return Err(ClusterError::Other(
-                "Fluvio cluster is already installed".to_string(),
-            ));
+            return Err(ClusterError::AlreadyInstalled);
         }
 
         // check k8 config hostname is not an IP address
@@ -628,31 +657,27 @@ impl ClusterInstaller {
         Ok(())
     }
 
-    /// Checks if all of the prerequisites for installing Fluvio are met
-    ///
-    /// This will attempt to automatically fix any missing prerequisites,
-    /// depending on the installer configuration. See the following options
-    /// for more details:
-    ///
-    /// - [`with_system_chart`]
-    /// - [`with_update_context`]
-    ///
-    /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
-    /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
-    fn check_and_fix(&self) -> Result<(), ClusterError> {
-        // Preforms pre-install checks and tries to fix things if possible
-        match self.pre_install_check() {
-            Ok(_) => (),
-            Err(ClusterError::MissingSystemChart) if self.config.install_sys => {
+    /// Given a pre-check error, attempt to automatically correct it
+    #[instrument(skip(self, error))]
+    fn pre_install_fix(&self, error: ClusterError) -> Result<(), ClusterError> {
+
+        // Depending on what error occurred, try to fix the error.
+        // If we handle the error successfully, return Ok(()) to indicate success
+        // If we cannot handle this error, return it to bubble up
+        match error {
+            ClusterError::MissingSystemChart if self.config.install_sys => {
                 debug!("Fluvio system chart not installed. Attempting to install");
                 self._install_sys()?;
             }
-            Err(ClusterError::InvalidMinikubeContext) if self.config.update_context => {
+            ClusterError::InvalidMinikubeContext if self.config.update_context => {
                 debug!("Updating to minikube context");
                 let context = MinikubeContext::try_from_system()?;
                 context.save()?;
             }
-            Err(other) => return Err(other),
+            unhandled => {
+                warn!("Pre-install was unable to autofix an error");
+                return Err(unhandled);
+            },
         }
 
         Ok(())
@@ -667,10 +692,14 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
-        self.check_and_fix()?;
-
-        // Performs the main installation
-        self.install_app()?;
+        match self.pre_install() {
+            // If all checks pass, perform the main installation
+            Ok(()) => self.install_app()?,
+            // If Fluvio is already installed, skip install step
+            Err(ClusterError::AlreadyInstalled) => (),
+            // If there were other unhandled errors, return them
+            Err(unhandled) => return Err(unhandled),
+        }
 
         let namespace = &self.config.namespace;
         let sc_address = match self.wait_for_sc_service(namespace).await {
