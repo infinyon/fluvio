@@ -1,0 +1,54 @@
+name: 'fluvio'
+description: 'Installs Fluvio CLI from source with required dependencies (e.g. Helm, Rust) and starts a Local Cluster. Used for developing fluvio.'
+inputs:
+  spus:  # number of SPUs
+    description: 'number of SPUs to create for local cluster'
+    required: false
+    default: "1"
+  cluster-type:
+    description: 'Type of cluster (i.e. local or kubernetes)'
+    required: true
+    default: 'local'
+  rust-log:
+    description: "Add rust log options (e.g. debug, warn, info)"
+    required: false
+    default: 'info'
+  version:
+    description: "Use a specific version of the fluvio CLI (e.g. latest, 0.6.0)"
+    required: false
+    default: 'latest'
+  development:
+    description: "Use a debug release version of fluvio"
+    required: false
+    default: "true"
+  helm-version:
+    description: "Use a specific helm version"
+    required: false
+    default: 'v3.3.4'
+  minikube-version:
+    description: "Use a specific minikube version"
+    required: false
+    default: 'v1.13.1'
+runs:
+  using: "composite"
+  steps: 
+    - id: set-environment-variables
+      run: |
+        echo "::set-env name=SPU_NUMBER::${{ inputs.spus }}"
+        echo "::set-env name=CLUSTER_TYPE::${{ inputs.cluster-type }}"
+        echo "::set-env name=RUST_LOG::${{ inputs.rust-log }}"
+        echo "::set-env name=VERSION::${{ inputs.version }}"
+        echo "::set-env name=DEVELOPMENT::${{ inputs.development }}"
+        echo "::set-env name=HELM_VERSION::${{ inputs.helm-version }}"
+        echo "::set-env name=MINIKUBE_VERSION::${{ inputs.minikube-version }}"
+        echo "::set-env name=OS::${{ runner.os }}"
+      shell: bash
+    - id: install-helm
+      run: ${{ github.action_path }}/dev-tools/ci-replace-helm.sh
+      shell: bash
+    - id: install-minikube
+      run: ${{ github.action_path }}/dev-tools/action-install-minikube.sh
+      shell: bash
+    - id: fluvio-cluster
+      run: ${{ github.action_path }}/dev-tools/action-install-fluvio-cluster.sh
+      shell: bash

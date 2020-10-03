@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
-
+echo "Operating System: $OS"
 case $OS in
+        'Linux') PLATFORM=linux-amd64
+        ;;
         'ubuntu-latest') PLATFORM=linux-amd64
         ;;
         'macOS-latest') PLATFORM=darwin-amd64
