@@ -8,7 +8,7 @@ spec:
   serviceAccountName: {{ .Values.serviceAccount.name }}
   containers:
     - name: flv-sc
-      image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.AppVersion }}
+      image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.version }}
       imagePullPolicy: {{ .Values.image.pullPolicy }}
       ports:
         - containerPort: 9003
@@ -16,7 +16,7 @@ spec:
         - name: RUST_LOG
           value: {{ .Values.scLog }}
         - name:  SPU_IMAGE
-          value: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.AppVersion }}
+          value: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.version }}
       command: ["/fluvio", "run", "sc"]
   {{ if .Values.tls }}
       args:

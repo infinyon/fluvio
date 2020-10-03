@@ -3,4 +3,3 @@ name: fluvio-app
 description: A Helm chart for Fluvio
 type: application
 version: 0.6.0
-appVersion: 0.6.0

@@ -122,6 +122,16 @@ make publish_fluvio_image:
 	-d '{"ref":"master"}'
 
 
+helm_install_plugin:
+	helm plugin install https://github.com/chartmuseum/helm-push.git
+
+helm_login:
+	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
+
+helm_publish_app:
+	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
+
+
 # create releases
 # release CLI can be downloaded from https://github.com/aktau/github-release/releases
 create_release:
