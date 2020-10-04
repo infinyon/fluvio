@@ -37,9 +37,7 @@ impl FluvioManager {
         }
     }
 
-    pub async fn process_msg(&mut self, json_msg: String) -> Result<(), CdcError> {
-        // translated binlog message to fluvio message
-        let bn_message: BinLogMessage = serde_json::from_str(&json_msg)?;
+    pub async fn process_msg(&mut self, bn_message: BinLogMessage) -> Result<(), CdcError> {
         let flv_message = FluvioMessage::new(bn_message, self.sequence);
         let msg = serde_json::to_string(&flv_message).unwrap();
         self.producer.send_record(msg, 0).await?;

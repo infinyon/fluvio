@@ -40,6 +40,7 @@ impl Config {
 pub struct Profile {
     binlog_index_file: PathBuf,
     mysql_resource_name: String,
+    resume_file: PathBuf,
     database: Database,
     filters: Option<Filters>,
     fluvio: Option<Fluvio>,
@@ -73,6 +74,10 @@ impl Profile {
 
     pub fn binlog_index_file(&self) -> &PathBuf {
         &self.binlog_index_file
+    }
+
+    pub fn resume_file(&self) -> &Path {
+        &self.resume_file
     }
 
     pub fn mysql_resource_name(&self) -> &String {

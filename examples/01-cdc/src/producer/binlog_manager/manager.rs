@@ -47,7 +47,7 @@ impl BinLogManager {
         })
     }
 
-    pub fn run(mut self, resume: Option<Resume>, frequency_mili: Option<u64>) {
+    pub fn run(mut self, resume: Resume, frequency_mili: Option<u64>) {
         let mut init = true;
 
         thread::spawn(move || loop {
@@ -62,7 +62,7 @@ impl BinLogManager {
         });
     }
 
-    fn inner_run(&mut self, resume: &Option<Resume>, init: bool) -> Result<(), CdcError> {
+    fn inner_run(&mut self, resume: &Resume, init: bool) -> Result<(), CdcError> {
         if init {
             self.set_current_file(resume)?;
             self.send_current_file_records()?;
@@ -81,9 +81,9 @@ impl BinLogManager {
         Ok(())
     }
 
-    fn set_current_file(&mut self, resume: &Option<Resume>) -> Result<(), Error> {
-        let (file, offset) = match resume {
-            Some(resume) => (resume.file(), resume.offset()),
+    fn set_current_file(&mut self, resume: &Resume) -> Result<(), Error> {
+        let (file, offset) = match &resume.binfile {
+            Some(binfile) => (binfile.file_name.clone(), binfile.offset),
             None => (self.get_first_index_file()?, None),
         };
 

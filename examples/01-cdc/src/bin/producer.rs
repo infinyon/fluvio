@@ -3,6 +3,7 @@ use crossbeam_channel::{bounded, select, Receiver};
 
 use fluvio_cdc::producer::{Config, get_cli_opt};
 use fluvio_cdc::producer::{FluvioManager, BinLogManager, Resume};
+use fluvio_cdc::messages::BinLogMessage;
 use fluvio_cdc::error::CdcError;
 
 async fn run() -> Result<(), CdcError> {
@@ -17,28 +18,32 @@ async fn run() -> Result<(), CdcError> {
 
     // create fluvio manager
     let mut flv_manager = FluvioManager::new(profile.topic(), profile.replicas(), None).await?;
-    let bn_file = flv_manager.get_last_file_offset().await?;
 
     // create binlog manager
     let bn_manager = BinLogManager::new(&profile, sender)?;
 
     // create resume
-    let resume = Resume::new(bn_file);
-    if let Some(resume) = &resume {
-        println!("{}", resume);
+    println!("Using resume file path: {:?}", profile.resume_file());
+    let mut resume = Resume::load(profile.resume_file()).await?;
+    if let Some(binfile) = resume.binfile.as_ref() {
+        println!("Resuming with {:?}", binfile);
     }
 
     let ts_frequency = None;
-    bn_manager.run(resume, ts_frequency);
+    bn_manager.run(resume.clone(), ts_frequency);
 
     loop {
         select! {
             recv(receiver) -> msg => {
                 match msg {
                     Ok(msg) => {
-                        if let Err(err) = flv_manager.process_msg(msg).await {
+                        let bn_message: BinLogMessage = serde_json::from_str(&msg)?;
+                        let bn_file = bn_message.bn_file.clone();
+                        if let Err(err) = flv_manager.process_msg(bn_message).await {
                             println!("{:?}", err);
+                            std::process::exit(0);
                         }
+                        resume.update_binfile(bn_file).await?;
                     },
                     Err(err) => {
                         println!("{:?}", err);
