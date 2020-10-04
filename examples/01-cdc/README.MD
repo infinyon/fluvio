@@ -4,72 +4,83 @@
 that can be used to improve replication, keep audit trails, and feed downstream
 business intelligence tools.
 
-This demo focuses on **database replication**, where a **CDC producer** publishes
-database events to a **Fluvio stream** and one or more **CDC consumers** read the events
+This example showcases database replication, where a CDC producer publishes
+database events to a Fluvio topic, and one or more CDC consumers read the events
 and create identical database replicas.
 
 ## Requirements
 
-Access to a Fluvio installation (local or cloud)
+This example requires you to have completed the following prerequisites:
 
-* [Setup Fluvio Cloud](https://app.fluvio.io/login)
+- Install [Docker]
+- Install the [mysql client]
+- Complete the [Fluvio getting started guide]
+  - Note: You may use [Fluvio Cloud] or install [Fluvio locally], but you don't need both
 
+[Docker]: https://docs.docker.com/engine/install/
+[Fluvio getting started guide]: https://fluvio.io/docs/getting-started
+[Fluvio Cloud]: https://fluvio.io/docs/getting-started/fluvio-cloud/
+[Fluvio locally]: https://fluvio.io/docs/getting-started/fluvio-local/
 
-## Standalone Deployment
+## Docker MySQL deployment
 
-For a standalone deployment using your own databases, follow the instructions in
-[cdc-producer](./cdc-producer/README.MD) and [cdc-consumer](./cdc-consumer/README.MD) sections.
+This example requires two instances of MySQL to be up and running: One to be a
+leader that produces events, and one to be a follower that consumes events.
+We've provided docker images to help you configure these MySQL instances with
+the right configurations. Run the following commands to start your MySQL containers:
 
-## Laptop Demo Deployment
-
-The laptop demo environment with 2+ mysql instances requires Docker:
-
-* [Setup MYSQL Docker Environment](./docker/README.MD)
-
-Please complete the Docker setup, before moving to the next section.
-
-
-## Build Producer/Consumer
-
-In **flv-mysql-cdc-demo** directory, build producer/consumer
-
-```
-$ cargo build
-...
-Compiling cdc-producer v0.1.0 (/projects/github/flv-mysql-cdc-demo/mysql-cdc/cdc-producer)
-Compiling cdc-consumer v0.1.0 (/projects/github/flv-mysql-cdc-demo/mysql-cdc/cdc-consumer)
-Finished dev [unoptimized + debuginfo] target(s) in 1m 21s
+```bash
+$ cd docker/
+$ ./install.sh -n mysql-producer -d ~/mysql-cdc/mysql-producer -p 3080
+$ ./install.sh -n mysql-consumer -d ~/mysql-cdc/mysql-consumer -p 3090
 ```
 
-## Start CDC Producer
+At this point, you should be able to see both docker containers running
 
-**None**: Producer must be started before Consumer, as the producer creates the topic in Fluvio.
-
-Producer **profile** is configured to connect to the mysql database configured in [Docker setup](./docker/README.MD).
-
-Start producer:
-
-```
-./target/debug/cdc-producer ./cdc-producer/producer_profile.toml
+```bash
+$ docker ps
+CONTAINER ID   IMAGE      COMMAND                  CREATED       STATUS       PORTS                               NAMES
+17c60cbbfc09   mysql-80   "docker-entrypoint.s…"   3 hours ago   Up 3 hours   33060/tcp, 0.0.0.0:3090->3306/tcp   mysql-consumer
+f5ec27a58476   mysql-80   "docker-entrypoint.s…"   3 hours ago   Up 3 hours   33060/tcp, 0.0.0.0:3080->3306/tcp   mysql-producer
 ```
 
-## Start CDC Consumer
+## Creating a Fluvio Topic
 
-Consumer **profile** is configured to connect to the mysql database configured in [Docker setup](./docker/README.MD). 
+In Fluvio, every message is sent to a Topic. A topic is a sort of category for events that
+are related. For this example, we're going to create a topic that will receive all of our
+MySQL events. Run the following command to create the topic:
 
-Start consumer:
-
+```bash
+$ fluvio topic create rust-mysql-cdc
 ```
-./target/debug/cdc-consumer cdc-consumer/consumer_profile.toml 
+
+## Start the Producer and Consumer
+
+Now we'll launch the CDC Producer, which will watch for any SQL commands that are executed
+in the leader MySQL instance and produce corresponding Fluvio events.
+
+```bash
+$ cargo run --bin cdc-producer -- examples/01-cdc/producer_profile.toml
+```
+
+In another terminal window, we'll launch the CDC Consumer, which listens for new Fluvio
+events and replicates them in the follower MySQL instance.
+
+```bash
+$ cargo run --bin cdc-consumer -- examples/01-cdc/consumer_profile.toml
 ```
 
 ## Connect to Mysql
 
-In two separate terminal windows, connect to the mysql databases
+Now you're ready to start interacting with your databases. We'll open up
+the `mysql` command line and start running queries on the leader database, and we'll
+open a separate window connected to the follower database to see that all the changes
+get propagated.
 
-### Connect to Producer (master db)
+### Connect to Producer (leader DB)
 
-Producer database is mapped port **3080**.
+The leader database is bound to port 3080. You can connect to it using the `mysql`
+command as follows:
 
 ```
 $ mysql -h 0.0.0.0 -P 3080 -ufluvio -pfluvio4cdc!
@@ -77,7 +88,8 @@ $ mysql -h 0.0.0.0 -P 3080 -ufluvio -pfluvio4cdc!
 mysql >
 ```
 
-Producer profile has a filter that registers only changes applied to the "flvDB" database. Let's create the database:
+The producer profile has a filter that registers only changes applied to the "flvDB"
+database. Let's create the database now:
 
 ```
 mysql> CREATE DATABASE flvDb;
@@ -87,9 +99,10 @@ mysql> use flvDb;
 Database changed
 ```
 
-### Connect to Consumer (slave db)
+### Connect to Consumer (follower DB)
 
-Consumer database is mapped port **3090**.
+The follower database is bound to port 3090. Open another terminal window and connect
+to it using the `mysql` command:
 
 ```
 $ mysql -h 0.0.0.0 -P 3090 -ufluvio -pfluvio4cdc!
@@ -97,9 +110,9 @@ $ mysql -h 0.0.0.0 -P 3090 -ufluvio -pfluvio4cdc!
 mysql >
 ```
 
-**NOTE**: Database was crated the by the cdc-producer (check the log).
+Since the CDC Consumer is already running, the "flvDb" database we just created on
+the leader will also be created on the follower!
 
-Let's take a look:
 ```
 mysql> SHOW DATABASES;
 +--------------------+

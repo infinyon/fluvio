@@ -9,11 +9,11 @@ name = "fluvio_cdc"
 path = "src/lib.rs"
 
 [[bin]]
-name = "producer"
+name = "cdc-producer"
 path = "src/bin/producer.rs"
 
 [[bin]]
-name = "consumer"
+name = "cdc-consumer"
 path = "src/bin/consumer.rs"
 
 [dependencies]
