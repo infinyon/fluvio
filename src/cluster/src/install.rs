@@ -30,6 +30,8 @@ use crate::check::{
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
+const DEFAULT_APP_NAME: &str = "fluvio-app";
+const DEFAULT_SYS_NAME: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_REPO: &str = "fluvio";
@@ -714,7 +716,7 @@ impl ClusterInstaller {
                 )?;
             }
             ChartLocation::Local(chart_home) => {
-                let chart_location = chart_home.join("fluvio-sys");
+                let chart_location = chart_home.join(DEFAULT_SYS_NAME);
                 let chart_string = chart_location.to_string_lossy();
                 debug!(
                     chart_location = chart_string.as_ref(),
@@ -800,7 +802,7 @@ impl ClusterInstaller {
             }
             // For local, we do not use a repo but install from the chart location directly.
             ChartLocation::Local(chart_home) => {
-                let chart_location = chart_home.join("fluvio-app");
+                let chart_location = chart_home.join(DEFAULT_APP_NAME);
                 let chart_string = chart_location.to_string_lossy();
                 debug!(
                     chart_location = chart_string.as_ref(),
