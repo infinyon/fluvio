@@ -4,8 +4,7 @@ use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
-use std::net::{IpAddr, SocketAddr};
-use std::str::FromStr;
+use std::net::SocketAddr;
 
 use tracing::{info, warn, debug, trace, instrument};
 use fluvio::{Fluvio, FluvioConfig};
@@ -25,7 +24,7 @@ use semver::Version;
 
 use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::get_cluster_server_host;
+use crate::check::{check_cluster_server_host, CheckError};
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -597,11 +596,11 @@ impl ClusterInstaller {
     ///  1. Check if compatible helm version is installed
     ///  2. Check if compatible sys charts are installed
     ///  3. Check if the K8 config hostname is not an IP address
-    fn pre_install_check(&self) -> Result<(), ClusterError> {
+    fn pre_install_check(&self) -> Result<(), CheckError> {
         // check helm version
         let helm_version = self.helm_client.get_helm_version()?;
         if Version::parse(&helm_version) < Version::parse(DEFAULT_HELM_VERSION) {
-            return Err(ClusterError::IncompatibleHelmVersion {
+            return Err(CheckError::IncompatibleHelmVersion {
                 installed: helm_version,
                 required: DEFAULT_HELM_VERSION.to_string(),
             });
@@ -612,11 +611,9 @@ impl ClusterInstaller {
             .helm_client
             .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO)?;
         if sys_charts.is_empty() {
-            return Err(ClusterError::MissingSystemChart);
+            return Err(CheckError::MissingSystemChart);
         } else if sys_charts.len() > 1 {
-            return Err(ClusterError::Other(
-                "Multiple fluvio system charts found".to_string(),
-            ));
+            return Err(CheckError::MultipleSystemCharts);
         }
 
         // check if cluster is already installed
@@ -624,7 +621,7 @@ impl ClusterInstaller {
             .helm_client
             .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO)?;
         if !app_charts.is_empty() {
-            return Err(ClusterError::AlreadyInstalled);
+            return Err(CheckError::AlreadyInstalled);
         }
 
         // check k8 config hostname is not an IP address
@@ -634,24 +631,7 @@ impl ClusterInstaller {
                 // ignore server check for pod
             }
             K8Config::KubeConfig(config) => {
-                let server_host = match get_cluster_server_host(config) {
-                    Ok(server) => server,
-                    Err(e) => {
-                        return Err(ClusterError::Other(format!(
-                            "error fetching server from kube context {}",
-                            e.to_string()
-                        )))
-                    }
-                };
-                if !server_host.trim().is_empty() {
-                    if IpAddr::from_str(&server_host).is_ok() {
-                        return Err(ClusterError::InvalidMinikubeContext);
-                    };
-                } else {
-                    return Err(ClusterError::Other(
-                        "Cluster in kubectl context cannot have empty hostname".to_owned(),
-                    ));
-                }
+                check_cluster_server_host(config)?;
             }
         };
         Ok(())
@@ -659,24 +639,24 @@ impl ClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    fn pre_install_fix(&self, error: ClusterError) -> Result<(), ClusterError> {
+    fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
 
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
         match error {
-            ClusterError::MissingSystemChart if self.config.install_sys => {
+            CheckError::MissingSystemChart if self.config.install_sys => {
                 debug!("Fluvio system chart not installed. Attempting to install");
                 self._install_sys()?;
             }
-            ClusterError::InvalidMinikubeContext if self.config.update_context => {
+            CheckError::InvalidMinikubeContext if self.config.update_context => {
                 debug!("Updating to minikube context");
                 let context = MinikubeContext::try_from_system()?;
                 context.save()?;
             }
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
-                return Err(unhandled);
+                return Err(unhandled.into());
             },
         }
 
@@ -696,7 +676,7 @@ impl ClusterInstaller {
             // If all checks pass, perform the main installation
             Ok(()) => self.install_app()?,
             // If Fluvio is already installed, skip install step
-            Err(ClusterError::AlreadyInstalled) => (),
+            Err(ClusterError::PreCheckError { source: CheckError::AlreadyInstalled }) => (),
             // If there were other unhandled errors, return them
             Err(unhandled) => return Err(unhandled),
         }
