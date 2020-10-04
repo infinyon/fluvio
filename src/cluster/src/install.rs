@@ -538,7 +538,7 @@ impl ClusterInstaller {
             cloud: DEFAULT_CLOUD_NAME.to_string(),
             save_profile: false,
             install_sys: true,
-            update_context: true,
+            update_context: false,
             spu_spec,
             rust_log: None,
             server_tls_policy: TlsPolicy::Disabled,
