@@ -18,7 +18,7 @@ fn get_log_directory() -> &'static str {
 
 #[cfg(not(target_os = "macos"))]
 fn get_log_directory() -> &'static str {
-    "/var/log/fluvio"
+    "/tmp"
 }
 
 pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
