@@ -23,7 +23,10 @@ use k8_obj_metadata::InputObjectMeta;
 
 use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{check_cluster_server_host, CheckError, check_helm_version, check_system_chart, check_already_installed};
+use crate::check::{
+    check_cluster_server_host, CheckError, check_helm_version, check_system_chart,
+    check_already_installed,
+};
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -570,7 +573,6 @@ impl ClusterInstaller {
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     fn pre_install(&self) -> Result<(), ClusterError> {
-
         // Continue fixing pre-check errors until we resolve all problems
         // or there is an error that we cannot fix
         loop {
@@ -604,7 +606,6 @@ impl ClusterInstaller {
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
     fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
-
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
@@ -621,7 +622,7 @@ impl ClusterInstaller {
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
                 return Err(unhandled.into());
-            },
+            }
         }
 
         Ok(())
@@ -640,7 +641,9 @@ impl ClusterInstaller {
             // If all checks pass, perform the main installation
             Ok(()) => self.install_app()?,
             // If Fluvio is already installed, skip install step
-            Err(ClusterError::PreCheckError { source: CheckError::AlreadyInstalled }) => (),
+            Err(ClusterError::PreCheckError {
+                source: CheckError::AlreadyInstalled,
+            }) => (),
             // If there were other unhandled errors, return them
             Err(unhandled) => return Err(unhandled),
         }

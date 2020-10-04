@@ -64,7 +64,7 @@ pub enum CheckError {
     K8ConfigError {
         #[from]
         source: K8ConfigError,
-    }
+    },
 }
 
 // Getting server hostname from K8 context
@@ -75,12 +75,17 @@ pub fn check_cluster_server_host() -> Result<(), CheckError> {
         K8Config::KubeConfig(context) => context,
     };
 
-    let cluster_context = context.config.current_cluster()
+    let cluster_context = context
+        .config
+        .current_cluster()
         .ok_or(CheckError::NoActiveKubernetesContext)?;
     let server_url = cluster_context.cluster.server.to_owned();
-    let url = Url::parse(&server_url)
-        .map_err(|source| CheckError::BadKubernetesServerUrl { source })?;
-    let host = url.host().ok_or(CheckError::MissingKubernetesServerHost)?.to_string();
+    let url =
+        Url::parse(&server_url).map_err(|source| CheckError::BadKubernetesServerUrl { source })?;
+    let host = url
+        .host()
+        .ok_or(CheckError::MissingKubernetesServerHost)?
+        .to_string();
     if host.is_empty() {
         return Err(CheckError::MissingKubernetesServerHost);
     }
@@ -105,7 +110,6 @@ pub fn check_helm_version(helm: &HelmClient, required: &str) -> Result<(), Check
 
 /// Check that the system chart is installed
 pub fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> Result<(), CheckError> {
-
     // check installed system chart version
     let sys_charts = helm.get_installed_chart_by_name(sys_repo)?;
     if sys_charts.is_empty() {
