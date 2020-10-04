@@ -11,6 +11,20 @@ pub struct Resume {
 }
 
 impl Resume {
+    pub fn new<P: Into<PathBuf>>(path: P, binfile: BnFile) -> Result<Self, Error> {
+        Ok(Self {
+            path: path.into(),
+            binfile: Some(binfile),
+        })
+    }
+
+    pub fn empty<P: Into<PathBuf>>(path: P) -> Result<Self, Error> {
+        Ok(Self {
+            path: path.into(),
+            binfile: None,
+        })
+    }
+
     pub async fn load<P: Into<PathBuf>>(resume_path: P) -> Result<Self, Error> {
         let path = resume_path.into();
         let path = match expand_tilde(&path) {

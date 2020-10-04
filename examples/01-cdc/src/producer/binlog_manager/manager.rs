@@ -258,7 +258,8 @@ mod test {
 
         // test - resume: file1, offset: None,
         let bn_file = BnFile::new(BL_FILE1.to_owned(), None);
-        let resume = Resume::new(Some(bn_file));
+        let resume_path = get_base_dir().join("resume");
+        let resume = Resume::new(&resume_path, bn_file).unwrap();
         let set_current_res = fm.set_current_file(&resume);
         assert!(set_current_res.is_ok());
 
@@ -273,7 +274,7 @@ mod test {
 
         // test - resume: file2, offset: 2000,
         let bn_file = BnFile::new(BL_FILE2.to_owned(), Some(200));
-        let resume = Resume::new(Some(bn_file));
+        let resume = Resume::new(&resume_path, bn_file).unwrap();
         let set_current_res = fm.set_current_file(&resume);
         assert!(set_current_res.is_ok());
 
@@ -287,7 +288,7 @@ mod test {
         );
 
         // test - resume: invalid, offset: Some(1000),
-        let resume = None;
+        let resume = Resume::empty(&resume_path).unwrap();
         let set_current_res = fm.set_current_file(&resume);
         assert!(set_current_res.is_ok());
 
