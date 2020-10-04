@@ -20,11 +20,10 @@ use k8_config::context::MinikubeContext;
 use k8_client::metadata::MetadataClient;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
-use semver::Version;
 
 use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{check_cluster_server_host, CheckError};
+use crate::check::{check_cluster_server_host, CheckError, check_helm_version, check_system_chart, check_already_installed};
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -597,43 +596,10 @@ impl ClusterInstaller {
     ///  2. Check if compatible sys charts are installed
     ///  3. Check if the K8 config hostname is not an IP address
     fn pre_install_check(&self) -> Result<(), CheckError> {
-        // check helm version
-        let helm_version = self.helm_client.get_helm_version()?;
-        if Version::parse(&helm_version) < Version::parse(DEFAULT_HELM_VERSION) {
-            return Err(CheckError::IncompatibleHelmVersion {
-                installed: helm_version,
-                required: DEFAULT_HELM_VERSION.to_string(),
-            });
-        }
-
-        // check installed system chart version
-        let sys_charts = self
-            .helm_client
-            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO)?;
-        if sys_charts.is_empty() {
-            return Err(CheckError::MissingSystemChart);
-        } else if sys_charts.len() > 1 {
-            return Err(CheckError::MultipleSystemCharts);
-        }
-
-        // check if cluster is already installed
-        let app_charts = self
-            .helm_client
-            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO)?;
-        if !app_charts.is_empty() {
-            return Err(CheckError::AlreadyInstalled);
-        }
-
-        // check k8 config hostname is not an IP address
-        let k8_config = K8Config::load()?;
-        match k8_config {
-            K8Config::Pod(_) => {
-                // ignore server check for pod
-            }
-            K8Config::KubeConfig(config) => {
-                check_cluster_server_host(config)?;
-            }
-        };
+        check_helm_version(&self.helm_client, DEFAULT_HELM_VERSION)?;
+        check_system_chart(&self.helm_client, DEFAULT_CHART_SYS_REPO)?;
+        check_already_installed(&self.helm_client, DEFAULT_CHART_APP_REPO)?;
+        check_cluster_server_host()?;
         Ok(())
     }
 

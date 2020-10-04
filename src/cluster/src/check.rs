@@ -2,9 +2,10 @@ use std::net::IpAddr;
 use std::str::FromStr;
 
 use thiserror::Error;
-use k8_config::{KubeContext, ConfigError as K8ConfigError};
+use semver::Version;
+use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
-use crate::helm::HelmError;
+use crate::helm::{HelmError, HelmClient};
 
 #[derive(Error, Debug)]
 pub enum CheckError {
@@ -67,8 +68,14 @@ pub enum CheckError {
 }
 
 // Getting server hostname from K8 context
-pub(crate) fn check_cluster_server_host(kc_context: KubeContext) -> Result<(), CheckError> {
-    let cluster_context = kc_context.config.current_cluster()
+pub fn check_cluster_server_host() -> Result<(), CheckError> {
+    let config = K8Config::load()?;
+    let context = match config {
+        K8Config::Pod(_) => return Ok(()),
+        K8Config::KubeConfig(context) => context,
+    };
+
+    let cluster_context = context.config.current_cluster()
         .ok_or(CheckError::NoActiveKubernetesContext)?;
     let server_url = cluster_context.cluster.server.to_owned();
     let url = Url::parse(&server_url)
@@ -81,5 +88,39 @@ pub(crate) fn check_cluster_server_host(kc_context: KubeContext) -> Result<(), C
         return Err(CheckError::KubernetesServerIsIp);
     }
 
+    Ok(())
+}
+
+/// Checks that the installed helm version is compatible with the installer requirements
+pub fn check_helm_version(helm: &HelmClient, required: &str) -> Result<(), CheckError> {
+    let helm_version = helm.get_helm_version()?;
+    if Version::parse(&helm_version) < Version::parse(required) {
+        return Err(CheckError::IncompatibleHelmVersion {
+            installed: helm_version,
+            required: required.to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Check that the system chart is installed
+pub fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> Result<(), CheckError> {
+
+    // check installed system chart version
+    let sys_charts = helm.get_installed_chart_by_name(sys_repo)?;
+    if sys_charts.is_empty() {
+        return Err(CheckError::MissingSystemChart);
+    } else if sys_charts.len() > 1 {
+        return Err(CheckError::MultipleSystemCharts);
+    }
+    Ok(())
+}
+
+/// Checks that Fluvio is not already installed
+pub fn check_already_installed(helm: &HelmClient, app_repo: &str) -> Result<(), CheckError> {
+    let app_charts = helm.get_installed_chart_by_name(app_repo)?;
+    if !app_charts.is_empty() {
+        return Err(CheckError::AlreadyInstalled);
+    }
     Ok(())
 }
