@@ -58,10 +58,8 @@ pub struct ClusterInstallerBuilder {
     chart_name: String,
     /// A specific version of the Fluvio helm chart to install
     chart_version: String,
-    /// The location to find the fluvio app chart
+    /// The location to find the fluvio charts
     chart_location: ChartLocation,
-    /// The location to find the fluvio sys chart
-    chart_location_sys: ChartLocation,
     /// The name of the SPU group to create
     group_name: String,
     /// The name of the Fluvio cloud
@@ -217,7 +215,8 @@ impl ClusterInstallerBuilder {
     ///
     /// This is often desirable when developing for Fluvio locally and making
     /// edits to the chart. When using this option, the argument is expected to be
-    /// a local filesystem path.
+    /// a local filesystem path. The path given is expected to be the parent directory
+    /// of both the `fluvio-app` and `fluvio-sys` charts.
     ///
     /// This option is mutually exclusive from [`with_remote_chart`]; if both are used,
     /// the latest one defined is the one that's used.
@@ -227,7 +226,7 @@ impl ClusterInstallerBuilder {
     /// ```no_run
     /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
-    ///     .with_local_chart("./k8-util/helm/fluvio-app")
+    ///     .with_local_chart("./k8-util/helm")
     ///     .build()
     ///     .unwrap();
     /// ```
@@ -533,7 +532,6 @@ impl ClusterInstaller {
             chart_version: crate::VERSION.to_string(),
             chart_name: DEFAULT_CHART_APP_NAME.to_string(),
             chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
-            chart_location_sys: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
             group_name: DEFAULT_GROUP_NAME.to_string(),
             cloud: DEFAULT_CLOUD_NAME.to_string(),
             save_profile: false,
@@ -691,7 +689,7 @@ impl ClusterInstaller {
     #[instrument(skip(self))]
     pub fn _install_sys(&self) -> Result<(), ClusterError> {
         let install_settings = &[("cloud", &*self.config.cloud)];
-        match &self.config.chart_location_sys {
+        match &self.config.chart_location {
             ChartLocation::Remote(chart_location) => {
                 debug!(
                     chart_location = &**chart_location,
@@ -708,16 +706,17 @@ impl ClusterInstaller {
                     install_settings,
                 )?;
             }
-            ChartLocation::Local(chart_location) => {
-                let chart_location = chart_location.to_string_lossy();
+            ChartLocation::Local(chart_home) => {
+                let chart_location = chart_home.join("fluvio-sys");
+                let chart_string = chart_location.to_string_lossy();
                 debug!(
-                    chart_location = chart_location.as_ref(),
+                    chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_SYS_REPO,
-                    chart_location.as_ref(),
+                    chart_string.as_ref(),
                     None,
                     install_settings,
                 )?;
@@ -793,16 +792,17 @@ impl ClusterInstaller {
                 )?;
             }
             // For local, we do not use a repo but install from the chart location directly.
-            ChartLocation::Local(chart_location) => {
-                let chart_location = chart_location.to_string_lossy();
+            ChartLocation::Local(chart_home) => {
+                let chart_location = chart_home.join("fluvio-app");
+                let chart_string = chart_location.to_string_lossy();
                 debug!(
-                    chart_location = chart_location.as_ref(),
+                    chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_APP_REPO,
-                    chart_location.as_ref(),
+                    chart_string.as_ref(),
                     Some(&self.config.chart_version),
                     &install_settings,
                 )?;

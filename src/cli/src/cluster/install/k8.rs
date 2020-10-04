@@ -43,7 +43,7 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         }
         // If we're in develop mode (but no explicit chart location), use hardcoded local path
         None if opt.develop => {
-            builder = builder.with_local_chart("./k8-util/helm/fluvio-app");
+            builder = builder.with_local_chart("./k8-util/helm");
         }
         _ => (),
     }
