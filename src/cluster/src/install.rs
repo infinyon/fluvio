@@ -643,7 +643,11 @@ impl ClusterInstaller {
             // If Fluvio is already installed, skip install step
             Err(ClusterError::PreCheckError {
                 source: CheckError::AlreadyInstalled,
-            }) => (),
+            }) => {
+                debug!("Fluvio is already installed. Getting SC address");
+                let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
+                return Ok(sc_address);
+            },
             // If there were other unhandled errors, return them
             Err(unhandled) => return Err(unhandled),
         }
