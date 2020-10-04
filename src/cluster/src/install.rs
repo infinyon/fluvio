@@ -39,7 +39,7 @@ const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
-const DEFAULT_HELM_VERSION: &str = "3.2.0";
+const DEFAULT_HELM_VERSION: &str = "3.3.4";
 
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug)]
