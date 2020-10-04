@@ -4,8 +4,7 @@ use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
-use std::net::{IpAddr, SocketAddr};
-use std::str::FromStr;
+use std::net::SocketAddr;
 
 use tracing::{info, warn, debug, trace, instrument};
 use fluvio::{Fluvio, FluvioConfig};
@@ -17,17 +16,22 @@ use fluvio_future::timer::sleep;
 use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
+use k8_config::context::MinikubeContext;
 use k8_client::metadata::MetadataClient;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
-use semver::Version;
 
 use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::get_cluster_server_host;
+use crate::check::{
+    check_cluster_server_host, CheckError, check_helm_version, check_system_chart,
+    check_already_installed,
+};
 
 const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
+const DEFAULT_APP_NAME: &str = "fluvio-app";
+const DEFAULT_SYS_NAME: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_REPO: &str = "fluvio";
@@ -35,7 +39,7 @@ const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
-const DEFAULT_HELM_VERSION: &str = "3.2.0";
+const DEFAULT_HELM_VERSION: &str = "3.3.4";
 
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug)]
@@ -59,7 +63,7 @@ pub struct ClusterInstallerBuilder {
     chart_name: String,
     /// A specific version of the Fluvio helm chart to install
     chart_version: String,
-    /// The location to find the helm chart
+    /// The location to find the fluvio charts
     chart_location: ChartLocation,
     /// The name of the SPU group to create
     group_name: String,
@@ -67,6 +71,10 @@ pub struct ClusterInstallerBuilder {
     cloud: String,
     /// Whether to save an update to the Fluvio profile
     save_profile: bool,
+    /// Whether to install fluvio-sys with fluvio-app
+    install_sys: bool,
+    /// Whether to update the `kubectl` context
+    update_context: bool,
     /// How much storage to allocate on SPUs
     spu_spec: SpuGroupSpec,
     /// The logging settings to set in the cluster
@@ -89,7 +97,7 @@ impl ClusterInstallerBuilder {
     /// following:
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .build()
     ///     .expect("should create ClusterInstaller");
@@ -107,6 +115,16 @@ impl ClusterInstallerBuilder {
     /// Sets the Kubernetes namespace to install Fluvio into.
     ///
     /// The default namespace is "default".
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_namespace("my-namespace")
+    ///     .build()
+    ///     .expect("should build installer");
+    /// ```
     pub fn with_namespace<S: Into<String>>(mut self, namespace: S) -> Self {
         self.namespace = namespace.into();
         self
@@ -125,7 +143,7 @@ impl ClusterInstallerBuilder {
     /// You can do that like this:
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_image_tag("0.6.0")
     ///     .build()
@@ -158,7 +176,7 @@ impl ClusterInstallerBuilder {
     /// > **NOTE**: See [`with_image_tag`] to see how to specify the `0.1.0` shown here.
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_image_registry("localhost:5000/infinyon")
     ///     .build()
@@ -185,7 +203,7 @@ impl ClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_chart_version("0.6.0")
     ///     .build()
@@ -202,7 +220,8 @@ impl ClusterInstallerBuilder {
     ///
     /// This is often desirable when developing for Fluvio locally and making
     /// edits to the chart. When using this option, the argument is expected to be
-    /// a local filesystem path.
+    /// a local filesystem path. The path given is expected to be the parent directory
+    /// of both the `fluvio-app` and `fluvio-sys` charts.
     ///
     /// This option is mutually exclusive from [`with_remote_chart`]; if both are used,
     /// the latest one defined is the one that's used.
@@ -210,9 +229,9 @@ impl ClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
-    ///     .with_local_chart("./k8-util/helm/fluvio-app")
+    ///     .with_local_chart("./k8-util/helm")
     ///     .build()
     ///     .unwrap();
     /// ```
@@ -235,7 +254,7 @@ impl ClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_remote_chart("https://charts.fluvio.io")
     ///     .build()
@@ -269,7 +288,7 @@ impl ClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_save_profile(true)
     ///     .build()
@@ -280,12 +299,48 @@ impl ClusterInstallerBuilder {
         self
     }
 
+    /// Whether to install the `fluvio-sys` chart in the full installation. Defaults to `true`.
+    ///
+    /// # Example
+    ///
+    /// If you want to disable installing the system chart, you can do this
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_system_chart(false)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_system_chart(mut self, install_sys: bool) -> Self {
+        self.install_sys = install_sys;
+        self
+    }
+
+    /// Whether to update the `kubectl` context to match the Fluvio installation. Defaults to `true`.
+    ///
+    /// # Example
+    ///
+    /// If you do not want your Kubernetes contexts to be updated, you can do this
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_update_context(false)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_update_context(mut self, update_context: bool) -> Self {
+        self.update_context = update_context;
+        self
+    }
+
     /// Sets the number of SPU replicas that should be provisioned. Defaults to 1.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_spu_replicas(2)
     ///     .build()
@@ -301,7 +356,7 @@ impl ClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
+    /// # use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
     ///     .with_rust_log("debug")
     ///     .build()
@@ -401,18 +456,17 @@ impl ClusterInstallerBuilder {
 /// cluster. A `ClusterInstaller` takes care of installing all of
 /// the pieces in the right order, with sane defaults.
 ///
-/// [Helm Charts]: https://helm.sh/
-///
-/// # Example
-///
 /// If you want to try out Fluvio on Kubernetes, you can use [Minikube]
 /// as an installation target. This is the default target that the
 /// `ClusterInstaller` uses, so it doesn't require any complex setup.
 ///
-/// [Minikube]: https://kubernetes.io/docs/tasks/tools/install-minikube/
+/// # Example
+///
+/// To install Fluvio using all the default settings, use
+/// `ClusterInstaller::new()`
 ///
 /// ```no_run
-/// use fluvio_cluster::ClusterInstaller;
+/// # use fluvio_cluster::ClusterInstaller;
 /// let installer = ClusterInstaller::new()
 ///     .build()
 ///     .expect("should initialize installer");
@@ -422,6 +476,9 @@ impl ClusterInstallerBuilder {
 ///     installer.install_fluvio().await
 /// });
 /// ```
+///
+/// [Helm Charts]: https://helm.sh/
+/// [Minikube]: https://kubernetes.io/docs/tasks/tools/install-minikube/
 #[derive(Debug)]
 pub struct ClusterInstaller {
     /// Configuration options for this installation
@@ -483,6 +540,8 @@ impl ClusterInstaller {
             group_name: DEFAULT_GROUP_NAME.to_string(),
             cloud: DEFAULT_CLOUD_NAME.to_string(),
             save_profile: false,
+            install_sys: true,
+            update_context: false,
             spu_spec,
             rust_log: None,
             server_tls_policy: TlsPolicy::Disabled,
@@ -504,73 +563,70 @@ impl ClusterInstaller {
         Ok(sys_charts)
     }
 
+    /// Checks if all of the prerequisites for installing Fluvio are met
+    ///
+    /// This will attempt to automatically fix any missing prerequisites,
+    /// depending on the installer configuration. See the following options
+    /// for more details:
+    ///
+    /// - [`with_system_chart`]
+    /// - [`with_update_context`]
+    ///
+    /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
+    /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
+    fn pre_install(&self) -> Result<(), ClusterError> {
+        // Continue fixing pre-check errors until we resolve all problems
+        // or there is an error that we cannot fix
+        loop {
+            let check_error = match self.pre_install_check() {
+                // This is the successful exit case. If all pre-checks succeed,
+                // we can continue the installation process normally
+                Ok(_) => return Ok(()),
+                Err(err) => err,
+            };
+
+            // If this returns an error, we require user intervention
+            self.pre_install_fix(check_error)?;
+
+            // If we reach this point, the fix succeeded.
+            // In this case, continue the loop to check for more errors
+        }
+    }
+
     /// Runs pre install checks
     ///  1. Check if compatible helm version is installed
     ///  2. Check if compatible sys charts are installed
     ///  3. Check if the K8 config hostname is not an IP address
-    fn pre_install_check(&self) -> Result<(), ClusterError> {
-        // check helm version
-        let version_text_trimmed = self.helm_client.get_helm_version()?;
-        if Version::parse(&version_text_trimmed) < Version::parse(DEFAULT_HELM_VERSION) {
-            return Err(ClusterError::Other(format!(
-                "Helm version {} is not compatible with fluvio platform, please install version >= {}",
-                version_text_trimmed, DEFAULT_HELM_VERSION
-            )));
-        }
+    fn pre_install_check(&self) -> Result<(), CheckError> {
+        check_helm_version(&self.helm_client, DEFAULT_HELM_VERSION)?;
+        check_system_chart(&self.helm_client, DEFAULT_CHART_SYS_REPO)?;
+        check_already_installed(&self.helm_client, DEFAULT_CHART_APP_REPO)?;
+        check_cluster_server_host()?;
+        Ok(())
+    }
 
-        // check installed system chart version
-        let sys_charts = self
-            .helm_client
-            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO)?;
-        if sys_charts.is_empty() {
-            return Err(ClusterError::Other(
-                "Fluvio system chart is not installed, please install fluvio-sys first".to_string(),
-            ));
-        } else if sys_charts.len() > 1 {
-            return Err(ClusterError::Other(
-                "Multiple fluvio system charts found".to_string(),
-            ));
-        }
-
-        // check if cluster is already installed
-        let app_charts = self
-            .helm_client
-            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO)?;
-        if !app_charts.is_empty() {
-            return Err(ClusterError::Other(
-                "Fluvio cluster is already installed".to_string(),
-            ));
-        }
-
-        // check k8 config hostname is not an IP address
-        let k8_config = K8Config::load()?;
-        match k8_config {
-            K8Config::Pod(_) => {
-                // ignore server check for pod
+    /// Given a pre-check error, attempt to automatically correct it
+    #[instrument(skip(self, error))]
+    fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
+        // Depending on what error occurred, try to fix the error.
+        // If we handle the error successfully, return Ok(()) to indicate success
+        // If we cannot handle this error, return it to bubble up
+        match error {
+            CheckError::MissingSystemChart if self.config.install_sys => {
+                debug!("Fluvio system chart not installed. Attempting to install");
+                self._install_sys()?;
             }
-            K8Config::KubeConfig(config) => {
-                let server_host = match get_cluster_server_host(config) {
-                    Ok(server) => server,
-                    Err(e) => {
-                        return Err(ClusterError::Other(format!(
-                            "error fetching server from kube context {}",
-                            e.to_string()
-                        )))
-                    }
-                };
-                if !server_host.trim().is_empty() {
-                    if IpAddr::from_str(&server_host).is_ok() {
-                        return Err(ClusterError::Other(
-                            format!("Cluster in kube context cannot use IP address, please use minikube context: {}", server_host),
-                        ));
-                    };
-                } else {
-                    return Err(ClusterError::Other(
-                        "Cluster in kubectl context cannot have empty hostname".to_owned(),
-                    ));
-                }
+            CheckError::InvalidMinikubeContext if self.config.update_context => {
+                debug!("Updating to minikube context");
+                let context = MinikubeContext::try_from_system()?;
+                context.save()?;
             }
-        };
+            unhandled => {
+                warn!("Pre-install was unable to autofix an error");
+                return Err(unhandled.into());
+            }
+        }
+
         Ok(())
     }
 
@@ -582,9 +638,21 @@ impl ClusterInstaller {
         fields(namespace = &*self.config.namespace),
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
-        // perform pre install checks
-        self.pre_install_check()?;
-        self.install_app()?;
+        // Checks if env is ready for install and tries to fix anything it can
+        match self.pre_install() {
+            // If all checks pass, perform the main installation
+            Ok(()) => self.install_app()?,
+            // If Fluvio is already installed, skip install step
+            Err(ClusterError::PreCheckError {
+                source: CheckError::AlreadyInstalled,
+            }) => {
+                debug!("Fluvio is already installed. Getting SC address");
+                let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
+                return Ok(sc_address);
+            }
+            // If there were other unhandled errors, return them
+            Err(unhandled) => return Err(unhandled),
+        }
 
         let namespace = &self.config.namespace;
         let sc_address = match self.wait_for_sc_service(namespace).await {
@@ -647,16 +715,17 @@ impl ClusterInstaller {
                     install_settings,
                 )?;
             }
-            ChartLocation::Local(chart_location) => {
-                let chart_location = chart_location.to_string_lossy();
+            ChartLocation::Local(chart_home) => {
+                let chart_location = chart_home.join(DEFAULT_SYS_NAME);
+                let chart_string = chart_location.to_string_lossy();
                 debug!(
-                    chart_location = chart_location.as_ref(),
+                    chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_SYS_REPO,
-                    chart_location.as_ref(),
+                    chart_string.as_ref(),
                     None,
                     install_settings,
                 )?;
@@ -732,16 +801,17 @@ impl ClusterInstaller {
                 )?;
             }
             // For local, we do not use a repo but install from the chart location directly.
-            ChartLocation::Local(chart_location) => {
-                let chart_location = chart_location.to_string_lossy();
+            ChartLocation::Local(chart_home) => {
+                let chart_location = chart_home.join(DEFAULT_APP_NAME);
+                let chart_string = chart_location.to_string_lossy();
                 debug!(
-                    chart_location = chart_location.as_ref(),
+                    chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
                 self.helm_client.install(
                     &self.config.namespace,
                     DEFAULT_CHART_APP_REPO,
-                    chart_location.as_ref(),
+                    chart_string.as_ref(),
                     Some(&self.config.chart_version),
                     &install_settings,
                 )?;

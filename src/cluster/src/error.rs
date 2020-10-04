@@ -5,6 +5,7 @@ use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
 use crate::helm::HelmError;
+use crate::check::CheckError;
 
 /// The types of errors that can occur during cluster management
 #[derive(Error, Debug)]
@@ -44,20 +45,13 @@ pub enum ClusterError {
         /// The underlying Helm client error
         source: HelmError,
     },
-    /// The installed version of helm is incompatible
-    #[error("Must have helm version {required} or later. You have {installed}")]
-    IncompatibleHelmVersion {
-        /// The currently-installed helm version
-        installed: String,
-        /// The minimum required helm version
-        required: String,
+    /// An error that occurred during pre-installation checks
+    #[error("Fluvio pre-installation check failed")]
+    PreCheckError {
+        /// The pre-check error that occurred
+        #[from]
+        source: CheckError,
     },
-    /// The fluvio-sys chart is not installed
-    #[error("The fluvio-sys chart is not installed")]
-    MissingSystemChart,
-    /// Need to update minikube context
-    #[error("The minikube context is not active or does not match your minikube ip")]
-    InvalidMinikubeContext,
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
     SCServiceTimeout,
