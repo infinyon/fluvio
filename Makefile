@@ -67,7 +67,7 @@ run-all-unit-test:
 	cargo test --all --all-features
 
 install_musl:
-	rustup target add ${TARGET_MUSL}
+	rustup target add ${TARGET_LINUX}
 
 clean_build:
 	rm -rf /tmp/cli-*
@@ -124,7 +124,7 @@ fluvio_image: fluvio_bin_linux
 
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
-	cargo build $(RELEASE_FLAG) --bin fluvio --target $(TARGET_MUSL)
+	cargo build $(RELEASE_FLAG) --bin fluvio --target $(TARGET_LINUX)
 
 make publish_fluvio_image: 
 	curl \
