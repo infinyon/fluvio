@@ -1,9 +1,7 @@
 VERSION := $(shell cat VERSION)
 RUSTV=stable
 DOCKER_TAG=$(VERSION)
-GITHUB_USER=infinyon
-GITHUB_REPO=fluvio
-GITHUB_TAG=$(VERSION)
+GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_REGISTRY=infinyon
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
@@ -88,22 +86,6 @@ publish_cli:
 	cd src/cli;cargo publish
 
 
-#
-# List of steps for creating fluvio binary
-# create binaries for CLI
-release_cli:
-	rustup target add ${BUILD_TARGET}
-	cd src/cli;cargo build --release --bin fluvio --target ${BUILD_TARGET}
-	mkdir -p /tmp/$(CLI_BUILD)_${BUILD_TARGET}
-	cp target/${BUILD_TARGET}/release/fluvio /tmp/$(CLI_BUILD)_${BUILD_TARGET}
-	cd /tmp;tar -czvf cli-${BUILD_TARGET}-release.tar.gz $(CLI_BUILD)_${BUILD_TARGET};rm -rf $(CLI_BUILD)_${BUILD_TARGET}
-
-
-release_cli_darwin: BUILD_TARGET=${TARGET_DARWIN}
-release_cli_darwin:	release_cli
-	
-release_cli_linux:	BUILD_TARGET=${TARGET_LINUX}
-release_cli_linux:	release_cli
 
 # publish docker image for release
 # this just retag image build from fluvio_image
@@ -133,7 +115,7 @@ minikube_image:	fluvio_image
 # this will tag with current git tag
 fluvio_image: CARGO_PROFILE=$(if $(RELEASE),release,debug)
 fluvio_image: fluvio_bin_linux
-	echo "Building Fluvio image with version: $(VERSION)"
+	echo "Building Fluvio musl image with version: $(VERSION)"
 	export CARGO_PROFILE=$(if $(RELEASE),release,debug); \
 	export MINIKUBE_DOCKER_ENV=$(MINIKUBE_DOCKER_ENV); \
 	export DOCKER_TAG=$(GIT_COMMIT); \
@@ -153,21 +135,54 @@ make publish_fluvio_image:
 	-d '{"ref":"master"}'
 
 
-helm_install_plugin:
+## publish helm
+
+helm-install-plugin:
 	helm plugin install https://github.com/chartmuseum/helm-push.git
 
 
-helm_login:
+helm-login:
 	helm repo remove fluvio
 	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
 
-helm_publish_app:	helm_login
+helm-publish-app:
 	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
 
 
 # create releases
+# this assume gh has been succesfull authenticated
+#create_release_gh:	
+#	gh release create $(GITHUB_TAG) 
+#		'/tmp/fluvio-$(TARGET_LINUX)-release.tar.gz#fluvio-$(TARGET_LINUX)-release.tar.gz' \
+#		--title $(GITHUB_TAG) \
+#		--notes fluvio
+
+
+
+################# Github releases
+
+
+GITHUB_USER=infinyon
+GITHUB_REPO=fluvio
+CLI_BINARY=fluvio
+BUILD_OUTPUT=/tmp
+
+release_github:	build-cli-darwin build-cli-linux create-gh-release upload-gh-darwin upload-gh-linux
+
+
+build-cli-darwin: 	
+	rustup target add $(TARGET_DARWIN)
+	cargo build --release --bin fluvio --target $(TARGET_DARWIN)
+
+build-cli-linux:
+	rustup target add $(TARGET_LINUX)
+	cargo build --release --bin fluvio --target $(TARGET_LINUX)
+
+
+
+# create release using classic API.  note that this API is deprecated
 # release CLI can be downloaded from https://github.com/aktau/github-release/releases
-create_release:
+create-gh-release:	
 	github-release release \
 		--user ${GITHUB_USER} \
 		--repo ${GITHUB_REPO} \
@@ -175,28 +190,34 @@ create_release:
 		--name "${GITHUB_TAG}" \
 		--description "${GITHUB_TAG}"
 
-
-upload_release:	release_cli_darwin release_cli_linux
+upload-gh-darwin:
 	github-release upload \
 		--user ${GITHUB_USER} \
 		--repo ${GITHUB_REPO} \
 		--tag ${GITHUB_TAG} \
-		--name "cli-${TARGET_DARWIN}-release.tar.gz" \
-		--file /tmp/cli-${TARGET_DARWIN}-release.tar.gz 
+		--name "fluvio-$(GITHUB_TAG)-$(TARGET_DARWIN)" \
+		--file target/$(TARGET_DARWIN)/release/fluvio
+
+upload-gh-linux:
 	github-release upload \
 		--user ${GITHUB_USER} \
 		--repo ${GITHUB_REPO} \
 		--tag ${GITHUB_TAG} \
-		--name "cli-${TARGET_LINUX}-release.tar.gz" \
-		--file /tmp/cli-${TARGET_LINUX}-release.tar.gz
+		--name "fluvio-$(GITHUB_TAG)-$(TARGET_LINUX)" \
+		--file target/$(TARGET_LINUX)/release/fluvio
+
+upload-gh-linux:
+	github-release upload \
+		--user ${GITHUB_USER} \
+		--repo ${GITHUB_REPO} \
+		--tag ${GITHUB_TAG} \
+		--name "fluvio-$(GITHUB_TAG)-$(TARGET_LINUX)" \
+		--file target/$(TARGET_LINUX)/release/fluvio
 
 
-delete_release:
+delete-gh-release:
 	github-release delete \
 	--user ${GITHUB_USER} \
 	--repo ${GITHUB_REPO} \
 	--tag ${GITHUB_TAG}
 
-# helm targets
-helm_package:
-	make -C k8-util/helm package-core
