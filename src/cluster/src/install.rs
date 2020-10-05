@@ -25,10 +25,10 @@ use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{
     check_cluster_server_host, CheckError, check_helm_version, check_system_chart,
-    check_already_installed,
+    check_already_installed, check_load_balancer_status,
 };
 
-const DEFAULT_NAMESPACE: &str = "default";
+pub const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
@@ -574,11 +574,11 @@ impl ClusterInstaller {
     ///
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
-    fn pre_install(&self) -> Result<(), ClusterError> {
+    async fn pre_install(&self) -> Result<(), ClusterError> {
         // Continue fixing pre-check errors until we resolve all problems
         // or there is an error that we cannot fix
         loop {
-            let check_error = match self.pre_install_check() {
+            let check_error = match self.pre_install_check().await {
                 // This is the successful exit case. If all pre-checks succeed,
                 // we can continue the installation process normally
                 Ok(_) => return Ok(()),
@@ -586,7 +586,7 @@ impl ClusterInstaller {
             };
 
             // If this returns an error, we require user intervention
-            self.pre_install_fix(check_error)?;
+            self.pre_install_fix(check_error).await?;
 
             // If we reach this point, the fix succeeded.
             // In this case, continue the loop to check for more errors
@@ -597,17 +597,28 @@ impl ClusterInstaller {
     ///  1. Check if compatible helm version is installed
     ///  2. Check if compatible sys charts are installed
     ///  3. Check if the K8 config hostname is not an IP address
-    fn pre_install_check(&self) -> Result<(), CheckError> {
+    async fn pre_install_check(&self) -> Result<(), CheckError> {
         check_helm_version(&self.helm_client, DEFAULT_HELM_VERSION)?;
         check_system_chart(&self.helm_client, DEFAULT_CHART_SYS_REPO)?;
         check_already_installed(&self.helm_client, DEFAULT_CHART_APP_REPO)?;
         check_cluster_server_host()?;
+        check_load_balancer_status().await?;
+        Ok(())
+    }
+
+    async fn _try_minikube_tunnel(&self) -> Result<(), ClusterError> {
+        // run minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out
+        Command::new("minikube")
+            .arg("tunnel")
+            .args(&[">", "/tmp/tunnel.out", "2>", "/tmp/tunnel.out"])
+            .output()?;
+        sleep(Duration::from_millis(10000)).await;
         Ok(())
     }
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
+    async fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
@@ -620,6 +631,12 @@ impl ClusterInstaller {
                 debug!("Updating to minikube context");
                 let context = MinikubeContext::try_from_system()?;
                 context.save()?;
+            }
+            CheckError::MinikubeTunnelNotFoundRetry => {
+                debug!(
+                    "Load balancer service is not available, trying to bring up minikube tunnel"
+                );
+                self._try_minikube_tunnel().await?;
             }
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
@@ -639,7 +656,7 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
-        match self.pre_install() {
+        match self.pre_install().await {
             // If all checks pass, perform the main installation
             Ok(()) => self.install_app()?,
             // If Fluvio is already installed, skip install step

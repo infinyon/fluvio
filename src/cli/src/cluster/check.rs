@@ -3,22 +3,15 @@ use std::io::ErrorKind;
 use std::str::FromStr;
 use std::net::{IpAddr};
 use std::process::Command;
-use std::time::Duration;
 
 use semver::Version;
 use k8_client::K8Config;
-use fluvio_future::timer::sleep;
-use k8_client::ClientError;
-use k8_client::load_and_share;
-use k8_obj_core::service::ServiceSpec;
-use k8_obj_metadata::InputObjectMeta;
-use k8_client::ClientError as K8ClientError;
 use k8_config::KubeContext;
 use url::{Url};
 use structopt::StructOpt;
 use colored::*;
 use serde_json::{Value};
-use fluvio_cluster::ClusterInstaller;
+use fluvio_cluster::{ClusterInstaller, check_load_balancer_status};
 
 use crate::CliError;
 use super::*;
@@ -27,8 +20,6 @@ use super::*;
 const MIN_KUBE_VERSION: &str = "1.7.0";
 const DEFAULT_HELM_VERSION: &str = "3.2.0";
 const SYS_CHART_VERSION: &str = "0.2.0";
-const DEFAULT_NAMESPACE: &str = "default";
-const DUMMY_LB_SERVICE: &str = "flv-dummy-service";
 const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
@@ -283,115 +274,6 @@ fn get_cluster_server_host() -> Result<String, IoError> {
     } else {
         Err(IoError::new(ErrorKind::Other, "no context found"))
     }
-}
-
-fn compute_user_name() -> Result<String, IoError> {
-    let kc_config = get_current_context()?;
-
-    if let Some(ctx) = kc_config.config.current_context() {
-        Ok(ctx.context.user.to_owned())
-    } else {
-        Err(IoError::new(ErrorKind::Other, "no context found"))
-    }
-}
-
-async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, ClientError> {
-    use k8_metadata_client::MetadataClient;
-    use k8_client::http::StatusCode;
-
-    let client = load_and_share()?;
-
-    let input = InputObjectMeta::named(DUMMY_LB_SERVICE, ns);
-
-    for _ in 0..10u16 {
-        match client.retrieve_item::<ServiceSpec, _>(&input).await {
-            Ok(svc) => {
-                // check if load balancer status exists
-                if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
-                    return Ok(Some(addr.to_owned()));
-                } else {
-                    sleep(Duration::from_millis(3000)).await;
-                }
-            }
-            Err(err) => match err {
-                K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
-                    sleep(Duration::from_millis(3000)).await;
-                }
-                _ => panic!("error: {}", err),
-            },
-        };
-    }
-
-    Ok(None)
-}
-
-async fn check_load_balancer_status() -> Result<(), IoError> {
-    let username = match compute_user_name() {
-        Ok(username) => username,
-        Err(e) => {
-            return Err(IoError::new(
-                ErrorKind::Other,
-                format!("error fetching username from context {}", e.to_string()),
-            ))
-        }
-    };
-
-    // create dummy service
-    create_dummy_service()?;
-    if wait_for_service_exist(DEFAULT_NAMESPACE)
-        .await
-        .map_err(|err| IoError::new(ErrorKind::Other, err.to_string()))?
-        .is_some()
-    {
-        // IP found, everything good
-        delete_service()?;
-    } else {
-        delete_service()?;
-        if username == "minikube" {
-            return Err(IoError::new(
-                ErrorKind::Other,
-                "Not able to find the tunnel, please ensure minikube tunnel is up".to_string(),
-            ));
-        }
-        return Err(IoError::new(
-            ErrorKind::Other,
-            "Service not available".to_string(),
-        ));
-    }
-
-    Ok(())
-}
-
-fn create_dummy_service() -> Result<(), IoError> {
-    Command::new("kubectl")
-        .arg("create")
-        .arg("service")
-        .arg("loadbalancer")
-        .arg(DUMMY_LB_SERVICE)
-        .arg("--tcp=5678:8080")
-        .output()
-        .map_err(|err| {
-            IoError::new(
-                ErrorKind::Other,
-                format!("Error creating loadbalancer service: {}", err.to_string()),
-            )
-        })?;
-    Ok(())
-}
-
-fn delete_service() -> Result<(), IoError> {
-    Command::new("kubectl")
-        .arg("delete")
-        .arg("service")
-        .arg(DUMMY_LB_SERVICE)
-        .output()
-        .map_err(|err| {
-            IoError::new(
-                ErrorKind::Other,
-                format!("Error deleting loadbalancer service: {}", err.to_string()),
-            )
-        })?;
-    Ok(())
 }
 
 fn check_loadable_config() -> Result<(), IoError> {
