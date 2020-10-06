@@ -32,7 +32,7 @@ structopt = { version = "0.3", default-features = false }
 futures = { version = "0.3.4", features = ['async-await'] }
 mysql_binlog = { git = "https://github.com/infinyon/rust-mysql-binlog" }
 
-fluvio = { path = "../../../fluvio/src/client" }
+fluvio = { path = "../../src/client" }
 
 [dev-dependencies]
 async-std = "1.6.5"
