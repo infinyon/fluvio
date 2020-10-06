@@ -149,9 +149,9 @@ struct CreateServiceAccountPermission;
 impl InstallCheck for CreateServiceAccountPermission {
     async fn perform_check(&self) -> Result<String, String> {
         match check_permission(RESOURCE_SERVICE_ACCOUNT) {
-            Ok(_) => Ok("Can create CustomResourceDefinitions".to_string()),
+            Ok(_) => Ok("Can create ServiceAccount".to_string()),
             Err(err) => Err(format!(
-                "Cannot create CustomResourceDefinitions\n        error: {}",
+                "Cannot create ServiceAccount\n        error: {}",
                 err.to_string()
             )),
         }
