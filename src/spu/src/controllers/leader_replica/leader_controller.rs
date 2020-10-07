@@ -116,6 +116,10 @@ impl ReplicaLeaderController<FileReplica> {
 
                             LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica) => {
                                 leader_debug!(self,"update replica from sc: {}",replica.id);
+                            },
+                            LeaderReplicaControllerCommand::RemoveReplicaFromSc => {
+                                leader_debug!(self,"remove replica from sc: {}",self.id);
+                                self.remove().await;
                             }
                         }
                     } else {
@@ -159,6 +163,18 @@ impl ReplicaLeaderController<FileReplica> {
                 "no replica is found: {} for update follower offsets",
                 self.id
             );
+        }
+    }
+
+    // remove leader replica and shutdown this controller
+
+    async fn remove(&self) {
+        if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
+            leader_replica
+                .remove()
+                .await;
+        } else {
+            leader_warn!(self, "sync followers: no replica is found");
         }
     }
 
