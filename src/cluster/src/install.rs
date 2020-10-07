@@ -5,6 +5,8 @@ use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
 use std::net::SocketAddr;
+use std::process::Stdio;
+use std::fs::File;
 
 use tracing::{info, warn, debug, trace, instrument};
 use fluvio::{Fluvio, FluvioConfig};
@@ -25,7 +27,7 @@ use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{
     check_cluster_server_host, CheckError, check_helm_version, check_system_chart,
-    check_already_installed, check_load_balancer_status,
+    check_already_installed, _check_load_balancer_status,
 };
 
 pub const DEFAULT_NAMESPACE: &str = "default";
@@ -40,6 +42,7 @@ const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_HELM_VERSION: &str = "3.3.4";
+const DELAY: u64 = 3000;
 
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug)]
@@ -600,19 +603,23 @@ impl ClusterInstaller {
     async fn pre_install_check(&self) -> Result<(), CheckError> {
         check_helm_version(&self.helm_client, DEFAULT_HELM_VERSION)?;
         check_system_chart(&self.helm_client, DEFAULT_CHART_SYS_REPO)?;
+        _check_load_balancer_status().await?;
         check_already_installed(&self.helm_client, DEFAULT_CHART_APP_REPO)?;
         check_cluster_server_host()?;
-        check_load_balancer_status().await?;
         Ok(())
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), ClusterError> {
+        let log_file = File::create("/tmp/tunnel.out")?;
+        let error_file = log_file.try_clone()?;
+
         // run minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out
         Command::new("minikube")
             .arg("tunnel")
-            .args(&[">", "/tmp/tunnel.out", "2>", "/tmp/tunnel.out"])
+            .stdout(Stdio::from(log_file))
+            .stderr(Stdio::from(error_file))
             .output()?;
-        sleep(Duration::from_millis(10000)).await;
+        sleep(Duration::from_millis(DELAY)).await;
         Ok(())
     }
 

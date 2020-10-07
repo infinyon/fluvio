@@ -11,7 +11,7 @@ use url::{Url};
 use structopt::StructOpt;
 use colored::*;
 use serde_json::{Value};
-use fluvio_cluster::{ClusterInstaller, check_load_balancer_status};
+use fluvio_cluster::{ClusterInstaller, _check_load_balancer_status};
 
 use crate::CliError;
 use super::*;
@@ -154,7 +154,7 @@ struct LoadBalancer;
 #[async_trait]
 impl InstallCheck for LoadBalancer {
     async fn perform_check(&self) -> Result<String, String> {
-        match check_load_balancer_status().await {
+        match _check_load_balancer_status().await {
             Ok(_) => Ok("Load Balancer is up".to_string()),
             Err(err) => Err(format!(
                 "Load Balancer is down\n        error: {}",

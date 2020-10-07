@@ -16,6 +16,8 @@ use crate::helm::{HelmError, HelmClient};
 use crate::install::{DEFAULT_NAMESPACE};
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
+const DELAY: u64 = 1000;
+const MINIKUBE_USERNAME: &str = "minikube";
 
 #[derive(Error, Debug)]
 pub enum CheckError {
@@ -106,6 +108,10 @@ pub enum CheckError {
     /// Minikube tunnel not found, this error is used in case of linux where we can try to bring tunnel up
     #[error("Minikube tunnel not found, retrying")]
     MinikubeTunnelNotFoundRetry,
+
+    // Default unhandled K8 client error
+    #[error("Unhandled K8 client error")]
+    UnhandledK8ClientError,
 }
 
 /// Getting server hostname from K8 context
@@ -171,7 +177,8 @@ pub fn check_already_installed(helm: &HelmClient, app_repo: &str) -> Result<(), 
 }
 
 /// check if load balancer is up
-pub async fn check_load_balancer_status() -> Result<(), CheckError> {
+#[doc(hidden)]
+pub async fn _check_load_balancer_status() -> Result<(), CheckError> {
     let config = K8Config::load()?;
     let context = match config {
         K8Config::Pod(_) => return Ok(()),
@@ -191,7 +198,7 @@ pub async fn check_load_balancer_status() -> Result<(), CheckError> {
         delete_service()?;
     } else {
         delete_service()?;
-        if username == "minikube" {
+        if username == MINIKUBE_USERNAME {
             // incase of macos we need to run tunnel with elevated context of sudo
             // hence handle both seperately
             return Err(get_tunnel_error());
@@ -240,14 +247,16 @@ async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, CheckError> 
                 if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
                     return Ok(Some(addr.to_owned()));
                 } else {
-                    sleep(Duration::from_millis(3000)).await;
+                    sleep(Duration::from_millis(DELAY)).await;
                 }
             }
             Err(err) => match err {
                 K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
-                    sleep(Duration::from_millis(3000)).await;
+                    sleep(Duration::from_millis(DELAY)).await;
                 }
-                _ => panic!("error: {}", err),
+                _ => {
+                    return Err(CheckError::UnhandledK8ClientError);
+                }
             },
         };
     }
