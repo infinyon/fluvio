@@ -1,7 +1,7 @@
+use futures::Stream;
 use tracing::debug;
 
-use fluvio_socket::AsyncResponse;
-use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::fetch::DefaultFetchRequest;
@@ -9,6 +9,7 @@ use dataplane::fetch::FetchPartition;
 use dataplane::fetch::FetchableTopic;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
+use dataplane::record::DefaultRecord;
 use crate::FluvioError;
 use crate::offset::Offset;
 use crate::client::SerialFrame;
@@ -212,15 +213,10 @@ impl PartitionConsumer {
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
-    /// while let Some(Ok(event)) = stream.next().await {
-    ///     for batch in event.partition.records.batches {
-    ///         for record in batch.records {
-    ///             if let Some(record) = record.value.inner_value() {
-    ///                 let string = String::from_utf8(record)
-    ///                     .expect("record should be a string");
-    ///                 println!("Got event: {}", string);
-    ///             }
-    ///         }
+    /// while let Some(Ok(record)) = stream.next().await {
+    ///     if let Some(bytes) = record.try_into_bytes() {
+    ///         let string = String::from_utf8_lossy(&bytes);
+    ///         println!("Got event: {}", string);
     ///     }
     /// }
     /// # Ok(())
@@ -233,11 +229,12 @@ impl PartitionConsumer {
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
-        let result = self
+    ) -> Result<impl Stream<Item=Result<Record, FluvioError>>, FluvioError> {
+        let stream = self
             .stream_with_config(offset, ConsumerConfig::default())
             .await?;
-        Ok(result)
+
+        Ok(stream)
     }
 
     /// Continuously streams events from a particular offset in the consumer's partition
@@ -263,15 +260,10 @@ impl PartitionConsumer {
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
-    /// while let Some(Ok(event)) = stream.next().await {
-    ///     for batch in event.partition.records.batches {
-    ///         for record in batch.records {
-    ///             if let Some(record) = record.value.inner_value() {
-    ///                 let string = String::from_utf8(record)
-    ///                     .expect("record should be a string");
-    ///                 println!("Got event: {}", string);
-    ///             }
-    ///         }
+    /// while let Some(Ok(record)) = stream.next().await {
+    ///     if let Some(bytes) = record.try_into_bytes() {
+    ///         let string = String::from_utf8_lossy(&bytes);
+    ///         println!("Got event: {}", string);
     ///     }
     /// }
     /// # Ok(())
@@ -284,7 +276,44 @@ impl PartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<AsyncResponse<DefaultStreamFetchRequest>, FluvioError> {
+    ) -> Result<impl Stream<Item=Result<Record, FluvioError>>, FluvioError> {
+        use futures::future::{Either, err};
+        use futures::stream::{StreamExt, once, iter};
+
+        let stream = self._stream_batches_with_config(offset, config).await?;
+        let flattened = stream.flat_map(|batch_result| {
+            let batch = match batch_result {
+                Ok(batch) => batch,
+                Err(e) => return Either::Right(once(err(e.into()))),
+            };
+
+            let records = batch.partition.records.batches.into_iter()
+                .flat_map(|batch| {
+                    let base_offset = batch.base_offset;
+                    batch.records.into_iter().enumerate()
+                        .map(move |(relative, record)| {
+                            Ok(Record {
+                                offset: base_offset + relative as i64,
+                                record,
+                            })
+                        })
+                });
+            Either::Left(iter(records))
+        });
+
+        Ok(flattened)
+    }
+
+    /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely
+    /// on the internal structure of the fetch response. New clients should use the
+    /// `stream` and `stream_with_config` methods.
+    #[doc(hidden)]
+    #[deprecated(note = "please use 'stream' or 'stream_with_config' instead")]
+    pub async fn _stream_batches_with_config(
+        &self,
+        offset: Offset,
+        config: ConsumerConfig,
+    ) -> Result<impl Stream<Item=Result<DefaultStreamFetchResponse, FluvioError>>, FluvioError> {
         let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
@@ -307,7 +336,9 @@ impl PartitionConsumer {
             ..Default::default()
         };
 
-        self.pool.create_stream(&replica, stream_request).await
+        use futures::StreamExt;
+        let stream = self.pool.create_stream(&replica, stream_request).await?;
+        Ok(stream.map(|item| item.map_err(|e| e.into())))
     }
 }
 
@@ -349,5 +380,20 @@ impl ConsumerConfig {
     pub fn with_max_bytes(mut self, max_bytes: i32) -> Self {
         self.max_bytes = max_bytes;
         self
+    }
+}
+
+pub struct Record {
+    offset: i64,
+    record: DefaultRecord,
+}
+
+impl Record {
+    pub fn offset(&self) -> i64 {
+        self.offset
+    }
+
+    pub fn try_into_bytes(self) -> Option<Vec<u8>> {
+        self.record.value.inner_value()
     }
 }

@@ -92,7 +92,7 @@ where
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
         let mut log_stream = consumer
-            .stream_with_config(initial_offset, fetch_config)
+            ._stream_batches_with_config(initial_offset, fetch_config)
             .await?;
 
         while let Some(Ok(response)) = log_stream.next().await {
