@@ -91,7 +91,6 @@ where
 
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
-        #[clippy::allow]
         let mut log_stream = consumer
             ._stream_batches_with_config(initial_offset, fetch_config)
             .await?;

@@ -284,7 +284,7 @@ impl PartitionConsumer {
         let flattened = stream.flat_map(|batch_result| {
             let batch = match batch_result {
                 Ok(batch) => batch,
-                Err(e) => return Either::Right(once(err(e.into()))),
+                Err(e) => return Either::Right(once(err(e))),
             };
 
             let records = batch
@@ -315,7 +315,6 @@ impl PartitionConsumer {
     /// on the internal structure of the fetch response. New clients should use the
     /// `stream` and `stream_with_config` methods.
     #[doc(hidden)]
-    #[deprecated(note = "please use 'stream' or 'stream_with_config' instead")]
     pub async fn _stream_batches_with_config(
         &self,
         offset: Offset,
