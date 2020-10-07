@@ -229,7 +229,7 @@ impl PartitionConsumer {
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item=Result<Record, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
         let stream = self
             .stream_with_config(offset, ConsumerConfig::default())
             .await?;
@@ -276,7 +276,7 @@ impl PartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item=Result<Record, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
         use futures::future::{Either, err};
         use futures::stream::{StreamExt, once, iter};
 
@@ -287,10 +287,17 @@ impl PartitionConsumer {
                 Err(e) => return Either::Right(once(err(e.into()))),
             };
 
-            let records = batch.partition.records.batches.into_iter()
+            let records = batch
+                .partition
+                .records
+                .batches
+                .into_iter()
                 .flat_map(|batch| {
                     let base_offset = batch.base_offset;
-                    batch.records.into_iter().enumerate()
+                    batch
+                        .records
+                        .into_iter()
+                        .enumerate()
                         .map(move |(relative, record)| {
                             Ok(Record {
                                 offset: base_offset + relative as i64,
@@ -313,7 +320,8 @@ impl PartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item=Result<DefaultStreamFetchResponse, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>>, FluvioError>
+    {
         let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
             "starting fetch log once: {:#?} from replica: {}",

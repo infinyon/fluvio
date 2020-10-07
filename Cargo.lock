@@ -1238,7 +1238,7 @@ dependencies = [
  "fluvio-protocol",
  "futures",
  "log",
- "pin-project",
+ "pin-project-lite",
  "thiserror",
  "tokio",
  "tokio-util",
