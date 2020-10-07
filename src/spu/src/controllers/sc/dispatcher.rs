@@ -358,7 +358,7 @@ impl ScDispatcher<FileReplica> {
                 }
                 SpecChange::Delete(deleted_replica) => {
                     if deleted_replica.leader == local_id {
-                        self.remove_leader_replica(&deleted_replica.id).await;
+                        self.remove_leader_replica(deleted_replica).await;
                     } else {
                         self.remove_follower_replica(deleted_replica);
                     }
@@ -463,6 +463,44 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
+    /// reemove leader replica
+    #[instrument(
+        skip(self, replica),
+        fields(replica_id = &*format!("{}", replica.id))
+    )]
+    async fn remove_leader_replica(&self, replica: Replica) {
+        debug!("trying to remove leader controller: {}", replica);
+
+        if self.ctx.leaders_state().has_replica(&replica.id) {
+            debug!("leader replica was found, sending removing: {}", replica);
+
+            match self
+                .ctx
+                .leaders_state()
+                .send_message(
+                    &replica.id,
+                    LeaderReplicaControllerCommand::RemoveReplicaFromSc,
+                )
+                .await
+            {
+                Ok(status) => {
+                    if !status {
+                        error!("leader controller mailbox was not found for: {}", replica);
+                    }
+                }
+                Err(err) => {
+                    error!(
+                        "error sending external command to replica controller for replica: {}, {:#?}",
+                        replica,
+                        err
+                    );
+                }
+            }
+        } else {
+            error!("leader controller: {} was not found", replica)
+        }
+    }
+
     /// spawn new leader controller
     #[instrument(
         skip(self, replica_id, leader_state, shared_sc_sink),
@@ -501,18 +539,6 @@ impl ScDispatcher<FileReplica> {
             self.max_bytes,
         );
         leader_controller.run();
-    }
-
-    #[instrument(
-        skip(self, id),
-        fields(replica_id = &*format!("{}", id))
-    )]
-    pub async fn remove_leader_replica(&self, id: &ReplicaKey) {
-        debug!("removing leader replica");
-
-        if self.ctx.leaders_state().remove_replica(id).await.is_none() {
-            error!("failed to find leader replica when removing");
-        }
     }
 
     /// Promote follower replica as leader,
