@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 fluvio = { path = "../../src/client" }
+futures = "0.3.6"
 async-std = "1.6.4"

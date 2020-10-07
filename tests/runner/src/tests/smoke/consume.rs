@@ -5,6 +5,7 @@ use std::io::Write;
 use std::collections::HashMap;
 
 use utils::bin::get_fluvio;
+use futures::StreamExt;
 
 use fluvio::{Fluvio, Offset};
 use crate::cli::TestOption;
@@ -75,7 +76,7 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
             .expect("start from beginning");
 
         let mut total_records: u16 = 0;
-        'outer: while let Ok(event) = stream.next().await {
+        'outer: while let Some(Ok(event)) = stream.next().await {
             let batches = event.partition.records.batches;
             println!("consumer: received batches {}", batches.len());
             for batch in batches {

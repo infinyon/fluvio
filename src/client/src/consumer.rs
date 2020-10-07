@@ -210,8 +210,9 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
-    /// while let Ok(event) = stream.next().await {
+    /// while let Some(Ok(event)) = stream.next().await {
     ///     for batch in event.partition.records.batches {
     ///         for record in batch.records {
     ///             if let Some(record) = record.value.inner_value() {
@@ -257,11 +258,12 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
-    /// while let Ok(event) = stream.next().await {
+    /// while let Some(Ok(event)) = stream.next().await {
     ///     for batch in event.partition.records.batches {
     ///         for record in batch.records {
     ///             if let Some(record) = record.value.inner_value() {

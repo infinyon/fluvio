@@ -89,6 +89,7 @@
 //! ```
 
 use std::time::Duration;
+use futures::StreamExt;
 use fluvio::{FluvioError, Offset};
 
 const TOPIC: &str = "echo";
@@ -121,7 +122,7 @@ async fn consume() -> Result<(), FluvioError> {
     let consumer = fluvio::consumer(TOPIC, 0).await?;
     let mut stream = consumer.stream(Offset::beginning()).await?;
 
-    while let Ok(event) = stream.next().await {
+    while let Some(Ok(event)) = stream.next().await {
         for batch in event.partition.records.batches {
             for record in batch.records {
                 if let Some(record) = record.value.inner_value() {

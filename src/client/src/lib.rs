@@ -42,6 +42,7 @@
 //! ```no_run
 //! use std::time::Duration;
 //! use fluvio::{Offset, FluvioError};
+//! use futures::StreamExt;
 //!
 //! async_std::task::spawn(produce_records());
 //! if let Err(e) = async_std::task::block_on(consume_records()) {
@@ -61,7 +62,7 @@
 //!     let consumer = fluvio::consumer("echo", 0).await?;
 //!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
-//!     while let Ok(event) = stream.next().await {
+//!     while let Some(Ok(event)) = stream.next().await {
 //!         for batch in event.partition.records.batches {
 //!             for record in batch.records {
 //!                 if let Some(record) = record.value.inner_value() {
@@ -139,9 +140,10 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// ```no_run
 /// # use fluvio::{ConsumerConfig, FluvioError, Offset};
 /// #  async fn do_consume() -> Result<(), FluvioError> {
+/// use futures::StreamExt;
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
 /// let mut stream = consumer.stream(Offset::beginning()).await?;
-/// while let Ok(event) = stream.next().await {
+/// while let Some(Ok(event)) = stream.next().await {
 ///     for batch in event.partition.records.batches {
 ///         for record in batch.records {
 ///             if let Some(record) = record.value.inner_value() {

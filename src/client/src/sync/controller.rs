@@ -4,8 +4,8 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt::Display;
 
-use tracing::debug;
-use tracing::error;
+use tracing::{error, debug, instrument};
+use futures::StreamExt;
 
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
@@ -47,6 +47,10 @@ where
         spawn(controller.dispatch_loop(watch_response));
     }
 
+    #[instrument(
+        skip(self, response),
+        fields(spec = &*S::LABEL)
+    )]
     async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {
         use tokio::select;
 
@@ -58,12 +62,12 @@ where
                     debug!("received request");
 
                     match item {
-                        Ok(watch_response) => {
+                        Some(Ok(watch_response)) => {
                             let update_result: Result<MetadataUpdate<S>,_> = watch_response.try_into();
                             match update_result {
                                 Ok(update) => {
                                     if let Err(err) = self.process_updates(update).await {
-                                        error!("{} processing updates: {}",S::LABEL,err);
+                                        error!("processing updates: {}", err);
                                     }
 
                                 },
@@ -72,12 +76,14 @@ where
                                 }
                             }
                         },
-                        Err(err) => {
-                            error!("{} error receiving, end, {}",S::LABEL,err);
+                        Some(Err(err)) => {
+                            error!("error receiving, end, {}", err);
                             break;
+                        },
+                        None => {
+                            error!("No more items to receive from stream!")
                         }
                     }
-
                 }
             }
         }
