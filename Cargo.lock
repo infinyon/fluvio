@@ -1339,7 +1339,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-storage"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",

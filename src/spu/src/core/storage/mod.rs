@@ -19,3 +19,13 @@ pub(crate) async fn create_replica_storage(
     let config = default_config(local_spu, base_config);
     FileReplica::create(replica.topic.clone(), replica.partition as u32, 0, &config).await
 }
+
+/// remove replica storage
+pub async fn remove_replic_storage (
+    local_spu: SpuId,
+    replica: &ReplicaKey,
+    base_config: &ConfigOption,
+) -> Result<FileReplica, StorageError> {
+    let config = default_config(local_spu, base_config);
+    FileReplica::create(replica.topic.clone(), replica.partition as u32, 0, &config).await
+}
