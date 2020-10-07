@@ -618,7 +618,7 @@ impl ClusterInstaller {
             .arg("tunnel")
             .stdout(Stdio::from(log_file))
             .stderr(Stdio::from(error_file))
-            .output()?;
+            .spawn()?;
         sleep(Duration::from_millis(DELAY)).await;
         Ok(())
     }
