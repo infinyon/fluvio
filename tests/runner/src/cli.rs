@@ -113,7 +113,7 @@ impl TestOption {
 
     /// use k8 env driver
     pub fn use_k8_driver(&self) -> bool {
-        !self.local_driver
+        !self.local
     }
 
     pub fn develop_mode(&self) -> bool {
