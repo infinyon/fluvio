@@ -38,7 +38,11 @@ impl ListSpusOpt {
 // -----------------------------------
 
 /// Process list spus cli request
-pub async fn process_list_spus<O>(out: std::sync::Arc<O>, fluvio: &Fluvio, opt: ListSpusOpt) -> Result<(), CliError>
+pub async fn process_list_spus<O>(
+    out: std::sync::Arc<O>,
+    fluvio: &Fluvio,
+    opt: ListSpusOpt,
+) -> Result<(), CliError>
 where
     O: Terminal,
 {

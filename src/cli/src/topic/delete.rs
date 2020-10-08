@@ -22,7 +22,10 @@ pub struct DeleteTopicOpt {
 // -----------------------------------
 
 /// Process delete topic cli request
-pub async fn process_delete_topic(fluvio: &Fluvio, opt: DeleteTopicOpt) -> Result<String, CliError> {
+pub async fn process_delete_topic(
+    fluvio: &Fluvio,
+    opt: DeleteTopicOpt,
+) -> Result<String, CliError> {
     debug!("deleting topic: {}", &opt.topic);
     let mut admin = fluvio.admin().await;
     admin.delete::<TopicSpec, _>(&opt.topic).await?;

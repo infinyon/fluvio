@@ -22,7 +22,11 @@ pub struct ListPartitionOpt {
 
 impl ListPartitionOpt {
     /// perform actions
-    pub async fn process<O>(self, out: std::sync::Arc<O>, fluvio: &Fluvio) -> Result<String, CliError>
+    pub async fn process<O>(
+        self,
+        out: std::sync::Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<String, CliError>
     where
         O: Terminal,
     {

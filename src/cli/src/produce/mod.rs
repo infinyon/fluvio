@@ -67,9 +67,7 @@ pub struct ProduceLogOpt {
 
 impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
-    pub fn validate(
-        self,
-    ) -> Result<(ProduceLogConfig, Option<FileRecord>), CliError> {
+    pub fn validate(self) -> Result<(ProduceLogConfig, Option<FileRecord>), CliError> {
         let file_records = if let Some(record_per_line) = self.record_per_line {
             Some(FileRecord::Lines(record_per_line))
         } else if !self.record_file.is_empty() {

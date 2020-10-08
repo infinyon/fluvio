@@ -57,7 +57,10 @@ impl RegisterCustomSpuOpt {
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_register_custom_spu(fluvio: &Fluvio, opt: RegisterCustomSpuOpt) -> Result<(), CliError> {
+pub async fn process_register_custom_spu(
+    fluvio: &Fluvio,
+    opt: RegisterCustomSpuOpt,
+) -> Result<(), CliError> {
     let (name, spec) = opt.validate()?;
 
     let mut admin = fluvio.admin().await;

@@ -105,7 +105,10 @@ impl CreateTopicOpt {
 // -----------------------------------
 
 /// Process create topic cli request
-pub async fn process_create_topic(fluvio: &Fluvio, opt: CreateTopicOpt) -> Result<String, CliError> {
+pub async fn process_create_topic(
+    fluvio: &Fluvio,
+    opt: CreateTopicOpt,
+) -> Result<String, CliError> {
     let dry_run = opt.dry_run;
     let (name, topic_spec) = opt.validate()?;
 

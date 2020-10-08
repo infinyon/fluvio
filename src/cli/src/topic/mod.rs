@@ -66,12 +66,18 @@ mod cli {
         O: Terminal,
     {
         let output = match topic_opt {
-            TopicOpt::Create(create_topic_opt) => process_create_topic(fluvio, create_topic_opt).await?,
-            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(fluvio, delete_topic_opt).await?,
+            TopicOpt::Create(create_topic_opt) => {
+                process_create_topic(fluvio, create_topic_opt).await?
+            }
+            TopicOpt::Delete(delete_topic_opt) => {
+                process_delete_topic(fluvio, delete_topic_opt).await?
+            }
             TopicOpt::Describe(describe_topics_opt) => {
                 process_describe_topics(out, fluvio, describe_topics_opt).await?
             }
-            TopicOpt::List(list_topics_opt) => process_list_topics(out, fluvio, list_topics_opt).await?,
+            TopicOpt::List(list_topics_opt) => {
+                process_list_topics(out, fluvio, list_topics_opt).await?
+            }
         };
         Ok(output)
     }
