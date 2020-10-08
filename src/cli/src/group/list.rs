@@ -39,7 +39,7 @@ pub async fn process_list_managed_spu_groups<O: Terminal>(
 ) -> Result<(), CliError> {
     let (target_server, output) = opt.validate()?;
 
-    let mut client = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;

@@ -1075,7 +1075,7 @@ impl ClusterInstaller {
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), ClusterError> {
         let name = self.config.group_name.clone();
-        let mut fluvio = Fluvio::connect_with_config(cluster).await?;
+        let fluvio = Fluvio::connect_with_config(cluster).await?;
         let mut admin = fluvio.admin().await;
         admin
             .create(name, false, self.config.spu_spec.clone())

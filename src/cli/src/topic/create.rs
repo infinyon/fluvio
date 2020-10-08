@@ -118,7 +118,7 @@ pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliErro
 
     debug!("creating topic: {} spec: {:#?}", name, topic_spec);
 
-    let mut target = Fluvio::connect_with_config(&target_server).await?;
+    let target = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = target.admin().await;
 
     admin.create(name.clone(), dry_run, topic_spec).await?;

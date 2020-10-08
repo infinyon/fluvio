@@ -82,7 +82,7 @@ pub async fn process_create_managed_spu_group(
 
     debug!("creating spg: {}, spec: {:#?}", name, spec);
 
-    let mut target = Fluvio::connect_with_config(&target_server).await?;
+    let target = Fluvio::connect_with_config(&target_server).await?;
 
     let mut admin = target.admin().await;
 

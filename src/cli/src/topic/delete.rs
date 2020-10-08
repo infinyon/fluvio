@@ -41,7 +41,7 @@ pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliErro
 
     debug!("deleting topic: {}", name);
 
-    let mut client = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
     admin.delete::<TopicSpec, _>(&name).await?;
     Ok(format!("topic \"{}\" deleted", name))
