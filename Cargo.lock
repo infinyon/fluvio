@@ -956,7 +956,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "async-h1",
  "async-trait",
@@ -1000,7 +1000,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
