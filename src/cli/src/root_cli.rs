@@ -7,18 +7,21 @@ use std::sync::Arc;
 use structopt::clap::{AppSettings, Shell};
 use structopt::StructOpt;
 
+use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
 
 use crate::COMMAND_TEMPLATE;
 use crate::CliError;
 use crate::target::ClusterTarget;
+use crate::Terminal;
+
 
 use super::consume::process_consume_log;
 use super::produce::process_produce_record;
 use super::topic::process_topic;
-use super::spu::*;
-use super::custom::*;
-use super::group::*;
+use crate::spu::{SpuOpt, process_spu};
+use crate::custom::{CustomSpuOpt, process_custom_spu};
+use crate::group::{SpuGroupOpt, process_spu_group};
 use super::profile::process_profile;
 use super::cluster::process_cluster;
 use super::consume::ConsumeLogOpt;
@@ -155,9 +158,6 @@ pub fn run_cli() -> eyre::Result<String> {
         Ok(output)
     })
 }
-
-use crate::Terminal;
-use fluvio::Fluvio;
 
 struct PrintTerminal {}
 
