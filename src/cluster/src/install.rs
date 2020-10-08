@@ -30,7 +30,7 @@ use crate::check::{
     check_already_installed, _check_load_balancer_status,
 };
 
-pub const DEFAULT_NAMESPACE: &str = "default";
+pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
