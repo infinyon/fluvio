@@ -52,10 +52,7 @@ impl Default for ErrorCode {
 
 impl ErrorCode {
     pub fn is_ok(&self) -> bool {
-        match self {
-            Self::None => true,
-            _ => false,
-        }
+        matches!(self, ErrorCode::None)
     }
 
     pub fn to_sentence(&self) -> String {
