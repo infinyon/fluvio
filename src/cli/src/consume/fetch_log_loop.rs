@@ -16,6 +16,7 @@ use crate::Terminal;
 
 use super::ConsumeLogConfig;
 use super::process_fetch_topic_response;
+use futures_lite::StreamExt;
 
 // -----------------------------------
 // SPU - Fetch Loop
@@ -91,10 +92,10 @@ where
         process_fetch_topic_response(out.clone(), response, &opt).await?;
     } else {
         let mut log_stream = consumer
-            .stream_with_config(initial_offset, fetch_config)
+            ._stream_batches_with_config(initial_offset, fetch_config)
             .await?;
 
-        while let Ok(response) = log_stream.next().await {
+        while let Some(Ok(response)) = log_stream.next().await {
             let partition = response.partition;
             debug!(
                 "got response: LSO: {} batchs: {}",

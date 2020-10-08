@@ -28,9 +28,9 @@ Please open an Issue on GitHub with the label `question`.
 
 ## Getting Started
 
-Follow our [Installation Guide](https://github.com/infinyon/fluvio/blob/master/doc/INSTALL.md) to get fluvio up and running.
+Follow our [Getting started](https://www.fluvio.io/docs/getting-started/) to get fluvio up and running.
 
-To learn about the Fluvio Architecture and contribute to Fluvio project, please visit the [Developer](https://github.com/infinyon/fluvio/blob/master/DEVELOPER.md) section.
+To learn about the Fluvio Architecture and contribute to Fluvio project, please visit the [Architecture](https://www.fluvio.io/docs/architecture/) section.
 
 ## Contributing
 
