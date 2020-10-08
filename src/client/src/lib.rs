@@ -40,6 +40,9 @@
 //! [`Fluvio`] client object.
 //!
 //! ```no_run
+//! # mod futures {
+//! #     pub use futures_util::stream::StreamExt;
+//! # }
 //! use std::time::Duration;
 //! use fluvio::{Offset, FluvioError};
 //! use futures::StreamExt;
@@ -134,6 +137,9 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 ///
 /// ```no_run
 /// # use fluvio::{ConsumerConfig, FluvioError, Offset};
+/// # mod futures {
+/// #     pub use futures_util::stream::StreamExt;
+/// # }
 /// #  async fn do_consume() -> Result<(), FluvioError> {
 /// use futures::StreamExt;
 /// let consumer = fluvio::consumer("my-topic", 0).await?;

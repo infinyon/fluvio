@@ -210,8 +210,11 @@ impl PartitionConsumer {
     /// ```no_run
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
+    /// # mod futures {
+    /// #     pub use futures_util::stream::StreamExt;
+    /// # }
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// use futures::stream::StreamExt;
+    /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
     ///     if let Some(bytes) = record.try_into_bytes() {
@@ -254,8 +257,11 @@ impl PartitionConsumer {
     /// ```no_run
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
+    /// # mod futures {
+    /// #     pub use futures_util::stream::StreamExt;
+    /// # }
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// use futures::stream::StreamExt;
+    /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
