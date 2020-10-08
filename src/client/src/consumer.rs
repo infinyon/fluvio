@@ -1,4 +1,4 @@
-use futures::Stream;
+use futures_util::stream::Stream;
 use tracing::debug;
 
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
@@ -211,7 +211,7 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// use futures::StreamExt;
+    /// use futures::stream::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
     ///     if let Some(bytes) = record.try_into_bytes() {
@@ -255,7 +255,7 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// use futures::StreamExt;
+    /// use futures::stream::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
@@ -277,8 +277,8 @@ impl PartitionConsumer {
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
-        use futures::future::{Either, err};
-        use futures::stream::{StreamExt, once, iter};
+        use futures_util::future::{Either, err};
+        use futures_util::stream::{StreamExt, once, iter};
 
         let stream = self._stream_batches_with_config(offset, config).await?;
         let flattened = stream.flat_map(|batch_result| {
@@ -343,7 +343,7 @@ impl PartitionConsumer {
             ..Default::default()
         };
 
-        use futures::StreamExt;
+        use futures_util::StreamExt;
         let stream = self.pool.create_stream(&replica, stream_request).await?;
         Ok(stream.map(|item| item.map_err(|e| e.into())))
     }

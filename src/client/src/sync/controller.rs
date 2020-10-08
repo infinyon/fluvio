@@ -5,7 +5,7 @@ use std::io::ErrorKind;
 use std::fmt::Display;
 
 use tracing::{error, debug, instrument};
-use futures::StreamExt;
+use futures_util::stream::StreamExt;
 
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;

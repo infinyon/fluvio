@@ -89,7 +89,7 @@
 //! ```
 
 use std::time::Duration;
-use futures::StreamExt;
+use futures_lite::StreamExt;
 use fluvio::{FluvioError, Offset};
 
 const TOPIC: &str = "echo";

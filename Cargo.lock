@@ -843,7 +843,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "fluvio",
- "futures",
+ "futures-lite",
 ]
 
 [[package]]
@@ -944,7 +944,7 @@ dependencies = [
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
- "futures",
+ "futures-util",
  "serde",
  "serde_json",
  "thiserror",
