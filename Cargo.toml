@@ -20,7 +20,7 @@ members = [
 ]
 
 [patch.crates-io]
-fluvio-socket = { path = "../fluvio-socket/crates/socket" }
+fluvio-socket = { git = "https://github.com/nicholastmosher/fluvio-socket", branch = "stream" }
 
 # profile to make image sizer smaller
 # comment out for now
