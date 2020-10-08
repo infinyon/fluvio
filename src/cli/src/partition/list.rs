@@ -40,7 +40,7 @@ impl ListPartitionOpt {
     {
         let (target_server, output) = self.validate()?;
 
-        let mut client = Fluvio::connect_with_config(&target_server).await?;
+        let client = Fluvio::connect_with_config(&target_server).await?;
         let mut admin = client.admin().await;
 
         let partitions = admin.list::<PartitionSpec, _>(vec![]).await?;

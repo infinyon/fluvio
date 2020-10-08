@@ -68,9 +68,9 @@ impl RegisterCustomSpuOpt {
 pub async fn process_register_custom_spu(opt: RegisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, (name, spec)) = opt.validate()?;
 
-    let mut sc = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
 
-    let mut admin = sc.admin().await;
+    let mut admin = client.admin().await;
 
     admin.create(name, false, spec).await?;
 

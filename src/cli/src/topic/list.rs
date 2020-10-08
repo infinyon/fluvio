@@ -66,7 +66,7 @@ where
 
     debug!("list topics {:#?} ", output_type);
 
-    let mut client = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let topics = admin.list::<TopicSpec, _>(vec![]).await?;
