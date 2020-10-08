@@ -38,7 +38,7 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let mut client = Fluvio::connect().await.expect("should connect");
+        let client = Fluvio::connect().await.expect("should connect");
         let mut admin = client.admin().await;
 
         for i in 0..replication {

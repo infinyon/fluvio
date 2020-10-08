@@ -65,7 +65,7 @@ impl UnregisterCustomSpuOpt {
 pub async fn process_unregister_custom_spu(opt: UnregisterCustomSpuOpt) -> Result<(), CliError> {
     let (target_server, delete_key) = opt.validate()?;
 
-    let mut client = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     admin.delete::<CustomSpuSpec, _>(delete_key).await?;

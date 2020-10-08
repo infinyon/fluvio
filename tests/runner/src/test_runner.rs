@@ -39,7 +39,7 @@ impl TestRunner {
         }
 
         // wait until all partitions are provisioned
-        let mut client = Fluvio::connect().await.expect("should connect");
+        let client = Fluvio::connect().await.expect("should connect");
         let mut admin = client.admin().await;
 
         for _ in 0..60u16 {
