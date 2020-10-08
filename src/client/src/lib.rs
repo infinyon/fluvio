@@ -40,8 +40,12 @@
 //! [`Fluvio`] client object.
 //!
 //! ```no_run
+//! # mod futures {
+//! #     pub use futures_util::stream::StreamExt;
+//! # }
 //! use std::time::Duration;
 //! use fluvio::{Offset, FluvioError};
+//! use futures::StreamExt;
 //!
 //! async_std::task::spawn(produce_records());
 //! if let Err(e) = async_std::task::block_on(consume_records()) {
@@ -61,15 +65,10 @@
 //!     let consumer = fluvio::consumer("echo", 0).await?;
 //!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
-//!     while let Ok(event) = stream.next().await {
-//!         for batch in event.partition.records.batches {
-//!             for record in batch.records {
-//!                 if let Some(record) = record.value.inner_value() {
-//!                     let string = String::from_utf8(record)
-//!                         .expect("record should be a string");
-//!                     println!("Got record: {}", string);
-//!                 }
-//!             }
+//!     while let Some(Ok(record)) = stream.next().await {
+//!         if let Some(bytes) = record.try_into_bytes() {
+//!             let string = String::from_utf8_lossy(&bytes);
+//!             println!("Got record: {}", string);
 //!         }
 //!     }
 //!     Ok(())
@@ -138,18 +137,17 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 ///
 /// ```no_run
 /// # use fluvio::{ConsumerConfig, FluvioError, Offset};
+/// # mod futures {
+/// #     pub use futures_util::stream::StreamExt;
+/// # }
 /// #  async fn do_consume() -> Result<(), FluvioError> {
+/// use futures::StreamExt;
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
 /// let mut stream = consumer.stream(Offset::beginning()).await?;
-/// while let Ok(event) = stream.next().await {
-///     for batch in event.partition.records.batches {
-///         for record in batch.records {
-///             if let Some(record) = record.value.inner_value() {
-///                 let string = String::from_utf8(record)
-///                     .expect("record should be a string");
-///                 println!("Got record: {}", string);
-///             }
-///         }
+/// while let Some(Ok(record)) = stream.next().await {
+///     if let Some(bytes) = record.try_into_bytes() {
+///         let string = String::from_utf8_lossy(&bytes);
+///         println!("Got record: {}", string);
 ///     }
 /// }
 /// # Ok(())
