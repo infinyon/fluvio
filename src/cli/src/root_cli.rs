@@ -112,7 +112,7 @@ enum RootCommand {
         template = COMMAND_TEMPLATE,
         about = "Cluster operations"
     )]
-    Cluster(ClusterCommands),
+    Cluster(Box<ClusterCommands>),
 
     #[cfg(feature = "cluster_components")]
     #[structopt(about = "Run cluster component")]
@@ -149,7 +149,7 @@ pub fn run_cli() -> eyre::Result<String> {
             RootCommand::Topic(topic) => process_topic(terminal.clone(), &fluvio, topic).await?,
             RootCommand::Partition(partition) => partition.process_partition(terminal.clone(), &fluvio).await?,
             RootCommand::Profile(profile) => process_profile(terminal.clone(), profile).await?,
-            RootCommand::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
+            RootCommand::Cluster(cluster) => process_cluster(terminal.clone(), *cluster).await?,
             #[cfg(feature = "cluster_components")]
             RootCommand::Run(opt) => process_run(opt)?,
             RootCommand::Version(_) => process_version_cmd()?,
