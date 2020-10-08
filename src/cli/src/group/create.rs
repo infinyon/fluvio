@@ -7,11 +7,9 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::spg::*;
-
-use crate::error::CliError;
-use crate::target::ClusterTarget;
+use crate::Result;
 
 // -----------------------------------
 // CLI Options
@@ -38,16 +36,21 @@ pub struct CreateManagedSpuGroupOpt {
     /// The amount of storage to assign to this SPG
     #[structopt(long, value_name = "string")]
     pub storage_size: Option<String>,
-
-    #[structopt(flatten)]
-    pub target: ClusterTarget,
 }
 
 impl CreateManagedSpuGroupOpt {
-    /// Validate cli options. Generate target-server and create spu group config.
-    fn validate(self) -> Result<(FluvioConfig, (String, SpuGroupSpec)), CliError> {
-        let target_server = self.target.load()?;
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        let (name, spec) = self.validate()?;
+        debug!("creating spg: {}, spec: {:#?}", name, spec);
 
+        let mut admin = fluvio.admin().await;
+        admin.create(name, false, spec).await?;
+
+        Ok(())
+    }
+
+    /// Validate cli options. Generate target-server and create spu group config.
+    fn validate(self) -> Result<(String, SpuGroupSpec)> {
         let storage = self.storage_size.map(|storage_size| StorageConfig {
             size: Some(storage_size),
             ..Default::default()
@@ -66,27 +69,7 @@ impl CreateManagedSpuGroupOpt {
                 spu_config,
             },
         );
-        // return server separately from config
 
-        Ok((target_server, group))
+        Ok(group)
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-pub async fn process_create_managed_spu_group(
-    opt: CreateManagedSpuGroupOpt,
-) -> Result<(), CliError> {
-    let (target_server, (name, spec)) = opt.validate()?;
-
-    debug!("creating spg: {}, spec: {:#?}", name, spec);
-
-    let target = Fluvio::connect_with_config(&target_server).await?;
-
-    let mut admin = target.admin().await;
-
-    admin.create(name, false, spec).await?;
-
-    Ok(())
 }

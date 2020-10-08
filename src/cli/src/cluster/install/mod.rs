@@ -1,13 +1,11 @@
+use std::{fmt, str::FromStr};
+use structopt::StructOpt;
+
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 mod local;
 mod k8;
 mod tls;
 
-use fmt::Display;
-use structopt::StructOpt;
-use std::{fmt, str::FromStr};
-
-use crate::Terminal;
 use crate::CliError;
 use tls::TlsOpt;
 
@@ -30,7 +28,7 @@ impl Default for DefaultVersion {
     }
 }
 
-impl Display for DefaultVersion {
+impl fmt::Display for DefaultVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -53,7 +51,7 @@ impl Default for DefaultLogDirectory {
     }
 }
 
-impl Display for DefaultLogDirectory {
+impl fmt::Display for DefaultLogDirectory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -103,7 +101,7 @@ pub struct K8Install {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct InstallCommand {
+pub struct InstallOpt {
     /// use local image
     #[structopt(long)]
     pub develop: bool,
@@ -145,33 +143,28 @@ pub struct InstallCommand {
     pub skip_checks: bool,
 }
 
-pub async fn process_install<O>(
-    _out: std::sync::Arc<O>,
-    command: InstallCommand,
-) -> Result<String, CliError>
-where
-    O: Terminal,
-{
-    use k8::install_sys;
-    use k8::install_core;
+impl InstallOpt {
+    pub async fn process(self) -> crate::Result<()> {
+        use k8::install_sys;
+        use k8::install_core;
+        let spu = self.spu;
 
-    let spu = command.spu;
-
-    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-    use local::install_local;
-
-    if command.sys {
-        install_sys(command)?;
-    } else if command.local {
         #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-        install_local(command).await?;
-        confirm_spu(spu).await?;
-    } else {
-        install_core(command).await?;
-        confirm_spu(spu).await?;
-    }
+        use local::install_local;
 
-    Ok("".to_owned())
+        if self.sys {
+            install_sys(self)?;
+        } else if self.local {
+            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
+            install_local(self).await?;
+            confirm_spu(spu).await?;
+        } else {
+            install_core(self).await?;
+            confirm_spu(spu).await?;
+        }
+
+        Ok(())
+    }
 }
 
 /// check to ensure spu are all running

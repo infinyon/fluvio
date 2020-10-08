@@ -7,43 +7,23 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::error::CliError;
-use crate::target::ClusterTarget;
+use crate::Result;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteTopicOpt {
     /// The name of the Topic to delete
     #[structopt(value_name = "name")]
     topic: String,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl DeleteTopicOpt {
-    /// Validate cli options. Generate target-server and delete-topic configuration.
-    fn validate(self) -> Result<(FluvioConfig, String), CliError> {
-        let target_server = self.target.load()?;
-
-        // return server separately from config
-        Ok((target_server, self.topic))
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        debug!("deleting topic: {}", &self.topic);
+        let mut admin = fluvio.admin().await;
+        admin.delete::<TopicSpec, _>(&self.topic).await?;
+        println!("topic \"{}\" deleted", &self.topic);
+        Ok(())
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-
-/// Process delete topic cli request
-pub async fn process_delete_topic(opt: DeleteTopicOpt) -> Result<String, CliError> {
-    let (target_server, name) = opt.validate()?;
-
-    debug!("deleting topic: {}", name);
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-    admin.delete::<TopicSpec, _>(&name).await?;
-    Ok(format!("topic \"{}\" deleted", name))
 }

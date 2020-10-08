@@ -1,76 +1,68 @@
+use std::sync::Arc;
+use structopt::StructOpt;
+
 mod create;
 mod delete;
 mod describe;
 mod list;
 
-pub use cli::*;
+use create::CreateTopicOpt;
+use delete::DeleteTopicOpt;
+use describe::DescribeTopicsOpt;
+use list::ListTopicsOpt;
 
-mod cli {
+use crate::{Result, Terminal};
+use fluvio::Fluvio;
 
-    use structopt::StructOpt;
-    use super::*;
+#[derive(Debug, StructOpt)]
+#[structopt(name = "topic", about = "Topic operations")]
+pub enum TopicCmd {
+    /// Creates a Topic with the given name
+    #[structopt(
+        name = "create",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Create(CreateTopicOpt),
 
-    use create::CreateTopicOpt;
-    use delete::DeleteTopicOpt;
-    use describe::DescribeTopicsOpt;
-    use list::ListTopicsOpt;
+    /// Deletes a Topic with the given name
+    #[structopt(
+        name = "delete",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Delete(DeleteTopicOpt),
 
-    use create::process_create_topic;
-    use delete::process_delete_topic;
-    use describe::process_describe_topics;
-    use list::process_list_topics;
+    /// Prints detailed information about a Topic
+    #[structopt(
+        name = "describe",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Describe(DescribeTopicsOpt),
 
-    use crate::COMMAND_TEMPLATE;
-    use crate::Terminal;
-    use crate::CliError;
+    /// Lists all of the Topics in the cluster
+    #[structopt(
+        name = "list",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    List(ListTopicsOpt),
+}
 
-    #[derive(Debug, StructOpt)]
-    #[structopt(name = "topic", about = "Topic operations")]
-    pub enum TopicOpt {
-        /// Creates a Topic with the given name
-        #[structopt(
-            name = "create",
-            template = COMMAND_TEMPLATE,
-        )]
-        Create(CreateTopicOpt),
-
-        /// Deletes a Topic with the given name
-        #[structopt(
-            name = "delete",
-            template = COMMAND_TEMPLATE,
-        )]
-        Delete(DeleteTopicOpt),
-
-        /// Prints detailed information about a Topic
-        #[structopt(
-            name = "describe",
-            template = COMMAND_TEMPLATE,
-        )]
-        Describe(DescribeTopicsOpt),
-
-        /// Lists all of the Topics in the cluster
-        #[structopt(
-            name = "list",
-            template = COMMAND_TEMPLATE,
-        )]
-        List(ListTopicsOpt),
-    }
-
-    pub(crate) async fn process_topic<O>(
-        out: std::sync::Arc<O>,
-        topic_opt: TopicOpt,
-    ) -> Result<String, CliError>
-    where
-        O: Terminal,
-    {
-        let output = match topic_opt {
-            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await?,
-            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await?,
-            TopicOpt::Describe(describe_topics_opt) => {
-                process_describe_topics(out, describe_topics_opt).await?
+impl TopicCmd {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        match self {
+            TopicCmd::Create(create) => {
+                create.process(fluvio).await?;
             }
-            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await?,
-        };
-        Ok(output)
+            TopicCmd::Delete(delete) => {
+                delete.process(fluvio).await?;
+            }
+            TopicCmd::Describe(describe) => {
+                describe.process(out, fluvio).await?;
+            }
+            TopicCmd::List(list) => {
+                list.process(out, fluvio).await?;
+            }
+        }
+
+        Ok(())
     }
 }

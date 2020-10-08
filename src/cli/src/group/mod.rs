@@ -1,67 +1,53 @@
+use std::sync::Arc;
+use structopt::StructOpt;
+
 mod create;
 mod delete;
 mod list;
 
-pub use cli::*;
-pub use create::*;
+use fluvio::Fluvio;
+use crate::{Result, Terminal};
+use crate::group::create::CreateManagedSpuGroupOpt;
+use crate::group::delete::DeleteManagedSpuGroupOpt;
+use crate::group::list::ListManagedSpuGroupsOpt;
 
-mod cli {
-    use structopt::StructOpt;
+#[derive(Debug, StructOpt)]
+pub enum SpuGroupCmd {
+    /// Create a new managed SPU Group
+    #[structopt(
+        name = "create",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Create(CreateManagedSpuGroupOpt),
 
-    use super::*;
+    /// Delete a managed SPU Group
+    #[structopt(
+        name = "delete",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Delete(DeleteManagedSpuGroupOpt),
 
-    use create::CreateManagedSpuGroupOpt;
-    use create::process_create_managed_spu_group;
+    /// List all managed SPUs
+    #[structopt(
+        name = "list",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    List(ListManagedSpuGroupsOpt),
+}
 
-    use delete::DeleteManagedSpuGroupOpt;
-    use delete::process_delete_managed_spu_group;
-
-    use list::ListManagedSpuGroupsOpt;
-    use list::process_list_managed_spu_groups;
-
-    use crate::COMMAND_TEMPLATE;
-    use crate::error::CliError;
-    use crate::Terminal;
-
-    #[derive(Debug, StructOpt)]
-    pub enum SpuGroupOpt {
-        /// Create a new managed SPU Group
-        #[structopt(
-            name = "create",
-            template = COMMAND_TEMPLATE,
-        )]
-        Create(CreateManagedSpuGroupOpt),
-
-        /// Delete a managed SPU Group
-        #[structopt(
-            name = "delete",
-            template = COMMAND_TEMPLATE,
-        )]
-        Delete(DeleteManagedSpuGroupOpt),
-
-        /// List all managed SPUs
-        #[structopt(
-            name = "list",
-            template = COMMAND_TEMPLATE,
-        )]
-        List(ListManagedSpuGroupsOpt),
-    }
-
-    pub(crate) async fn process_spu_group<O: Terminal>(
-        out: std::sync::Arc<O>,
-        spu_group_opt: SpuGroupOpt,
-    ) -> Result<String, CliError> {
-        match spu_group_opt {
-            SpuGroupOpt::Create(spu_group_opt) => {
-                process_create_managed_spu_group(spu_group_opt).await?;
+impl SpuGroupCmd {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        match self {
+            Self::Create(create) => {
+                create.process(fluvio).await?;
             }
-            SpuGroupOpt::Delete(spu_group_opt) => {
-                process_delete_managed_spu_group(spu_group_opt).await?;
+            Self::Delete(delete) => {
+                delete.process(fluvio).await?;
             }
-            SpuGroupOpt::List(spu_group_opt) => {
-                process_list_managed_spu_groups(out, spu_group_opt).await?;
+            Self::List(list) => {
+                list.process(out, fluvio).await?;
             }
         }
-        Ok("".to_string())
+        Ok(())
     }
 }

@@ -4,17 +4,15 @@
 //! CLI to describe Topics and their corresponding Partitions
 //!
 
+use std::sync::Arc;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
-use crate::target::ClusterTarget;
-
+use crate::Result;
 use crate::Terminal;
-use crate::error::CliError;
-use crate::OutputType;
 use crate::common::OutputFormat;
 
 // -----------------------------------
@@ -29,47 +27,20 @@ pub struct DescribeTopicsOpt {
 
     #[structopt(flatten)]
     output: OutputFormat,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl DescribeTopicsOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, (String, OutputType)), CliError> {
-        let target_server = self.target.load()?;
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        let topic = self.topic;
+        let output_type = self.output.format;
+        debug!("describe topic: {}, {}", topic, output_type);
 
-        // transfer config parameters
-        let (topic, output) = (self.topic, self.output.as_output());
+        let mut admin = fluvio.admin().await;
+        let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;
 
-        // return server separately from topic result
-        Ok((target_server, (topic, output)))
+        display::describe_topics(topics, output_type, out).await?;
+        Ok(())
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-
-/// Process describe topic cli request
-pub async fn process_describe_topics<O>(
-    out: std::sync::Arc<O>,
-    opt: DescribeTopicsOpt,
-) -> Result<String, CliError>
-where
-    O: Terminal,
-{
-    let (target_server, (topic, output_type)) = opt.validate()?;
-
-    debug!("describe topic: {}, {}", topic, output_type);
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-
-    let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;
-
-    display::describe_topics(topics, output_type, out).await?;
-    Ok("".to_owned())
 }
 
 mod display {
@@ -81,7 +52,7 @@ mod display {
     use fluvio::metadata::topic::TopicSpec;
 
     use crate::OutputType;
-    use crate::error::CliError;
+    use crate::Result;
     use crate::DescribeObjectHandler;
     use crate::{KeyValOutputHandler, TableOutputHandler};
     use crate::Terminal;
@@ -93,7 +64,7 @@ mod display {
         topics: ListTopics,
         output_type: OutputType,
         out: std::sync::Arc<O>,
-    ) -> Result<(), CliError>
+    ) -> Result<()>
     where
         O: Terminal,
     {
@@ -117,7 +88,7 @@ mod display {
             false
         }
 
-        fn validate(&self) -> Result<(), CliError> {
+        fn validate(&self) -> Result<()> {
             Ok(())
         }
     }

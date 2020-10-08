@@ -1,67 +1,54 @@
+use std::sync::Arc;
+use structopt::StructOpt;
+
 mod register;
 mod list;
 mod unregister;
 
-pub use cli::*;
+use register::RegisterCustomSpuOpt;
+use unregister::UnregisterCustomSpuOpt;
+use list::ListCustomSpusOpt;
 
-mod cli {
+use fluvio::Fluvio;
+use crate::{Result, Terminal};
 
-    use structopt::StructOpt;
+#[derive(Debug, StructOpt)]
+pub enum CustomSpuOpt {
+    /// Registers a new custom SPU with the cluster
+    #[structopt(
+        name = "register",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Create(RegisterCustomSpuOpt),
 
-    use register::RegisterCustomSpuOpt;
-    use register::process_register_custom_spu;
+    /// Unregisters a custom SPU from the cluster
+    #[structopt(
+        name = "unregister",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    Delete(UnregisterCustomSpuOpt),
 
-    use unregister::UnregisterCustomSpuOpt;
-    use unregister::process_unregister_custom_spu;
+    /// List all custom SPUs known by this cluster
+    #[structopt(
+        name = "list",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    List(ListCustomSpusOpt),
+}
 
-    use list::ListCustomSpusOpt;
-    use list::process_list_custom_spus;
-
-    use crate::COMMAND_TEMPLATE;
-    use crate::error::CliError;
-    use crate::Terminal;
-
-    use super::*;
-
-    #[derive(Debug, StructOpt)]
-    pub enum CustomSpuOpt {
-        /// Registers a new custom SPU with the cluster
-        #[structopt(
-            name = "register",
-            template = COMMAND_TEMPLATE,
-        )]
-        Create(RegisterCustomSpuOpt),
-
-        /// Unregisters a custom SPU from the cluster
-        #[structopt(
-            name = "unregister",
-            template = COMMAND_TEMPLATE,
-        )]
-        Delete(UnregisterCustomSpuOpt),
-
-        /// List all custom SPUs known by this cluster
-        #[structopt(
-            name = "list",
-            template = COMMAND_TEMPLATE,
-        )]
-        List(ListCustomSpusOpt),
-    }
-
-    pub(crate) async fn process_custom_spu<O: Terminal>(
-        out: std::sync::Arc<O>,
-        custom_spu_opt: CustomSpuOpt,
-    ) -> Result<String, CliError> {
-        match custom_spu_opt {
-            CustomSpuOpt::Create(custom_spu_opt) => {
-                process_register_custom_spu(custom_spu_opt).await?;
+impl CustomSpuOpt {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        match self {
+            CustomSpuOpt::Create(create) => {
+                create.process(fluvio).await?;
             }
-            CustomSpuOpt::Delete(custom_spu_opt) => {
-                process_unregister_custom_spu(custom_spu_opt).await?;
+            CustomSpuOpt::Delete(delete) => {
+                delete.process(fluvio).await?;
             }
-            CustomSpuOpt::List(custom_spu_opt) => {
-                process_list_custom_spus(out, custom_spu_opt).await?;
+            CustomSpuOpt::List(list) => {
+                list.process(out, fluvio).await?;
             }
         }
-        Ok("".to_string())
+        Ok(())
     }
 }

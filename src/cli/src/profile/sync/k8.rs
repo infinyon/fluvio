@@ -1,17 +1,57 @@
 use std::convert::TryInto;
-use tracing::*;
-use fluvio::config::*;
-use k8_client::K8Client;
-use k8_obj_core::service::ServiceSpec;
-use k8_obj_metadata::InputObjectMeta;
-use k8_client::metadata::MetadataClient;
-use k8_client::K8Config;
+use structopt::StructOpt;
+use tracing::debug;
 
-use crate::{CliError, profile::sync::K8Opt};
+use fluvio::config::{Profile, ConfigFile};
+use fluvio::FluvioConfig;
+use k8_config::K8Config;
+use k8_client::K8Client;
+use k8_client::metadata::MetadataClient;
+use fluvio_controlplane_metadata::k8::core::service::ServiceSpec;
+use fluvio_controlplane_metadata::k8::metadata::InputObjectMeta;
+use crate::{Result, CliError};
+use crate::tls::TlsClientOpt;
+
+#[derive(Debug, StructOpt, Default)]
+pub struct K8Opt {
+    /// kubernetes namespace,
+    #[structopt(long, short, value_name = "namespace")]
+    pub namespace: Option<String>,
+
+    /// profile name
+    #[structopt(value_name = "name")]
+    pub name: Option<String>,
+
+    #[structopt(flatten)]
+    pub tls: TlsClientOpt,
+}
+
+impl K8Opt {
+    pub async fn process(self) -> Result<()> {
+        let external_addr = match discover_fluvio_addr(self.namespace.as_deref()).await? {
+            Some(sc_addr) => sc_addr,
+            None => {
+                return Err(CliError::Other(
+                    "fluvio service is not deployed".to_string(),
+                ))
+            }
+        };
+
+        match set_k8_context(self, external_addr).await {
+            Ok(profile) => {
+                println!("updated profile: {:#?}", profile);
+            }
+            Err(err) => {
+                eprintln!("config creation failed: {}", err);
+            }
+        }
+        Ok(())
+    }
+}
 
 /// compute profile name, if name exists in the cli option, we use that
 /// otherwise, we look up k8 config context name
-fn compute_profile_name() -> Result<String, CliError> {
+fn compute_profile_name() -> Result<String> {
     let k8_config = K8Config::load()?;
 
     let kc_config = match k8_config {
@@ -27,7 +67,7 @@ fn compute_profile_name() -> Result<String, CliError> {
 }
 
 /// create new k8 cluster and profile
-pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile, CliError> {
+pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile> {
     let mut config_file = ConfigFile::load_default_or_new()?;
     let config = config_file.mut_config();
 
@@ -73,7 +113,7 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 }
 
 /// find fluvio addr
-pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>, CliError> {
+pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>> {
     use k8_client::http::status::StatusCode;
 
     let ns = namespace.unwrap_or("default");

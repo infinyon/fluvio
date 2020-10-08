@@ -8,32 +8,50 @@ use structopt::clap::{AppSettings, Shell};
 use structopt::StructOpt;
 use tracing::debug;
 
-use fluvio_future::task::run_block_on;
+use fluvio::Fluvio;
 
+use crate::Result;
 use crate::COMMAND_TEMPLATE;
-use crate::CliError;
+use crate::target::ClusterTarget;
+use crate::Terminal;
 
-use super::consume::process_consume_log;
-use super::produce::process_produce_record;
-use super::topic::process_topic;
-use super::spu::*;
-use super::custom::*;
-use super::group::*;
-use super::profile::process_profile;
-use super::cluster::process_cluster;
+use crate::spu::SpuCmd;
+use crate::group::SpuGroupCmd;
+use crate::custom::CustomSpuOpt;
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
-use super::topic::TopicOpt;
-use super::profile::ProfileCommand;
-use super::cluster::ClusterCommands;
-use super::partition::PartitionOpt;
+use super::topic::TopicCmd;
+use super::profile::ProfileCmd;
+use super::cluster::ClusterCmd;
+use super::partition::PartitionCmd;
 use crate::install::update::UpdateOpt;
 use crate::install::plugins::InstallOpt;
 
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-use super::run::{process_run, RunOpt};
+use super::run::RunOpt;
 
 /// Fluvio Command Line Interface
+#[derive(StructOpt, Debug)]
+pub struct Root {
+    #[structopt(flatten)]
+    opts: RootOpt,
+    #[structopt(subcommand)]
+    command: RootCmd,
+}
+
+impl Root {
+    pub async fn process(self) -> Result<()> {
+        self.command.process(self.opts).await?;
+        Ok(())
+    }
+}
+
+#[derive(StructOpt, Debug)]
+struct RootOpt {
+    #[structopt(flatten)]
+    target: ClusterTarget,
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     about = "Fluvio Command Line Interface",
@@ -42,7 +60,7 @@ use super::run::{process_run, RunOpt};
     max_term_width = 80,
     global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
 )]
-enum Root {
+enum RootCmd {
     /// Reads messages from a topic/partition
     ///
     /// By default, this activates in "follow" mode, where
@@ -72,13 +90,13 @@ enum Root {
     /// and relaying them to consumers. This command lets you see
     /// the status of SPUs in your cluster.
     #[structopt(name = "spu")]
-    SPU(SpuOpt),
+    SPU(SpuCmd),
 
     /// Manage and view SPU Groups (SPGs)
     ///
     /// SPGs are groups of SPUs in a cluster which are managed together.
     #[structopt(name = "spg")]
-    SPUGroup(SpuGroupOpt),
+    SPUGroup(SpuGroupCmd),
 
     /// Manage and view "custom SPUs", operated outside a cluster
     ///
@@ -99,7 +117,7 @@ enum Root {
     /// database, the names and contents of Topics will typically reflect the
     /// structure of the application domain they are used for.
     #[structopt(name = "topic")]
-    Topic(TopicOpt),
+    Topic(TopicCmd),
 
     /// Manage and view Partitions
     ///
@@ -109,7 +127,7 @@ enum Root {
     /// dividing the load of a Topic evenly among partitions, you can increase the
     /// total throughput of the Topic.
     #[structopt(name = "partition")]
-    Partition(PartitionOpt),
+    Partition(PartitionCmd),
 
     /// Manage Profiles, which describe linked clusters
     ///
@@ -118,7 +136,7 @@ enum Root {
     /// There is one "active" profile, which determines which cluster all of the
     /// Fluvio CLI commands interact with.
     #[structopt(name = "profile")]
-    Profile(ProfileCommand),
+    Profile(ProfileCmd),
 
     /// Install or uninstall Fluvio clusters
     ///
@@ -127,7 +145,7 @@ enum Root {
     /// of a Minikube kubernetes environment. These cluster commands will help you
     /// to set up these types of installations.
     #[structopt(name = "cluster")]
-    Cluster(ClusterCommands),
+    Cluster(Box<ClusterCmd>),
 
     /// Run a Streaming Controller (SC) or SPU
     #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
@@ -150,47 +168,96 @@ enum Root {
 
     /// Print Fluvio version information
     #[structopt(name = "version")]
-    Version(VersionCmd),
+    Version(VersionOpt),
 
     /// Generate command-line completions for Fluvio
     #[structopt(
         name = "completions",
         settings = &[AppSettings::Hidden]
     )]
-    Completions(CompletionShell),
+    Completions(CompletionCmd),
 
     #[structopt(external_subcommand)]
     External(Vec<String>),
 }
 
-pub fn run_cli(args: &[String]) -> eyre::Result<String> {
-    run_block_on(async move {
-        let terminal = Arc::new(PrintTerminal::new());
+impl RootCmd {
+    pub async fn process(self, root: RootOpt) -> Result<()> {
+        let out = Arc::new(PrintTerminal::new());
 
-        let root_args: Root = Root::from_iter(args);
-        let output = match root_args {
-            Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await?,
-            Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await?,
-            Root::SPU(spu) => process_spu(terminal.clone(), spu).await?,
-            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await?,
-            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await?,
-            Root::Topic(topic) => process_topic(terminal.clone(), topic).await?,
-            Root::Partition(partition) => partition.process_partition(terminal.clone()).await?,
-            Root::Profile(profile) => process_profile(terminal.clone(), profile).await?,
-            Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
-            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-            Root::Run(opt) => process_run(opt)?,
-            Root::Install(opt) => opt.process().await?,
-            Root::Update(opt) => opt.process().await?,
-            Root::Version(_) => process_version_cmd()?,
-            Root::Completions(shell) => process_completions_cmd(shell)?,
-            Root::External(args) => process_external_subcommand(args)?,
-        };
-        Ok(output)
-    })
+        // Match on any command that does NOT require connecting to Fluvio
+        match self {
+            Self::Profile(profile) => {
+                profile.process(out).await?;
+            }
+            Self::Cluster(cluster) => {
+                cluster.process().await?;
+            }
+            #[cfg(any(
+                feature = "cluster_components",
+                feature = "cluster_components_rustls"
+            ))]
+            Self::Run(run) => {
+                run.process().await?;
+            }
+            Self::Install(install) => {
+                install.process().await?;
+            }
+            Self::Update(update) => {
+                update.process().await?;
+            }
+            Self::Version(version) => {
+                version.process()?;
+            }
+            Self::Completions(completion) => {
+                completion.process()?;
+            }
+            Self::External(args) => {
+                process_external_subcommand(args)?;
+            }
+            // Match on commands that DO require connecting to Fluvio
+            other => {
+                let fluvio_config = root.target.load()?;
+                let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
+
+                match other {
+                    Self::Consume(consume) => {
+                        consume.process(out, &fluvio).await?;
+                    }
+                    Self::Produce(produce) => {
+                        produce.process(out, &fluvio).await?;
+                    }
+                    Self::SPU(spu) => {
+                        spu.process(out, &fluvio).await?;
+                    }
+                    Self::SPUGroup(spu_group) => {
+                        spu_group.process(out, &fluvio).await?;
+                    }
+                    Self::CustomSPU(custom_spu) => {
+                        custom_spu.process(out, &fluvio).await?;
+                    }
+                    Self::Topic(topic) => {
+                        topic.process(out, &fluvio).await?;
+                    }
+                    Self::Partition(partition) => {
+                        partition.process(out, &fluvio).await?;
+                    }
+                    // These commands are handled above, before connecting to Fluvio
+                    Self::Profile(_)
+                    | Self::Cluster(_)
+                    | Self::Run(_)
+                    | Self::Install(_)
+                    | Self::Update(_)
+                    | Self::Version(_)
+                    | Self::Completions(_)
+                    | Self::External(_) => unreachable!(),
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
-
-use crate::Terminal;
 
 struct PrintTerminal {}
 
@@ -211,16 +278,18 @@ impl Terminal for PrintTerminal {
 }
 
 #[derive(Debug, StructOpt)]
-struct VersionCmd {}
+struct VersionOpt {}
 
-fn process_version_cmd() -> Result<String, CliError> {
-    println!("Fluvio version : {}", crate::VERSION);
-    println!("Git Commit     : {}", env!("GIT_HASH"));
-    if let Some(os_info) = option_env!("UNAME") {
-        println!("OS Details     : {}", os_info);
+impl VersionOpt {
+    pub fn process(self) -> Result<()> {
+        println!("Fluvio version : {}", crate::VERSION);
+        println!("Git Commit     : {}", env!("GIT_HASH"));
+        if let Some(os_info) = option_env!("UNAME") {
+            println!("OS Details     : {}", os_info);
+        }
+        println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
+        Ok(())
     }
-    println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
-    Ok("".to_owned())
 }
 
 #[derive(Debug, StructOpt)]
@@ -230,7 +299,7 @@ struct CompletionOpt {
 }
 
 #[derive(Debug, StructOpt)]
-enum CompletionShell {
+enum CompletionCmd {
     /// Generate CLI completions for bash
     #[structopt(name = "bash")]
     Bash(CompletionOpt),
@@ -243,23 +312,25 @@ enum CompletionShell {
     Fish(CompletionOpt),
 }
 
-fn process_completions_cmd(shell: CompletionShell) -> Result<String, CliError> {
-    let mut app: structopt::clap::App = Root::clap();
-    match shell {
-        CompletionShell::Bash(opt) => {
-            app.gen_completions_to(opt.name, Shell::Bash, &mut std::io::stdout());
+impl CompletionCmd {
+    pub fn process(self) -> Result<()> {
+        let mut app: structopt::clap::App = RootCmd::clap();
+        match self {
+            Self::Bash(opt) => {
+                app.gen_completions_to(opt.name, Shell::Bash, &mut std::io::stdout());
+            }
+            // Self::Zsh(opt) => {
+            //     app.gen_completions_to(opt.name, Shell::Zsh, &mut std::io::stdout());
+            // }
+            Self::Fish(opt) => {
+                app.gen_completions_to(opt.name, Shell::Fish, &mut std::io::stdout());
+            }
         }
-        // CompletionShell::Zsh(opt) => {
-        //     app.gen_completions_to(opt.name, Shell::Zsh, &mut std::io::stdout());
-        // }
-        CompletionShell::Fish(opt) => {
-            app.gen_completions_to(opt.name, Shell::Fish, &mut std::io::stdout());
-        }
+        Ok(())
     }
-    Ok("".to_string())
 }
 
-fn process_external_subcommand(mut args: Vec<String>) -> Result<String, CliError> {
+fn process_external_subcommand(mut args: Vec<String>) -> Result<()> {
     use std::process::Command;
     use which::{CanonicalPath, Error as WhichError};
 
@@ -297,5 +368,5 @@ fn process_external_subcommand(mut args: Vec<String>) -> Result<String, CliError
         std::process::exit(code);
     }
 
-    Ok("".to_string())
+    Ok(())
 }

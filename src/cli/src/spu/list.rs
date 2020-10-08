@@ -4,58 +4,31 @@
 //! CLI tree and processing to list SPUs
 //!
 
+use std::sync::Arc;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
-use crate::error::CliError;
-use crate::OutputType;
+use crate::Result;
 use crate::Terminal;
-use crate::target::ClusterTarget;
 use super::format_spu_response_output;
 use crate::common::OutputFormat;
-
-#[derive(Debug)]
-pub struct ListSpusConfig {
-    pub output: OutputType,
-}
 
 #[derive(Debug, StructOpt)]
 pub struct ListSpusOpt {
     #[structopt(flatten)]
     output: OutputFormat,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ListSpusOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
-        let target_server = self.target.load()?;
+    /// Process list spus cli request
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        let mut admin = fluvio.admin().await;
+        let spus = admin.list::<SpuSpec, _>(vec![]).await?;
 
-        Ok((target_server, self.output.as_output()))
+        // format and dump to screen
+        format_spu_response_output(out, spus, self.output.format)?;
+        Ok(())
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-
-/// Process list spus cli request
-pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> Result<(), CliError>
-where
-    O: Terminal,
-{
-    let (target_server, output) = opt.validate()?;
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-
-    let spus = admin.list::<SpuSpec, _>(vec![]).await?;
-
-    // format and dump to screen
-    format_spu_response_output(out, spus, output)?;
-    Ok(())
 }

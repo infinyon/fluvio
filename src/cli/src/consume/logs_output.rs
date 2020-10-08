@@ -16,14 +16,14 @@ use crate::Terminal;
 use crate::t_println;
 use crate::t_print_cli_err;
 
-use super::ConsumeLogConfig;
+use crate::consume::ConsumeLogOpt;
 use super::ConsumeOutputType;
 
 /// Process fetch topic response based on output type
 pub async fn process_fetch_topic_response<O>(
     out: std::sync::Arc<O>,
     response: FetchablePartitionResponse<RecordSet>,
-    config: &ConsumeLogConfig,
+    config: &ConsumeLogOpt,
 ) -> Result<(), CliError>
 where
     O: Terminal,

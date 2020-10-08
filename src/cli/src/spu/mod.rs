@@ -1,41 +1,31 @@
+use std::sync::Arc;
+use structopt::StructOpt;
+
 mod list;
 mod display;
 
+use fluvio::Fluvio;
 pub use display::*;
-pub use cli::*;
+use crate::{Result, Terminal};
+use crate::spu::list::ListSpusOpt;
 
-mod cli {
+#[derive(Debug, StructOpt)]
+pub enum SpuCmd {
+    /// List all SPUs known by this cluster (managed AND custom)
+    #[structopt(
+        name = "list",
+        template = crate::COMMAND_TEMPLATE,
+    )]
+    List(ListSpusOpt),
+}
 
-    use super::*;
-    use list::ListSpusOpt;
-    use list::process_list_spus;
-
-    use structopt::StructOpt;
-
-    use crate::COMMAND_TEMPLATE;
-    use crate::error::CliError;
-    use crate::Terminal;
-
-    #[derive(Debug, StructOpt)]
-    pub enum SpuOpt {
-        /// List all SPUs known by this cluster (managed AND custom)
-        #[structopt(
-            name = "list",
-            template = COMMAND_TEMPLATE,
-        )]
-        List(ListSpusOpt),
-    }
-
-    pub(crate) async fn process_spu<O>(
-        out: std::sync::Arc<O>,
-        spu_opt: SpuOpt,
-    ) -> Result<String, CliError>
-    where
-        O: Terminal,
-    {
-        match spu_opt {
-            SpuOpt::List(spu_opt) => process_list_spus(out, spu_opt).await?,
+impl SpuCmd {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        match self {
+            Self::List(list) => {
+                list.process(out, fluvio).await?;
+            }
         }
-        Ok("".to_string())
+        Ok(())
     }
 }

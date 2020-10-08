@@ -1,30 +1,39 @@
-use crate::CliError;
-use super::*;
+use structopt::StructOpt;
 use fluvio_cluster::ClusterInstaller;
+use crate::Result;
 
 #[derive(Debug, StructOpt)]
-pub enum ReleasesCommand {
+pub enum ReleasesCmd {
     /// show list of versions
     #[structopt(name = "list")]
-    List,
+    List(ListOpt),
 }
 
-pub fn process_releases(opt: ReleasesCommand) -> Result<String, CliError> {
-    match opt {
-        ReleasesCommand::List => list_releases()?,
-    }
-    Ok("".to_string())
-}
-
-fn list_releases() -> Result<(), CliError> {
-    let versions = ClusterInstaller::versions()?;
-    if !versions.is_empty() {
-        println!("VERSION");
-        for chart in &versions {
-            println!("{}", chart.version());
+impl ReleasesCmd {
+    pub async fn process(self) -> Result<()> {
+        match self {
+            Self::List(list) => {
+                list.process().await?;
+            }
         }
-    } else {
-        println!("No releases found");
+        Ok(())
     }
-    Ok(())
+}
+
+#[derive(Debug, StructOpt)]
+pub struct ListOpt {}
+
+impl ListOpt {
+    pub async fn process(self) -> Result<()> {
+        let versions = ClusterInstaller::versions()?;
+        if !versions.is_empty() {
+            println!("VERSION");
+            for chart in &versions {
+                println!("{}", chart.version());
+            }
+        } else {
+            println!("No releases found");
+        }
+        Ok(())
+    }
 }
