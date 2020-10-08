@@ -76,28 +76,6 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
             .expect("start from beginning");
 
         let mut total_records: u16 = 0;
-        // 'outer: while let Some(Ok(event)) = stream.next().await {
-        //     for batch in batches {
-        //         let mut offset = batch.base_offset;
-        //         for record in batch.records {
-        //             if let Some(bytes) = record.value.inner_value() {
-        //                 validate_message(offset, &topic_name, option, &bytes);
-        //                 offset += 1;
-        //                 total_records += 1;
-        //                 println!(
-        //                     "   consumer: total records: {}, validated offset: {}",
-        //                     total_records, offset
-        //                 );
-        //                 assert_eq!(offset, base_offset + total_records as i64);
-        //                 if total_records == iteration {
-        //                     println!("<<consume test done for: {} >>>>", topic_name);
-        //                     break 'outer;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
         while let Some(Ok(record)) = stream.next().await {
             let offset = record.offset();
             if let Some(bytes) = record.try_into_bytes() {
@@ -114,27 +92,6 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
                 }
             }
         }
-
-        /*
-        println!("retrieving messages");
-        let response = consumer.fetch(Offset::beginning()).await.expect("records");
-        println!("message received");
-        let batches = response.records.batches;
-
-        assert_eq!(batches.len(), option.produce.produce_iteration as usize);
-        */
         println!("consume message validated!");
     }
-
-    /*
-    let mut log_stream = leader.fetch_logs(FetchOffset::Earliest(None), FetchLogOption::default());
-
-    if let Some(partition_response) = log_stream.next().await {
-        let records = partition_response.records;
-
-        println!("batch records: {}", records.batches.len());
-    } else {
-        assert!(false, "no response")
-    }
-    */
 }
