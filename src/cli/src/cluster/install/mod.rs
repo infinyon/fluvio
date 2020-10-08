@@ -13,6 +13,16 @@ use tls::TlsOpt;
 
 use super::util::*;
 
+#[cfg(target_os = "macos")]
+fn get_log_directory() -> &'static str {
+    "/usr/local/var/log/fluvio"
+}
+
+#[cfg(not(target_os = "macos"))]
+fn get_log_directory() -> &'static str {
+    "/tmp"
+}
+
 #[derive(Debug)]
 pub struct DefaultVersion(String);
 
@@ -29,6 +39,29 @@ impl Display for DefaultVersion {
 }
 
 impl FromStr for DefaultVersion {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
+    }
+}
+
+#[derive(Debug)]
+pub struct DefaultLogDirectory(String);
+
+impl Default for DefaultLogDirectory {
+    fn default() -> Self {
+        Self(get_log_directory().to_string())
+    }
+}
+
+impl Display for DefaultLogDirectory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for DefaultLogDirectory {
     type Err = std::io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -92,8 +125,8 @@ pub struct InstallCommand {
     pub rust_log: Option<String>,
 
     /// log dir
-    #[structopt(long)]
-    log_dir: Option<String>,
+    #[structopt(long, default_value)]
+    log_dir: DefaultLogDirectory,
 
     #[structopt(long)]
     /// installing sys

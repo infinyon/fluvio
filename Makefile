@@ -27,10 +27,10 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local-driver --log-dir /tmp --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local-driver --rust-log ${DEFAULT_LOG}
 
 smoke-test-tls:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local-driver --log-dir /tmp --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local-driver --rust-log ${DEFAULT_LOG}
 
 smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop --rust-log ${DEFAULT_LOG}
