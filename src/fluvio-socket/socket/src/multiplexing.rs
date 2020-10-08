@@ -1,8 +1,10 @@
+use core::task::{Context, Poll};
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::marker::PhantomData;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -13,11 +15,10 @@ use async_mutex::Mutex;
 use bytes::BytesMut;
 use event_listener::Event;
 use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::StreamExt;
+use futures_util::stream::{Stream, StreamExt};
+use pin_project_lite::pin_project;
 use tokio::select;
-use tracing::debug;
-use tracing::error;
-use tracing::trace;
+use tracing::{debug, error, instrument, trace};
 
 use fluvio_future::net::TcpStream;
 use fluvio_future::timer::sleep;
@@ -129,70 +130,58 @@ where
     }
 }
 
-/// Implement async socket where response are send back async manner
-/// they are queued using channel
-pub struct AsyncResponse<R> {
-    receiver: Receiver<BytesMut>,
-    header: RequestHeader,
-    correlation_id: i32,
-    data: PhantomData<R>,
+pin_project! {
+    /// Implement async socket where response are send back async manner
+    /// they are queued using channel
+    pub struct AsyncResponse<R> {
+        #[pin]
+        receiver: Receiver<BytesMut>,
+        header: RequestHeader,
+        correlation_id: i32,
+        data: PhantomData<R>,
+    }
 }
 
-impl<R> AsyncResponse<R>
-where
-    R: Request,
-{
-    pub async fn next(&mut self) -> Result<R::Response, FlvSocketError> {
-        debug!(
-            "waiting for async response: {} correlation: {}",
-            R::API_KEY,
-            self.correlation_id
-        );
+impl<R: Request> Stream for AsyncResponse<R> {
+    type Item = Result<R::Response, FlvSocketError>;
 
-        if let Some(res_bytes) = self.receiver.next().await {
-            let response =
-                R::Response::decode_from(&mut Cursor::new(&res_bytes), self.header.api_version())?;
-            trace!("receive response: {:#?}", &response);
-            Ok(response)
-        } else {
-            error!("no more response. server has terminated connection");
-            Err(IoError::new(ErrorKind::UnexpectedEof, "server has terminated connection").into())
-        }
-    }
-
-    pub async fn next_timeout(
-        &mut self,
-        time_out: Duration,
-    ) -> Result<R::Response, FlvSocketError> {
-        debug!(
-            "waiting for async response: {} correlation: {}",
-            R::API_KEY,
-            self.correlation_id
-        );
-        select! {
-            _ = (sleep(time_out)) => {
-                debug!("async socket timeout expired: {},",self.correlation_id);
-                Err(IoError::new(
-                    ErrorKind::TimedOut,
-                    format!("time out in async time out: {}",self.correlation_id),
-                ).into())
-            },
-            bytes = self.receiver.next() => {
-                if let Some(res_bytes) = bytes {
-                    trace!("received bytes {}",res_bytes.len());
-                    let response =
-                        R::Response::decode_from(&mut Cursor::new(&res_bytes), self.header.api_version())?;
-                    trace!("receive response: {:#?}", &response);
-                    Ok(response)
-                } else {
-                    error!("no more response. server has terminated connection");
-                    Err(IoError::new(
-                        ErrorKind::UnexpectedEof,
-                        "server has terminated connection",
-                    ).into())
-                }
+    #[instrument(
+        skip(self, cx),
+        fields(
+            api_key = R::API_KEY,
+            correlation_id = self.correlation_id,
+        )
+    )]
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let this = self.project();
+        let next = match this.receiver.poll_next(cx) {
+            Poll::Pending => {
+                trace!("Waiting for async response");
+                return Poll::Pending;
             }
-        }
+            Poll::Ready(next) => next,
+        };
+
+        let bytes = match next {
+            Some(bytes) => bytes,
+            None => {
+                error!("No more responses, server has terminated connection");
+                // TODO REVIEW: Should this return None or Some(Err(...))?
+                return Poll::Ready(None);
+            }
+        };
+
+        let mut cursor = Cursor::new(&bytes);
+        let response = R::Response::decode_from(&mut cursor, this.header.api_version());
+
+        let value = match response {
+            Ok(value) => {
+                trace!("Received response: {:#?}", &value);
+                Some(Ok(value))
+            }
+            Err(e) => Some(Err(e.into())),
+        };
+        Poll::Ready(value)
     }
 }
 
@@ -391,9 +380,8 @@ mod tests {
 
     use std::time::Duration;
 
-    use futures_util::future::join;
-    use futures_util::future::join3;
-    use futures_util::stream::StreamExt;
+    use futures_util::future::{join, join3};
+    use futures_util::StreamExt;
     use tracing::debug;
 
     use fluvio_future::net::TcpListener;
@@ -529,10 +517,18 @@ mod tests {
             },
             async move {
                 sleep(Duration::from_millis(100)).await;
-                let response = status_response.next().await.expect("async response");
+                let response = status_response
+                    .next()
+                    .await
+                    .expect("stream yields value")
+                    .expect("async response");
                 debug!("received async response");
                 assert_eq!(response.status, 4); // multiply by 2
-                let response = status_response.next().await.expect("async response");
+                let response = status_response
+                    .next()
+                    .await
+                    .expect("stream yields value")
+                    .expect("async response");
                 debug!("received async response");
                 assert_eq!(response.status, 8);
                 SystemTime::now()

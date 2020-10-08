@@ -11,8 +11,8 @@ use tracing::debug;
 use tracing::trace;
 
 use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::sink::SinkExt;
 use futures_util::stream::SplitSink;
+use futures_util::SinkExt;
 use tokio_util::compat::Compat;
 
 use bytes::BytesMut;
@@ -229,8 +229,7 @@ mod tests {
     use bytes::Bytes;
     use futures_util::future::join;
     use futures_util::io::AsyncWriteExt;
-    use futures_util::sink::SinkExt;
-    use futures_util::stream::StreamExt;
+    use futures_util::{SinkExt, StreamExt};
     use tracing::debug;
     use tracing::info;
 

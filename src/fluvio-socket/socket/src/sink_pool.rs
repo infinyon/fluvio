@@ -58,7 +58,7 @@ mod tests {
     use std::time::Duration;
 
     use futures_util::future::join;
-    use futures_util::stream::StreamExt;
+    use futures_util::StreamExt;
     use tracing::debug;
     use tracing::info;
 

@@ -9,9 +9,7 @@ use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage}
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
 use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::SplitStream;
-use futures_util::stream::Stream;
-use futures_util::stream::StreamExt;
+use futures_util::stream::{SplitStream, Stream, StreamExt};
 use tokio_util::codec::Framed;
 use tokio_util::compat::Compat;
 use tracing::error;
