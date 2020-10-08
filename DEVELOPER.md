@@ -1,4 +1,4 @@
-# Fluvio for Developers
+# Developing Fluvio
 
 Thank you for joining Fluvio community.  The goal of this document is to provide everything you need to get started with developing Fluvio.
 
@@ -15,52 +15,131 @@ Other platforms such as Windows can be made to work, but we haven't tried them y
 
 To test and run services,  you need to get access to development Kubernetes cluster.  Our guide uses Minikube as examples because it is easy to it get it started, but you can use other Kubernetes cluster as well.  Please see  [Kubernetes](https://kubernetes.io) for setting up a development cluster.
 
-# Rust futures and nightly
+Please read [doc](www.fluvio.io) for technical arch and operation guide.
 
-Currently,  Fluvio is using the nightly version of Rust because it is using unstable version of the Futures library.  Currently we are depending on following nightly features:
-
-- [Default specialization](https://github.com/rust-lang/rust/issues/37653)
-
-
-# Fluvio cluster
-Fluvio is a distributed platform that consists of multiple components.   It is designed to deploy in the many varieties of infrastructures as possible, such as cloud and private data centers.  It has built-in first-class integration with Kubernetes.
-Components of Fluvio are:
-
-## Streaming Controller (SC)
-Streaming Controller implements the control plane. It is responsible for organizing and coordinating data streams between SPU's. It uses the declarative model to self-heal and recover much as possible during failures.
-
-## Streaming Processing Engine (SPU)
-An SPU implements a data processing engine for processing streams. Each SPU can handle multiple data streams. SPU uses reactive and asynchronous architecture to ensure efficient handling of data. 
-
-## Fluvio CLI(Command Line Interface
-
-With Fluvio CLI, you can manage fluvio objects and stream them using the terminal interface. It can manage
-Topics
-SPU and SPU group
-Consume and produce messages to streams
-
-
-# Building Fluvio
+# Setting up Development Environment
 
 ## Set up Rust
 
 Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
 
-## Checkout and build
 
-To build and run unit tests for Fluvio for your environment:
+## Install minikube
+
+Please follow [minikube](https://minikube.sigs.k8s.io/docs/start/) to install minikube.
+
+
+## Install Helm
+
+Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install hel
+
+## Checkout and build Fluvio
+
+Build Fluvio CLI from source code
 
 ```
 $ git clone https://github.com/infinyon/fluvio.git
 $ cd fluvio
 $ cargo build
-$ cargo test
 ```
 
-#### Cross-platform installation for docker image
+Setup alias for development CLI.
+```
+$ alias flvd=./target/debug/fluvio
+``` 
+
+This avoid collision with released version of Fluvio.
+
+
+## Setting Kubernetes up for running Fluvio in development
+
+Install Fluvio `sys` chart from source.
+
+```
+$ flvd cluster install --sys --develop
+```
+
+
+# Running Fluvio with local cluster
+
+It is recommened to use `local` cluster for development.
+
+In this case, we run `sc` and `spu` individually, allowing development testing.
+
+
+## Starting SC
+
+The Streaming Controller (SC) is controller for fluvio cluster.  You only start a single SC for
+a single Fluvio cluster.
+
+Following command, will start sc with default port (9003) and rust log level:
+
+```
+$ RUST_LOG=fluvio=debug flvd run sc 
+```
+
+## Starting SPU
+
+After SC is started, you can start adding unmanaged (custom SPU).
+
+For each SPU, register spu.  For example, following registere spu with 5001 with public and private ports. 
+Normally, you only need to register SPU once.
+
+```
+$ flvd custom-spu register --id 5001 --public-server 0.0.0.0:9010 --private-server  0.0.0.0:9011
+```
+
+Then you can start SPU 5001
+
+```
+$ RUST_LOG=fluvio=debug flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 > /tmp/spu_5001.log
+```
+
+The logs can be founded in `/tmp/spu_5001`.log.
+
+Now, you should see SPU being active:
+
+```
+$ flvd spu list
+ ID    NAME             STATUS  TYPE      RACK  PUBLIC        PRIVATE 
+ 5001  custom-spu-5001  Online  "custom"   -    0.0.0.0:9010  0.0.0.0:9011 
+```
+
+Can create new topic
+```
+$ flvd topic create topic
+topic "topic" created
+```
+
+Produce and consume works:
+```
+$ flvd produce topic
+hello world
+Ok!
+
+$ flvd consume topic -B -d
+hello world
+
+```
+
+You can launch additional SPU as needed, just ensure that ports doesn't conflict with each other.
+For example, to add 2nd:
+
+```
+$ flvd custom-spu register --id 5001 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
+$ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
+```
+
+
+
+# Compiling for K8
+
+In order to deploy to minikube.  Docker image version must be built.
 
 Fluvio uses [musl](https://musl.libc.org) for deploying on a docker image.  
 
+
+## Setting up target
 First, install Rust target:
 
 ```
@@ -71,6 +150,7 @@ For mac:
 
 ```
 brew install filosottile/musl-cross/musl-cross
+export TARGET_CC=x86_64-linux-musl-gcc
 ```
 
 For Linux, please see [musl wiki](https://wiki.musl-libc.org) for the installation of musl-gcc.
@@ -81,45 +161,26 @@ sudo apt install -y musl-tools
 export TARGET_CC=musl-gcc
 sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
 ```
+## To build docker image
 
-
-## Running Fluvio CLI
-
-You can run the development version of fluvio CLI by:
+Run following command to build image
 ```
-$ ./target/debug/fluvio
+$ make minikube_image
 ```
 
-You can assign an alias to simplify references to CLI like this:
+Make sure you uninstall previous clusters for local and k8:
 ```
-alias fluvio=./target/debug/fluvio
-```
-
-From now on, we will reference ```fluvio``` instead of the release version.
-
-
-## Setting up Kubernetes Clusters and Installing system chart
-
-Please follow instruction on INSTALL.md for setting up kubernetes clusters and installing fluvio system chart.
-
-
-## Deploying development version of Fluvio cluster to Kubernetes
-
-
-Set the following environment variable:
-
-```
-export TARGET_CC=x86_64-linux-musl-gcc
-```
-Then build docker images for current source code:
-```
-make minikube_image
+$ flvd cluster uninstall --local
+$ flvd cluster uninstall
 ```
 
-You can install develop a version of fluvio using same installation command:
+Run command below now to run install with image just built
 ```
-fluvio cluster install --develop
+$ fluvio cluster install --develop
 ```
+
+Topic creation, product and consumer can now be tested as with `local` cluster.
+
 
 You can remove fluvio cluster by
 ```
@@ -132,36 +193,6 @@ Note that when you uninstall cluster, CLI will remove all related objects such a
 * Tls Secrets
 * Storage
 
-
-# Running Fluvio using custom SPU
-
-There are 2 types of SPU supported.  Default is managed SPU which are running in Kubernetes Cluster.  Second is "custom" SPU which  can be run outside Kubernetes.  This can be useful for develop and test SPU in your local laptop.  
-
-It is recommended to use custom SPU when you are working on feature development.
-
-
-## Creating local cluster
-
-Local cluster of custom SPU can be created same manner previously:
-
-```
-fluvio cluster install --local --spu <spu>
-```
-
-where ```---spu``` is optional.  This will launch SC and SPU's using native build instead of docker images.
-
-The logs for SC and SPU can be found in:
-* /tmp/flv_sc.log
-* /tmp/spu_log_<spu_id>.og
-
-
-## Uninstalling local cluster
-
-Local cluster can be uninstalled as:
-
-```
-fluvio cluster uninstall --local
-```
 
 
 ## Troubleshooting
