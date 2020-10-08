@@ -20,21 +20,22 @@ mod process {
 
     use super::ConsumeLogOpt;
     use super::fetch_log_loop;
-    use fluvio::Fluvio;
+    use fluvio::{Fluvio, FluvioConfig};
 
     /// Process Consume log cli request
     pub async fn process_consume_log<O>(
         out: std::sync::Arc<O>,
         opt: ConsumeLogOpt,
+        config: &FluvioConfig,
     ) -> Result<String, CliError>
     where
         O: Terminal,
     {
-        let (target_server, cfg) = opt.validate()?;
+        let cfg = opt.validate()?;
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
-        let target = Fluvio::connect_with_config(&target_server).await?;
+        let target = Fluvio::connect_with_config(config).await?;
         let consumer = target.partition_consumer(&cfg.topic, cfg.partition).await?;
         fetch_log_loop(out, consumer, cfg).await?;
 

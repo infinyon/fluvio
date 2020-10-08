@@ -6,12 +6,8 @@
 
 use structopt::StructOpt;
 
-use fluvio::FluvioConfig;
 use fluvio::dataplane::Offset;
-
 use crate::error::CliError;
-use crate::target::ClusterTarget;
-
 use super::ConsumeOutputType;
 
 #[derive(Debug, StructOpt)]
@@ -54,17 +50,12 @@ pub struct ConsumeLogOpt {
         default_value
     )]
     output: ConsumeOutputType,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ConsumeLogOpt {
     /// validate the configuration and generate target server and config which can be used
-    pub fn validate(self) -> Result<(FluvioConfig, ConsumeLogConfig), CliError> {
-        let target_server = self.target.load()?;
-
-        // consume log specific configurations
+    pub fn validate(self) -> Result<ConsumeLogConfig, CliError> {
+        // consume log configurations
         let consume_log_cfg = ConsumeLogConfig {
             topic: self.topic,
             partition: self.partition,
@@ -76,8 +67,7 @@ impl ConsumeLogOpt {
             suppress_unknown: self.suppress_unknown,
         };
 
-        // return server separately from config
-        Ok((target_server, consume_log_cfg))
+        Ok(consume_log_cfg)
     }
 }
 

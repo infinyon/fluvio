@@ -11,6 +11,7 @@ use fluvio_future::task::run_block_on;
 
 use crate::COMMAND_TEMPLATE;
 use crate::CliError;
+use crate::target::ClusterTarget;
 
 use super::consume::process_consume_log;
 use super::produce::process_produce_record;
@@ -30,6 +31,14 @@ use super::partition::PartitionOpt;
 #[cfg(feature = "cluster_components")]
 use super::run::{process_run, RunOpt};
 
+#[derive(StructOpt, Debug)]
+struct Root {
+    #[structopt(flatten)]
+    target: ClusterTarget,
+    #[structopt(subcommand)]
+    command: RootCommand,
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     about = "Fluvio Command Line Interface",
@@ -37,7 +46,7 @@ use super::run::{process_run, RunOpt};
     template = COMMAND_TEMPLATE,
     global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
 )]
-enum Root {
+enum RootCommand {
     #[structopt(
         no_version,
         name = "consume",
@@ -124,20 +133,23 @@ pub fn run_cli() -> eyre::Result<String> {
     run_block_on(async move {
         let terminal = Arc::new(PrintTerminal::new());
 
-        let output = match Root::from_args() {
-            Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await?,
-            Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await?,
-            Root::SPU(spu) => process_spu(terminal.clone(), spu).await?,
-            Root::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await?,
-            Root::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await?,
-            Root::Topic(topic) => process_topic(terminal.clone(), topic).await?,
-            Root::Partition(partition) => partition.process_partition(terminal.clone()).await?,
-            Root::Profile(profile) => process_profile(terminal.clone(), profile).await?,
-            Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
+        let root: Root = Root::from_args();
+        let fluvio_config = root.target.load()?;
+
+        let output = match root.command {
+            RootCommand::Consume(consume) => process_consume_log(terminal.clone(), consume, &fluvio_config).await?,
+            RootCommand::Produce(produce) => process_produce_record(terminal.clone(), produce).await?,
+            RootCommand::SPU(spu) => process_spu(terminal.clone(), spu).await?,
+            RootCommand::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await?,
+            RootCommand::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await?,
+            RootCommand::Topic(topic) => process_topic(terminal.clone(), topic).await?,
+            RootCommand::Partition(partition) => partition.process_partition(terminal.clone()).await?,
+            RootCommand::Profile(profile) => process_profile(terminal.clone(), profile).await?,
+            RootCommand::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
             #[cfg(feature = "cluster_components")]
-            Root::Run(opt) => process_run(opt)?,
-            Root::Version(_) => process_version_cmd()?,
-            Root::Completions(shell) => process_completions_cmd(shell)?,
+            RootCommand::Run(opt) => process_run(opt)?,
+            RootCommand::Version(_) => process_version_cmd()?,
+            RootCommand::Completions(shell) => process_completions_cmd(shell)?,
         };
         Ok(output)
     })
@@ -197,7 +209,7 @@ enum CompletionShell {
 }
 
 fn process_completions_cmd(shell: CompletionShell) -> Result<String, CliError> {
-    let mut app: structopt::clap::App = Root::clap();
+    let mut app: structopt::clap::App = RootCommand::clap();
     match shell {
         CompletionShell::Bash(opt) => {
             app.gen_completions_to(opt.name, Shell::Bash, &mut std::io::stdout());
