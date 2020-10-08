@@ -56,7 +56,7 @@ pub struct TestOption {
 
     /// run local environment
     #[structopt(long)]
-    local_driver: bool,
+    local: bool,
 
     /// run develop image, this is for k8
     #[structopt(long)]

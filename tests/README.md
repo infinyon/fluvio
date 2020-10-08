@@ -1,18 +1,38 @@
-# Local test
-This run test with SC and SPU running in your dev machine.
+# Fluvio Test Runner
 
-## Setting up
+Used to run a various test against `Fluvio` platform.
+
+This assumes you have read Fluvio doc and setup or access to a Fluvio cluster .
+
+
+
+## Setting up Test runer
+
+Build all `Fluvio` crates. 
 
 ```
 cargo build
+```
+
+Set up alias to run development version of Fluvio and Test runner CLI.
+
+```
 alias flvd=./target/debug/fluvio
+alias flvt=./target/debug/flv-test
 
 ```
 
 
-# Running simple test
+# Running Test runner
 
-This run a simple smoke test with a single record
+Test runner can be a running in two ways:
+- Create new cluster (local or k8) and run tests (smoke test)
+- Run tests againts existing cluster
+
+
+## Smoke test
+
+This run a simple smoke test by creating new local 
 
 ```
 $ flvt --local-driver --log-dir /tmp
