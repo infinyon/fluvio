@@ -11,52 +11,37 @@ use crate::CliError;
 use super::InstallCommand;
 use super::CommandUtil;
 
-#[cfg(target_os = "macos")]
-fn get_log_directory() -> &'static str {
-    "/usr/local/var/log/fluvio"
-}
-
-#[cfg(not(target_os = "macos"))]
-fn get_log_directory() -> &'static str {
-    "/var/log/fluvio"
-}
-
 pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     use std::path::Path;
     use std::fs::create_dir_all;
 
-    let log_dir = opt
-        .log_dir
-        .clone()
-        .unwrap_or_else(|| get_log_directory().to_owned());
+    debug!("using log dir: {}", &opt.log_dir);
 
-    debug!("using log dir: {}", log_dir);
-
-    if !Path::new(&log_dir).exists() {
-        create_dir_all(&log_dir)?;
+    if !Path::new(&opt.log_dir.to_string()).exists() {
+        create_dir_all(&opt.log_dir.to_string())?;
     }
 
     // ensure we sync files before we launch servers
     Command::new("sync").inherit();
 
     println!("launching sc");
-    launch_sc(&opt, &log_dir);
+    launch_sc(&opt);
 
     println!("setting local profile");
     set_profile(&opt)?;
 
     println!("launching spu group with size: {}", opt.spu);
-    launch_spu_group(&opt, &log_dir).await;
+    launch_spu_group(&opt).await;
 
     sleep(Duration::from_secs(1)).await;
 
     Ok(())
 }
 
-fn launch_sc(option: &InstallCommand, log_dir: &str) {
+fn launch_sc(option: &InstallCommand) {
     use std::fs::File;
 
-    let outputs = File::create(format!("{}/flv_sc.log", log_dir)).expect("log file");
+    let outputs = File::create(format!("{}/flv_sc.log", &option.log_dir)).expect("log file");
     let errors = outputs.try_clone().expect("error  file");
 
     debug!("starting sc server");
@@ -118,16 +103,16 @@ fn set_profile(opt: &InstallCommand) -> Result<(), CliError> {
     Ok(())
 }
 
-async fn launch_spu_group(opt: &InstallCommand, log_dir: &str) {
+async fn launch_spu_group(opt: &InstallCommand) {
     use k8_client::load_and_share;
 
     let client = load_and_share().expect("client should not fail");
 
     for i in 0..opt.spu {
         println!("launching SPU ({} of {})", i + 1, opt.spu);
-        launch_spu(i, client.clone(), opt, log_dir).await;
+        launch_spu(i, client.clone(), opt, &opt.log_dir.to_string()).await;
     }
-    println!("SC log generated at {}/flv_sc.log", log_dir);
+    println!("SC log generated at {}/flv_sc.log", &opt.log_dir);
     sleep(Duration::from_millis(500)).await;
 }
 

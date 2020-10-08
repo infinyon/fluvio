@@ -31,7 +31,7 @@ if [ "$DEVELOPMENT" = "true" ]; then
 
         if [ "$CLUSTER_TYPE" = "local" ]; then
                 # Install Local Fluvio Cluster
-                fluvio cluster install --rust-log $RUST_LOG --log-dir /tmp --develop --local --spu $SPU_NUMBER
+                fluvio cluster install --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
         else
                 echo "Currently, only local cluster types are supported"
         fi
