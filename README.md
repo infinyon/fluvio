@@ -4,6 +4,16 @@
     <img src="https://github.com/infinyon/fluvio/workflows/CI/badge.svg"
       alt="CI Status" />
   </a>
+  <a href="https://crates.io/crates/fluvio">
+    <img src="https://img.shields.io/crates/v/fluvio?style=flat-square"
+    alt="Crates.io version" />
+  </a>
+   <!-- docs.rs docs -->
+  <a href="https://docs.rs/fluvio">
+    <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square"
+      alt="docs.rs docs" />
+  </a>
+
   <a href="https://discordapp.com/invite/bBG2dTz">
     <img src="https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat-square"
       alt="chat" />
@@ -15,27 +25,18 @@
 <h1 align="center">Fluvio</h1>
 <div align="center">
  <strong>
-   Cloud native platform for Data Stream
+   Data streaming platform for connected Apps
  </strong>
 </div>
 
 
 
+Fluvio is a high performance, low latency data streaming platform built for real-time Apps that can run on Mobile, Edge, Cloud, and your Data Center.
 
-Fluvio is a cloud-native platform for data-in-motion, built from the ground up to run on Kubernetes.  
-It brings centralized control to connect, transform, and distribute real-time data across the organization.
+Roll out your own log aggregation, DB replication, IOT middle layer, or an event driven infrastructure in a matter of minutes. Use our expressive Node or Rust APIs to create producers/consumers and start rapid experimentation with real-time data.
 
 The repository contains all the code necessary to run the Fluvio platform: Services, APIs, and the CLI.
 
-## **Features**
-
-- Declarative Management -  A unique approach to data management, you specify intent and fluvio does the rest.
-- Cloud Native - Built for Kubernetes. 
-- Real-time architecture -  Fully asynchronous by design, suitable for low latency and high throughput environments.
-- Flexible Deployments - Controller can manage Cloud and on-Premise services simultaneously.
-- Powerful CLI  - User-friendly and easy to use Command Line Interface.
-- Written in [Rust](https://www.rust-lang.org) - [Safe](https://msrc-blog.microsoft.com/2019/07/22/why-rust-for-safe-systems-programming), Fast, Small Footprint - built for high performance distributed systems.
-    - Goodbye garbage collection!
 
 
 ## Release Status
@@ -44,19 +45,8 @@ Fluvio is at Alpha and should be suitable for lab environment. APIs, Schema, CLI
 
 ## Documentation
 
-Please see following list of doc:
-- [Installation](website/kubernetes/INSTALL.md)
+Please see doc at: https://www.fluvio.io
 
-
-Full, comprehensive documentation is viewable on the Fluvio website:
-
-https://www.fluvio.io/docs
-
-
-
-## For Developers
-
-To learn about the Fluvio Architecture and contribute to Fluvio project, please visit the [Developer](DEVELOPER.md) section.
 
 ## Contributing
 

@@ -206,13 +206,6 @@ upload-gh-linux:
 		--name "fluvio-$(GITHUB_TAG)-$(TARGET_LINUX)" \
 		--file target/$(TARGET_LINUX)/release/fluvio
 
-upload-gh-linux:
-	github-release upload \
-		--user ${GITHUB_USER} \
-		--repo ${GITHUB_REPO} \
-		--tag ${GITHUB_TAG} \
-		--name "fluvio-$(GITHUB_TAG)-$(TARGET_LINUX)" \
-		--file target/$(TARGET_LINUX)/release/fluvio
 
 
 delete-gh-release:

@@ -61,10 +61,7 @@ impl DefaultAsyncBuffer {
     /// Check if value is binary content
     pub fn is_binary(&self) -> bool {
         if let Some(value) = self.inner_value_ref() {
-            match inspect(value) {
-                ContentType::BINARY => true,
-                _ => false,
-            }
+            matches!(inspect(value), ContentType::BINARY)
         } else {
             false
         }
