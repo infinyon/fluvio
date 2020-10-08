@@ -8,12 +8,11 @@ use std::convert::TryFrom;
 
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::spu::CustomSpuSpec;
 use flv_util::socket_helpers::ServerAddress;
 
 use crate::error::CliError;
-use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct RegisterCustomSpuOpt {
@@ -36,17 +35,11 @@ pub struct RegisterCustomSpuOpt {
     /// Private server::port
     #[structopt(short = "v", long = "private-server", value_name = "host:port")]
     private_server: String,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl RegisterCustomSpuOpt {
     /// Validate cli options. Generate target-server and register custom spu config.
-    fn validate(self) -> Result<(FluvioConfig, (String, CustomSpuSpec)), CliError> {
-        let target = self.target.load()?;
-
-        // register custom spu config
+    fn validate(self) -> Result<(String, CustomSpuSpec), CliError> {
         let cfg = (
             self.name.unwrap_or(format!("custom-spu-{}", self.id)),
             CustomSpuSpec {
@@ -57,21 +50,17 @@ impl RegisterCustomSpuOpt {
             },
         );
 
-        // return server separately from config
-        Ok((target, cfg))
+        Ok(cfg)
     }
 }
 
 // -----------------------------------
 //  CLI Processing
 // -----------------------------------
-pub async fn process_register_custom_spu(opt: RegisterCustomSpuOpt) -> Result<(), CliError> {
-    let (target_server, (name, spec)) = opt.validate()?;
+pub async fn process_register_custom_spu(fluvio: &Fluvio, opt: RegisterCustomSpuOpt) -> Result<(), CliError> {
+    let (name, spec) = opt.validate()?;
 
-    let client = Fluvio::connect_with_config(&target_server).await?;
-
-    let mut admin = client.admin().await;
-
+    let mut admin = fluvio.admin().await;
     admin.create(name, false, spec).await?;
 
     Ok(())

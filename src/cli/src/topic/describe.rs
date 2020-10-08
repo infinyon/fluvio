@@ -7,14 +7,11 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-
-use crate::target::ClusterTarget;
 
 use crate::Terminal;
 use crate::error::CliError;
-use crate::OutputType;
 use crate::common::OutputFormat;
 
 // -----------------------------------
@@ -29,22 +26,6 @@ pub struct DescribeTopicsOpt {
 
     #[structopt(flatten)]
     output: OutputFormat,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
-}
-
-impl DescribeTopicsOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, (String, OutputType)), CliError> {
-        let target_server = self.target.load()?;
-
-        // transfer config parameters
-        let (topic, output) = (self.topic, self.output.as_output());
-
-        // return server separately from topic result
-        Ok((target_server, (topic, output)))
-    }
 }
 
 // -----------------------------------
@@ -54,18 +35,17 @@ impl DescribeTopicsOpt {
 /// Process describe topic cli request
 pub async fn process_describe_topics<O>(
     out: std::sync::Arc<O>,
+    fluvio: &Fluvio,
     opt: DescribeTopicsOpt,
 ) -> Result<String, CliError>
 where
     O: Terminal,
 {
-    let (target_server, (topic, output_type)) = opt.validate()?;
-
+    let topic = opt.topic;
+    let output_type = opt.output.as_output();
     debug!("describe topic: {}, {}", topic, output_type);
 
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-
+    let mut admin = fluvio.admin().await;
     let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;
 
     display::describe_topics(topics, output_type, out).await?;

@@ -5,10 +5,9 @@
 //!
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::spg::SpuGroupSpec;
 use crate::error::CliError;
-use crate::target::ClusterTarget;
 
 // -----------------------------------
 // CLI Options
@@ -19,18 +18,6 @@ pub struct DeleteManagedSpuGroupOpt {
     /// Managed SPU group name
     #[structopt(short = "n", long = "name", value_name = "string")]
     name: String,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
-}
-
-impl DeleteManagedSpuGroupOpt {
-    /// Validate cli options. Generate target-server and delete spu group configuration.
-    fn validate(self) -> Result<(FluvioConfig, String), CliError> {
-        let target_server = self.target.load()?;
-
-        Ok((target_server, self.name))
-    }
 }
 
 // -----------------------------------
@@ -39,12 +26,10 @@ impl DeleteManagedSpuGroupOpt {
 
 /// Process delete custom-spu cli request
 pub async fn process_delete_managed_spu_group(
+    fluvio: &Fluvio,
     opt: DeleteManagedSpuGroupOpt,
 ) -> Result<(), CliError> {
-    let (target_server, name) = opt.validate()?;
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-    admin.delete::<SpuGroupSpec, _>(&name).await?;
+    let mut admin = fluvio.admin().await;
+    admin.delete::<SpuGroupSpec, _>(&opt.name).await?;
     Ok(())
 }

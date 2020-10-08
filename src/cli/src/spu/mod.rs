@@ -15,6 +15,7 @@ mod cli {
     use crate::COMMAND_TEMPLATE;
     use crate::error::CliError;
     use crate::Terminal;
+    use fluvio::Fluvio;
 
     #[derive(Debug, StructOpt)]
     pub enum SpuOpt {
@@ -28,13 +29,14 @@ mod cli {
 
     pub(crate) async fn process_spu<O>(
         out: std::sync::Arc<O>,
+        fluvio: &Fluvio,
         spu_opt: SpuOpt,
     ) -> Result<String, CliError>
     where
         O: Terminal,
     {
         match spu_opt {
-            SpuOpt::List(spu_opt) => process_list_spus(out, spu_opt).await?,
+            SpuOpt::List(spu_opt) => process_list_spus(out, fluvio, spu_opt).await?,
         }
         Ok("".to_string())
     }

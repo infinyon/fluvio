@@ -3,9 +3,8 @@ use std::path::PathBuf;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 
-use crate::target::ClusterTarget;
 use crate::CliError;
 use crate::Terminal;
 
@@ -64,18 +63,13 @@ pub struct ProduceLogOpt {
         conflicts_with = "record_per_line"
     )]
     record_file: Vec<PathBuf>,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ProduceLogOpt {
     /// Validate cli options. Generate target-server and produce log configuration.
     pub fn validate(
         self,
-    ) -> Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>)), CliError> {
-        let target_server = self.target.load()?;
-
+    ) -> Result<(ProduceLogConfig, Option<FileRecord>), CliError> {
         let file_records = if let Some(record_per_line) = self.record_per_line {
             Some(FileRecord::Lines(record_per_line))
         } else if !self.record_file.is_empty() {
@@ -90,21 +84,21 @@ impl ProduceLogOpt {
             continuous: self.continuous,
         };
 
-        Ok((target_server, (produce_log_cfg, file_records)))
+        Ok((produce_log_cfg, file_records))
     }
 }
 
 /// Process produce record cli request
 pub async fn process_produce_record<O>(
     out: std::sync::Arc<O>,
+    fluvio: &Fluvio,
     opt: ProduceLogOpt,
 ) -> Result<String, CliError>
 where
     O: Terminal,
 {
-    let (target_server, (cfg, file_records)) = opt.validate()?;
-    let target = Fluvio::connect_with_config(&target_server).await?;
-    let producer = target.topic_producer(&cfg.topic).await?;
+    let (cfg, file_records) = opt.validate()?;
+    let producer = fluvio.topic_producer(&cfg.topic).await?;
 
     debug!("got producer");
     if let Some(records) = file_records {

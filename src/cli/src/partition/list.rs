@@ -6,13 +6,11 @@
 
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio_controlplane_metadata::partition::*;
 
 use crate::error::CliError;
-use crate::OutputType;
 use crate::Terminal;
-use crate::target::ClusterTarget;
 use crate::common::OutputFormat;
 
 /// Option for Listing Partition
@@ -20,28 +18,16 @@ use crate::common::OutputFormat;
 pub struct ListPartitionOpt {
     #[structopt(flatten)]
     output: OutputFormat,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ListPartitionOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
-        let target_server = self.target.load()?;
-
-        Ok((target_server, self.output.as_output()))
-    }
-
     /// perform actions
-    pub async fn process<O>(self, out: std::sync::Arc<O>) -> Result<String, CliError>
+    pub async fn process<O>(self, out: std::sync::Arc<O>, fluvio: &Fluvio) -> Result<String, CliError>
     where
         O: Terminal,
     {
-        let (target_server, output) = self.validate()?;
-
-        let client = Fluvio::connect_with_config(&target_server).await?;
-        let mut admin = client.admin().await;
+        let output = self.output.as_output();
+        let mut admin = fluvio.admin().await;
 
         let partitions = admin.list::<PartitionSpec, _>(vec![]).await?;
 

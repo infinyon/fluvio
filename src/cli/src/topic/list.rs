@@ -8,13 +8,12 @@ use structopt::StructOpt;
 
 use tracing::debug;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::Terminal;
 use crate::error::CliError;
 use crate::OutputType;
-use crate::target::ClusterTarget;
 
 #[derive(Debug)]
 pub struct ListTopicsConfig {
@@ -36,18 +35,6 @@ pub struct ListTopicsOpt {
         case_insensitive = true,
     )]
     output: Option<OutputType>,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
-}
-
-impl ListTopicsOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
-        let target_server = self.target.load()?;
-
-        Ok((target_server, self.output.unwrap_or_default()))
-    }
 }
 
 // -----------------------------------
@@ -57,17 +44,15 @@ impl ListTopicsOpt {
 /// Process list topics cli request
 pub async fn process_list_topics<O>(
     out: std::sync::Arc<O>,
+    fluvio: &Fluvio,
     opt: ListTopicsOpt,
 ) -> Result<String, CliError>
 where
     O: Terminal,
 {
-    let (target_server, output_type) = opt.validate()?;
-
+    let output_type = opt.output.unwrap_or_default();
     debug!("list topics {:#?} ", output_type);
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
+    let mut admin = fluvio.admin().await;
 
     let topics = admin.list::<TopicSpec, _>(vec![]).await?;
     display::format_response_output(out, topics, output_type)?;

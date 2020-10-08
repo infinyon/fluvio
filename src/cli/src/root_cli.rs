@@ -135,15 +135,16 @@ pub fn run_cli() -> eyre::Result<String> {
 
         let root: Root = Root::from_args();
         let fluvio_config = root.target.load()?;
+        let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
 
         let output = match root.command {
-            RootCommand::Consume(consume) => process_consume_log(terminal.clone(), consume, &fluvio_config).await?,
-            RootCommand::Produce(produce) => process_produce_record(terminal.clone(), produce).await?,
-            RootCommand::SPU(spu) => process_spu(terminal.clone(), spu).await?,
-            RootCommand::SPUGroup(spu_group) => process_spu_group(terminal.clone(), spu_group).await?,
-            RootCommand::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), custom_spu).await?,
-            RootCommand::Topic(topic) => process_topic(terminal.clone(), topic).await?,
-            RootCommand::Partition(partition) => partition.process_partition(terminal.clone()).await?,
+            RootCommand::Consume(consume) => process_consume_log(terminal.clone(), &fluvio, consume).await?,
+            RootCommand::Produce(produce) => process_produce_record(terminal.clone(), &fluvio, produce).await?,
+            RootCommand::SPU(spu) => process_spu(terminal.clone(), &fluvio, spu).await?,
+            RootCommand::SPUGroup(spu_group) => process_spu_group(terminal.clone(), &fluvio, spu_group).await?,
+            RootCommand::CustomSPU(custom_spu) => process_custom_spu(terminal.clone(), &fluvio, custom_spu).await?,
+            RootCommand::Topic(topic) => process_topic(terminal.clone(), &fluvio, topic).await?,
+            RootCommand::Partition(partition) => partition.process_partition(terminal.clone(), &fluvio).await?,
             RootCommand::Profile(profile) => process_profile(terminal.clone(), profile).await?,
             RootCommand::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
             #[cfg(feature = "cluster_components")]
@@ -156,6 +157,7 @@ pub fn run_cli() -> eyre::Result<String> {
 }
 
 use crate::Terminal;
+use fluvio::Fluvio;
 
 struct PrintTerminal {}
 

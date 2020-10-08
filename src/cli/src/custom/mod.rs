@@ -22,6 +22,7 @@ mod cli {
     use crate::Terminal;
 
     use super::*;
+    use fluvio::Fluvio;
 
     #[derive(Debug, StructOpt)]
     pub enum CustomSpuOpt {
@@ -49,17 +50,18 @@ mod cli {
 
     pub(crate) async fn process_custom_spu<O: Terminal>(
         out: std::sync::Arc<O>,
+        fluvio: &Fluvio,
         custom_spu_opt: CustomSpuOpt,
     ) -> Result<String, CliError> {
         match custom_spu_opt {
             CustomSpuOpt::Create(custom_spu_opt) => {
-                process_register_custom_spu(custom_spu_opt).await?;
+                process_register_custom_spu(fluvio, custom_spu_opt).await?;
             }
             CustomSpuOpt::Delete(custom_spu_opt) => {
-                process_unregister_custom_spu(custom_spu_opt).await?;
+                process_unregister_custom_spu(fluvio, custom_spu_opt).await?;
             }
             CustomSpuOpt::List(custom_spu_opt) => {
-                process_list_custom_spus(out, custom_spu_opt).await?;
+                process_list_custom_spus(out, fluvio, custom_spu_opt).await?;
             }
         }
         Ok("".to_string())

@@ -23,6 +23,7 @@ mod cli {
     use crate::COMMAND_TEMPLATE;
     use crate::Terminal;
     use crate::CliError;
+    use fluvio::Fluvio;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "topic", about = "Topic operations")]
@@ -58,18 +59,19 @@ mod cli {
 
     pub(crate) async fn process_topic<O>(
         out: std::sync::Arc<O>,
+        fluvio: &Fluvio,
         topic_opt: TopicOpt,
     ) -> Result<String, CliError>
     where
         O: Terminal,
     {
         let output = match topic_opt {
-            TopicOpt::Create(create_topic_opt) => process_create_topic(create_topic_opt).await?,
-            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(delete_topic_opt).await?,
+            TopicOpt::Create(create_topic_opt) => process_create_topic(fluvio, create_topic_opt).await?,
+            TopicOpt::Delete(delete_topic_opt) => process_delete_topic(fluvio, delete_topic_opt).await?,
             TopicOpt::Describe(describe_topics_opt) => {
-                process_describe_topics(out, describe_topics_opt).await?
+                process_describe_topics(out, fluvio, describe_topics_opt).await?
             }
-            TopicOpt::List(list_topics_opt) => process_list_topics(out, list_topics_opt).await?,
+            TopicOpt::List(list_topics_opt) => process_list_topics(out, fluvio, list_topics_opt).await?,
         };
         Ok(output)
     }

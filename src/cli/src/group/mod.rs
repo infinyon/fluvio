@@ -22,6 +22,7 @@ mod cli {
     use crate::COMMAND_TEMPLATE;
     use crate::error::CliError;
     use crate::Terminal;
+    use fluvio::Fluvio;
 
     #[derive(Debug, StructOpt)]
     pub enum SpuGroupOpt {
@@ -49,17 +50,18 @@ mod cli {
 
     pub(crate) async fn process_spu_group<O: Terminal>(
         out: std::sync::Arc<O>,
+        fluvio: &Fluvio,
         spu_group_opt: SpuGroupOpt,
     ) -> Result<String, CliError> {
         match spu_group_opt {
             SpuGroupOpt::Create(spu_group_opt) => {
-                process_create_managed_spu_group(spu_group_opt).await?;
+                process_create_managed_spu_group(fluvio, spu_group_opt).await?;
             }
             SpuGroupOpt::Delete(spu_group_opt) => {
-                process_delete_managed_spu_group(spu_group_opt).await?;
+                process_delete_managed_spu_group(fluvio, spu_group_opt).await?;
             }
             SpuGroupOpt::List(spu_group_opt) => {
-                process_list_managed_spu_groups(out, spu_group_opt).await?;
+                process_list_managed_spu_groups(out, fluvio, spu_group_opt).await?;
             }
         }
         Ok("".to_string())

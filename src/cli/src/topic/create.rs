@@ -11,11 +11,10 @@ use std::path::PathBuf;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::error::CliError;
-use crate::target::ClusterTarget;
 
 // -----------------------------------
 // CLI Options
@@ -67,19 +66,14 @@ pub struct CreateTopicOpt {
     /// Validates configuration, does not provision
     #[structopt(short = "d", long)]
     dry_run: bool,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl CreateTopicOpt {
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(FluvioConfig, (String, TopicSpec)), CliError> {
+    fn validate(self) -> Result<(String, TopicSpec), CliError> {
         use fluvio::metadata::topic::PartitionMaps;
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
-
-        let target_server = self.target.load()?;
 
         let topic = if let Some(replica_assign_file) = &self.replica_assignment {
             TopicSpec::Assigned(
@@ -102,7 +96,7 @@ impl CreateTopicOpt {
         };
 
         // return server separately from config
-        Ok((target_server, (self.topic, topic)))
+        Ok((self.topic, topic))
     }
 }
 
@@ -111,16 +105,12 @@ impl CreateTopicOpt {
 // -----------------------------------
 
 /// Process create topic cli request
-pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliError> {
+pub async fn process_create_topic(fluvio: &Fluvio, opt: CreateTopicOpt) -> Result<String, CliError> {
     let dry_run = opt.dry_run;
-
-    let (target_server, (name, topic_spec)) = opt.validate()?;
+    let (name, topic_spec) = opt.validate()?;
 
     debug!("creating topic: {} spec: {:#?}", name, topic_spec);
-
-    let target = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = target.admin().await;
-
+    let mut admin = fluvio.admin().await;
     admin.create(name.clone(), dry_run, topic_spec).await?;
 
     Ok(format!("topic \"{}\" created", name))

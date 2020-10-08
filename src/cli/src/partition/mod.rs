@@ -10,6 +10,7 @@ mod cli {
     use crate::CliError;
 
     use super::list::ListPartitionOpt;
+    use fluvio::Fluvio;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "partition", about = "Partition operations")]
@@ -26,12 +27,13 @@ mod cli {
         pub(crate) async fn process_partition<O>(
             self,
             out: std::sync::Arc<O>,
+            fluvio: &Fluvio,
         ) -> Result<String, CliError>
         where
             O: Terminal,
         {
             match self {
-                Self::List(list) => list.process(out).await,
+                Self::List(list) => list.process(out, fluvio).await,
             }
         }
     }

@@ -6,13 +6,12 @@
 
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::error::CliError;
 use crate::OutputType;
 use crate::Terminal;
-use crate::target::ClusterTarget;
 use super::format_spu_response_output;
 use crate::common::OutputFormat;
 
@@ -25,17 +24,12 @@ pub struct ListSpusConfig {
 pub struct ListSpusOpt {
     #[structopt(flatten)]
     output: OutputFormat,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ListSpusOpt {
     /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
-        let target_server = self.target.load()?;
-
-        Ok((target_server, self.output.as_output()))
+    fn validate(self) -> Result<OutputType, CliError> {
+        Ok(self.output.as_output())
     }
 }
 
@@ -44,15 +38,13 @@ impl ListSpusOpt {
 // -----------------------------------
 
 /// Process list spus cli request
-pub async fn process_list_spus<O>(out: std::sync::Arc<O>, opt: ListSpusOpt) -> Result<(), CliError>
+pub async fn process_list_spus<O>(out: std::sync::Arc<O>, fluvio: &Fluvio, opt: ListSpusOpt) -> Result<(), CliError>
 where
     O: Terminal,
 {
-    let (target_server, output) = opt.validate()?;
+    let output = opt.validate()?;
 
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-
+    let mut admin = fluvio.admin().await;
     let spus = admin.list::<SpuSpec, _>(vec![]).await?;
 
     // format and dump to screen
