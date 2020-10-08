@@ -1,33 +1,58 @@
-# Local test
-This run test with SC and SPU running in your dev machine.
+# Fluvio Test Runner
 
-## Setting up
+Used to run a various test against `Fluvio` platform.
+
+This assumes you have read Fluvio doc and setup or access to a Fluvio cluster .
+
+
+
+## Setting up Test runer
+
+Build all `Fluvio` crates. 
 
 ```
 cargo build
+```
+
+Set up alias to run development version of Fluvio and Test runner CLI.
+
+```
 alias flvd=./target/debug/fluvio
+alias flvt=./target/debug/flv-test
 
 ```
 
 
-# Running simple test
+# Running Test runner
 
-This run a simple smoke test with a single record
+Test runner can be a running in two ways:
+- Create new cluster (local or k8) and run tests (smoke test)
+- Run tests againts existing cluster
+
+
+## Smoke test
+
+This run a simple smoke test by creating new local cluster.
+
+It creates a simple topic: `topic0` and perform produce/consume 
 
 ```
-$ flvt --local-driver --log-dir /tmp
+$ flvt --local
+
+....various cluster installation
+start testing...
+found topic: topic0 offset: 0
+starting produce
+Ok!
+send message of len 108
+topic: topic0, consume message validated!
 ```
 
-Displaying current offsets:
-```
-$ flvd partition list
- TOPIC   PARTITION  LEADER  REPLICAS  RESOLUTION  HW  LEO  LSR  FOLLOWER OFFSETS 
- topic0  0          5001    []        Online      1   1    0    [] 
-```
+Smoke test can be specified with more than 1 iterations:
 
 Run a test with sending 10 records:
 ```
-flvt  --produce-iteration 10  -d
+flvt  --local --produce-iteration 10
 
 no setup
 no topic initialized

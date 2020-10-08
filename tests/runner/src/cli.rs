@@ -56,7 +56,7 @@ pub struct TestOption {
 
     /// run local environment
     #[structopt(long)]
-    local_driver: bool,
+    local: bool,
 
     /// run develop image, this is for k8
     #[structopt(long)]
@@ -113,7 +113,7 @@ impl TestOption {
 
     /// use k8 env driver
     pub fn use_k8_driver(&self) -> bool {
-        !self.local_driver
+        !self.local
     }
 
     pub fn develop_mode(&self) -> bool {
