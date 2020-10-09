@@ -24,10 +24,6 @@ jobs:
           go get github.com/github-release/github-release
           ls $(go env GOPATH)/bin
           cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
-      - name: Create release
-        run:  make create-gh-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
       - name: Install Musl Tools for Linux
         run: |
           sudo apt install -y musl-tools
@@ -43,10 +39,18 @@ jobs:
           make helm-install-plugin
           make helm-login
           make helm-publish-app
+        env:
+          HELM_PASSWORD: ${{ secrets.HELM_PASSWORD }}
+      - name: Create release
+        run:  make create-gh-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
       - name: Build Linux CLI
         run: build-cli-linux
       - name: Upload Darin CLI
         run:  make upload-gh-linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
   upload_mac:
     needs: release_linux
@@ -61,6 +65,8 @@ jobs:
         run:  make build-cli-darwin
       - name: Upload Darwn CLI
         run:  make upload-gh-darwin
+      env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
 
 
