@@ -8,17 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Upload Release Asset
-    runs-on: macOS-latest
+  release_linux:
+    name: Build and Release Linux
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Install github-release
         run: go get github.com/github-release/github-release
-      - name: Install /tmp/cli-x86_64-unknown-linux-musl-release.tar.gz
+      - name: Install Musl Tools for Linux
         run: |
-          brew install filosottile/musl-cross/musl-cross
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          export TARGET_CC=musl-gcc
       - name: Release docker
         run: |
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
@@ -31,4 +33,4 @@ jobs:
       - name: Release to Github
         run: |
           export TARGET_CC=x86_64-linux-musl-gcc
-          make release_github
+          make release_linux
