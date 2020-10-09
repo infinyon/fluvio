@@ -42,6 +42,7 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: Release docker
         run: |
+          export TARGET_CC=musl-gcc
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           make release_image
     
@@ -62,7 +63,9 @@ jobs:
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: Build Linux CLI
-        run:  make build-cli-linux
+        run: |
+          export TARGET_CC=musl-gcc
+          make build-cli-linux
       - name: Upload Darin CLI
         run:  make upload-gh-linux
         env:
