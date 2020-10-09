@@ -4,14 +4,14 @@
 
 use std::fmt;
 use std::io::Error as StdIoError;
-use futures::channel::mpsc::SendError;
 
+use async_channel::SendError;
 use fluvio_types::PartitionError;
 
 #[derive(Debug)]
 pub enum StoreError {
     IoError(StdIoError),
-    SendError(SendError),
+    SendError(String),
     PartitionError(PartitionError),
 }
 
@@ -31,9 +31,9 @@ impl From<StdIoError> for StoreError {
     }
 }
 
-impl From<SendError> for StoreError {
-    fn from(error: SendError) -> Self {
-        Self::SendError(error)
+impl<T> From<SendError<T>> for StoreError {
+    fn from(error: SendError<T>) -> Self {
+        Self::SendError(error.to_string())
     }
 }
 
