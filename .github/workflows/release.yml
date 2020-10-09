@@ -20,9 +20,10 @@ jobs:
           echo $(go env GOROOT)
           echo $PATH
       - name: Install github-release
-        run: go get github.com/github-release/github-release
-        env:
-          GOPATH: /usr/local/sbin
+        run:  | 
+          go get github.com/github-release/github-release
+          ls $(go env GOPATH)/bin
+          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
       - name: Create release
         run:  make create-gh-release
       - name: Install Musl Tools for Linux
