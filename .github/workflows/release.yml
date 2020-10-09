@@ -1,11 +1,13 @@
 name: Release
 
 on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+#  push:
+#    # Sequence of patterns matched against refs/tags
+#    tags:
+#      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
+  push:
+    branches: [fix-release]   
 
 jobs:
   build:
@@ -31,7 +33,7 @@ jobs:
           brew install filosottile/musl-cross/musl-cross
       - name: Release docker
         run: |
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD 
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           make release_image
       - name: Release helm chart
         run: |
