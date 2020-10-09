@@ -79,7 +79,11 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
         while let Some(Ok(record)) = stream.next().await {
             let offset = record.offset();
             if let Some(bytes) = record.try_into_bytes() {
-                println!("consumer received offset: {}, message: {}",offset, bytes.len());
+                println!(
+                    "consumer received offset: {}, message: {}",
+                    offset,
+                    bytes.len()
+                );
                 validate_message(offset, &topic_name, option, &bytes);
                 println!(
                     "   total records: {}, validated offset: {}",
