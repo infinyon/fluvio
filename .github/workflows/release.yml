@@ -14,11 +14,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: echo env
+      - name: Add go lang path
         run: |
-          echo $(go env GOPATH)
-          echo $(go env GOROOT)
-          echo $PATH
+          echo $(go env GOPATH) >> $GITHUB_PATH
+          echo $(go env GOROOT) >> $GITHUB_PATH
       - name: Install github-release
         run: go get github.com/github-release/github-release
       - name: Create release
