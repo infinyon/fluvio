@@ -60,7 +60,7 @@ jobs:
           ls $(go env GOPATH)/bin
           cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
       - name: Build Linux CLI
-        run: make build-cli-linux
+        run:  make build-cli-linux
       - name: Upload Darin CLI
         run:  make upload-gh-linux
         env:
