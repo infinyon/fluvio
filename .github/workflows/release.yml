@@ -16,6 +16,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install github-release
         run: go get github.com/github-release/github-release
+      - name: Create release
+        run:  make create-gh-release
       - name: Install Musl Tools for Linux
         run: |
           sudo apt install -y musl-tools
@@ -23,6 +25,7 @@ jobs:
           export TARGET_CC=musl-gcc
       - name: Release docker
         run: |
+          export TARGET_CC=x86_64-linux-musl-gcc
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           make release_image
       - name: Release helm chart
@@ -30,12 +33,13 @@ jobs:
           make helm-install-plugin
           make helm-login
           make helm-publish-app
-      - name: Release to Github
-        run: |
-          export TARGET_CC=x86_64-linux-musl-gcc
-          make release_linux
+      - name: Build Linux CLI
+        run: build-cli-linux
+      - name: Upload Darin CLI
+        run:  make upload-gh-linux
 
   upload_mac:
+    needs: release_linux
     name: Upload Release Asset for Mac
     runs-on: macOS-latest
     steps:
