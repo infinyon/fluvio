@@ -27,7 +27,7 @@ jobs:
       - name: Create release
         run:  make create-gh-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
       - name: Install Musl Tools for Linux
         run: |
           sudo apt install -y musl-tools
