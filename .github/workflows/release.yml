@@ -14,16 +14,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-        with:
-          tag_name: v0.6.0-alpha.1
-          release_name: Release 0.6.0-alpha.1
-          draft: false
-          prerelease: false
       - name: Install github-release
         run: go get github.com/github-release/github-release
       - name: Install /tmp/cli-x86_64-unknown-linux-musl-release.tar.gz
