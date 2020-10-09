@@ -1,44 +1,99 @@
 name: Release
 
 on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+#  push:
+#    # Sequence of patterns matched against refs/tags
+#    tags:
+#      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Upload Release Asset
-    runs-on: macOS-latest
+  create_release:
+    name: create github release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Install github-release
+        run:  | 
+          go get github.com/github-release/github-release
+          ls $(go env GOPATH)/bin
+          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
+      - name: Create release
+        run:  make create-gh-release
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-        with:
-          tag_name: v0.6.0-alpha.1
-          release_name: Release 0.6.0-alpha.1
-          draft: false
-          prerelease: false
-      - name: Install github-release
-        run: go get github.com/github-release/github-release
-      - name: Install /tmp/cli-x86_64-unknown-linux-musl-release.tar.gz
-        run: |
-          brew install filosottile/musl-cross/musl-cross
-      - name: Release docker
-        run: |
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD 
-          make release_image
       - name: Release helm chart
         run: |
           make helm-install-plugin
-          make helm-login
+          helm repo add fluvio https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
           make helm-publish-app
-      - name: Release to Github
+
+  release_docker:
+    name: docker release
+    needs:  create_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Musl Tools for Linux
         run: |
-          export TARGET_CC=x86_64-linux-musl-gcc
-          make release_github
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+      - name: Release docker
+        run: |
+          export TARGET_CC=musl-gcc
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+          make release_image
+    
+  upload_linux_cli:
+    needs:  create_release
+    name: upload linux cli
+    runs-on:  ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install github-release
+        run:  | 
+          go get github.com/github-release/github-release
+          ls $(go env GOPATH)/bin
+          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
+      - name: Install Musl Tools for Linux
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+      - name: Build Linux CLI
+        run: |
+          export TARGET_CC=musl-gcc
+          make build-cli-linux
+      - name: Upload Darin CLI
+        run:  make upload-gh-linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+
+  upload_mac_cli:
+    needs: create_release
+    name: upload mac cli
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Add go lang path
+        run: |
+          echo $(go env GOPATH)
+          echo $(go env GOROOT)
+          echo $PATH
+      - name: Install github-release
+        run:  | 
+          go get github.com/github-release/github-release
+          ls $(go env GOPATH)/bin
+          cp $(go env GOPATH)/bin/github-release /usr/local/bin
+      - name: Build Darwin CLI
+        run:  make build-cli-darwin
+      - name: Upload Darwin CLI
+        run:  make upload-gh-darwin
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+
+
+

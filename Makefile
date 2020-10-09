@@ -180,8 +180,6 @@ build-cli-linux:
 
 
 
-# create release using classic API.  note that this API is deprecated
-# release CLI can be downloaded from https://github.com/aktau/github-release/releases
 create-gh-release:	
 	github-release release \
 		--user ${GITHUB_USER} \
