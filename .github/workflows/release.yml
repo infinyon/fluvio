@@ -26,6 +26,8 @@ jobs:
           cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
       - name: Create release
         run:  make create-gh-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Musl Tools for Linux
         run: |
           sudo apt install -y musl-tools
