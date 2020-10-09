@@ -22,7 +22,7 @@ jobs:
       - name: Install github-release
         run: go get github.com/github-release/github-release
         env:
-          GOPATH: /home/runner/work/
+          GOPATH: /usr/local/sbin
       - name: Create release
         run:  make create-gh-release
       - name: Install Musl Tools for Linux
