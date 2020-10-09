@@ -55,7 +55,7 @@ jobs:
   upload_mac:
     needs: release_linux
     name: Upload Release Asset for Mac
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
