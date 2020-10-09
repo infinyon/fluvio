@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  release_linux:
-    name: Build and Release Linux
+  create_release:
+    name: create github release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -19,30 +19,44 @@ jobs:
           echo $(go env GOPATH)
           echo $(go env GOROOT)
           echo $PATH
-      - name: Install github-release
-        run:  | 
-          go get github.com/github-release/github-release
-          ls $(go env GOPATH)/bin
-          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
-      - name: Install Musl Tools for Linux
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          export TARGET_CC=musl-gcc
+      - name: Create release
+        run:  make create-gh-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
       - name: Release helm chart
         run: |
           make helm-install-plugin
           helm repo add fluvio https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
           make helm-publish-app
+
+  release_docker:
+    name: docker release
+    needs:  create_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Musl Tools for Linux
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          export TARGET_CC=musl-gcc
       - name: Release docker
         run: |
           export TARGET_CC=x86_64-linux-musl-gcc
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           make release_image
-      - name: Create release
-        run:  make create-gh-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+    
+  upload_linux_cli:
+    needs:  create_release
+    name: upload linux cli
+    runs-on:  ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install github-release
+        run:  | 
+          go get github.com/github-release/github-release
+          ls $(go env GOPATH)/bin
+          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
       - name: Build Linux CLI
         run: build-cli-linux
       - name: Upload Darin CLI
@@ -50,15 +64,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
-  upload_mac:
-    needs: release_linux
-    name: Upload Release Asset for Mac
+  upload_mac_cli:
+    needs: create_release
+    name: upload mac cli
     runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Install github-release
-        run: go get github.com/github-release/github-release
+        run:  | 
+          go get github.com/github-release/github-release
+          ls $(go env GOPATH)/bin
+          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
       - name: Build Darwin CLI
         run:  make build-cli-darwin
       - name: Upload Darwn CLI
