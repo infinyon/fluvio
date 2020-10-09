@@ -29,11 +29,6 @@ jobs:
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           export TARGET_CC=musl-gcc
-      - name: Release docker
-        run: |
-          export TARGET_CC=x86_64-linux-musl-gcc
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-          make release_image
       - name: Release helm chart
         run: |
           make helm-install-plugin
@@ -41,6 +36,11 @@ jobs:
           make helm-publish-app
         env:
           HELM_PASSWORD: ${{ secrets.HELM_PASSWORD }}
+      - name: Release docker
+        run: |
+          export TARGET_CC=x86_64-linux-musl-gcc
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+          make release_image
       - name: Create release
         run:  make create-gh-release
         env:
@@ -65,7 +65,7 @@ jobs:
         run:  make build-cli-darwin
       - name: Upload Darwn CLI
         run:  make upload-gh-darwin
-      env:
+        env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
 
