@@ -5,7 +5,6 @@
 use std::fmt;
 use std::io::Error as StdIoError;
 
-
 use async_channel::SendError;
 use fluvio_types::PartitionError;
 
@@ -32,7 +31,7 @@ impl From<StdIoError> for StoreError {
     }
 }
 
-impl <T>From<SendError<T>> for StoreError {
+impl<T> From<SendError<T>> for StoreError {
     fn from(error: SendError<T>) -> Self {
         Self::SendError(error.to_string())
     }
