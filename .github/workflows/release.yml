@@ -32,7 +32,7 @@ jobs:
       - name: Release helm chart
         run: |
           make helm-install-plugin
-          make helm-login
+          helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
           make helm-publish-app
         env:
           HELM_PASSWORD: ${{ secrets.HELM_PASSWORD }}
