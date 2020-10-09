@@ -34,6 +34,8 @@ jobs:
     needs:  create_release
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Install Musl Tools for Linux
         run: |
           sudo apt install -y musl-tools
