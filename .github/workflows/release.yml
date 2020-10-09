@@ -57,6 +57,10 @@ jobs:
           go get github.com/github-release/github-release
           ls $(go env GOPATH)/bin
           cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
+      - name: Install Musl Tools for Linux
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: Build Linux CLI
         run:  make build-cli-linux
       - name: Upload Darin CLI
