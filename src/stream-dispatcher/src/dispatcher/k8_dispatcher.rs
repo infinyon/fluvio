@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use futures::stream::StreamExt;
+use futures_lite::stream::StreamExt;
 use tracing::debug;
 use tracing::error;
 use tracing::info;

@@ -5,7 +5,7 @@ use std::io::Write;
 use std::collections::HashMap;
 
 use utils::bin::get_fluvio;
-use futures::StreamExt;
+use futures_lite::stream::StreamExt;
 
 use fluvio::{Fluvio, Offset};
 use crate::cli::TestOption;
