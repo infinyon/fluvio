@@ -87,7 +87,7 @@ jobs:
         run:  | 
           go get github.com/github-release/github-release
           ls $(go env GOPATH)/bin
-          cp $(go env GOPATH)/bin/github-release /Users/runner/bin
+          cp $(go env GOPATH)/bin/github-release /usr/local/bin
       - name: Build Darwin CLI
         run:  make build-cli-darwin
       - name: Upload Darwin CLI
