@@ -34,3 +34,19 @@ jobs:
         run: |
           export TARGET_CC=x86_64-linux-musl-gcc
           make release_linux
+
+  upload_mac:
+    name: Upload Release Asset for Mac
+    runs-on: macOS-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install github-release
+        run: go get github.com/github-release/github-release
+      - name: Build Darwin CLI
+        run:  make build-cli-darwin
+      - name: Upload Darwn CLI
+        run:  make upload-gh-darwin
+
+
+
