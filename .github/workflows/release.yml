@@ -16,10 +16,13 @@ jobs:
         uses: actions/checkout@v2
       - name: Add go lang path
         run: |
-          echo $(go env GOPATH) >> $GITHUB_PATH
-          echo $(go env GOROOT) >> $GITHUB_PATH
+          echo $(go env GOPATH)
+          echo $(go env GOROOT)
+          echo $PATH
       - name: Install github-release
         run: go get github.com/github-release/github-release
+        env:
+          GOPATH: /home/runner/work/
       - name: Create release
         run:  make create-gh-release
       - name: Install Musl Tools for Linux
