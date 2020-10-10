@@ -415,7 +415,10 @@ impl ScDispatcher<FileReplica> {
                     .await;
             }
             Err(err) => {
-                error!("error creating storage foer leader replica {:#?}", err);
+                error!(
+                    "error creating storage leader replica {:#?}, log: {:#?}",
+                    err, storage_log
+                );
                 // TODO: send status back to SC
             }
         }

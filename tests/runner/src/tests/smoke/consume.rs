@@ -61,7 +61,7 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
         let topic_name = option.topic_name(i);
         let base_offset = offsets.get(&topic_name).expect("offsets");
         println!(
-            "starting fetch stream for: {} at: {}, expected new records: {}",
+            "starting fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, iteration
         );
 
@@ -79,13 +79,17 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
         while let Some(Ok(record)) = stream.next().await {
             let offset = record.offset();
             if let Some(bytes) = record.try_into_bytes() {
+                println!(
+                    "consumer received offset: {}, message: {}",
+                    offset,
+                    bytes.len()
+                );
                 validate_message(offset, &topic_name, option, &bytes);
                 println!(
-                    "   consumer: total records: {}, validated offset: {}",
+                    "   total records: {}, validated offset: {}",
                     total_records, offset
                 );
                 total_records += 1;
-                assert_eq!(offset, base_offset + total_records as i64);
                 if total_records == iteration {
                     println!("<<consume test done for: {} >>>>", topic_name);
                     break;

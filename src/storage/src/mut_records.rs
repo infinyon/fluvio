@@ -58,7 +58,7 @@ impl MutFileRecords {
         option: &ConfigOption,
     ) -> Result<MutFileRecords, StorageError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        trace!("opening commit log at: {}", log_path.display());
+        debug!("opening commit log at: {}", log_path.display());
 
         let sink_option = BoundedFileOption {
             max_len: Some(option.segment_max_bytes as u64),
