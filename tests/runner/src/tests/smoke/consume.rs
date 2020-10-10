@@ -4,9 +4,10 @@ use std::io;
 use std::io::Write;
 use std::collections::HashMap;
 
-use utils::bin::get_fluvio;
+use log::info;
 use futures_lite::stream::StreamExt;
 
+use utils::bin::get_fluvio;
 use fluvio::{Fluvio, Offset};
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
@@ -79,14 +80,15 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
         while let Some(Ok(record)) = stream.next().await {
             let offset = record.offset();
             if let Some(bytes) = record.try_into_bytes() {
-                println!(
-                    "consumer received offset: {}, message: {}",
+                info!(
+                    "* consumer iter: {}, received offset: {}, message: {}",
+                    total_records,
                     offset,
                     bytes.len()
                 );
                 validate_message(offset, &topic_name, option, &bytes);
-                println!(
-                    "   total records: {}, validated offset: {}",
+                info!(
+                    " total records: {}, validated offset: {}",
                     total_records, offset
                 );
                 total_records += 1;

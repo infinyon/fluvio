@@ -191,7 +191,8 @@ where
 pub struct SyncStatus {
     pub epoch: Epoch,
     pub add: i32,
-    pub update: i32,
+    pub update_spec: i32,
+    pub update_status: i32,
     pub delete: i32,
 }
 
@@ -220,7 +221,7 @@ where
 
         drop(read_guard);
 
-        let (mut add_cnt, mut mod_cnt, mut del_cnt) = (0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
 
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
@@ -229,11 +230,17 @@ where
             let key = source.key().clone();
             // always insert, so we stamp current epoch
             if let Some(old_value) = write_guard.insert_meta(source) {
-                if old_value.inner() != write_guard.get(&key).unwrap().inner() {
-                    mod_cnt += 1;
+                let changes = old_value
+                    .inner()
+                    .diff(write_guard.get(&key).unwrap().inner());
+                if changes.spec {
+                    update_spec += 1;
+                }
+                if changes.status {
+                    update_status += 1;
                 }
             } else {
-                add_cnt += 1;
+                add += 1;
             }
 
             local_keys.retain(|n| n != &key);
@@ -243,7 +250,7 @@ where
         for name in local_keys.into_iter() {
             if write_guard.contains_key(&name) {
                 if write_guard.remove(&name).is_some() {
-                    del_cnt += 1;
+                    delete += 1;
                 } else {
                     error!("delete  should never fail since key exists: {:#?}", name);
                 }
@@ -258,18 +265,20 @@ where
         drop(write_guard);
 
         debug!(
-            "Sync all: <{}:{}> [add:{}, mod:{}, del:{}], ",
+            "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
             S::LABEL,
             epoch,
-            add_cnt,
-            mod_cnt,
-            del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
         );
         SyncStatus {
             epoch,
-            add: add_cnt,
-            update: mod_cnt,
-            delete: del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
         }
     }
 
@@ -319,7 +328,7 @@ where
             return None;
         }
 
-        let (mut add_cnt, mut mod_cnt, mut del_cnt) = (0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
 
@@ -327,16 +336,25 @@ where
         for change in actual_changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
-                    if write_guard.insert_meta(new_kv_value).is_some() {
-                        mod_cnt += 1;
+                    let key = new_kv_value.key_owned();
+                    if let Some(old_value) = write_guard.insert_meta(new_kv_value) {
+                        let changes = old_value
+                            .inner()
+                            .diff(write_guard.get(&key).unwrap().inner());
+                        if changes.spec {
+                            update_spec += 1;
+                        }
+                        if changes.status {
+                            update_status += 1;
+                        }
                     } else {
                         // there was no existing, so this is new
-                        add_cnt += 1;
+                        add += 1;
                     }
                 }
                 LSUpdate::Delete(key) => {
                     write_guard.remove(&key);
-                    del_cnt += 1;
+                    delete += 1;
                 }
             }
         }
@@ -345,18 +363,20 @@ where
         drop(write_guard);
 
         debug!(
-            "Apply changes {} [add:{},mod:{},del:{},epoch: {}",
+            "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
             S::LABEL,
-            add_cnt,
-            mod_cnt,
-            del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
             epoch,
         );
         Some(SyncStatus {
             epoch,
-            add: add_cnt,
-            update: mod_cnt,
-            delete: del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
         })
     }
 }

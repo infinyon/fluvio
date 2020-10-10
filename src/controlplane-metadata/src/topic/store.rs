@@ -213,7 +213,7 @@ mod test {
 }
 
 #[cfg(test)]
-pub mod test2 {
+mod test2 {
 
     use fluvio_future::test_async;
 

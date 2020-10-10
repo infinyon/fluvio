@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use log::info;
+
 use fluvio::Fluvio;
 
 use crate::TestOption;
@@ -90,12 +92,13 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &topic_name, &option);
             let len = message.len();
+            info!("producer trying to send iteration: {}", i);
             producer
                 .send_record(message, 0)
                 .await
                 .expect("message sent");
-            println!(
-                "produced message topic: {}, offset: {},len: {}",
+            info!(
+                "produced completed message topic: {}, offset: {},len: {}",
                 topic_name, offset, len
             );
         }

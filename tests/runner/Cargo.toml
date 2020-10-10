@@ -5,6 +5,7 @@ authors = ["fluvio.io"]
 edition = "2018"
 
 [dependencies]
+log = "0.4.8"
 bytes = "0.5.3"
 futures-lite = "1.11.0"
 structopt = "0.3.5"

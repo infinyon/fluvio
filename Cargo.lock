@@ -1363,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-rwlock",
  "fluvio-future",
@@ -1418,6 +1418,7 @@ dependencies = [
  "futures-lite",
  "k8-client",
  "k8-metadata-client",
+ "log",
  "structopt",
 ]
 

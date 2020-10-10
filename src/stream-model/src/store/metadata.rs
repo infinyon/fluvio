@@ -116,6 +116,15 @@ where
     pub fn is_newer(&self, another: &Self) -> bool {
         self.ctx.item().is_newer(another.ctx().item())
     }
+
+    pub fn diff(&self, another: &Self)  -> MetadataChange {
+        let spec_diff = self.spec != another.spec;
+        let status_diff = self.status != another.status;
+        MetadataChange {
+            spec: spec_diff,
+            status: status_diff
+        }
+    }
 }
 
 impl<S, C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S, C>
@@ -127,3 +136,10 @@ where
         (self.key, self.spec, self.status)
     }
 }
+
+/// What has been changed between two metadata 
+pub struct MetadataChange {
+    pub spec: bool,
+    pub status: bool,
+}
+

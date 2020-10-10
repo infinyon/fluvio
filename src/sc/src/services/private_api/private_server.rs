@@ -282,6 +282,7 @@ async fn send_replica_change(
 ) -> Result<Epoch, FlvSocketError> {
     use fluvio_controlplane_metadata::message::*;
 
+    debug!("sending replica change: {} to spu: {}",epoch,spu_id);
     let read_guard = ctx.partitions().store().read().await;
     let changes = read_guard.changes_since(epoch);
     drop(read_guard);
