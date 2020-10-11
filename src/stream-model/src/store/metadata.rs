@@ -4,6 +4,9 @@ use crate::core::{Spec, MetadataContext, MetadataItem};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, String>;
 
+use super::DualDiff;
+use super::MetadataChange;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct MetadataStoreObject<S, C>
 where
@@ -117,7 +120,18 @@ where
         self.ctx.item().is_newer(another.ctx().item())
     }
 
-    pub fn diff(&self, another: &Self)  -> MetadataChange {
+    
+}
+
+
+
+impl<S, C> DualDiff for MetadataStoreObject<S, C>
+where
+    S: Spec,
+    C: MetadataItem,
+{
+
+    fn diff(&self, another: &Self)  -> MetadataChange {
         let spec_diff = self.spec != another.spec;
         let status_diff = self.status != another.status;
         MetadataChange {
@@ -125,7 +139,9 @@ where
             status: status_diff
         }
     }
+
 }
+
 
 impl<S, C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S, C>
 where
@@ -137,9 +153,4 @@ where
     }
 }
 
-/// What has been changed between two metadata 
-pub struct MetadataChange {
-    pub spec: bool,
-    pub status: bool,
-}
 

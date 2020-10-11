@@ -265,11 +265,20 @@ mod old_map {
 
     pub struct EpochChanges<V> {
         // current epoch
-        pub epoch: Epoch,
+        epoch: Epoch,
         changes: EpochDeltaChanges<V>,
     }
 
+
+
     impl<V> EpochChanges<V> {
+        
+        pub fn new(epoch: Epoch,changes: EpochDeltaChanges<V>) -> Self {
+            Self {
+                epoch,
+                changes
+            }
+        }
 
         /// current epoch
         pub fn current_epoch(&self) -> &Epoch {

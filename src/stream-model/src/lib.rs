@@ -1,5 +1,6 @@
 pub mod core;
 pub mod store;
+pub mod epoch;
 
 #[cfg(feature = "k8")]
 pub mod k8 {
