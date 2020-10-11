@@ -22,11 +22,29 @@ pub struct MetadataChange {
 }
 
 impl MetadataChange {
-    fn all() -> Self {
+    /// create change that change both spec and status
+    fn full_change() -> Self {
         Self {
             spec: true,
             status: true,
         }
+    }
+
+    /// create no changes
+    fn no_change() -> Self {
+        Self {
+            spec: false,
+            status: false
+        }
+    }
+
+    pub fn has_full_change(&self) -> bool {
+        self.spec && self.status
+    }
+
+    /// check if there were any changes
+    pub fn has_no_changes(&self) -> bool {
+        !self.spec && !self.status
     }
 }
 
@@ -156,7 +174,7 @@ where
         } else {
             epoch_value.set_epoch(current_epoch);
             self.values.insert(key, epoch_value);
-            MetadataChange::all()
+            MetadataChange::full_change()
         }
     }
 
@@ -305,6 +323,7 @@ mod test {
     use crate::store::DefaultMetadataObject;
 
     use super::DualEpochMap;
+    use super::MetadataChange;
 
     // define test spec and status
     #[derive(Debug, Default, Clone, PartialEq)]
@@ -329,6 +348,17 @@ mod test {
     type DefaultTest = DefaultMetadataObject<TestSpec>;
 
     type TestEpochMap = DualEpochMap<String, DefaultTest>;
+
+    #[test]
+    fn test_metadata_changes() {
+        let full_change = MetadataChange::full_change();
+        assert!(full_change.has_full_change());
+        assert!(!full_change.has_no_changes());
+        let no_change = MetadataChange::no_change();
+        assert!(no_change.has_no_changes());
+        assert!(!no_change.has_full_change());
+
+    }
 
     #[test]
     fn test_epoch_map_empty() {
