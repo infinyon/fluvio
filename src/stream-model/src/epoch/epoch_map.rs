@@ -265,7 +265,7 @@ mod old_map {
 
     pub struct EpochChanges<V> {
         // current epoch
-        epoch: Epoch,
+        pub epoch: Epoch,
         changes: EpochDeltaChanges<V>,
     }
 

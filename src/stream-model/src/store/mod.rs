@@ -12,4 +12,6 @@ pub use store::*;
 pub use filter::*;
 pub use concurrent_hashmap::*;
 pub use metadata::*;
-pub use super::epoch::*;
+
+// re-export epoch
+pub use crate::epoch::*;
