@@ -439,7 +439,7 @@ mod test {
     }
 
     #[test]
-    fn test_epoch_map_update_multiple() {
+    fn test_epoch_map_update_status() {
         let mut map = TestEpochMap::new();
 
         let test1 = DefaultTest::with_key("t1");
@@ -494,4 +494,63 @@ mod test {
         }
         
     }
+
+
+    #[test]
+    fn test_epoch_map_update_spec() {
+        let mut map = TestEpochMap::new();
+
+        let test1 = DefaultTest::with_key("t1");
+        let mut test2 = test1.clone();
+        test2.spec.replica = 20;
+
+        // first epoch
+        map.increment_epoch();
+
+        assert!(map.update(test1.key_owned(), test1).has_full_change());
+
+        map.increment_epoch();
+        let changes = map.update(test2.key_owned(), test2);
+        assert!(changes.spec);
+        assert!(!changes.status);
+
+        // update the
+        assert_eq!(map.epoch(), 2);
+
+        // test with base epoch, this should return a single changes for spec and status
+        {
+            let (updates, deletes) = map.spec_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        // test with middle epoch, this should just return status
+
+        {
+            let (updates, deletes) =  map.spec_changes_since(1).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(1).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        
+        {
+            let (updates, deletes) = map.spec_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+        }
+        
+    }
+
 }
