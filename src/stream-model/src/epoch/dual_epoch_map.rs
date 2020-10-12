@@ -34,7 +34,7 @@ impl MetadataChange {
     fn no_change() -> Self {
         Self {
             spec: false,
-            status: false
+            status: false,
         }
     }
 
@@ -158,16 +158,18 @@ where
         let current_epoch = self.epoch.epoch();
 
         // check each spec and status
-        if let Some(existing_value) = self.values.get(&key) {
+        if let Some(existing_value) = self.values.get_mut(&key) {
             let diff = existing_value.diff(new_value.inner());
             if diff.has_full_change() {
                 new_value.set_epoch(current_epoch);
                 self.values.insert(key, new_value);
             } else if diff.spec {
                 new_value.set_spec_epoch(current_epoch);
+                new_value.set_status_epoch(existing_value.status_epoch);
                 self.values.insert(key, new_value);
             } else if diff.status {
                 new_value.set_status_epoch(current_epoch);
+                new_value.set_spec_epoch(existing_value.spec_epoch);
                 self.values.insert(key, new_value);
             }
             diff
@@ -283,8 +285,8 @@ where
         if epoch < self.fence.epoch() {
             return EpochChanges::new(
                 self.epoch.epoch(),
-        EpochDeltaChanges::SyncAll(self.clone_values())
-            )
+                EpochDeltaChanges::SyncAll(self.clone_values()),
+            );
         }
 
         let updates = self
@@ -312,7 +314,7 @@ where
 
         EpochChanges::new(
             self.epoch.epoch(),
-    EpochDeltaChanges::Changes((updates, deletes))
+            EpochDeltaChanges::Changes((updates, deletes)),
         )
     }
 }
@@ -358,7 +360,6 @@ mod test {
         let no_change = MetadataChange::no_change();
         assert!(no_change.has_no_changes());
         assert!(!no_change.has_full_change());
-
     }
 
     #[test]
@@ -377,7 +378,7 @@ mod test {
         map.increment_epoch();
 
         let test1 = DefaultTest::with_key("t1");
-        map.update(test1.key_owned(), test1);
+        assert!(map.update(test1.key_owned(), test1).has_full_change());
 
         assert_eq!(map.epoch(), 1);
 
@@ -391,7 +392,6 @@ mod test {
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
 
-
             let status_changes = map.status_changes_since(-1);
             assert_eq!(*status_changes.current_epoch(), 1); // current epoch is 1
             assert!(status_changes.is_sync_all()); // this is only delta
@@ -401,7 +401,6 @@ mod test {
             assert_eq!(deletes2.len(), 0);
         }
 
-        
         // test with current epoch, this return just 1 changes
         {
             let spec_changes = map.spec_changes_since(0);
@@ -421,8 +420,7 @@ mod test {
             assert_eq!(deletes.len(), 0);
         }
 
-        
-        // test with current epoch which should return empty
+        // test with current epoch which should return 1 single change as well
         {
             let spec_changes = map.spec_changes_since(1);
             assert_eq!(*spec_changes.current_epoch(), 1); // current epoch is 1
@@ -439,8 +437,6 @@ mod test {
             assert_eq!(deletes.len(), 0);
         }
     }
-
-
 
     #[test]
     fn test_epoch_map_update_multiple() {
@@ -460,33 +456,42 @@ mod test {
         assert!(!changes.spec);
         assert!(changes.status);
 
-
-        // update the 
+        // update the
         assert_eq!(map.epoch(), 2);
 
-        
-        // test with base epoch, this should return a single changes, both insert/update are consolidated into a single
+        // test with base epoch, this should return a single changes for spec and status
         {
-            let changes = map.spec_changes_since(0);
-            assert_eq!(*changes.current_epoch(), 2);
-            assert!(!changes.is_sync_all());
+            let (updates, deletes) = map.spec_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
 
-          //  let (updates, deletes) = changes.parts();
-          //  assert_eq!(updates.len(), 1);
-          //  assert_eq!(deletes.len(), 0);
-        }
-        
-
-        /*
-        // test with middle epoch, this should still return a single changes
-        {
-            let changes = map.spec_changes_since(1);
-            assert_eq!(*changes.current_epoch(), 2);
-            assert!(!changes.is_sync_all());
-            let (updates, deletes) = changes.parts();
+            let (updates, deletes) = map.status_changes_since(0).parts();
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
         }
-        */
+
+        // test with middle epoch, this should just return status
+
+        {
+            let (updates, deletes) =  map.spec_changes_since(1).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(1).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        
+        {
+            let (updates, deletes) = map.spec_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+        }
+        
     }
 }
