@@ -132,11 +132,9 @@ where
 {
 
     fn diff(&self, another: &Self)  -> MetadataChange {
-        let spec_diff = self.spec != another.spec;
-        let status_diff = self.status != another.status;
         MetadataChange {
-            spec: spec_diff,
-            status: status_diff
+            spec: self.spec != another.spec,
+            status: self.status != another.status
         }
     }
 
