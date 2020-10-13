@@ -11,10 +11,10 @@ use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
-use crate::core::*;
-use super::actions::*;
-use super::epoch_map::*;
-use super::*;
+use crate::core::{MetadataItem,Spec};
+use super::MetadataStoreObject;
+use super::{ DualEpochMap, DualEpochCounter, Epoch };
+use super::actions::LSUpdate;
 
 pub enum CheckExist {
     // doesn't exist
@@ -31,22 +31,22 @@ pub enum CheckExist {
 /// Hash values are wrapped in EpochCounter.  EpochCounter is also deref.
 /// Using async lock to ensure read/write are thread safe.
 #[derive(Debug)]
-pub struct LocalStore<S, C>(RwLock<EpochMap<S::IndexKey, MetadataStoreObject<S, C>>>)
+pub struct DualLocalStore<S, C>(RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>)
 where
     S: Spec,
     C: MetadataItem;
 
-impl<S, C> Default for LocalStore<S, C>
+impl<S, C> Default for DualLocalStore<S, C>
 where
     S: Spec,
     C: MetadataItem,
 {
     fn default() -> Self {
-        Self(RwLock::new(EpochMap::new()))
+        Self(RwLock::new(DualEpochMap::new()))
     }
 }
 
-impl<S, C> LocalStore<S, C>
+impl<S, C> DualLocalStore<S, C>
 where
     S: Spec,
     C: MetadataItem,
@@ -61,7 +61,7 @@ where
         for obj in obj {
             map.insert(obj.key.clone(), obj.into());
         }
-        Self(RwLock::new(EpochMap::new_with_map(map)))
+        Self(RwLock::new(DualEpochMap::new_with_map(map)))
     }
 
     /// create arc wrapper
@@ -73,7 +73,7 @@ where
     #[inline(always)]
     pub async fn read<'a>(
         &'_ self,
-    ) -> RwLockReadGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
+    ) -> RwLockReadGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.read().await
     }
 
@@ -81,7 +81,7 @@ where
     #[inline(always)]
     pub async fn write<'a>(
         &'_ self,
-    ) -> RwLockWriteGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
+    ) -> RwLockWriteGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.write().await
     }
 
@@ -92,12 +92,12 @@ where
 
     /// initial epoch that should be used
     /// store will always have epoch greater than init_epoch if there are any changes
-    pub fn init_epoch(&self) -> EpochCounter<()> {
-        EpochCounter::default()
+    pub fn init_epoch(&self) -> DualEpochCounter<()> {
+        DualEpochCounter::default()
     }
 
     /// copy of the value
-    pub async fn value<K: ?Sized>(&self, key: &K) -> Option<EpochCounter<MetadataStoreObject<S, C>>>
+    pub async fn value<K: ?Sized>(&self, key: &K) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>>
     where
         S::IndexKey: Borrow<K>,
         K: Eq + Hash,
@@ -164,7 +164,7 @@ where
     }
 }
 
-impl<S, C> Display for LocalStore<S, C>
+impl<S, C> Display for DualLocalStore<S, C>
 where
     S: Spec,
     C: MetadataItem,
@@ -174,7 +174,7 @@ where
     }
 }
 
-impl<S, C> EpochMap<S::IndexKey, MetadataStoreObject<S, C>>
+impl<S, C> DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>
 where
     S: Spec + PartialEq,
     S::Status: PartialEq,
@@ -183,7 +183,7 @@ where
     fn insert_meta(
         &mut self,
         value: MetadataStoreObject<S, C>,
-    ) -> Option<EpochCounter<MetadataStoreObject<S, C>>> {
+    ) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>> {
         self.insert(value.key_owned(), value)
     }
 }
@@ -196,15 +196,15 @@ pub struct SyncStatus {
     pub delete: i32,
 }
 
-impl<S, C> LocalStore<S, C>
+impl<S, C> DualLocalStore<S, C>
 where
     S: Spec + PartialEq,
     S::Status: PartialEq,
     S::IndexKey: Display,
     C: MetadataItem + PartialEq,
 {
-    /// sync list of changes with with this store assuming incoming is source of truth.
-    /// any objects not in incoming list will be deleted (but will be in history).
+    /// sync with incoming changes as source of truth.
+    /// any objects not in incoming list will be deleted.
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
@@ -224,12 +224,13 @@ where
         let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
 
         let mut write_guard = self.write().await;
+        // start new epoch cycle
         write_guard.increment_epoch();
 
         for source in incoming_changes {
             let key = source.key().clone();
             // always insert, so we stamp current epoch
-            if let Some(old_value) = write_guard.insert_meta(source) {
+            if let Some(old_value) = write_guard.insert(key,) {
                 let changes = old_value
                     .inner()
                     .diff(write_guard.get(&key).unwrap().inner());

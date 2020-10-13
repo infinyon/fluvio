@@ -23,6 +23,7 @@ pub struct MetadataChange {
 
 impl MetadataChange {
     /// create change that change both spec and status
+    #[inline]
     fn full_change() -> Self {
         Self {
             spec: true,
@@ -31,6 +32,7 @@ impl MetadataChange {
     }
 
     /// create no changes
+    #[inline]
     fn no_change() -> Self {
         Self {
             spec: false,
@@ -38,11 +40,13 @@ impl MetadataChange {
         }
     }
 
+    #[inline]
     pub fn has_full_change(&self) -> bool {
         self.spec && self.status
     }
 
     /// check if there were any changes
+    #[inline]
     pub fn has_no_changes(&self) -> bool {
         !self.spec && !self.status
     }
@@ -77,6 +81,7 @@ impl<T> DualEpochCounter<T> {
         self.status_epoch = epoch;
     }
 
+    #[inline]
     pub fn inner(&self) -> &T {
         &self.inner
     }
@@ -101,6 +106,12 @@ impl<T> Deref for DualEpochCounter<T> {
 impl<T> DerefMut for DualEpochCounter<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
+    }
+}
+
+impl<T> From<T> for DualEpochCounter<T> {
+    fn from(inner: T) -> Self {
+        Self::new(inner)
     }
 }
 
@@ -133,13 +144,18 @@ where
     K: Eq + Hash,
 {
     pub fn new() -> Self {
+        Self::new_with_map(HashMap::new())
+    }
+
+    pub fn new_with_map(values: HashMap<K, DualEpochCounter<V>>) -> Self {
         Self {
             epoch: EpochCounter::default(),
             fence: EpochCounter::default(),
-            values: HashMap::new(),
+            values,
             deleted: vec![],
         }
     }
+
 
     pub fn increment_epoch(&mut self) {
         self.epoch.increment();
