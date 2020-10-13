@@ -3,23 +3,39 @@
 # GitHub Action Workflows.
 echo "Installing Fluvio Local Cluster"
 if [ "$DEVELOPMENT" = "true" ]; then
-        if [ "$VERSION" = "latest" ]; then 
-                echo "Installing from latest source"
-                # Download Fluvio Repo
-                # TODO! TEMPORARY; REPLACE ONCE BINARY IS RELEASED
-                # Use only in develop version
-                pushd /tmp/
-                git clone https://github.com/infinyon/fluvio.git
-                popd
+        case $VERSION in
+                "latest")
+                        echo "Installing from latest source"
+                        # Download Fluvio Repo
+                        # TODO! TEMPORARY; REPLACE ONCE BINARY IS RELEASED
+                        # Use only in develop version
+                        cd /tmp/
+                        git clone https://github.com/infinyon/fluvio.git
+                        cd -
 
-                pushd /tmp/fluvio
-                # Install Fluvio Src
-                cargo install --path ./src/cli
-                popd
-        else
-                echo "Release binary is not available; use 'latest'"
-        fi
+                        cd /tmp/fluvio
+                        # Install Fluvio Src
+                        cargo install --path ./src/cli
+                        cd -
+                ;;
+                "v"*)
+                        echo "Installing Fluvio $VERSION"
+                        cd /tmp/
+                        wget https://raw.githubusercontent.com/infinyon/fluvio/feature/alpha_install_script/dev-tools/install-fluvio.sh
+                        export OSTYPE=$OSTYPE
+                        export SHELL=$SHELL
+                        export HOME=$HOME
+                        sh ./install-fluvio.sh
+                        cd -
+                        echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
+                        . $HOME/.bash_profile
+                ;;
+                *)
+                        echo "Release binary is not available for $VERSION; use 'latest'"
+                ;;
+        esac
 
+        
         # Set fluvio minikube context
         fluvio cluster set-minikube-context
 
