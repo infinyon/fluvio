@@ -49,6 +49,10 @@ runs:
     - id: install-minikube
       run: ${{ github.action_path }}/dev-tools/action-install-minikube.sh
       shell: bash
-    - id: fluvio-cluster
+    - id: install-fluvio
       run: ${{ github.action_path }}/dev-tools/action-install-fluvio-cluster.sh
       shell: bash
+    - id: set-fluvio-path
+      shell: bash
+      run: |
+        echo "$HOME/.fluvio/bin" >> $GITHUB_PATH

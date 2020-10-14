@@ -1,6 +1,11 @@
 #!/bin/bash
 # This script is ran by the github actions to install fluvio in
 # GitHub Action Workflows.
+
+function error_msg_unsupported_os {
+        echo "unsupported operating system; ignoring minikube install"
+}
+
 echo "Installing Minikube"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "Installing for Linux"
@@ -24,26 +29,55 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Update permissions for .kube and .minikube
         sudo chown -R $USER $HOME/.kube $HOME/.minikube
 
+        export IP=$(minikube ip)
+        sudo sed -i'' '/minikubeCA/d' /etc/hosts
+        echo "$IP minikubeCA" | sudo tee -a  /etc/hosts
+        cd ~
+        kubectl config set-cluster minikube --server=https://minikubeCA:8443 --certificate-authority=.minikube/ca.crt
+        kubectl config set-context minikube --user=minikube --cluster=minikube
+        kubectl config use-context minikube
+
         # Run Minikube Tunnel
         sudo nohup minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out &
 
 elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
         PLATFORM=darwin-amd64
-        echo "unsupported operating system; ignoring fluvio install"
+        
+        curl -LO https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-${PLATFORM}
+        sudo install minikube-${PLATFORM} /usr/local/bin/minikube
+
+        # Install hyperkit using brew for osx minikube driver
+        brew install hyperkit
+
+        # Start Minikube with `hyperkit` driver
+        # OSx does not have `none` bare metal option
+        minikube start --driver=hyperkit -p minikube
+
+        # Download kubectl
+        minikube kubectl -- get po -A
+
+        # Update permissions for .kube and .minikube
+        sudo chown -R $USER $HOME/.kube $HOME/.minikube
+
+        sudo kubectl config use-context minikube
+
+        # Run Minikube Tunnel
+        sudo nohup minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out &
+
 elif [[ "$OSTYPE" == "cygwin" ]]; then
         # POSIX compatibility layer and Linux environment emulation for Windows
-        echo "unsupported operating system; ignoring fluvio install"
+        error_msg_unsupported_os
 elif [[ "$OSTYPE" == "msys" ]]; then
         # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
-        echo "unsupported operating system; ignoring fluvio install"
+        error_msg_unsupported_os
 elif [[ "$OSTYPE" == "win32" ]]; then
         # I'm not sure this can happen.
-        echo "unsupported operating system; ignoring fluvio install"
+        error_msg_unsupported_os
 elif [[ "$OSTYPE" == "freebsd"* ]]; then
         # ...
-        echo "unsupported operating system; ignoring fluvio install"
+        error_msg_unsupported_os
 else
         # Unknown.
-        echo "unsupported operating system; ignoring fluvio install"
+        error_msg_unsupported_os
 fi
