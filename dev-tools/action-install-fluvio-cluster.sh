@@ -21,7 +21,7 @@ if [ "$DEVELOPMENT" = "true" ]; then
                 "v"*)
                         echo "Installing Fluvio $VERSION"
                         cd /tmp/
-                        wget https://raw.githubusercontent.com/infinyon/fluvio/feature/alpha_install_script/dev-tools/install-fluvio.sh
+                        wget https://raw.githubusercontent.com/infinyon/fluvio/master/dev-tools/install-fluvio.sh
                         export OSTYPE=$OSTYPE
                         export SHELL=$SHELL
                         export HOME=$HOME
