@@ -344,7 +344,7 @@ mod test {
     use fluvio_future::test_async;
 
     use crate::store::actions::LSUpdate;
-    use crate::test_fixture::{TestSpec, DefaultTest};
+    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest};
 
     use super::DualLocalStore;
 
@@ -397,8 +397,17 @@ mod test {
 
         // applying updated version with but same data result in no changes
         let topic2 = DefaultTest::with_spec("t1", TestSpec::default()).with_context(3);
-        assert_eq!(topic_store.epoch().await, 1);
         assert!(topic_store.apply_changes(vec![LSUpdate::Mod(topic2)]).await.is_none());
+        assert_eq!(topic_store.epoch().await, 1);     // still same epoch
+        let read_guard = topic_store.read().await;
+        let t = read_guard.get("t1").expect("t1");
+        assert_eq!(t.spec_epoch(),1);
+        drop(read_guard);
+
+        let topic3 = DefaultTest::new("t1", TestSpec::default(), TestStatus { up: true}).with_context(3);
+        let changes = topic_store.apply_changes(vec![LSUpdate::Mod(topic3)]).await.expect("some changes");
+        assert_eq!(changes.update_spec,0);
+        assert_eq!(changes.update_status,1);
         Ok(())
     }
 }
