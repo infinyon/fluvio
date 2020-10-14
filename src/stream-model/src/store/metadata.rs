@@ -84,8 +84,18 @@ where
     pub fn spec(&self) -> &S {
         &self.spec
     }
+
+    // set spec
+    pub fn set_spec(&mut self,spec: S) {
+        self.spec =  spec;
+    }
+
     pub fn status(&self) -> &S::Status {
         &self.status
+    }
+
+    pub fn set_status(&mut self,status: S::Status) {
+        self.status = status;
     }
 
     pub fn ctx(&self) -> &MetadataContext<C> {

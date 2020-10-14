@@ -166,7 +166,9 @@ where
     }
 
     /// updates the metadata if it is different from existing value
-    pub fn update(&mut self, key: K, new_value: V) -> MetadataChange
+    //  if this return some then it means replace
+    //  otherwise change occured
+    pub fn update(&mut self, key: K, new_value: V) -> Option<MetadataChange>
     where
         K: Clone,
     {
@@ -178,32 +180,26 @@ where
             let diff = existing_value.diff(new_value.inner());
             if diff.has_full_change() {
                 new_value.set_epoch(current_epoch);
-                self.values.insert(key, new_value);
+                *existing_value = new_value;
             } else if diff.spec {
                 new_value.set_spec_epoch(current_epoch);
                 new_value.set_status_epoch(existing_value.status_epoch);
-                self.values.insert(key, new_value);
+                *existing_value = new_value;
             } else if diff.status {
                 new_value.set_status_epoch(current_epoch);
                 new_value.set_spec_epoch(existing_value.spec_epoch);
-                self.values.insert(key, new_value);
+                *existing_value = new_value;
             }
-            diff
+            Some(diff)
         } else {
             // doesn't exist, so this is new
             new_value.set_epoch(current_epoch);
             self.values.insert(key, new_value);
-            MetadataChange::full_change()
+            None
         }
     }
 
-    /// forcefully replace existing value
-    pub fn insert(&mut self, key: K, value: V) -> Option<DualEpochCounter<V>> {
-        let mut epoch_value = DualEpochCounter::new(value);
-        epoch_value.set_epoch(self.epoch.epoch());
-        self.values.insert(key, epoch_value)
-    }
-
+   
     /// remove existing value
     /// if successful, remove are added to history
     pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<DualEpochCounter<V>>
@@ -394,7 +390,7 @@ mod test {
         map.increment_epoch();
 
         let test1 = DefaultTest::with_key("t1");
-        assert!(map.update(test1.key_owned(), test1).has_full_change());
+        assert!(map.update(test1.key_owned(), test1).is_none());
 
         assert_eq!(map.epoch(), 1);
 
@@ -465,10 +461,10 @@ mod test {
         // first epoch
         map.increment_epoch();
 
-        assert!(map.update(test1.key_owned(), test1).has_full_change());
+        assert!(map.update(test1.key_owned(), test1).is_none());
 
         map.increment_epoch();
-        let changes = map.update(test2.key_owned(), test2);
+        let changes = map.update(test2.key_owned(), test2).expect("update");
         assert!(!changes.spec);
         assert!(changes.status);
 
@@ -523,10 +519,10 @@ mod test {
         // first epoch
         map.increment_epoch();
 
-        assert!(map.update(test1.key_owned(), test1).has_full_change());
+        assert!(map.update(test1.key_owned(), test1).is_none());
 
         map.increment_epoch();
-        let changes = map.update(test2.key_owned(), test2);
+        let changes = map.update(test2.key_owned(), test2).expect("update");
         assert!(changes.spec);
         assert!(!changes.status);
 

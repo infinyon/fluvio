@@ -16,14 +16,6 @@ use super::MetadataStoreObject;
 use super::{ DualEpochMap, DualEpochCounter, Epoch };
 use super::actions::LSUpdate;
 
-pub enum CheckExist {
-    // doesn't exist
-    None,
-    // exists, but same value
-    Same,
-    // exists, but different
-    Different,
-}
 
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
@@ -174,19 +166,7 @@ where
     }
 }
 
-impl<S, C> DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>
-where
-    S: Spec + PartialEq,
-    S::Status: PartialEq,
-    C: MetadataItem + PartialEq,
-{
-    fn insert_meta(
-        &mut self,
-        value: MetadataStoreObject<S, C>,
-    ) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>> {
-        self.insert(value.key_owned(), value)
-    }
-}
+
 
 pub struct SyncStatus {
     pub epoch: Epoch,
@@ -204,7 +184,7 @@ where
     C: MetadataItem + PartialEq,
 {
     /// sync with incoming changes as source of truth.
-    /// any objects not in incoming list will be deleted.
+    /// any objects not in incoming list will be deleted
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
@@ -229,17 +209,16 @@ where
 
         for source in incoming_changes {
             let key = source.key().clone();
+
             // always insert, so we stamp current epoch
-            if let Some(old_value) = write_guard.insert(key,) {
-                let changes = old_value
-                    .inner()
-                    .diff(write_guard.get(&key).unwrap().inner());
-                if changes.spec {
+            if let Some(diff) = write_guard.update(key.clone(),source) {
+                if diff.spec {
                     update_spec += 1;
                 }
-                if changes.status {
-                    update_status += 1;
+                if diff.status {
+                    update_status += 1 ;
                 }
+                
             } else {
                 add += 1;
             }
@@ -338,15 +317,13 @@ where
             match change {
                 LSUpdate::Mod(new_kv_value) => {
                     let key = new_kv_value.key_owned();
-                    if let Some(old_value) = write_guard.insert_meta(new_kv_value) {
-                        let changes = old_value
-                            .inner()
-                            .diff(write_guard.get(&key).unwrap().inner());
-                        if changes.spec {
+                    if let Some(diff) = write_guard.update(key,new_kv_value) {
+
+                        if diff.spec {
                             update_spec += 1;
                         }
-                        if changes.status {
-                            update_status += 1;
+                        if diff.status {
+                            update_status += 1 ;
                         }
                     } else {
                         // there was no existing, so this is new
