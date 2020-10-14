@@ -11,11 +11,10 @@ use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
-use crate::core::{MetadataItem,Spec};
+use crate::core::{MetadataItem, Spec};
 use super::MetadataStoreObject;
-use super::{ DualEpochMap, DualEpochCounter, Epoch };
+use super::{DualEpochMap, DualEpochCounter, Epoch};
 use super::actions::LSUpdate;
-
 
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
@@ -89,7 +88,10 @@ where
     }
 
     /// copy of the value
-    pub async fn value<K: ?Sized>(&self, key: &K) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>>
+    pub async fn value<K: ?Sized>(
+        &self,
+        key: &K,
+    ) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>>
     where
         S::IndexKey: Borrow<K>,
         K: Eq + Hash,
@@ -166,8 +168,6 @@ where
     }
 }
 
-
-
 pub struct SyncStatus {
     pub epoch: Epoch,
     pub add: i32,
@@ -211,14 +211,13 @@ where
             let key = source.key().clone();
 
             // always insert, so we stamp current epoch
-            if let Some(diff) = write_guard.update(key.clone(),source) {
+            if let Some(diff) = write_guard.update(key.clone(), source) {
                 if diff.spec {
                     update_spec += 1;
                 }
                 if diff.status {
-                    update_status += 1 ;
+                    update_status += 1;
                 }
-                
             } else {
                 add += 1;
             }
@@ -317,13 +316,12 @@ where
             match change {
                 LSUpdate::Mod(new_kv_value) => {
                     let key = new_kv_value.key_owned();
-                    if let Some(diff) = write_guard.update(key,new_kv_value) {
-
+                    if let Some(diff) = write_guard.update(key, new_kv_value) {
                         if diff.spec {
                             update_spec += 1;
                         }
                         if diff.status {
-                            update_status += 1 ;
+                            update_status += 1;
                         }
                     } else {
                         // there was no existing, so this is new
@@ -356,5 +354,64 @@ where
             update_status,
             delete,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use fluvio_future::test_async;
+
+    use crate::store::actions::LSUpdate;
+    use crate::test_fixture::{TestSpec, DefaultTest};
+
+    use super::DualLocalStore;
+
+    type DefaultTestStore = DualLocalStore<TestSpec, u32>;
+
+    #[test_async]
+    async fn test_sync_all() -> Result<(), ()> {
+        let tests = vec![DefaultTest::with_spec("t1", TestSpec::default())];
+        let test_store = DefaultTestStore::default();
+        assert_eq!(test_store.epoch().await, 0);
+
+        let sync1 = test_store.sync_all(tests.clone()).await;
+        assert_eq!(test_store.epoch().await, 1);
+        assert_eq!(sync1.add, 1);
+        assert_eq!(sync1.delete, 0);
+        assert_eq!(sync1.update_spec, 0);
+        assert_eq!(sync1.update_status, 0);
+
+        let read_guard = test_store.read().await;
+        let test1 = read_guard.get("t1").expect("t1 should exists");
+        assert_eq!(test1.status_epoch(), 1);
+        assert_eq!(test1.spec_epoch(), 1);
+        drop(read_guard);
+
+        // apply same changes should have no effect
+        
+        let sync2 = test_store.sync_all(vec![DefaultTest::with_spec("t1",TestSpec{replica: 6})]).await;
+        assert_eq!(test_store.epoch().await,2);
+        assert_eq!(sync2.add, 0);
+        assert_eq!(sync2.delete, 0);
+        assert_eq!(sync2.update_spec, 1);
+        assert_eq!(sync2.update_status, 0);
+
+
+        Ok(())
+    }
+
+
+    #[test_async]
+    async fn test_sync_all_update_status() -> Result<(), ()> {
+        let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
+
+        let topic_store = DefaultTestStore::default();
+        let _ = topic_store.sync_all(vec![initial_topic.clone()]);
+     
+        assert!(topic_store.apply_changes(vec![LSUpdate::Mod(initial_topic)]).await.is_none());
+
+
+        Ok(())
     }
 }

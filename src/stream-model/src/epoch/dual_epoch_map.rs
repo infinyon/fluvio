@@ -22,9 +22,10 @@ pub struct MetadataChange {
 }
 
 impl MetadataChange {
+    
     /// create change that change both spec and status
-    #[inline]
-    fn full_change() -> Self {
+    #[cfg(test)]
+    pub fn full_change() -> Self {
         Self {
             spec: true,
             status: true,
@@ -33,7 +34,7 @@ impl MetadataChange {
 
     /// create no changes
     #[inline]
-    fn no_change() -> Self {
+    pub fn no_change() -> Self {
         Self {
             spec: false,
             status: false,
@@ -68,13 +69,24 @@ impl<T> DualEpochCounter<T> {
         }
     }
 
+
     fn set_epoch(&mut self, epoch: Epoch) {
         self.spec_epoch = epoch;
         self.status_epoch = epoch;
     }
 
+    #[inline]
+    pub fn spec_epoch(&self) -> Epoch {
+        self.spec_epoch
+    }
+
     fn set_spec_epoch(&mut self, epoch: Epoch) {
         self.spec_epoch = epoch;
+    }
+
+    #[inline]
+    pub fn status_epoch(&self) -> Epoch {
+        self.status_epoch
     }
 
     fn set_status_epoch(&mut self, epoch: Epoch) {

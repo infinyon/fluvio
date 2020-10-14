@@ -34,6 +34,7 @@ pub(crate) mod test_fixture {
         pub replica: u16,
     }
 
+
     impl Spec for TestSpec {
         const LABEL: &'static str = "Test";
         type IndexKey = String;

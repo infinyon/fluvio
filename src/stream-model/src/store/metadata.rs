@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use crate::core::{Spec, MetadataContext, MetadataItem};
 
-pub type DefaultMetadataObject<S> = MetadataStoreObject<S, String>;
+pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
 
 use super::DualDiff;
 use super::MetadataChange;
@@ -64,8 +64,8 @@ where
         Self::with_spec(key.into(), S::default())
     }
 
-    pub fn with_context(mut self, ctx: MetadataContext<C>) -> Self {
-        self.ctx = ctx;
+    pub fn with_context(mut self, ctx: impl Into<MetadataContext<C>> ) -> Self  {
+        self.ctx = ctx.into();
         self
     }
 

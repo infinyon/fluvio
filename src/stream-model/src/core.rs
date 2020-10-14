@@ -17,6 +17,19 @@ mod context {
         fn is_newer(&self, another: &Self) -> bool;
     }
 
+    impl MetadataItem for u32 {
+        type UId = u32;
+
+        fn uid(&self) -> &Self::UId {
+            &self
+        }
+
+        fn is_newer(&self, another: &Self) -> bool {
+            self > another
+        }
+    }
+
+    /// deprecrated, this should be removed in the future
     impl MetadataItem for String {
         type UId = String;
 
@@ -25,9 +38,10 @@ mod context {
         }
 
         fn is_newer(&self, _another: &Self) -> bool {
-            true
+            panic!("this should not be used!")
         }
     }
+
 
     #[derive(Default, Debug, Clone, PartialEq)]
     pub struct MetadataContext<C> {

@@ -226,7 +226,7 @@ mod test2 {
     use super::TopicResolution;
 
     type DefaultTopic = DefaultMetadataObject<TopicSpec>;
-    type DefaultTopicStore = LocalStore<TopicSpec, String>;
+    type DefaultTopicStore = LocalStore<TopicSpec, u32>;
 
     #[test_async]
     async fn test_store_check_items_against_empty() -> Result<(), ()> {
