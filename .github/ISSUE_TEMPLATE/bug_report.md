@@ -22,6 +22,18 @@ Steps to reproduce the behavior:
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
+**Log output**
+It helps to have logs from Fluvio's SC and SPU processes.
+Depending on your setup, here's how you can get the logs:
+
+- For a local Fluvio installation on Mac:
+  - Run `cat /usr/local/var/log/fluvio/flv_sc.log` for SC logs
+  - Run `cat /usr/local/var/log/fluvio/spu_log_XXXX.log` for each SPU
+    - E.g. when running 1 SPU, there will be `spu_log_5001.log`
+- For a Fluvio installation on Minikube:
+  - Run `kubectl logs flv-sc` for SC logs
+  - Run `kubectl logs flv-spg-main-X` for each SPU
+
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
