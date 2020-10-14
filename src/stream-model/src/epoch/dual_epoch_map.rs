@@ -11,7 +11,7 @@ use super::EpochDeltaChanges;
 use super::EpochChanges;
 
 pub trait DualDiff {
-    /// find dual diff
+    /// check if another is different from myself
     fn diff(&self, another: &Self) -> MetadataChange;
 }
 
@@ -171,6 +171,10 @@ where
 
     pub fn increment_epoch(&mut self) {
         self.epoch.increment();
+    }
+
+    pub fn decrement_epoch(&mut self) {
+        self.epoch.decrement();
     }
 
     pub fn epoch(&self) -> Epoch {

@@ -101,6 +101,10 @@ impl<T> EpochCounter<T> {
     pub fn increment(&mut self) {
         self.epoch += 1;
     }
+
+    pub fn decrement(&mut self) {
+        self.epoch -= 1;
+    }
 }
 
 pub use old_map::*;

@@ -188,22 +188,19 @@ where
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
-        let read_guard = self.read().await;
+    
+        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
+
+        let mut write_guard = self.write().await;
 
         debug!(
             "SyncAll: <{}> epoch: {} incoming {}",
             S::LABEL,
-            read_guard.epoch(),
+            write_guard.epoch(),
             incoming_changes.len()
         );
 
-        let mut local_keys = read_guard.clone_keys();
-
-        drop(read_guard);
-
-        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
-
-        let mut write_guard = self.write().await;
+        let mut local_keys = write_guard.clone_keys();
         // start new epoch cycle
         write_guard.increment_epoch();
 
@@ -262,57 +259,27 @@ where
     }
 
     /// apply changes to this store
-    /// this assume changes are source of truth.
     /// if item doesn't exit, it will be treated as add
     /// if item exist but different, it will be treated as updated
     /// epoch will be only incremented if there are actual changes
     /// which means this is idempotent operations.
     /// same add result in only 1 single epoch increase.
     pub async fn apply_changes(&self, changes: Vec<LSUpdate<S, C>>) -> Option<SyncStatus> {
-        let read_guard = self.read().await;
-        debug!(
-            "ApplyChanges <{}> epoch: {}, incoming: {} items",
-            S::LABEL,
-            read_guard.epoch(),
-            changes.len(),
-        );
-
-        let mut actual_changes = vec![];
-
-        // perform dry run to see if there are real changes
-        for dry_run_change in changes.into_iter() {
-            match dry_run_change {
-                LSUpdate::Mod(new_kv_value) => {
-                    if let Some(old_value) = read_guard.get(new_kv_value.key()) {
-                        if new_kv_value.is_newer(old_value) {
-                            // only replace if new kv is newer than old
-                            actual_changes.push(LSUpdate::Mod(new_kv_value));
-                        }
-                    } else {
-                        actual_changes.push(LSUpdate::Mod(new_kv_value));
-                    }
-                }
-                LSUpdate::Delete(key) => {
-                    if read_guard.contains_key(&key) {
-                        actual_changes.push(LSUpdate::Delete(key));
-                    }
-                }
-            }
-        }
-
-        drop(read_guard);
-
-        if actual_changes.is_empty() {
-            debug!("Apply changes <{}> required no changes", S::LABEL);
-            return None;
-        }
+    
 
         let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
 
+        debug!(
+            "apply changes <{}> new epoch: {}, incoming: {} items",
+            S::LABEL,
+            write_guard.epoch(),
+            changes.len(),
+        );
+
         // loop through items and generate add/mod actions
-        for change in actual_changes.into_iter() {
+        for change in changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
                     let key = new_kv_value.key_owned();
@@ -333,6 +300,20 @@ where
                     delete += 1;
                 }
             }
+        }
+
+        // if there are no changes, we revert epoch
+        if add == 0 && update_spec == 0 && update_status == 0 && delete == 0 {
+
+            write_guard.decrement_epoch();     
+
+            debug!("Apply changes: {} no changes, reverting back epoch to: {}",
+                S::LABEL,
+                write_guard.epoch()
+            );
+
+            return None;
+
         }
 
         let epoch = write_guard.epoch();
@@ -408,10 +389,16 @@ mod test {
 
         let topic_store = DefaultTestStore::default();
         let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
+        assert_eq!(topic_store.epoch().await, 1);
      
-        assert!(topic_store.apply_changes(vec![LSUpdate::Mod(initial_topic)]).await.is_none());
+        // applying same data should result in change since version stays same
+        assert!(topic_store.apply_changes(vec![LSUpdate::Mod(initial_topic.clone())]).await.is_none());
 
 
+        // applying updated version with but same data result in no changes
+        let topic2 = DefaultTest::with_spec("t1", TestSpec::default()).with_context(3);
+        assert_eq!(topic_store.epoch().await, 1);
+        assert!(topic_store.apply_changes(vec![LSUpdate::Mod(topic2)]).await.is_none());
         Ok(())
     }
 }

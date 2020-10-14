@@ -141,10 +141,15 @@ where
     C: MetadataItem,
 {
 
+    /// compute difference, in our case we take account of version as well
     fn diff(&self, another: &Self)  -> MetadataChange {
-        MetadataChange {
-            spec: self.spec != another.spec,
-            status: self.status != another.status
+        if self.is_newer(another) {
+            MetadataChange::no_change()
+        } else {
+            MetadataChange {
+                spec: self.spec != another.spec,
+                status: self.status != another.status
+            }
         }
     }
 
