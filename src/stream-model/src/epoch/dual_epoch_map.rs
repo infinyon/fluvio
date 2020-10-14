@@ -334,35 +334,10 @@ where
 #[cfg(test)]
 mod test {
 
-    use crate::core::{Spec, Status};
-    use crate::store::DefaultMetadataObject;
+    use crate::test_fixture::{  DefaultTest, TestEpochMap };
 
-    use super::DualEpochMap;
     use super::MetadataChange;
 
-    // define test spec and status
-    #[derive(Debug, Default, Clone, PartialEq)]
-    struct TestSpec {
-        replica: u16,
-    }
-
-    impl Spec for TestSpec {
-        const LABEL: &'static str = "Test";
-        type IndexKey = String;
-        type Owner = Self;
-        type Status = TestStatus;
-    }
-
-    #[derive(Debug, Default, Clone, PartialEq)]
-    struct TestStatus {
-        up: bool,
-    }
-
-    impl Status for TestStatus {}
-
-    type DefaultTest = DefaultMetadataObject<TestSpec>;
-
-    type TestEpochMap = DualEpochMap<String, DefaultTest>;
 
     #[test]
     fn test_metadata_changes() {
