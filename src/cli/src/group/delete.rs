@@ -43,7 +43,7 @@ pub async fn process_delete_managed_spu_group(
 ) -> Result<(), CliError> {
     let (target_server, name) = opt.validate()?;
 
-    let mut client = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
     admin.delete::<SpuGroupSpec, _>(&name).await?;
     Ok(())

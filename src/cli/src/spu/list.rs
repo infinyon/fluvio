@@ -50,7 +50,7 @@ where
 {
     let (target_server, output) = opt.validate()?;
 
-    let mut client = Fluvio::connect_with_config(&target_server).await?;
+    let client = Fluvio::connect_with_config(&target_server).await?;
     let mut admin = client.admin().await;
 
     let spus = admin.list::<SpuSpec, _>(vec![]).await?;
