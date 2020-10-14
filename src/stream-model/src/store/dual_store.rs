@@ -370,7 +370,7 @@ mod test {
     type DefaultTestStore = DualLocalStore<TestSpec, u32>;
 
     #[test_async]
-    async fn test_sync_all() -> Result<(), ()> {
+    async fn test_store_sync_all() -> Result<(), ()> {
         let tests = vec![DefaultTest::with_spec("t1", TestSpec::default())];
         let test_store = DefaultTestStore::default();
         assert_eq!(test_store.epoch().await, 0);
@@ -403,11 +403,11 @@ mod test {
 
 
     #[test_async]
-    async fn test_sync_all_update_status() -> Result<(), ()> {
+    async fn test_store_update() -> Result<(), ()> {
         let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
 
         let topic_store = DefaultTestStore::default();
-        let _ = topic_store.sync_all(vec![initial_topic.clone()]);
+        let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
      
         assert!(topic_store.apply_changes(vec![LSUpdate::Mod(initial_topic)]).await.is_none());
 
