@@ -50,12 +50,15 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Install hyperkit using brew for osx minikube driver
         brew install hyperkit
 
+        # Try to upgrade hyperkit
+        brew upgrade hyperkit
+
         # Start Minikube with `hyperkit` driver
         # OSx does not have `none` bare metal option
         minikube start --driver=hyperkit -p minikube
 
         # Download kubectl
-        minikube kubectl -- get po -A
+        brew install kubectl
 
         # Update permissions for .kube and .minikube
         sudo chown -R $USER $HOME/.kube $HOME/.minikube
