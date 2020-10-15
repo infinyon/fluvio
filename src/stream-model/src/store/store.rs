@@ -11,20 +11,10 @@ use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
-use crate::core::*;
-
-use super::actions::*;
-
-use super::*;
-
-pub enum CheckExist {
-    // doesn't exist
-    None,
-    // exists, but same value
-    Same,
-    // exists, but different
-    Different,
-}
+use crate::core::{MetadataItem, Spec};
+use super::MetadataStoreObject;
+use super::{DualEpochMap, DualEpochCounter, Epoch};
+use super::actions::LSUpdate;
 
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
@@ -32,7 +22,7 @@ pub enum CheckExist {
 /// Hash values are wrapped in EpochCounter.  EpochCounter is also deref.
 /// Using async lock to ensure read/write are thread safe.
 #[derive(Debug)]
-pub struct LocalStore<S, C>(RwLock<EpochMap<S::IndexKey, MetadataStoreObject<S, C>>>)
+pub struct LocalStore<S, C>(RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>)
 where
     S: Spec,
     C: MetadataItem;
@@ -43,7 +33,7 @@ where
     C: MetadataItem,
 {
     fn default() -> Self {
-        Self(RwLock::new(EpochMap::new()))
+        Self(RwLock::new(DualEpochMap::new()))
     }
 }
 
@@ -62,7 +52,7 @@ where
         for obj in obj {
             map.insert(obj.key.clone(), obj.into());
         }
-        Self(RwLock::new(EpochMap::new_with_map(map)))
+        Self(RwLock::new(DualEpochMap::new_with_map(map)))
     }
 
     /// create arc wrapper
@@ -74,7 +64,7 @@ where
     #[inline(always)]
     pub async fn read<'a>(
         &'_ self,
-    ) -> RwLockReadGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
+    ) -> RwLockReadGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.read().await
     }
 
@@ -82,7 +72,7 @@ where
     #[inline(always)]
     pub async fn write<'a>(
         &'_ self,
-    ) -> RwLockWriteGuard<'_, EpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
+    ) -> RwLockWriteGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.0.write().await
     }
 
@@ -93,12 +83,15 @@ where
 
     /// initial epoch that should be used
     /// store will always have epoch greater than init_epoch if there are any changes
-    pub fn init_epoch(&self) -> EpochCounter<()> {
-        EpochCounter::default()
+    pub fn init_epoch(&self) -> DualEpochCounter<()> {
+        DualEpochCounter::default()
     }
 
     /// copy of the value
-    pub async fn value<K: ?Sized>(&self, key: &K) -> Option<EpochCounter<MetadataStoreObject<S, C>>>
+    pub async fn value<K: ?Sized>(
+        &self,
+        key: &K,
+    ) -> Option<DualEpochCounter<MetadataStoreObject<S, C>>>
     where
         S::IndexKey: Borrow<K>,
         K: Eq + Hash,
@@ -175,25 +168,22 @@ where
     }
 }
 
-impl<S, C> EpochMap<S::IndexKey, MetadataStoreObject<S, C>>
-where
-    S: Spec + PartialEq,
-    S::Status: PartialEq,
-    C: MetadataItem + PartialEq,
-{
-    fn insert_meta(
-        &mut self,
-        value: MetadataStoreObject<S, C>,
-    ) -> Option<EpochCounter<MetadataStoreObject<S, C>>> {
-        self.insert(value.key_owned(), value)
-    }
-}
-
 pub struct SyncStatus {
     pub epoch: Epoch,
     pub add: i32,
-    pub update: i32,
+    pub update_spec: i32,
+    pub update_status: i32,
     pub delete: i32,
+}
+
+impl SyncStatus {
+    pub fn has_spec_changes(&self) -> bool {
+        self.add > 0 || self.update_spec > 0 || self.delete > 0
+    }
+
+    pub fn has_status_changes(&self) -> bool {
+        self.update_status > 0
+    }
 }
 
 impl<S, C> LocalStore<S, C>
@@ -203,38 +193,39 @@ where
     S::IndexKey: Display,
     C: MetadataItem + PartialEq,
 {
-    /// sync list of changes with with this store assuming incoming is source of truth.
-    /// any objects not in incoming list will be deleted (but will be in history).
+    /// sync with incoming changes as source of truth.
+    /// any objects not in incoming list will be deleted
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
-        let read_guard = self.read().await;
+        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
+
+        let mut write_guard = self.write().await;
 
         debug!(
             "SyncAll: <{}> epoch: {} incoming {}",
             S::LABEL,
-            read_guard.epoch(),
+            write_guard.epoch(),
             incoming_changes.len()
         );
 
-        let mut local_keys = read_guard.clone_keys();
-
-        drop(read_guard);
-
-        let (mut add_cnt, mut mod_cnt, mut del_cnt) = (0, 0, 0);
-
-        let mut write_guard = self.write().await;
+        let mut local_keys = write_guard.clone_keys();
+        // start new epoch cycle
         write_guard.increment_epoch();
 
         for source in incoming_changes {
             let key = source.key().clone();
+
             // always insert, so we stamp current epoch
-            if let Some(old_value) = write_guard.insert_meta(source) {
-                if old_value.inner() != write_guard.get(&key).unwrap().inner() {
-                    mod_cnt += 1;
+            if let Some(diff) = write_guard.update(key.clone(), source) {
+                if diff.spec {
+                    update_spec += 1;
+                }
+                if diff.status {
+                    update_status += 1;
                 }
             } else {
-                add_cnt += 1;
+                add += 1;
             }
 
             local_keys.retain(|n| n != &key);
@@ -244,7 +235,7 @@ where
         for name in local_keys.into_iter() {
             if write_guard.contains_key(&name) {
                 if write_guard.remove(&name).is_some() {
-                    del_cnt += 1;
+                    delete += 1;
                 } else {
                     error!("delete  should never fail since key exists: {:#?}", name);
                 }
@@ -259,105 +250,179 @@ where
         drop(write_guard);
 
         debug!(
-            "Sync all: <{}:{}> [add:{}, mod:{}, del:{}], ",
+            "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
             S::LABEL,
             epoch,
-            add_cnt,
-            mod_cnt,
-            del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
         );
         SyncStatus {
             epoch,
-            add: add_cnt,
-            update: mod_cnt,
-            delete: del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
         }
     }
 
     /// apply changes to this store
-    /// this assume changes are source of truth.
     /// if item doesn't exit, it will be treated as add
     /// if item exist but different, it will be treated as updated
     /// epoch will be only incremented if there are actual changes
     /// which means this is idempotent operations.
     /// same add result in only 1 single epoch increase.
     pub async fn apply_changes(&self, changes: Vec<LSUpdate<S, C>>) -> Option<SyncStatus> {
-        let read_guard = self.read().await;
-        debug!(
-            "ApplyChanges <{}> epoch: {}, incoming: {} items",
-            S::LABEL,
-            read_guard.epoch(),
-            changes.len(),
-        );
-
-        let mut actual_changes = vec![];
-
-        // perform dry run to see if there are real changes
-        for dry_run_change in changes.into_iter() {
-            match dry_run_change {
-                LSUpdate::Mod(new_kv_value) => {
-                    if let Some(old_value) = read_guard.get(new_kv_value.key()) {
-                        if new_kv_value.is_newer(old_value) {
-                            // only replace if new kv is newer than old
-                            actual_changes.push(LSUpdate::Mod(new_kv_value));
-                        }
-                    } else {
-                        actual_changes.push(LSUpdate::Mod(new_kv_value));
-                    }
-                }
-                LSUpdate::Delete(key) => {
-                    if read_guard.contains_key(&key) {
-                        actual_changes.push(LSUpdate::Delete(key));
-                    }
-                }
-            }
-        }
-
-        drop(read_guard);
-
-        if actual_changes.is_empty() {
-            debug!("Apply changes <{}> required no changes", S::LABEL);
-            return None;
-        }
-
-        let (mut add_cnt, mut mod_cnt, mut del_cnt) = (0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
 
+        debug!(
+            "apply changes <{}> new epoch: {}, incoming: {} items",
+            S::LABEL,
+            write_guard.epoch(),
+            changes.len(),
+        );
+
         // loop through items and generate add/mod actions
-        for change in actual_changes.into_iter() {
+        for change in changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
-                    if write_guard.insert_meta(new_kv_value).is_some() {
-                        mod_cnt += 1;
+                    let key = new_kv_value.key_owned();
+                    if let Some(diff) = write_guard.update(key, new_kv_value) {
+                        if diff.spec {
+                            update_spec += 1;
+                        }
+                        if diff.status {
+                            update_status += 1;
+                        }
                     } else {
                         // there was no existing, so this is new
-                        add_cnt += 1;
+                        add += 1;
                     }
                 }
                 LSUpdate::Delete(key) => {
                     write_guard.remove(&key);
-                    del_cnt += 1;
+                    delete += 1;
                 }
             }
+        }
+
+        // if there are no changes, we revert epoch
+        if add == 0 && update_spec == 0 && update_status == 0 && delete == 0 {
+            write_guard.decrement_epoch();
+
+            debug!(
+                "Apply changes: {} no changes, reverting back epoch to: {}",
+                S::LABEL,
+                write_guard.epoch()
+            );
+
+            return None;
         }
 
         let epoch = write_guard.epoch();
         drop(write_guard);
 
         debug!(
-            "Apply changes {} [add:{},mod:{},del:{},epoch: {}",
+            "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
             S::LABEL,
-            add_cnt,
-            mod_cnt,
-            del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
             epoch,
         );
         Some(SyncStatus {
             epoch,
-            add: add_cnt,
-            update: mod_cnt,
-            delete: del_cnt,
+            add,
+            update_spec,
+            update_status,
+            delete,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use fluvio_future::test_async;
+
+    use crate::store::actions::LSUpdate;
+    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest};
+
+    use super::LocalStore;
+
+    type DefaultTestStore = LocalStore<TestSpec, u32>;
+
+    #[test_async]
+    async fn test_store_sync_all() -> Result<(), ()> {
+        let tests = vec![DefaultTest::with_spec("t1", TestSpec::default())];
+        let test_store = DefaultTestStore::default();
+        assert_eq!(test_store.epoch().await, 0);
+
+        let sync1 = test_store.sync_all(tests.clone()).await;
+        assert_eq!(test_store.epoch().await, 1);
+        assert_eq!(sync1.add, 1);
+        assert_eq!(sync1.delete, 0);
+        assert_eq!(sync1.update_spec, 0);
+        assert_eq!(sync1.update_status, 0);
+
+        let read_guard = test_store.read().await;
+        let test1 = read_guard.get("t1").expect("t1 should exists");
+        assert_eq!(test1.status_epoch(), 1);
+        assert_eq!(test1.spec_epoch(), 1);
+        drop(read_guard);
+
+        // apply same changes should have no effect
+
+        let sync2 = test_store
+            .sync_all(vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 })])
+            .await;
+        assert_eq!(test_store.epoch().await, 2);
+        assert_eq!(sync2.add, 0);
+        assert_eq!(sync2.delete, 0);
+        assert_eq!(sync2.update_spec, 1);
+        assert_eq!(sync2.update_status, 0);
+
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_store_update() -> Result<(), ()> {
+        let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
+
+        let topic_store = DefaultTestStore::default();
+        let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
+        assert_eq!(topic_store.epoch().await, 1);
+
+        // applying same data should result in change since version stays same
+        assert!(topic_store
+            .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
+            .await
+            .is_none());
+
+        // applying updated version with but same data result in no changes
+        let topic2 = DefaultTest::with_spec("t1", TestSpec::default()).with_context(3);
+        assert!(topic_store
+            .apply_changes(vec![LSUpdate::Mod(topic2)])
+            .await
+            .is_none());
+        assert_eq!(topic_store.epoch().await, 1); // still same epoch
+        let read_guard = topic_store.read().await;
+        let t = read_guard.get("t1").expect("t1");
+        assert_eq!(t.spec_epoch(), 1);
+        drop(read_guard);
+
+        let topic3 =
+            DefaultTest::new("t1", TestSpec::default(), TestStatus { up: true }).with_context(3);
+        let changes = topic_store
+            .apply_changes(vec![LSUpdate::Mod(topic3)])
+            .await
+            .expect("some changes");
+        assert_eq!(changes.update_spec, 0);
+        assert_eq!(changes.update_status, 1);
+        Ok(())
     }
 }

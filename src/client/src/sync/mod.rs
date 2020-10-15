@@ -19,7 +19,7 @@ mod context {
     use crate::FluvioError;
     use crate::metadata::core::Spec;
     use crate::metadata::store::LocalStore;
-    use crate::metadata::store::EpochMap;
+    use crate::metadata::store::DualEpochMap;
     use crate::metadata::store::MetadataStoreObject;
     use crate::metadata::spu::SpuSpec;
 
@@ -29,7 +29,8 @@ mod context {
         S: Spec,
     {
         store: Arc<LocalStore<S, String>>,
-        event: Arc<Event>,
+        spec_event: Arc<Event>,
+        status_event: Arc<Event>
     }
 
     impl<S> StoreContext<S>
@@ -39,7 +40,8 @@ mod context {
         pub fn new() -> Self {
             Self {
                 store: LocalStore::new_shared(),
-                event: Arc::new(Event::new()),
+                spec_event: Arc::new(Event::new()),
+                status_event: Arc::new(Event::new())
             }
         }
 
@@ -48,12 +50,30 @@ mod context {
         }
 
         pub fn listen(&self) -> EventListener {
-            self.event.listen()
+            self.spec_event.listen()
         }
 
-        pub fn notify(&self) {
-            self.event.notify(usize::MAX);
+        pub fn status_listen(&self) -> EventListener {
+            self.status_event.listen()
         }
+
+        /// notify changes to specs
+        pub fn notify_spec_changes(&self) {
+            self.spec_event.notify(usize::MAX);
+        }
+
+        /// notify changes to status
+        pub fn notify_status_changes(&self) {
+            self.status_event.notify(usize::MAX);
+        }
+
+        /// look up object by index key
+        pub async fn try_lookup_by_key(&self,key: &S::IndexKey) -> Option<MetadataStoreObject<S, String>> {
+
+            let read_lock = self.store.read().await;
+            read_lock.get(key).map(|value| value.inner().clone())
+        }
+
 
         pub async fn lookup_by_key(
             &self,
@@ -77,7 +97,7 @@ mod context {
             S: 'static,
             S::IndexKey: Display,
             F: Fn(
-                RwLockReadGuard<'a, EpochMap<S::IndexKey, MetadataStoreObject<S, String>>>,
+                RwLockReadGuard<'a, DualEpochMap<S::IndexKey, MetadataStoreObject<S, String>>>,
             ) -> Option<MetadataStoreObject<S, String>>,
         {
             use std::time::Instant;
@@ -88,7 +108,7 @@ mod context {
             use tokio::select;
             use fluvio_future::timer::sleep;
 
-            const TIMER_DURATION: u64 = 180;
+            const TIMER_DURATION: u64 = 10;
 
             let mut time_left = Duration::from_secs(TIMER_DURATION);
 

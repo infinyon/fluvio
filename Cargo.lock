@@ -956,7 +956,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "async-h1",
  "async-trait",
@@ -1021,7 +1021,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1033,7 +1033,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1154,7 +1154,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1363,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "async-rwlock",
  "fluvio-future",
