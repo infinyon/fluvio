@@ -7,20 +7,20 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+**What happened**
 A clear and concise description of what the bug is.
+
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
 **Describe the setup**
 - Are you using a local Fluvio install? Minikube? Fluvio Cloud?
 - What version of Fluvio are you using? `fluvio version`
 
-**To Reproduce**
+**How to reproduce it (as minimally and precisely as possible)**
 Steps to reproduce the behavior:
 1. Run the command '...'
 2. Type the input '...'
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
 
 **Log output**
 It helps to have logs from Fluvio's SC and SPU processes.
@@ -34,12 +34,11 @@ Depending on your setup, here's how you can get the logs:
   - Run `kubectl logs flv-sc` for SC logs
   - Run `kubectl logs flv-spg-main-X` for each SPU
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
 **Environment (please complete the following information):**
- - OS: [e.g. iOS]
+ - OS: [e.g. Linux, Mac]
  - Fluvio Version [e.g. 22]
+ - Minikube version (if used): use `minikube version`
+ - Kubernetes version: use `kubectl version`
 
 **Additional context**
 Add any other context about the problem here.
