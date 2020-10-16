@@ -7,38 +7,31 @@ assignees: ''
 
 ---
 
-**What happened**
-A clear and concise description of what the bug is.
+### What were you trying to do?
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+Tell us here
 
-**Describe the setup**
-- Are you using a local Fluvio install? Minikube? Fluvio Cloud?
-- What version of Fluvio are you using? `fluvio version`
+### What went wrong?
 
-**How to reproduce it (as minimally and precisely as possible)**
-Steps to reproduce the behavior:
-1. Run the command '...'
-2. Type the input '...'
+Tell us here
 
-**Log output**
-It helps to have logs from Fluvio's SC and SPU processes.
-Depending on your setup, here's how you can get the logs:
+### What does your setup look like?
 
-- For a local Fluvio installation on Mac:
-  - Run `cat /usr/local/var/log/fluvio/flv_sc.log` for SC logs
-  - Run `cat /usr/local/var/log/fluvio/spu_log_XXXX.log` for each SPU
-    - E.g. when running 1 SPU, there will be `spu_log_5001.log`
-- For a Fluvio installation on Minikube:
-  - Run `kubectl logs flv-sc` for SC logs
-  - Run `kubectl logs flv-spg-main-X` for each SPU
+Check any of the following that describe your setup:
 
-**Environment (please complete the following information):**
- - OS: [e.g. Linux, Mac]
- - Fluvio Version [e.g. 22]
- - Minikube version (if used): use `minikube version`
- - Kubernetes version: use `kubectl version`
+- [x] Check a box by putting an x in it
+- [ ] I'm using (or trying to use) Fluvio on Minikube
+- [ ] I'm using (or trying to use) Fluvio on my local machine
+- [ ] I'm using (or trying to use) Fluvio Cloud
+- [ ] I'm using Mac
+  - Version:
+- [ ] I'm using Linux
+  - Distro:
+  - Version:
 
-**Additional context**
-Add any other context about the problem here.
+What version of Fluvio are you using? `fluvio version`
+
+```
+$ fluvio version
+...Paste your output here
+```
