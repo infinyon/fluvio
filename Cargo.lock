@@ -115,6 +115,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cff77d8686867eceff3105329d4698d96c2391c176d5d03adc90c7389162b5b8"
 
 [[package]]
+name = "assert2"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96d1e69def1a232bef9759f8cac95b3726f4a674344b0a9f9f1cb1a1cd50e86f"
+dependencies = [
+ "assert2-macros",
+ "yansi",
+]
+
+[[package]]
+name = "assert2-macros"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "715c6964fb35d5714155e9b89347694d4a83916befe700adc4b44cd38b85c0d9"
+dependencies = [
+ "proc-macro2",
+ "quote 1.0.7",
+ "rustc_version",
+ "syn 1.0.42",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1407,6 +1429,7 @@ dependencies = [
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
+ "assert2",
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
@@ -3698,3 +3721,9 @@ checksum = "39f0c922f1a334134dc2f7a8b67dc5d25f0735263feec974345ff706bcf20b0d"
 dependencies = [
  "linked-hash-map",
 ]
+
+[[package]]
+name = "yansi"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fc79f4a1e39857fc00c3f662cbf2651c771f00e9c15fe2abc341806bd46bd71"

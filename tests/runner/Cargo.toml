@@ -10,6 +10,7 @@ bytes = "0.5.3"
 futures-lite = "1.11.0"
 structopt = "0.3.5"
 async-trait = "0.1.21"
+assert2 = "0.3.3"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.1.0", features = ["task","timer","subscriber","fixture"] }

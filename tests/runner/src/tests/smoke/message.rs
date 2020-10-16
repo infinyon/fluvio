@@ -1,3 +1,4 @@
+
 use crate::TestOption;
 
 const VALUE: u8 = 65;
@@ -29,10 +30,10 @@ pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u
 
     // check prefix
     for i in 0..prefix_len {
-        assert_eq!(data[i], prefix[i]);
+        assert!(data[i] == prefix[i],"prefix not equal,offset: {}, topic: {}",offset,topic);
     }
 
     for i in 0..option.produce.record_size {
-        assert_eq!(data[i + prefix_len], VALUE);
+        assert!(data[i + prefix_len] == VALUE, "data not equal, offset: {}, topic: {}",offset,topic);
     }
 }

@@ -69,7 +69,6 @@ impl TopicController {
             }
         }
 
-        debug!("topic controller is terminated");
     }
 
     /// get list of topics we need to check
