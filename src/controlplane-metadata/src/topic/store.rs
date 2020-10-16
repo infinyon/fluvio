@@ -9,8 +9,8 @@ use super::*;
 
 pub type TopicMetadata<C> = MetadataStoreObject<TopicSpec, C>;
 pub type TopicLocalStore<C> = LocalStore<TopicSpec, C>;
-pub type DefaultTopicMd = TopicMetadata<String>;
-pub type DefaultTopicLocalStore = TopicLocalStore<String>;
+pub type DefaultTopicMd = TopicMetadata<u32>;
+pub type DefaultTopicLocalStore = TopicLocalStore<u32>;
 
 #[async_trait]
 pub trait TopicMd<C: MetadataItem> {

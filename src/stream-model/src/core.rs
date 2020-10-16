@@ -29,19 +29,19 @@ mod context {
         }
     }
 
-    /// deprecrated, this should be removed in the future
-    impl MetadataItem for String {
-        type UId = String;
+    impl MetadataItem for u64 {
+        type UId = u64;
 
         fn uid(&self) -> &Self::UId {
             &self
         }
 
-        fn is_newer(&self, _another: &Self) -> bool {
-            panic!("this should not be used!")
+        fn is_newer(&self, another: &Self) -> bool {
+            self > another
         }
     }
 
+    
 
     #[derive(Default, Debug, Clone, PartialEq)]
     pub struct MetadataContext<C> {
