@@ -29,7 +29,8 @@ pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8
 #[allow(clippy::needless_range_loop)]
 pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u8]) {
    
-    let prefix = generate_pre_fix(topic, offset).as_bytes().to_vec();
+    let prefix_string = generate_pre_fix(topic, offset);
+    let prefix = prefix_string.as_bytes().to_vec();
     let prefix_len = prefix.len();
 
     let message_len = option.produce.record_size + prefix_len;
@@ -37,7 +38,7 @@ pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u
 
     // check prefix
     for i in 0..prefix_len {
-        assert!(data[i] == prefix[i],"prefix failed, i: {}, data: {}, data len: {}, offset: {}, topic: {}",i,data[i],data.len(),offset,topic);
+        assert!(data[i] == prefix[i],"prefix failed, i: {}, data: {}, prefix: {}, data len: {}, offset: {}, topic: {}",i,data[i],prefix_string,data.len(),offset,topic);
     }
 
     // verify payload
