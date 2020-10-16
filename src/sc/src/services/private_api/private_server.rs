@@ -124,7 +124,8 @@ async fn dispatch_loop(
 
     // send initial spu and replicas
     spu_epoch = send_spu_spec_changes(spu_epoch, &context, &mut sink, spu_id).await?;
-    partition_epoch = send_replica_spec_changes(partition_epoch, &context, &mut sink, spu_id).await?;
+    partition_epoch =
+        send_replica_spec_changes(partition_epoch, &context, &mut sink, spu_id).await?;
 
     // we wait for update from SPU or wait for updates form SPU channel
 
@@ -193,14 +194,14 @@ async fn dispatch_loop(
                 spu_epoch = send_spu_spec_changes(spu_epoch, &context, &mut sink,spu_id).await?;
 
             },
-           
+
 
             _ = context.partitions().spec_listen() => {
                 debug!("partition spec changed: {}",partition_epoch);
                 partition_epoch = send_replica_spec_changes(partition_epoch, &context, &mut sink,spu_id).await?;
             },
 
-        
+
 
         }
     }

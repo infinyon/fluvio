@@ -41,8 +41,6 @@ mod context {
         }
     }
 
-    
-
     #[derive(Default, Debug, Clone, PartialEq)]
     pub struct MetadataContext<C> {
         item: C,

@@ -57,7 +57,7 @@ mod context {
             Ok(())
         }
 
-        pub fn notify_spec_changes(&self)  {
+        pub fn notify_spec_changes(&self) {
             self.spec_event.notify(usize::MAX);
         }
 

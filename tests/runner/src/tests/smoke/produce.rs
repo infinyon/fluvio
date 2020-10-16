@@ -144,7 +144,10 @@ mod cli {
 
         let base_offset = *offsets.get(topic_name).expect("offsets");
 
-        info!("produce cli message: {}, offset: {}",topic_name,base_offset);
+        info!(
+            "produce cli message: {}, offset: {}",
+            topic_name, base_offset
+        );
 
         let mut child = get_fluvio()
             .expect("no fluvio")

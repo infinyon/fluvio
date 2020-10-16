@@ -15,12 +15,10 @@ use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_sc_schema::objects::MetadataUpdate;
 use fluvio_sc_schema::objects::Metadata;
 
-
 use crate::metadata::core::Spec;
 
 use super::StoreContext;
 use super::CacheMetadataStoreObject;
-
 
 ///
 pub struct MetadataSyncController<S>

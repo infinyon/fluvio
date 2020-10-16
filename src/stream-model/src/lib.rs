@@ -18,14 +18,11 @@ pub mod k8 {
     }
 }
 
-
-
 #[cfg(test)]
 pub(crate) mod test_fixture {
 
-
     use crate::core::{Spec, Status};
-    use crate::store::{ DefaultMetadataObject};
+    use crate::store::{DefaultMetadataObject};
     use crate::epoch::DualEpochMap;
 
     // define test spec and status
@@ -33,7 +30,6 @@ pub(crate) mod test_fixture {
     pub struct TestSpec {
         pub replica: u16,
     }
-
 
     impl Spec for TestSpec {
         const LABEL: &'static str = "Test";
@@ -52,5 +48,4 @@ pub(crate) mod test_fixture {
     pub type DefaultTest = DefaultMetadataObject<TestSpec>;
 
     pub type TestEpochMap = DualEpochMap<String, DefaultTest>;
-
 }

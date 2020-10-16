@@ -68,7 +68,6 @@ impl TopicController {
                 }
             }
         }
-
     }
 
     /// get list of topics we need to check
@@ -76,9 +75,9 @@ impl TopicController {
         let read_guard = self.topics.store().read().await;
         let changes = read_guard.changes_since(self.topic_epoch);
         self.topic_epoch = changes.epoch;
-        debug!("setting topic epoch to: {}",self.topic_epoch);
+        debug!("setting topic epoch to: {}", self.topic_epoch);
         let (updates, _) = changes.parts();
-        debug!("updates: {}",updates.len());
+        debug!("updates: {}", updates.len());
         drop(read_guard);
 
         let actions = self.reducer.process_requests(updates).await;

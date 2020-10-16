@@ -221,7 +221,7 @@ pub fn print_dynamic_records<O>(
                 if let Some(batch_record) = record.get_value().inner_value_ref() {
                     // TODO: this should be refactored
                     if let Some(bytes) = record.get_value().inner_value_ref() {
-                        debug!("len: {}",bytes.len());
+                        debug!("len: {}", bytes.len());
                     }
                     if record.get_value().is_binary() {
                         t_println!(out, "{}", hex_dump_separator());

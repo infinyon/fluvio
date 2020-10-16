@@ -24,11 +24,10 @@ mod context {
     use crate::metadata::spu::SpuSpec;
     use crate::metadata::core::MetadataItem;
 
-
-    pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S,AlwaysNewContext>;
+    pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S, AlwaysNewContext>;
 
     /// context that always updates
-    #[derive(Debug,Default,Clone,PartialEq)]
+    #[derive(Debug, Default, Clone, PartialEq)]
     pub struct AlwaysNewContext {}
 
     impl MetadataItem for AlwaysNewContext {
@@ -43,7 +42,6 @@ mod context {
         }
     }
 
-
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
     where
@@ -51,7 +49,7 @@ mod context {
     {
         store: Arc<LocalStore<S, AlwaysNewContext>>,
         spec_event: Arc<Event>,
-        status_event: Arc<Event>
+        status_event: Arc<Event>,
     }
 
     impl<S> StoreContext<S>
@@ -62,7 +60,7 @@ mod context {
             Self {
                 store: LocalStore::new_shared(),
                 spec_event: Arc::new(Event::new()),
-                status_event: Arc::new(Event::new())
+                status_event: Arc::new(Event::new()),
             }
         }
 
@@ -91,12 +89,13 @@ mod context {
 
         /// look up object by index key
         #[allow(unused)]
-        pub async fn try_lookup_by_key(&self,key: &S::IndexKey) -> Option<CacheMetadataStoreObject<S>> {
-
+        pub async fn try_lookup_by_key(
+            &self,
+            key: &S::IndexKey,
+        ) -> Option<CacheMetadataStoreObject<S>> {
             let read_lock = self.store.read().await;
             read_lock.get(key).map(|value| value.inner().clone())
         }
-
 
         pub async fn lookup_by_key(
             &self,

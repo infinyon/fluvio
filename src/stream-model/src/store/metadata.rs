@@ -64,7 +64,7 @@ where
         Self::with_spec(key.into(), S::default())
     }
 
-    pub fn with_context(mut self, ctx: impl Into<MetadataContext<C>> ) -> Self  {
+    pub fn with_context(mut self, ctx: impl Into<MetadataContext<C>>) -> Self {
         self.ctx = ctx.into();
         self
     }
@@ -86,15 +86,15 @@ where
     }
 
     // set spec
-    pub fn set_spec(&mut self,spec: S) {
-        self.spec =  spec;
+    pub fn set_spec(&mut self, spec: S) {
+        self.spec = spec;
     }
 
     pub fn status(&self) -> &S::Status {
         &self.status
     }
 
-    pub fn set_status(&mut self,status: S::Status) {
+    pub fn set_status(&mut self, status: S::Status) {
         self.status = status;
     }
 
@@ -129,32 +129,25 @@ where
     pub fn is_newer(&self, another: &Self) -> bool {
         self.ctx.item().is_newer(another.ctx().item())
     }
-
-    
 }
-
-
 
 impl<S, C> DualDiff for MetadataStoreObject<S, C>
 where
     S: Spec,
     C: MetadataItem,
 {
-
     /// compute difference, in our case we take account of version as well
-    fn diff(&self, another: &Self)  -> MetadataChange {
+    fn diff(&self, another: &Self) -> MetadataChange {
         if self.is_newer(another) {
             MetadataChange::no_change()
         } else {
             MetadataChange {
                 spec: self.spec != another.spec,
-                status: self.status != another.status
+                status: self.status != another.status,
             }
         }
     }
-
 }
-
 
 impl<S, C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S, C>
 where
@@ -165,5 +158,3 @@ where
         (self.key, self.spec, self.status)
     }
 }
-
-
