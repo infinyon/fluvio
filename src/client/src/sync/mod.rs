@@ -53,6 +53,7 @@ mod context {
             self.spec_event.listen()
         }
 
+        #[allow(unused)]
         pub fn status_listen(&self) -> EventListener {
             self.status_event.listen()
         }
@@ -68,6 +69,7 @@ mod context {
         }
 
         /// look up object by index key
+        #[allow(unused)]
         pub async fn try_lookup_by_key(&self,key: &S::IndexKey) -> Option<MetadataStoreObject<S, String>> {
 
             let read_lock = self.store.read().await;

@@ -112,7 +112,8 @@ where
                 }
             }
             self.store.store().sync_all(objects).await;
-            self.store.notify();
+            self.store.notify_spec_changes();
+            self.store.notify_status_changes();
         }
 
         Ok(())

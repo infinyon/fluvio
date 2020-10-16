@@ -41,8 +41,8 @@ impl fmt::Debug for SpuServiceController {
 impl SpuServiceController {
     pub fn start(ctx: SharedContext, services: StoreContext<SpuServicespec>) {
         let spus = ctx.spus().clone();
-        let spu_epoch = spus.store().init_epoch().epoch();
-        let service_epoch = services.store().init_epoch().epoch();
+        let spu_epoch = spus.store().init_epoch().spec_epoch();
+        let service_epoch = services.store().init_epoch().spec_epoch();
 
         let controller = Self {
             services,
@@ -64,12 +64,20 @@ impl SpuServiceController {
             debug!("waiting  for service and spu updates");
 
             select! {
-                _ = self.services.listen() => {
-                    debug!("detected events in services");
+                _ = self.services.spec_listen() => {
+                    debug!("detected service spec changes");
                     self.sync_service_to_spu().await;
                 },
-                _ = self.spus.listen() => {
-                    debug!("detected events in spu");
+                _ = self.services.status_listen() => {
+                    debug!("detected service status changes");
+                    self.sync_service_to_spu().await;
+                },
+                _ = self.spus.spec_listen() => {
+                    debug!("detected spu spec changes");
+                    self.sync_spu_to_service().await;
+                },
+                _ = self.spus.status_listen() => {
+                    debug!("detected spu event changes");
                     self.sync_spu_to_service().await;
                 }
             }

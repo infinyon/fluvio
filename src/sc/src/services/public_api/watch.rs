@@ -120,8 +120,17 @@ where
                     break;
                 },
 
-                _ = self.store.listen() => {
-                    debug!("watch: {}, changes in been detected",S::LABEL);
+                _ = self.store.spec_listen() => {
+                    debug!("watch: {}, changes in spec has been detected",S::LABEL);
+
+                    if !self.sync_and_send_changes().await {
+                        debug!("watch: {}, problem with sync, terminating", S::LABEL);
+                        break;
+                    }
+                },
+
+                _ = self.store.status_listen() => {
+                    debug!("watch: {}, changes status has been detected",S::LABEL);
 
                     if !self.sync_and_send_changes().await {
                         debug!("watch: {}, problem with sync, terminating", S::LABEL);
