@@ -61,17 +61,25 @@ impl TopicController {
                 _ = self.topics.spec_listen() => {
                     debug!("detected topic spec changes. topic syncing");
                     self.sync_topics().await;
+                },
+                _ = self.topics.status_listen() => {
+                    debug!("detected topic status changes, topic syncing");
+                    self.sync_topics().await;
                 }
             }
         }
 
-        //debug!("spu controller is terminated");
+        debug!("topic controller is terminated");
     }
 
     /// get list of topics we need to check
     async fn sync_topics(&mut self) {
         let read_guard = self.topics.store().read().await;
-        let (updates, _) = read_guard.spec_changes_since(self.topic_epoch).parts();
+        let changes = read_guard.changes_since(self.topic_epoch);
+        self.topic_epoch = changes.epoch;
+        debug!("setting topic epoch to: {}",self.topic_epoch);
+        let (updates, _) = changes.parts();
+        debug!("updates: {}",updates.len());
         drop(read_guard);
 
         let actions = self.reducer.process_requests(updates).await;
