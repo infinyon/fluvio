@@ -18,6 +18,41 @@ No Issue
 flvt --local-driver -p 5000 --record-size 5000 --spu 2 --replication 2
 ```
 
+## Election Scenario
+
+Create cluster
+
+```
+fluvio cluster install --spu 3 --local
+``
+
+Create topic with replica 3
+```
+fluvio topic create -r 3 topic
+```
+
+Produce message
+
+Identity a leader:
+```
+fluvio partition list
+```
+
+Read message
+```
+fluvio consume topic -B
+```
+
+Kill a leader SPU
+```
+ps -ef | grep spu
+```
+
+2nd SPU should take over, this should still work:
+```
+flvd consume topic -B
+```
+
 
 
 
