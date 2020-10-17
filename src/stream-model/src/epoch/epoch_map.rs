@@ -101,6 +101,10 @@ impl<T> EpochCounter<T> {
     pub fn increment(&mut self) {
         self.epoch += 1;
     }
+
+    pub fn decrement(&mut self) {
+        self.epoch -= 1;
+    }
 }
 
 pub use old_map::*;
@@ -264,11 +268,21 @@ mod old_map {
     }
 
     pub struct EpochChanges<V> {
+        // current epoch
         pub epoch: Epoch,
         changes: EpochDeltaChanges<V>,
     }
 
     impl<V> EpochChanges<V> {
+        pub fn new(epoch: Epoch, changes: EpochDeltaChanges<V>) -> Self {
+            Self { epoch, changes }
+        }
+
+        /// current epoch
+        pub fn current_epoch(&self) -> &Epoch {
+            &self.epoch
+        }
+
         /// return all updates regardless of sync or changes
         /// (update,deletes)
         pub fn parts(self) -> (Vec<V>, Vec<V>) {
@@ -289,5 +303,132 @@ mod old_map {
     pub enum EpochDeltaChanges<V> {
         SyncAll(Vec<V>),
         Changes((Vec<V>, Vec<V>)),
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::core::{Spec, Status};
+    use crate::store::DefaultMetadataObject;
+
+    use super::EpochMap;
+
+    // define test spec and status
+    #[derive(Debug, Default, Clone, PartialEq)]
+    struct TestSpec {
+        replica: u16,
+    }
+
+    impl Spec for TestSpec {
+        const LABEL: &'static str = "Test";
+        type IndexKey = String;
+        type Owner = Self;
+        type Status = TestStatus;
+    }
+
+    #[derive(Debug, Default, Clone, PartialEq)]
+    struct TestStatus {
+        up: bool,
+    }
+
+    impl Status for TestStatus {}
+
+    type DefaultTest = DefaultMetadataObject<TestSpec>;
+
+    type TestEpochMap = EpochMap<String, DefaultTest>;
+
+    #[test]
+    fn test_epoch_map_empty() {
+        let map = TestEpochMap::new();
+        assert_eq!(map.epoch(), 0);
+    }
+
+    #[test]
+    fn test_epoch_map_insert() {
+        let mut map = TestEpochMap::new();
+
+        // increase epoch
+        // epoch must be increased before any write occur manually here
+        // in the store, this is done automatically but this is low level interface
+        map.increment_epoch();
+
+        let test1 = DefaultTest::with_key("t1");
+        map.insert(test1.key_owned(), test1);
+
+        assert_eq!(map.epoch(), 1);
+
+        // test with before base epoch
+        {
+            let changes = map.changes_since(-1);
+            assert_eq!(*changes.current_epoch(), 1); // current epoch is 1
+            assert!(changes.is_sync_all()); // this is only delta
+
+            let (updates, deletes) = changes.parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        // test with base epoch
+        {
+            let changes = map.changes_since(0);
+            assert_eq!(*changes.current_epoch(), 1); // current epoch is 1
+            assert!(!changes.is_sync_all()); // this is only delta
+
+            let (updates, deletes) = changes.parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        // test with current epoch which should return empty
+        {
+            let changes = map.changes_since(1);
+            assert_eq!(*changes.current_epoch(), 1); // current epoch is 1
+            assert!(!changes.is_sync_all()); // this is only delta
+            let (updates, deletes) = changes.parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_epoch_map_insert_update() {
+        let mut map = TestEpochMap::new();
+
+        let test1 = DefaultTest::with_key("t1");
+        let test2 = test1.clone();
+        let test3 = DefaultTest::with_key("t2");
+
+        // first epoch
+        map.increment_epoch();
+        map.insert(test1.key_owned(), test1);
+        map.insert(test3.key_owned(), test3);
+
+        // second epoch
+        map.increment_epoch();
+        map.insert(test2.key_owned(), test2);
+
+        assert_eq!(map.epoch(), 2);
+
+        // test with base epoch, this should return a single changes, both insert/update are consolidated into a single
+        {
+            let changes = map.changes_since(0);
+            assert_eq!(*changes.current_epoch(), 2);
+            assert!(!changes.is_sync_all());
+
+            let (updates, deletes) = changes.parts();
+            assert_eq!(updates.len(), 2);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        // test with middle epoch, this should still return a single changes
+        {
+            let changes = map.changes_since(1);
+            assert_eq!(*changes.current_epoch(), 2);
+            assert!(!changes.is_sync_all());
+            let (updates, deletes) = changes.parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
     }
 }

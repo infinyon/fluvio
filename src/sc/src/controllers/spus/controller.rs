@@ -76,9 +76,14 @@ impl SpuController {
             );
 
             select! {
-                _ = self.spus.listen() => {
+                _ = self.spus.spec_listen() => {
 
-                    debug!("detected events in spu store");
+                    debug!("detected events in spu speec");
+                    self.sync_store().await;
+                    time_left -= health_time.elapsed();
+                },
+                _ = self.spus.status_listen() => {
+                    debug!("detected events in spu status");
                     self.sync_store().await;
                     time_left -= health_time.elapsed();
                 },

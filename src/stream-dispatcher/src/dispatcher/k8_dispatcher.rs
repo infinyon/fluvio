@@ -136,13 +136,19 @@ where
                         match result {
                             Ok(auth_token_msgs) => {
 
-                                if k8_watch_events_to_metadata_actions(
+                                if let Some(status) = k8_watch_events_to_metadata_actions(
                                     Ok(auth_token_msgs),
                                     self.ctx.store(),
-                                ).await {
-                                    self.ctx.event().notify(usize::MAX);
+                                ).await
+                                {
+                                    if status.has_spec_changes() {
+                                        self.ctx.notify_spec_changes();
+                                    }
+                                    if status.has_status_changes() {
+                                        self.ctx.notify_status_changes();
+                                    }
                                 } else {
-                                    debug!("no changes to sync_all")
+                                    debug!("{}, no changes to applying changes to watch events",S::LABEL);
                                 }
 
                             }
@@ -208,8 +214,9 @@ where
                     format!("error converting k8: {}", err),
                 )
             })?;
-        debug!("notifying receivers");
-        self.ctx.event().notify(usize::MAX);
+        debug!("{}: notifying update all", S::LABEL);
+        self.ctx.notify_spec_changes();
+        self.ctx.notify_status_changes();
         Ok(version)
     }
 
@@ -273,8 +280,14 @@ where
                             Ok(updated_item) => {
                                 let changes = vec![LSUpdate::Mod(updated_item)];
 
-                                if self.ctx.store().apply_changes(changes).await.is_some() {
-                                    self.ctx.event().notify(usize::MAX);
+                                if let Some(changes) = self.ctx.store().apply_changes(changes).await
+                                {
+                                    if changes.has_spec_changes() {
+                                        self.ctx.notify_spec_changes();
+                                    }
+                                    if changes.has_status_changes() {
+                                        self.ctx.notify_status_changes();
+                                    }
                                 }
                             }
                             Err(err) => error!("{},error  converting back: {:#?}", S::LABEL, err),
@@ -383,7 +396,7 @@ mod convert {
     pub async fn k8_watch_events_to_metadata_actions<S, E>(
         stream: TokenStreamResult<S::K8Spec, E>,
         local_store: &LocalStore<S, K8MetaItem>,
-    ) -> bool
+    ) -> Option<SyncStatus>
     where
         S: K8ExtendedSpec + PartialEq,
         S::IndexKey: Display,
@@ -453,12 +466,7 @@ mod convert {
             }
         }
 
-        if local_store.apply_changes(changes).await.is_some() {
-            return true;
-        } else {
-            debug!("no apply changes: {}", S::LABEL);
-            return false;
-        }
+        local_store.apply_changes(changes).await
     }
 
     ///

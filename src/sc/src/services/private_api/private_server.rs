@@ -119,12 +119,13 @@ async fn dispatch_loop(
     mut sink: FlvSink,
     health_sender: Sender<SpuAction>,
 ) -> Result<(), FlvSocketError> {
-    let mut spu_epoch = context.spus().store().init_epoch().epoch();
-    let mut partition_epoch = context.partitions().store().init_epoch().epoch();
+    let mut spu_epoch = context.spus().store().init_epoch().spec_epoch();
+    let mut partition_epoch = context.partitions().store().init_epoch().spec_epoch();
 
     // send initial spu and replicas
-    spu_epoch = send_spu_change(spu_epoch, &context, &mut sink, spu_id).await?;
-    partition_epoch = send_replica_change(partition_epoch, &context, &mut sink, spu_id).await?;
+    spu_epoch = send_spu_spec_changes(spu_epoch, &context, &mut sink, spu_id).await?;
+    partition_epoch =
+        send_replica_spec_changes(partition_epoch, &context, &mut sink, spu_id).await?;
 
     // we wait for update from SPU or wait for updates form SPU channel
 
@@ -187,17 +188,20 @@ async fn dispatch_loop(
             },
 
 
-            _ = context.spus().listen() => {
+            _ = context.spus().spec_listen() => {
 
-                debug!("spu store changed: {}",spu_epoch);
-                spu_epoch = send_spu_change(spu_epoch, &context, &mut sink,spu_id).await?;
+                debug!("spu spec changed: {}",spu_epoch);
+                spu_epoch = send_spu_spec_changes(spu_epoch, &context, &mut sink,spu_id).await?;
 
             },
 
-            _ = context.partitions().listen() => {
-                debug!("partition store changed: {}",partition_epoch);
-                partition_epoch = send_replica_change(partition_epoch, &context, &mut sink,spu_id).await?;
-            }
+
+            _ = context.partitions().spec_listen() => {
+                debug!("partition spec changed: {}",partition_epoch);
+                partition_epoch = send_replica_spec_changes(partition_epoch, &context, &mut sink,spu_id).await?;
+            },
+
+
 
         }
     }
@@ -231,7 +235,8 @@ async fn send_lrs_update(ctx: &SharedContext, lrs_req: UpdateLrsRequest) {
     ctx.partitions().send_action(action).await;
 }
 
-async fn send_spu_change(
+/// send spu spec changes only
+async fn send_spu_spec_changes(
     epoch: Epoch,
     ctx: &SharedContext,
     sink: &mut FlvSink,
@@ -240,7 +245,7 @@ async fn send_spu_change(
     use fluvio_controlplane_metadata::message::*;
 
     let read_guard = ctx.spus().store().read().await;
-    let changes = read_guard.changes_since(epoch);
+    let changes = read_guard.spec_changes_since(epoch);
     drop(read_guard);
 
     let epoch = changes.epoch;
@@ -274,7 +279,7 @@ async fn send_spu_change(
     Ok(epoch)
 }
 
-async fn send_replica_change(
+async fn send_replica_spec_changes(
     epoch: Epoch,
     ctx: &SharedContext,
     sink: &mut FlvSink,
@@ -282,8 +287,9 @@ async fn send_replica_change(
 ) -> Result<Epoch, FlvSocketError> {
     use fluvio_controlplane_metadata::message::*;
 
+    debug!("sending replica change: {} to spu: {}", epoch, spu_id);
     let read_guard = ctx.partitions().store().read().await;
-    let changes = read_guard.changes_since(epoch);
+    let changes = read_guard.spec_changes_since(epoch);
     drop(read_guard);
 
     let is_sync_all = changes.is_sync_all();

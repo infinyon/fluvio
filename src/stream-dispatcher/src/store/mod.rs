@@ -26,7 +26,8 @@ mod context {
         S: Spec,
     {
         store: Arc<LocalStore<S, K8MetaItem>>,
-        event: Arc<Event>,
+        spec_event: Arc<Event>,
+        status_event: Arc<Event>,
         sender: Sender<WSAction<S>>,
         receiver: Receiver<WSAction<S>>,
     }
@@ -39,7 +40,8 @@ mod context {
             let (sender, receiver) = bounded(100);
             Self {
                 store: LocalStore::new_shared(),
-                event: Arc::new(Event::new()),
+                spec_event: Arc::new(Event::new()),
+                status_event: Arc::new(Event::new()),
                 sender,
                 receiver,
             }
@@ -55,12 +57,22 @@ mod context {
             Ok(())
         }
 
-        pub fn event(&self) -> &Event {
-            &self.event
+        pub fn notify_spec_changes(&self) {
+            self.spec_event.notify(usize::MAX);
         }
 
-        pub fn listen(&self) -> EventListener {
-            self.event.listen()
+        pub fn notify_status_changes(&self) {
+            self.status_event.notify(usize::MAX);
+        }
+
+        /// listen to spec
+        pub fn spec_listen(&self) -> EventListener {
+            self.spec_event.listen()
+        }
+
+        /// list to status
+        pub fn status_listen(&self) -> EventListener {
+            self.status_event.listen()
         }
 
         pub fn store(&self) -> &Arc<LocalStore<S, K8MetaItem>> {
@@ -125,7 +137,7 @@ mod context {
                                     format!("store timed out: {} for {:?}", S::LABEL,key)
                                 ));
                             },
-                            _ = self.listen() => {
+                            _ = self.spec_listen() => {
                                 // check if we can find new object
                                 if let Some(value) = self.store.value(&key).await {
                                     debug!("store: {}, object: {:#?}, created",S::LABEL,key);
@@ -184,7 +196,7 @@ mod context {
                                     format!("store timed out: {} for {:?}", S::LABEL,key)
                                 ));
                             },
-                            _ = self.listen() => {
+                            _ = self.spec_listen() => {
                                 // check if we can find old object
                                 if !self.store.contains_key(&key).await {
                                     debug!("store: {}, object: {:#?}, has been deleted",S::LABEL,key);

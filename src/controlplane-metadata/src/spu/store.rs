@@ -18,10 +18,10 @@ use crate::core::*;
 use crate::message::*;
 
 pub type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
-pub type DefaultSpuStore = SpuLocalStore<String>;
+pub type DefaultSpuStore = SpuLocalStore<u32>;
 pub type SharedSpuLocalStore<C> = Arc<SpuLocalStore<C>>;
 pub type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
-pub type DefaultSpuMd = SpuMetadata<String>;
+pub type DefaultSpuMd = SpuMetadata<u32>;
 
 pub trait SpuMd<C: MetadataItem> {
     fn quick<J>(spu: (J, i32, bool, Option<String>)) -> SpuMetadata<C>
@@ -389,7 +389,7 @@ pub mod test {
             .await
             .expect("some");
         assert_eq!(status.add, 0);
-        assert_eq!(status.update, 0);
+        assert_eq!(status.update_spec, 0);
         assert_eq!(status.delete, 1);
         assert_eq!(status.epoch, 1);
         assert_eq!(spus.online_spu_count().await, 0);
@@ -419,7 +419,7 @@ pub mod test {
             .expect("some");
 
         assert_eq!(status.add, 0);
-        assert_eq!(status.update, 1);
+        assert_eq!(status.update_spec, 1);
         assert_eq!(status.delete, 0);
 
         // test result
@@ -451,7 +451,8 @@ pub mod test {
             .expect("some");
         let spu = spus.value("spu-0").await.expect("spu");
         assert_eq!(status.add, 0);
-        assert_eq!(status.update, 1);
+        assert_eq!(status.update_status, 1);
+        assert_eq!(status.update_spec, 0);
         assert_eq!(status.delete, 0);
         assert_eq!(spus.count().await, 3);
         assert_eq!(spus.online_spu_count().await, 0);
@@ -465,7 +466,7 @@ pub mod test {
             .await
             .expect("some");
         assert_eq!(status.add, 0);
-        assert_eq!(status.update, 1);
+        assert_eq!(status.update_status, 1);
         assert_eq!(status.delete, 0);
         let spu = spus.value("spu-3").await.expect("spu");
         assert_eq!(spus.count().await, 3);

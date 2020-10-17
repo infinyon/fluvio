@@ -19,17 +19,37 @@ mod context {
     use crate::FluvioError;
     use crate::metadata::core::Spec;
     use crate::metadata::store::LocalStore;
-    use crate::metadata::store::EpochMap;
+    use crate::metadata::store::DualEpochMap;
     use crate::metadata::store::MetadataStoreObject;
     use crate::metadata::spu::SpuSpec;
+    use crate::metadata::core::MetadataItem;
+
+    pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S, AlwaysNewContext>;
+
+    /// context that always updates
+    #[derive(Debug, Default, Clone, PartialEq)]
+    pub struct AlwaysNewContext {}
+
+    impl MetadataItem for AlwaysNewContext {
+        type UId = u64;
+
+        fn uid(&self) -> &Self::UId {
+            &0
+        }
+
+        fn is_newer(&self, _another: &Self) -> bool {
+            true
+        }
+    }
 
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
     where
         S: Spec,
     {
-        store: Arc<LocalStore<S, String>>,
-        event: Arc<Event>,
+        store: Arc<LocalStore<S, AlwaysNewContext>>,
+        spec_event: Arc<Event>,
+        status_event: Arc<Event>,
     }
 
     impl<S> StoreContext<S>
@@ -39,26 +59,48 @@ mod context {
         pub fn new() -> Self {
             Self {
                 store: LocalStore::new_shared(),
-                event: Arc::new(Event::new()),
+                spec_event: Arc::new(Event::new()),
+                status_event: Arc::new(Event::new()),
             }
         }
 
-        pub fn store(&self) -> &Arc<LocalStore<S, String>> {
+        pub fn store(&self) -> &Arc<LocalStore<S, AlwaysNewContext>> {
             &self.store
         }
 
         pub fn listen(&self) -> EventListener {
-            self.event.listen()
+            self.spec_event.listen()
         }
 
-        pub fn notify(&self) {
-            self.event.notify(usize::MAX);
+        #[allow(unused)]
+        pub fn status_listen(&self) -> EventListener {
+            self.status_event.listen()
+        }
+
+        /// notify changes to specs
+        pub fn notify_spec_changes(&self) {
+            self.spec_event.notify(usize::MAX);
+        }
+
+        /// notify changes to status
+        pub fn notify_status_changes(&self) {
+            self.status_event.notify(usize::MAX);
+        }
+
+        /// look up object by index key
+        #[allow(unused)]
+        pub async fn try_lookup_by_key(
+            &self,
+            key: &S::IndexKey,
+        ) -> Option<CacheMetadataStoreObject<S>> {
+            let read_lock = self.store.read().await;
+            read_lock.get(key).map(|value| value.inner().clone())
         }
 
         pub async fn lookup_by_key(
             &self,
             key: &S::IndexKey,
-        ) -> Result<MetadataStoreObject<S, String>, FluvioError>
+        ) -> Result<CacheMetadataStoreObject<S>, FluvioError>
         where
             S: 'static,
             S::IndexKey: Display,
@@ -72,13 +114,13 @@ mod context {
         pub async fn lookup_and_wait<'a, F>(
             &'a self,
             search: F,
-        ) -> Result<MetadataStoreObject<S, String>, FluvioError>
+        ) -> Result<CacheMetadataStoreObject<S>, FluvioError>
         where
             S: 'static,
             S::IndexKey: Display,
             F: Fn(
-                RwLockReadGuard<'a, EpochMap<S::IndexKey, MetadataStoreObject<S, String>>>,
-            ) -> Option<MetadataStoreObject<S, String>>,
+                RwLockReadGuard<'a, DualEpochMap<S::IndexKey, CacheMetadataStoreObject<S>>>,
+            ) -> Option<CacheMetadataStoreObject<S>>,
         {
             use std::time::Instant;
             use std::time::Duration;
@@ -88,7 +130,7 @@ mod context {
             use tokio::select;
             use fluvio_future::timer::sleep;
 
-            const TIMER_DURATION: u64 = 180;
+            const TIMER_DURATION: u64 = 10;
 
             let mut time_left = Duration::from_secs(TIMER_DURATION);
 
@@ -136,7 +178,7 @@ mod context {
         pub async fn look_up_by_id(
             &self,
             id: i32,
-        ) -> Result<MetadataStoreObject<SpuSpec, String>, FluvioError> {
+        ) -> Result<CacheMetadataStoreObject<SpuSpec>, FluvioError> {
             self.lookup_and_wait(|g| {
                 for spu in g.values() {
                     if spu.spec.id == id {

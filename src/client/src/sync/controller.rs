@@ -14,11 +14,11 @@ use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_sc_schema::objects::MetadataUpdate;
 use fluvio_sc_schema::objects::Metadata;
-use fluvio_sc_schema::store::MetadataStoreObject;
 
 use crate::metadata::core::Spec;
 
 use super::StoreContext;
+use super::CacheMetadataStoreObject;
 
 ///
 pub struct MetadataSyncController<S>
@@ -36,8 +36,8 @@ where
     S::IndexKey: Display,
     WatchResponse: TryInto<MetadataUpdate<S>> + Send,
     <WatchResponse as TryInto<MetadataUpdate<S>>>::Error: Display + Send,
-    MetadataStoreObject<S, String>: TryFrom<Metadata<S>>,
-    <Metadata<S> as TryInto<MetadataStoreObject<S, String>>>::Error: Display,
+    CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
+    <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
 {
     pub fn start(store: StoreContext<S>, watch_response: AsyncResponse<WatchRequest>) {
         use fluvio_future::task::spawn;
@@ -96,9 +96,9 @@ where
                 S::LABEL,
                 updates.all.len()
             );
-            let mut objects: Vec<MetadataStoreObject<S, String>> = vec![];
+            let mut objects: Vec<CacheMetadataStoreObject<S>> = vec![];
             for meta in updates.all.into_iter() {
-                let store_obj: Result<MetadataStoreObject<S, String>, _> = meta.try_into();
+                let store_obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
                 match store_obj {
                     Ok(obj) => {
                         objects.push(obj);
@@ -112,7 +112,8 @@ where
                 }
             }
             self.store.store().sync_all(objects).await;
-            self.store.notify();
+            self.store.notify_spec_changes();
+            self.store.notify_status_changes();
         }
 
         Ok(())
