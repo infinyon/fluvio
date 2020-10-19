@@ -21,7 +21,8 @@ pub(crate) async fn create_replica_storage(
 }
 
 /// remove replica storage
-pub async fn remove_replic_storage (
+#[allow(unused)]
+pub async fn remove_replic_storage(
     local_spu: SpuId,
     replica: &ReplicaKey,
     base_config: &ConfigOption,

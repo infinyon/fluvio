@@ -169,6 +169,7 @@ impl ReplicaLeaderController<FileReplica> {
     // remove leader replica and shutdown this controller
 
     async fn remove(&self) {
+        /*
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica
                 .remove()
@@ -176,6 +177,7 @@ impl ReplicaLeaderController<FileReplica> {
         } else {
             leader_warn!(self, "sync followers: no replica is found");
         }
+        */
     }
 
     /// go thru each of follower and sync replicas
