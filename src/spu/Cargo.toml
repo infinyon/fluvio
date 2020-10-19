@@ -34,6 +34,7 @@ regex = "1.3.1"
 tokio = { version = "0.2.21", features = ["macros","sync"] }
 async-channel = "1.4.2"
 async-rwlock = "1.1.0"
+async-mutex = "1.4.0"
 event-listener = "2.4.0"
 
 
