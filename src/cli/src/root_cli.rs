@@ -6,6 +6,7 @@
 use std::sync::Arc;
 use structopt::clap::{AppSettings, Shell};
 use structopt::StructOpt;
+use tracing::debug;
 
 use fluvio_future::task::run_block_on;
 
@@ -118,13 +119,17 @@ enum Root {
         settings = &[AppSettings::Hidden]
     )]
     Completions(CompletionShell),
+
+    #[structopt(external_subcommand)]
+    External(Vec<String>),
 }
 
-pub fn run_cli() -> eyre::Result<String> {
+pub fn run_cli(args: &[String]) -> eyre::Result<String> {
     run_block_on(async move {
         let terminal = Arc::new(PrintTerminal::new());
 
-        let output = match Root::from_args() {
+        let root_args: Root = Root::from_iter(args);
+        let output = match root_args {
             Root::Consume(consume) => process_consume_log(terminal.clone(), consume).await?,
             Root::Produce(produce) => process_produce_record(terminal.clone(), produce).await?,
             Root::SPU(spu) => process_spu(terminal.clone(), spu).await?,
@@ -138,6 +143,7 @@ pub fn run_cli() -> eyre::Result<String> {
             Root::Run(opt) => process_run(opt)?,
             Root::Version(_) => process_version_cmd()?,
             Root::Completions(shell) => process_completions_cmd(shell)?,
+            Root::External(args) => process_external_subcommand(args)?,
         };
         Ok(output)
     })
@@ -209,5 +215,46 @@ fn process_completions_cmd(shell: CompletionShell) -> Result<String, CliError> {
             app.gen_completions_to(opt.name, Shell::Fish, &mut std::io::stdout());
         }
     }
+    Ok("".to_string())
+}
+
+fn process_external_subcommand(mut args: Vec<String>) -> Result<String, CliError> {
+    use std::process::Command;
+    use which::{CanonicalPath, Error as WhichError};
+
+    // The external subcommand's name is given as the first argument, take it.
+    let cmd = args.remove(0);
+
+    // Check for a matching external command in the environment
+    let external_subcommand = format!("fluvio-{}", cmd);
+    let subcommand_path = match CanonicalPath::new(&external_subcommand) {
+        Ok(path) => path,
+        Err(WhichError::CannotFindBinaryPath) => {
+            println!(
+                "Unable to find plugin '{}'. Make sure it is executable and in your PATH.",
+                &external_subcommand
+            );
+            std::process::exit(1);
+        }
+        other => other?,
+    };
+
+    // Print the fully-qualified command to debug
+    let args_string = args.join(" ");
+    debug!(
+        "Launching external subcommand: {} {}",
+        subcommand_path.as_path().display(),
+        &args_string
+    );
+
+    // Execute the command with the provided arguments
+    let status = Command::new(subcommand_path.as_path())
+        .args(&args)
+        .status()?;
+
+    if let Some(code) = status.code() {
+        std::process::exit(code);
+    }
+
     Ok("".to_string())
 }

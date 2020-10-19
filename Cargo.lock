@@ -1012,6 +1012,7 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "url",
+ "which",
 ]
 
 [[package]]
@@ -3685,6 +3686,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "142bc2cba3fe88be1a8fcb55c727fa4cd5b0cf2d7438722792e22f26f04bc1e0"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "which"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87c14ef7e1b8b8ecfc75d5eca37949410046e66f15d185c01d70824f1f8111ef"
+dependencies = [
+ "libc",
+ "thiserror",
 ]
 
 [[package]]
