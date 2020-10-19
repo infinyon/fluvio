@@ -17,7 +17,6 @@ use fluvio_storage::FileReplica;
 use fluvio_storage::ConfigOption;
 use fluvio_storage::StorageError;
 use fluvio_types::SpuId;
-use fluvio_types::log_on_err;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
 use fluvio_socket::ExclusiveFlvSink;
@@ -258,11 +257,14 @@ where
             self.leader_id, self.replica_id
         ));
 
-        log_on_err!(sc_sink.send_request(&message).await);
-        debug!(
-            "sent replica status to sc: {}, replica: {}",
-            self.leader_id, self.replica_id
-        );
+        if let Err(err) = sc_sink.send_request(&message).await {
+            error!("error sending status to sc: {}, leader: {}, replica: {}",err,self.leader_id,self.replica_id);
+        } else {
+            trace!(
+                "sent replica status to sc: {}, replica: {}",
+                self.leader_id, self.replica_id
+            );
+        }
     }
 }
 
