@@ -221,7 +221,6 @@ async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
                 PartitionResolution::Online,
             );
             current_status.merge(new_status);
-
             WSAction::UpdateStatus::<PartitionSpec>((key, current_status))
         } else {
             error!(
