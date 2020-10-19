@@ -209,29 +209,35 @@ async fn dispatch_loop(
 }
 
 /// send lrs update to metadata stores
-async fn send_lrs_update(ctx: &SharedContext, lrs_req: UpdateLrsRequest) {
+async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
     let read_guard = ctx.partitions().store().read().await;
-    let action = if let Some(partition) = read_guard.get(&lrs_req.id) {
-        let mut current_status = partition.inner().status().clone();
-        let key = lrs_req.id.clone();
-        let new_status = PartitionStatus::new2(
-            lrs_req.leader,
-            lrs_req.replicas,
-            PartitionResolution::Online,
-        );
-        current_status.merge(new_status);
+    for lrs_req in requests.into_requests().into_iter() {
 
-        WSAction::UpdateStatus::<PartitionSpec>((key, current_status))
-    } else {
-        error!(
-            "trying to update replica: {}, that doesn't exist",
-            lrs_req.id
-        );
-        return;
-    };
+        let action = if let Some(partition) = read_guard.get(&lrs_req.id) {
+            let mut current_status = partition.inner().status().clone();
+            let key = lrs_req.id.clone();
+            let new_status = PartitionStatus::new2(
+                lrs_req.leader,
+                lrs_req.replicas,
+                PartitionResolution::Online,
+            );
+            current_status.merge(new_status);
+    
+            WSAction::UpdateStatus::<PartitionSpec>((key, current_status))
+        } else {
+            error!(
+                "trying to update replica: {}, that doesn't exist",
+                lrs_req.id
+            );
+            return;
+        };
 
+        ctx.partitions().send_action(action).await;
+    
+    }
+    
     drop(read_guard);
-    ctx.partitions().send_action(action).await;
+   
 }
 
 /// send spu spec changes only
