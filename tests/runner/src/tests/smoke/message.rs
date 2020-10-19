@@ -5,7 +5,7 @@ const VALUE: u8 = 65;
 /// each message has prefix
 fn generate_pre_fix(topic: &str, _offset: i64) -> String {
     //  format!("{}:{}", topic, offset)
-    format!("{}", topic)
+    format!("topic-{}", topic)
 }
 
 /// generate test data based on iteration and option
