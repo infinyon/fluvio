@@ -258,11 +258,15 @@ where
         ));
 
         if let Err(err) = sc_sink.send_request(&message).await {
-            error!("error sending status to sc: {}, leader: {}, replica: {}",err,self.leader_id,self.replica_id);
+            error!(
+                "error sending status to sc: {}, leader: {}, replica: {}",
+                err, self.leader_id, self.replica_id
+            );
         } else {
             trace!(
                 "sent replica status to sc: {}, replica: {}",
-                self.leader_id, self.replica_id
+                self.leader_id,
+                self.replica_id
             );
         }
     }
