@@ -47,6 +47,7 @@ http-types = "2.4.0"
 thiserror = "1.0.20"
 eyre = "0.6.1"
 color-eyre = "0.5.5"
+which = "4.0.2"
 
 # Fluvio dependencies
 

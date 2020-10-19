@@ -7,7 +7,7 @@ use crate::profile::CloudError;
 
 #[derive(Error, Debug)]
 pub enum CliError {
-    #[error("IO error")]
+    #[error(transparent)]
     IoError {
         #[from]
         source: IoError,
@@ -39,6 +39,11 @@ pub enum CliError {
     },
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
+    #[error("Error finding executable")]
+    WhichError {
+        #[from]
+        source: which::Error,
+    },
     #[error("Unknown error: {0}")]
     Other(String),
 }
