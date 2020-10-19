@@ -116,7 +116,7 @@ impl FileReplica {
     /// remove this replica
     pub async fn delete(&mut self) -> Result<(),IoError>  {
         remove_dir_all(&self.option.base_dir).await
-}
+    }
 
     /// update committed offset (high watermark)
     pub async fn update_high_watermark(&mut self, offset: Offset) -> Result<(), IoError> {
