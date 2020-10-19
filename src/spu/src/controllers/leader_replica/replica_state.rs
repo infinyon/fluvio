@@ -12,7 +12,7 @@ use dataplane::api::RequestMessage;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::Replica;
-use fluvio_controlplane::UpdateLrsRequest;
+use fluvio_controlplane::{UpdateLrsRequest, LrsRequest};
 use fluvio_storage::FileReplica;
 use fluvio_storage::ConfigOption;
 use fluvio_storage::StorageError;
@@ -247,7 +247,7 @@ where
             })
             .collect();
 
-        UpdateLrsRequest::new(self.replica_id.clone(), leader, replicas)
+        UpdateLrsRequest::new(vec![LrsRequest::new(self.replica_id.clone(), leader, replicas)])
     }
 
     pub async fn send_status_to_sc(&self, sc_sink: &ExclusiveFlvSink) {

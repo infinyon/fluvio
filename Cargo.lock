@@ -1293,6 +1293,7 @@ name = "fluvio-spu"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "async-mutex",
  "async-rwlock",
  "async-trait",
  "bytes 0.5.6",
