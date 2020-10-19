@@ -230,7 +230,10 @@ fn process_external_subcommand(mut args: Vec<String>) -> Result<String, CliError
     let subcommand_path = match CanonicalPath::new(&external_subcommand) {
         Ok(path) => path,
         Err(WhichError::CannotFindBinaryPath) => {
-            println!("Unable to find plugin '{}'. Make sure it is executable and in your PATH.", &external_subcommand);
+            println!(
+                "Unable to find plugin '{}'. Make sure it is executable and in your PATH.",
+                &external_subcommand
+            );
             std::process::exit(1);
         }
         other => other?,
@@ -238,7 +241,11 @@ fn process_external_subcommand(mut args: Vec<String>) -> Result<String, CliError
 
     // Print the fully-qualified command to debug
     let args_string = args.join(" ");
-    debug!("Launching external subcommand: {} {}", subcommand_path.as_path().display(), &args_string);
+    debug!(
+        "Launching external subcommand: {} {}",
+        subcommand_path.as_path().display(),
+        &args_string
+    );
 
     // Execute the command with the provided arguments
     let status = Command::new(subcommand_path.as_path())
