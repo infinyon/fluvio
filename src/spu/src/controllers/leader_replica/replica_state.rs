@@ -247,7 +247,11 @@ where
             })
             .collect();
 
-        UpdateLrsRequest::new(vec![LrsRequest::new(self.replica_id.clone(), leader, replicas)])
+        UpdateLrsRequest::new(vec![LrsRequest::new(
+            self.replica_id.clone(),
+            leader,
+            replicas,
+        )])
     }
 
     pub async fn send_status_to_sc(&self, sc_sink: &ExclusiveFlvSink) {

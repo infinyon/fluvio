@@ -9,7 +9,7 @@ use tracing::trace;
 use fluvio_socket::FlvSink;
 use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_controlplane::{ LrsRequest, UpdateLrsRequest };
+use fluvio_controlplane::{LrsRequest, UpdateLrsRequest};
 use dataplane::api::RequestMessage;
 
 pub type SharedSinkMessageChannel = Arc<ScSinkMessageChannel>;
@@ -40,15 +40,12 @@ impl ScSinkMessageChannel {
 /// All status to SC must go thro this
 pub struct ScMessageSinkDispatcher {
     channel: SharedSinkMessageChannel,
-    sc_sink: FlvSink
+    sc_sink: FlvSink,
 }
 
 impl ScMessageSinkDispatcher {
-    pub fn start(channel: SharedSinkMessageChannel,sc_sink: FlvSink) {
-        let dispatcher = Self { 
-            channel,
-            sc_sink 
-        };
+    pub fn start(channel: SharedSinkMessageChannel, sc_sink: FlvSink) {
+        let dispatcher = Self { channel, sc_sink };
 
         spawn(async move {
             dispatcher.dispatch_loop().await;
@@ -68,22 +65,15 @@ impl ScMessageSinkDispatcher {
     }
 
     async fn send_batch_status(&mut self) {
-
         let requests = self.channel.remove_all().await;
         let len = requests.len();
 
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
         if let Err(err) = self.sc_sink.send_request(&message).await {
-            error!(
-                "error sending batch status to sc: {}",
-                err
-            );
+            error!("error sending batch status to sc: {}", err);
         } else {
-            trace!(
-                "sent replica status: {}",
-                len
-            );
+            trace!("sent replica status: {}", len);
         }
     }
 }
