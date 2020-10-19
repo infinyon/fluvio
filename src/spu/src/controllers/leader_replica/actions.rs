@@ -9,7 +9,7 @@ pub enum LeaderReplicaControllerCommand {
     UpdateReplicaFromSc(Replica),
     EndOffsetUpdated,
     FollowerOffsetUpdate(FollowerOffsetUpdate),
-    RemoveReplicaFromSc
+    RemoveReplicaFromSc,
 }
 
 #[derive(Debug)]

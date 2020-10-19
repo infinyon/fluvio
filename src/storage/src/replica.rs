@@ -114,10 +114,8 @@ impl FileReplica {
     }
 
     /// remove this replica
-    pub async fn delete(&mut self) -> Result<(),IoError>  {
-
+    pub async fn delete(&mut self) -> Result<(), IoError> {
         remove_dir_all(&self.option.base_dir).await
-
     }
 
     /// update committed offset (high watermark)
@@ -648,7 +646,6 @@ mod tests {
         Ok(())
     }
 
-
     #[test_async]
     async fn test_replica_delete() -> Result<(), StorageError> {
         let option = base_option("test_simple");
@@ -657,15 +654,13 @@ mod tests {
             .expect("test replica");
 
         let test_file = option.base_dir.join("testd-0").join(TEST_SEG_NAME);
-        
+
         assert!(test_file.exists());
-        
+
         replica.delete().await.expect("delet");
 
         assert!(!test_file.exists());
 
         Ok(())
-
     }
-
 }
