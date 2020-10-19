@@ -213,7 +213,6 @@ async fn dispatch_loop(
 async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
     let read_guard = ctx.partitions().store().read().await;
     for lrs_req in requests.into_requests().into_iter() {
-
         let action = if let Some(partition) = read_guard.get(&lrs_req.id) {
             let mut current_status = partition.inner().status().clone();
             let key = lrs_req.id.clone();
@@ -223,7 +222,7 @@ async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
                 PartitionResolution::Online,
             );
             current_status.merge(new_status);
-    
+
             WSAction::UpdateStatus::<PartitionSpec>((key, current_status))
         } else {
             error!(
@@ -234,11 +233,9 @@ async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
         };
 
         ctx.partitions().send_action(action).await;
-    
     }
-    
+
     drop(read_guard);
-   
 }
 
 /// send spu spec changes only

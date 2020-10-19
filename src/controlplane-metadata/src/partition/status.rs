@@ -48,13 +48,11 @@ impl fmt::Display for PartitionStatus {
 // -----------------------------------
 
 impl PartitionStatus {
-    pub fn leader(leader: impl Into<ReplicaStatus>) -> Self
-    {
+    pub fn leader(leader: impl Into<ReplicaStatus>) -> Self {
         Self::new(leader.into(), vec![])
     }
 
-    pub fn new(leader: impl Into<ReplicaStatus>, replicas: Vec<ReplicaStatus>) -> Self
-    {
+    pub fn new(leader: impl Into<ReplicaStatus>, replicas: Vec<ReplicaStatus>) -> Self {
         Self {
             resolution: PartitionResolution::default(),
             leader: leader.into(),
@@ -63,8 +61,11 @@ impl PartitionStatus {
         }
     }
 
-    pub fn new2(leader: impl Into<ReplicaStatus>, replicas: Vec<ReplicaStatus>, resolution: PartitionResolution) -> Self
-    {
+    pub fn new2(
+        leader: impl Into<ReplicaStatus>,
+        replicas: Vec<ReplicaStatus>,
+        resolution: PartitionResolution,
+    ) -> Self {
         Self {
             resolution,
             leader: leader.into(),

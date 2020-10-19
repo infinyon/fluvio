@@ -13,16 +13,14 @@ use crate::InternalScKey;
 
 /// Live Replica Status
 /// First lrs is leader by convention but should not be relied upon
-#[derive(Decode, Encode, Debug, Default,Clone)]
+#[derive(Decode, Encode, Debug, Default, Clone)]
 pub struct UpdateLrsRequest {
-    replicas: Vec<LrsRequest>
+    replicas: Vec<LrsRequest>,
 }
 
 impl UpdateLrsRequest {
-    pub fn new(replicas: Vec<LrsRequest> ) -> Self {
-        Self {
-            replicas
-        }
+    pub fn new(replicas: Vec<LrsRequest>) -> Self {
+        Self { replicas }
     }
 
     /// make into vec of requests
@@ -45,18 +43,13 @@ impl Request for UpdateLrsRequest {
 #[derive(Decode, Encode, Default, Debug)]
 pub struct UpdateLrsResponse {}
 
-
-
-
 /// Request to update replica status
-#[derive(Decode, Encode, Debug, Default,Clone)]
+#[derive(Decode, Encode, Debug, Default, Clone)]
 pub struct LrsRequest {
     pub id: ReplicaKey,
     pub leader: ReplicaStatus,
     pub replicas: Vec<ReplicaStatus>,
 }
-
-
 
 impl PartialEq for LrsRequest {
     fn eq(&self, other: &Self) -> bool {
@@ -88,4 +81,3 @@ impl LrsRequest {
         }
     }
 }
-
