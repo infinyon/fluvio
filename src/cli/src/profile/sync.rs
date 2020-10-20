@@ -1,13 +1,9 @@
-mod cloud;
-
 use structopt::StructOpt;
 use crate::{CliError, Terminal};
 use crate::t_println;
 use crate::COMMAND_TEMPLATE;
 use crate::profile::{set_k8_context, discover_fluvio_addr, set_local_context};
-use crate::profile::sync::cloud::{CloudOpt, process_cloud};
 use crate::tls::TlsClientOpt;
-pub use cloud::CloudError;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -19,8 +15,6 @@ pub enum SyncCommand {
     K8(K8Opt),
     #[structopt(name = "local", about = "sync profile from local cluster")]
     Local(LocalOpt),
-    #[structopt(name = "cloud", about = "sync profile from Fluvio Cloud")]
-    Cloud(CloudOpt),
 }
 
 #[derive(Debug, StructOpt, Default)]
@@ -53,7 +47,6 @@ pub async fn process_sync<O: Terminal>(
     match command {
         SyncCommand::K8(opt) => process_k8(out, opt).await,
         SyncCommand::Local(opt) => process_local(out, opt).await,
-        SyncCommand::Cloud(opt) => process_cloud(out, opt).await,
     }
 }
 
