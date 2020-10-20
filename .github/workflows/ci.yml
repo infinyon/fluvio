@@ -151,6 +151,32 @@ jobs:
           FLV_CMD=true make smoke-test DEFAULT_SPU=1
 
 
+  build_k8_image:
+    name: Build minikube image for mac
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macOS-latest]
+        rust: [stable]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Minikube on Mac
+        if: startsWith(matrix.os, 'macOS')
+        run:  brew install minikube
+      - name: Setup Minikube for Mac
+        run: |  
+          minikube start --driver=virtualbox
+      - name: set up musl-cross
+        run: |
+          brew install filosottile/musl-cross/musl-cross
+          export TARGET_CC=x86_64-linux-musl-gcc
+      - name: build k8 image
+        run: |
+          make minikube_image
+
+
+
   k8_cluster_test:
     name: Kubernetes cluster test
     runs-on: ${{ matrix.os }}
