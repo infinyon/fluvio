@@ -170,9 +170,9 @@ jobs:
       - name: set up musl-cross
         run: |
           brew install filosottile/musl-cross/musl-cross
-          export TARGET_CC=x86_64-linux-musl-gcc
       - name: build k8 image
         run: |
+          export TARGET_CC=x86_64-linux-musl-gcc
           make minikube_image
 
 
