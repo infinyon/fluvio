@@ -77,3 +77,51 @@ impl ScMessageSinkDispatcher {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    use std::time::Instant;
+    use std::time::Duration;
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicU64;
+    use std::sync::atomic::Ordering;
+
+    use log::debug;
+    use futures_util::future::join;
+    use event_listener::Event;
+
+    use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
+
+    #[test_async]
+    async fn test_event_lister() -> Result<(), ()> {
+        let event = Arc::new(Event::new());
+        let counter = Arc::new(AtomicU64::new(0));
+        //  let event2 = event.clone();
+
+        let (a, b) = join(
+            async {
+                let t1 = Instant::now();
+                counter.fetch_add(1, Ordering::SeqCst);
+                event.notify(usize::MAX);
+                t1
+            },
+            async {
+                sleep(Duration::from_millis(10)).await;
+                // we still 0 then wait
+                if counter.load(Ordering::SeqCst) == 0 {
+                    event.listen().await;
+                    debug!("waiting");
+                }
+
+                Instant::now()
+            },
+        )
+        .await;
+
+        assert!(b > a);
+
+        Ok(())
+    }
+}
