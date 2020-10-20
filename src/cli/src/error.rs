@@ -3,7 +3,6 @@ use thiserror::Error;
 
 use fluvio::FluvioError;
 use fluvio_cluster::ClusterError;
-use crate::profile::CloudError;
 
 #[derive(Error, Debug)]
 pub enum CliError {
@@ -16,11 +15,6 @@ pub enum CliError {
     ClientError {
         #[from]
         source: FluvioError,
-    },
-    #[error("Fluvio Cloud error")]
-    CloudError {
-        #[from]
-        source: CloudError,
     },
     #[error("Fluvio cluster error")]
     ClusterError {

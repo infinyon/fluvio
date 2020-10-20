@@ -13,7 +13,6 @@ use structopt::StructOpt;
 pub use k8::set_k8_context;
 pub use k8::discover_fluvio_addr;
 pub use context::set_local_context;
-pub use sync::CloudError;
 pub use sync::LocalOpt;
 pub use sync::K8Opt;
 
