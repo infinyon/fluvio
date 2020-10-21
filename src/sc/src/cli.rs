@@ -48,11 +48,20 @@ pub struct ScOpt {
     tls: TlsConfig,
 
     #[structopt(
-        short = "a",
-        long = "authorization",
+        long = "authorization-scopes",
+        value_name = "authorization scopes path"
+    )]
+    x509_auth_scopes: Option<String>,
+
+    #[structopt(
+        long = "authorization-policy",
         value_name = "authorization policy path"
     )]
     auth_policy: Option<PathBuf>,
+    
+    #[structopt(long)]
+    /// file path of role binding map
+    role_binding_map: Option<String>,
 }
 
 impl ScOpt {

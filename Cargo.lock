@@ -296,8 +296,7 @@ checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 [[package]]
 name = "async-tls"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d85a97c4a0ecce878efd3f945f119c78a646d8975340bca0398f9bb05c30cc52"
+source = "git+https://github.com/infinyon/async-tls.git?rev=375f2a483a7bdf85d66a29c3b68258a78c515a93#375f2a483a7bdf85d66a29c3b68258a78c515a93"
 dependencies = [
  "futures-core",
  "futures-io",
@@ -1304,6 +1303,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
+ "x509-parser",
 ]
 
 [[package]]
@@ -2136,9 +2136,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.79"
+version = "0.2.80"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2448f6066e80e3bfc792e9c98bf705b4b0fc6e8ef5b43e5889aff0eaa9c58743"
+checksum = "4d58d1b70b004888f764dfbf6a26a3b0342a1632d33968e4a179d8011c760614"
 
 [[package]]
 name = "libnghttp2-sys"
@@ -2972,14 +2972,9 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9bdc5e856e51e685846fb6c13a1f5e5432946c2c90501bdc76a1319f19e29da"
-dependencies = [
- "proc-macro2",
- "quote 1.0.7",
- "syn 1.0.48",
-]
+checksum = "cb5d2a036dc6d2d8fd16fde3498b04306e29bd193bf306a57427019b823d5acd"
 
 [[package]]
 name = "ryu"

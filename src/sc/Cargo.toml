@@ -37,6 +37,7 @@ async-channel = "1.4.0"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 structopt = "0.3.17"
+x509-parser = "0.8.2"
 
 # Fluvio dependencies
 fluvio-auth = { version = "0.1.0", path = "../auth" }
@@ -54,7 +55,7 @@ fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.3.0"}
 fluvio-service = { version = "0.2.0" }
-flv-tls-proxy = "0.2.0"
+flv-tls-proxy = "0.2.2"
 utils = { version = "0.1.0", path = "../utils", package = "fluvio-system-util" }
 
 [dev-dependencies]

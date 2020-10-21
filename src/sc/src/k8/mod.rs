@@ -7,6 +7,7 @@
 
 mod operator;
 mod service;
+mod authentication;
 
 use k8_client::new_shared;
 
@@ -61,17 +62,30 @@ mod proxy {
     use std::process;
     use log::info;
 
-    use crate::config::ScConfig;
     use fluvio_types::print_cli_err;
     use fluvio_future::tls::TlsAcceptor;
-    use flv_tls_proxy::start as proxy_start;
+    use flv_tls_proxy::{
+        start as proxy_start, start_with_authenticator as proxy_start_with_authenticator,
+    };
+
+    use crate::config::ScConfig;
+    use super::authentication::DefaultAuthenticator;
 
     pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {
         let (tls_acceptor, proxy_addr) = acceptor;
         let target = config.public_endpoint;
         info!("starting TLS proxy: {}", proxy_addr);
 
-        if let Err(err) = proxy_start(&proxy_addr, tls_acceptor, target).await {
+        let result = if let Some(role_binding_map) = config.role_binding_map {
+            let authenticator = Box::new(
+                DefaultAuthenticator::new(&role_binding_map),
+            );
+            proxy_start_with_authenticator(&proxy_addr, tls_acceptor, target, authenticator).await
+        } else {
+            proxy_start(&proxy_addr, tls_acceptor, target).await
+        };
+
+        if let Err(err) = result {
             print_cli_err!(err);
             process::exit(-1);
         }
