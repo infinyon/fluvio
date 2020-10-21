@@ -41,6 +41,10 @@ pub struct ScOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(long)]
+    /// file path of role binding map
+    role_binding_map: Option<String>,
 }
 
 impl ScOpt {

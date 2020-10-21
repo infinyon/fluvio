@@ -30,3 +30,7 @@ incremental = false
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
 opt-level = 3
+
+[patch.crates-io]
+async-tls = { version = "0.10.0", git = "https://github.com/infinyon/async-tls.git", rev = "375f2a483a7bdf85d66a29c3b68258a78c515a93" }
+flv-tls-proxy = { version = "0.2.2", git = "https://github.com/nacardin/flv-tls-proxy.git", rev = "e423bdd273e4c0729bec67b826a6b198e461c3b2" }

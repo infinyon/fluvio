@@ -284,8 +284,7 @@ checksum = "8ab27c1aa62945039e44edaeee1dc23c74cc0c303dd5fe0fb462a184f1c3a518"
 [[package]]
 name = "async-tls"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d85a97c4a0ecce878efd3f945f119c78a646d8975340bca0398f9bb05c30cc52"
+source = "git+https://github.com/infinyon/async-tls.git?rev=375f2a483a7bdf85d66a29c3b68258a78c515a93#375f2a483a7bdf85d66a29c3b68258a78c515a93"
 dependencies = [
  "futures-core",
  "futures-io",
@@ -368,6 +367,12 @@ name = "base64"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
+
+[[package]]
+name = "base64"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
 name = "bitflags"
@@ -786,6 +791,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4d0e2d24e5ee3b23a01de38eefdcd978907890701f08ffffd4cb457ca4ee8d6"
 
 [[package]]
+name = "der-oid-macro"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e66558629d772c3be040566b7be07be8c8f5aecee95e4a092dfe2efc313277ad"
+dependencies = [
+ "nom",
+ "num-bigint",
+ "num-traits",
+ "proc-macro-hack",
+]
+
+[[package]]
+name = "der-parser"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caca07c50eaae94d43e21f4d14eca5543b6f5f5ce64715e9b7665ac5f5185b4e"
+dependencies = [
+ "der-oid-macro",
+ "nom",
+ "num-bigint",
+ "num-traits",
+ "proc-macro-hack",
+ "rusticata-macros",
+]
+
+[[package]]
 name = "deunicode"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1200,11 +1231,13 @@ dependencies = [
  "rand 0.7.3",
  "regex",
  "serde",
+ "serde_json",
  "structopt",
  "tokio",
  "toml",
  "tracing",
  "tracing-futures",
+ "x509-parser",
 ]
 
 [[package]]
@@ -1441,15 +1474,20 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de1cc4cb2dfb7d71a935b562e09b9b1b5e3a74214320b11a279887c1b150aa45"
+version = "0.2.2"
+source = "git+https://github.com/nacardin/flv-tls-proxy.git?rev=e423bdd273e4c0729bec67b826a6b198e461c3b2#e423bdd273e4c0729bec67b826a6b198e461c3b2"
 dependencies = [
+ "async-trait",
  "fluvio-future",
+ "fluvio-protocol",
+ "fluvio-socket 0.2.0",
  "futures-lite",
  "futures-util",
  "log",
  "pin-project-lite",
+ "serde",
+ "serde_json",
+ "x509-parser",
 ]
 
 [[package]]
@@ -1988,6 +2026,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
+name = "lexical-core"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db65c6da02e61f55dae90a0ae427b2a5f6b3e8db09f58d10efab23af92592616"
+dependencies = [
+ "arrayvec",
+ "bitflags",
+ "cfg-if 0.1.10",
+ "ryu",
+ "static_assertions",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2153,6 +2204,28 @@ dependencies = [
  "cc",
  "cfg-if 0.1.10",
  "libc",
+]
+
+[[package]]
+name = "nom"
+version = "5.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af"
+dependencies = [
+ "lexical-core",
+ "memchr",
+ "version_check",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7f3fc75e3697059fb1bc465e3d8cca6cf92f56854f201158b3f9c77d5a3cfa0"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -2693,6 +2766,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusticata-macros"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8a9050636e8a1b487ba1fbe99114021cd7594dde3ce6ed95bfc1691e5b5367b"
+dependencies = [
+ "nom",
+]
+
+[[package]]
 name = "rustls"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2716,6 +2798,17 @@ dependencies = [
  "ring",
  "sct",
  "webpki",
+]
+
+[[package]]
+name = "rustversion"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9bdc5e856e51e685846fb6c13a1f5e5432946c2c90501bdc76a1319f19e29da"
+dependencies = [
+ "proc-macro2",
+ "quote 1.0.7",
+ "syn 1.0.44",
 ]
 
 [[package]]
@@ -2988,6 +3081,12 @@ checksum = "f4e0831040d2cf2bdfd51b844be71885783d489898a192f254ae25d57cce725c"
 dependencies = [
  "version_check",
 ]
+
+[[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdweb"
@@ -3728,6 +3827,25 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "x509-parser"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a76245c48460d72a3e17ad3a01855c3cae98601bb992091c1c1421c77d1cb27c"
+dependencies = [
+ "base64 0.13.0",
+ "chrono",
+ "data-encoding",
+ "der-oid-macro",
+ "der-parser",
+ "lazy_static",
+ "nom",
+ "num-bigint",
+ "rusticata-macros",
+ "rustversion",
+ "thiserror",
+]
 
 [[package]]
 name = "yaml-rust"

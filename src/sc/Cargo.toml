@@ -26,6 +26,7 @@ tracing = "0.1.19"
 tracing-futures = "0.2.4"
 toml = "0.5.5"
 serde = { version = "1.0.103", features = ['derive'] }
+serde_json = "1.0.59"
 futures-util = { version = "0.3.5" }
 chashmap = "2.2.0"
 base64 = "0.11.0"
@@ -36,6 +37,7 @@ async-channel = "1.4.0"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 structopt = "0.3.17"
+x509-parser = "0.8.2"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.1.0", features = ["tls","subscriber"] }
@@ -51,7 +53,7 @@ fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.1.0" }
 fluvio-service = { version = "0.1.0" }
-flv-tls-proxy = "0.2.0"
+flv-tls-proxy = "0.2.2"
 utils = { version = "0.1.0", path = "../utils", package = "fluvio-system-util" }
 
 [dev-dependencies]
