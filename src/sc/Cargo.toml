@@ -37,7 +37,6 @@ async-channel = "1.4.0"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 structopt = "0.3.17"
-x509-parser = "0.8.2"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.1.0", features = ["tls","subscriber"] }
@@ -46,6 +45,7 @@ fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema" }
 fluvio-controlplane = { version = "0.2.0", path = "../controlplane" }
 fluvio-controlplane-metadata = { version = "0.2.0", features = ["k8"], path = "../controlplane-metadata" }
 fluvio-stream-dispatcher = { version = "0.2.0", path = "../stream-dispatcher" }
+fluvio-auth = { version = "0.1.0", path = "../auth" }
 k8-client = { version = "2.1.0", optional = true }
 k8-metadata-client = { version = "1.0.2" }
 k8-obj-metadata = { version = "1.0.0" }

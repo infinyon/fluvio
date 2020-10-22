@@ -7,7 +7,6 @@
 
 mod operator;
 mod service;
-mod authentication;
 
 use k8_client::new_shared;
 
@@ -64,12 +63,12 @@ mod proxy {
 
     use fluvio_types::print_cli_err;
     use fluvio_future::tls::TlsAcceptor;
+    use fluvio_auth::authentication::DefaultAuthenticator;
     use flv_tls_proxy::{
         start as proxy_start, start_with_authenticator as proxy_start_with_authenticator,
     };
 
     use crate::config::ScConfig;
-    use super::authentication::DefaultAuthenticator;
 
     pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {
         let (tls_acceptor, proxy_addr) = acceptor;

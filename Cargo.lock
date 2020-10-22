@@ -1002,6 +1002,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-auth"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "fluvio-future",
+ "fluvio-protocol",
+ "fluvio-socket 0.2.0",
+ "flv-tls-proxy",
+ "futures-util",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "x509-parser",
+]
+
+[[package]]
 name = "fluvio-cli"
 version = "0.2.0"
 dependencies = [
@@ -1210,6 +1228,7 @@ dependencies = [
  "base64 0.11.0",
  "chashmap",
  "event-listener",
+ "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1237,7 +1256,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
- "x509-parser",
 ]
 
 [[package]]
