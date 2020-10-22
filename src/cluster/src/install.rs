@@ -27,21 +27,21 @@ use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{
     check_cluster_server_host, CheckError, check_helm_version, check_system_chart,
-    check_already_installed, _check_load_balancer_status,
+    check_already_installed, check_load_balancer_status,
 };
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
+pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
+pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
+pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
-const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
-const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
-const DEFAULT_HELM_VERSION: &str = "3.3.4";
 const DELAY: u64 = 3000;
 
 /// Distinguishes between a Local and Remote helm chart
@@ -603,7 +603,7 @@ impl ClusterInstaller {
     async fn pre_install_check(&self) -> Result<(), CheckError> {
         check_helm_version(&self.helm_client, DEFAULT_HELM_VERSION)?;
         check_system_chart(&self.helm_client, DEFAULT_CHART_SYS_REPO)?;
-        _check_load_balancer_status().await?;
+        check_load_balancer_status().await?;
         check_already_installed(&self.helm_client, DEFAULT_CHART_APP_REPO)?;
         check_cluster_server_host()?;
         Ok(())

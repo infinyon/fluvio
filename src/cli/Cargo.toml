@@ -24,7 +24,6 @@ cluster_components = ["fluvio-spu", "fluvio-sc"]
 rustc_version = "0.2.3"
 
 [dependencies]
-colored = "2.0.0"
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
 url = "2.1.1"

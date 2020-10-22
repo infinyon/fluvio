@@ -26,6 +26,7 @@ mod check;
 pub use install::ClusterInstaller;
 pub use install::ClusterInstallerBuilder;
 pub use error::ClusterError;
-pub use check::_check_load_balancer_status;
+pub use check::ClusterChecker;
+pub use check::CheckError;
 
 const VERSION: &str = include_str!("VERSION");
