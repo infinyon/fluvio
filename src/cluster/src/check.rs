@@ -295,10 +295,8 @@ impl ClusterChecker {
     /// Runs all the checks that are needed for fluvio cluster installation
     /// # Example
     /// ```no_run
-    /// # use fluvio_cluster::ClusterChecker;
-    ///
-    /// ClusterChecker::run_preflight_checks().await?;
-    ///
+    /// use fluvio_cluster::ClusterChecker;
+    /// ClusterChecker::run_preflight_checks();
     /// ```
     pub async fn run_preflight_checks() -> Result<(), CheckError> {
         // List of checks
