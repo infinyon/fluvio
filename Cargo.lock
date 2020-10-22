@@ -1042,6 +1042,7 @@ dependencies = [
  "fluvio-socket 0.3.0",
  "fluvio-stream-model",
  "fluvio-types",
+ "flv-tls-proxy",
  "futures-util",
  "log",
  "serde",
@@ -1049,6 +1050,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-futures",
+ "x509-parser",
 ]
 
 [[package]]
@@ -1303,7 +1305,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
- "x509-parser",
 ]
 
 [[package]]
