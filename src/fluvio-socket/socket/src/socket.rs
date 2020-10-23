@@ -22,10 +22,10 @@ use crate::InnerFlvStream;
 
 pub type FlvSocket = InnerFlvSocket<TcpStream>;
 
-#[cfg(feature = "tls")]
+#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
 pub type AllFlvSocket = InnerFlvSocket<fluvio_future::tls::AllTcpStream>;
 
-#[cfg(feature = "native_tls")]
+#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
 pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
 
 /// FlvSocket is high level socket that can send and receive fluvio protocol
