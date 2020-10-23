@@ -1,0 +1,23 @@
+######################### Req Section ##################
+# THIS IS USED BY REQ COMMAND
+
+[req]
+default_bits = 4096
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C=US
+ST=CA
+L=Sunnyvale
+O=Fluvio
+OU=Eng
+CN = fluvio.io
+
+[ req_ext ]
+# subjectAltName = @alt_names
+
+[ ca ]
+default_ca = CA

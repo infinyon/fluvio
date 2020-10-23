@@ -15,14 +15,18 @@ use fluvio_protocol::codec::FluvioCodec;
 use fluvio_future::net::DefaultTcpDomainConnector;
 use fluvio_future::net::TcpDomainConnector;
 use fluvio_future::net::TcpStream;
-use fluvio_future::tls::AllTcpStream;
 
 use super::FlvSocketError;
 use crate::InnerFlvSink;
 use crate::InnerFlvStream;
 
 pub type FlvSocket = InnerFlvSocket<TcpStream>;
-pub type AllFlvSocket = InnerFlvSocket<AllTcpStream>;
+
+#[cfg(feature = "tls")]
+pub type AllFlvSocket = InnerFlvSocket<fluvio_future::tls::AllTcpStream>;
+
+#[cfg(feature = "native_tls")]
+pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
 
 /// FlvSocket is high level socket that can send and receive fluvio protocol
 #[derive(Debug)]

@@ -4,7 +4,6 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use fluvio_future::net::TcpStream;
-use fluvio_future::tls::AllTcpStream;
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
@@ -18,8 +17,14 @@ use tracing::trace;
 use crate::FlvSocketError;
 
 pub type FlvStream = InnerFlvStream<TcpStream>;
+
 #[allow(unused)]
-pub type AllFlvStream = InnerFlvStream<AllTcpStream>;
+#[cfg(feature = "tls")]
+pub type AllFlvStream = InnerFlvStream<fluvio_future::tls::AllTcpStream>;
+
+#[allow(unused)]
+#[cfg(feature = "native_tls")]
+pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
 
 type FrameStream<S> = SplitStream<Framed<Compat<S>, FluvioCodec>>;
 
