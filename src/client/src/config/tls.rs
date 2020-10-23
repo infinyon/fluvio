@@ -6,9 +6,14 @@ use std::path::PathBuf;
 use tracing::info;
 use serde::{Deserialize, Serialize};
 
-use fluvio_future::tls::AllDomainConnector;
-use fluvio_future::tls::TlsDomainConnector;
-use fluvio_future::tls::ConnectorBuilder;
+#[cfg(feature = "native_tls")]
+use fluvio_future::native_tls::{
+    AllDomainConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
+    PrivateKeyBuilder, CertBuilder,
+};
+
+#[cfg(feature = "rust_tls")]
+use fluvio_future::tls::{AllDomainConnector, TlsDomainConnector, ConnectorBuilder};
 
 /// Describes whether or not to use TLS and how
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -194,6 +199,7 @@ pub struct TlsPaths {
 }
 
 // TODO move this to AllDomainConnector
+#[cfg(feature = "rust_tls")]
 impl TryFrom<TlsPolicy> for AllDomainConnector {
     type Error = IoError;
 
@@ -232,6 +238,67 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                         .load_client_certs_from_bytes(tls.cert.as_bytes(), tls.key.as_bytes())?
                         .load_ca_cert_from_bytes(tls.ca_cert.as_bytes())?
                         .build(),
+                    tls.domain,
+                )))
+            }
+        }
+    }
+}
+
+#[cfg(feature = "native_tls")]
+impl TryFrom<TlsPolicy> for AllDomainConnector {
+    type Error = IoError;
+
+    fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
+        match config {
+            TlsPolicy::Disabled => Ok(AllDomainConnector::default_tcp()),
+            TlsPolicy::Anonymous => {
+                info!("Using anonymous TLS");
+                Ok(AllDomainConnector::TlsAnonymous(
+                    ConnectorBuilder::anonymous().build().into(),
+                ))
+            }
+            TlsPolicy::Verified(TlsConfig::Files(tls)) => {
+                info!(
+                    domain = &*tls.domain,
+                    "Using verified TLS with certificates from paths"
+                );
+
+                let builder = ConnectorBuilder::identity(IdentityBuilder::from_x509(
+                    X509PemBuilder::from_path(&tls.cert)?,
+                    PrivateKeyBuilder::from_path(&tls.key)?,
+                )?)?
+                .add_root_certificate(X509PemBuilder::from_path(&tls.ca_cert)?)?;
+                let builder = if cfg!(macos) {
+                    builder.no_cert_verification()
+                } else {
+                    builder
+                };
+                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                    builder.build(),
+                    tls.domain,
+                )))
+            }
+            TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
+                info!(
+                    domain = &*tls.domain,
+                    "Using verified TLS with inline certificates"
+                );
+
+                let builder = ConnectorBuilder::identity(IdentityBuilder::from_x509(
+                    X509PemBuilder::from_reader(&mut tls.cert.as_bytes())?,
+                    PrivateKeyBuilder::from_reader(&mut tls.key.as_bytes())?,
+                )?)?
+                .add_root_certificate(X509PemBuilder::from_reader(&mut tls.ca_cert.as_bytes())?)?;
+
+                let builder = if cfg!(macos) {
+                    builder.no_cert_verification()
+                } else {
+                    builder
+                };
+
+                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                    builder.build(),
                     tls.domain,
                 )))
             }
