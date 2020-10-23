@@ -19,6 +19,11 @@ members = [
     "tests/runner",
 ]
 
+[patch.crates-io]
+fluvio-socket = { path = '../fluvio-socket/crates/socket' }
+fluvio-service = { path = '../fluvio-socket/crates/service'}
+fluvio-future = { path = '../future-aio'}
+
 # profile to make image sizer smaller
 # comment out for now
 [profile.release]

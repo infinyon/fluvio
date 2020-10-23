@@ -1,6 +1,7 @@
 use std::default::Default;
 use std::fmt;
 use std::fmt::Display;
+use std::sync::Arc;
 
 use tracing::trace;
 use async_trait::async_trait;
@@ -8,8 +9,8 @@ use async_trait::async_trait;
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
-use fluvio_socket::*;
-use fluvio_future::tls::AllDomainConnector;
+use fluvio_socket:: { FlvSocketError, AllFlvSocket, AllSerialSocket };
+use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::FluvioError;
 
@@ -124,7 +125,7 @@ impl VersionedSocket {
 pub struct ClientConfig {
     addr: String,
     client_id: String,
-    connector: AllDomainConnector,
+    connector: Arc<AllDomainConnector>,
 }
 
 impl fmt::Display for ClientConfig {
@@ -140,7 +141,7 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(addr: S, connector: AllDomainConnector) -> Self {
+    pub fn new<S: Into<String>>(addr: S, connector: Arc<AllDomainConnector>) -> Self {
         Self {
             addr: addr.into(),
             client_id: "fluvio".to_owned(),
@@ -149,7 +150,7 @@ impl ClientConfig {
     }
 
     pub fn with_addr(addr: String) -> Self {
-        Self::new(addr, AllDomainConnector::default())
+        Self::new(addr, Arc::new(AllDomainConnector::default()))
     }
 
     pub fn addr(&self) -> &str {
@@ -171,7 +172,7 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
+        let socket = AllFlvSocket::connect_with_connector(&self.addr, &*self.connector).await?;
         VersionedSocket::connect(socket, self).await
     }
 }

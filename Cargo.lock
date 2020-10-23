@@ -227,6 +227,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-native-tls"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e9e7a929bd34c68a82d58a4de7f86fffdaf97fb2af850162a7bb19dd7269b33"
+dependencies = [
+ "async-std",
+ "native-tls",
+ "thiserror",
+ "url",
+]
+
+[[package]]
 name = "async-net"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -668,6 +680,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-foundation"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57d24c7a13c43e870e37c1556b74555437870a04514f7685f5b354e090567171"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
+]
+
+[[package]]
+name = "core-foundation-sys"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3a71ab494c0b5b860bdc8407ae08978052417070c2ced38573a9157ad75b8ac"
+
+[[package]]
 name = "cpuid-bool"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -989,7 +1017,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
- "fluvio-socket",
+ "fluvio-socket 0.3.0",
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
@@ -1108,7 +1136,7 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.2.1",
  "flv-util",
  "futures-util",
  "log",
@@ -1116,12 +1144,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eb262f8e2f83adac923ec2ed4dc20b5478dade0012ee2d5f8ef5b344e26711c"
+version = "0.1.4"
 dependencies = [
  "async-fs",
  "async-io",
+ "async-native-tls",
  "async-net",
  "async-std",
  "async-tls",
@@ -1130,7 +1157,9 @@ dependencies = [
  "futures-lite",
  "log",
  "memmap",
+ "native-tls",
  "nix 0.17.0",
+ "openssl",
  "pin-project",
  "pin-utils",
  "rustls 0.18.1",
@@ -1218,7 +1247,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-service",
- "fluvio-socket",
+ "fluvio-socket 0.3.0",
  "fluvio-stream-dispatcher",
  "fluvio-system-util",
  "fluvio-types",
@@ -1255,15 +1284,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ac1fb8759158c766701fd264bd3dc2735bbddba589397888fab23b08fdd46ff"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "event-listener",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.3.0",
  "futures-util",
  "log",
  "pin-utils",
@@ -1277,6 +1304,28 @@ name = "fluvio-socket"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9800e3f19f797488fb526831d306f99567861f1d82bd78891189e425a3c72d78"
+dependencies = [
+ "async-channel",
+ "async-mutex",
+ "async-net",
+ "async-trait",
+ "bytes 0.5.6",
+ "chashmap",
+ "event-listener",
+ "fluvio-future",
+ "fluvio-protocol",
+ "futures-util",
+ "log",
+ "pin-project-lite",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-socket"
+version = "0.3.0"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1313,7 +1362,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
- "fluvio-socket",
+ "fluvio-socket 0.3.0",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-system-util",
@@ -1354,7 +1403,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.3.0",
  "fluvio-types",
  "flv-util",
  "futures-lite",
@@ -1413,8 +1462,6 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc9e4cb09caa5ff039928399ef5aa99206fd1b9a59df208cf6d94e2764fe5ce0"
 dependencies = [
  "proc-macro2",
  "quote 1.0.7",
@@ -1456,7 +1503,7 @@ dependencies = [
  "async-trait",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.2.1",
  "futures-lite",
  "futures-util",
  "log",
@@ -1481,6 +1528,21 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "foreign-types"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
+dependencies = [
+ "foreign-types-shared",
+]
+
+[[package]]
+name = "foreign-types-shared"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "form_urlencoded"
@@ -2176,6 +2238,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "native-tls"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b0d88c06fe90d5ee94048ba40409ef1d9315d86f6f38c2efdaad4fb50c58b2d"
+dependencies = [
+ "lazy_static",
+ "libc",
+ "log",
+ "openssl",
+ "openssl-probe",
+ "openssl-sys",
+ "schannel",
+ "security-framework",
+ "security-framework-sys",
+ "tempfile",
+]
+
+[[package]]
 name = "nb-connect"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2284,6 +2364,20 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
+
+[[package]]
+name = "openssl"
+version = "0.10.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d575eff3665419f9b83678ff2815858ad9d11567e082f5ac1814baba4e2bcb4"
+dependencies = [
+ "bitflags",
+ "cfg-if 0.1.10",
+ "foreign-types",
+ "lazy_static",
+ "libc",
+ "openssl-sys",
+]
 
 [[package]]
 name = "openssl-probe"
@@ -2718,6 +2812,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8cab7a364d15cde1e505267766a2d3c4e22a843e1a601f0fa7564c0f82ced11c"
 
 [[package]]
+name = "remove_dir_all"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
 name = "ring"
 version = "0.16.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2860,6 +2963,29 @@ checksum = "e3042af939fca8c3453b7af0f1c66e533a15a86169e39de2657310ade8f98d3c"
 dependencies = [
  "ring",
  "untrusted",
+]
+
+[[package]]
+name = "security-framework"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64808902d7d99f78eaddd2b4e2509713babc3dc3c85ad6f4c447680f3c01e535"
+dependencies = [
+ "bitflags",
+ "core-foundation",
+ "core-foundation-sys",
+ "libc",
+ "security-framework-sys",
+]
+
+[[package]]
+name = "security-framework-sys"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17bf11d99252f512695eb468de5516e5cf75455521e69dfe343f3b74e4748405"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
 ]
 
 [[package]]
@@ -3213,6 +3339,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
 dependencies = [
  "unicode-xid 0.0.4",
+]
+
+[[package]]
+name = "tempfile"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a6e24d9338a0a5be79593e2fa15a648add6138caa803e2d5bc782c371732ca9"
+dependencies = [
+ "cfg-if 0.1.10",
+ "libc",
+ "rand 0.7.3",
+ "redox_syscall",
+ "remove_dir_all",
+ "winapi",
 ]
 
 [[package]]
