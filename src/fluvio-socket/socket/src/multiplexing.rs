@@ -35,10 +35,10 @@ use crate::InnerFlvStream;
 #[allow(unused)]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
-#[cfg(feature = "tls")]
+#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
 pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::tls::AllTcpStream>;
 
-#[cfg(feature = "native_tls")]
+#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
 pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
@@ -189,10 +189,10 @@ impl<R: Request> Stream for AsyncResponse<R> {
     }
 }
 
-#[cfg(feature = "tls")]
+#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
 pub type AllSerialSocket = SerialSocket<fluvio_future::tls::AllTcpStream>;
 
-#[cfg(feature = "native_tls")]
+#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
 pub type AllSerialSocket = SerialSocket<fluvio_future::native_tls::AllTcpStream>;
 
 /// socket that can send request and response one at time,

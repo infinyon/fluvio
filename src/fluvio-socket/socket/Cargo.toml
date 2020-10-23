@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -13,7 +13,6 @@ name = "fluvio_socket"
 path = "src/lib.rs"
 
 [features]
-default = ["tls"]
 tls = ["fluvio-future/tls"]
 native_tls = ["fluvio-future/native2_tls"]
 

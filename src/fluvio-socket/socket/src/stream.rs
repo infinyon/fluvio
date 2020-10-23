@@ -19,11 +19,11 @@ use crate::FlvSocketError;
 pub type FlvStream = InnerFlvStream<TcpStream>;
 
 #[allow(unused)]
-#[cfg(feature = "tls")]
+#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
 pub type AllFlvStream = InnerFlvStream<fluvio_future::tls::AllTcpStream>;
 
 #[allow(unused)]
-#[cfg(feature = "native_tls")]
+#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
 pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
 
 type FrameStream<S> = SplitStream<Framed<Compat<S>, FluvioCodec>>;
