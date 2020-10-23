@@ -269,7 +269,9 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                     PrivateKeyBuilder::from_path(&tls.key)?,
                 )?)?
                 .add_root_certificate(X509PemBuilder::from_path(&tls.ca_cert)?)?;
-                let builder = if cfg!(macos) {
+
+                // disable certificate verification for mac only!
+                let builder = if cfg!(target_os = "macos") {
                     builder.no_cert_verification()
                 } else {
                     builder
@@ -291,7 +293,8 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                 )?)?
                 .add_root_certificate(X509PemBuilder::from_reader(&mut tls.ca_cert.as_bytes())?)?;
 
-                let builder = if cfg!(macos) {
+                // disable certificate verification for mac only!
+                let builder = if cfg!(target_os = "macos") {
                     builder.no_cert_verification()
                 } else {
                     builder
