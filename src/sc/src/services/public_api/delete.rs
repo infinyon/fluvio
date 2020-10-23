@@ -16,17 +16,17 @@ use crate::core::*;
 /// Handler for delete topic request
 pub async fn handle_delete_request(
     request: RequestMessage<DeleteRequest>,
-    ctx: SharedContext,
+    auth_ctx: &AuthenticatedContext,
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, req) = request.get_header_request();
 
     let status = match req {
-        DeleteRequest::Topic(name) => super::topic::handle_delete_topic(name, ctx.clone()).await?,
+        DeleteRequest::Topic(name) => super::topic::handle_delete_topic(name, auth_ctx).await?,
         DeleteRequest::CustomSpu(key) => {
-            super::spu::handle_un_register_custom_spu_request(key, ctx.clone()).await?
+            super::spu::handle_un_register_custom_spu_request(key, auth_ctx).await?
         }
         DeleteRequest::SpuGroup(name) => {
-            super::spg::handle_delete_spu_group(name, ctx.clone()).await?
+            super::spg::handle_delete_spu_group(name, auth_ctx).await?
         }
     };
 

@@ -13,42 +13,55 @@ use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use event_listener::Event;
 
+use fluvio_auth::identity::AuthorizationIdentity;
+use fluvio_service::auth::Authorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::InnerFlvSocket;
 use fluvio_socket::FlvSocketError;
-use fluvio_service::FlvService;
+use fluvio_service::{FlvService};
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 
 use crate::core::*;
+use crate::services::auth::basic::{Policy, ScAuthorizationContext};
 
 #[derive(Debug)]
 pub struct PublicService {}
 
 impl PublicService {
     pub fn new() -> Self {
-        Self {}
+        PublicService {}
     }
 }
 
 #[async_trait]
-impl<S> FlvService<S> for PublicService
+impl<S> FlvService<S, AuthorizationIdentity, Policy> for PublicService
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
     type Context = SharedContext;
+    type IdentityContext = AuthorizationIdentity;
     type Request = AdminPublicRequest;
+    type Authorization = ScAuthorizationContext;
 
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
+        identity: Self::IdentityContext,
         socket: InnerFlvSocket<S>,
     ) -> Result<(), FlvSocketError> {
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
+
+        let policy_config = ctx.config().policy.clone();
+
+        let auth_context = AuthenticatedContext {
+            global_ctx: ctx,
+            auth: ScAuthorizationContext::create_authorization_context(identity, policy_config),
+        };
 
         let end_event = Arc::new(Event::new());
 
@@ -65,20 +78,20 @@ where
 
             AdminPublicRequest::CreateRequest(request) => call_service!(
                 request,
-                super::create::handle_create_request(request, ctx.clone()),
+                super::create::handle_create_request(request, &auth_context),
                 shared_sink,
                 "create  handler"
             ),
             AdminPublicRequest::DeleteRequest(request) => call_service!(
                 request,
-                super::delete::handle_delete_request(request, ctx.clone()),
+                super::delete::handle_delete_request(request, &auth_context),
                 shared_sink,
                 "delete  handler"
             ),
 
             AdminPublicRequest::ListRequest(request) => call_service!(
                 request,
-                super::list::handle_list_request(request, ctx.clone()),
+                super::list::handle_list_request(request, &auth_context),
                 shared_sink,
                 "list handler"
             ),
@@ -86,7 +99,7 @@ where
 
                 super::watch::handle_watch_request(
                     request,
-                    ctx.clone(),
+                    &auth_context,
                     shared_sink.clone(),
                     end_event.clone(),
                 )

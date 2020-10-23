@@ -1,0 +1,31 @@
+[package]
+name = "fluvio-auth"
+version = "0.1.0"
+authors = ["fluvio.io"]
+edition = "2018"
+
+[lib]
+name = "fluvio_auth"
+path = "src/lib.rs"
+
+[dependencies]
+async-trait = "0.1.41"
+log = "0.4.11"
+thiserror = "1.0.21"
+
+tracing = "0.1.21"
+tracing-futures = "0.2.4"
+
+futures-util = { version = "0.3.5" }
+
+fluvio-protocol = { version = "0.2.0" }
+fluvio-service = { version = "0.2.0" }
+fluvio-socket = { version = "0.3.0" }
+fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
+fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema" }
+fluvio-types = { version = "0.1.0", path = "../types" }
+fluvio-future = { version = "0.1.0", features = ["net"] }
+fluvio-auth-schema = { version = "0.1.0", path = "../auth-schema" }
+
+serde = { version = "1.0.103", features = ['derive'] }
+serde_json = "1.0.59"

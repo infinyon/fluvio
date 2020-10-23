@@ -3,7 +3,7 @@
 //!
 //! Metadata stores a copy of the data from KV store in local memory.
 //!
-use std::sync::Arc;
+use std::sync::{Arc};
 
 use crate::config::ScConfig;
 use crate::stores::spu::*;
@@ -12,6 +12,8 @@ use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::*;
 use crate::controllers::spus::SpuStatusChannel;
+
+use crate::services::auth::basic::ScAuthorizationContext;
 
 pub type SharedContext = Arc<Context>;
 
@@ -82,4 +84,9 @@ impl Context {
     pub fn namespace(&self) -> &str {
         &self.config.namespace
     }
+}
+
+pub struct AuthenticatedContext {
+    pub global_ctx: SharedContext,
+    pub auth: ScAuthorizationContext,
 }
