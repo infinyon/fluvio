@@ -33,7 +33,7 @@ impl ::std::default::Default for ScConfig {
             private_endpoint: format!("0.0.0.0:{}", SC_PRIVATE_PORT),
             run_k8_dispatchers: true,
             namespace: "default".to_owned(),
-            role_binding_map: None
+            role_binding_map: None,
         }
     }
 }
