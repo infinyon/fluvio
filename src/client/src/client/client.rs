@@ -12,12 +12,12 @@ use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
 use fluvio_socket::FlvSocketError;
 
 #[cfg(feature = "rust_tls")]
-use fluvio_socket::{ AllFlvSocket, AllSerialSocket};
+use fluvio_socket::{AllFlvSocket, AllSerialSocket};
 #[cfg(feature = "rust_tls")]
 use fluvio_future::tls::AllDomainConnector;
 
 #[cfg(feature = "native_tls")]
-use fluvio_socket::{ AllFlvSocket, AllSerialSocket};
+use fluvio_socket::{AllFlvSocket, AllSerialSocket};
 #[cfg(feature = "native_tls")]
 use fluvio_future::native_tls::AllDomainConnector;
 
