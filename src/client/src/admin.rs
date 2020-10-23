@@ -6,8 +6,18 @@ use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
+use fluvio_socket::FlvSocketError;
+
+#[cfg(feature = "native_tls")]
 use fluvio_future::native_tls::AllDomainConnector;
-use fluvio_socket::{AllMultiplexerSocket, FlvSocketError};
+#[cfg(feature = "native_tls")]
+use fluvio_socket::AllMultiplexerSocket;
+
+#[cfg(feature = "rust_tls")]
+use fluvio_future::tls::AllDomainConnector;
+#[cfg(feature = "rust_tls")]
+use fluvio_socket::AllMultiplexerSocket;
+
 use crate::client::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
 use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};

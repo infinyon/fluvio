@@ -60,7 +60,9 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 check-clippy:	install-clippy
-	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
+	cargo +$(RUSTV) clippy --all-targets  -- -D warnings
+	cd src/client; cargo +$(RUSTV) clippy --all-targets  --features native_tls -- -D warnings
+	cd src/client; cargo +$(RUSTV) clippy --all-targets  --features rust_tls -- -D warnings
 
 
 run-all-unit-test:

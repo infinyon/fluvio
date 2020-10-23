@@ -3,7 +3,12 @@ use std::convert::TryFrom;
 use tracing::debug;
 
 use fluvio_socket::AllMultiplexerSocket;
+
+#[cfg(feature = "native_tls")]
 use fluvio_future::native_tls::AllDomainConnector;
+
+#[cfg(feature = "rust_tls")]
+use fluvio_future::tls::AllDomainConnector;
 
 use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
