@@ -1,17 +1,32 @@
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug};
 
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::partition::*;
-use crate::core::Context;
+use fluvio_service::auth::Authorization;
+
+use crate::core::AuthenticatedContext;
+use crate::services::auth::basic::{Action, Object};
 
 pub async fn handle_fetch_request(
     _filters: Vec<String>,
-    ctx: &Context,
+    auth_ctx: &AuthenticatedContext,
 ) -> Result<ListResponse, Error> {
     debug!("fetching custom spu list");
-    let partitions: Vec<Metadata<PartitionSpec>> = ctx
+
+    let auth_request = (Action::Read, Object::Partition, None);
+    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+        if !authorized {
+            trace!("authorization failed");
+            return Ok(ListResponse::Partition(vec![]));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+    }
+
+    let partitions: Vec<Metadata<PartitionSpec>> = auth_ctx
+        .global_ctx
         .partitions()
         .store()
         .read()

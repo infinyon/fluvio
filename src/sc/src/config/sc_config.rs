@@ -7,6 +7,7 @@ use std::io::Error as IoError;
 
 use fluvio_types::defaults::SC_PUBLIC_PORT;
 use fluvio_types::defaults::SC_PRIVATE_PORT;
+use crate::services::auth::basic::Policy;
 
 // -----------------------------------
 // Traits
@@ -23,6 +24,7 @@ pub struct ScConfig {
     pub private_endpoint: String,
     pub run_k8_dispatchers: bool,
     pub namespace: String,
+    pub policy: Policy,
 }
 
 impl ::std::default::Default for ScConfig {
@@ -32,6 +34,7 @@ impl ::std::default::Default for ScConfig {
             private_endpoint: format!("0.0.0.0:{}", SC_PRIVATE_PORT),
             run_k8_dispatchers: true,
             namespace: "default".to_owned(),
+            policy: Policy::default(),
         }
     }
 }

@@ -88,6 +88,15 @@ mod custom_metadata {
         Id(i32),
     }
 
+    impl From<&CustomSpuKey> for String {
+        fn from(key: &CustomSpuKey) -> Self {
+            match key {
+                CustomSpuKey::Name(name) => name.to_owned(),
+                CustomSpuKey::Id(id) => id.to_string(),
+            }
+        }
+    }
+
     impl CustomSpuKey {
         fn type_string(&self) -> &'static str {
             match self {

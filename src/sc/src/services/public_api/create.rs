@@ -9,7 +9,7 @@ use crate::core::*;
 /// Handler for create topic request
 pub async fn handle_create_request(
     request: RequestMessage<CreateRequest>,
-    ctx: SharedContext,
+    auth_context: &AuthenticatedContext,
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();
 
@@ -18,17 +18,17 @@ pub async fn handle_create_request(
 
     let status = match req.spec {
         AllCreatableSpec::Topic(topic) => {
-            super::topic::handle_create_topics_request(name, dry_run, topic, ctx.clone()).await?
+            super::topic::handle_create_topics_request(name, dry_run, topic, auth_context).await?
         }
         AllCreatableSpec::SpuGroup(group) => {
-            super::spg::handle_create_spu_group_request(name, group, dry_run, ctx.clone()).await?
+            super::spg::handle_create_spu_group_request(name, group, dry_run, auth_context).await?
         }
         AllCreatableSpec::CustomSpu(custom) => {
             super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
                 name,
                 custom,
                 dry_run,
-                ctx.clone(),
+                auth_context,
             )
             .await
         }

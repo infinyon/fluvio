@@ -1,6 +1,8 @@
 [workspace]
 members = [
     "examples/00-echo",
+    "src/auth",
+    "src/auth-schema",
     "src/cli",
     "src/client",
     "src/cluster",
@@ -20,8 +22,8 @@ members = [
 ]
 
 [patch.crates-io]
-fluvio-socket = { git = 'https://github.com/infinyon/fluvio-socket', rev = "b717c1e"  }
-fluvio-service = { git = 'https://github.com/infinyon/fluvio-socket', rev = "b717c1e" }
+fluvio-socket = { git = 'https://github.com/infinyon/fluvio-socket', rev = "3975110" }
+fluvio-service = { git = 'https://github.com/infinyon/fluvio-socket', rev = "3975110" }
 
 
 # profile to make image sizer smaller

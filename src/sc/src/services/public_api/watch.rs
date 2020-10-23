@@ -20,13 +20,13 @@ use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
-use crate::core::SharedContext;
+use crate::core::AuthenticatedContext;
 use crate::stores::StoreContext;
 
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T>(
     request: RequestMessage<WatchRequest>,
-    ctx: SharedContext,
+    auth_ctx: &AuthenticatedContext,
     sink: InnerExclusiveFlvSink<T>,
     end_event: Arc<Event>,
 ) where
@@ -41,7 +41,7 @@ pub fn handle_watch_request<T>(
             epoch,
             sink,
             end_event,
-            ctx.spus().clone(),
+            auth_ctx.global_ctx.spus().clone(),
             header,
         ),
         WatchRequest::SpuGroup(_) => unimplemented!(),
@@ -49,7 +49,7 @@ pub fn handle_watch_request<T>(
             epoch,
             sink,
             end_event,
-            ctx.partitions().clone(),
+            auth_ctx.global_ctx.partitions().clone(),
             header,
         ),
     }
