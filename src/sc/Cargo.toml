@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-sc"
 edition = "2018"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["fluvio.io"]
 description = "Fluvio Stream Controller"
 repository = "https://github.com/infinyon/fluvio"
@@ -41,15 +41,15 @@ structopt = "0.3.17"
 fluvio-future = { version = "0.1.0", features = ["tls","subscriber"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema" }
-fluvio-controlplane = { version = "0.1.0", path = "../controlplane" }
-fluvio-controlplane-metadata = { version = "0.1.0", features = ["k8"], path = "../controlplane-metadata" }
+fluvio-controlplane = { version = "0.2.0", path = "../controlplane" }
+fluvio-controlplane-metadata = { version = "0.2.0", features = ["k8"], path = "../controlplane-metadata" }
 fluvio-stream-dispatcher = { version = "0.2.0", path = "../stream-dispatcher" }
 k8-client = { version = "2.1.0", optional = true }
 k8-metadata-client = { version = "1.0.2" }
 k8-obj-metadata = { version = "1.0.0" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-socket = { version = "0.1.0" }
+fluvio-socket = { version = "0.2.0", default-features = false }
 fluvio-service = { version = "0.1.0" }
 flv-tls-proxy = "0.2.0"
 utils = { version = "0.1.0", path = "../utils", package = "fluvio-system-util" }

@@ -17,15 +17,27 @@ mod context {
         fn is_newer(&self, another: &Self) -> bool;
     }
 
-    impl MetadataItem for String {
-        type UId = String;
+    impl MetadataItem for u32 {
+        type UId = u32;
 
         fn uid(&self) -> &Self::UId {
             &self
         }
 
-        fn is_newer(&self, _another: &Self) -> bool {
-            true
+        fn is_newer(&self, another: &Self) -> bool {
+            self > another
+        }
+    }
+
+    impl MetadataItem for u64 {
+        type UId = u64;
+
+        fn uid(&self) -> &Self::UId {
+            &self
+        }
+
+        fn is_newer(&self, another: &Self) -> bool {
+            self > another
         }
     }
 

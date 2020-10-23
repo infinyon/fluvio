@@ -3,11 +3,10 @@ use thiserror::Error;
 
 use fluvio::FluvioError;
 use fluvio_cluster::ClusterError;
-use crate::profile::CloudError;
 
 #[derive(Error, Debug)]
 pub enum CliError {
-    #[error("IO error")]
+    #[error(transparent)]
     IoError {
         #[from]
         source: IoError,
@@ -16,11 +15,6 @@ pub enum CliError {
     ClientError {
         #[from]
         source: FluvioError,
-    },
-    #[error("Fluvio Cloud error")]
-    CloudError {
-        #[from]
-        source: CloudError,
     },
     #[error("Fluvio cluster error")]
     ClusterError {
@@ -39,6 +33,11 @@ pub enum CliError {
     },
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
+    #[error("Error finding executable")]
+    WhichError {
+        #[from]
+        source: which::Error,
+    },
     #[error("Unknown error: {0}")]
     Other(String),
 }

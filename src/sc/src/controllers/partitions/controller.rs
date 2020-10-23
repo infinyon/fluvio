@@ -26,9 +26,9 @@ pub struct PartitionController {
 impl PartitionController {
     pub fn start(ctx: SharedContext) {
         let partitions = ctx.partitions().clone();
-        let partition_epoch = partitions.store().init_epoch().epoch();
+        let partition_epoch = partitions.store().init_epoch().spec_epoch();
         let spus = ctx.spus().clone();
-        let spu_epoch = spus.store().init_epoch().epoch();
+        let spu_epoch = spus.store().init_epoch().spec_epoch();
 
         let controller = Self {
             partitions,
@@ -52,7 +52,7 @@ impl PartitionController {
         loop {
             select! {
 
-                _ = self.spus.listen() => {
+                _ = self.spus.status_listen() => {
                     self.sync_spu_changes().await;
                 }
             }

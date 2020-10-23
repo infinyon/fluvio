@@ -219,6 +219,10 @@ pub fn print_dynamic_records<O>(
         for batch in &r_partition.records.batches {
             for record in &batch.records {
                 if let Some(batch_record) = record.get_value().inner_value_ref() {
+                    // TODO: this should be refactored
+                    if let Some(bytes) = record.get_value().inner_value_ref() {
+                        debug!("len: {}", bytes.len());
+                    }
                     if record.get_value().is_binary() {
                         t_println!(out, "{}", hex_dump_separator());
                         t_println!(out, "{}", bytes_to_hex_dump(&batch_record));

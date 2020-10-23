@@ -2,7 +2,10 @@ use std::fmt::Debug;
 
 use crate::core::{Spec, MetadataContext, MetadataItem};
 
-pub type DefaultMetadataObject<S> = MetadataStoreObject<S, String>;
+pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
+
+use super::DualDiff;
+use super::MetadataChange;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MetadataStoreObject<S, C>
@@ -61,8 +64,8 @@ where
         Self::with_spec(key.into(), S::default())
     }
 
-    pub fn with_context(mut self, ctx: MetadataContext<C>) -> Self {
-        self.ctx = ctx;
+    pub fn with_context(mut self, ctx: impl Into<MetadataContext<C>>) -> Self {
+        self.ctx = ctx.into();
         self
     }
 
@@ -81,8 +84,18 @@ where
     pub fn spec(&self) -> &S {
         &self.spec
     }
+
+    // set spec
+    pub fn set_spec(&mut self, spec: S) {
+        self.spec = spec;
+    }
+
     pub fn status(&self) -> &S::Status {
         &self.status
+    }
+
+    pub fn set_status(&mut self, status: S::Status) {
+        self.status = status;
     }
 
     pub fn ctx(&self) -> &MetadataContext<C> {
@@ -115,6 +128,24 @@ where
 
     pub fn is_newer(&self, another: &Self) -> bool {
         self.ctx.item().is_newer(another.ctx().item())
+    }
+}
+
+impl<S, C> DualDiff for MetadataStoreObject<S, C>
+where
+    S: Spec,
+    C: MetadataItem,
+{
+    /// compute difference, in our case we take account of version as well
+    fn diff(&self, another: &Self) -> MetadataChange {
+        if self.is_newer(another) {
+            MetadataChange::no_change()
+        } else {
+            MetadataChange {
+                spec: self.spec != another.spec,
+                status: self.status != another.status,
+            }
+        }
     }
 }
 
