@@ -16,15 +16,14 @@ path = "src/lib.rs"
 log = "0.4.0"
 tracing = "0.1.18"
 tracing-futures = "0.2.4"
-futures-util = { version = "0.3.5" }
 async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
-fluvio-future = { version = "0.1.0", features = ["tls"] }
-# fluvio-types = { version = "0.1.0", path = "../types" }
+futures-util = { version = "0.3.5" }
+fluvio-future = { version = "0.1.0" }
 fluvio-socket = { version = "0.2.0", path = "../socket" }
 fluvio-protocol = { version = "0.2.0", features = ["derive", "api", "codec"] }
 
