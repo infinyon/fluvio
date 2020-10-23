@@ -66,7 +66,7 @@ check-clippy:	install-clippy
 
 
 run-all-unit-test:
-	cargo test --all --all-features
+	cargo test --all
 
 install_musl:
 	rustup target add ${TARGET_LINUX}
