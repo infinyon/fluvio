@@ -1287,7 +1287,7 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/fluvio-socket#b717c1ed35b5afc197bac05cb4af9997df239723"
+source = "git+https://github.com/infinyon/fluvio-socket?rev=b717c1e#b717c1ed35b5afc197bac05cb4af9997df239723"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1329,7 +1329,7 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.0"
-source = "git+https://github.com/infinyon/fluvio-socket#b717c1ed35b5afc197bac05cb4af9997df239723"
+source = "git+https://github.com/infinyon/fluvio-socket?rev=b717c1e#b717c1ed35b5afc197bac05cb4af9997df239723"
 dependencies = [
  "async-channel",
  "async-mutex",
