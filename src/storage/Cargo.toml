@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "fluvio-storage"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["fluvio.io"]
 description = "Storage for Fluvio platform"
 repository = "https://github.com/infinyon/fluvio"
@@ -28,7 +28,6 @@ serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
 fluvio-types = { path = "../types", version = "0.1.0" }
-fluvio-socket = { version = "0.1.0" }
 fluvio-future = { version = "0.1.0", features = ["fs","mmap"] }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
@@ -37,4 +36,5 @@ dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluv
 [dev-dependencies]
 fluvio-future = { version = "0.1.0", features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
+fluvio-socket = { version = "0.2.0", default-features = false }
 
