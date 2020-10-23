@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
-use fluvio_socket:: { FlvSocketError, AllFlvSocket, AllSerialSocket };
+use fluvio_socket::{FlvSocketError, AllFlvSocket, AllSerialSocket};
 use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::FluvioError;

@@ -4,13 +4,13 @@ use std::fmt::Display;
 use tracing::debug;
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::{Metadata,AllCreatableSpec};
+use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
 use fluvio_future::native_tls::AllDomainConnector;
-use fluvio_socket::{ AllMultiplexerSocket, FlvSocketError };
-use crate::client::{ ClientConfig, VersionedSerialSocket, SerialFrame };
+use fluvio_socket::{AllMultiplexerSocket, FlvSocketError};
+use crate::client::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
-use crate::metadata::objects::{ ListResponse,ListSpec, DeleteSpec, CreateRequest };
+use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};
 use crate::config::ConfigFile;
 
 /// An interface for managing a Fluvio cluster
