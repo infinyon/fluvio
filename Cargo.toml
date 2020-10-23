@@ -20,9 +20,9 @@ members = [
 ]
 
 [patch.crates-io]
-fluvio-socket = { path = '../fluvio-socket/crates/socket' }
-fluvio-service = { path = '../fluvio-socket/crates/service'}
-fluvio-future = { path = '../future-aio'}
+fluvio-socket = { git = 'https://github.com/infinyon/fluvio-socket' }
+fluvio-service = { git = 'https://github.com/infinyon/fluvio-socket'}
+
 
 # profile to make image sizer smaller
 # comment out for now

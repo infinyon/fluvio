@@ -148,7 +148,7 @@ jobs:
       - name: smoke test tls
         if: startsWith(matrix.os, 'macOS')
         run: |
-          FLV_CMD=true make smoke-test DEFAULT_SPU=1
+          FLV_CMD=true make smoke-test-tls DEFAULT_SPU=1
 
 
   k8_cluster_test:
@@ -199,4 +199,4 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: smoke test k8 tls
         run: | 
-          FLV_CMD=true make smoke-test-k8
+          FLV_CMD=true make smoke-test-k8-tls

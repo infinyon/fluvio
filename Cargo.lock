@@ -1145,6 +1145,8 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9eac52925a38cf92788318aeef688303f07d2ae17d021e2a8cacf194839ced4"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1285,6 +1287,7 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.0"
+source = "git+https://github.com/infinyon/fluvio-socket#b717c1ed35b5afc197bac05cb4af9997df239723"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1326,6 +1329,7 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.0"
+source = "git+https://github.com/infinyon/fluvio-socket#b717c1ed35b5afc197bac05cb4af9997df239723"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1347,7 +1351,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1462,6 +1466,8 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc9e4cb09caa5ff039928399ef5aa99206fd1b9a59df208cf6d94e2764fe5ce0"
 dependencies = [
  "proc-macro2",
  "quote 1.0.7",
