@@ -76,9 +76,7 @@ mod proxy {
         info!("starting TLS proxy: {}", proxy_addr);
 
         let result = if let Some(role_binding_map) = config.role_binding_map {
-            let authenticator = Box::new(
-                DefaultAuthenticator::new(&role_binding_map),
-            );
+            let authenticator = Box::new(DefaultAuthenticator::new(&role_binding_map));
             proxy_start_with_authenticator(&proxy_addr, tls_acceptor, target, authenticator).await
         } else {
             proxy_start(&proxy_addr, tls_acceptor, target).await
