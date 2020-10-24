@@ -61,8 +61,8 @@ install-clippy:
 
 check-clippy:	install-clippy
 	cargo +$(RUSTV) clippy --all-targets  -- -D warnings
-	cd src/client; cargo +$(RUSTV) clippy --all-targets  --features native_tls -- -D warnings
-	cd src/client; cargo +$(RUSTV) clippy --all-targets  --features rust_tls -- -D warnings
+	cd src/client; cargo +$(RUSTV) clippy --all-targets  -- -D warnings
+
 
 
 run-all-unit-test:

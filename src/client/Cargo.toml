@@ -12,6 +12,7 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
+default = ["native_tls"]
 admin = ["fluvio-sc-schema/use_serde"]
 rust_tls = ["fluvio-future/tls","fluvio-socket/tls"]
 native_tls = ["fluvio-future/native2_tls","fluvio-socket/native_tls"]
