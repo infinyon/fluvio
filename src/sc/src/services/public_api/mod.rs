@@ -9,7 +9,6 @@ mod delete;
 mod list;
 mod watch;
 
-pub use context::*;
 
 mod context {
 
@@ -18,7 +17,7 @@ mod context {
 
     use fluvio_service::{FlvApiServer};
 
-    use crate::core::*;
+    use crate::core::AuthGlobalContext;
     use super::public_server::PublicService;
 
     /// create public server
@@ -27,7 +26,7 @@ mod context {
         skip(ctx),
         fields(address = &*ctx.config().public_endpoint)
     )]
-    pub fn start_public_server(ctx: SharedContext) {
+    pub fn start_public_server(ctx: AuthGlobalContext) {
         let addr = ctx.config().public_endpoint.clone();
         info!("start public api service");
         let server = FlvApiServer::new(addr, ctx, PublicService::new());

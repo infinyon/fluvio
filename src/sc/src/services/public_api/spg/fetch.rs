@@ -3,22 +3,19 @@ use std::io::{Error, ErrorKind};
 use tracing::debug;
 use tracing::trace;
 
-use fluvio_service::auth::Authorization;
-use fluvio_sc_schema::objects::*;
-use fluvio_sc_schema::spg::SpuGroupSpec;
-use fluvio_controlplane_metadata::store::*;
 
-use crate::core::AuthenticatedContext;
-use crate::services::auth::basic::{Action, Object};
+use fluvio_sc_schema::objects::{ ListResponse, NameFilter, Metadata };
+use fluvio_sc_schema::spg::SpuGroupSpec;
+
+use crate::services::auth::AuthServiceContext;
 
 pub async fn handle_fetch_spu_groups_request(
     filters: Vec<NameFilter>,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<ListResponse, Error> {
     debug!("fetching spu groups");
 
-    let auth_request = (Action::Read, Object::SpuGroup, None);
-    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+    if let Ok(authorized) = auth_ctx.auth.read::<SpuGroupSpec>().await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;

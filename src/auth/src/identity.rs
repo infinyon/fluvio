@@ -1,13 +1,45 @@
-use fluvio_auth_schema::AuthorizationScopes;
 
 use async_trait::async_trait;
-use futures_util::stream::StreamExt;
+//use futures_util::stream::StreamExt;
 use serde::{Deserialize, Serialize};
 
-use fluvio_service::{SocketBuilder, IdentityContext};
+
+use fluvio_auth_schema::AuthorizationScopes;
+//use fluvio_service::{SocketBuilder};
 use fluvio_socket::InnerFlvSocket;
-use fluvio_protocol::api::{ResponseMessage};
-use fluvio_auth_schema::{AuthorizationApiRequest, AuthResponse};
+//use fluvio_protocol::api::{ResponseMessage};
+// use fluvio_auth_schema::{AuthorizationApiRequest, AuthResponse};
+use fluvio_controlplane_metadata::core::Spec;
+
+#[async_trait]
+pub trait AuthContext {
+
+    /// check if allows to create any instance of spec
+    async fn create<S: Spec>(&self) -> Result<bool,std::io::Error> ;
+
+    /// check if specific instance of spec can be deleted
+    async fn delete<S: Spec>(&self,key: &S::IndexKey) -> Result<bool,std::io::Error>;
+
+    /// check if any instance of spec can be reead;
+    /// this is not per instance
+    async fn read<S: Spec>(&self) -> Result<bool,std::io::Error>;
+    
+}
+
+
+
+#[async_trait]
+pub trait Authorization
+{
+
+    /// create auth context
+    fn create_auth_context<C:AuthContext,S>(&self, socket: &mut InnerFlvSocket<S>
+    ) -> Result<C, std::io::Error>;
+        
+}
+
+
+
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AuthorizationIdentity {
@@ -21,6 +53,7 @@ impl AuthorizationIdentity {
     }
 }
 
+/*
 #[async_trait]
 impl IdentityContext for AuthorizationIdentity {
     async fn create_from_connection<S>(
@@ -79,3 +112,4 @@ impl IdentityContext for AuthorizationIdentity {
         }
     }
 }
+*/

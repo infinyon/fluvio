@@ -8,13 +8,12 @@ use std::io::{Error as IoError};
 
 use dataplane::ErrorCode;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_service::auth::Authorization;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 
-use crate::core::*;
-use crate::services::auth::basic::{Action, Object};
+use crate::core::{ SharedContext};
+use crate::services::auth::AuthServiceContext;
 
 pub struct RegisterCustomSpu {
     ctx: SharedContext,
@@ -28,11 +27,10 @@ impl RegisterCustomSpu {
         name: String,
         spec: CustomSpuSpec,
         dry_run: bool,
-        auth_ctx: &AuthenticatedContext,
+        auth_ctx: &AuthServiceContext,
     ) -> Status {
         debug!("api request: create custom-spu '{}({})'", name, spec.id);
-        let auth_request = (Action::Create, Object::CustomSpu, None);
-        if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+        if let Ok(authorized) = auth_ctx.auth.create::<CustomSpuSpec>().await {
             if !authorized {
                 trace!("authorization failed");
                 return Status::new(

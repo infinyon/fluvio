@@ -102,7 +102,7 @@ pub struct ScAuthorizationContext {
     pub policy: Policy,
 }
 
-pub type ScAuthorizationContextRequest = (Action, Object, Option<ObjectName>);
+
 
 #[async_trait]
 impl Authorization<Policy, AuthorizationIdentity> for ScAuthorizationContext {

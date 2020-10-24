@@ -5,6 +5,8 @@
 //!
 use std::sync::{Arc};
 
+use fluvio_auth::Authorization;
+
 use crate::config::ScConfig;
 use crate::stores::spu::*;
 use crate::stores::partition::*;
@@ -13,10 +15,11 @@ use crate::stores::spg::*;
 use crate::stores::*;
 use crate::controllers::spus::SpuStatusChannel;
 
-use crate::services::auth::basic::ScAuthorizationContext;
 
 pub type SharedContext = Arc<Context>;
 
+/// Global Context for SC
+/// This is where we store globally accessible data
 #[derive(Debug)]
 pub struct Context {
     spus: StoreContext<SpuSpec>,
@@ -86,7 +89,19 @@ impl Context {
     }
 }
 
-pub struct AuthenticatedContext {
+/// SC global context with authorization
+/// auth is trait object which contains global auth auth policy
+pub struct AuthGlobalContext {
     pub global_ctx: SharedContext,
-    pub auth: ScAuthorizationContext,
+    pub auth: Arc<Box<dyn Authorization>>,
+}
+
+impl AuthGlobalContext {
+
+    pub fn new(global_ctx: SharedContext, auth:Arc<Box<dyn Authorization>>) -> Self {
+        Self {
+            global_ctx,
+            auth
+        }
+    }
 }

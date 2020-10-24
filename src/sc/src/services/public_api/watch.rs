@@ -20,13 +20,13 @@ use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
-use crate::core::AuthenticatedContext;
+use crate::services::auth::AuthServiceContext;
 use crate::stores::StoreContext;
 
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T>(
     request: RequestMessage<WatchRequest>,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
     sink: InnerExclusiveFlvSink<T>,
     end_event: Arc<Event>,
 ) where

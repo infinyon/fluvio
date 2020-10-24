@@ -2,18 +2,17 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use fluvio_auth::identity::AuthorizationIdentity;
 use fluvio_service::api_loop;
-use fluvio_service::{FlvService};
+use fluvio_service::FlvService;
 use fluvio_socket::FlvSocket;
 use fluvio_socket::FlvSocketError;
 use fluvio_future::net::TcpStream;
 
 use super::SpuPeerRequest;
 use super::SPUPeerApiEnum;
+
 use super::fetch_stream::handle_fetch_stream_request;
 use crate::core::DefaultSharedGlobalContext;
-use crate::services::auth::basic::{SpuAuthorizationContext, Policy};
 
 #[derive(Debug)]
 pub struct InternalService {}
@@ -25,16 +24,13 @@ impl InternalService {
 }
 
 #[async_trait]
-impl FlvService<TcpStream, AuthorizationIdentity, Policy> for InternalService {
+impl FlvService<TcpStream> for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
-    type IdentityContext = AuthorizationIdentity;
-    type Authorization = SpuAuthorizationContext;
 
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        _identity: Self::IdentityContext,
         socket: FlvSocket,
     ) -> Result<(), FlvSocketError> {
         let (sink, mut stream) = socket.split();

@@ -2,23 +2,22 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug};
 
-use fluvio_service::auth::Authorization;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{ ListResponse,Metadata };
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::spu::CustomSpuSpec;
-use fluvio_controlplane_metadata::store::*;
 
-use crate::core::AuthenticatedContext;
+
+use crate::services::auth::AuthServiceContext;
 use crate::services::auth::basic::{Action, Object};
 
 pub async fn handle_fetch_custom_spu_request(
     filters: Vec<String>,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<ListResponse, Error> {
     debug!("fetching custom spu list");
 
-    let auth_request = (Action::Read, Object::CustomSpu, None);
-    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+ 
+    if let Ok(authorized) = auth_ctx.auth.read::<CustomSpuSpec>().await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;
@@ -61,12 +60,12 @@ pub async fn handle_fetch_custom_spu_request(
 
 pub async fn handle_fetch_spus_request(
     filters: Vec<String>,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<ListResponse, Error> {
     debug!("fetching spu list");
 
-    let auth_request = (Action::Read, Object::Spu, None);
-    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+   
+    if let Ok(authorized) = auth_ctx.auth.read::<SpuSpec>().await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;

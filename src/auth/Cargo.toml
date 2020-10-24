@@ -26,6 +26,6 @@ fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema" }
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-future = { version = "0.1.0", features = ["net"] }
 fluvio-auth-schema = { version = "0.1.0", path = "../auth-schema" }
-
+fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata" }
 serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.59"
