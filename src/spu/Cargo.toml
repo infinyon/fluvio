@@ -27,7 +27,6 @@ futures-util = { version = "0.3.5", features = ["sink"] }
 async-trait = "0.1.21"
 serde_yaml = "0.8.8"
 serde = { version = "1.0.103", features = ['derive'] }
-serde_json = "1.0.59"
 chrono = { version = "0.4.6", features = ["serde"] }
 chashmap = "2.2.0"
 pin-utils = "0.1.0-alpha.4"
@@ -39,13 +38,11 @@ event-listener = "2.4.0"
 
 
 # Fluvio dependencies
-fluvio-auth = { version = "0.1.0", path = "../auth" }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-storage = { path = "../storage", version = "0.1.0" }
 fluvio-controlplane = { path = "../controlplane", version = "0.2.0" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", version = "0.2.0" }
 fluvio-spu-schema = { path = "../spu-schema", version = "0.1.0" }
-fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.3.0" }

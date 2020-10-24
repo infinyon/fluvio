@@ -2,21 +2,20 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug};
 
-use fluvio_sc_schema::objects::*;
-use fluvio_sc_schema::partition::*;
-use fluvio_service::auth::Authorization;
+use fluvio_sc_schema::objects::{ListResponse,Metadata };
+use fluvio_sc_schema::partition::{PartitionSpec};
 
-use crate::core::AuthenticatedContext;
-use crate::services::auth::basic::{Action, Object};
+
+use crate::services::auth::AuthServiceContext;
+
 
 pub async fn handle_fetch_request(
     _filters: Vec<String>,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<ListResponse, Error> {
     debug!("fetching custom spu list");
 
-    let auth_request = (Action::Read, Object::Partition, None);
-    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+    if let Ok(authorized) = auth_ctx.auth.read::<PartitionSpec>().await {
         if !authorized {
             trace!("authorization failed");
             return Ok(ListResponse::Partition(vec![]));

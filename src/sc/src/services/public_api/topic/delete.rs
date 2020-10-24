@@ -9,20 +9,17 @@ use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_service::auth::Authorization;
 
-use crate::core::*;
-use crate::services::auth::basic::{Action, Object};
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete topic request
 pub async fn handle_delete_topic(
     topic_name: String,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<Status, Error> {
     debug!("api request: delete topic '{}'", topic_name);
 
-    let auth_request = (Action::Delete, Object::Topic, None);
-    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+    if let Ok(authorized) = auth_ctx.auth.delete(&topic_name).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

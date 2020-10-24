@@ -9,14 +9,14 @@ use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{DeleteRequest};
 
-use crate::core::*;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete topic request
 pub async fn handle_delete_request(
     request: RequestMessage<DeleteRequest>,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, req) = request.get_header_request();
 

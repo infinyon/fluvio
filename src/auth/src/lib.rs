@@ -1,4 +1,6 @@
-pub mod identity;
+mod identity;
 
 // #[cfg(test)]
 // mod tests;
+
+pub use identity::*;

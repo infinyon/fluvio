@@ -2,14 +2,14 @@ use std::io::Error as IoError;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{CreateRequest,AllCreatableSpec};
 
-use crate::core::*;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
 pub async fn handle_create_request(
     request: RequestMessage<CreateRequest>,
-    auth_context: &AuthenticatedContext,
+    auth_context: &AuthServiceContext,
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();
 

@@ -3,23 +3,20 @@ use tracing::trace;
 
 use std::io::{Error, ErrorKind};
 
-use fluvio_service::auth::Authorization;
 use fluvio_sc_schema::Status;
 
-use crate::core::*;
-use crate::services::auth::basic::{Action, Object};
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete spu group request
 pub async fn handle_delete_spu_group(
     name: String,
-    auth_ctx: &AuthenticatedContext,
+    auth_ctx: &AuthServiceContext,
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
     debug!("delete spg group: {}", name);
 
-    let auth_request = (Action::Delete, Object::SpuGroup, None);
-    if let Ok(authorized) = auth_ctx.auth.enforce(auth_request).await {
+    if let Ok(authorized) = auth_ctx.auth.delete(&name).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

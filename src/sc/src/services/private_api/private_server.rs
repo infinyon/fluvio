@@ -10,13 +10,12 @@ use async_trait::async_trait;
 use async_channel::Sender;
 use futures_util::stream::Stream;
 
-use fluvio_auth::identity::AuthorizationIdentity;
 use fluvio_types::SpuId;
 use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_service::{FlvService};
+use fluvio_service::FlvService;
 use fluvio_service::wait_for_request;
 use fluvio_socket::*;
 use fluvio_controlplane::*;
@@ -25,7 +24,6 @@ use crate::core::*;
 use crate::stores::partition::*;
 use crate::controllers::spus::SpuAction;
 use crate::stores::actions::WSAction;
-use crate::services::auth::basic::{Policy, ScAuthorizationContext};
 
 const HEALTH_DURATION: u64 = 30;
 
@@ -39,16 +37,13 @@ impl ScInternalService {
 }
 
 #[async_trait]
-impl FlvService<TcpStream, AuthorizationIdentity, Policy> for ScInternalService {
+impl FlvService<TcpStream> for ScInternalService {
     type Context = SharedContext;
     type Request = InternalScRequest;
-    type IdentityContext = AuthorizationIdentity;
-    type Authorization = ScAuthorizationContext;
 
     async fn respond(
         self: Arc<Self>,
-        context: Self::Context,
-        _identity: Self::IdentityContext,
+        context: SharedContext,
         socket: FlvSocket,
     ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
@@ -56,7 +51,6 @@ impl FlvService<TcpStream, AuthorizationIdentity, Policy> for ScInternalService 
 
         // every SPU need to be validated and registered
         let spu_id = wait_for_request!(api_stream,
-
             InternalScRequest::RegisterSpuRequest(req_msg) => {
                 let spu_id = req_msg.request.spu();
                 let mut status = true;

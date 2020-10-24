@@ -1036,6 +1036,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "fluvio-auth-schema",
+ "fluvio-controlplane-metadata",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
@@ -1324,7 +1325,7 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/fluvio-socket?rev=3975110#3975110751fc9475b93c5e698f35cacfd607da81"
+source = "git+https://github.com/infinyon/fluvio-socket?rev=b717c1e#b717c1ed35b5afc197bac05cb4af9997df239723"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1334,9 +1335,6 @@ dependencies = [
  "futures-util",
  "log",
  "pin-utils",
- "serde",
- "serde_json",
- "thiserror",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -1369,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.0"
-source = "git+https://github.com/infinyon/fluvio-socket?rev=3975110#3975110751fc9475b93c5e698f35cacfd607da81"
+source = "git+https://github.com/infinyon/fluvio-socket?rev=b717c1e#b717c1ed35b5afc197bac05cb4af9997df239723"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1400,7 +1398,6 @@ dependencies = [
  "chashmap",
  "chrono",
  "event-listener",
- "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1410,7 +1407,6 @@ dependencies = [
  "fluvio-socket 0.3.0",
  "fluvio-spu-schema",
  "fluvio-storage",
- "fluvio-stream-model",
  "fluvio-system-util",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1420,7 +1416,6 @@ dependencies = [
  "pin-utils",
  "regex",
  "serde",
- "serde_json",
  "serde_yaml",
  "structopt",
  "tokio",

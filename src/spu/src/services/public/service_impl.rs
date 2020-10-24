@@ -17,7 +17,6 @@ use fluvio_socket::InnerFlvSink;
 use fluvio_socket::FlvSocketError;
 use fluvio_service::call_service;
 use fluvio_service::FlvService;
-use fluvio_auth::identity::AuthorizationIdentity;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
@@ -29,8 +28,6 @@ use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
 use super::stream_fetch::StreamFetchHandler;
 use super::OffsetReplicaList;
-use crate::services::auth::basic::Policy;
-use crate::services::auth::basic::SpuAuthorizationContext;
 
 #[derive(Debug)]
 pub struct PublicService {}
@@ -42,19 +39,16 @@ impl PublicService {
 }
 
 #[async_trait]
-impl<S> FlvService<S, AuthorizationIdentity, Policy> for PublicService
+impl<S> FlvService<S> for PublicService
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuServerRequest;
-    type IdentityContext = AuthorizationIdentity;
-    type Authorization = SpuAuthorizationContext;
 
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        _identity: Self::IdentityContext,
         socket: InnerFlvSocket<S>,
     ) -> Result<(), FlvSocketError>
     where
