@@ -29,25 +29,26 @@ use fluvio_future::zero_copy::ZeroCopyWrite;
 use crate::services::auth::{ AuthGlobalContext, AuthServiceContext };
 
 #[derive(Debug)]
-pub struct PublicService<A> {
-    data: PhantomData<A>
+pub struct PublicService<A>
+ {
+    data: PhantomData<A>,
 }
 
-impl <A> PublicService<A> {
+impl <A>PublicService<A> {
+
     pub fn new() -> Self {
         PublicService {
-            data: PhantomData
+            data: PhantomData,
         }
     }
 }
 
 #[async_trait]
-impl<S,A> FlvService<S> for PublicService<A>
+impl<A,S> FlvService<S> for PublicService<A>
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
     A: Authorization < Stream = S> + Sync + Send,
     <A as Authorization>::Context: Send + Sync ,
-    AuthServiceContext<<A as Authorization>::Context>: AuthContext + Send + Sync,
   
 {
     type Context = AuthGlobalContext<A>;

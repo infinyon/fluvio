@@ -24,7 +24,7 @@ pub fn main_k8_loop(opt: ScOpt) {
 
     use crate::init::start_main_loop;
     // parse configuration (program exits on error)
-    let (sc_config, k8_config, tls_option) = opt.parse_cli_or_exit();
+    let ((sc_config,auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
 
@@ -32,7 +32,7 @@ pub fn main_k8_loop(opt: ScOpt) {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
-        let ctx = start_main_loop(sc_config.clone(), k8_client.clone()).await;
+        let ctx = start_main_loop((sc_config.clone(),auth_policy), k8_client.clone()).await;
 
         run_k8_operators(
             namespace.clone(),
