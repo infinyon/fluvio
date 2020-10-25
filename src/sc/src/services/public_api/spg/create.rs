@@ -11,21 +11,21 @@ use tracing::{debug, trace};
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+use fluvio_auth::{ AuthContext, TypeAction };
 
 use crate::core::Context;
-
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for spu groups request
-pub async fn handle_create_spu_group_request(
+pub async fn handle_create_spu_group_request<AC: AuthContext>(
     name: String,
     spec: SpuGroupSpec,
     _dry_run: bool,
-    auth_ctx: &AuthServiceContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     debug!("creating spu group: {}", name);
    
-    if let Ok(authorized) = auth_ctx.auth.create::<SpuGroupSpec>().await {
+    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<SpuGroupSpec>(TypeAction::Create).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

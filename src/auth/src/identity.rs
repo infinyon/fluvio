@@ -1,4 +1,6 @@
+use std::fmt::Debug;
 
+use futures_util::io::{AsyncRead, AsyncWrite};
 use async_trait::async_trait;
 //use futures_util::stream::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -11,18 +13,40 @@ use fluvio_socket::InnerFlvSocket;
 // use fluvio_auth_schema::{AuthorizationApiRequest, AuthResponse};
 use fluvio_controlplane_metadata::core::Spec;
 
+
+
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
+pub enum TypeAction {
+    Create,
+    Read,
+}
+
+pub enum InstanceAction {
+    Delete
+}
+
+/*
+/// Enumerate objec type, can't use spec becuase we can't do generic in the trait object
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
+pub enum ObjectType {
+    Spu,
+    CustomSpu,
+    SpuGroup,
+    Topic,
+    Partition,
+}
+*/
+
+
+
 #[async_trait]
 pub trait AuthContext {
 
-    /// check if allows to create any instance of spec
-    async fn create<S: Spec>(&self) -> Result<bool,std::io::Error> ;
+    /// check if any allow type specific action
+    async fn type_action_allowed<S: Spec>(&self,action: TypeAction) -> Result<bool,std::io::Error>;
 
     /// check if specific instance of spec can be deleted
-    async fn delete<S: Spec>(&self,key: &S::IndexKey) -> Result<bool,std::io::Error>;
-
-    /// check if any instance of spec can be reead;
-    /// this is not per instance
-    async fn read<S: Spec>(&self) -> Result<bool,std::io::Error>;
+    async fn instance_action_allowed<S: Spec + Send>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error>;
     
 }
 
@@ -32,9 +56,12 @@ pub trait AuthContext {
 pub trait Authorization
 {
 
+    type Stream: AsyncRead + AsyncWrite + Unpin + Send;
+    type Context: AuthContext;
+
     /// create auth context
-    fn create_auth_context<C:AuthContext,S>(&self, socket: &mut InnerFlvSocket<S>
-    ) -> Result<C, std::io::Error>;
+    async fn create_auth_context(&self, socket: &mut InnerFlvSocket<Self::Stream>
+    ) -> Result<Self::Context, std::io::Error>;
         
 }
 

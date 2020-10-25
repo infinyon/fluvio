@@ -10,17 +10,19 @@ use std::io::{Error, ErrorKind};
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::{ CustomSpuKey };
+use fluvio_auth::{ AuthContext, InstanceAction };
+use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 
 use crate::stores::spu::{SpuAdminMd};
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete custom spu request
-pub async fn handle_un_register_custom_spu_request(
+pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
     key: CustomSpuKey,
-    auth_ctx: &AuthServiceContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
    
-    if let Ok(authorized) = auth_ctx.auth.delete(&key).await {
+    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<CustomSpuSpec>(InstanceAction::Delete,&key).await {
         if !authorized {
             trace!("authorization failed");
             let name: String = String::from(&key);
@@ -74,7 +76,7 @@ pub async fn handle_un_register_custom_spu_request(
 }
 
 /// Generate for delete custom spu operation and return result.
-async fn un_register_custom_spu(auth_ctx: &AuthServiceContext, spu: SpuAdminMd) -> Status {
+async fn un_register_custom_spu<AC: AuthContext>(auth_ctx: &AuthServiceContext<AC>, spu: SpuAdminMd) -> Status {
     let spu_name = spu.key_owned();
 
     // must be Custom Spu

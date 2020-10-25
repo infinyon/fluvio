@@ -14,7 +14,6 @@ use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
 use crate::config::ScConfig;
-use crate::services::start_public_server;
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 
@@ -64,7 +63,31 @@ where
 
     start_internal_server(ctx.clone());
 
-    start_public_server(ctx.clone());
+    pub_server::start(ctx.clone());
+
+    mod pub_server {
+
+        use std::sync::Arc;
+        
+
+        use crate::services::start_public_server;  
+        use crate::core::SharedContext;      
+
+        use crate::services::auth::{ AuthGlobalContext,RootAuthorization };
+        use crate::services::auth::basic::{BasicAuthorization};
+
+
+        pub fn start(ctx: SharedContext ) {
+            if let Some(config) = ctx.config().basic_auth {
+                start_public_server(AuthGlobalContext::new(ctx,Arc::new(BasicAuthorization::load_from(config))));
+            } else {
+                start_public_server(AuthGlobalContext::new(ctx,Arc::new(RootAuthorization::new())));
+            }
+           
+        }
+       
+    }
+   
 
     ctx
 }

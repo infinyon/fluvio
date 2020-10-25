@@ -11,7 +11,7 @@ use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::convert::TryFrom;
+
 
 use tracing::info;
 use tracing::debug;
@@ -21,7 +21,6 @@ use fluvio_types::print_cli_err;
 use k8_client::K8Config;
 use fluvio_future::tls::TlsAcceptor;
 use fluvio_future::tls::AcceptorBuilder;
-use crate::services::auth::basic::Policy;
 
 use crate::error::ScError;
 use crate::config::ScConfig;
@@ -87,6 +86,7 @@ impl ScOpt {
         }
         config.namespace = self.namespace.unwrap();
 
+        /*
         // Set Configuration Authorzation Policy
         config.policy = match self.authorization {
             // Lookup a policy from a path
@@ -94,6 +94,7 @@ impl ScOpt {
             // Use root-only default policy if no policy path is found;
             None => Policy::default(),
         };
+        */
 
         let tls = self.tls;
 

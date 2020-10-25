@@ -3,9 +3,7 @@
 //!
 //! Metadata stores a copy of the data from KV store in local memory.
 //!
-use std::sync::{Arc};
-
-use fluvio_auth::Authorization;
+use std::sync::Arc;
 
 use crate::config::ScConfig;
 use crate::stores::spu::*;
@@ -86,22 +84,5 @@ impl Context {
 
     pub fn namespace(&self) -> &str {
         &self.config.namespace
-    }
-}
-
-/// SC global context with authorization
-/// auth is trait object which contains global auth auth policy
-pub struct AuthGlobalContext {
-    pub global_ctx: SharedContext,
-    pub auth: Arc<Box<dyn Authorization>>,
-}
-
-impl AuthGlobalContext {
-
-    pub fn new(global_ctx: SharedContext, auth:Arc<Box<dyn Authorization>>) -> Self {
-        Self {
-            global_ctx,
-            auth
-        }
     }
 }

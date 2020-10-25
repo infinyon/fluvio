@@ -1,22 +1,25 @@
+use std::io::{Error, ErrorKind};
+
 use tracing::debug;
 use tracing::trace;
 
-use std::io::{Error, ErrorKind};
 
 use fluvio_sc_schema::Status;
+use fluvio_auth::{ AuthContext, InstanceAction };
+use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete spu group request
-pub async fn handle_delete_spu_group(
+pub async fn handle_delete_spu_group<AC: AuthContext>(
     name: String,
-    auth_ctx: &AuthServiceContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
     debug!("delete spg group: {}", name);
 
-    if let Ok(authorized) = auth_ctx.auth.delete(&name).await {
+    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<SpuGroupSpec>(InstanceAction::Delete, &name).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

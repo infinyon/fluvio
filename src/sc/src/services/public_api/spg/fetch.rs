@@ -6,16 +6,17 @@ use tracing::trace;
 
 use fluvio_sc_schema::objects::{ ListResponse, NameFilter, Metadata };
 use fluvio_sc_schema::spg::SpuGroupSpec;
+use fluvio_auth::{ AuthContext, TypeAction };
 
 use crate::services::auth::AuthServiceContext;
 
-pub async fn handle_fetch_spu_groups_request(
+pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
     filters: Vec<NameFilter>,
-    auth_ctx: &AuthServiceContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
     debug!("fetching spu groups");
 
-    if let Ok(authorized) = auth_ctx.auth.read::<SpuGroupSpec>().await {
+    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<SpuGroupSpec>(TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;

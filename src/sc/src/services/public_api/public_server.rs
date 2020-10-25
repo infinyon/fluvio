@@ -7,13 +7,15 @@
 //!
 
 use std::sync::Arc;
+use std::marker::PhantomData;
+use std::fmt::Debug;
 
 use async_trait::async_trait;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use event_listener::Event;
 
-//use fluvio_auth::identity::AuthorizationIdentity;
+use fluvio_auth::{ Authorization, AuthContext };
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
@@ -24,38 +26,45 @@ use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 
-use crate::core::AuthGlobalContext;
+use crate::services::auth::{ AuthGlobalContext, AuthServiceContext };
 
 #[derive(Debug)]
-pub struct PublicService {
-
+pub struct PublicService<A> {
+    data: PhantomData<A>
 }
 
-impl PublicService {
+impl <A> PublicService<A> {
     pub fn new() -> Self {
-        PublicService {}
+        PublicService {
+            data: PhantomData
+        }
     }
 }
 
 #[async_trait]
-impl<S,ScAuth> FlvService<ScAuth> for PublicService
+impl<S,A> FlvService<S> for PublicService<A>
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
+    A: Authorization < Stream = S>,
+    AuthServiceContext<<A as Authorization>::Context>: AuthContext + Send
 {
-    type Context = AuthGlobalContext;
-
+    type Context = AuthGlobalContext<A>;
+    type Request = AdminPublicRequest;
 
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
-        socket: InnerFlvSocket<S>,
+        mut socket: InnerFlvSocket<S>,
     ) -> Result<(), FlvSocketError> {
+
+        let auth_context = ctx.auth.create_auth_context(&mut socket).await?;
+        let service_context = AuthServiceContext::new(ctx.global_ctx.clone(),auth_context);
+
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
 
-        let auth_context = ctx.auth.create_auth_context(&mut socket).await;
-
+       
         let end_event = Arc::new(Event::new());
 
         api_loop!(
@@ -71,20 +80,20 @@ where
 
             AdminPublicRequest::CreateRequest(request) => call_service!(
                 request,
-                super::create::handle_create_request(request, &auth_context),
+                super::create::handle_create_request(request, &service_context),
                 shared_sink,
                 "create  handler"
             ),
             AdminPublicRequest::DeleteRequest(request) => call_service!(
                 request,
-                super::delete::handle_delete_request(request, &auth_context),
+                super::delete::handle_delete_request(request, &service_context),
                 shared_sink,
                 "delete  handler"
             ),
 
             AdminPublicRequest::ListRequest(request) => call_service!(
                 request,
-                super::list::handle_list_request(request, &auth_context),
+                super::list::handle_list_request(request, &service_context),
                 shared_sink,
                 "list handler"
             ),
@@ -92,7 +101,7 @@ where
 
                 super::watch::handle_watch_request(
                     request,
-                    &auth_context,
+                    &service_context,
                     shared_sink.clone(),
                     end_event.clone(),
                 )
