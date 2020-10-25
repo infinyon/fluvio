@@ -35,7 +35,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
 ) -> Result<Status, IoError> {
     debug!("api request: create topic '{}'", name);
     
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<TopicSpec>(TypeAction::Create).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<TopicSpec>(TypeAction::Create).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

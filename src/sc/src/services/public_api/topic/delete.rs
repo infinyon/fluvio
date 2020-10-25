@@ -21,7 +21,7 @@ pub async fn handle_delete_topic<AC: AuthContext>(
 ) -> Result<Status, Error> {
     debug!("api request: delete topic '{}'", topic_name);
 
-    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<TopicSpec>(InstanceAction::Delete,&topic_name).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_instance_action::<TopicSpec>(InstanceAction::Delete,&topic_name).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

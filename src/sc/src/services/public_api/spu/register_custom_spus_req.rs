@@ -31,7 +31,7 @@ impl RegisterCustomSpu {
         auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
         debug!("api request: create custom-spu '{}({})'", name, spec.id);
-        if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<CustomSpuSpec>(TypeAction::Read).await {
+        if let Ok(authorized) = auth_ctx.auth.allow_type_action::<CustomSpuSpec>(TypeAction::Read).await {
             if !authorized {
                 trace!("authorization failed");
                 return Status::new(

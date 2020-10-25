@@ -1,6 +1,7 @@
-mod identity;
+mod policy;
+mod error;
+pub mod x509_identity;
 
-// #[cfg(test)]
-// mod tests;
+pub use policy::*;
+pub use error::AuthError;
 
-pub use identity::*;

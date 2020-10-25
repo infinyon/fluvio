@@ -18,7 +18,7 @@ mod server {
     use tracing::info;
 
     use fluvio_future::net::TcpStream;
-    use fluvio_service::{ FlvApiServer, FlvService};
+    use fluvio_service::FlvApiServer;
     use fluvio_auth::Authorization;
 
     use crate::services::auth::AuthGlobalContext;

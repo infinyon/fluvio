@@ -16,7 +16,7 @@ pub async fn handle_fetch_topics_request<AC: AuthContext>(
     debug!("retrieving topic list: {:#?}", filters);
 
     
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<TopicSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<TopicSpec>(TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(ListResponse::Topic(vec![]));

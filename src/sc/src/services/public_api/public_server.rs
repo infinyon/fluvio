@@ -9,6 +9,7 @@
 use std::sync::Arc;
 use std::marker::PhantomData;
 use std::fmt::Debug;
+use std::io::Error as IoError;
 
 use async_trait::async_trait;
 use futures_util::io::AsyncRead;
@@ -60,7 +61,11 @@ where
         mut socket: InnerFlvSocket<S>,
     ) -> Result<(), FlvSocketError> {
 
-        let auth_context = ctx.auth.create_auth_context(&mut socket).await?;
+        let auth_context = ctx.auth.create_auth_context(&mut socket).await
+            .map_err(|err| {
+                let io_error: IoError = err.into();
+                io_error
+            })?;
         let service_context = Arc::new(AuthServiceContext::new(ctx.global_ctx.clone(),auth_context));
 
         let (sink, mut stream) = socket.split();
