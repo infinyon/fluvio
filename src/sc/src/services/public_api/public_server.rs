@@ -48,7 +48,7 @@ where
     A: Authorization < Stream = S> + Sync + Send,
     <A as Authorization>::Context: Send + Sync ,
     AuthServiceContext<<A as Authorization>::Context>: AuthContext + Send + Sync,
-    AuthGlobalContext<A>: Send + Sync  + Debug 
+  
 {
     type Context = AuthGlobalContext<A>;
     type Request = AdminPublicRequest;
@@ -60,7 +60,7 @@ where
     ) -> Result<(), FlvSocketError> {
 
         let auth_context = ctx.auth.create_auth_context(&mut socket).await?;
-        let service_context = AuthServiceContext::new(ctx.global_ctx.clone(),auth_context);
+        let service_context = Arc::new(AuthServiceContext::new(ctx.global_ctx.clone(),auth_context));
 
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();

@@ -93,6 +93,7 @@ mod common {
 
     /// Auth Service Context, this hold individual context that is enough enforce auth
     /// for this service context
+    #[derive(Debug, Clone )]
     pub struct AuthServiceContext<AC> {
         pub global_ctx: SharedContext,
         pub auth: AC
