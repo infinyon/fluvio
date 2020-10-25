@@ -25,7 +25,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     debug!("creating spu group: {}", name);
    
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<SpuGroupSpec>(TypeAction::Create).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<SpuGroupSpec>(TypeAction::Create).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

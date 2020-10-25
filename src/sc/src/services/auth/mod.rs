@@ -1,10 +1,6 @@
 pub mod basic;
 
 
-//#[cfg(test)]
-// mod test;
-
-
 pub use common::*;
 
 mod common {
@@ -15,7 +11,7 @@ mod common {
     use async_trait::async_trait;
 
     use fluvio_future::net::TcpStream; 
-    use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction };
+    use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction, AuthError };
     use fluvio_socket::InnerFlvSocket;
     use fluvio_controlplane_metadata::core::Spec;
 
@@ -53,7 +49,7 @@ mod common {
         type Stream = TcpStream;
         type Context = RootAuthContext;
 
-        async fn create_auth_context(&self, socket: &mut InnerFlvSocket<Self::Stream>) -> Result<Self::Context, std::io::Error> {
+        async fn create_auth_context(&self, socket: &mut InnerFlvSocket<Self::Stream>) -> Result<Self::Context, AuthError> {
             Ok(RootAuthContext{})
         }
     }
@@ -74,12 +70,12 @@ mod common {
     #[async_trait]
     impl AuthContext for RootAuthContext {
 
-        async fn type_action_allowed<S: Spec>(&self,action: TypeAction) -> Result<bool,std::io::Error> {
+        async fn allow_type_action<S: Spec>(&self,action: TypeAction) -> Result<bool, AuthError> {
             Ok(true)
         }
     
         /// check if specific instance of spec can be deleted
-        async fn instance_action_allowed<S>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error>
+        async fn allow_instance_action<S>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,AuthError>
         where S: Spec + Send,
              S::IndexKey: Sync
         {

@@ -17,7 +17,7 @@ pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
 ) -> Result<ListResponse, Error> {
     debug!("fetching spu groups");
 
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<SpuGroupSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<SpuGroupSpec>(TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;

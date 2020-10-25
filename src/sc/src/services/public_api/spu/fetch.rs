@@ -17,7 +17,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     debug!("fetching custom spu list");
 
  
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<CustomSpuSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<CustomSpuSpec>(TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;
@@ -65,7 +65,7 @@ pub async fn handle_fetch_spus_request<AC: AuthContext>(
     debug!("fetching spu list");
 
    
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<SpuSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<SpuSpec>(TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;

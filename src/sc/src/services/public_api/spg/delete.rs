@@ -19,7 +19,7 @@ pub async fn handle_delete_spu_group<AC: AuthContext>(
 
     debug!("delete spg group: {}", name);
 
-    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<SpuGroupSpec>(InstanceAction::Delete, &name).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_instance_action::<SpuGroupSpec>(InstanceAction::Delete, &name).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

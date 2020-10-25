@@ -15,7 +15,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
 ) -> Result<ListResponse, Error> {
     debug!("fetching custom spu list");
 
-    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<PartitionSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<PartitionSpec>(TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(ListResponse::Partition(vec![]));

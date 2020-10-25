@@ -24,7 +24,7 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
    
     let spu_name = key.to_string();
-    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<CustomSpuSpec>(InstanceAction::Delete,&spu_name).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_instance_action::<CustomSpuSpec>(InstanceAction::Delete,&spu_name).await {
         if !authorized {
             trace!("authorization failed");
             let name: String = String::from(&key);
