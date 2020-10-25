@@ -19,7 +19,7 @@ pub struct BasicAuthorization {}
 
 impl BasicAuthorization {
 
-    pub fn load_from(config: String) -> Self {
+    pub fn load_from(config: &str) -> Self {
         Self{}
     }
 }

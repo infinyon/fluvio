@@ -49,14 +49,14 @@ pub struct ScOpt {
         long = "authorization",
         value_name = "authorization policy path"
     )]
-    authorization: Option<PathBuf>,
+    auth_policy: Option<PathBuf>,
 }
 
 impl ScOpt {
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
-    ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScError> {
+    ) -> Result<((ScConfig,Option<String>), K8Config, Option<(String, TlsConfig)>), ScError> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -73,7 +73,7 @@ impl ScOpt {
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(self) -> Result<(ScConfig, Option<(String, TlsConfig)>), IoError> {
+    fn as_sc_config(self) -> Result<((ScConfig,Option<String>), Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
@@ -87,6 +87,7 @@ impl ScOpt {
         config.namespace = self.namespace.unwrap();
 
         /*
+        let policy = 
         // Set Configuration Authorzation Policy
         config.policy = match self.authorization {
             // Lookup a policy from a path
@@ -95,6 +96,7 @@ impl ScOpt {
             None => Policy::default(),
         };
         */
+        
 
         let tls = self.tls;
 
@@ -110,13 +112,13 @@ impl ScOpt {
                 )
             })?;
 
-            Ok((config, Some((proxy_addr, tls))))
+            Ok(((config,None), Some((proxy_addr, tls))))
         } else {
-            Ok((config, None))
+            Ok(((config,None), None))
         }
     }
 
-    pub fn parse_cli_or_exit(self) -> (ScConfig, K8Config, Option<(String, TlsConfig)>) {
+    pub fn parse_cli_or_exit(self) -> ((ScConfig,Option<String>), K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);

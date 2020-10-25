@@ -19,7 +19,7 @@ use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 
 /// start the main loop
 pub async fn start_main_loop<C>(
-    sc_config: ScConfig,
+    sc_config_policy: (ScConfig,Option<String>),
     metadata_client: SharedClient<C>,
 ) -> SharedContext
 where
@@ -29,6 +29,8 @@ where
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
+
+    let (sc_config, auth_policy) = sc_config_policy;
 
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
@@ -63,7 +65,7 @@ where
 
     start_internal_server(ctx.clone());
 
-    pub_server::start(ctx.clone());
+    pub_server::start(ctx.clone(),auth_policy);
 
     mod pub_server {
 
@@ -77,9 +79,9 @@ where
         use crate::services::auth::basic::{BasicAuthorization};
 
 
-        pub fn start(ctx: SharedContext ) {
-            if let Some(config) = ctx.config().basic_auth {
-                start_public_server(AuthGlobalContext::new(ctx,Arc::new(BasicAuthorization::load_from(config))));
+        pub fn start(ctx: SharedContext,auth_policy: Option<String> ) {
+            if let Some(config) = auth_policy {
+                start_public_server(AuthGlobalContext::new(ctx,Arc::new(BasicAuthorization::load_from(&config))));
             } else {
                 start_public_server(AuthGlobalContext::new(ctx,Arc::new(RootAuthorization::new())));
             }
