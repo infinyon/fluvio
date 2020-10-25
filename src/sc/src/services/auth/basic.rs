@@ -190,6 +190,9 @@ mod test {
     use std::convert::TryFrom;
     use std::collections::HashMap;
 
+    use fluvio_auth::x509_identity::X509Identity;
+    use fluvio_future::test_async;
+    
     use super::{ Action, Object, Policy};
 
     #[test]
@@ -219,10 +222,21 @@ mod test {
         )
     }
 
-    #[test]
-    fn test_policy_enforcement() {
-        // let identity =
-        // let auth = AuthorizationTest::create_authorization_context(identity: Self::IdentityContext, config: Policy)
+    #[test_async]
+    async fn test_policy_enforcement_simple() -> Result<(),()> {
+
+        let mut policy = Policy::default();
+        let identity = X509Identity::new("User".to_owned(),vec!["Default".to_owned()]);
+       
+        let mut role1 = HashMap::new();
+        role1.insert(Object::Topic, vec![Action::Delete,Action::Read]);
+
+        policy.0.insert(String::from("Default"), role1);
+
+
+        assert!(policy.evaluate((Action::Create,Object::CustomSpu,None),&identity).await.expect("eval"));
+
+        Ok(())
     }
 
 }

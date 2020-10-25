@@ -9,11 +9,19 @@ use fluvio_socket::FlvSocket;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct X509Identity {
-    pub principal: String,
+    pub principle: String,
     pub scopes: AuthorizationScopes,
 }
 
 impl X509Identity {
+
+    pub fn new(principle: String,scopes: AuthorizationScopes) -> Self {
+        Self {
+            principle,
+            scopes
+        }
+    }
+
     pub fn scopes(&self) -> &AuthorizationScopes {
         &self.scopes
     }
@@ -33,7 +41,7 @@ impl X509Identity {
                     Ok(req_msg) => match req_msg {
                         AuthorizationApiRequest::AuthRequest(req_msg) => Self {
                             scopes: req_msg.request.scopes,
-                            principal: req_msg.request.principal,
+                            principle: req_msg.request.principal,
                         },
                     },
                     Err(_e) => {
