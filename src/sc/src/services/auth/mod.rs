@@ -1,7 +1,9 @@
 pub mod basic;
 
-#[cfg(test)]
-mod test;
+
+//#[cfg(test)]
+// mod test;
+
 
 pub use common::*;
 
@@ -40,9 +42,9 @@ mod common {
         }
     }
 
-        /// Authorization that allows anything
+    /// Authorization that allows anything
     /// Used for personal development
-    #[derive(Debug)] 
+    #[derive(Debug,Clone)] 
     pub struct RootAuthorization {
     }
 
@@ -77,7 +79,10 @@ mod common {
         }
     
         /// check if specific instance of spec can be deleted
-        async fn instance_action_allowed<S: Spec + Send >(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error> {
+        async fn instance_action_allowed<S>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error>
+        where S: Spec + Send,
+             S::IndexKey: Sync
+        {
             Ok(true)
         }
     

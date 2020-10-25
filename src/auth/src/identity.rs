@@ -46,7 +46,9 @@ pub trait AuthContext {
     async fn type_action_allowed<S: Spec>(&self,action: TypeAction) -> Result<bool,std::io::Error>;
 
     /// check if specific instance of spec can be deleted
-    async fn instance_action_allowed<S: Spec + Send>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error>;
+    async fn instance_action_allowed<S>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error>
+        where S: Spec + Send,
+             S::IndexKey: Sync;
     
 }
 

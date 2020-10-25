@@ -6,6 +6,7 @@ use fluvio_sc_schema::objects::{ ListResponse,Metadata };
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::spu::CustomSpuSpec;
 use fluvio_auth::{ AuthContext, TypeAction };
+use fluvio_controlplane_metadata::store::KeyFilter;
 
 use crate::services::auth::AuthServiceContext;
 

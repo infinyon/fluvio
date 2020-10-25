@@ -7,6 +7,7 @@ use tracing::trace;
 use fluvio_sc_schema::objects::{ ListResponse, NameFilter, Metadata };
 use fluvio_sc_schema::spg::SpuGroupSpec;
 use fluvio_auth::{ AuthContext, TypeAction };
+use fluvio_controlplane_metadata::store::KeyFilter;
 
 use crate::services::auth::AuthServiceContext;
 

@@ -12,6 +12,7 @@ use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::{ CustomSpuKey };
 use fluvio_auth::{ AuthContext, InstanceAction };
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 
 use crate::stores::spu::{SpuAdminMd};
 use crate::services::auth::AuthServiceContext;
@@ -22,7 +23,8 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
    
-    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<CustomSpuSpec>(InstanceAction::Delete,&key).await {
+    let spu_name = key.to_string();
+    if let Ok(authorized) = auth_ctx.auth.instance_action_allowed::<CustomSpuSpec>(InstanceAction::Delete,&spu_name).await {
         if !authorized {
             trace!("authorization failed");
             let name: String = String::from(&key);
