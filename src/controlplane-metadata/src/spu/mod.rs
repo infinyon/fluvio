@@ -55,6 +55,7 @@ mod custom_metadata {
 
     use std::io::Error;
     use std::io::ErrorKind;
+    use std::fmt;
 
     use tracing::trace;
 
@@ -86,6 +87,15 @@ mod custom_metadata {
     pub enum CustomSpuKey {
         Name(String),
         Id(i32),
+    }
+
+    impl fmt::Display for CustomSpuKey {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                Self::Name(name) => write!(f, "{}", name),
+                Self::Id(id) => write!(f, "{}",id),
+            }
+        }
     }
 
     impl From<&CustomSpuKey> for String {

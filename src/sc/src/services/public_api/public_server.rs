@@ -45,8 +45,10 @@ impl <A> PublicService<A> {
 impl<S,A> FlvService<S> for PublicService<A>
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
-    A: Authorization < Stream = S>,
-    AuthServiceContext<<A as Authorization>::Context>: AuthContext + Send
+    A: Authorization < Stream = S> + Sync + Send,
+    <A as Authorization>::Context: Send + Sync ,
+    AuthServiceContext<<A as Authorization>::Context>: AuthContext + Send + Sync,
+    AuthGlobalContext<A>: Send + Sync  + Debug 
 {
     type Context = AuthGlobalContext<A>;
     type Request = AdminPublicRequest;
