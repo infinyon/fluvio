@@ -35,6 +35,7 @@ impl Authorization for BasicAuthorization {
     }
 }
 
+#[derive(Debug)]
 pub struct BasicAuthContext {
 
 }
