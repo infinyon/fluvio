@@ -7,29 +7,55 @@ use std::convert::TryFrom;
 
 use serde::{Serialize, Deserialize};
 
-use fluvio_auth::identity::AuthorizationIdentity;
-use fluvio_service::auth::{Authorization, AuthorizationError};
+use fluvio_future::net::TcpStream; 
+use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction};
+use fluvio_controlplane_metadata::core::Spec;
+//use fluvio_service::{Authorization, AuthorizationError};
 
 pub type Role = String;
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
-pub enum Action {
-    Create,
-    Read,
-    Update,
-    Delete,
-    All,
+
+pub struct BasicAuthorization {}
+
+impl BasicAuthorization {
+
+    pub fn load_from(config: String) -> Self {
+        Self{}
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
-pub enum Object {
-    Spu,
-    CustomSpu,
-    SpuGroup,
-    Topic,
-    Partition,
+#[async_trait]
+impl Authorization for BasicAuthorization {
+    type Stream = TcpStream;
+    type Context = BasicAuthContext;
+
+    async fn create_auth_context(&self, socket: &mut fluvio_socket::InnerFlvSocket<Self::Stream>
+    ) -> Result<Self::Context, std::io::Error> {
+        Ok(BasicAuthContext{})
+    }
 }
 
+pub struct BasicAuthContext {
+
+}
+
+#[async_trait]
+impl AuthContext for BasicAuthContext {
+
+    
+    async fn type_action_allowed<S: Spec>(&self,action: TypeAction) -> Result<bool,std::io::Error> {
+        Ok(true)
+    }
+
+    /// check if specific instance of spec can be deleted
+    async fn instance_action_allowed<S: Spec + Send >(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,std::io::Error> {
+        Ok(true)
+    }
+
+
+}
+
+/*
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Policy(pub HashMap<Role, HashMap<Object, Vec<Action>>>);
 
@@ -118,3 +144,4 @@ impl Authorization<Policy, AuthorizationIdentity> for ScAuthorizationContext {
         Ok(self.policy.evaluate(request, &self.identity).await?)
     }
 }
+*/

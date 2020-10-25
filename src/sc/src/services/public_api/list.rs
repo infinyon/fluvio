@@ -3,13 +3,14 @@ use tracing::debug;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::objects::{ListRequest,ListResponse};
+use fluvio_auth::{ AuthContext};
 
 use crate::services::auth::AuthServiceContext;
 
 
-pub async fn handle_list_request(
+pub async fn handle_list_request<AC: AuthContext>(
     request: RequestMessage<ListRequest>,
-    auth_ctx: &AuthServiceContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<ListResponse>, Error> {
     debug!("handling list request");
     let (header, req) = request.get_header_request();

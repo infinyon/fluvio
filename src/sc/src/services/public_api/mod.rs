@@ -9,24 +9,24 @@ mod delete;
 mod list;
 mod watch;
 
+pub use server::start_public_server;
 
-mod context {
+mod server {
+
+    use std::fmt::Debug;
 
     use tracing::info;
     use tracing::instrument;
 
-    use fluvio_service::{FlvApiServer};
+    use fluvio_service::FlvApiServer;
+    use fluvio_auth::Authorization;
 
-    use crate::core::AuthGlobalContext;
+    use crate::services::auth::AuthGlobalContext;
     use super::public_server::PublicService;
 
     /// create public server
-    #[instrument(
-        name = "sc_public_server"
-        skip(ctx),
-        fields(address = &*ctx.config().public_endpoint)
-    )]
-    pub fn start_public_server(ctx: AuthGlobalContext) {
+    pub fn start_public_server<A: Authorization>(ctx: AuthGlobalContext<A>)
+    {
         let addr = ctx.config().public_endpoint.clone();
         info!("start public api service");
         let server = FlvApiServer::new(addr, ctx, PublicService::new());

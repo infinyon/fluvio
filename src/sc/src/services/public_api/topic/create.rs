@@ -17,6 +17,7 @@ use dataplane::ErrorCode;
 
 use fluvio_sc_schema::Status;
 use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_auth::{ AuthContext, TypeAction };
 
 use crate::core::Context;
 use crate::controllers::topics::generate_replica_map;
@@ -26,15 +27,15 @@ use crate::controllers::topics::validate_assigned_topic_parameters;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
-pub async fn handle_create_topics_request(
+pub async fn handle_create_topics_request<AC: AuthContext>(
     name: String,
     dry_run: bool,
     topic_spec: TopicSpec,
-    auth_ctx: &AuthServiceContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
     debug!("api request: create topic '{}'", name);
     
-    if let Ok(authorized) = auth_ctx.auth.create::<TopicSpec>().await {
+    if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<TopicSpec>(TypeAction::Create).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(
@@ -127,8 +128,8 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 }
 
 /// Process topic, converts topic spec to K8 and sends to KV store
-async fn process_topic_request(
-    auth_ctx: &AuthServiceContext,
+async fn process_topic_request<AC: AuthContext>(
+    auth_ctx: &AuthServiceContext<AC>,
     name: String,
     topic_spec: TopicSpec,
 ) -> Status {
@@ -140,8 +141,8 @@ async fn process_topic_request(
     }
 }
 
-async fn create_topic(
-    auth_ctx: &AuthServiceContext,
+async fn create_topic<AC: AuthContext>(
+    auth_ctx: &AuthServiceContext<AC>,
     name: String,
     topic: TopicSpec,
 ) -> Result<(), IoError> {

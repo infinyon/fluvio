@@ -11,6 +11,7 @@ use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_auth::{ AuthContext, TypeAction };
 
 use crate::core::{ SharedContext};
 use crate::services::auth::AuthServiceContext;
@@ -23,14 +24,14 @@ pub struct RegisterCustomSpu {
 
 impl RegisterCustomSpu {
     /// Handler for create spus request
-    pub async fn handle_register_custom_spu_request(
+    pub async fn handle_register_custom_spu_request<AC: AuthContext>(
         name: String,
         spec: CustomSpuSpec,
         dry_run: bool,
-        auth_ctx: &AuthServiceContext,
+        auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
         debug!("api request: create custom-spu '{}({})'", name, spec.id);
-        if let Ok(authorized) = auth_ctx.auth.create::<CustomSpuSpec>().await {
+        if let Ok(authorized) = auth_ctx.auth.type_action_allowed::<CustomSpuSpec>(TypeAction::Read).await {
             if !authorized {
                 trace!("authorization failed");
                 return Status::new(
