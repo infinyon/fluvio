@@ -18,8 +18,10 @@ pub use k8::*;
 mod metadata {
 
     use crate::partition::ReplicaKey;
-    use crate::core::*;
+    use crate::core::{Spec, Status};
     use crate::topic::TopicSpec;
+    use crate::extended::{ObjectType, SpecExt};
+
     use super::*;
 
     impl Spec for PartitionSpec {
@@ -27,6 +29,10 @@ mod metadata {
         type IndexKey = ReplicaKey;
         type Status = PartitionStatus;
         type Owner = TopicSpec;
+    }
+
+    impl SpecExt for PartitionSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::Partition;
     }
 
     impl Status for PartitionStatus {}

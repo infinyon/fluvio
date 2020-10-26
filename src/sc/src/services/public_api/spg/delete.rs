@@ -1,20 +1,50 @@
+use std::io::{Error, ErrorKind};
+
 use tracing::debug;
 use tracing::trace;
 
-use std::io::Error;
-
 use fluvio_sc_schema::Status;
+use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::core::*;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete spu group request
-pub async fn handle_delete_spu_group(name: String, ctx: SharedContext) -> Result<Status, Error> {
+pub async fn handle_delete_spu_group<AC: AuthContext>(
+    name: String,
+    auth_ctx: &AuthServiceContext<AC>,
+) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
     debug!("delete spg group: {}", name);
 
-    let status = if ctx.spgs().store().value(&name).await.is_some() {
-        if let Err(err) = ctx.spgs().delete(name.clone()).await {
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_instance_action(SpuGroupSpec::OBJECT_TYPE, InstanceAction::Delete, &name)
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            return Ok(Status::new(
+                name.clone(),
+                ErrorCode::PermissionDenied,
+                Some(String::from("permission denied")),
+            ));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+    }
+
+    let status = if auth_ctx
+        .global_ctx
+        .spgs()
+        .store()
+        .value(&name)
+        .await
+        .is_some()
+    {
+        if let Err(err) = auth_ctx.global_ctx.spgs().delete(name.clone()).await {
             Status::new(name.clone(), ErrorCode::SpuError, Some(err.to_string()))
         } else {
             Status::new_ok(name)

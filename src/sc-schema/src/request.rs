@@ -4,30 +4,27 @@
 //! Maps SC Api Requests with their associated Responses.
 //!
 
-use std::convert::TryInto;
+use std::convert::{TryInto};
 use std::io::Error as IoError;
 
 use tracing::debug;
 
 use dataplane::bytes::Buf;
-
-use dataplane::api::ApiMessage;
+use dataplane::api::{ApiMessage};
 use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 
 use dataplane::api::api_decode;
-use dataplane::derive::Encode;
+use dataplane::derive::{Encode};
 
 use super::versions::ApiVersionsRequest;
 use super::objects::*;
-
 use super::AdminPublicApiKey;
 
 #[derive(Debug, Encode)]
 pub enum AdminPublicRequest {
     // Mixed
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-
     CreateRequest(RequestMessage<CreateRequest>),
     DeleteRequest(RequestMessage<DeleteRequest>),
     ListRequest(RequestMessage<ListRequest>),

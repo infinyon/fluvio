@@ -10,9 +10,6 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.41"
-fluvio-future = { version = "0.1.0", features = ["net"] }
-fluvio-protocol = { version = "0.2.0" }
-fluvio-socket = { version = "0.2.0" }
 flv-tls-proxy = "0.2.2"
 futures-util = { version = "0.3.5" }
 log = "0.4.11"
@@ -20,4 +17,15 @@ serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.59"
 thiserror = "1.0.21"
 tracing = "0.1.21"
+tracing-futures = "0.2.4"
 x509-parser = "0.8.2"
+
+# Fluvio dependencies
+fluvio-auth-schema = { version = "0.1.0", path = "../auth-schema" }
+fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata" }
+fluvio-future = { version = "0.1.0", features = ["net"] }
+fluvio-protocol = { version = "0.2.0" }
+fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema" }
+fluvio-socket = { version = "0.3.0" }
+fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
+fluvio-types = { version = "0.1.0", path = "../types" }

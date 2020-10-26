@@ -14,13 +14,13 @@ use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
 use crate::config::ScConfig;
-use crate::services::start_public_server;
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
+use crate::services::auth::basic::BasicRbacPolicy;
 
 /// start the main loop
 pub async fn start_main_loop<C>(
-    sc_config: ScConfig,
+    sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
 ) -> SharedContext
 where
@@ -30,6 +30,8 @@ where
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
+
+    let (sc_config, auth_policy) = sc_config_policy;
 
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
@@ -64,7 +66,35 @@ where
 
     start_internal_server(ctx.clone());
 
-    start_public_server(ctx.clone());
+    pub_server::start(ctx.clone(), auth_policy);
+
+    mod pub_server {
+
+        use std::sync::Arc;
+        use tracing::info;
+
+        use crate::services::start_public_server;
+        use crate::core::SharedContext;
+
+        use crate::services::auth::{AuthGlobalContext, RootAuthorization};
+        use crate::services::auth::basic::{BasicAuthorization, BasicRbacPolicy};
+
+        pub fn start(ctx: SharedContext, auth_policy_option: Option<BasicRbacPolicy>) {
+            if let Some(policy) = auth_policy_option {
+                info!("using basic authorization");
+                start_public_server(AuthGlobalContext::new(
+                    ctx,
+                    Arc::new(BasicAuthorization::new(policy)),
+                ));
+            } else {
+                info!("using root authorization");
+                start_public_server(AuthGlobalContext::new(
+                    ctx,
+                    Arc::new(RootAuthorization::new()),
+                ));
+            }
+        }
+    }
 
     ctx
 }

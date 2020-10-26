@@ -1,19 +1,38 @@
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug};
 
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{ListResponse, Metadata};
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::spu::CustomSpuSpec;
-use fluvio_controlplane_metadata::store::*;
-use crate::core::Context;
+use fluvio_auth::{AuthContext, TypeAction};
+use fluvio_controlplane_metadata::store::KeyFilter;
+use fluvio_controlplane_metadata::extended::SpecExt;
 
-pub async fn handle_fetch_custom_spu_request(
+use crate::services::auth::AuthServiceContext;
+
+pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     filters: Vec<String>,
-    ctx: &Context,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
     debug!("fetching custom spu list");
-    let spus: Vec<Metadata<SpuSpec>> = ctx
+
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Read)
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            // If permission denied, return empty list;
+            return Ok(ListResponse::CustomSpu(vec![]));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+    }
+
+    let spus: Vec<Metadata<SpuSpec>> = auth_ctx
+        .global_ctx
         .spus()
         .store()
         .read()
@@ -43,13 +62,26 @@ pub async fn handle_fetch_custom_spu_request(
     Ok(ListResponse::CustomSpu(custom_spus))
 }
 
-pub async fn handle_fetch_spus_request(
+pub async fn handle_fetch_spus_request<AC: AuthContext>(
     filters: Vec<String>,
-    ctx: &Context,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
     debug!("fetching spu list");
 
-    let spus: Vec<Metadata<SpuSpec>> = ctx
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_type_action(SpuSpec::OBJECT_TYPE, TypeAction::Read)
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            // If permission denied, return empty list;
+            return Ok(ListResponse::Spu(vec![]));
+        }
+    }
+
+    let spus: Vec<Metadata<SpuSpec>> = auth_ctx
+        .global_ctx
         .spus()
         .store()
         .read()
