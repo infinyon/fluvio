@@ -5,6 +5,7 @@ use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_sc_schema::objects:: { ListResponse,Metadata };
 use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_auth::{ AuthContext, TypeAction };
+use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
@@ -16,7 +17,7 @@ pub async fn handle_fetch_topics_request<AC: AuthContext>(
     debug!("retrieving topic list: {:#?}", filters);
 
     
-    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<TopicSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action(TopicSpec::OBJECT_TYPE, TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(ListResponse::Topic(vec![]));

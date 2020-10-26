@@ -14,7 +14,9 @@ pub use k8::*;
 
 mod metadata {
 
-    use crate::core::*;
+    use crate::core::{ Spec, Status, Removable, Creatable};
+    use crate::extended::{ SpecExt, ObjectType };
+
     use super::*;
 
     impl Spec for TopicSpec {
@@ -22,6 +24,10 @@ mod metadata {
         type IndexKey = String;
         type Status = TopicStatus;
         type Owner = Self;
+    }
+
+    impl SpecExt for TopicSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::Topic;
     }
 
     impl Removable for TopicSpec {

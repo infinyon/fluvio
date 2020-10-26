@@ -16,7 +16,7 @@ use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
-use fluvio_auth::{ AuthContext };
+
 
 use crate::services::auth::AuthServiceContext;
 use crate::stores::StoreContext;
