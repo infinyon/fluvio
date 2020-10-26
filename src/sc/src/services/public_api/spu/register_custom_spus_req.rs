@@ -11,10 +11,10 @@ use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
-use fluvio_auth::{ AuthContext, TypeAction };
+use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::core::{ SharedContext};
+use crate::core::{SharedContext};
 use crate::services::auth::AuthServiceContext;
 
 pub struct RegisterCustomSpu {
@@ -32,7 +32,11 @@ impl RegisterCustomSpu {
         auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
         debug!("api request: create custom-spu '{}({})'", name, spec.id);
-        if let Ok(authorized) = auth_ctx.auth.allow_type_action(CustomSpuSpec::OBJECT_TYPE,TypeAction::Read).await {
+        if let Ok(authorized) = auth_ctx
+            .auth
+            .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Read)
+            .await
+        {
             if !authorized {
                 trace!("authorization failed");
                 return Status::new(

@@ -2,11 +2,10 @@ use std::io::Error;
 use tracing::debug;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::objects::{ListRequest,ListResponse};
-use fluvio_auth::{ AuthContext};
+use fluvio_sc_schema::objects::{ListRequest, ListResponse};
+use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;
-
 
 pub async fn handle_list_request<AC: AuthContext>(
     request: RequestMessage<ListRequest>,

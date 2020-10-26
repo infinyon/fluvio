@@ -3,23 +3,20 @@ use std::sync::Arc;
 use async_trait::async_trait;
 pub use policy::BasicRbacPolicy;
 
-use fluvio_future::net::TcpStream; 
-use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction, AuthError };
+use fluvio_future::net::TcpStream;
+use fluvio_auth::{AuthContext, Authorization, TypeAction, InstanceAction, AuthError};
 use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_auth::x509_identity::X509Identity;
 
-
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct BasicAuthorization {
-    policy: Arc<BasicRbacPolicy>
+    policy: Arc<BasicRbacPolicy>,
 }
 
 impl BasicAuthorization {
-
     pub fn new(policy: BasicRbacPolicy) -> Self {
-
-        Self{
-            policy: Arc::new(policy)
+        Self {
+            policy: Arc::new(policy),
         }
     }
 }
@@ -29,13 +26,14 @@ impl Authorization for BasicAuthorization {
     type Stream = TcpStream;
     type Context = BasicAuthContext;
 
-    async fn create_auth_context(&self, socket: &mut fluvio_socket::InnerFlvSocket<Self::Stream>
+    async fn create_auth_context(
+        &self,
+        socket: &mut fluvio_socket::InnerFlvSocket<Self::Stream>,
     ) -> Result<Self::Context, AuthError> {
-       
         let identity = X509Identity::create_from_connection::<Self::Stream>(socket).await?;
         Ok(BasicAuthContext {
             identity,
-            policy: self.policy.clone()
+            policy: self.policy.clone(),
         })
     }
 }
@@ -43,28 +41,31 @@ impl Authorization for BasicAuthorization {
 #[derive(Debug)]
 pub struct BasicAuthContext {
     identity: X509Identity,
-    policy: Arc<BasicRbacPolicy>
+    policy: Arc<BasicRbacPolicy>,
 }
 
 #[async_trait]
 impl AuthContext for BasicAuthContext {
-
-    
-    async fn allow_type_action(&self,ty: ObjectType,action: TypeAction) -> Result<bool,AuthError> {
-       
-        self.policy.evaluate(action.into(), ty, None, &self.identity).await
+    async fn allow_type_action(
+        &self,
+        ty: ObjectType,
+        action: TypeAction,
+    ) -> Result<bool, AuthError> {
+        self.policy
+            .evaluate(action.into(), ty, None, &self.identity)
+            .await
     }
 
     /// check if specific instance of spec can be deleted
-    async fn allow_instance_action(&self, _ty: ObjectType,_action: InstanceAction, _key: &str) -> Result<bool,AuthError>
-    {
+    async fn allow_instance_action(
+        &self,
+        _ty: ObjectType,
+        _action: InstanceAction,
+        _key: &str,
+    ) -> Result<bool, AuthError> {
         Ok(true)
     }
-
-
 }
-
-
 
 /// basic policy module
 /// does imple subtitution
@@ -75,16 +76,14 @@ mod policy {
     use std::path::PathBuf;
     use std::convert::TryFrom;
 
-    
     use serde::{Serialize, Deserialize};
 
-    use fluvio_auth::{ AuthError, TypeAction, InstanceAction};
+    use fluvio_auth::{AuthError, TypeAction, InstanceAction};
     use fluvio_auth::x509_identity::X509Identity;
 
     use super::ObjectType;
 
     type Role = String;
-
 
     #[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
     pub enum Action {
@@ -99,7 +98,7 @@ mod policy {
         fn from(action: TypeAction) -> Self {
             match action {
                 TypeAction::Create => Action::Create,
-                TypeAction::Read => Action::Read
+                TypeAction::Read => Action::Read,
             }
         }
     }
@@ -107,12 +106,10 @@ mod policy {
     impl From<InstanceAction> for Action {
         fn from(action: InstanceAction) -> Self {
             match action {
-                InstanceAction::Delete => Action::Delete
+                InstanceAction::Delete => Action::Delete,
             }
         }
     }
-
-
 
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<ObjectType, Vec<Action>>>);
@@ -140,8 +137,7 @@ mod policy {
             _instance: Option<&str>,
             identity: &X509Identity,
         ) -> Result<bool, AuthError> {
-
-         //   let (action,object,_instance) = request;
+            //   let (action,object,_instance) = request;
             // For each scope provided in the identity,
             // check if there is a match;
             let is_allowed = identity.scopes().iter().any(|scope| {
@@ -151,9 +147,9 @@ mod policy {
                         objects
                             .get(&object_type)
                             .map(|actions| {
-                                actions
-                                    .iter()
-                                    .any(|permission| permission == &action || permission == &Action::All)
+                                actions.iter().any(|permission| {
+                                    permission == &action || permission == &Action::All
+                                })
                             })
                             .unwrap_or(false)
                     })
@@ -182,11 +178,7 @@ mod policy {
             Self(policy)
         }
     }
-
 }
-
-
-
 
 #[cfg(test)]
 mod test {
@@ -198,7 +190,7 @@ mod test {
 
     use fluvio_auth::x509_identity::X509Identity;
     use fluvio_future::test_async;
-    
+
     use super::policy::*;
     use super::ObjectType;
 
@@ -220,7 +212,8 @@ mod test {
         let tmp = File::create(tmp_file_path.clone()).expect("failed to create policy file");
         serde_json::to_writer(&tmp, &policy).expect("failed to serialize policy to json file");
 
-        let recovered_policy = BasicRbacPolicy::try_from(tmp_file_path).expect("failed to parse policy from file");
+        let recovered_policy =
+            BasicRbacPolicy::try_from(tmp_file_path).expect("failed to parse policy from file");
 
         assert_eq!(
             policy, recovered_policy,
@@ -229,23 +222,32 @@ mod test {
     }
 
     #[test_async]
-    async fn test_policy_enforcement_simple() -> Result<(),()> {
-
+    async fn test_policy_enforcement_simple() -> Result<(), ()> {
         let mut policy = BasicRbacPolicy::default();
-        let identity = X509Identity::new("User".to_owned(),vec!["Default".to_owned()]);
-       
+        let identity = X509Identity::new("User".to_owned(), vec!["Default".to_owned()]);
+
         let mut role1 = HashMap::new();
-        role1.insert(ObjectType::Topic, vec![Action::Delete,Action::Read]);
+        role1.insert(ObjectType::Topic, vec![Action::Delete, Action::Read]);
 
         policy.0.insert(String::from("Default"), role1);
 
-
-        assert!(!policy.evaluate(Action::Create,ObjectType::CustomSpu,None,&identity).await.expect("eval"));
-        assert!(!policy.evaluate(Action::Create,ObjectType::Topic,None,&identity).await.expect("eval"));
-        assert!(policy.evaluate(Action::Read,ObjectType::Topic,None,&identity).await.expect("eval"));
-        assert!(policy.evaluate(Action::Delete,ObjectType::Topic,Some("test"),&identity).await.expect("eval"));
+        assert!(!policy
+            .evaluate(Action::Create, ObjectType::CustomSpu, None, &identity)
+            .await
+            .expect("eval"));
+        assert!(!policy
+            .evaluate(Action::Create, ObjectType::Topic, None, &identity)
+            .await
+            .expect("eval"));
+        assert!(policy
+            .evaluate(Action::Read, ObjectType::Topic, None, &identity)
+            .await
+            .expect("eval"));
+        assert!(policy
+            .evaluate(Action::Delete, ObjectType::Topic, Some("test"), &identity)
+            .await
+            .expect("eval"));
 
         Ok(())
     }
-
 }

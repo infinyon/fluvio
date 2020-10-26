@@ -13,7 +13,6 @@ use crate::stores::spg::*;
 use crate::stores::*;
 use crate::controllers::spus::SpuStatusChannel;
 
-
 pub type SharedContext = Arc<Context>;
 
 /// Global Context for SC

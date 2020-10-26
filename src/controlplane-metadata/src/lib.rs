@@ -23,10 +23,7 @@ pub mod extended {
     use super::core::Spec;
 
     #[derive(Debug, Clone, PartialEq, Hash, Eq)]
-    #[cfg_attr(
-        feature = "use_serde",
-        derive(serde::Serialize, serde::Deserialize),
-    )]
+    #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
     pub enum ObjectType {
         Spu,
         CustomSpu,
@@ -35,11 +32,7 @@ pub mod extended {
         Partition,
     }
 
-
     pub trait SpecExt: Spec {
-
-        const OBJECT_TYPE: ObjectType;        
-
+        const OBJECT_TYPE: ObjectType;
     }
-
 }

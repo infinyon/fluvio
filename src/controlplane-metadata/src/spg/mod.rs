@@ -12,8 +12,8 @@ pub use k8::*;
 
 mod convert {
 
-    use crate::core::{ Spec, Status, Removable, Creatable };
-    use crate::extended::{ ObjectType, SpecExt};
+    use crate::core::{Spec, Status, Removable, Creatable};
+    use crate::extended::{ObjectType, SpecExt};
     use super::*;
 
     impl Spec for SpuGroupSpec {

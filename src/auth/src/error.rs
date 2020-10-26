@@ -8,14 +8,13 @@ pub enum AuthError {
     IoError {
         #[from]
         source: IoError,
-    }
+    },
 }
-
 
 impl Into<IoError> for AuthError {
     fn into(self) -> IoError {
         match self {
-            Self::IoError { source } =>  source
+            Self::IoError { source } => source,
         }
     }
 }

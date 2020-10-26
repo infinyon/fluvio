@@ -14,8 +14,8 @@ pub use k8::*;
 
 mod metadata {
 
-    use crate::core::{ Spec, Status, Removable, Creatable};
-    use crate::extended::{ SpecExt, ObjectType };
+    use crate::core::{Spec, Status, Removable, Creatable};
+    use crate::extended::{SpecExt, ObjectType};
 
     use super::*;
 
