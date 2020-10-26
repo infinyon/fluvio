@@ -11,6 +11,7 @@ use tracing::{debug, trace};
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{ AuthContext, TypeAction };
 
 use crate::core::Context;
@@ -25,7 +26,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     debug!("creating spu group: {}", name);
    
-    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<SpuGroupSpec>(TypeAction::Create).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action(SpuGroupSpec::OBJECT_TYPE, TypeAction::Create).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

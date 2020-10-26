@@ -16,7 +16,7 @@ use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use event_listener::Event;
 
-use fluvio_auth::{ Authorization, AuthContext };
+use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;

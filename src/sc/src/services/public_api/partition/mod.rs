@@ -4,6 +4,7 @@ use tracing::{trace, debug};
 
 use fluvio_sc_schema::objects::{ListResponse,Metadata };
 use fluvio_sc_schema::partition::{PartitionSpec};
+use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{ AuthContext, TypeAction };
 
 use crate::services::auth::AuthServiceContext;
@@ -15,7 +16,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
 ) -> Result<ListResponse, Error> {
     debug!("fetching custom spu list");
 
-    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<PartitionSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action(PartitionSpec::OBJECT_TYPE, TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             return Ok(ListResponse::Partition(vec![]));

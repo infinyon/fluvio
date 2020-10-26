@@ -12,8 +12,8 @@ pub use k8::*;
 
 mod convert {
 
-    use crate::core::*;
-
+    use crate::core::{ Spec, Status, Removable, Creatable };
+    use crate::extended::{ ObjectType, SpecExt};
     use super::*;
 
     impl Spec for SpuGroupSpec {
@@ -23,6 +23,10 @@ mod convert {
 
         type Owner = Self;
         type IndexKey = String;
+    }
+
+    impl SpecExt for SpuGroupSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::SpuGroup;
     }
 
     impl Removable for SpuGroupSpec {

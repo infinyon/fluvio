@@ -8,6 +8,7 @@ use fluvio_sc_schema::objects::{ ListResponse, NameFilter, Metadata };
 use fluvio_sc_schema::spg::SpuGroupSpec;
 use fluvio_auth::{ AuthContext, TypeAction };
 use fluvio_controlplane_metadata::store::KeyFilter;
+use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
@@ -17,7 +18,7 @@ pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
 ) -> Result<ListResponse, Error> {
     debug!("fetching spu groups");
 
-    if let Ok(authorized) = auth_ctx.auth.allow_type_action::<SpuGroupSpec>(TypeAction::Read).await {
+    if let Ok(authorized) = auth_ctx.auth.allow_type_action(SpuGroupSpec::OBJECT_TYPE, TypeAction::Read).await {
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;

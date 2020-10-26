@@ -13,7 +13,9 @@ pub use k8::*;
 
 mod metadata {
 
-    use crate::core::*;
+    use crate::core::{ Spec, Status};
+    use crate::extended::{ ObjectType, SpecExt};
+
     use super::*;
 
     impl Spec for SpuSpec {
@@ -21,6 +23,10 @@ mod metadata {
         type IndexKey = String;
         type Owner = Self;
         type Status = SpuStatus;
+    }
+
+    impl SpecExt for SpuSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::Spu;
     }
 
     impl Status for SpuStatus {}
@@ -64,7 +70,8 @@ mod custom_metadata {
     use dataplane::core::Version;
     use dataplane::bytes::{Buf, BufMut};
 
-    use crate::core::*;
+    use crate::core::{ Spec,Removable, Creatable};
+    use crate::extended:: { ObjectType, SpecExt }; 
 
     use super::*;
 
@@ -74,6 +81,10 @@ mod custom_metadata {
         type IndexKey = String;
         type Status = SpuStatus;
         type Owner = SpuSpec;
+    }
+
+    impl SpecExt for CustomSpuSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::CustomSpu;
     }
 
     impl Removable for CustomSpuSpec {

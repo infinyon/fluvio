@@ -5,7 +5,7 @@ pub use policy::BasicRbacPolicy;
 
 use fluvio_future::net::TcpStream; 
 use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction, AuthError };
-use fluvio_controlplane_metadata::core::Spec;
+use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_auth::x509_identity::X509Identity;
 
 
@@ -50,14 +50,13 @@ pub struct BasicAuthContext {
 impl AuthContext for BasicAuthContext {
 
     
-    async fn allow_type_action<S: Spec>(&self,action: TypeAction) -> Result<bool,AuthError> {
-        Ok(true)
+    async fn allow_type_action(&self,ty: ObjectType,action: TypeAction) -> Result<bool,AuthError> {
+       
+        self.policy.evaluate(action.into(), ty, None, &self.identity).await
     }
 
     /// check if specific instance of spec can be deleted
-    async fn allow_instance_action<S>(&self, action: InstanceAction, key: &S::IndexKey) -> Result<bool,AuthError>
-        where S: Spec + Send,
-            S::IndexKey: Sync
+    async fn allow_instance_action(&self, _ty: ObjectType,_action: InstanceAction, _key: &str) -> Result<bool,AuthError>
     {
         Ok(true)
     }
@@ -76,11 +75,13 @@ mod policy {
     use std::path::PathBuf;
     use std::convert::TryFrom;
 
-    use tracing::debug;
+    
     use serde::{Serialize, Deserialize};
 
-    use fluvio_auth::AuthError;
+    use fluvio_auth::{ AuthError, TypeAction, InstanceAction};
     use fluvio_auth::x509_identity::X509Identity;
+
+    use super::ObjectType;
 
     type Role = String;
 
@@ -94,13 +95,21 @@ mod policy {
         All,
     }
 
-    #[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
-    pub enum ObjectType {
-        Spu,
-        CustomSpu,
-        SpuGroup,
-        Topic,
-        Partition,
+    impl From<TypeAction> for Action {
+        fn from(action: TypeAction) -> Self {
+            match action {
+                TypeAction::Create => Action::Create,
+                TypeAction::Read => Action::Read
+            }
+        }
+    }
+
+    impl From<InstanceAction> for Action {
+        fn from(action: InstanceAction) -> Self {
+            match action {
+                InstanceAction::Delete => Action::Delete
+            }
+        }
     }
 
 
@@ -126,8 +135,8 @@ mod policy {
     impl BasicRbacPolicy {
         pub async fn evaluate(
             &self,
-            action: &Action,
-            object_type: &ObjectType,
+            action: Action,
+            object_type: ObjectType,
             _instance: Option<&str>,
             identity: &X509Identity,
         ) -> Result<bool, AuthError> {
@@ -144,7 +153,7 @@ mod policy {
                             .map(|actions| {
                                 actions
                                     .iter()
-                                    .any(|permission| permission == action || permission == &Action::All)
+                                    .any(|permission| permission == &action || permission == &Action::All)
                             })
                             .unwrap_or(false)
                     })
@@ -178,23 +187,6 @@ mod policy {
 
 
 
-/*
-#[async_trait]
-impl Authorization<Policy, AuthorizationIdentity> for ScAuthorizationContext {
-    type Request = ScAuthorizationContextRequest;
-    fn create_authorization_context(identity: AuthorizationIdentity, config: Policy) -> Self {
-        ScAuthorizationContext {
-            identity,
-            policy: config,
-        }
-    }
-
-    async fn enforce(&self, request: Self::Request) -> Result<bool, AuthorizationError> {
-        Ok(self.policy.evaluate(request, &self.identity).await?)
-    }
-}
-*/
-
 
 #[cfg(test)]
 mod test {
@@ -208,6 +200,7 @@ mod test {
     use fluvio_future::test_async;
     
     use super::policy::*;
+    use super::ObjectType;
 
     #[test]
     fn test_policy_serialization() {
@@ -247,10 +240,10 @@ mod test {
         policy.0.insert(String::from("Default"), role1);
 
 
-        assert!(!policy.evaluate(&Action::Create,&ObjectType::CustomSpu,None,&identity).await.expect("eval"));
-        assert!(!policy.evaluate(&Action::Create,&ObjectType::Topic,None,&identity).await.expect("eval"));
-        assert!(policy.evaluate(&Action::Read,&ObjectType::Topic,None,&identity).await.expect("eval"));
-        assert!(policy.evaluate(&Action::Delete,&ObjectType::Topic,Some("test"),&identity).await.expect("eval"));
+        assert!(!policy.evaluate(Action::Create,ObjectType::CustomSpu,None,&identity).await.expect("eval"));
+        assert!(!policy.evaluate(Action::Create,ObjectType::Topic,None,&identity).await.expect("eval"));
+        assert!(policy.evaluate(Action::Read,ObjectType::Topic,None,&identity).await.expect("eval"));
+        assert!(policy.evaluate(Action::Delete,ObjectType::Topic,Some("test"),&identity).await.expect("eval"));
 
         Ok(())
     }
