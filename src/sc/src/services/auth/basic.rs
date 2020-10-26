@@ -1,24 +1,26 @@
-use std::io::Error as IoError;
-
+use std::sync::Arc;
 
 use async_trait::async_trait;
-
+pub use policy::BasicRbacPolicy;
 
 use fluvio_future::net::TcpStream; 
 use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction, AuthError };
 use fluvio_controlplane_metadata::core::Spec;
-//use fluvio_auth::x509_identity::X509Identity;
+use fluvio_auth::x509_identity::X509Identity;
 
 
 #[derive(Debug,Clone)]
 pub struct BasicAuthorization {
+    policy: Arc<BasicRbacPolicy>
 }
 
 impl BasicAuthorization {
 
-    pub fn load_from(condfig_path: &str) -> Self {
+    pub fn new(policy: BasicRbacPolicy) -> Self {
 
-        Self{}
+        Self{
+            policy: Arc::new(policy)
+        }
     }
 }
 
@@ -29,15 +31,19 @@ impl Authorization for BasicAuthorization {
 
     async fn create_auth_context(&self, socket: &mut fluvio_socket::InnerFlvSocket<Self::Stream>
     ) -> Result<Self::Context, AuthError> {
-       // self.authenticstor.auth
-        Ok(BasicAuthContext{})
+       
+        let identity = X509Identity::create_from_connection::<Self::Stream>(socket).await?;
+        Ok(BasicAuthContext {
+            identity,
+            policy: self.policy.clone()
+        })
     }
 }
 
 #[derive(Debug)]
 pub struct BasicAuthContext {
-    //identity: X509Identity,
-    //policy: policy::
+    identity: X509Identity,
+    policy: Arc<BasicRbacPolicy>
 }
 
 #[async_trait]
@@ -168,7 +174,6 @@ mod policy {
         }
     }
 
-    pub type ObjectName = String;
 }
 
 

@@ -11,6 +11,7 @@ use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::convert::TryFrom;
 
 
 use tracing::info;
@@ -22,8 +23,10 @@ use k8_client::K8Config;
 use fluvio_future::tls::TlsAcceptor;
 use fluvio_future::tls::AcceptorBuilder;
 
+use crate::services::auth::basic::BasicRbacPolicy;
 use crate::error::ScError;
 use crate::config::ScConfig;
+
 
 /// cli options
 #[derive(Debug, StructOpt, Default)]
@@ -56,7 +59,7 @@ impl ScOpt {
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
-    ) -> Result<((ScConfig,Option<String>), K8Config, Option<(String, TlsConfig)>), ScError> {
+    ) -> Result<((ScConfig,Option<BasicRbacPolicy>), K8Config, Option<(String, TlsConfig)>), ScError> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -73,7 +76,7 @@ impl ScOpt {
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(self) -> Result<((ScConfig,Option<String>), Option<(String, TlsConfig)>), IoError> {
+    fn as_sc_config(self) -> Result<((ScConfig,Option<BasicRbacPolicy>), Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
@@ -86,18 +89,16 @@ impl ScOpt {
         }
         config.namespace = self.namespace.unwrap();
 
-        /*
-        let policy = 
-        // Set Configuration Authorzation Policy
-        config.policy = match self.authorization {
-            // Lookup a policy from a path
-            Some(p) => Policy::try_from(p)?,
-            // Use root-only default policy if no policy path is found;
-            None => Policy::default(),
-        };
-        */
         
-
+        // Set Configuration Authorzation Policy
+        let policy = match self.auth_policy {
+            // Lookup a policy from a path
+            Some(p) => Some(BasicRbacPolicy::try_from(p)?),
+            // Use root-only default policy if no policy path is found;
+            None => None
+        };
+        
+        
         let tls = self.tls;
 
         // if tls is on, we need to assign public service(internal) to another port
@@ -112,13 +113,13 @@ impl ScOpt {
                 )
             })?;
 
-            Ok(((config,None), Some((proxy_addr, tls))))
+            Ok(((config,policy), Some((proxy_addr, tls))))
         } else {
-            Ok(((config,None), None))
+            Ok(((config,policy), None))
         }
     }
 
-    pub fn parse_cli_or_exit(self) -> ((ScConfig,Option<String>), K8Config, Option<(String, TlsConfig)>) {
+    pub fn parse_cli_or_exit(self) -> ((ScConfig,Option<BasicRbacPolicy>), K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);
