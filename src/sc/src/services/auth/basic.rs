@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use fluvio_future::net::TcpStream; 
 use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction, AuthError };
 use fluvio_controlplane_metadata::core::Spec;
+use fluvio_auth::x509_identity::X509Identity;
 
 
 #[derive(Debug,Clone)]
@@ -32,7 +33,8 @@ impl Authorization for BasicAuthorization {
 
 #[derive(Debug)]
 pub struct BasicAuthContext {
-
+    //identity: X509Identity,
+    //policy: policy::
 }
 
 #[async_trait]
@@ -54,7 +56,7 @@ impl AuthContext for BasicAuthContext {
 
 }
 
-use policy::*;
+use policy::BasicRbacPolicy;
 
 /// basic policy module
 /// does imple subtitution
@@ -96,24 +98,24 @@ mod policy {
 
 
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-    pub struct Policy(pub HashMap<Role, HashMap<Object, Vec<Action>>>);
+    pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<Object, Vec<Action>>>);
 
-    impl From<HashMap<Role, HashMap<Object, Vec<Action>>>> for Policy {
+    impl From<HashMap<Role, HashMap<Object, Vec<Action>>>> for BasicRbacPolicy {
         fn from(map: HashMap<Role, HashMap<Object, Vec<Action>>>) -> Self {
             Self(map)
         }
     }
 
-    impl TryFrom<PathBuf> for Policy {
+    impl TryFrom<PathBuf> for BasicRbacPolicy {
         type Error = std::io::Error;
         fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
             let file = read(path)?;
-            let policy: Policy = serde_json::from_slice(&file)?;
+            let policy: BasicRbacPolicy = serde_json::from_slice(&file)?;
             Ok(policy)
         }
     }
 
-    impl Policy {
+    impl BasicRbacPolicy {
         pub async fn evaluate(
             &self,
             request: BasicAuthorizationRequest,
@@ -141,7 +143,7 @@ mod policy {
         }
     }
 
-    impl Default for Policy {
+    impl Default for BasicRbacPolicy {
         // default only allows the `Root` role to have full permissions;
         fn default() -> Self {
             let mut root_policy = HashMap::new();
@@ -194,11 +196,11 @@ mod test {
     use fluvio_auth::x509_identity::X509Identity;
     use fluvio_future::test_async;
     
-    use super::{ Action, Object, Policy};
+    use super::{ Action, Object, BasicRbacPolicy};
 
     #[test]
     fn test_policy_serialization() {
-        let mut policy = Policy::default();
+        let mut policy = BasicRbacPolicy::default();
 
         let mut default_role = HashMap::new();
 
@@ -226,7 +228,7 @@ mod test {
     #[test_async]
     async fn test_policy_enforcement_simple() -> Result<(),()> {
 
-        let mut policy = Policy::default();
+        let mut policy = BasicRbacPolicy::default();
         let identity = X509Identity::new("User".to_owned(),vec!["Default".to_owned()]);
        
         let mut role1 = HashMap::new();
