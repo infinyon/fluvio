@@ -89,7 +89,7 @@ mod policy {
     }
 
     #[derive(Debug, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
-    pub enum Object {
+    pub enum ObjectType {
         Spu,
         CustomSpu,
         SpuGroup,
@@ -97,15 +97,13 @@ mod policy {
         Partition,
     }
 
-    /// authorization request map to basic policy
-    pub type BasicAuthorizationRequest = (Action, Object, Option<ObjectName>);
 
 
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-    pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<Object, Vec<Action>>>);
+    pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<ObjectType, Vec<Action>>>);
 
-    impl From<HashMap<Role, HashMap<Object, Vec<Action>>>> for BasicRbacPolicy {
-        fn from(map: HashMap<Role, HashMap<Object, Vec<Action>>>) -> Self {
+    impl From<HashMap<Role, HashMap<ObjectType, Vec<Action>>>> for BasicRbacPolicy {
+        fn from(map: HashMap<Role, HashMap<ObjectType, Vec<Action>>>) -> Self {
             Self(map)
         }
     }
@@ -122,24 +120,25 @@ mod policy {
     impl BasicRbacPolicy {
         pub async fn evaluate(
             &self,
-            request: BasicAuthorizationRequest,
+            action: &Action,
+            object_type: &ObjectType,
+            _instance: Option<&str>,
             identity: &X509Identity,
         ) -> Result<bool, AuthError> {
 
-            let (action,object,_instance) = request;
+         //   let (action,object,_instance) = request;
             // For each scope provided in the identity,
             // check if there is a match;
             let is_allowed = identity.scopes().iter().any(|scope| {
-                debug!("role: {}",scope);
                 self.0
                     .get(scope)
                     .map(|objects| {
                         objects
-                            .get(&object)
+                            .get(&object_type)
                             .map(|actions| {
                                 actions
                                     .iter()
-                                    .any(|permission| permission == &action || permission == &Action::All)
+                                    .any(|permission| permission == action || permission == &Action::All)
                             })
                             .unwrap_or(false)
                     })
@@ -155,11 +154,11 @@ mod policy {
         fn default() -> Self {
             let mut root_policy = HashMap::new();
 
-            root_policy.insert(Object::Spu, vec![Action::All]);
-            root_policy.insert(Object::CustomSpu, vec![Action::All]);
-            root_policy.insert(Object::SpuGroup, vec![Action::All]);
-            root_policy.insert(Object::Topic, vec![Action::All]);
-            root_policy.insert(Object::Partition, vec![Action::All]);
+            root_policy.insert(ObjectType::Spu, vec![Action::All]);
+            root_policy.insert(ObjectType::CustomSpu, vec![Action::All]);
+            root_policy.insert(ObjectType::SpuGroup, vec![Action::All]);
+            root_policy.insert(ObjectType::Topic, vec![Action::All]);
+            root_policy.insert(ObjectType::Partition, vec![Action::All]);
 
             let mut policy = HashMap::new();
 
@@ -211,11 +210,11 @@ mod test {
 
         let mut default_role = HashMap::new();
 
-        default_role.insert(Object::Topic, vec![Action::All]);
-        default_role.insert(Object::Partition, vec![Action::All]);
-        default_role.insert(Object::SpuGroup, vec![Action::Read]);
-        default_role.insert(Object::CustomSpu, vec![Action::Read]);
-        default_role.insert(Object::Spu, vec![Action::Read]);
+        default_role.insert(ObjectType::Topic, vec![Action::All]);
+        default_role.insert(ObjectType::Partition, vec![Action::All]);
+        default_role.insert(ObjectType::SpuGroup, vec![Action::Read]);
+        default_role.insert(ObjectType::CustomSpu, vec![Action::Read]);
+        default_role.insert(ObjectType::Spu, vec![Action::Read]);
 
         policy.0.insert(String::from("Default"), default_role);
 
@@ -238,15 +237,15 @@ mod test {
         let identity = X509Identity::new("User".to_owned(),vec!["Default".to_owned()]);
        
         let mut role1 = HashMap::new();
-        role1.insert(Object::Topic, vec![Action::Delete,Action::Read]);
+        role1.insert(ObjectType::Topic, vec![Action::Delete,Action::Read]);
 
         policy.0.insert(String::from("Default"), role1);
 
 
-        assert!(!policy.evaluate((Action::Create,Object::CustomSpu,None),&identity).await.expect("eval"));
-        assert!(!policy.evaluate((Action::Create,Object::Topic,None),&identity).await.expect("eval"));
-        assert!(policy.evaluate((Action::Read,Object::Topic,None),&identity).await.expect("eval"));
-       // assert!(policy.evaluate((Action::Delete,Object::Topic,Some("test".owned())),&identity).await.expect("eval");
+        assert!(!policy.evaluate(&Action::Create,&ObjectType::CustomSpu,None,&identity).await.expect("eval"));
+        assert!(!policy.evaluate(&Action::Create,&ObjectType::Topic,None,&identity).await.expect("eval"));
+        assert!(policy.evaluate(&Action::Read,&ObjectType::Topic,None,&identity).await.expect("eval"));
+        assert!(policy.evaluate(&Action::Delete,&ObjectType::Topic,Some("test"),&identity).await.expect("eval"));
 
         Ok(())
     }
