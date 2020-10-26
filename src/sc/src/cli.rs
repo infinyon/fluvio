@@ -57,11 +57,7 @@ pub struct ScOpt {
         long = "authorization-policy",
         value_name = "authorization policy path"
     )]
-    auth_policy: Option<PathBuf>,
-    
-    #[structopt(long)]
-    /// file path of role binding map
-    x509_auth_scopes: Option<String>,
+    auth_policy: Option<PathBuf>
 }
 
 impl ScOpt {
