@@ -88,7 +88,7 @@ generate-client-key:
 
 generate-client-csr:	generate-client-key
 	openssl req -new -key certs/client.key -out certs/client.csr \
-		-subj "/C=US/ST=CA/O=MyOrg, Inc./CN=client.com"
+		-subj "/C=US/ST=CA/O=MyOrg, Inc./CN=root"
 
 generate-client-crt:	generate-client-csr
 	openssl x509 -req \
