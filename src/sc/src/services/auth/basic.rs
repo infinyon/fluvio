@@ -1,6 +1,6 @@
+use std::io::Error as IoError;
+
 use async_trait::async_trait;
-
-
 
 
 use fluvio_future::net::TcpStream; 
@@ -13,7 +13,8 @@ pub struct BasicAuthorization {}
 
 impl BasicAuthorization {
 
-    pub fn load_from(config: &str) -> Self {
+    pub fn load_from(condfig_path: &str) -> Self {
+
         Self{}
     }
 }
