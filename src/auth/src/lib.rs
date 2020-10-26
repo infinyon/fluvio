@@ -1,5 +1,6 @@
 mod policy;
 mod error;
+pub mod x509_authenticator;
 pub mod x509_identity;
 
 pub use policy::*;

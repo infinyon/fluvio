@@ -48,11 +48,16 @@ pub struct ScOpt {
     tls: TlsConfig,
 
     #[structopt(
-        short = "a",
-        long = "authorization",
+        long = "authorization-scopes",
+        value_name = "authorization scopes path"
+    )]
+    x509_auth_scopes: Option<String>,
+
+    #[structopt(
+        long = "authorization-policy",
         value_name = "authorization policy path"
     )]
-    auth_policy: Option<PathBuf>,
+    auth_policy: Option<PathBuf>
 }
 
 impl ScOpt {
