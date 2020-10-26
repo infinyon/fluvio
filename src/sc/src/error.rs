@@ -5,8 +5,6 @@
 use std::fmt;
 use std::io::Error as IoError;
 
-
-
 use fluvio_types::PartitionError;
 use k8_client::ClientError;
 use fluvio_socket::FlvSocketError;
@@ -18,7 +16,7 @@ pub enum ScError {
     ClientError(ClientError),
     SocketError(FlvSocketError),
     PartitionError(PartitionError),
-    AuthError(AuthError)
+    AuthError(AuthError),
 }
 
 impl fmt::Display for ScError {
@@ -29,7 +27,7 @@ impl fmt::Display for ScError {
             Self::ClientError(err) => write!(f, "{}", err),
             Self::SocketError(err) => write!(f, "{}", err),
             Self::PartitionError(err) => write!(f, "{}", err),
-            Self::AuthError(err) => write!(f,"{}",err)
+            Self::AuthError(err) => write!(f, "{}", err),
         }
     }
 }
@@ -40,13 +38,11 @@ impl From<IoError> for ScError {
     }
 }
 
-
 impl From<AuthError> for ScError {
     fn from(error: AuthError) -> Self {
         Self::AuthError(error)
     }
 }
-
 
 impl From<ClientError> for ScError {
     fn from(error: ClientError) -> Self {

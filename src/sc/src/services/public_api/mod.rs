@@ -26,12 +26,10 @@ mod server {
 
     /// create public server
     pub fn start_public_server<A>(ctx: AuthGlobalContext<A>)
-        where  
-            A: Authorization < Stream = TcpStream> + Sync + Send + Debug + 'static,
-            AuthGlobalContext<A>: Clone + Debug ,
-            <A as Authorization>::Context: Send + Sync,
-        
-            
+    where
+        A: Authorization<Stream = TcpStream> + Sync + Send + Debug + 'static,
+        AuthGlobalContext<A>: Clone + Debug,
+        <A as Authorization>::Context: Send + Sync,
     {
         let addr = ctx.global_ctx.config().public_endpoint.clone();
         info!("start public api service");

@@ -17,7 +17,7 @@ use dataplane::ErrorCode;
 
 use fluvio_sc_schema::Status;
 use fluvio_controlplane_metadata::topic::TopicSpec;
-use fluvio_auth::{ AuthContext, TypeAction };
+use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::core::Context;
@@ -35,8 +35,12 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
     debug!("api request: create topic '{}'", name);
-    
-    if let Ok(authorized) = auth_ctx.auth.allow_type_action(TopicSpec::OBJECT_TYPE, TypeAction::Create).await {
+
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_type_action(TopicSpec::OBJECT_TYPE, TypeAction::Create)
+        .await
+    {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(

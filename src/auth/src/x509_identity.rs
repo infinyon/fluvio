@@ -1,10 +1,9 @@
-
 use serde::{Serialize, Deserialize};
 
 use futures_util::stream::StreamExt;
 
 use fluvio_protocol::api::{ResponseMessage};
-use fluvio_auth_schema::{ AuthorizationScopes, AuthorizationApiRequest, AuthResponse };
+use fluvio_auth_schema::{AuthorizationScopes, AuthorizationApiRequest, AuthResponse};
 use fluvio_socket::FlvSocket;
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -14,12 +13,8 @@ pub struct X509Identity {
 }
 
 impl X509Identity {
-
-    pub fn new(principal: String,scopes: AuthorizationScopes) -> Self {
-        Self {
-            principal,
-            scopes
-        }
+    pub fn new(principal: String, scopes: AuthorizationScopes) -> Self {
+        Self { principal, scopes }
     }
 
     pub fn scopes(&self) -> &AuthorizationScopes {
@@ -27,10 +22,7 @@ impl X509Identity {
     }
 
     /// extract x509 identity from TCP Socket
-    pub async fn create_from_connection<S>(
-        socket: &mut FlvSocket
-    ) -> Result<Self, std::io::Error>
-    {
+    pub async fn create_from_connection<S>(socket: &mut FlvSocket) -> Result<Self, std::io::Error> {
         let identity = {
             let stream = &mut socket.get_mut_stream();
 

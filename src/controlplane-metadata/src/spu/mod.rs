@@ -13,8 +13,8 @@ pub use k8::*;
 
 mod metadata {
 
-    use crate::core::{ Spec, Status};
-    use crate::extended::{ ObjectType, SpecExt};
+    use crate::core::{Spec, Status};
+    use crate::extended::{ObjectType, SpecExt};
 
     use super::*;
 
@@ -70,8 +70,8 @@ mod custom_metadata {
     use dataplane::core::Version;
     use dataplane::bytes::{Buf, BufMut};
 
-    use crate::core::{ Spec,Removable, Creatable};
-    use crate::extended:: { ObjectType, SpecExt }; 
+    use crate::core::{Spec, Removable, Creatable};
+    use crate::extended::{ObjectType, SpecExt};
 
     use super::*;
 
@@ -104,7 +104,7 @@ mod custom_metadata {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match self {
                 Self::Name(name) => write!(f, "{}", name),
-                Self::Id(id) => write!(f, "{}",id),
+                Self::Id(id) => write!(f, "{}", id),
             }
         }
     }

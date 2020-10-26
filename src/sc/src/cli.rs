@@ -11,8 +11,7 @@ use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::convert::TryFrom;
-
+//use std::convert::TryFrom;
 
 use tracing::info;
 use tracing::debug;
@@ -27,6 +26,7 @@ use crate::services::auth::basic::BasicRbacPolicy;
 use crate::error::ScError;
 use crate::config::ScConfig;
 
+type Config = (ScConfig, Option<BasicRbacPolicy>);
 
 /// cli options
 #[derive(Debug, StructOpt, Default)]
@@ -59,7 +59,14 @@ impl ScOpt {
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
-    ) -> Result<((ScConfig,Option<BasicRbacPolicy>), K8Config, Option<(String, TlsConfig)>), ScError> {
+    ) -> Result<
+        (
+            Config,
+            K8Config,
+            Option<(String, TlsConfig)>,
+        ),
+        ScError,
+    > {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -76,7 +83,15 @@ impl ScOpt {
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(self) -> Result<((ScConfig,Option<BasicRbacPolicy>), Option<(String, TlsConfig)>), IoError> {
+    fn as_sc_config(
+        self,
+    ) -> Result<
+        (
+            Config,
+            Option<(String, TlsConfig)>,
+        ),
+        IoError,
+    > {
         let mut config = ScConfig::default();
 
         // apply our option
@@ -99,8 +114,7 @@ impl ScOpt {
         };
         */
         let policy = None;
-        
-        
+
         let tls = self.tls;
 
         // if tls is on, we need to assign public service(internal) to another port
@@ -115,13 +129,19 @@ impl ScOpt {
                 )
             })?;
 
-            Ok(((config,policy), Some((proxy_addr, tls))))
+            Ok(((config, policy), Some((proxy_addr, tls))))
         } else {
-            Ok(((config,policy), None))
+            Ok(((config, policy), None))
         }
     }
 
-    pub fn parse_cli_or_exit(self) -> ((ScConfig,Option<BasicRbacPolicy>), K8Config, Option<(String, TlsConfig)>) {
+    pub fn parse_cli_or_exit(
+        self,
+    ) -> (
+        Config,
+        K8Config,
+        Option<(String, TlsConfig)>,
+    ) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);

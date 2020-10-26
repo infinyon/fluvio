@@ -3,9 +3,8 @@ use std::io::{Error, ErrorKind};
 use tracing::debug;
 use tracing::trace;
 
-
 use fluvio_sc_schema::Status;
-use fluvio_auth::{ AuthContext, InstanceAction };
+use fluvio_auth::{AuthContext, InstanceAction};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
@@ -20,7 +19,11 @@ pub async fn handle_delete_spu_group<AC: AuthContext>(
 
     debug!("delete spg group: {}", name);
 
-    if let Ok(authorized) = auth_ctx.auth.allow_instance_action(SpuGroupSpec::OBJECT_TYPE, InstanceAction::Delete, &name).await {
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_instance_action(SpuGroupSpec::OBJECT_TYPE, InstanceAction::Delete, &name)
+        .await
+    {
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(
