@@ -95,6 +95,15 @@ impl HelmClient {
         Ok(())
     }
 
+    /// Uninstalls specified chart library
+    pub(crate) fn uninstall(&self, name: &str) -> Result<(), HelmError> {
+        let mut command = Command::new("helm");
+        command.args(&["uninstall", name]);
+
+        command.inherit();
+        Ok(())
+    }
+
     /// Adds a new helm repo with the given chart name and chart location
     #[instrument(skip(self))]
     pub(crate) fn repo_add(&self, chart: &str, location: &str) -> Result<(), HelmError> {
