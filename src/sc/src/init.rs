@@ -71,7 +71,7 @@ where
     mod pub_server {
 
         use std::sync::Arc;
-        
+        use tracing::info;
 
         use crate::services::start_public_server;  
         use crate::core::SharedContext;      
@@ -82,8 +82,10 @@ where
 
         pub fn start(ctx: SharedContext,auth_policy_option: Option<BasicRbacPolicy> ) {
             if let Some(policy) = auth_policy_option {
+                info!("using basic authorization");
                 start_public_server(AuthGlobalContext::new(ctx,Arc::new(BasicAuthorization::new(policy))));
             } else {
+                info!("using root authorization");
                 start_public_server(AuthGlobalContext::new(ctx,Arc::new(RootAuthorization::new())));
             }
            

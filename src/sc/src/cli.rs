@@ -89,7 +89,7 @@ impl ScOpt {
         }
         config.namespace = self.namespace.unwrap();
 
-        
+        /*
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {
             // Lookup a policy from a path
@@ -97,6 +97,8 @@ impl ScOpt {
             // Use root-only default policy if no policy path is found;
             None => None
         };
+        */
+        let policy = None;
         
         
         let tls = self.tls;
