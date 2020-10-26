@@ -59,14 +59,7 @@ impl ScOpt {
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
-    ) -> Result<
-        (
-            Config,
-            K8Config,
-            Option<(String, TlsConfig)>,
-        ),
-        ScError,
-    > {
+    ) -> Result<(Config, K8Config, Option<(String, TlsConfig)>), ScError> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -83,15 +76,7 @@ impl ScOpt {
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(
-        self,
-    ) -> Result<
-        (
-            Config,
-            Option<(String, TlsConfig)>,
-        ),
-        IoError,
-    > {
+    fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
@@ -135,13 +120,7 @@ impl ScOpt {
         }
     }
 
-    pub fn parse_cli_or_exit(
-        self,
-    ) -> (
-        Config,
-        K8Config,
-        Option<(String, TlsConfig)>,
-    ) {
+    pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);
