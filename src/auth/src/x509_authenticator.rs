@@ -38,11 +38,11 @@ impl RoleBindings {
     }
 }
 
-pub struct DefaultAuthenticator {
+pub struct X509Authenticator {
     role_bindings: RoleBindings,
 }
 
-impl DefaultAuthenticator {
+impl X509Authenticator {
     pub fn new(role_binding_file_path: &Path) -> Self {
         Self {
             role_bindings: RoleBindings::load(role_binding_file_path)
@@ -115,7 +115,7 @@ impl DefaultAuthenticator {
 }
 
 #[async_trait]
-impl Authenticator for DefaultAuthenticator {
+impl Authenticator for X509Authenticator {
     async fn authenticate(
         &self,
         incoming_tls_stream: &DefaultServerTlsStream,
@@ -132,13 +132,12 @@ impl Authenticator for DefaultAuthenticator {
 
 #[cfg(test)]
 mod tests {
-    use super::DefaultAuthenticator;
+    use super::X509Authenticator;
 
     #[test]
     fn test_principal_from_raw_certificate() {
         let (_, pem) = x509_parser::pem::pem_to_der(TEST_CERTIFICATE.as_bytes()).unwrap();
-        let common_name =
-            DefaultAuthenticator::principal_from_raw_certificate(&pem.contents).unwrap();
+        let common_name = X509Authenticator::principal_from_raw_certificate(&pem.contents).unwrap();
         assert_eq!(common_name, "root".to_owned());
     }
 

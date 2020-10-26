@@ -63,7 +63,7 @@ mod proxy {
 
     use fluvio_types::print_cli_err;
     use fluvio_future::tls::TlsAcceptor;
-    use fluvio_auth::authentication::DefaultAuthenticator;
+    use fluvio_auth::x509_authenticator::X509Authenticator;
     use flv_tls_proxy::{
         start as proxy_start, start_with_authenticator as proxy_start_with_authenticator,
     };
@@ -76,7 +76,7 @@ mod proxy {
         info!("starting TLS proxy: {}", proxy_addr);
 
         let result = if let Some(role_binding_map) = config.role_binding_map {
-            let authenticator = Box::new(DefaultAuthenticator::new(&role_binding_map));
+            let authenticator = Box::new(X509Authenticator::new(&role_binding_map));
             proxy_start_with_authenticator(&proxy_addr, tls_acceptor, target, authenticator).await
         } else {
             proxy_start(&proxy_addr, tls_acceptor, target).await
