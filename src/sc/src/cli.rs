@@ -11,7 +11,7 @@ use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-//use std::convert::TryFrom;
+use std::convert::TryFrom;
 
 use tracing::info;
 use tracing::debug;
@@ -49,13 +49,15 @@ pub struct ScOpt {
 
     #[structopt(
         long = "authorization-scopes",
-        value_name = "authorization scopes path"
+        value_name = "authorization scopes path",
+        env
     )]
     x509_auth_scopes: Option<String>,
 
     #[structopt(
         long = "authorization-policy",
-        value_name = "authorization policy path"
+        value_name = "authorization policy path",
+        env
     )]
     auth_policy: Option<PathBuf>,
 }
@@ -94,7 +96,7 @@ impl ScOpt {
         }
         config.namespace = self.namespace.unwrap();
 
-        /*
+        
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {
             // Lookup a policy from a path
@@ -102,8 +104,7 @@ impl ScOpt {
             // Use root-only default policy if no policy path is found;
             None => None
         };
-        */
-        let policy = None;
+        
 
         let tls = self.tls;
 
