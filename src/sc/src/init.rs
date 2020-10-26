@@ -16,10 +16,11 @@ use crate::controllers::partitions::PartitionController;
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
+use crate::services::auth::basic::BasicRbacPolicy;
 
 /// start the main loop
 pub async fn start_main_loop<C>(
-    sc_config_policy: (ScConfig,Option<String>),
+    sc_config_policy: (ScConfig,Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
 ) -> SharedContext
 where
@@ -76,12 +77,12 @@ where
         use crate::core::SharedContext;      
 
         use crate::services::auth::{ AuthGlobalContext,RootAuthorization };
-        use crate::services::auth::basic::{BasicAuthorization};
+        use crate::services::auth::basic::{BasicAuthorization,BasicRbacPolicy};
 
 
-        pub fn start(ctx: SharedContext,auth_policy: Option<String> ) {
-            if let Some(config) = auth_policy {
-                start_public_server(AuthGlobalContext::new(ctx,Arc::new(BasicAuthorization::load_from(&config))));
+        pub fn start(ctx: SharedContext,auth_policy_option: Option<BasicRbacPolicy> ) {
+            if let Some(policy) = auth_policy_option {
+                start_public_server(AuthGlobalContext::new(ctx,Arc::new(BasicAuthorization::new(policy))));
             } else {
                 start_public_server(AuthGlobalContext::new(ctx,Arc::new(RootAuthorization::new())));
             }

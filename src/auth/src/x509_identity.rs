@@ -7,7 +7,7 @@ use fluvio_protocol::api::{ResponseMessage};
 use fluvio_auth_schema::{ AuthorizationScopes, AuthorizationApiRequest, AuthResponse };
 use fluvio_socket::FlvSocket;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct X509Identity {
     pub principal: String,
     pub scopes: AuthorizationScopes,
@@ -27,7 +27,7 @@ impl X509Identity {
     }
 
     /// extract x509 identity from TCP Socket
-    async fn create_from_connection<S>(
+    pub async fn create_from_connection<S>(
         socket: &mut FlvSocket
     ) -> Result<Self, std::io::Error>
     {
