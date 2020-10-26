@@ -13,7 +13,7 @@ use flv_tls_proxy::authenticator::Authenticator;
 #[derive(Decode, Encode, Debug, Default)]
 pub struct AuthorizationRequest {
     principal: String,
-    role: String,
+    scopes: Vec<String>,
 }
 
 #[derive(Decode, Encode, Debug, Default)]
@@ -26,27 +26,27 @@ impl Request for AuthorizationRequest {
     type Response = AuthorizationResponse;
 }
 
-struct RoleBindings(HashMap<String, String>);
+struct ScopeBindings(HashMap<String, Vec<String>>);
 
-impl RoleBindings {
-    pub fn load(role_binding_file_path: &Path) -> Result<Self, IoError> {
-        let file = std::fs::read_to_string(role_binding_file_path)?;
+impl ScopeBindings {
+    pub fn load(scope_binding_file_path: &Path) -> Result<Self, IoError> {
+        let file = std::fs::read_to_string(scope_binding_file_path)?;
         Ok(Self(serde_json::from_str(&file)?))
     }
-    pub fn get_role(&self, principal: &str) -> String {
+    pub fn get_scopes(&self, principal: &str) -> Vec<String> {
         self.0[principal].clone()
     }
 }
 
 pub struct X509Authenticator {
-    role_bindings: RoleBindings,
+    scope_bindings: ScopeBindings,
 }
 
 impl X509Authenticator {
-    pub fn new(role_binding_file_path: &Path) -> Self {
+    pub fn new(scope_binding_file_path: &Path) -> Self {
         Self {
-            role_bindings: RoleBindings::load(role_binding_file_path)
-                .expect("unable to create RoleBindings"),
+            scope_bindings: ScopeBindings::load(scope_binding_file_path)
+                .expect("unable to create ScopeBindings"),
         }
     }
 
@@ -122,8 +122,8 @@ impl Authenticator for X509Authenticator {
         target_tcp_stream: &TcpStream,
     ) -> Result<bool, IoError> {
         let principal = Self::principal_from_tls_stream(incoming_tls_stream)?;
-        let role = self.role_bindings.get_role(&principal);
-        let authorization_request = AuthorizationRequest { principal, role };
+        let scopes = self.scope_bindings.get_scopes(&principal);
+        let authorization_request = AuthorizationRequest { principal, scopes };
         let success =
             Self::send_authorization_request(&target_tcp_stream, authorization_request).await?;
         Ok(success)
