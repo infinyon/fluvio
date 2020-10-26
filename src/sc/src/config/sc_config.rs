@@ -23,7 +23,7 @@ pub struct ScConfig {
     pub private_endpoint: String,
     pub run_k8_dispatchers: bool,
     pub namespace: String,
-    pub role_binding_map: Option<PathBuf>,
+    pub x509_auth_scopes: Option<PathBuf>,
 }
 
 impl ::std::default::Default for ScConfig {
@@ -33,7 +33,7 @@ impl ::std::default::Default for ScConfig {
             private_endpoint: format!("0.0.0.0:{}", SC_PRIVATE_PORT),
             run_k8_dispatchers: true,
             namespace: "default".to_owned(),
-            role_binding_map: None,
+            x509_auth_scopes: None,
         }
     }
 }

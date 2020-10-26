@@ -44,7 +44,7 @@ pub struct ScOpt {
 
     #[structopt(long)]
     /// file path of role binding map
-    role_binding_map: Option<String>,
+    x509_auth_scopes: Option<String>,
 }
 
 impl ScOpt {
