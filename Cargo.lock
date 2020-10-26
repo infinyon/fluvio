@@ -1034,8 +1034,8 @@ name = "fluvio-auth"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "fluvio-auth-schema",
  "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
@@ -1051,17 +1051,6 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "x509-parser",
-]
-
-[[package]]
-name = "fluvio-auth-schema"
-version = "0.1.0"
-dependencies = [
- "fluvio-dataplane-protocol",
- "fluvio-protocol",
- "fluvio-service",
- "log",
- "serde",
 ]
 
 [[package]]
@@ -1311,7 +1300,6 @@ dependencies = [
 name = "fluvio-sc-schema"
 version = "0.1.0"
 dependencies = [
- "fluvio-auth-schema",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-protocol",

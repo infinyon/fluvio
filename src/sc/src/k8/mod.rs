@@ -63,7 +63,7 @@ mod proxy {
 
     use fluvio_types::print_cli_err;
     use fluvio_future::tls::TlsAcceptor;
-    use fluvio_auth::x509_authenticator::X509Authenticator;
+    use fluvio_auth::x509::X509Authenticator;
     use flv_tls_proxy::{
         start as proxy_start, start_with_authenticator as proxy_start_with_authenticator,
     };

@@ -6,7 +6,7 @@ pub use policy::BasicRbacPolicy;
 use fluvio_future::net::TcpStream;
 use fluvio_auth::{AuthContext, Authorization, TypeAction, InstanceAction, AuthError};
 use fluvio_controlplane_metadata::extended::ObjectType;
-use fluvio_auth::x509_identity::X509Identity;
+use fluvio_auth::x509::X509Identity;
 
 #[derive(Debug, Clone)]
 pub struct BasicAuthorization {
@@ -79,7 +79,7 @@ mod policy {
     use serde::{Serialize, Deserialize};
 
     use fluvio_auth::{AuthError, TypeAction, InstanceAction};
-    use fluvio_auth::x509_identity::X509Identity;
+    use fluvio_auth::x509::X509Identity;
 
     use super::ObjectType;
 
@@ -188,7 +188,7 @@ mod test {
     use std::convert::TryFrom;
     use std::collections::HashMap;
 
-    use fluvio_auth::x509_identity::X509Identity;
+    use fluvio_auth::x509::X509Identity;
     use fluvio_future::test_async;
 
     use super::policy::*;

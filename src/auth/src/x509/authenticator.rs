@@ -1,30 +1,16 @@
 use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::os::unix::io::AsRawFd;
+
 use log::debug;
 use x509_parser::{X509Certificate, parse_x509_der};
 use async_trait::async_trait;
 
 use fluvio_future::{net::TcpStream, tls::DefaultServerTlsStream};
-use fluvio_protocol::api::{Request, RequestMessage, ResponseMessage};
-use fluvio_protocol::derive::{Decode, Encode};
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use flv_tls_proxy::authenticator::Authenticator;
 
-#[derive(Decode, Encode, Debug, Default)]
-pub struct AuthorizationRequest {
-    principal: String,
-    scopes: Vec<String>,
-}
-
-#[derive(Decode, Encode, Debug, Default)]
-pub struct AuthorizationResponse {
-    success: bool,
-}
-
-impl Request for AuthorizationRequest {
-    const API_KEY: u16 = 0;
-    type Response = AuthorizationResponse;
-}
+use super::request::{AuthRequest};
 
 struct ScopeBindings(HashMap<String, Vec<String>>);
 
@@ -52,7 +38,7 @@ impl X509Authenticator {
 
     async fn send_authorization_request(
         tcp_stream: &TcpStream,
-        authorization_request: AuthorizationRequest,
+        authorization_request: AuthRequest,
     ) -> Result<bool, IoError> {
         let mut socket =
             fluvio_socket::FlvSocket::from_stream(tcp_stream.clone(), tcp_stream.as_raw_fd());
@@ -123,7 +109,7 @@ impl Authenticator for X509Authenticator {
     ) -> Result<bool, IoError> {
         let principal = Self::principal_from_tls_stream(incoming_tls_stream)?;
         let scopes = self.scope_bindings.get_scopes(&principal);
-        let authorization_request = AuthorizationRequest { principal, scopes };
+        let authorization_request = AuthRequest::new(principal, scopes);
         let success =
             Self::send_authorization_request(&target_tcp_stream, authorization_request).await?;
         Ok(success)
@@ -141,7 +127,7 @@ mod tests {
         assert_eq!(common_name, "root".to_owned());
     }
 
-    const TEST_CERTIFICATE: &'static str = r#"-----BEGIN CERTIFICATE-----
+    const TEST_CERTIFICATE: &str = r#"-----BEGIN CERTIFICATE-----
 MIIG1jCCBL6gAwIBAgIUJA7m5OdyaHO9TosR3zZDH7kuP7AwDQYJKoZIhvcNAQEL
 BQAwgZMxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEg
 Q2xhcmExETAPBgNVBAoMCEluZmlueW9uMRUwEwYDVQQLDAxGbHV2aW8gQ2xvdWQx

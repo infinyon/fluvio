@@ -57,7 +57,7 @@ pub struct ScOpt {
         long = "authorization-policy",
         value_name = "authorization policy path"
     )]
-    auth_policy: Option<PathBuf>
+    auth_policy: Option<PathBuf>,
 }
 
 impl ScOpt {

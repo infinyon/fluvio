@@ -10,8 +10,8 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.41"
-fluvio-auth-schema = { version = "0.1.0", path = "../auth-schema" }
 fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata" }
+dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.1.0", features = ["net"] }
 fluvio-protocol = { version = "0.2.0" }
 fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema" }

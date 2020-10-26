@@ -3,8 +3,9 @@ use serde::{Serialize, Deserialize};
 use futures_util::stream::StreamExt;
 
 use fluvio_protocol::api::{ResponseMessage};
-use fluvio_auth_schema::{AuthorizationScopes, AuthorizationApiRequest, AuthResponse};
 use fluvio_socket::FlvSocket;
+
+use super::request::{AuthorizationScopes, AuthorizationApiRequest, AuthResponse};
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct X509Identity {

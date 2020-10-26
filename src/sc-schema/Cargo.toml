@@ -24,5 +24,4 @@ thiserror = "1.0.20"
 fluvio-types = { version = "0.1.0", path = "../types" }
 fluvio-controlplane-metadata = { version = "0.2.0", default-features = false, path = "../controlplane-metadata" }
 fluvio-protocol = { version = "0.2.0" }
-fluvio-auth-schema = { version = "0.1.0", path = "../auth-schema" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
