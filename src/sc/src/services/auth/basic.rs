@@ -1,16 +1,18 @@
 use std::io::Error as IoError;
 
+
 use async_trait::async_trait;
 
 
 use fluvio_future::net::TcpStream; 
 use fluvio_auth::{ AuthContext, Authorization, TypeAction, InstanceAction, AuthError };
 use fluvio_controlplane_metadata::core::Spec;
-use fluvio_auth::x509_identity::X509Identity;
+//use fluvio_auth::x509_identity::X509Identity;
 
 
 #[derive(Debug,Clone)]
-pub struct BasicAuthorization {}
+pub struct BasicAuthorization {
+}
 
 impl BasicAuthorization {
 
@@ -27,6 +29,7 @@ impl Authorization for BasicAuthorization {
 
     async fn create_auth_context(&self, socket: &mut fluvio_socket::InnerFlvSocket<Self::Stream>
     ) -> Result<Self::Context, AuthError> {
+       // self.authenticstor.auth
         Ok(BasicAuthContext{})
     }
 }
@@ -56,7 +59,7 @@ impl AuthContext for BasicAuthContext {
 
 }
 
-use policy::BasicRbacPolicy;
+
 
 /// basic policy module
 /// does imple subtitution
@@ -67,6 +70,7 @@ mod policy {
     use std::path::PathBuf;
     use std::convert::TryFrom;
 
+    use tracing::debug;
     use serde::{Serialize, Deserialize};
 
     use fluvio_auth::AuthError;
@@ -121,18 +125,21 @@ mod policy {
             request: BasicAuthorizationRequest,
             identity: &X509Identity,
         ) -> Result<bool, AuthError> {
+
+            let (action,object,_instance) = request;
             // For each scope provided in the identity,
             // check if there is a match;
             let is_allowed = identity.scopes().iter().any(|scope| {
+                debug!("role: {}",scope);
                 self.0
-                    .get(&scope.to_lowercase())
+                    .get(scope)
                     .map(|objects| {
                         objects
-                            .get(&request.1)
+                            .get(&object)
                             .map(|actions| {
                                 actions
                                     .iter()
-                                    .any(|action| action == &request.0 || action == &Action::All)
+                                    .any(|permission| permission == &action || permission == &Action::All)
                             })
                             .unwrap_or(false)
                     })
@@ -196,7 +203,7 @@ mod test {
     use fluvio_auth::x509_identity::X509Identity;
     use fluvio_future::test_async;
     
-    use super::{ Action, Object, BasicRbacPolicy};
+    use super::policy::*;
 
     #[test]
     fn test_policy_serialization() {
@@ -216,8 +223,7 @@ mod test {
         let tmp = File::create(tmp_file_path.clone()).expect("failed to create policy file");
         serde_json::to_writer(&tmp, &policy).expect("failed to serialize policy to json file");
 
-        let recovered_policy =
-            Policy::try_from(tmp_file_path).expect("failed to parse policy from file");
+        let recovered_policy = BasicRbacPolicy::try_from(tmp_file_path).expect("failed to parse policy from file");
 
         assert_eq!(
             policy, recovered_policy,
@@ -237,7 +243,10 @@ mod test {
         policy.0.insert(String::from("Default"), role1);
 
 
-        assert!(policy.evaluate((Action::Create,Object::CustomSpu,None),&identity).await.expect("eval"));
+        assert!(!policy.evaluate((Action::Create,Object::CustomSpu,None),&identity).await.expect("eval"));
+        assert!(!policy.evaluate((Action::Create,Object::Topic,None),&identity).await.expect("eval"));
+        assert!(policy.evaluate((Action::Read,Object::Topic,None),&identity).await.expect("eval"));
+       // assert!(policy.evaluate((Action::Delete,Object::Topic,Some("test".owned())),&identity).await.expect("eval");
 
         Ok(())
     }
