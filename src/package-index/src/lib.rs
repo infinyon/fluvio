@@ -11,28 +11,15 @@
 use std::collections::BTreeMap;
 use serde::{Serialize, Deserialize};
 
+mod error;
 mod package_id;
-pub use package_id::{PackageId, GroupName, PackageName, PackageIdError, Registry};
+
+pub use error::{Error, PackageIdError};
+pub use package_id::{PackageId, GroupName, PackageName, Registry};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub const INDEX_CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Failed to parse PackageId")]
-    PackageIdParseError(#[from] PackageIdError),
-    #[error("Failed to lookup package: group {0} does not exist")]
-    MissingGroup(GroupName),
-    #[error("Failed to lookup package: package {0} does not exist")]
-    MissingPackage(PackageName),
-    #[error("Failed to lookup package: release version {0} does not exist")]
-    MissingRelease(semver::Version),
-    #[error("Failed to create new package {0}: it already exists")]
-    PackageAlreadyExists(String),
-    #[error("Failed to add release: release version {0} already exists")]
-    ReleaseAlreadyExists(semver::Version),
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FluvioIndex {
@@ -47,16 +34,14 @@ pub struct FluvioIndex {
 }
 
 impl FluvioIndex {
-    pub fn find_package(&self, id: &str) -> Result<&Package> {
-        let id = id.parse::<PackageId>()?;
+    pub fn find_package(&self, id: &PackageId) -> Result<&Package> {
         let group = self.group(&id.group)?;
         let package = group.package(&id.name)?;
         Ok(package)
     }
 
-    pub fn find_release(&self, id: &str) -> Result<&Release> {
-        let id = id.parse::<PackageId>()?;
-        let version = id.version.ok_or(PackageIdError::MissingVersion)?;
+    pub fn find_release(&self, id: &PackageId) -> Result<&Release> {
+        let version = id.version.as_ref().ok_or(PackageIdError::MissingVersion)?;
         let group = self.group(&id.group)?;
         let package = group.package(&id.name)?;
         let release = package.find_release(&version)?;
@@ -70,8 +55,7 @@ impl FluvioIndex {
         Ok(())
     }
 
-    pub fn add_release(&mut self, id: &str, release: Release) -> Result<()> {
-        let id = id.parse::<PackageId>()?;
+    pub fn add_release(&mut self, id: &PackageId, release: Release) -> Result<()> {
         let group = self.group_mut(&id.group)?;
         let package = group.package_mut(&id.name)?;
         package.add_release(release)?;
@@ -159,18 +143,19 @@ impl GroupPackages {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Package {
     /// The unique name of this package
-    name: PackageName,
+    pub name: PackageName,
     /// The ID of the group that published the package
-    group: GroupName,
+    pub group: GroupName,
     /// The type of package this is
-    kind: PackageKind,
+    pub kind: PackageKind,
     /// The author of this package
-    author: Option<String>,
+    pub author: Option<String>,
     /// The human-readable description of this package
-    description: Option<String>,
+    pub description: Option<String>,
     /// A link to the source code repository of this package
-    repository: Option<String>,
+    pub repository: Option<String>,
     /// The instances of this package that have been published
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     releases: Vec<Release>,
 }
 
@@ -308,7 +293,6 @@ mod tests {
         std::fs::write(test_path(), &index_string).unwrap();
     }
 
-    #[test]
     fn test_create_index() {
         let index = sample_index();
         let index_string = serde_json::to_string_pretty(&index).unwrap();
@@ -318,7 +302,8 @@ mod tests {
     #[test]
     fn test_find_release() {
         let index = sample_index();
-        let release = index.find_release("fluvio/fluvio-cli:1.0.0").unwrap();
+        let id = "fluvio/fluvio-cli:1.0.0".parse().unwrap();
+        let release = index.find_release(&id).unwrap();
         assert_eq!(release.version, semver::Version::parse("1.0.0").unwrap());
         assert_eq!(release.permalink, url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio-cli/1.0.0/fluvio").unwrap());
     }
@@ -337,6 +322,14 @@ mod tests {
     }
 
     #[test]
+    fn test_serialize_package() {
+        let id = "fluvio/fluvio".parse().unwrap();
+        let package = Package::new_binary(&id, "Bob", "A package", "https://github.com");
+        let stringified = serde_json::to_string(&package).unwrap();
+        assert_eq!(stringified, r#"{"name":"fluvio","group":"fluvio","kind":"bin","author":"Bob","description":"A package","repository":"https://github.com"}"#)
+    }
+
+    #[test]
     fn test_add_release() {
         let mut index = sample_index();
         let new_release = Release {
@@ -345,7 +338,7 @@ mod tests {
             checksum: "BLAAAAAH".to_string(),
             yanked: false,
         };
-        let pid = "fluvio/fluvio-cli:1.1.0";
+        let pid = "fluvio/fluvio-cli:1.1.0".parse().unwrap();
         index.add_release(&pid, new_release.clone()).unwrap();
         let searched_release = index.find_release(&pid).unwrap();
         assert_eq!(new_release, *searched_release);
@@ -360,7 +353,7 @@ mod tests {
             checksum: "BLAAAAAH".to_string(),
             yanked: false,
         };
-        let pid = "fluvio/fluvio-cli:2.0.0";
+        let pid = "fluvio/fluvio-cli:2.0.0".parse().unwrap();
         index.add_release(&pid, release_2.clone()).unwrap();
 
         let release_1_1 = Release {
@@ -369,8 +362,8 @@ mod tests {
             checksum: "BLAAAAAH".to_string(),
             yanked: false,
         };
-        let id = "fluvio/fluvio-cli:1.1.0".parse::<PackageId>().unwrap();
-        index.add_release(&id.to_string(), release_1_1.clone()).unwrap();
+        let id = "fluvio/fluvio-cli:1.1.0".parse().unwrap();
+        index.add_release(&id, release_1_1.clone()).unwrap();
 
         let group_packages = index.group(&id.group).unwrap();
         let package = group_packages.package(&id.name).unwrap();
@@ -385,13 +378,5 @@ mod tests {
                 _ => panic!("Should have 2 windows"),
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

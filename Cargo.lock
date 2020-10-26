@@ -932,6 +932,7 @@ dependencies = [
  "lazy_static",
  "semver 0.11.0",
  "serde",
+ "serde_json",
  "thiserror",
  "url",
 ]

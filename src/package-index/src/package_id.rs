@@ -2,23 +2,7 @@ use std::fmt;
 use serde::{Serialize, Deserialize, Deserializer};
 use url::Url;
 
-#[derive(thiserror::Error, Debug)]
-pub enum PackageIdError {
-    #[error("PackageIds must have at least one `/` separator: <group>/<name>:<version>")]
-    TooFewSlashes,
-    #[error("PackageIds must have zero or one `:` separator: <name>(:<version>)?")]
-    InvalidNameVersionSegment,
-    #[error("Invalid semver")]
-    InvalidSemver(#[from] semver::SemVerError),
-    #[error("Invalid package name: {0}")]
-    InvalidPackageName(String),
-    #[error("Invalid group name: {0}")]
-    InvalidGroupName(String),
-    #[error("Version number is required here")]
-    MissingVersion,
-    #[error("Failed to parse registry segment of PackageId")]
-    FailedToParseRegistry(#[from] url::ParseError),
-}
+use crate::error::PackageIdError;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
