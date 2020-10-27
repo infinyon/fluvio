@@ -1,5 +1,9 @@
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
+cfg_if::cfg_if! {
+    if #[cfg(unix)] {
+        use std::os::unix::io::AsRawFd;
+        use std::os::unix::io::RawFd;
+    }
+}
 
 use futures_util::io::{AsyncRead, AsyncWrite};
 use futures_util::StreamExt;
@@ -22,11 +26,13 @@ use crate::InnerFlvStream;
 
 pub type FlvSocket = InnerFlvSocket<TcpStream>;
 
-#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
-pub type AllFlvSocket = InnerFlvSocket<fluvio_future::tls::AllTcpStream>;
-
-#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
-pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "tls")] {
+        pub type AllFlvSocket = InnerFlvSocket<fluvio_future::tls::AllTcpStream>;
+    } else if #[cfg(feature  = "native_tls")] {
+        pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
+    }
+}
 
 /// FlvSocket is high level socket that can send and receive fluvio protocol
 #[derive(Debug)]
@@ -119,9 +125,13 @@ impl FlvSocket {
     }
 }
 
-impl From<TcpStream> for FlvSocket {
-    fn from(tcp_stream: TcpStream) -> Self {
-        let fd = tcp_stream.as_raw_fd();
-        Self::from_stream(tcp_stream, fd)
+cfg_if::cfg_if! {
+    if #[cfg(unix)] {
+        impl From<TcpStream> for FlvSocket {
+            fn from(tcp_stream: TcpStream) -> Self {
+                let fd = tcp_stream.as_raw_fd();
+                Self::from_stream(tcp_stream, fd)
+            }
+        }
     }
 }

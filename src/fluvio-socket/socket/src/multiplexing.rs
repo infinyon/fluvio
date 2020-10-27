@@ -35,11 +35,13 @@ use crate::InnerFlvStream;
 #[allow(unused)]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
-#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
-pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::tls::AllTcpStream>;
-
-#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
-pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "tls")] {
+        pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::tls::AllTcpStream>;
+    } else if #[cfg(feature  = "native_tls")] {
+        pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
+    }
+}
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
 
@@ -189,11 +191,13 @@ impl<R: Request> Stream for AsyncResponse<R> {
     }
 }
 
-#[cfg(all(not(feature = "native_tls"), feature = "tls"))]
-pub type AllSerialSocket = SerialSocket<fluvio_future::tls::AllTcpStream>;
-
-#[cfg(all(not(feature = "tls"), feature = "native_tls"))]
-pub type AllSerialSocket = SerialSocket<fluvio_future::native_tls::AllTcpStream>;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "tls")] {
+        pub type AllSerialSocket = SerialSocket<fluvio_future::tls::AllTcpStream>;
+    } else if #[cfg(feature  = "native_tls")] {
+        pub type AllSerialSocket = SerialSocket<fluvio_future::native_tls::AllTcpStream>;
+    }
+}
 
 /// socket that can send request and response one at time,
 /// this can be only created from multiplex socket
@@ -682,7 +686,7 @@ mod tests {
     }
     */
 
-    #[cfg(feature = "native_tls")]
+    #[cfg(all(unix, feature = "native_tls"))]
     mod tls_test {
         use std::os::unix::io::AsRawFd;
 
