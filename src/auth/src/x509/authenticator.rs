@@ -12,18 +12,22 @@ use flv_tls_proxy::authenticator::Authenticator;
 
 use super::request::{AuthRequest};
 
+#[derive(Debug)]
 struct ScopeBindings(HashMap<String, Vec<String>>);
 
 impl ScopeBindings {
     pub fn load(scope_binding_file_path: &Path) -> Result<Self, IoError> {
         let file = std::fs::read_to_string(scope_binding_file_path)?;
-        Ok(Self(serde_json::from_str(&file)?))
+        let scope_bindings = Self(serde_json::from_str(&file)?);
+        debug!("scope bindings loaded {:?}", scope_bindings);
+        Ok(scope_bindings)
     }
     pub fn get_scopes(&self, principal: &str) -> Vec<String> {
         self.0[principal].clone()
     }
 }
 
+#[derive(Debug)]
 pub struct X509Authenticator {
     scope_bindings: ScopeBindings,
 }
