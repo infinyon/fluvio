@@ -1167,9 +1167,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.4"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9eac52925a38cf92788318aeef688303f07d2ae17d021e2a8cacf194839ced4"
+checksum = "42cb9202b5c9f9a5d22bf6fa05f0ba8d8be049b437f0468dcd736b1505acbcb8"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1313,7 +1313,7 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/fluvio-socket?rev=b717c1e#b717c1ed35b5afc197bac05cb4af9997df239723"
+source = "git+https://github.com/infinyon/fluvio-socket?rev=7766d5a6346ba550660deaaf939dc5c32f97a5c8#7766d5a6346ba550660deaaf939dc5c32f97a5c8"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1355,13 +1355,14 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.0"
-source = "git+https://github.com/infinyon/fluvio-socket?rev=b717c1e#b717c1ed35b5afc197bac05cb4af9997df239723"
+source = "git+https://github.com/infinyon/fluvio-socket?rev=7766d5a6346ba550660deaaf939dc5c32f97a5c8#7766d5a6346ba550660deaaf939dc5c32f97a5c8"
 dependencies = [
  "async-channel",
  "async-mutex",
  "async-net",
  "async-trait",
  "bytes 0.5.6",
+ "cfg-if 1.0.0",
  "chashmap",
  "event-listener",
  "fluvio-future",
