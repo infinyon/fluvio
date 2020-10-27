@@ -1,19 +1,19 @@
 {
     "Default": {
         "CustomSpu": [
-            "Read"
+            "All"
         ],
         "Spu": [
-            "Read"
+            "All"
         ],
         "Topic": [
-            "All"
+            "Read"
         ],
         "Partition": [
-            "All"
+            "Read"
         ],
         "SpuGroup": [
-            "Read"
+            "All"
         ]
     },
     "Root": {

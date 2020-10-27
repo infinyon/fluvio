@@ -14,7 +14,7 @@ impl TlsLoader {
     }
 
     pub fn set_client_tls(&self, cmd: &mut Command) {
-        let client_dir = Cert::load_client();
+        let client_dir = Cert::load_client(&self.option.tls_user);
 
         cmd.arg("--tls")
             .arg("--domain")
@@ -54,12 +54,12 @@ pub struct Cert {
 }
 
 impl Cert {
-    pub fn load_client() -> Self {
+    pub fn load_client(client_user: &str) -> Self {
         let cert_dir = cert_dir();
         Cert {
             ca: cert_dir.join("ca.crt"),
-            cert: cert_dir.join("client.crt"),
-            key: cert_dir.join("client.key"),
+            cert: cert_dir.join(format!("client-{}.crt",client_user)),
+            key: cert_dir.join(format!("client-{}.key",client_user)),
         }
     }
 
