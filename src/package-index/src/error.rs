@@ -14,6 +14,12 @@ pub enum Error {
     PackageAlreadyExists(String),
     #[error("Failed to add release: release version {0} already exists")]
     ReleaseAlreadyExists(semver::Version),
+    #[error("Failed to parse URL")]
+    UrlParseError(#[from] url::ParseError),
+    #[error("Invalid platform {0}")]
+    InvalidPlatform(String),
+    #[error(transparent)]
+    HttpError(#[from] HttpError),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -32,4 +38,10 @@ pub enum PackageIdError {
     MissingVersion,
     #[error("Failed to parse registry segment of PackageId")]
     FailedToParseRegistry(#[from] url::ParseError),
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("Http error: {}", inner)]
+pub struct HttpError {
+    pub inner: http_types::Error,
 }

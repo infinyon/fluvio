@@ -11,14 +11,18 @@
 use std::collections::BTreeMap;
 use serde::{Serialize, Deserialize};
 
+mod http;
 mod error;
+mod platform;
 mod package_id;
 
 pub use error::{Error, PackageIdError};
+pub use platform::Platform;
 pub use package_id::{PackageId, GroupName, PackageName, Registry};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1";
 pub const INDEX_CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Serialize, Deserialize)]
