@@ -10,13 +10,15 @@
 
 use std::collections::BTreeMap;
 use serde::{Serialize, Deserialize};
+use tracing::debug;
 
 mod http;
 mod error;
 mod platform;
 mod package_id;
 
-pub use error::{Error, PackageIdError};
+pub use http::HttpAgent;
+pub use error::Error;
 pub use platform::Platform;
 pub use package_id::{PackageId, GroupName, PackageName, Registry};
 
@@ -45,7 +47,7 @@ impl FluvioIndex {
     }
 
     pub fn find_release(&self, id: &PackageId) -> Result<&Release> {
-        let version = id.version.as_ref().ok_or(PackageIdError::MissingVersion)?;
+        let version = id.version.as_ref().ok_or(Error::MissingVersion)?;
         let group = self.group(&id.group)?;
         let package = group.package(&id.name)?;
         let release = package.find_release(&version)?;
@@ -183,6 +185,18 @@ impl Package {
         }
     }
 
+    /// Returns a reference to the latest release for this package
+    pub fn latest_release(&self) -> Result<&Release> {
+        debug!(releases = ?&self.releases, "Finding latest release");
+        // Since releases are sorted upon insert, we just need to grab the last one
+        self.releases.last()
+            .ok_or(Error::NoReleases(self.package_id().to_string()))
+    }
+
+    fn package_id(&self) -> PackageId {
+        PackageId::new(self.name.clone(), self.group.clone())
+    }
+
     fn find_release(&self, version: &semver::Version) -> Result<&Release> {
         self.releases.iter().find(|it| it.version == *version)
             .ok_or_else(|| Error::MissingRelease(version.clone()))
@@ -224,13 +238,22 @@ pub enum PackageKind {
 pub struct Release {
     /// The version of the package that this release holds
     version: semver::Version,
-    /// A permalink where this release may be downloaded
-    permalink: url::Url,
-    /// The hex-encoded SHA2 hash of the package contents
-    checksum: String,
+    /// The releases per platform for this release version
+    platforms: Vec<ReleasePlatform>,
     /// If a release is yanked, no client should ever try to download it.
     /// A yanked package may have its permalink taken down.
     yanked: bool,
+}
+
+/// A release for a specific platform.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReleasePlatform {
+    /// A unique identifier for this platform
+    platform: Platform,
+    /// A permalink where this platform-specific release may be downloaded
+    permalink: url::Url,
+    /// The hex-encoded SHA2 hash of the package contents
+    checksum: String,
 }
 
 #[cfg(test)]
@@ -245,13 +268,17 @@ mod tests {
     }
 
     fn sample_index() -> FluvioIndex {
-        let release = Release {
-            version: semver::Version::parse("1.0.0").unwrap(),
-            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio-cli/1.0.0/fluvio").unwrap(),
+        let platform_release = ReleasePlatform {
+            platform: Platform::X86_64AppleDarwin,
+            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.1.0/x86_64-apple-darwin/fluvio").unwrap(),
             checksum: "BLAAAAAH".to_string(),
+        };
+        let release = Release {
+            version: semver::Version::parse("0.1.0").unwrap(),
+            platforms: vec![platform_release],
             yanked: false,
         };
-        let package_name = "fluvio-cli".parse::<PackageName>().unwrap();
+        let package_name = "fluvio".parse::<PackageName>().unwrap();
         let group_name = "fluvio".parse::<GroupName>().unwrap();
         let package = Package {
             name: package_name.clone(),
@@ -306,10 +333,13 @@ mod tests {
     #[test]
     fn test_find_release() {
         let index = sample_index();
-        let id = "fluvio/fluvio-cli:1.0.0".parse().unwrap();
+        let id = "fluvio/fluvio:0.1.0".parse().unwrap();
         let release = index.find_release(&id).unwrap();
-        assert_eq!(release.version, semver::Version::parse("1.0.0").unwrap());
-        assert_eq!(release.permalink, url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio-cli/1.0.0/fluvio").unwrap());
+        assert_eq!(release.version, semver::Version::parse("0.1.0").unwrap());
+        let platforms = &release.platforms;
+        assert_eq!(platforms.len(), 1);
+        let platform_release = platforms.get(0).unwrap();
+        assert_eq!(platform_release.permalink, url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.1.0/x86_64-apple-darwin/fluvio").unwrap());
     }
 
     #[test]
@@ -336,13 +366,17 @@ mod tests {
     #[test]
     fn test_add_release() {
         let mut index = sample_index();
+        let platform_release = ReleasePlatform {
+            platform: Platform::X86_64AppleDarwin,
+            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/1.1.0/x86_64-apple-darwin/fluvio").unwrap(),
+            checksum: "BLAAAAAH".to_string(),
+        };
         let new_release = Release {
             version: semver::Version::parse("1.1.0").unwrap(),
-            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio-cli/1.1.0/fluvio").unwrap(),
-            checksum: "BLAAAAAH".to_string(),
+            platforms: vec![platform_release],
             yanked: false,
         };
-        let pid = "fluvio/fluvio-cli:1.1.0".parse().unwrap();
+        let pid = "fluvio/fluvio:1.1.0".parse().unwrap();
         index.add_release(&pid, new_release.clone()).unwrap();
         let searched_release = index.find_release(&pid).unwrap();
         assert_eq!(new_release, *searched_release);
@@ -351,22 +385,30 @@ mod tests {
     #[test]
     fn test_releases_sorted() {
         let mut index = sample_index();
+        let platform_release = ReleasePlatform {
+            platform: Platform::X86_64AppleDarwin,
+            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/2.0.0/x86_64-apple-darwin/fluvio").unwrap(),
+            checksum: "BLAAAAAH".to_string(),
+        };
         let release_2 = Release {
             version: semver::Version::parse("2.0.0").unwrap(),
-            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio-cli/2.0.0/fluvio").unwrap(),
-            checksum: "BLAAAAAH".to_string(),
+            platforms: vec![platform_release],
             yanked: false,
         };
-        let pid = "fluvio/fluvio-cli:2.0.0".parse().unwrap();
+        let pid = "fluvio/fluvio:2.0.0".parse().unwrap();
         index.add_release(&pid, release_2.clone()).unwrap();
 
+        let platform_release = ReleasePlatform {
+            platform: Platform::X86_64AppleDarwin,
+            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/1.1.0/x86_64-apple-darwin/fluvio").unwrap(),
+            checksum: "BLAAAAAH".to_string(),
+        };
         let release_1_1 = Release {
             version: semver::Version::parse("1.1.0").unwrap(),
-            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio-cli/1.1.0/fluvio").unwrap(),
-            checksum: "BLAAAAAH".to_string(),
+            platforms: vec![platform_release],
             yanked: false,
         };
-        let id = "fluvio/fluvio-cli:1.1.0".parse().unwrap();
+        let id = "fluvio/fluvio:1.1.0".parse().unwrap();
         index.add_release(&id, release_1_1.clone()).unwrap();
 
         let group_packages = index.group(&id.group).unwrap();
@@ -382,5 +424,38 @@ mod tests {
                 _ => panic!("Should have 2 windows"),
             }
         }
+    }
+
+    #[test]
+    fn test_latest_release() {
+        let mut index = sample_index();
+
+        let id = "fluvio/fluvio".parse::<PackageId>().unwrap();
+        let platform_release = ReleasePlatform {
+            platform: Platform::X86_64AppleDarwin,
+            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.2.0/x86_64-apple-darwin/fluvio").unwrap(),
+            checksum: "BLAAAAAH".to_string(),
+        };
+        let later_release = Release {
+            version: semver::Version::parse("0.2.0").unwrap(),
+            platforms: vec![platform_release],
+            yanked: false,
+        };
+        index.add_release(&id, later_release).unwrap();
+
+        let platform_release = ReleasePlatform {
+            platform: Platform::X86_64AppleDarwin,
+            permalink: url::Url::parse("https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.0.1/x86_64-apple-darwin/fluvio").unwrap(),
+            checksum: "BLAAAAAH".to_string(),
+        };
+        let earlier_release = Release {
+            version: semver::Version::parse("0.0.1").unwrap(),
+            platforms: vec![platform_release],
+            yanked: false,
+        };
+        index.add_release(&id, earlier_release).unwrap();
+        let package = index.find_package(&id).unwrap();
+        let latest = package.latest_release().unwrap();
+        assert_eq!(latest.version, semver::Version::parse("0.2.0").unwrap());
     }
 }

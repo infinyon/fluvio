@@ -1,10 +1,13 @@
 use std::fmt;
+use serde::{Serialize, Deserialize};
 use crate::Error;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 pub enum Platform {
+    #[serde(rename = "x86_64-apple-darwin")]
     X86_64AppleDarwin,
+    #[serde(rename = "x86_64-unknown-linux-musl")]
     X86_64UnknownLinuxMusl,
 }
 

@@ -1,5 +1,5 @@
 use http_types::{Request, Response};
-use crate::{Result, FluvioIndex, Package, PackageId, PackageIdError, Release, Platform};
+use crate::{Result, FluvioIndex, Package, PackageId, Release, Platform, Error};
 use crate::error::HttpError;
 
 pub struct HttpAgent {
@@ -41,7 +41,7 @@ impl HttpAgent {
 
     pub fn request_release_download(&self, id: &PackageId, platform: &Platform) -> Result<Request> {
         let version = id.version.as_ref()
-            .ok_or(PackageIdError::MissingVersion)?;
+            .ok_or(Error::MissingVersion)?;
         let url = self.base_url.join(
             &format!("packages/{group}/{name}/{version}/{platform}/{name}",
                 group = &id.group,
@@ -51,7 +51,22 @@ impl HttpAgent {
             )
         )?;
 
-        todo!()
+        Ok(Request::get(url))
+    }
+
+    pub fn request_release_checksum(&self, id: &PackageId, platform: &Platform) -> Result<Request> {
+        let version = id.version.as_ref()
+            .ok_or(Error::MissingVersion)?;
+        let url = self.base_url.join(
+            &format!("packages/{group}/{name}/{version}/{platform}/{name}.sha256",
+                group = &id.group,
+                name = &id.name,
+                version = version,
+                platform = platform.as_str(),
+            )
+        )?;
+
+        Ok(Request::get(url))
     }
 
     pub async fn release_from_response(&self, mut response: Response) -> Result<Release> {

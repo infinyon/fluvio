@@ -1,8 +1,7 @@
 use std::fmt;
 use serde::{Serialize, Deserialize, Deserializer};
 use url::Url;
-
-use crate::error::PackageIdError;
+use crate::Error;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -28,10 +27,11 @@ impl Default for Registry {
 }
 
 impl std::str::FromStr for Registry {
-    type Err = url::ParseError;
+    type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let url = url::Url::parse(s)?;
+        let url = url::Url::parse(s)
+            .map_err(Error::FailedToParseRegistry)?;
         Ok(Self(url))
     }
 }
@@ -55,9 +55,9 @@ macro_rules! deserialize_no_slash_string {
     ($mod:ident, $id:ident, $err:expr, $string_name:expr $(,)?) => {
         mod $mod {
             use super::$id;
-            use super::PackageIdError;
+            use super::Error;
             impl std::str::FromStr for $id {
-                type Err = PackageIdError;
+                type Err = Error;
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
                     if s.find('/').is_some() {
@@ -108,7 +108,7 @@ impl fmt::Display for GroupName {
     }
 }
 
-deserialize_no_slash_string!(group, GroupName, PackageIdError::InvalidGroupName, "index group");
+deserialize_no_slash_string!(group, GroupName, Error::InvalidGroupName, "index group");
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize)]
 #[serde(transparent)]
@@ -120,7 +120,7 @@ impl fmt::Display for PackageName {
     }
 }
 
-deserialize_no_slash_string!(package_name, PackageName, PackageIdError::InvalidPackageName, "package name");
+deserialize_no_slash_string!(package_name, PackageName, Error::InvalidPackageName, "package name");
 
 /// A unique identifier for a package that describes its registry, group,
 /// name, and version.
@@ -143,6 +143,15 @@ pub struct PackageId {
 }
 
 impl PackageId {
+    pub fn new(name: PackageName, group: GroupName) -> PackageId {
+        PackageId {
+            registry: None,
+            group,
+            name,
+            version: None,
+        }
+    }
+
     pub fn registry(&self) -> &Registry {
         match self.registry.as_ref() {
             Some(registry) => registry,
@@ -152,18 +161,18 @@ impl PackageId {
 }
 
 impl std::str::FromStr for PackageId {
-    type Err = PackageIdError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 { return Err(PackageIdError::TooFewSlashes); }
+        if segments.len() < 2 { return Err(Error::TooFewSlashes); }
 
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
         let (name_string, version_string) = match &name_version_segments[..] {
             &[name_string] => (name_string, None),
             &[name_string, version_string] => (name_string, Some(version_string)),
-            _ => return Err(PackageIdError::InvalidNameVersionSegment),
+            _ => return Err(Error::InvalidNameVersionSegment),
         };
 
         let version = match version_string {

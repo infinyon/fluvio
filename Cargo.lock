@@ -164,6 +164,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-h1"
+version = "2.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fd9a5f3dbb5065856974e08c2ac24e6f81da6e39d2328de1c03a9a2b34ffb01"
+dependencies = [
+ "async-std",
+ "byte-pool",
+ "futures-core",
+ "http-types",
+ "httparse",
+ "lazy_static",
+ "log",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "async-io"
 version = "1.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -276,6 +292,19 @@ name = "async-task"
 version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
+
+[[package]]
+name = "async-tls"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d85a97c4a0ecce878efd3f945f119c78a646d8975340bca0398f9bb05c30cc52"
+dependencies = [
+ "futures-core",
+ "futures-io",
+ "rustls",
+ "webpki",
+ "webpki-roots",
+]
 
 [[package]]
 name = "async-trait"
@@ -436,6 +465,16 @@ name = "bumpalo"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
+
+[[package]]
+name = "byte-pool"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e38e98299d518ec351ca016363e0cbfc77059dcd08dfa9700d15e405536097a"
+dependencies = [
+ "crossbeam-queue",
+ "stable_deref_trait",
+]
 
 [[package]]
 name = "byte-tools"
@@ -649,6 +688,17 @@ name = "crc32c"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6419af41d57055d753ec718ab9318e08d35378f0094b3ae4779ae15857951aa"
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "774ba60a54c213d409d5353bda12d49cd68d14e45036a285234c8d6f91f92570"
+dependencies = [
+ "cfg-if 0.1.10",
+ "crossbeam-utils 0.7.2",
+ "maybe-uninit",
+]
 
 [[package]]
 name = "crossbeam-utils"
@@ -940,6 +990,8 @@ dependencies = [
 name = "fluvio-cli"
 version = "0.3.0"
 dependencies = [
+ "async-h1",
+ "async-tls",
  "async-trait",
  "bytes 0.5.6",
  "color-eyre",
@@ -950,12 +1002,14 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-controlplane-metadata",
  "fluvio-future",
+ "fluvio-package-index",
  "fluvio-sc",
  "fluvio-sc-schema",
  "fluvio-spu",
  "fluvio-types",
  "flv-util",
  "futures-lite",
+ "http-types",
  "k8-client",
  "k8-config",
  "k8-metadata-client",
@@ -1085,6 +1139,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "tracing",
  "url",
 ]
 
