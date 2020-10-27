@@ -145,10 +145,12 @@ jobs:
         if: startsWith(matrix.os,'ubuntu')
         run: |
           FLV_CMD=true make smoke-test-tls
+          make test-permission-user1
       - name: smoke test tls
         if: startsWith(matrix.os, 'macOS')
         run: |
           FLV_CMD=true make smoke-test-tls DEFAULT_SPU=1
+          make test-permission-user1
 
 
   k8_cluster_test:
@@ -200,3 +202,4 @@ jobs:
       - name: smoke test k8 tls
         run: | 
           FLV_CMD=true make smoke-test-k8-tls
+          make test-permission-user1
