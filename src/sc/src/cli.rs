@@ -97,7 +97,7 @@ impl ScOpt {
 
         config.namespace = self.namespace.unwrap();
         config.x509_auth_scopes = self.x509_auth_scopes;
-        
+
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {
             // Lookup a policy from a path
