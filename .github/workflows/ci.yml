@@ -144,13 +144,13 @@ jobs:
       - name: smoke test tls for linux
         if: startsWith(matrix.os,'ubuntu')
         run: |
-          FLV_CMD=true make smoke-test-tls
-          make test-permission-user1
+          FLV_CMD=true make smoke-test-tls-root
+          make test-permission-user1-local
       - name: smoke test tls
         if: startsWith(matrix.os, 'macOS')
         run: |
-          FLV_CMD=true make smoke-test-tls DEFAULT_SPU=1
-          make test-permission-user1
+          FLV_CMD=true make smoke-test-tls-root DEFAULT_SPU=1
+          make test-permission-user1-local
 
 
   k8_cluster_test:
@@ -201,5 +201,5 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: smoke test k8 tls
         run: | 
-          FLV_CMD=true make smoke-test-k8-tls
-          make test-permission-user1
+          FLV_CMD=true make smoke-test-k8-tls-root
+

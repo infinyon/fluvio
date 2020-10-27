@@ -40,7 +40,8 @@ smoke-test-tls-root:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
 
 # test rbac with user1 who doesn't have topic creation permission
-test-permission-user1:	smoke-test-tls-root
+# assumes cluster is set
+test-permission-user1-local:
 	rm -f /tmp/topic.err
 	- $(FLUVIO_BIN) topic create test3 --cluster localhost:9003 --tls --enable-client-cert \
 		 --domain fluvio.local --ca-cert tls/certs/ca.crt \
@@ -48,16 +49,14 @@ test-permission-user1:	smoke-test-tls-root
 	grep -q permission /tmp/topic.err
 	
 
-
-# test with USER1 user who doesn't have access to topic
-smoke-test-tls-user1:	test-clean-up
-	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
-	$(TEST_BIN) --spu ${DEFAULT_SPU}  --tls --tls-user user1 --local --rust-log ${DEFAULT_LOG}
-
 smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop --rust-log ${DEFAULT_LOG}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
+
+smoke-test-k8-tls-root:	test-clean-up minikube_image
+	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
 
 
