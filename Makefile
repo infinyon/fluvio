@@ -13,6 +13,8 @@ TEST_BIN=FLV_CMD=true ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=1
 DEFAULT_LOG=info
+AUTH_POLICY = ./src/sc/test-data/test-policy.json
+AUTH_SCOPE = ./src/sc/test-data/scopes.json
 
 # install all tools required
 install_tools_mac:
@@ -32,11 +34,41 @@ smoke-test:	test-clean-up
 smoke-test-tls:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
 
+# test rbac with ROOT user
+smoke-test-tls-root:	test-clean-up
+	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
+
+# test rbac with user1 who doesn't have topic creation permission
+# assumes cluster is set
+test-permission-user1-local:
+	rm -f /tmp/topic.err
+	- $(FLUVIO_BIN) topic create test3 --cluster localhost:9003 --tls --enable-client-cert \
+		 --domain fluvio.local --ca-cert tls/certs/ca.crt \
+		 --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key  2> /tmp/topic.err
+	grep -q permission /tmp/topic.err
+	
+
 smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop --rust-log ${DEFAULT_LOG}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
+
+smoke-test-k8-tls-root:	test-clean-up minikube_image
+	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
+
+
+# test rbac
+#
+#
+#
+
+test-rbac:
+	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
+
+
 
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall
@@ -89,21 +121,21 @@ publish_cli:
 
 
 
-# publish docker image for release
-# this just retag image build from fluvio_image
+# 
+# Docker actions
+#
 release_image:	RELEASE=true
 release_image:	fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(VERSION)
 	docker push $(DOCKER_IMAGE):$(VERSION)
 
 
-# publish docker image as latest
 latest_image:	RELEASE=true
 latest_image:	fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
 	docker push $(DOCKER_IMAGE):latest
 
-# publish docker image as nightly
+
 nightly_image:	RELEASE=true
 nightly_image:	fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):nightly
@@ -137,7 +169,9 @@ make publish_fluvio_image:
 	-d '{"ref":"master"}'
 
 
-## publish helm
+#
+# Helm actions
+#
 
 helm-install-plugin:
 	helm plugin install https://github.com/chartmuseum/helm-push.git
@@ -151,17 +185,11 @@ helm-publish-app:
 	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
 
 
-# create releases
-# this assume gh has been succesfull authenticated
-#create_release_gh:	
-#	gh release create $(GITHUB_TAG) 
-#		'/tmp/fluvio-$(TARGET_LINUX)-release.tar.gz#fluvio-$(TARGET_LINUX)-release.tar.gz' \
-#		--title $(GITHUB_TAG) \
-#		--notes fluvio
 
+#
+# Github release actions
+#
 
-
-################# Github releases
 
 
 GITHUB_USER=infinyon
