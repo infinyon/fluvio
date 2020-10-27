@@ -3,6 +3,7 @@ name = "fluvio-package-index"
 version = "0.1.0"
 authors = ["Infinyon Contributors <team@infiyon.com>"]
 edition = "2018"
+build = "build.rs"
 
 [lib]
 name = "fluvio_index"

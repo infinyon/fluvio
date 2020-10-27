@@ -48,6 +48,8 @@ thiserror = "1.0.20"
 eyre = "0.6.1"
 color-eyre = "0.5.5"
 which = "4.0.2"
+sha2 = "0.9.1"
+hex = "0.4.2"
 
 # Fluvio dependencies
 

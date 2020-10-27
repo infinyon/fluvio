@@ -1,5 +1,5 @@
 use http_types::{Request, Response};
-use crate::{Result, FluvioIndex, Package, PackageId, Release, Platform, Error};
+use crate::{Result, FluvioIndex, Package, PackageId, Target, Error};
 use crate::error::HttpError;
 
 pub struct HttpAgent {
@@ -25,11 +25,13 @@ impl HttpAgent {
     }
 
     pub fn request_package(&self, id: &PackageId) -> Result<Request> {
+        println!("BASE_URL: {}", &self.base_url);
         let url = self.base_url.join(
             &format!("packages/{}/{}/meta.json",
                     id.group,
                     id.name
             ))?;
+        println!("REQUEST URL: {}", &url);
         Ok(Request::get(url))
     }
 
@@ -39,39 +41,43 @@ impl HttpAgent {
         Ok(package)
     }
 
-    pub fn request_release_download(&self, id: &PackageId, platform: &Platform) -> Result<Request> {
+    pub fn request_release_download(&self, id: &PackageId, target: Target) -> Result<Request> {
         let version = id.version.as_ref()
             .ok_or(Error::MissingVersion)?;
         let url = self.base_url.join(
-            &format!("packages/{group}/{name}/{version}/{platform}/{name}",
-                group = &id.group,
-                name = &id.name,
-                version = version,
-                platform = platform.as_str(),
+            &format!("packages/{group}/{name}/{version}/{target}/{name}",
+                     group = &id.group,
+                     name = &id.name,
+                     version = version,
+                     target = target.as_str(),
             )
         )?;
 
         Ok(Request::get(url))
     }
 
-    pub fn request_release_checksum(&self, id: &PackageId, platform: &Platform) -> Result<Request> {
+    pub fn request_release_checksum(&self, id: &PackageId, target: Target) -> Result<Request> {
         let version = id.version.as_ref()
             .ok_or(Error::MissingVersion)?;
         let url = self.base_url.join(
-            &format!("packages/{group}/{name}/{version}/{platform}/{name}.sha256",
-                group = &id.group,
-                name = &id.name,
-                version = version,
-                platform = platform.as_str(),
+            &format!("packages/{group}/{name}/{version}/{target}/{name}.sha256",
+                     group = &id.group,
+                     name = &id.name,
+                     version = version,
+                     target = target.as_str(),
             )
         )?;
 
         Ok(Request::get(url))
     }
 
-    pub async fn release_from_response(&self, mut response: Response) -> Result<Release> {
-        let release: Release = response.body_json().await
-            .map_err(|inner| HttpError { inner })?;
-        Ok(release)
+    pub async fn release_from_response(&self, mut response: Response) -> Result<Vec<u8>> {
+        let bytes = response.body_bytes().await?;
+        Ok(bytes)
+    }
+
+    pub async fn checksum_from_response(&self, mut response: Response) -> Result<String> {
+        let string = response.body_string().await?;
+        Ok(string)
     }
 }

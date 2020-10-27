@@ -1009,6 +1009,7 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "futures-lite",
+ "hex",
  "http-types",
  "k8-client",
  "k8-config",
@@ -1022,6 +1023,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2",
  "structopt",
  "thiserror",
  "toml",
@@ -1732,6 +1734,12 @@ checksum = "5aca5565f760fb5b220e499d72710ed156fdb74e631659e99377d9ebfbd13ae8"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "hex"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
 
 [[package]]
 name = "hkdf"

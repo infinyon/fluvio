@@ -1,4 +1,5 @@
 use crate::package_id::{GroupName, PackageName};
+use crate::Target;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -8,6 +9,8 @@ pub enum Error {
     MissingPackage(PackageName),
     #[error("Failed to lookup package: release version {0} does not exist")]
     MissingRelease(semver::Version),
+    #[error("Failed to lookup package: target {0} does not exist")]
+    MissingTarget(Target),
     #[error("Package {0} has no releases")]
     NoReleases(String),
     #[error("Failed to create new package {0}: it already exists")]
@@ -20,6 +23,8 @@ pub enum Error {
     InvalidPlatform(String),
     #[error(transparent)]
     HttpError(#[from] HttpError),
+    #[error("DANGER: Downloaded package checksum did not match")]
+    ChecksumError,
 
     // Package ID specific errors
     #[error("PackageIds must have at least one `/` separator: <group>/<name>:<version>")]
@@ -42,4 +47,10 @@ pub enum Error {
 #[error("Http error: {}", inner)]
 pub struct HttpError {
     pub inner: http_types::Error,
+}
+
+impl From<http_types::Error> for Error {
+    fn from(inner: http_types::Error) -> Self {
+        Self::HttpError(HttpError { inner })
+    }
 }
