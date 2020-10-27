@@ -35,7 +35,7 @@ impl ClusterUninstallerBuilder {
     ///
     /// ```no_run
     /// # use fluvio_cluster::ClusterUninstaller;
-    /// let installer = ClusterUnInstaller::new()
+    /// let installer = ClusterUninstaller::new()
     ///     .build()
     ///     .expect("should create ClusterUnInstaller");
     /// ```
@@ -106,13 +106,13 @@ impl ClusterUninstaller {
     /// # use fluvio_cluster::ClusterUninstaller;
     /// let uninstaller = ClusterUninstaller::new()
     ///     .with_namespace("my-namespace")
-    ///     .build();
+    ///     .build().unwrap();
     /// uninstaller.uninstall();
     /// ```
     #[instrument(skip(self))]
     pub async fn uninstall(&self) -> Result<(), ClusterError> {
         info!("Removing kubernetes cluster");
-        self.helm_client.uninstall(&self.config.name)?;
+        self.helm_client.uninstall(&self.config.name, true)?;
 
         let client = load_and_share().map_err(|err| ClusterError::Other(err.to_string()))?;
 
@@ -131,13 +131,13 @@ impl ClusterUninstaller {
     /// # use fluvio_cluster::ClusterUninstaller;
     /// let uninstaller = ClusterUninstaller::new()
     ///     .with_namespace("my-namespace")
-    ///     .build();
+    ///     .build().unwrap();
     /// uninstaller.uninstall_sys();
     /// ```
     #[instrument(skip(self))]
     pub fn uninstall_sys(&self) -> Result<(), ClusterError> {
         info!("Removing fluvio sys chart");
-        self.helm_client.uninstall(DEFAULT_CHART_SYS_REPO)?;
+        self.helm_client.uninstall(DEFAULT_CHART_SYS_REPO, true)?;
         info!("fluvio sys chart has been uninstalled");
         self.cleanup()?;
 
@@ -152,7 +152,7 @@ impl ClusterUninstaller {
     /// # use fluvio_cluster::ClusterUninstaller;
     /// let uninstaller = ClusterUninstaller::new()
     ///     .with_name("my-namespace")
-    ///     .build();
+    ///     .build().unwrap();
     /// uninstaller.uninstall_local();
     /// ```
     pub fn uninstall_local(&self) -> Result<(), ClusterError> {

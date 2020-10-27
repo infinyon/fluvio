@@ -166,23 +166,33 @@ pub enum CheckError {
     PreFlightCheckError,
 }
 
+/// Captures the status of the check
+pub enum StatusCheck {
+    /// Everything seems to be working as expected, check passed
+    Working(String),
+    /// Check failed due to an error, there is no work around
+    NotWorkingNoRemediation(CheckError),
+    /// Check failed due to an error, there is a work around fix
+    NotWorking(CheckError),
+}
+
 #[async_trait]
 pub trait InstallCheck: Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
-    async fn perform_check(&self) -> Result<String, CheckError>;
+    async fn perform_check(&self) -> StatusCheck;
 }
 
 struct LoadableConfig;
 
 #[async_trait]
 impl InstallCheck for LoadableConfig {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> StatusCheck {
         match check_cluster_server_host() {
-            Ok(_) => Ok(
+            Ok(_) => StatusCheck::Working(
                 "Kubernetes config is loadable and cluster hostname is not an IP address"
                     .to_string(),
             ),
-            Err(err) => Err(err),
+            Err(err) => StatusCheck::NotWorkingNoRemediation(err),
         }
     }
 }
@@ -191,10 +201,10 @@ struct K8Version;
 
 #[async_trait]
 impl InstallCheck for K8Version {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> StatusCheck {
         match k8_version_check() {
-            Ok(_) => Ok("Supported kubernetes version is installed".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Supported kubernetes version is installed".to_string()),
+            Err(err) => StatusCheck::NotWorkingNoRemediation(err),
         }
     }
 }
@@ -203,11 +213,16 @@ struct HelmVersion;
 
 #[async_trait]
 impl InstallCheck for HelmVersion {
-    async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new()?;
+    async fn perform_check(&self) -> StatusCheck {
+        let helm_client = match HelmClient::new() {
+            Ok(client) => client,
+            Err(err) => {
+                return StatusCheck::NotWorkingNoRemediation(CheckError::HelmError { source: err });
+            }
+        };
         match check_helm_version(&helm_client, DEFAULT_HELM_VERSION) {
-            Ok(_) => Ok("Supported helm version is installed".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Supported helm version is installed".to_string()),
+            Err(err) => StatusCheck::NotWorkingNoRemediation(err),
         }
     }
 }
@@ -216,11 +231,16 @@ struct SysChart;
 
 #[async_trait]
 impl InstallCheck for SysChart {
-    async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new()?;
+    async fn perform_check(&self) -> StatusCheck {
+        let helm_client = match HelmClient::new() {
+            Ok(client) => client,
+            Err(err) => {
+                return StatusCheck::NotWorkingNoRemediation(CheckError::HelmError { source: err });
+            }
+        };
         match check_system_chart(&helm_client, DEFAULT_CHART_SYS_REPO) {
-            Ok(_) => Ok("Fluvio system charts are installed".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Fluvio system charts are installed".to_string()),
+            Err(err) => StatusCheck::NotWorking(err),
         }
     }
 }
@@ -229,11 +249,16 @@ struct AlreadyInstalled;
 
 #[async_trait]
 impl InstallCheck for AlreadyInstalled {
-    async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new()?;
+    async fn perform_check(&self) -> StatusCheck {
+        let helm_client = match HelmClient::new() {
+            Ok(client) => client,
+            Err(err) => {
+                return StatusCheck::NotWorkingNoRemediation(CheckError::HelmError { source: err });
+            }
+        };
         match check_already_installed(&helm_client, DEFAULT_CHART_APP_REPO) {
-            Ok(_) => Ok("".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("".to_string()),
+            Err(err) => StatusCheck::NotWorking(err),
         }
     }
 }
@@ -242,10 +267,10 @@ struct CreateServicePermission;
 
 #[async_trait]
 impl InstallCheck for CreateServicePermission {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> StatusCheck {
         match check_permission(RESOURCE_SERVICE) {
-            Ok(_) => Ok("Can create a Service".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Can create a Service".to_string()),
+            Err(err) => StatusCheck::NotWorkingNoRemediation(err),
         }
     }
 }
@@ -254,10 +279,10 @@ struct CreateCrdPermission;
 
 #[async_trait]
 impl InstallCheck for CreateCrdPermission {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> StatusCheck {
         match check_permission(RESOURCE_CRD) {
-            Ok(_) => Ok("Can create CustomResourceDefinitions".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Can create CustomResourceDefinitions".to_string()),
+            Err(err) => StatusCheck::NotWorkingNoRemediation(err),
         }
     }
 }
@@ -266,10 +291,10 @@ struct CreateServiceAccountPermission;
 
 #[async_trait]
 impl InstallCheck for CreateServiceAccountPermission {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> StatusCheck {
         match check_permission(RESOURCE_SERVICE_ACCOUNT) {
-            Ok(_) => Ok("Can create ServiceAccount".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Can create ServiceAccount".to_string()),
+            Err(err) => StatusCheck::NotWorkingNoRemediation(err),
         }
     }
 }
@@ -278,10 +303,10 @@ struct LoadBalancer;
 
 #[async_trait]
 impl InstallCheck for LoadBalancer {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> StatusCheck {
         match check_load_balancer_status().await {
-            Ok(_) => Ok("Load Balancer is up".to_string()),
-            Err(err) => Err(err),
+            Ok(_) => StatusCheck::Working("Load Balancer is up".to_string()),
+            Err(err) => StatusCheck::NotWorking(err),
         }
     }
 }
@@ -317,11 +342,12 @@ impl ClusterChecker {
 
         for check in checks {
             match check.perform_check().await {
-                Ok(success) => {
+                StatusCheck::Working(success) => {
                     let msg = format!("ok: {}", success);
                     println!("✔️  {}", msg.green());
                 }
-                Err(failure) => {
+                StatusCheck::NotWorkingNoRemediation(failure)
+                | StatusCheck::NotWorking(failure) => {
                     let msg = format!("failed: {}", failure);
                     println!("❌ {}", msg.red());
                     failures.push(failure);
