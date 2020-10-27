@@ -28,7 +28,6 @@ serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
 fluvio-types = { path = "../types", version = "0.1.0" }
-fluvio-socket = { version = "0.3.0" }
 fluvio-future = { version = "0.1.0", features = ["fs","mmap"] }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
