@@ -124,8 +124,7 @@ mod policy {
     impl TryFrom<PathBuf> for BasicRbacPolicy {
         type Error = std::io::Error;
         fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
-
-            debug!("reading basic policy: {:#?}",path);
+            debug!("reading basic policy: {:#?}", path);
             let file = read(path)?;
             let policy: BasicRbacPolicy = serde_json::from_slice(&file)?;
             Ok(policy)

@@ -96,15 +96,13 @@ impl ScOpt {
         }
         config.namespace = self.namespace.unwrap();
 
-        
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {
             // Lookup a policy from a path
             Some(p) => Some(BasicRbacPolicy::try_from(p)?),
             // Use root-only default policy if no policy path is found;
-            None => None
+            None => None,
         };
-        
 
         let tls = self.tls;
 
