@@ -21,8 +21,6 @@ members = [
 ]
 
 [patch.crates-io]
-fluvio-socket = { git = 'https://github.com/infinyon/fluvio-socket', rev = "7766d5a6346ba550660deaaf939dc5c32f97a5c8" }
-fluvio-service = { git = 'https://github.com/infinyon/fluvio-socket', rev = "7766d5a6346ba550660deaaf939dc5c32f97a5c8" }
 async-tls = { version = "0.10.0", git = "https://github.com/infinyon/async-tls.git", rev = "375f2a483a7bdf85d66a29c3b68258a78c515a93" }
 
 # profile to make image sizer smaller

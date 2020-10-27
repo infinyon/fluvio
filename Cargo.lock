@@ -1159,7 +1159,7 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.2.1",
+ "fluvio-socket 0.3.0",
  "flv-util",
  "futures-util",
  "log",
@@ -1313,7 +1313,8 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/fluvio-socket?rev=7766d5a6346ba550660deaaf939dc5c32f97a5c8#7766d5a6346ba550660deaaf939dc5c32f97a5c8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16997e86923f688f984cf04296957cf6ae50e8ec2e9302c435a0aa839789c476"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1355,7 +1356,8 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.0"
-source = "git+https://github.com/infinyon/fluvio-socket?rev=7766d5a6346ba550660deaaf939dc5c32f97a5c8#7766d5a6346ba550660deaaf939dc5c32f97a5c8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96cee99599bbca88d9ced02b233bf13aef49917b8d9f530f3a1c891a4f616464"
 dependencies = [
  "async-channel",
  "async-mutex",
