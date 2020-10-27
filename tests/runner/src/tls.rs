@@ -58,8 +58,8 @@ impl Cert {
         let cert_dir = cert_dir();
         Cert {
             ca: cert_dir.join("ca.crt"),
-            cert: cert_dir.join(format!("client-{}.crt",client_user)),
-            key: cert_dir.join(format!("client-{}.key",client_user)),
+            cert: cert_dir.join(format!("client-{}.crt", client_user)),
+            key: cert_dir.join(format!("client-{}.key", client_user)),
         }
     }
 

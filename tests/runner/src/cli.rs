@@ -55,7 +55,7 @@ pub struct TestOption {
     tls: bool,
 
     /// tls user, only used if tls is used
-    #[structopt(long,default_value = "root")]
+    #[structopt(long, default_value = "root")]
     pub tls_user: String,
 
     /// run local environment
