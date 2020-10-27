@@ -4,14 +4,18 @@
 //! Converts Custom Spu API request into KV request and sends to KV store for processing.
 //!
 use tracing::{debug, trace};
-use std::io::Error as IoError;
+use std::io::{Error as IoError};
 
 use dataplane::ErrorCode;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::spu::CustomSpuSpec;
 use fluvio_sc_schema::spu::SpuSpec;
-use crate::core::*;
+use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_auth::{AuthContext, TypeAction};
+use fluvio_controlplane_metadata::extended::SpecExt;
+
+use crate::core::{SharedContext};
+use crate::services::auth::AuthServiceContext;
 
 pub struct RegisterCustomSpu {
     ctx: SharedContext,
@@ -21,15 +25,33 @@ pub struct RegisterCustomSpu {
 
 impl RegisterCustomSpu {
     /// Handler for create spus request
-    pub async fn handle_register_custom_spu_request(
+    pub async fn handle_register_custom_spu_request<AC: AuthContext>(
         name: String,
         spec: CustomSpuSpec,
         dry_run: bool,
-        ctx: SharedContext,
+        auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
         debug!("api request: create custom-spu '{}({})'", name, spec.id);
+        if let Ok(authorized) = auth_ctx
+            .auth
+            .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Read)
+            .await
+        {
+            if !authorized {
+                trace!("authorization failed");
+                return Status::new(
+                    name.clone(),
+                    ErrorCode::PermissionDenied,
+                    Some(String::from("permission denied")),
+                );
+            }
+        }
 
-        let cmd = Self { name, spec, ctx };
+        let cmd = Self {
+            name,
+            spec,
+            ctx: auth_ctx.global_ctx.clone(),
+        };
 
         // validate custom-spu request
         if let Err(status) = cmd.validate_custom_spu_request().await {

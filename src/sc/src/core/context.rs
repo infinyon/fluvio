@@ -15,6 +15,8 @@ use crate::controllers::spus::SpuStatusChannel;
 
 pub type SharedContext = Arc<Context>;
 
+/// Global Context for SC
+/// This is where we store globally accessible data
 #[derive(Debug)]
 pub struct Context {
     spus: StoreContext<SpuSpec>,

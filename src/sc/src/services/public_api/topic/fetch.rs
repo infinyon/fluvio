@@ -1,18 +1,35 @@
 use tracing::{trace, debug};
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 use fluvio_controlplane_metadata::store::KeyFilter;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{ListResponse, Metadata};
 use fluvio_sc_schema::topic::TopicSpec;
+use fluvio_auth::{AuthContext, TypeAction};
+use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::core::Context;
+use crate::services::auth::AuthServiceContext;
 
-pub async fn handle_fetch_topics_request(
+pub async fn handle_fetch_topics_request<AC: AuthContext>(
     filters: Vec<String>,
-    ctx: &Context,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
     debug!("retrieving topic list: {:#?}", filters);
-    let topics: Vec<Metadata<TopicSpec>> = ctx
+
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_type_action(TopicSpec::OBJECT_TYPE, TypeAction::Read)
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            return Ok(ListResponse::Topic(vec![]));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+    }
+
+    let topics: Vec<Metadata<TopicSpec>> = auth_ctx
+        .global_ctx
         .topics()
         .store()
         .read()

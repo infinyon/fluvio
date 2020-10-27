@@ -10,6 +10,8 @@
 use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::path::PathBuf;
+use std::convert::TryFrom;
 
 use tracing::info;
 use tracing::debug;
@@ -20,8 +22,11 @@ use k8_client::K8Config;
 use fluvio_future::tls::TlsAcceptor;
 use fluvio_future::tls::AcceptorBuilder;
 
+use crate::services::auth::basic::BasicRbacPolicy;
 use crate::error::ScError;
 use crate::config::ScConfig;
+
+type Config = (ScConfig, Option<BasicRbacPolicy>);
 
 /// cli options
 #[derive(Debug, StructOpt, Default)]
@@ -41,13 +46,27 @@ pub struct ScOpt {
 
     #[structopt(flatten)]
     tls: TlsConfig,
+
+    #[structopt(
+        long = "authorization-scopes",
+        value_name = "authorization scopes path",
+        env
+    )]
+    x509_auth_scopes: Option<String>,
+
+    #[structopt(
+        long = "authorization-policy",
+        value_name = "authorization policy path",
+        env
+    )]
+    auth_policy: Option<PathBuf>,
 }
 
 impl ScOpt {
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
-    ) -> Result<(ScConfig, K8Config, Option<(String, TlsConfig)>), ScError> {
+    ) -> Result<(Config, K8Config, Option<(String, TlsConfig)>), ScError> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -64,7 +83,7 @@ impl ScOpt {
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(self) -> Result<(ScConfig, Option<(String, TlsConfig)>), IoError> {
+    fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
 
         // apply our option
@@ -76,6 +95,14 @@ impl ScOpt {
             config.private_endpoint = private_addr;
         }
         config.namespace = self.namespace.unwrap();
+
+        // Set Configuration Authorzation Policy
+        let policy = match self.auth_policy {
+            // Lookup a policy from a path
+            Some(p) => Some(BasicRbacPolicy::try_from(p)?),
+            // Use root-only default policy if no policy path is found;
+            None => None,
+        };
 
         let tls = self.tls;
 
@@ -91,13 +118,13 @@ impl ScOpt {
                 )
             })?;
 
-            Ok((config, Some((proxy_addr, tls))))
+            Ok(((config, policy), Some((proxy_addr, tls))))
         } else {
-            Ok((config, None))
+            Ok(((config, policy), None))
         }
     }
 
-    pub fn parse_cli_or_exit(self) -> (ScConfig, K8Config, Option<(String, TlsConfig)>) {
+    pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);
