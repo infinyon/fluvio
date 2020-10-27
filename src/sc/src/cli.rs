@@ -52,7 +52,7 @@ pub struct ScOpt {
         value_name = "authorization scopes path",
         env
     )]
-    x509_auth_scopes: Option<String>,
+    x509_auth_scopes: Option<PathBuf>,
 
     #[structopt(
         long = "authorization-policy",
@@ -94,8 +94,10 @@ impl ScOpt {
         if let Some(private_addr) = self.bind_private {
             config.private_endpoint = private_addr;
         }
-        config.namespace = self.namespace.unwrap();
 
+        config.namespace = self.namespace.unwrap();
+        config.x509_auth_scopes = self.x509_auth_scopes;
+        
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {
             // Lookup a policy from a path
