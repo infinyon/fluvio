@@ -7,45 +7,38 @@ use crate::CliError;
 use fluvio_index::{PackageId, HttpAgent, Target};
 use thiserror::private::DisplayAsDisplay;
 
-const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio-new";
+const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
 fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
     let home = dirs::home_dir()
         .ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
-    Ok(home.join(".fluvio/bin"))
+    Ok(home.join(".fluvio/bin/"))
 }
 
 #[derive(StructOpt, Debug)]
 pub struct UpdateOpt {
-    /// Self-update the Fluvio CLI
-    #[structopt(long = "self")]
-    update_me: bool,
-    /// Update the named package
-    package: Option<PackageId>,
+    // /// Update the named package
+    // package: Option<PackageId>,
 }
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<String, CliError> {
         let agent = HttpAgent::new();
 
-        if self.update_me {
+        // if let Some(id) = self.package {
+        //     update_package(id)?;
+        //     return Ok("".to_string())
+        // } else {
             update_self(&agent).await?;
-            return Ok("".to_string());
-        }
+        // }
 
-        if let Some(id) = self.package {
-            update_package(id)?;
-            return Ok("".to_string())
-        }
-
-        update_all()?;
         Ok("".to_string())
     }
 }
 
 async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     let target = fluvio_index::PACKAGE_TARGET.parse::<Target>()?;
-    let id: PackageId = FLUVIO_PACKAGE_ID.parse::<PackageId>()?;
+    let mut id: PackageId = FLUVIO_PACKAGE_ID.parse::<PackageId>()?;
 
     let request = agent.request_package(&id)?;
     debug!("Requesting package manifest: {}", request.url().as_display());
@@ -58,6 +51,7 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     }
 
     // Download the package file from the package registry
+    id.version = Some(latest_release.version.clone());
     let download_request = agent.request_release_download(&id, target)?;
     debug!(url = %download_request.url(), "Requesting package download:");
     let response = crate::http::execute(download_request).await?;
@@ -71,6 +65,7 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     if !verify_checksum(&package_file, &package_checksum) {
         return Err(fluvio_index::Error::ChecksumError.into());
     }
+    debug!(hex = %package_checksum, "Verified checksum");
 
     // Create ~/.fluvio/bin/ if it does not exist
     let download_dir = fluvio_bin_dir()?;
@@ -106,9 +101,5 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
 }
 
 fn update_package(id: PackageId) -> Result<String, CliError> {
-    todo!()
-}
-
-fn update_all() -> Result<String, CliError> {
     todo!()
 }

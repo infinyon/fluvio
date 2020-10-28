@@ -25,13 +25,11 @@ impl HttpAgent {
     }
 
     pub fn request_package(&self, id: &PackageId) -> Result<Request> {
-        println!("BASE_URL: {}", &self.base_url);
         let url = self.base_url.join(
             &format!("packages/{}/{}/meta.json",
                     id.group,
                     id.name
             ))?;
-        println!("REQUEST URL: {}", &url);
         Ok(Request::get(url))
     }
 
