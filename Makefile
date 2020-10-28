@@ -110,7 +110,7 @@ clean_build:
 
 release:	update_version release_image helm_publish_app publish_cli
 
-# update version
+# This needed to be run every time we increment VERSION
 update_version:
 	cp VERSION	src/cli/src
 
