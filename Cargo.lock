@@ -218,18 +218,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 
 [[package]]
-name = "async-tls"
-version = "0.10.0"
-source = "git+https://github.com/infinyon/async-tls.git?rev=375f2a483a7bdf85d66a29c3b68258a78c515a93#375f2a483a7bdf85d66a29c3b68258a78c515a93"
-dependencies = [
- "futures-core",
- "futures-io",
- "rustls 0.18.1",
- "webpki",
- "webpki-roots 0.20.0",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -802,9 +790,9 @@ checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 
 [[package]]
 name = "eyre"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4c5cb4dc433c59f09df4b4450f649cbfed61e8a3505abe32e4154066439157e"
+checksum = "534ce924bff9118be8b28b24ede6bf7e96a00b53e4ded25050aa7b526e051e1a"
 dependencies = [
  "indenter",
  "once_cell",
@@ -852,6 +840,19 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
+]
+
+[[package]]
+name = "fluvio-async-tls"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deb06ff818853b26ea7b2f82fdab29a8d88bd7000c14cd5020e809ed66f83476"
+dependencies = [
+ "futures-core",
+ "futures-io",
+ "rustls 0.18.1",
+ "webpki",
+ "webpki-roots 0.20.0",
 ]
 
 [[package]]
@@ -988,17 +989,17 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42cb9202b5c9f9a5d22bf6fa05f0ba8d8be049b437f0468dcd736b1505acbcb8"
+checksum = "ecd6e5839de09e94633050f1b7f9ddc8fb595d196c230c76fe7e9f6f6c0755ef"
 dependencies = [
  "async-fs",
  "async-io",
  "async-native-tls",
  "async-net",
  "async-std",
- "async-tls",
  "async-trait",
+ "fluvio-async-tls",
  "fluvio-test-derive",
  "futures-lite",
  "log",
@@ -1345,9 +1346,9 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da5b118f6a53f4536bea378533c252a1c8a9163e81719467f2abd6878e3d1d11"
+checksum = "8ec8be13e783dcc9b9d0e8d91e0e86f03b673ce893338d7891e9188b095e9984"
 dependencies = [
  "async-trait",
  "fluvio-future",
@@ -2419,9 +2420,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro-hack"
-version = "0.5.18"
+version = "0.5.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99c605b9a0adc77b7211c6b1f722dcb613d68d66859a44f3d485a6da332b0598"
+checksum = "dbf0c48bc1d91375ae5c3cd81e3722dff1abcf81a30960240640d223f59fe0e5"
 
 [[package]]
 name = "proc-macro-nested"
