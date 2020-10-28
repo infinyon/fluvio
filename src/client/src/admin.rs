@@ -4,13 +4,19 @@ use std::fmt::Display;
 use tracing::debug;
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
-use fluvio_future::tls::AllDomainConnector;
-use fluvio_socket::*;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::AllMultiplexerSocket;
 
-use crate::client::*;
+#[cfg(feature = "native_tls")]
+use fluvio_future::native_tls::AllDomainConnector;
+#[cfg(feature = "rust_tls")]
+use fluvio_future::tls::AllDomainConnector;
+
+use crate::client::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
+use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};
 use crate::config::ConfigFile;
 
 /// An interface for managing a Fluvio cluster
@@ -99,7 +105,9 @@ impl FluvioAdmin {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        let connector = AllDomainConnector::try_from(config.tls.clone())?;
+        use std::sync::Arc;
+
+        let connector = Arc::new(AllDomainConnector::try_from(config.tls.clone())?);
         let config = ClientConfig::new(&config.addr, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());

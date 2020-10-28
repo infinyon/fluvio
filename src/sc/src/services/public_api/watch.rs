@@ -10,23 +10,20 @@ use futures_util::io::AsyncWrite;
 use fluvio_socket::InnerExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
-use fluvio_sc_schema::objects::WatchRequest;
-use fluvio_sc_schema::objects::WatchResponse;
-use fluvio_sc_schema::objects::Metadata;
-use fluvio_sc_schema::objects::MetadataUpdate;
+use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
-use crate::core::SharedContext;
+use crate::services::auth::AuthServiceContext;
 use crate::stores::StoreContext;
 
 /// handle watch request by spawning watch controller for each store
-pub fn handle_watch_request<T>(
+pub fn handle_watch_request<T, AC>(
     request: RequestMessage<WatchRequest>,
-    ctx: SharedContext,
+    auth_ctx: &AuthServiceContext<AC>,
     sink: InnerExclusiveFlvSink<T>,
     end_event: Arc<Event>,
 ) where
@@ -41,7 +38,7 @@ pub fn handle_watch_request<T>(
             epoch,
             sink,
             end_event,
-            ctx.spus().clone(),
+            auth_ctx.global_ctx.spus().clone(),
             header,
         ),
         WatchRequest::SpuGroup(_) => unimplemented!(),
@@ -49,7 +46,7 @@ pub fn handle_watch_request<T>(
             epoch,
             sink,
             end_event,
-            ctx.partitions().clone(),
+            auth_ctx.global_ctx.partitions().clone(),
             header,
         ),
     }

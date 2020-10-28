@@ -7,45 +7,67 @@
 //!
 
 use std::sync::Arc;
+use std::marker::PhantomData;
+use std::fmt::Debug;
+use std::io::Error as IoError;
 
 use async_trait::async_trait;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use event_listener::Event;
 
+use fluvio_auth::Authorization;
+//use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::InnerFlvSocket;
 use fluvio_socket::FlvSocketError;
-use fluvio_service::FlvService;
+use fluvio_service::{FlvService};
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 
-use crate::core::*;
+use crate::services::auth::{AuthGlobalContext, AuthServiceContext};
 
 #[derive(Debug)]
-pub struct PublicService {}
+pub struct PublicService<A> {
+    data: PhantomData<A>,
+}
 
-impl PublicService {
+impl<A> PublicService<A> {
     pub fn new() -> Self {
-        Self {}
+        PublicService { data: PhantomData }
     }
 }
 
 #[async_trait]
-impl<S> FlvService<S> for PublicService
+impl<A, S> FlvService<S> for PublicService<A>
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
+    A: Authorization<Stream = S> + Sync + Send,
+    <A as Authorization>::Context: Send + Sync,
 {
-    type Context = SharedContext;
+    type Context = AuthGlobalContext<A>;
     type Request = AdminPublicRequest;
 
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
-        socket: InnerFlvSocket<S>,
+        mut socket: InnerFlvSocket<S>,
     ) -> Result<(), FlvSocketError> {
+        let auth_context = ctx
+            .auth
+            .create_auth_context(&mut socket)
+            .await
+            .map_err(|err| {
+                let io_error: IoError = err.into();
+                io_error
+            })?;
+        let service_context = Arc::new(AuthServiceContext::new(
+            ctx.global_ctx.clone(),
+            auth_context,
+        ));
+
         let (sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
@@ -65,20 +87,20 @@ where
 
             AdminPublicRequest::CreateRequest(request) => call_service!(
                 request,
-                super::create::handle_create_request(request, ctx.clone()),
+                super::create::handle_create_request(request, &service_context),
                 shared_sink,
                 "create  handler"
             ),
             AdminPublicRequest::DeleteRequest(request) => call_service!(
                 request,
-                super::delete::handle_delete_request(request, ctx.clone()),
+                super::delete::handle_delete_request(request, &service_context),
                 shared_sink,
                 "delete  handler"
             ),
 
             AdminPublicRequest::ListRequest(request) => call_service!(
                 request,
-                super::list::handle_list_request(request, ctx.clone()),
+                super::list::handle_list_request(request, &service_context),
                 shared_sink,
                 "list handler"
             ),
@@ -86,7 +108,7 @@ where
 
                 super::watch::handle_watch_request(
                     request,
-                    ctx.clone(),
+                    &service_context,
                     shared_sink.clone(),
                     end_event.clone(),
                 )

@@ -24,7 +24,7 @@ mod common {
             use crate::tls::Cert;
 
             if option.tls() {
-                let client_dir = Cert::load_client();
+                let client_dir = Cert::load_client(&option.tls_user);
 
                 cmd.arg("--tls")
                     .arg("--domain")

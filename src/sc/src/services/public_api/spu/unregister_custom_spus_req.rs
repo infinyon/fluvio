@@ -5,28 +5,55 @@
 //! and send K8 a delete message.
 //!
 use tracing::{debug, trace};
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::spu::*;
+use fluvio_sc_schema::spu::{CustomSpuKey};
+use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
+use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::stores::spu::*;
-use crate::core::*;
+use crate::stores::spu::{SpuAdminMd};
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete custom spu request
-pub async fn handle_un_register_custom_spu_request(
+pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
     key: CustomSpuKey,
-    ctx: SharedContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    let spu_store = ctx.spus().store();
+    let spu_name = key.to_string();
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_instance_action(
+            CustomSpuSpec::OBJECT_TYPE,
+            InstanceAction::Delete,
+            &spu_name,
+        )
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            let name: String = String::from(&key);
+            return Ok(Status::new(
+                name,
+                ErrorCode::PermissionDenied,
+                Some(String::from("permission denied")),
+            ));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+    }
+
+    let spu_store = auth_ctx.global_ctx.spus().store();
     let status = match key {
         CustomSpuKey::Name(spu_name) => {
             debug!("api request: delete custom-spu with name '{}'", spu_name);
 
             // spu-name must exist
             if let Some(spu) = spu_store.value(&spu_name).await {
-                un_register_custom_spu(&ctx, spu.inner_owned()).await
+                un_register_custom_spu(&auth_ctx, spu.inner_owned()).await
             } else {
                 // spu does not exist
                 Status::new(
@@ -41,7 +68,7 @@ pub async fn handle_un_register_custom_spu_request(
 
             // spu-id must exist
             if let Some(spu) = spu_store.get_by_id(spu_id).await {
-                un_register_custom_spu(&ctx, spu).await
+                un_register_custom_spu(&auth_ctx, spu).await
             } else {
                 // spu does not exist
                 Status::new(
@@ -59,7 +86,10 @@ pub async fn handle_un_register_custom_spu_request(
 }
 
 /// Generate for delete custom spu operation and return result.
-async fn un_register_custom_spu(ctx: &Context, spu: SpuAdminMd) -> Status {
+async fn un_register_custom_spu<AC: AuthContext>(
+    auth_ctx: &AuthServiceContext<AC>,
+    spu: SpuAdminMd,
+) -> Status {
     let spu_name = spu.key_owned();
 
     // must be Custom Spu
@@ -72,7 +102,7 @@ async fn un_register_custom_spu(ctx: &Context, spu: SpuAdminMd) -> Status {
     }
 
     // delete custom spec and return result
-    if let Err(err) = ctx.spus().delete(spu_name.clone()).await {
+    if let Err(err) = auth_ctx.global_ctx.spus().delete(spu_name.clone()).await {
         Status::new(
             spu_name,
             ErrorCode::SpuError,

@@ -2,14 +2,15 @@ use std::io::Error as IoError;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{CreateRequest, AllCreatableSpec};
+use fluvio_auth::AuthContext;
 
-use crate::core::*;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
-pub async fn handle_create_request(
+pub async fn handle_create_request<AC: AuthContext>(
     request: RequestMessage<CreateRequest>,
-    ctx: SharedContext,
+    auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();
 
@@ -18,17 +19,17 @@ pub async fn handle_create_request(
 
     let status = match req.spec {
         AllCreatableSpec::Topic(topic) => {
-            super::topic::handle_create_topics_request(name, dry_run, topic, ctx.clone()).await?
+            super::topic::handle_create_topics_request(name, dry_run, topic, auth_context).await?
         }
         AllCreatableSpec::SpuGroup(group) => {
-            super::spg::handle_create_spu_group_request(name, group, dry_run, ctx.clone()).await?
+            super::spg::handle_create_spu_group_request(name, group, dry_run, auth_context).await?
         }
         AllCreatableSpec::CustomSpu(custom) => {
             super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
                 name,
                 custom,
                 dry_run,
-                ctx.clone(),
+                auth_context,
             )
             .await
         }

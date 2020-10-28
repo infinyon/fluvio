@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "examples/00-echo",
+    "src/auth",
     "src/cli",
     "src/client",
     "src/cluster",
@@ -18,6 +19,7 @@ members = [
     "src/utils",
     "tests/runner",
 ]
+
 
 # profile to make image sizer smaller
 # comment out for now
