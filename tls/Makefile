@@ -43,7 +43,7 @@ uninstall-k8:
 
 
 
-generate-certs:	clean-cert	generate-ca-crt generate-server-crt generate-client-crt
+generate-certs:	clean-cert	generate-ca-crt generate-server-crt generate-client-crts
 
 generate-ca-key:	
 	openssl genrsa  -out certs/ca.key 4096
@@ -83,20 +83,41 @@ generate-server-crt:	generate-server-csr
 		-extfile openssl.cnf
 
 
-generate-client-key:
-	openssl genrsa -out certs/client.key 4096
 
-generate-client-csr:	generate-client-key
-	openssl req -new -key certs/client.key -out certs/client.csr \
-		-subj "/C=US/ST=CA/O=MyOrg, Inc./CN=client.com"
+generate-client-crts:	generate-client-root-crt generate-client-user1-crt
 
-generate-client-crt:	generate-client-csr
+generate-client-root-crt:	generate-client-root-csr
 	openssl x509 -req \
-		-days 365 -in certs/client.csr \
-		-out certs/client.crt \
+		-days 365 -in certs/client-root.csr \
+		-out certs/client-root.crt \
 		-CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial \
 		-extensions v3_end \
 		-extfile openssl.cnf
+
+generate-client-root-csr:	generate-client-root-key
+	openssl req -new -key certs/client-root.key -out certs/client-root.csr \
+		-subj "/C=US/ST=CA/O=MyOrg, Inc./CN=root"
+
+generate-client-root-key:
+	openssl genrsa -out certs/client-root.key 4096
+
+
+# todo, consolidate this into csr
+generate-client-user1-crt:	generate-client-user1-csr
+	openssl x509 -req \
+		-days 365 -in certs/client-user1.csr \
+		-out certs/client-user1.crt \
+		-CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial \
+		-extensions v3_end \
+		-extfile openssl.cnf
+
+generate-client-user1-csr:	generate-client-user1-key
+	openssl req -new -key certs/client-user1.key -out certs/client-user1.csr \
+		-subj "/C=US/ST=CA/O=MyOrg, Inc./CN=user1"
+
+
+generate-client-user1-key:
+	openssl genrsa -out certs/client-user1.key 4096
 
 
 

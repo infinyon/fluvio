@@ -5,19 +5,54 @@
 //! and send K8 a delete message.
 //!
 use tracing::{debug, trace};
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
+use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_auth::{AuthContext, InstanceAction};
+use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::core::*;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete topic request
-pub async fn handle_delete_topic(topic_name: String, ctx: SharedContext) -> Result<Status, Error> {
+pub async fn handle_delete_topic<AC: AuthContext>(
+    topic_name: String,
+    auth_ctx: &AuthServiceContext<AC>,
+) -> Result<Status, Error> {
     debug!("api request: delete topic '{}'", topic_name);
 
-    let status = if ctx.topics().store().value(&topic_name).await.is_some() {
-        if let Err(err) = ctx.topics().delete(topic_name.clone()).await {
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_instance_action(TopicSpec::OBJECT_TYPE, InstanceAction::Delete, &topic_name)
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            return Ok(Status::new(
+                topic_name.clone(),
+                ErrorCode::PermissionDenied,
+                Some(String::from("permission denied")),
+            ));
+        }
+    } else {
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+    }
+
+    let status = if auth_ctx
+        .global_ctx
+        .topics()
+        .store()
+        .value(&topic_name)
+        .await
+        .is_some()
+    {
+        if let Err(err) = auth_ctx
+            .global_ctx
+            .topics()
+            .delete(topic_name.clone())
+            .await
+        {
             Status::new(
                 topic_name.clone(),
                 ErrorCode::TopicError,

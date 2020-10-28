@@ -9,24 +9,25 @@ use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::objects::{DeleteRequest};
+use fluvio_auth::{AuthContext};
 
-use crate::core::*;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete topic request
-pub async fn handle_delete_request(
+pub async fn handle_delete_request<AC: AuthContext>(
     request: RequestMessage<DeleteRequest>,
-    ctx: SharedContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, req) = request.get_header_request();
 
     let status = match req {
-        DeleteRequest::Topic(name) => super::topic::handle_delete_topic(name, ctx.clone()).await?,
+        DeleteRequest::Topic(name) => super::topic::handle_delete_topic(name, auth_ctx).await?,
         DeleteRequest::CustomSpu(key) => {
-            super::spu::handle_un_register_custom_spu_request(key, ctx.clone()).await?
+            super::spu::handle_un_register_custom_spu_request(key, auth_ctx).await?
         }
         DeleteRequest::SpuGroup(name) => {
-            super::spg::handle_delete_spu_group(name, ctx.clone()).await?
+            super::spg::handle_delete_spu_group(name, auth_ctx).await?
         }
     };
 

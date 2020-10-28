@@ -19,5 +19,3 @@ fluvio-types = { path = "../../src/types", version = "0.1.0" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../../src/controlplane-metadata" }
 dataplane = { version = "0.1.0", path = "../../src/dataplane-protocol", package = "fluvio-dataplane-protocol" }
 utils = { version = "0.1.0", path = "../../src/utils", package = "fluvio-system-util" }
-k8-client = { version = "2.0.0" }
-k8-metadata-client = { version = "1.0.1" }

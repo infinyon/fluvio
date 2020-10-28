@@ -12,6 +12,7 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
+default = ["native_tls"]
 admin = ["fluvio-sc-schema/use_serde"]
 rust_tls = ["fluvio-future/tls","fluvio-socket/tls"]
 native_tls = ["fluvio-future/native2_tls","fluvio-socket/native_tls"]
@@ -36,9 +37,9 @@ thiserror = "1.0.20"
 # Fluvio dependencies
 fluvio-future = { version = "0.1.4" }
 fluvio-types = { version = "0.1.0", path = "../types" }
-fluvio-sc-schema = { version = "0.1.0", path = "../sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.2.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema" }
-fluvio-socket = { version = "0.3.0" }
+fluvio-socket = { version = "0.3.0", features = [ "native_tls" ] }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 

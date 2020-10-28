@@ -9,34 +9,57 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
-use std::io::Error as IoError;
+use std::io::{Error as IoError, ErrorKind};
 
 use tracing::{debug, trace};
 
 use dataplane::ErrorCode;
 
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::topic::*;
+use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_auth::{AuthContext, TypeAction};
+use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::core::*;
+use crate::core::Context;
 use crate::controllers::topics::generate_replica_map;
 use crate::controllers::topics::update_replica_map_for_assigned_topic;
 use crate::controllers::topics::validate_computed_topic_parameters;
 use crate::controllers::topics::validate_assigned_topic_parameters;
+use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
-pub async fn handle_create_topics_request(
+pub async fn handle_create_topics_request<AC: AuthContext>(
     name: String,
     dry_run: bool,
     topic_spec: TopicSpec,
-    ctx: SharedContext,
+    auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
     debug!("api request: create topic '{}'", name);
 
+    if let Ok(authorized) = auth_ctx
+        .auth
+        .allow_type_action(TopicSpec::OBJECT_TYPE, TypeAction::Create)
+        .await
+    {
+        if !authorized {
+            trace!("authorization failed");
+            return Ok(Status::new(
+                name.clone(),
+                ErrorCode::PermissionDenied,
+                Some(String::from("permission denied")),
+            ));
+        }
+    } else {
+        return Err(IoError::new(
+            ErrorKind::Interrupted,
+            "authorization io error",
+        ));
+    }
+
     // validate topic request
-    let mut status = validate_topic_request(&name, &topic_spec, &ctx).await;
+    let mut status = validate_topic_request(&name, &topic_spec, &auth_ctx.global_ctx).await;
     if !dry_run {
-        status = process_topic_request(&ctx, name, topic_spec).await;
+        status = process_topic_request(auth_ctx, name, topic_spec).await;
     }
 
     trace!("create topics request response {:#?}", status);
@@ -110,8 +133,12 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 }
 
 /// Process topic, converts topic spec to K8 and sends to KV store
-async fn process_topic_request(ctx: &Context, name: String, topic_spec: TopicSpec) -> Status {
-    if let Err(err) = create_topic(ctx, name.clone(), topic_spec).await {
+async fn process_topic_request<AC: AuthContext>(
+    auth_ctx: &AuthServiceContext<AC>,
+    name: String,
+    topic_spec: TopicSpec,
+) -> Status {
+    if let Err(err) = create_topic(auth_ctx, name.clone(), topic_spec).await {
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::TopicError, error)
     } else {
@@ -119,6 +146,15 @@ async fn process_topic_request(ctx: &Context, name: String, topic_spec: TopicSpe
     }
 }
 
-async fn create_topic(ctx: &Context, name: String, topic: TopicSpec) -> Result<(), IoError> {
-    ctx.topics().create_spec(name, topic).await.map(|_| ())
+async fn create_topic<AC: AuthContext>(
+    auth_ctx: &AuthServiceContext<AC>,
+    name: String,
+    topic: TopicSpec,
+) -> Result<(), IoError> {
+    auth_ctx
+        .global_ctx
+        .topics()
+        .create_spec(name, topic)
+        .await
+        .map(|_| ())
 }
