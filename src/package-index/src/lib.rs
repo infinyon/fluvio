@@ -62,10 +62,10 @@ impl FluvioIndex {
         Ok(())
     }
 
-    pub fn add_release(&mut self, id: &PackageId, release: Release) -> Result<()> {
+    pub fn add_release(&mut self, id: &PackageId, version: semver::Version, target: Target) -> Result<()> {
         let group = self.group_mut(&id.group)?;
         let package = group.package_mut(&id.name)?;
-        package.add_release(release)?;
+        package.add_release(version, target)?;
         Ok(())
     }
 
@@ -162,7 +162,7 @@ pub struct Package {
     /// A link to the source code repository of this package
     pub repository: Option<String>,
     /// The instances of this package that have been published
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     releases: Vec<Release>,
 }
 
@@ -209,15 +209,22 @@ impl Package {
     /// version. Therefore, if a release with version `0.1.0-alpha` exists, you
     /// cannot add a release with version `0.1.0-beta`, since there is no way to know
     /// which of those is more recent.
-    fn add_release(&mut self, new_release: Release) -> Result<()> {
-        // This will reject adding a release if the version numbers are the same
-        let maybe_conflict = self.releases.iter().find(|it| it.version == new_release.version);
-        if let Some(conflict) = maybe_conflict {
-            return Err(Error::ReleaseAlreadyExists(conflict.version.clone()));
+    pub fn add_release(&mut self, version: semver::Version, target: Target) -> Result<()> {
+        // See if there are any releases with the given version
+        let maybe_release = self.releases.iter_mut()
+            .find(|it| it.version == version);
+
+        match maybe_release {
+            // If a release with this version exists, just add the target to it
+            Some(release) => release.add_target(target)?,
+            // If a release with this version does not exist, create it
+            None => {
+                let release = Release::new(version, target);
+                self.releases.push(release);
+                self.releases.sort_by(|a, b| a.version.cmp(&b.version));
+            }
         }
 
-        self.releases.push(new_release);
-        self.releases.sort_by(|a, b| a.version.cmp(&b.version));
         Ok(())
     }
 }
@@ -247,6 +254,22 @@ pub struct Release {
 }
 
 impl Release {
+    pub fn new(version: semver::Version, target: Target) -> Self {
+        Self {
+            version,
+            yanked: false,
+            targets: vec![target],
+        }
+    }
+
+    pub fn add_target(&mut self, target: Target) -> Result<()> {
+        if self.target_exists(target) {
+            return Err(Error::ReleaseAlreadyExists(self.version.clone(), target));
+        }
+        self.targets.push(target);
+        Ok(())
+    }
+
     pub fn target_exists(&self, target: Target) -> bool {
         self.targets.iter()
             .find(|it| it == &&target)
@@ -362,7 +385,7 @@ mod tests {
             yanked: false,
         };
         let pid = "fluvio/fluvio:1.1.0".parse().unwrap();
-        index.add_release(&pid, new_release.clone()).unwrap();
+        index.add_release(&pid, new_release.version.clone(), new_release.targets[0]).unwrap();
         let searched_release = index.find_release(&pid).unwrap();
         assert_eq!(new_release, *searched_release);
     }
@@ -376,7 +399,7 @@ mod tests {
             yanked: false,
         };
         let pid = "fluvio/fluvio:2.0.0".parse().unwrap();
-        index.add_release(&pid, release_2.clone()).unwrap();
+        index.add_release(&pid, release_2.version.clone(), release_2.targets[0]).unwrap();
 
         let release_1_1 = Release {
             version: semver::Version::parse("1.1.0").unwrap(),
@@ -384,7 +407,7 @@ mod tests {
             yanked: false,
         };
         let id = "fluvio/fluvio:1.1.0".parse().unwrap();
-        index.add_release(&id, release_1_1.clone()).unwrap();
+        index.add_release(&id, release_1_1.version.clone(), release_1_1.targets[0]).unwrap();
 
         let group_packages = index.group(&id.group).unwrap();
         let package = group_packages.package(&id.name).unwrap();
@@ -406,19 +429,13 @@ mod tests {
         let mut index = sample_index();
 
         let id = "fluvio/fluvio".parse::<PackageId>().unwrap();
-        let later_release = Release {
-            version: semver::Version::parse("0.2.0").unwrap(),
-            targets: vec![Target::X86_64AppleDarwin],
-            yanked: false,
-        };
-        index.add_release(&id, later_release).unwrap();
+        let version = semver::Version::parse("0.2.0").unwrap();
+        let target = Target::X86_64AppleDarwin;
+        index.add_release(&id, version, target).unwrap();
 
-        let earlier_release = Release {
-            version: semver::Version::parse("0.0.1").unwrap(),
-            targets: vec![Target::X86_64AppleDarwin],
-            yanked: false,
-        };
-        index.add_release(&id, earlier_release).unwrap();
+        let version = semver::Version::parse("0.0.1").unwrap();
+        let target = Target::X86_64AppleDarwin;
+        index.add_release(&id, version, target).unwrap();
         let package = index.find_package(&id).unwrap();
         let latest = package.latest_release().unwrap();
         assert_eq!(latest.version, semver::Version::parse("0.2.0").unwrap());

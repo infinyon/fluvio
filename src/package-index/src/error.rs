@@ -15,8 +15,8 @@ pub enum Error {
     NoReleases(String),
     #[error("Failed to create new package {0}: it already exists")]
     PackageAlreadyExists(String),
-    #[error("Failed to add release: release version {0} already exists")]
-    ReleaseAlreadyExists(semver::Version),
+    #[error("Failed to add release: release version {0} for {0} already exists")]
+    ReleaseAlreadyExists(semver::Version, Target),
     #[error("Failed to parse URL")]
     UrlParseError(#[from] url::ParseError),
     #[error("Invalid platform {0}")]
