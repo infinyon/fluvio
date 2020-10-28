@@ -65,9 +65,7 @@ pub struct HttpError {
 impl From<http_types::Error> for CliError {
     fn from(e: http_types::Error) -> Self {
         CliError::HttpError {
-            source: HttpError {
-                inner: e
-            }
+            source: HttpError { inner: e },
         }
     }
 }

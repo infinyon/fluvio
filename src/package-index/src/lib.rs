@@ -79,13 +79,20 @@ impl FluvioIndex {
     }
 
     pub fn add_package(&mut self, package: Package) -> Result<()> {
-        let group = self.groups.entry(package.group.clone())
+        let group = self
+            .groups
+            .entry(package.group.clone())
             .or_insert_with(|| GroupPackages::empty(package.group.clone()));
         group.add_package(package.name.clone(), package)?;
         Ok(())
     }
 
-    pub fn add_release(&mut self, id: &PackageId, version: semver::Version, target: Target) -> Result<()> {
+    pub fn add_release(
+        &mut self,
+        id: &PackageId,
+        version: semver::Version,
+        target: Target,
+    ) -> Result<()> {
         let group = self.group_mut(&id.group)?;
         let package = group.package_mut(&id.name)?;
         package.add_release(version, target)?;
@@ -100,11 +107,15 @@ impl FluvioIndex {
     }
 
     fn group(&self, group: &GroupName) -> Result<&GroupPackages> {
-        self.groups.get(group).ok_or_else(|| Error::MissingGroup(group.clone()))
+        self.groups
+            .get(group)
+            .ok_or_else(|| Error::MissingGroup(group.clone()))
     }
 
     fn group_mut(&mut self, group: &GroupName) -> Result<&mut GroupPackages> {
-        self.groups.get_mut(group).ok_or_else(|| Error::MissingGroup(group.clone()))
+        self.groups
+            .get_mut(group)
+            .ok_or_else(|| Error::MissingGroup(group.clone()))
     }
 }
 
@@ -127,18 +138,26 @@ impl GroupPackages {
     /// This will reject packages that already exist.
     pub fn add_package(&mut self, name: PackageName, package: Package) -> Result<()> {
         if self.packages.contains_key(&name) {
-            return Err(Error::PackageAlreadyExists(format!("{}/{}", self.group, name.as_str())));
+            return Err(Error::PackageAlreadyExists(format!(
+                "{}/{}",
+                self.group,
+                name.as_str()
+            )));
         }
         self.packages.insert(name, package);
         Ok(())
     }
 
     fn package(&self, package: &PackageName) -> Result<&Package> {
-        self.packages.get(package).ok_or_else(|| Error::MissingPackage(package.clone()))
+        self.packages
+            .get(package)
+            .ok_or_else(|| Error::MissingPackage(package.clone()))
     }
 
     fn package_mut(&mut self, package: &PackageName) -> Result<&mut Package> {
-        self.packages.get_mut(package).ok_or_else(|| Error::MissingPackage(package.clone()))
+        self.packages
+            .get_mut(package)
+            .ok_or_else(|| Error::MissingPackage(package.clone()))
     }
 }
 
@@ -170,9 +189,10 @@ pub struct Package {
 
 impl Package {
     pub fn new_binary<S1, S2, S3>(id: &PackageId, author: S1, desc: S2, repo: S3) -> Self
-        where S1: Into<String>,
-              S2: Into<String>,
-              S3: Into<String>,
+    where
+        S1: Into<String>,
+        S2: Into<String>,
+        S3: Into<String>,
     {
         let author = author.into();
         let description = desc.into();
@@ -192,13 +212,16 @@ impl Package {
     pub fn latest_release(&self) -> Result<&Release> {
         debug!(releases = ?&self.releases, "Finding latest release");
         // Since releases are sorted upon insert, we just need to grab the last one
-        self.releases.last()
+        self.releases
+            .last()
             .ok_or_else(|| Error::NoReleases(self.package_id().to_string()))
     }
 
     /// Returns a reference to the latest release with this target
     pub fn latest_release_for_target(&self, target: Target) -> Result<&Release> {
-        self.releases.iter().rev()
+        self.releases
+            .iter()
+            .rev()
             .find(|it| it.targets.contains(&target))
             .ok_or(Error::MissingTarget(target))
     }
@@ -208,7 +231,9 @@ impl Package {
     }
 
     fn find_release(&self, version: &semver::Version) -> Result<&Release> {
-        self.releases.iter().find(|it| it.version == *version)
+        self.releases
+            .iter()
+            .find(|it| it.version == *version)
             .ok_or_else(|| Error::MissingRelease(version.clone()))
     }
 
@@ -220,8 +245,7 @@ impl Package {
     /// which of those is more recent.
     pub fn add_release(&mut self, version: semver::Version, target: Target) -> Result<()> {
         // See if there are any releases with the given version
-        let maybe_release = self.releases.iter_mut()
-            .find(|it| it.version == version);
+        let maybe_release = self.releases.iter_mut().find(|it| it.version == version);
 
         match maybe_release {
             // If a release with this version exists, just add the target to it
@@ -280,8 +304,7 @@ impl Release {
     }
 
     pub fn target_exists(&self, target: Target) -> bool {
-        self.targets.iter()
-            .any(|it| it == &target)
+        self.targets.iter().any(|it| it == &target)
     }
 }
 
@@ -319,7 +342,7 @@ mod tests {
                 let mut packages = BTreeMap::new();
                 packages.insert(package_name, package);
                 packages
-            }
+            },
         };
         let metadata = IndexMetadata {
             minimum_client_version: semver::Version::parse("0.6.0-alpha-1").unwrap(),
@@ -330,7 +353,7 @@ mod tests {
                 let mut groups = BTreeMap::new();
                 groups.insert(group_name, group_packages);
                 groups
-            }
+            },
         };
         index
     }
@@ -378,7 +401,10 @@ mod tests {
         let id = "fluvio/fluvio".parse().unwrap();
         let package = Package::new_binary(&id, "Bob", "A package", "https://github.com");
         let stringified = serde_json::to_string(&package).unwrap();
-        assert_eq!(stringified, r#"{"name":"fluvio","group":"fluvio","kind":"bin","author":"Bob","description":"A package","repository":"https://github.com"}"#)
+        assert_eq!(
+            stringified,
+            r#"{"name":"fluvio","group":"fluvio","kind":"bin","author":"Bob","description":"A package","repository":"https://github.com"}"#
+        )
     }
 
     #[test]
@@ -390,7 +416,9 @@ mod tests {
             yanked: false,
         };
         let pid = "fluvio/fluvio:1.1.0".parse().unwrap();
-        index.add_release(&pid, new_release.version.clone(), new_release.targets[0]).unwrap();
+        index
+            .add_release(&pid, new_release.version.clone(), new_release.targets[0])
+            .unwrap();
         let searched_release = index.find_release(&pid).unwrap();
         assert_eq!(new_release, *searched_release);
     }
@@ -404,7 +432,9 @@ mod tests {
             yanked: false,
         };
         let pid = "fluvio/fluvio:2.0.0".parse().unwrap();
-        index.add_release(&pid, release_2.version.clone(), release_2.targets[0]).unwrap();
+        index
+            .add_release(&pid, release_2.version.clone(), release_2.targets[0])
+            .unwrap();
 
         let release_1_1 = Release {
             version: semver::Version::parse("1.1.0").unwrap(),
@@ -412,7 +442,9 @@ mod tests {
             yanked: false,
         };
         let id = "fluvio/fluvio:1.1.0".parse().unwrap();
-        index.add_release(&id, release_1_1.version.clone(), release_1_1.targets[0]).unwrap();
+        index
+            .add_release(&id, release_1_1.version.clone(), release_1_1.targets[0])
+            .unwrap();
 
         let group_packages = index.group(&id.group).unwrap();
         let package = group_packages.package(&id.name).unwrap();
@@ -460,8 +492,13 @@ mod tests {
         index.add_release(&id, version, target).unwrap();
         let package = index.find_package(&id).unwrap();
 
-        let latest_for_apple = package.latest_release_for_target(Target::X86_64AppleDarwin).unwrap();
+        let latest_for_apple = package
+            .latest_release_for_target(Target::X86_64AppleDarwin)
+            .unwrap();
         // Remember, the sample index has 0.1.0 for AppleDarwin target
-        assert_eq!(latest_for_apple.version, semver::Version::parse("0.1.0").unwrap());
+        assert_eq!(
+            latest_for_apple.version,
+            semver::Version::parse("0.1.0").unwrap()
+        );
     }
 }

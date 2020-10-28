@@ -25,11 +25,9 @@ impl HttpAgent {
     }
 
     pub fn request_package(&self, id: &PackageId) -> Result<Request> {
-        let url = self.base_url.join(
-            &format!("packages/{}/{}/meta.json",
-                    id.group,
-                    id.name
-            ))?;
+        let url = self
+            .base_url
+            .join(&format!("packages/{}/{}/meta.json", id.group, id.name))?;
         Ok(Request::get(url))
     }
 
@@ -39,31 +37,27 @@ impl HttpAgent {
     }
 
     pub fn request_release_download(&self, id: &PackageId, target: Target) -> Result<Request> {
-        let version = id.version.as_ref()
-            .ok_or(Error::MissingVersion)?;
-        let url = self.base_url.join(
-            &format!("packages/{group}/{name}/{version}/{target}/{name}",
-                     group = &id.group,
-                     name = &id.name,
-                     version = version,
-                     target = target.as_str(),
-            )
-        )?;
+        let version = id.version.as_ref().ok_or(Error::MissingVersion)?;
+        let url = self.base_url.join(&format!(
+            "packages/{group}/{name}/{version}/{target}/{name}",
+            group = &id.group,
+            name = &id.name,
+            version = version,
+            target = target.as_str(),
+        ))?;
 
         Ok(Request::get(url))
     }
 
     pub fn request_release_checksum(&self, id: &PackageId, target: Target) -> Result<Request> {
-        let version = id.version.as_ref()
-            .ok_or(Error::MissingVersion)?;
-        let url = self.base_url.join(
-            &format!("packages/{group}/{name}/{version}/{target}/{name}.sha256",
-                     group = &id.group,
-                     name = &id.name,
-                     version = version,
-                     target = target.as_str(),
-            )
-        )?;
+        let version = id.version.as_ref().ok_or(Error::MissingVersion)?;
+        let url = self.base_url.join(&format!(
+            "packages/{group}/{name}/{version}/{target}/{name}.sha256",
+            group = &id.group,
+            name = &id.name,
+            version = version,
+            target = target.as_str(),
+        ))?;
 
         Ok(Request::get(url))
     }

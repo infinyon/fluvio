@@ -10,13 +10,13 @@ use thiserror::private::DisplayAsDisplay;
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
 fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
     Ok(home.join(".fluvio/bin/"))
 }
 
 #[derive(StructOpt, Debug)]
-pub struct UpdateOpt { }
+pub struct UpdateOpt {}
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<String, CliError> {
@@ -32,7 +32,10 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     let mut id: PackageId = FLUVIO_PACKAGE_ID.parse::<PackageId>()?;
 
     let request = agent.request_package(&id)?;
-    debug!("Requesting package manifest: {}", request.url().as_display());
+    debug!(
+        "Requesting package manifest: {}",
+        request.url().as_display()
+    );
     let response = crate::http::execute(request).await?;
     let package = agent.package_from_response(response).await?;
     let latest_release = package.latest_release_for_target(target)?;
@@ -72,7 +75,9 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
         .arg(download_path.as_os_str())
         .status()?;
     if !status.success() {
-        return Err(CliError::Other("Failed to make package executable".to_string()));
+        return Err(CliError::Other(
+            "Failed to make package executable".to_string(),
+        ));
     }
 
     Ok(format!("Successfully installed ~/.fluvio/bin/{}", &id.name))
@@ -101,6 +106,4 @@ pub async fn check_update_required() -> Result<bool, CliError> {
     Ok(index.metadata.update_required())
 }
 
-pub async fn prompt_update() {
-
-}
+pub async fn prompt_update() {}

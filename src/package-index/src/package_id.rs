@@ -30,8 +30,7 @@ impl std::str::FromStr for Registry {
     type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let url = url::Url::parse(s)
-            .map_err(Error::FailedToParseRegistry)?;
+        let url = url::Url::parse(s).map_err(Error::FailedToParseRegistry)?;
         Ok(Self(url))
     }
 }
@@ -66,7 +65,7 @@ macro_rules! deserialize_no_slash_string {
                     if s.find(':').is_some() {
                         return Err($err("cannot contain ':'".to_string()));
                     }
-                    return Ok(Self(s.to_string()))
+                    return Ok(Self(s.to_string()));
                 }
             }
 
@@ -77,8 +76,11 @@ macro_rules! deserialize_no_slash_string {
             }
 
             impl<'de> serde::Deserialize<'de> for $id {
-                fn deserialize<D>(deserializer: D) -> Result<Self, <D as serde::Deserializer<'de>>::Error> where
-                    D: serde::Deserializer<'de>
+                fn deserialize<D>(
+                    deserializer: D,
+                ) -> Result<Self, <D as serde::Deserializer<'de>>::Error>
+                where
+                    D: serde::Deserializer<'de>,
                 {
                     let string = String::deserialize(deserializer)?;
 
@@ -87,7 +89,7 @@ macro_rules! deserialize_no_slash_string {
                         use serde::de::{Unexpected, Error as DeserializeError};
                         return Err(DeserializeError::invalid_value(
                             Unexpected::Other(&e.to_string()),
-                            &&*format!("valid {}", $string_name)
+                            &&*format!("valid {}", $string_name),
                         ));
                     }
 
@@ -95,7 +97,7 @@ macro_rules! deserialize_no_slash_string {
                 }
             }
         }
-    }
+    };
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize)]
@@ -120,7 +122,12 @@ impl fmt::Display for PackageName {
     }
 }
 
-deserialize_no_slash_string!(package_name, PackageName, Error::InvalidPackageName, "package name");
+deserialize_no_slash_string!(
+    package_name,
+    PackageName,
+    Error::InvalidPackageName,
+    "package name"
+);
 
 /// A unique identifier for a package that describes its registry, group,
 /// name, and version.
@@ -165,7 +172,9 @@ impl std::str::FromStr for PackageId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 { return Err(Error::TooFewSlashes); }
+        if segments.len() < 2 {
+            return Err(Error::TooFewSlashes);
+        }
 
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
@@ -209,13 +218,15 @@ impl std::str::FromStr for PackageId {
 
 impl fmt::Display for PackageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let registry = self.registry.as_ref()
-            .map(|it| it.0.as_str())
-            .unwrap_or("");
-        let version = self.version.as_ref()
+        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
+        let version = self
+            .version
+            .as_ref()
             .map(|it| format!(":{}", it))
             .unwrap_or_else(|| "".to_string());
-        write!(f, "{registry}{group}/{name}{version}",
+        write!(
+            f,
+            "{registry}{group}/{name}{version}",
             registry = registry,
             group = self.group.as_str(),
             name = self.name.as_str(),
@@ -225,8 +236,9 @@ impl fmt::Display for PackageId {
 }
 
 impl<'de> Deserialize<'de> for PackageId {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error> where
-        D: Deserializer<'de>
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
     {
         let string = String::deserialize(deserializer)?;
         let package_id = match string.parse::<PackageId>() {
@@ -258,7 +270,9 @@ mod tests {
             group: GroupName,
         }
 
-        let json_group = JsonGroup { group: group.clone() };
+        let json_group = JsonGroup {
+            group: group.clone(),
+        };
         let group_string = serde_json::to_string(&json_group).unwrap();
 
         let read_json_group: JsonGroup = serde_json::from_str(&group_string).unwrap();
@@ -287,7 +301,9 @@ mod tests {
     #[test]
     fn test_parse_package_id_custom_registry() {
         let registry_url = "https://other.registry.io/v2/";
-        let package_id: PackageId = format!("{}/fluvio.io/fluvio:0.6.0", registry_url).parse().unwrap();
+        let package_id: PackageId = format!("{}/fluvio.io/fluvio:0.6.0", registry_url)
+            .parse()
+            .unwrap();
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
         assert_eq!(package_id.group.as_str(), "fluvio.io");
         assert_eq!(package_id.name.as_str(), "fluvio");
@@ -304,8 +320,9 @@ mod tests {
         };
 
         let package_id_string = package_id.to_string();
-        assert_eq!(package_id_string,
-                   "https://some.registry.somewhere/v11/\
+        assert_eq!(
+            package_id_string,
+            "https://some.registry.somewhere/v11/\
             infinyon.super.secret.division/\
             project-x-secret-sauce:100.0.0-special-edition"
         );
