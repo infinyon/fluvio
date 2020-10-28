@@ -16,21 +16,12 @@ fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
 }
 
 #[derive(StructOpt, Debug)]
-pub struct UpdateOpt {
-    // /// Update the named package
-    // package: Option<PackageId>,
-}
+pub struct UpdateOpt { }
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<String, CliError> {
         let agent = HttpAgent::new();
-
-        // if let Some(id) = self.package {
-        //     update_package(id)?;
-        //     return Ok("".to_string())
-        // } else {
-            update_self(&agent).await?;
-        // }
+        update_self(&agent).await?;
 
         Ok("".to_string())
     }
@@ -98,8 +89,4 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
         hexed
     };
     &*buffer_checksum == checksum
-}
-
-fn update_package(id: PackageId) -> Result<String, CliError> {
-    todo!()
 }

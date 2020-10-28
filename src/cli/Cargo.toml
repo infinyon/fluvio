@@ -42,7 +42,6 @@ ctrlc = "3.1.3"
 futures-lite = { version = "1.7.0" }
 dirs = "1.0.2"
 async-h1 = "2.1.2"
-async-tls = "0.10.0"
 http-types = "2.4.0"
 thiserror = "1.0.20"
 eyre = "0.6.1"
