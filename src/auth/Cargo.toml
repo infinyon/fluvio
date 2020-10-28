@@ -1,8 +1,12 @@
 [package]
 name = "fluvio-auth"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
+license = "Apache-2.0"
+repository = "https://github.com/infinyon/fluvio"
+description = "Authorization framework for Fluvio"
+
 
 [lib]
 name = "fluvio_auth"
@@ -17,7 +21,7 @@ fluvio-protocol = { version = "0.2.0" }
 fluvio-socket = { version = "0.3.0" }
 fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
 fluvio-types = { version = "0.1.0", path = "../types" }
-flv-tls-proxy = "0.2.2"
+flv-tls-proxy = "0.2.4"
 futures-util = { version = "0.3.5" }
 log = "0.4.11"
 serde = { version = "1.0.103", features = ['derive'] }
