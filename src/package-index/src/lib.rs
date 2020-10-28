@@ -18,11 +18,9 @@ mod target;
 mod package_id;
 
 pub use http::HttpAgent;
-pub use error::Error;
+pub use error::{Error, Result};
 pub use target::Target;
 pub use package_id::{PackageId, GroupName, PackageName, Registry};
-
-pub type Result<T> = std::result::Result<T, Error>;
 
 pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1/";
 pub const INDEX_CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -30,22 +28,13 @@ pub const PACKAGE_TARGET: &str = env!("PACKAGE_TARGET");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexMetadata {
-    /// The index itself is given a version so that installers and updaters
-    /// can print upgrade prompts to users. If an installer is expecting an
-    /// index version `1.0.0` and finds an index with a version such as
-    /// `2.0.0`, the installer will know to prompt the user to self-update
-    /// the installer. The original index is expected to continue to be available
-    /// forever, and, critically, new versions of the installer must always
-    /// be published to the original index. New versions of the installer may
-    /// then point to future versions of the Fluvio Index, which may exhibit
-    /// breaking changes.
-    pub version: semver::Version,
-    /// The location of this registry as a URL
-    pub registry: Registry,
     /// The minimum version of a client which must be used in order
     /// to properly access the index. If a client finds itself with a lower
     /// version than this minimum, it must prompt the user for an update before
     /// it can proceed.
+    ///
+    /// This version number corresponds to the crate version of the
+    /// `fluvio-package-index` crate.
     pub minimum_client_version: semver::Version,
 }
 
@@ -204,7 +193,14 @@ impl Package {
         debug!(releases = ?&self.releases, "Finding latest release");
         // Since releases are sorted upon insert, we just need to grab the last one
         self.releases.last()
-            .ok_or(Error::NoReleases(self.package_id().to_string()))
+            .ok_or_else(|| Error::NoReleases(self.package_id().to_string()))
+    }
+
+    /// Returns a reference to the latest release with this target
+    pub fn latest_release_for_target(&self, target: Target) -> Result<&Release> {
+        self.releases.iter().rev()
+            .find(|it| it.targets.contains(&target))
+            .ok_or(Error::MissingTarget(target))
     }
 
     fn package_id(&self) -> PackageId {
@@ -285,8 +281,7 @@ impl Release {
 
     pub fn target_exists(&self, target: Target) -> bool {
         self.targets.iter()
-            .find(|it| it == &&target)
-            .is_some()
+            .any(|it| it == &target)
     }
 }
 
@@ -296,7 +291,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn test_path() -> PathBuf {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/bin/index.json");
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/index.json");
         println!("Path: {}", path.display());
         path
     }
@@ -327,8 +322,6 @@ mod tests {
             }
         };
         let metadata = IndexMetadata {
-            version: semver::Version::parse("0.1.0").unwrap(),
-            registry: "https://packages.fluvio.io/v1/".parse().unwrap(),
             minimum_client_version: semver::Version::parse("0.6.0-alpha-1").unwrap(),
         };
         let index = FluvioIndex {
@@ -342,11 +335,10 @@ mod tests {
         index
     }
 
+    #[test]
     fn write_index() {
         let metadata = IndexMetadata {
-            version: semver::Version::parse("0.1.0").unwrap(),
-            registry: "https://packages.fluvio.io/v1/".parse().unwrap(),
-            minimum_client_version: semver::Version::parse("0.6.0-alpha-1").unwrap(),
+            minimum_client_version: semver::Version::parse("0.1.0").unwrap(),
         };
         let index = FluvioIndex::empty(metadata);
         let index_string = serde_json::to_string_pretty(&index).unwrap();
@@ -452,5 +444,24 @@ mod tests {
         let package = index.find_package(&id).unwrap();
         let latest = package.latest_release().unwrap();
         assert_eq!(latest.version, semver::Version::parse("0.2.0").unwrap());
+    }
+
+    #[test]
+    fn test_latest_release_for_targetj() {
+        let mut index = sample_index();
+
+        let id = "fluvio/fluvio".parse::<PackageId>().unwrap();
+        let version = semver::Version::parse("0.2.0").unwrap();
+        let target = Target::X86_64UnknownLinuxMusl;
+        index.add_release(&id, version, target).unwrap();
+
+        let version = semver::Version::parse("0.0.1").unwrap();
+        let target = Target::X86_64AppleDarwin;
+        index.add_release(&id, version, target).unwrap();
+        let package = index.find_package(&id).unwrap();
+
+        let latest_for_apple = package.latest_release_for_target(Target::X86_64AppleDarwin).unwrap();
+        // Remember, the sample index has 0.1.0 for AppleDarwin target
+        assert_eq!(latest_for_apple.version, semver::Version::parse("0.1.0").unwrap());
     }
 }

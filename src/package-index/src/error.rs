@@ -1,6 +1,8 @@
 use crate::package_id::{GroupName, PackageName};
 use crate::Target;
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Failed to lookup package: group {0} does not exist")]

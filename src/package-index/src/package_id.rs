@@ -170,8 +170,8 @@ impl std::str::FromStr for PackageId {
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
         let (name_string, version_string) = match &name_version_segments[..] {
-            &[name_string] => (name_string, None),
-            &[name_string, version_string] => (name_string, Some(version_string)),
+            [name_string] => (name_string, None),
+            [name_string, version_string] => (name_string, Some(version_string)),
             _ => return Err(Error::InvalidNameVersionSegment),
         };
 

@@ -1,26 +1,26 @@
 use http_types::{Request, Response};
 use crate::{Result, FluvioIndex, Package, PackageId, Target, Error};
-use crate::error::HttpError;
 
 pub struct HttpAgent {
     base_url: url::Url,
 }
 
-impl HttpAgent {
-    pub fn new() -> Self {
+impl Default for HttpAgent {
+    fn default() -> Self {
         Self {
             base_url: url::Url::parse(crate::INDEX_LOCATION).unwrap(),
         }
     }
+}
 
+impl HttpAgent {
     pub fn request_index(&self) -> Result<Request> {
         let url = self.base_url.join("index.json")?;
         Ok(Request::get(url))
     }
 
     pub async fn index_from_response(&self, mut response: Response) -> Result<FluvioIndex> {
-        let index: FluvioIndex = response.body_json().await
-            .map_err(|inner| HttpError { inner })?;
+        let index: FluvioIndex = response.body_json().await?;
         Ok(index)
     }
 
@@ -34,8 +34,7 @@ impl HttpAgent {
     }
 
     pub async fn package_from_response(&self, mut response: Response) -> Result<Package> {
-        let package: Package = response.body_json().await
-            .map_err(|inner| HttpError { inner })?;
+        let package: Package = response.body_json().await?;
         Ok(package)
     }
 

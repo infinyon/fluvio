@@ -20,7 +20,7 @@ pub struct UpdateOpt { }
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<String, CliError> {
-        let agent = HttpAgent::new();
+        let agent = HttpAgent::default();
         update_self(&agent).await?;
 
         Ok("".to_string())
@@ -35,7 +35,7 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     debug!("Requesting package manifest: {}", request.url().as_display());
     let response = crate::http::execute(request).await?;
     let package = agent.package_from_response(response).await?;
-    let latest_release = package.latest_release()?;
+    let latest_release = package.latest_release_for_target(target)?;
     debug!(release = ?latest_release, "Latest release for package:");
     if !latest_release.target_exists(target) {
         return Err(fluvio_index::Error::MissingTarget(target).into());
@@ -85,8 +85,22 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
         let mut hasher = sha2::Sha256::new();
         hasher.update(bytes);
         let output = hasher.finalize();
-        let hexed = hex::encode(output);
-        hexed
+        hex::encode(output)
     };
     &*buffer_checksum == checksum
+}
+
+/// Check whether the index requires a more recent version of the client.
+///
+/// If this is the case, we need to prompt the user to perform an update.
+pub async fn check_update_required() -> Result<bool, CliError> {
+    let agent = HttpAgent::default();
+    let request = agent.request_index()?;
+    let response = crate::http::execute(request).await?;
+    let index = agent.index_from_response(response).await?;
+    Ok(index.metadata.update_required())
+}
+
+pub async fn prompt_update() {
+
 }
