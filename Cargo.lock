@@ -829,7 +829,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
@@ -864,7 +864,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-tls-proxy",
@@ -981,7 +981,7 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "flv-util",
  "futures-util",
  "log",
@@ -1095,7 +1095,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-service",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "fluvio-stream-dispatcher",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1140,37 +1140,13 @@ dependencies = [
  "event-listener",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "futures-util",
  "log",
  "pin-utils",
  "tokio",
  "tracing",
  "tracing-futures",
-]
-
-[[package]]
-name = "fluvio-socket"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9800e3f19f797488fb526831d306f99567861f1d82bd78891189e425a3c72d78"
-dependencies = [
- "async-channel",
- "async-mutex",
- "async-net",
- "async-trait",
- "bytes 0.5.6",
- "chashmap",
- "event-listener",
- "fluvio-future",
- "fluvio-protocol",
- "futures-util",
- "log",
- "pin-project-lite",
- "thiserror",
- "tokio",
- "tokio-util",
- "tracing",
 ]
 
 [[package]]
@@ -1215,7 +1191,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
@@ -1255,7 +1231,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.0",
+ "fluvio-socket",
  "fluvio-types",
  "flv-util",
  "futures-lite",
@@ -1346,14 +1322,13 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ec8be13e783dcc9b9d0e8d91e0e86f03b673ce893338d7891e9188b095e9984"
+checksum = "153fbbb2b0704c6f557b7ceb9b40b2e4d1ceb8a30274c47707a1a08e8893b452"
 dependencies = [
  "async-trait",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.2.1",
  "futures-lite",
  "futures-util",
  "log",
