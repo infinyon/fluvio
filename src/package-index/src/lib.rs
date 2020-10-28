@@ -29,15 +29,49 @@ pub const INDEX_CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PACKAGE_TARGET: &str = env!("PACKAGE_TARGET");
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct IndexMetadata {
+    /// The index itself is given a version so that installers and updaters
+    /// can print upgrade prompts to users. If an installer is expecting an
+    /// index version `1.0.0` and finds an index with a version such as
+    /// `2.0.0`, the installer will know to prompt the user to self-update
+    /// the installer. The original index is expected to continue to be available
+    /// forever, and, critically, new versions of the installer must always
+    /// be published to the original index. New versions of the installer may
+    /// then point to future versions of the Fluvio Index, which may exhibit
+    /// breaking changes.
+    pub version: semver::Version,
+    /// The location of this registry as a URL
+    pub registry: Registry,
+    /// The minimum version of a client which must be used in order
+    /// to properly access the index. If a client finds itself with a lower
+    /// version than this minimum, it must prompt the user for an update before
+    /// it can proceed.
+    pub minimum_client_version: semver::Version,
+}
+
+impl IndexMetadata {
+    /// This checks whether this version of the client is compatible with the given index.
+    ///
+    /// This will return `true` if the `minimum_client_version` of the index is
+    /// greater than this version of the `fluvio-package-index` crate.
+    pub fn update_required(&self) -> bool {
+        let client_version = semver::Version::parse(INDEX_CLIENT_VERSION).unwrap();
+        let required_version = &self.minimum_client_version;
+        *required_version > client_version
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FluvioIndex {
     /// Metadata about the Fluvio Index itself
-    #[serde(rename = "index")]
+    #[serde(alias = "index")]
     pub metadata: IndexMetadata,
     /// Packages are organized by group, where a group is like a particular
     /// user which publishes packages. For the initial index, there will only
     /// be an official Fluvio group, but in the future there may be more.
     /// This will prevent clashes in the package namespace.
-    pub groups: BTreeMap<GroupName, GroupPackages>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    groups: BTreeMap<GroupName, GroupPackages>,
 }
 
 impl FluvioIndex {
@@ -83,27 +117,6 @@ impl FluvioIndex {
     fn group_mut(&mut self, group: &GroupName) -> Result<&mut GroupPackages> {
         self.groups.get_mut(group).ok_or_else(|| Error::MissingGroup(group.clone()))
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct IndexMetadata {
-    /// The index itself is given a version so that installers and updaters
-    /// can print upgrade prompts to users. If an installer is expecting an
-    /// index version `1.0.0` and finds an index with a version such as
-    /// `2.0.0`, the installer will know to prompt the user to self-update
-    /// the installer. The original index is expected to continue to be available
-    /// forever, and, critically, new versions of the installer must always
-    /// be published to the original index. New versions of the installer may
-    /// then point to future versions of the Fluvio Index, which may exhibit
-    /// breaking changes.
-    pub version: semver::Version,
-    /// The location of this registry as a URL
-    pub registry: Registry,
-    /// The minimum version of a client which must be used in order
-    /// to properly access the index. If a client finds itself with a lower
-    /// version than this minimum, it must prompt the user for an update before
-    /// it can proceed.
-    pub minimum_client_version: semver::Version,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
