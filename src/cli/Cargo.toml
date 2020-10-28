@@ -60,7 +60,7 @@ fluvio-sc = { version = "0.2.0", path = "../sc", optional = true, features = ["k
 fluvio-sc-schema = { version = "0.2.0", path = "../sc-schema", features = ["use_serde"] }
 fluvio-spu = { version = "0.2.0", path = "../spu", optional = true }
 fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
-fluvio-cluster = { version = "0.1.0", path = "../cluster" }
+fluvio-cluster = { version = "0.2.0", path = "../cluster" }
 fluvio-types = { path = "../types", version = "0.1.0" }
 
 [dev-dependencies]
