@@ -50,7 +50,7 @@ k8-client = { version = "2.1.0", optional = true }
 k8-metadata-client = { version = "1.0.2" }
 k8-obj-metadata = { version = "1.0.0" }
 fluvio-protocol = { version = "0.2.0" }
-dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.1.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.3.0"}
 fluvio-service = { version = "0.2.0" }
 flv-tls-proxy = "0.2.4"
