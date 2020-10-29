@@ -249,7 +249,7 @@ impl Package {
 
         match maybe_release {
             // If a release with this version exists, just add the target to it
-            Some(release) => release.add_target(target)?,
+            Some(release) => release.add_target(target),
             // If a release with this version does not exist, create it
             None => {
                 let release = Release::new(version, target);
@@ -295,12 +295,12 @@ impl Release {
         }
     }
 
-    pub fn add_target(&mut self, target: Target) -> Result<()> {
-        if self.target_exists(target) {
-            return Err(Error::ReleaseAlreadyExists(self.version.clone(), target));
+    /// Adds a target to this release. If that target already exists,
+    /// nothing happens
+    pub fn add_target(&mut self, target: Target) {
+        if !self.target_exists(target) {
+            self.targets.push(target);
         }
-        self.targets.push(target);
-        Ok(())
     }
 
     pub fn target_exists(&self, target: Target) -> bool {
