@@ -4,39 +4,145 @@
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_LATEST_URL="https://packages.fluvio.io/v1/latest"
 
-success_msg () {
-    printf "\n\n\n\e[1mFluvio Installation complete!\n\n\nRun the following command to update your PATH for the fluvio binary:\n\n\n\n"
+main() {
+    downloader --check
+    need_cmd uname
+    need_cmd mktemp
+    need_cmd chmod
+    need_cmd mkdir
+    need_cmd mv
+    need_cmd shasum
+
+    # Detect architecture and ensure it's supported
+    get_architecture || return 1
+    local _arch="$RETVAL"
+    assert_nz "$_arch"
+    assert_supported_architecture ${_arch}
+    local _latest=$(fetch_latest_version_for_architecture "${_arch}")
+    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_arch}/fluvio"
+
+    # Download Fluvio to a temporary file
+    say "⏳ Downloading fluvio ${_latest} for ${_arch}..."
+    local _temp_file=$(download_fluvio_to_temp "${_url}")
+    ensure downloader "${_url}" "${_temp_file}"
+
+    # Verify the checksum of the temporary file
+    say "🔑 Downloaded fluvio, verifying checksum..."
+    verify_checksum "${_url}" "${_temp_file}" || return 1
+
+    # After verification, install the file and make it executable
+    say "✅ Verified checksum, installing fluvio..."
+    ensure mkdir -p "${FLUVIO_BIN}"
+    local _install_file="${FLUVIO_BIN}/fluvio"
+    ensure mv "${_temp_file}" "${_install_file}"
+    ensure chmod +x "${_install_file}"
+    say "🎉 Install complete!"
+    remind_path
+
+    return 0
 }
 
-error_msg_unsupported_os () {
-        echo "unsupported operating system $OSTYPE; ignoring fluvio install"
-}
+# Ensure that this architecture is supported and matches the
+# naming convention of known platform releases in the registry
+#
+# @param $1: The target triple of this architecture
+# @return: Status 0 if the architecture is supported, exit if not
+assert_supported_architecture() {
+    local _arch="$1"; shift
 
-install_unix () {
-    mkdir -p $FLUVIO_BIN
-    pushd $FLUVIO_BIN || return 1
-        wget https://github.com/infinyon/fluvio/releases/download/$1/fluvio-$1-$2
-        mv fluvio-$1-$2 fluvio
-        chmod +x fluvio
-    popd || return 1
-
-    case $SHELL in 
-        *"bash"* )
-            echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bashrc
-            . $HOME/.bashrc
-        ;;
-        *"zsh"* )
-            echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.zshrc
-            . $HOME/.zshrc
-        ;;
-        *)
-            echo "Unknown Operating System Shell, $SHELL, is not supported; recommend exporting fluvio PATH manually"
-            echo "export PATH:$FLUVIO_BIN"
-        ;;
+    # Match against all supported architectures
+    case $_arch in
+        x86_64-apple-darwin)
+            return 0
+            ;;
+        x86_64-unknown-linux-musl)
+            return 0
+            ;;
     esac
+
+    # If this architecture is not supported, return error
+    err "Architecture ${_arch} is not supported."
+    abort_prompt_issue
 }
 
+# Fetch the latest released version for this architecture
+#
+# @param $1: The target triple of this architecture
+# @return <stdout>: The version of the latest release
+fetch_latest_version_for_architecture() {
+    local _arch="$1"; shift
+
+    # Download the list of latest releases
+    local _downloaded=$(ensure downloader "${FLUVIO_LATEST_URL}" - 2>&1)
+
+    # Find the latest release for this architecture
+    local _latest=$(echo "${_downloaded}" | grep "${_arch}" | sed -E "s/(.*)?=(.*)?/\2/")
+    echo "${_latest}"
+}
+
+# Download the Fluvio CLI binary to a temporary file
+# This returns the name of the temporary file on stdout,
+# and is intended to be captured via a subshell $()
+#
+# @param $1: The URL of the file to download to a temporary dir
+# @return <stdout>: The path of the temporary file downloaded
+download_fluvio_to_temp() {
+    local _url="$1"; shift
+    local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-download)"
+    local _temp_file="${_dir}/fluvio"
+    ensure downloader "${_url}" "${_temp_file}"
+    echo "${_temp_file}"
+}
+
+# Verify the checksum of the downloaded file with the published
+# checksum that accompanies the file.
+#
+# @param $1: The URL of the file that was downloaded. The checksums
+#            of files in the Fluvio registry are located at the same
+#            path with a .sha256 extension.
+# @param $2: The temporary file path where the Fluvio CLI was downloaded
+# @return: Status 0 if checksum matches, exit if it does not
+verify_checksum() {
+    local _url="$1"; shift
+    local _temp_file="$1"; shift
+
+    local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-checksum)"
+    local _checksum_url="${_url}.sha256"
+    local _downloaded_checksum_file="${_dir}/fluvio.sha256-downloaded"
+    local _calculated_checksum_file="${_dir}/fluvio.sha256-calculated"
+
+    # Download the posted checksum
+    local _downloaded=$(ensure downloader "${_checksum_url}" - 2>&1)
+    # Add '  -\n' to the download to match the formatting given by shasum
+    echo "${_downloaded}  -" > "${_downloaded_checksum_file}"
+
+    # Calculate the checksum from the downloaded executable
+    shasum -a256 < "${_temp_file}" > "${_dir}/fluvio.sha256-calculated"
+
+    local _err=$(diff "${_downloaded_checksum_file}" "${_calculated_checksum_file}")
+    if [ -n "$_err" ]; then
+        err "❌ Unable to verify the checksum of the downloaded file, aborting"
+        abort_prompt_issue
+    fi
+}
+
+# Prompts the user to add ~/.fluvio/bin to their PATH variable
+remind_path() {
+    say "💡 You'll need to add '~/.fluvio/bin/' to your PATH variable"
+    say "    You can run the following to set your PATH on shell startup:"
+    # shellcheck disable=SC2016
+    say '      For bash: echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'
+    # shellcheck disable=SC2016
+    say '      For zsh : echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
+    say ""
+    say "    To use fluvio you'll need to restart your shell or run the following:"
+    # shellcheck disable=SC2016
+    say '      export PATH="${HOME}/.fluvio/bin:${PATH}"'
+}
+
+############################################################
 ##### Below are utilities borrowed from rustup-init.sh #####
+############################################################
 
 say() {
     printf '\e[1;34mfluvio:\e[0m %s\n' "$1"
@@ -310,118 +416,6 @@ get_architecture() {
     _arch="${_cputype}-${_ostype}"
 
     RETVAL="$_arch"
-}
-
-assert_supported_architecture() {
-    local _arch="$1"; shift
-
-    # Match against all supported architectures
-    case $_arch in
-        x86_64-apple-darwin)
-            return 0
-            ;;
-        x86_64-unknown-linux-musl)
-            return 0
-            ;;
-    esac
-
-    # If this architecture is not supported, return error
-    err "Architecture ${_arch} is not supported."
-    abort_prompt_issue
-}
-
-fetch_latest_version_for_architecture() {
-    local _arch="$1"; shift
-
-    # Download the list of latest releases
-    local _downloaded=$(ensure downloader "${FLUVIO_LATEST_URL}" - 2>&1)
-
-    # Find the latest release for this architecture
-    local _latest=$(echo "${_downloaded}" | grep "${_arch}" | sed -E "s/(.*)?=(.*)?/\2/")
-    echo "${_latest}"
-}
-
-download_fluvio_to_temp() {
-    local _url="$1"; shift
-    local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-download)"
-    local _temp_file="${_dir}/fluvio"
-    ensure downloader "${_url}" "${_temp_file}"
-    echo "${_temp_file}"
-}
-
-verify_checksum() {
-    local _url="$1"; shift
-    local _temp_file="$1"; shift
-
-    local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-checksum)"
-    local _checksum_url="${_url}.sha256"
-    local _downloaded_checksum_file="${_dir}/fluvio.sha256-downloaded"
-    local _calculated_checksum_file="${_dir}/fluvio.sha256-calculated"
-
-    # Download the posted checksum
-    local _downloaded=$(ensure downloader "${_checksum_url}" - 2>&1)
-    # Add '  -\n' to the download to match the formatting given by shasum
-    echo "${_downloaded}  -" > "${_downloaded_checksum_file}"
-
-    # Calculate the checksum from the downloaded executable
-    shasum -a256 < "${_temp_file}" > "${_dir}/fluvio.sha256-calculated"
-
-    local _err=$(diff "${_downloaded_checksum_file}" "${_calculated_checksum_file}")
-    if [ -n "$_err" ]; then
-        err "❌ Unable to verify the checksum of the downloaded file, aborting"
-        abort_prompt_issue
-    fi
-}
-
-remind_path() {
-    say "💡 You'll need to add '~/.fluvio/bin/' to your PATH variable"
-    say "    You can run the following to set your PATH on shell startup:"
-    # shellcheck disable=SC2016
-    say '      For bash: echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'
-    # shellcheck disable=SC2016
-    say '      For zsh : echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
-    say ""
-    say "    To use fluvio you'll need to restart your shell or run the following:"
-    # shellcheck disable=SC2016
-    say '      export PATH="${HOME}/.fluvio/bin:${PATH}"'
-}
-
-main() {
-    downloader --check
-    need_cmd uname
-    need_cmd mktemp
-    need_cmd chmod
-    need_cmd mkdir
-    need_cmd mv
-    need_cmd shasum
-
-    # Detect architecture and ensure it's supported
-    get_architecture || return 1
-    local _arch="$RETVAL"
-    assert_nz "$_arch"
-    assert_supported_architecture ${_arch}
-    local _latest=$(fetch_latest_version_for_architecture "${_arch}")
-    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_arch}/fluvio"
-
-    # Download Fluvio to a temporary file
-    say "⏳ Downloading fluvio ${_latest} for ${_arch}..."
-    local _temp_file=$(download_fluvio_to_temp "${_url}")
-    ensure downloader "${_url}" "${_temp_file}"
-
-    # Verify the checksum of the temporary file
-    say "🔑 Downloaded fluvio, verifying checksum..."
-    verify_checksum "${_url}" "${_temp_file}" || return 1
-
-    # After verification, install the file and make it executable
-    say "✅ Verified checksum, installing fluvio..."
-    ensure mkdir -p "${FLUVIO_BIN}"
-    local _install_file="${FLUVIO_BIN}/fluvio"
-    ensure mv "${_temp_file}" "${_install_file}"
-    ensure chmod +x "${_install_file}"
-    say "🎉 Install complete!"
-    remind_path
-
-    return 0
 }
 
 main "$@"
