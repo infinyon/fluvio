@@ -47,7 +47,7 @@ fetch_latest_version_for_architecture() {
     fi
 
     # Find the latest release for this architecture
-    local _latest=$(echo "${_downloaded}" | grep "${_arch}" | sed -E "s/(.*)?=(.*)?/\2/")
+    local _latest=$(echo "${_downloaded}" | grep "${_arch}" | sed "s/.*\=//")
     _status=$?
 
     if [ $_status -ne 0 ]; then
