@@ -4,44 +4,6 @@
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_LATEST_URL="https://packages.fluvio.io/v1/latest"
 
-main() {
-    downloader --check
-    need_cmd uname
-    need_cmd mktemp
-    need_cmd chmod
-    need_cmd mkdir
-    need_cmd mv
-    need_cmd shasum
-
-    # Detect architecture and ensure it's supported
-    get_architecture || return 1
-    local _arch="$RETVAL"
-    assert_nz "$_arch"
-    assert_supported_architecture ${_arch}
-    local _latest=$(fetch_latest_version_for_architecture "${_arch}")
-    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_arch}/fluvio"
-
-    # Download Fluvio to a temporary file
-    say "⏳ Downloading fluvio ${_latest} for ${_arch}..."
-    local _temp_file=$(download_fluvio_to_temp "${_url}")
-    ensure downloader "${_url}" "${_temp_file}"
-
-    # Verify the checksum of the temporary file
-    say "🔑 Downloaded fluvio, verifying checksum..."
-    verify_checksum "${_url}" "${_temp_file}" || return 1
-
-    # After verification, install the file and make it executable
-    say "✅ Verified checksum, installing fluvio..."
-    ensure mkdir -p "${FLUVIO_BIN}"
-    local _install_file="${FLUVIO_BIN}/fluvio"
-    ensure mv "${_temp_file}" "${_install_file}"
-    ensure chmod +x "${_install_file}"
-    say "🎉 Install complete!"
-    remind_path
-
-    return 0
-}
-
 # Ensure that this architecture is supported and matches the
 # naming convention of known platform releases in the registry
 #
@@ -58,6 +20,9 @@ assert_supported_architecture() {
         x86_64-unknown-linux-musl)
             return 0
             ;;
+        x86_64-unknown-linux-gnu)
+            return 0
+            ;;
     esac
 
     # If this architecture is not supported, return error
@@ -70,13 +35,25 @@ assert_supported_architecture() {
 # @param $1: The target triple of this architecture
 # @return <stdout>: The version of the latest release
 fetch_latest_version_for_architecture() {
+    local _status
     local _arch="$1"; shift
 
     # Download the list of latest releases
     local _downloaded=$(ensure downloader "${FLUVIO_LATEST_URL}" - 2>&1)
+    _status=$?
+
+    if [ $_status -ne 0 ]; then
+        return $_status
+    fi
 
     # Find the latest release for this architecture
     local _latest=$(echo "${_downloaded}" | grep "${_arch}" | sed -E "s/(.*)?=(.*)?/\2/")
+    _status=$?
+
+    if [ $_status -ne 0 ]; then
+        return $_status
+    fi
+
     echo "${_latest}"
 }
 
@@ -87,6 +64,7 @@ fetch_latest_version_for_architecture() {
 # @param $1: The URL of the file to download to a temporary dir
 # @return <stdout>: The path of the temporary file downloaded
 download_fluvio_to_temp() {
+    local _status
     local _url="$1"; shift
     local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-download)"
     local _temp_file="${_dir}/fluvio"
@@ -174,7 +152,10 @@ check_cmd() {
 # will immediately terminate with an error showing the failing
 # command.
 ensure() {
-    if ! "$@"; then err "command failed: $*"; fi
+    if ! "$@"; then
+        err "command failed: $*"
+        exit 1
+    fi
 }
 
 assert_nz() {
@@ -208,7 +189,7 @@ downloader() {
         return $_status
     elif [ "$_dld" = wget ]; then
         # Use wget
-        wget --https-only --secure-protocol=TLSv1_2 "$1" -O "$2" 2>&1
+        _err=$(wget --https-only --secure-protocol=TLSv1_2 "$1" -O "$2" 2>&1)
         _status=$?
 
         # If there is anything on stderr, print it
@@ -455,6 +436,58 @@ get_architecture() {
     _arch="${_cputype}-${_ostype}"
 
     RETVAL="$_arch"
+}
+
+main() {
+    downloader --check
+    need_cmd uname
+    need_cmd mktemp
+    need_cmd chmod
+    need_cmd mkdir
+    need_cmd mv
+    need_cmd shasum
+    local _status
+
+    # Detect architecture and ensure it's supported
+    get_architecture || return 1
+    local _arch="$RETVAL"
+    assert_nz "$_arch"
+    assert_supported_architecture ${_arch}
+
+    # Fetch the latest version information for all supported architectures
+    local _latest=$(fetch_latest_version_for_architecture "${_arch}")
+    _status=$?
+    if [ $_status -ne 0 ]; then
+        err "❌ Failed to fetch latest version information!"
+        err "    Error downloading from ${FLUVIO_LATEST_URL}"
+        abort_prompt_issue
+    fi
+
+    # Download Fluvio to a temporary file
+    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_arch}/fluvio"
+    say "⏳ Downloading fluvio ${_latest} for ${_arch}..."
+    local _temp_file=$(download_fluvio_to_temp "${_url}")
+    _status=$?
+    if [ $_status -ne 0 ]; then
+        err "❌ Failed to download Fluvio!"
+        err "    Error downloading from ${_url}"
+        abort_prompt_issue
+    fi
+
+    # Verify the checksum of the temporary file
+    say "🔑 Downloaded fluvio, verifying checksum..."
+    verify_checksum "${_url}" "${_temp_file}" || return 1
+
+    # After verification, install the file and make it executable
+    say "✅ Verified checksum, installing fluvio..."
+    ensure mkdir -p "${FLUVIO_BIN}"
+    local _install_file="${FLUVIO_BIN}/fluvio"
+    ensure mv "${_temp_file}" "${_install_file}"
+    ensure chmod +x "${_install_file}"
+    say "🎉 Install complete!"
+    remind_path
+
+    return 0
 }
 
 main "$@"
