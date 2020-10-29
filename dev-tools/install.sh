@@ -15,19 +15,20 @@ assert_supported_architecture() {
     # Match against all supported architectures
     case $_arch in
         x86_64-apple-darwin)
+            echo "x86_64-apple-darwin"
             return 0
             ;;
         x86_64-unknown-linux-musl)
+            echo "x86_64-unknown-linux-musl"
             return 0
             ;;
         x86_64-unknown-linux-gnu)
+            echo "x86_64-unknown-linux-musl"
             return 0
             ;;
     esac
 
-    # If this architecture is not supported, return error
-    err "Architecture ${_arch} is not supported."
-    abort_prompt_issue
+    return 1
 }
 
 # Fetch the latest released version for this architecture
@@ -90,7 +91,7 @@ verify_checksum() {
     local _calculated_checksum_file="${_dir}/fluvio.sha256-calculated"
 
     # Download the posted checksum
-    local _downloaded=$(ensure downloader "${_checksum_url}" - 2>&1)
+    local _downloaded="$(ensure downloader "${_checksum_url}" - 2>&1)"
     # Add '  -\n' to the download to match the formatting given by shasum
     echo "${_downloaded}  -" > "${_downloaded_checksum_file}"
 
@@ -133,7 +134,8 @@ err() {
 # Exit immediately, prompting the user to file an issue on GH <3
 abort_prompt_issue() {
     err ""
-    err "If you believe this is incorrect, please feel free to file an issue on Github ❤️"
+    err "If you believe this is incorrect (or just need help),"
+    err "please feel free to file an issue on Github ❤️"
     err "    https://github.com/infinyon/fluvio/issues/new"
     exit 1
 }
@@ -452,10 +454,20 @@ main() {
     get_architecture || return 1
     local _arch="$RETVAL"
     assert_nz "$_arch"
-    assert_supported_architecture ${_arch}
+
+    # Some architectures may be folded into a single 'target' distribution
+    # e.g. x86_64-unknown-linux-musl and x86_64-unknown-linux-gnu both download
+    # the musl target release. The _target here is used in the URL to download
+    local _target=$(assert_supported_architecture ${_arch})
+    _status=$?
+    if [ $_status -ne 0 ]; then
+        # If this architecture is not supported, return error
+        err "❌ Architecture ${_arch} is not supported."
+        abort_prompt_issue
+    fi
 
     # Fetch the latest version information for all supported architectures
-    local _latest=$(fetch_latest_version_for_architecture "${_arch}")
+    local _latest=$(fetch_latest_version_for_architecture "${_target}")
     _status=$?
     if [ $_status -ne 0 ]; then
         err "❌ Failed to fetch latest version information!"
@@ -464,8 +476,8 @@ main() {
     fi
 
     # Download Fluvio to a temporary file
-    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_arch}/fluvio"
-    say "⏳ Downloading fluvio ${_latest} for ${_arch}..."
+    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_target}/fluvio"
+    say "⏳ Downloading fluvio ${_latest} for ${_target}..."
     local _temp_file=$(download_fluvio_to_temp "${_url}")
     _status=$?
     if [ $_status -ne 0 ]; then
