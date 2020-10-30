@@ -6,27 +6,13 @@ if [ "$DEVELOPMENT" = "true" ]; then
         case $VERSION in
                 "latest")
                         echo "Installing from latest source"
-                        # Download Fluvio Repo
-                        # TODO! TEMPORARY; REPLACE ONCE BINARY IS RELEASED
-                        # Use only in develop version
-                        cd /tmp/
-                        git clone https://github.com/infinyon/fluvio.git
-                        cd -
-
-                        cd /tmp/fluvio
-                        # Install Fluvio Src
-                        cargo install --path ./src/cli
-                        cd -
+                        curl -sSf https://raw.githubusercontent.com.infinyon/fluvio/master/dev-tools/install.sh | bash
+                        echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
+                        . $HOME/.bash_profile
                 ;;
                 "v"*)
                         echo "Installing Fluvio $VERSION"
-                        cd /tmp/
-                        wget https://raw.githubusercontent.com/infinyon/fluvio/master/dev-tools/install-fluvio.sh
-                        export OSTYPE=$OSTYPE
-                        export SHELL=$SHELL
-                        export HOME=$HOME
-                        sh ./install-fluvio.sh
-                        cd -
+                        curl -sSf https://raw.githubusercontent.com.infinyon/fluvio/master/dev-tools/install.sh | bash
                         echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
                         . $HOME/.bash_profile
                 ;;
@@ -35,7 +21,6 @@ if [ "$DEVELOPMENT" = "true" ]; then
                 ;;
         esac
 
-        
         # Set fluvio minikube context
         fluvio cluster set-minikube-context
 

@@ -73,11 +73,27 @@ fetch_latest_version_for_architecture() {
 # @param $1: The URL of the file to download to a temporary dir
 # @return <stdout>: The path of the temporary file downloaded
 download_fluvio_to_temp() {
-    local _status
+    local _status _dir _temp_file
     local _url="$1"; shift
-    local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-download)"
-    local _temp_file="${_dir}/fluvio"
-    ensure downloader "${_url}" "${_temp_file}"
+
+    _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-download)"
+    _temp_file="${_dir}/fluvio"
+
+    downloader "${_url}" "${_temp_file}"
+    _status=$?
+    if [ $_status -ne 0 ]; then
+        if [ -n "${VERSION:-""}" ]; then
+            # If a VERSION was set, warn that it may be invalid
+            err "❌ Failed to download Fluvio, could not find custom VERSION=${VERSION}"
+            err "    Make sure this is a valid version, or unset VERSION to download latest"
+        else
+            # If downloading the latest version, warn a general download error
+            err "❌ Failed to download Fluvio!"
+            err "    Error downloading from ${_url}"
+        fi
+        abort_prompt_issue
+    fi
+
     echo "${_temp_file}"
 }
 
@@ -92,21 +108,22 @@ download_fluvio_to_temp() {
 verify_checksum() {
     local _url="$1"; shift
     local _temp_file="$1"; shift
+    local _dir _downloaded _err
 
-    local _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-checksum)"
+    _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-checksum)"
     local _checksum_url="${_url}.sha256"
     local _downloaded_checksum_file="${_dir}/fluvio.sha256-downloaded"
     local _calculated_checksum_file="${_dir}/fluvio.sha256-calculated"
 
     # Download the posted checksum
-    local _downloaded="$(ensure downloader "${_checksum_url}" - 2>&1)"
+    _downloaded="$(ensure downloader "${_checksum_url}" - 2>&1)"
     # Add '  -\n' to the download to match the formatting given by shasum
     echo "${_downloaded}  -" > "${_downloaded_checksum_file}"
 
     # Calculate the checksum from the downloaded executable
     shasum -a256 < "${_temp_file}" > "${_dir}/fluvio.sha256-calculated"
 
-    local _err=$(diff "${_downloaded_checksum_file}" "${_calculated_checksum_file}")
+    _err=$(diff "${_downloaded_checksum_file}" "${_calculated_checksum_file}")
     if [ -n "$_err" ]; then
         err "❌ Unable to verify the checksum of the downloaded file, aborting"
         abort_prompt_issue
@@ -142,7 +159,7 @@ err() {
 # Exit immediately, prompting the user to file an issue on GH <3
 abort_prompt_issue() {
     err ""
-    err "If you believe this is incorrect (or just need help),"
+    err "If you believe this is a bug (or just need help),"
     err "please feel free to file an issue on Github ❤️"
     err "    https://github.com/infinyon/fluvio/issues/new"
     exit 1
@@ -440,7 +457,7 @@ main() {
     need_cmd mkdir
     need_cmd mv
     # need_cmd shasum
-    local _status _target _latest _temp_file
+    local _status _target _version _temp_file
 
     # Detect architecture and ensure it's supported
     get_architecture || return 1
@@ -458,18 +475,23 @@ main() {
         abort_prompt_issue
     fi
 
-    # Fetch the latest version information for all supported architectures
-    _latest=$(fetch_latest_version_for_architecture "${_target}")
-    _status=$?
-    if [ $_status -ne 0 ]; then
-        err "❌ Failed to fetch latest version information!"
-        err "    Error downloading from ${FLUVIO_LATEST_URL}"
-        abort_prompt_issue
+    if [ -n "${VERSION:-""}" ]; then
+        # If a VERSION env variable is set, try to install that version
+        _version="${VERSION}"
+    else
+        # Otherwise, fetch the latest version information
+        _version=$(fetch_latest_version_for_architecture "${_target}")
+        _status=$?
+        if [ $_status -ne 0 ]; then
+            err "❌ Failed to fetch latest version information!"
+            err "    Error downloading from ${FLUVIO_LATEST_URL}"
+            abort_prompt_issue
+        fi
     fi
 
     # Download Fluvio to a temporary file
-    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_target}/fluvio"
-    say "⏳ Downloading Fluvio ${_latest} for ${_target}..."
+    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_version}/${_target}/fluvio"
+    say "⏳ Downloading Fluvio ${_version} for ${_target}..."
     _temp_file=$(download_fluvio_to_temp "${_url}")
     _status=$?
     if [ $_status -ne 0 ]; then
