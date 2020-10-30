@@ -36,11 +36,11 @@ assert_supported_architecture() {
 # @param $1: The target triple of this architecture
 # @return <stdout>: The version of the latest release
 fetch_latest_version_for_architecture() {
-    local _status
+    local _status _downloaded _newest
     local _arch="$1"; shift
 
     # Download the list of latest releases
-    local _downloaded=$(ensure downloader "${FLUVIO_LATEST_URL}" - 2>&1)
+    _downloaded="$(ensure downloader "${FLUVIO_LATEST_URL}" - 2>&1)"
     _status=$?
 
     if [ $_status -ne 0 ]; then
@@ -48,14 +48,18 @@ fetch_latest_version_for_architecture() {
     fi
 
     # Find the latest release for this architecture
-    local _latest=$(echo "${_downloaded}" | grep "${_arch}" | sed "s/.*\=//")
+    _newest="$(echo "${_downloaded}" | grep "${_arch}" | sed "s/.*\=//")"
     _status=$?
 
     if [ $_status -ne 0 ]; then
         return $_status
     fi
 
-    echo "${_latest}"
+    if [ -z "$_newest" ]; then
+        return 1
+    fi
+
+    echo "${_newest}"
 }
 
 # Download the Fluvio CLI binary to a temporary file
@@ -198,8 +202,8 @@ downloader() {
         _err=$(wget --https-only --secure-protocol=TLSv1_2 "$1" -O "$2" 2>&1)
         _status=$?
 
-        # If there is anything on stderr, print it
-        if [ -n "$_err" ]; then
+        # If the status code was nonzero, print stderr
+        if [ $_status -ne 0 ]; then
             echo "$_err" >&2
         fi
         return $_status
@@ -452,7 +456,7 @@ main() {
     need_cmd mkdir
     need_cmd mv
     # need_cmd shasum
-    local _status
+    local _status _target _latest _temp_file
 
     # Detect architecture and ensure it's supported
     get_architecture || return 1
@@ -462,7 +466,7 @@ main() {
     # Some architectures may be folded into a single 'target' distribution
     # e.g. x86_64-unknown-linux-musl and x86_64-unknown-linux-gnu both download
     # the musl target release. The _target here is used in the URL to download
-    local _target=$(assert_supported_architecture ${_arch})
+    _target=$(assert_supported_architecture ${_arch})
     _status=$?
     if [ $_status -ne 0 ]; then
         # If this architecture is not supported, return error
@@ -471,7 +475,7 @@ main() {
     fi
 
     # Fetch the latest version information for all supported architectures
-    local _latest=$(fetch_latest_version_for_architecture "${_target}")
+    _latest=$(fetch_latest_version_for_architecture "${_target}")
     _status=$?
     if [ $_status -ne 0 ]; then
         err "❌ Failed to fetch latest version information!"
@@ -482,7 +486,7 @@ main() {
     # Download Fluvio to a temporary file
     local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_target}/fluvio"
     say "⏳ Downloading Fluvio ${_latest} for ${_target}..."
-    local _temp_file=$(download_fluvio_to_temp "${_url}")
+    _temp_file=$(download_fluvio_to_temp "${_url}")
     _status=$?
     if [ $_status -ne 0 ]; then
         err "❌ Failed to download Fluvio!"
