@@ -114,7 +114,7 @@ remind_path() {
     # shellcheck disable=SC2016
     say '      For zsh : echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
     say ""
-    say "    To use fluvio you'll need to restart your shell or run the following:"
+    say "    To use Fluvio you'll need to restart your shell or run the following:"
     # shellcheck disable=SC2016
     say '      export PATH="${HOME}/.fluvio/bin:${PATH}"'
 }
@@ -451,7 +451,7 @@ main() {
     need_cmd chmod
     need_cmd mkdir
     need_cmd mv
-    need_cmd shasum
+    # need_cmd shasum
     local _status
 
     # Detect architecture and ensure it's supported
@@ -481,7 +481,7 @@ main() {
 
     # Download Fluvio to a temporary file
     local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_latest}/${_target}/fluvio"
-    say "⏳ Downloading fluvio ${_latest} for ${_target}..."
+    say "⏳ Downloading Fluvio ${_latest} for ${_target}..."
     local _temp_file=$(download_fluvio_to_temp "${_url}")
     _status=$?
     if [ $_status -ne 0 ]; then
@@ -491,11 +491,11 @@ main() {
     fi
 
     # Verify the checksum of the temporary file
-    say "🔑 Downloaded fluvio, verifying checksum..."
-    verify_checksum "${_url}" "${_temp_file}" || return 1
+    # say "🔑 Downloaded fluvio, verifying checksum..."
+    # verify_checksum "${_url}" "${_temp_file}" || return 1
 
     # After verification, install the file and make it executable
-    say "✅ Verified checksum, installing fluvio..."
+    say "✅ Downloaded Fluvio, installing..."
     ensure mkdir -p "${FLUVIO_BIN}"
     local _install_file="${FLUVIO_BIN}/fluvio"
     ensure mv "${_temp_file}" "${_install_file}"
