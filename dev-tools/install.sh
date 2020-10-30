@@ -1,5 +1,5 @@
-#!/bin/sh
-# shellcheck shell=dash
+#!/bin/bash
+# shellcheck shell=bash
 
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_LATEST_URL="https://packages.fluvio.io/v1/latest"
@@ -143,6 +143,7 @@ abort_prompt_issue() {
 need_cmd() {
     if ! check_cmd "$1"; then
         err "need '$1' (command not found)"
+        exit 1
     fi
 }
 
@@ -161,7 +162,10 @@ ensure() {
 }
 
 assert_nz() {
-    if [ -z "$1" ]; then err "assert_nz $2"; fi
+    if [ -z "$1" ]; then
+        err "assert_nz $2"
+        exit 1
+    fi
 }
 
 # Adapted from rustup-init.sh:
