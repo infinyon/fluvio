@@ -1,6 +1,10 @@
 #!/bin/bash
 # shellcheck shell=bash
 
+set -e
+set -u
+set -o pipefail
+
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_LATEST_URL="https://packages.fluvio.io/v1/latest"
 
@@ -172,44 +176,24 @@ assert_nz() {
     fi
 }
 
-# Adapted from rustup-init.sh:
-# This wraps curl or wget. Try curl first, if not installed, use wget instead.
+# Uses curl to download the contents of a URL to a file.
+#
+# @param $1: The URL of the file to download
+# @param $2: The filename of where to download
 downloader() {
-    local _dld _status
+    local _status
+    local _url="$1"; shift
+    local _file="$1"; shift
 
-    if check_cmd curl; then
-        _dld=curl
-    elif check_cmd wget; then
-        _dld=wget
-    else
-        _dld='curl or wget' # to be used in error message of need_cmd
+    # Use curl for downloads
+    _err=$(curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location "${_url}" --output "${_file}" 2>&1)
+    _status=$?
+
+    # If there is anything on stderr, print it
+    if [ -n "$_err" ]; then
+        echo "$_err" >&2
     fi
-
-    if [ "$1" = --check ]; then
-        need_cmd "$_dld"
-    elif [ "$_dld" = curl ]; then
-        # Use curl
-        _err=$(curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location "$1" --output "$2" 2>&1)
-        _status=$?
-
-        # If there is anything on stderr, print it
-        if [ -n "$_err" ]; then
-            echo "$_err" >&2
-        fi
-        return $_status
-    elif [ "$_dld" = wget ]; then
-        # Use wget
-        _err=$(wget --https-only --secure-protocol=TLSv1_2 "$1" -O "$2" 2>&1)
-        _status=$?
-
-        # If the status code was nonzero, print stderr
-        if [ $_status -ne 0 ]; then
-            echo "$_err" >&2
-        fi
-        return $_status
-    else
-        err "Unknown downloader"   # should not reach here
-    fi
+    return $_status
 }
 
 get_bitness() {
@@ -449,7 +433,7 @@ get_architecture() {
 }
 
 main() {
-    downloader --check
+    need_cmd curl
     need_cmd uname
     need_cmd mktemp
     need_cmd chmod
