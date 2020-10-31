@@ -195,8 +195,8 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
             println!("{} spus provisioned", spus.len());
             return Ok(());
         } else {
-            println!("{} out of spu: {} up, waiting 1 sec", live_spus, spu);
-            sleep(Duration::from_secs(1)).await;
+            println!("{} out of spu: {} up, waiting 5 sec", live_spus, spu);
+            sleep(Duration::from_secs(5)).await;
         }
     }
 
