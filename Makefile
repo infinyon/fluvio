@@ -241,4 +241,3 @@ delete-gh-release:
 	--user ${GITHUB_USER} \
 	--repo ${GITHUB_REPO} \
 	--tag ${GITHUB_TAG}
-
