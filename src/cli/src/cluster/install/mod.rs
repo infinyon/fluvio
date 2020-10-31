@@ -180,7 +180,7 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
 
     println!("waiting for spu to be provisioned");
     sleep(Duration::from_secs(5)).await;
-    
+
     let client = Fluvio::connect().await.expect("sc ");
     let mut admin = client.admin().await;
 
