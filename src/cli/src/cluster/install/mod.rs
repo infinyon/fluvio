@@ -180,7 +180,7 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
     let delay: u64 = env::var("FLV_SPU_DELAY")
-        .unwrap_or("1".to_string())
+        .unwrap_or_else(|_| "1".to_string())
         .parse()
         .unwrap_or_else(|_| 1);
 
