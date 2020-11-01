@@ -21,6 +21,8 @@ pub struct ClusterUninstallerBuilder {
     namespace: String,
     /// name of the chart repo
     name: String,
+    /// retries
+    retry_count: u16,
 }
 
 impl ClusterUninstallerBuilder {
@@ -76,6 +78,19 @@ impl ClusterUninstallerBuilder {
         self.name = name.into();
         self
     }
+    /// Sets the chart repo name.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterUninstaller;
+    /// let uninstaller = ClusterUninstaller::new()
+    ///     .with_retries(2u16);
+    /// ```
+    pub fn with_retries(mut self, retry_count: u16) -> Self {
+        self.retry_count = retry_count;
+        self
+    }
 }
 
 /// Uninstalls different flavors of fluvio
@@ -96,6 +111,7 @@ impl ClusterUninstaller {
         ClusterUninstallerBuilder {
             namespace: DEFAULT_NAMESPACE.to_string(),
             name: DEFAULT_CHART_APP_REPO.to_string(),
+            retry_count: 10,
         }
     }
     /// Uninstall fluvio
@@ -230,7 +246,7 @@ impl ClusterUninstaller {
     ) -> Result<(), ClusterError> {
         use k8_client::metadata::MetadataClient;
         let mut success = false;
-        for i in 0..100u16 {
+        for i in 0..self.config.retry_count {
             debug!("checking to see if {} is deleted, count: {}", S::label(), i);
             match client.retrieve_item::<S, _>(input).await {
                 Ok(_) => {

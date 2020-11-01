@@ -11,8 +11,6 @@ use crate::Terminal;
 use crate::CliError;
 use tls::TlsOpt;
 
-use super::util::*;
-
 #[cfg(target_os = "macos")]
 fn get_log_directory() -> &'static str {
     "/usr/local/var/log/fluvio"
