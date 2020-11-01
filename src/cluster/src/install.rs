@@ -86,6 +86,8 @@ pub struct ClusterInstallerBuilder {
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
     client_tls_policy: TlsPolicy,
+    /// The authorization ConfigMap name
+    authorization_config_map: Option<String>,
 }
 
 impl ClusterInstallerBuilder {
@@ -445,9 +447,28 @@ impl ClusterInstallerBuilder {
     ///     .unwrap();
     /// ```
     ///
-    /// [`RUST_LOG`]: https://docs.rs/tracing-subscriber/0.2.11/tracing_subscriber/filter/struct.EnvFilter.html
     pub fn with_cloud<S: Into<String>>(mut self, cloud: S) -> Self {
         self.cloud = cloud.into();
+        self
+    }
+
+    /// Sets the ConfigMap for authorization.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_cwith_authorization_config_maploud("authorization")
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    ///
+    pub fn with_authorization_config_map<S: Into<String>>(
+        mut self,
+        authorization_config_map: S,
+    ) -> Self {
+        self.authorization_config_map = Some(authorization_config_map.into());
         self
     }
 }
@@ -549,6 +570,7 @@ impl ClusterInstaller {
             rust_log: None,
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
+            authorization_config_map: None,
         }
     }
 
@@ -797,6 +819,10 @@ impl ClusterInstaller {
         // If RUST_LOG is defined, pass it to SC
         if let Some(log) = &self.config.rust_log {
             install_settings.push(("scLog", log));
+        }
+
+        if let Some(authorization_config_map) = &self.config.authorization_config_map {
+            install_settings.push(("authorizationConfigMap", authorization_config_map));
         }
 
         match &self.config.chart_location {

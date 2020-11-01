@@ -15,6 +15,7 @@ image:
 cert:
   caCert: fluvio-ca
   tls: fluvio-tls
+authorizationConfigMap: null
 rbac:
   create: true
 serviceAccount:

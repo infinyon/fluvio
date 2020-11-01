@@ -30,12 +30,22 @@ spec:
         - /var/certs/tls/tls.key
         - --bind-non-tls-public
         - 0.0.0.0:9005
+        {{ if .Values.authorizationConfigMap }}
+        - --authorization-policy
+        - /etc/fluvio-authorization/policy
+        - --authorization-scopes
+        - /etc/fluvio-authorization/scopes
+        {{ end }}
       volumeMounts:
-          - mountPath: "/var/certs/ca"
-            name: cacert
-            readOnly: true
-          - mountPath: "/var/certs/tls"
-            name: tls
+        - name: cacert
+          mountPath: /var/certs/ca  
+          readOnly: true
+        - name: tls
+          mountPath: /var/certs/tls
+        {{ if .Values.authorizationConfigMap }}
+        - name: authorization-config
+          mountPath: /etc/fluvio-authorization
+        {{ end }}
   volumes:
     - name: cacert
       secret:
@@ -43,4 +53,14 @@ spec:
     - name: tls
       secret:
         secretName: {{ .Values.cert.tls }}
+    {{ if .Values.authorizationConfigMap }}
+    - name: authorization-config
+      configMap:
+        name: {{ .Values.authorizationConfigMap }}
+        items:
+        - key: POLICY
+          path: policy
+        - key: SCOPES
+          path: scopes
+    {{ end }}
   {{ end }}
