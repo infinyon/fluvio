@@ -15,6 +15,7 @@ DEFAULT_ITERATION=1
 DEFAULT_LOG=info
 AUTH_POLICY = ./src/sc/test-data/test-policy.json
 AUTH_SCOPE = ./src/sc/test-data/scopes.json
+SPU_DELAY=5
 
 # install all tools required
 install_tools_mac:
@@ -37,6 +38,7 @@ smoke-test-tls:	test-clean-up
 # test rbac with ROOT user
 smoke-test-tls-root:	test-clean-up
 	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
 
 # test rbac with user1 who doesn't have topic creation permission
@@ -57,6 +59,7 @@ smoke-test-k8-tls:	test-clean-up minikube_image
 
 smoke-test-k8-tls-root:	test-clean-up minikube_image
 	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
 
 
