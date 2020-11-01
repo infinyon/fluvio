@@ -84,6 +84,7 @@ impl TestRunner {
 
     /// main entry point
     pub async fn run_test(&self) {
+        use std::env;
         use crate::tests::create_test_driver;
 
         // at this point, cluster is up, we need to ensure clean shutdown of cluster
@@ -93,8 +94,15 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-
-            sleep(Duration::from_secs(10)).await;
+            let delay: u64 = env::var("FLV_SPU_DELAY")
+                .unwrap_or_else(|_| "1".to_string())
+                .parse()
+                .unwrap_or_else(|_| 1);
+            println!(
+                "waiting for topics to be provisioned for: {} seconds",
+                delay
+            );
+            sleep(Duration::from_secs(delay)).await;
         } else {
             println!("no topic initialized");
         }
