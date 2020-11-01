@@ -459,7 +459,7 @@ impl ClusterInstallerBuilder {
     /// ```no_run
     /// use fluvio_cluster::ClusterInstaller;
     /// let installer = ClusterInstaller::new()
-    ///     .with_cwith_authorization_config_maploud("authorization")
+    ///     .with_authorization_config_map("authorization")
     ///     .build()
     ///     .unwrap();
     /// ```
