@@ -15,7 +15,7 @@ DEFAULT_ITERATION=1
 DEFAULT_LOG=info
 AUTH_POLICY = ./src/sc/test-data/test-policy.json
 AUTH_SCOPE = ./src/sc/test-data/scopes.json
-SPU_DELAY=5
+SPU_DELAY=10
 
 # install all tools required
 install_tools_mac:
