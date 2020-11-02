@@ -21,6 +21,6 @@ pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
     }
 
     let installer = builder.build()?;
-    installer.install_local().await?;
+    installer.install().await?;
     Ok(())
 }

@@ -35,7 +35,7 @@ pub struct LocalClusterInstallerBuilder {
 }
 
 impl LocalClusterInstallerBuilder {
-    /// Creates a `ClusterInstaller` with the current configuration.
+    /// Creates a `LocalClusterInstaller` with the current configuration.
     ///
     /// This may fail if there is a problem conencting to Kubernetes or
     /// finding the `helm` executable on the local system.
@@ -194,7 +194,7 @@ impl LocalClusterInstaller {
         };
         LocalClusterInstallerBuilder {
             spu_spec,
-            rust_log: None,
+            rust_log: Some("info".to_string()),
             log_dir: "/tmp".to_string(),
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
@@ -202,7 +202,7 @@ impl LocalClusterInstaller {
     }
 
     /// Install fluvio locally
-    pub async fn install_local(&self) -> Result<(), ClusterError> {
+    pub async fn install(&self) -> Result<(), ClusterError> {
         debug!("using log dir: {}", &self.config.log_dir);
         if !Path::new(&self.config.log_dir.to_string()).exists() {
             create_dir_all(&self.config.log_dir.to_string())?;

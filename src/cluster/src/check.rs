@@ -315,7 +315,7 @@ impl ClusterChecker {
                     }
                 },
                 Err(err) => {
-                    let msg = format!("error ocured: {}", err);
+                    let msg = format!("Unexpected error occurred: {}", err);
                     println!("{}", msg.red());
                     failures.push(err);
                 }
@@ -346,7 +346,7 @@ pub(crate) fn check_helm_version(
                 required: required.to_string(),
             },
             format!(
-                "Please upgrade your helm package manager to at least {}",
+                "Please upgrade your helm client to atleast {}",
                 KUBE_VERSION.to_string()
             ),
         ));
@@ -370,7 +370,9 @@ pub(crate) fn check_system_chart(
                 .to_string(),
         ));
     } else if sys_charts.len() > 1 {
-        return Err(CheckError::MultipleSystemCharts);
+        return Ok(StatusCheck::NotWorking(
+            CheckError::MultipleSystemCharts,
+            "Multiple fluvio System charts are installed. Please remove duplicate helm system chart(s)".to_string()));
     }
     Ok(StatusCheck::Working(
         "Fluvio system charts are installed".to_string(),
@@ -386,7 +388,7 @@ pub(crate) fn check_already_installed(
     if !app_charts.is_empty() {
         return Ok(StatusCheck::NotWorking(
             CheckError::AlreadyInstalled,
-            "Fluvio is already installed, proceeding further with the installation".to_string(),
+            "Fluvio is already installed, Please uninstall before trying to install".to_string(),
         ));
     }
     Ok(StatusCheck::Working("".to_string()))
