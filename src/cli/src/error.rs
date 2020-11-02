@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use thiserror::Error;
 
 use fluvio::FluvioError;
-use fluvio_cluster::ClusterError;
+use fluvio_cluster::{ClusterError, CheckError};
 
 #[derive(Error, Debug)]
 pub enum CliError {
@@ -20,6 +20,11 @@ pub enum CliError {
     ClusterError {
         #[from]
         source: ClusterError,
+    },
+    #[error("Fluvio cluster pre install check error")]
+    CheckError {
+        #[from]
+        source: CheckError,
     },
     #[error("Kubernetes config error")]
     K8ConfigError {

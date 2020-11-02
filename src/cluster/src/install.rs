@@ -26,22 +26,22 @@ use k8_obj_metadata::InputObjectMeta;
 use crate::ClusterError;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{
-    check_cluster_server_host, CheckError, check_helm_version, check_system_chart,
-    check_already_installed, _check_load_balancer_status,
+    CheckError, StatusCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig,
+    LoadBalancer,
 };
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
+pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
+pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
+pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
-const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
-const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
-const DEFAULT_HELM_VERSION: &str = "3.3.4";
 const DELAY: u64 = 3000;
 
 /// Distinguishes between a Local and Remote helm chart
@@ -577,35 +577,37 @@ impl ClusterInstaller {
     ///
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
-    async fn pre_install(&self) -> Result<(), ClusterError> {
-        // Continue fixing pre-check errors until we resolve all problems
-        // or there is an error that we cannot fix
-        loop {
-            let check_error = match self.pre_install_check().await {
-                // This is the successful exit case. If all pre-checks succeed,
-                // we can continue the installation process normally
-                Ok(_) => return Ok(()),
-                Err(err) => err,
+    async fn pre_install_check(&self) -> Result<(), ClusterError> {
+        let checks: Vec<Box<dyn InstallCheck>> = vec![
+            Box::new(LoadableConfig),
+            Box::new(HelmVersion),
+            Box::new(SysChart),
+            Box::new(AlreadyInstalled),
+            Box::new(LoadBalancer),
+        ];
+        for check in checks {
+            match check.perform_check().await {
+                Ok(check) => match check {
+                    StatusCheck::Working(_) => {
+                        // do nothing check is fine
+                    }
+                    // unrecoverable error occured, return error
+                    StatusCheck::NotWorkingNoRemediation(failure) => return Err(failure.into()),
+                    // recoverable error occured, try to fix
+                    StatusCheck::NotWorking(failure, _) => {
+                        match self.pre_install_fix(failure).await {
+                            Ok(_) => {
+                                // recovered correctly
+                            }
+                            // not able to recover, return error
+                            Err(err) => return Err(err),
+                        };
+                    }
+                },
+                Err(err) => return Err(err.into()),
             };
-
-            // If this returns an error, we require user intervention
-            self.pre_install_fix(check_error).await?;
-
-            // If we reach this point, the fix succeeded.
-            // In this case, continue the loop to check for more errors
         }
-    }
 
-    /// Runs pre install checks
-    ///  1. Check if compatible helm version is installed
-    ///  2. Check if compatible sys charts are installed
-    ///  3. Check if the K8 config hostname is not an IP address
-    async fn pre_install_check(&self) -> Result<(), CheckError> {
-        check_helm_version(&self.helm_client, DEFAULT_HELM_VERSION)?;
-        check_system_chart(&self.helm_client, DEFAULT_CHART_SYS_REPO)?;
-        _check_load_balancer_status().await?;
-        check_already_installed(&self.helm_client, DEFAULT_CHART_APP_REPO)?;
-        check_cluster_server_host()?;
         Ok(())
     }
 
@@ -625,7 +627,7 @@ impl ClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    async fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
+    pub(crate) async fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
@@ -663,7 +665,7 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
-        match self.pre_install().await {
+        match self.pre_install_check().await {
             // If all checks pass, perform the main installation
             Ok(()) => self.install_app()?,
             // If Fluvio is already installed, skip install step

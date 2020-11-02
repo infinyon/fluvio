@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::string::FromUtf8Error;
 use std::process::{Command, Stdio};
 
-use tracing::instrument;
+use tracing::{instrument, warn};
 use thiserror::Error;
 use serde::Deserialize;
 use flv_util::cmd::CommandExt;
@@ -90,6 +90,22 @@ impl HelmClient {
         if let Some(version) = version {
             command.args(&["--version", version]);
         }
+
+        command.inherit();
+        Ok(())
+    }
+
+    /// Uninstalls specified chart library
+    pub(crate) fn uninstall(&self, name: &str, ignore_not_found: bool) -> Result<(), HelmError> {
+        if ignore_not_found {
+            let app_charts = self.get_installed_chart_by_name(name)?;
+            if app_charts.is_empty() {
+                warn!("Chart does not exists, {}", &name);
+                return Ok(());
+            }
+        }
+        let mut command = Command::new("helm");
+        command.args(&["uninstall", name]);
 
         command.inherit();
         Ok(())

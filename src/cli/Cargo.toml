@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cli"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio CLI"
@@ -24,7 +24,6 @@ cluster_components = ["fluvio-spu", "fluvio-sc"]
 rustc_version = "0.2.3"
 
 [dependencies]
-colored = "2.0.0"
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
 url = "2.1.1"
@@ -60,7 +59,7 @@ fluvio-sc = { version = "0.2.0", path = "../sc", optional = true, features = ["k
 fluvio-sc-schema = { version = "0.2.0", path = "../sc-schema", features = ["use_serde"] }
 fluvio-spu = { version = "0.2.0", path = "../spu", optional = true }
 fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
-fluvio-cluster = { version = "0.2.0", path = "../cluster" }
+fluvio-cluster = { version = "0.2.1", path = "../cluster" }
 fluvio-types = { path = "../types", version = "0.1.0" }
 
 [dev-dependencies]

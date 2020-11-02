@@ -2,7 +2,7 @@ use crate::Terminal;
 
 use crate::CliError;
 use structopt::StructOpt;
-use tracing::debug;
+use fluvio_cluster::ClusterUninstaller;
 
 #[derive(Debug, StructOpt)]
 pub struct UninstallCommand {
@@ -16,17 +16,14 @@ pub struct UninstallCommand {
     #[structopt(long)]
     no_wait: bool,
 
-    /// uninstall local spu/sc(custom)
+    /// Remove local spu/sc(custom) fluvio installation
     #[structopt(long)]
     local: bool,
 
     #[structopt(long)]
-    /// removing sys chart
+    /// Remove fluvio system chart
     sys: bool,
 }
-
-use std::process::Command;
-use super::CommandUtil;
 
 pub async fn process_uninstall<O>(
     _out: std::sync::Arc<O>,
@@ -35,110 +32,17 @@ pub async fn process_uninstall<O>(
 where
     O: Terminal,
 {
-    println!("removing fluvio installation");
+    let uninstaller = ClusterUninstaller::new()
+        .with_namespace(&command.namespace)
+        .with_name(&command.name)
+        .build()?;
     if command.sys {
-        remove_sys();
+        uninstaller.uninstall_sys()?;
     } else if command.local {
-        remove_local_cluster();
+        uninstaller.uninstall_local()?;
     } else {
-        remove_k8_cluster(&command).await?;
+        uninstaller.uninstall().await?;
     }
-
-    let ns = &command.namespace;
-
-    remove_objects("spugroups", ns, None);
-    remove_objects("spus", ns, None);
-    remove_objects("topics", ns, None);
-    remove_objects("persistentvolumeclaims", ns, Some("app=spu"));
-
-    // delete secrets
-    Command::new("kubectl")
-        .arg("delete")
-        .arg("secret")
-        .arg("fluvio-ca")
-        .arg("--ignore-not-found=true")
-        .inherit();
-
-    Command::new("kubectl")
-        .arg("delete")
-        .arg("secret")
-        .arg("fluvio-tls")
-        .arg("--ignore-not-found=true")
-        .inherit();
 
     Ok("".to_owned())
-}
-
-fn remove_objects(object_type: &str, namespace: &str, selector: Option<&str>) {
-    let mut cmd = Command::new("kubectl");
-
-    cmd.arg("delete");
-    cmd.arg(object_type);
-    cmd.arg("--namespace");
-    cmd.arg(namespace);
-
-    if let Some(label) = selector {
-        println!(
-            "deleting label '{}' object {} in: {}",
-            label, object_type, namespace
-        );
-        cmd.arg("--selector").arg(label);
-    } else {
-        println!("deleting all {} in: {}", object_type, namespace);
-        cmd.arg("--all");
-    }
-
-    cmd.inherit();
-}
-
-fn remove_local_cluster() {
-    use std::fs::remove_dir_all;
-
-    use tracing::warn;
-
-    println!("removing local cluster ");
-    Command::new("pkill")
-        .arg("-f")
-        .arg("fluvio run")
-        .print()
-        .output()
-        .expect("failed to execute process");
-
-    // delete fluvio file
-    debug!("remove fluvio directory");
-    if let Err(err) = remove_dir_all("/tmp/fluvio") {
-        warn!("fluvio dir can't be removed: {}", err);
-    }
-}
-
-async fn remove_k8_cluster(command: &UninstallCommand) -> Result<(), CliError> {
-    use k8_client::load_and_share;
-    use k8_obj_metadata::InputObjectMeta;
-    use k8_obj_core::pod::PodSpec;
-
-    use super::k8_util::wait_for_delete;
-
-    println!("removing kubernetes cluster");
-    Command::new("helm")
-        .arg("uninstall")
-        .arg(&command.name)
-        .wait();
-
-    let client = load_and_share().map_err(|err| CliError::Other(err.to_string()))?;
-
-    let sc_pod = InputObjectMeta::named("flv-sc", &command.namespace);
-    wait_for_delete::<PodSpec>(client, &sc_pod).await;
-
-    Ok(())
-}
-
-fn remove_sys() {
-    println!("removing fluvio sys chart");
-
-    Command::new("helm")
-        .arg("uninstall")
-        .arg("fluvio-sys")
-        .inherit();
-
-    println!("fluvio sys chart has been uninstalled");
 }

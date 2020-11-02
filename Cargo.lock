@@ -880,12 +880,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "color-eyre",
- "colored",
  "ctrlc",
  "dirs 1.0.5",
  "eyre",
@@ -922,8 +921,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
+ "async-trait",
+ "colored",
  "fluvio",
  "fluvio-controlplane-metadata",
  "fluvio-future",
