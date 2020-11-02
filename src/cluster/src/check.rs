@@ -346,7 +346,7 @@ pub(crate) fn check_helm_version(
                 required: required.to_string(),
             },
             format!(
-                "Please upgrade your helm client to atleast {}",
+                "Please upgrade your helm client to at least {}",
                 KUBE_VERSION.to_string()
             ),
         ));
