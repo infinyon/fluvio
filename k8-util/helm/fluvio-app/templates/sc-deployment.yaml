@@ -59,8 +59,8 @@ spec:
         name: {{ .Values.authorizationConfigMap }}
         items:
         - key: POLICY
-          path: policy
+          path: policy.json
         - key: SCOPES
-          path: scopes
+          path: scopes.json
     {{ end }}
   {{ end }}

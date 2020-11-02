@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::os::unix::io::AsRawFd;
 
-use log::debug;
+use log::{debug, trace};
 use x509_parser::{X509Certificate, parse_x509_der};
 use async_trait::async_trait;
 
@@ -23,7 +23,14 @@ impl ScopeBindings {
         Ok(scope_bindings)
     }
     pub fn get_scopes(&self, principal: &str) -> Vec<String> {
-        self.0[principal].clone()
+        trace!("getting scopes for principal {:?}", principal);
+        if let Some(scopes) = self.0.get(principal) {
+            trace!("scopes found for principal {:?}: {:?}", principal, scopes);
+            scopes.clone()
+        } else {
+            trace!("scopes not found for principal {:?}", principal);
+            Vec::new()
+        }
     }
 }
 
@@ -67,6 +74,13 @@ impl X509Authenticator {
         let client_certificates = tls_stream
             .client_certificates()
             .ok_or(IoErrorKind::NotFound)?;
+
+        trace!("tls stream {:?}", tls_stream);
+        trace!("number of client certs {}", client_certificates.len());
+
+        for cert in &client_certificates {
+            trace!("client cert {:02X?}", cert.0);
+        }
 
         let principal = client_certificates
             .iter()

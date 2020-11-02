@@ -1076,11 +1076,11 @@ impl ClusterInstaller {
         match config.cluster_mut(&profile_name) {
             Some(cluster) => {
                 cluster.addr = external_addr;
-                cluster.tls = self.config.server_tls_policy.clone();
+                cluster.tls = self.config.client_tls_policy.clone();
             }
             None => {
                 let mut local_cluster = FluvioConfig::new(external_addr);
-                local_cluster.tls = self.config.server_tls_policy.clone();
+                local_cluster.tls = self.config.client_tls_policy.clone();
                 config.add_cluster(local_cluster, profile_name.clone());
             }
         }
