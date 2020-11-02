@@ -13,8 +13,7 @@ TEST_BIN=FLV_CMD=true ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 DEFAULT_LOG=info
-AUTH_POLICY = ./src/sc/test-data/test-policy.json
-AUTH_SCOPE = ./src/sc/test-data/scopes.json
+AUTH_CONFIG = ./src/sc/test-data/auth_config
 SPU_DELAY=10
 
 # install all tools required
@@ -37,9 +36,15 @@ smoke-test-tls:	test-clean-up
 
 # test rbac with ROOT user
 smoke-test-tls-root:	test-clean-up
-	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	kubectl create configmap authorization --from-file=${AUTH_CONFIG}
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) \
+		--spu ${DEFAULT_SPU} \
+		--produce-iteration ${DEFAULT_ITERATION} \
+		--tls \
+		--local \
+		--rust-log ${DEFAULT_LOG} \
+		--authorization-config-map ${AUTH_CONFIG}
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set

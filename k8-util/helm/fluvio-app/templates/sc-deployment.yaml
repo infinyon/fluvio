@@ -32,9 +32,9 @@ spec:
         - 0.0.0.0:9005
         {{ if .Values.authorizationConfigMap }}
         - --authorization-policy
-        - /etc/fluvio-authorization/policy
+        - /etc/fluvio-authorization/policy.json
         - --authorization-scopes
-        - /etc/fluvio-authorization/scopes
+        - /etc/fluvio-authorization/scopes.json
         {{ end }}
       volumeMounts:
         - name: cacert
