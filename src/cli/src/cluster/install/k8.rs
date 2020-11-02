@@ -63,7 +63,7 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
     if let Some(rust_log) = opt.rust_log {
         builder = builder.with_rust_log(rust_log);
     }
-    
+
     if let Some(authorization_config_map) = opt.authorization_config_map {
         builder = builder.with_authorization_config_map(authorization_config_map);
     }

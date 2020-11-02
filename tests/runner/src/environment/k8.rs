@@ -43,7 +43,6 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             self.set_tls(&self.option, &mut cmd);
         }
 
-
         if let Some(ref authorization_config_map) = self.option.authorization_config_map {
             cmd.arg("--authorization-config-map")
                 .arg(authorization_config_map);

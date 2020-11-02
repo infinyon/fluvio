@@ -138,7 +138,7 @@ pub struct InstallCommand {
     tls: TlsOpt,
 
     #[structopt(long)]
-    authorization_config_map: Option<String>
+    authorization_config_map: Option<String>,
 }
 
 pub async fn process_install<O>(
