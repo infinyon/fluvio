@@ -76,11 +76,6 @@ impl X509Authenticator {
             .ok_or(IoErrorKind::NotFound)?;
 
         trace!("tls stream {:?}", tls_stream);
-        trace!("number of client certs {}", client_certificates.len());
-
-        for cert in &client_certificates {
-            trace!("client cert {:02X?}", cert.0);
-        }
 
         let principal = client_certificates
             .iter()
