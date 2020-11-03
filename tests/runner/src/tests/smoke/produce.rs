@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use log::info;
 
-use fluvio::{ Fluvio, TopicProducer };
+use fluvio::{Fluvio, TopicProducer};
 
 use crate::TestOption;
 use super::message::*;
@@ -79,26 +79,24 @@ mod offsets {
 }
 
 async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
-        use std::time::Duration;
-        use fluvio_future::timer::sleep;
+    use std::time::Duration;
+    use fluvio_future::timer::sleep;
 
-        for _ in 0..10 {
-            match client.topic_producer(topic).await {
-                Ok(client) => return client,
-                Err(err) => {
-                    println!(
-                        "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                        topic, err
-                    );
-                    sleep(Duration::from_secs(10)).await;
-                }
+    for _ in 0..10 {
+        match client.topic_producer(topic).await {
+            Ok(client) => return client,
+            Err(err) => {
+                println!(
+                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
             }
         }
-
-        panic!("can't get producer");
     }
 
-
+    panic!("can't get producer");
+}
 
 pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
     let client = Fluvio::connect().await.expect("should connect");
@@ -108,7 +106,7 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
         let topic_name = option.topic_name(i);
 
         let base_offset = *offsets.get(&topic_name).expect("offsets");
-        let producer = get_producer(&client,&topic_name).await;
+        let producer = get_producer(&client, &topic_name).await;
 
         for i in 0..option.produce.produce_iteration {
             let offset = base_offset + i as i64;
