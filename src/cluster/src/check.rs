@@ -530,9 +530,9 @@ fn check_cluster_server_host() -> Result<StatusCheck, CheckError> {
     if host.is_empty() {
         return Err(CheckError::MissingKubernetesServerHost);
     }
-    
+
     Ok(StatusCheck::Working(
-        "Kubernetes config is loadable".to_string()
+        "Kubernetes config is loadable".to_string(),
     ))
 }
 
