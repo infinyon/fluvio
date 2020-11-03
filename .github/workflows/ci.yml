@@ -149,6 +149,17 @@ jobs:
         run: |
           FLV_CMD=true make smoke-test-tls-root DEFAULT_SPU=1
           make test-permission-user1-local
+      - name: Save logs on Linux
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-logs
+          path: /tmp/flv_sc.log
+      - name: Save logs on Mac
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-logs
+          path: /usr/local/var/log/fluvio/flv_sc.log
+
 
 
   k8_cluster_test:
@@ -198,4 +209,10 @@ jobs:
       - name: smoke test k8 tls
         run: | 
           FLV_CMD=true make smoke-test-k8-tls-root
-
+      - name: Save logs
+        run: kubectl logs flv-sc > /tmp/flv_sc.log
+      - name: Upload logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-k8-logs
+          path: /tmp/flv_sc.log
