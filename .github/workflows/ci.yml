@@ -98,7 +98,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest,macOS-latest]
+        os: [ubuntu-latest]
         rust: [stable]
 
     steps:
@@ -139,6 +139,8 @@ jobs:
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: smoke test tls for linux
         if: startsWith(matrix.os,'ubuntu')
         run: |
