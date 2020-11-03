@@ -15,7 +15,7 @@ mod group;
 mod custom;
 mod partition;
 
-#[cfg(feature = "cluster_components")]
+#[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 mod run;
 
 pub use self::error::CliError;

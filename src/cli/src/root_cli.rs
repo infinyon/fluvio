@@ -28,7 +28,7 @@ use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 use super::partition::PartitionOpt;
 
-#[cfg(feature = "cluster_components")]
+#[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 use super::run::{process_run, RunOpt};
 
 #[derive(Debug, StructOpt)]
@@ -103,7 +103,7 @@ enum Root {
     )]
     Cluster(ClusterCommands),
 
-    #[cfg(feature = "cluster_components")]
+    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
     #[structopt(about = "Run cluster component")]
     Run(RunOpt),
 
@@ -139,7 +139,7 @@ pub fn run_cli(args: &[String]) -> eyre::Result<String> {
             Root::Partition(partition) => partition.process_partition(terminal.clone()).await?,
             Root::Profile(profile) => process_profile(terminal.clone(), profile).await?,
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
-            #[cfg(feature = "cluster_components")]
+            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
             Root::Run(opt) => process_run(opt)?,
             Root::Version(_) => process_version_cmd()?,
             Root::Completions(shell) => process_completions_cmd(shell)?,
