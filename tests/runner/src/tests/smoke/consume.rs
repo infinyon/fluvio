@@ -52,23 +52,25 @@ fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
         println!("topic: {}, consume message validated!", topic_name);
     }
 }
-async fn get_consumer(client: &Fluvio, topic: &str)  -> PartitionConsumer {
+async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
     use std::time::Duration;
     use fluvio_future::timer::sleep;
 
     for _ in 0..10 {
-       match client.partition_consumer(topic.to_string(), 0).await  {
-           Ok(client) => return client,
-           Err(err) => {
-               println!("unable to get consumer to topic: {}, error: {} sleeping 10 second ",topic,err);
-               sleep(Duration::from_secs(10)).await;
-           }
-       }
+        match client.partition_consumer(topic.to_string(), 0).await {
+            Ok(client) => return client,
+            Err(err) => {
+                println!(
+                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
     }
 
     panic!("can't get consumer");
 }
-                
 
 async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
     let client = Fluvio::connect().await.expect("should connect");
@@ -82,8 +84,8 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, iteration
         );
-        
-        let consumer = get_consumer(&client,&topic_name).await;
+
+        let consumer = get_consumer(&client, &topic_name).await;
 
         let mut stream = consumer
             .stream(Offset::absolute(*base_offset).unwrap())
