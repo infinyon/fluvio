@@ -11,7 +11,7 @@ CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
 TEST_BIN=FLV_CMD=true ./target/debug/flv-test
 DEFAULT_SPU=1
-DEFAULT_ITERATION=1
+DEFAULT_ITERATION=5
 DEFAULT_LOG=info
 AUTH_POLICY = ./src/sc/test-data/test-policy.json
 AUTH_SCOPE = ./src/sc/test-data/scopes.json
