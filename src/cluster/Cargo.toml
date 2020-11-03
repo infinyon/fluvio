@@ -14,8 +14,8 @@ path = "src/lib.rs"
 
 [features]
 default = ["native_tls"]
-rust_tls = ["fluvio/rust_tls"]
-native_tls = ["fluvio/native_tls"]
+rust_tls = ["fluvio/rust_tls","k8-client/rust_tls"]
+native_tls = ["fluvio/native_tls","k8-client/native_tls"]
 
 [dependencies]
 colored = "2.0.0"
@@ -35,7 +35,7 @@ fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-meta
 fluvio-future = { version = "0.1.0" }
 flv-util = "0.5.2"
 k8-config = { version = "1.3.0", features = ["context"] }
-k8-client = "3.0.0"
+k8-client = { version = "3.0.0", default-features = false }
 k8-obj-core = "1.1.0"
 k8-obj-metadata = "1.0.0"
 
