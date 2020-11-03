@@ -1,5 +1,3 @@
-use std::net::IpAddr;
-use std::str::FromStr;
 use std::io::Error as IoError;
 use std::time::Duration;
 use std::process::{Command};
@@ -532,14 +530,9 @@ fn check_cluster_server_host() -> Result<StatusCheck, CheckError> {
     if host.is_empty() {
         return Err(CheckError::MissingKubernetesServerHost);
     }
-    if IpAddr::from_str(&host).is_ok() {
-        return Ok(StatusCheck::NotWorkingNoRemediation(
-            CheckError::KubernetesServerIsIp,
-        ));
-    }
-
+    
     Ok(StatusCheck::Working(
-        "Kubernetes config is loadable and cluster hostname is not an IP address".to_string(),
+        "Kubernetes config is loadable".to_string()
     ))
 }
 
