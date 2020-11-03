@@ -74,7 +74,7 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
 /// find fluvio addr
 pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>, CliError> {
-    use k8_client::http::StatusCode;
+    use k8_client::http::status::StatusCode;
 
     let ns = namespace.unwrap_or("default");
     let svc = match K8Client::default()?

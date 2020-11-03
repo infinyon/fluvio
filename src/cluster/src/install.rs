@@ -861,7 +861,7 @@ impl ClusterInstaller {
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
     async fn discover_sc_address(&self, ns: &str) -> Result<Option<String>, ClusterError> {
-        use k8_client::http::StatusCode;
+        use k8_client::http::status::StatusCode;
 
         let result = self
             .kube_client

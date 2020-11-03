@@ -1,4 +1,4 @@
-#[cfg(feature = "cluster_components")]
+#[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 mod local;
 mod k8;
 mod tls;
@@ -150,13 +150,13 @@ where
 
     let spu = command.spu;
 
-    #[cfg(feature = "cluster_components")]
+    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
     use local::install_local;
 
     if command.sys {
         install_sys(command)?;
     } else if command.local {
-        #[cfg(feature = "cluster_components")]
+        #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
         install_local(command).await?;
         confirm_spu(spu).await?;
     } else {
