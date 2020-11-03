@@ -134,10 +134,6 @@ jobs:
       - name: Build
         run: |
           cargo build
-      - name: setup context
-        run: |
-          ./target/debug/fluvio cluster set-minikube-context
-          kubectl config view
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
@@ -187,11 +183,6 @@ jobs:
       - name: Build
         run: |
           cargo build
-      - name: setup context
-        run: |
-          ./target/debug/fluvio cluster set-minikube-context
-          kubectl config view
-          helm list
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
