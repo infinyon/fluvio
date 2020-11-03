@@ -83,7 +83,7 @@ mod display {
         if !spus.is_empty() {
             out.render_list(&spus, output_type)?;
         } else {
-            t_println!(out, "no spu");
+            t_println!(out, "No partitions found");
         }
 
         Ok(())
