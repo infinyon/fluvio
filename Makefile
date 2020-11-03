@@ -14,7 +14,7 @@ DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 DEFAULT_LOG=info
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
-SPU_DELAY=15
+SPU_DELAY=10
 
 # install all tools required
 install_tools_mac:

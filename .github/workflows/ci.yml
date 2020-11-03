@@ -173,11 +173,14 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Install Minikube on Linux
-        uses: manusa/actions-setup-minikube@v2.0.1
-        with:
-          minikube version: "v1.13.1"
-          kubernetes version: "v1.19.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
+        if: startsWith(matrix.os,'ubuntu')
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |  
+          minikube start --driver=docker
       - name: Test minikube
         run: |
           minikube profile list
