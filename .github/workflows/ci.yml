@@ -149,12 +149,14 @@ jobs:
         run: |
           FLV_CMD=true make smoke-test-tls-root DEFAULT_SPU=1
           make test-permission-user1-local
-      - name: Save logs on Linux
+      - name: Upload logs on Linux
+        if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-logs
           path: /tmp/flv_sc.log
-      - name: Save logs on Mac
+      - name: Upload logs on Mac
+        if: startsWith(matrix.os,'macOS') && failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-logs
@@ -210,8 +212,10 @@ jobs:
         run: | 
           FLV_CMD=true make smoke-test-k8-tls-root
       - name: Save logs
+        if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log
       - name: Upload logs
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-k8-logs
