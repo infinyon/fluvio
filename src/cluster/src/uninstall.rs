@@ -6,7 +6,7 @@ use tracing::{info, warn, debug, instrument};
 use fluvio_future::timer::sleep;
 use k8_client::ClientError as K8ClientError;
 use k8_client::{load_and_share, SharedK8Client};
-use k8_client::http::StatusCode;
+use k8_client::http::status::StatusCode;
 use k8_obj_metadata::{InputObjectMeta, Spec};
 use k8_obj_core::pod::PodSpec;
 

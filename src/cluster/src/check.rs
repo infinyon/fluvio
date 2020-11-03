@@ -456,7 +456,7 @@ fn delete_service() -> Result<(), CheckError> {
 
 async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, CheckError> {
     use k8_client::metadata::MetadataClient;
-    use k8_client::http::StatusCode;
+    use k8_client::http::status::StatusCode;
 
     let client = load_and_share()?;
 
