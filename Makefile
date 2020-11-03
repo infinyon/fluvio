@@ -9,12 +9,12 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
-TEST_BIN=FLV_CMD=true ./target/debug/flv-test
+TEST_BIN=FLV_CMD=true RUST_LOG=debug ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 DEFAULT_LOG=info
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
-SPU_DELAY=10
+SPU_DELAY=20
 
 # install all tools required
 install_tools_mac:
