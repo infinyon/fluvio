@@ -107,8 +107,11 @@ impl TestRunner {
             println!("no topic initialized");
         }
 
-        let test_driver = create_test_driver(self.option.clone());
-
-        test_driver.run().await;
+        if self.option.produce.produce_iteration > 0 {
+            let test_driver = create_test_driver(self.option.clone());
+            test_driver.run().await;
+        } else {
+            println!("no produce iteration, ending");
+        }
     }
 }
