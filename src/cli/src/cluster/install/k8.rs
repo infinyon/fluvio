@@ -74,9 +74,20 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
 }
 
 pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
-    let installer = ClusterInstaller::new()
-        .with_namespace(opt.k8_config.namespace)
-        .build()?;
+    let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
+
+    match opt.k8_config.chart_location {
+        // If a chart location is given, use it
+        Some(chart_location) => {
+            builder = builder.with_local_chart(chart_location);
+        }
+        // If we're in develop mode (but no explicit chart location), use local path
+        None if opt.develop => {
+            builder = builder.with_local_chart("./k8-util/helm");
+        }
+        _ => (),
+    }
+    let installer = builder.build()?;
     installer._install_sys()?;
     println!("fluvio sys chart has been installed");
     Ok(())
