@@ -127,7 +127,7 @@ For example, to add 2nd:
 
 ```
 $ flvd custom-spu register --id 5001 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
-$ flvd run spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
+$ flvd run spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 ```
 
 

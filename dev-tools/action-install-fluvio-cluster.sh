@@ -21,9 +21,7 @@ if [ "$DEVELOPMENT" = "true" ]; then
                 ;;
         esac
 
-        # Set fluvio minikube context
-        fluvio cluster set-minikube-context
-
+        
         # Install Fluvio System Charts
         fluvio cluster install --sys
 

@@ -1,9 +1,21 @@
-# Start a single SPU with id of 5001, ports of 9005, 9006
+# To start local cluster with custom SPU 5001,5002,5003
 
-kubectl create -f k8-util/samples/crd/spu_5001.yaml 
-kubectl create -f k8-util/samples/crd/spu_5002.yaml 
-kubectl create -f k8-util/samples/crd/spu_5003.yaml 
+For SPU 5001
+```
+$ flvd custom-spu register --id 5001 -p 0.0.0.0:9020 -v  0.0.0.0:9021
+$ flvd run spu -i 5001 -p 0.0.0.0:9030 -v 0.0.0.0:9031
+```
 
-./dev-tools/log/debug-spu-min 5001 9005 9006
-./dev-tools/log/debug-spu-min 5002 9007 9008
-./dev-tools/log/debug-spu-min 5003 9009 9010
+For SPU 5002
+```
+$ flvd custom-spu register --id 5002 -p 0.0.0.0:9030 -v  0.0.0.0:9031
+$ flvd run spu -i 5002 -p 0.0.0.0:9030 -v 0.0.0.0:9031
+```
+
+For SPU 5003
+```
+$ flvd custom-spu register --id 5003 -p 0.0.0.0:9040 -v  0.0.0.0:9041
+$ flvd run spu -i 5003 -p 0.0.0.0:9040 -v 0.0.0.0:9041
+```
+
+# 
