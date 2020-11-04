@@ -1257,9 +1257,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16997e86923f688f984cf04296957cf6ae50e8ec2e9302c435a0aa839789c476"
+version = "0.2.1"
+source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#ed457f380ec22fb169651902ba3ef41dfdcb1b97"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1277,7 +1276,7 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#e912cb328503ce2bed54d98ed2ae849dc1971645"
+source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#ed457f380ec22fb169651902ba3ef41dfdcb1b97"
 dependencies = [
  "async-channel",
  "async-mutex",
