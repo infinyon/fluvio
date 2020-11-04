@@ -13,7 +13,7 @@ pub async fn produce_message(option: &TestOption) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&option).await;
 
-    if option.produce.produce_iteration == 1 {
+    if option.use_cli() {
         cli::produce_message_with_cli(option, offsets.clone()).await;
     } else if option.consumer_wait {
         produce_message_with_api(offsets.clone(), option.clone()).await;
