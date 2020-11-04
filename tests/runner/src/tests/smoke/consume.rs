@@ -17,7 +17,6 @@ type Offsets = HashMap<String, i64>;
 
 /// verify consumers
 pub async fn validate_consume_message(option: &TestOption, offsets: Offsets) {
-
     if option.use_cli() {
         validate_consume_message_cli(option, offsets);
     } else {
