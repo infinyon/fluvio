@@ -73,6 +73,10 @@ pub struct TestOption {
     // log dir
     #[structopt(long)]
     pub log_dir: Option<String>,
+
+    /// authorization ConfigMap
+    #[structopt(long)]
+    pub authorization_config_map: Option<String>,
 }
 
 impl TestOption {

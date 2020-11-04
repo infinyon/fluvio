@@ -9,13 +9,12 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
-TEST_BIN=FLV_CMD=true ./target/debug/flv-test
+TEST_BIN=FLV_CMD=true RUST_LOG=debug ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 DEFAULT_LOG=info
-AUTH_POLICY = ./src/sc/test-data/test-policy.json
-AUTH_SCOPE = ./src/sc/test-data/scopes.json
-SPU_DELAY=10
+SC_AUTH_CONFIG=./src/sc/test-data/auth_config
+SPU_DELAY=30
 
 # install all tools required
 install_tools_mac:
@@ -37,7 +36,7 @@ smoke-test-tls:	test-clean-up
 
 # test rbac with ROOT user
 smoke-test-tls-root:	test-clean-up
-	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
 
@@ -58,9 +57,15 @@ smoke-test-k8-tls:	test-clean-up minikube_image
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
 
 smoke-test-k8-tls-root:	test-clean-up minikube_image
-	AUTH_POLICY=$(AUTH_POLICY) X509_AUTH_SCOPES=$(AUTH_SCOPE)  \
+	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) \
+		--spu ${DEFAULT_SPU} \
+		--produce-iteration ${DEFAULT_ITERATION} \
+		--tls \
+		--develop \
+		--rust-log ${DEFAULT_LOG} \
+		--authorization-config-map authorization
 
 
 # test rbac
@@ -76,7 +81,7 @@ test-rbac:
 test-clean-up:
 	$(FLUVIO_BIN) cluster uninstall
 	$(FLUVIO_BIN) cluster uninstall --local
-
+	kubectl delete configmap authorization --ignore-not-found
 
 #
 #  Various Lint tools

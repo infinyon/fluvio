@@ -116,14 +116,16 @@ jobs:
           override: true
       - name: Install Minikube on Linux
         if: startsWith(matrix.os,'ubuntu')
-        uses: manusa/actions-setup-minikube@v2.0.1
-        with:
-          minikube version: "v1.13.1"
-          kubernetes version: "v1.19.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
       - name: Install Minikube on Mac
         if: startsWith(matrix.os, 'macOS')
         run:  brew install minikube
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |  
+          minikube start --driver=docker
       - name: Setup Minikube for Mac
         if: startsWith(matrix.os, 'macOS')
         run: |  
@@ -147,6 +149,19 @@ jobs:
         run: |
           FLV_CMD=true make smoke-test-tls-root DEFAULT_SPU=1
           make test-permission-user1-local
+      - name: Upload logs on Linux
+        if: startsWith(matrix.os,'ubuntu') && failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-logs
+          path: /tmp/flv_sc.log
+      - name: Upload logs on Mac
+        if: startsWith(matrix.os,'macOS') && failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-logs
+          path: /usr/local/var/log/fluvio/flv_sc.log
+
 
 
   k8_cluster_test:
@@ -171,11 +186,14 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Install Minikube on Linux
-        uses: manusa/actions-setup-minikube@v2.0.1
-        with:
-          minikube version: "v1.13.1"
-          kubernetes version: "v1.19.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
+        if: startsWith(matrix.os,'ubuntu')
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |  
+          minikube start --driver=docker
       - name: Test minikube
         run: |
           minikube profile list
@@ -193,4 +211,12 @@ jobs:
       - name: smoke test k8 tls
         run: | 
           FLV_CMD=true make smoke-test-k8-tls-root
-
+      - name: Save logs
+        if: failure()
+        run: kubectl logs flv-sc > /tmp/flv_sc.log
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-k8-logs
+          path: /tmp/flv_sc.log
