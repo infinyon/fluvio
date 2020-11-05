@@ -27,7 +27,7 @@ use super::topic::TopicOpt;
 use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 use super::partition::PartitionOpt;
-use crate::update::UpdateOpt;
+use crate::install::update::UpdateOpt;
 
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 use super::run::{process_run, RunOpt};
@@ -109,6 +109,13 @@ enum Root {
     Run(RunOpt),
 
     #[structopt(
+        name = "install",
+        template = COMMAND_TEMPLATE,
+        about = "Install Fluvio plugins"
+    )]
+    Install(InstallOpt),
+
+    #[structopt(
         name = "update",
         template = COMMAND_TEMPLATE,
         about = "Update the Fluvio CLI and plugins"
@@ -149,6 +156,7 @@ pub fn run_cli(args: &[String]) -> eyre::Result<String> {
             Root::Cluster(cluster) => process_cluster(terminal.clone(), cluster).await?,
             #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
             Root::Run(opt) => process_run(opt)?,
+            Root::Install(opt) => opt.process().await?,
             Root::Update(opt) => opt.process().await?,
             Root::Version(_) => process_version_cmd()?,
             Root::Completions(shell) => process_completions_cmd(shell)?,
@@ -159,6 +167,7 @@ pub fn run_cli(args: &[String]) -> eyre::Result<String> {
 }
 
 use crate::Terminal;
+use crate::install::plugins::InstallOpt;
 
 struct PrintTerminal {}
 
