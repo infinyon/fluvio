@@ -311,13 +311,6 @@ impl Release {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
-
-    fn test_path() -> PathBuf {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/index.json");
-        println!("Path: {}", path.display());
-        path
-    }
 
     fn sample_index() -> FluvioIndex {
         let release = Release {
@@ -347,31 +340,14 @@ mod tests {
         let metadata = IndexMetadata {
             minimum_client_version: semver::Version::parse("0.6.0-alpha-1").unwrap(),
         };
-        let index = FluvioIndex {
+        FluvioIndex {
             metadata,
             groups: {
                 let mut groups = BTreeMap::new();
                 groups.insert(group_name, group_packages);
                 groups
             },
-        };
-        index
-    }
-
-    #[test]
-    fn write_index() {
-        let metadata = IndexMetadata {
-            minimum_client_version: semver::Version::parse("0.1.0").unwrap(),
-        };
-        let index = FluvioIndex::empty(metadata);
-        let index_string = serde_json::to_string_pretty(&index).unwrap();
-        std::fs::write(test_path(), &index_string).unwrap();
-    }
-
-    fn test_create_index() {
-        let index = sample_index();
-        let index_string = serde_json::to_string_pretty(&index).unwrap();
-        std::fs::write(test_path(), &index_string).unwrap();
+        }
     }
 
     #[test]
@@ -393,7 +369,7 @@ mod tests {
             "The fluvio cloud plugin",
             "https://github.com/infinyon/fluvio",
         );
-        starting_index.add_package(package);
+        starting_index.add_package(package).unwrap();
     }
 
     #[test]
@@ -452,7 +428,7 @@ mod tests {
         let releases = package.releases.clone();
         for windows in releases.windows(2) {
             match &windows {
-                &[a, b] => {
+                [a, b] => {
                     println!("Is {} < {}?", a.version, b.version);
                     assert!(a.version < b.version);
                 }
