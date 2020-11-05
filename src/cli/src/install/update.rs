@@ -63,8 +63,8 @@ pub async fn check_update_available(agent: &HttpAgent) -> Result<bool, CliError>
     let release = package.latest_release_for_target(target)?;
     let latest_version = &release.version;
 
-    let current_version = Version::parse(crate::VERSION)
-        .expect("Fluvio CLI 'VERSION' should be a valid semver");
+    let current_version =
+        Version::parse(crate::VERSION).expect("Fluvio CLI 'VERSION' should be a valid semver");
 
     Ok(current_version < *latest_version)
 }
@@ -77,7 +77,10 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
 
     println!("⚠️ A major update to Fluvio has been detected!");
     println!("⚠️ You must complete this update before using any 'install' command");
-    println!("⚠️     Run 'fluvio update' to install v{} of Fluvio", &latest_version);
+    println!(
+        "⚠️     Run 'fluvio update' to install v{} of Fluvio",
+        &latest_version
+    );
     Ok(())
 }
 
@@ -88,6 +91,9 @@ pub async fn prompt_available_update(agent: &HttpAgent) -> Result<(), CliError> 
 
     println!();
     println!("💡 An update to Fluvio is available!");
-    println!("💡     Run 'fluvio update' to install v{} of Fluvio", &latest_version);
+    println!(
+        "💡     Run 'fluvio update' to install v{} of Fluvio",
+        &latest_version
+    );
     Ok(())
 }

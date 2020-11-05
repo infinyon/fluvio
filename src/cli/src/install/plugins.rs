@@ -2,7 +2,9 @@ use structopt::StructOpt;
 use fluvio_index::{PackageId, Target, HttpAgent};
 use crate::CliError;
 use crate::install::{fetch_latest_version, fetch_package_file, fluvio_bin_dir, install_bin};
-use crate::install::update::{check_update_required, prompt_required_update, check_update_available, prompt_available_update};
+use crate::install::update::{
+    check_update_required, prompt_required_update, check_update_available, prompt_available_update,
+};
 
 #[derive(StructOpt, Debug)]
 pub struct InstallOpt {
@@ -39,9 +41,12 @@ impl InstallOpt {
         // If a version is given in the package ID, use it. Otherwise, use latest
         let id = match self.id.version.as_ref() {
             Some(_) => {
-                println!("⏳ Downloading package with provided version: {}...", &self.id);
+                println!(
+                    "⏳ Downloading package with provided version: {}...",
+                    &self.id
+                );
                 self.id
-            },
+            }
             None => {
                 let mut id = self.id;
                 println!("🎣 Fetching latest version for package: {}...", &id);
@@ -49,7 +54,7 @@ impl InstallOpt {
                 id.version = Some(version);
                 println!("⏳ Downloading package with latest version: {}...", &id);
                 id
-            },
+            }
         };
 
         // Download the package file from the package registry

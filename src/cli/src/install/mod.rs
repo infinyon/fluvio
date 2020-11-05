@@ -15,7 +15,11 @@ fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
 }
 
 /// Fetches the latest version of the package with the given ID
-async fn fetch_latest_version(agent: &HttpAgent, id: &PackageId, target: Target) -> Result<Version, CliError> {
+async fn fetch_latest_version(
+    agent: &HttpAgent,
+    id: &PackageId,
+    target: Target,
+) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
     debug!(
         url = %request.url(),
@@ -32,7 +36,11 @@ async fn fetch_latest_version(agent: &HttpAgent, id: &PackageId, target: Target)
 }
 
 /// Downloads and verifies a package file via it's versioned ID and target
-async fn fetch_package_file(agent: &HttpAgent, id: &PackageId, target: Target) -> Result<Vec<u8>, CliError> {
+async fn fetch_package_file(
+    agent: &HttpAgent,
+    id: &PackageId,
+    target: Target,
+) -> Result<Vec<u8>, CliError> {
     // This operation requires the ID to have a version
     if id.version.is_none() {
         return Err(fluvio_index::Error::MissingVersion.into());
@@ -68,7 +76,11 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
     &*buffer_checksum == checksum
 }
 
-pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_dir: P, name: &str, bytes: B) -> Result<(), CliError> {
+pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
+    bin_dir: P,
+    name: &str,
+    bytes: B,
+) -> Result<(), CliError> {
     // Create bin_dir if it does not exist
     let bin_dir = bin_dir.as_ref();
     std::fs::create_dir_all(&bin_dir)?;
