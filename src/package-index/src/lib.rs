@@ -99,13 +99,6 @@ impl FluvioIndex {
         Ok(())
     }
 
-    fn empty(metadata: IndexMetadata) -> FluvioIndex {
-        FluvioIndex {
-            metadata,
-            groups: BTreeMap::new(),
-        }
-    }
-
     fn group(&self, group: &GroupName) -> Result<&GroupPackages> {
         self.groups
             .get(group)
