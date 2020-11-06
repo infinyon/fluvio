@@ -1,5 +1,6 @@
 #![type_length_limit = "2669460"]
 
+mod http;
 mod common;
 mod error;
 mod consume;
@@ -13,6 +14,7 @@ mod tls;
 pub mod cluster;
 mod group;
 mod custom;
+mod install;
 mod partition;
 
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]

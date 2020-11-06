@@ -8,6 +8,7 @@ members = [
     "src/controlplane",
     "src/controlplane-metadata",
     "src/dataplane-protocol",
+    "src/package-index",
     "src/sc",
     "src/sc-schema",
     "src/spu",

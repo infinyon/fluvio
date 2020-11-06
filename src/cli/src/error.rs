@@ -1,10 +1,9 @@
 use std::io::Error as IoError;
-use thiserror::Error;
 
 use fluvio::FluvioError;
 use fluvio_cluster::{ClusterError, CheckError};
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum CliError {
     #[error(transparent)]
     IoError {
@@ -38,13 +37,37 @@ pub enum CliError {
     },
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
+    #[error("Package index error")]
+    IndexError {
+        #[from]
+        source: fluvio_index::Error,
+    },
     #[error("Error finding executable")]
     WhichError {
         #[from]
         source: which::Error,
     },
+    #[error(transparent)]
+    HttpError {
+        #[from]
+        source: HttpError,
+    },
     #[error("Unknown error: {0}")]
     Other(String),
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("Http Error: {}", inner)]
+pub struct HttpError {
+    inner: http_types::Error,
+}
+
+impl From<http_types::Error> for CliError {
+    fn from(e: http_types::Error) -> Self {
+        CliError::HttpError {
+            source: HttpError { inner: e },
+        }
+    }
 }
 
 impl CliError {
