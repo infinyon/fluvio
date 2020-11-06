@@ -114,4 +114,4 @@ fn make_executable(file: &mut File) -> Result<(), IoError> {
 }
 
 #[cfg(not(unix))]
-fn make_executable(_file: &mut File) { }
+fn make_executable(_file: &mut File) {}
