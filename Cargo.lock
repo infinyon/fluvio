@@ -1410,6 +1410,7 @@ dependencies = [
  "futures-lite",
  "k8-metadata-client",
  "log",
+ "once_cell",
  "serde",
  "tokio",
  "tracing",
