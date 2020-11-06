@@ -12,9 +12,9 @@ FLUVIO_BIN=./target/debug/fluvio
 TEST_BIN=FLV_CMD=true RUST_LOG=debug ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
-DEFAULT_LOG=info
+DEFAULT_LOG=warn
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
-SPU_DELAY=30
+SPU_DELAY=15
 
 # install all tools required
 install_tools_mac:
