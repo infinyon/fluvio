@@ -4,6 +4,7 @@ use tracing::debug;
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target};
 use crate::CliError;
+use std::fs::File;
 
 pub mod update;
 pub mod plugins;
@@ -81,24 +82,36 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
     name: &str,
     bytes: B,
 ) -> Result<(), CliError> {
+    use std::io::Write as _;
+
     // Create bin_dir if it does not exist
     let bin_dir = bin_dir.as_ref();
     std::fs::create_dir_all(&bin_dir)?;
 
     // Install our package to `<bin_dir>/<name>`
     let install_path = bin_dir.join(name);
-    std::fs::write(&install_path, bytes)?;
+    let mut install_file = File::create(&install_path)?;
+    install_file.write_all(bytes.as_ref())?;
 
-    // Mark our package as executable
-    let status = std::process::Command::new("chmod")
-        .arg("+x")
-        .arg(install_path.as_os_str())
-        .status()?;
-    if !status.success() {
-        return Err(CliError::Other(
-            "Failed to make package executable".to_string(),
-        ));
-    }
+    // Mark the file as executable
+    make_executable(&mut install_file)?;
 
     Ok(())
 }
+
+#[cfg(unix)]
+fn make_executable(file: &mut File) -> Result<(), IoError> {
+    use std::os::unix::fs::PermissionsExt;
+
+    // Add u+rwx mode to the existing file permissions, leaving others unchanged
+    let mut permissions = file.metadata()?.permissions();
+    let mut mode = permissions.mode();
+    mode |= 0o700;
+    permissions.set_mode(mode);
+
+    file.set_permissions(permissions)?;
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn make_executable(_file: &mut File) { }
