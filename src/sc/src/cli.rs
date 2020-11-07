@@ -22,7 +22,6 @@ use k8_client::K8Config;
 use fluvio_future::rust_tls::TlsAcceptor;
 use fluvio_future::rust_tls::AcceptorBuilder;
 
-
 use crate::services::auth::basic::BasicRbacPolicy;
 use crate::error::ScError;
 use crate::config::ScConfig;
