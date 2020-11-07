@@ -29,6 +29,6 @@ fn main() {
             println!("no setup");
         }
 
-        test_runner.run_test().await;
+        //test_runner.run_test().await;
     });
 }
