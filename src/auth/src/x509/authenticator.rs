@@ -6,7 +6,7 @@ use log::{debug, trace};
 use x509_parser::{X509Certificate, parse_x509_der};
 use async_trait::async_trait;
 
-use fluvio_future::{net::TcpStream, tls::DefaultServerTlsStream};
+use fluvio_future::{net::TcpStream, rust_tls::DefaultServerTlsStream};
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use flv_tls_proxy::authenticator::Authenticator;
 
