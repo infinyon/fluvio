@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "base-x"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2734baf8ed08920ccecce1b48a2dfce4ac74a973144add031163bd21a1c5dab"
+checksum = "a4521f3e3d031370679b3b140beb36dfe4801b09ac77e30c61941f97df3ef28b"
 
 [[package]]
 name = "base64"
@@ -1258,7 +1258,7 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#4261f90bbff34eb74d3e0f908ce32eee7dcc6525"
+source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#b7e1787c86b57d482b0a8db0fa76cd0589b4c693"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1276,7 +1276,7 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#4261f90bbff34eb74d3e0f908ce32eee7dcc6525"
+source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#b7e1787c86b57d482b0a8db0fa76cd0589b4c693"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1290,6 +1290,7 @@ dependencies = [
  "fluvio-protocol",
  "futures-util",
  "log",
+ "once_cell",
  "pin-project-lite",
  "thiserror",
  "tokio",
