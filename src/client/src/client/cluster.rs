@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use tracing::debug;
+use tracing::{ debug, trace};
 
 use fluvio_socket::AllMultiplexerSocket;
 
@@ -27,6 +27,13 @@ pub struct Fluvio {
     config: ClientConfig,
     versions: Versions,
     spu_pool: SpuPool,
+}
+
+impl Drop for Fluvio {
+    fn drop(&mut self) {
+        trace!("dropping fluvio");
+        self.spu_pool.shutdown();
+    }
 }
 
 impl Fluvio {

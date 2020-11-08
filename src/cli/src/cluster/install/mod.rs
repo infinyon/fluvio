@@ -201,6 +201,8 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
             .count();
         if live_spus == spu as usize {
             println!("{} spus provisioned", spus.len());
+            drop(client);
+            sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
             return Ok(());
         } else {
             println!("{} out of spu: {} up, waiting 5 sec", live_spus, spu);
@@ -208,6 +210,8 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
         }
     }
 
+    //drop(admin);
+    
     println!("waited too long,bailing out");
     Err(ClusterError::Other(format!("not able to provision:{} spu", spu)).into())
 }
