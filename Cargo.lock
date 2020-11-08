@@ -1258,7 +1258,7 @@ dependencies = [
 [[package]]
 name = "fluvio-service"
 version = "0.2.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#ed457f380ec22fb169651902ba3ef41dfdcb1b97"
+source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#4261f90bbff34eb74d3e0f908ce32eee7dcc6525"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1276,7 +1276,7 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#ed457f380ec22fb169651902ba3ef41dfdcb1b97"
+source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#4261f90bbff34eb74d3e0f908ce32eee7dcc6525"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1446,7 +1446,7 @@ dependencies = [
 [[package]]
 name = "flv-tls-proxy"
 version = "0.2.6"
-source = "git+https://github.com/infinyon/flv-tls-proxy?branch=debug_proxy#aabfb9c058839ee2e51eb4061a4a12b42bc40bae"
+source = "git+https://github.com/infinyon/flv-tls-proxy?branch=debug_proxy#89d2fe83b03cd1d7c6035acb9db68086cedae71f"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
