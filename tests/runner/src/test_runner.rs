@@ -83,6 +83,7 @@ impl TestRunner {
     }
 
     /// main entry point
+    #[allow(unused)]
     pub async fn run_test(&self) {
         use std::env;
         use crate::tests::create_test_driver;

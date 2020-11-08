@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use tracing::debug;
 
-
 use fluvio_socket::AllMultiplexerSocket;
 use fluvio_socket::FlvSocketError;
 
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;
 
-use super::controller::{ MetadataSyncController, SimpleEvent };
+use super::controller::{MetadataSyncController, SimpleEvent};
 use super::StoreContext;
 
 #[derive(Clone)]
@@ -60,7 +59,11 @@ impl MetadataStores {
         let req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
         let async_response = socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<SpuSpec>::start(self.spus.clone(), async_response,self.shutdown.clone());
+        MetadataSyncController::<SpuSpec>::start(
+            self.spus.clone(),
+            async_response,
+            self.shutdown.clone(),
+        );
 
         Ok(())
     }
@@ -77,7 +80,11 @@ impl MetadataStores {
         let req_msg = RequestMessage::new_request(WatchRequest::Partition(0));
         let async_response = socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<PartitionSpec>::start(self.partitions.clone(), async_response,self.shutdown.clone());
+        MetadataSyncController::<PartitionSpec>::start(
+            self.partitions.clone(),
+            async_response,
+            self.shutdown.clone(),
+        );
 
         Ok(())
     }

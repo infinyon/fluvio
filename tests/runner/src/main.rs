@@ -19,7 +19,7 @@ fn main() {
 
     let option = TestOption::parse_cli_or_exit();
 
-    let test_runner = TestRunner::new(option.clone());
+    let _test_runner = TestRunner::new(option.clone());
 
     run_block_on(async move {
         if option.setup() {

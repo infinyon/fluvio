@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use tracing::{ debug, trace};
+use tracing::{debug, trace};
 
 use fluvio_socket::AllMultiplexerSocket;
 
