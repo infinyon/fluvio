@@ -179,7 +179,7 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     use fluvio_cluster::ClusterError;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
-    // sleep 1 second to allow spu to spin up just in case  
+    // sleep 1 second to allow spu to spin up just in case
     sleep(Duration::from_secs(1)).await;
 
     let client = Fluvio::connect().await.expect("sc ");

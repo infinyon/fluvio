@@ -95,7 +95,7 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-            
+
             sleep(Duration::from_secs(1)).await;
         } else {
             println!("no topic initialized");
