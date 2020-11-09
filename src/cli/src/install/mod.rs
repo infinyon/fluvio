@@ -123,3 +123,11 @@ fn make_executable(file: &mut File) -> Result<(), IoError> {
 
 #[cfg(not(unix))]
 fn make_executable(_file: &mut File) {}
+
+pub fn install_println<S: AsRef<str>>(string: S) {
+    if std::env::var("FLUVIO_BOOTSTRAP").is_ok() {
+        println!("\x1B[1;34mfluvio:\x1B[0m {}", string.as_ref());
+    } else {
+        println!("{}", string.as_ref());
+    }
+}

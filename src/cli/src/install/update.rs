@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent, Target};
 use crate::CliError;
-use crate::install::{fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir};
+use crate::install::{fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir, install_println};
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
@@ -33,19 +33,19 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     debug!(%target, %id, "Fluvio CLI updating self:");
 
     // Find the latest version of this package
-    println!("🎣 Fetching latest version for fluvio/fluvio...");
+    install_println(format!("🎣 Fetching latest version for fluvio/fluvio..."));
     let latest_version = fetch_latest_version(agent, &id, target).await?;
     id.version = Some(latest_version);
 
     // Download the package file from the package registry
-    println!("⏳ Downloading Fluvio CLI with latest version: {}...", &id);
+    install_println(format!("⏳ Downloading Fluvio CLI with latest version: {}...", &id));
     let package_file = fetch_package_file(agent, &id, target).await?;
-    println!("🔑 Downloaded and verified package file");
+    install_println(format!("🔑 Downloaded and verified package file"));
 
     // Install the package to the ~/.fluvio/bin/ dir
     let fluvio_dir = fluvio_bin_dir()?;
     install_bin(&fluvio_dir, "fluvio", &package_file)?;
-    println!("✅ Successfully installed ~/.fluvio/bin/{}", &id.name);
+    install_println(format!("✅ Successfully installed ~/.fluvio/bin/{}", &id.name));
 
     Ok("".to_string())
 }

@@ -505,11 +505,16 @@ main() {
     # verify_checksum "${_url}" "${_temp_file}" || return 1
 
     # After verification, install the file and make it executable
-    say "✅ Downloaded Fluvio, installing..."
+    say "⬇️ Downloaded Fluvio, installing..."
     ensure mkdir -p "${FLUVIO_BIN}"
     local _install_file="${FLUVIO_BIN}/fluvio"
     ensure mv "${_temp_file}" "${_install_file}"
     ensure chmod +x "${_install_file}"
+
+    # Let fluvio know it is invoked from installer
+    say "☁️ Installing Fluvio Cloud..."
+    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio/fluvio-cloud
+
     say "🎉 Install complete!"
     remind_path
 
