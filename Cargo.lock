@@ -1257,8 +1257,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.2.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#b7e1787c86b57d482b0a8db0fa76cd0589b4c693"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16997e86923f688f984cf04296957cf6ae50e8ec2e9302c435a0aa839789c476"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1276,7 +1277,8 @@ dependencies = [
 [[package]]
 name = "fluvio-socket"
 version = "0.3.1"
-source = "git+https://github.com/infinyon/fluvio-socket?branch=more_logging#b7e1787c86b57d482b0a8db0fa76cd0589b4c693"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10a3717e4654da05cea7d471eb53fad0e134006dd5f914aadc4ff0684dc063ac"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1447,7 +1449,8 @@ dependencies = [
 [[package]]
 name = "flv-tls-proxy"
 version = "0.2.6"
-source = "git+https://github.com/infinyon/flv-tls-proxy?branch=debug_proxy#89d2fe83b03cd1d7c6035acb9db68086cedae71f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2377e4d3b5b9a464c7331875c4bde103b7e461c0c184b57951ef64f4012e1de"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",

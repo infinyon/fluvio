@@ -143,14 +143,8 @@ jobs:
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
         run: |
-          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root > /tmp/client.log
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root
           make test-permission-user1-local
-      - name: Upload client logs
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-client-logs
-          path: /tmp/client.log
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2

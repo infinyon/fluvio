@@ -21,10 +21,7 @@ members = [
     "tests/runner",
 ]
 
-[patch.crates-io]
-fluvio-socket = { git = "https://github.com/infinyon/fluvio-socket", branch = "more_logging" }
-fluvio-service = { git = "https://github.com/infinyon/fluvio-socket", branch = "more_logging" }
-flv-tls-proxy = { git = "https://github.com/infinyon/flv-tls-proxy", branch = "debug_proxy"}
+
 
 # profile to make image sizer smaller
 # comment out for now
