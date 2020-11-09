@@ -19,7 +19,7 @@ fn main() {
 
     let option = TestOption::parse_cli_or_exit();
 
-    let _test_runner = TestRunner::new(option.clone());
+    let test_runner = TestRunner::new(option.clone());
 
     run_block_on(async move {
         if option.setup() {
@@ -29,6 +29,6 @@ fn main() {
             println!("no setup");
         }
 
-        //test_runner.run_test().await;
+        test_runner.run_test().await;
     });
 }
