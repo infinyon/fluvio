@@ -98,7 +98,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest,macOS-latest]
+        os: [ubuntu-latest]
         rust: [stable]
 
     steps:
@@ -139,27 +139,23 @@ jobs:
       - name: install fluvio system chart
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
-      - name: smoke test tls for linux
-        if: startsWith(matrix.os,'ubuntu')
-        run: |
-          FLV_CMD=true make smoke-test-tls-root
-          make test-permission-user1-local
+      # - name: Setup tmate session
+      #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
-        if: startsWith(matrix.os, 'macOS')
         run: |
-          FLV_CMD=true make smoke-test-tls-root DEFAULT_SPU=1
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root
           make test-permission-user1-local
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-logs
+          name: fluvio-sc-logs
           path: /tmp/flv_sc.log
       - name: Upload logs on Mac
         if: startsWith(matrix.os,'macOS') && failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-logs
+          name: fluvio-sc-logs
           path: /usr/local/var/log/fluvio/flv_sc.log
 
 
@@ -210,7 +206,7 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: smoke test k8 tls
         run: | 
-          FLV_CMD=true make smoke-test-k8-tls-root
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-k8-tls-root
       - name: Save logs
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log

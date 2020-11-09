@@ -29,14 +29,6 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Update permissions for .kube and .minikube
         sudo chown -R $USER $HOME/.kube $HOME/.minikube
 
-        export IP=$(minikube ip)
-        sudo sed -i'' '/minikubeCA/d' /etc/hosts
-        echo "$IP minikubeCA" | sudo tee -a  /etc/hosts
-        cd ~
-        kubectl config set-cluster minikube --server=https://minikubeCA:8443 --certificate-authority=.minikube/ca.crt
-        kubectl config set-context minikube --user=minikube --cluster=minikube
-        kubectl config use-context minikube
-
         # Run Minikube Tunnel
         sudo nohup minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out &
 

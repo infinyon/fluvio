@@ -127,4 +127,8 @@ impl SpuPool {
 
         Ok(stream)
     }
+
+    pub fn shutdown(&mut self) {
+        self.metadata.shutdown();
+    }
 }

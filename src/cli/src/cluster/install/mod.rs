@@ -173,21 +173,14 @@ where
 /// check to ensure spu are all running
 async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     use std::time::Duration;
-    use std::env;
 
     use fluvio_future::timer::sleep;
     use fluvio::Fluvio;
     use fluvio_cluster::ClusterError;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
-    let delay: u64 = env::var("FLV_SPU_DELAY")
-        .unwrap_or_else(|_| "1".to_string())
-        .parse()
-        .unwrap_or_else(|_| 1);
-
-    println!("waiting for spu to be provisioned for: {} seconds", delay);
-
-    sleep(Duration::from_secs(delay)).await;
+    // sleep 1 second to allow spu to spin up just in case
+    sleep(Duration::from_secs(1)).await;
 
     let client = Fluvio::connect().await.expect("sc ");
     let mut admin = client.admin().await;
@@ -201,12 +194,16 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
             .count();
         if live_spus == spu as usize {
             println!("{} spus provisioned", spus.len());
+            drop(client);
+            sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
             return Ok(());
         } else {
             println!("{} out of spu: {} up, waiting 5 sec", live_spus, spu);
             sleep(Duration::from_secs(5)).await;
         }
     }
+
+    //drop(admin);
 
     println!("waited too long,bailing out");
     Err(ClusterError::Other(format!("not able to provision:{} spu", spu)).into())

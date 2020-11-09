@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "base-x"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2734baf8ed08920ccecce1b48a2dfce4ac74a973144add031163bd21a1c5dab"
+checksum = "a4521f3e3d031370679b3b140beb36dfe4801b09ac77e30c61941f97df3ef28b"
 
 [[package]]
 name = "base64"
@@ -1276,9 +1276,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96cee99599bbca88d9ced02b233bf13aef49917b8d9f530f3a1c891a4f616464"
+checksum = "10a3717e4654da05cea7d471eb53fad0e134006dd5f914aadc4ff0684dc063ac"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1292,6 +1292,7 @@ dependencies = [
  "fluvio-protocol",
  "futures-util",
  "log",
+ "once_cell",
  "pin-project-lite",
  "thiserror",
  "tokio",
@@ -1447,9 +1448,9 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b14e1d17c9864f7599c34a68d0bd9eb9a82cfd6152dcce640f89d232367e95ef"
+checksum = "e2377e4d3b5b9a464c7331875c4bde103b7e461c0c184b57951ef64f4012e1de"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",

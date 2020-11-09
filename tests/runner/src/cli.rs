@@ -132,4 +132,8 @@ impl TestOption {
     pub fn topic_name(&self, index: u16) -> String {
         format!("{}{}", self.topic_name, index)
     }
+
+    pub fn use_cli(&self) -> bool {
+        self.produce.produce_iteration == 1
+    }
 }
