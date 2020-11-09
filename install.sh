@@ -510,6 +510,7 @@ main() {
     local _install_file="${FLUVIO_BIN}/fluvio"
     ensure mv "${_temp_file}" "${_install_file}"
     ensure chmod +x "${_install_file}"
+    say "✅ Successfully installed ~/.fluvio/bin/fluvio"
 
     # Let fluvio know it is invoked from installer
     say "☁️ Installing Fluvio Cloud..."
