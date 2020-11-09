@@ -8,7 +8,6 @@
 //! e.g. via `fluvio install fluvio-cloud`, and to give the CLI visibility
 //! of new releases for itself and plugins.
 
-use std::collections::BTreeMap;
 use serde::{Serialize, Deserialize};
 use tracing::debug;
 
@@ -56,103 +55,6 @@ pub struct FluvioIndex {
     /// Metadata about the Fluvio Index itself
     #[serde(alias = "index")]
     pub metadata: IndexMetadata,
-    /// Packages are organized by group, where a group is like a particular
-    /// user which publishes packages. For the initial index, there will only
-    /// be an official Fluvio group, but in the future there may be more.
-    /// This will prevent clashes in the package namespace.
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    groups: BTreeMap<GroupName, GroupPackages>,
-}
-
-impl FluvioIndex {
-    fn find_package(&self, id: &PackageId) -> Result<&Package> {
-        let group = self.group(&id.group)?;
-        let package = group.package(&id.name)?;
-        Ok(package)
-    }
-
-    fn find_release(&self, id: &PackageId) -> Result<&Release> {
-        let version = id.version.as_ref().ok_or(Error::MissingVersion)?;
-        let group = self.group(&id.group)?;
-        let package = group.package(&id.name)?;
-        let release = package.find_release(&version)?;
-        Ok(release)
-    }
-
-    fn add_package(&mut self, package: Package) -> Result<()> {
-        let group = self
-            .groups
-            .entry(package.group.clone())
-            .or_insert_with(|| GroupPackages::empty(package.group.clone()));
-        group.add_package(package.name.clone(), package)?;
-        Ok(())
-    }
-
-    fn add_release(
-        &mut self,
-        id: &PackageId,
-        version: semver::Version,
-        target: Target,
-    ) -> Result<()> {
-        let group = self.group_mut(&id.group)?;
-        let package = group.package_mut(&id.name)?;
-        package.add_release(version, target)?;
-        Ok(())
-    }
-
-    fn group(&self, group: &GroupName) -> Result<&GroupPackages> {
-        self.groups
-            .get(group)
-            .ok_or_else(|| Error::MissingGroup(group.clone()))
-    }
-
-    fn group_mut(&mut self, group: &GroupName) -> Result<&mut GroupPackages> {
-        self.groups
-            .get_mut(group)
-            .ok_or_else(|| Error::MissingGroup(group.clone()))
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GroupPackages {
-    group: GroupName,
-    packages: BTreeMap<PackageName, Package>,
-}
-
-impl GroupPackages {
-    pub fn empty(group: GroupName) -> Self {
-        Self {
-            group,
-            packages: BTreeMap::new(),
-        }
-    }
-
-    /// Adds the given package with the given name to this group.
-    ///
-    /// This will reject packages that already exist.
-    pub fn add_package(&mut self, name: PackageName, package: Package) -> Result<()> {
-        if self.packages.contains_key(&name) {
-            return Err(Error::PackageAlreadyExists(format!(
-                "{}/{}",
-                self.group,
-                name.as_str()
-            )));
-        }
-        self.packages.insert(name, package);
-        Ok(())
-    }
-
-    fn package(&self, package: &PackageName) -> Result<&Package> {
-        self.packages
-            .get(package)
-            .ok_or_else(|| Error::MissingPackage(package.clone()))
-    }
-
-    fn package_mut(&mut self, package: &PackageName) -> Result<&mut Package> {
-        self.packages
-            .get_mut(package)
-            .ok_or_else(|| Error::MissingPackage(package.clone()))
-    }
 }
 
 /// A `Package` represents a single published item in Fluvio's registry.
@@ -222,13 +124,6 @@ impl Package {
 
     fn package_id(&self) -> PackageId {
         PackageId::new(self.name.clone(), self.group.clone())
-    }
-
-    fn find_release(&self, version: &semver::Version) -> Result<&Release> {
-        self.releases
-            .iter()
-            .find(|it| it.version == *version)
-            .ok_or_else(|| Error::MissingRelease(version.clone()))
     }
 
     /// Adds a new release to this package. This will reject a release if a release by the same version exists.
@@ -306,66 +201,6 @@ impl Release {
 mod tests {
     use super::*;
 
-    fn sample_index() -> FluvioIndex {
-        let release = Release {
-            version: semver::Version::parse("0.1.0").unwrap(),
-            targets: vec![Target::X86_64AppleDarwin],
-            yanked: false,
-        };
-        let package_name = "fluvio".parse::<PackageName>().unwrap();
-        let group_name = "fluvio".parse::<GroupName>().unwrap();
-        let package = Package {
-            name: package_name.clone(),
-            group: group_name.clone(),
-            kind: PackageKind::Binary,
-            author: None,
-            description: None,
-            repository: None,
-            releases: vec![release],
-        };
-        let group_packages = GroupPackages {
-            group: group_name.clone(),
-            packages: {
-                let mut packages = BTreeMap::new();
-                packages.insert(package_name, package);
-                packages
-            },
-        };
-        let metadata = IndexMetadata {
-            minimum_client_version: semver::Version::parse("0.6.0-alpha-1").unwrap(),
-        };
-        FluvioIndex {
-            metadata,
-            groups: {
-                let mut groups = BTreeMap::new();
-                groups.insert(group_name, group_packages);
-                groups
-            },
-        }
-    }
-
-    #[test]
-    fn test_find_release() {
-        let index = sample_index();
-        let id = "fluvio/fluvio:0.1.0".parse().unwrap();
-        let release = index.find_release(&id).unwrap();
-        assert_eq!(release.version, semver::Version::parse("0.1.0").unwrap());
-        assert!(release.target_exists(Target::X86_64AppleDarwin));
-    }
-
-    #[test]
-    fn test_add_package() {
-        let mut starting_index = sample_index();
-        let id = "fluvio/fluvio-cloud".parse::<PackageId>().unwrap();
-        let package = Package::new_binary(
-            &id,
-            "Bobson",
-            "The fluvio cloud plugin",
-            "https://github.com/infinyon/fluvio",
-        );
-        starting_index.add_package(package).unwrap();
-    }
-
     #[test]
     fn test_serialize_package() {
         let id = "fluvio/fluvio".parse().unwrap();
@@ -375,100 +210,5 @@ mod tests {
             stringified,
             r#"{"name":"fluvio","group":"fluvio","kind":"bin","author":"Bob","description":"A package","repository":"https://github.com"}"#
         )
-    }
-
-    #[test]
-    fn test_add_release() {
-        let mut index = sample_index();
-        let new_release = Release {
-            version: semver::Version::parse("1.1.0").unwrap(),
-            targets: vec![Target::X86_64AppleDarwin],
-            yanked: false,
-        };
-        let pid = "fluvio/fluvio:1.1.0".parse().unwrap();
-        index
-            .add_release(&pid, new_release.version.clone(), new_release.targets[0])
-            .unwrap();
-        let searched_release = index.find_release(&pid).unwrap();
-        assert_eq!(new_release, *searched_release);
-    }
-
-    #[test]
-    fn test_releases_sorted() {
-        let mut index = sample_index();
-        let release_2 = Release {
-            version: semver::Version::parse("2.0.0").unwrap(),
-            targets: vec![Target::X86_64AppleDarwin],
-            yanked: false,
-        };
-        let pid = "fluvio/fluvio:2.0.0".parse().unwrap();
-        index
-            .add_release(&pid, release_2.version.clone(), release_2.targets[0])
-            .unwrap();
-
-        let release_1_1 = Release {
-            version: semver::Version::parse("1.1.0").unwrap(),
-            targets: vec![Target::X86_64AppleDarwin],
-            yanked: false,
-        };
-        let id = "fluvio/fluvio:1.1.0".parse().unwrap();
-        index
-            .add_release(&id, release_1_1.version.clone(), release_1_1.targets[0])
-            .unwrap();
-
-        let group_packages = index.group(&id.group).unwrap();
-        let package = group_packages.package(&id.name).unwrap();
-
-        let releases = package.releases.clone();
-        for windows in releases.windows(2) {
-            match &windows {
-                [a, b] => {
-                    println!("Is {} < {}?", a.version, b.version);
-                    assert!(a.version < b.version);
-                }
-                _ => panic!("Should have 2 windows"),
-            }
-        }
-    }
-
-    #[test]
-    fn test_latest_release() {
-        let mut index = sample_index();
-
-        let id = "fluvio/fluvio".parse::<PackageId>().unwrap();
-        let version = semver::Version::parse("0.2.0").unwrap();
-        let target = Target::X86_64AppleDarwin;
-        index.add_release(&id, version, target).unwrap();
-
-        let version = semver::Version::parse("0.0.1").unwrap();
-        let target = Target::X86_64AppleDarwin;
-        index.add_release(&id, version, target).unwrap();
-        let package = index.find_package(&id).unwrap();
-        let latest = package.latest_release().unwrap();
-        assert_eq!(latest.version, semver::Version::parse("0.2.0").unwrap());
-    }
-
-    #[test]
-    fn test_latest_release_for_targetj() {
-        let mut index = sample_index();
-
-        let id = "fluvio/fluvio".parse::<PackageId>().unwrap();
-        let version = semver::Version::parse("0.2.0").unwrap();
-        let target = Target::X86_64UnknownLinuxMusl;
-        index.add_release(&id, version, target).unwrap();
-
-        let version = semver::Version::parse("0.0.1").unwrap();
-        let target = Target::X86_64AppleDarwin;
-        index.add_release(&id, version, target).unwrap();
-        let package = index.find_package(&id).unwrap();
-
-        let latest_for_apple = package
-            .latest_release_for_target(Target::X86_64AppleDarwin)
-            .unwrap();
-        // Remember, the sample index has 0.1.0 for AppleDarwin target
-        assert_eq!(
-            latest_for_apple.version,
-            semver::Version::parse("0.1.0").unwrap()
-        );
     }
 }
