@@ -95,15 +95,8 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-            let delay: u64 = env::var("FLV_SPU_DELAY")
-                .unwrap_or_else(|_| "1".to_string())
-                .parse()
-                .unwrap_or_else(|_| 1);
-            println!(
-                "waiting for topics to be provisioned for: {} seconds",
-                delay
-            );
-            sleep(Duration::from_secs(delay)).await;
+            
+            sleep(Duration::from_secs(1)).await;
         } else {
             println!("no topic initialized");
         }
