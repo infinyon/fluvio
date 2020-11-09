@@ -13,9 +13,9 @@ CLIENT_LOG=debug
 TEST_BIN=FLV_CMD=true RUST_LOG=$(CLIENT_LOG) ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
-DEFAULT_LOG=debug
+DEFAULT_LOG=flv_tls=trace,fluvio_socket=trace,fluvio_protocol_codec=trace
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
-SPU_DELAY=15
+
 
 # install all tools required
 install_tools_mac:
