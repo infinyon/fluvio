@@ -9,11 +9,17 @@ use crate::install::update::{
 #[derive(StructOpt, Debug)]
 pub struct InstallOpt {
     id: PackageId,
+    /// Used for testing. Specifies alternate package location, e.g. "test/"
+    #[structopt(hidden = true, long)]
+    prefix: Option<String>,
 }
 
 impl InstallOpt {
     pub async fn process(self) -> Result<String, CliError> {
-        let agent = HttpAgent::default();
+        let agent = match &self.prefix {
+            Some(prefix) => HttpAgent::with_prefix(prefix)?,
+            None => HttpAgent::default(),
+        };
 
         // Before any "install" type command, check if the CLI needs updating.
         // This may be the case if the index schema has updated.

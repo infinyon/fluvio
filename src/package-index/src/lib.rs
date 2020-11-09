@@ -22,6 +22,7 @@ pub use error::{Error, Result};
 pub use target::Target;
 pub use package_id::{PackageId, GroupName, PackageName, Registry};
 
+pub const INDEX_HOST: &str = "https://packages.fluvio.io/";
 pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1/";
 pub const INDEX_CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PACKAGE_TARGET: &str = env!("PACKAGE_TARGET");
@@ -64,13 +65,13 @@ pub struct FluvioIndex {
 }
 
 impl FluvioIndex {
-    pub fn find_package(&self, id: &PackageId) -> Result<&Package> {
+    fn find_package(&self, id: &PackageId) -> Result<&Package> {
         let group = self.group(&id.group)?;
         let package = group.package(&id.name)?;
         Ok(package)
     }
 
-    pub fn find_release(&self, id: &PackageId) -> Result<&Release> {
+    fn find_release(&self, id: &PackageId) -> Result<&Release> {
         let version = id.version.as_ref().ok_or(Error::MissingVersion)?;
         let group = self.group(&id.group)?;
         let package = group.package(&id.name)?;
@@ -78,7 +79,7 @@ impl FluvioIndex {
         Ok(release)
     }
 
-    pub fn add_package(&mut self, package: Package) -> Result<()> {
+    fn add_package(&mut self, package: Package) -> Result<()> {
         let group = self
             .groups
             .entry(package.group.clone())
@@ -87,7 +88,7 @@ impl FluvioIndex {
         Ok(())
     }
 
-    pub fn add_release(
+    fn add_release(
         &mut self,
         id: &PackageId,
         version: semver::Version,
