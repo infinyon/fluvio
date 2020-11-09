@@ -141,27 +141,27 @@ jobs:
           FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
-      - name: smoke test tls for linux
-        if: startsWith(matrix.os,'ubuntu')
-        run: |
-          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root
-          make test-permission-user1-local
       - name: smoke test tls
-        if: startsWith(matrix.os, 'macOS')
         run: |
-          FLV_CMD=true  FLV_SOCKET_WAIT=600  make smoke-test-tls-root DEFAULT_SPU=1
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root > /tmp/client.log
           make test-permission-user1-local
+      - name: Upload client logs
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-client-logs
+          path: /tmp/client.log
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-logs
+          name: fluvio-sc-logs
           path: /tmp/flv_sc.log
       - name: Upload logs on Mac
         if: startsWith(matrix.os,'macOS') && failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-logs
+          name: fluvio-sc-logs
           path: /usr/local/var/log/fluvio/flv_sc.log
 
 
