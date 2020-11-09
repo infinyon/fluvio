@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use log::info;
 
-use fluvio::Fluvio;
+use fluvio::{Fluvio, TopicProducer};
 
 use crate::TestOption;
 use super::message::*;
@@ -13,7 +13,7 @@ pub async fn produce_message(option: &TestOption) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&option).await;
 
-    if option.produce.produce_iteration == 1 {
+    if option.use_cli() {
         cli::produce_message_with_cli(option, offsets.clone()).await;
     } else if option.consumer_wait {
         produce_message_with_api(offsets.clone(), option.clone()).await;
@@ -78,6 +78,26 @@ mod offsets {
     }
 }
 
+async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
+    use std::time::Duration;
+    use fluvio_future::timer::sleep;
+
+    for _ in 0..10 {
+        match client.topic_producer(topic).await {
+            Ok(client) => return client,
+            Err(err) => {
+                println!(
+                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+    }
+
+    panic!("can't get producer");
+}
+
 pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
@@ -86,7 +106,7 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
         let topic_name = option.topic_name(i);
 
         let base_offset = *offsets.get(&topic_name).expect("offsets");
-        let producer = client.topic_producer(&topic_name).await.expect("producer");
+        let producer = get_producer(&client, &topic_name).await;
 
         for i in 0..option.produce.produce_iteration {
             let offset = base_offset + i as i64;
