@@ -73,8 +73,13 @@ where
     where
         RequestMessage<R>: FlvEncoder + Default + Debug,
     {
-        trace!("sending one way request: {:#?}", &req_msg);
-        (&mut self.inner).send(req_msg.as_bytes(0)?).await?;
+        let bytes = req_msg.as_bytes(0)?;
+        trace!(
+            "sending one way request: {:#?}, bytes: {}",
+            &req_msg,
+            bytes.len()
+        );
+        (&mut self.inner).send(bytes).await?;
         Ok(())
     }
 
@@ -87,8 +92,9 @@ where
     where
         ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
-        trace!("sending response {:#?}", &resp_msg);
-        (&mut self.inner).send(resp_msg.as_bytes(version)?).await?;
+        let bytes = resp_msg.as_bytes(version)?;
+        trace!("sending response {:#?}, bytes: {}", &resp_msg, bytes.len());
+        (&mut self.inner).send(bytes).await?;
         Ok(())
     }
 }

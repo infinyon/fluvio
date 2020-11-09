@@ -124,7 +124,11 @@ where
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Queue(sender));
 
-        debug!("send async request with: {}", correlation_id);
+        debug!(
+            "send request: {} correlation_id: {}",
+            R::API_KEY,
+            correlation_id
+        );
         self.sink.send_request(&req_msg).await?;
 
         Ok(AsyncResponse {
@@ -182,7 +186,7 @@ impl<R: Request> Stream for AsyncResponse<R> {
 
         let value = match response {
             Ok(value) => {
-                trace!("Received response: {:#?}", &value);
+                trace!("Received response bytes: {},  {:#?}", bytes.len(), &value,);
                 Some(Ok(value))
             }
             Err(e) => Some(Err(e.into())),
@@ -218,13 +222,24 @@ where
     where
         R: Request,
     {
+        use once_cell::sync::Lazy;
+
+        static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
+            use std::env;
+
+            let var_value = env::var("car").unwrap_or_default();
+            let wait_time: u64 = var_value.parse().unwrap_or_else(|_| 10);
+            wait_time
+        });
+
         // first try to lock, this should lock
         // if lock fails then somebody still trying to  writing which should not happen, in this cases, we bail
         // if lock ok, then we cleared the value
         match self.receiver.0.try_lock() {
             Some(mut guard) => {
                 debug!(
-                    "serial socket: clearing existing value, id: {}",
+                    "serial socket for: {} clearing value, id: {}",
+                    R::API_KEY,
                     self.correlation_id
                 );
                 *guard = None;
@@ -241,19 +256,23 @@ where
 
         req_msg.header.set_correlation_id(self.correlation_id);
 
-        debug!("serial: sending serial request id: {}", self.correlation_id);
-        trace!("sending request: {:#?}", req_msg);
+        debug!(
+            "serial multiplexing: sending request: {} id: {}",
+            R::API_KEY,
+            self.correlation_id
+        );
         self.sink.send_request(&req_msg).await?;
         debug!(
-            "serial: finished and waiting for reply from dispatcher for: {}",
+            "serial: waiting: {} from dispatcher id:{}",
+            R::API_KEY,
             self.correlation_id
         );
         select! {
-            _ = sleep(Duration::from_secs(5)) => {
-                debug!("serial socket: timeout happen, id: {}",self.correlation_id);
+            _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
+                debug!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, self.correlation_id);
                 Err(IoError::new(
                     ErrorKind::TimedOut,
-                    format!("time out in send and request: {}",self.correlation_id),
+                    format!("time out in serial: {} request: {}", R::API_KEY, self.correlation_id),
                 ).into())
             },
 
@@ -261,7 +280,7 @@ where
 
                 match self.receiver.0.try_lock() {
                     Some(guard) => {
-                        debug!("serial socket: clearing existing value, id: {}",self.correlation_id);
+                        debug!("serial socket for: {}, clearing existing value, id: {}",R::API_KEY, self.correlation_id);
 
                         if let Some(response_bytes) =  &*guard {
 
@@ -272,7 +291,7 @@ where
                             trace!("receive response: {:#?}", response);
                             Ok(response)
                         } else {
-                            debug!("serial socket: value is empty, something bad happened");
+                            debug!("serial socket for: {} value is empty, something bad happened",R::API_KEY);
                             Err(IoError::new(
                                 ErrorKind::UnexpectedEof,
                                 "connection is closed".to_string(),

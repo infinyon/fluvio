@@ -85,7 +85,7 @@ where
                         &mut Cursor::new(&req_bytes),
                         req_msg.header.api_version(),
                     )?;
-                    trace!("receive response: {:#?}", &response);
+                    trace!("received {} bytes: {:#?}", req_bytes.len(), &response);
                     Ok(response)
                 }
                 Err(source) => {
