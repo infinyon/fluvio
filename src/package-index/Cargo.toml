@@ -2,6 +2,9 @@
 name = "fluvio-package-index"
 version = "0.1.0"
 authors = ["Infinyon Contributors <team@infiyon.com>"]
+description = "Fluvio Package Index"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
 edition = "2018"
 build = "build.rs"
 

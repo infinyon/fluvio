@@ -174,13 +174,21 @@ where
 async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     use std::time::Duration;
 
+    use std::env;
+
     use fluvio_future::timer::sleep;
     use fluvio::Fluvio;
     use fluvio_cluster::ClusterError;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
-    // sleep 1 second to allow spu to spin up just in case
-    sleep(Duration::from_secs(1)).await;
+    let delay: u64 = env::var("FLV_SPU_DELAY")
+        .unwrap_or_else(|_| "1".to_string())
+        .parse()
+        .unwrap_or_else(|_| 1);
+
+    println!("waiting for spu to be provisioned for: {} seconds", delay);
+
+    sleep(Duration::from_secs(delay)).await;
 
     let client = Fluvio::connect().await.expect("sc ");
     let mut admin = client.admin().await;
