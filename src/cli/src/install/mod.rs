@@ -1,10 +1,10 @@
+use std::fs::File;
 use std::io::{ErrorKind, Error as IoError};
 use std::path::{Path, PathBuf};
-use tracing::debug;
+use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target};
 use crate::CliError;
-use std::fs::File;
 
 pub mod update;
 pub mod plugins;
@@ -16,6 +16,10 @@ fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
 }
 
 /// Fetches the latest version of the package with the given ID
+#[instrument(
+    skip(agent, target, id),
+    fields(%target, %id)
+)]
 async fn fetch_latest_version(
     agent: &HttpAgent,
     id: &PackageId,
@@ -37,6 +41,10 @@ async fn fetch_latest_version(
 }
 
 /// Downloads and verifies a package file via it's versioned ID and target
+#[instrument(
+    skip(agent, id, target),
+    fields(%target, %id)
+)]
 async fn fetch_package_file(
     agent: &HttpAgent,
     id: &PackageId,
@@ -115,3 +123,11 @@ fn make_executable(file: &mut File) -> Result<(), IoError> {
 
 #[cfg(not(unix))]
 fn make_executable(_file: &mut File) {}
+
+pub fn install_println<S: AsRef<str>>(string: S) {
+    if std::env::var("FLUVIO_BOOTSTRAP").is_ok() {
+        println!("\x1B[1;34mfluvio:\x1B[0m {}", string.as_ref());
+    } else {
+        println!("{}", string.as_ref());
+    }
+}

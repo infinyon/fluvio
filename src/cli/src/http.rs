@@ -1,35 +1,45 @@
 use std::io::{ErrorKind, Error as IoError};
 use async_h1::client;
 use http_types::{Error, Request, Response, StatusCode};
-use tracing::debug;
+use tracing::{debug, error, instrument};
 
-pub async fn execute(req: Request) -> Result<Response, Error> {
-    debug!("executing request: {:#?}", req);
+#[instrument(
+    skip(request),
+    fields(url = %request.url())
+)]
+pub async fn execute(request: Request) -> Result<Response, Error> {
+    debug!(?request, "Executing http request:");
 
-    if req.url().scheme() != "https" {
+    if request.url().scheme() != "https" {
+        error!("CLI http executor only accepts https!");
         return Err(IoError::new(ErrorKind::InvalidInput, "Must use https").into());
     }
 
-    let host = req
+    let host = request
         .url()
         .host_str()
         .ok_or_else(|| Error::from_str(StatusCode::BadRequest, "missing hostname"))?
         .to_string();
+    debug!(%host, "Valid hostname:");
 
-    let addr = req
+    let addr = request
         .url()
         .socket_addrs(|| Some(443))?
         .into_iter()
         .next()
         .ok_or_else(|| Error::from_str(StatusCode::BadRequest, "missing valid address"))?;
+    debug!(%addr, "Valid address:");
 
     let tcp_stream = fluvio_future::net::TcpStream::connect(addr).await?;
+    debug!("Established TCP stream");
     let tls_connector = create_tls().await;
+    debug!("Created TLS connector");
     let tls_stream = tls_connector.connect(host, tcp_stream).await?;
-    let result = client::connect(tls_stream, req).await?;
+    debug!("Opened TLS stream from TCP stream");
+    let response = client::connect(tls_stream, request).await?;
 
-    debug!("http result: {:#?}", result);
-    Ok(result)
+    debug!(?response, "Http response:");
+    Ok(response)
 }
 
 #[cfg(feature = "native2_tls")]

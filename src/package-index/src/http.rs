@@ -1,5 +1,6 @@
 use http_types::{Request, Response};
 use crate::{Result, FluvioIndex, Package, PackageId, Target, Error};
+use url::Url;
 
 pub struct HttpAgent {
     base_url: url::Url,
@@ -14,6 +15,16 @@ impl Default for HttpAgent {
 }
 
 impl HttpAgent {
+    pub fn with_prefix(prefix: &str) -> Result<Self> {
+        Ok(Self {
+            base_url: Url::parse(crate::INDEX_HOST).unwrap().join(prefix)?,
+        })
+    }
+
+    pub fn base_url(&self) -> &str {
+        self.base_url.as_str()
+    }
+
     pub fn request_index(&self) -> Result<Request> {
         let url = self.base_url.join("index.json")?;
         Ok(Request::get(url))
