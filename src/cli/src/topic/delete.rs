@@ -14,7 +14,8 @@ use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteTopicOpt {
-    #[structopt(value_name = "string")]
+    /// The name of the Topic to delete
+    #[structopt(value_name = "name")]
     topic: String,
 
     #[structopt(flatten)]

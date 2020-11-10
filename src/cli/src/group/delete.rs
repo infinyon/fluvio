@@ -16,8 +16,8 @@ use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteManagedSpuGroupOpt {
-    /// Managed SPU group name
-    #[structopt(short = "n", long = "name", value_name = "string")]
+    /// The name of the SPU Group to delete
+    #[structopt(value_name = "name")]
     name: String,
 
     #[structopt(flatten)]

@@ -16,31 +16,31 @@ use super::ConsumeOutputType;
 
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
-    /// Topic name
-    #[structopt(value_name = "string")]
+    /// The name of the Topic to consume from
+    #[structopt(value_name = "topic")]
     pub topic: String,
 
-    /// Partition id
+    /// The ID of the Partition to consume from
     #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
     pub partition: i32,
 
-    /// Start reading from beginning
+    /// Starts consuming from the beginning
     #[structopt(short = "B", long = "from-beginning")]
     pub from_beginning: bool,
 
-    /// disable continuous processing of messages
+    /// Disables continuous processing of messages
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
-    /// Offsets can be positive or negative. (Syntax for negative offset: --offset="-1")
+    /// The offset of the message to begin consuming from
     #[structopt(short, long, value_name = "integer")]
     pub offset: Option<i64>,
 
-    /// Maximum number of bytes to be retrieved
+    /// The maximum number of bytes to be retrieved
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
     pub max_bytes: Option<i32>,
 
-    /// Suppress items items that have an unknown output type
+    /// Suppress items that have an unknown output type
     #[structopt(short = "s", long = "suppress-unknown")]
     pub suppress_unknown: bool,
 

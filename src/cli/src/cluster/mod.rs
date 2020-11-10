@@ -19,23 +19,23 @@ use releases::ReleasesCommand;
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
 pub enum ClusterCommands {
-    /// set my own context
+    /// Set kubectl's active context to use Minikube for Fluvio
     #[structopt(name = "set-minikube-context")]
     SetMinikubeContext(SetMinikubeContext),
 
-    /// install cluster
+    /// Install a Fluvio cluster, locally or on Minikube
     #[structopt(name = "install")]
     Install(InstallCommand),
 
-    /// uninstall cluster
+    /// Uninstall a Fluvio cluster from the local machine or Minkube
     #[structopt(name = "uninstall")]
     Uninstall(UninstallCommand),
 
-    /// perform checks
+    /// Check that all requirements for installation are met
     #[structopt(name = "check")]
     Check(CheckCommand),
 
-    /// release information
+    /// Prints information about various Fluvio releases
     #[structopt(name = "releases")]
     Releases(ReleasesCommand),
 }

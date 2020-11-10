@@ -12,12 +12,11 @@ mod cli {
     use super::list::ListPartitionOpt;
 
     #[derive(Debug, StructOpt)]
-    #[structopt(name = "partition", about = "Partition operations")]
     pub enum PartitionOpt {
+        /// List all of the Partitions in this cluster
         #[structopt(
             name = "list",
             template = COMMAND_TEMPLATE,
-            about = "Show all partitions"
         )]
         List(ListPartitionOpt),
     }

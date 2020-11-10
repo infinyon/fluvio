@@ -12,7 +12,7 @@ mod output {
 
     #[derive(Debug, StructOpt, Default)]
     pub struct OutputFormat {
-        /// Output
+        /// The output format for this command
         #[structopt(
             short = "O",
             long = "output",
