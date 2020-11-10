@@ -984,7 +984,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async-h1",
  "async-trait",
@@ -1012,6 +1012,7 @@ dependencies = [
  "k8-metadata-client",
  "k8-obj-core",
  "k8-obj-metadata",
+ "openssl",
  "prettytable-rs",
  "rand 0.7.3",
  "rustc_version",
@@ -2326,6 +2327,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 
 [[package]]
+name = "openssl-src"
+version = "111.12.0+1.1.1h"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "858a4132194f8570a7ee9eb8629e85b23cbc4565f2d4a162e87556e5956abf61"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "openssl-sys"
 version = "0.9.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2334,6 +2344,7 @@ dependencies = [
  "autocfg",
  "cc",
  "libc",
+ "openssl-src",
  "pkg-config",
  "vcpkg",
 ]

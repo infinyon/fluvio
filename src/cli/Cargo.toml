@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cli"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio CLI"
@@ -18,7 +18,7 @@ doc = false
 
 [features]
 default = ["cluster_components", "native2_tls"]
-cluster_components = ["k8-client/native_tls","fluvio-spu", "fluvio-sc/k8","fluvio/native_tls","fluvio-cluster/native_tls"]
+cluster_components = ["k8-client/native_tls","fluvio-spu", "fluvio-sc/k8","fluvio/native_tls","fluvio-cluster/native_tls","openssl/vendored"]
 cluster_components_rustls = ["k8-client/rust_tls","fluvio-spu","fluvio-sc/k8_rustls","fluvio/rust_tls","fluvio-cluster/rust_tls"]
 native2_tls = ["fluvio-future/native2_tls"]
 
@@ -51,6 +51,7 @@ color-eyre = "0.5.5"
 which = "4.0.2"
 sha2 = "0.9.1"
 hex = "0.4.2"
+openssl = { version = "0.10.30", optional = true }
 
 # Fluvio dependencies
 
