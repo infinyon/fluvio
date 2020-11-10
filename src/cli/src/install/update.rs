@@ -1,41 +1,59 @@
 use structopt::StructOpt;
+use tracing::{debug, instrument};
 
-use crate::CliError;
-use fluvio_index::{PackageId, HttpAgent, Target};
-use crate::install::{fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir};
 use semver::Version;
+use fluvio_index::{PackageId, HttpAgent, Target};
+use crate::CliError;
+use crate::install::{
+    fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir, install_println,
+};
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
 #[derive(StructOpt, Debug)]
-pub struct UpdateOpt {}
+pub struct UpdateOpt {
+    /// Used for testing. Specifies alternate package location, e.g. "test/"
+    #[structopt(hidden = true, long)]
+    prefix: Option<String>,
+}
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<String, CliError> {
-        let agent = HttpAgent::default();
+        let agent = match self.prefix {
+            Some(prefix) => HttpAgent::with_prefix(&prefix)?,
+            None => HttpAgent::default(),
+        };
         let output = update_self(&agent).await?;
         Ok(output)
     }
 }
 
+#[instrument(skip(agent))]
 async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     let target = fluvio_index::PACKAGE_TARGET.parse::<Target>()?;
     let mut id: PackageId = FLUVIO_PACKAGE_ID.parse::<PackageId>()?;
+    debug!(%target, %id, "Fluvio CLI updating self:");
 
     // Find the latest version of this package
-    println!("🎣 Fetching latest version for fluvio/fluvio...");
+    install_println("🎣 Fetching latest version for fluvio/fluvio...");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
     id.version = Some(latest_version);
 
     // Download the package file from the package registry
-    println!("⏳ Downloading Fluvio CLI with latest version: {}...", &id);
+    install_println(format!(
+        "⏳ Downloading Fluvio CLI with latest version: {}...",
+        &id
+    ));
     let package_file = fetch_package_file(agent, &id, target).await?;
-    println!("🔑 Downloaded and verified package file");
+    install_println("🔑 Downloaded and verified package file");
 
     // Install the package to the ~/.fluvio/bin/ dir
     let fluvio_dir = fluvio_bin_dir()?;
     install_bin(&fluvio_dir, "fluvio", &package_file)?;
-    println!("✅ Successfully installed ~/.fluvio/bin/{}", &id.name);
+    install_println(format!(
+        "✅ Successfully installed ~/.fluvio/bin/{}",
+        &id.name
+    ));
 
     Ok("".to_string())
 }
@@ -43,7 +61,12 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
 /// Check whether the index requires a more recent version of the client.
 ///
 /// If this is the case, we need to prompt the user to perform an update.
+#[instrument(
+    skip(agent),
+    fields(prefix = agent.base_url())
+)]
 pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> {
+    debug!("Checking for a required CLI update");
     let request = agent.request_index()?;
     let response = crate::http::execute(request).await?;
     let index = agent.index_from_response(response).await?;
@@ -51,28 +74,36 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> 
 }
 
 /// Check whether there is any newer version of the Fluvio CLI available
+#[instrument(
+    skip(agent),
+    fields(prefix = agent.base_url())
+)]
 pub async fn check_update_available(agent: &HttpAgent) -> Result<bool, CliError> {
     let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
-
-    let request = agent.request_index()?;
-    let response = crate::http::execute(request).await?;
-    let index = agent.index_from_response(response).await?;
-
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
-    let package = index.find_package(&id)?;
+    debug!(%target, %id, "Checking for an available (not required) CLI update:");
+
+    let request = agent.request_package(&id)?;
+    let response = crate::http::execute(request).await?;
+    let package = agent.package_from_response(response).await?;
+
     let release = package.latest_release_for_target(target)?;
     let latest_version = &release.version;
-
     let current_version =
         Version::parse(crate::VERSION).expect("Fluvio CLI 'VERSION' should be a valid semver");
 
     Ok(current_version < *latest_version)
 }
 
-/// Prompt the user about a more recent version of the Fluvio CLI
+/// Prompt the user about a new required version of the Fluvio CLI
+#[instrument(
+    skip(agent),
+    fields(prefix = agent.base_url())
+)]
 pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
     let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
+    debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
 
     println!("⚠️ A major update to Fluvio has been detected!");
@@ -84,9 +115,15 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
     Ok(())
 }
 
+/// Prompt the user about a new available version of the Fluvio CLI
+#[instrument(
+    skip(agent),
+    fields(prefix = agent.base_url())
+)]
 pub async fn prompt_available_update(agent: &HttpAgent) -> Result<(), CliError> {
     let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
+    debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
 
     println!();
