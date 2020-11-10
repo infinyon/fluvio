@@ -14,6 +14,7 @@ TEST_BIN=FLV_CMD=true RUST_LOG=$(CLIENT_LOG) ./target/debug/flv-test
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 DEFAULT_LOG=debug
+SPU_DELAY=15
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 
 
