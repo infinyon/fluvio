@@ -28,13 +28,13 @@ serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
 fluvio-types = { path = "../types", version = "0.1.0" }
-fluvio-future = { version = "0.1.0", features = ["fs","mmap"] }
-fluvio-protocol = { version = "0.2.0" }
+fluvio-future = { version = "0.1.8", features = ["fs","mmap"] }
+fluvio-protocol = { version = "0.2.1" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 
 [dev-dependencies]
 fluvio-future = { version = "0.1.8", features = ["fixture"] }
-flv-util = { version = "0.5.0", features = ["fixture"] }
+flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { version = "0.3.1" }
 
