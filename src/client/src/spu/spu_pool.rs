@@ -8,7 +8,7 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket::AllMultiplexerSocket;
+use fluvio_socket:: {AllMultiplexerSocket, SharedAllMultiplexerSocket };
 use fluvio_socket::AsyncResponse;
 use crate::FluvioError;
 use crate::client::ClientConfig;
@@ -20,14 +20,14 @@ const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 struct SpuSocket {
     config: ClientConfig,
-    socket: AllMultiplexerSocket,
+    socket: SharedAllMultiplexerSocket,
     versions: Versions,
 }
 
 impl SpuSocket {
     async fn create_serial_socket(&mut self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
-            self.socket.create_serial_socket().await,
+            self.socket.clone(),
             self.config.clone(),
             self.versions.clone(),
         )
@@ -75,7 +75,7 @@ impl SpuPool {
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
         Ok(SpuSocket {
-            socket: AllMultiplexerSocket::new(socket),
+            socket: AllMultiplexerSocket::shared(socket),
             config,
             versions,
         })

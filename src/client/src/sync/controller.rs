@@ -88,11 +88,12 @@ where
     async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {
         use tokio::select;
 
-        debug!("starting dispatch loop");
+        debug!("{} starting dispatch loop",S::LABEL);
 
         loop {
             // check if shutdown is set
             if self.shutdown.is_set() {
+                debug!("{} shutdown exiting",S::LABEL);
                 break;
             }
 
@@ -102,7 +103,7 @@ where
                 }
 
                 item = response.next() => {
-                    debug!("received request");
+                    debug!("{} received request",S::LABEL);
 
                     match item {
                         Some(Ok(watch_response)) => {
@@ -120,18 +121,19 @@ where
                             }
                         },
                         Some(Err(err)) => {
-                            error!("error receiving, end, {}", err);
+                            error!("{} error receiving, end, {}", S::LABEL, err);
                             break;
                         },
                         None => {
-                            error!("No more items to receive from stream!")
+                            debug!("{} No more items to receive from stream!",S::LABEL);
+                            break;
                         }
                     }
                 }
             }
         }
 
-        debug!("shutting down");
+        debug!("{} terminated",S::LABEL);
     }
 
     async fn process_updates(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {

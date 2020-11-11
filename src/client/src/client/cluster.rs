@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use tracing::{debug, trace};
 
-use fluvio_socket::AllMultiplexerSocket;
+use fluvio_socket::{ AllMultiplexerSocket, SharedAllMultiplexerSocket };
 
 #[cfg(feature = "native_tls")]
 use fluvio_future::native_tls::AllDomainConnector;
@@ -23,7 +23,7 @@ use super::*;
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
-    socket: AllMultiplexerSocket,
+    socket: SharedAllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
     spu_pool: SpuPool,
@@ -81,9 +81,9 @@ impl Fluvio {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
-        let mut socket = AllMultiplexerSocket::new(socket);
+        let socket = AllMultiplexerSocket::shared(socket);
 
-        let metadata = MetadataStores::new(&mut socket).await?;
+        let metadata = MetadataStores::new(&socket).await?;
         let spu_pool = SpuPool::new(config.clone(), metadata);
 
         Ok(Self {
@@ -172,7 +172,7 @@ impl Fluvio {
     /// create serial connection
     async fn create_serial_client(&self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
-            self.socket.create_serial_socket().await,
+            self.socket.clone(),
             self.config.clone(),
             self.versions.clone(),
         )
