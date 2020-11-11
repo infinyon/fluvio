@@ -34,8 +34,8 @@ mod process {
 
         debug!("spu  leader consume config: {:#?}", cfg);
 
-        let target = Fluvio::connect_with_config(&target_server).await?;
-        let consumer = target.partition_consumer(&cfg.topic, cfg.partition).await?;
+        let client = Fluvio::connect_with_config(&target_server).await?;
+        let consumer = client.partition_consumer(&cfg.topic, cfg.partition).await?;
         fetch_log_loop(out, consumer, cfg).await?;
 
         Ok("".to_owned())
