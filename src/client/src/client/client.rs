@@ -10,7 +10,7 @@ use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::{AllFlvSocket, AllSerialSocket};
+use fluvio_socket::{AllFlvSocket, SharedAllMultiplexerSocket};
 
 #[cfg(feature = "rust_tls")]
 use fluvio_future::tls::AllDomainConnector;
@@ -205,7 +205,7 @@ impl Versions {
 
 /// Connection that perform request/response
 pub struct VersionedSerialSocket {
-    socket: AllSerialSocket,
+    socket: SharedAllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
 }
@@ -217,7 +217,11 @@ impl fmt::Display for VersionedSerialSocket {
 }
 
 impl VersionedSerialSocket {
-    pub fn new(socket: AllSerialSocket, config: ClientConfig, versions: Versions) -> Self {
+    pub fn new(
+        socket: SharedAllMultiplexerSocket,
+        config: ClientConfig,
+        versions: Versions,
+    ) -> Self {
         Self {
             socket,
             config,

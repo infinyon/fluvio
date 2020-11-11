@@ -55,30 +55,35 @@ impl SpuServiceController {
     }
 
     async fn dispatch_loop(mut self) {
-        use tokio::select;
+        use std::time::Duration;
 
-        self.sync_service_to_spu().await;
-        self.sync_spu_to_service().await;
+        use tokio::select;
+        use fluvio_future::timer::sleep;
 
         loop {
+            debug!("syncing service to spu");
+            self.sync_service_to_spu().await;
+            debug!("synching spu to service");
+            self.sync_spu_to_service().await;
+
             debug!("waiting  for service and spu updates");
 
             select! {
+                // this is hack until we fix listener
+                _ = sleep(Duration::from_secs(60)) => {
+                    debug!("timer expired");
+                },
                 _ = self.services.spec_listen() => {
                     debug!("detected service spec changes");
-                    self.sync_service_to_spu().await;
                 },
                 _ = self.services.status_listen() => {
                     debug!("detected service status changes");
-                    self.sync_service_to_spu().await;
                 },
                 _ = self.spus.spec_listen() => {
                     debug!("detected spu spec changes");
-                    self.sync_spu_to_service().await;
                 },
                 _ = self.spus.status_listen() => {
                     debug!("detected spu event changes");
-                    self.sync_spu_to_service().await;
                 }
             }
         }

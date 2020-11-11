@@ -110,12 +110,20 @@ mod context {
             use std::time::Duration;
             use std::time::Instant;
 
+            use once_cell::sync::Lazy;
             use tokio::select;
             use tracing::debug;
-            use tracing::warn;
             use fluvio_future::timer::sleep;
 
-            const MAX_WAIT_TIME: u64 = 5;
+            static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
+                use std::env;
+
+                let var_value = env::var("FLV_DISPATCHER_WAIT").unwrap_or_default();
+                let wait_time: u64 = var_value.parse().unwrap_or_else(|_| 10);
+                wait_time
+            });
+
+            const POLL_TIME: u64 = 1;
 
             debug!("{}: sending WS action to store: {}", S::LABEL, key);
             let action = WSAction::UpdateSpec((key.clone(), spec));
@@ -125,32 +133,29 @@ mod context {
                     // wait for object created in the store
 
                     let instant = Instant::now();
-                    let max_wait = Duration::from_secs(MAX_WAIT_TIME);
+                    let max_wait = Duration::from_secs(*MAX_WAIT_TIME);
                     loop {
                         debug!("{} store, waiting for store event", S::LABEL);
 
-                        select! {
-                            _ = sleep(Duration::from_secs(MAX_WAIT_TIME)) => {
-                                warn!("{} store, didn't receive wait,exiting",S::LABEL);
+                        if let Some(value) = self.store.value(&key).await {
+                            debug!("store: {}, object: {:#?}, created", S::LABEL, key);
+                            return Ok(value.inner_owned());
+                        } else {
+                            // check if total time expired
+                            if instant.elapsed() > max_wait {
                                 return Err(IoError::new(
                                     ErrorKind::TimedOut,
-                                    format!("store timed out: {} for {:?}", S::LABEL,key)
+                                    format!("store timed out: {} for {:?}", S::LABEL, key),
                                 ));
+                            }
+                        }
+
+                        select! {
+                            _ = sleep(Duration::from_secs(POLL_TIME)) => {
+                                debug!("{} store, didn't receive wait,exiting,continue waiting",S::LABEL);
                             },
                             _ = self.spec_listen() => {
-                                // check if we can find new object
-                                if let Some(value) = self.store.value(&key).await {
-                                    debug!("store: {}, object: {:#?}, created",S::LABEL,key);
-                                    return Ok(value.inner_owned())
-                                } else {
-                                    // check if total time expired
-                                    if instant.elapsed() > max_wait {
-                                        return Err(IoError::new(
-                                            ErrorKind::TimedOut,
-                                            format!("store timed out: {} for {:?}", S::LABEL,key)
-                                        ));
-                                    }
-                                }
+                                debug!("{} store, received updates",S::LABEL);
                             }
                         }
                     }

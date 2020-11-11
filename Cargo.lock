@@ -919,7 +919,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -933,7 +933,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
- "fluvio-socket",
+ "fluvio-socket 0.4.0",
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
@@ -968,7 +968,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.3.1",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1093,7 +1093,7 @@ dependencies = [
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.3.1",
  "flv-util",
  "futures-util",
  "log",
@@ -1205,7 +1205,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async-channel",
  "async-lock 1.1.5",
@@ -1221,7 +1221,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-service",
- "fluvio-socket",
+ "fluvio-socket 0.3.1",
  "fluvio-stream-dispatcher",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1266,7 +1266,7 @@ dependencies = [
  "event-listener",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.3.1",
  "futures-util",
  "log",
  "pin-utils",
@@ -1302,6 +1302,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-socket"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbc53d9fd92dbd0a78580e016e56af2031a4fad5dd7e5d52b23fadd236710c5f"
+dependencies = [
+ "async-channel",
+ "async-mutex",
+ "async-net",
+ "async-trait",
+ "bytes 0.5.6",
+ "cfg-if 1.0.0",
+ "chashmap",
+ "event-listener",
+ "fluvio-future",
+ "fluvio-protocol",
+ "futures-util",
+ "log",
+ "once_cell",
+ "pin-project 1.0.1",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-spu"
 version = "0.2.1"
 dependencies = [
@@ -1318,7 +1344,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
- "fluvio-socket",
+ "fluvio-socket 0.3.1",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
@@ -1358,7 +1384,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket",
+ "fluvio-socket 0.3.1",
  "fluvio-types",
  "flv-util",
  "futures-lite",
@@ -1384,6 +1410,7 @@ dependencies = [
  "futures-lite",
  "k8-metadata-client",
  "log",
+ "once_cell",
  "serde",
  "tokio",
  "tracing",
@@ -2290,9 +2317,9 @@ checksum = "8d3b63360ec3cb337817c2dbd47ab4a0f170d285d8e5a2064600f3def1402397"
 
 [[package]]
 name = "once_cell"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "260e51e7efe62b592207e9e13a68e43692a7a279171d6ba57abd208bf23645ad"
+checksum = "95c43eba5c640051fbde86a3377842386a94281df3ff0a5f0365c2075ed5c66f"
 
 [[package]]
 name = "opaque-debug"

@@ -21,7 +21,7 @@ pub struct MetadataStores {
 
 impl MetadataStores {
     /// crete store and set up sync controllers
-    pub async fn new(socket: &mut AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
+    pub async fn new(socket: &AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
@@ -49,7 +49,7 @@ impl MetadataStores {
     /// start watch for spu
     pub async fn start_watch_for_spu(
         &self,
-        socket: &mut AllMultiplexerSocket,
+        socket: &AllMultiplexerSocket,
     ) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
@@ -70,7 +70,7 @@ impl MetadataStores {
 
     pub async fn start_watch_for_partition(
         &self,
-        socket: &mut AllMultiplexerSocket,
+        socket: &AllMultiplexerSocket,
     ) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
