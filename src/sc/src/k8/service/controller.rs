@@ -60,10 +60,7 @@ impl SpuServiceController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        
-
         loop {
-
             debug!("syncing service to spu");
             self.sync_service_to_spu().await;
             debug!("synching spu to service");

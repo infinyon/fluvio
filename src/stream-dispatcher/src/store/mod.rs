@@ -138,14 +138,14 @@ mod context {
                         debug!("{} store, waiting for store event", S::LABEL);
 
                         if let Some(value) = self.store.value(&key).await {
-                            debug!("store: {}, object: {:#?}, created",S::LABEL,key);
-                            return Ok(value.inner_owned())
+                            debug!("store: {}, object: {:#?}, created", S::LABEL, key);
+                            return Ok(value.inner_owned());
                         } else {
                             // check if total time expired
                             if instant.elapsed() > max_wait {
                                 return Err(IoError::new(
                                     ErrorKind::TimedOut,
-                                    format!("store timed out: {} for {:?}", S::LABEL,key)
+                                    format!("store timed out: {} for {:?}", S::LABEL, key),
                                 ));
                             }
                         }
