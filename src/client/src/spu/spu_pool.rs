@@ -86,7 +86,23 @@ impl SpuPool {
         &self,
         replica: &ReplicaKey,
     ) -> Result<VersionedSerialSocket, FluvioError> {
-        let partition = self.metadata.partitions().lookup_by_key(replica).await?;
+        use std::io::ErrorKind;
+
+        let partition = match self.metadata.partitions().lookup_by_key(replica).await {
+            Ok(m) => Ok(m),
+            Err(err) => Err(match err {
+                FluvioError::IoError { source } => match source.kind() {
+                    ErrorKind::TimedOut => {
+                        return Err(FluvioError::PartitionNotFound(
+                            replica.topic.to_string(),
+                            replica.partition,
+                        ))
+                    }
+                    _ => source.into(),
+                },
+                _ => err,
+            }),
+        }?;
 
         let leader_id = partition.spec.leader;
 
