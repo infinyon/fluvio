@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use tracing::{debug, trace};
 
-use fluvio_socket::{ AllMultiplexerSocket, SharedAllMultiplexerSocket };
+use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
 
 #[cfg(feature = "native_tls")]
 use fluvio_future::native_tls::AllDomainConnector;

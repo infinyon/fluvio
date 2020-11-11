@@ -115,7 +115,7 @@ impl FluvioAdmin {
         let (socket, config, versions) = inner_client.split();
         let socket = AllMultiplexerSocket::shared(socket);
 
-        let versioned_socket = VersionedSerialSocket::new(socket.clone(), config, versions);
+        let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
         Ok(Self(versioned_socket))
     }
 

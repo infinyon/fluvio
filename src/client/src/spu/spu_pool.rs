@@ -8,7 +8,7 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket:: {AllMultiplexerSocket, SharedAllMultiplexerSocket };
+use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
 use fluvio_socket::AsyncResponse;
 use crate::FluvioError;
 use crate::client::ClientConfig;

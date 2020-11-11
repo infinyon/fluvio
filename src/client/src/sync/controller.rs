@@ -88,12 +88,12 @@ where
     async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {
         use tokio::select;
 
-        debug!("{} starting dispatch loop",S::LABEL);
+        debug!("{} starting dispatch loop", S::LABEL);
 
         loop {
             // check if shutdown is set
             if self.shutdown.is_set() {
-                debug!("{} shutdown exiting",S::LABEL);
+                debug!("{} shutdown exiting", S::LABEL);
                 break;
             }
 
@@ -133,7 +133,7 @@ where
             }
         }
 
-        debug!("{} terminated",S::LABEL);
+        debug!("{} terminated", S::LABEL);
     }
 
     async fn process_updates(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
