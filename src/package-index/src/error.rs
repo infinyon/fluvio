@@ -21,7 +21,7 @@ pub enum Error {
     ReleaseAlreadyExists(semver::Version, Target),
     #[error("Failed to parse URL")]
     UrlParseError(#[from] url::ParseError),
-    #[error("Invalid platform {0}")]
+    #[error("Invalid target {0}")]
     InvalidPlatform(String),
     #[error(transparent)]
     HttpError(#[from] HttpError),

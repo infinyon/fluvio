@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use fluvio_index::{PackageId, Target, HttpAgent};
+use fluvio_index::{PackageId, HttpAgent};
 
 use crate::CliError;
 use crate::install::{
@@ -45,7 +45,7 @@ impl InstallOpt {
     }
 
     async fn install_plugin(self, agent: &HttpAgent) -> Result<String, CliError> {
-        let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
+        let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
         let id = match self.id.version.as_ref() {
