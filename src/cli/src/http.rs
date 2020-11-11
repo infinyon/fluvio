@@ -22,14 +22,7 @@ pub async fn execute(request: Request) -> Result<Response, Error> {
         .to_string();
     debug!(%host, "Valid hostname:");
 
-    let addr = request
-        .url()
-        .socket_addrs(|| Some(443))?
-        .into_iter()
-        .next()
-        .ok_or_else(|| Error::from_str(StatusCode::BadRequest, "missing valid address"))?;
-    debug!(%addr, "Valid address:");
-
+    let addr: (&str, u16) = (&host, request.url().port_or_known_default().unwrap_or(443));
     let tcp_stream = fluvio_future::net::TcpStream::connect(addr).await?;
     debug!("Established TCP stream");
     let tls_connector = create_tls().await;
