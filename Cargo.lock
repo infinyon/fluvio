@@ -1130,7 +1130,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "http-types",
  "lazy_static",

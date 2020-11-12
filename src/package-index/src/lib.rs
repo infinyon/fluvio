@@ -18,13 +18,12 @@ mod package_id;
 
 pub use http::HttpAgent;
 pub use error::{Error, Result};
-pub use target::Target;
+pub use target::{Target, package_target};
 pub use package_id::{PackageId, GroupName, PackageName, Registry};
 
 pub const INDEX_HOST: &str = "https://packages.fluvio.io/";
 pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1/";
 pub const INDEX_CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const PACKAGE_TARGET: &str = env!("PACKAGE_TARGET");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexMetadata {

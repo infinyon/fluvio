@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use tracing::{debug, instrument};
 
 use semver::Version;
-use fluvio_index::{PackageId, HttpAgent, Target};
+use fluvio_index::{PackageId, HttpAgent};
 use crate::CliError;
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir, install_println,
@@ -30,7 +30,7 @@ impl UpdateOpt {
 
 #[instrument(skip(agent))]
 async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
-    let target = fluvio_index::PACKAGE_TARGET.parse::<Target>()?;
+    let target = fluvio_index::package_target()?;
     let mut id: PackageId = FLUVIO_PACKAGE_ID.parse::<PackageId>()?;
     debug!(%target, %id, "Fluvio CLI updating self:");
 
@@ -79,7 +79,7 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> 
     fields(prefix = agent.base_url())
 )]
 pub async fn check_update_available(agent: &HttpAgent) -> Result<bool, CliError> {
-    let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
+    let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
@@ -101,7 +101,7 @@ pub async fn check_update_available(agent: &HttpAgent) -> Result<bool, CliError>
     fields(prefix = agent.base_url())
 )]
 pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
-    let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
+    let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
@@ -121,7 +121,7 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
     fields(prefix = agent.base_url())
 )]
 pub async fn prompt_available_update(agent: &HttpAgent) -> Result<(), CliError> {
-    let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
+    let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
