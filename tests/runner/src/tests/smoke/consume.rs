@@ -47,7 +47,7 @@ fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
         io::stderr().write_all(&output.stderr).unwrap();
 
         let msg = output.stdout.as_slice();
-        validate_message(*offset, &topic_name, option, &msg[0..msg.len() - 1]);
+        validate_message(i,*offset, &topic_name, option, &msg[0..msg.len() - 1]);
 
         println!("topic: {}, consume message validated!", topic_name);
     }
@@ -97,12 +97,12 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
             let offset = record.offset();
             if let Some(bytes) = record.try_into_bytes() {
                 info!(
-                    "* consumer iter: {}, received offset: {}, message: {}",
+                    "* consumer iter: {}, received offset: {}, bytes: {}",
                     total_records,
                     offset,
                     bytes.len()
                 );
-                validate_message(offset, &topic_name, option, &bytes);
+                validate_message(iteration,offset, &topic_name, option, &bytes);
                 info!(
                     " total records: {}, validated offset: {}",
                     total_records, offset

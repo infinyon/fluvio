@@ -47,24 +47,27 @@ impl TopicController {
     }
 
     async fn dispatch_loop(mut self) {
+        use std::time::Duration;
+
         use tokio::select;
+        use fluvio_future::timer::sleep;
 
         debug!("starting topic controller loop");
-        self.sync_topics().await;
-
+    
         loop {
-            debug!("waiting for events");
+            
+            self.sync_topics().await;
             select! {
-                _ = self.spus.spec_listen() => {
-                    debug!("detected changes in spu spec");
+                // this is hack until we fix listener
+                _ = sleep(Duration::from_secs(60)) => {
+                    debug!("timer expired");
                 },
                 _ = self.topics.spec_listen() => {
                     debug!("detected topic spec changes. topic syncing");
-                    self.sync_topics().await;
+                   
                 },
                 _ = self.topics.status_listen() => {
                     debug!("detected topic status changes, topic syncing");
-                    self.sync_topics().await;
                 }
             }
         }
@@ -72,6 +75,7 @@ impl TopicController {
 
     /// get list of topics we need to check
     async fn sync_topics(&mut self) {
+        debug!("syncing topics");
         let read_guard = self.topics.store().read().await;
         let changes = read_guard.changes_since(self.topic_epoch);
         self.topic_epoch = changes.epoch;
