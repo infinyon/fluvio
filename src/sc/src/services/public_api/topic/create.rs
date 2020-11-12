@@ -58,6 +58,9 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
 
     // validate topic request
     let mut status = validate_topic_request(&name, &topic_spec, &auth_ctx.global_ctx).await;
+    if status.is_error() {
+        return Ok(status);
+    }
     if !dry_run {
         status = process_topic_request(auth_ctx, name, topic_spec).await;
     }
@@ -75,6 +78,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
     let spus = metadata.spus().store();
     // check if topic already exists
     if topics.contains_key(name).await {
+        debug!("topic already exists");
         return Status::new(
             name.to_string(),
             ErrorCode::TopicAlreadyExists,
