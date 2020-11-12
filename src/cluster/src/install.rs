@@ -600,6 +600,7 @@ impl ClusterInstaller {
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     async fn pre_install_check(&self) -> Result<(), ClusterError> {
+        /*
         use colored::*;
 
         let checks: Vec<Box<dyn InstallCheck>> = vec![
@@ -632,6 +633,7 @@ impl ClusterInstaller {
                 Err(err) => return Err(err.into()),
             };
         }
+        */
 
         Ok(())
     }
