@@ -600,6 +600,8 @@ impl ClusterInstaller {
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     async fn pre_install_check(&self) -> Result<(), ClusterError> {
+        use colored::*;
+
         let checks: Vec<Box<dyn InstallCheck>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),
@@ -610,8 +612,9 @@ impl ClusterInstaller {
         for check in checks {
             match check.perform_check().await {
                 Ok(check) => match check {
-                    StatusCheck::Working(_) => {
-                        // do nothing check is fine
+                    StatusCheck::Working(success) => {
+                        let msg = format!("ok: {}", success);
+                        println!("✔️  {}", msg.green());
                     }
                     // unrecoverable error occured, return error
                     StatusCheck::NotWorkingNoRemediation(failure) => return Err(failure.into()),
