@@ -53,9 +53,8 @@ impl TopicController {
         use fluvio_future::timer::sleep;
 
         debug!("starting topic controller loop");
-    
+
         loop {
-            
             self.sync_topics().await;
             select! {
                 // this is hack until we fix listener
@@ -64,7 +63,7 @@ impl TopicController {
                 },
                 _ = self.topics.spec_listen() => {
                     debug!("detected topic spec changes. topic syncing");
-                   
+
                 },
                 _ = self.topics.status_listen() => {
                     debug!("detected topic status changes, topic syncing");

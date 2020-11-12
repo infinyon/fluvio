@@ -599,8 +599,8 @@ impl ClusterInstaller {
     ///
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
+    #[allow(unused)]
     async fn pre_install_check(&self) -> Result<(), ClusterError> {
-        /*
         use colored::*;
 
         let checks: Vec<Box<dyn InstallCheck>> = vec![
@@ -633,7 +633,6 @@ impl ClusterInstaller {
                 Err(err) => return Err(err.into()),
             };
         }
-        */
 
         Ok(())
     }
@@ -692,7 +691,7 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
-        match self.pre_install_check().await {
+        /*match self.pre_install_check().await {
             // If all checks pass, perform the main installation
             Ok(()) => self.install_app()?,
             // If Fluvio is already installed, skip install step
@@ -705,7 +704,9 @@ impl ClusterInstaller {
             }
             // If there were other unhandled errors, return them
             Err(unhandled) => return Err(unhandled),
-        }
+        }*/
+
+        self.install_app()?;
 
         let namespace = &self.config.namespace;
         let sc_address = match self.wait_for_sc_service(namespace).await {

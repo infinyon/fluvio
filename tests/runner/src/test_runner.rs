@@ -104,7 +104,7 @@ impl TestRunner {
         if self.option.produce.produce_iteration > 0 {
             let test_driver = create_test_driver(self.option.clone());
             test_driver.run().await;
-            sleep(Duration::from_millis(200)).await;     // let it sleep
+            sleep(Duration::from_millis(200)).await; // let it sleep
         } else {
             println!("no produce iteration, ending");
         }
