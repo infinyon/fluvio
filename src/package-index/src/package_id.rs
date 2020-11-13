@@ -467,8 +467,7 @@ mod tests {
         let package_id_string = package_id.to_string();
         assert_eq!(
             package_id_string,
-            "https://some.registry.somewhere/v11/\
-            infinyon.super.secret.division/\
+            "infinyon.super.secret.division/\
             project-x-secret-sauce:100.0.0-special-edition"
         );
 
