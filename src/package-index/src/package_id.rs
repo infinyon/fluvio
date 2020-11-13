@@ -145,24 +145,44 @@ deserialize_no_slash_string!(
 );
 
 pub type WithVersion = Version;
-
-#[non_exhaustive]
-pub struct WithoutVersion {}
-
 pub type MaybeVersion = Option<Version>;
 
 /// A unique identifier for a package that describes its registry, group,
-/// name, and version.
+/// name, and (possibly) version.
 ///
-/// A PackageId may be represented as a URL-style path, such as:
+/// There are two different variations of a PackageId, which have different
+/// formatting and parsing rules.
 ///
-/// `<registry>/<group>/<name>:<version>`
+/// 1) A `PackageId<WithVersion>` represents a fully-qualified package
+/// name that also refers to a specific version of the package. It is
+/// rendered (and parsed) as a string in the following form:
 ///
-/// Note that the `<registry>/` portion is optional, and will default to
-/// the value `https://packages.fluvio.io/v1/` if omitted. Therefore, it
-/// is common to write package IDs as:
+/// ```text
+/// <registry>/<group>/<name>:<version>
+/// OR
+/// <group>/<name>:<version>
+/// ```
 ///
-/// `<group>/<name>:<version>`
+/// Note that a `PackageId<WithVersion>` has strong guarantees on its
+/// `FromStr` implementation (and therefore, it's `parse()` rules). This
+/// means that a `PackageId<WithVersion>` is _guaranteed_ to have a version
+/// embedded in it, which can be accessed via `.version()`.
+///
+/// 2) A `PackageId<MaybeVersion>` might or might not contain a version, and
+/// will parse a package string that does OR does not have a version in it.
+/// This is the type you should use if you don't need a version or if you want
+/// to do something different based on whether or not a version is given. An
+/// example of this might be installing a specific version of a package if a
+/// version is given, or defaulting to the latest version if not given.
+///
+/// Valid strings that will parse into a `PackageId<MaybeVersion>` include:
+///
+/// ```text
+/// <registry>/<group>/<name>
+/// <group>/<name>
+/// <registry>/<group>/<name>:<version>
+/// <group>/<name>:<version>
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackageId<V> {
     registry: Option<Registry>,
@@ -176,16 +196,6 @@ impl<T> PackageId<T> {
         match self.registry.as_ref() {
             Some(registry) => registry,
             None => &*DEFAULT_REGISTRY,
-        }
-    }
-
-    /// Add a Version to any PackageId to create a PackageId<WithVersion>
-    pub fn into_versioned(self, version: Version) -> PackageId<WithVersion> {
-        PackageId {
-            registry: self.registry,
-            name: self.name,
-            group: self.group,
-            version,
         }
     }
 
@@ -217,14 +227,24 @@ impl PackageId<WithVersion> {
     }
 }
 
-impl PackageId<WithoutVersion> {
+impl PackageId<MaybeVersion> {
     /// Create a new PackageId with no version info.
     pub fn new_unversioned(name: PackageName, group: GroupName) -> Self {
         PackageId {
             registry: None,
             group,
             name,
-            version: WithoutVersion {},
+            version: None,
+        }
+    }
+
+    /// Add a Version to any PackageId to create a PackageId<WithVersion>
+    pub fn into_versioned(self, version: Version) -> PackageId<WithVersion> {
+        PackageId {
+            registry: self.registry,
+            name: self.name,
+            group: self.group,
+            version,
         }
     }
 }
@@ -232,39 +252,6 @@ impl PackageId<WithoutVersion> {
 impl PackageId<MaybeVersion> {
     pub fn maybe_version(&self) -> Option<&Version> {
         self.version.as_ref()
-    }
-}
-
-impl std::str::FromStr for PackageId<WithoutVersion> {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 {
-            return Err(Error::TooFewSlashes);
-        }
-
-        let name_version_segment = segments.pop().unwrap();
-        let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
-        let name_string = match &name_version_segments[..] {
-            [name_string] => name_string,
-            [name_string, _] => name_string,
-            _ => return Err(Error::InvalidNameVersionSegment),
-        };
-
-        let name: PackageName = name_string.parse()?;
-        let group_string = segments.pop().unwrap();
-        let group: GroupName = group_string.parse()?;
-        let registry = Registry::try_from_segments(&segments);
-
-        let package_id = PackageId {
-            registry,
-            group,
-            name,
-            version: WithoutVersion {},
-        };
-
-        Ok(package_id)
     }
 }
 
@@ -353,19 +340,6 @@ impl fmt::Display for PackageId<WithVersion> {
     }
 }
 
-impl fmt::Display for PackageId<WithoutVersion> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
-        write!(
-            f,
-            "{registry}{group}/{name}",
-            registry = registry,
-            group = self.group.as_str(),
-            name = self.name.as_str(),
-        )
-    }
-}
-
 impl fmt::Display for PackageId<MaybeVersion> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
@@ -405,13 +379,13 @@ impl<'de> Deserialize<'de> for PackageId<WithVersion> {
     }
 }
 
-impl<'de> Deserialize<'de> for PackageId<WithoutVersion> {
+impl<'de> Deserialize<'de> for PackageId<MaybeVersion> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
         where
             D: Deserializer<'de>,
     {
         let string = String::deserialize(deserializer)?;
-        let package_id = match string.parse::<PackageId<WithoutVersion>>() {
+        let package_id = match string.parse::<PackageId<MaybeVersion>>() {
             Ok(pid) => pid,
             Err(e) => {
                 use serde::de::{Unexpected, Error as DeserializeError};

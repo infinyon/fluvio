@@ -25,7 +25,6 @@ pub use package_id::{
     PackageName,
     Registry,
     WithVersion,
-    WithoutVersion,
     MaybeVersion,
 };
 
@@ -129,7 +128,7 @@ impl Package {
             .ok_or(Error::MissingTarget(target))
     }
 
-    fn package_id(&self) -> PackageId<WithoutVersion> {
+    fn package_id(&self) -> PackageId<MaybeVersion> {
         PackageId::new_unversioned(self.name.clone(), self.group.clone())
     }
 

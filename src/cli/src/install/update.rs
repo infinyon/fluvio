@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use tracing::{debug, instrument};
 
 use semver::Version;
-use fluvio_index::{PackageId, HttpAgent, WithoutVersion};
+use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use crate::CliError;
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir, install_println,
@@ -31,7 +31,7 @@ impl UpdateOpt {
 #[instrument(skip(agent))]
 async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId<WithoutVersion> = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fluvio CLI updating self:");
 
     // Find the latest version of this package
@@ -80,7 +80,7 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> 
 )]
 pub async fn check_update_available(agent: &HttpAgent) -> Result<bool, CliError> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId<WithoutVersion> = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
     let request = agent.request_package(&id)?;
@@ -102,7 +102,7 @@ pub async fn check_update_available(agent: &HttpAgent) -> Result<bool, CliError>
 )]
 pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId<WithoutVersion> = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
 
@@ -122,7 +122,7 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
 )]
 pub async fn prompt_available_update(agent: &HttpAgent) -> Result<(), CliError> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId<WithoutVersion> = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target).await?;
 
