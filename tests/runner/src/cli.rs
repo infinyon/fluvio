@@ -77,6 +77,10 @@ pub struct TestOption {
     /// authorization ConfigMap
     #[structopt(long)]
     pub authorization_config_map: Option<String>,
+
+    /// skip pre-install checks
+    #[structopt(long)]
+    skip_checks: bool,
 }
 
 impl TestOption {
@@ -135,5 +139,9 @@ impl TestOption {
 
     pub fn use_cli(&self) -> bool {
         self.produce.produce_iteration == 1
+    }
+
+    pub fn skip_checks(&self) -> bool {
+        self.skip_checks
     }
 }

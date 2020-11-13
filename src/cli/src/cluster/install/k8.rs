@@ -68,6 +68,10 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         builder = builder.with_authorization_config_map(authorization_config_map);
     }
 
+    if opt.skip_checks {
+        builder = builder.with_skip_checks(true);
+    }
+
     let installer = builder.build()?;
     installer.install_fluvio().await?;
     Ok(())
