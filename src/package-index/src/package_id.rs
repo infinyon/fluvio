@@ -10,7 +10,9 @@ pub struct Registry(url::Url);
 
 impl Registry {
     fn try_from_segments(segments: &[&str]) -> Option<Self> {
-        if segments.is_empty() { return None; }
+        if segments.is_empty() {
+            return None;
+        }
 
         let mut reconstructed: String = segments.join("/");
         if !reconstructed.ends_with('/') {
@@ -381,8 +383,8 @@ impl<'de> Deserialize<'de> for PackageId<WithVersion> {
 
 impl<'de> Deserialize<'de> for PackageId<MaybeVersion> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let string = String::deserialize(deserializer)?;
         let package_id = match string.parse::<PackageId<MaybeVersion>>() {
@@ -439,7 +441,7 @@ mod tests {
         assert_eq!(package_id.registry(), &Registry::default());
         assert_eq!(package_id.group.as_str(), "fluvio.io");
         assert_eq!(package_id.name.as_str(), "fluvio");
-        assert_eq!(package_id.version, Some(Version::parse("0.6.0").unwrap()));
+        assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
     }
 
     #[test]
@@ -451,17 +453,16 @@ mod tests {
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
         assert_eq!(package_id.group.as_str(), "fluvio.io");
         assert_eq!(package_id.name.as_str(), "fluvio");
-        assert_eq!(package_id.version, Some(Version::parse("0.6.0").unwrap()));
+        assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
     }
 
     #[test]
     fn test_package_id_idempotent() {
-        let package_id = PackageId {
-            registry: Some("https://some.registry.somewhere/v11/".parse().unwrap()),
-            group: "infinyon.super.secret.division".parse().unwrap(),
-            name: "project-x-secret-sauce".parse().unwrap(),
-            version: Some(Version::parse("100.0.0-special-edition").unwrap()),
-        };
+        let package_id = PackageId::new_versioned(
+            "project-x-secret-sauce".parse().unwrap(),
+            "infinyon.super.secret.division".parse().unwrap(),
+            Version::parse("100.0.0-special-edition").unwrap(),
+        );
 
         let package_id_string = package_id.to_string();
         assert_eq!(

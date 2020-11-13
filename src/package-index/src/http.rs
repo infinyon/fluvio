@@ -48,7 +48,11 @@ impl HttpAgent {
         Ok(package)
     }
 
-    pub fn request_release_download(&self, id: &PackageId<WithVersion>, target: Target) -> Result<Request> {
+    pub fn request_release_download(
+        &self,
+        id: &PackageId<WithVersion>,
+        target: Target,
+    ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}",
             group = &id.group,
@@ -60,7 +64,11 @@ impl HttpAgent {
         Ok(Request::get(url))
     }
 
-    pub fn request_release_checksum(&self, id: &PackageId<WithVersion>, target: Target) -> Result<Request> {
+    pub fn request_release_checksum(
+        &self,
+        id: &PackageId<WithVersion>,
+        target: Target,
+    ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}.sha256",
             group = &id.group,

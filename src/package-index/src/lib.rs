@@ -19,14 +19,7 @@ mod package_id;
 pub use http::HttpAgent;
 pub use error::{Error, Result};
 pub use target::{Target, package_target};
-pub use package_id::{
-    PackageId,
-    GroupName,
-    PackageName,
-    Registry,
-    WithVersion,
-    MaybeVersion,
-};
+pub use package_id::{PackageId, GroupName, PackageName, Registry, WithVersion, MaybeVersion};
 
 pub const INDEX_HOST: &str = "https://packages.fluvio.io/";
 pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1/";
@@ -209,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_serialize_package() {
-        let id = "fluvio/fluvio".parse().unwrap();
+        let id: PackageId<MaybeVersion> = "fluvio/fluvio".parse().unwrap();
         let package = Package::new_binary(&id, "Bob", "A package", "https://github.com");
         let stringified = serde_json::to_string(&package).unwrap();
         assert_eq!(
