@@ -19,7 +19,15 @@ mod package_id;
 pub use http::HttpAgent;
 pub use error::{Error, Result};
 pub use target::{Target, package_target};
-pub use package_id::{PackageId, GroupName, PackageName, Registry};
+pub use package_id::{
+    PackageId,
+    GroupName,
+    PackageName,
+    Registry,
+    WithVersion,
+    WithoutVersion,
+    MaybeVersion,
+};
 
 pub const INDEX_HOST: &str = "https://packages.fluvio.io/";
 pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1/";
@@ -83,7 +91,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn new_binary<S1, S2, S3>(id: &PackageId, author: S1, desc: S2, repo: S3) -> Self
+    pub fn new_binary<S1, S2, S3, V>(id: &PackageId<V>, author: S1, desc: S2, repo: S3) -> Self
     where
         S1: Into<String>,
         S2: Into<String>,
@@ -121,8 +129,8 @@ impl Package {
             .ok_or(Error::MissingTarget(target))
     }
 
-    fn package_id(&self) -> PackageId {
-        PackageId::new(self.name.clone(), self.group.clone())
+    fn package_id(&self) -> PackageId<WithoutVersion> {
+        PackageId::new_unversioned(self.name.clone(), self.group.clone())
     }
 
     /// Adds a new release to this package. This will reject a release if a release by the same version exists.

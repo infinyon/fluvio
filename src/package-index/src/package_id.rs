@@ -2,10 +2,25 @@ use std::fmt;
 use serde::{Serialize, Deserialize, Deserializer};
 use url::Url;
 use crate::Error;
+use semver::Version;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Registry(url::Url);
+
+impl Registry {
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+        if segments.is_empty() { return None; }
+
+        let mut reconstructed: String = segments.join("/");
+        if !reconstructed.ends_with('/') {
+            reconstructed.push('/');
+        }
+        let registry_url = url::Url::parse(&reconstructed).ok()?;
+        let registry = Registry::from(registry_url);
+        Some(registry)
+    }
+}
 
 lazy_static::lazy_static! {
     static ref DEFAULT_REGISTRY: Registry = {
@@ -129,6 +144,13 @@ deserialize_no_slash_string!(
     "package name"
 );
 
+pub type WithVersion = Version;
+
+#[non_exhaustive]
+pub struct WithoutVersion {}
+
+pub type MaybeVersion = Option<Version>;
+
 /// A unique identifier for a package that describes its registry, group,
 /// name, and version.
 ///
@@ -142,32 +164,145 @@ deserialize_no_slash_string!(
 ///
 /// `<group>/<name>:<version>`
 #[derive(Debug, Clone, PartialEq)]
-pub struct PackageId {
+pub struct PackageId<V> {
     registry: Option<Registry>,
     pub group: GroupName,
     pub name: PackageName,
-    pub version: Option<semver::Version>,
+    version: V,
 }
 
-impl PackageId {
-    pub fn new(name: PackageName, group: GroupName) -> PackageId {
-        PackageId {
-            registry: None,
-            group,
-            name,
-            version: None,
-        }
-    }
-
+impl<T> PackageId<T> {
     pub fn registry(&self) -> &Registry {
         match self.registry.as_ref() {
             Some(registry) => registry,
             None => &*DEFAULT_REGISTRY,
         }
     }
+
+    /// Add a Version to any PackageId to create a PackageId<WithVersion>
+    pub fn into_versioned(self, version: Version) -> PackageId<WithVersion> {
+        PackageId {
+            registry: self.registry,
+            name: self.name,
+            group: self.group,
+            version,
+        }
+    }
+
+    pub fn display(&self) -> impl fmt::Display {
+        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
+        format!(
+            "{registry}{group}/{name}",
+            registry = registry,
+            group = self.group.as_str(),
+            name = self.name.as_str(),
+        )
+    }
 }
 
-impl std::str::FromStr for PackageId {
+impl PackageId<WithVersion> {
+    /// Create a new, versioned PackageId.
+    pub fn new_versioned(name: PackageName, group: GroupName, version: Version) -> Self {
+        Self {
+            registry: None,
+            group,
+            name,
+            version,
+        }
+    }
+
+    /// A PackageId<WithVersion> indisputably has a version, no Option required.
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+}
+
+impl PackageId<WithoutVersion> {
+    /// Create a new PackageId with no version info.
+    pub fn new_unversioned(name: PackageName, group: GroupName) -> Self {
+        PackageId {
+            registry: None,
+            group,
+            name,
+            version: WithoutVersion {},
+        }
+    }
+}
+
+impl PackageId<MaybeVersion> {
+    pub fn maybe_version(&self) -> Option<&Version> {
+        self.version.as_ref()
+    }
+}
+
+impl std::str::FromStr for PackageId<WithoutVersion> {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut segments: Vec<&str> = s.split('/').collect();
+        if segments.len() < 2 {
+            return Err(Error::TooFewSlashes);
+        }
+
+        let name_version_segment = segments.pop().unwrap();
+        let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
+        let name_string = match &name_version_segments[..] {
+            [name_string] => name_string,
+            [name_string, _] => name_string,
+            _ => return Err(Error::InvalidNameVersionSegment),
+        };
+
+        let name: PackageName = name_string.parse()?;
+        let group_string = segments.pop().unwrap();
+        let group: GroupName = group_string.parse()?;
+        let registry = Registry::try_from_segments(&segments);
+
+        let package_id = PackageId {
+            registry,
+            group,
+            name,
+            version: WithoutVersion {},
+        };
+
+        Ok(package_id)
+    }
+}
+
+impl std::str::FromStr for PackageId<WithVersion> {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut segments: Vec<&str> = s.split('/').collect();
+        if segments.len() < 2 {
+            return Err(Error::TooFewSlashes);
+        }
+
+        let name_version_segment = segments.pop().unwrap();
+        let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
+        let (name_string, version_string) = match &name_version_segments[..] {
+            [name_string, version_string] => (name_string, version_string),
+            _ => return Err(Error::InvalidNameVersionSegment),
+        };
+
+        let version = Version::parse(version_string)?;
+        let name: PackageName = name_string.parse()?;
+
+        let group_string = segments.pop().unwrap();
+        let group: GroupName = group_string.parse()?;
+        let registry = Registry::try_from_segments(&segments);
+
+        let package_id = PackageId {
+            registry,
+            group,
+            name,
+            version,
+        };
+
+        Ok(package_id)
+    }
+}
+
+impl std::str::FromStr for PackageId<MaybeVersion> {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -185,25 +320,13 @@ impl std::str::FromStr for PackageId {
         };
 
         let version = match version_string {
-            Some(version_string) => Some(semver::Version::parse(version_string)?),
+            Some(version_string) => Some(Version::parse(version_string)?),
             None => None,
         };
         let name: PackageName = name_string.parse()?;
-
         let group_string = segments.pop().unwrap();
         let group: GroupName = group_string.parse()?;
-
-        let registry = if segments.is_empty() {
-            None
-        } else {
-            let mut reconstructed: String = segments.join("/");
-            if !reconstructed.ends_with('/') {
-                reconstructed.push('/');
-            }
-            let registry_url = url::Url::parse(&reconstructed)?;
-            let registry = Registry::from(registry_url);
-            Some(registry)
-        };
+        let registry = Registry::try_from_segments(&segments);
 
         let package_id = PackageId {
             registry,
@@ -216,7 +339,34 @@ impl std::str::FromStr for PackageId {
     }
 }
 
-impl fmt::Display for PackageId {
+impl fmt::Display for PackageId<WithVersion> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
+        write!(
+            f,
+            "{registry}{group}/{name}:{version}",
+            registry = registry,
+            group = self.group.as_str(),
+            name = self.name.as_str(),
+            version = self.version,
+        )
+    }
+}
+
+impl fmt::Display for PackageId<WithoutVersion> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
+        write!(
+            f,
+            "{registry}{group}/{name}",
+            registry = registry,
+            group = self.group.as_str(),
+            name = self.name.as_str(),
+        )
+    }
+}
+
+impl fmt::Display for PackageId<MaybeVersion> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
         let version = self
@@ -226,7 +376,7 @@ impl fmt::Display for PackageId {
             .unwrap_or_else(|| "".to_string());
         write!(
             f,
-            "{registry}{group}/{name}{version}",
+            "{registry}{group}/{name}:{version}",
             registry = registry,
             group = self.group.as_str(),
             name = self.name.as_str(),
@@ -235,13 +385,33 @@ impl fmt::Display for PackageId {
     }
 }
 
-impl<'de> Deserialize<'de> for PackageId {
+impl<'de> Deserialize<'de> for PackageId<WithVersion> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
         D: Deserializer<'de>,
     {
         let string = String::deserialize(deserializer)?;
-        let package_id = match string.parse::<PackageId>() {
+        let package_id = match string.parse::<PackageId<WithVersion>>() {
+            Ok(pid) => pid,
+            Err(e) => {
+                use serde::de::{Unexpected, Error as DeserializeError};
+                return Err(DeserializeError::invalid_value(
+                    Unexpected::Other("Invalid PackageId"),
+                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {}", e),
+                ));
+            }
+        };
+        Ok(package_id)
+    }
+}
+
+impl<'de> Deserialize<'de> for PackageId<WithoutVersion> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        let string = String::deserialize(deserializer)?;
+        let package_id = match string.parse::<PackageId<WithoutVersion>>() {
             Ok(pid) => pid,
             Err(e) => {
                 use serde::de::{Unexpected, Error as DeserializeError};
@@ -291,7 +461,7 @@ mod tests {
 
     #[test]
     fn test_parse_package_id_default_registry() {
-        let package_id: PackageId = "fluvio.io/fluvio:0.6.0".parse().unwrap();
+        let package_id: PackageId<WithVersion> = "fluvio.io/fluvio:0.6.0".parse().unwrap();
         assert_eq!(package_id.registry(), &Registry::default());
         assert_eq!(package_id.group.as_str(), "fluvio.io");
         assert_eq!(package_id.name.as_str(), "fluvio");
@@ -301,7 +471,7 @@ mod tests {
     #[test]
     fn test_parse_package_id_custom_registry() {
         let registry_url = "https://other.registry.io/v2/";
-        let package_id: PackageId = format!("{}/fluvio.io/fluvio:0.6.0", registry_url)
+        let package_id: PackageId<WithVersion> = format!("{}/fluvio.io/fluvio:0.6.0", registry_url)
             .parse()
             .unwrap();
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
@@ -327,7 +497,7 @@ mod tests {
             project-x-secret-sauce:100.0.0-special-edition"
         );
 
-        let parsed_package_id: PackageId = package_id_string.parse().unwrap();
+        let parsed_package_id: PackageId<WithVersion> = package_id_string.parse().unwrap();
         assert_eq!(package_id, parsed_package_id);
     }
 }
