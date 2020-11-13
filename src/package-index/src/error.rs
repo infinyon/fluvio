@@ -22,7 +22,7 @@ pub enum Error {
     #[error("Failed to parse URL")]
     UrlParseError(#[from] url::ParseError),
     #[error("Invalid target {0}")]
-    InvalidPlatform(String),
+    InvalidTarget(String),
     #[error(transparent)]
     HttpError(#[from] HttpError),
     #[error("DANGER: Downloaded package checksum did not match")]

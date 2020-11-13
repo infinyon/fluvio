@@ -3,7 +3,7 @@ use std::io::{ErrorKind, Error as IoError};
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
-use fluvio_index::{HttpAgent, PackageId, Target};
+use fluvio_index::{HttpAgent, PackageId, Target, WithVersion};
 use crate::CliError;
 
 pub mod update;
@@ -18,11 +18,11 @@ fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
 /// Fetches the latest version of the package with the given ID
 #[instrument(
     skip(agent, target, id),
-    fields(%target, %id)
+    fields(%target, id = %id.display())
 )]
-async fn fetch_latest_version(
+async fn fetch_latest_version<T>(
     agent: &HttpAgent,
-    id: &PackageId,
+    id: &PackageId<T>,
     target: Target,
 ) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
@@ -47,14 +47,9 @@ async fn fetch_latest_version(
 )]
 async fn fetch_package_file(
     agent: &HttpAgent,
-    id: &PackageId,
+    id: &PackageId<WithVersion>,
     target: Target,
 ) -> Result<Vec<u8>, CliError> {
-    // This operation requires the ID to have a version
-    if id.version.is_none() {
-        return Err(fluvio_index::Error::MissingVersion.into());
-    }
-
     // Download the package file from the package registry
     let download_request = agent.request_release_download(&id, target)?;
     debug!(url = %download_request.url(), "Requesting package download:");
