@@ -711,11 +711,11 @@ impl ClusterInstaller {
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
         if !self.config.skip_checks {
-            info!("Performing pre-flight checks");
+            println!("Performing pre-flight checks");
             match self.pre_install_check().await {
                 // If all checks pass, perform the main installation
                 Ok(()) => {
-                    info!("All checks passed, proceeding with the installation");
+                    println!("All checks passed, proceeding with the installation");
                     self.install_app()?;
                 }
                 // If Fluvio is already installed, skip install step
@@ -730,7 +730,7 @@ impl ClusterInstaller {
                 Err(unhandled) => return Err(unhandled),
             }
         } else {
-            info!("Skipping pre-flight checks, proceeding with the installation");
+            println!("Skipping pre-flight checks, proceeding with the installation");
             self.install_app()?;
         }
 
