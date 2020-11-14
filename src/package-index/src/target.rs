@@ -40,7 +40,7 @@ impl std::str::FromStr for Target {
             "x86_64-apple-darwin" => Self::X86_64AppleDarwin,
             "x86_64-unknown-linux-musl" => Self::X86_64UnknownLinuxMusl,
             "x86_64-unknown-linux-gnu" => Self::X86_64UnknownLinuxMusl,
-            invalid => return Err(Error::InvalidPlatform(invalid.to_string())),
+            invalid => return Err(Error::InvalidTarget(invalid.to_string())),
         };
         Ok(platform)
     }
