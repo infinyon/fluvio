@@ -1,6 +1,5 @@
 mod install;
 mod uninstall;
-mod minikube;
 mod util;
 mod check;
 mod releases;
@@ -9,7 +8,6 @@ pub use process::process_cluster;
 
 use structopt::StructOpt;
 
-use minikube::SetMinikubeContext;
 pub use install::InstallCommand;
 use uninstall::UninstallCommand;
 use check::CheckCommand;
@@ -19,10 +17,6 @@ use releases::ReleasesCommand;
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
 pub enum ClusterCommands {
-    /// Set kubectl's active context to use Minikube for Fluvio
-    #[structopt(name = "set-minikube-context")]
-    SetMinikubeContext(SetMinikubeContext),
-
     /// Install a Fluvio cluster, locally or on Minikube
     #[structopt(name = "install")]
     Install(InstallCommand),
@@ -49,7 +43,6 @@ mod process {
 
     use install::process_install;
     use uninstall::process_uninstall;
-    use minikube::process_minikube_context;
     use check::run_checks;
     use releases::process_releases;
 
@@ -61,7 +54,6 @@ mod process {
         O: Terminal,
     {
         match cmd {
-            ClusterCommands::SetMinikubeContext(ctx) => process_minikube_context(ctx),
             ClusterCommands::Install(install) => process_install(out, install).await,
             ClusterCommands::Uninstall(uninstall) => process_uninstall(out, uninstall).await,
             ClusterCommands::Check(check) => run_checks(check).await,
