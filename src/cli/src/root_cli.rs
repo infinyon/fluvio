@@ -28,109 +28,133 @@ use super::profile::ProfileCommand;
 use super::cluster::ClusterCommands;
 use super::partition::PartitionOpt;
 use crate::install::update::UpdateOpt;
+use crate::install::plugins::InstallOpt;
 
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 use super::run::{process_run, RunOpt};
 
+/// Fluvio Command Line Interface
 #[derive(Debug, StructOpt)]
 #[structopt(
     about = "Fluvio Command Line Interface",
     name = "fluvio",
     template = COMMAND_TEMPLATE,
+    max_term_width = 80,
     global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
 )]
 enum Root {
-    #[structopt(
-        no_version,
-        name = "consume",
-        template = COMMAND_TEMPLATE,
-        about = "Reads messages from a topic/partition"
-    )]
+    /// Reads messages from a topic/partition
+    ///
+    /// By default, this activates in "follow" mode, where
+    /// the command will hang and continue to wait for new
+    /// messages, printing them as they arrive. You can use
+    /// the `-d` switch to consume all available messages,
+    /// but exit upon reaching the end of the stream.
+    #[structopt(name = "consume")]
     Consume(ConsumeLogOpt),
 
-    #[structopt(
-        name = "produce",
-        template = COMMAND_TEMPLATE,
-        about = "Writes messages to a topic/partition"
-    )]
+    /// Writes messages to a topic/partition
+    ///
+    /// By default, this reads a single line from stdin to
+    /// use as the message. If you run this with no file options,
+    /// the command will hang until you type a line in the terminal.
+    /// Alternatively, you can pipe a message into the command
+    /// like this:
+    ///
+    /// $ echo "Hello, world" | fluvio produce greetings
+    #[structopt(name = "produce")]
     Produce(ProduceLogOpt),
 
-    #[structopt(
-        name = "spu",
-        template = COMMAND_TEMPLATE,
-        about = "SPU operations"
-    )]
+    /// Manage and view Streaming Processing Units (SPUs)
+    ///
+    /// SPUs make up the part of a Fluvio cluster which is in charge
+    /// of receiving messages from producers, storing those messages,
+    /// and relaying them to consumers. This command lets you see
+    /// the status of SPUs in your cluster.
+    #[structopt(name = "spu")]
     SPU(SpuOpt),
 
-    #[structopt(
-        name = "spu-group",
-        template = COMMAND_TEMPLATE,
-        about = "SPU group operations"
-    )]
+    /// Manage and view SPU Groups (SPGs)
+    ///
+    /// SPGs are groups of SPUs in a cluster which are managed together.
+    #[structopt(name = "spg")]
     SPUGroup(SpuGroupOpt),
 
-    #[structopt(
-        name = "custom-spu",
-        template = COMMAND_TEMPLATE,
-        about = "Custom SPU operations"
-    )]
+    /// Manage and view "custom SPUs", operated outside a cluster
+    ///
+    /// A "custom SPU" is just a SPU which exists outside of a typical
+    /// Fluvio cluster. As opposed to a regular "managed" SPU, you are
+    /// responsible for operating and maintaining custom SPUs.
+    ///
+    /// This command lets you register and unregister custom SPUs, which tells
+    /// the Streaming Controller (SC) of the cluster whether to - and how to -
+    /// direct streaming traffic to those SPUs.
+    #[structopt(name = "custom-spu")]
     CustomSPU(CustomSpuOpt),
 
-    #[structopt(
-        name = "topic",
-        template = COMMAND_TEMPLATE,
-        about = "Topic operations"
-    )]
+    /// Manage and view Topics
+    ///
+    /// A Topic is essentially the name of a stream which carries messages that
+    /// are related to each other. Similar to the role of tables in a relational
+    /// database, the names and contents of Topics will typically reflect the
+    /// structure of the application domain they are used for.
+    #[structopt(name = "topic")]
     Topic(TopicOpt),
 
-    #[structopt(
-        name = "partition",
-        template = COMMAND_TEMPLATE,
-        about = "Partition operations"
-    )]
+    /// Manage and view Partitions
+    ///
+    /// Partitions are a way to divide the total traffic of a single Topic into
+    /// separate streams which may be processed independently. Data sent to different
+    /// partitions may be processed by separate SPUs on different computers. By
+    /// dividing the load of a Topic evenly among partitions, you can increase the
+    /// total throughput of the Topic.
+    #[structopt(name = "partition")]
     Partition(PartitionOpt),
 
-    #[structopt(
-        name = "profile",
-        template = COMMAND_TEMPLATE,
-        about = "Profile operations"
-    )]
+    /// Manage Profiles, which describe linked clusters
+    ///
+    /// Each Profile describes a particular Fluvio cluster you may be connected to.
+    /// This might correspond to Fluvio running on Minikube or in the Cloud.
+    /// There is one "active" profile, which determines which cluster all of the
+    /// Fluvio CLI commands interact with.
+    #[structopt(name = "profile")]
     Profile(ProfileCommand),
 
-    #[structopt(
-        name = "cluster",
-        template = COMMAND_TEMPLATE,
-        about = "Cluster operations"
-    )]
+    /// Install or uninstall Fluvio clusters
+    ///
+    /// If you are not using Fluvio Cloud, you may wish to install your own Fluvio
+    /// cluster, running either directly on your computer (local), or hosted inside
+    /// of a Minikube kubernetes environment. These cluster commands will help you
+    /// to set up these types of installations.
+    #[structopt(name = "cluster")]
     Cluster(ClusterCommands),
 
+    /// Run a Streaming Controller (SC) or SPU
     #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-    #[structopt(about = "Run cluster component")]
+    #[structopt(name = "run")]
     Run(RunOpt),
 
-    #[structopt(
-        name = "install",
-        template = COMMAND_TEMPLATE,
-        about = "Install Fluvio plugins"
-    )]
+    /// Install Fluvio plugins
+    ///
+    /// The Fluvio CLI considers any executable with the prefix `fluvio-` to be a
+    /// CLI plugin. For example, an executable named `fluvio-foo` in your PATH may
+    /// be invoked by running `fluvio foo`.
+    ///
+    /// This command allows you to install plugins from Fluvio's package registry.
+    #[structopt(name = "install")]
     Install(InstallOpt),
 
-    #[structopt(
-        name = "update",
-        template = COMMAND_TEMPLATE,
-        about = "Update the Fluvio CLI and plugins"
-    )]
+    /// Update the Fluvio CLI
+    #[structopt(name = "update")]
     Update(UpdateOpt),
 
-    #[structopt(
-        name = "version",
-        about = "Prints the current fluvio version information"
-    )]
+    /// Print Fluvio version information
+    #[structopt(name = "version")]
     Version(VersionCmd),
 
+    /// Generate command-line completions for Fluvio
     #[structopt(
         name = "completions",
-        about = "Generate command-line completions for Fluvio",
         settings = &[AppSettings::Hidden]
     )]
     Completions(CompletionShell),
@@ -167,7 +191,6 @@ pub fn run_cli(args: &[String]) -> eyre::Result<String> {
 }
 
 use crate::Terminal;
-use crate::install::plugins::InstallOpt;
 
 struct PrintTerminal {}
 

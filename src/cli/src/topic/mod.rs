@@ -27,31 +27,31 @@ mod cli {
     #[derive(Debug, StructOpt)]
     #[structopt(name = "topic", about = "Topic operations")]
     pub enum TopicOpt {
+        /// Creates a Topic with the given name
         #[structopt(
             name = "create",
             template = COMMAND_TEMPLATE,
-            about = "Creates a topic"
         )]
         Create(CreateTopicOpt),
 
+        /// Deletes a Topic with the given name
         #[structopt(
             name = "delete",
             template = COMMAND_TEMPLATE,
-            about = "Deletes a topic"
         )]
         Delete(DeleteTopicOpt),
 
+        /// Prints detailed information about a Topic
         #[structopt(
             name = "describe",
             template = COMMAND_TEMPLATE,
-            about = "Shows details of a topic"
         )]
         Describe(DescribeTopicsOpt),
 
+        /// Lists all of the Topics in the cluster
         #[structopt(
             name = "list",
             template = COMMAND_TEMPLATE,
-            about = "Shows all topics"
         )]
         List(ListTopicsOpt),
     }

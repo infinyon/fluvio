@@ -25,24 +25,24 @@ mod cli {
 
     #[derive(Debug, StructOpt)]
     pub enum CustomSpuOpt {
+        /// Registers a new custom SPU with the cluster
         #[structopt(
             name = "register",
             template = COMMAND_TEMPLATE,
-            about = "Create custom SPU"
         )]
         Create(RegisterCustomSpuOpt),
 
+        /// Unregisters a custom SPU from the cluster
         #[structopt(
             name = "unregister",
             template = COMMAND_TEMPLATE,
-            about = "Delete custom SPU"
         )]
         Delete(UnregisterCustomSpuOpt),
 
+        /// List all custom SPUs known by this cluster
         #[structopt(
             name = "list",
             template = COMMAND_TEMPLATE,
-            about = "List custom SPUs"
         )]
         List(ListCustomSpusOpt),
     }
