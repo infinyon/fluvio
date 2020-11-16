@@ -1,7 +1,6 @@
 use std::time::Duration;
-use std::time::Instant;
-use std::fmt::Debug;
-use std::fmt::Display;
+use std::fmt;
+use std::fmt::{ Debug, Display};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
@@ -9,11 +8,13 @@ use futures_lite::stream::StreamExt;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+use tracing::trace;
 use tracing::instrument;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use once_cell::sync::Lazy;
 
-use fluvio_types::defaults::SC_RECONCILIATION_INTERVAL_SEC;
+
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 
@@ -33,6 +34,15 @@ use crate::actions::WSAction;
 use convert::*;
 use super::*;
 
+
+static SC_RECONCILIATION_INTERVAL_SEC: Lazy<u64> = Lazy::new(|| {
+    use std::env;
+
+    let var_value = env::var("FLV_SC_RECONCILIATION_INTERVAL").unwrap_or_default();
+    let wait_time: u64 = var_value.parse().unwrap_or_else(|_| 60);
+    wait_time
+});
+
 /// For each spec, process updates from Kubernetes metadata
 pub struct K8ClusterStateDispatcher<S, C>
 where
@@ -45,6 +55,18 @@ where
     namespace: NameSpace,
     ctx: StoreContext<S>,
     ws_update_service: K8WSUpdateService<C, S>,
+}
+
+impl <S,C> Debug for  K8ClusterStateDispatcher<S,C> 
+    where 
+        S: K8ExtendedSpec,
+        <S as Spec>::Owner: K8ExtendedSpec,
+        S::Status: PartialEq,
+        S::IndexKey: Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} K8StateDispatcher",S::LABEL)
+    }
 }
 
 impl<S, C> K8ClusterStateDispatcher<S, C>
@@ -76,9 +98,7 @@ where
     }
 
     #[instrument(
-        skip(self),
         fields(
-            spec = S::LABEL,
             namespace = self.namespace.named(),
         )
     )]
@@ -91,7 +111,7 @@ where
     }
 
     ///
-    /// Kubernetes Dispatcher Event Loop
+    /// Main Event Loop
     ///
     #[instrument(skip(self))]
     async fn inner_loop(&mut self) {
@@ -110,28 +130,26 @@ where
 
         let client = self.client.clone();
 
-        let mut reconcile_time_left = Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC);
+        let mut reconcile_timer = sleep(Duration::from_secs(*SC_RECONCILIATION_INTERVAL_SEC));
 
         // create watch streams
         let mut k8_stream =
             client.watch_stream_since::<S::K8Spec, _>(self.namespace.clone(), resume_stream);
 
         loop {
-            let reconcile_time_mark = Instant::now();
-            debug!(
-                time_left = reconcile_time_left.as_secs(),
-                "waiting events for ws/k8"
-            );
+            
+            debug!("dispatcher waiting");
             let ws_receiver = self.ctx.receiver();
 
             select! {
-                _ = sleep(reconcile_time_left) => {
-                    debug!("timer fired - kickoff re-sync all");
+                _ = &mut reconcile_timer => {
+                    debug!("reconcillation timer fired - kickoff re-sync all");
                     break;
                 },
 
                 k8_result = k8_stream.next() =>  {
 
+                    trace!("received K8 stream next");
                     if let Some(result) = k8_result {
                         match result {
                             Ok(auth_token_msgs) => {
@@ -148,7 +166,7 @@ where
                                         self.ctx.notify_status_changes();
                                     }
                                 } else {
-                                    debug!("{}, no changes to applying changes to watch events",S::LABEL);
+                                    debug!( "no changes to applying changes to watch events");
                                 }
 
                             }
@@ -156,11 +174,10 @@ where
                         }
 
                     } else {
-                        debug!("SPU stream terminated, during update auth-token processing... reconnecting");
+                        debug!("k8 stream terminated, exiting event loop");
                         break;
                     }
 
-                    reconcile_time_left -= reconcile_time_mark.elapsed();
                 },
 
                 msg = ws_receiver.recv() => {
@@ -174,9 +191,6 @@ where
                             panic!(-1);
                         }
                     }
-
-                    reconcile_time_left -= reconcile_time_mark.elapsed();
-
                 }
 
             }

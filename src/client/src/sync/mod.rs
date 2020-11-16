@@ -121,7 +121,6 @@ mod context {
                 RwLockReadGuard<'a, DualEpochMap<S::IndexKey, CacheMetadataStoreObject<S>>>,
             ) -> Option<CacheMetadataStoreObject<S>>,
         {
-            use std::time::Instant;
             use std::time::Duration;
             use std::io::Error as IoError;
             use std::io::ErrorKind;
@@ -131,21 +130,20 @@ mod context {
 
             const TIMER_DURATION: u64 = 300;
 
-            let mut time_left = Duration::from_millis(TIMER_DURATION);
+            let mut timer = (Duration::from_millis(TIMER_DURATION));
 
             loop {
-                debug!("{} checking to see if exists", S::LABEL);
+                debug!( SPEC = S::LABEL, "checking to see if exists");
                 if let Some(value) = search(self.store().read().await) {
-                    debug!("{} found value", S::LABEL);
+                    debug!( SPEC = S::LABEL, "found value");
                     return Ok(value);
                 } else {
-                    debug!("{} value not found, waiting", S::LABEL);
-                    let current_time = Instant::now();
-
+                    debug!(SPEC = S::LABEL, "value not found, waiting");
+                    
                     select! {
 
-                        _ = sleep(time_left) => {
-                            debug!("store {}: look up timeout expired",S::LABEL);
+                        _ = &mut timer => {
+                            debug!( SPEC = S::LABEL, "store look up timeout expired");
                             return Err(IoError::new(
                                 ErrorKind::TimedOut,
                                 format!("{} store lookup failed due to timeout",S::LABEL),
@@ -154,8 +152,7 @@ mod context {
 
                         _ = self.listen() => {
 
-                            time_left -= current_time.elapsed();
-                            debug!("{} store updated",S::LABEL);
+                            debug!( SPEC = S::LABEL, "store updated");
                         }
 
                     }
