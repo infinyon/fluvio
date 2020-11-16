@@ -130,16 +130,16 @@ mod context {
 
             const TIMER_DURATION: u64 = 300;
 
-            let mut timer = (Duration::from_millis(TIMER_DURATION));
+            let mut timer = sleep(Duration::from_millis(TIMER_DURATION));
 
             loop {
-                debug!( SPEC = S::LABEL, "checking to see if exists");
+                debug!(SPEC = S::LABEL, "checking to see if exists");
                 if let Some(value) = search(self.store().read().await) {
-                    debug!( SPEC = S::LABEL, "found value");
+                    debug!(SPEC = S::LABEL, "found value");
                     return Ok(value);
                 } else {
                     debug!(SPEC = S::LABEL, "value not found, waiting");
-                    
+
                     select! {
 
                         _ = &mut timer => {

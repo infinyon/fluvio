@@ -1,6 +1,6 @@
 use std::time::Duration;
 use std::fmt;
-use std::fmt::{ Debug, Display};
+use std::fmt::{Debug, Display};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
@@ -13,7 +13,6 @@ use tracing::instrument;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use once_cell::sync::Lazy;
-
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
@@ -33,7 +32,6 @@ use crate::actions::WSAction;
 
 use convert::*;
 use super::*;
-
 
 static SC_RECONCILIATION_INTERVAL_SEC: Lazy<u64> = Lazy::new(|| {
     use std::env;
@@ -57,15 +55,15 @@ where
     ws_update_service: K8WSUpdateService<C, S>,
 }
 
-impl <S,C> Debug for  K8ClusterStateDispatcher<S,C> 
-    where 
-        S: K8ExtendedSpec,
-        <S as Spec>::Owner: K8ExtendedSpec,
-        S::Status: PartialEq,
-        S::IndexKey: Debug,
+impl<S, C> Debug for K8ClusterStateDispatcher<S, C>
+where
+    S: K8ExtendedSpec,
+    <S as Spec>::Owner: K8ExtendedSpec,
+    S::Status: PartialEq,
+    S::IndexKey: Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} K8StateDispatcher",S::LABEL)
+        write!(f, "{} K8StateDispatcher", S::LABEL)
     }
 }
 
@@ -137,7 +135,6 @@ where
             client.watch_stream_since::<S::K8Spec, _>(self.namespace.clone(), resume_stream);
 
         loop {
-            
             debug!("dispatcher waiting");
             let ws_receiver = self.ctx.receiver();
 

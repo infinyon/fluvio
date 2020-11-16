@@ -24,7 +24,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
     _dry_run: bool,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    debug!("creating spu group: {}, replica: {}", name,spec.replicas);
+    debug!("creating spu group: {}, replica: {}", name, spec.replicas);
 
     if let Ok(authorized) = auth_ctx
         .auth

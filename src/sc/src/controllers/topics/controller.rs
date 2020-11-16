@@ -58,7 +58,7 @@ impl TopicController {
 
         loop {
             self.sync_topics().await;
-            
+
             select! {
                 // this is hack until we fix listener
                 _ = &mut timer => {
