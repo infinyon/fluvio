@@ -32,7 +32,7 @@ impl TestRunner {
                 .arg(&topic_name)
                 .arg("--replication")
                 .arg(self.option.replication().to_string())
-                .rust_log(self.option.rust_log.as_deref())
+                .rust_log(self.option.client_log.as_deref())
                 .wait_and_check();
 
             println!("topic: {}, created", topic_name);

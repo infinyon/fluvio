@@ -175,7 +175,7 @@ mod cli {
 
         let mut child = get_fluvio()
             .expect("no fluvio")
-            .rust_log(option.rust_log.as_deref())
+            .rust_log(option.client_log.as_deref())
             .stdin(Stdio::piped())
             .arg("produce")
             .arg(topic_name)

@@ -91,13 +91,14 @@ impl ReplicaLeaderController<FileReplica> {
         leader_debug!(self, "starting");
         self.send_status_to_sc().await;
         self.sync_followers().await;
+
+        let mut timer = sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC));
         loop {
             leader_debug!(self, "waiting for next command");
 
             select! {
 
-                _ = sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC)) => {
-
+                _ = &mut timer => {
 
                     self.sync_followers().await;
                 },

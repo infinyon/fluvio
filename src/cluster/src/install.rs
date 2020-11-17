@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use std::process::Stdio;
 use std::fs::File;
 
-use tracing::{info, warn, debug, trace, instrument};
+use tracing::{info, warn, debug, error, instrument};
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
@@ -754,6 +754,7 @@ impl ClusterInstaller {
         }
 
         if self.config.spu_spec.replicas > 0 {
+            debug!("waiting for SC to spin up");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
 
@@ -819,7 +820,7 @@ impl ClusterInstaller {
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
     fn install_app(&self) -> Result<(), ClusterError> {
-        trace!(
+        debug!(
             "Installing fluvio with the following configuration: {:#?}",
             &self.config
         );
@@ -971,7 +972,7 @@ impl ClusterInstaller {
                 attempt = i,
                 "no SC service found, sleeping for {} ms", sleep_ms
             );
-            sleep(Duration::from_millis(sleep_ms)).await
+            sleep(Duration::from_millis(sleep_ms)).await;
         }
 
         Err(ClusterError::SCServiceTimeout)
@@ -983,13 +984,14 @@ impl ClusterInstaller {
         for i in 0..12 {
             let sock_addr = self.wait_for_sc_dns(&sock_addr_str).await?;
             if TcpStream::connect(&*sock_addr).await.is_ok() {
+                info!(sock_addr = %sock_addr_str, "finished SC port check");
                 return Ok(());
             }
             let sleep_ms = 1000 * 2u64.pow(i as u32);
             info!(attempt = i, "sc port closed, sleeping for {} ms", sleep_ms);
-            sleep(Duration::from_millis(sleep_ms)).await
+            sleep(Duration::from_millis(sleep_ms)).await;
         }
-
+        error!(sock_addr = %sock_addr_str, "timeout for SC port check");
         Err(ClusterError::SCPortCheckTimeout)
     }
 
@@ -998,21 +1000,25 @@ impl ClusterInstaller {
         &self,
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, ClusterError> {
-        info!("waiting for SC dns resolution");
+        info!("waiting for SC dns resolution: {}", sock_addr_string);
         for i in 0..12 {
             match resolve(sock_addr_string).await {
-                Ok(sock_addr) => return Ok(sock_addr),
+                Ok(sock_addr) => {
+                    debug!("finished SC dns resolution: {}", sock_addr_string);
+                    return Ok(sock_addr);
+                }
                 Err(err) => {
                     let sleep_ms = 1000 * 2u64.pow(i as u32);
                     info!(
                         attempt = i,
                         "SC dns resoultion failed {}, sleeping for {} ms", err, sleep_ms
                     );
-                    sleep(Duration::from_millis(sleep_ms)).await
+                    sleep(Duration::from_millis(sleep_ms)).await;
                 }
             }
         }
 
+        error!("timedout sc dns: {}", sock_addr_string);
         Err(ClusterError::SCDNSTimeout)
     }
 
@@ -1100,6 +1106,7 @@ impl ClusterInstaller {
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
     fn update_profile(&self, external_addr: String) -> Result<(), ClusterError> {
+        debug!("updating profile for: {}", external_addr);
         let mut config_file = ConfigFile::load_default_or_new()?;
         let config = config_file.mut_config();
 
@@ -1158,6 +1165,7 @@ impl ClusterInstaller {
         fields(cluster_addr = &*cluster.addr)
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), ClusterError> {
+        debug!("trying to create managed spu: {:#?}", cluster);
         let name = self.config.group_name.clone();
         let fluvio = Fluvio::connect_with_config(cluster).await?;
         let mut admin = fluvio.admin().await;
