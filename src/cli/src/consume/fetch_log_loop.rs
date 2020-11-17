@@ -10,13 +10,13 @@ use std::convert::TryFrom;
 
 use tracing::debug;
 use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
+use futures_lite::StreamExt;
 
 use crate::error::CliError;
 use crate::Terminal;
 
-use super::ConsumeLogConfig;
-use super::process_fetch_topic_response;
-use futures_lite::StreamExt;
+use crate::consume::ConsumeLogOpt;
+use crate::consume::logs_output::process_fetch_topic_response;
 
 // -----------------------------------
 // SPU - Fetch Loop
@@ -27,7 +27,7 @@ use futures_lite::StreamExt;
 pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
     consumer: PartitionConsumer,
-    opt: ConsumeLogConfig,
+    opt: ConsumeLogOpt,
 ) -> Result<(), CliError>
 where
     O: Terminal,

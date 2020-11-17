@@ -4,9 +4,9 @@ use fluvio::config::TlsPolicy;
 
 use crate::CliError;
 
-use super::InstallCommand;
+use super::InstallOpt;
 
-pub async fn install_local(opt: InstallCommand) -> Result<(), CliError> {
+pub async fn install_local(opt: InstallOpt) -> Result<(), CliError> {
     let mut builder = LocalClusterInstaller::new()
         .with_log_dir(opt.log_dir.to_string())
         .with_spu_replicas(opt.spu);

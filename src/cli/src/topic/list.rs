@@ -4,22 +4,16 @@
 //! CLI tree and processing to list Topics
 //!
 
+use std::sync::Arc;
 use structopt::StructOpt;
-
 use tracing::debug;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::Terminal;
-use crate::error::CliError;
-use crate::OutputType;
-use crate::target::ClusterTarget;
-
-#[derive(Debug)]
-pub struct ListTopicsConfig {
-    pub output: OutputType,
-}
+use crate::Result;
+use crate::common::OutputFormat;
 
 // -----------------------------------
 // CLI Options
@@ -28,50 +22,20 @@ pub struct ListTopicsConfig {
 #[derive(Debug, StructOpt)]
 pub struct ListTopicsOpt {
     /// Output
-    #[structopt(
-        short = "o",
-        long = "output",
-        value_name = "type",
-        possible_values = &OutputType::variants(),
-        case_insensitive = true,
-    )]
-    output: Option<OutputType>,
-
     #[structopt(flatten)]
-    target: ClusterTarget,
+    output: OutputFormat,
 }
 
 impl ListTopicsOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
-        let target_server = self.target.load()?;
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        let output_type = self.output.format;
+        debug!("list topics {:#?} ", output_type);
+        let mut admin = fluvio.admin().await;
 
-        Ok((target_server, self.output.unwrap_or_default()))
+        let topics = admin.list::<TopicSpec, _>(vec![]).await?;
+        display::format_response_output(out, topics, output_type)?;
+        Ok(())
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-
-/// Process list topics cli request
-pub async fn process_list_topics<O>(
-    out: std::sync::Arc<O>,
-    opt: ListTopicsOpt,
-) -> Result<String, CliError>
-where
-    O: Terminal,
-{
-    let (target_server, output_type) = opt.validate()?;
-
-    debug!("list topics {:#?} ", output_type);
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-
-    let topics = admin.list::<TopicSpec, _>(vec![]).await?;
-    display::format_response_output(out, topics, output_type)?;
-    Ok("".to_owned())
 }
 
 mod display {

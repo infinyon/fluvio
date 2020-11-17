@@ -1,12 +1,12 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 
-use crate::target::ClusterTarget;
-use crate::CliError;
+use crate::Result;
 use crate::Terminal;
 
 /// Produce log configuration parameters
@@ -64,18 +64,25 @@ pub struct ProduceLogOpt {
         conflicts_with = "record-per-line"
     )]
     record_file: Vec<PathBuf>,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ProduceLogOpt {
-    /// Validate cli options. Generate target-server and produce log configuration.
-    pub fn validate(
-        self,
-    ) -> Result<(FluvioConfig, (ProduceLogConfig, Option<FileRecord>)), CliError> {
-        let target_server = self.target.load()?;
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        let (cfg, file_records) = self.validate()?;
+        let producer = fluvio.topic_producer(&cfg.topic).await?;
 
+        debug!("got producer");
+        if let Some(records) = file_records {
+            produce::produce_file_records(producer, out, cfg, records).await?;
+        } else {
+            produce::produce_from_stdin(producer, cfg).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Validate cli options. Generate target-server and produce log configuration.
+    pub fn validate(self) -> Result<(ProduceLogConfig, Option<FileRecord>)> {
         let file_records = if let Some(record_per_line) = self.record_per_line {
             Some(FileRecord::Lines(record_per_line))
         } else if !self.record_file.is_empty() {
@@ -90,30 +97,8 @@ impl ProduceLogOpt {
             continuous: self.continuous,
         };
 
-        Ok((target_server, (produce_log_cfg, file_records)))
+        Ok((produce_log_cfg, file_records))
     }
-}
-
-/// Process produce record cli request
-pub async fn process_produce_record<O>(
-    out: std::sync::Arc<O>,
-    opt: ProduceLogOpt,
-) -> Result<String, CliError>
-where
-    O: Terminal,
-{
-    let (target_server, (cfg, file_records)) = opt.validate()?;
-    let target = Fluvio::connect_with_config(&target_server).await?;
-    let producer = target.topic_producer(&cfg.topic).await?;
-
-    debug!("got producer");
-    if let Some(records) = file_records {
-        produce::produce_file_records(producer, out, cfg, records).await?;
-    } else {
-        produce::produce_from_stdin(producer, out, cfg).await?;
-    }
-
-    Ok("".to_owned())
 }
 
 #[allow(clippy::module_inception)]
@@ -140,7 +125,7 @@ mod produce {
         out: std::sync::Arc<O>,
         cfg: ProduceLogConfig,
         file: FileRecord,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         let tuples = file_to_records(file).await?;
         for r_tuple in tuples {
             t_println!(out, "{}", r_tuple.0);
@@ -150,11 +135,10 @@ mod produce {
     }
 
     /// Dispatch records based on the content of the record tuples variable
-    pub async fn produce_from_stdin<O: Terminal>(
+    pub async fn produce_from_stdin(
         mut producer: TopicProducer,
-        _out: std::sync::Arc<O>,
         opt: ProduceLogConfig,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         let stdin = stdin();
         let mut lines = BufReader::new(stdin).lines();
         while let Some(line) = lines.next().await {
@@ -188,7 +172,7 @@ mod produce {
     }
 
     /// Retrieve one or more files and converts them into a list of (name, record) touples
-    async fn file_to_records(file_record_options: FileRecord) -> Result<RecordTuples, CliError> {
+    async fn file_to_records(file_record_options: FileRecord) -> Result<RecordTuples> {
         let mut records: RecordTuples = vec![];
 
         match file_record_options {

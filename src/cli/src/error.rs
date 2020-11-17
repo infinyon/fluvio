@@ -3,6 +3,8 @@ use std::io::Error as IoError;
 use fluvio::FluvioError;
 use fluvio_cluster::{ClusterError, CheckError};
 
+pub type Result<T> = std::result::Result<T, CliError>;
+
 #[derive(thiserror::Error, Debug)]
 pub enum CliError {
     #[error(transparent)]

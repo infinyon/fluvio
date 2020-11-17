@@ -20,11 +20,12 @@ mod partition;
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 mod run;
 
-pub use self::error::CliError;
-pub use self::root_cli::run_cli;
+pub use self::error::{Result, CliError};
 
 pub use output::Terminal;
 use output::*;
+
+pub use root_cli::Root;
 
 const VERSION: &str = include_str!("VERSION");
 
