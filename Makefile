@@ -19,6 +19,7 @@ DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 SPU_DELAY=15
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
+SKIP_CHECK=--skip-checks
 
 
 # install all tools required
@@ -34,16 +35,16 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP-CHECK}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG}
 
 smoke-test-tls:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP-CHECK}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG}
 
 # test rbac with ROOT user
 smoke-test-tls-root:	test-clean-up
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP-CHECK}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG}
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
@@ -71,7 +72,7 @@ smoke-test-k8-tls-root:	test-clean-up minikube_image
 		--develop \
 		${TEST_LOG} \
 		--authorization-config-map authorization \
-		${SKIP-CHECK}
+		${SKIP_CHECK}
 
 
 # test rbac
