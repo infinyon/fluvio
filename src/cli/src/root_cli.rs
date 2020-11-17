@@ -131,10 +131,7 @@ impl RootCmd {
             Self::Cluster(cluster) => {
                 cluster.process().await?;
             }
-            #[cfg(any(
-                feature = "cluster_components",
-                feature = "cluster_components_rustls"
-            ))]
+            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
             Self::Run(run) => {
                 run.process().await?;
             }
@@ -229,7 +226,6 @@ pub enum FluvioCmd {
     /// total throughput of the Topic.
     #[structopt(name = "partition")]
     Partition(PartitionCmd),
-
 }
 
 impl FluvioCmd {
