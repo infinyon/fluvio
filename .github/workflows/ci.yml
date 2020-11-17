@@ -146,7 +146,7 @@ jobs:
       #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root
       #    make test-permission-user1-local
         run: |
-          FLV_CMD=true smoke-test
+          FLV_CMD=true make smoke-test
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
