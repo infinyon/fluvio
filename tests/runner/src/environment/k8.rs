@@ -52,7 +52,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             cmd.arg("--develop");
         }
 
-        if let Some(log) = &self.option.rust_log {
+        if let Some(log) = &self.option.server_log {
             cmd.arg("--rust-log").arg(log);
         }
 
@@ -61,10 +61,11 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         sleep(Duration::from_millis(2000)).await;
 
         // display sc pod
-        print_sc_logs();
+        // print_sc_logs();
     }
 }
 
+/*
 fn print_sc_logs() {
     use std::process::Command;
 
@@ -80,3 +81,4 @@ fn print_sc_logs() {
         .print()
         .inherit();
 }
+*/
