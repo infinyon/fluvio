@@ -1,8 +1,11 @@
 use std::convert::TryFrom;
+use std::sync::Arc;
 
-use tracing::{debug, trace};
+use tracing::debug;
+use once_cell::sync::OnceCell;
 
 use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
+use fluvio_future::task::run_block_on;
 
 #[cfg(feature = "native_tls")]
 use fluvio_future::native_tls::AllDomainConnector;
@@ -16,7 +19,6 @@ use crate::TopicProducer;
 use crate::PartitionConsumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
-use crate::sync::MetadataStores;
 use crate::spu::SpuPool;
 
 use super::*;
@@ -26,15 +28,9 @@ pub struct Fluvio {
     socket: SharedAllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
-    spu_pool: SpuPool,
+    spu_pool: OnceCell<Arc<SpuPool>>
 }
 
-impl Drop for Fluvio {
-    fn drop(&mut self) {
-        trace!("dropping fluvio");
-        self.spu_pool.shutdown();
-    }
-}
 
 impl Fluvio {
     /// Creates a new Fluvio client using the current profile from `~/.fluvio/config`
@@ -73,7 +69,7 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        use std::sync::Arc;
+        
 
         let connector = Arc::new(AllDomainConnector::try_from(config.tls.clone())?);
         let config = ClientConfig::new(&config.addr, connector);
@@ -83,15 +79,24 @@ impl Fluvio {
         let (socket, config, versions) = inner_client.split();
         let socket = AllMultiplexerSocket::shared(socket);
 
-        let metadata = MetadataStores::new(&socket).await?;
-        let spu_pool = SpuPool::new(config.clone(), metadata);
-
+        let spu_pool = OnceCell::new();
         Ok(Self {
             socket,
             config,
             versions,
             spu_pool,
         })
+    }
+
+
+    /// lazy get spu pool
+    fn spu_pool(&self) -> Result<Arc<SpuPool>,FluvioError> {
+
+        self.spu_pool.get_or_try_init(|| -> Result<Arc<SpuPool>,FluvioError> {            
+            let pool = run_block_on(SpuPool::start(self.config.clone(),
+            &self.socket));
+            Ok(Arc::new(pool?))
+        }).map(|pool| pool.clone())
     }
 
     /// Creates a new `TopicProducer` for the given topic name
@@ -116,7 +121,7 @@ impl Fluvio {
     ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
-        Ok(TopicProducer::new(topic, self.spu_pool.clone()))
+        Ok(TopicProducer::new(topic,self.spu_pool()?))
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
@@ -150,7 +155,7 @@ impl Fluvio {
         Ok(PartitionConsumer::new(
             topic,
             partition,
-            self.spu_pool.clone(),
+            self.spu_pool()?,
         ))
     }
 

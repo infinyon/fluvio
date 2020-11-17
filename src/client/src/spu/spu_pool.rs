@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use tracing::debug;
+use tracing::{ debug, trace};
 use async_mutex::Mutex;
+
 
 use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
-use fluvio_socket::AsyncResponse;
+use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket, FlvSocketError, AsyncResponse};
 use crate::FluvioError;
 use crate::client::ClientConfig;
 use crate::sync::MetadataStores;
@@ -46,21 +46,32 @@ impl SpuSocket {
 }
 
 /// connection pool to spu
-#[derive(Clone)]
 pub struct SpuPool {
     config: ClientConfig,
     metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
 
+
+impl Drop for SpuPool {
+    fn drop(&mut self) {
+        trace!("dropping spu pool");
+        self.shutdown();
+    }
+}
+
 impl SpuPool {
-    /// create new spu pool from client config template and metadata store
-    pub fn new(config: ClientConfig, metadata: MetadataStores) -> Self {
-        Self {
+
+    /// start synchronize based on pool
+    pub async fn start(config: ClientConfig,sc_socket: &AllMultiplexerSocket) -> Result<Self,FlvSocketError> {
+        
+        let metadata = MetadataStores::start(sc_socket).await?;
+        debug!("starting spu pool");    
+        Ok(Self {
             metadata,
             config,
             spu_clients: Arc::new(Mutex::new(HashMap::new())),
-        }
+        })
     }
 
     /// create new spu socket

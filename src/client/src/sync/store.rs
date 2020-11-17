@@ -20,8 +20,9 @@ pub struct MetadataStores {
 }
 
 impl MetadataStores {
-    /// crete store and set up sync controllers
-    pub async fn new(socket: &AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
+
+    /// start synchronization
+    pub async fn start(socket: &AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
@@ -33,6 +34,8 @@ impl MetadataStores {
 
         Ok(store)
     }
+
+
 
     pub fn spus(&self) -> &StoreContext<SpuSpec> {
         &self.spus

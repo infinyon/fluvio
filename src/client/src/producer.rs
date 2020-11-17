@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::sync::Arc;
 
 use tracing::{debug, trace, instrument};
 use dataplane::ReplicaKey;
@@ -16,11 +17,11 @@ use crate::client::SerialFrame;
 /// each event should be delivered to.
 pub struct TopicProducer {
     topic: String,
-    pool: SpuPool,
+    pool: Arc<SpuPool>,
 }
 
 impl TopicProducer {
-    pub(crate) fn new(topic: String, pool: SpuPool) -> Self {
+    pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
         Self { topic, pool }
     }
 
