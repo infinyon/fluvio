@@ -66,10 +66,14 @@ pub struct TestOption {
     #[structopt(long)]
     develop: bool,
 
-    // rust log
+    // log apply to fluvio client
     #[structopt(long)]
-    pub rust_log: Option<String>,
+    pub client_log: Option<String>,
 
+    // log apply to fluvio
+    #[structopt(long)]
+    pub server_log: Option<String>,
+    
     // log dir
     #[structopt(long)]
     pub log_dir: Option<String>,
