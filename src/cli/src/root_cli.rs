@@ -61,6 +61,107 @@ struct RootOpt {
     global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
 )]
 enum RootCmd {
+    /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
+    #[structopt(flatten)]
+    Fluvio(FluvioCmd),
+
+    /// Manage Profiles, which describe linked clusters
+    ///
+    /// Each Profile describes a particular Fluvio cluster you may be connected to.
+    /// This might correspond to Fluvio running on Minikube or in the Cloud.
+    /// There is one "active" profile, which determines which cluster all of the
+    /// Fluvio CLI commands interact with.
+    #[structopt(name = "profile")]
+    Profile(ProfileCmd),
+
+    /// Install or uninstall Fluvio clusters
+    ///
+    /// If you are not using Fluvio Cloud, you may wish to install your own Fluvio
+    /// cluster, running either directly on your computer (local), or hosted inside
+    /// of a Minikube kubernetes environment. These cluster commands will help you
+    /// to set up these types of installations.
+    #[structopt(name = "cluster")]
+    Cluster(Box<ClusterCmd>),
+
+    /// Run a Streaming Controller (SC) or SPU
+    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
+    #[structopt(name = "run")]
+    Run(RunOpt),
+
+    /// Install Fluvio plugins
+    ///
+    /// The Fluvio CLI considers any executable with the prefix `fluvio-` to be a
+    /// CLI plugin. For example, an executable named `fluvio-foo` in your PATH may
+    /// be invoked by running `fluvio foo`.
+    ///
+    /// This command allows you to install plugins from Fluvio's package registry.
+    #[structopt(name = "install")]
+    Install(InstallOpt),
+
+    /// Update the Fluvio CLI
+    #[structopt(name = "update")]
+    Update(UpdateOpt),
+
+    /// Print Fluvio version information
+    #[structopt(name = "version")]
+    Version(VersionOpt),
+
+    /// Generate command-line completions for Fluvio
+    #[structopt(
+        name = "completions",
+        settings = &[AppSettings::Hidden]
+    )]
+    Completions(CompletionCmd),
+
+    #[structopt(external_subcommand)]
+    External(Vec<String>),
+}
+
+impl RootCmd {
+    pub async fn process(self, root: RootOpt) -> Result<()> {
+        let out = Arc::new(PrintTerminal::new());
+
+        match self {
+            Self::Fluvio(fluvio_cmd) => {
+                fluvio_cmd.process(out, root.target).await?;
+            }
+            Self::Profile(profile) => {
+                profile.process(out).await?;
+            }
+            Self::Cluster(cluster) => {
+                cluster.process().await?;
+            }
+            #[cfg(any(
+                feature = "cluster_components",
+                feature = "cluster_components_rustls"
+            ))]
+            Self::Run(run) => {
+                run.process().await?;
+            }
+            Self::Install(install) => {
+                install.process().await?;
+            }
+            Self::Update(update) => {
+                update.process().await?;
+            }
+            Self::Version(version) => {
+                version.process()?;
+            }
+            Self::Completions(completion) => {
+                completion.process()?;
+            }
+            Self::External(args) => {
+                process_external_subcommand(args)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// All top-level subcommands that require a Fluvio client
+#[derive(StructOpt, Debug)]
+pub enum FluvioCmd {
     /// Reads messages from a topic/partition
     ///
     /// By default, this activates in "follow" mode, where
@@ -129,129 +230,35 @@ enum RootCmd {
     #[structopt(name = "partition")]
     Partition(PartitionCmd),
 
-    /// Manage Profiles, which describe linked clusters
-    ///
-    /// Each Profile describes a particular Fluvio cluster you may be connected to.
-    /// This might correspond to Fluvio running on Minikube or in the Cloud.
-    /// There is one "active" profile, which determines which cluster all of the
-    /// Fluvio CLI commands interact with.
-    #[structopt(name = "profile")]
-    Profile(ProfileCmd),
-
-    /// Install or uninstall Fluvio clusters
-    ///
-    /// If you are not using Fluvio Cloud, you may wish to install your own Fluvio
-    /// cluster, running either directly on your computer (local), or hosted inside
-    /// of a Minikube kubernetes environment. These cluster commands will help you
-    /// to set up these types of installations.
-    #[structopt(name = "cluster")]
-    Cluster(Box<ClusterCmd>),
-
-    /// Run a Streaming Controller (SC) or SPU
-    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-    #[structopt(name = "run")]
-    Run(RunOpt),
-
-    /// Install Fluvio plugins
-    ///
-    /// The Fluvio CLI considers any executable with the prefix `fluvio-` to be a
-    /// CLI plugin. For example, an executable named `fluvio-foo` in your PATH may
-    /// be invoked by running `fluvio foo`.
-    ///
-    /// This command allows you to install plugins from Fluvio's package registry.
-    #[structopt(name = "install")]
-    Install(InstallOpt),
-
-    /// Update the Fluvio CLI
-    #[structopt(name = "update")]
-    Update(UpdateOpt),
-
-    /// Print Fluvio version information
-    #[structopt(name = "version")]
-    Version(VersionOpt),
-
-    /// Generate command-line completions for Fluvio
-    #[structopt(
-        name = "completions",
-        settings = &[AppSettings::Hidden]
-    )]
-    Completions(CompletionCmd),
-
-    #[structopt(external_subcommand)]
-    External(Vec<String>),
 }
 
-impl RootCmd {
-    pub async fn process(self, root: RootOpt) -> Result<()> {
-        let out = Arc::new(PrintTerminal::new());
+impl FluvioCmd {
+    /// Connect to Fluvio and pass the Fluvio client to the subcommand handlers.
+    pub async fn process<O: Terminal>(self, out: Arc<O>, target: ClusterTarget) -> Result<()> {
+        let fluvio_config = target.load()?;
+        let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
 
-        // Match on any command that does NOT require connecting to Fluvio
         match self {
-            Self::Profile(profile) => {
-                profile.process(out).await?;
+            Self::Consume(consume) => {
+                consume.process(out, &fluvio).await?;
             }
-            Self::Cluster(cluster) => {
-                cluster.process().await?;
+            Self::Produce(produce) => {
+                produce.process(out, &fluvio).await?;
             }
-            #[cfg(any(
-                feature = "cluster_components",
-                feature = "cluster_components_rustls"
-            ))]
-            Self::Run(run) => {
-                run.process().await?;
+            Self::SPU(spu) => {
+                spu.process(out, &fluvio).await?;
             }
-            Self::Install(install) => {
-                install.process().await?;
+            Self::SPUGroup(spu_group) => {
+                spu_group.process(out, &fluvio).await?;
             }
-            Self::Update(update) => {
-                update.process().await?;
+            Self::CustomSPU(custom_spu) => {
+                custom_spu.process(out, &fluvio).await?;
             }
-            Self::Version(version) => {
-                version.process()?;
+            Self::Topic(topic) => {
+                topic.process(out, &fluvio).await?;
             }
-            Self::Completions(completion) => {
-                completion.process()?;
-            }
-            Self::External(args) => {
-                process_external_subcommand(args)?;
-            }
-            // Match on commands that DO require connecting to Fluvio
-            other => {
-                let fluvio_config = root.target.load()?;
-                let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
-
-                match other {
-                    Self::Consume(consume) => {
-                        consume.process(out, &fluvio).await?;
-                    }
-                    Self::Produce(produce) => {
-                        produce.process(out, &fluvio).await?;
-                    }
-                    Self::SPU(spu) => {
-                        spu.process(out, &fluvio).await?;
-                    }
-                    Self::SPUGroup(spu_group) => {
-                        spu_group.process(out, &fluvio).await?;
-                    }
-                    Self::CustomSPU(custom_spu) => {
-                        custom_spu.process(out, &fluvio).await?;
-                    }
-                    Self::Topic(topic) => {
-                        topic.process(out, &fluvio).await?;
-                    }
-                    Self::Partition(partition) => {
-                        partition.process(out, &fluvio).await?;
-                    }
-                    // These commands are handled above, before connecting to Fluvio
-                    Self::Profile(_)
-                    | Self::Cluster(_)
-                    | Self::Run(_)
-                    | Self::Install(_)
-                    | Self::Update(_)
-                    | Self::Version(_)
-                    | Self::Completions(_)
-                    | Self::External(_) => unreachable!(),
-                }
+            Self::Partition(partition) => {
+                partition.process(out, &fluvio).await?;
             }
         }
 
