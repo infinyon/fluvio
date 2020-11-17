@@ -20,7 +20,6 @@ pub struct MetadataStores {
 }
 
 impl MetadataStores {
-
     /// start synchronization
     pub async fn start(socket: &AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
@@ -34,8 +33,6 @@ impl MetadataStores {
 
         Ok(store)
     }
-
-
 
     pub fn spus(&self) -> &StoreContext<SpuSpec> {
         &self.spus

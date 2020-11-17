@@ -28,9 +28,8 @@ pub struct Fluvio {
     socket: SharedAllMultiplexerSocket,
     config: ClientConfig,
     versions: Versions,
-    spu_pool: OnceCell<Arc<SpuPool>>
+    spu_pool: OnceCell<Arc<SpuPool>>,
 }
-
 
 impl Fluvio {
     /// Creates a new Fluvio client using the current profile from `~/.fluvio/config`
@@ -69,8 +68,6 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        
-
         let connector = Arc::new(AllDomainConnector::try_from(config.tls.clone())?);
         let config = ClientConfig::new(&config.addr, connector);
         let inner_client = config.connect().await?;
@@ -88,15 +85,14 @@ impl Fluvio {
         })
     }
 
-
     /// lazy get spu pool
-    fn spu_pool(&self) -> Result<Arc<SpuPool>,FluvioError> {
-
-        self.spu_pool.get_or_try_init(|| -> Result<Arc<SpuPool>,FluvioError> {            
-            let pool = run_block_on(SpuPool::start(self.config.clone(),
-            &self.socket));
-            Ok(Arc::new(pool?))
-        }).map(|pool| pool.clone())
+    fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
+        self.spu_pool
+            .get_or_try_init(|| -> Result<Arc<SpuPool>, FluvioError> {
+                let pool = run_block_on(SpuPool::start(self.config.clone(), &self.socket));
+                Ok(Arc::new(pool?))
+            })
+            .map(|pool| pool.clone())
     }
 
     /// Creates a new `TopicProducer` for the given topic name
@@ -121,7 +117,7 @@ impl Fluvio {
     ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
-        Ok(TopicProducer::new(topic,self.spu_pool()?))
+        Ok(TopicProducer::new(topic, self.spu_pool()?))
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
@@ -152,11 +148,7 @@ impl Fluvio {
     ) -> Result<PartitionConsumer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
-        Ok(PartitionConsumer::new(
-            topic,
-            partition,
-            self.spu_pool()?,
-        ))
+        Ok(PartitionConsumer::new(topic, partition, self.spu_pool()?))
     }
 
     /// Provides an interface for managing a Fluvio cluster

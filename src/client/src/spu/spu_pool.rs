@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use tracing::{ debug, trace};
+use tracing::{debug, trace};
 use async_mutex::Mutex;
-
 
 use dataplane::ReplicaKey;
 use dataplane::api::Request;
@@ -52,7 +51,6 @@ pub struct SpuPool {
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
 
-
 impl Drop for SpuPool {
     fn drop(&mut self) {
         trace!("dropping spu pool");
@@ -61,12 +59,13 @@ impl Drop for SpuPool {
 }
 
 impl SpuPool {
-
     /// start synchronize based on pool
-    pub async fn start(config: ClientConfig,sc_socket: &AllMultiplexerSocket) -> Result<Self,FlvSocketError> {
-        
+    pub async fn start(
+        config: ClientConfig,
+        sc_socket: &AllMultiplexerSocket,
+    ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
-        debug!("starting spu pool");    
+        debug!("starting spu pool");
         Ok(Self {
             metadata,
             config,
