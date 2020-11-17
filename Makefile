@@ -70,7 +70,8 @@ smoke-test-k8-tls-root:	test-clean-up minikube_image
 		--tls \
 		--develop \
 		${TEST_LOG} \
-		--authorization-config-map authorization
+		--authorization-config-map authorization \
+		--skip-checks
 
 
 # test rbac

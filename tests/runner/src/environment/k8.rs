@@ -56,6 +56,10 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             cmd.arg("--rust-log").arg(log);
         }
 
+        if self.option.skip_checks() {
+            cmd.arg("--skip-checks");
+        }
+
         cmd.print().inherit();
 
         sleep(Duration::from_millis(2000)).await;

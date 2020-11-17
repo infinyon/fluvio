@@ -139,6 +139,10 @@ pub struct InstallCommand {
 
     #[structopt(long)]
     authorization_config_map: Option<String>,
+
+    /// Whether to skip pre-install checks, defaults to false
+    #[structopt(long)]
+    pub skip_checks: bool,
 }
 
 pub async fn process_install<O>(

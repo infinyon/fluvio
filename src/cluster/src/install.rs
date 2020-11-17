@@ -88,6 +88,8 @@ pub struct ClusterInstallerBuilder {
     client_tls_policy: TlsPolicy,
     /// The authorization ConfigMap name
     authorization_config_map: Option<String>,
+    /// Should the pre install checks be skipped
+    skip_checks: bool,
 }
 
 impl ClusterInstallerBuilder {
@@ -301,6 +303,22 @@ impl ClusterInstallerBuilder {
     /// ```
     pub fn with_save_profile(mut self, save_profile: bool) -> Self {
         self.save_profile = save_profile;
+        self
+    }
+
+    /// Whether to skip pre-install checks before installation. Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_skip_checks(true)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_skip_checks(mut self, skip_checks: bool) -> Self {
+        self.skip_checks = skip_checks;
         self
     }
 
@@ -571,6 +589,7 @@ impl ClusterInstaller {
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
             authorization_config_map: None,
+            skip_checks: false,
         }
     }
 
@@ -691,22 +710,29 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
-        /*match self.pre_install_check().await {
-            // If all checks pass, perform the main installation
-            Ok(()) => self.install_app()?,
-            // If Fluvio is already installed, skip install step
-            Err(ClusterError::PreCheckError {
-                source: CheckError::AlreadyInstalled,
-            }) => {
-                debug!("Fluvio is already installed. Getting SC address");
-                let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
-                return Ok(sc_address);
+        if !self.config.skip_checks {
+            println!("Performing pre-flight checks");
+            match self.pre_install_check().await {
+                // If all checks pass, perform the main installation
+                Ok(()) => {
+                    println!("All checks passed, proceeding with the installation");
+                    self.install_app()?;
+                }
+                // If Fluvio is already installed, skip install step
+                Err(ClusterError::PreCheckError {
+                    source: CheckError::AlreadyInstalled,
+                }) => {
+                    debug!("Fluvio is already installed. Getting SC address");
+                    let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
+                    return Ok(sc_address);
+                }
+                // If there were other unhandled errors, return them
+                Err(unhandled) => return Err(unhandled),
             }
-            // If there were other unhandled errors, return them
-            Err(unhandled) => return Err(unhandled),
-        }*/
-
-        self.install_app()?;
+        } else {
+            println!("Skipping pre-flight checks, proceeding with the installation");
+            self.install_app()?;
+        }
 
         let namespace = &self.config.namespace;
         let sc_address = match self.wait_for_sc_service(namespace).await {
