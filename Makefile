@@ -241,6 +241,10 @@ upload-gh-darwin:
 		--name "fluvio-$(GITHUB_TAG)-$(TARGET_DARWIN)" \
 		--file target/$(TARGET_DARWIN)/release/fluvio
 
+fluvio-package-darwin:
+	target/$(TARGET_DARWIN)/release/fluvio install fluvio/fluvio-package
+	fluvio package --test publish target/$(TARGET_DARWIN)/release/fluvio --version=$(VERSION)
+
 upload-gh-linux:
 	github-release upload \
 		--user ${GITHUB_USER} \
@@ -249,7 +253,9 @@ upload-gh-linux:
 		--name "fluvio-$(GITHUB_TAG)-$(TARGET_LINUX)" \
 		--file target/$(TARGET_LINUX)/release/fluvio
 
-
+fluvio-package-linux:
+	target/$(TARGET_LINUX)/release/fluvio install fluvio/fluvio-package
+	fluvio package --test publish target/$(TARGET_LINUX)/release/fluvio --version=$(VERSION)
 
 delete-gh-release:
 	github-release delete \
