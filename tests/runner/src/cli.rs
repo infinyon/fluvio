@@ -73,7 +73,7 @@ pub struct TestOption {
     // log apply to fluvio
     #[structopt(long)]
     pub server_log: Option<String>,
-    
+
     // log dir
     #[structopt(long)]
     pub log_dir: Option<String>,
