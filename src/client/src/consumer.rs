@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use futures_util::stream::Stream;
 use tracing::debug;
 
@@ -46,11 +48,11 @@ use crate::spu::SpuPool;
 pub struct PartitionConsumer {
     topic: String,
     partition: i32,
-    pool: SpuPool,
+    pool: Arc<SpuPool>,
 }
 
 impl PartitionConsumer {
-    pub(crate) fn new(topic: String, partition: i32, pool: SpuPool) -> Self {
+    pub(crate) fn new(topic: String, partition: i32, pool: Arc<SpuPool>) -> Self {
         Self {
             topic,
             partition,

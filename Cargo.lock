@@ -937,6 +937,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
+ "once_cell",
  "serde",
  "serde_json",
  "thiserror",

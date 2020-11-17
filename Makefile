@@ -19,6 +19,7 @@ DEFAULT_SPU=1
 DEFAULT_ITERATION=5
 SPU_DELAY=15
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
+SKIP_CHECK=--skip-checks
 
 
 # install all tools required
@@ -56,10 +57,10 @@ test-permission-user1-local:
 	
 
 smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop ${TEST_LOG}
+	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop ${TEST_LOG} ${SKIP-CHECK}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop ${TEST_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop ${TEST_LOG} ${SKIP-CHECK}
 
 smoke-test-k8-tls-root:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
@@ -71,7 +72,7 @@ smoke-test-k8-tls-root:	test-clean-up minikube_image
 		--develop \
 		${TEST_LOG} \
 		--authorization-config-map authorization \
-		--skip-checks
+		${SKIP_CHECK}
 
 
 # test rbac
