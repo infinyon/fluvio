@@ -28,7 +28,7 @@ use crate::profile::sync::process_sync;
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
 pub enum ProfileCommand {
-    /// Display the current context
+    /// Print the name of the current context
     #[structopt(name = "current")]
     DisplayCurrent,
 

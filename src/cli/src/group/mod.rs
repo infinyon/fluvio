@@ -25,24 +25,24 @@ mod cli {
 
     #[derive(Debug, StructOpt)]
     pub enum SpuGroupOpt {
+        /// Create a new managed SPU Group
         #[structopt(
             name = "create",
             template = COMMAND_TEMPLATE,
-            about = "Create managed SPU group"
         )]
         Create(CreateManagedSpuGroupOpt),
 
+        /// Delete a managed SPU Group
         #[structopt(
             name = "delete",
             template = COMMAND_TEMPLATE,
-            about = "Delete managed SPU group"
         )]
         Delete(DeleteManagedSpuGroupOpt),
 
+        /// List all managed SPUs
         #[structopt(
             name = "list",
             template = COMMAND_TEMPLATE,
-            about = "List managed SPU groups"
         )]
         List(ListManagedSpuGroupsOpt),
     }

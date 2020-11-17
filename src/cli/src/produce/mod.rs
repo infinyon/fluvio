@@ -29,11 +29,11 @@ pub enum FileRecord {
 
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
-    /// Topic name
+    /// The name of the Topic to produce to
     #[structopt(value_name = "topic")]
     pub topic: String,
 
-    /// Partition id
+    /// The ID of the Partition to produce to
     #[structopt(
         short = "p",
         long = "partition",
@@ -46,7 +46,7 @@ pub struct ProduceLogOpt {
     #[structopt(short = "C", long = "continuous")]
     pub continuous: bool,
 
-    /// Each line is a Record
+    /// Send each line of the file as its own Record
     #[structopt(
         short = "l",
         long = "record-per-line",
@@ -55,13 +55,13 @@ pub struct ProduceLogOpt {
     )]
     record_per_line: Option<PathBuf>,
 
-    /// Entire file is a Record (multiple)
+    /// Send an entire file as a single Record
     #[structopt(
         short = "r",
         long = "record-file",
         value_name = "filename",
         parse(from_os_str),
-        conflicts_with = "record_per_line"
+        conflicts_with = "record-per-line"
     )]
     record_file: Vec<PathBuf>,
 

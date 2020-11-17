@@ -23,11 +23,17 @@ use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
-    /// Topic name
-    #[structopt(value_name = "topic-name")]
+    /// The name of the Topic to create
+    #[structopt(value_name = "name")]
     topic: String,
 
-    /// Number of partitions
+    /// The number of Partitions to give the Topic
+    ///
+    /// Partitions are a way to divide the total traffic of a single Topic into
+    /// separate streams which may be processed independently. Data sent to different
+    /// partitions may be processed by separate SPUs on different computers. By
+    /// dividing the load of a Topic evenly among partitions, you can increase the
+    /// total throughput of the Topic.
     #[structopt(
         short = "p",
         long = "partitions",
@@ -36,7 +42,16 @@ pub struct CreateTopicOpt {
     )]
     partitions: i32,
 
-    /// Replication factor per partition
+    /// The number of full replicas of the Topic to keep
+    ///
+    /// The Replication Factor describes how many copies of
+    /// the Topic's data should be kept. If the Topic has a
+    /// replication factor of 2, then all of the data in the
+    /// Topic must be fully stored on at least 2 separate SPUs.
+    ///
+    /// This applies to each Partition in the Topic. If we have
+    /// 3 partitions and a replication factor of 2, then all 3
+    /// of the partitions must exist on at least 2 SPUs.
     #[structopt(
         short = "r",
         long = "replication",

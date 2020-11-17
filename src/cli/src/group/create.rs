@@ -19,23 +19,23 @@ use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct CreateManagedSpuGroupOpt {
-    /// Managed SPU group name
-    #[structopt(value_name = "string")]
+    /// The name for the new SPU Group
+    #[structopt(value_name = "name")]
     pub name: String,
 
-    /// SPU replicas
+    /// The number of SPUs to create in this SPG
     #[structopt(short, long, value_name = "integer", default_value = "1")]
     pub replicas: u16,
 
-    /// Minimum SPU id (default: 1)
-    #[structopt(long, default_value = "1")]
+    /// Minimum SPU ID
+    #[structopt(long, value_name = "integer", default_value = "1")]
     pub min_id: i32,
 
     /// Rack name
     #[structopt(long, value_name = "string")]
     pub rack: Option<String>,
 
-    /// storage size
+    /// The amount of storage to assign to this SPG
     #[structopt(long, value_name = "string")]
     pub storage_size: Option<String>,
 

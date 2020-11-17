@@ -18,10 +18,10 @@ mod cli {
 
     #[derive(Debug, StructOpt)]
     pub enum SpuOpt {
+        /// List all SPUs known by this cluster (managed AND custom)
         #[structopt(
             name = "list",
             template = COMMAND_TEMPLATE,
-            about = "List custom & managed SPUs"
         )]
         List(ListSpusOpt),
     }
