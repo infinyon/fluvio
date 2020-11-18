@@ -143,7 +143,7 @@ jobs:
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
         run: |
-          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-tls-root
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         # run: |
         #  FLV_CMD=true FLV_SOCKET_WAIT=600 make smoke-test
       - name: Upload logs on Linux

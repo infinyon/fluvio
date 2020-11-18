@@ -60,10 +60,10 @@ test-permission-user1-local:
 	
 
 smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop ${TEST_LOG} ${SKIP-CHECK}
+	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop ${TEST_LOG} ${SKIP_CHECK}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop ${TEST_LOG} ${SKIP-CHECK}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop ${TEST_LOG} ${SKIP_CHECK}
 
 smoke-test-k8-tls-policy:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
@@ -88,11 +88,17 @@ test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
 
-
 test-clean-up:
-	#$(FLUVIO_BIN) cluster uninstall
-	#$(FLUVIO_BIN) cluster uninstall --local
-	#kubectl delete configmap authorization --ignore-not-found
+ifeq ($(UNINSTALL),noclean)
+	echo "no clean"
+else
+	echo "clean up previous installation"
+	$(FLUVIO_BIN) cluster uninstall
+	$(FLUVIO_BIN) cluster uninstall --local
+	kubectl delete configmap authorization --ignore-not-found
+endif
+
+
 
 #
 #  Various Lint tools
