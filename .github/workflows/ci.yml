@@ -213,7 +213,7 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: smoke test k8 tls
         run: | 
-          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-k8-tls-root
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-k8-tls-root
       #  run:  |
       #    FLV_CMD=true FLV_SOCKET_WAIT=600 make smoke-test-k8
       - name: Save logs
