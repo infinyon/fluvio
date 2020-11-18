@@ -960,14 +960,14 @@ impl ClusterInstaller {
     #[instrument(skip(self, ns))]
     async fn wait_for_sc_service(&self, ns: &str) -> Result<String, ClusterError> {
         info!("waiting for SC service");
-        for i in 0..12 {
+        for i in 0..30 {
             if let Some(sock_addr) = self.discover_sc_address(ns).await? {
                 info!(%sock_addr, "found SC service load balancer, discovered SC address");
                 self.wait_for_sc_port_check(&sock_addr).await?;
                 return Ok(sock_addr);
             }
 
-            let sleep_ms = 1000 * 2u64.pow(i as u32);
+            let sleep_ms = 2000;
             info!(
                 attempt = i,
                 "no SC service found, sleeping for {} ms", sleep_ms
