@@ -9,8 +9,8 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
-CLIENT_LOG=warn
-SERVER_LOG=debug
+CLIENT_LOG=trace
+SERVER_LOG=trace
 TEST_LOG=warn
 TEST_BIN_DEBUG=FLV_CMD=true RUST_LOG=$(TEST_LOG)  ./target/debug/flv-test
 TEST_BIN=FLV_CMD=true ./target/debug/flv-test
