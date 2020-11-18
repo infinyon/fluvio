@@ -11,11 +11,9 @@ use std::path::PathBuf;
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-
-use crate::error::CliError;
-use crate::target::ClusterTarget;
+use crate::Result;
 
 // -----------------------------------
 // CLI Options
@@ -23,11 +21,17 @@ use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
-    /// Topic name
-    #[structopt(value_name = "topic-name")]
+    /// The name of the Topic to create
+    #[structopt(value_name = "name")]
     topic: String,
 
-    /// Number of partitions
+    /// The number of Partitions to give the Topic
+    ///
+    /// Partitions are a way to divide the total traffic of a single Topic into
+    /// separate streams which may be processed independently. Data sent to different
+    /// partitions may be processed by separate SPUs on different computers. By
+    /// dividing the load of a Topic evenly among partitions, you can increase the
+    /// total throughput of the Topic.
     #[structopt(
         short = "p",
         long = "partitions",
@@ -36,7 +40,16 @@ pub struct CreateTopicOpt {
     )]
     partitions: i32,
 
-    /// Replication factor per partition
+    /// The number of full replicas of the Topic to keep
+    ///
+    /// The Replication Factor describes how many copies of
+    /// the Topic's data should be kept. If the Topic has a
+    /// replication factor of 2, then all of the data in the
+    /// Topic must be fully stored on at least 2 separate SPUs.
+    ///
+    /// This applies to each Partition in the Topic. If we have
+    /// 3 partitions and a replication factor of 2, then all 3
+    /// of the partitions must exist on at least 2 SPUs.
     #[structopt(
         short = "r",
         long = "replication",
@@ -67,19 +80,26 @@ pub struct CreateTopicOpt {
     /// Validates configuration, does not provision
     #[structopt(short = "d", long)]
     dry_run: bool,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl CreateTopicOpt {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        let dry_run = self.dry_run;
+        let (name, topic_spec) = self.validate()?;
+
+        debug!("creating topic: {} spec: {:#?}", name, topic_spec);
+        let mut admin = fluvio.admin().await;
+        admin.create(name.clone(), dry_run, topic_spec).await?;
+        println!("topic \"{}\" created", name);
+
+        Ok(())
+    }
+
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(FluvioConfig, (String, TopicSpec)), CliError> {
+    fn validate(self) -> Result<(String, TopicSpec)> {
         use fluvio::metadata::topic::PartitionMaps;
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
-
-        let target_server = self.target.load()?;
 
         let topic = if let Some(replica_assign_file) = &self.replica_assignment {
             TopicSpec::Assigned(
@@ -102,28 +122,8 @@ impl CreateTopicOpt {
         };
 
         // return server separately from config
-        Ok((target_server, (self.topic, topic)))
+        Ok((self.topic, topic))
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-
-/// Process create topic cli request
-pub async fn process_create_topic(opt: CreateTopicOpt) -> Result<String, CliError> {
-    let dry_run = opt.dry_run;
-
-    let (target_server, (name, topic_spec)) = opt.validate()?;
-
-    debug!("creating topic: {} spec: {:#?}", name, topic_spec);
-
-    let target = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = target.admin().await;
-
-    admin.create(name.clone(), dry_run, topic_spec).await?;
-
-    Ok(format!("topic \"{}\" created", name))
 }
 
 /// module to load partitions maps from file

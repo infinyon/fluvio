@@ -7,7 +7,7 @@ use fluvio_cluster::ClusterInstaller;
 use fluvio::config::TlsPolicy;
 use super::*;
 
-pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
+pub async fn install_core(opt: InstallOpt) -> Result<(), CliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -68,12 +68,16 @@ pub async fn install_core(opt: InstallCommand) -> Result<(), CliError> {
         builder = builder.with_authorization_config_map(authorization_config_map);
     }
 
+    if opt.skip_checks {
+        builder = builder.with_skip_checks(true);
+    }
+
     let installer = builder.build()?;
     installer.install_fluvio().await?;
     Ok(())
 }
 
-pub fn install_sys(opt: InstallCommand) -> Result<(), CliError> {
+pub fn install_sys(opt: InstallOpt) -> Result<(), CliError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
 
     match opt.k8_config.chart_location {

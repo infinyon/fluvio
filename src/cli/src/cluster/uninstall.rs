@@ -1,11 +1,9 @@
-use crate::Terminal;
-
-use crate::CliError;
 use structopt::StructOpt;
 use fluvio_cluster::ClusterUninstaller;
+use crate::Result;
 
 #[derive(Debug, StructOpt)]
-pub struct UninstallCommand {
+pub struct UninstallOpt {
     #[structopt(long, default_value = "default")]
     namespace: String,
 
@@ -25,24 +23,20 @@ pub struct UninstallCommand {
     sys: bool,
 }
 
-pub async fn process_uninstall<O>(
-    _out: std::sync::Arc<O>,
-    command: UninstallCommand,
-) -> Result<String, CliError>
-where
-    O: Terminal,
-{
-    let uninstaller = ClusterUninstaller::new()
-        .with_namespace(&command.namespace)
-        .with_name(&command.name)
-        .build()?;
-    if command.sys {
-        uninstaller.uninstall_sys()?;
-    } else if command.local {
-        uninstaller.uninstall_local()?;
-    } else {
-        uninstaller.uninstall().await?;
-    }
+impl UninstallOpt {
+    pub async fn process(self) -> Result<()> {
+        let uninstaller = ClusterUninstaller::new()
+            .with_namespace(&self.namespace)
+            .with_name(&self.name)
+            .build()?;
+        if self.sys {
+            uninstaller.uninstall_sys()?;
+        } else if self.local {
+            uninstaller.uninstall_local()?;
+        } else {
+            uninstaller.uninstall().await?;
+        }
 
-    Ok("".to_owned())
+        Ok(())
+    }
 }

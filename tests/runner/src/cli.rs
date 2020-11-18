@@ -66,9 +66,13 @@ pub struct TestOption {
     #[structopt(long)]
     develop: bool,
 
-    // rust log
+    // log apply to fluvio client
     #[structopt(long)]
-    pub rust_log: Option<String>,
+    pub client_log: Option<String>,
+
+    // log apply to fluvio
+    #[structopt(long)]
+    pub server_log: Option<String>,
 
     // log dir
     #[structopt(long)]
@@ -77,6 +81,10 @@ pub struct TestOption {
     /// authorization ConfigMap
     #[structopt(long)]
     pub authorization_config_map: Option<String>,
+
+    /// skip pre-install checks
+    #[structopt(long)]
+    skip_checks: bool,
 }
 
 impl TestOption {
@@ -135,5 +143,9 @@ impl TestOption {
 
     pub fn use_cli(&self) -> bool {
         self.produce.produce_iteration == 1
+    }
+
+    pub fn skip_checks(&self) -> bool {
+        self.skip_checks
     }
 }

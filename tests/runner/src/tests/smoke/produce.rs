@@ -99,6 +99,9 @@ async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
 }
 
 pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
+    use std::time::Duration;
+    use fluvio_future::timer::sleep;
+
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
 
@@ -112,15 +115,16 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &topic_name, &option);
             let len = message.len();
-            info!("producer trying to send iteration: {}", i);
+            info!("trying send: {}, iteration: {}", topic_name, i);
             producer
                 .send_record(message, 0)
                 .await
                 .expect("message sent");
             info!(
-                "produced completed message topic: {}, offset: {},len: {}",
+                "completed send iter: {}, offset: {},len: {}",
                 topic_name, offset, len
             );
+            sleep(Duration::from_millis(10)).await;
         }
     }
 }
@@ -171,7 +175,7 @@ mod cli {
 
         let mut child = get_fluvio()
             .expect("no fluvio")
-            .rust_log(option.rust_log.as_deref())
+            .rust_log(option.client_log.as_deref())
             .stdin(Stdio::piped())
             .arg("produce")
             .arg(topic_name)

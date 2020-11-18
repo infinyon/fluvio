@@ -937,6 +937,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
+ "once_cell",
  "serde",
  "serde_json",
  "thiserror",
@@ -1101,9 +1102,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.8"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "519cd9f4126d14d382dd3ab4c86bb928fa5442af8967849a9eef22d709de69a2"
+checksum = "e520b61ea9fe639893b7bb5956cb955159e771a279ed1af6e3e432ad6d576a7c"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1119,7 +1120,7 @@ dependencies = [
  "native-tls",
  "nix 0.17.0",
  "openssl",
- "pin-project 0.4.27",
+ "pin-project 1.0.1",
  "pin-utils",
  "rustls",
  "thiserror",
@@ -1130,7 +1131,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "http-types",
  "lazy_static",
@@ -1205,7 +1206,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "async-channel",
  "async-lock 1.1.5",
@@ -1397,7 +1398,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1828,9 +1829,9 @@ dependencies = [
 
 [[package]]
 name = "http-types"
-version = "2.7.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffa4e35764a650ce8e709c50e985431eb8963eee7fc793d923134d4aa8e530b4"
+checksum = "6f316f6a06306570e899238d3b85375f350cfceda60ec47807c4164d6e169e58"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1975,9 +1976,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93898a399ecd19973e449693cf8aa7ecba851a4dee99fccfa27fd8813fdea6b5"
+checksum = "0bcecbc006f363a102504e0e35afe2d4d35b4f3edeb4c053545f3479e4fac8ed"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -1992,6 +1993,7 @@ dependencies = [
  "k8-metadata-client",
  "k8-obj-core",
  "k8-obj-metadata",
+ "openssl",
  "pin-utils",
  "rand 0.7.3",
  "rustls",
@@ -2317,9 +2319,9 @@ checksum = "8d3b63360ec3cb337817c2dbd47ab4a0f170d285d8e5a2064600f3def1402397"
 
 [[package]]
 name = "once_cell"
-version = "1.5.0"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95c43eba5c640051fbde86a3377842386a94281df3ff0a5f0365c2075ed5c66f"
+checksum = "13bd41f508810a131401606d54ac32a467c97172d74ba7662562ebba5ad07fa0"
 
 [[package]]
 name = "opaque-debug"
@@ -3368,15 +3370,24 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "0.3.4"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "238ce071d267c5710f9d31451efec16c5ee22de34df17cc05e56cbc92e967117"
+checksum = "b78a366903f506d2ad52ca8dc552102ffdd3e937ba8a227f024dc1d1eae28575"
+dependencies = [
+ "tinyvec_macros",
+]
+
+[[package]]
+name = "tinyvec_macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "0.2.22"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d34ca54d84bf2b5b4d7d31e901a8464f7b60ac145a284fba25ceb801f2ddccd"
+checksum = "a6d7ad61edd59bfcc7e80dababf0f4aed2e6d5e0ba1659356ae889752dfc12ff"
 dependencies = [
  "bytes 0.5.6",
  "fnv",
@@ -3388,9 +3399,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
+checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3602,18 +3613,18 @@ dependencies = [
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fb19cf769fa8c6a80a162df694621ebeb4dafb606470b2b2fce0be40a98a977"
+checksum = "b7f98e67a4d84f730d343392f9bfff7d21e3fca562b9cb7a43b768350beeddc6"
 dependencies = [
  "tinyvec",
 ]
 
 [[package]]
 name = "unicode-segmentation"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e83e153d1053cbb5a118eeff7fd5be06ed99153f00dbcd8ae310c5fb2b22edc0"
+checksum = "db8716a166f290ff49dabc18b44aa407cb7c6dbe1aa0971b44b8a24b0ca35aae"
 
 [[package]]
 name = "unicode-width"

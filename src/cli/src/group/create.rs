@@ -7,11 +7,9 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio::metadata::spg::*;
-
-use crate::error::CliError;
-use crate::target::ClusterTarget;
+use crate::Result;
 
 // -----------------------------------
 // CLI Options
@@ -19,35 +17,40 @@ use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct CreateManagedSpuGroupOpt {
-    /// Managed SPU group name
-    #[structopt(value_name = "string")]
+    /// The name for the new SPU Group
+    #[structopt(value_name = "name")]
     pub name: String,
 
-    /// SPU replicas
+    /// The number of SPUs to create in this SPG
     #[structopt(short, long, value_name = "integer", default_value = "1")]
     pub replicas: u16,
 
-    /// Minimum SPU id (default: 1)
-    #[structopt(long, default_value = "1")]
+    /// Minimum SPU ID
+    #[structopt(long, value_name = "integer", default_value = "1")]
     pub min_id: i32,
 
     /// Rack name
     #[structopt(long, value_name = "string")]
     pub rack: Option<String>,
 
-    /// storage size
+    /// The amount of storage to assign to this SPG
     #[structopt(long, value_name = "string")]
     pub storage_size: Option<String>,
-
-    #[structopt(flatten)]
-    pub target: ClusterTarget,
 }
 
 impl CreateManagedSpuGroupOpt {
-    /// Validate cli options. Generate target-server and create spu group config.
-    fn validate(self) -> Result<(FluvioConfig, (String, SpuGroupSpec)), CliError> {
-        let target_server = self.target.load()?;
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        let (name, spec) = self.validate()?;
+        debug!("creating spg: {}, spec: {:#?}", name, spec);
 
+        let mut admin = fluvio.admin().await;
+        admin.create(name, false, spec).await?;
+
+        Ok(())
+    }
+
+    /// Validate cli options. Generate target-server and create spu group config.
+    fn validate(self) -> Result<(String, SpuGroupSpec)> {
         let storage = self.storage_size.map(|storage_size| StorageConfig {
             size: Some(storage_size),
             ..Default::default()
@@ -66,27 +69,7 @@ impl CreateManagedSpuGroupOpt {
                 spu_config,
             },
         );
-        // return server separately from config
 
-        Ok((target_server, group))
+        Ok(group)
     }
-}
-
-// -----------------------------------
-//  CLI Processing
-// -----------------------------------
-pub async fn process_create_managed_spu_group(
-    opt: CreateManagedSpuGroupOpt,
-) -> Result<(), CliError> {
-    let (target_server, (name, spec)) = opt.validate()?;
-
-    debug!("creating spg: {}, spec: {:#?}", name, spec);
-
-    let target = Fluvio::connect_with_config(&target_server).await?;
-
-    let mut admin = target.admin().await;
-
-    admin.create(name, false, spec).await?;
-
-    Ok(())
 }

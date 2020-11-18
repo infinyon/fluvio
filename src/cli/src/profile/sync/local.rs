@@ -1,14 +1,36 @@
 use std::convert::TryInto;
-use eyre::Context;
+use structopt::StructOpt;
 
-use fluvio::config::*;
+use fluvio::FluvioConfig;
+use fluvio::config::{ConfigFile, LOCAL_PROFILE, Profile};
+use crate::Result;
+use crate::tls::TlsClientOpt;
 
-use crate::{Terminal, CliError};
-use crate::t_println;
-use crate::profile::sync::LocalOpt;
+#[derive(Debug, Default, StructOpt)]
+pub struct LocalOpt {
+    #[structopt(value_name = "host:port", default_value = "localhost:9003")]
+    pub local: String,
+
+    #[structopt(flatten)]
+    pub tls: TlsClientOpt,
+}
+
+impl LocalOpt {
+    pub async fn process(self) -> Result<()> {
+        match set_local_context(self) {
+            Ok(msg) => {
+                println!("{}", msg);
+            }
+            Err(err) => {
+                eprintln!("config creation failed: {}", err);
+            }
+        }
+        Ok(())
+    }
+}
 
 /// create new local cluster and profile
-pub fn set_local_context(local_config: LocalOpt) -> Result<String, CliError> {
+pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
     let local_addr = local_config.local;
     let mut config_file = ConfigFile::load_default_or_new()?;
 
@@ -44,29 +66,4 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String, CliError> {
     config_file.save()?;
 
     Ok(format!("local context is set to: {}", local_addr))
-}
-
-pub fn view_profile<O>(out: std::sync::Arc<O>) -> eyre::Result<()>
-where
-    O: Terminal,
-{
-    let config_file = ConfigFile::load(None).context("Failed to read Fluvio config file")?;
-    t_println!(out, "{:#?}", config_file.config());
-    Ok(())
-}
-
-pub fn display_current_profile<O>(out: std::sync::Arc<O>)
-where
-    O: Terminal,
-{
-    match ConfigFile::load(None) {
-        Ok(config_file) => {
-            if let Some(profile) = config_file.config().current_profile_name() {
-                t_println!(out, "{}", profile);
-            } else {
-                t_println!(out, "no current profile set");
-            }
-        }
-        Err(_) => t_println!(out, "no profile can be founded"),
-    }
 }

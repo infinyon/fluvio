@@ -1,43 +1,89 @@
-mod cli;
-mod logs_output;
+//!
+//! # Consume CLI
+//!
+//! CLI command for Consume operation
+//!
+
+use std::sync::Arc;
+use structopt::StructOpt;
+use structopt::clap::arg_enum;
+
 mod fetch_log_loop;
-mod consume_hdlr;
+mod logs_output;
 
-use consume_hdlr::ConsumeOutputType;
-pub use cli::ConsumeLogOpt;
-pub use cli::ConsumeLogConfig;
-use fetch_log_loop::fetch_log_loop;
+use fluvio::Fluvio;
+use crate::error::CliError;
+use crate::consume::fetch_log_loop::fetch_log_loop;
+use crate::Terminal;
 
-use logs_output::process_fetch_topic_response;
+#[derive(Debug, StructOpt)]
+pub struct ConsumeLogOpt {
+    /// Topic name
+    #[structopt(value_name = "string")]
+    pub topic: String,
 
-pub use process::process_consume_log;
+    /// Partition id
+    #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
+    pub partition: i32,
 
-mod process {
-    use tracing::debug;
+    /// Start reading from beginning
+    #[structopt(short = "B", long = "from-beginning")]
+    pub from_beginning: bool,
 
-    use crate::CliError;
-    use crate::Terminal;
+    /// disable continuous processing of messages
+    #[structopt(short = "d", long)]
+    pub disable_continuous: bool,
 
-    use super::ConsumeLogOpt;
-    use super::fetch_log_loop;
-    use fluvio::Fluvio;
+    /// Offsets can be positive or negative. (Syntax for negative offset: --offset="-1")
+    #[structopt(short, long, value_name = "integer")]
+    pub offset: Option<i64>,
 
-    /// Process Consume log cli request
-    pub async fn process_consume_log<O>(
-        out: std::sync::Arc<O>,
-        opt: ConsumeLogOpt,
-    ) -> Result<String, CliError>
-    where
-        O: Terminal,
-    {
-        let (target_server, cfg) = opt.validate()?;
+    /// Maximum number of bytes to be retrieved
+    #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
+    pub max_bytes: Option<i32>,
 
-        debug!("spu  leader consume config: {:#?}", cfg);
+    /// Suppress items items that have an unknown output type
+    #[structopt(short = "s", long = "suppress-unknown")]
+    pub suppress_unknown: bool,
 
-        let client = Fluvio::connect_with_config(&target_server).await?;
-        let consumer = client.partition_consumer(&cfg.topic, cfg.partition).await?;
-        fetch_log_loop(out, consumer, cfg).await?;
+    /// Output
+    #[structopt(
+        short = "O",
+        long = "output",
+        value_name = "type",
+        possible_values = &ConsumeOutputType::variants(),
+        case_insensitive = true,
+        default_value
+    )]
+    pub output: ConsumeOutputType,
+}
 
-        Ok("".to_owned())
+impl ConsumeLogOpt {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
+        let consumer = fluvio
+            .partition_consumer(&self.topic, self.partition)
+            .await?;
+        fetch_log_loop(out, consumer, self).await?;
+        Ok(())
+    }
+}
+
+// Uses clap::arg_enum to choose possible variables
+arg_enum! {
+    #[derive(Debug, Clone, PartialEq)]
+    #[allow(non_camel_case_types)]
+    pub enum ConsumeOutputType {
+        dynamic,
+        text,
+        binary,
+        json,
+        raw,
+    }
+}
+
+/// Consume output type defaults to text formatting
+impl ::std::default::Default for ConsumeOutputType {
+    fn default() -> Self {
+        ConsumeOutputType::dynamic
     }
 }

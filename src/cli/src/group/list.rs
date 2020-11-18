@@ -3,48 +3,30 @@
 //! CLI tree and processing to list SPU Groups
 //!
 
+use std::sync::Arc;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, FluvioConfig};
+use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
-use crate::output::OutputType;
-use crate::error::CliError;
+use crate::Result;
 use crate::Terminal;
 use crate::common::OutputFormat;
-use crate::target::ClusterTarget;
 
 #[derive(Debug, StructOpt)]
 pub struct ListManagedSpuGroupsOpt {
     #[structopt(flatten)]
     output: OutputFormat,
-
-    #[structopt(flatten)]
-    target: ClusterTarget,
 }
 
 impl ListManagedSpuGroupsOpt {
-    /// Validate cli options and generate config
-    fn validate(self) -> Result<(FluvioConfig, OutputType), CliError> {
-        let target_server = self.target.load()?;
+    /// Process list spus cli request
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+        let mut admin = fluvio.admin().await;
+        let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
 
-        Ok((target_server, self.output.as_output()))
+        output::spu_group_response_to_output(out, lists, self.output.format)
     }
-}
-
-/// Process list spus cli request
-pub async fn process_list_managed_spu_groups<O: Terminal>(
-    out: std::sync::Arc<O>,
-    opt: ListManagedSpuGroupsOpt,
-) -> Result<(), CliError> {
-    let (target_server, output) = opt.validate()?;
-
-    let client = Fluvio::connect_with_config(&target_server).await?;
-    let mut admin = client.admin().await;
-
-    let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
-
-    output::spu_group_response_to_output(out, lists, output)
 }
 
 mod output {
@@ -64,7 +46,7 @@ mod output {
     use fluvio::metadata::objects::Metadata;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
-    use crate::error::CliError;
+    use crate::Result;
     use crate::output::OutputType;
     use crate::TableOutputHandler;
     use crate::Terminal;
@@ -81,7 +63,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_spu_groups: ListSpuGroups,
         output_type: OutputType,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         debug!("groups: {:#?}", list_spu_groups);
 
         if !list_spu_groups.is_empty() {

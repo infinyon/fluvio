@@ -21,8 +21,8 @@ pub enum Error {
     ReleaseAlreadyExists(semver::Version, Target),
     #[error("Failed to parse URL")]
     UrlParseError(#[from] url::ParseError),
-    #[error("Invalid platform {0}")]
-    InvalidPlatform(String),
+    #[error("Invalid target {0}")]
+    InvalidTarget(String),
     #[error(transparent)]
     HttpError(#[from] HttpError),
     #[error("DANGER: Downloaded package checksum did not match")]

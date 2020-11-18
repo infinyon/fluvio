@@ -9,13 +9,17 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 FLUVIO_BIN=./target/debug/fluvio
-CLIENT_LOG=debug
-TEST_BIN=FLV_CMD=true RUST_LOG=$(CLIENT_LOG) ./target/debug/flv-test
+CLIENT_LOG=warn
+SERVER_LOG=debug
+TEST_LOG=warn
+TEST_BIN_DEBUG=FLV_CMD=true RUST_LOG=$(TEST_LOG)  ./target/debug/flv-test
+TEST_BIN=FLV_CMD=true ./target/debug/flv-test
+TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
-DEFAULT_LOG=debug
 SPU_DELAY=15
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
+SKIP_CHECK=--skip-checks
 
 
 # install all tools required
@@ -31,34 +35,37 @@ build:
 #
 
 smoke-test:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG}
 
 smoke-test-tls:	test-clean-up
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG}
 
-# test rbac with ROOT user
-smoke-test-tls-root:	test-clean-up
+smoke-test-tls-policy:	test-clean-up
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG}
+
+# test rbac with ROOT user
+smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1-local
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 test-permission-user1-local:
 	rm -f /tmp/topic.err
-	- $(FLUVIO_BIN) topic create test3 --cluster localhost:9003 --tls --enable-client-cert \
-		 --domain fluvio.local --ca-cert tls/certs/ca.crt \
-		 --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key  2> /tmp/topic.err
+	- $(FLUVIO_BIN) --cluster localhost:9003 \
+		--tls --enable-client-cert --domain fluvio.local \
+		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
+		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
 	
 
 smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop ${TEST_LOG} ${SKIP_CHECK}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop --rust-log ${DEFAULT_LOG}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop ${TEST_LOG} ${SKIP_CHECK}
 
-smoke-test-k8-tls-root:	test-clean-up minikube_image
+smoke-test-k8-tls-policy:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) \
@@ -66,9 +73,11 @@ smoke-test-k8-tls-root:	test-clean-up minikube_image
 		--produce-iteration ${DEFAULT_ITERATION} \
 		--tls \
 		--develop \
-		--rust-log ${DEFAULT_LOG} \
-		--authorization-config-map authorization
+		${TEST_LOG} \
+		--authorization-config-map authorization \
+		${SKIP_CHECK}
 
+smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-user1-local
 
 # test rbac
 #
@@ -79,11 +88,17 @@ test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
 
-
 test-clean-up:
+ifeq ($(UNINSTALL),noclean)
+	echo "no clean"
+else
+	echo "clean up previous installation"
 	$(FLUVIO_BIN) cluster uninstall
 	$(FLUVIO_BIN) cluster uninstall --local
 	kubectl delete configmap authorization --ignore-not-found
+endif
+
+
 
 #
 #  Various Lint tools

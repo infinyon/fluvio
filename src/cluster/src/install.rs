@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use std::process::Stdio;
 use std::fs::File;
 
-use tracing::{info, warn, debug, trace, instrument};
+use tracing::{info, warn, debug, error, instrument};
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
@@ -88,6 +88,8 @@ pub struct ClusterInstallerBuilder {
     client_tls_policy: TlsPolicy,
     /// The authorization ConfigMap name
     authorization_config_map: Option<String>,
+    /// Should the pre install checks be skipped
+    skip_checks: bool,
 }
 
 impl ClusterInstallerBuilder {
@@ -301,6 +303,22 @@ impl ClusterInstallerBuilder {
     /// ```
     pub fn with_save_profile(mut self, save_profile: bool) -> Self {
         self.save_profile = save_profile;
+        self
+    }
+
+    /// Whether to skip pre-install checks before installation. Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_skip_checks(true)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_skip_checks(mut self, skip_checks: bool) -> Self {
+        self.skip_checks = skip_checks;
         self
     }
 
@@ -571,6 +589,7 @@ impl ClusterInstaller {
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
             authorization_config_map: None,
+            skip_checks: false,
         }
     }
 
@@ -599,7 +618,10 @@ impl ClusterInstaller {
     ///
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
+    #[allow(unused)]
     async fn pre_install_check(&self) -> Result<(), ClusterError> {
+        use colored::*;
+
         let checks: Vec<Box<dyn InstallCheck>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),
@@ -610,8 +632,9 @@ impl ClusterInstaller {
         for check in checks {
             match check.perform_check().await {
                 Ok(check) => match check {
-                    StatusCheck::Working(_) => {
-                        // do nothing check is fine
+                    StatusCheck::Working(success) => {
+                        let msg = format!("ok: {}", success);
+                        println!("✔️  {}", msg.green());
                     }
                     // unrecoverable error occured, return error
                     StatusCheck::NotWorkingNoRemediation(failure) => return Err(failure.into()),
@@ -687,19 +710,28 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
-        match self.pre_install_check().await {
-            // If all checks pass, perform the main installation
-            Ok(()) => self.install_app()?,
-            // If Fluvio is already installed, skip install step
-            Err(ClusterError::PreCheckError {
-                source: CheckError::AlreadyInstalled,
-            }) => {
-                debug!("Fluvio is already installed. Getting SC address");
-                let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
-                return Ok(sc_address);
+        if !self.config.skip_checks {
+            println!("Performing pre-flight checks");
+            match self.pre_install_check().await {
+                // If all checks pass, perform the main installation
+                Ok(()) => {
+                    println!("All checks passed, proceeding with the installation");
+                    self.install_app()?;
+                }
+                // If Fluvio is already installed, skip install step
+                Err(ClusterError::PreCheckError {
+                    source: CheckError::AlreadyInstalled,
+                }) => {
+                    debug!("Fluvio is already installed. Getting SC address");
+                    let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
+                    return Ok(sc_address);
+                }
+                // If there were other unhandled errors, return them
+                Err(unhandled) => return Err(unhandled),
             }
-            // If there were other unhandled errors, return them
-            Err(unhandled) => return Err(unhandled),
+        } else {
+            println!("Skipping pre-flight checks, proceeding with the installation");
+            self.install_app()?;
         }
 
         let namespace = &self.config.namespace;
@@ -722,6 +754,7 @@ impl ClusterInstaller {
         }
 
         if self.config.spu_spec.replicas > 0 {
+            debug!("waiting for SC to spin up");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
 
@@ -787,7 +820,7 @@ impl ClusterInstaller {
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
     fn install_app(&self) -> Result<(), ClusterError> {
-        trace!(
+        debug!(
             "Installing fluvio with the following configuration: {:#?}",
             &self.config
         );
@@ -939,7 +972,7 @@ impl ClusterInstaller {
                 attempt = i,
                 "no SC service found, sleeping for {} ms", sleep_ms
             );
-            sleep(Duration::from_millis(sleep_ms)).await
+            sleep(Duration::from_millis(sleep_ms)).await;
         }
 
         Err(ClusterError::SCServiceTimeout)
@@ -951,13 +984,14 @@ impl ClusterInstaller {
         for i in 0..12 {
             let sock_addr = self.wait_for_sc_dns(&sock_addr_str).await?;
             if TcpStream::connect(&*sock_addr).await.is_ok() {
+                info!(sock_addr = %sock_addr_str, "finished SC port check");
                 return Ok(());
             }
             let sleep_ms = 1000 * 2u64.pow(i as u32);
             info!(attempt = i, "sc port closed, sleeping for {} ms", sleep_ms);
-            sleep(Duration::from_millis(sleep_ms)).await
+            sleep(Duration::from_millis(sleep_ms)).await;
         }
-
+        error!(sock_addr = %sock_addr_str, "timeout for SC port check");
         Err(ClusterError::SCPortCheckTimeout)
     }
 
@@ -966,21 +1000,25 @@ impl ClusterInstaller {
         &self,
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, ClusterError> {
-        info!("waiting for SC dns resolution");
+        info!("waiting for SC dns resolution: {}", sock_addr_string);
         for i in 0..12 {
             match resolve(sock_addr_string).await {
-                Ok(sock_addr) => return Ok(sock_addr),
+                Ok(sock_addr) => {
+                    debug!("finished SC dns resolution: {}", sock_addr_string);
+                    return Ok(sock_addr);
+                }
                 Err(err) => {
                     let sleep_ms = 1000 * 2u64.pow(i as u32);
                     info!(
                         attempt = i,
                         "SC dns resoultion failed {}, sleeping for {} ms", err, sleep_ms
                     );
-                    sleep(Duration::from_millis(sleep_ms)).await
+                    sleep(Duration::from_millis(sleep_ms)).await;
                 }
             }
         }
 
+        error!("timedout sc dns: {}", sock_addr_string);
         Err(ClusterError::SCDNSTimeout)
     }
 
@@ -1068,6 +1106,7 @@ impl ClusterInstaller {
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
     fn update_profile(&self, external_addr: String) -> Result<(), ClusterError> {
+        debug!("updating profile for: {}", external_addr);
         let mut config_file = ConfigFile::load_default_or_new()?;
         let config = config_file.mut_config();
 
@@ -1126,6 +1165,7 @@ impl ClusterInstaller {
         fields(cluster_addr = &*cluster.addr)
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), ClusterError> {
+        debug!("trying to create managed spu: {:#?}", cluster);
         let name = self.config.group_name.clone();
         let fluvio = Fluvio::connect_with_config(cluster).await?;
         let mut admin = fluvio.admin().await;

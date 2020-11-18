@@ -26,7 +26,7 @@ pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8
 
 /// validate the message for given offset
 #[allow(clippy::needless_range_loop)]
-pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u8]) {
+pub fn validate_message(iter: u16, offset: i64, topic: &str, option: &TestOption, data: &[u8]) {
     let prefix_string = generate_pre_fix(topic, offset);
     let prefix = prefix_string.as_bytes().to_vec();
     let prefix_len = prefix.len();
@@ -43,7 +43,8 @@ pub fn validate_message(offset: i64, topic: &str, option: &TestOption, data: &[u
     for i in 0..prefix_len {
         assert!(
             data[i] == prefix[i],
-            "prefix failed, i: {}, data: {}, prefix: {}, data len: {}, offset: {}, topic: {}",
+            "prefix failed, iter: {}, index: {}, data: {}, prefix: {}, data len: {}, offset: {}, topic: {}",
+            iter,
             i,
             data[i],
             prefix_string,

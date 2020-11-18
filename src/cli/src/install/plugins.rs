@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use fluvio_index::{PackageId, Target, HttpAgent};
+use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 
 use crate::CliError;
 use crate::install::{
@@ -11,7 +11,8 @@ use crate::install::update::{
 
 #[derive(StructOpt, Debug)]
 pub struct InstallOpt {
-    id: PackageId,
+    /// The ID of a package to install, e.g. "fluvio/fluvio-cloud".
+    package: PackageId<MaybeVersion>,
     /// Used for testing. Specifies alternate package location, e.g. "test/"
     #[structopt(hidden = true, long)]
     prefix: Option<String>,
@@ -45,25 +46,26 @@ impl InstallOpt {
     }
 
     async fn install_plugin(self, agent: &HttpAgent) -> Result<String, CliError> {
-        let target: Target = fluvio_index::PACKAGE_TARGET.parse()?;
+        let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
-        let id = match self.id.version.as_ref() {
-            Some(_) => {
+        let id = match self.package.maybe_version() {
+            Some(version) => {
                 install_println(format!(
                     "⏳ Downloading package with provided version: {}...",
-                    &self.id
+                    &self.package
                 ));
-                self.id
+                let version = version.clone();
+                self.package.into_versioned(version)
             }
             None => {
-                let mut id = self.id;
+                let id = self.package;
                 install_println(format!(
                     "🎣 Fetching latest version for package: {}...",
                     &id
                 ));
                 let version = fetch_latest_version(agent, &id, target).await?;
-                id.version = Some(version);
+                let id = id.into_versioned(version);
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
                     &id
