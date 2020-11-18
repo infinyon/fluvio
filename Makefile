@@ -90,9 +90,9 @@ test-rbac:
 
 
 test-clean-up:
-	$(FLUVIO_BIN) cluster uninstall
-	$(FLUVIO_BIN) cluster uninstall --local
-	kubectl delete configmap authorization --ignore-not-found
+	#$(FLUVIO_BIN) cluster uninstall
+	#$(FLUVIO_BIN) cluster uninstall --local
+	#kubectl delete configmap authorization --ignore-not-found
 
 #
 #  Various Lint tools
