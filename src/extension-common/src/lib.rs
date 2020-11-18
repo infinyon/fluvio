@@ -6,6 +6,7 @@ mod common;
 pub mod tls;
 
 pub use common::*;
+pub use crate::output::Terminal;
 
 pub const COMMAND_TEMPLATE: &str = "{about}
 
@@ -36,6 +37,30 @@ pub struct FluvioExtensionMetadata {
     pub command: String,
     pub description: String,
     pub version: String,
+}
+
+pub struct PrintTerminal {}
+
+impl PrintTerminal {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Default for PrintTerminal {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Terminal for PrintTerminal {
+    fn print(&self, msg: &str) {
+        print!("{}", msg);
+    }
+
+    fn println(&self, msg: &str) {
+        println!("{}", msg);
+    }
 }
 
 #[cfg(feature = "target")]

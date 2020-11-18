@@ -2,12 +2,12 @@ use std::convert::TryInto;
 
 use fluvio::config::TlsPolicy;
 
-use crate::extension::ClusterCmdError;
+use crate::cli::ClusterCliError;
 use crate::LocalClusterInstaller;
 
 use super::InstallOpt;
 
-pub async fn install_local(opt: InstallOpt) -> Result<(), ClusterCmdError> {
+pub async fn install_local(opt: InstallOpt) -> Result<(), ClusterCliError> {
     let mut builder = LocalClusterInstaller::new()
         .with_log_dir(opt.log_dir.to_string())
         .with_spu_replicas(opt.spu);
@@ -29,7 +29,7 @@ pub async fn install_local(opt: InstallOpt) -> Result<(), ClusterCmdError> {
     Ok(())
 }
 
-pub async fn run_local_setup(_opt: InstallOpt) -> Result<(), ClusterCmdError> {
+pub async fn run_local_setup(_opt: InstallOpt) -> Result<(), ClusterCliError> {
     let installer = LocalClusterInstaller::new().build()?;
     installer.setup().await?;
     println!("Setup successful, all the steps neccessary for cluster installation have been performed successfully");

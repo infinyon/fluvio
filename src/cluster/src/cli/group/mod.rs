@@ -6,9 +6,9 @@ mod delete;
 mod list;
 
 use fluvio::Fluvio;
-use crate::extension::Result;
-use crate::extension::common::output::Terminal;
-use crate::extension::common::COMMAND_TEMPLATE;
+use crate::cli::ClusterCliError;
+use crate::cli::common::output::Terminal;
+use crate::cli::common::COMMAND_TEMPLATE;
 
 use create::CreateManagedSpuGroupOpt;
 use delete::DeleteManagedSpuGroupOpt;
@@ -39,7 +39,11 @@ pub enum SpuGroupCmd {
 }
 
 impl SpuGroupCmd {
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process<O: Terminal>(
+        self,
+        out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<(), ClusterCliError> {
         match self {
             Self::Create(create) => {
                 create.process(fluvio).await?;

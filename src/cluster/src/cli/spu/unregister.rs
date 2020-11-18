@@ -7,11 +7,10 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use structopt::StructOpt;
 
+use fluvio::Fluvio;
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::CustomSpuKey;
-use fluvio::Fluvio;
-
-use super::Result;
+use crate::cli::ClusterCliError;
 
 // -----------------------------------
 // CLI Options
@@ -34,7 +33,7 @@ pub struct UnregisterCustomSpuOpt {
 }
 
 impl UnregisterCustomSpuOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let delete_key = self.validate()?;
         let mut admin = fluvio.admin().await;
         admin.delete::<CustomSpuSpec, _>(delete_key).await?;
@@ -42,7 +41,7 @@ impl UnregisterCustomSpuOpt {
     }
 
     /// Validate cli options. Generate target-server and unregister custom spu config.
-    fn validate(self) -> Result<CustomSpuKey> {
+    fn validate(self) -> Result<CustomSpuKey, ClusterCliError> {
         let custom_spu = if let Some(name) = self.name {
             CustomSpuKey::Name(name)
         } else if let Some(id) = self.id {

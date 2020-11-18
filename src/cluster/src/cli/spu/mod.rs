@@ -7,9 +7,9 @@ mod register;
 mod unregister;
 
 use fluvio::Fluvio;
-pub use display::*;
-use super::Result;
+// pub use display::*;
 
+use crate::cli::ClusterCliError;
 use super::common::COMMAND_TEMPLATE;
 use super::common::output::Terminal;
 use list::ListSpusOpt;
@@ -41,7 +41,11 @@ pub enum SpuCmd {
 }
 
 impl SpuCmd {
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process<O: Terminal>(
+        self,
+        out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<(), ClusterCliError> {
         match self {
             Self::Register(register) => {
                 register.process(fluvio).await?;

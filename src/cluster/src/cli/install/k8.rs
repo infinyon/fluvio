@@ -5,12 +5,11 @@ use std::process::Command;
 
 use fluvio::config::TlsPolicy;
 
-use crate::ClusterInstaller;
-use crate::extension::ClusterCmdError;
+use crate::{ClusterInstaller, ClusterError};
+use crate::cli::ClusterCliError;
+use crate::cli::install::InstallOpt;
 
-use super::*;
-
-pub async fn install_core(opt: InstallOpt) -> Result<(), ClusterCmdError> {
+pub async fn install_core(opt: InstallOpt) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -80,7 +79,7 @@ pub async fn install_core(opt: InstallOpt) -> Result<(), ClusterCmdError> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallOpt) -> Result<(), ClusterCmdError> {
+pub fn install_sys(opt: InstallOpt) -> Result<(), ClusterCliError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
 
     match opt.k8_config.chart_location {
@@ -95,12 +94,12 @@ pub fn install_sys(opt: InstallOpt) -> Result<(), ClusterCmdError> {
         _ => (),
     }
     let installer = builder.build()?;
-    installer._install_sys()?;
+    installer._install_sys().map_err(ClusterError::InstallK8)?;
     println!("fluvio sys chart has been installed");
     Ok(())
 }
 
-pub async fn run_setup(opt: InstallOpt) -> Result<(), ClusterCmdError> {
+pub async fn run_setup(opt: InstallOpt) -> Result<(), ClusterCliError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
     match opt.k8_config.chart_location {
         // If a chart location is given, use it
