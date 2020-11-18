@@ -1475,9 +1475,8 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2377e4d3b5b9a464c7331875c4bde103b7e461c0c184b57951ef64f4012e1de"
+version = "0.2.7"
+source = "git+https://github.com/infinyon/flv-tls-proxy?branch=update_log#7ebd39bc9ddaeae765859cb24d44adc5cf04ce36"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
