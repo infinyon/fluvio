@@ -142,10 +142,10 @@ jobs:
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
-      # run: |
-      #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-k8-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make smoke-test
+          FLV_CMD=true  FLV_SOCKET_WAIT=600 make smoke-test-k8-tls-root
+        # run: |
+        #  FLV_CMD=true FLV_SOCKET_WAIT=600 make smoke-test
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
