@@ -40,19 +40,22 @@ smoke-test:	test-clean-up
 smoke-test-tls:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG}
 
-# test rbac with ROOT user
-smoke-test-tls-root:	test-clean-up
+smoke-test-tls-policy:	test-clean-up
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG}
+
+# test rbac with ROOT user
+smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1-local
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 test-permission-user1-local:
 	rm -f /tmp/topic.err
-	- $(FLUVIO_BIN) topic create test3 --cluster localhost:9003 --tls --enable-client-cert \
-		 --domain fluvio.local --ca-cert tls/certs/ca.crt \
-		 --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key  2> /tmp/topic.err
+	- $(FLUVIO_BIN) --cluster localhost:9003 \
+		--tls --enable-client-cert --domain fluvio.local \
+		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
+		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
 	
 
@@ -62,7 +65,7 @@ smoke-test-k8:	test-clean-up minikube_image
 smoke-test-k8-tls:	test-clean-up minikube_image
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --develop ${TEST_LOG} ${SKIP-CHECK}
 
-smoke-test-k8-tls-root:	test-clean-up minikube_image
+smoke-test-k8-tls-policy:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) \
@@ -74,6 +77,7 @@ smoke-test-k8-tls-root:	test-clean-up minikube_image
 		--authorization-config-map authorization \
 		${SKIP_CHECK}
 
+smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-user1-local
 
 # test rbac
 #
