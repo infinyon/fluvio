@@ -168,7 +168,6 @@ nightly_image:	fluvio_image
 
 # publish docker image to minikube environment
 minikube_image:	MINIKUBE_DOCKER_ENV=true
-minikube_image:	RELEASE=true
 minikube_image:	fluvio_image
 
 # build docker image for fluvio using release mode

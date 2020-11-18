@@ -142,10 +142,10 @@ jobs:
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
+        #run: |
+        #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
-        # run: |
-        #  FLV_CMD=true FLV_SOCKET_WAIT=600 make smoke-test
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
@@ -212,10 +212,10 @@ jobs:
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: smoke test k8 tls
-        run: | 
-          FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-k8-tls-root
-      #  run:  |
-      #    FLV_CMD=true FLV_SOCKET_WAIT=600 make smoke-test-k8
+      #  run: | 
+      #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
+        run:  |
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-k8
       - name: Save logs
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log
