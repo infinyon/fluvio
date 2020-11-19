@@ -934,7 +934,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
- "fluvio-socket 0.4.2",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
@@ -963,14 +963,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-auth"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.1",
+ "fluvio-socket",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1088,14 +1088,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bytes 0.5.6",
  "content_inspector",
  "crc32c",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.1",
+ "fluvio-socket",
  "flv-util",
  "futures-util",
  "log",
@@ -1223,7 +1223,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-service",
- "fluvio-socket 0.3.1",
+ "fluvio-socket",
  "fluvio-stream-dispatcher",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1260,47 +1260,21 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16997e86923f688f984cf04296957cf6ae50e8ec2e9302c435a0aa839789c476"
+checksum = "bb4c21fc5bd3e566fd87bd30afeaf65f437c63ac8512ca39fdbe7f31c5f45619"
 dependencies = [
  "async-trait",
  "event-listener",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.1",
+ "fluvio-socket",
  "futures-util",
  "log",
  "pin-utils",
  "tokio",
  "tracing",
  "tracing-futures",
-]
-
-[[package]]
-name = "fluvio-socket"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10a3717e4654da05cea7d471eb53fad0e134006dd5f914aadc4ff0684dc063ac"
-dependencies = [
- "async-channel",
- "async-mutex",
- "async-net",
- "async-trait",
- "bytes 0.5.6",
- "cfg-if 1.0.0",
- "chashmap",
- "event-listener",
- "fluvio-future",
- "fluvio-protocol",
- "futures-util",
- "log",
- "once_cell",
- "pin-project-lite",
- "thiserror",
- "tokio",
- "tokio-util",
- "tracing",
 ]
 
 [[package]]
@@ -1331,7 +1305,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1346,7 +1320,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
- "fluvio-socket 0.3.1",
+ "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
@@ -1386,7 +1360,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-socket 0.3.1",
+ "fluvio-socket",
  "fluvio-types",
  "flv-util",
  "futures-lite",
