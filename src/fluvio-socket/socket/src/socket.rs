@@ -28,7 +28,7 @@ pub type FlvSocket = InnerFlvSocket<TcpStream>;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "tls")] {
-        pub type AllFlvSocket = InnerFlvSocket<fluvio_future::tls::AllTcpStream>;
+        pub type AllFlvSocket = InnerFlvSocket<fluvio_future::rust_tls::AllTcpStream>;
     } else if #[cfg(feature  = "native_tls")] {
         pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
     }
