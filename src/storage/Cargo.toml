@@ -36,5 +36,5 @@ dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluv
 [dev-dependencies]
 fluvio-future = { version = "0.1.8", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
-fluvio-socket = { version = "0.3.1" }
+fluvio-socket = { version = "0.4.0" }
 
