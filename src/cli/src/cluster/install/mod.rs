@@ -154,14 +154,18 @@ impl InstallOpt {
         let spu = self.spu;
 
         #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-        use local::install_local;
+        use local::{install_local, run_local_setup};
 
         if self.sys {
             install_sys(self)?;
         } else if self.local {
-            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-            install_local(self).await?;
-            confirm_spu(spu).await?;
+            if self.setup {
+                run_local_setup(self).await?;
+            } else {
+                #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
+                install_local(self).await?;
+                confirm_spu(spu).await?;
+            }
         } else if self.setup {
             run_setup(self).await?;
         } else {

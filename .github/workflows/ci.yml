@@ -136,9 +136,9 @@ jobs:
       - name: Build
         run: |
           cargo build
-      - name: install fluvio system chart
+      - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+          FLV_CMD=true ./target/debug/fluvio cluster install --local --setup
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
