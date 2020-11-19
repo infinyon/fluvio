@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{FluvioConfig};
 
-use tracing::{info, warn, debug};
+use tracing::{info, warn, debug, instrument};
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio::metadata::spg::SpuGroupSpec;
 use flv_util::cmd::CommandExt;
@@ -19,6 +19,10 @@ use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
 use crate::ClusterError;
+use crate::check::{CheckError, StatusCheck, InstallCheck, HelmVersion, SysChart};
+use crate::install::{ClusterInstaller, DEFAULT_NAMESPACE};
+
+const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 
 #[derive(Debug)]
 pub struct LocalClusterInstallerBuilder {
@@ -32,6 +36,8 @@ pub struct LocalClusterInstallerBuilder {
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
     client_tls_policy: TlsPolicy,
+    /// install system charts automatically
+    install_sys: bool,
 }
 
 impl LocalClusterInstallerBuilder {
@@ -165,6 +171,23 @@ impl LocalClusterInstallerBuilder {
         self.server_tls_policy = server_policy;
         self
     }
+    /// Whether to install the `fluvio-sys` chart in the full installation. Defaults to `true`.
+    ///
+    /// # Example
+    ///
+    /// If you want to disable installing the system chart, you can do this
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::LocalClusterInstaller;
+    /// let installer = LocalClusterInstaller::new()
+    ///     .with_system_chart(false)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_system_chart(mut self, install_sys: bool) -> Self {
+        self.install_sys = install_sys;
+        self
+    }
 }
 
 /// Install fluvio cluster locally
@@ -198,11 +221,65 @@ impl LocalClusterInstaller {
             log_dir: "/tmp".to_string(),
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
+            install_sys: true,
         }
+    }
+    /// Checks if all of the prerequisites for installing Fluvio locally are met
+    async fn pre_install_check(&self) -> Result<(), ClusterError> {
+        let checks: Vec<Box<dyn InstallCheck>> = vec![Box::new(HelmVersion), Box::new(SysChart)];
+        for check in checks {
+            match check.perform_check().await {
+                Ok(check) => match check {
+                    StatusCheck::Working(_) => {
+                        // do nothing check is fine
+                    }
+                    // unrecoverable error occured, return error
+                    StatusCheck::NotWorkingNoRemediation(failure) => return Err(failure.into()),
+                    // recoverable error occured, try to fix
+                    StatusCheck::NotWorking(failure, _) => {
+                        match self.pre_install_fix(failure).await {
+                            Ok(_) => {
+                                // recovered correctly
+                            }
+                            // not able to recover, return error
+                            Err(err) => return Err(err),
+                        };
+                    }
+                },
+                Err(err) => return Err(err.into()),
+            };
+        }
+
+        Ok(())
+    }
+
+    /// Given a pre-check error, attempt to automatically correct it
+    #[instrument(skip(self, error))]
+    async fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
+        // Depending on what error occurred, try to fix the error.
+        // If we handle the error successfully, return Ok(()) to indicate success
+        // If we cannot handle this error, return it to bubble up
+        match error {
+            CheckError::MissingSystemChart if self.config.install_sys => {
+                debug!("Fluvio system chart not installed. Attempting to install");
+                let installer = ClusterInstaller::new()
+                    .with_namespace(DEFAULT_NAMESPACE)
+                    .with_local_chart(DEFAULT_CHART_LOCATION)
+                    .build()?;
+                installer._install_sys()?;
+            }
+            unhandled => {
+                warn!("Pre-install was unable to autofix an error");
+                return Err(unhandled.into());
+            }
+        }
+
+        Ok(())
     }
 
     /// Install fluvio locally
     pub async fn install(&self) -> Result<(), ClusterError> {
+        self.pre_install_check().await?;
         debug!("using log dir: {}", &self.config.log_dir);
         if !Path::new(&self.config.log_dir.to_string()).exists() {
             create_dir_all(&self.config.log_dir.to_string())?;
