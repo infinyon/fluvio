@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.4.0"
+version = "0.4.2"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -13,7 +13,7 @@ name = "fluvio_socket"
 path = "src/lib.rs"
 
 [features]
-tls = ["fluvio-future/tls"]
+tls = ["fluvio-future/rust_tls"]
 native_tls = ["fluvio-future/native2_tls"]
 
 [dependencies]
@@ -35,7 +35,7 @@ pin-project = "1.0.1"
 thiserror = "1.0.20"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.1.6", features = ["net", "zero_copy"] }
+fluvio-future = { version = "0.1.11", features = ["net", "zero_copy"] }
 fluvio-protocol = { version = "0.2.0", features = ["derive", "api", "codec", "store"] }
 
 
