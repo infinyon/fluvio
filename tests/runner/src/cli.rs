@@ -120,7 +120,7 @@ impl TestOption {
     }
 
     pub fn replication(&self) -> u16 {
-        self.replication.unwrap_or_else(|| self.spu)
+        self.replication.unwrap_or(self.spu)
     }
 
     pub fn produce(&self) -> bool {
