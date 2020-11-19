@@ -9,10 +9,13 @@ use fluvio_sc_schema::AdminRequest;
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::AllMultiplexerSocket;
 
-#[cfg(feature = "native_tls")]
-use fluvio_future::native_tls::AllDomainConnector;
-#[cfg(feature = "rust_tls")]
-use fluvio_future::tls::AllDomainConnector;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "rust_tls")] {
+        use fluvio_future::rust_tls::AllDomainConnector;
+    } else if #[cfg(feature  = "native_tls")] {
+        use fluvio_future::native_tls::AllDomainConnector;
+    }
+}
 
 use crate::client::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
