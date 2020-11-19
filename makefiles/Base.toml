@@ -1,0 +1,11 @@
+[env.development]
+CARGO_PROFILE = "dev"
+
+[env.production]
+CARGO_PROFILE = "release"
+
+[tasks.set-image-tag]
+env = { IMAGE_TAG = "${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}-${CARGO_PROFILE}" }
+
+[env]
+GIT_TAG = { script = ["cat VERSION"] }
