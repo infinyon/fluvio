@@ -19,7 +19,6 @@ pub async fn install_local(opt: InstallOpt) -> Result<(), CliError> {
         let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
         builder = builder.with_tls(client, server);
     }
-    
     if opt.skip_checks {
         builder = builder.with_skip_checks(true);
     }
