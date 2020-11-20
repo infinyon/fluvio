@@ -19,8 +19,18 @@ pub async fn install_local(opt: InstallOpt) -> Result<(), CliError> {
         let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
         builder = builder.with_tls(client, server);
     }
+    if opt.skip_checks {
+        builder = builder.with_skip_checks(true);
+    }
 
     let installer = builder.build()?;
     installer.install().await?;
+    Ok(())
+}
+
+pub async fn run_local_setup(_opt: InstallOpt) -> Result<(), CliError> {
+    let installer = LocalClusterInstaller::new().build()?;
+    installer.setup().await?;
+    println!("Setup successful, all the steps neccessary for cluster installation have been performed successfully");
     Ok(())
 }
