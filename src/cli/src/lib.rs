@@ -13,7 +13,6 @@ pub mod profile;
 mod tls;
 pub mod cluster;
 mod group;
-mod custom;
 mod install;
 mod partition;
 
