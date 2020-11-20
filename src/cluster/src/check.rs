@@ -389,7 +389,9 @@ pub(crate) fn check_already_installed(
             "Fluvio is already installed, Please uninstall before trying to install".to_string(),
         ));
     }
-    Ok(StatusCheck::Working("".to_string()))
+    Ok(StatusCheck::Working(
+        "Previous fluvio installation not found".to_string(),
+    ))
 }
 
 /// Check if load balancer is up

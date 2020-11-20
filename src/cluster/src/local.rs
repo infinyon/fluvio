@@ -38,6 +38,8 @@ pub struct LocalClusterInstallerBuilder {
     client_tls_policy: TlsPolicy,
     /// install system charts automatically
     install_sys: bool,
+    /// Should the pre install checks be skipped
+    skip_checks: bool,
 }
 
 impl LocalClusterInstallerBuilder {
@@ -188,6 +190,21 @@ impl LocalClusterInstallerBuilder {
         self.install_sys = install_sys;
         self
     }
+    /// Whether to skip pre-install checks before installation. Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::LocalClusterInstaller;
+    /// let installer = LocalClusterInstaller::new()
+    ///     .with_skip_checks(true)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_skip_checks(mut self, skip_checks: bool) -> Self {
+        self.skip_checks = skip_checks;
+        self
+    }
 }
 
 /// Install fluvio cluster locally
@@ -222,10 +239,13 @@ impl LocalClusterInstaller {
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
             install_sys: true,
+            skip_checks: false,
         }
     }
     /// Checks if all of the prerequisites for installing Fluvio locally are met
-    async fn pre_install_check(&self) -> Result<(), ClusterError> {
+    /// and tries to auto-fix the issues observed
+    pub async fn setup(&self) -> Result<(), ClusterError> {
+        println!("Performing pre-flight checks");
         let checks: Vec<Box<dyn InstallCheck>> = vec![Box::new(HelmVersion), Box::new(SysChart)];
         for check in checks {
             match check.perform_check().await {
@@ -279,7 +299,11 @@ impl LocalClusterInstaller {
 
     /// Install fluvio locally
     pub async fn install(&self) -> Result<(), ClusterError> {
-        self.pre_install_check().await?;
+        if !self.config.skip_checks {
+            self.setup().await?;
+        } else {
+            println!("Skipping pre-flight checks, proceeding with the installation");
+        }
         debug!("using log dir: {}", &self.config.log_dir);
         if !Path::new(&self.config.log_dir.to_string()).exists() {
             create_dir_all(&self.config.log_dir.to_string())?;

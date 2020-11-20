@@ -40,21 +40,21 @@ structopt = "0.3.17"
 
 # Fluvio dependencies
 fluvio-auth = { version = "0.1.2", path = "../auth" }
-fluvio-future = { version = "0.1.8", features = ["subscriber","rust_tls"]}
+fluvio-future = { version = "0.1.8", features = ["subscriber", "rust_tls"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-sc-schema = { version = "0.2.0", path = "../sc-schema" }
 fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
 fluvio-controlplane = { version = "0.2.0", path = "../controlplane" }
-fluvio-controlplane-metadata = { version = "0.2.0", features = ["k8","serde"], path = "../controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.2.0", features = ["k8", "serde"], path = "../controlplane-metadata" }
 fluvio-stream-dispatcher = { version = "0.2.0", path = "../stream-dispatcher" }
 k8-client = { version = "3.0.1", default-features = false, optional = true }
 k8-metadata-client = { version = "1.0.2" }
 k8-obj-metadata = { version = "1.0.0" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-socket = { version = "0.3.0"}
-fluvio-service = { version = "0.2.0" }
-flv-tls-proxy = { version = "0.2.6"} 
+fluvio-socket = { version = "0.4.2" }
+fluvio-service = { version = "0.3.0" }
+flv-tls-proxy = { version = "0.2.6" }
 
 
 [dev-dependencies]

@@ -37,7 +37,7 @@ static SC_RECONCILIATION_INTERVAL_SEC: Lazy<u64> = Lazy::new(|| {
     use std::env;
 
     let var_value = env::var("FLV_SC_RECONCILIATION_INTERVAL").unwrap_or_default();
-    let wait_time: u64 = var_value.parse().unwrap_or_else(|_| 60);
+    let wait_time: u64 = var_value.parse().unwrap_or(60);
     wait_time
 });
 

@@ -136,9 +136,9 @@ jobs:
       - name: Build
         run: |
           cargo build
-      - name: install fluvio system chart
+      - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+          FLV_CMD=true ./target/debug/fluvio cluster install --local --setup
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
@@ -195,18 +195,12 @@ jobs:
         run: |
           minikube profile list
           minikube status
-      - name: Run minikube tunnel
-        run: |
-          minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &
-          sleep 10
-          echo "tunnel status"
-          cat /tmp/tunnel.out    
       - name: Build
         run: |
           cargo build
-      - name: install fluvio system chart
+      - name: Setup installation pre-requisites 
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --sys --develop
+          FLV_CMD=true ./target/debug/fluvio cluster install --setup --develop
       - name: Install musl-tools for Linux
         run: |
           sudo apt install -y musl-tools

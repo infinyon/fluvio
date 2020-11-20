@@ -619,8 +619,9 @@ impl ClusterInstaller {
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     #[allow(unused)]
-    async fn pre_install_check(&self) -> Result<(), ClusterError> {
+    pub async fn setup(&self) -> Result<(), ClusterError> {
         use colored::*;
+        println!("Performing pre-flight checks");
 
         let checks: Vec<Box<dyn InstallCheck>> = vec![
             Box::new(LoadableConfig),
@@ -711,8 +712,7 @@ impl ClusterInstaller {
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
         // Checks if env is ready for install and tries to fix anything it can
         if !self.config.skip_checks {
-            println!("Performing pre-flight checks");
-            match self.pre_install_check().await {
+            match self.setup().await {
                 // If all checks pass, perform the main installation
                 Ok(()) => {
                     println!("All checks passed, proceeding with the installation");

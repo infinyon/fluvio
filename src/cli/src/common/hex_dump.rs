@@ -20,7 +20,7 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
 
         // spacing half way
         if row_idx % (cols / 2) == 0 {
-            result.push_str(" ");
+            result.push(' ');
         }
 
         // convert and add character to collector

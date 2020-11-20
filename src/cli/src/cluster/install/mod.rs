@@ -141,23 +141,33 @@ pub struct InstallOpt {
     /// Whether to skip pre-install checks, defaults to false
     #[structopt(long)]
     pub skip_checks: bool,
+    /// Tries to setup neccessary environment for cluster install
+    #[structopt(long)]
+    pub setup: bool,
 }
 
 impl InstallOpt {
     pub async fn process(self) -> crate::Result<()> {
         use k8::install_sys;
         use k8::install_core;
+        use k8::run_setup;
         let spu = self.spu;
 
         #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-        use local::install_local;
+        use local::{install_local, run_local_setup};
 
         if self.sys {
             install_sys(self)?;
         } else if self.local {
-            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-            install_local(self).await?;
-            confirm_spu(spu).await?;
+            if self.setup {
+                run_local_setup(self).await?;
+            } else {
+                #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
+                install_local(self).await?;
+                confirm_spu(spu).await?;
+            }
+        } else if self.setup {
+            run_setup(self).await?;
         } else {
             install_core(self).await?;
             confirm_spu(spu).await?;
@@ -181,7 +191,7 @@ async fn confirm_spu(spu: u16) -> Result<(), CliError> {
     let delay: u64 = env::var("FLV_SPU_DELAY")
         .unwrap_or_else(|_| "1".to_string())
         .parse()
-        .unwrap_or_else(|_| 1);
+        .unwrap_or(1);
 
     println!("waiting for spu to be provisioned for: {} seconds", delay);
 

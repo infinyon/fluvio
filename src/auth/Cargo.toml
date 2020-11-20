@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-auth"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -18,7 +18,7 @@ fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-meta
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.1.8", features = ["net","rust_tls"] }
 fluvio-protocol = { version = "0.2.0" }
-fluvio-socket = { version = "0.3.0" }
+fluvio-socket = { version = "0.4.0" }
 fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
 fluvio-types = { version = "0.1.0", path = "../types" }
 flv-tls-proxy = { version = "0.2.5", features = ["rust_tls"] }
