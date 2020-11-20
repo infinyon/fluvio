@@ -1,2 +1,11 @@
+extend = [
+    { path = "makefiles/Pi.toml" },
+    { path = "makefiles/Github.toml" },
+    { path = "makefiles/Helm.toml" },
+]
+
+[config]
+default_to_workspace = false
+
 [tasks.build]
 args = ["build"]

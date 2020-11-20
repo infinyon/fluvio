@@ -8,92 +8,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  create_release:
-    name: create github release
+  upload_fluvio_cli:
+    name: cli
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+        with:
+          version: '0.32.9'
+      - name: Build and upload release to github
+        run: cargo make -l verbose --profile production github-release-upload
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+
+  release_fluvio_pi:
+    name: Raspberry Pi Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Install github-release
-        run:  | 
-          go get github.com/github-release/github-release
-          ls $(go env GOPATH)/bin
-          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
-      - name: Create release
-        run:  make create-gh-release
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+        with:
+          version: '0.32.9'
+      - name: Build and upload pi release to github
+        run: cargo make -l verbose pi-github-release-upload
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-      - name: Release helm chart
-        run: |
-          make helm-install-plugin
-          helm repo add fluvio https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          make helm-publish-app
 
   release_docker:
     name: docker release
-    needs:  create_release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Install Musl Tools for Linux
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: Release docker
         run: |
           export TARGET_CC=musl-gcc
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           make release_image
-    
-  upload_linux_cli:
-    needs:  create_release
-    name: upload linux cli
-    runs-on:  ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Install github-release
-        run:  | 
-          go get github.com/github-release/github-release
-          ls $(go env GOPATH)/bin
-          cp $(go env GOPATH)/bin/github-release /home/linuxbrew/.linuxbrew/sbin
-      - name: Install Musl Tools for Linux
+
+      - name: Release helm chart
         run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-      - name: Build Linux CLI
-        run: |
-          export TARGET_CC=musl-gcc
-          make build-cli-linux
-      - name: Upload Darin CLI
-        run:  make upload-gh-linux
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-
-  upload_mac_cli:
-    needs: create_release
-    name: upload mac cli
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Add go lang path
-        run: |
-          echo $(go env GOPATH)
-          echo $(go env GOROOT)
-          echo $PATH
-      - name: Install github-release
-        run:  | 
-          go get github.com/github-release/github-release
-          ls $(go env GOPATH)/bin
-          cp $(go env GOPATH)/bin/github-release /usr/local/bin
-      - name: Build Darwin CLI
-        run:  make build-cli-darwin
-      - name: Upload Darwin CLI
-        run:  make upload-gh-darwin
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-
-
-
+          make helm-install-plugin
+          helm repo add fluvio https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
+          make helm-publish-app

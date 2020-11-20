@@ -57,7 +57,7 @@ test-permission-user1-local:
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
-	
+
 
 smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --develop ${TEST_LOG} ${SKIP_CHECK}
@@ -102,7 +102,7 @@ endif
 
 #
 #  Various Lint tools
-#	
+#
 
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)
@@ -126,6 +126,7 @@ run-all-unit-test:
 	cargo test --all
 
 install_musl:
+	sudo apt-get install -y musl-tools build-essential
 	rustup target add ${TARGET_LINUX}
 
 clean_build:
@@ -146,7 +147,7 @@ publish_cli:
 
 
 
-# 
+#
 # Docker actions
 #
 release_image:	RELEASE=true
@@ -186,7 +187,7 @@ fluvio_bin_linux: install_musl
 	cd src/cli; cargo build $(RELEASE_FLAG) --no-default-features  \
 		--features cluster_components_rustls --bin fluvio --target $(TARGET_LINUX)
 
-make publish_fluvio_image: 
+make publish_fluvio_image:
 	curl \
 	-X POST \
 	-H "Accept: application/vnd.github.v3+json" \
@@ -226,7 +227,7 @@ BUILD_OUTPUT=/tmp
 release_github:	build-cli-darwin build-cli-linux create-gh-release upload-gh-darwin upload-gh-linux
 
 
-build-cli-darwin: 	
+build-cli-darwin:
 	rustup target add $(TARGET_DARWIN)
 	cargo build --release --bin fluvio --target $(TARGET_DARWIN)
 
@@ -236,7 +237,7 @@ build-cli-linux:
 
 
 
-create-gh-release:	
+create-gh-release:
 	github-release release \
 		--user ${GITHUB_USER} \
 		--repo ${GITHUB_REPO} \

@@ -1,0 +1,47 @@
+extend = "Base.toml"
+
+[tasks.pi-build.linux]
+description = "Build PI Binaries"
+category = "Raspberry-Pi"
+dependencies = [
+    "pi-setup-tools",
+]
+command = "cross"
+args = [
+    "build",
+    "--bin", "fluvio",
+    "--release",
+    "--target",
+    "armv7-unknown-linux-gnueabihf",
+]
+
+[tasks.pi-setup-tools]
+script = '''
+cross --help > /dev/null || {
+    cargo install cross
+}
+'''
+
+[tasks.pi-github-release-env]
+category = "Raspberry-Pi"
+env = { TARGET = "armv7-unknown-linux-gnueabihf" }
+
+[tasks.pi-github-release-upload]
+description = "Upload release binaries to Github"
+category = "Raspberry-Pi"
+dependencies = [
+    "pi-github-release-env",
+    "install-github-release",
+    "pi-build",
+    "github-release-create-pre-release",
+]
+command = "github-release"
+args = [
+    "-v",
+    "upload",
+    "--user", "infinyon",
+    "--repo", "fluvio",
+    "--tag", "v${GIT_TAG}",
+    "--name", "fluvio-v${GIT_TAG}-${TARGET}",
+    "--file", "./target/${TARGET}/release/fluvio",
+]
