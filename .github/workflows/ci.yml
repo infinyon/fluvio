@@ -110,7 +110,7 @@ jobs:
         if: startsWith(matrix.os, 'macOS')
         run: brew install minikube
       - name: Setup Minikube for Linux
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |  
           minikube delete
           minikube start --driver=docker
@@ -163,7 +163,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Setup Minikube for Linux
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |  
           minikube delete
           minikube start --driver=docker
