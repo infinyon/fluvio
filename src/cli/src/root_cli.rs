@@ -17,7 +17,6 @@ use crate::Terminal;
 
 use crate::spu::SpuCmd;
 use crate::group::SpuGroupCmd;
-use crate::custom::CustomSpuOpt;
 use super::consume::ConsumeLogOpt;
 use super::produce::ProduceLogOpt;
 use super::topic::TopicCmd;
@@ -196,18 +195,6 @@ pub enum FluvioCmd {
     #[structopt(name = "spg")]
     SPUGroup(SpuGroupCmd),
 
-    /// Manage and view "custom SPUs", operated outside a cluster
-    ///
-    /// A "custom SPU" is just a SPU which exists outside of a typical
-    /// Fluvio cluster. As opposed to a regular "managed" SPU, you are
-    /// responsible for operating and maintaining custom SPUs.
-    ///
-    /// This command lets you register and unregister custom SPUs, which tells
-    /// the Streaming Controller (SC) of the cluster whether to - and how to -
-    /// direct streaming traffic to those SPUs.
-    #[structopt(name = "custom-spu")]
-    CustomSPU(CustomSpuOpt),
-
     /// Manage and view Topics
     ///
     /// A Topic is essentially the name of a stream which carries messages that
@@ -246,9 +233,6 @@ impl FluvioCmd {
             }
             Self::SPUGroup(spu_group) => {
                 spu_group.process(out, &fluvio).await?;
-            }
-            Self::CustomSPU(custom_spu) => {
-                custom_spu.process(out, &fluvio).await?;
             }
             Self::Topic(topic) => {
                 topic.process(out, &fluvio).await?;
