@@ -96,7 +96,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-bionic]
+        os: [infinyon-ubuntu-bionic]
         rust: [stable]
     steps:
       - uses: actions/checkout@v2
@@ -154,7 +154,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-bionic]
+        os: [infinyon-ubuntu-bionic]
         rust: [stable]
 
     steps:
