@@ -1276,6 +1276,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-runner"
+version = "0.1.0"
+dependencies = [
+ "async-h1",
+ "async-trait",
+ "bytes 0.5.6",
+ "cfg-if 1.0.0",
+ "color-eyre",
+ "ctrlc",
+ "dirs 1.0.5",
+ "eyre",
+ "fluvio",
+ "fluvio-cluster",
+ "fluvio-controlplane-metadata",
+ "fluvio-extension-common",
+ "fluvio-extension-consumer",
+ "fluvio-future",
+ "fluvio-package-index",
+ "fluvio-sc",
+ "fluvio-sc-schema",
+ "fluvio-spu",
+ "fluvio-types",
+ "flv-util",
+ "futures-lite",
+ "hex",
+ "http-types",
+ "k8-client",
+ "k8-config",
+ "k8-metadata-client",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "openssl",
+ "prettytable-rs",
+ "rand 0.7.3",
+ "semver 0.11.0",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "structopt",
+ "thiserror",
+ "toml",
+ "tracing",
+ "tracing-futures",
+ "url",
+ "which",
+]
+
+[[package]]
 name = "fluvio-sc"
 version = "0.3.2"
 dependencies = [

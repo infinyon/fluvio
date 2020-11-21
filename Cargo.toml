@@ -20,6 +20,7 @@ members = [
     "src/utils",
     "src/extension-consumer",
     "src/extension-common",
+    "src/extension-runner",
     "tests/runner",
 ]
 
