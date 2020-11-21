@@ -16,6 +16,8 @@ path = "src/lib.rs"
 default = ["native_tls"]
 rust_tls = ["fluvio/rust_tls","k8-client/rust_tls"]
 native_tls = ["fluvio/native_tls","k8-client/native_tls"]
+k8 = []
+local = []
 
 [dependencies]
 colored = "2.0.0"
@@ -30,6 +32,7 @@ async-trait = "0.1.21"
 
 
 # Fluvio dependencies
+fluvio-helm = { version = "0.1.0", git = "https://github.com/infinyon/fluvio-helm", branch = "main"}
 fluvio = { version = "0.2.3", path = "../client", default-features = false }
 fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata", features = ["k8"] }
 fluvio-future = { version = "0.1.0" }
