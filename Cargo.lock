@@ -329,9 +329,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.54"
+version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2baad346b2d4e94a24347adeee9c7a93f412ee94b9cc26e5b59dea23848e9f28"
+checksum = "ef5140344c85b01f9bbb4d4b7288a8aa4b3287ccef913a14bcc78a1063623598"
 dependencies = [
  "addr2line",
  "cfg-if 1.0.0",
@@ -490,9 +490,9 @@ checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
 name = "cc"
-version = "1.0.63"
+version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad9c6140b5a2c7db40ea56eb1821245e5362b44385c05b76288b1a599934ac87"
+checksum = "95752358c8f7552394baf48cd82695b345628ad3f170d607de3ca03b8dacca15"
 
 [[package]]
 name = "cfg-if"
@@ -1135,13 +1135,7 @@ dependencies = [
 name = "fluvio-extension-consumer"
 version = "0.1.0"
 dependencies = [
- "async-h1",
- "async-trait",
- "bytes 0.5.6",
- "cfg-if 1.0.0",
- "color-eyre",
  "ctrlc",
- "dirs 1.0.5",
  "eyre",
  "fluvio",
  "fluvio-controlplane-metadata",
@@ -1150,27 +1144,14 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "futures-lite",
- "hex",
- "http-types",
- "k8-client",
- "k8-config",
- "k8-metadata-client",
- "k8-obj-core",
- "k8-obj-metadata",
- "openssl",
  "prettytable-rs",
- "rand 0.7.3",
- "semver 0.11.0",
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2",
  "structopt",
  "thiserror",
  "toml",
  "tracing",
- "tracing-futures",
- "url",
  "which",
 ]
 
@@ -1991,9 +1972,9 @@ checksum = "64e9829a50b42bb782c1df523f78d332fe371b10c661e78b7a3c34b0198e9fac"
 
 [[package]]
 name = "instant"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb1fc4429a33e1f80d41dc9fea4d108a88bec1de8053878898ae448a0b52f613"
+checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
 dependencies = [
  "cfg-if 1.0.0",
 ]
@@ -2024,9 +2005,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bcecbc006f363a102504e0e35afe2d4d35b4f3edeb4c053545f3479e4fac8ed"
+checksum = "6f6c33d5276f0b0278fcf177d79fe37496267c3f86236008d348088d4472f355"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -3418,9 +3399,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b78a366903f506d2ad52ca8dc552102ffdd3e937ba8a227f024dc1d1eae28575"
+checksum = "ccf8dbc19eb42fba10e8feaaec282fb50e2c14b2726d6301dbfeed0f73306a6f"
 dependencies = [
  "tinyvec_macros",
 ]
