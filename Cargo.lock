@@ -986,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "async-h1",
  "async-trait",
@@ -1036,12 +1036,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async-trait",
  "colored",
  "fluvio",
  "fluvio-controlplane-metadata",
+ "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
  "flv-util",
@@ -1049,9 +1050,11 @@ dependencies = [
  "k8-config",
  "k8-obj-core",
  "k8-obj-metadata",
+ "prettytable-rs",
  "semver 0.10.0",
  "serde",
  "serde_json",
+ "structopt",
  "thiserror",
  "tracing",
  "tracing-futures",

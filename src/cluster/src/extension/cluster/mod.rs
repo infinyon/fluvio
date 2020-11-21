@@ -6,11 +6,12 @@ mod util;
 mod check;
 mod releases;
 
+
 use install::InstallOpt;
 use uninstall::UninstallOpt;
 use check::CheckOpt;
 use releases::ReleasesCmd;
-use crate::Result;
+use super::{ Result, ClusterCmdError};
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]

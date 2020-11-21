@@ -6,8 +6,8 @@ mod local;
 mod k8;
 mod tls;
 
-use crate::CliError;
-use tls::TlsOpt;
+use super::ClusterCmdError;
+use self::tls::TlsOpt;
 
 #[cfg(target_os = "macos")]
 fn get_log_directory() -> &'static str {
@@ -147,7 +147,7 @@ pub struct InstallOpt {
 }
 
 impl InstallOpt {
-    pub async fn process(self) -> crate::Result<()> {
+    pub async fn process(self) -> super::Result<()> {
         use k8::install_sys;
         use k8::install_core;
         use k8::run_setup;
@@ -178,14 +178,14 @@ impl InstallOpt {
 }
 
 /// check to ensure spu are all running
-async fn confirm_spu(spu: u16) -> Result<(), CliError> {
+async fn confirm_spu(spu: u16) -> Result<(), ClusterCmdError> {
     use std::time::Duration;
 
     use std::env;
 
     use fluvio_future::timer::sleep;
     use fluvio::Fluvio;
-    use fluvio_cluster::ClusterError;
+    use crate::ClusterError;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
     let delay: u64 = env::var("FLV_SPU_DELAY")

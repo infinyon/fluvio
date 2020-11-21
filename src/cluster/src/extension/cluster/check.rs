@@ -1,6 +1,7 @@
 use structopt::StructOpt;
-use fluvio_cluster::ClusterChecker;
-use crate::Result;
+
+use crate::ClusterChecker;
+use super::Result;
 
 #[derive(Debug, StructOpt)]
 pub struct CheckOpt {

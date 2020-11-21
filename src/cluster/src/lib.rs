@@ -24,6 +24,10 @@ mod check;
 mod uninstall;
 mod local;
 
+
+#[cfg(feature = "cmd_extension")]
+pub mod extension;
+
 use fluvio_helm as helm;
 
 pub use install::ClusterInstaller;

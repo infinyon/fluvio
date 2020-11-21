@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cli"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio CLI"
@@ -18,9 +18,23 @@ doc = false
 
 [features]
 default = ["cluster_components", "native2_tls"]
-cluster_components = ["k8-client/native_tls","fluvio-spu", "fluvio-sc/k8","fluvio/native_tls","fluvio-cluster/native_tls","openssl/vendored"]
-cluster_components_rustls = ["k8-client/rust_tls","fluvio-spu","fluvio-sc/k8_rustls","fluvio/rust_tls","fluvio-cluster/rust_tls","openssl/vendored"]
-native2_tls = ["fluvio-future/native2_tls","fluvio-extension-consumer/native_tls"]
+cluster_components = [
+    "k8-client/native_tls",
+    "fluvio-spu",
+    "fluvio-sc/k8",
+    "fluvio/native_tls",
+    "fluvio-cluster/native_tls",
+    "openssl/vendored",
+]
+cluster_components_rustls = [
+    "k8-client/rust_tls",
+    "fluvio-spu",
+    "fluvio-sc/k8_rustls",
+    "fluvio/rust_tls",
+    "fluvio-cluster/rust_tls",
+    "openssl/vendored",
+]
+native2_tls = ["fluvio-future/native2_tls", "fluvio-extension-consumer/native_tls"]
 
 [build-dependencies]
 rustc_version = "0.2.3"
@@ -51,7 +65,7 @@ color-eyre = "0.5.5"
 which = "4.0.2"
 sha2 = "0.9.1"
 hex = "0.4.2"
-openssl = { version = "0.10.30",optional = true }
+openssl = { version = "0.10.30", optional = true }
 
 
 # Fluvio dependencies
@@ -68,11 +82,11 @@ fluvio-sc = { version = "0.3.1", path = "../sc", optional = true, default-featur
 fluvio-sc-schema = { version = "0.2.0", path = "../sc-schema", features = ["use_serde"] }
 fluvio-spu = { version = "0.2.0", path = "../spu", optional = true }
 fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
-fluvio-cluster = { version = "0.3.0", path = "../cluster", default-features = false }
+fluvio-cluster = { version = "0.3.1", path = "../cluster", default-features = false, features = ["cmd_extension"] }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-package-index = { version = "0.2.0", path = "../package-index" }
-fluvio-extension-consumer = { version = "0.1.0", path = "../extension-consumer"}
-fluvio-extension-common = { version = "0.1.0", path = "../extension-common"}
+fluvio-extension-consumer = { version = "0.1.0", path = "../extension-consumer" }
+fluvio-extension-common = { version = "0.1.0", path = "../extension-common" }
 
 
 [dev-dependencies]
