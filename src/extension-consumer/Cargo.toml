@@ -3,7 +3,7 @@ name = "fluvio-extension-consumer"
 version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-description = "Fluvio CLI"
+description = "Fluvio consumer extension"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
@@ -58,3 +58,5 @@ k8-obj-metadata = { version = "1.0.0" }
 k8-metadata-client = { version = "1.0.0" }
 fluvio = { version = "0.2.3", path = "../client", default-features = false }
 fluvio-types = { path = "../types", version = "0.1.0" }
+fluvio-extension-common = { version = "0.1.0", path = "../extension-common"}
+fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata", default-features = false }

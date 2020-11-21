@@ -70,6 +70,8 @@ fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-meta
 fluvio-cluster = { version = "0.3.0", path = "../cluster", default-features = false }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-package-index = { version = "0.2.0", path = "../package-index" }
+fluvio-extension-consumer = { version = "0.1.0", path = "../extension-consumer"}
+fluvio-extension-common = { version = "0.1.0", path = "../extension-common"}
 
 [dev-dependencies]
 fluvio-future = { version = "0.1.0", features = ["fixture"] }

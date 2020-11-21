@@ -8,7 +8,9 @@ mod unregister;
 
 use fluvio::Fluvio;
 pub use display::*;
-use crate::{Result, Terminal};
+use crate::Result;
+use crate::common::COMMAND_TEMPLATE;
+use crate::common::output::Terminal;
 use crate::spu::list::ListSpusOpt;
 use crate::spu::register::RegisterCustomSpuOpt;
 use crate::spu::unregister::UnregisterCustomSpuOpt;
@@ -18,21 +20,21 @@ pub enum SpuCmd {
     /// Registers a new custom SPU with the cluster
     #[structopt(
         name = "register",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     Register(RegisterCustomSpuOpt),
 
     /// Unregisters a custom SPU from the cluster
     #[structopt(
         name = "unregister",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     Unregister(UnregisterCustomSpuOpt),
 
     /// List all SPUs known by this cluster (managed AND custom)
     #[structopt(
         name = "list",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     List(ListSpusOpt),
 }

@@ -19,6 +19,7 @@ members = [
     "src/types",
     "src/utils",
     "src/extension-consumer",
+    "src/extension-common",
     "tests/runner",
 ]
 

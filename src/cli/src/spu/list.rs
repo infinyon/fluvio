@@ -11,7 +11,7 @@ use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::Result;
-use crate::Terminal;
+use crate::common::output::Terminal;
 use super::format_spu_response_output;
 use crate::common::OutputFormat;
 use fluvio::metadata::spu::CustomSpuSpec;

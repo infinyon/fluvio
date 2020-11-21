@@ -4,13 +4,14 @@ mod k8;
 mod local;
 
 use crate::Result;
+use crate::common::COMMAND_TEMPLATE;
 use crate::profile::sync::local::LocalOpt;
 use crate::profile::sync::k8::K8Opt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "sync",
-    template = crate::COMMAND_TEMPLATE,
+    template = COMMAND_TEMPLATE,
 )]
 pub enum SyncCmd {
     #[structopt(name = "k8", about = "sync profile from kubernetes cluster")]

@@ -2,7 +2,8 @@ use structopt::StructOpt;
 
 mod hex_dump;
 pub use self::hex_dump::*;
-use crate::OutputType;
+
+use crate::output::OutputType;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct OutputFormat {

@@ -25,12 +25,35 @@ mod context {
     use std::sync::Arc;
 
     use async_trait::async_trait;
-    use crate::Terminal;
+    use super::Terminal;
 
     #[async_trait]
     pub trait RenderContext {
         async fn render_on<O: Terminal>(&self, out: Arc<O>);
     }
+}
+
+pub use self::error::OutputError;
+
+mod error {
+
+    use serde_json::Error as SerdeJsonError;
+    use serde_yaml::Error as SerdeYamlError;
+
+    #[derive(thiserror::Error, Debug)]
+    pub enum OutputError {
+        #[error(transparent)]
+        SerdeJson {
+            #[from]
+            source: SerdeJsonError,
+        },
+        #[error("Fluvio client error")]
+        SerdeYamlError {
+            #[from]
+            source: SerdeYamlError,
+        },
+    }
+
 }
 
 #[allow(clippy::module_inception)]
@@ -45,8 +68,6 @@ mod output {
     use prettytable::row;
     use prettytable::cell;
 
-    use crate::CliError;
-
     use super::TableOutputHandler;
     use super::TableRenderer;
     use super::SerdeRenderer;
@@ -54,6 +75,7 @@ mod output {
     use super::DescribeObjectRender;
     use super::KeyValOutputHandler;
     use super::SerializeType;
+    use super::OutputError;
 
     // Uses clap::arg_enum to choose possible variables
     arg_enum! {
@@ -81,10 +103,11 @@ mod output {
     }
 
     pub trait Terminal: Sized {
+
         fn print(&self, msg: &str);
         fn println(&self, msg: &str);
 
-        fn render_list<T>(self: Arc<Self>, list: &T, mode: OutputType) -> Result<(), CliError>
+        fn render_list<T>(self: Arc<Self>, list: &T, mode: OutputType) -> Result<(), OutputError>
         where
             T: TableOutputHandler + Serialize,
         {
@@ -108,18 +131,19 @@ mod output {
             self: Arc<Self>,
             val: &T,
             mode: SerializeType,
-        ) -> Result<(), CliError> {
+        ) -> Result<(), OutputError> {
             let render = SerdeRenderer::new(self);
             render.render(val, mode)
         }
 
-        fn describe_objects<D: DescribeObjectHandler>(
+        /// describe objects
+        fn describe_objects<D>(
             self: Arc<Self>,
             objects: &[D],
             mode: OutputType,
-        ) -> Result<(), CliError>
+        ) -> Result<(), OutputError>
         where
-            D: TableOutputHandler + KeyValOutputHandler + Serialize + Clone,
+            D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler + Serialize + Clone,
         {
             let render = DescribeObjectRender::new(self);
             render.render(objects, mode)

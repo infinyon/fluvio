@@ -3,7 +3,7 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 
 use crate::Result;
-use crate::Terminal;
+use crate::common::output::Terminal;
 use crate::partition::list::ListPartitionOpt;
 
 mod list;
@@ -14,7 +14,7 @@ pub enum PartitionCmd {
     /// List all of the Partitions in this cluster
     #[structopt(
         name = "list",
-        template = crate::COMMAND_TEMPLATE,
+        template = crate::common::COMMAND_TEMPLATE,
     )]
     List(ListPartitionOpt),
 }

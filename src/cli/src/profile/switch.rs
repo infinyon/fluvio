@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::config::ConfigFile;
-use crate::{Result, Terminal};
-use crate::{t_println, t_print_cli_err};
+use crate::Result;
+use crate::common::output::Terminal;
+use crate::common::{ t_println, t_print_cli_err};
 
 #[derive(Debug, StructOpt)]
 pub struct SwitchOpt {

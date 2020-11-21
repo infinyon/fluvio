@@ -14,7 +14,8 @@ mod delete_profile;
 mod delete_cluster;
 mod view;
 
-use crate::{Result, Terminal};
+use crate::Result;
+use crate::common::output::Terminal;
 use crate::profile::current::CurrentOpt;
 use crate::profile::delete_cluster::DeleteClusterOpt;
 use crate::profile::delete_profile::DeleteProfileOpt;

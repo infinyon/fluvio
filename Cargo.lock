@@ -999,6 +999,8 @@ dependencies = [
  "fluvio",
  "fluvio-cluster",
  "fluvio-controlplane-metadata",
+ "fluvio-extension-common",
+ "fluvio-extension-consumer",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-sc",
@@ -1102,6 +1104,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-extension-common"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes 0.5.6",
+ "cfg-if 1.0.0",
+ "color-eyre",
+ "ctrlc",
+ "eyre",
+ "futures-lite",
+ "hex",
+ "prettytable-rs",
+ "rand 0.7.3",
+ "semver 0.11.0",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "structopt",
+ "thiserror",
+ "toml",
+ "tracing",
+ "tracing-futures",
+ "url",
+ "which",
+]
+
+[[package]]
 name = "fluvio-extension-consumer"
 version = "0.1.0"
 dependencies = [
@@ -1114,6 +1144,8 @@ dependencies = [
  "dirs 1.0.5",
  "eyre",
  "fluvio",
+ "fluvio-controlplane-metadata",
+ "fluvio-extension-common",
  "fluvio-future",
  "fluvio-types",
  "flv-util",

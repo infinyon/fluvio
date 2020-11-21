@@ -3,10 +3,11 @@ use std::sync::Arc;
 use serde::Serialize;
 use structopt::clap::arg_enum;
 
-use crate::Terminal;
-use crate::CliError;
+use super::Terminal;
+
 
 use super::OutputType;
+use super::OutputError;
 
 arg_enum! {
     #[derive(Debug, Clone, PartialEq)]
@@ -37,7 +38,7 @@ where
         Self(out)
     }
 
-    pub fn render<S>(&self, value: &S, output_type: SerializeType) -> Result<(), CliError>
+    pub fn render<S>(&self, value: &S, output_type: SerializeType) -> Result<(),OutputError>
     where
         S: Serialize,
     {
@@ -48,11 +49,11 @@ where
     }
 
     /// convert result to yaml format and print to terminal
-    fn to_yaml<S>(&self, value: &S) -> Result<(), CliError>
+    fn to_yaml<S>(&self, value: &S) -> Result<(),OutputError>
     where
         S: Serialize,
     {
-        let serialized = serde_yaml::to_string(value).unwrap();
+        let serialized = serde_yaml::to_string(value)?;
 
         self.0.println(&serialized);
 
@@ -60,11 +61,11 @@ where
     }
 
     /// convert to yaml format and print to terminal
-    fn to_json<S>(&self, value: &S) -> Result<(), CliError>
+    fn to_json<S>(&self, value: &S) -> Result<(),OutputError>
     where
         S: Serialize,
     {
-        let serialized = serde_json::to_string_pretty(value).unwrap();
+        let serialized = serde_json::to_string_pretty(value)?;
 
         self.0.println(&serialized);
 

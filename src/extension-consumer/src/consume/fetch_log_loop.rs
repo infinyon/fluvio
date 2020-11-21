@@ -12,11 +12,10 @@ use tracing::debug;
 use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
 use futures_lite::StreamExt;
 
-use crate::error::CliError;
-use crate::Terminal;
-
+use crate::common::output::Terminal;
 use crate::consume::ConsumeLogOpt;
 use crate::consume::logs_output::process_fetch_topic_response;
+use crate::ConsumerError;
 
 // -----------------------------------
 // SPU - Fetch Loop
@@ -28,7 +27,7 @@ pub async fn fetch_log_loop<O>(
     out: std::sync::Arc<O>,
     consumer: PartitionConsumer,
     opt: ConsumeLogOpt,
-) -> Result<(), CliError>
+) -> Result<(), ConsumerError>
 where
     O: Terminal,
 {
@@ -66,7 +65,7 @@ where
     let initial_offset = match maybe_initial_offset {
         Some(offset) => offset,
         None => {
-            return Err(CliError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()));
+            return Err(ConsumerError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()));
         }
     };
 

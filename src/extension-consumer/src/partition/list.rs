@@ -9,7 +9,8 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::partition::*;
 
-use crate::{Result, Terminal};
+use crate::Result;
+use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 /// Option for Listing Partition
@@ -39,34 +40,45 @@ impl ListPartitionOpt {
 mod display {
 
     use std::convert::TryInto;
-
+    
     use prettytable::Row;
     use prettytable::row;
     use prettytable::cell;
+    use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::partition::*;
     use fluvio::dataplane::PartitionError;
 
-    use crate::error::CliError;
-    use crate::OutputType;
-    use crate::Terminal;
-    use crate::TableOutputHandler;
-    use crate::t_println;
+    //use crate::error::CliError;
+    use crate::common::t_println;
+    use crate::common::output:: { OutputType, OutputError, Terminal, TableOutputHandler};
 
-    type ListSpus = Vec<Metadata<PartitionSpec>>;
+
+    #[derive(Serialize)]
+    struct ListSpus(Vec<Metadata<PartitionSpec>>);
+
+    impl IntoIterator for ListSpus {
+        type Item = Metadata<PartitionSpec>;
+        type IntoIter = std::vec::IntoIter<Self::Item>;
+    
+        fn into_iter(self) -> Self::IntoIter {
+            self.0.into_iter()
+        }
+    }
 
     /// Process server based on output type
     pub fn format_partition_response_output<O>(
         out: std::sync::Arc<O>,
-        spus: ListSpus,
+        spus: Vec<Metadata<PartitionSpec>>,
         output_type: OutputType,
-    ) -> Result<(), CliError>
+    ) -> Result<(), OutputError>
     where
         O: Terminal,
     {
         if !spus.is_empty() {
-            out.render_list(&spus, output_type)?;
+            let meta_spus = ListSpus(spus);
+            out.render_list(&meta_spus, output_type)?;
         } else {
             t_println!(out, "No partitions found");
         }
@@ -96,7 +108,7 @@ mod display {
         }
 
         fn content(&self) -> Vec<Row> {
-            self.iter()
+            self.0.iter()
                 .map(|metadata| {
                     let spec = &metadata.spec;
                     let status = &metadata.status;
