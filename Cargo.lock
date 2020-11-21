@@ -1043,6 +1043,7 @@ dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
  "fluvio-future",
+ "fluvio-helm",
  "flv-util",
  "k8-client",
  "k8-config",
@@ -1182,6 +1183,18 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "webpki",
+]
+
+[[package]]
+name = "fluvio-helm"
+version = "0.1.0"
+source = "git+https://github.com/infinyon/fluvio-helm?branch=main#8c3af984f6a239747578b3ff3228ebc2829a696e"
+dependencies = [
+ "flv-util",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
