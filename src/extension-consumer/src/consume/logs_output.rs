@@ -10,7 +10,7 @@ use serde_json::Value;
 use fluvio::dataplane::record::RecordSet;
 use fluvio::dataplane::fetch::FetchablePartitionResponse;
 
-use crate::common::output:: { Terminal, OutputError};
+use crate::common::output::{Terminal, OutputError};
 use crate::common::{bytes_to_hex_dump, hex_dump_separator};
 use crate::common::{t_println, t_print_cli_err};
 

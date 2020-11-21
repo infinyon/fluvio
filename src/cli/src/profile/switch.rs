@@ -3,7 +3,7 @@ use structopt::StructOpt;
 use fluvio::config::ConfigFile;
 use crate::Result;
 use crate::common::output::Terminal;
-use crate::common::{ t_println, t_print_cli_err};
+use crate::common::{t_println, t_print_cli_err};
 
 #[derive(Debug, StructOpt)]
 pub struct SwitchOpt {

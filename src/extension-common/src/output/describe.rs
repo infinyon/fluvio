@@ -8,8 +8,6 @@ use std::sync::Arc;
 
 use serde::Serialize;
 
-
-
 use crate::t_println;
 
 use super::OutputType;
@@ -19,11 +17,9 @@ use super::OutputError;
 use super::Terminal;
 
 pub trait DescribeObjectHandler {
-
-
     fn is_ok(&self) -> bool;
     fn is_error(&self) -> bool;
-    fn validate(&self) -> Result<(),OutputError>;
+    fn validate(&self) -> Result<(), OutputError>;
 
     fn label() -> &'static str;
     fn label_plural() -> &'static str;

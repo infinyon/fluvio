@@ -1,5 +1,3 @@
-
-
 mod http;
 mod error;
 mod root_cli;
@@ -9,7 +7,6 @@ mod tls;
 pub mod cluster;
 mod group;
 mod install;
-
 
 #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
 mod run;
@@ -21,8 +18,6 @@ use fluvio_extension_common as common;
 pub use root_cli::Root;
 
 const VERSION: &str = include_str!("VERSION");
-
-
 
 mod target {
     use std::io::{ErrorKind, Error as IoError};

@@ -4,7 +4,6 @@ use prettytable::format;
 use prettytable::Row;
 use prettytable::Table;
 
-
 use crate::t_println;
 use super::Terminal;
 

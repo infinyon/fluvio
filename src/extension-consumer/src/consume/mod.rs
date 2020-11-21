@@ -60,7 +60,11 @@ pub struct ConsumeLogOpt {
 }
 
 impl ConsumeLogOpt {
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), ConsumerError> {
+    pub async fn process<O: Terminal>(
+        self,
+        out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<(), ConsumerError> {
         let consumer = fluvio
             .partition_consumer(&self.topic, self.partition)
             .await?;

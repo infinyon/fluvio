@@ -48,7 +48,7 @@ mod output {
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
     use crate::Result;
-    use crate::common::output::{ OutputType, TableOutputHandler, Terminal};
+    use crate::common::output::{OutputType, TableOutputHandler, Terminal};
     use crate::common::t_println;
 
     #[derive(Serialize)]
@@ -92,7 +92,8 @@ mod output {
 
         /// table content implementation
         fn content(&self) -> Vec<Row> {
-            self.0.iter()
+            self.0
+                .iter()
                 .map(|r| {
                     let spec = &r.spec;
                     let storage_config = spec.spu_config.real_storage_config();

@@ -53,7 +53,6 @@ mod error {
             source: SerdeYamlError,
         },
     }
-
 }
 
 #[allow(clippy::module_inception)]
@@ -103,7 +102,6 @@ mod output {
     }
 
     pub trait Terminal: Sized {
-
         fn print(&self, msg: &str);
         fn println(&self, msg: &str);
 

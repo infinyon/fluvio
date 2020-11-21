@@ -12,9 +12,8 @@ use fluvio::metadata::objects::Metadata;
 use fluvio::metadata::spu::SpuSpec;
 
 use crate::error::CliError;
-use crate::common::output::{ OutputType, Terminal, TableOutputHandler};
+use crate::common::output::{OutputType, Terminal, TableOutputHandler};
 use crate::common::t_println;
-
 
 #[derive(Serialize)]
 struct ListSpus(Vec<Metadata<SpuSpec>>);
@@ -50,7 +49,8 @@ impl TableOutputHandler for ListSpus {
     }
 
     fn content(&self) -> Vec<Row> {
-        self.0.iter()
+        self.0
+            .iter()
             .map(|metadata| {
                 let spu = &metadata.spec;
 

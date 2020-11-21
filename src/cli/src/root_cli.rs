@@ -19,7 +19,6 @@ use crate::common::COMMAND_TEMPLATE;
 use crate::target::ClusterTarget;
 use crate::common::output::Terminal;
 
-
 use crate::spu::SpuCmd;
 use crate::group::SpuGroupCmd;
 use super::profile::ProfileCmd;

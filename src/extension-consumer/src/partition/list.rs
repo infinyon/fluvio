@@ -40,7 +40,7 @@ impl ListPartitionOpt {
 mod display {
 
     use std::convert::TryInto;
-    
+
     use prettytable::Row;
     use prettytable::row;
     use prettytable::cell;
@@ -52,8 +52,7 @@ mod display {
 
     //use crate::error::CliError;
     use crate::common::t_println;
-    use crate::common::output:: { OutputType, OutputError, Terminal, TableOutputHandler};
-
+    use crate::common::output::{OutputType, OutputError, Terminal, TableOutputHandler};
 
     #[derive(Serialize)]
     struct ListSpus(Vec<Metadata<PartitionSpec>>);
@@ -61,7 +60,7 @@ mod display {
     impl IntoIterator for ListSpus {
         type Item = Metadata<PartitionSpec>;
         type IntoIter = std::vec::IntoIter<Self::Item>;
-    
+
         fn into_iter(self) -> Self::IntoIter {
             self.0.into_iter()
         }
@@ -108,7 +107,8 @@ mod display {
         }
 
         fn content(&self) -> Vec<Row> {
-            self.0.iter()
+            self.0
+                .iter()
                 .map(|metadata| {
                     let spec = &metadata.spec;
                     let status = &metadata.status;

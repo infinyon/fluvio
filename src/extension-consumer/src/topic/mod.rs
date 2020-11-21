@@ -17,7 +17,6 @@ use crate::Result;
 use crate::common::COMMAND_TEMPLATE;
 use crate::common::output::Terminal;
 
-
 #[derive(Debug, StructOpt)]
 #[structopt(name = "topic", about = "Topic operations")]
 pub enum TopicCmd {

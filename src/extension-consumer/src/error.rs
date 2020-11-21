@@ -34,7 +34,6 @@ pub enum ConsumerError {
     Other(String),
 }
 
-
 impl ConsumerError {
     pub fn invalid_arg<M: Into<String>>(reason: M) -> Self {
         Self::InvalidArg(reason.into())

@@ -15,7 +15,6 @@ use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 use crate::Result;
 
-
 // -----------------------------------
 // CLI Options
 // -----------------------------------
@@ -43,11 +42,11 @@ mod display {
 
     use prettytable::*;
     use serde::Serialize;
-    
+
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::topic::TopicSpec;
 
-    use crate::common::output::{ OutputType,TableOutputHandler, Terminal, OutputError };
+    use crate::common::output::{OutputType, TableOutputHandler, Terminal, OutputError};
     use crate::common::t_println;
 
     #[derive(Serialize)]
@@ -95,7 +94,8 @@ mod display {
 
         /// table content implementation
         fn content(&self) -> Vec<Row> {
-            self.0.iter()
+            self.0
+                .iter()
                 .map(|metadata| {
                     let topic = &metadata.spec;
                     row![

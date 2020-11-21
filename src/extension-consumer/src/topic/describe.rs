@@ -52,26 +52,26 @@ mod display {
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::topic::TopicSpec;
 
-    use crate::common::output::{ OutputType, OutputError, DescribeObjectHandler, KeyValOutputHandler, TableOutputHandler, Terminal};
-   
+    use crate::common::output::{
+        OutputType, OutputError, DescribeObjectHandler, KeyValOutputHandler, TableOutputHandler,
+        Terminal,
+    };
 
+    #[allow(clippy::redundant_closure)]
     // Connect to Kafka Controller and query server for topic
     pub async fn describe_topics<O>(
         topics: Vec<Metadata<TopicSpec>>,
         output_type: OutputType,
         out: std::sync::Arc<O>,
-    ) -> Result<(),OutputError>
+    ) -> Result<(), OutputError>
     where
         O: Terminal,
     {
-        let topic_list: Vec<TopicMetadata> = topics
-            .into_iter()
-            .map(|m| TopicMetadata(m))
-            .collect();
+        let topic_list: Vec<TopicMetadata> = topics.into_iter().map(|m| TopicMetadata(m)).collect();
         out.describe_objects(&topic_list, output_type)
     }
 
-    #[derive(Serialize,Clone)]
+    #[derive(Serialize, Clone)]
     struct TopicMetadata(Metadata<TopicSpec>);
 
     impl DescribeObjectHandler for TopicMetadata {
@@ -91,7 +91,7 @@ mod display {
             false
         }
 
-        fn validate(&self) -> Result<(),OutputError> {
+        fn validate(&self) -> Result<(), OutputError> {
             Ok(())
         }
     }

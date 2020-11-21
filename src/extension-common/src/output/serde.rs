@@ -5,7 +5,6 @@ use structopt::clap::arg_enum;
 
 use super::Terminal;
 
-
 use super::OutputType;
 use super::OutputError;
 
@@ -38,7 +37,7 @@ where
         Self(out)
     }
 
-    pub fn render<S>(&self, value: &S, output_type: SerializeType) -> Result<(),OutputError>
+    pub fn render<S>(&self, value: &S, output_type: SerializeType) -> Result<(), OutputError>
     where
         S: Serialize,
     {
@@ -49,7 +48,7 @@ where
     }
 
     /// convert result to yaml format and print to terminal
-    fn to_yaml<S>(&self, value: &S) -> Result<(),OutputError>
+    fn to_yaml<S>(&self, value: &S) -> Result<(), OutputError>
     where
         S: Serialize,
     {
@@ -61,7 +60,7 @@ where
     }
 
     /// convert to yaml format and print to terminal
-    fn to_json<S>(&self, value: &S) -> Result<(),OutputError>
+    fn to_json<S>(&self, value: &S) -> Result<(), OutputError>
     where
         S: Serialize,
     {
