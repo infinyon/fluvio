@@ -4,8 +4,8 @@ use prettytable::format;
 use prettytable::Row;
 use prettytable::Table;
 
-use crate::Terminal;
 use crate::t_println;
+use super::Terminal;
 
 pub trait TableOutputHandler {
     fn header(&self) -> Row;

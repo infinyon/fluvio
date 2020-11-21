@@ -6,29 +6,30 @@
 use prettytable::Row;
 use prettytable::row;
 use prettytable::cell;
+use serde::Serialize;
 
 use fluvio::metadata::objects::Metadata;
 use fluvio::metadata::spu::SpuSpec;
 
 use crate::error::CliError;
-use crate::OutputType;
-use crate::Terminal;
-use crate::TableOutputHandler;
-use crate::t_println;
+use crate::common::output::{OutputType, Terminal, TableOutputHandler};
+use crate::common::t_println;
 
-type ListSpus = Vec<Metadata<SpuSpec>>;
+#[derive(Serialize)]
+struct ListSpus(Vec<Metadata<SpuSpec>>);
 
 /// Process server based on output type
 pub fn format_spu_response_output<O>(
     out: std::sync::Arc<O>,
-    spus: ListSpus,
+    spus: Vec<Metadata<SpuSpec>>,
     output_type: OutputType,
 ) -> Result<(), CliError>
 where
     O: Terminal,
 {
     if !spus.is_empty() {
-        out.render_list(&spus, output_type)?;
+        let spu_list = ListSpus(spus);
+        out.render_list(&spu_list, output_type)?;
     } else {
         t_println!(out, "no spu");
     }
@@ -48,7 +49,8 @@ impl TableOutputHandler for ListSpus {
     }
 
     fn content(&self) -> Vec<Row> {
-        self.iter()
+        self.0
+            .iter()
             .map(|metadata| {
                 let spu = &metadata.spec;
 

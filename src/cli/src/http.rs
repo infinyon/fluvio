@@ -41,6 +41,6 @@ async fn create_tls() -> fluvio_future::native_tls::TlsConnector {
 }
 
 #[cfg(not(feature = "native2_tls"))]
-async fn create_tls() -> fluvio_future::tls::TlsConnector {
-    fluvio_future::tls::TlsConnector::default()
+async fn create_tls() -> fluvio_future::rust_tls::TlsConnector {
+    fluvio_future::rust_tls::TlsConnector::default()
 }

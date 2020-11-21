@@ -10,11 +10,9 @@ use serde_json::Value;
 use fluvio::dataplane::record::RecordSet;
 use fluvio::dataplane::fetch::FetchablePartitionResponse;
 
-use crate::error::CliError;
+use crate::common::output::{Terminal, OutputError};
 use crate::common::{bytes_to_hex_dump, hex_dump_separator};
-use crate::Terminal;
-use crate::t_println;
-use crate::t_print_cli_err;
+use crate::common::{t_println, t_print_cli_err};
 
 use crate::consume::ConsumeLogOpt;
 use super::ConsumeOutputType;
@@ -24,7 +22,7 @@ pub async fn process_fetch_topic_response<O>(
     out: std::sync::Arc<O>,
     response: FetchablePartitionResponse<RecordSet>,
     config: &ConsumeLogOpt,
-) -> Result<(), CliError>
+) -> Result<(), OutputError>
 where
     O: Terminal,
 {

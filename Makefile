@@ -46,7 +46,7 @@ smoke-test-tls-policy:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
 
 # test rbac with ROOT user
-smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1-local
+smoke-test-tls-root:	smoke-test-tls-policy
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set

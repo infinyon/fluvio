@@ -11,8 +11,11 @@ use delete::DeleteTopicOpt;
 use describe::DescribeTopicsOpt;
 use list::ListTopicsOpt;
 
-use crate::{Result, Terminal};
 use fluvio::Fluvio;
+
+use crate::Result;
+use crate::common::COMMAND_TEMPLATE;
+use crate::common::output::Terminal;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "topic", about = "Topic operations")]
@@ -20,28 +23,28 @@ pub enum TopicCmd {
     /// Creates a Topic with the given name
     #[structopt(
         name = "create",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     Create(CreateTopicOpt),
 
     /// Deletes a Topic with the given name
     #[structopt(
         name = "delete",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteTopicOpt),
 
     /// Prints detailed information about a Topic
     #[structopt(
         name = "describe",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     Describe(DescribeTopicsOpt),
 
     /// Lists all of the Topics in the cluster
     #[structopt(
         name = "list",
-        template = crate::COMMAND_TEMPLATE,
+        template = COMMAND_TEMPLATE,
     )]
     List(ListTopicsOpt),
 }

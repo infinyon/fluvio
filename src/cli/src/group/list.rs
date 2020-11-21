@@ -10,7 +10,7 @@ use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 use crate::Result;
-use crate::Terminal;
+use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 #[derive(Debug, StructOpt)]
@@ -42,17 +42,17 @@ mod output {
     use prettytable::cell;
     use prettytable::format::Alignment;
     use tracing::debug;
+    use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
     use crate::Result;
-    use crate::output::OutputType;
-    use crate::TableOutputHandler;
-    use crate::Terminal;
-    use crate::t_println;
+    use crate::common::output::{OutputType, TableOutputHandler, Terminal};
+    use crate::common::t_println;
 
-    type ListSpuGroups = Vec<Metadata<SpuGroupSpec>>;
+    #[derive(Serialize)]
+    struct ListSpuGroups(Vec<Metadata<SpuGroupSpec>>);
 
     // -----------------------------------
     // Format Output
@@ -61,13 +61,15 @@ mod output {
     /// Format SPU Group based on output type
     pub fn spu_group_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_spu_groups: ListSpuGroups,
+        list_spu_groups: Vec<Metadata<SpuGroupSpec>>,
         output_type: OutputType,
     ) -> Result<()> {
         debug!("groups: {:#?}", list_spu_groups);
 
         if !list_spu_groups.is_empty() {
-            out.render_list(&list_spu_groups, output_type)
+            let groups = ListSpuGroups(list_spu_groups);
+            out.render_list(&groups, output_type)?;
+            Ok(())
         } else {
             t_println!(out, "no groups");
             Ok(())
@@ -85,12 +87,13 @@ mod output {
 
         /// return errors in string format
         fn errors(&self) -> Vec<String> {
-            self.iter().map(|_g| "".to_owned()).collect()
+            self.0.iter().map(|_g| "".to_owned()).collect()
         }
 
         /// table content implementation
         fn content(&self) -> Vec<Row> {
-            self.iter()
+            self.0
+                .iter()
                 .map(|r| {
                     let spec = &r.spec;
                     let storage_config = spec.spu_config.real_storage_config();

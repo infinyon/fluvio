@@ -6,8 +6,8 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 
+use crate::common::output::Terminal;
 use crate::Result;
-use crate::Terminal;
 
 /// Produce log configuration parameters
 #[derive(Debug)]
@@ -114,7 +114,7 @@ mod produce {
     use fluvio_types::{print_cli_err, print_cli_ok};
     use fluvio::TopicProducer;
 
-    use crate::t_println;
+    use crate::common::t_println;
 
     use super::*;
 

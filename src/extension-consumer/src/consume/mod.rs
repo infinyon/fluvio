@@ -12,9 +12,10 @@ mod fetch_log_loop;
 mod logs_output;
 
 use fluvio::Fluvio;
-use crate::error::CliError;
+
+use crate::common::output::Terminal;
 use crate::consume::fetch_log_loop::fetch_log_loop;
-use crate::Terminal;
+use crate::ConsumerError;
 
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
@@ -59,7 +60,11 @@ pub struct ConsumeLogOpt {
 }
 
 impl ConsumeLogOpt {
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
+    pub async fn process<O: Terminal>(
+        self,
+        out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<(), ConsumerError> {
         let consumer = fluvio
             .partition_consumer(&self.topic, self.partition)
             .await?;

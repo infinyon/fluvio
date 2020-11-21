@@ -9,20 +9,20 @@ use structopt::StructOpt;
 use tracing::debug;
 
 use fluvio::Fluvio;
+use fluvio_extension_consumer::consume::ConsumeLogOpt;
+use fluvio_extension_consumer::produce::ProduceLogOpt;
+use fluvio_extension_consumer::partition::PartitionCmd;
+use fluvio_extension_consumer::topic::TopicCmd;
 
 use crate::Result;
-use crate::COMMAND_TEMPLATE;
+use crate::common::COMMAND_TEMPLATE;
 use crate::target::ClusterTarget;
-use crate::Terminal;
+use crate::common::output::Terminal;
 
 use crate::spu::SpuCmd;
 use crate::group::SpuGroupCmd;
-use super::consume::ConsumeLogOpt;
-use super::produce::ProduceLogOpt;
-use super::topic::TopicCmd;
 use super::profile::ProfileCmd;
 use super::cluster::ClusterCmd;
-use super::partition::PartitionCmd;
 use crate::install::update::UpdateOpt;
 use crate::install::plugins::InstallOpt;
 

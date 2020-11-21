@@ -12,7 +12,7 @@ use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::Result;
-use crate::Terminal;
+use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 // -----------------------------------
@@ -47,31 +47,34 @@ mod display {
 
     use prettytable::Row;
     use prettytable::row;
+    use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::topic::TopicSpec;
 
-    use crate::OutputType;
-    use crate::Result;
-    use crate::DescribeObjectHandler;
-    use crate::{KeyValOutputHandler, TableOutputHandler};
-    use crate::Terminal;
+    use crate::common::output::{
+        OutputType, OutputError, DescribeObjectHandler, KeyValOutputHandler, TableOutputHandler,
+        Terminal,
+    };
 
-    type ListTopics = Vec<Metadata<TopicSpec>>;
-
+    #[allow(clippy::redundant_closure)]
     // Connect to Kafka Controller and query server for topic
     pub async fn describe_topics<O>(
-        topics: ListTopics,
+        topics: Vec<Metadata<TopicSpec>>,
         output_type: OutputType,
         out: std::sync::Arc<O>,
-    ) -> Result<()>
+    ) -> Result<(), OutputError>
     where
         O: Terminal,
     {
-        out.describe_objects(&topics, output_type)
+        let topic_list: Vec<TopicMetadata> = topics.into_iter().map(|m| TopicMetadata(m)).collect();
+        out.describe_objects(&topic_list, output_type)
     }
 
-    impl DescribeObjectHandler for Metadata<TopicSpec> {
+    #[derive(Serialize, Clone)]
+    struct TopicMetadata(Metadata<TopicSpec>);
+
+    impl DescribeObjectHandler for TopicMetadata {
         fn label() -> &'static str {
             "topic"
         }
@@ -88,12 +91,12 @@ mod display {
             false
         }
 
-        fn validate(&self) -> Result<()> {
+        fn validate(&self) -> Result<(), OutputError> {
             Ok(())
         }
     }
 
-    impl TableOutputHandler for Metadata<TopicSpec> {
+    impl TableOutputHandler for TopicMetadata {
         fn header(&self) -> Row {
             row![]
         }
@@ -107,14 +110,14 @@ mod display {
         }
     }
 
-    impl KeyValOutputHandler for Metadata<TopicSpec> {
+    impl KeyValOutputHandler for TopicMetadata {
         /// key value hash map implementation
         fn key_values(&self) -> Vec<(String, Option<String>)> {
             let mut key_values = Vec::new();
-            let spec = &self.spec;
-            let status = &self.status;
+            let spec = &self.0.spec;
+            let status = &self.0.status;
 
-            key_values.push(("Name".to_owned(), Some(self.name.clone())));
+            key_values.push(("Name".to_owned(), Some(self.0.name.clone())));
             key_values.push(("Type".to_owned(), Some(spec.type_label().to_string())));
             match spec {
                 TopicSpec::Computed(param) => {

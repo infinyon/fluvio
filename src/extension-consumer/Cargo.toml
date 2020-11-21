@@ -1,0 +1,44 @@
+[package]
+name = "fluvio-extension-consumer"
+version = "0.1.0"
+edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio consumer extension"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+
+[lib]
+name = "fluvio_extension_consumer"
+path = "src/lib.rs"
+
+
+[features]
+default = ["native_tls"]
+native_tls = ["fluvio/native_tls"]
+rust_tls = ["fluvio/rust_tls"]
+
+
+[dependencies]
+tracing = "0.1.19"
+structopt = { version = "0.3.16", default-features = false }
+toml = "0.5.5"
+prettytable-rs = "0.8.0"
+serde = { version = "1.0.103", features = ['derive'] }
+serde_json = "1.0.39"
+serde_yaml = "0.8.8"
+ctrlc = "3.1.3"
+futures-lite = { version = "1.7.0" }
+thiserror = "1.0.20"
+eyre = "0.6.1"
+which = "4.0.2"
+
+
+
+# Fluvio dependencies
+
+flv-util = { version = "0.5.0" }
+fluvio-future = { version = "0.1.8" }
+fluvio = { version = "0.2.3", path = "../client", default-features = false }
+fluvio-types = { path = "../types", version = "0.1.0" }
+fluvio-extension-common = { version = "0.1.0", path = "../extension-common"}
+fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata", default-features = false }

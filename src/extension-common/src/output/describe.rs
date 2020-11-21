@@ -8,18 +8,18 @@ use std::sync::Arc;
 
 use serde::Serialize;
 
-use crate::error::CliError;
-use crate::Terminal;
 use crate::t_println;
 
 use super::OutputType;
 use super::TableOutputHandler;
 use super::KeyValOutputHandler;
+use super::OutputError;
+use super::Terminal;
 
 pub trait DescribeObjectHandler {
     fn is_ok(&self) -> bool;
     fn is_error(&self) -> bool;
-    fn validate(&self) -> Result<(), CliError>;
+    fn validate(&self) -> Result<(), OutputError>;
 
     fn label() -> &'static str;
     fn label_plural() -> &'static str;
@@ -42,7 +42,7 @@ impl<O> DescribeObjectRender<O> {
 // -----------------------------------
 
 impl<O: Terminal> DescribeObjectRender<O> {
-    pub fn render<D>(&self, objects: &[D], output_type: OutputType) -> Result<(), CliError>
+    pub fn render<D>(&self, objects: &[D], output_type: OutputType) -> Result<(), OutputError>
     where
         D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler + Serialize + Clone,
     {
@@ -54,7 +54,7 @@ impl<O: Terminal> DescribeObjectRender<O> {
         }
     }
 
-    pub fn print_table<D>(&self, objects: &[D]) -> Result<(), CliError>
+    pub fn print_table<D>(&self, objects: &[D]) -> Result<(), OutputError>
     where
         D: DescribeObjectHandler + TableOutputHandler + KeyValOutputHandler,
     {

@@ -2,6 +2,8 @@ use std::io::Error as IoError;
 
 use fluvio::FluvioError;
 use fluvio_cluster::{ClusterError, CheckError};
+use fluvio_extension_common::output::OutputError;
+use fluvio_extension_consumer::ConsumerError;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 
@@ -11,6 +13,16 @@ pub enum CliError {
     IoError {
         #[from]
         source: IoError,
+    },
+    #[error(transparent)]
+    OutputError {
+        #[from]
+        source: OutputError,
+    },
+    #[error("Consumer Error")]
+    ConsumerError {
+        #[from]
+        source: ConsumerError,
     },
     #[error("Fluvio client error")]
     ClientError {

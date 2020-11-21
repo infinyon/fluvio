@@ -11,9 +11,9 @@ use tracing::debug;
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
-use crate::Terminal;
-use crate::Result;
+use crate::common::output::Terminal;
 use crate::common::OutputFormat;
+use crate::Result;
 
 // -----------------------------------
 // CLI Options
@@ -41,29 +41,29 @@ impl ListTopicsOpt {
 mod display {
 
     use prettytable::*;
+    use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::topic::TopicSpec;
 
-    use crate::error::CliError;
-    use crate::OutputType;
-    use crate::TableOutputHandler;
-    use crate::Terminal;
-    use crate::t_println;
+    use crate::common::output::{OutputType, TableOutputHandler, Terminal, OutputError};
+    use crate::common::t_println;
 
-    type ListTopics = Vec<Metadata<TopicSpec>>;
+    #[derive(Serialize)]
+    struct ListTopics(Vec<Metadata<TopicSpec>>);
 
     /// Process server based on output type
     pub fn format_response_output<O>(
         out: std::sync::Arc<O>,
-        list_topics: ListTopics,
+        list_topics: Vec<Metadata<TopicSpec>>,
         output_type: OutputType,
-    ) -> Result<(), CliError>
+    ) -> Result<(), OutputError>
     where
         O: Terminal,
     {
         if !list_topics.is_empty() {
-            out.render_list(&list_topics, output_type)
+            let table_list = ListTopics(list_topics);
+            out.render_list(&table_list, output_type)
         } else {
             t_println!(out, "No topics found");
             Ok(())
@@ -94,7 +94,8 @@ mod display {
 
         /// table content implementation
         fn content(&self) -> Vec<Row> {
-            self.iter()
+            self.0
+                .iter()
                 .map(|metadata| {
                     let topic = &metadata.spec;
                     row![
