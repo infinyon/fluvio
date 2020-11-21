@@ -1102,6 +1102,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-extension-consumer"
+version = "0.1.0"
+dependencies = [
+ "async-h1",
+ "async-trait",
+ "bytes 0.5.6",
+ "cfg-if 1.0.0",
+ "color-eyre",
+ "ctrlc",
+ "dirs 1.0.5",
+ "eyre",
+ "fluvio",
+ "fluvio-future",
+ "fluvio-types",
+ "flv-util",
+ "futures-lite",
+ "hex",
+ "http-types",
+ "k8-client",
+ "k8-config",
+ "k8-metadata-client",
+ "k8-obj-core",
+ "k8-obj-metadata",
+ "openssl",
+ "prettytable-rs",
+ "rand 0.7.3",
+ "semver 0.11.0",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "structopt",
+ "thiserror",
+ "toml",
+ "tracing",
+ "tracing-futures",
+ "url",
+ "which",
+]
+
+[[package]]
 name = "fluvio-future"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"

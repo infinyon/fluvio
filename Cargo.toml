@@ -18,6 +18,7 @@ members = [
     "src/stream-model",
     "src/types",
     "src/utils",
+    "src/extension-consumer",
     "tests/runner",
 ]
 
