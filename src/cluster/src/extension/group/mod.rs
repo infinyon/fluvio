@@ -6,12 +6,13 @@ mod delete;
 mod list;
 
 use fluvio::Fluvio;
-use crate::Result;
-use crate::common::output::Terminal;
-use crate::common::COMMAND_TEMPLATE;
-use crate::group::create::CreateManagedSpuGroupOpt;
-use crate::group::delete::DeleteManagedSpuGroupOpt;
-use crate::group::list::ListManagedSpuGroupsOpt;
+use crate::extension::Result;
+use crate::extension::common::output::Terminal;
+use crate::extension::common::COMMAND_TEMPLATE;
+
+use create::CreateManagedSpuGroupOpt;
+use delete::DeleteManagedSpuGroupOpt;
+use list::ListManagedSpuGroupsOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum SpuGroupCmd {

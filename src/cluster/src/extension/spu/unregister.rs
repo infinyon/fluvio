@@ -10,7 +10,8 @@ use structopt::StructOpt;
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::spu::CustomSpuKey;
 use fluvio::Fluvio;
-use crate::Result;
+
+use super::Result;
 
 // -----------------------------------
 // CLI Options

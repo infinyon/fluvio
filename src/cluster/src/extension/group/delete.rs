@@ -7,7 +7,8 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::spg::SpuGroupSpec;
-use crate::Result;
+
+use crate::extension::Result;
 
 // -----------------------------------
 // CLI Options

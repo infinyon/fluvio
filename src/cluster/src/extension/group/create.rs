@@ -9,7 +9,8 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::spg::*;
-use crate::Result;
+
+use crate::extension::Result;
 
 // -----------------------------------
 // CLI Options

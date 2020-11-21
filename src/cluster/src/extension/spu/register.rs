@@ -10,7 +10,8 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio::metadata::spu::CustomSpuSpec;
 use flv_util::socket_helpers::ServerAddress;
-use crate::Result;
+
+use super::Result;
 
 #[derive(Debug, StructOpt)]
 pub struct RegisterCustomSpuOpt {
