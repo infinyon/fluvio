@@ -138,7 +138,7 @@ use structopt::StructOpt;
         local: bool,
 
         #[structopt(flatten)]
-        tls: TlsOpt,
+        pub tls: TlsOpt,
 
         #[structopt(long)]
         pub authorization_config_map: Option<String>,
@@ -158,8 +158,8 @@ use structopt::StructOpt;
             use k8::run_setup;
             let spu = self.spu;
 
-            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-            use local::{install_local, run_local_setup};
+            
+            use super::local::{install_local, run_local_setup};
 
             if self.sys {
                 install_sys(self)?;
@@ -167,7 +167,7 @@ use structopt::StructOpt;
                 if self.setup {
                     run_local_setup(self).await?;
                 } else {
-                    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
+                    
                     install_local(self).await?;
                     confirm_spu(spu).await?;
                 }

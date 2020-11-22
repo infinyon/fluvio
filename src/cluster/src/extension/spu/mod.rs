@@ -8,7 +8,7 @@ mod unregister;
 
 use fluvio::Fluvio;
 pub use display::*;
-use super::{ Result, ClusterCmdError};
+use super::Result;
 
 use super::common::COMMAND_TEMPLATE;
 use super::common::output::Terminal;

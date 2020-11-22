@@ -1,15 +1,9 @@
 mod http;
 mod error;
 mod root_cli;
-mod spu;
 pub mod profile;
 mod tls;
-pub mod cluster;
-mod group;
-mod install;
 
-#[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-mod run;
 
 pub use self::error::{Result, CliError};
 

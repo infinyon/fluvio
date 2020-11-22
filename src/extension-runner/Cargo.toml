@@ -11,22 +11,14 @@ license = "Apache-2.0"
 name = "fluvio_runner_lib"
 path = "src/lib.rs"
 
-[[bin]]
-name = "fluvio_runner"
-path = "src/bin/main.rs"
-doc = false
-
-[features]
-rust_tls = ["fluvio-sc/k8_rustls"]
-native_tls = ["fluvio-sc/k8"]
-
 
 [dependencies]
 structopt = { version = "0.3.16", default-features = false }
 thiserror = "1.0.20"
 
-fluvio-sc = { version = "0.3.1", path = "../sc", default-features = false}
-fluvio-spu = { version = "0.2.0", path = "../spu"}
+# regardless of TLS, sc and spu always use rust_tls for now because we need cert API
+fluvio-sc = { version = "0.3.2", path = "../sc", default-features = false, features = ["k8_rustls"]}
+fluvio-spu = { version = "0.2.2", path = "../spu", default-features = false }
 
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common" }
 
