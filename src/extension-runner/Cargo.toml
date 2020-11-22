@@ -23,7 +23,7 @@ native_tls = ["fluvio-sc/k8"]
 
 [dependencies]
 structopt = { version = "0.3.16", default-features = false }
-
+thiserror = "1.0.20"
 
 fluvio-sc = { version = "0.3.1", path = "../sc", default-features = false}
 fluvio-spu = { version = "0.2.0", path = "../spu"}

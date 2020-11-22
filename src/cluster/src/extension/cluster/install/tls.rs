@@ -5,7 +5,8 @@ use tracing::debug;
 use structopt::StructOpt;
 
 use fluvio::config::{TlsPolicy, TlsPaths};
-use super::ClusterCmdError;
+
+use crate::extension::ClusterCmdError;
 
 #[derive(Debug, StructOpt)]
 pub struct TlsOpt {

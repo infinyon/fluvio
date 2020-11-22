@@ -1,7 +1,7 @@
 use structopt::StructOpt;
-use crate::ClusterUninstaller;
 
-use super::Result;
+use crate::ClusterUninstaller;
+use crate::extension::Result;
 
 #[derive(Debug, StructOpt)]
 pub struct UninstallOpt {

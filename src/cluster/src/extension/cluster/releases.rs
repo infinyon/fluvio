@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use crate::ClusterInstaller;
-use super::Result;
+use crate::extension::Result;
 
 #[derive(Debug, StructOpt)]
 pub enum ReleasesCmd {

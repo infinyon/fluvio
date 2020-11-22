@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 
 use crate::ClusterChecker;
-use super::Result;
+use crate::extension::Result;
 
 #[derive(Debug, StructOpt)]
 pub struct CheckOpt {

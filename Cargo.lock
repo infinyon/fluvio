@@ -1045,6 +1045,7 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
+ "fluvio-runner",
  "flv-util",
  "k8-client",
  "k8-config",
@@ -1283,6 +1284,7 @@ dependencies = [
  "fluvio-sc",
  "fluvio-spu",
  "structopt",
+ "thiserror",
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ use std::process::Command;
 use fluvio::config::TlsPolicy;
 
 use crate::ClusterInstaller;
+use crate::extension::ClusterCmdError;
 
 use super::*;
 
