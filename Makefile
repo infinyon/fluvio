@@ -27,8 +27,7 @@ install_tools_mac:
 	brew install yq
 	brew install helm
 
-build:
-	cargo build
+
 
 #
 # List of smoke test steps.  This is used by CI
@@ -184,7 +183,7 @@ fluvio_image: fluvio_bin_linux
 
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
-	cd src/extension-runner; cargo build $(RELEASE_FLAG)   \
+	cargo build $(RELEASE_FLAG)   \
 		--bin fluvio_runner_cli --target $(TARGET_LINUX)
 
 make publish_fluvio_image:
