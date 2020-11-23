@@ -29,8 +29,9 @@ install_tools_mac:
 	brew install helm
 
 build_test:
-	cargo build --${TEST_BUILD} --bin fluvio
-	cargo build --${TEST_BUILD} --bin flv-test
+	export CARGO_PROFILE=$(if $(TEST_BUILD),release,debug); \
+	cargo build --bin fluvio; \
+	cargo build  --bin flv-test
 
 #
 # List of smoke test steps.  This is used by CI
