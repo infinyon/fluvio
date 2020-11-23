@@ -19,6 +19,8 @@ mod opt {
     
     use structopt::StructOpt;
 
+    use fluvio_runner::run::RunOpt;
+    
     use crate::extension::common::target::ClusterTarget;
     use crate::extension::common::output::Terminal;
 
@@ -67,6 +69,10 @@ mod opt {
         #[structopt(name = "spg")]
         SPUGroup(SpuGroupCmd),
 
+        /// Run a Streaming Controller (SC) or SPU
+        #[structopt(name = "run")]
+        Run(RunOpt),
+
     }
 
     impl ClusterCmd {
@@ -89,10 +95,13 @@ mod opt {
                 Self::SPU(spu) => {
                     let fluvio = target.connect().await?;
                     spu.process(out, &fluvio).await?;
-                } Self::SPUGroup(group) => {
+                },
+                Self::SPUGroup(group) => {
                     let fluvio = target.connect().await?;
                     group.process(out, &fluvio).await?;
-                    
+                },
+                Self::Run(run) => {
+                    run.process().await?;
                 }
             }
 

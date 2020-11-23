@@ -16,7 +16,7 @@ path = "src/lib.rs"
 default = ["native_tls"]
 rust_tls = ["fluvio/rust_tls","k8-client/rust_tls"]
 native_tls = ["fluvio/native_tls","k8-client/native_tls"]
-cmd_extension = ["structopt","fluvio-extension-common/target","prettytable-rs"]
+cmd_extension = ["structopt","fluvio-extension-common/target","prettytable-rs","fluvio-runner"]
 
 [dependencies]
 colored = "2.0.0"
@@ -42,7 +42,7 @@ k8-client = { version = "3.0.0", default-features = false }
 k8-obj-core = "1.1.0"
 k8-obj-metadata = "1.0.0"
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common", optional = true }
-fluvio-runner = { version = "0.1.0", path = "../extension-runner"}
+fluvio-runner = { version = "0.1.0", path = "../extension-runner", optional = true}
 
 [dev-dependencies]
 fluvio-future = { version = "0.1.0", features =["task"]}

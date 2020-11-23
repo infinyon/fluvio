@@ -80,10 +80,6 @@ enum RootCmd {
     #[structopt(name = "cluster")]
     Cluster(Box<ClusterCmd>),
 
-    /// Run a Streaming Controller (SC) or SPU
-    #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-    #[structopt(name = "run")]
-    Run(RunOpt),
 
     /// Install Fluvio plugins
     ///
@@ -127,11 +123,7 @@ impl RootCmd {
             }
             Self::Cluster(cluster) => {
                 cluster.process(out,root.target).await?;
-            }
-            #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
-            Self::Run(run) => {
-                run.process().await?;
-            }
+            },
             Self::Install(install) => {
                 install.process().await?;
             }
