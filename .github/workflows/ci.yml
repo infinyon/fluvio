@@ -145,7 +145,7 @@ jobs:
         #run: |
         #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test-tls-root
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
@@ -173,7 +173,9 @@ jobs:
         run: dev-tools/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
-          OS: ${{ matrix.os }}
+          OS: ${{ matrix.os }}'
+      - name: Install Jq
+        run: sudo apt-get install -y jq
       - run: helm version
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -211,7 +213,7 @@ jobs:
         #  run: |
         #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8-tls-root
       - name: Save logs
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log
