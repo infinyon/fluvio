@@ -1107,28 +1107,16 @@ name = "fluvio-extension-common"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "bytes 0.5.6",
- "cfg-if 1.0.0",
- "color-eyre",
- "ctrlc",
- "eyre",
  "fluvio",
  "futures-lite",
- "hex",
  "prettytable-rs",
- "rand 0.7.3",
- "semver 0.11.0",
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2",
  "structopt",
  "thiserror",
- "toml",
  "tracing",
  "tracing-futures",
- "url",
- "which",
 ]
 
 [[package]]
@@ -1276,7 +1264,6 @@ dependencies = [
 name = "fluvio-runner"
 version = "0.1.0"
 dependencies = [
- "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",

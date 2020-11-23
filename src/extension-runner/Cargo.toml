@@ -26,6 +26,3 @@ thiserror = "1.0.20"
 fluvio-future = { version = "0.1.8", features = ["subscriber"] }
 fluvio-sc = { version = "0.3.2", path = "../sc", default-features = false, features = ["k8_rustls"]}
 fluvio-spu = { version = "0.2.2", path = "../spu", default-features = false }
-
-fluvio-extension-common = { version = "0.1.0", path = "../extension-common" }
-
