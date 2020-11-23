@@ -942,6 +942,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-package-index",
  "hex",
+ "home",
  "http-types",
  "k8-client",
  "k8-config",
@@ -1723,6 +1724,15 @@ checksum = "c1441c6b1e930e2817404b5046f1f989899143a12bf92de603b69f4e0aee1e15"
 dependencies = [
  "crypto-mac",
  "digest",
+]
+
+[[package]]
+name = "home"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2456aef2e6b6a9784192ae780c0f15bc57df0e918585282325e8c8ac27737654"
+dependencies = [
+ "winapi",
 ]
 
 [[package]]

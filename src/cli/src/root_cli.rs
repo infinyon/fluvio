@@ -286,24 +286,38 @@ impl CompletionCmd {
 }
 
 fn process_external_subcommand(mut args: Vec<String>) -> Result<()> {
+    use std::fs;
     use std::process::Command;
-    use which::{CanonicalPath, Error as WhichError};
+    use std::path::PathBuf;
 
     // The external subcommand's name is given as the first argument, take it.
     let cmd = args.remove(0);
-
     // Check for a matching external command in the environment
+
     let external_subcommand = format!("fluvio-{}", cmd);
-    let subcommand_path = match CanonicalPath::new(&external_subcommand) {
-        Ok(path) => path,
-        Err(WhichError::CannotFindBinaryPath) => {
+    let mut subcommand_path: Option<PathBuf> = None;
+
+    let fluvio_dir = crate::install::fluvio_extensions_dir()?;
+
+    if let Ok(entries) = fs::read_dir(&fluvio_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                if entry.path().ends_with(&external_subcommand) {
+                    subcommand_path = Some(entry.path());
+                    break;
+                }
+            }
+        }
+    }
+    let subcommand_path = match subcommand_path {
+        Some(path) => path,
+        None => {
             println!(
-                "Unable to find plugin '{}'. Make sure it is executable and in your PATH.",
-                &external_subcommand
+                "Unable to find plugin '{}'. Make sure it is installed in {:?}.",
+                &external_subcommand, fluvio_dir,
             );
             std::process::exit(1);
         }
-        other => other?,
     };
 
     // Print the fully-qualified command to debug

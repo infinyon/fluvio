@@ -9,10 +9,22 @@ use crate::CliError;
 pub mod update;
 pub mod plugins;
 
-fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
+pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
+    if let Ok(dir) = std::env::var("FLUVIO_DIR") {
+        // Assume this is like `~/.fluvio
+        let path = PathBuf::from(dir).join("extensions");
+        if path.exists() {
+            return Ok(path);
+        }
+    }
+
     let home =
-        dirs::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
-    Ok(home.join(".fluvio/bin/"))
+        home::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
+    let path = home.join(".fluvio/extensions/");
+    if path.exists() {
+        return Ok(path);
+    }
+    Err(IoError::new(ErrorKind::NotFound, "Fluvio extensions directory not found").into())
 }
 
 /// Fetches the latest version of the package with the given ID
