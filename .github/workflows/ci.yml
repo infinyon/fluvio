@@ -126,6 +126,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |  
           minikube start --driver=docker
+          sleep 30
       - name: Setup Minikube for Mac
         if: startsWith(matrix.os, 'macOS')
         run: |  
@@ -192,6 +193,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |  
           minikube start --driver=docker
+          sleep 30
       - name: Test minikube
         run: |
           minikube profile list
