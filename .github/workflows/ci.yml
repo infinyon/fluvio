@@ -132,13 +132,13 @@ jobs:
       - name: Test minikube
         run: |
           minikube profile list
+          minikube status
       - name: Build Test
         run: |
           make TEST_BUILD=release build_test
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/release/fluvio cluster install --local --setup
-          FLV_CMD=true ./target/release/fluvio cluster check --pre-install
+          FLV_CMD=true ./target/release/fluvio cluster install --setup --local --develop
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
