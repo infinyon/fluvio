@@ -9,9 +9,9 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
-use crate::Result;
-use crate::common::output::Terminal;
-use crate::common::OutputFormat;
+use crate::extension::Result;
+use crate::extension::common::output::Terminal;
+use crate::extension::common::OutputFormat;
 
 #[derive(Debug, StructOpt)]
 pub struct ListManagedSpuGroupsOpt {
@@ -47,9 +47,9 @@ mod output {
     use fluvio::metadata::objects::Metadata;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
-    use crate::Result;
-    use crate::common::output::{OutputType, TableOutputHandler, Terminal};
-    use crate::common::t_println;
+    use crate::extension::Result;
+    use crate::extension::common::output::{OutputType, TableOutputHandler, Terminal};
+    use crate::extension::common::t_println;
 
     #[derive(Serialize)]
     struct ListSpuGroups(Vec<Metadata<SpuGroupSpec>>);

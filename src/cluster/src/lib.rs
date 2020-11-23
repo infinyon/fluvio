@@ -16,13 +16,15 @@
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
 
-#![warn(missing_docs)]
-
 mod install;
 mod error;
 mod check;
 mod uninstall;
 mod local;
+
+/// extensions
+#[cfg(feature = "cmd_extension")]
+pub mod extension;
 
 use fluvio_helm as helm;
 

@@ -8,12 +8,13 @@ mod unregister;
 
 use fluvio::Fluvio;
 pub use display::*;
-use crate::Result;
-use crate::common::COMMAND_TEMPLATE;
-use crate::common::output::Terminal;
-use crate::spu::list::ListSpusOpt;
-use crate::spu::register::RegisterCustomSpuOpt;
-use crate::spu::unregister::UnregisterCustomSpuOpt;
+use super::Result;
+
+use super::common::COMMAND_TEMPLATE;
+use super::common::output::Terminal;
+use list::ListSpusOpt;
+use register::RegisterCustomSpuOpt;
+use unregister::UnregisterCustomSpuOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum SpuCmd {

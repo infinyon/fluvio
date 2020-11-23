@@ -1,6 +1,6 @@
 use structopt::StructOpt;
-use fluvio_cluster::ClusterInstaller;
-use crate::Result;
+use crate::ClusterInstaller;
+use crate::extension::Result;
 
 #[derive(Debug, StructOpt)]
 pub enum ReleasesCmd {

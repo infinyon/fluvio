@@ -3,11 +3,14 @@ use std::io::ErrorKind;
 use std::convert::TryInto;
 use std::process::Command;
 
-use fluvio_cluster::ClusterInstaller;
 use fluvio::config::TlsPolicy;
+
+use crate::ClusterInstaller;
+use crate::extension::ClusterCmdError;
+
 use super::*;
 
-pub async fn install_core(opt: InstallOpt) -> Result<(), CliError> {
+pub async fn install_core(opt: InstallOpt) -> Result<(), ClusterCmdError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -77,7 +80,7 @@ pub async fn install_core(opt: InstallOpt) -> Result<(), CliError> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallOpt) -> Result<(), CliError> {
+pub fn install_sys(opt: InstallOpt) -> Result<(), ClusterCmdError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
 
     match opt.k8_config.chart_location {
@@ -97,7 +100,7 @@ pub fn install_sys(opt: InstallOpt) -> Result<(), CliError> {
     Ok(())
 }
 
-pub async fn run_setup(opt: InstallOpt) -> Result<(), CliError> {
+pub async fn run_setup(opt: InstallOpt) -> Result<(), ClusterCmdError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
     match opt.k8_config.chart_location {
         // If a chart location is given, use it

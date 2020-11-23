@@ -10,7 +10,7 @@ use k8_client::metadata::MetadataClient;
 use fluvio_controlplane_metadata::k8::core::service::ServiceSpec;
 use fluvio_controlplane_metadata::k8::metadata::InputObjectMeta;
 use crate::{Result, CliError};
-use crate::tls::TlsClientOpt;
+use crate::common::tls::TlsClientOpt;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct K8Opt {

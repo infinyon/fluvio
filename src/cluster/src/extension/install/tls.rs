@@ -1,9 +1,12 @@
 use std::path::PathBuf;
+use std::convert::TryFrom;
+
 use tracing::debug;
 use structopt::StructOpt;
+
 use fluvio::config::{TlsPolicy, TlsPaths};
-use std::convert::TryFrom;
-use crate::CliError;
+
+use crate::extension::ClusterCmdError;
 
 #[derive(Debug, StructOpt)]
 pub struct TlsOpt {
@@ -37,7 +40,7 @@ pub struct TlsOpt {
 }
 
 impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
-    type Error = CliError;
+    type Error = ClusterCmdError;
 
     /// Returns (Client TLS Policy, Server TLS Policy)
     fn try_from(opt: TlsOpt) -> Result<Self, Self::Error> {
@@ -73,7 +76,7 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
         })();
 
         policies.ok_or_else(|| {
-            CliError::Other(
+            ClusterCmdError::Other(
                 "Missing required args after --tls:\
   --domain, --ca-cert, --client-cert, --client-key, --server-cert, --server-key"
                     .to_string(),

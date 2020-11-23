@@ -1,6 +1,7 @@
 use structopt::StructOpt;
-use fluvio_cluster::ClusterUninstaller;
-use crate::Result;
+
+use crate::ClusterUninstaller;
+use crate::extension::Result;
 
 #[derive(Debug, StructOpt)]
 pub struct UninstallOpt {

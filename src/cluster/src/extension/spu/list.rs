@@ -9,13 +9,13 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
-
-use crate::Result;
-use crate::common::output::Terminal;
-use super::format_spu_response_output;
-use crate::common::OutputFormat;
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::objects::Metadata;
+
+use super::Result;
+use crate::extension::common::output::Terminal;
+use crate::extension::common::OutputFormat;
+use super::format_spu_response_output;
 
 #[derive(Debug, StructOpt)]
 pub struct ListSpusOpt {

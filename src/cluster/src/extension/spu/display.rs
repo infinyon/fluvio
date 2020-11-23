@@ -11,9 +11,9 @@ use serde::Serialize;
 use fluvio::metadata::objects::Metadata;
 use fluvio::metadata::spu::SpuSpec;
 
-use crate::error::CliError;
-use crate::common::output::{OutputType, Terminal, TableOutputHandler};
-use crate::common::t_println;
+use crate::extension::ClusterCmdError;
+use crate::extension::common::output::{OutputType, Terminal, TableOutputHandler};
+use crate::extension::common::t_println;
 
 #[derive(Serialize)]
 struct ListSpus(Vec<Metadata<SpuSpec>>);
@@ -23,7 +23,7 @@ pub fn format_spu_response_output<O>(
     out: std::sync::Arc<O>,
     spus: Vec<Metadata<SpuSpec>>,
     output_type: OutputType,
-) -> Result<(), CliError>
+) -> Result<(), ClusterCmdError>
 where
     O: Terminal,
 {
