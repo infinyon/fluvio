@@ -206,6 +206,8 @@ jobs:
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+      - name: Make image
+        run: make RELEASE=true minikube_image
       - name: smoke test k8 tls
       #  run: | 
       #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
