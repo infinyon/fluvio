@@ -329,10 +329,7 @@ impl LocalClusterInstaller {
         debug!("starting sc server");
         let mut binary = {
             let mut cmd = Command::new(std::env::current_exe()?);
-            cmd
-                .arg("cluster")
-                .arg("run")
-                .arg("sc");
+            cmd.arg("cluster").arg("run").arg("sc");
             cmd
         };
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
@@ -485,9 +482,7 @@ impl LocalClusterInstaller {
 
         let mut binary = {
             let mut cmd = Command::new(std::env::current_exe()?);
-            cmd.arg("cluster")
-                .arg("run")
-                .arg("spu");
+            cmd.arg("cluster").arg("run").arg("spu");
             cmd
         };
 

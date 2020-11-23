@@ -6,7 +6,6 @@ use crate::Result;
 
 #[derive(Debug, StructOpt)]
 pub enum RunnerCmd {
-
     /// Run a Streaming Controller (SC) or SPU
     #[structopt(name = "run")]
     Run(RunOpt),
