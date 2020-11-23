@@ -173,7 +173,7 @@ impl ClusterUninstaller {
     /// ```
     pub fn uninstall_local(&self) -> Result<(), ClusterError> {
         info!("Removing local cluster");
-        Command::new("pkill").arg("-f").arg("fluvio run").output()?;
+        Command::new("pkill").arg("-f").arg("fluvio cluster run").output()?;
         // delete fluvio file
         debug!("remove fluvio directory");
         if let Err(err) = remove_dir_all("/tmp/fluvio") {
