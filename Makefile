@@ -128,7 +128,6 @@ run-all-unit-test:
 	cargo test --all
 
 install_musl:
-	sudo apt-get install -y musl-tools build-essential
 	rustup target add ${TARGET_LINUX}
 
 clean_build:

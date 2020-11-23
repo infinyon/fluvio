@@ -128,10 +128,10 @@ jobs:
           make TEST_BUILD=release build_test
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --local --setup
-      - name: Run smoke-test-tls
+          FLV_CMD=true ./target/release/fluvio cluster install --setup --local --develop
+      - name: Run smoke-test
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test
       - run: minikube delete
       - name: Upload logs on Linux
         if: startsWith(matrix.os, 'ubuntu') && failure()
@@ -179,13 +179,9 @@ jobs:
         run: |
           FLV_CMD=true ./target/release/fluvio cluster install --setup --develop
           FLV_CMD=true ./target/release/fluvio cluster check --pre-install
-      - name: Install musl-tools for Linux
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
       - name: Make image
         run: make RELEASE=true minikube_image
-      - name: smoke test k8
+      - name: Run smoke-test-k8
         run:  |
           FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8
       - run: minikube delete
