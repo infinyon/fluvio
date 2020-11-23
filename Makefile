@@ -48,12 +48,12 @@ smoke-test-tls-policy:	test-clean-up	build_test
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
 
 # test rbac with ROOT user
-smoke-test-tls-root:	smoke-test-tls-policy
+smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 SC_HOST=localhost:9003
-test-permission-user1-local:
+test-permission-user1:
 	rm -f /tmp/topic.err
 	- $(FLUVIO_BIN) --cluster ${SC_HOST} \
 		--tls --enable-client-cert --domain fluvio.local \
@@ -80,7 +80,12 @@ smoke-test-k8-tls-policy:	test-clean-up minikube_image
 		--authorization-config-map authorization \
 		${SKIP_CHECK}
 
-smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-user1-local
+test_host:	SC_HOST=$(shell kubectl get svc flv-sc-public -o json | jq '.status.loadBalancer.ingress[0].ip' | tr -d '"' )
+
+test_host:
+	echo "sc host ${SC_HOST}"
+
+smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-user1
 
 # test rbac
 #
