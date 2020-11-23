@@ -173,7 +173,9 @@ jobs:
         run: dev-tools/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
-          OS: ${{ matrix.os }}
+          OS: ${{ matrix.os }}'
+      - name: Install Jq
+        run: sudo apt-get install -y jq
       - run: helm version
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
