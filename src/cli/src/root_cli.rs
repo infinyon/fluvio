@@ -13,16 +13,14 @@ use fluvio_extension_consumer::consume::ConsumeLogOpt;
 use fluvio_extension_consumer::produce::ProduceLogOpt;
 use fluvio_extension_consumer::partition::PartitionCmd;
 use fluvio_extension_consumer::topic::TopicCmd;
+use fluvio_cluster::extension::ClusterCmd;
 
 use crate::Result;
 use crate::common::COMMAND_TEMPLATE;
-use crate::target::ClusterTarget;
+use crate::common::target::ClusterTarget;
 use crate::common::output::Terminal;
 
-use crate::spu::SpuCmd;
-use crate::group::SpuGroupCmd;
-use super::profile::ProfileCmd;
-use super::cluster::ClusterCmd;
+use crate::profile::ProfileCmd;
 use crate::install::update::UpdateOpt;
 use crate::install::plugins::InstallOpt;
 
@@ -128,7 +126,7 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                cluster.process().await?;
+                cluster.process(out,root.target).await?;
             }
             #[cfg(any(feature = "cluster_components", feature = "cluster_components_rustls"))]
             Self::Run(run) => {
@@ -180,20 +178,6 @@ pub enum FluvioCmd {
     #[structopt(name = "produce")]
     Produce(ProduceLogOpt),
 
-    /// Manage and view Streaming Processing Units (SPUs)
-    ///
-    /// SPUs make up the part of a Fluvio cluster which is in charge
-    /// of receiving messages from producers, storing those messages,
-    /// and relaying them to consumers. This command lets you see
-    /// the status of SPUs in your cluster.
-    #[structopt(name = "spu")]
-    SPU(SpuCmd),
-
-    /// Manage and view SPU Groups (SPGs)
-    ///
-    /// SPGs are groups of SPUs in a cluster which are managed together.
-    #[structopt(name = "spg")]
-    SPUGroup(SpuGroupCmd),
 
     /// Manage and view Topics
     ///
@@ -227,12 +211,6 @@ impl FluvioCmd {
             }
             Self::Produce(produce) => {
                 produce.process(out, &fluvio).await?;
-            }
-            Self::SPU(spu) => {
-                spu.process(out, &fluvio).await?;
-            }
-            Self::SPUGroup(spu_group) => {
-                spu_group.process(out, &fluvio).await?;
             }
             Self::Topic(topic) => {
                 topic.process(out, &fluvio).await?;

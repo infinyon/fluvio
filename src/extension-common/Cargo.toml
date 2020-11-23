@@ -11,7 +11,8 @@ license = "Apache-2.0"
 name = "fluvio_extension_common"
 path = "src/lib.rs"
 
-
+[features]
+target = ["fluvio"]
 
 
 [dependencies]
@@ -37,3 +38,5 @@ color-eyre = "0.5.5"
 which = "4.0.2"
 sha2 = "0.9.1"
 hex = "0.4.2"
+
+fluvio = { version = "0.2.3", path = "../client",  optional = true }

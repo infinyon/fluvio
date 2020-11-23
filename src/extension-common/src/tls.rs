@@ -5,7 +5,7 @@ use tracing::debug;
 use structopt::StructOpt;
 
 use fluvio::config::{TlsPolicy, TlsPaths};
-use crate::CliError;
+use crate::target::TargetError;
 
 /// Optional Tls Configuration to Client
 #[derive(Debug, StructOpt, Default, Clone)]
@@ -36,7 +36,7 @@ pub struct TlsClientOpt {
 }
 
 impl TryFrom<TlsClientOpt> for TlsPolicy {
-    type Error = CliError;
+    type Error = TargetError;
 
     fn try_from(opt: TlsClientOpt) -> Result<Self, Self::Error> {
         if !opt.tls {
@@ -67,7 +67,7 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
         })();
 
         policy.ok_or_else(|| {
-            CliError::Other(
+            TargetError::Other(
                 "Missing required args after --tls:\
   --domain, --ca-cert, --client-cert, --client-key"
                     .to_string(),

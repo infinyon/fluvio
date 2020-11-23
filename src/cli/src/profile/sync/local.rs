@@ -4,7 +4,7 @@ use structopt::StructOpt;
 use fluvio::FluvioConfig;
 use fluvio::config::{ConfigFile, LOCAL_PROFILE, Profile};
 use crate::Result;
-use crate::tls::TlsClientOpt;
+use crate::common::tls::TlsClientOpt;
 
 #[derive(Debug, Default, StructOpt)]
 pub struct LocalOpt {

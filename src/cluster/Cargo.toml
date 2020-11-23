@@ -16,7 +16,7 @@ path = "src/lib.rs"
 default = ["native_tls"]
 rust_tls = ["fluvio/rust_tls","k8-client/rust_tls"]
 native_tls = ["fluvio/native_tls","k8-client/native_tls"]
-cmd_extension = ["structopt","fluvio-extension-common","prettytable-rs"]
+cmd_extension = ["structopt","fluvio-extension-common/target","prettytable-rs"]
 
 [dependencies]
 colored = "2.0.0"

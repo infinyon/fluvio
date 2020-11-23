@@ -2,8 +2,11 @@ use std::io::Error as IoError;
 
 use fluvio::FluvioError;
 use fluvio_cluster::{ClusterError, CheckError};
-use fluvio_extension_common::output::OutputError;
+use fluvio_cluster::extension::ClusterCmdError;
 use fluvio_extension_consumer::ConsumerError;
+
+use crate::common::output::OutputError;
+use crate::common::target::TargetError;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 
@@ -23,6 +26,16 @@ pub enum CliError {
     ConsumerError {
         #[from]
         source: ConsumerError,
+    },
+    #[error("ClusterCommand Error")]
+    ClusterCmdError {
+        #[from]
+        source: ClusterCmdError,
+    },
+    #[error("ClusterCommand Error")]
+    TargetError {
+        #[from]
+        source: TargetError,
     },
     #[error("Fluvio client error")]
     ClientError {

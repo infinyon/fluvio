@@ -2,11 +2,13 @@ use std::io::Error as IoError;
 
 use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
+use fluvio_extension_common::target::TargetError;
 
 use crate::{ClusterError, CheckError};
 
 pub type Result<T> = std::result::Result<T, ClusterCmdError>;
 
+/// Cluster Command Error
 #[derive(thiserror::Error, Debug)]
 pub enum ClusterCmdError {
     #[error(transparent)]
@@ -14,10 +16,15 @@ pub enum ClusterCmdError {
         #[from]
         source: IoError,
     },
-    #[error(transparent)]
+    #[error("Output Error")]
     OutputError {
         #[from]
         source: OutputError,
+    },
+    #[error("Target Error")]
+    TargetError {
+        #[from]
+        source: TargetError,
     },
     #[error("Fluvio cluster error")]
     ClusterError {
