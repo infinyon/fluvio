@@ -680,7 +680,7 @@ impl ClusterInstaller {
             CheckError::MissingSystemChart if self.config.install_sys => {
                 println!("Fluvio system chart not installed. Attempting to install");
                 self._install_sys()?;
-            },
+            }
             CheckError::MinikubeTunnelNotFoundRetry => {
                 println!(
                     "Load balancer service is not available, trying to bring up minikube tunnel"
