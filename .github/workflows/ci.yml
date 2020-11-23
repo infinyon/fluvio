@@ -139,7 +139,7 @@ jobs:
       - name: Setup installation pre-requisites
         run: |
           FLV_CMD=true ./target/release/fluvio cluster install --local --setup
-          FLV_CMD=true ./target/debug/fluvio cluster check --pre-install
+          FLV_CMD=true ./target/release/fluvio cluster check --pre-install
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
@@ -198,11 +198,11 @@ jobs:
           minikube status
       - name: Build
         run: |
-          cargo build
+           make TEST_BUILD=release build_test
       - name: Setup installation pre-requisites 
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --setup --develop
-          FLV_CMD=true ./target/debug/fluvio cluster check --pre-install
+          FLV_CMD=true ./target/release/fluvio cluster install --setup --develop
+          FLV_CMD=true ./target/release/fluvio cluster check --pre-install
       - name: Install musl-tools for Linux
         run: |
           sudo apt install -y musl-tools
