@@ -18,7 +18,6 @@ use fluvio_future::timer::sleep;
 use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
-use k8_config::context::MinikubeContext;
 use k8_client::metadata::MetadataClient;
 use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
@@ -642,8 +641,8 @@ impl ClusterInstaller {
                     // recoverable error occured, try to fix
                     StatusCheck::NotWorking(failure, _) => {
                         match self.pre_install_fix(failure).await {
-                            Ok(_) => {
-                                // recovered correctly
+                            Ok(()) => {
+                                println!("✔️  success");
                             }
                             // not able to recover, return error
                             Err(err) => return Err(err),
@@ -679,16 +678,11 @@ impl ClusterInstaller {
         // If we cannot handle this error, return it to bubble up
         match error {
             CheckError::MissingSystemChart if self.config.install_sys => {
-                debug!("Fluvio system chart not installed. Attempting to install");
+                println!("Fluvio system chart not installed. Attempting to install");
                 self._install_sys()?;
-            }
-            CheckError::InvalidMinikubeContext if self.config.update_context => {
-                debug!("Updating to minikube context");
-                let context = MinikubeContext::try_from_system()?;
-                context.save()?;
-            }
+            },
             CheckError::MinikubeTunnelNotFoundRetry => {
-                debug!(
+                println!(
                     "Load balancer service is not available, trying to bring up minikube tunnel"
                 );
                 self._try_minikube_tunnel().await?;

@@ -201,6 +201,7 @@ jobs:
       - name: Setup installation pre-requisites 
         run: |
           FLV_CMD=true ./target/debug/fluvio cluster install --setup --develop
+          /target/debug/fluvio cluster install check --pre-install
       - name: Install musl-tools for Linux
         run: |
           sudo apt install -y musl-tools
