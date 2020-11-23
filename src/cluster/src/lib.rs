@@ -22,7 +22,6 @@ mod check;
 mod uninstall;
 mod local;
 
-
 /// extensions
 #[cfg(feature = "cmd_extension")]
 pub mod extension;

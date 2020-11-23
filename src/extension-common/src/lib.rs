@@ -30,8 +30,6 @@ macro_rules! t_print_cli_err {
     };
 }
 
-
-
 #[cfg(feature = "target")]
 pub mod target {
     use std::io::{ErrorKind, Error as IoError};
@@ -43,7 +41,6 @@ pub mod target {
     use fluvio::Fluvio;
     use fluvio::config::ConfigFile;
     use crate::tls::TlsClientOpt;
-    
 
     #[derive(thiserror::Error, Debug)]
     pub enum TargetError {
@@ -69,7 +66,6 @@ pub mod target {
         }
     }
 
-
     /// server configuration
     #[derive(Debug, StructOpt, Default)]
     pub struct ClusterTarget {
@@ -85,11 +81,11 @@ pub mod target {
     }
 
     impl ClusterTarget {
-
         /// helper method to connect to fluvio
         pub async fn connect(self) -> Result<Fluvio, TargetError> {
             let fluvio_config = self.load()?;
-            Fluvio::connect_with_config(&fluvio_config).await
+            Fluvio::connect_with_config(&fluvio_config)
+                .await
                 .map_err(|err| err.into())
         }
 

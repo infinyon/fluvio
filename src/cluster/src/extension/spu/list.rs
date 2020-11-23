@@ -17,8 +17,6 @@ use crate::extension::common::output::Terminal;
 use crate::extension::common::OutputFormat;
 use super::format_spu_response_output;
 
-
-
 #[derive(Debug, StructOpt)]
 pub struct ListSpusOpt {
     /// Whether to list managed SPUs

@@ -11,16 +11,15 @@ pub use self::error::ClusterCmdError;
 use self::error::Result;
 use fluvio_extension_common as common;
 
-
 pub use opt::ClusterCmd;
 mod opt {
 
     use std::sync::Arc;
-    
+
     use structopt::StructOpt;
 
     use fluvio_runner::run::RunOpt;
-    
+
     use crate::extension::common::target::ClusterTarget;
     use crate::extension::common::output::Terminal;
 
@@ -30,7 +29,6 @@ mod opt {
     use super::releases::ReleasesCmd;
     use super::group::SpuGroupCmd;
     use super::spu::SpuCmd;
-    
 
     use crate::extension::Result;
 
@@ -72,13 +70,11 @@ mod opt {
         /// Run a Streaming Controller (SC) or SPU
         #[structopt(name = "run")]
         Run(RunOpt),
-
     }
 
     impl ClusterCmd {
         /// process cluster commands
-        pub async fn process<O: Terminal>(self,out: Arc<O>, target: ClusterTarget) -> Result<()> {
-
+        pub async fn process<O: Terminal>(self, out: Arc<O>, target: ClusterTarget) -> Result<()> {
             match self {
                 Self::Install(install) => {
                     install.process().await?;
@@ -91,15 +87,15 @@ mod opt {
                 }
                 Self::Releases(releases) => {
                     releases.process().await?;
-                },
+                }
                 Self::SPU(spu) => {
                     let fluvio = target.connect().await?;
                     spu.process(out, &fluvio).await?;
-                },
+                }
                 Self::SPUGroup(group) => {
                     let fluvio = target.connect().await?;
                     group.process(out, &fluvio).await?;
-                },
+                }
                 Self::Run(run) => {
                     run.process().await?;
                 }

@@ -1,4 +1,3 @@
-
 mod local;
 mod k8;
 mod tls;
@@ -7,9 +6,9 @@ pub use opt::InstallOpt;
 
 mod opt {
     use std::{fmt, str::FromStr};
-use structopt::StructOpt;
+    use structopt::StructOpt;
 
-    use crate::extension::{ ClusterCmdError, Result as ClusterResult};
+    use crate::extension::{ClusterCmdError, Result as ClusterResult};
 
     use super::tls::TlsOpt;
     use super::k8;
@@ -158,7 +157,6 @@ use structopt::StructOpt;
             use k8::run_setup;
             let spu = self.spu;
 
-            
             use super::local::{install_local, run_local_setup};
 
             if self.sys {
@@ -167,7 +165,6 @@ use structopt::StructOpt;
                 if self.setup {
                     run_local_setup(self).await?;
                 } else {
-                    
                     install_local(self).await?;
                     confirm_spu(spu).await?;
                 }
@@ -210,7 +207,9 @@ use structopt::StructOpt;
             let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
             let live_spus = spus
                 .iter()
-                .filter(|spu| spu.status.is_online() && !spu.spec.public_endpoint.ingress.is_empty())
+                .filter(|spu| {
+                    spu.status.is_online() && !spu.spec.public_endpoint.ingress.is_empty()
+                })
                 .count();
             if live_spus == spu as usize {
                 println!("{} spus provisioned", spus.len());

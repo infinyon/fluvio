@@ -80,7 +80,6 @@ enum RootCmd {
     #[structopt(name = "cluster")]
     Cluster(Box<ClusterCmd>),
 
-
     /// Install Fluvio plugins
     ///
     /// The Fluvio CLI considers any executable with the prefix `fluvio-` to be a
@@ -122,8 +121,8 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                cluster.process(out,root.target).await?;
-            },
+                cluster.process(out, root.target).await?;
+            }
             Self::Install(install) => {
                 install.process().await?;
             }
@@ -169,7 +168,6 @@ pub enum FluvioCmd {
     /// $ echo "Hello, world" | fluvio produce greetings
     #[structopt(name = "produce")]
     Produce(ProduceLogOpt),
-
 
     /// Manage and view Topics
     ///

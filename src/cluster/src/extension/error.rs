@@ -45,7 +45,7 @@ pub enum ClusterCmdError {
     #[error("Runner error")]
     RunnerError {
         #[from]
-        source: RunnerError
+        source: RunnerError,
     },
     #[error("Unknown error: {0}")]
     Other(String),
