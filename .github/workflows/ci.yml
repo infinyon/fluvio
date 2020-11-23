@@ -145,7 +145,7 @@ jobs:
         #run: |
         #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test-tls-root
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
@@ -213,7 +213,7 @@ jobs:
         #  run: |
         #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8-tls-root
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8
       - name: Save logs
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log
