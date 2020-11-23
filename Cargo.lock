@@ -295,9 +295,9 @@ checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 
 [[package]]
 name = "async-trait"
-version = "0.1.41"
+version = "0.1.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b246867b8b3b6ae56035f1eb1ed557c1d8eae97f0d53696138a50fa0e3a3b8c0"
+checksum = "8d3a45e77e34375a7923b1e8febb049bb011f064714a8e17a1a616fef01da13d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -989,11 +989,7 @@ name = "fluvio-cli"
 version = "0.4.0"
 dependencies = [
  "async-h1",
- "async-trait",
- "bytes 0.5.6",
- "cfg-if 1.0.0",
  "color-eyre",
- "ctrlc",
  "dirs 1.0.5",
  "eyre",
  "fluvio",
@@ -1003,25 +999,15 @@ dependencies = [
  "fluvio-extension-consumer",
  "fluvio-future",
  "fluvio-package-index",
- "fluvio-types",
- "flv-util",
- "futures-lite",
  "hex",
  "http-types",
  "k8-client",
  "k8-config",
- "openssl",
- "prettytable-rs",
- "rand 0.7.3",
  "rustc_version",
  "semver 0.11.0",
- "serde",
- "serde_json",
- "serde_yaml",
  "sha2",
  "structopt",
  "thiserror",
- "toml",
  "tracing",
  "tracing-futures",
  "url",
@@ -3266,9 +3252,9 @@ checksum = "343f3f510c2915908f155e94f17220b19ccfacf2a64a2a5d8004f2c3e311e7fd"
 
 [[package]]
 name = "syn"
-version = "1.0.48"
+version = "1.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc371affeffc477f42a221a1e4297aedcea33d47d19b61455588bd9d8f6b19ac"
+checksum = "443b4178719c5a851e1bde36ce12da21d74a0e60b4d982ec3385a933c812f0f6"
 dependencies = [
  "proc-macro2",
  "quote",
