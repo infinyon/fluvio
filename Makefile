@@ -52,9 +52,10 @@ smoke-test-tls-root:	smoke-test-tls-policy
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
+SC_HOST=localhost:9003
 test-permission-user1-local:
 	rm -f /tmp/topic.err
-	- $(FLUVIO_BIN) --cluster localhost:9003 \
+	- $(FLUVIO_BIN) --cluster ${SC_HOST} \
 		--tls --enable-client-cert --domain fluvio.local \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
