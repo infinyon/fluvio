@@ -25,19 +25,19 @@ jobs:
   #     - name: check versions
   #       run: make -s check_version
 
-#  version_check:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Install cargo-cvm
-#        uses: actions-rs/install@v0.1
-#        with:
-#          crate: cargo-cvm
-#          version: latest
-#      - name: Check Versions
-#        run: cargo cvm -x
+  #  version_check:
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #      - uses: actions/checkout@v2
+  #        with:
+  #          fetch-depth: 0
+  #      - name: Install cargo-cvm
+  #        uses: actions-rs/install@v0.1
+  #        with:
+  #          crate: cargo-cvm
+  #          version: latest
+  #      - name: Check Versions
+  #        run: cargo cvm -x
 
   check_clippy:
     runs-on: ${{ matrix.os }}
@@ -89,9 +89,7 @@ jobs:
       - name: Show rustup
         run: rustup show
       - name: Run unit tests
-        run:  make run-all-unit-test
-
-  
+        run: make run-all-unit-test
 
   local_cluster_test:
     name: Local cluster test
@@ -121,31 +119,33 @@ jobs:
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
       - name: Install Minikube on Mac
         if: startsWith(matrix.os, 'macOS')
-        run:  brew install minikube
+        run: brew install minikube
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'ubuntu')
-        run: |  
+        run: |
+          sleep 30  
           minikube start --driver=docker
       - name: Setup Minikube for Mac
         if: startsWith(matrix.os, 'macOS')
-        run: |  
+        run: |
           minikube start --driver=virtualbox
       - name: Test minikube
         run: |
           minikube profile list
-      - name: Build
+          minikube status
+      - name: Build Test
         run: |
-          cargo build
+          make TEST_BUILD=release build_test
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --local --setup
+          FLV_CMD=true ./target/release/fluvio cluster install --setup --local --develop
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: smoke test tls
         #run: |
         #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test
       - name: Upload logs on Linux
         if: startsWith(matrix.os,'ubuntu') && failure()
         uses: actions/upload-artifact@v2
@@ -159,8 +159,6 @@ jobs:
           name: fluvio-sc-logs
           path: /usr/local/var/log/fluvio/flv_sc.log
 
-
-
   k8_cluster_test:
     name: Kubernetes cluster test
     runs-on: ${{ matrix.os }}
@@ -168,7 +166,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-    
+
     steps:
       - uses: actions/checkout@v2
       - name: Install Helm
@@ -189,7 +187,8 @@ jobs:
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'ubuntu')
-        run: |  
+        run: |
+          sleep 30  
           minikube start --driver=docker
       - name: Test minikube
         run: |
@@ -197,20 +196,22 @@ jobs:
           minikube status
       - name: Build
         run: |
-          cargo build
-      - name: Setup installation pre-requisites 
+          make TEST_BUILD=release build_test
+      - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/debug/fluvio cluster install --setup --develop
-          FLV_CMD=true ./target/debug/fluvio cluster check --pre-install
+          FLV_CMD=true ./target/release/fluvio cluster install --setup --develop
+          FLV_CMD=true ./target/release/fluvio cluster check --pre-install
       - name: Install musl-tools for Linux
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+      - name: Make image
+        run: make RELEASE=true minikube_image
       - name: smoke test k8 tls
-      #  run: | 
-      #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
-        run:  |
-          FLV_CMD=true RELEASE=true FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-k8
+        #  run: |
+        #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
+        run: |
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8
       - name: Save logs
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log

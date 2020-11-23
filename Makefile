@@ -8,12 +8,13 @@ DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
-FLUVIO_BIN=./target/debug/fluvio
+TEST_BUILD=debug
+FLUVIO_BIN=./target/$(TEST_BUILD)/fluvio
 CLIENT_LOG=warn
 SERVER_LOG=debug
 TEST_LOG=warn
 TEST_BIN_DEBUG=FLV_CMD=true RUST_LOG=$(TEST_LOG)  ./target/debug/flv-test
-TEST_BIN=FLV_CMD=true ./target/debug/flv-test
+TEST_BIN=FLV_CMD=true ./target/$(TEST_BUILD)/flv-test
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
@@ -27,19 +28,21 @@ install_tools_mac:
 	brew install yq
 	brew install helm
 
-
+build_test:
+	cargo build --${TEST_BUILD} --bin fluvio
+	cargo build --${TEST_BUILD} --bin flv-test
 
 #
 # List of smoke test steps.  This is used by CI
 #
 
-smoke-test:	test-clean-up
+smoke-test:	test-clean-up	build_test
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK}
 
-smoke-test-tls:	test-clean-up
+smoke-test-tls:	test-clean-up	build_test
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
 
-smoke-test-tls-policy:	test-clean-up
+smoke-test-tls-policy:	test-clean-up	build_test
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
