@@ -213,7 +213,7 @@ jobs:
       #  run: | 
       #    FLV_CMD=true  FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
         run:  |
-          FLV_CMD=true RELEASE=true FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-k8-tls-policy
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8
       - name: Save logs
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log
