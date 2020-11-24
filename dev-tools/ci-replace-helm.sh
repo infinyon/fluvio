@@ -16,6 +16,6 @@ esac
 cd $(mktemp -d)
 curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-${PLATFORM}.tar.gz | tar zx
 helm_bin=$(which helm)
-sudo rm $helm_bin
+sudo rm -f $helm_bin
 sudo mv ${PLATFORM}/helm $helm_bin
 chmod +x $helm_bin
