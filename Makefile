@@ -9,12 +9,13 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 TEST_BUILD=$(if $(RELEASE),release,debug)
-FLUVIO_BIN=./target/$(TEST_BUILD)/fluvio
+TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
+FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/fluvio,./target/$(TEST_BUILD)/fluvio)
 CLIENT_LOG=warn
 SERVER_LOG=debug
 TEST_LOG=warn
-TEST_BIN_DEBUG=FLV_CMD=true RUST_LOG=$(TEST_LOG)  ./target/debug/flv-test
-TEST_BIN=FLV_CMD=true ./target/$(TEST_BUILD)/flv-test
+TEST_BIN_INNER=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/flv-test,./target/$(TEST_BUILD)/flv-test)
+TEST_BIN=FLV_CMD=true $(TEST_BIN_INNER)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
 DEFAULT_ITERATION=5
@@ -30,20 +31,20 @@ install_tools_mac:
 
 build_test:	TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
 build_test:
-	cargo build $(TEST_RELEASE_FLAG) --bin fluvio;
-	cargo build $(TEST_RELEASE_FLAG) --bin flv-test
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio;
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test
 
 #
 # List of smoke test steps.  This is used by CI
 #
 
-smoke-test:	build_test test-clean-up
+smoke-test:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK}
 
-smoke-test-tls:	build_test test-clean-up	
+smoke-test-tls:	test-clean-up	
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
 
-smoke-test-tls-policy:	build_test test-clean-up
+smoke-test-tls-policy:	test-clean-up
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
@@ -61,6 +62,10 @@ test-permission-user1:
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
+
+k8-setup:
+	$(FLUVIO_BIN) cluster install --setup --develop
+#	$(FLUVIO_BIN) cluster check --pre-install
 
 
 smoke-test-k8:	test-clean-up minikube_image
@@ -95,7 +100,7 @@ test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
 
-test-clean-up:
+test-clean-up:	build_test
 ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
