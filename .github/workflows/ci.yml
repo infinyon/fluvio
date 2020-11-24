@@ -125,13 +125,13 @@ jobs:
           minikube status
       - name: Build Test
         run: |
-          make TEST_BUILD=release build_test
+          make RELEASE=release build_test
       - name: Setup installation pre-requisites
         run: |
           FLV_CMD=true ./target/release/fluvio cluster install --setup --local --develop
       - name: Run smoke-test
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make TEST_BUILD=release UNINSTALL=noclean smoke-test-tls-root
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
       - name: Upload logs on Linux
         if: startsWith(matrix.os, 'ubuntu') && failure()
@@ -174,16 +174,16 @@ jobs:
           minikube status
       - name: Build
         run: |
-          make TEST_BUILD=release build_test
+          make RELEASE=release build_test
       - name: Setup installation pre-requisites
         run: |
           FLV_CMD=true ./target/release/fluvio cluster install --setup --develop
           FLV_CMD=true ./target/release/fluvio cluster check --pre-install
       - name: Make image
         run: make RELEASE=true minikube_image
-      - name: Run smoke-test-k8
+      - name: Run smoke-test-k8-tls-root
         run:  |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TEST_BUILD=release UNINSTALL=noclean smoke-test-k8-tls-root
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-k8-tls-root
       - run: minikube delete
       - name: Save logs
         if: failure()
