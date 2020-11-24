@@ -54,14 +54,12 @@ impl TopicController {
 
         debug!("starting topic controller loop");
 
-        let mut timer = sleep(Duration::from_secs(60));
-
         loop {
             self.sync_topics().await;
 
             select! {
                 // this is hack until we fix listener
-                _ = &mut timer => {
+                _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
                 _ = self.topics.spec_listen() => {
