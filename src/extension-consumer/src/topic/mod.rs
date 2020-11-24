@@ -16,6 +16,7 @@ use fluvio::Fluvio;
 use crate::Result;
 use crate::common::COMMAND_TEMPLATE;
 use crate::common::output::Terminal;
+use crate::common::FluvioExtensionMetadata;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "topic", about = "Topic operations")]
@@ -52,20 +53,27 @@ pub enum TopicCmd {
 impl TopicCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         match self {
-            TopicCmd::Create(create) => {
+            Self::Create(create) => {
                 create.process(fluvio).await?;
             }
-            TopicCmd::Delete(delete) => {
+            Self::Delete(delete) => {
                 delete.process(fluvio).await?;
             }
-            TopicCmd::Describe(describe) => {
+            Self::Describe(describe) => {
                 describe.process(out, fluvio).await?;
             }
-            TopicCmd::List(list) => {
+            Self::List(list) => {
                 list.process(out, fluvio).await?;
             }
         }
 
         Ok(())
+    }
+    pub fn metadata() -> FluvioExtensionMetadata {
+        FluvioExtensionMetadata {
+            command: "topic".into(),
+            description: "Topic Operations".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        }
     }
 }

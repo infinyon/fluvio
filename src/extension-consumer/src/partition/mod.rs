@@ -4,6 +4,7 @@ use fluvio::Fluvio;
 
 use crate::Result;
 use crate::common::output::Terminal;
+use crate::common::FluvioExtensionMetadata;
 use crate::partition::list::ListPartitionOpt;
 
 mod list;
@@ -28,5 +29,12 @@ impl PartitionCmd {
         }
 
         Ok(())
+    }
+    pub fn metadata() -> FluvioExtensionMetadata {
+        FluvioExtensionMetadata {
+            command: "partition".into(),
+            description: "Partition Operations".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        }
     }
 }

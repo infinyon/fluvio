@@ -7,6 +7,7 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 
 use crate::common::output::Terminal;
+use crate::common::FluvioExtensionMetadata;
 use crate::Result;
 
 /// Produce log configuration parameters
@@ -98,6 +99,14 @@ impl ProduceLogOpt {
         };
 
         Ok((produce_log_cfg, file_records))
+    }
+
+    pub fn metadata() -> FluvioExtensionMetadata {
+        FluvioExtensionMetadata {
+            command: "produce".into(),
+            description: "Produce new data in a stream".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        }
     }
 }
 

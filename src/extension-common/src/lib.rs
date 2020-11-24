@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 pub mod output;
 mod common;
 
@@ -28,6 +29,13 @@ macro_rules! t_print_cli_err {
     ($out:expr,$x:expr) => {
         t_println!($out, "\x1B[1;31merror:\x1B[0m {}", $x);
     };
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FluvioExtensionMetadata {
+    pub command: String,
+    pub description: String,
+    pub version: String,
 }
 
 #[cfg(feature = "target")]

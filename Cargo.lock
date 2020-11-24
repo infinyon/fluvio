@@ -948,6 +948,7 @@ dependencies = [
  "k8-config",
  "rustc_version",
  "semver 0.11.0",
+ "serde_json",
  "sha2",
  "structopt",
  "thiserror",
