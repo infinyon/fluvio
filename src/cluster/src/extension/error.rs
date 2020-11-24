@@ -3,7 +3,7 @@ use std::io::Error as IoError;
 use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
-use fluvio_runner::RunnerError;
+use fluvio_runner_local::RunnerError;
 
 use crate::{ClusterError, CheckError};
 

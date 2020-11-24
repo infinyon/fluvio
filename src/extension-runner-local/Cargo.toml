@@ -1,5 +1,5 @@
 [package]
-name = "fluvio-runner"
+name = "fluvio-runner-local"
 version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,11 +8,11 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 
 [lib]
-name = "fluvio_runner"
+name = "fluvio_runner_local"
 path = "src/lib.rs"
 
 [[bin]]
-name = "fluvio_runner_cli"
+name = "fluvio_runner_local_cli"
 path = "src/bin/main.rs"
 doc = false
 

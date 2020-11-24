@@ -968,7 +968,7 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
- "fluvio-runner",
+ "fluvio-runner-local",
  "flv-util",
  "k8-client",
  "k8-config",
@@ -1190,7 +1190,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-runner"
+name = "fluvio-runner-local"
 version = "0.1.0"
 dependencies = [
  "fluvio-future",
