@@ -18,7 +18,7 @@ mod opt {
 
     use structopt::StructOpt;
 
-    use fluvio_runner::run::RunnerCmd;
+    use fluvio_runner_local::run::RunnerCmd;
 
     use crate::extension::common::target::ClusterTarget;
     use crate::extension::common::output::Terminal;
