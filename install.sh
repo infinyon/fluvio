@@ -6,6 +6,7 @@ set -u
 set -o pipefail
 
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
+readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 readonly FLUVIO_LATEST_URL="https://packages.fluvio.io/v1/latest"
 
 # Ensure that this architecture is supported and matches the
@@ -507,6 +508,7 @@ main() {
     # After verification, install the file and make it executable
     say "⬇️ Downloaded Fluvio, installing..."
     ensure mkdir -p "${FLUVIO_BIN}"
+    ensure mkdir -p "${FLUVIO_EXTENSIONS}"
     local _install_file="${FLUVIO_BIN}/fluvio"
     ensure mv "${_temp_file}" "${_install_file}"
     ensure chmod +x "${_install_file}"

@@ -3,7 +3,7 @@ use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 
 use crate::CliError;
 use crate::install::{
-    fetch_latest_version, fetch_package_file, fluvio_bin_dir, install_bin, install_println,
+    fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
 };
 use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
@@ -79,12 +79,8 @@ impl InstallOpt {
         install_println("🔑 Downloaded and verified package file");
 
         // Install the package to the ~/.fluvio/bin/ dir
-        let fluvio_dir = fluvio_bin_dir()?;
+        let fluvio_dir = fluvio_extensions_dir()?;
         install_bin(&fluvio_dir, id.name.as_str(), &package_file)?;
-        install_println(format!(
-            "✅ Successfully installed ~/.fluvio/bin/{}",
-            &id.name
-        ));
 
         Ok("".to_string())
     }

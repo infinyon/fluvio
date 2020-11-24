@@ -38,6 +38,7 @@ color-eyre = "0.5.5"
 which = "4.0.2"
 sha2 = "0.9.1"
 hex = "0.4.2"
+home = "0.5.3"
 
 # Fluvio dependencies
 
