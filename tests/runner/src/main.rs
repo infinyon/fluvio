@@ -28,7 +28,6 @@ fn main() {
     }));
 
     run_block_on(async move {
-        
         if option.setup() {
             let mut setup = Setup::new(option);
             setup.setup().await;
@@ -37,7 +36,7 @@ fn main() {
         }
 
         test_runner.run_test().await;
-        
-        assert_eq!(2,3);
+
+        assert_eq!(2, 3);
     });
 }
