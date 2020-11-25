@@ -30,7 +30,7 @@ install_tools_mac:
 	brew install helm
 
 build_test:	TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
-build_test:
+build_test: install_musl
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio;
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test
 
