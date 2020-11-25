@@ -47,13 +47,13 @@ impl PartitionController {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
-        self.sync_spu_changes().await;
-
         loop {
+            self.sync_spu_changes().await;
+
             select! {
 
                 _ = self.spus.status_listen() => {
-                    self.sync_spu_changes().await;
+                   debug!("detected spus status changed");
                 }
             }
         }
@@ -64,8 +64,10 @@ impl PartitionController {
     /// sync spu states to partition
     /// check to make sure
     async fn sync_spu_changes(&mut self) {
+
+        debug!("sync spu changes");
         let read_guard = self.spus.store().read().await;
-        let changes = read_guard.changes_since(self.partition_epoch);
+        let changes = read_guard.changes_since(self.spu_epoch);
         drop(read_guard);
         self.spu_epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
