@@ -116,6 +116,8 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
             let message = generate_message(offset, &topic_name, &option);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
+            // create panic
+            assert_eq!(1, 2);
             producer
                 .send_record(message, 0)
                 .await
