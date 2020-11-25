@@ -9,7 +9,6 @@ TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
 TEST_BUILD=$(if $(RELEASE),release,debug)
-TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/fluvio,./target/$(TEST_BUILD)/fluvio)
 CLIENT_LOG=warn
 SERVER_LOG=debug
@@ -30,9 +29,16 @@ install_tools_mac:
 	brew install helm
 
 build_test:	TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
-build_test: install_musl
-	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio;
+build_test:	TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
+build_test:	install_test_target
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test
+
+install_test_target:	
+ifdef TARGET
+	rustup target add $(TARGET)
+endif
+	
 
 #
 # List of smoke test steps.  This is used by CI
