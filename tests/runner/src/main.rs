@@ -36,7 +36,5 @@ fn main() {
         }
 
         test_runner.run_test().await;
-
-        assert_eq!(2, 3);
     });
 }
