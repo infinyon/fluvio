@@ -90,7 +90,7 @@ impl ReplicaLeaderController<FileReplica> {
 
         leader_debug!(self, "starting");
         self.send_status_to_sc().await;
-       
+
         loop {
             self.sync_followers().await;
             leader_debug!(self, "waiting for next command");
