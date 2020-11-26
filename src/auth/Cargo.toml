@@ -16,12 +16,12 @@ path = "src/lib.rs"
 async-trait = "0.1.41"
 fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-future = { version = "0.1.8", features = ["net","rust_tls"] }
+fluvio-future = { version = "0.1.12", features = ["net", "openssl_tls"] }
 fluvio-protocol = { version = "0.2.0" }
 fluvio-socket = { version = "0.4.0" }
 fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
 fluvio-types = { version = "0.1.0", path = "../types" }
-flv-tls-proxy = { version = "0.2.5", features = ["rust_tls"] }
+flv-tls-proxy = { version = "0.3.0" }
 futures-util = { version = "0.3.5" }
 log = "0.4.11"
 serde = { version = "1.0.103", features = ['derive'] }

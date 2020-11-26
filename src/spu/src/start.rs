@@ -83,7 +83,7 @@ mod proxy {
     use tracing::info;
 
     use flv_util::print_cli_err;
-    use fluvio_future::rust_tls::TlsAcceptor;
+    use fluvio_future::openssl::TlsAcceptor;
     use crate::config::SpuConfig;
     use flv_tls_proxy::start as proxy_start;
 

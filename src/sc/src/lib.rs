@@ -1,6 +1,6 @@
 #![type_length_limit = "1324680"]
 
-#[cfg(any(feature = "k8", feature = "k8_rustls"))]
+#[cfg(any(feature = "k8"))]
 pub mod k8;
 pub mod cli;
 pub mod core;

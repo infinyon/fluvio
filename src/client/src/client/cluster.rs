@@ -6,14 +6,7 @@ use once_cell::sync::OnceCell;
 
 use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
 use fluvio_future::task::run_block_on;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "rust_tls")] {
-        use fluvio_future::rust_tls::AllDomainConnector;
-    } else if #[cfg(feature  = "native_tls")] {
-        use fluvio_future::native_tls::AllDomainConnector;
-    }
-}
+use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;

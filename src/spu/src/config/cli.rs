@@ -14,8 +14,7 @@ use structopt::StructOpt;
 
 use fluvio_types::print_cli_err;
 use fluvio_types::SpuId;
-use fluvio_future::rust_tls::TlsAcceptor;
-use fluvio_future::rust_tls::AcceptorBuilder;
+use fluvio_future::openssl::TlsAcceptor;
 
 use super::SpuConfig;
 
@@ -155,7 +154,7 @@ impl SpuOpt {
             .server_cert
             .as_ref()
             .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server cert"))?;
-        let server_key_pat = tls_config
+        let server_key_path = tls_config
             .server_key
             .as_ref()
             .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing server key"))?;
@@ -165,11 +164,15 @@ impl SpuOpt {
                 .ca_cert
                 .as_ref()
                 .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing ca cert"))?;
-            AcceptorBuilder::new_client_authenticate(ca_path)?
+            TlsAcceptor::builder()
+                .map_err(|err| err.into_io_error())?
+                .with_ca_from_pem_file(ca_path)
+                .map_err(|err| err.into_io_error())?
         } else {
-            AcceptorBuilder::new_no_client_authentication()
+            TlsAcceptor::builder().map_err(|err| err.into_io_error())?
         })
-        .load_server_certs(server_crt_path, server_key_pat)?;
+        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)
+        .map_err(|err| err.into_io_error())?;
 
         Ok(Some(builder.build()))
     }
