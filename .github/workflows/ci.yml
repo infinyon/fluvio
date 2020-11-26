@@ -99,26 +99,48 @@ jobs:
         os: [macos-latest]
         rust: [stable]
 
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 300M
+      SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
+
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - name: Install sccache
+        run: brew install sccache
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ~/.cargo/registry/cache
+          key: ${{ runner.os }}-${{ matrix.conf }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.conf }}-cargo-registry-
+      - name: Cache sccache output
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: /Users/runner/Library/Caches/Mozilla.sccache
+          key: ${{ runner.os }}-${{ matrix.conf }}-sccache-${{ hashFiles('**/Cargo.*') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.conf }}-sccache-
+      - name: Start sccache server
+        run: sccache --start-server
+      - name: Build Test
+        run: |
+          make RELEASE=release build_test
       - name: Install Helm
         run: dev-tools/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
           OS: ${{ matrix.os }}
       - run: helm version
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
       - name: Install Minikube on Mac
         run: brew install minikube
       - name: Setup Minikube for Mac
@@ -128,9 +150,6 @@ jobs:
         run: |
           minikube profile list
           minikube status
-      - name: Build Test
-        run: |
-          make RELEASE=release build_test
       - name: Setup installation pre-requisites
         run: |
           FLV_CMD=true ./target/release/fluvio cluster install --setup --local --develop
@@ -141,8 +160,11 @@ jobs:
         #run: |
         #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test
-      - name: Upload logs on Mac
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+      - name: Stop sccache server
+        run: sccache --stop-server
+      - name: Upload SC log
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-sc-logs
@@ -183,8 +205,9 @@ jobs:
         run: |
           FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
-      - name: Upload logs on Linux
+      - name: Upload SC log
         uses: actions/upload-artifact@v2
+        if: failure()
         with:
           name: fluvio-sc-logs
           path: /tmp/flv_sc.log
