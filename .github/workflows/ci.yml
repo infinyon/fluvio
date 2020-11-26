@@ -160,7 +160,7 @@ jobs:
         #run: |
         #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test
+          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload SC log
