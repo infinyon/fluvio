@@ -109,6 +109,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install sccache
         run: brew install sccache
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Cache cargo registry
         uses: actions/cache@v2
         continue-on-error: true
@@ -136,11 +141,6 @@ jobs:
           HELM_VERSION: v3.3.4
           OS: ${{ matrix.os }}
       - run: helm version
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
       - name: Install Minikube on Mac
         run: brew install minikube
       - name: Setup Minikube for Mac
