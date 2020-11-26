@@ -90,17 +90,15 @@ impl ReplicaLeaderController<FileReplica> {
 
         leader_debug!(self, "starting");
         self.send_status_to_sc().await;
-        self.sync_followers().await;
-
-        let mut timer = sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC));
+       
         loop {
+            self.sync_followers().await;
             leader_debug!(self, "waiting for next command");
 
             select! {
 
-                _ = &mut timer => {
-
-                    self.sync_followers().await;
+                _ = sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC)) => {
+                    debug!("reconcillation timer expired");
                 },
 
                 controller_req = self.controller_receiver.next() => {
@@ -166,6 +164,7 @@ impl ReplicaLeaderController<FileReplica> {
 
     /// go thru each of follower and sync replicas
     async fn sync_followers(&self) {
+        debug!("sync followers");
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica
                 .sync_followers(&self.follower_sinks, self.max_bytes)
