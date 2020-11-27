@@ -47,6 +47,7 @@ impl PartitionController {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
+        debug!("starting dispatch loop");
         loop {
             self.sync_spu_changes().await;
 

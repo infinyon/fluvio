@@ -52,7 +52,7 @@ impl TopicController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        debug!("starting topic controller loop");
+        debug!("starting dispatch loop");
 
         loop {
             self.sync_topics().await;
@@ -73,7 +73,7 @@ impl TopicController {
         }
     }
 
-    /// get list of topics we need to check
+    /// sync topics with partition
     async fn sync_topics(&mut self) {
         debug!("syncing topics");
         let read_guard = self.topics.store().read().await;
