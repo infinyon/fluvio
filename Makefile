@@ -139,6 +139,8 @@ check-clippy:	install-clippy
 	cd src/client; cargo +$(RUSTV) clippy --all-targets  -- -D warnings
 
 
+build-all-test:	
+	cargo build --tests --all-features
 
 run-all-unit-test:
 	cargo test --all-features

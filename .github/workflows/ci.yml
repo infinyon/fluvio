@@ -120,7 +120,10 @@ jobs:
             ${{ runner.os }}-${{ matrix.conf }}-sccache-
       - name: Start sccache server
         run: sccache --start-server
+      - name: Build Tests
+        run: make build-all-test
       - name: Run unit tests
+        timeout-minutes: 5
         run: make run-all-unit-test
       - name: Stop sccache server
         run: sccache --stop-server
@@ -165,7 +168,10 @@ jobs:
             ${{ runner.os }}-${{ matrix.conf }}-sccache-
       - name: Start sccache server
         run: sccache --start-server
+      - name: Build Tests
+        run: make build-all-test
       - name: Run unit tests
+        timeout-minutes: 5
         run: make run-all-unit-test
       - name: Stop sccache server
         run: sccache --stop-server
