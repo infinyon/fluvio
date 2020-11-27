@@ -73,7 +73,7 @@ jobs:
         run: make check-fmt RUSTV=${{ matrix.rust }}
 
   unit_test_linux:
-    name: Unit test
+    name: Unit Test Linux
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
