@@ -144,10 +144,12 @@ impl RootCmd {
     }
 }
 
-/// All top-level subcommands that require a Fluvio client
+// For some reason this doc string is the one that gets used for the top-level help menu.
+// Please don't change it unless you want to update the top-level help menu "about".
+/// Fluvio command-line interface
 #[derive(StructOpt, Debug)]
 pub enum FluvioCmd {
-    /// Reads messages from a topic/partition
+    /// Read messages from a topic/partition
     ///
     /// By default, this activates in "follow" mode, where
     /// the command will hang and continue to wait for new
@@ -157,7 +159,7 @@ pub enum FluvioCmd {
     #[structopt(name = "consume")]
     Consume(ConsumeLogOpt),
 
-    /// Writes messages to a topic/partition
+    /// Write messages to a topic/partition
     ///
     /// By default, this reads a single line from stdin to
     /// use as the message. If you run this with no file options,

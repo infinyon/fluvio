@@ -18,14 +18,14 @@ use unregister::UnregisterCustomSpuOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum SpuCmd {
-    /// Registers a new custom SPU with the cluster
+    /// Register a new custom SPU with the cluster
     #[structopt(
         name = "register",
         template = COMMAND_TEMPLATE,
     )]
     Register(RegisterCustomSpuOpt),
 
-    /// Unregisters a custom SPU from the cluster
+    /// Unregister a custom SPU from the cluster
     #[structopt(
         name = "unregister",
         template = COMMAND_TEMPLATE,
