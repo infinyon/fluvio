@@ -155,17 +155,17 @@ jobs:
         continue-on-error: true
         with:
           path: ~/.cargo/registry/cache
-          key: ${{ runner.os }}-${{ matrix.conf }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: test-${{ runner.os }}-${{ matrix.conf }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.conf }}-cargo-registry-
+            test-${{ runner.os }}-${{ matrix.conf }}-cargo-registry-
       - name: Cache sccache output
         uses: actions/cache@v2
         continue-on-error: true
         with:
           path: /Users/runner/Library/Caches/Mozilla.sccache
-          key: ${{ runner.os }}-${{ matrix.conf }}-sccache-${{ hashFiles('**/Cargo.*') }}
+          key: test-${{ runner.os }}-${{ matrix.conf }}-sccache-${{ hashFiles('**/Cargo.*') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.conf }}-sccache-
+            test-${{ runner.os }}-${{ matrix.conf }}-sccache-
       - name: Start sccache server
         run: sccache --start-server
       - name: Build Tests
