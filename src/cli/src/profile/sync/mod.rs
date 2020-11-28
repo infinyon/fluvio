@@ -14,9 +14,11 @@ use crate::profile::sync::k8::K8Opt;
     template = COMMAND_TEMPLATE,
 )]
 pub enum SyncCmd {
-    #[structopt(name = "k8", about = "sync profile from kubernetes cluster")]
+    /// Sync a profile from a Kubernetes cluster
+    #[structopt(name = "k8")]
     K8(K8Opt),
-    #[structopt(name = "local", about = "sync profile from local cluster")]
+    /// Sync a profile from a local cluster
+    #[structopt(name = "local")]
     Local(LocalOpt),
 }
 

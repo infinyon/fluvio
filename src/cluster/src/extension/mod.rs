@@ -40,15 +40,15 @@ mod opt {
         #[structopt(name = "install")]
         Install(Box<InstallOpt>),
 
-        /// Uninstall a Fluvio cluster from the local machine or Minkube
+        /// Uninstall a Fluvio cluster from the local machine or Minikube
         #[structopt(name = "uninstall")]
         Uninstall(UninstallOpt),
 
-        /// Check that all requirements for installation are met
+        /// Check that all requirements for cluster installation are met
         #[structopt(name = "check")]
         Check(CheckOpt),
 
-        /// Prints information about various Fluvio releases
+        /// Print information about various Fluvio releases
         #[structopt(name = "releases")]
         Releases(ReleasesCmd),
 

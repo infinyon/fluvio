@@ -20,28 +20,28 @@ use crate::common::output::Terminal;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "topic", about = "Topic operations")]
 pub enum TopicCmd {
-    /// Creates a Topic with the given name
+    /// Create a Topic with the given name
     #[structopt(
         name = "create",
         template = COMMAND_TEMPLATE,
     )]
     Create(CreateTopicOpt),
 
-    /// Deletes a Topic with the given name
+    /// Delete a Topic with the given name
     #[structopt(
         name = "delete",
         template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteTopicOpt),
 
-    /// Prints detailed information about a Topic
+    /// Print detailed information about a Topic
     #[structopt(
         name = "describe",
         template = COMMAND_TEMPLATE,
     )]
     Describe(DescribeTopicsOpt),
 
-    /// Lists all of the Topics in the cluster
+    /// List all of the Topics in the cluster
     #[structopt(
         name = "list",
         template = COMMAND_TEMPLATE,

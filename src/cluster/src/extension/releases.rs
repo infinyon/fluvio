@@ -4,7 +4,7 @@ use crate::extension::Result;
 
 #[derive(Debug, StructOpt)]
 pub enum ReleasesCmd {
-    /// show list of versions
+    /// Show a list of Fluvio release versions
     #[structopt(name = "list")]
     List(ListOpt),
 }

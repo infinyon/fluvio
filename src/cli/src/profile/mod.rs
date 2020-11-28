@@ -46,7 +46,7 @@ pub enum ProfileCmd {
     #[structopt(name = "sync")]
     Sync(SyncCmd),
 
-    /// Display entire configuration
+    /// Display the entire Fluvio configuration
     #[structopt(name = "view")]
     View(ViewOpt),
 }

@@ -24,9 +24,11 @@ impl RunnerCmd {
 
 #[derive(Debug, StructOpt)]
 pub enum RunOpt {
-    #[structopt(about = "Run SPU server")]
+    /// Run a new Streaming Controller (SC)
+    #[structopt(name = "spu")]
     SPU(SpuOpt),
-    #[structopt(about = "Run streaming controller")]
+    /// Run a new Streaming Processing Unit (SPU)
+    #[structopt(name = "sc")]
     SC(ScOpt),
 }
 

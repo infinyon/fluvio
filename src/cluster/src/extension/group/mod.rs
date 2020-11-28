@@ -30,7 +30,7 @@ pub enum SpuGroupCmd {
     )]
     Delete(DeleteManagedSpuGroupOpt),
 
-    /// List all managed SPUs
+    /// List all SPU Groups
     #[structopt(
         name = "list",
         template = COMMAND_TEMPLATE,
