@@ -4,6 +4,7 @@
 //! CLI configurations at the top of the tree
 
 use std::sync::Arc;
+use std::process::Command;
 use structopt::clap::{AppSettings, Shell};
 use structopt::StructOpt;
 use tracing::debug;
@@ -19,6 +20,7 @@ use crate::Result;
 use crate::common::COMMAND_TEMPLATE;
 use crate::common::target::ClusterTarget;
 use crate::common::output::Terminal;
+use crate::common::FluvioExtensionMetadata;
 
 use crate::profile::ProfileCmd;
 use crate::install::update::UpdateOpt;
@@ -105,6 +107,13 @@ enum RootCmd {
     )]
     Completions(CompletionCmd),
 
+    /// Generate metadata for Fluvio base CLI
+    #[structopt(
+        name = "metadata",
+        settings = &[AppSettings::Hidden]
+    )]
+    Metadata(MetadataOpt),
+
     #[structopt(external_subcommand)]
     External(Vec<String>),
 }
@@ -134,6 +143,9 @@ impl RootCmd {
             }
             Self::Completions(completion) => {
                 completion.process()?;
+            }
+            Self::Metadata(metadata) => {
+                metadata.process()?;
             }
             Self::External(args) => {
                 process_external_subcommand(args)?;
@@ -250,6 +262,46 @@ impl VersionOpt {
 }
 
 #[derive(Debug, StructOpt)]
+struct MetadataOpt {}
+impl MetadataOpt {
+    pub fn process(self) -> Result<()> {
+        let metadata = Self::metadata()?;
+        if let Ok(out) = serde_json::to_string(&metadata) {
+            println!("{}", out);
+        }
+
+        Ok(())
+    }
+
+    pub fn metadata() -> Result<Vec<FluvioExtensionMetadata>> {
+        // Scan for extensions, run `fluvio <extension> metadata` on them, add them to metadata
+        // hashmap, run the same on FluvioCmds
+        let mut metadata: Vec<FluvioExtensionMetadata> = vec![
+            TopicCmd::metadata(),
+            PartitionCmd::metadata(),
+            ProduceLogOpt::metadata(),
+            ConsumeLogOpt::metadata(),
+        ];
+
+        for (_subcommand_name, subcommand_path) in crate::install::get_extensions()? {
+            let stdout = match Command::new(subcommand_path.as_path())
+                .args(&["metadata"])
+                .output()
+            {
+                Ok(out) => out.stdout,
+                _ => continue,
+            };
+
+            if let Ok(out) = serde_json::from_slice::<FluvioExtensionMetadata>(&stdout) {
+                metadata.push(out);
+            }
+        }
+
+        Ok(metadata)
+    }
+}
+
+#[derive(Debug, StructOpt)]
 struct CompletionOpt {
     #[structopt(long, default_value = "fluvio")]
     name: String,
@@ -289,7 +341,6 @@ impl CompletionCmd {
 
 fn process_external_subcommand(mut args: Vec<String>) -> Result<()> {
     use std::fs;
-    use std::process::Command;
     use std::path::PathBuf;
 
     // The external subcommand's name is given as the first argument, take it.

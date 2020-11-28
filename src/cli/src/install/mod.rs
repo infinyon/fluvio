@@ -26,6 +26,22 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
     }
     Err(IoError::new(ErrorKind::NotFound, "Fluvio extensions directory not found").into())
 }
+pub(crate) fn get_extensions() -> Result<Vec<(String, PathBuf)>, CliError> {
+    use std::fs;
+    let mut extensions: Vec<(String, PathBuf)> = Vec::new();
+    let fluvio_dir = fluvio_extensions_dir()?;
+    if let Ok(entries) = fs::read_dir(&fluvio_dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                let filename = entry.file_name().to_string_lossy().to_string();
+                if filename.starts_with("fluvio-") {
+                    extensions.push((filename, entry.path()));
+                }
+            }
+        }
+    }
+    Ok(extensions)
+}
 
 /// Fetches the latest version of the package with the given ID
 #[instrument(

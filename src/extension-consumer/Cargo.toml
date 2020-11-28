@@ -36,7 +36,7 @@ which = "4.0.2"
 # Fluvio dependencies
 
 flv-util = { version = "0.5.0" }
-fluvio-future = { version = "0.1.8" }
+fluvio-future = { version = "0.1.8", features = ["fs", "io"] }
 fluvio = { version = "0.2.3", path = "../client", default-features = false }
 fluvio-types = { path = "../types", version = "0.1.0" }
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common", features = ["target"] }

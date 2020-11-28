@@ -16,6 +16,7 @@ use fluvio::Fluvio;
 use crate::common::output::Terminal;
 use crate::consume::fetch_log_loop::fetch_log_loop;
 use crate::ConsumerError;
+use crate::common::FluvioExtensionMetadata;
 
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
@@ -70,6 +71,14 @@ impl ConsumeLogOpt {
             .await?;
         fetch_log_loop(out, consumer, self).await?;
         Ok(())
+    }
+
+    pub fn metadata() -> FluvioExtensionMetadata {
+        FluvioExtensionMetadata {
+            command: "consume".into(),
+            description: "Consume new data in a stream".into(),
+            version: env!("CARGO_PKG_VERSION").into(),
+        }
     }
 }
 
