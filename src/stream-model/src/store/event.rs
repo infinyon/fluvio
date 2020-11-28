@@ -28,7 +28,7 @@ impl EventPublisher {
         self.change.load(DEFAULT_EVENT_ORDERING)
     }
 
-    pub fn change_listener(self: Arc<Self>) -> ChangeListener {
+    pub fn change_listener(self: &Arc<Self>) -> ChangeListener {
         let last_change =  self.current_change();
         ChangeListener {
             publisher: self.clone(),
@@ -69,6 +69,14 @@ impl ChangeListener {
         self.publisher.listen()
     }
 
+    pub fn last_change(&self) -> u64 {
+        self.last_change
+    }
+
+    pub fn current_change(&self) -> u64 {
+        self.publisher.current_change()
+    }
+
 }
 
 
@@ -105,10 +113,11 @@ mod test {
 
     use std::time::Duration;
     use std::sync::Arc;
+    use std::sync::atomic::AtomicU64;
 
     use tracing::debug;
     use rand::{ thread_rng, Rng};
-    use event_listener::Event;
+
 
     use fluvio_future::test_async;
     use fluvio_future::task::spawn;
@@ -120,12 +129,13 @@ mod test {
 
     struct TestController {
         change: ChangeListener,
-        shutdown: Arc<SimpleEvent>
+        shutdown: Arc<SimpleEvent>,
+        last_change: AtomicU64
     }
 
     impl TestController {
 
-        fn start(change: ChangeListener,shutdown: Arc<SimpleEvent>)   {
+        fn start(change: ChangeListener,shutdown: Arc<SimpleEvent>,last_change: AtomicU64)   {
             let controller = Self{
                 change,
                 shutdown
@@ -147,6 +157,7 @@ mod test {
 
                 self.sync().await;
 
+                
                 if self.change.has_change() {
                     debug!("has change");
                     continue;
@@ -188,7 +199,25 @@ mod test {
     async fn test_listener() -> Result<(),()> {
 
         
-        let publisher = EventPublisher::new();
+        let publisher = Arc::new(EventPublisher::new());
+        let listener = Arc::new(publisher.change_listener());
+        let shutdown = SimpleEvent::shared();
+        TestController::start(listener.clone(),shutdown.clone());
+
+        let rng = thread_rng();
+        for _ in 0..20u16 {
+            let delay = thread_rng().gen_range(1,10);
+            sleep(Duration::from_millis(delay)).await;
+        }
+        
+        // shutdown and wait to finish
+        shutdown.notify();
+
+        // wait for test controller to finish
+        sleep(Duration::from_millis(10)).await;
+
+        assert_eq!(publisher.current_change(),listener.last_change());
+
         Ok(())
 
     }
