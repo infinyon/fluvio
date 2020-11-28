@@ -1,3 +1,5 @@
+// mod event;
+
 pub use context::*;
 
 pub use fluvio_stream_model::store::*;

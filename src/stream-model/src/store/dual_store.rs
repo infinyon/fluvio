@@ -22,10 +22,13 @@ use super::actions::LSUpdate;
 /// Hash values are wrapped in EpochCounter.  EpochCounter is also deref.
 /// Using async lock to ensure read/write are thread safe.
 #[derive(Debug)]
-pub struct LocalStore<S, C>(RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>)
-where
-    S: Spec,
-    C: MetadataItem;
+pub struct LocalStore<S, C>
+    where
+        S: Spec,
+        C: MetadataItem
+{
+    store: RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>
+} 
 
 impl<S, C> Default for LocalStore<S, C>
 where
@@ -33,7 +36,9 @@ where
     C: MetadataItem,
 {
     fn default() -> Self {
-        Self(RwLock::new(DualEpochMap::new()))
+        Self {
+            store: RwLock::new(DualEpochMap::new())
+        }
     }
 }
 
@@ -52,7 +57,9 @@ where
         for obj in obj {
             map.insert(obj.key.clone(), obj.into());
         }
-        Self(RwLock::new(DualEpochMap::new_with_map(map)))
+        Self {
+            store: RwLock::new(DualEpochMap::new_with_map(map))
+        }
     }
 
     /// create arc wrapper
@@ -65,7 +72,7 @@ where
     pub async fn read<'a>(
         &'_ self,
     ) -> RwLockReadGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
-        self.0.read().await
+        self.store.read().await
     }
 
     /// write guard, this is private, use sync API to make changes
@@ -73,7 +80,7 @@ where
     pub async fn write<'a>(
         &'_ self,
     ) -> RwLockWriteGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
-        self.0.write().await
+        self.store.write().await
     }
 
     /// current epoch
