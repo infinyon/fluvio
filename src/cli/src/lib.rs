@@ -135,8 +135,7 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                let config = root.target.load()?;
-                cluster.process(out, &config).await?;
+                cluster.process(out, root.target).await?;
             }
             Self::Install(install) => {
                 install.process().await?;

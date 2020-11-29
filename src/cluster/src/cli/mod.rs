@@ -19,13 +19,11 @@ use spu::SpuCmd;
 
 pub use self::error::ClusterCliError;
 
-use fluvio::Fluvio;
+use fluvio_runner_local::RunCmd;
 use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
-use fluvio_runner_local::RunCmd;
-use fluvio::FluvioConfig;
-use fluvio_extension_common::PrintTerminal;
+use common::PrintTerminal;
 
 #[derive(StructOpt, Debug)]
 pub struct ClusterOpt {
@@ -39,8 +37,7 @@ pub struct ClusterOpt {
 impl ClusterOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
         let out = Arc::new(PrintTerminal {});
-        let config = self.target.load()?;
-        self.cmd.process(out, &config).await?;
+        self.cmd.process(out, self.target).await?;
         Ok(())
     }
 }
@@ -90,7 +87,7 @@ impl ClusterCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
-        config: &FluvioConfig,
+        target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
             Self::Install(install) => {
@@ -106,11 +103,11 @@ impl ClusterCmd {
                 releases.process().await?;
             }
             Self::SPU(spu) => {
-                let fluvio = Fluvio::connect_with_config(config).await?;
+                let fluvio = target.connect().await?;
                 spu.process(out, &fluvio).await?;
             }
             Self::SPUGroup(group) => {
-                let fluvio = Fluvio::connect_with_config(config).await?;
+                let fluvio = target.connect().await?;
                 group.process(out, &fluvio).await?;
             }
             Self::Run(run) => {
