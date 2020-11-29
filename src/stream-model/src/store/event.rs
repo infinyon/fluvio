@@ -163,14 +163,14 @@ mod test {
 
             
                 if self.change.has_change() {
-                    debug!("has change: {}",self.change.last_change());
+                    debug!("before has change: {}",self.change.last_change());
                     continue;
                 }
 
                 let listener = self.change.listen();
 
                 if self.change.has_change() {
-                    debug!("has change: {}",self.change.last_change());
+                    debug!("after has change: {}",self.change.last_change());
                     continue;
                 }
 
@@ -220,12 +220,14 @@ mod test {
             publisher.notify();
             debug!("notification: {}",i);
         }
-        
+       
+         // wait for test controller to finish
+        sleep(Duration::from_millis(20)).await;
+
         // shutdown and wait to finish
         shutdown.notify();
 
-        // wait for test controller to finish
-        sleep(Duration::from_millis(10)).await;
+        sleep(Duration::from_millis(20)).await;
 
         assert_eq!(publisher.current_change(),last_change.load(SeqCst));
 
