@@ -20,7 +20,7 @@ use k8_client::SharedK8Client;
 
 use crate::{LocalInstallError, ClusterError};
 use crate::check::{CheckError, StatusCheck, InstallCheck, HelmVersion, SysChart};
-use crate::install::{ClusterInstaller, DEFAULT_NAMESPACE};
+use crate::start::{ClusterInstaller, DEFAULT_NAMESPACE};
 
 const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 

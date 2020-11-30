@@ -23,19 +23,19 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         get_fluvio()
             .expect("fluvio not founded")
             .arg("cluster")
-            .arg("uninstall")
+            .arg("delete")
             .print()
             .inherit();
     }
 
-    async fn install_cluster(&self) {
+    async fn start_cluster(&self) {
         use std::time::Duration;
         use fluvio_future::timer::sleep;
 
         let mut cmd = get_fluvio().expect("fluvio not founded");
 
         cmd.arg("cluster")
-            .arg("install")
+            .arg("start")
             .arg("--spu")
             .arg(self.option.spu.to_string());
 

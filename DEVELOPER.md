@@ -56,7 +56,7 @@ This avoid collision with released version of Fluvio.
 Install Fluvio `sys` chart from source.
 
 ```
-$ flvd cluster install --sys --develop
+$ flvd cluster start --sys --develop
 ```
 
 
@@ -170,13 +170,13 @@ $ make minikube_image
 
 Make sure you uninstall previous clusters for local and k8:
 ```
-$ flvd cluster uninstall --local
-$ flvd cluster uninstall
+$ flvd cluster delete --local
+$ flvd cluster delete
 ```
 
 Run command below now to run install with image just built
 ```
-$ fluvio cluster install --develop
+$ fluvio cluster start --develop
 ```
 
 Topic creation, product and consumer can now be tested as with `local` cluster.
@@ -184,7 +184,7 @@ Topic creation, product and consumer can now be tested as with `local` cluster.
 
 You can remove fluvio cluster by
 ```
-fluvio cluster uninstall
+fluvio cluster delete
 ```
 
 Note that when you uninstall cluster, CLI will remove all related objects such as
@@ -263,7 +263,7 @@ minikube start
 If you face issues while installing sys chart
 
 ```
-$ fluvio cluster install --sys
+$ fluvio cluster start --sys
 "fluvio" has been added to your repositories
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "fluvio" chart repository

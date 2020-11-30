@@ -7,9 +7,9 @@ use fluvio::config::TlsPolicy;
 
 use crate::{ClusterInstaller, ClusterError};
 use crate::cli::ClusterCliError;
-use crate::cli::install::InstallOpt;
+use crate::cli::start::StartOpt;
 
-pub async fn install_core(opt: InstallOpt) -> Result<(), ClusterCliError> {
+pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -79,7 +79,7 @@ pub async fn install_core(opt: InstallOpt) -> Result<(), ClusterCliError> {
     Ok(())
 }
 
-pub fn install_sys(opt: InstallOpt) -> Result<(), ClusterCliError> {
+pub fn install_sys(opt: StartOpt) -> Result<(), ClusterCliError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
 
     match opt.k8_config.chart_location {
@@ -99,7 +99,7 @@ pub fn install_sys(opt: InstallOpt) -> Result<(), ClusterCliError> {
     Ok(())
 }
 
-pub async fn run_setup(opt: InstallOpt) -> Result<(), ClusterCliError> {
+pub async fn run_setup(opt: StartOpt) -> Result<(), ClusterCliError> {
     let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
     match opt.k8_config.chart_location {
         // If a chart location is given, use it
@@ -114,6 +114,6 @@ pub async fn run_setup(opt: InstallOpt) -> Result<(), ClusterCliError> {
     }
     let installer = builder.build()?;
     installer.setup().await?;
-    println!("Setup successful, all the steps neccessary for cluster installation have been performed successfully");
+    println!("Setup successful, all the steps necessary for cluster startup have been performed successfully");
     Ok(())
 }

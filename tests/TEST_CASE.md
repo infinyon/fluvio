@@ -23,7 +23,7 @@ flvt --local-driver -p 5000 --record-size 5000 --spu 2 --replication 2
 Create cluster
 
 ```
-fluvio cluster install --spu 3 --local
+fluvio cluster start --spu 3 --local
 ``
 
 Create topic with replica 3

@@ -53,7 +53,7 @@ enum ChartLocation {
     Remote(String),
 }
 
-/// A builder for cluster installation options
+/// A builder for cluster startup options
 #[derive(Debug)]
 pub struct ClusterInstallerBuilder {
     /// The namespace to install under
