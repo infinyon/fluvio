@@ -1004,6 +1004,7 @@ dependencies = [
  "flv-util",
  "futures-util",
  "log",
+ "semver 0.11.0",
 ]
 
 [[package]]
