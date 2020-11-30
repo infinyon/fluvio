@@ -178,6 +178,19 @@ where
         self.status_publisher.change_listener()
     }
 
+    /// find changes given change listener
+    /// this will reset change listener once diff are computed
+    pub async fn changes_since(&self,change_listener: &mut ChangeListener) -> (Vec<MetadataStoreObject<S,C>>,Vec<MetadataStoreObject<S, C>>) {
+
+        let last_change = change_listener.last_change();
+        let read_guard = self.read().await;
+        let changes  = read_guard.spec_changes_since(last_change);
+        drop(read_guard);
+        trace!("finding last change: {}, from: {}",last_change,changes.epoch);
+        change_listener.set_last_change(changes.epoch);
+        changes.parts()
+    }
+
 }
 
 impl<S, C> Display for LocalStore<S, C>
@@ -493,9 +506,7 @@ mod test_notify {
     use std::sync::atomic::Ordering::SeqCst;
 
     use tracing::debug;
-    use rand::{ thread_rng, Rng};
-
-
+    
     use fluvio_future::test_async;
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
@@ -553,26 +564,17 @@ mod test_notify {
 
             }
 
-            self.last_change.fetch_add(spec_listner.last_change(),SeqCst);
-
-
         }
 
         async fn sync(&mut self,spec_listner: &mut ChangeListener) {
           
-            let last_change = spec_listner.last_change();
-            debug!("sync start with change: {}",last_change);
-            let read_guard = self.store.read().await;
-            let changes = read_guard.spec_changes_since(last_change);
-            if *changes.current_epoch() != last_change {
-                debug!("reseting last change: {}",*changes.current_epoch());
-                spec_listner.set_last_change(*changes.current_epoch());
-            }
-
-            let delay = thread_rng().gen_range(1,10);
-            sleep(Duration::from_millis(delay)).await;
-
+            debug!("sync start");
+            let (update,_delete) = self.store.changes_since(spec_listner).await;
+           // assert!(update.len() > 0);
+            debug!("changes: {}",update.len());
+            sleep(Duration::from_millis(10)).await;
             debug!("sync end");
+            self.last_change.fetch_add(1,SeqCst);
         }
 
     }
@@ -590,11 +592,10 @@ mod test_notify {
         let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
         let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
 
-        let mut rng = thread_rng();
 
         for i in 0..10u16 {
-            let delay = rng.gen_range(3,10);
-            sleep(Duration::from_millis(delay)).await;
+          
+            sleep(Duration::from_millis(2)).await;
             let topic_name = format!("topic{}",i);
             debug!("creating topic: {}",topic_name);
             let topic = DefaultTest::with_spec(topic_name, TestSpec::default()).with_context(3);
@@ -607,7 +608,7 @@ mod test_notify {
         shutdown.notify();
         sleep(Duration::from_millis(1)).await;
 
-        assert_eq!(topic_store.epoch().await,last_change.load(SeqCst));
+        assert_eq!(last_change.load(SeqCst),4);
 
         Ok(())
     }

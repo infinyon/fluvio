@@ -887,7 +887,6 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
- "fluvio-stream-model",
  "fluvio-types",
  "flv-tls-proxy",
  "futures-util",
@@ -1348,7 +1347,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1370,7 +1369,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-rwlock",
  "event-listener",
@@ -1378,7 +1377,6 @@ dependencies = [
  "k8-obj-app",
  "k8-obj-core",
  "k8-obj-metadata",
- "rand 0.7.3",
  "serde",
  "tokio",
  "tracing",

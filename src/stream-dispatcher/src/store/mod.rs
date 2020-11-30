@@ -12,15 +12,16 @@ mod context {
     use std::fmt::Display;
 
     use tracing::error;
-    use event_listener::{Event, EventListener};
     use async_channel::{Sender, Receiver, bounded, SendError};
 
     use crate::actions::WSAction;
     use crate::store::k8::K8MetaItem;
-
+    use crate::core::Spec;
+    
     use super::MetadataStoreObject;
     use super::LocalStore;
-    use crate::core::Spec;
+    use super::event::ChangeListener;
+    
 
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
@@ -28,8 +29,6 @@ mod context {
         S: Spec,
     {
         store: Arc<LocalStore<S, K8MetaItem>>,
-        spec_event: Arc<Event>,
-        status_event: Arc<Event>,
         sender: Sender<WSAction<S>>,
         receiver: Receiver<WSAction<S>>,
     }
@@ -42,8 +41,6 @@ mod context {
             let (sender, receiver) = bounded(100);
             Self {
                 store: LocalStore::new_shared(),
-                spec_event: Arc::new(Event::new()),
-                status_event: Arc::new(Event::new()),
                 sender,
                 receiver,
             }
@@ -59,22 +56,15 @@ mod context {
             Ok(())
         }
 
-        pub fn notify_spec_changes(&self) {
-            self.spec_event.notify(usize::MAX);
-        }
-
-        pub fn notify_status_changes(&self) {
-            self.status_event.notify(usize::MAX);
-        }
 
         /// listen to spec
-        pub fn spec_listen(&self) -> EventListener {
-            self.spec_event.listen()
+        pub fn spec_listen(&self) -> ChangeListener {
+            self.store.spec_change_listener()
         }
 
         /// list to status
-        pub fn status_listen(&self) -> EventListener {
-            self.status_event.listen()
+        pub fn status_listen(&self) -> ChangeListener {
+            self.store.status_change_listener()
         }
 
         pub fn store(&self) -> &Arc<LocalStore<S, K8MetaItem>> {
@@ -129,6 +119,7 @@ mod context {
 
             debug!("{}: sending WS action to store: {}", S::LABEL, key);
             let action = WSAction::UpdateSpec((key.clone(), spec));
+            let mut spec_listener = self.spec_listen();
 
             match self.sender.send(action).await {
                 Ok(_) => {
@@ -156,7 +147,7 @@ mod context {
                             _ = sleep(Duration::from_secs(POLL_TIME)) => {
                                 debug!("{} store, didn't receive wait,exiting,continue waiting",S::LABEL);
                             },
-                            _ = self.spec_listen() => {
+                            _ = spec_listener.listen() => {
                                 debug!("{} store, received updates",S::LABEL);
                             }
                         }
@@ -192,6 +183,7 @@ mod context {
 
                     let instant = Instant::now();
                     let max_wait = Duration::from_secs(MAX_WAIT_TIME);
+                    let mut spec_listener = self.spec_listen();
                     loop {
                         debug!("{} store, waiting for store event", S::LABEL);
 
@@ -203,7 +195,7 @@ mod context {
                                     format!("store timed out: {} for {:?}", S::LABEL,key)
                                 ));
                             },
-                            _ = self.spec_listen() => {
+                            _ = spec_listener.listen() => {
                                 // check if we can find old object
                                 if !self.store.contains_key(&key).await {
                                     debug!("store: {}, object: {:#?}, has been deleted",S::LABEL,key);

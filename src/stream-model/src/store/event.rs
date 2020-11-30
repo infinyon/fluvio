@@ -71,14 +71,18 @@ impl ChangeListener {
     /// to ensure no events are missed
     #[inline]
     pub fn has_change(&mut self) -> bool {
-        let current_change = self.publisher.current_change();
-        if current_change == self.last_change {
-            false
-        } else {
-            debug!("updating last change: {}",current_change);
-            self.last_change = current_change;
-            true
-        }
+        self.publisher.current_change() != self.last_change
+    }
+
+    /// sync change to current change
+    #[inline(always)]
+    pub fn load_last(&mut self)  {
+        self.set_last_change(self.publisher.current_change());
+    }
+
+    #[inline(always)]
+    pub fn set_last_change(&mut self, last_change: i64) {
+        self.last_change = last_change;
     }
 
 
@@ -87,9 +91,6 @@ impl ChangeListener {
         self.last_change
     }
 
-    pub fn set_last_change(&mut self, last_change: i64) {
-        self.last_change = last_change;
-    }
 
     pub fn current_change(&self) -> i64 {
         self.publisher.current_change()
@@ -111,9 +112,7 @@ impl ChangeListener {
 
         listener.await;
 
-        self.last_change = self.publisher.current_change();
-
-        trace!("new last change: {}",self.last_change());
+        trace!("new change: {}",self.current_change());
 
     }
 
@@ -172,8 +171,6 @@ mod test {
     use std::sync::atomic::Ordering::SeqCst;
 
     use tracing::debug;
-    use rand::{ thread_rng, Rng};
-
 
     use fluvio_future::test_async;
     use fluvio_future::task::spawn;
@@ -223,15 +220,15 @@ mod test {
             }
 
             debug!("terminated, last change: {}",self.change.last_change());
-            self.last_change.fetch_add(self.change.last_change(),SeqCst);
         }
 
         /// randomly sleep to simulate some tasks
         async fn sync(&mut self) {
             debug!("sync start");
-            let delay = thread_rng().gen_range(1,30);
-            sleep(Duration::from_millis(delay)).await;
-            debug!("sync end");
+            self.last_change.fetch_add(1,SeqCst);
+            sleep(Duration::from_millis(5)).await;
+            self.change.load_last();        // sync to latest
+            debug!("sync end: {}",self.change.last_change());
 
         }
 
@@ -248,13 +245,11 @@ mod test {
         let last_change = Arc::new(AtomicI64::new(0));
         TestController::start(listener,shutdown.clone(),last_change.clone());
 
-        let mut rng = thread_rng();
-        for i in 0..20u16 {
-            let delay = rng.gen_range(1,10);
-            sleep(Duration::from_millis(delay)).await;
+        for i in 0..5u16 {
+            sleep(Duration::from_millis(2)).await;
             publisher.increment();
             publisher.notify();
-            debug!("notification: {}",i);
+            debug!("notification: {}, value: {}",i,publisher.current_change());
         }
        
          // wait for test controller to finish
@@ -263,9 +258,9 @@ mod test {
         // shutdown and wait to finish
         shutdown.notify();
 
-        sleep(Duration::from_millis(20)).await;
+        sleep(Duration::from_millis(5)).await;
 
-        assert_eq!(publisher.current_change(),last_change.load(SeqCst));
+        assert_eq!(last_change.load(SeqCst),2); // there should be 2 sync happenings
 
         Ok(())
 
