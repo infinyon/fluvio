@@ -59,6 +59,7 @@ impl EventPublisher {
 }
 
 /// listen for changes in the event by comparing against last change
+#[derive(Debug)]
 pub struct ChangeListener {
     publisher: Arc<EventPublisher>,
     last_change: i64

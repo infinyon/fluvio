@@ -330,7 +330,7 @@ where
         )
     }
 
-    /// compatibility with old
+    /// all changes (spec and status) since epoch 
     pub fn changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
     where
         Epoch: From<E>,

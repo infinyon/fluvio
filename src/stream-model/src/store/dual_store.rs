@@ -178,7 +178,7 @@ where
         self.status_publisher.change_listener()
     }
 
-    /// find changes given change listener
+    /// find changes given change listener whether spec or status
     /// this will reset change listener once diff are computed
     pub async fn changes_since(&self,change_listener: &mut ChangeListener) -> (Vec<MetadataStoreObject<S,C>>,Vec<MetadataStoreObject<S, C>>) {
 
@@ -188,6 +188,19 @@ where
         drop(read_guard);
         trace!("finding last change: {}, from: {}",last_change,changes.epoch);
         change_listener.set_last_change(changes.epoch);
+        changes.parts()
+    }
+
+    /// find changes if either  spec and status changes and resync both them
+    pub async fn all_changes_since(&self,spec_change: &mut ChangeListener,status_change: &mut ChangeListener) -> (Vec<MetadataStoreObject<S,C>>,Vec<MetadataStoreObject<S, C>>) {
+
+        let last_change = std::cmp::min(spec_change.last_change(),status_change.last_change());
+        let read_guard = self.read().await;
+        let changes  = read_guard.changes_since(last_change);
+        drop(read_guard);
+        trace!("finding last change: {}, from: {}",last_change,changes.epoch);
+        spec_change.set_last_change(changes.epoch);
+        status_change.set_last_change(changes.epoch);
         changes.parts()
     }
 

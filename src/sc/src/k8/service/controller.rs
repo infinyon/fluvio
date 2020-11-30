@@ -9,6 +9,7 @@ use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
 use crate::stores::StoreContext;
+use crate::stores::event::ChangeListener;
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
 use crate::dispatcher::k8::core::service::LoadBalancerIngress;
@@ -60,8 +61,8 @@ impl SpuServiceController {
 
         loop {
             
-            self.sync_service_to_spu().await;
-            self.sync_spu_to_service().await;
+            self.sync_service_to_spu(&mut service_spec_listener, &mut service_status_listener).await;
+            self.sync_spu_to_service(&mut spu_spec_listener, &mut spu_status_listener).await;
 
             debug!("waiting events");
 
@@ -90,21 +91,18 @@ impl SpuServiceController {
         }
     }
 
-    #[instrument()]
-    /// svc has been changed, update spu
-    async fn sync_service_to_spu(&mut self) {
-        debug!("syncing service to spu");
-        let read_guard = self.services.store().read().await;
-        let changes = read_guard.changes_since(self.service_epoch);
-        drop(read_guard);
-        self.service_epoch = changes.epoch; // update epoch
 
-        let (updates, deletes) = changes.parts();
+    /// svc has been changed, update spu
+    #[instrument()]
+    async fn sync_service_to_spu(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
+        debug!("syncing service to spu");
+      
+
+        let (updates, deletes) = self.services.store().all_changes_since(spec,status).await;
         debug!(
-            "received service changes updates: {},deletes: {},epoch: {}",
+            "received service changes updates: {},deletes: {}",
             updates.len(),
             deletes.len(),
-            self.service_epoch,
         );
 
         for svc_md in updates.into_iter() {
@@ -150,19 +148,14 @@ impl SpuServiceController {
 
     #[instrument()]
     /// spu has been changed, sync with existing services
-    async fn sync_spu_to_service(&mut self) {
+    async fn sync_spu_to_service(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
         debug!("synching spu to service");
-        let read_guard = self.spus.store().read().await;
-        let changes = read_guard.changes_since(self.spu_epoch);
-        drop(read_guard);
-        self.spu_epoch = changes.epoch; // update epoch
-
-        let (updates, deletes) = changes.parts();
+      
+        let (updates, deletes) = self.spus.store().all_changes_since(spec,status).await;
         debug!(
-            "received spu changes updates: {},deletes: {},epoch: {}",
+            "received spu changes updates: {},deletes: {}",
             updates.len(),
             deletes.len(),
-            self.spu_epoch,
         );
 
         for spu_md in updates.into_iter() {
