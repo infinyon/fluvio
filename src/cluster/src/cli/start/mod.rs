@@ -100,7 +100,7 @@ pub struct K8Install {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct InstallOpt {
+pub struct StartOpt {
     /// use local image
     #[structopt(long)]
     pub develop: bool,
@@ -145,7 +145,7 @@ pub struct InstallOpt {
     pub setup: bool,
 }
 
-impl InstallOpt {
+impl StartOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
         use k8::install_sys;
         use k8::install_core;

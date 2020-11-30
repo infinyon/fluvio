@@ -5,9 +5,9 @@ use fluvio::config::TlsPolicy;
 use crate::cli::ClusterCliError;
 use crate::LocalClusterInstaller;
 
-use super::InstallOpt;
+use super::StartOpt;
 
-pub async fn install_local(opt: InstallOpt) -> Result<(), ClusterCliError> {
+pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
     let mut builder = LocalClusterInstaller::new()
         .with_log_dir(opt.log_dir.to_string())
         .with_spu_replicas(opt.spu);
@@ -29,7 +29,7 @@ pub async fn install_local(opt: InstallOpt) -> Result<(), ClusterCliError> {
     Ok(())
 }
 
-pub async fn run_local_setup(_opt: InstallOpt) -> Result<(), ClusterCliError> {
+pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {
     let installer = LocalClusterInstaller::new().build()?;
     installer.setup().await?;
     println!("Setup successful, all the steps neccessary for cluster installation have been performed successfully");
