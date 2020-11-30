@@ -255,7 +255,7 @@ where
         self.values().cloned().map(|c| c.inner_owned()).collect()
     }
 
-    /// find all spec changes
+    /// find all spec changes given epoch
     /// if epoch is before fence, return full changes with epoch,
     /// otherwise return delta changes
     /// user should keep that epoch and do subsequent changes
