@@ -18,7 +18,7 @@ mod common {
         async fn remove_cluster(&self);
 
         /// install cluster
-        async fn install_cluster(&self);
+        async fn start_cluster(&self);
 
         fn set_tls(&self, option: &TestOption, cmd: &mut Command) {
             use crate::tls::Cert;
