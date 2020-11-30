@@ -534,23 +534,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fb57305b07ffcc1a4d08808f1f2200647c8e3d91a4c83d2810ae20c997274e0"
 dependencies = [
  "backtrace",
- "color-spantrace",
  "eyre",
  "indenter",
  "once_cell",
  "owo-colors",
- "tracing-error",
-]
-
-[[package]]
-name = "color-spantrace"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a99aa4aa18448eef4c7d3f86d2720d2d8cad5c860fe9ff9b279293efdc8f5be"
-dependencies = [
- "ansi_term 0.11.0",
- "tracing-core",
- "tracing-error",
 ]
 
 [[package]]
@@ -928,7 +915,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "async-h1",
  "color-eyre",
@@ -960,9 +947,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "async-trait",
+ "color-eyre",
  "colored",
  "fluvio",
  "fluvio-controlplane-metadata",
@@ -1106,7 +1094,8 @@ dependencies = [
 [[package]]
 name = "fluvio-helm"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/fluvio-helm?branch=main#6e15fd2c789c33ba8bae51a369a0983e177c2f78"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9edd0b4e3486ae12e69743b12858380cc7fd5284506cf4d397e05b48863fef00"
 dependencies = [
  "flv-util",
  "serde",
@@ -3290,16 +3279,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f50de3927f93d202783f4513cda820ab47ef17f624b03c096e86ef00c67e6b5f"
 dependencies = [
  "lazy_static",
-]
-
-[[package]]
-name = "tracing-error"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4d7c0b83d4a500748fa5879461652b361edf5c9d51ede2a2ac03875ca185e24"
-dependencies = [
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

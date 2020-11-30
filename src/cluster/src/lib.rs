@@ -23,14 +23,15 @@ mod uninstall;
 mod local;
 
 /// extensions
-#[cfg(feature = "cmd_extension")]
-pub mod extension;
+#[cfg(feature = "cli")]
+pub mod cli;
 
 use fluvio_helm as helm;
 
 pub use install::ClusterInstaller;
 pub use install::ClusterInstallerBuilder;
-pub use error::ClusterError;
+pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
+pub use helm::HelmError;
 pub use check::ClusterChecker;
 pub use check::CheckError;
 pub use uninstall::ClusterUninstaller;

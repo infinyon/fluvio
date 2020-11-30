@@ -12,10 +12,10 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio::metadata::spu::CustomSpuSpec;
 use fluvio::metadata::objects::Metadata;
 
-use super::Result;
-use crate::extension::common::output::Terminal;
-use crate::extension::common::OutputFormat;
-use super::format_spu_response_output;
+use crate::cli::ClusterCliError;
+use crate::cli::common::output::Terminal;
+use crate::cli::common::OutputFormat;
+use crate::cli::spu::display::format_spu_response_output;
 
 #[derive(Debug, StructOpt)]
 pub struct ListSpusOpt {
@@ -32,7 +32,11 @@ pub struct ListSpusOpt {
 
 impl ListSpusOpt {
     /// Process list spus cli request
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process<O: Terminal>(
+        self,
+        out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<(), ClusterCliError> {
         let mut admin = fluvio.admin().await;
 
         let (managed, custom) = match (self.managed, self.custom) {

@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use crate::ClusterInstaller;
-use crate::extension::Result;
+use crate::cli::ClusterCliError;
 
 #[derive(Debug, StructOpt)]
 pub enum ReleasesCmd {
@@ -10,7 +10,7 @@ pub enum ReleasesCmd {
 }
 
 impl ReleasesCmd {
-    pub async fn process(self) -> Result<()> {
+    pub async fn process(self) -> Result<(), ClusterCliError> {
         match self {
             Self::List(list) => {
                 list.process().await?;
@@ -24,7 +24,7 @@ impl ReleasesCmd {
 pub struct ListOpt {}
 
 impl ListOpt {
-    pub async fn process(self) -> Result<()> {
+    pub async fn process(self) -> Result<(), ClusterCliError> {
         let versions = ClusterInstaller::versions()?;
         if !versions.is_empty() {
             println!("VERSION");

@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio::metadata::spg::*;
 
-use crate::extension::Result;
+use crate::cli::ClusterCliError;
 
 // -----------------------------------
 // CLI Options
@@ -40,7 +40,7 @@ pub struct CreateManagedSpuGroupOpt {
 }
 
 impl CreateManagedSpuGroupOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let (name, spec) = self.validate()?;
         debug!("creating spg: {}, spec: {:#?}", name, spec);
 
@@ -51,7 +51,7 @@ impl CreateManagedSpuGroupOpt {
     }
 
     /// Validate cli options. Generate target-server and create spu group config.
-    fn validate(self) -> Result<(String, SpuGroupSpec)> {
+    fn validate(self) -> Result<(String, SpuGroupSpec), ClusterCliError> {
         let storage = self.storage_size.map(|storage_size| StorageConfig {
             size: Some(storage_size),
             ..Default::default()

@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 
 use crate::ClusterUninstaller;
-use crate::extension::Result;
+use crate::cli::ClusterCliError;
 
 #[derive(Debug, StructOpt)]
 pub struct UninstallOpt {
@@ -25,7 +25,7 @@ pub struct UninstallOpt {
 }
 
 impl UninstallOpt {
-    pub async fn process(self) -> Result<()> {
+    pub async fn process(self) -> Result<(), ClusterCliError> {
         let uninstaller = ClusterUninstaller::new()
             .with_namespace(&self.namespace)
             .with_name(&self.name)

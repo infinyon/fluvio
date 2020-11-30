@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 
 use crate::ClusterChecker;
-use crate::extension::Result;
+use crate::cli::ClusterCliError;
 
 #[derive(Debug, StructOpt)]
 pub struct CheckOpt {
@@ -11,7 +11,7 @@ pub struct CheckOpt {
 }
 
 impl CheckOpt {
-    pub async fn process(self) -> Result<()> {
+    pub async fn process(self) -> Result<(), ClusterCliError> {
         if self.pre_install {
             ClusterChecker::run_preflight_checks().await?;
         }

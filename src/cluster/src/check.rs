@@ -14,7 +14,8 @@ use semver::Version;
 use serde_json::{Value};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
-use crate::helm::{HelmError, HelmClient};
+
+use fluvio_helm::{HelmClient, HelmError};
 use crate::install::{
     DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
 };
@@ -30,6 +31,51 @@ const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 /// The type of error that can occur while running preinstall checks
 #[derive(Error, Debug)]
 pub enum CheckError {
+    /// There was a problem with the helm client during pre-check
+    #[error("Helm client error")]
+    HelmError(#[from] HelmError),
+
+    /// There was a problem fetching kubernetes configuration
+    #[error("Kubernetes config error")]
+    K8ConfigError(#[from] K8ConfigError),
+
+    /// Could not connect to K8 client
+    #[error("Kubernetes client error")]
+    K8ClientError(#[from] K8ClientError),
+
+    /// Failed to parse kubernetes cluster server URL
+    #[error("Failed to parse server url from Kubernetes context")]
+    BadKubernetesServerUrl(#[from] ParseError),
+
+    /// Kubectl not found
+    #[error("Kubectl not found")]
+    KubectlNotFoundError(IoError),
+
+    /// Check permissions to create k8 resources
+    #[error("Permissions to create {resource} denied")]
+    PermissionError {
+        /// Name of the resource
+        resource: String,
+    },
+
+    /// The installed version of helm is incompatible
+    #[error("Must have helm version {required} or later. You have {installed}")]
+    IncompatibleHelmVersion {
+        /// The currently-installed helm version
+        installed: String,
+        /// The minimum required helm version
+        required: String,
+    },
+
+    /// The installed version of Kubectl is incompatible
+    #[error("Must have kubectl version {required} or later. You have {installed}")]
+    IncompatibleKubectlVersion {
+        /// The currently-installed helm version
+        installed: String,
+        /// The minimum required helm version
+        required: String,
+    },
+
     /// The fluvio-sys chart is not installed
     #[error("The fluvio-sys chart is not installed")]
     MissingSystemChart,
@@ -46,14 +92,6 @@ pub enum CheckError {
     #[error("There is no active Kubernetes context")]
     NoActiveKubernetesContext,
 
-    /// Failed to parse kubernetes cluster server URL
-    #[error("Failed to parse server url from Kubernetes context")]
-    BadKubernetesServerUrl {
-        /// source : ParseError
-        #[from]
-        source: ParseError,
-    },
-
     /// There are multiple fluvio-sys's installed
     #[error("Cannot have multiple versions of fluvio-sys installed")]
     MultipleSystemCharts,
@@ -65,39 +103,6 @@ pub enum CheckError {
     /// The server address for the current cluster must be a hostname, not an IP
     #[error("Kubernetes server must be a hostname, not an IP address")]
     KubernetesServerIsIp,
-
-    /// The installed version of helm is incompatible
-    #[error("Must have helm version {required} or later. You have {installed}")]
-    IncompatibleHelmVersion {
-        /// The currently-installed helm version
-        installed: String,
-        /// The minimum required helm version
-        required: String,
-    },
-
-    /// There was a problem with the helm client during pre-check
-    #[error("Helm client error")]
-    HelmError {
-        #[from]
-        /// helm client error
-        source: HelmError,
-    },
-
-    /// There was a problem fetching kubernetes configuration
-    #[error("Kubernetes config error")]
-    K8ConfigError {
-        /// source : K8ConfigError
-        #[from]
-        source: K8ConfigError,
-    },
-
-    /// Could not connect to K8 client, external IP/hostname not found
-    #[error("Kubernetes client error")]
-    K8ClientError {
-        /// source : K8ClientError
-        #[from]
-        source: K8ClientError,
-    },
 
     /// There is no load balancer service is not available
     #[error("Load balancer service is not available")]
@@ -112,11 +117,7 @@ pub enum CheckError {
     ServiceDeleteError,
 
     /// Minikube tunnel not found, this error is used in case of macos we don't try to get tunnel up as it needs elevated context
-    #[error(
-        r#"Load balancer service not found. 
-  Please make sure you have minikube tunnel up and running.
-  Run `sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &`"#
-    )]
+    #[error("Load balancer service not found, minikube tunnel may not be running")]
     MinikubeTunnelNotFound,
 
     /// Minikube tunnel not found, this error is used in case of linux where we can try to bring tunnel up
@@ -127,33 +128,9 @@ pub enum CheckError {
     #[error("Unhandled K8 client error")]
     UnhandledK8ClientError,
 
-    /// Kubectl not found
-    #[error("Kubectl not found")]
-    KubectlNotFoundError {
-        /// source : IoError
-        #[from]
-        source: IoError,
-    },
-
     /// Unable to parse kubectl version
     #[error("Unable to parse kubectl version")]
     KubectlVersionError,
-
-    /// The installed version of Kubectl is incompatible
-    #[error("Must have kubectl version {required} or later. You have {installed}")]
-    IncompatibleKubectlVersion {
-        /// The currently-installed helm version
-        installed: String,
-        /// The minimum required helm version
-        required: String,
-    },
-
-    /// Check permissions to create k8 resources
-    #[error("Permissions to create {resource} denied")]
-    PermissionError {
-        /// Name of the resource
-        resource: String,
-    },
 
     /// Error while fetching create permissions for a resource
     #[error("Unable to fetch permissions")]
@@ -523,8 +500,7 @@ fn check_cluster_server_host() -> Result<StatusCheck, CheckError> {
         .current_cluster()
         .ok_or(CheckError::NoActiveKubernetesContext)?;
     let server_url = cluster_context.cluster.server.to_owned();
-    let url =
-        Url::parse(&server_url).map_err(|source| CheckError::BadKubernetesServerUrl { source })?;
+    let url = Url::parse(&server_url).map_err(CheckError::BadKubernetesServerUrl)?;
     let host = url
         .host()
         .ok_or(CheckError::MissingKubernetesServerHost)?
@@ -544,7 +520,7 @@ fn k8_version_check() -> Result<StatusCheck, CheckError> {
         .arg("version")
         .arg("-o=json")
         .output()
-        .map_err(|source| CheckError::KubectlNotFoundError { source })?;
+        .map_err(CheckError::KubectlNotFoundError)?;
     let version_text = String::from_utf8(kube_version.stdout).unwrap();
 
     let kube_version_json: Value =
@@ -589,7 +565,8 @@ fn check_create_permission(resource: &str) -> Result<bool, CheckError> {
         .arg("can-i")
         .arg("create")
         .arg(resource)
-        .output()?;
+        .output()
+        .map_err(CheckError::KubectlNotFoundError)?;
     let res =
         String::from_utf8(check_command.stdout).map_err(|_| CheckError::FetchPermissionError)?;
     Ok(res.trim() == "yes")

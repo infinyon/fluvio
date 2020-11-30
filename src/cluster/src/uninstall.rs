@@ -10,9 +10,10 @@ use k8_client::http::status::StatusCode;
 use k8_obj_metadata::{InputObjectMeta, Spec};
 use k8_obj_core::pod::PodSpec;
 
-use crate::ClusterError;
 use crate::helm::HelmClient;
 use crate::install::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
+use crate::error::UninstallError;
+use crate::ClusterError;
 
 /// Uninstalls different flavors of fluvio
 #[derive(Debug)]
@@ -44,7 +45,7 @@ impl ClusterUninstallerBuilder {
     pub fn build(self) -> Result<ClusterUninstaller, ClusterError> {
         Ok(ClusterUninstaller {
             config: self,
-            helm_client: HelmClient::new()?,
+            helm_client: HelmClient::new().map_err(UninstallError::HelmError)?,
         })
     }
     /// Sets the Kubernetes namespace.
@@ -128,9 +129,11 @@ impl ClusterUninstaller {
     #[instrument(skip(self))]
     pub async fn uninstall(&self) -> Result<(), ClusterError> {
         info!("Removing kubernetes cluster");
-        self.helm_client.uninstall(&self.config.name, true)?;
+        self.helm_client
+            .uninstall(&self.config.name, true)
+            .map_err(UninstallError::HelmError)?;
 
-        let client = load_and_share().map_err(|err| ClusterError::Other(err.to_string()))?;
+        let client = load_and_share().map_err(UninstallError::K8ClientError)?;
 
         let sc_pod = InputObjectMeta::named("flv-sc", &self.config.namespace);
         self.wait_for_delete::<PodSpec>(client, &sc_pod).await?;
@@ -153,7 +156,9 @@ impl ClusterUninstaller {
     #[instrument(skip(self))]
     pub fn uninstall_sys(&self) -> Result<(), ClusterError> {
         info!("Removing fluvio sys chart");
-        self.helm_client.uninstall(DEFAULT_CHART_SYS_REPO, true)?;
+        self.helm_client
+            .uninstall(DEFAULT_CHART_SYS_REPO, true)
+            .map_err(UninstallError::HelmError)?;
         info!("fluvio sys chart has been uninstalled");
         self.cleanup()?;
 
@@ -176,7 +181,8 @@ impl ClusterUninstaller {
         Command::new("pkill")
             .arg("-f")
             .arg("fluvio cluster run")
-            .output()?;
+            .output()
+            .map_err(UninstallError::IoError)?;
         // delete fluvio file
         debug!("remove fluvio directory");
         if let Err(err) = remove_dir_all("/tmp/fluvio") {
@@ -187,7 +193,7 @@ impl ClusterUninstaller {
     }
 
     /// Clean up objects and secrets created during the installation process
-    fn cleanup(&self) -> Result<(), ClusterError> {
+    fn cleanup(&self) -> Result<(), UninstallError> {
         let ns = &self.config.namespace;
 
         // delete objects
@@ -209,7 +215,7 @@ impl ClusterUninstaller {
         object_type: &str,
         namespace: &str,
         selector: Option<&str>,
-    ) -> Result<(), ClusterError> {
+    ) -> Result<(), UninstallError> {
         let mut cmd = Command::new("kubectl");
         cmd.arg("delete");
         cmd.arg(object_type);
@@ -231,7 +237,7 @@ impl ClusterUninstaller {
     }
 
     /// Remove K8 secret
-    fn remove_secrets(&self, name: &str) -> Result<(), ClusterError> {
+    fn remove_secrets(&self, name: &str) -> Result<(), UninstallError> {
         Command::new("kubectl")
             .arg("delete")
             .arg("secret")
@@ -246,7 +252,7 @@ impl ClusterUninstaller {
         &self,
         client: SharedK8Client,
         input: &InputObjectMeta,
-    ) -> Result<(), ClusterError> {
+    ) -> Result<(), UninstallError> {
         use k8_client::metadata::MetadataClient;
         let mut success = false;
         for i in 0..self.config.retry_count {
@@ -263,13 +269,13 @@ impl ClusterUninstaller {
                         break;
                     }
                     _ => {
-                        return Err(ClusterError::Other(err.to_string()));
+                        return Err(UninstallError::Other(err.to_string()));
                     }
                 },
             };
         }
         if !success {
-            return Err(ClusterError::Other(
+            return Err(UninstallError::Other(
                 "Waiting for too long, failing".to_string(),
             ));
         }
