@@ -29,7 +29,7 @@ install-local-tls:
 		--client-key tls/certs/client.key --domain fluvio.local
 	
 uninstall-local:
-	$(FLUVIO_BIN) cluster uninstall --local
+	$(FLUVIO_BIN) cluster delete --local
 
 install-k8-tls:
 	$(FLUVIO_BIN) cluster start --develop \
@@ -38,7 +38,7 @@ install-k8-tls:
 		--client-key tls/certs/client.key --domain fluvio.local
 
 uninstall-k8:
-	$(FLUVIO_BIN) cluster uninstall
+	$(FLUVIO_BIN) cluster delete
 
 
 

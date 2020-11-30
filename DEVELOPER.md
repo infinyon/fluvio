@@ -170,8 +170,8 @@ $ make minikube_image
 
 Make sure you uninstall previous clusters for local and k8:
 ```
-$ flvd cluster uninstall --local
-$ flvd cluster uninstall
+$ flvd cluster delete --local
+$ flvd cluster delete
 ```
 
 Run command below now to run install with image just built
@@ -184,7 +184,7 @@ Topic creation, product and consumer can now be tested as with `local` cluster.
 
 You can remove fluvio cluster by
 ```
-fluvio cluster uninstall
+fluvio cluster delete
 ```
 
 Note that when you uninstall cluster, CLI will remove all related objects such as

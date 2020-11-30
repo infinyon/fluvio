@@ -111,8 +111,8 @@ ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
 	echo "clean up previous installation"
-	$(FLUVIO_BIN) cluster uninstall
-	$(FLUVIO_BIN) cluster uninstall --local
+	$(FLUVIO_BIN) cluster delete
+	$(FLUVIO_BIN) cluster delete --local
 	kubectl delete configmap authorization --ignore-not-found
 endif
 
