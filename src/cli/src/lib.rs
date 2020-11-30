@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 use std::process::Command;
-use structopt::clap::{AppSettings, Shell};
+use structopt::clap::{AppSettings, Shell, App, SubCommand};
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -62,7 +62,12 @@ struct RootOpt {
     name = "fluvio",
     template = COMMAND_TEMPLATE,
     max_term_width = 80,
-    global_settings = &[AppSettings::VersionlessSubcommands, AppSettings::DeriveDisplayOrder, AppSettings::DisableVersion]
+    global_settings = &[
+    AppSettings::VersionlessSubcommands,
+    AppSettings::DeriveDisplayOrder,
+    AppSettings::DisableVersion,
+    AppSettings::DisableHelpFlags,
+    ]
 )]
 enum RootCmd {
     /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
@@ -119,6 +124,13 @@ enum RootCmd {
     )]
     Metadata(MetadataOpt),
 
+    /// Give help message
+    #[structopt(
+        name = "help",
+        aliases = &["-h", "--help"],
+    )]
+    Help(HelpOpt),
+
     #[structopt(external_subcommand)]
     External(Vec<String>),
 }
@@ -148,6 +160,9 @@ impl RootCmd {
             }
             Self::Completions(completion) => {
                 completion.process()?;
+            }
+            Self::Help(help) => {
+                help.process()?;
             }
             Self::Metadata(metadata) => {
                 metadata.process()?;
@@ -249,10 +264,28 @@ impl VersionOpt {
 }
 
 #[derive(Debug, StructOpt)]
+pub struct HelpOpt {}
+impl HelpOpt {
+    pub fn process(self) -> Result<()> {
+        let external_commands = MetadataOpt::metadata(false)?;
+
+        let mut app: App = Root::clap();
+
+        for i in &external_commands {
+            app = app.subcommand(SubCommand::with_name(&i.command).about(&*i.description));
+        }
+
+        let _ = app.print_help();
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, StructOpt)]
 struct MetadataOpt {}
 impl MetadataOpt {
     pub fn process(self) -> Result<()> {
-        let metadata = Self::metadata()?;
+        let metadata = Self::metadata(true)?;
         if let Ok(out) = serde_json::to_string(&metadata) {
             println!("{}", out);
         }
@@ -260,15 +293,19 @@ impl MetadataOpt {
         Ok(())
     }
 
-    pub fn metadata() -> Result<Vec<FluvioExtensionMetadata>> {
+    pub fn metadata(include_static: bool) -> Result<Vec<FluvioExtensionMetadata>> {
         // Scan for extensions, run `fluvio <extension> metadata` on them, add them to metadata
         // hashmap, run the same on FluvioCmds
-        let mut metadata: Vec<FluvioExtensionMetadata> = vec![
-            TopicCmd::metadata(),
-            PartitionCmd::metadata(),
-            ProduceLogOpt::metadata(),
-            ConsumeLogOpt::metadata(),
-        ];
+        let mut metadata: Vec<FluvioExtensionMetadata> = if include_static {
+            vec![
+                TopicCmd::metadata(),
+                PartitionCmd::metadata(),
+                ProduceLogOpt::metadata(),
+                ConsumeLogOpt::metadata(),
+            ]
+        } else {
+            Vec::new()
+        };
 
         for (_subcommand_name, subcommand_path) in crate::install::get_extensions()? {
             let stdout = match Command::new(subcommand_path.as_path())
