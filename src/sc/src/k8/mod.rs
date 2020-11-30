@@ -1,5 +1,5 @@
 //!
-//! # Iitialization routines for Streaming Coordinator (SC)
+//! # Initialization routines for Streaming Coordinator (SC)
 //!
 //! All processing engines are hooked-up here. Channels are created and split between sencders
 //! and receivers.
@@ -62,7 +62,7 @@ mod proxy {
     use log::info;
 
     use fluvio_types::print_cli_err;
-    pub use fluvio_future::rust_tls::TlsAcceptor;
+    pub use fluvio_future::openssl::TlsAcceptor;
 
     use fluvio_auth::x509::X509Authenticator;
     use flv_tls_proxy::{

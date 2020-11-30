@@ -19,8 +19,8 @@ use structopt::StructOpt;
 
 use fluvio_types::print_cli_err;
 use k8_client::K8Config;
-use fluvio_future::rust_tls::TlsAcceptor;
-use fluvio_future::rust_tls::AcceptorBuilder;
+use fluvio_future::openssl::TlsAcceptor;
+use fluvio_future::openssl::SslVerifyMode;
 
 use crate::services::auth::basic::BasicRbacPolicy;
 use crate::error::ScError;
@@ -183,12 +183,17 @@ impl TlsConfig {
                 .as_ref()
                 .ok_or_else(|| IoError::new(ErrorKind::NotFound, "missing ca cert"))?;
             info!("using client cert CA path: {}", ca_path);
-            AcceptorBuilder::new_client_authenticate(ca_path)?
+            TlsAcceptor::builder()
+                .map_err(|err| err.into_io_error())?
+                .with_ssl_verify_mode(SslVerifyMode::PEER)
+                .with_ca_from_pem_file(ca_path)
+                .map_err(|err| err.into_io_error())?
         } else {
             info!("using tls anonymous access");
-            AcceptorBuilder::new_no_client_authentication()
+            TlsAcceptor::builder().map_err(|err| err.into_io_error())?
         })
-        .load_server_certs(server_crt_path, server_key_path)?;
+        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)
+        .map_err(|err| err.into_io_error())?;
 
         Ok(builder.build())
     }

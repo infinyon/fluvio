@@ -6,7 +6,7 @@ use log::{debug, trace};
 use x509_parser::{X509Certificate, parse_x509_der};
 use async_trait::async_trait;
 
-use fluvio_future::{net::TcpStream, rust_tls::DefaultServerTlsStream};
+use fluvio_future::{net::TcpStream, openssl::DefaultServerTlsStream};
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use flv_tls_proxy::authenticator::Authenticator;
 
@@ -71,17 +71,21 @@ impl X509Authenticator {
     }
 
     fn principal_from_tls_stream(tls_stream: &DefaultServerTlsStream) -> Result<String, IoError> {
-        let client_certificates = tls_stream
-            .client_certificates()
-            .ok_or(IoErrorKind::NotFound)?;
+        trace!("tls_stream {:?}", tls_stream);
 
-        trace!("tls stream {:?}", tls_stream);
+        let peer_certificate = tls_stream.peer_certificate();
 
-        let principal = client_certificates
-            .iter()
-            .map(|cert| Self::principal_from_raw_certificate(cert.as_ref()))
-            .next()
-            .ok_or(IoErrorKind::NotFound)??;
+        trace!("peer_certificate {:?}", peer_certificate);
+
+        let client_certificate = tls_stream.peer_certificate().ok_or(IoErrorKind::NotFound)?;
+
+        trace!("client_certificate {:?}", tls_stream);
+
+        let principal = Self::principal_from_raw_certificate(
+            &client_certificate
+                .to_der()
+                .map_err(|err| err.into_io_error())?,
+        )?;
 
         Ok(principal)
     }

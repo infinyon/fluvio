@@ -11,14 +11,7 @@ use dataplane::api::Request;
 use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::{AllFlvSocket, SharedAllMultiplexerSocket};
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "rust_tls")] {
-        use fluvio_future::rust_tls::AllDomainConnector;
-    } else if #[cfg(feature  = "native_tls")] {
-        use fluvio_future::native_tls::AllDomainConnector;
-    }
-}
+use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::FluvioError;
 
