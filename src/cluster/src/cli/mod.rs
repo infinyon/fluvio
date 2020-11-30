@@ -50,7 +50,7 @@ pub enum ClusterCmd {
     Start(Box<StartOpt>),
 
     /// Delete a Fluvio cluster from the local machine or Minikube
-    #[structopt(name = "uninstall")]
+    #[structopt(name = "delete")]
     Delete(DeleteOpt),
 
     /// Check that all requirements for cluster startup are met
