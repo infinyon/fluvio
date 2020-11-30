@@ -5,8 +5,7 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use tracing::debug;
-use tracing::error;
+use tracing::{ debug, trace, error};
 use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
@@ -375,11 +374,13 @@ where
         drop(write_guard);
 
         if status.has_spec_changes() {
+            trace!("notify spec changed: {}",epoch);
             self.spec_publisher.store_change(epoch);   
             self.spec_publisher.notify();
         }
 
         if status.has_status_changes() {
+            trace!("notify status changed: {}",epoch);
             self.status_publisher.store_change(epoch);
             self.status_publisher.notify();
         }
@@ -499,6 +500,7 @@ mod test_notify {
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
+    use crate::store::actions::LSUpdate;
     use crate::store::event::SimpleEvent;
     use crate::test_fixture::{TestSpec,DefaultTest};
 
@@ -540,7 +542,7 @@ mod test_notify {
 
                 select! {
                     _ = spec_listner.listen() => {
-                        debug!("spec change occur");
+                        debug!("spec change occur: {}",spec_listner.last_change());
                         continue;
                     },
                     _ = self.shutdown.listen() => {
@@ -557,15 +559,17 @@ mod test_notify {
         }
 
         async fn sync(&mut self,spec_listner: &mut ChangeListener) {
-            debug!("sync start");
+          
             let last_change = spec_listner.last_change();
+            debug!("sync start with change: {}",last_change);
             let read_guard = self.store.read().await;
             let changes = read_guard.spec_changes_since(last_change);
             if *changes.current_epoch() != last_change {
+                debug!("reseting last change: {}",*changes.current_epoch());
                 spec_listner.set_last_change(*changes.current_epoch());
             }
 
-            let delay = thread_rng().gen_range(1,5);
+            let delay = thread_rng().gen_range(1,10);
             sleep(Duration::from_millis(delay)).await;
 
             debug!("sync end");
@@ -585,6 +589,18 @@ mod test_notify {
 
         let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
         let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
+
+        let mut rng = thread_rng();
+
+        for i in 0..10u16 {
+            let delay = rng.gen_range(3,10);
+            sleep(Duration::from_millis(delay)).await;
+            let topic_name = format!("topic{}",i);
+            debug!("creating topic: {}",topic_name);
+            let topic = DefaultTest::with_spec(topic_name, TestSpec::default()).with_context(3);
+            let _ = topic_store.apply_changes(vec![LSUpdate::Mod(topic)]).await;
+        }
+        
 
         // wait for controller to sync
         sleep(Duration::from_millis(100)).await;

@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicI64, Ordering, AtomicBool};
 use std::sync::Arc;
 
-use tracing::debug;
+use tracing::{debug,trace};
 use event_listener::{Event, EventListener};
 
 const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
@@ -75,6 +75,7 @@ impl ChangeListener {
         if current_change == self.last_change {
             false
         } else {
+            debug!("updating last change: {}",current_change);
             self.last_change = current_change;
             true
         }
@@ -97,18 +98,22 @@ impl ChangeListener {
     pub async fn listen(&mut self)  {
 
         if self.has_change() {
-            debug!("before has change: {}",self.last_change());
+            trace!("before has change: {}",self.last_change());
             return;
         }
 
         let listener = self.publisher.listen();
 
         if self.has_change() {
-            debug!("after has change: {}",self.last_change());
+            trace!("after has change: {}",self.last_change());
             return;
         }
 
-        listener.await
+        listener.await;
+
+        self.last_change = self.publisher.current_change();
+
+        trace!("new last change: {}",self.last_change());
 
     }
 
@@ -136,14 +141,14 @@ impl SimpleEvent {
     pub async fn listen(&self)  {
 
         if self.is_set() {
-            debug!("before, flag is set");
+            trace!("before, flag is set");
             return;
         }
 
         let listener = self.event.listen();
 
         if self.is_set() {
-            debug!("after flag is set");
+            trace!("after flag is set");
             return;
         }
 
