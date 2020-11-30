@@ -23,7 +23,7 @@ k8-set-k8-profile-tls:
 
 
 install-local-tls:
-	$(FLUVIO_BIN) cluster install --local  \
+	$(FLUVIO_BIN) cluster start --local  \
 		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
 		--client-key tls/certs/client.key --domain fluvio.local
@@ -32,7 +32,7 @@ uninstall-local:
 	$(FLUVIO_BIN) cluster uninstall --local
 
 install-k8-tls:
-	$(FLUVIO_BIN) cluster install --develop \
+	$(FLUVIO_BIN) cluster start --develop \
 		--tls --server-cert tls/certs/server.crt --server-key tls/certs/server.key \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client.crt	\
 		--client-key tls/certs/client.key --domain fluvio.local

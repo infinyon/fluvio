@@ -70,7 +70,7 @@ test-permission-user1:
 	grep -q permission /tmp/topic.err
 
 k8-setup:
-	$(FLUVIO_BIN) cluster install --setup --develop
+	$(FLUVIO_BIN) cluster start --setup --develop
 #	$(FLUVIO_BIN) cluster check --pre-install
 
 

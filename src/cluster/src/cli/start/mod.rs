@@ -140,7 +140,7 @@ pub struct StartOpt {
     /// Whether to skip pre-install checks, defaults to false
     #[structopt(long)]
     pub skip_checks: bool,
-    /// Tries to setup neccessary environment for cluster install
+    /// Tries to setup necessary environment for cluster startup
     #[structopt(long)]
     pub setup: bool,
 }

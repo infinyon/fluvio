@@ -286,7 +286,7 @@ jobs:
           make RELEASE=release build_test
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/release/fluvio cluster install --setup --local --develop
+          FLV_CMD=true ./target/release/fluvio cluster start --setup --local --develop
       - name: Run smoke-test
         timeout-minutes: 5
         run: |

@@ -56,7 +56,7 @@ This avoid collision with released version of Fluvio.
 Install Fluvio `sys` chart from source.
 
 ```
-$ flvd cluster install --sys --develop
+$ flvd cluster start --sys --develop
 ```
 
 
@@ -176,7 +176,7 @@ $ flvd cluster uninstall
 
 Run command below now to run install with image just built
 ```
-$ fluvio cluster install --develop
+$ fluvio cluster start --develop
 ```
 
 Topic creation, product and consumer can now be tested as with `local` cluster.
@@ -263,7 +263,7 @@ minikube start
 If you face issues while installing sys chart
 
 ```
-$ fluvio cluster install --sys
+$ fluvio cluster start --sys
 "fluvio" has been added to your repositories
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "fluvio" chart repository

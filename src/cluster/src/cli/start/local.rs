@@ -32,6 +32,6 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
 pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {
     let installer = LocalClusterInstaller::new().build()?;
     installer.setup().await?;
-    println!("Setup successful, all the steps neccessary for cluster installation have been performed successfully");
+    println!("Setup successful, all the steps necessary for cluster startup have been performed successfully");
     Ok(())
 }
