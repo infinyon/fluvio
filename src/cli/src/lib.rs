@@ -32,7 +32,7 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
 
-const VERSION: &str = include_str!("VERSION");
+const VERSION: &str = include_str!("../../../VERSION");
 
 /// Fluvio Command Line Interface
 #[derive(StructOpt, Debug)]
