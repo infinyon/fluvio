@@ -44,7 +44,7 @@ prettytable-rs = { version = "0.8.0", optional = true }
 
 # Fluvio dependencies
 fluvio = { version = "0.2.3", path = "../client", default-features = false }
-fluvio-helm = { git = "https://github.com/infinyon/fluvio-helm", rev = "6e15fd2c789c33ba8bae51a369a0983e177c2f78" }
+fluvio-helm = "0.1.0"
 fluvio-future = { version = "0.1.0" }
 fluvio-runner-local = { version = "0.1.0", path = "../extension-runner-local", optional = true }
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common", optional = true }
