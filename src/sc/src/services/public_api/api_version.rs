@@ -12,6 +12,7 @@ pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
     let mut response = ApiVersionsResponse::default();
+    response.platform_version = crate::VERSION.to_string();
 
     // topic versions
     response.api_keys.push(make_version_key(

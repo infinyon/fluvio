@@ -13,6 +13,8 @@ mod controllers;
 
 pub use init::start_main_loop;
 
+const VERSION: &str = include_str!("../../../VERSION");
+
 pub mod dispatcher {
     pub use fluvio_stream_dispatcher::*;
 }

@@ -4,30 +4,18 @@
 mod common;
 mod error_code;
 
+pub mod apis;
 pub mod batch;
 pub mod record;
 pub mod fetch;
 pub mod produce;
+pub mod versions;
 
 pub use common::*;
 pub use error_code::*;
 
-pub mod bytes {
-    pub use fluvio_protocol::bytes::*;
-}
-
-pub mod core {
-    pub use fluvio_protocol::*;
-}
-
-pub mod derive {
-    pub use fluvio_protocol::derive::*;
-}
-
-pub mod api {
-    pub use fluvio_protocol::api::*;
-}
-
-pub mod store {
-    pub use fluvio_protocol::store::*;
-}
+pub use fluvio_protocol as core;
+pub use fluvio_protocol::api as api;
+pub use fluvio_protocol::bytes as bytes;
+pub use fluvio_protocol::store as store;
+pub use fluvio_protocol::derive as derive;
