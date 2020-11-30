@@ -16,7 +16,7 @@ use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
 
 use fluvio_helm::{HelmClient, HelmError};
-use crate::install::{
+use crate::start::{
     DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
 };
 
@@ -247,7 +247,7 @@ impl InstallCheck for LoadBalancer {
 pub struct ClusterChecker {}
 
 impl ClusterChecker {
-    /// Runs all the checks that are needed for fluvio cluster installation
+    /// Runs all the checks that are needed for fluvio cluster startup
     /// # Example
     /// ```no_run
     /// use fluvio_cluster::ClusterChecker;
@@ -341,7 +341,7 @@ pub(crate) fn check_system_chart(
     if sys_charts.is_empty() {
         return Ok(StatusCheck::NotWorking(
             CheckError::MissingSystemChart,
-            "Fluvio system charts can be installed using commnd `fluvio cluster install --sys`"
+            "Fluvio system charts can be installed using command `fluvio cluster start --sys`"
                 .to_string(),
         ));
     } else if sys_charts.len() > 1 {

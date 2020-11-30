@@ -36,7 +36,7 @@ impl Setup {
 
         println!("installing cluster");
 
-        self.env_driver.install_cluster().await;
+        self.env_driver.start_cluster().await;
 
         sleep(Duration::from_millis(2000)).await;
     }

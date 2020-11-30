@@ -39,7 +39,7 @@ It creates a simple topic: `topic0` and perform produce/consume
 ```
 $ flvt --local
 
-....various cluster installation
+....various cluster startup
 start testing...
 found topic: topic0 offset: 0
 starting produce

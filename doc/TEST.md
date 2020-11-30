@@ -20,8 +20,8 @@ Test runner can be located in: ```target/debug/flv-test```
 
 By default, ```flv-test``` will create new cluster.   Ensure you delete existing using fluvio:
 
-```fluvio cluster uninstall``` for k8 or
-```fluvio cluster uninstall --local``` for local cluster
+```fluvio cluster delete``` for k8 or
+```fluvio cluster delete --local``` for local cluster
 
 ## Alias
 

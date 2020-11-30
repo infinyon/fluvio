@@ -16,11 +16,11 @@
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
 
-mod install;
-mod error;
 mod check;
-mod uninstall;
+mod start;
+mod delete;
 mod local;
+mod error;
 
 /// extensions
 #[cfg(feature = "cli")]
@@ -28,13 +28,13 @@ pub mod cli;
 
 use fluvio_helm as helm;
 
-pub use install::ClusterInstaller;
-pub use install::ClusterInstallerBuilder;
+pub use start::ClusterInstaller;
+pub use start::ClusterInstallerBuilder;
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
 pub use check::ClusterChecker;
 pub use check::CheckError;
-pub use uninstall::ClusterUninstaller;
+pub use delete::ClusterUninstaller;
 pub use local::LocalClusterInstaller;
 
 const VERSION: &str = include_str!("VERSION");

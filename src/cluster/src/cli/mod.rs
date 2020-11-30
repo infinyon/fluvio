@@ -3,15 +3,15 @@ use structopt::StructOpt;
 
 mod group;
 mod spu;
-mod install;
-mod uninstall;
+mod start;
+mod delete;
 mod util;
 mod check;
 mod releases;
 mod error;
 
-use install::InstallOpt;
-use uninstall::UninstallOpt;
+use start::StartOpt;
+use delete::DeleteOpt;
 use check::CheckOpt;
 use releases::ReleasesCmd;
 use group::SpuGroupCmd;
@@ -42,19 +42,18 @@ impl ClusterOpt {
     }
 }
 
-/// Cluster commands
+/// Manage and view Fluvio clusters
 #[derive(StructOpt, Debug)]
-#[structopt(about = "Available Commands")]
 pub enum ClusterCmd {
-    /// Install a Fluvio cluster, locally or on Minikube
-    #[structopt(name = "install")]
-    Install(Box<InstallOpt>),
+    /// Start a Fluvio cluster, locally or on Minikube
+    #[structopt(name = "start")]
+    Start(Box<StartOpt>),
 
-    /// Uninstall a Fluvio cluster from the local machine or Minikube
-    #[structopt(name = "uninstall")]
-    Uninstall(UninstallOpt),
+    /// Delete a Fluvio cluster from the local machine or Minikube
+    #[structopt(name = "delete")]
+    Delete(DeleteOpt),
 
-    /// Check that all requirements for cluster installation are met
+    /// Check that all requirements for cluster startup are met
     #[structopt(name = "check")]
     Check(CheckOpt),
 
@@ -90,10 +89,10 @@ impl ClusterCmd {
         target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
-            Self::Install(install) => {
-                install.process().await?;
+            Self::Start(start) => {
+                start.process().await?;
             }
-            Self::Uninstall(uninstall) => {
+            Self::Delete(uninstall) => {
                 uninstall.process().await?;
             }
             Self::Check(check) => {

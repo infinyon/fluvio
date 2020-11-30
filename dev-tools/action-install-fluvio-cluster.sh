@@ -23,14 +23,14 @@ if [ "$DEVELOPMENT" = "true" ]; then
 
         
         # Install Fluvio System Charts
-        fluvio cluster install --sys
+        fluvio cluster start --sys
 
         # Run Fluvio Cluster Pre-Install Check
         fluvio cluster check --pre-install
 
         if [ "$CLUSTER_TYPE" = "local" ]; then
                 # Install Local Fluvio Cluster
-                fluvio cluster install --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
+                fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
         else
                 echo "Currently, only local cluster types are supported"
         fi

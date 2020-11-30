@@ -70,7 +70,7 @@ test-permission-user1:
 	grep -q permission /tmp/topic.err
 
 k8-setup:
-	$(FLUVIO_BIN) cluster install --setup --develop
+	$(FLUVIO_BIN) cluster start --setup --develop
 #	$(FLUVIO_BIN) cluster check --pre-install
 
 
@@ -111,8 +111,8 @@ ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
 	echo "clean up previous installation"
-	$(FLUVIO_BIN) cluster uninstall
-	$(FLUVIO_BIN) cluster uninstall --local
+	$(FLUVIO_BIN) cluster delete
+	$(FLUVIO_BIN) cluster delete --local
 	kubectl delete configmap authorization --ignore-not-found
 endif
 
