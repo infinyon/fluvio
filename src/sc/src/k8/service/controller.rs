@@ -39,11 +39,8 @@ impl fmt::Debug for SpuServiceController {
 impl SpuServiceController {
     pub fn start(ctx: SharedContext, services: StoreContext<SpuServicespec>) {
         let spus = ctx.spus().clone();
-      
-        let controller = Self {
-            services,
-            spus,
-        };
+
+        let controller = Self { services, spus };
 
         spawn(controller.dispatch_loop());
     }
@@ -60,14 +57,15 @@ impl SpuServiceController {
         let mut spu_status_listener = self.spus.status_listen();
 
         loop {
-            
-            self.sync_service_to_spu(&mut service_spec_listener, &mut service_status_listener).await;
-            self.sync_spu_to_service(&mut spu_spec_listener, &mut spu_status_listener).await;
+            self.sync_service_to_spu(&mut service_spec_listener, &mut service_status_listener)
+                .await;
+            self.sync_spu_to_service(&mut spu_spec_listener, &mut spu_status_listener)
+                .await;
 
             debug!("waiting events");
 
             select! {
-                // just in case, we force 
+                // just in case, we force
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
@@ -87,16 +85,16 @@ impl SpuServiceController {
         }
     }
 
-
     /// svc has been changed, update spu
     #[instrument()]
-    async fn sync_service_to_spu(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
+    async fn sync_service_to_spu(
+        &mut self,
+        spec: &mut ChangeListener,
+        status: &mut ChangeListener,
+    ) {
         debug!("syncing service to spu");
-      
-        let changes =
-            self.services
-                .store()
-                .all_changes_since(spec,status).await;
+
+        let changes = self.services.store().all_changes_since(spec, status).await;
 
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
@@ -151,10 +149,14 @@ impl SpuServiceController {
 
     #[instrument()]
     /// spu has been changed, sync with existing services
-    async fn sync_spu_to_service(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
+    async fn sync_spu_to_service(
+        &mut self,
+        spec: &mut ChangeListener,
+        status: &mut ChangeListener,
+    ) {
         debug!("synching spu to service");
-      
-        let changes = self.spus.store().all_changes_since(spec,status).await;
+
+        let changes = self.spus.store().all_changes_since(spec, status).await;
 
         let epoch = changes.epoch; // update epoch
         let (updates, deletes) = changes.parts();

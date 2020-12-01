@@ -63,17 +63,13 @@ impl SpuController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-
         let mut spec_listener = self.spus.spec_listen();
         let mut status_listener = self.spus.status_listen();
-
-        
 
         const HEALTH_DURATION: u64 = 90;
 
         let mut time_left = Duration::from_secs(HEALTH_DURATION);
         loop {
-            
             self.sync_store().await;
 
             let health_time = Instant::now();

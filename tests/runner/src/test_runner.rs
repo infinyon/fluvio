@@ -34,8 +34,6 @@ impl TestRunner {
                 .arg(self.option.replication().to_string())
                 .rust_log(self.option.client_log.as_deref())
                 .wait_and_check();
-
-            println!("topic: {}, created", topic_name);
         }
 
         // wait until all partitions are provisioned

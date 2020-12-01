@@ -21,13 +21,12 @@ use crate::services::auth::AuthServiceContext;
 use crate::stores::StoreContext;
 use crate::stores::event::ChangeListener;
 
-
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T, AC>(
     request: RequestMessage<WatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: InnerExclusiveFlvSink<T>,
-    end_event: Arc<SimpleEvent>
+    end_event: Arc<SimpleEvent>,
 ) where
     T: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
@@ -97,16 +96,15 @@ where
         let mut status_listener = self.store.status_listen();
 
         loop {
-
-            if !self.sync_and_send_changes(&mut spec_listener, &mut status_listener).await {
+            if !self
+                .sync_and_send_changes(&mut spec_listener, &mut status_listener)
+                .await
+            {
                 self.end_event.notify();
                 break;
             }
 
-            debug!(
-                "watch: {}, waiting for changes with",
-                S::LABEL,
-            );
+            debug!("watch: {}, waiting for changes with", S::LABEL,);
             select! {
 
                 _ = self.end_event.listen() => {
@@ -130,17 +128,21 @@ where
 
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
-    async fn sync_and_send_changes(&mut self,spec: &mut ChangeListener,status:&mut ChangeListener) -> bool {
+    async fn sync_and_send_changes(
+        &mut self,
+        spec: &mut ChangeListener,
+        status: &mut ChangeListener,
+    ) -> bool {
         use fluvio_controlplane_metadata::message::*;
 
-        let changes = self.store.store().all_changes_since(spec,status).await;
+        let changes = self.store.store().all_changes_since(spec, status).await;
         let epoch = changes.epoch;
         debug!(
             "watch: {} received changes with epoch: {},",
             S::LABEL,
             epoch
         );
-        
+
         let updates = if changes.is_sync_all() {
             let (updates, _) = changes.parts();
             MetadataUpdate::with_all(epoch, updates.into_iter().map(|u| u.into()).collect())

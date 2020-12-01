@@ -7,7 +7,7 @@ use event_listener::{Event, EventListener};
 const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
 /// Track publishing of events by using u64 counter
-#[derive(Debug)]
+#[derive(Debug,Default)]
 pub struct EventPublisher {
     event: Event,
     change: AtomicI64,
@@ -15,7 +15,7 @@ pub struct EventPublisher {
 
 impl EventPublisher {
     pub fn new() -> Self {
-        Self { 
+        Self {
             event: Event::new(),
             change: AtomicI64::new(0),
         }
@@ -25,7 +25,7 @@ impl EventPublisher {
         Arc::new(Self::new())
     }
 
-    pub fn notify(&self)  {
+    pub fn notify(&self) {
         self.event.notify(usize::MAX);
     }
 
@@ -35,38 +35,35 @@ impl EventPublisher {
     }
 
     pub fn increment(&self) -> i64 {
-        self.change.fetch_add(1,DEFAULT_EVENT_ORDERING)
+        self.change.fetch_add(1, DEFAULT_EVENT_ORDERING)
     }
 
     /// store new value
-    pub fn store_change(&self,value: i64) {
+    pub fn store_change(&self, value: i64) {
         self.change.store(value, DEFAULT_EVENT_ORDERING);
     }
 
     pub fn change_listener(self: &Arc<Self>) -> ChangeListener {
-        let last_change =  self.current_change();
+        let last_change = self.current_change();
         ChangeListener {
             publisher: self.clone(),
-            last_change
+            last_change,
         }
     }
 
-    
     pub fn listen(&self) -> EventListener {
         self.event.listen()
     }
-
 }
 
 /// listen for changes in the event by comparing against last change
 #[derive(Debug)]
 pub struct ChangeListener {
     publisher: Arc<EventPublisher>,
-    last_change: i64
+    last_change: i64,
 }
 
 impl ChangeListener {
-
     /// check if there should be any changes
     /// this should be done before event listener
     /// to ensure no events are missed
@@ -77,7 +74,7 @@ impl ChangeListener {
 
     /// sync change to current change
     #[inline(always)]
-    pub fn load_last(&mut self)  {
+    pub fn load_last(&mut self) {
         self.set_last_change(self.publisher.current_change());
     }
 
@@ -86,39 +83,33 @@ impl ChangeListener {
         self.last_change = last_change;
     }
 
-
     #[inline]
     pub fn last_change(&self) -> i64 {
         self.last_change
     }
 
-
     pub fn current_change(&self) -> i64 {
         self.publisher.current_change()
     }
 
-    pub async fn listen(&mut self)  {
-
+    pub async fn listen(&mut self) {
         if self.has_change() {
-            trace!("before has change: {}",self.last_change());
+            trace!("before has change: {}", self.last_change());
             return;
         }
 
         let listener = self.publisher.listen();
 
         if self.has_change() {
-            trace!("after has change: {}",self.last_change());
+            trace!("after has change: {}", self.last_change());
             return;
         }
 
         listener.await;
 
-        trace!("new change: {}",self.current_change());
-
+        trace!("new change: {}", self.current_change());
     }
-
 }
-
 
 pub struct SimpleEvent {
     flag: AtomicBool,
@@ -138,8 +129,7 @@ impl SimpleEvent {
         self.flag.load(DEFAULT_EVENT_ORDERING)
     }
 
-    pub async fn listen(&self)  {
-
+    pub async fn listen(&self) {
         if self.is_set() {
             trace!("before, flag is set");
             return;
@@ -153,7 +143,6 @@ impl SimpleEvent {
         }
 
         listener.await
-
     }
 
     pub fn notify(&self) {
@@ -161,7 +150,6 @@ impl SimpleEvent {
         self.event.notify(usize::MAX);
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -184,27 +172,24 @@ mod test {
     struct TestController {
         change: ChangeListener,
         shutdown: Arc<SimpleEvent>,
-        last_change: Arc<AtomicI64>
+        last_change: Arc<AtomicI64>,
     }
 
     impl TestController {
-
-        fn start(change: ChangeListener,shutdown: Arc<SimpleEvent>,last_change: Arc<AtomicI64>)   {
-            let controller = Self{
+        fn start(change: ChangeListener, shutdown: Arc<SimpleEvent>, last_change: Arc<AtomicI64>) {
+            let controller = Self {
                 change,
                 shutdown,
-                last_change
+                last_change,
             };
             spawn(controller.dispatch_loop());
         }
 
         async fn dispatch_loop(mut self) {
-
             use tokio::select;
 
             debug!("entering loop");
             loop {
-
                 self.sync().await;
 
                 select! {
@@ -217,43 +202,37 @@ mod test {
                         break;
                     }
                 }
-
             }
 
-            debug!("terminated, last change: {}",self.change.last_change());
+            debug!("terminated, last change: {}", self.change.last_change());
         }
 
         /// randomly sleep to simulate some tasks
         async fn sync(&mut self) {
             debug!("sync start");
-            self.last_change.fetch_add(1,SeqCst);
+            self.last_change.fetch_add(1, SeqCst);
             sleep(Duration::from_millis(5)).await;
-            self.change.load_last();        // sync to latest
-            debug!("sync end: {}",self.change.last_change());
-
+            self.change.load_last(); // sync to latest
+            debug!("sync end: {}", self.change.last_change());
         }
-
-
     }
 
     #[test_async]
-    async fn test_listener() -> Result<(),()> {
-
-        
+    async fn test_listener() -> Result<(), ()> {
         let publisher = Arc::new(EventPublisher::new());
         let listener = publisher.change_listener();
         let shutdown = SimpleEvent::shared();
         let last_change = Arc::new(AtomicI64::new(0));
-        TestController::start(listener,shutdown.clone(),last_change.clone());
+        TestController::start(listener, shutdown.clone(), last_change.clone());
 
         for i in 0..5u16 {
             sleep(Duration::from_millis(2)).await;
             publisher.increment();
             publisher.notify();
-            debug!("notification: {}, value: {}",i,publisher.current_change());
+            debug!("notification: {}, value: {}", i, publisher.current_change());
         }
-       
-         // wait for test controller to finish
+
+        // wait for test controller to finish
         sleep(Duration::from_millis(20)).await;
 
         // shutdown and wait to finish
@@ -261,10 +240,8 @@ mod test {
 
         sleep(Duration::from_millis(5)).await;
 
-        assert_eq!(last_change.load(SeqCst),2); // there should be 2 sync happenings
+        assert_eq!(last_change.load(SeqCst), 2); // there should be 2 sync happenings
 
         Ok(())
-
     }
-
 }

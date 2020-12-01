@@ -17,11 +17,10 @@ mod context {
     use crate::actions::WSAction;
     use crate::store::k8::K8MetaItem;
     use crate::core::Spec;
-    
+
     use super::MetadataStoreObject;
     use super::LocalStore;
     use super::event::ChangeListener;
-    
 
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
@@ -55,7 +54,6 @@ mod context {
             }
             Ok(())
         }
-
 
         /// listen to spec
         pub fn spec_listen(&self) -> ChangeListener {

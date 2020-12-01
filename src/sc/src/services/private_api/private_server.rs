@@ -120,8 +120,6 @@ async fn dispatch_loop(
     mut sink: FlvSink,
     health_sender: Sender<SpuAction>,
 ) -> Result<(), FlvSocketError> {
-  
-   
     // we wait for update from SPU or wait for updates form SPU channel
 
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
@@ -141,8 +139,9 @@ async fn dispatch_loop(
         let mut spu_spec_listener = context.spus().spec_listen();
         let mut partition_spec_listener = context.partitions().spec_listen();
 
-        send_spu_spec_changes(&mut spu_spec_listener, &context, &mut sink,spu_id).await?;
-        send_replica_spec_changes(&mut partition_spec_listener, &context, &mut sink,spu_id).await?;
+        send_spu_spec_changes(&mut spu_spec_listener, &context, &mut sink, spu_id).await?;
+        send_replica_spec_changes(&mut partition_spec_listener, &context, &mut sink, spu_id)
+            .await?;
 
         debug!("waiting for events");
 
@@ -233,7 +232,7 @@ async fn send_lrs_update(ctx: &SharedContext, lrs_req: UpdateLrsRequest) {
 
 /// send spu spec changes only
 async fn send_spu_spec_changes(
-    change: &mut ChangeListener, 
+    change: &mut ChangeListener,
     ctx: &SharedContext,
     sink: &mut FlvSink,
     spu_id: SpuId,
@@ -241,7 +240,7 @@ async fn send_spu_spec_changes(
     use fluvio_controlplane_metadata::message::*;
 
     let changes = ctx.spus().store().spec_changes_since(change).await;
-  
+
     let epoch = changes.epoch;
     let is_sync_all = changes.is_sync_all();
     let (updates, deletes) = changes.parts();
@@ -274,7 +273,7 @@ async fn send_spu_spec_changes(
 }
 
 async fn send_replica_spec_changes(
-    change: &mut ChangeListener, 
+    change: &mut ChangeListener,
     ctx: &SharedContext,
     sink: &mut FlvSink,
     spu_id: SpuId,
@@ -284,7 +283,7 @@ async fn send_replica_spec_changes(
     let changes = ctx.partitions().store().spec_changes_since(change).await;
     let epoch = changes.epoch;
     debug!("sending replica change: {} to spu: {}", epoch, spu_id);
-  
+
     let is_sync_all = changes.is_sync_all();
     let (updates, deletes) = changes.parts();
 

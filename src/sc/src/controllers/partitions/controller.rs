@@ -68,8 +68,7 @@ impl PartitionController {
 
     /// sync spu states to partition
     /// check to make sure
-    async fn sync_spu_changes(&mut self,spu_change : &mut ChangeListener) {
-
+    async fn sync_spu_changes(&mut self, spu_change: &mut ChangeListener) {
         debug!("sync spu changes");
         let changes = self.spus.store().status_changes_since(spu_change).await;
         let epoch = changes.epoch;

@@ -29,7 +29,7 @@ impl TopicController {
     pub fn start(ctx: SharedContext) {
         let topics = ctx.topics().clone();
         let partitions = ctx.partitions().clone();
-    
+
         let controller = Self {
             reducer: TopicReducer::new(
                 topics.store().clone(),
@@ -38,7 +38,7 @@ impl TopicController {
             ),
             topics,
             partitions,
-            spus: ctx.spus().clone()
+            spus: ctx.spus().clone(),
         };
 
         spawn(controller.dispatch_loop());
@@ -56,10 +56,11 @@ impl TopicController {
         let mut status_listener = self.topics.status_listen();
 
         loop {
-            self.sync_topics(&mut spec_listener,&mut status_listener).await;
+            self.sync_topics(&mut spec_listener, &mut status_listener)
+                .await;
 
             select! {
-                
+
                 // just in case
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
@@ -76,15 +77,15 @@ impl TopicController {
     }
 
     /// sync topics with partition
-    async fn sync_topics(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
+    async fn sync_topics(&mut self, spec: &mut ChangeListener, status: &mut ChangeListener) {
         debug!("syncing topics");
-      
-        let changes = self.topics.store().all_changes_since(spec,status).await;
+
+        let changes = self.topics.store().all_changes_since(spec, status).await;
         let epoch = changes.epoch;
         debug!("setting topic epoch to: {}", epoch);
         let (updates, _) = changes.parts();
         debug!("updates: {}", updates.len());
-    
+
         let actions = self.reducer.process_requests(updates).await;
 
         if actions.topics.is_empty() && actions.partitions.is_empty() {

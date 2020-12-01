@@ -6,7 +6,6 @@ use event_listener::Event;
 
 const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
-
 pub struct SimpleEvent {
     flag: AtomicBool,
     event: Event,
@@ -25,8 +24,7 @@ impl SimpleEvent {
         self.flag.load(DEFAULT_EVENT_ORDERING)
     }
 
-    pub async fn listen(&self)  {
-
+    pub async fn listen(&self) {
         if self.is_set() {
             trace!("before, flag is set");
             return;
@@ -40,7 +38,6 @@ impl SimpleEvent {
         }
 
         listener.await
-
     }
 
     pub fn notify(&self) {

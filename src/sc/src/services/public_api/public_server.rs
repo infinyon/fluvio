@@ -15,7 +15,6 @@ use async_trait::async_trait;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
-
 use fluvio_types::event::SimpleEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
