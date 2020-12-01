@@ -71,15 +71,20 @@ impl Default for PlatformVersion {
 impl Decoder for PlatformVersion {
     /// Wrap the decoder for the string inside
     fn decode<T>(&mut self, src: &mut T, version: i16) -> Result<(), IoError>
-        where T: Buf
+    where
+        T: Buf,
     {
         // Decode the data as a String
         let mut string = String::default();
         string.decode(src, version)?;
 
         // Before constructing, ensure that what was decoded is valid Semver
-        let _version = semver::Version::parse(&string)
-            .map_err(|_| IoError::new(ErrorKind::InvalidData, "PlatformVersion is not valid semver"))?;
+        let _version = semver::Version::parse(&string).map_err(|_| {
+            IoError::new(
+                ErrorKind::InvalidData,
+                "PlatformVersion is not valid semver",
+            )
+        })?;
 
         // Construct PlatformVersion with semver string
         self.0 = string;
@@ -93,7 +98,8 @@ impl Encoder for PlatformVersion {
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
-        where T: BufMut
+    where
+        T: BufMut,
     {
         self.0.encode(dest, version)
     }

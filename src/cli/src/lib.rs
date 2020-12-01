@@ -260,7 +260,7 @@ impl VersionOpt {
         if let Ok(fluvio_config) = target.load() {
             if let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await {
                 let version = fluvio.platform_version();
-        println!("Fluvio Platform : {}", version);
+                println!("Fluvio Platform : {}", version);
             }
         }
 

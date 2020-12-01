@@ -16,8 +16,8 @@ pub mod errors {
 }
 
 pub use dataplane::apis::AdminPublicApiKey;
-pub use fluvio_controlplane_metadata::core as core;
-pub use fluvio_controlplane_metadata::store as store;
+pub use fluvio_controlplane_metadata::core;
+pub use fluvio_controlplane_metadata::store;
 
 /// Error from api call
 #[derive(thiserror::Error, Debug)]
