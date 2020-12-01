@@ -1,0 +1,48 @@
+extend = "Base.toml"
+
+
+# https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+[tasks.install-aws-cli.linux]
+script = '''
+which aws 2> /dev/null > /dev/null || {
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip";
+    unzip awscliv2.zip;
+    sudo ./aws/install;
+}
+'''
+
+[tasks.install-aws-cli.mac]
+script = '''
+which aws 2> /dev/null > /dev/null || {
+    echo "Install aws cli at https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html";
+    exit 1
+}
+'''
+
+
+[tasks.s3-upload-installer]
+dependencies = [
+    "install-aws-cli",
+]
+command = "aws"
+args = [
+    "s3",
+    "cp", "./install.sh", "s3://packages.fluvio.io/v1/install.sh",
+    "--acl", "public-read",
+]
+
+[tasks.publish-fluvio]
+dependencies = [
+    "build-release",
+]
+script = '''
+mkdir -p ~/.fluvio/extensions
+./target/${TARGET}/release/fluvio install fluvio/fluvio-package;
+./target/${TARGET}/release/fluvio package publish ./target/${TARGET}/release/fluvio --version=${FLUVIO_VERSION};
+'''
+
+[tasks.publish-fluvio.linux]
+env = { TARGET = "x86_64-unknown-linux-musl" }
+
+[tasks.publish-fluvio.mac]
+env = { TARGET = "x86_64-apple-darwin" }
