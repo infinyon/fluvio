@@ -593,7 +593,7 @@ mod test_notify {
         async fn sync(&mut self,spec_listner: &mut ChangeListener) {
           
             debug!("sync start");
-            let (update,_delete) = self.store.changes_since(spec_listner).await;
+            let (update,_delete) = self.store.spec_changes_since(spec_listner).await.parts();
            // assert!(update.len() > 0);
             debug!("changes: {}",update.len());
             sleep(Duration::from_millis(10)).await;
