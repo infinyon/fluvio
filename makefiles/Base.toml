@@ -8,4 +8,37 @@ CARGO_PROFILE = "release"
 env = { IMAGE_TAG = "${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}-${CARGO_PROFILE}" }
 
 [env]
-GIT_TAG = { script = ["cat VERSION"] }
+FLUVIO_VERSION = { script = ["cat VERSION"] }
+
+[tasks.build-release.mac]
+args = [
+    "build",
+    "--bin", "fluvio",
+    "--release",
+    "--target=x86_64-apple-darwin",
+    "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )"
+]
+
+[tasks.build-release.linux]
+dependencies = ["setup-musl"]
+args = [
+    "build",
+    "--release",
+    "--bin", "fluvio",
+    "--target=x86_64-unknown-linux-musl",
+    "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )"
+]
+
+[tasks.setup-musl.linux]
+script = '''
+sudo apt-get update
+sudo apt-get install -y musl-tools build-essential
+rustup target add "$CARGO_MAKE_RELEASE_FLOW_TARGET"
+'''
+
+[tasks.setup-musl.condition]
+platforms = ["linux"]
+profiles = [ "production" ]
+
+[tasks.setup-musl.env]
+CARGO_MAKE_RELEASE_FLOW_TARGET = "x86_64-unknown-linux-musl"
