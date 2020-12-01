@@ -25,21 +25,21 @@ impl Request for ApiVersionsRequest {
 
 pub type ApiVersions = Vec<ApiVersionKey>;
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decode, Encode, Default, Debug, PartialEq)]
 pub struct ApiVersionsResponse {
     pub error_code: ErrorCode,
     pub api_keys: ApiVersions,
     pub platform_version: PlatformVersion,
 }
 
-#[derive(Decode, Encode, Default, Clone, Debug)]
+#[derive(Decode, Encode, Default, Clone, Debug, PartialEq)]
 pub struct ApiVersionKey {
     pub api_key: i16,
     pub min_version: i16,
     pub max_version: i16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct PlatformVersion(String);
 
 impl PlatformVersion {
@@ -102,5 +102,51 @@ impl Encoder for PlatformVersion {
         T: BufMut,
     {
         self.0.encode(dest, version)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_encode_platform_version() {
+        let version = semver::Version::parse("1.2.3-alpha.4+56789").unwrap();
+        let version_string = version.to_string();
+        let platform_version = PlatformVersion::from(version);
+
+        // Check encoding matches
+        let mut version_string_buffer: Vec<u8> = vec![];
+        version_string.encode(&mut version_string_buffer, 0).unwrap();
+        let mut platform_version_buffer: Vec<u8> = vec![];
+        platform_version.encode(&mut platform_version_buffer, 0).unwrap();
+        assert_eq!(version_string_buffer, platform_version_buffer);
+
+        // Check round-trip encode/decode for PlatformVersion
+        let mut decoded_platform_version = PlatformVersion::default();
+        decoded_platform_version.decode(&mut (&*platform_version_buffer), 0).unwrap();
+        assert_eq!(platform_version, decoded_platform_version);
+    }
+
+    #[test]
+    fn test_encode_decode_api_versions_response() {
+        fn api_versions() -> ApiVersionsResponse {
+            let version = semver::Version::parse("0.1.2-alpha.3+4567").unwrap();
+            let platform_version = PlatformVersion::from(version);
+            ApiVersionsResponse {
+                error_code: ErrorCode::None,
+                api_keys: vec![],
+                platform_version,
+            }
+        }
+
+        let api_version = api_versions();
+        let mut api_versions_buffer: Vec<u8> = vec![];
+        api_version.encode(&mut api_versions_buffer, 0).unwrap();
+
+        let mut decoded_api_version = ApiVersionsResponse::default();
+        decoded_api_version.decode(&mut (&*api_versions_buffer), 0).unwrap();
+
+        assert_eq!(api_version, decoded_api_version);
     }
 }
