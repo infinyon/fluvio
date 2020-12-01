@@ -23,16 +23,16 @@ impl Request for ApiVersionsRequest {
 // ApiVersionsResponse
 // -----------------------------------
 
-#[derive(Decode, Encode, Default, Debug)]
-pub struct ApiVersionsResponse {
-    pub error_code: ErrorCode,
-    pub api_keys: Vec<ApiVersionKey>,
-    pub platform_version: String,
-}
-
 pub type ApiVersions = Vec<ApiVersionKey>;
 
 #[derive(Decode, Encode, Default, Debug)]
+pub struct ApiVersionsResponse {
+    pub error_code: ErrorCode,
+    pub api_keys: ApiVersions,
+    pub platform_version: PlatformVersion,
+}
+
+#[derive(Decode, Encode, Default, Clone, Debug)]
 pub struct ApiVersionKey {
     pub api_key: i16,
     pub min_version: i16,
@@ -41,6 +41,20 @@ pub struct ApiVersionKey {
 
 #[derive(Debug)]
 pub struct PlatformVersion(String);
+
+impl PlatformVersion {
+    /// Creates a `semver::Version` object of the inner version
+    pub fn to_semver(&self) -> semver::Version {
+        // This is safe because of this type's invariant:
+        // The only ways to construct it are From<semver::Version>,
+        // via the Decoder trait, or by Default. The Decoder impl explicitly
+        // checks that the inner string is Semver, and the Default impl
+        // directly constructs a Semver and stringifies it. Therefore this
+        // unwrapping is safe.
+        semver::Version::parse(&self.0)
+            .expect("Broken Invariant: PlatformVersion can only be constructed with Semver")
+    }
+}
 
 impl From<semver::Version> for PlatformVersion {
     fn from(version: semver::Version) -> Self {

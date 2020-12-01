@@ -156,7 +156,7 @@ impl RootCmd {
                 update.process().await?;
             }
             Self::Version(version) => {
-                version.process()?;
+                version.process(root.target).await?;
             }
             Self::Completions(completion) => {
                 completion.process()?;
@@ -252,13 +252,23 @@ impl FluvioCmd {
 struct VersionOpt {}
 
 impl VersionOpt {
-    pub fn process(self) -> Result<()> {
-        println!("Fluvio version : {}", crate::VERSION);
-        println!("Git Commit     : {}", env!("GIT_HASH"));
-        if let Some(os_info) = option_env!("UNAME") {
-            println!("OS Details     : {}", os_info);
+    pub async fn process(self, target: ClusterTarget) -> Result<()> {
+        println!("Fluvio CLI      : {}", crate::VERSION.trim());
+
+        // Attempt to connect to a Fluvio cluster to get platform version
+        // Even if we fail to connect, we should not fail the other printouts
+        if let Ok(fluvio_config) = target.load() {
+            if let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await {
+                let version = fluvio.platform_version();
+        println!("Fluvio Platform : {}", version);
+            }
         }
-        println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
+
+        println!("Git Commit      : {}", env!("GIT_HASH"));
+        if let Some(os_info) = option_env!("UNAME") {
+            println!("OS Details      : {}", os_info);
+        }
+        println!("Rustc Version   : {}", env!("RUSTC_VERSION"));
         Ok(())
     }
 }
