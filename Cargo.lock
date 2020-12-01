@@ -924,6 +924,7 @@ dependencies = [
  "semver 0.11.0",
  "serde_json",
  "sha2",
+ "static_assertions",
  "structopt",
  "thiserror",
  "tracing",
