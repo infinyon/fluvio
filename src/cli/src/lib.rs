@@ -258,12 +258,14 @@ impl VersionOpt {
 
         // Attempt to connect to a Fluvio cluster to get platform version
         // Even if we fail to connect, we should not fail the other printouts
+        let mut platform_version = String::from("Not available");
         if let Ok(fluvio_config) = target.load() {
             if let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await {
                 let version = fluvio.platform_version();
-                println!("Fluvio Platform : {}", version);
+                platform_version = version.to_string();
             }
         }
+        println!("Fluvio Platform : {}", platform_version);
 
         println!("Git Commit      : {}", env!("GIT_HASH"));
         if let Some(os_info) = option_env!("UNAME") {
