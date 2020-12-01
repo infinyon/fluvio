@@ -142,7 +142,7 @@ where
         );
         
         let updates = if changes.is_sync_all() {
-            let (updates, deletes) = changes.parts();
+            let (updates, _) = changes.parts();
             MetadataUpdate::with_all(epoch, updates.into_iter().map(|u| u.into()).collect())
         } else {
             let (updates, deletes) = changes.parts();

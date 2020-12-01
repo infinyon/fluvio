@@ -8,10 +8,11 @@ use tracing::debug;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::topic::*;
-use crate::stores::spu::*;
-use crate::stores::partition::*;
-use crate::stores::*;
+use crate::stores::topic::TopicSpec;
+use crate::stores::spu::SpuSpec;
+use crate::stores::partition::PartitionSpec;
+use crate::stores::StoreContext;
+use crate::stores::event::ChangeListener;
 
 use super::reducer::TopicReducer;
 
@@ -20,7 +21,6 @@ pub struct TopicController {
     topics: StoreContext<TopicSpec>,
     partitions: StoreContext<PartitionSpec>,
     spus: StoreContext<SpuSpec>,
-    topic_epoch: Epoch,
     reducer: TopicReducer,
 }
 
@@ -29,8 +29,7 @@ impl TopicController {
     pub fn start(ctx: SharedContext) {
         let topics = ctx.topics().clone();
         let partitions = ctx.partitions().clone();
-        let topic_epoch = topics.store().init_epoch().spec_epoch();
-
+    
         let controller = Self {
             reducer: TopicReducer::new(
                 topics.store().clone(),
@@ -39,8 +38,7 @@ impl TopicController {
             ),
             topics,
             partitions,
-            topic_epoch,
-            spus: ctx.spus().clone(),
+            spus: ctx.spus().clone()
         };
 
         spawn(controller.dispatch_loop());
@@ -54,19 +52,23 @@ impl TopicController {
 
         debug!("starting dispatch loop");
 
+        let mut spec_listener = self.topics.spec_listen();
+        let mut status_listener = self.topics.status_listen();
+
         loop {
-            self.sync_topics().await;
+            self.sync_topics(&mut spec_listener,&mut status_listener).await;
 
             select! {
-                // this is hack until we fix listener
+                
+                // just in case
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = self.topics.spec_listen() => {
+                _ = spec_listener.listen() => {
                     debug!("detected topic spec changes. topic syncing");
 
                 },
-                _ = self.topics.status_listen() => {
+                _ = status_listener.listen() => {
                     debug!("detected topic status changes, topic syncing");
                 }
             }
@@ -74,16 +76,15 @@ impl TopicController {
     }
 
     /// sync topics with partition
-    async fn sync_topics(&mut self) {
+    async fn sync_topics(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
         debug!("syncing topics");
-        let read_guard = self.topics.store().read().await;
-        let changes = read_guard.changes_since(self.topic_epoch);
-        self.topic_epoch = changes.epoch;
-        debug!("setting topic epoch to: {}", self.topic_epoch);
+      
+        let changes = self.topics.store().all_changes_since(spec,status).await;
+        let epoch = changes.epoch;
+        debug!("setting topic epoch to: {}", epoch);
         let (updates, _) = changes.parts();
         debug!("updates: {}", updates.len());
-        drop(read_guard);
-
+    
         let actions = self.reducer.process_requests(updates).await;
 
         if actions.topics.is_empty() && actions.partitions.is_empty() {
