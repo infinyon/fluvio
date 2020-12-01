@@ -117,14 +117,20 @@ mod tests {
 
         // Check encoding matches
         let mut version_string_buffer: Vec<u8> = vec![];
-        version_string.encode(&mut version_string_buffer, 0).unwrap();
+        version_string
+            .encode(&mut version_string_buffer, 0)
+            .unwrap();
         let mut platform_version_buffer: Vec<u8> = vec![];
-        platform_version.encode(&mut platform_version_buffer, 0).unwrap();
+        platform_version
+            .encode(&mut platform_version_buffer, 0)
+            .unwrap();
         assert_eq!(version_string_buffer, platform_version_buffer);
 
         // Check round-trip encode/decode for PlatformVersion
         let mut decoded_platform_version = PlatformVersion::default();
-        decoded_platform_version.decode(&mut (&*platform_version_buffer), 0).unwrap();
+        decoded_platform_version
+            .decode(&mut (&*platform_version_buffer), 0)
+            .unwrap();
         assert_eq!(platform_version, decoded_platform_version);
     }
 
@@ -145,7 +151,9 @@ mod tests {
         api_version.encode(&mut api_versions_buffer, 0).unwrap();
 
         let mut decoded_api_version = ApiVersionsResponse::default();
-        decoded_api_version.decode(&mut (&*api_versions_buffer), 0).unwrap();
+        decoded_api_version
+            .decode(&mut (&*api_versions_buffer), 0)
+            .unwrap();
 
         assert_eq!(api_version, decoded_api_version);
     }
