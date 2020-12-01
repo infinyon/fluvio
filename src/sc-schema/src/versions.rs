@@ -9,7 +9,7 @@
 
 pub use dataplane::versions::{ApiVersionKey, ApiVersions};
 pub use dataplane::versions::{ApiVersionsRequest, ApiVersionsResponse};
-use crate::AdminPublicApiKey;
+use crate::apis::AdminPublicApiKey;
 
 /// Given an API key, it returns max_version. None if not found
 pub fn lookup_version(api_key: AdminPublicApiKey, versions: &[ApiVersionKey]) -> Option<i16> {

@@ -4,7 +4,6 @@
 mod common;
 mod error_code;
 
-pub mod apis;
 pub mod batch;
 pub mod record;
 pub mod fetch;

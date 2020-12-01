@@ -4,14 +4,14 @@
 //! Stores Api Keys supported by the SC.
 //!
 
-use crate::derive::{Decode, Encode};
+use dataplane::derive::{Decode, Encode};
 
 /// API call from client to SPU
 #[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum AdminPublicApiKey {
-    ApiVersion = 18,
+    ApiVersion = 18,  // VERSIONS_API_KEY
     Create = 1001,
     Delete = 1002,
     List = 1003,

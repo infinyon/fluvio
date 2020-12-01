@@ -4,9 +4,11 @@ pub mod spg;
 pub mod partition;
 pub mod versions;
 pub mod objects;
+mod apis;
 mod request;
 mod response;
 
+pub use apis::AdminPublicApiKey;
 pub use request::*;
 pub use response::*;
 pub use admin::*;
@@ -15,7 +17,6 @@ pub mod errors {
     pub use dataplane::ErrorCode;
 }
 
-pub use dataplane::apis::AdminPublicApiKey;
 pub use fluvio_controlplane_metadata::core;
 pub use fluvio_controlplane_metadata::store;
 

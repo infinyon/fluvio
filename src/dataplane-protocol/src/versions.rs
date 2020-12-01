@@ -4,8 +4,9 @@ use fluvio_protocol::bytes::{BufMut, Buf};
 
 use crate::ErrorCode;
 use crate::api::Request;
-use crate::apis::AdminPublicApiKey;
 use crate::derive::{Decode, Encode};
+
+pub const VERSIONS_API_KEY: u16 = 18;
 
 // -----------------------------------
 // ApiVersionsRequest
@@ -15,7 +16,7 @@ use crate::derive::{Decode, Encode};
 pub struct ApiVersionsRequest {}
 
 impl Request for ApiVersionsRequest {
-    const API_KEY: u16 = AdminPublicApiKey::ApiVersion as u16;
+    const API_KEY: u16 = VERSIONS_API_KEY;
     type Response = ApiVersionsResponse;
 }
 

@@ -1,5 +1,4 @@
-use dataplane::derive::Encode;
-use dataplane::derive::Decode;
+use dataplane::derive::{Decode, Encode};
 
 /// Api Key for Spu Server API
 #[fluvio(encode_discriminant)]
@@ -7,7 +6,7 @@ use dataplane::derive::Decode;
 #[repr(u16)]
 pub enum SpuServerApiKey {
     // Mixed
-    ApiVersion = 18,
+    ApiVersion = 18, // API_VERSIONS_KEY
 
     // Kafka
     Produce = 0,

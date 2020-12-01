@@ -4,11 +4,10 @@ use tracing::debug;
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::produce::DefaultProduceRequest;
 use dataplane::fetch::DefaultFetchRequest;
+use dataplane::versions::ApiVersionKey;
 use fluvio_spu_schema::server::SpuServerApiKey;
-use fluvio_spu_schema::server::versions::ApiVersionKey;
-use fluvio_spu_schema::server::versions::ApiVersionsRequest;
-use fluvio_spu_schema::server::versions::ApiVersionsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
+use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 
 pub async fn handle_kf_lookup_version_request(
     request: RequestMessage<ApiVersionsRequest>,
