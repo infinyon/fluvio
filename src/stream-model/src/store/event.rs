@@ -240,7 +240,7 @@ mod test {
 
         sleep(Duration::from_millis(5)).await;
 
-       // assert_eq!(last_change.load(SeqCst), 2); // there should be 2 sync happenings
+        // assert_eq!(last_change.load(SeqCst), 2); // there should be 2 sync happenings
 
         Ok(())
     }
