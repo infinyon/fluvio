@@ -867,6 +867,7 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "once_cell",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -923,6 +924,7 @@ dependencies = [
  "semver 0.11.0",
  "serde_json",
  "sha2",
+ "static_assertions",
  "structopt",
  "thiserror",
  "tracing",
@@ -1004,6 +1006,7 @@ dependencies = [
  "flv-util",
  "futures-util",
  "log",
+ "semver 0.11.0",
 ]
 
 [[package]]
@@ -1205,6 +1208,7 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "regex",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "structopt",
@@ -1223,6 +1227,7 @@ dependencies = [
  "fluvio-types",
  "log",
  "serde",
+ "static_assertions",
  "thiserror",
  "tracing",
 ]
@@ -1317,6 +1322,7 @@ dependencies = [
  "fluvio-protocol",
  "log",
  "serde",
+ "static_assertions",
  "tracing",
 ]
 

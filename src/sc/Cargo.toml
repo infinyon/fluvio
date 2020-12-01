@@ -36,6 +36,7 @@ async-channel = "1.4.0"
 event-listener = "2.2.0"
 tokio = { version = "0.2.21", features = ["macros"] }
 structopt = "0.3.17"
+semver = "0.11.0"
 
 # Fluvio dependencies
 fluvio-auth = { version = "0.1.2", path = "../auth" }

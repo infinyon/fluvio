@@ -242,6 +242,9 @@ jobs:
           FLV_CMD=true ./target/release/fluvio cluster start --setup --local --develop
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
+      - name: Print Fluvio version
+        run: |
+          ./target/release/fluvio version
       - name: smoke test tls
         timeout-minutes: 5
         #run: |
@@ -287,6 +290,9 @@ jobs:
       - name: Setup installation pre-requisites
         run: |
           FLV_CMD=true ./target/release/fluvio cluster start --setup --local --develop
+      - name: Print Fluvio version
+        run: |
+          ./target/release/fluvio version
       - name: Run smoke-test
         timeout-minutes: 5
         run: |

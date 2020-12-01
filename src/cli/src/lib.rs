@@ -32,7 +32,8 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
 
-const VERSION: &str = include_str!("VERSION");
+pub const VERSION: &str = include_str!("../../../VERSION");
+static_assertions::const_assert!(!VERSION.is_empty());
 
 /// Fluvio Command Line Interface
 #[derive(StructOpt, Debug)]
@@ -156,7 +157,7 @@ impl RootCmd {
                 update.process().await?;
             }
             Self::Version(version) => {
-                version.process()?;
+                version.process(root.target).await?;
             }
             Self::Completions(completion) => {
                 completion.process()?;
@@ -252,13 +253,25 @@ impl FluvioCmd {
 struct VersionOpt {}
 
 impl VersionOpt {
-    pub fn process(self) -> Result<()> {
-        println!("Fluvio version : {}", crate::VERSION);
-        println!("Git Commit     : {}", env!("GIT_HASH"));
-        if let Some(os_info) = option_env!("UNAME") {
-            println!("OS Details     : {}", os_info);
+    pub async fn process(self, target: ClusterTarget) -> Result<()> {
+        println!("Fluvio CLI      : {}", crate::VERSION.trim());
+
+        // Attempt to connect to a Fluvio cluster to get platform version
+        // Even if we fail to connect, we should not fail the other printouts
+        let mut platform_version = String::from("Not available");
+        if let Ok(fluvio_config) = target.load() {
+            if let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await {
+                let version = fluvio.platform_version();
+                platform_version = version.to_string();
+            }
         }
-        println!("Rustc Version  : {}", env!("RUSTC_VERSION"));
+        println!("Fluvio Platform : {}", platform_version);
+
+        println!("Git Commit      : {}", env!("GIT_HASH"));
+        if let Some(os_info) = option_env!("UNAME") {
+            println!("OS Details      : {}", os_info);
+        }
+        println!("Rustc Version   : {}", env!("RUSTC_VERSION"));
         Ok(())
     }
 }

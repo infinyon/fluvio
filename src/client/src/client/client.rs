@@ -8,7 +8,7 @@ use async_trait::async_trait;
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
-use fluvio_spu_schema::server::versions::{ApiVersions, ApiVersionsRequest};
+use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::{AllFlvSocket, SharedAllMultiplexerSocket};
 use fluvio_future::native_tls::AllDomainConnector;
@@ -90,12 +90,13 @@ impl VersionedSocket {
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
-        let response = (socket.send(&req_msg).await?).response;
+        let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
+        let versions = Versions::new(response);
 
         Ok(Self {
             socket,
             config,
-            versions: Versions::new(response.api_keys),
+            versions,
         })
     }
 
@@ -180,16 +181,30 @@ impl ClientConfig {
 
 /// wrap around versions
 #[derive(Clone)]
-pub struct Versions(ApiVersions);
+pub struct Versions {
+    api_versions: ApiVersions,
+    platform_version: semver::Version,
+}
 
 impl Versions {
-    pub fn new(versions: ApiVersions) -> Self {
-        Self(versions)
+    pub fn new(version_response: ApiVersionsResponse) -> Self {
+        Self {
+            api_versions: version_response.api_keys,
+            platform_version: version_response.platform_version.to_semver(),
+        }
+    }
+
+    /// Tells the platform version reported by the SC
+    ///
+    /// The platform version refers to the value in the VERSION
+    /// file at the time the SC was compiled.
+    pub fn platform_version(&self) -> &semver::Version {
+        &self.platform_version
     }
 
     /// Given an API key, it returns max_version. None if not found
     pub fn lookup_version(&self, api_key: u16) -> Option<i16> {
-        for version in &self.0 {
+        for version in &self.api_versions {
             if version.api_key == api_key as i16 {
                 return Some(version.max_version);
             }

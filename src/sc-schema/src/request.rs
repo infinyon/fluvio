@@ -15,9 +15,9 @@ use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 
 use dataplane::api::api_decode;
-use dataplane::derive::{Encode};
+use dataplane::derive::Encode;
+use dataplane::versions::ApiVersionsRequest;
 
-use super::versions::ApiVersionsRequest;
 use super::objects::*;
 use super::AdminPublicApiKey;
 

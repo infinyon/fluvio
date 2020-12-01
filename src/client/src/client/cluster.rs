@@ -161,6 +161,16 @@ impl Fluvio {
         FluvioAdmin::new(self.create_serial_client().await)
     }
 
+    /// Reports the Platform Version of the connected cluster.
+    ///
+    /// The "Platform Version" is the value of the VERSION file when
+    /// the cluster components were compiled, and is a [`semver`] value.
+    ///
+    /// [`semver`]: https://semver.org/
+    pub fn platform_version(&self) -> &semver::Version {
+        self.versions.platform_version()
+    }
+
     /// create serial connection
     async fn create_serial_client(&self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(

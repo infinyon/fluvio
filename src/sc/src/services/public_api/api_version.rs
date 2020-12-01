@@ -2,16 +2,18 @@ use std::io::Error;
 use tracing::trace;
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
-
-use fluvio_sc_schema::versions::ApiVersionKey;
-use fluvio_sc_schema::versions::{ApiVersionsRequest, ApiVersionsResponse};
-use fluvio_sc_schema::AdminPublicApiKey;
+use dataplane::versions::{ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion};
 use fluvio_sc_schema::objects::*;
+use fluvio_sc_schema::AdminPublicApiKey;
 
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
     let mut response = ApiVersionsResponse::default();
+
+    let platform_version = semver::Version::parse(crate::VERSION)
+        .expect("Platform Version (from VERSION file) must be semver");
+    response.platform_version = PlatformVersion::from(platform_version);
 
     // topic versions
     response.api_keys.push(make_version_key(

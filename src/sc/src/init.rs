@@ -5,6 +5,7 @@
 //! and receivers.
 //!
 
+use tracing::info;
 use k8_metadata_client::SharedClient;
 use k8_metadata_client::MetadataClient;
 
@@ -30,6 +31,7 @@ where
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
+    info!("SC Platform Version: {}", crate::VERSION);
 
     let (sc_config, auth_policy) = sc_config_policy;
 

@@ -19,9 +19,9 @@ use dataplane::fetch::FileFetchRequest;
 
 use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
-use super::versions::ApiVersionsRequest;
 use super::register_replica::RegisterSyncReplicaRequest;
 use super::stream_fetch::FileStreamFetchRequest;
+use crate::ApiVersionsRequest;
 
 /// Request to Spu Server
 #[derive(Debug, Encode)]
