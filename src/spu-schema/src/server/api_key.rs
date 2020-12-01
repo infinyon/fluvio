@@ -1,5 +1,11 @@
 use dataplane::derive::{Decode, Encode};
 
+// Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
+static_assertions::const_assert_eq!(
+    dataplane::versions::VERSIONS_API_KEY,
+    SpuServerApiKey::ApiVersion as u16,
+);
+
 /// Api Key for Spu Server API
 #[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]

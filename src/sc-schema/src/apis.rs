@@ -6,12 +6,18 @@
 
 use dataplane::derive::{Decode, Encode};
 
+// Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
+static_assertions::const_assert_eq!(
+    dataplane::versions::VERSIONS_API_KEY,
+    AdminPublicApiKey::ApiVersion as u16,
+);
+
 /// API call from client to SPU
 #[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum AdminPublicApiKey {
-    ApiVersion = 18,  // VERSIONS_API_KEY
+    ApiVersion = 18, // VERSIONS_API_KEY
     Create = 1001,
     Delete = 1002,
     List = 1003,

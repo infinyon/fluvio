@@ -1227,6 +1227,7 @@ dependencies = [
  "fluvio-types",
  "log",
  "serde",
+ "static_assertions",
  "thiserror",
  "tracing",
 ]
@@ -1321,6 +1322,7 @@ dependencies = [
  "fluvio-protocol",
  "log",
  "serde",
+ "static_assertions",
  "tracing",
 ]
 
