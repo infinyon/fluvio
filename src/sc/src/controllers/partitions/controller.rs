@@ -10,6 +10,7 @@ use crate::core::SharedContext;
 use crate::stores::*;
 use crate::stores::partition::*;
 use crate::stores::spu::*;
+use crate::stores::event::ChangeListener;
 
 use super::reducer::*;
 
@@ -48,12 +49,15 @@ impl PartitionController {
         use tokio::select;
 
         debug!("starting dispatch loop");
-        loop {
-            self.sync_spu_changes().await;
 
+        let mut spu_status_listener = self.spus.status_listen();
+        loop {
+            self.sync_spu_changes(&mut spu_status_listener).await;
+
+            debug!("waiting for events");
             select! {
 
-                _ = self.spus.status_listen() => {
+                _ = spu_status_listener.listen() => {
                    debug!("detected spus status changed");
                 }
             }
@@ -64,17 +68,15 @@ impl PartitionController {
 
     /// sync spu states to partition
     /// check to make sure
-    async fn sync_spu_changes(&mut self) {
+    async fn sync_spu_changes(&mut self,spu_change : &mut ChangeListener) {
 
         debug!("sync spu changes");
-        let read_guard = self.spus.store().read().await;
-        let changes = read_guard.changes_since(self.spu_epoch);
-        drop(read_guard);
-        self.spu_epoch = changes.epoch;
+        let changes = self.spus.store().status_changes_since(spu_change).await;
+        let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(
             "received spu epoch: {}, updates: {},deletes: {}",
-            self.spu_epoch,
+            epoch,
             updates.len(),
             deletes.len()
         );

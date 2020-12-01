@@ -191,6 +191,17 @@ where
         changes
     }
 
+    pub async fn status_changes_since(&self,change_listener: &mut ChangeListener) -> EpochChanges<MetadataStoreObject<S,C>>  {
+
+        let last_change = change_listener.last_change();
+        let read_guard = self.read().await;
+        let changes  = read_guard.status_changes_since(last_change);
+        drop(read_guard);
+        trace!("finding last status change: {}, from: {}",last_change,changes.epoch);
+        change_listener.set_last_change(changes.epoch);
+        changes
+    }
+
     /// find changes if either  spec and status changes and resync both them
     pub async fn all_changes_since(&self,spec_change: &mut ChangeListener,status_change: &mut ChangeListener) -> EpochChanges<MetadataStoreObject<S,C>> {
 
