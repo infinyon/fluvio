@@ -7,7 +7,7 @@ use event_listener::{Event, EventListener};
 const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
 /// Track publishing of events by using u64 counter
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct EventPublisher {
     event: Event,
     change: AtomicI64,
