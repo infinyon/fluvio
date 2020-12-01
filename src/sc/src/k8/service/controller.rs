@@ -70,10 +70,6 @@ impl SpuServiceController {
                 // just in case, we force 
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
-                    service_spec_listener.load_last();
-                    service_status_listener.load_last();
-                    spu_spec_listener.load_last();
-                    spu_status_listener.load_last();
                 },
                 _ = service_spec_listener.listen() => {
                     debug!("detected service spec changes");
@@ -97,12 +93,19 @@ impl SpuServiceController {
     async fn sync_service_to_spu(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
         debug!("syncing service to spu");
       
+        let changes =
+            self.services
+                .store()
+                .all_changes_since(spec,status).await;
 
-        let (updates, deletes) = self.services.store().all_changes_since(spec,status).await;
+        let epoch = changes.epoch;
+        let (updates, deletes) = changes.parts();
+
         debug!(
-            "received service changes updates: {},deletes: {}",
+            "received service changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
+            epoch,
         );
 
         for svc_md in updates.into_iter() {
@@ -151,11 +154,15 @@ impl SpuServiceController {
     async fn sync_spu_to_service(&mut self,spec: &mut ChangeListener,status: &mut ChangeListener) {
         debug!("synching spu to service");
       
-        let (updates, deletes) = self.spus.store().all_changes_since(spec,status).await;
+        let changes = self.spus.store().all_changes_since(spec,status).await;
+
+        let epoch = changes.epoch; // update epoch
+        let (updates, deletes) = changes.parts();
         debug!(
-            "received spu changes updates: {},deletes: {}",
+            "received spu changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
+            epoch
         );
 
         for spu_md in updates.into_iter() {

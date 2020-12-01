@@ -12,7 +12,7 @@ use async_rwlock::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
 use super::MetadataStoreObject;
-use super::{DualEpochMap, DualEpochCounter, Epoch};
+use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
 use super::actions::LSUpdate;
 use super::event::{ EventPublisher, ChangeListener };
 
@@ -178,21 +178,21 @@ where
         self.status_publisher.change_listener()
     }
 
-    /// find changes given change listener whether spec or status
-    /// this will reset change listener once diff are computed
-    pub async fn changes_since(&self,change_listener: &mut ChangeListener) -> (Vec<MetadataStoreObject<S,C>>,Vec<MetadataStoreObject<S, C>>) {
+    /// find spec changes given change listener
+    /// reset change listener to latest epoch
+    pub async fn spec_changes_since(&self,change_listener: &mut ChangeListener) -> EpochChanges<MetadataStoreObject<S,C>>  {
 
         let last_change = change_listener.last_change();
         let read_guard = self.read().await;
         let changes  = read_guard.spec_changes_since(last_change);
         drop(read_guard);
-        trace!("finding last change: {}, from: {}",last_change,changes.epoch);
+        trace!("finding last spec change: {}, from: {}",last_change,changes.epoch);
         change_listener.set_last_change(changes.epoch);
-        changes.parts()
+        changes
     }
 
     /// find changes if either  spec and status changes and resync both them
-    pub async fn all_changes_since(&self,spec_change: &mut ChangeListener,status_change: &mut ChangeListener) -> (Vec<MetadataStoreObject<S,C>>,Vec<MetadataStoreObject<S, C>>) {
+    pub async fn all_changes_since(&self,spec_change: &mut ChangeListener,status_change: &mut ChangeListener) -> EpochChanges<MetadataStoreObject<S,C>> {
 
         let last_change = std::cmp::min(spec_change.last_change(),status_change.last_change());
         let read_guard = self.read().await;
@@ -201,7 +201,7 @@ where
         trace!("finding last change: {}, from: {}",last_change,changes.epoch);
         spec_change.set_last_change(changes.epoch);
         status_change.set_last_change(changes.epoch);
-        changes.parts()
+        changes
     }
 
 }

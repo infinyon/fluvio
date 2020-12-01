@@ -134,7 +134,8 @@ mod cli {
     use std::io::Write;
     use std::process::Stdio;
 
-    use utils::bin::get_fluvio;
+    use fluvio_system_util::bin::get_fluvio;
+    
     use crate::cli::TestOption;
     use crate::util::CommandUtil;
 

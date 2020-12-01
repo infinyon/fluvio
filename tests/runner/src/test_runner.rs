@@ -1,7 +1,7 @@
 use std::time::Duration;
 use fluvio_future::timer::sleep;
 
-use utils::bin::get_fluvio;
+use fluvio_system_util::bin::get_fluvio;
 
 use crate::cli::TestOption;
 use crate::util::CommandUtil;

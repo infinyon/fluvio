@@ -26,6 +26,8 @@ pub trait WatchSpec: Spec {
     fn into_list_request(epoch: Epoch) -> WatchRequest;
 }
 
+/// Watch resources
+/// Argument epoch is not being used, it is always 0
 #[derive(Debug)]
 pub enum WatchRequest {
     Topic(Epoch),

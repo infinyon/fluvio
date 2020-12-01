@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicI64, Ordering, AtomicBool};
 use std::sync::Arc;
 
-use tracing::{debug,trace};
+use tracing::trace;
 use event_listener::{Event, EventListener};
 
 const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;

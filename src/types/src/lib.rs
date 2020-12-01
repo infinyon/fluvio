@@ -4,6 +4,9 @@ pub mod defaults;
 pub mod macros;
 pub mod partition;
 
+#[cfg(feature = "events")]
+pub mod event;
+
 pub use partition::PartitionError;
 
 //

@@ -3,29 +3,31 @@ use std::fmt::Debug;
 
 use tracing::debug;
 use tracing::error;
-use event_listener::Event;
+
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
+use fluvio_types::event::SimpleEvent;
 use fluvio_socket::InnerExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_controlplane_metadata::core::Spec;
-use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::services::auth::AuthServiceContext;
 use crate::stores::StoreContext;
+use crate::stores::event::ChangeListener;
+
 
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T, AC>(
     request: RequestMessage<WatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: InnerExclusiveFlvSink<T>,
-    end_event: Arc<Event>,
+    end_event: Arc<SimpleEvent>
 ) where
     T: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
 {
@@ -34,16 +36,14 @@ pub fn handle_watch_request<T, AC>(
 
     match req {
         WatchRequest::Topic(_) => unimplemented!(),
-        WatchRequest::Spu(epoch) => WatchController::<T, SpuSpec>::update(
-            epoch,
+        WatchRequest::Spu(_) => WatchController::<T, SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
         ),
         WatchRequest::SpuGroup(_) => unimplemented!(),
-        WatchRequest::Partition(epoch) => WatchController::<T, PartitionSpec>::update(
-            epoch,
+        WatchRequest::Partition(_) => WatchController::<T, PartitionSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
@@ -58,9 +58,8 @@ where
 {
     response_sink: InnerExclusiveFlvSink<T>,
     store: StoreContext<S>,
-    epoch: Epoch,
     header: RequestHeader,
-    end_event: Arc<Event>,
+    end_event: Arc<SimpleEvent>,
 }
 
 impl<T, S> WatchController<T, S>
@@ -74,9 +73,8 @@ where
 {
     /// start watch controller
     fn update(
-        epoch: Epoch,
         response_sink: InnerExclusiveFlvSink<T>,
-        end_event: Arc<Event>,
+        end_event: Arc<SimpleEvent>,
         store: StoreContext<S>,
         header: RequestHeader,
     ) {
@@ -85,7 +83,6 @@ where
         let controller = Self {
             response_sink,
             store,
-            epoch,
             end_event,
             header,
         };
@@ -96,19 +93,19 @@ where
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
-        // do initial sync
-        if !self.sync_and_send_changes().await {
-            debug!(
-                "watch: {}, problem with initial sync, terminating",
-                S::LABEL
-            );
-            return;
-        }
+        let mut spec_listener = self.store.spec_listen();
+        let mut status_listener = self.store.status_listen();
+
         loop {
+
+            if !self.sync_and_send_changes(&mut spec_listener, &mut status_listener).await {
+                self.end_event.notify();
+                break;
+            }
+
             debug!(
-                "watch: {}, waiting for changes with epoch: {}",
+                "watch: {}, waiting for changes with",
                 S::LABEL,
-                self.epoch
             );
             select! {
 
@@ -117,22 +114,12 @@ where
                     break;
                 },
 
-                _ = self.store.spec_listen() => {
+                _ = spec_listener.listen() => {
                     debug!("watch: {}, changes in spec has been detected",S::LABEL);
-
-                    if !self.sync_and_send_changes().await {
-                        debug!("watch: {}, problem with sync, terminating", S::LABEL);
-                        break;
-                    }
                 },
 
-                _ = self.store.status_listen() => {
+                _ = status_listener.listen() => {
                     debug!("watch: {}, changes status has been detected",S::LABEL);
-
-                    if !self.sync_and_send_changes().await {
-                        debug!("watch: {}, problem with sync, terminating", S::LABEL);
-                        break;
-                    }
                 }
 
             }
@@ -143,25 +130,22 @@ where
 
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
-    async fn sync_and_send_changes(&mut self) -> bool {
+    async fn sync_and_send_changes(&mut self,spec: &mut ChangeListener,status:&mut ChangeListener) -> bool {
         use fluvio_controlplane_metadata::message::*;
 
-        let read_guard = self.store.store().read().await;
-        let changes = read_guard.changes_since(self.epoch);
-        drop(read_guard);
-
+        let changes = self.store.store().all_changes_since(spec,status).await;
+        let epoch = changes.epoch;
         debug!(
             "watch: {} received changes with epoch: {},",
             S::LABEL,
-            changes.epoch
+            epoch
         );
-        self.epoch = changes.epoch;
-
-        let is_sync_all = changes.is_sync_all();
-        let (updates, deletes) = changes.parts();
-        let updates = if is_sync_all {
-            MetadataUpdate::with_all(self.epoch, updates.into_iter().map(|u| u.into()).collect())
+        
+        let updates = if changes.is_sync_all() {
+            let (updates, deletes) = changes.parts();
+            MetadataUpdate::with_all(epoch, updates.into_iter().map(|u| u.into()).collect())
         } else {
+            let (updates, deletes) = changes.parts();
             let mut changes: Vec<Message<Metadata<S>>> = updates
                 .into_iter()
                 .map(|v| Message::update(v.into()))
@@ -171,12 +155,13 @@ where
                 .map(|d| Message::delete(d.into()))
                 .collect();
             changes.append(&mut deletes);
-            MetadataUpdate::with_changes(self.epoch, changes)
+            MetadataUpdate::with_changes(epoch, changes)
         };
 
         let resp_msg: ResponseMessage<WatchResponse> =
             ResponseMessage::from_header(&self.header, updates.into());
 
+        // try to send response, if it fails then we need to end
         if let Err(err) = self
             .response_sink
             .send_response(&resp_msg, self.header.api_version())
@@ -189,7 +174,6 @@ where
                 err
             );
             // listen to other sender, that error has been occur, terminate their loop
-            self.end_event.notify(usize::MAX);
             return false;
         }
 
