@@ -427,5 +427,15 @@ fn process_external_subcommand(mut args: Vec<String>) -> Result<()> {
         std::process::exit(code);
     }
 
+    #[cfg(unix)]
+    {
+        // https://doc.rust-lang.org/std/os/unix/process/trait.ExitStatusExt.html
+        use std::os::unix::process::ExitStatusExt;
+        if let Some(signal) = status.signal() {
+            println!("Extension killed via {} signal", signal);
+            std::process::exit(signal);
+        }
+    }
+
     Ok(())
 }
