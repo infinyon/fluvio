@@ -84,10 +84,6 @@ pub enum CheckError {
     #[error("The fluvio-app chart is already installed")]
     AlreadyInstalled,
 
-    /// Need to update minikube context
-    #[error("The minikube context is not active or does not match your minikube ip")]
-    InvalidMinikubeContext,
-
     /// There is no current kubernetest context
     #[error("There is no active Kubernetes context")]
     NoActiveKubernetesContext,
@@ -99,10 +95,6 @@ pub enum CheckError {
     /// The current kubernetes cluster must have a server hostname
     #[error("Missing Kubernetes server host")]
     MissingKubernetesServerHost,
-
-    /// The server address for the current cluster must be a hostname, not an IP
-    #[error("Kubernetes server must be a hostname, not an IP address")]
-    KubernetesServerIsIp,
 
     /// There is no load balancer service is not available
     #[error("Load balancer service is not available")]
