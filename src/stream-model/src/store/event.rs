@@ -44,8 +44,8 @@ impl EventPublisher {
         self.change.store(value, DEFAULT_EVENT_ORDERING);
     }
 
-    pub fn change_listener(self: &Arc<Self>) -> ChangeListener {
-        let last_change = self.current_change();
+    /// create new change lister starting
+    pub fn change_listener(self: &Arc<Self>,last_change: i64) -> ChangeListener {
         ChangeListener {
             publisher: self.clone(),
             last_change,

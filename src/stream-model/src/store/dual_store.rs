@@ -171,7 +171,7 @@ where
 
     /// create new change listener
     pub fn change_listener(&self) -> ChangeListener {
-        self.event_publisher.change_listener()
+        self.event_publisher.change_listener(0)
     }
 
     pub async fn changes_since(
