@@ -4,6 +4,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::cmp::Eq;
 use std::cmp::PartialEq;
+use std::fmt;
 
 pub type Epoch = i64;
 
@@ -49,7 +50,7 @@ impl<T> DerefMut for EpochCounter<T> {
     }
 }
 
-use std::fmt;
+
 
 impl<T> fmt::Display for EpochCounter<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -272,6 +273,19 @@ mod old_map {
         pub epoch: Epoch,
         changes: EpochDeltaChanges<V>,
     }
+
+    impl <V> fmt::Debug for EpochChanges<V> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match &self.changes {
+                EpochDeltaChanges::SyncAll(all) => write!(f, "epoch {}, sync_all: {}", self.epoch,all.len()),
+                
+                EpochDeltaChanges::Changes(changes) => write!(f, "epoch {}, delta updates: {}, deletes: {}", self.epoch,changes.0.len(),changes.1.len())
+                
+            }
+            
+        }
+    }
+    
 
     impl<V> EpochChanges<V> {
         pub fn new(epoch: Epoch, changes: EpochDeltaChanges<V>) -> Self {

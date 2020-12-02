@@ -4,6 +4,7 @@
 //! Reconcile Topics
 
 use tracing::debug;
+use tracing::instrument;
 
 use fluvio_future::task::spawn;
 
@@ -11,7 +12,7 @@ use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
 use crate::stores::spu::SpuSpec;
 use crate::stores::partition::PartitionSpec;
-use crate::stores::StoreContext;
+use crate::stores::{ StoreContext, StoreChanges};
 use crate::stores::event::ChangeListener;
 
 use super::reducer::TopicReducer;
@@ -66,11 +67,11 @@ impl TopicController {
                     debug!("timer expired");
                 },
                 _ = spec_listener.listen() => {
-                    debug!("detected topic spec changes. topic syncing");
+                    debug!("detected topic spec changes");
 
                 },
                 _ = status_listener.listen() => {
-                    debug!("detected topic status changes, topic syncing");
+                    debug!("detected topic status changes");
                 }
             }
         }
@@ -78,13 +79,20 @@ impl TopicController {
 
     /// sync topics with partition
     async fn sync_topics(&mut self, spec: &mut ChangeListener, status: &mut ChangeListener) {
-        debug!("syncing topics");
+        if spec.has_change() {
+            self.sync_changes(self.topics.store().spec_changes_since(spec).await).await;
+        }
 
-        let changes = self.topics.store().all_changes_since(spec, status).await;
-        let epoch = changes.epoch;
-        debug!("setting topic epoch to: {}", epoch);
+        if status.has_change() {
+            self.sync_changes(self.topics.store().status_changes_since(status).await).await;
+        }
+    }
+     
+    #[instrument(skip(self))]
+    async fn sync_changes(&mut self,changes: StoreChanges<TopicSpec>) {
+       
         let (updates, _) = changes.parts();
-        debug!("updates: {}", updates.len());
+        
 
         let actions = self.reducer.process_requests(updates).await;
 

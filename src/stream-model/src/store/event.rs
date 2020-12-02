@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicI64, Ordering, AtomicBool};
 use std::sync::Arc;
+use std::fmt;
 
 use tracing::trace;
 use event_listener::{Event, EventListener};
@@ -57,11 +58,17 @@ impl EventPublisher {
 }
 
 /// listen for changes in the event by comparing against last change
-#[derive(Debug)]
 pub struct ChangeListener {
     publisher: Arc<EventPublisher>,
     last_change: i64,
 }
+
+impl fmt::Debug for ChangeListener {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "last {}, current: {}", self.last_change,self.publisher.current_change())
+    }
+}
+
 
 impl ChangeListener {
     /// check if there should be any changes
@@ -79,8 +86,8 @@ impl ChangeListener {
     }
 
     #[inline(always)]
-    pub fn set_last_change(&mut self, last_change: i64) {
-        self.last_change = last_change;
+    pub fn set_last_change(&mut self, updated_change: i64) {
+        self.last_change = updated_change;
     }
 
     #[inline]

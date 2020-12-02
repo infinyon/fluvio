@@ -16,6 +16,8 @@ use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
 use super::actions::LSUpdate;
 use super::event::{EventPublisher, ChangeListener};
 
+pub type MetadataChanges<S,C> = EpochChanges<MetadataStoreObject<S, C>>;
+
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
 /// For read, read guards are provided which provide hash map API using deref.  
@@ -183,7 +185,7 @@ where
     pub async fn spec_changes_since(
         &self,
         change_listener: &mut ChangeListener,
-    ) -> EpochChanges<MetadataStoreObject<S, C>> {
+    ) -> MetadataChanges<S, C> {
         let last_change = change_listener.last_change();
         let read_guard = self.read().await;
         let changes = read_guard.spec_changes_since(last_change);
@@ -200,7 +202,7 @@ where
     pub async fn status_changes_since(
         &self,
         change_listener: &mut ChangeListener,
-    ) -> EpochChanges<MetadataStoreObject<S, C>> {
+    ) -> MetadataChanges<S, C>  {
         let last_change = change_listener.last_change();
         let read_guard = self.read().await;
         let changes = read_guard.status_changes_since(last_change);
@@ -214,25 +216,6 @@ where
         changes
     }
 
-    /// find changes if either  spec and status changes and resync both them
-    pub async fn all_changes_since(
-        &self,
-        spec_change: &mut ChangeListener,
-        status_change: &mut ChangeListener,
-    ) -> EpochChanges<MetadataStoreObject<S, C>> {
-        let last_change = std::cmp::min(spec_change.last_change(), status_change.last_change());
-        let read_guard = self.read().await;
-        let changes = read_guard.changes_since(last_change);
-        drop(read_guard);
-        trace!(
-            "finding last change: {}, from: {}",
-            last_change,
-            changes.epoch
-        );
-        spec_change.set_last_change(changes.epoch);
-        status_change.set_last_change(changes.epoch);
-        changes
-    }
 }
 
 impl<S, C> Display for LocalStore<S, C>

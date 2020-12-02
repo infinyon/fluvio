@@ -300,6 +300,7 @@ jobs:
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
+        timeout-minutes: 5
         if: failure()
         with:
           name: fluvio-sc-logs
@@ -348,6 +349,7 @@ jobs:
         if: failure()
         run: kubectl logs flv-sc > /tmp/flv_sc.log
       - name: Upload logs
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:

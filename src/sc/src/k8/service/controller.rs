@@ -8,7 +8,7 @@ use tracing::instrument;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::StoreContext;
+use crate::stores::{ StoreContext, StoreChanges};
 use crate::stores::event::ChangeListener;
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
@@ -86,16 +86,27 @@ impl SpuServiceController {
     }
 
     /// svc has been changed, update spu
-    #[instrument()]
     async fn sync_service_to_spu(
         &mut self,
         spec: &mut ChangeListener,
         status: &mut ChangeListener,
     ) {
-        debug!("syncing service to spu");
 
-        let changes = self.services.store().all_changes_since(spec, status).await;
+        if spec.has_change() {
+            self.sync_service_to_spu_changes(self.services.store().spec_changes_since(spec).await).await;
+        }
 
+        if status.has_change() {
+            self.sync_service_to_spu_changes(self.services.store().status_changes_since(status).await).await;
+        }
+        
+    }
+
+    #[instrument(skip(self))]
+    async fn sync_service_to_spu_changes(
+        &mut self,
+        changes: StoreChanges<SpuServicespec>
+    ) {
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
 
@@ -154,11 +165,23 @@ impl SpuServiceController {
         spec: &mut ChangeListener,
         status: &mut ChangeListener,
     ) {
+        if spec.has_change() {
+            self.sync_spu_to_service_changes(self.spus.store().spec_changes_since(spec).await).await;
+        }
+
+        if status.has_change() {
+            self.sync_spu_to_service_changes(self.spus.store().status_changes_since(status).await).await;
+        }
+    }
+
+
+    async fn sync_spu_to_service_changes(
+        &mut self,
+        changes: StoreChanges<SpuSpec>
+    ) {
         debug!("synching spu to service");
 
-        let changes = self.spus.store().all_changes_since(spec, status).await;
-
-        let epoch = changes.epoch; // update epoch
+        let epoch = changes.epoch; 
         let (updates, deletes) = changes.parts();
         debug!(
             "received spu changes updates: {},deletes: {},epoch: {}",

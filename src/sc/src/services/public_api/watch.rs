@@ -18,7 +18,7 @@ use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::services::auth::AuthServiceContext;
-use crate::stores::StoreContext;
+use crate::stores::{ StoreContext, StoreChanges};
 use crate::stores::event::ChangeListener;
 
 /// handle watch request by spawning watch controller for each store
@@ -133,9 +133,27 @@ where
         spec: &mut ChangeListener,
         status: &mut ChangeListener,
     ) -> bool {
+
+        if spec.has_change() {
+            if !self.sync_and_send(self.store.store().spec_changes_since(spec).await).await {
+                return false;
+            }
+        }
+
+        if status.has_change() {
+            if !self.sync_and_send(self.store.store().status_changes_since(status).await).await {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    async fn sync_and_send(&mut self,changes: StoreChanges<S>) -> bool {
+
         use fluvio_controlplane_metadata::message::*;
 
-        let changes = self.store.store().all_changes_since(spec, status).await;
         let epoch = changes.epoch;
         debug!(
             "watch: {} received changes with epoch: {},",
