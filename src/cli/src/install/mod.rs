@@ -13,15 +13,20 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
     if let Ok(dir) = std::env::var("FLUVIO_DIR") {
         // Assume this is like `~/.fluvio
         let path = PathBuf::from(dir).join("extensions");
-        if path.exists() {
-            return Ok(path);
+        if !path.exists() {
+            std::fs::create_dir(&path)?;
         }
+        return Ok(path);
     }
 
     let home =
         home::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
-    let path = home.join(".fluvio/extensions/");
+    let path = home.join(".fluvio");
     if path.exists() {
+        let path = path.join("extensions/");
+        if !path.exists() {
+            std::fs::create_dir(&path)?;
+        }
         return Ok(path);
     }
     Err(IoError::new(ErrorKind::NotFound, "Fluvio extensions directory not found").into())
