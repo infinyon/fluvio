@@ -50,7 +50,7 @@ impl PartitionController {
 
         debug!("starting dispatch loop");
 
-        let mut spu_status_listener = self.spus.status_listen();
+        let mut spu_status_listener = self.spus.change_listener();
         loop {
             self.sync_spu_changes(&mut spu_status_listener).await;
 
@@ -69,8 +69,18 @@ impl PartitionController {
     /// sync spu states to partition
     /// check to make sure
     async fn sync_spu_changes(&mut self, spu_change: &mut ChangeListener) {
+        if !spu_change.has_change() {
+            debug!("no change");
+            return;
+        }
+
         debug!("sync spu changes");
         let changes = self.spus.store().status_changes_since(spu_change).await;
+        if changes.is_empty() {
+            debug!("no spu changes");
+            return;
+        }
+        
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(

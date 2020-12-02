@@ -30,8 +30,7 @@ where
     C: MetadataItem,
 {
     store: RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>,
-    spec_publisher: Arc<EventPublisher>,
-    status_publisher: Arc<EventPublisher>,
+    event_publisher: Arc<EventPublisher>
 }
 
 impl<S, C> Default for LocalStore<S, C>
@@ -42,8 +41,7 @@ where
     fn default() -> Self {
         Self {
             store: RwLock::new(DualEpochMap::new()),
-            spec_publisher: EventPublisher::shared(),
-            status_publisher: EventPublisher::shared(),
+            event_publisher: EventPublisher::shared()
         }
     }
 }
@@ -65,8 +63,7 @@ where
         }
         Self {
             store: RwLock::new(DualEpochMap::new_with_map(map)),
-            spec_publisher: EventPublisher::shared(),
-            status_publisher: EventPublisher::shared(),
+            event_publisher: EventPublisher::shared()
         }
     }
 
@@ -172,13 +169,32 @@ where
         self.read().await.clone_values()
     }
 
-    pub fn spec_change_listener(&self) -> ChangeListener {
-        self.spec_publisher.change_listener()
+    /// create new change listener
+    pub fn change_listener(&self) -> ChangeListener {
+        self.event_publisher.change_listener()
     }
 
-    pub fn status_change_listener(&self) -> ChangeListener {
-        self.status_publisher.change_listener()
+    pub async fn changes_since(
+        &self,
+        change_listener: &mut ChangeListener,
+    ) -> MetadataChanges<S, C> {
+        let last_change = change_listener.last_change();
+        let read_guard = self.read().await;
+        let changes = read_guard.changes_since(last_change);
+        drop(read_guard);
+        trace!(
+            "finding changes: {}, from: {}",
+            last_change,
+            changes.epoch
+        );
+        let current_epoch = self.event_publisher.current_change();
+        if changes.epoch > current_epoch {
+            error!("latest epoch: {} > status epoch: {}",changes.epoch,current_epoch);
+        }
+        change_listener.set_last_change(current_epoch);
+        changes
     }
+
 
     /// find spec changes given change listener
     /// reset change listener to latest epoch
@@ -195,7 +211,11 @@ where
             last_change,
             changes.epoch
         );
-        change_listener.set_last_change(changes.epoch);
+        let current_epoch = self.event_publisher.current_change();
+        if changes.epoch > current_epoch {
+            error!("latest epoch: {} > status epoch: {}",changes.epoch,current_epoch);
+        }
+        change_listener.set_last_change(current_epoch);
         changes
     }
 
@@ -212,7 +232,12 @@ where
             last_change,
             changes.epoch
         );
-        change_listener.set_last_change(changes.epoch);
+       
+        let current_epoch = self.event_publisher.current_change();
+        if changes.epoch > current_epoch {
+            error!("latest epoch: {} > spec epoch: {}",changes.epoch,current_epoch);
+        }
+        change_listener.set_last_change(current_epoch);
         changes
     }
 
@@ -318,15 +343,9 @@ where
 
         drop(write_guard);
 
-        if status.has_spec_changes() {
-            self.spec_publisher.store_change(epoch);
-            self.spec_publisher.notify();
-        }
-
-        if status.has_status_changes() {
-            self.status_publisher.store_change(epoch);
-            self.status_publisher.notify();
-        }
+        self.event_publisher.store_change(epoch);
+        self.event_publisher.notify();
+        
 
         debug!(
             "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
@@ -407,17 +426,11 @@ where
 
         drop(write_guard);
 
-        if status.has_spec_changes() {
-            trace!("notify spec changed: {}", epoch);
-            self.spec_publisher.store_change(epoch);
-            self.spec_publisher.notify();
-        }
-
-        if status.has_status_changes() {
-            trace!("notify status changed: {}", epoch);
-            self.status_publisher.store_change(epoch);
-            self.status_publisher.notify();
-        }
+       
+        debug!("notify epoch changed: {}", epoch);
+        self.event_publisher.store_change(epoch);
+        self.event_publisher.notify();
+        
 
         debug!(
             "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
@@ -565,7 +578,7 @@ mod test_notify {
 
             debug!("entering loop");
 
-            let mut spec_listner = self.store.spec_change_listener();
+            let mut spec_listner = self.store.change_listener();
 
             loop {
                 self.sync(&mut spec_listner).await;

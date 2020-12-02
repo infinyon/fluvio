@@ -57,15 +57,11 @@ mod context {
             Ok(())
         }
 
-        /// listen to spec
-        pub fn spec_listen(&self) -> ChangeListener {
-            self.store.spec_change_listener()
+        /// create new listener
+        pub fn change_listener(&self) -> ChangeListener {
+            self.store.change_listener()
         }
 
-        /// list to status
-        pub fn status_listen(&self) -> ChangeListener {
-            self.store.status_change_listener()
-        }
 
         pub fn store(&self) -> &Arc<LocalStore<S, K8MetaItem>> {
             &self.store
@@ -119,7 +115,7 @@ mod context {
 
             debug!("{}: sending WS action to store: {}", S::LABEL, key);
             let action = WSAction::UpdateSpec((key.clone(), spec));
-            let mut spec_listener = self.spec_listen();
+            let mut spec_listener = self.change_listener();
 
             match self.sender.send(action).await {
                 Ok(_) => {
@@ -183,7 +179,7 @@ mod context {
 
                     let instant = Instant::now();
                     let max_wait = Duration::from_secs(MAX_WAIT_TIME);
-                    let mut spec_listener = self.spec_listen();
+                    let mut spec_listener = self.change_listener();
                     loop {
                         debug!("{} store, waiting for store event", S::LABEL);
 

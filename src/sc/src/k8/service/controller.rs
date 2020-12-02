@@ -8,7 +8,7 @@ use tracing::instrument;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::{ StoreContext, StoreChanges};
+use crate::stores::StoreContext;
 use crate::stores::event::ChangeListener;
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
@@ -51,16 +51,12 @@ impl SpuServiceController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        let mut service_spec_listener = self.services.spec_listen();
-        let mut service_status_listener = self.services.status_listen();
-        let mut spu_spec_listener = self.spus.spec_listen();
-        let mut spu_status_listener = self.spus.status_listen();
-
+        let mut service_listener = self.services.change_listener();
+        let mut spu_listener = self.spus.change_listener();
+     
         loop {
-            self.sync_service_to_spu(&mut service_spec_listener, &mut service_status_listener)
-                .await;
-            self.sync_spu_to_service(&mut spu_spec_listener, &mut spu_status_listener)
-                .await;
+            self.sync_service_to_spu(&mut service_listener).await;
+            self.sync_spu_to_service(&mut spu_listener).await;
 
             debug!("waiting events");
 
@@ -69,44 +65,29 @@ impl SpuServiceController {
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = service_spec_listener.listen() => {
-                    debug!("detected service spec changes");
+                _ = service_listener.listen() => {
+                    debug!("detected service changes");
                 },
-                _ = service_status_listener.listen() => {
-                    debug!("detected service status changes");
-                },
-                _ = spu_spec_listener.listen() => {
-                    debug!("detected spu spec changes");
-                },
-                _ = spu_status_listener.listen() => {
-                    debug!("detected spu status changes");
+                _ = spu_listener.listen() => {
+                    debug!("detected spu changes");
                 }
             }
         }
     }
 
+    #[instrument(skip(self))]
     /// svc has been changed, update spu
     async fn sync_service_to_spu(
         &mut self,
-        spec: &mut ChangeListener,
-        status: &mut ChangeListener,
+        listener: &mut ChangeListener
     ) {
 
-        if spec.has_change() {
-            self.sync_service_to_spu_changes(self.services.store().spec_changes_since(spec).await).await;
+        if !listener.has_change() {
+            debug!("no service change, skipping");
+            return;
         }
 
-        if status.has_change() {
-            self.sync_service_to_spu_changes(self.services.store().status_changes_since(status).await).await;
-        }
-        
-    }
-
-    #[instrument(skip(self))]
-    async fn sync_service_to_spu_changes(
-        &mut self,
-        changes: StoreChanges<SpuServicespec>
-    ) {
+        let changes = self.services.store().changes_since(listener).await;
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
 
@@ -162,24 +143,14 @@ impl SpuServiceController {
     /// spu has been changed, sync with existing services
     async fn sync_spu_to_service(
         &mut self,
-        spec: &mut ChangeListener,
-        status: &mut ChangeListener,
+        listener: &mut ChangeListener,
     ) {
-        if spec.has_change() {
-            self.sync_spu_to_service_changes(self.spus.store().spec_changes_since(spec).await).await;
+        if !listener.has_change() {
+            debug!("no spu changes, skipping");
+            return;
         }
-
-        if status.has_change() {
-            self.sync_spu_to_service_changes(self.spus.store().status_changes_since(status).await).await;
-        }
-    }
-
-
-    async fn sync_spu_to_service_changes(
-        &mut self,
-        changes: StoreChanges<SpuSpec>
-    ) {
-        debug!("synching spu to service");
+        
+        let changes = self.spus.store().changes_since(listener).await;
 
         let epoch = changes.epoch; 
         let (updates, deletes) = changes.parts();

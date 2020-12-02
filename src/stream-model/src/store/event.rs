@@ -65,7 +65,7 @@ pub struct ChangeListener {
 
 impl fmt::Debug for ChangeListener {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "last {}, current: {}", self.last_change,self.publisher.current_change())
+        write!(f, "last:{},current:{}", self.last_change,self.publisher.current_change())
     }
 }
 

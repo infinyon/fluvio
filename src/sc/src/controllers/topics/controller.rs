@@ -12,7 +12,7 @@ use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
 use crate::stores::spu::SpuSpec;
 use crate::stores::partition::PartitionSpec;
-use crate::stores::{ StoreContext, StoreChanges};
+use crate::stores::StoreContext;
 use crate::stores::event::ChangeListener;
 
 use super::reducer::TopicReducer;
@@ -53,12 +53,10 @@ impl TopicController {
 
         debug!("starting dispatch loop");
 
-        let mut spec_listener = self.topics.spec_listen();
-        let mut status_listener = self.topics.status_listen();
-
+        let mut listener = self.topics.change_listener();
+        
         loop {
-            self.sync_topics(&mut spec_listener, &mut status_listener)
-                .await;
+            self.sync_topics(&mut listener).await;
 
             select! {
 
@@ -66,33 +64,31 @@ impl TopicController {
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = spec_listener.listen() => {
-                    debug!("detected topic spec changes");
+                _ = listener.listen() => {
+                    debug!("detected topic changes");
 
-                },
-                _ = status_listener.listen() => {
-                    debug!("detected topic status changes");
                 }
             }
         }
     }
 
     /// sync topics with partition
-    async fn sync_topics(&mut self, spec: &mut ChangeListener, status: &mut ChangeListener) {
-        if spec.has_change() {
-            self.sync_changes(self.topics.store().spec_changes_since(spec).await).await;
+    #[instrument(skip(self))]
+    async fn sync_topics(&mut self, listener: &mut ChangeListener) {
+      
+        if !listener.has_change() {
+            debug!("no change");
+            return;
         }
 
-        if status.has_change() {
-            self.sync_changes(self.topics.store().status_changes_since(status).await).await;
+        let changes =   self.topics.store().changes_since(listener).await;
+            
+        if changes.is_empty() {
+            debug!("no topic changes");
+            return;
         }
-    }
-     
-    #[instrument(skip(self))]
-    async fn sync_changes(&mut self,changes: StoreChanges<TopicSpec>) {
-       
+
         let (updates, _) = changes.parts();
-        
 
         let actions = self.reducer.process_requests(updates).await;
 

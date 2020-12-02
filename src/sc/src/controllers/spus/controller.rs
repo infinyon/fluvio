@@ -63,9 +63,8 @@ impl SpuController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        let mut spec_listener = self.spus.spec_listen();
-        let mut status_listener = self.spus.status_listen();
-
+        let mut listener = self.spus.change_listener();
+     
         const HEALTH_DURATION: u64 = 90;
 
         let mut time_left = Duration::from_secs(HEALTH_DURATION);
@@ -79,14 +78,9 @@ impl SpuController {
             );
 
             select! {
-                _ = spec_listener.listen() => {
-                    debug!("detected events in spu speec");
-                    spec_listener.load_last();
-                    time_left -= health_time.elapsed();
-                },
-                _ = status_listener.listen() => {
-                    debug!("detected events in spu status");
-                    status_listener.load_last();
+                _ = listener.listen() => {
+                    debug!("detected events in spu");
+                    listener.load_last();
                     time_left -= health_time.elapsed();
                 },
                 health_msg = self.health_receiver.recv() => {

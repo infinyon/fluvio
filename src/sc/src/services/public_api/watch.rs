@@ -18,7 +18,7 @@ use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::services::auth::AuthServiceContext;
-use crate::stores::{ StoreContext, StoreChanges};
+use crate::stores::StoreContext;
 use crate::stores::event::ChangeListener;
 
 /// handle watch request by spawning watch controller for each store
@@ -92,12 +92,12 @@ where
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
-        let mut spec_listener = self.store.spec_listen();
-        let mut status_listener = self.store.status_listen();
+        let mut change_listener = self.store.change_listener();
+       
 
         loop {
             if !self
-                .sync_and_send_changes(&mut spec_listener, &mut status_listener)
+                .sync_and_send_changes(&mut change_listener)
                 .await
             {
                 self.end_event.notify();
@@ -112,14 +112,9 @@ where
                     break;
                 },
 
-                _ = spec_listener.listen() => {
-                    debug!("watch: {}, changes in spec has been detected",S::LABEL);
-                },
-
-                _ = status_listener.listen() => {
-                    debug!("watch: {}, changes status has been detected",S::LABEL);
+                _ = change_listener.listen() => {
+                    debug!("watch: {}, changes has been detected",S::LABEL);
                 }
-
             }
         }
 
@@ -130,29 +125,16 @@ where
     /// if can't send, then signal end and return false
     async fn sync_and_send_changes(
         &mut self,
-        spec: &mut ChangeListener,
-        status: &mut ChangeListener,
-    ) -> bool {
-
-        if spec.has_change() {
-            if !self.sync_and_send(self.store.store().spec_changes_since(spec).await).await {
-                return false;
-            }
-        }
-
-        if status.has_change() {
-            if !self.sync_and_send(self.store.store().status_changes_since(status).await).await {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    async fn sync_and_send(&mut self,changes: StoreChanges<S>) -> bool {
-
+        listener: &mut ChangeListener) -> bool {
+       
         use fluvio_controlplane_metadata::message::*;
+
+
+        if !listener.has_change() {
+            debug!("no changes, skipping");
+        }
+        
+        let changes = self.store.store().changes_since(listener).await;
 
         let epoch = changes.epoch;
         debug!(
