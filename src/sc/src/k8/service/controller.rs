@@ -53,7 +53,7 @@ impl SpuServiceController {
 
         let mut service_listener = self.services.change_listener();
         let mut spu_listener = self.spus.change_listener();
-     
+
         loop {
             self.sync_service_to_spu(&mut service_listener).await;
             self.sync_spu_to_service(&mut spu_listener).await;
@@ -77,11 +77,7 @@ impl SpuServiceController {
 
     #[instrument(skip(self))]
     /// svc has been changed, update spu
-    async fn sync_service_to_spu(
-        &mut self,
-        listener: &mut ChangeListener
-    ) {
-
+    async fn sync_service_to_spu(&mut self, listener: &mut ChangeListener) {
         if !listener.has_change() {
             debug!("no service change, skipping");
             return;
@@ -141,18 +137,15 @@ impl SpuServiceController {
 
     #[instrument()]
     /// spu has been changed, sync with existing services
-    async fn sync_spu_to_service(
-        &mut self,
-        listener: &mut ChangeListener,
-    ) {
+    async fn sync_spu_to_service(&mut self, listener: &mut ChangeListener) {
         if !listener.has_change() {
             debug!("no spu changes, skipping");
             return;
         }
-        
+
         let changes = self.spus.store().changes_since(listener).await;
 
-        let epoch = changes.epoch; 
+        let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(
             "received spu changes updates: {},deletes: {},epoch: {}",

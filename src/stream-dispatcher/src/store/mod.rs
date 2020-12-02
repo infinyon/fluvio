@@ -19,10 +19,10 @@ mod context {
     use crate::core::Spec;
 
     use super::MetadataStoreObject;
-    use super::{ LocalStore, MetadataChanges};
+    use super::{LocalStore, MetadataChanges};
     use super::event::ChangeListener;
 
-    pub type StoreChanges<S> = MetadataChanges<S,K8MetaItem>;
+    pub type StoreChanges<S> = MetadataChanges<S, K8MetaItem>;
 
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
@@ -61,7 +61,6 @@ mod context {
         pub fn change_listener(&self) -> ChangeListener {
             self.store.change_listener()
         }
-
 
         pub fn store(&self) -> &Arc<LocalStore<S, K8MetaItem>> {
             &self.store

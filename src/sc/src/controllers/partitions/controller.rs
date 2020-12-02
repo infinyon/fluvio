@@ -80,7 +80,7 @@ impl PartitionController {
             debug!("no spu changes");
             return;
         }
-        
+
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(

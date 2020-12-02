@@ -45,7 +45,7 @@ impl EventPublisher {
     }
 
     /// create new change lister starting
-    pub fn change_listener(self: &Arc<Self>,last_change: i64) -> ChangeListener {
+    pub fn change_listener(self: &Arc<Self>, last_change: i64) -> ChangeListener {
         ChangeListener {
             publisher: self.clone(),
             last_change,
@@ -65,10 +65,14 @@ pub struct ChangeListener {
 
 impl fmt::Debug for ChangeListener {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "last:{},current:{}", self.last_change,self.publisher.current_change())
+        write!(
+            f,
+            "last:{},current:{}",
+            self.last_change,
+            self.publisher.current_change()
+        )
     }
 }
-
 
 impl ChangeListener {
     /// check if there should be any changes
@@ -227,7 +231,7 @@ mod test {
     #[test_async]
     async fn test_listener() -> Result<(), ()> {
         let publisher = Arc::new(EventPublisher::new());
-        let listener = publisher.change_listener();
+        let listener = publisher.change_listener(0);
         let shutdown = SimpleEvent::shared();
         let last_change = Arc::new(AtomicI64::new(0));
         TestController::start(listener, shutdown.clone(), last_change.clone());

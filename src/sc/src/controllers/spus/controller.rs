@@ -64,7 +64,7 @@ impl SpuController {
         use fluvio_future::timer::sleep;
 
         let mut listener = self.spus.change_listener();
-     
+
         const HEALTH_DURATION: u64 = 90;
 
         let mut time_left = Duration::from_secs(HEALTH_DURATION);

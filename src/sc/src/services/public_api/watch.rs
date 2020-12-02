@@ -93,13 +93,9 @@ where
         use tokio::select;
 
         let mut change_listener = self.store.change_listener();
-       
 
         loop {
-            if !self
-                .sync_and_send_changes(&mut change_listener)
-                .await
-            {
+            if !self.sync_and_send_changes(&mut change_listener).await {
                 self.end_event.notify();
                 break;
             }
@@ -123,17 +119,13 @@ where
 
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
-    async fn sync_and_send_changes(
-        &mut self,
-        listener: &mut ChangeListener) -> bool {
-       
+    async fn sync_and_send_changes(&mut self, listener: &mut ChangeListener) -> bool {
         use fluvio_controlplane_metadata::message::*;
-
 
         if !listener.has_change() {
             debug!("no changes, skipping");
         }
-        
+
         let changes = self.store.store().changes_since(listener).await;
 
         let epoch = changes.epoch;

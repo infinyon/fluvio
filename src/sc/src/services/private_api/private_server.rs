@@ -139,7 +139,6 @@ async fn dispatch_loop(
             time_left.as_secs()
         );
 
-
         send_spu_spec_changes(&mut spu_spec_listener, &context, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &context, &mut sink, spu_id)
             .await?;
@@ -243,13 +242,13 @@ async fn send_spu_spec_changes(
 
     if !change.has_change() {
         debug!("changes is empty, skipping");
-        return Ok(())
+        return Ok(());
     }
 
     let changes = ctx.spus().store().spec_changes_since(change).await;
     if changes.is_empty() {
         debug!("spec changes is empty, skipping");
-        return Ok(())
+        return Ok(());
     }
 
     let epoch = changes.epoch;
@@ -294,17 +293,16 @@ async fn send_replica_spec_changes(
 
     if !change.has_change() {
         debug!("changes is empty, skipping");
-        return Ok(())
+        return Ok(());
     }
 
     let changes = ctx.partitions().store().spec_changes_since(change).await;
     if changes.is_empty() {
         debug!("spec changes is empty, skipping");
-        return Ok(())
+        return Ok(());
     }
-    
+
     let epoch = changes.epoch;
-   
 
     let is_sync_all = changes.is_sync_all();
     let (updates, deletes) = changes.parts();

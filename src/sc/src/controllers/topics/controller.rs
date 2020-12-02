@@ -54,7 +54,7 @@ impl TopicController {
         debug!("starting dispatch loop");
 
         let mut listener = self.topics.change_listener();
-        
+
         loop {
             self.sync_topics(&mut listener).await;
 
@@ -75,14 +75,13 @@ impl TopicController {
     /// sync topics with partition
     #[instrument(skip(self))]
     async fn sync_topics(&mut self, listener: &mut ChangeListener) {
-      
         if !listener.has_change() {
             debug!("no change");
             return;
         }
 
-        let changes =   self.topics.store().changes_since(listener).await;
-            
+        let changes = self.topics.store().changes_since(listener).await;
+
         if changes.is_empty() {
             debug!("no topic changes");
             return;

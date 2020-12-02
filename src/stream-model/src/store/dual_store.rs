@@ -16,7 +16,7 @@ use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
 use super::actions::LSUpdate;
 use super::event::{EventPublisher, ChangeListener};
 
-pub type MetadataChanges<S,C> = EpochChanges<MetadataStoreObject<S, C>>;
+pub type MetadataChanges<S, C> = EpochChanges<MetadataStoreObject<S, C>>;
 
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
@@ -30,7 +30,7 @@ where
     C: MetadataItem,
 {
     store: RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>,
-    event_publisher: Arc<EventPublisher>
+    event_publisher: Arc<EventPublisher>,
 }
 
 impl<S, C> Default for LocalStore<S, C>
@@ -41,7 +41,7 @@ where
     fn default() -> Self {
         Self {
             store: RwLock::new(DualEpochMap::new()),
-            event_publisher: EventPublisher::shared()
+            event_publisher: EventPublisher::shared(),
         }
     }
 }
@@ -63,7 +63,7 @@ where
         }
         Self {
             store: RwLock::new(DualEpochMap::new_with_map(map)),
-            event_publisher: EventPublisher::shared()
+            event_publisher: EventPublisher::shared(),
         }
     }
 
@@ -182,19 +182,17 @@ where
         let read_guard = self.read().await;
         let changes = read_guard.changes_since(last_change);
         drop(read_guard);
-        trace!(
-            "finding changes: {}, from: {}",
-            last_change,
-            changes.epoch
-        );
+        trace!("finding changes: {}, from: {}", last_change, changes.epoch);
         let current_epoch = self.event_publisher.current_change();
         if changes.epoch > current_epoch {
-            error!("latest epoch: {} > status epoch: {}",changes.epoch,current_epoch);
+            error!(
+                "latest epoch: {} > status epoch: {}",
+                changes.epoch, current_epoch
+            );
         }
         change_listener.set_last_change(current_epoch);
         changes
     }
-
 
     /// find spec changes given change listener
     /// reset change listener to latest epoch
@@ -213,7 +211,10 @@ where
         );
         let current_epoch = self.event_publisher.current_change();
         if changes.epoch > current_epoch {
-            error!("latest epoch: {} > status epoch: {}",changes.epoch,current_epoch);
+            error!(
+                "latest epoch: {} > status epoch: {}",
+                changes.epoch, current_epoch
+            );
         }
         change_listener.set_last_change(current_epoch);
         changes
@@ -222,7 +223,7 @@ where
     pub async fn status_changes_since(
         &self,
         change_listener: &mut ChangeListener,
-    ) -> MetadataChanges<S, C>  {
+    ) -> MetadataChanges<S, C> {
         let last_change = change_listener.last_change();
         let read_guard = self.read().await;
         let changes = read_guard.status_changes_since(last_change);
@@ -232,15 +233,17 @@ where
             last_change,
             changes.epoch
         );
-       
+
         let current_epoch = self.event_publisher.current_change();
         if changes.epoch > current_epoch {
-            error!("latest epoch: {} > spec epoch: {}",changes.epoch,current_epoch);
+            error!(
+                "latest epoch: {} > spec epoch: {}",
+                changes.epoch, current_epoch
+            );
         }
         change_listener.set_last_change(current_epoch);
         changes
     }
-
 }
 
 impl<S, C> Display for LocalStore<S, C>
@@ -345,7 +348,6 @@ where
 
         self.event_publisher.store_change(epoch);
         self.event_publisher.notify();
-        
 
         debug!(
             "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
@@ -426,11 +428,9 @@ where
 
         drop(write_guard);
 
-       
         debug!("notify epoch changed: {}", epoch);
         self.event_publisher.store_change(epoch);
         self.event_publisher.notify();
-        
 
         debug!(
             "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
