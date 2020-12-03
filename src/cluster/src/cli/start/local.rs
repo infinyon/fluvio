@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 
 use crate::cli::ClusterCliError;
-use crate::{LocalClusterInstaller, ClusterError, LocalInstallError};
+use crate::{LocalClusterInstaller, ClusterError, LocalInstallError, StartStatus};
 
 use super::StartOpt;
 
@@ -33,12 +33,12 @@ pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
 
     match install_result {
         // Successfully performed startup without pre-checks
-        Ok(None) => {
+        Ok(StartStatus { checks: None, .. }) => {
             println!("Skipped pre-start checks");
             println!("Successfully installed Fluvio!");
         }
         // Successfully performed startup with pre-checks
-        Ok(Some(check_results)) => {
+        Ok(StartStatus { checks: Some(check_results), .. }) => {
             check_results.render_checks();
         }
         // Aborted startup because pre-checks failed
@@ -47,6 +47,7 @@ pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
             check_results.render_next_steps();
             return Ok(false);
         }
+        // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
     }
 

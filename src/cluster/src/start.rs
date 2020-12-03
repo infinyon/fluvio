@@ -25,7 +25,7 @@ use k8_obj_metadata::InputObjectMeta;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig, LoadBalancer, CheckError, RecoverableCheck, CheckResults};
 use crate::error::K8InstallError;
-use crate::ClusterError;
+use crate::{ClusterError, StartStatus};
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
@@ -701,44 +701,48 @@ impl ClusterInstaller {
         skip(self),
         fields(namespace = &*self.config.namespace),
     )]
-    pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
+    pub async fn install_fluvio(&self) -> Result<StartStatus, ClusterError> {
+        let checks = match self.config.skip_checks {
+            true => None,
+            false => {
+                // Check if env is ready for install and tries to fix anything it can
+                let check_results = self.setup().await;
 
-        if !self.config.skip_checks {
-            // Check if env is ready for install and tries to fix anything it can
-            let check_results = self.setup().await;
-
-            let mut any_failed = false;
-            for result in &check_results.0 {
-                match result {
-                    // If Fluvio is already installed, return it's SC's address
-                    Err(CheckError::AlreadyInstalled) => {
-                        debug!("Fluvio is already installed. Getting SC address");
-                        let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
-                        return Ok(sc_address);
+                let mut any_failed = false;
+                for result in &check_results.0 {
+                    match result {
+                        // If Fluvio is already installed, return the SC's address
+                        Err(CheckError::AlreadyInstalled) => {
+                            debug!("Fluvio is already installed. Getting SC address");
+                            let address = self.wait_for_sc_service(&self.config.namespace).await?;
+                            return Ok(StartStatus {
+                                address,
+                                checks: Some(check_results),
+                            });
+                        }
+                        Err(_) => any_failed = true,
+                        _ => (),
                     }
-                    Err(_) => any_failed = true,
-                    _ => (),
                 }
-            }
 
-            // If any of the pre-checks was a straight-up failure, install should fail
-            if any_failed {
-                return Err(K8InstallError::FailedPrecheck(check_results).into());
+                // If any of the pre-checks was a straight-up failure, install should fail
+                if any_failed {
+                    return Err(K8InstallError::FailedPrecheck(check_results).into());
+                }
+                Some(check_results)
             }
-        } else {
-            info!("Skipping pre-flight checks, proceeding with the installation");
-        }
+        };
 
         self.install_app()?;
         let namespace = &self.config.namespace;
-        let sc_address = self
+        let address = self
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
-        info!(addr = %sc_address, "Fluvio SC is up:");
+        info!(addr = %address, "Fluvio SC is up:");
 
         if self.config.save_profile {
-            self.update_profile(sc_address.clone())?;
+            self.update_profile(address.clone())?;
         }
 
         if self.config.spu_spec.replicas > 0 {
@@ -747,7 +751,7 @@ impl ClusterInstaller {
             sleep(Duration::from_millis(2000)).await;
 
             // Create a managed SPU cluster
-            let cluster = FluvioConfig::new(sc_address.clone())
+            let cluster = FluvioConfig::new(address.clone())
                 .with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
 
@@ -756,7 +760,10 @@ impl ClusterInstaller {
                 .await?;
         }
 
-        Ok(sc_address)
+        Ok(StartStatus {
+            address,
+            checks,
+        })
     }
 
     /// Install the Fluvio System chart on the configured cluster

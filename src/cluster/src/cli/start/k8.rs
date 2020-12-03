@@ -5,7 +5,7 @@ use std::process::Command;
 
 use fluvio::config::TlsPolicy;
 
-use crate::{ClusterInstaller, ClusterError};
+use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
 
@@ -75,7 +75,26 @@ pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
     }
 
     let installer = builder.build()?;
-    installer.install_fluvio().await?;
+    let results = installer.install_fluvio().await;
+    match results {
+        // Successfully performed startup without pre-checks
+        Ok(StartStatus { checks: None, .. }) => {
+            println!("Skipped pre-start checks");
+            println!("Successfully installed Fluvio!");
+        }
+        // Successfully performed startup with pre-checks
+        Ok(StartStatus { checks: Some(checks), .. }) => {
+            checks.render_checks();
+        }
+        // Aborted startup because pre-checks failed
+        Err(ClusterError::InstallK8(K8InstallError::FailedPrecheck(check_results))) => {
+            check_results.render_checks();
+            check_results.render_next_steps();
+        }
+        // Another type of error occurred during checking or startup
+        Err(other) => return Err(other.into()),
+    }
+
     Ok(())
 }
 

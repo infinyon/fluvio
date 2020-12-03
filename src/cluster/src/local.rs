@@ -18,7 +18,7 @@ use k8_obj_metadata::InputK8Obj;
 use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError, UnrecoverableCheck};
+use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus};
 use crate::check::{InstallCheck, HelmVersion, SysChart, CheckError, RecoverableCheck, CheckResults};
 use crate::start::{ClusterInstaller, DEFAULT_NAMESPACE};
 
@@ -308,8 +308,8 @@ impl LocalClusterInstaller {
     }
 
     /// Install fluvio locally
-    pub async fn install(&self) -> Result<Option<CheckResults>, ClusterError> {
-        let maybe_check_results = match self.config.skip_checks {
+    pub async fn install(&self) -> Result<StartStatus, ClusterError> {
+        let checks = match self.config.skip_checks {
             true => None,
             false => {
                 // Try to setup environment by running pre-checks and auto-fixes
@@ -329,7 +329,7 @@ impl LocalClusterInstaller {
         // ensure we sync files before we launch servers
         Command::new("sync").inherit();
         info!("launching sc");
-        self.launch_sc()?;
+        let address = self.launch_sc()?;
         info!("setting local profile");
         self.set_profile()?;
 
@@ -339,10 +339,17 @@ impl LocalClusterInstaller {
         );
         self.launch_spu_group().await?;
         sleep(Duration::from_secs(1)).await;
-        Ok(maybe_check_results)
+
+        Ok(StartStatus {
+            address,
+            checks,
+        })
     }
 
-    fn launch_sc(&self) -> Result<(), LocalInstallError> {
+    /// Launches an SC on the local machine
+    ///
+    /// Returns the address of the SC if successful
+    fn launch_sc(&self) -> Result<String, LocalInstallError> {
         let outputs = File::create(format!("{}/flv_sc.log", &self.config.log_dir))?;
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
@@ -362,7 +369,7 @@ impl LocalClusterInstaller {
             .stderr(Stdio::from(errors))
             .spawn()?;
 
-        Ok(())
+        Ok("localhost:9003".to_string())
     }
 
     fn set_server_tls(
