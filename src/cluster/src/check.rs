@@ -8,7 +8,6 @@ use k8_obj_metadata::InputObjectMeta;
 use k8_obj_core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 use fluvio_future::timer::sleep;
-use colored::*;
 use semver::Version;
 use serde_json::{Value};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
@@ -26,6 +25,8 @@ const KUBE_VERSION: &str = "1.7.0";
 const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
+
+pub type CheckResults = Vec<std::result::Result<String, CheckError>>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum CheckError {
@@ -142,20 +143,6 @@ pub enum UnrecoverableCheck {
     /// Error while fetching create permissions for a resource
     #[error("Unable to fetch permissions")]
     FetchPermissionError,
-
-    /// One or more pre flight checks have failed
-    #[error("Some pre-install checks have failed.")]
-    PreFlightCheckError,
-}
-
-/// Captures the status of the check
-pub(crate) enum StatusCheck {
-    /// Everything seems to be working as expected, check passed
-    Working(String),
-    /// Check failed due to an error, there is no work around
-    NotWorkingNoRemediation(UnrecoverableCheck),
-    /// Check failed due to an error, there is a work around fix
-    NotWorking(UnrecoverableCheck, String),
 }
 
 #[async_trait]
@@ -263,7 +250,7 @@ impl ClusterChecker {
     /// use fluvio_cluster::ClusterChecker;
     /// ClusterChecker::run_preflight_checks();
     /// ```
-    pub async fn run_preflight_checks() -> Result<(), UnrecoverableCheck> {
+    pub async fn run_preflight_checks() -> CheckResults {
         // List of checks
         let checks: Vec<Box<dyn InstallCheck>> = vec![
             Box::new(LoadableConfig),
@@ -276,38 +263,15 @@ impl ClusterChecker {
             Box::new(LoadBalancer),
         ];
 
-        // capture failures if any
-        let mut failures = Vec::new();
-        println!("\nRunning pre-install checks....\n");
+        // Collect results from running checks
+        let mut results = vec![];
 
         for check in checks {
-            match check.perform_check().await {
-                Ok(success) => {
-                    let msg = format!("ok: {}", success);
-                    println!("✔️  {}", msg.green());
-                }
-                Err(e @ CheckError::AutoRecoverable(_)) => {
-                    let msg = format!("warn: {}", e);
-                    println!("⚠️ {}", msg.yellow());
-                    println!("  💡 {}: may be fixed automatically during installation", "note".yellow());
-                    failures.push(e);
-                }
-                Err(e @ CheckError::Unrecoverable(_)) => {
-                    let msg = format!("failed: {}", e);
-                    println!("❌ {}", msg.red());
-                    failures.push(e);
-                }
-            }
+            let check_result = check.perform_check().await;
+            results.push(check_result);
         }
 
-        // check if there are any failures and show final message
-        if !failures.is_empty() {
-            println!("\nSome pre-install checks have failed.\n");
-            return Err(UnrecoverableCheck::PreFlightCheckError);
-        } else {
-            println!("\nAll checks passed!\n");
-        }
-        Ok(())
+        results
     }
 }
 

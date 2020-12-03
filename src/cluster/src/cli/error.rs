@@ -17,8 +17,6 @@ pub enum ClusterCliError {
     TargetError(#[from] TargetError),
     #[error("Fluvio cluster error")]
     ClusterError(#[from] ClusterError),
-    #[error("Fluvio cluster pre install check error")]
-    CheckError(#[from] UnrecoverableCheck),
     #[error("Fluvio client error")]
     ClientError(#[from] FluvioError),
     #[error("Runner error")]
@@ -41,7 +39,9 @@ impl ClusterCliError {
 // This impl is here so that it is only compiled under "cli" feature flag
 impl ClusterError {
     pub fn into_report(self) -> color_eyre::Report {
-        use color_eyre::{Report, Section};
+        #[allow(unused)]
+        use color_eyre::Section;
+        use color_eyre::Report;
 
         match &self {
             _ => Report::from(self),
