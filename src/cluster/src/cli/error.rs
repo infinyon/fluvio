@@ -4,7 +4,7 @@ use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
 use fluvio_runner_local::RunnerError;
-use crate::{ClusterError, CheckError};
+use crate::{ClusterError, UnrecoverableCheck};
 
 /// Cluster Command Error
 #[derive(thiserror::Error, Debug)]
@@ -18,7 +18,7 @@ pub enum ClusterCliError {
     #[error("Fluvio cluster error")]
     ClusterError(#[from] ClusterError),
     #[error("Fluvio cluster pre install check error")]
-    CheckError(#[from] CheckError),
+    CheckError(#[from] UnrecoverableCheck),
     #[error("Fluvio client error")]
     ClientError(#[from] FluvioError),
     #[error("Runner error")]
@@ -42,26 +42,8 @@ impl ClusterCliError {
 impl ClusterError {
     pub fn into_report(self) -> color_eyre::Report {
         use color_eyre::{Report, Section};
-        use fluvio_helm::HelmError as Helm;
-        use CheckError as Check;
-        use crate::K8InstallError::*;
 
         match &self {
-            Self::InstallK8(PreCheck(Check::HelmError(Helm::FailedToConnect))) => {
-                let report = Report::from(self);
-                #[cfg(target_os = "macos")]
-                let report =
-                    report.suggestion("Make sure you have run 'minikube start --driver=hyperkit'");
-                #[cfg(not(target_os = "macos"))]
-                let report =
-                    report.suggestion("Make sure you have run 'minikube start --driver=docker'");
-                report
-            }
-            Self::InstallK8(PreCheck(Check::MinikubeTunnelNotFound)) => {
-                let report = Report::from(self);
-                let report = report.suggestion("Make sure minikube tunnel is running");
-                report.suggestion("Run 'minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out'")
-            }
             _ => Report::from(self),
         }
     }

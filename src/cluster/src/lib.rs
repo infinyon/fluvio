@@ -33,7 +33,7 @@ pub use start::ClusterInstallerBuilder;
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
 pub use check::ClusterChecker;
-pub use check::CheckError;
+pub use check::UnrecoverableCheck;
 pub use delete::ClusterUninstaller;
 pub use local::LocalClusterInstaller;
 

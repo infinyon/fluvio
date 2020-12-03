@@ -19,7 +19,7 @@ use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
 use crate::{LocalInstallError, ClusterError};
-use crate::check::{CheckError, StatusCheck, InstallCheck, HelmVersion, SysChart};
+use crate::check::{InstallCheck, HelmVersion, SysChart, CheckError, RecoverableCheck};
 use crate::start::{ClusterInstaller, DEFAULT_NAMESPACE};
 
 const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
@@ -249,28 +249,47 @@ impl LocalClusterInstaller {
         println!("Performing pre-flight checks");
         let checks: Vec<Box<dyn InstallCheck>> = vec![Box::new(HelmVersion), Box::new(SysChart)];
         for check in checks {
-            match check.perform_check().await {
-                Ok(check) => match check {
-                    StatusCheck::Working(_) => {
-                        // do nothing check is fine
+            let check_result = check.perform_check().await;
+            match check_result {
+                Ok(_success) => {
+                    // do nothing check is fine
+                }
+                Err(e @ CheckError::Unrecoverable(_)) => {
+                    return Err(LocalInstallError::PreCheck(e).into());
+                }
+                Err(CheckError::AutoRecoverable(it)) => {
+                    match self.pre_install_fix(it).await {
+                        Ok(_) => {
+                            // recovered correctly
+                        }
+                        Err(e) => return Err(e),
                     }
-                    // unrecoverable error occured, return error
-                    StatusCheck::NotWorkingNoRemediation(failure) => {
-                        return Err(LocalInstallError::PreCheck(failure).into());
-                    }
-                    // recoverable error occured, try to fix
-                    StatusCheck::NotWorking(failure, _) => {
-                        match self.pre_install_fix(failure).await {
-                            Ok(_) => {
-                                // recovered correctly
-                            }
-                            // not able to recover, return error
-                            Err(err) => return Err(err),
-                        };
-                    }
-                },
-                Err(err) => return Err(LocalInstallError::PreCheck(err).into()),
-            };
+                }
+            }
+
+
+            // match check.perform_check().await {
+            //     Ok(check) => match check {
+            //         StatusCheck::Working(_) => {
+            //             // do nothing check is fine
+            //         }
+            //         // unrecoverable error occured, return error
+            //         StatusCheck::NotWorkingNoRemediation(failure) => {
+            //             return Err(LocalInstallError::PreCheck(failure).into());
+            //         }
+            //         // recoverable error occured, try to fix
+            //         StatusCheck::NotWorking(failure, _) => {
+            //             match self.pre_install_fix(failure).await {
+            //                 Ok(_) => {
+            //                     // recovered correctly
+            //                 }
+            //                 // not able to recover, return error
+            //                 Err(err) => return Err(err),
+            //             };
+            //         }
+            //     },
+            //     Err(err) => return Err(LocalInstallError::PreCheck(err).into()),
+            // };
         }
 
         Ok(())
@@ -278,12 +297,12 @@ impl LocalClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    async fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
+    async fn pre_install_fix(&self, error: RecoverableCheck) -> Result<(), ClusterError> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
         match error {
-            CheckError::MissingSystemChart if self.config.install_sys => {
+            RecoverableCheck::MissingSystemChart if self.config.install_sys => {
                 debug!("Fluvio system chart not installed. Attempting to install");
                 let installer = ClusterInstaller::new()
                     .with_namespace(DEFAULT_NAMESPACE)
@@ -293,7 +312,7 @@ impl LocalClusterInstaller {
             }
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
-                return Err(LocalInstallError::PreCheck(unhandled).into());
+                return Err(LocalInstallError::PreCheck(unhandled.into()).into());
             }
         }
 
