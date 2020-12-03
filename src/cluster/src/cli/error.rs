@@ -4,7 +4,7 @@ use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
 use fluvio_runner_local::RunnerError;
-use crate::{ClusterError, UnrecoverableCheck};
+use crate::ClusterError;
 
 /// Cluster Command Error
 #[derive(thiserror::Error, Debug)]

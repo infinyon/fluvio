@@ -23,7 +23,7 @@ use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig, LoadBalancer, CheckError, RecoverableCheck};
+use crate::check::{UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig, LoadBalancer, CheckError, RecoverableCheck, CheckResults};
 use crate::error::K8InstallError;
 use crate::ClusterError;
 
@@ -618,8 +618,7 @@ impl ClusterInstaller {
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     #[allow(unused)]
-    pub async fn setup(&self) -> Result<(), ClusterError> {
-        use colored::*;
+    pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
 
         let checks: Vec<Box<dyn InstallCheck>> = vec![
@@ -629,38 +628,61 @@ impl ClusterInstaller {
             Box::new(AlreadyInstalled),
             Box::new(LoadBalancer),
         ];
-        let mut fail_count = 0;
+
+        let mut results = vec![];
         for check in checks {
             let check_result = check.perform_check().await;
+
             match check_result {
-                Ok(success) => {
-                    let msg = format!("ok: {}", success);
-                    println!("✔️  {}", msg.green());
-                }
-                Err(CheckError::Unrecoverable(e)) => {
-                    let msg = format!("failed: {}", e);
-                    println!("❌ {}", msg.red());
-                    fail_count += 1;
-                }
+                // If a check comes back as auto-recoverable, attempt to recover
                 Err(CheckError::AutoRecoverable(it)) => {
+                    let err = format!("{}", it);
                     let fix_result = self.pre_install_fix(it).await;
                     match fix_result {
-                        // Recovered successfully
                         Ok(_) => {
-                            println!("✔️  success");
+                            results.push(Ok(format!("Fixed: {}", err)));
                         }
-                        // Failed to recover, print error
                         Err(e) => {
-                            let msg = format!("failed: {}", e);
-                            println!("❌ {}", msg.red());
-                            fail_count += 1;
+                            results.push(Err(CheckError::Unrecoverable(e)));
                         }
                     }
                 }
+                other => results.push(other),
             }
         }
 
-        Ok(())
+        // let mut fail_count = 0;
+        // for check in checks {
+        //     let check_result = check.perform_check().await;
+        //     match check_result {
+        //         Ok(success) => {
+        //             let msg = format!("ok: {}", success);
+        //             println!("✔️  {}", msg.green());
+        //         }
+        //         Err(CheckError::Unrecoverable(e)) => {
+        //             let msg = format!("failed: {}", e);
+        //             println!("❌ {}", msg.red());
+        //             fail_count += 1;
+        //         }
+        //         Err(CheckError::AutoRecoverable(it)) => {
+        //             let fix_result = self.pre_install_fix(it).await;
+        //             match fix_result {
+        //                 // Recovered successfully
+        //                 Ok(_) => {
+        //                     println!("✔️  success");
+        //                 }
+        //                 // Failed to recover, print error
+        //                 Err(e) => {
+        //                     let msg = format!("failed: {}", e);
+        //                     println!("❌ {}", msg.red());
+        //                     fail_count += 1;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        results
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
@@ -679,24 +701,26 @@ impl ClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    pub(crate) async fn pre_install_fix(&self, error: RecoverableCheck) -> Result<(), K8InstallError> {
+    pub(crate) async fn pre_install_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
-        // If we cannot handle this error, return it to bubble up
+        // If we cannot handle this error, wrap it in UnrecoverableCheck::FailedRecovery
         match error {
             RecoverableCheck::MissingSystemChart if self.config.install_sys => {
                 println!("Fluvio system chart not installed. Attempting to install");
-                self._install_sys()?;
+                self._install_sys()
+                    .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
             }
             RecoverableCheck::MinikubeTunnelNotFoundRetry => {
                 println!(
                     "Load balancer service is not available, trying to bring up minikube tunnel"
                 );
-                self._try_minikube_tunnel().await?;
+                self._try_minikube_tunnel().await
+                    .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
             }
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
-                return Err(CheckError::AutoRecoverable(unhandled).into());
+                return Err(UnrecoverableCheck::FailedRecovery(unhandled));
             }
         }
 
@@ -711,29 +735,34 @@ impl ClusterInstaller {
         fields(namespace = &*self.config.namespace),
     )]
     pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
-        // Checks if env is ready for install and tries to fix anything it can
+
         if !self.config.skip_checks {
-            match self.setup().await {
-                // If all checks pass, perform the main installation
-                Ok(()) => {
-                    println!("All checks passed, proceeding with the installation");
-                    self.install_app()?;
+            // Check if env is ready for install and tries to fix anything it can
+            let check_results = self.setup().await;
+
+            let mut any_failed = false;
+            for result in &check_results {
+                match result {
+                    // If Fluvio is already installed, return it's SC's address
+                    Err(CheckError::AlreadyInstalled) => {
+                        debug!("Fluvio is already installed. Getting SC address");
+                        let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
+                        return Ok(sc_address);
+                    }
+                    Err(_) => any_failed = true,
+                    _ => (),
                 }
-                // If Fluvio is already installed, skip install step
-                Err(ClusterError::InstallK8(K8InstallError::PreCheck(
-                                                CheckError::Unrecoverable(UnrecoverableCheck::AlreadyInstalled)))) => {
-                    debug!("Fluvio is already installed. Getting SC address");
-                    let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
-                    return Ok(sc_address);
-                }
-                // If there were other unhandled errors, return them
-                Err(unhandled) => return Err(unhandled),
+            }
+
+            // If any of the pre-checks was a straight-up failure, install should fail
+            if any_failed {
+                return Err(K8InstallError::FailedPrecheck(check_results).into());
             }
         } else {
-            println!("Skipping pre-flight checks, proceeding with the installation");
-            self.install_app()?;
+            info!("Skipping pre-flight checks, proceeding with the installation");
         }
 
+        self.install_app()?;
         let namespace = &self.config.namespace;
         let sc_address = self
             .wait_for_sc_service(namespace)

@@ -36,16 +36,19 @@ pub enum CheckError {
     /// A cluster pre-start check that is unrecoverable
     #[error(transparent)]
     Unrecoverable(#[from] UnrecoverableCheck),
+    /// Indicates that a cluster is already started
+    #[error("Fluvio cluster is already started")]
+    AlreadyInstalled,
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum RecoverableCheck {
     /// The fluvio-sys chart is not installed
-    #[error("Missing Fluvio system charts. Try running `fluvio cluster start --sys`")]
+    #[error("Missing Fluvio system charts.")]
     MissingSystemChart,
 
     /// Minikube tunnel not found, this error is used in case of linux where we can try to bring tunnel up
-    #[error("Minikube tunnel not found, retrying")]
+    #[error("Minikube tunnel not found")]
     MinikubeTunnelNotFoundRetry,
 }
 
@@ -72,6 +75,9 @@ pub enum UnrecoverableCheck {
     #[error("Kubectl not found")]
     KubectlNotFoundError(IoError),
 
+    #[error("Failed to recover from auto-recoverable check")]
+    FailedRecovery(RecoverableCheck),
+
     /// Check permissions to create k8 resources
     #[error("Permissions to create {resource} denied")]
     PermissionError {
@@ -96,10 +102,6 @@ pub enum UnrecoverableCheck {
         /// The minimum required helm version
         required: String,
     },
-
-    /// Fluvio is already correctly installed
-    #[error("Fluvio is already installed. Please uninstall before trying to install")]
-    AlreadyInstalled,
 
     /// There is no current kubernetest context
     #[error("There is no active Kubernetes context")]
@@ -315,7 +317,7 @@ pub(crate) fn check_already_installed(
     let app_charts = helm.get_installed_chart_by_name(app_repo)
         .map_err(UnrecoverableCheck::HelmError)?;
     if !app_charts.is_empty() {
-        return Err(UnrecoverableCheck::AlreadyInstalled.into());
+        return Err(CheckError::AlreadyInstalled);
     }
     Ok("Previous fluvio installation not found".to_string())
 }
