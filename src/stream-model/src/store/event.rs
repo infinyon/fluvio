@@ -43,12 +43,10 @@ impl EventPublisher {
         self.change.store(value, DEFAULT_EVENT_ORDERING);
     }
 
-
     pub fn listen(&self) -> EventListener {
         self.event.listen()
     }
 }
-
 
 pub struct SimpleEvent {
     flag: AtomicBool,

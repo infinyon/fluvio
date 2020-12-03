@@ -20,8 +20,8 @@ mod context {
 
     use super::MetadataStoreObject;
     use super::{LocalStore, ChangeListener, MetadataChanges};
-  
-    pub type K8ChangeListener<S> = ChangeListener<S,K8MetaItem>;
+
+    pub type K8ChangeListener<S> = ChangeListener<S, K8MetaItem>;
 
     pub type StoreChanges<S> = MetadataChanges<S, K8MetaItem>;
 
@@ -124,13 +124,10 @@ mod context {
                     let instant = Instant::now();
                     let max_wait = Duration::from_secs(*MAX_WAIT_TIME);
                     loop {
-                        
-
                         if let Some(value) = self.store.value(&key).await {
                             debug!("store: {}, object: {:#?}, created", S::LABEL, key);
                             return Ok(value.inner_owned());
                         } else {
-                            
                             // check if total time expired
                             if instant.elapsed() > max_wait {
                                 return Err(IoError::new(
@@ -138,7 +135,7 @@ mod context {
                                     format!("store timed out: {} for {:?}", S::LABEL, key),
                                 ));
                             } else {
-                                debug!("store still doesn't exists: {}",key);
+                                debug!("store still doesn't exists: {}", key);
                             }
                         }
 

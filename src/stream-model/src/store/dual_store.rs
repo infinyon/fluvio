@@ -19,7 +19,6 @@ use super::event::{EventPublisher};
 pub use listener::ChangeListener;
 pub type MetadataChanges<S, C> = EpochChanges<MetadataStoreObject<S, C>>;
 
-
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
 /// For read, read guards are provided which provide hash map API using deref.  
@@ -176,11 +175,9 @@ where
     }
 
     /// create new change listener
-    pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S,C> {
+    pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S, C> {
         ChangeListener::new(self.clone())
     }
-
-    
 }
 
 impl<S, C> Display for LocalStore<S, C>
@@ -382,7 +379,7 @@ where
     }
 }
 
-mod listener  {
+mod listener {
 
     use std::fmt;
     use std::sync::Arc;
@@ -392,18 +389,22 @@ mod listener  {
 
     use crate::store::event::EventPublisher;
 
-    use super::{ LocalStore, Spec, MetadataItem, MetadataChanges };
+    use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
     /// listen for changes local store
-    pub struct ChangeListener<S,C> 
-        where S: Spec, C: MetadataItem
+    pub struct ChangeListener<S, C>
+    where
+        S: Spec,
+        C: MetadataItem,
     {
-        store: Arc<LocalStore<S,C>>,
+        store: Arc<LocalStore<S, C>>,
         last_change: i64,
     }
 
-    impl <S,C> fmt::Debug for ChangeListener<S,C> 
-        where S: Spec, C: MetadataItem
+    impl<S, C> fmt::Debug for ChangeListener<S, C>
+    where
+        S: Spec,
+        C: MetadataItem,
     {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(
@@ -416,13 +417,15 @@ mod listener  {
         }
     }
 
-    impl <S,C> ChangeListener<S,C> 
-        where S: Spec, C: MetadataItem 
+    impl<S, C> ChangeListener<S, C>
+    where
+        S: Spec,
+        C: MetadataItem,
     {
-        pub fn new(store: Arc<LocalStore<S,C>>) -> Self {
+        pub fn new(store: Arc<LocalStore<S, C>>) -> Self {
             Self {
                 store,
-                last_change: 0
+                last_change: 0,
             }
         }
 
@@ -430,8 +433,6 @@ mod listener  {
         pub fn event_publisher(&self) -> &EventPublisher {
             self.store.event_publisher()
         }
-
-
 
         /// check if there should be any changes
         /// this should be done before event listener
@@ -467,7 +468,6 @@ mod listener  {
                 return;
             }
 
-            
             let listener = self.event_publisher().listen();
 
             if self.has_change() {
@@ -484,11 +484,14 @@ mod listener  {
 
         /// find all changes derived from this listener
         pub async fn sync_changes(&mut self) -> MetadataChanges<S, C> {
-           
             let read_guard = self.store.read().await;
             let changes = read_guard.changes_since(self.last_change);
             drop(read_guard);
-            trace!("finding changes: {}, from: {}", self.last_change, changes.epoch);
+            trace!(
+                "finding changes: {}, from: {}",
+                self.last_change,
+                changes.epoch
+            );
             let current_epoch = self.event_publisher().current_change();
             if changes.epoch > current_epoch {
                 debug!(
@@ -499,10 +502,9 @@ mod listener  {
             self.set_last_change(changes.epoch);
             changes
         }
-    
+
         /// find all spec related changes
         pub async fn sync_spec_changes(&mut self) -> MetadataChanges<S, C> {
-           
             let read_guard = self.store.read().await;
             let changes = read_guard.spec_changes_since(self.last_change);
             drop(read_guard);
@@ -521,10 +523,9 @@ mod listener  {
             self.set_last_change(changes.epoch);
             changes
         }
-    
+
         /// all status related changes
         pub async fn sync_status_changes(&mut self) -> MetadataChanges<S, C> {
-          
             let read_guard = self.store.read().await;
             let changes = read_guard.status_changes_since(self.last_change);
             drop(read_guard);
@@ -533,7 +534,7 @@ mod listener  {
                 self.last_change,
                 changes.epoch
             );
-    
+
             let current_epoch = self.event_publisher().current_change();
             if changes.epoch > current_epoch {
                 debug!(
@@ -698,7 +699,7 @@ mod test_notify {
             }
         }
 
-        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec,u32>) {
+        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, u32>) {
             debug!("sync start");
             let (update, _delete) = spec_listner.sync_spec_changes().await.parts();
             // assert!(update.len() > 0);

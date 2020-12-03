@@ -12,8 +12,7 @@ use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
 use crate::stores::spu::SpuSpec;
 use crate::stores::partition::PartitionSpec;
-use crate::stores::{ StoreContext, K8ChangeListener};
-
+use crate::stores::{StoreContext, K8ChangeListener};
 
 use super::reducer::TopicReducer;
 

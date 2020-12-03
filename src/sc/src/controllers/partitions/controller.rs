@@ -7,7 +7,7 @@ use tracing::debug;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores:: { StoreContext, Epoch};
+use crate::stores::{StoreContext, Epoch};
 use crate::stores::partition::PartitionSpec;
 use crate::stores::spu::SpuSpec;
 use crate::stores::K8ChangeListener;

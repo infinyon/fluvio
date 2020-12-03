@@ -16,15 +16,17 @@ use fluvio_types::SpuId;
 use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_service::{ FlvService, wait_for_request};
-use fluvio_socket:: { FlvSocket,FlvSocketError, FlvSink};
-use fluvio_controlplane::{ InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, 
-    UpdateReplicaRequest, UpdateSpuRequest};
-use fluvio_controlplane_metadata::message::{ ReplicaMsg,Message, SpuMsg} ;
+use fluvio_service::{FlvService, wait_for_request};
+use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
+use fluvio_controlplane::{
+    InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
+    UpdateSpuRequest,
+};
+use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
 use crate::core::SharedContext;
 use crate::stores::{K8ChangeListener};
-use crate::stores::partition::{ PartitionSpec, PartitionStatus, PartitionResolution };
+use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
 use crate::stores::spu::SpuSpec;
 use crate::controllers::spus::SpuAction;
 use crate::stores::actions::WSAction;
@@ -143,8 +145,7 @@ async fn dispatch_loop(
         );
 
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
-        send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id)
-            .await?;
+        send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
         debug!("waiting for events");
 
@@ -240,7 +241,6 @@ async fn send_spu_spec_changes(
     sink: &mut FlvSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
-    
     if !listener.has_change() {
         debug!("changes is empty, skipping");
         return Ok(());
@@ -289,8 +289,6 @@ async fn send_replica_spec_changes(
     sink: &mut FlvSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
-   
-
     if !listener.has_change() {
         debug!("changes is empty, skipping");
         return Ok(());

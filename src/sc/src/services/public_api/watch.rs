@@ -18,8 +18,7 @@ use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::services::auth::AuthServiceContext;
-use crate::stores::{ StoreContext, K8ChangeListener };
-
+use crate::stores::{StoreContext, K8ChangeListener};
 
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T, AC>(
