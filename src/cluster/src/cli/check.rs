@@ -27,13 +27,11 @@ impl CheckResults {
         for result in self.0.iter() {
             match result {
                 Ok(success) => {
-                    let msg = format!("ok: {}", success);
-                    println!("✅ {}", msg.green());
+                    println!("✅ {} {}", "ok:".bold().green(), success.green());
                 }
                 Err(e @ CheckError::AutoRecoverable(_)) => {
-                    let msg = format!("warn: {}", e);
-                    println!("⚠️ {}", msg.yellow());
-                    println!("  💡 {}: this may be fixed automatically during startup", "note".yellow());
+                    println!("❕ {} {}", "warning:".bold().yellow(), e);
+                    println!("  💡 {} this may be fixed automatically during startup", "note:".bold());
                 }
                 Err(e @ CheckError::Unrecoverable(_)) => {
                     // Print one layer of source error
@@ -41,11 +39,11 @@ impl CheckResults {
                         Some(underlying) => format!(": {}", underlying),
                         None => "".to_string(),
                     };
-                    let msg = format!("failed: {}{}", e, cause);
-                    println!("❌ {}", msg.red());
+                    let msg = format!("{}{}", e, cause);
+                    println!("❌ {} {}", "failed:".bold().red(), msg.red());
                 }
                 Err(CheckError::AlreadyInstalled) => {
-                    println!("{}", "💙 note: Fluvio is already running".bright_blue());
+                    println!("💙 {} {}", "note:".bold().bright_blue(), "Fluvio is already running".bright_blue());
                 }
             }
         }
@@ -88,6 +86,7 @@ impl CheckResults {
             (0, _) if !installed => {
                 println!("{}", "Some checks failed, but may be auto-corrected".bold());
                 println!("You may proceed with cluster startup");
+                println!("{}: run `fluvio cluster start`", "next".bold().bright_blue());
             }
             _ if !installed => {
                 let s = if failures == 1 { "" } else { "s" };
