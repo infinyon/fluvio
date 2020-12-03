@@ -130,12 +130,15 @@ mod context {
                             debug!("store: {}, object: {:#?}, created", S::LABEL, key);
                             return Ok(value.inner_owned());
                         } else {
+                            
                             // check if total time expired
                             if instant.elapsed() > max_wait {
                                 return Err(IoError::new(
                                     ErrorKind::TimedOut,
                                     format!("store timed out: {} for {:?}", S::LABEL, key),
                                 ));
+                            } else {
+                                debug!("store still doesn't exists: {}",key);
                             }
                         }
 
@@ -146,7 +149,8 @@ mod context {
                                 debug!("{} store, didn't receive wait,exiting,continue waiting",S::LABEL);
                             },
                             _ = spec_listener.listen() => {
-                                debug!("{} store, received updates",S::LABEL);
+                                let changes = spec_listener.sync_changes().await;
+                                debug!("{} received changes: {:#?}",S::LABEL,changes);
                             }
                         }
                     }

@@ -408,7 +408,8 @@ mod listener  {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(
                 f,
-                "last:{},current:{}",
+                "{} last:{},current:{}",
+                S::LABEL,
                 self.last_change,
                 self.event_publisher().current_change()
             )
@@ -466,12 +467,15 @@ mod listener  {
                 return;
             }
 
+            
             let listener = self.event_publisher().listen();
 
             if self.has_change() {
                 trace!("after has change: {}", self.last_change());
                 return;
             }
+
+            trace!("waiting for publisher");
 
             listener.await;
 

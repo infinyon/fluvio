@@ -100,7 +100,7 @@ where
                 break;
             }
 
-            debug!("watch: {}, waiting for changes with", S::LABEL,);
+            debug!("{}: waiting for changes", S::LABEL,);
             select! {
 
                 _ = self.end_event.listen() => {
