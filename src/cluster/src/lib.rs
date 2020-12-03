@@ -16,6 +16,8 @@
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
 
+#![warn(missing_docs)]
+
 mod check;
 mod start;
 mod delete;

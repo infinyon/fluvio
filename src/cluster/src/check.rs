@@ -24,6 +24,7 @@ const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 
+/// A collection of the successes and failures of running checks
 #[derive(Debug)]
 pub struct CheckResults(pub(crate) Vec<Result<String, CheckError>>);
 
@@ -33,6 +34,7 @@ impl From<Vec<Result<String, CheckError>>> for CheckResults {
     }
 }
 
+/// A description of a failed check
 #[derive(thiserror::Error, Debug)]
 pub enum CheckError {
     /// A cluster pre-start check that is potentially auto-recoverable
@@ -46,6 +48,7 @@ pub enum CheckError {
     AlreadyInstalled,
 }
 
+/// A type of check failure which may be automatically recovered from
 #[derive(thiserror::Error, Debug)]
 pub enum RecoverableCheck {
     /// The fluvio-sys chart is not installed
@@ -57,7 +60,7 @@ pub enum RecoverableCheck {
     MinikubeTunnelNotFoundRetry,
 }
 
-/// The type of error that can occur while running preinstall checks
+/// A type of check failure which is not recoverable
 #[derive(thiserror::Error, Debug)]
 pub enum UnrecoverableCheck {
     /// There was a problem with the helm client during pre-check
@@ -80,6 +83,7 @@ pub enum UnrecoverableCheck {
     #[error("Kubectl not found")]
     KubectlNotFoundError(IoError),
 
+    /// We failed to recover from a potentially-recoverable check failure
     #[error("Failed to recover from auto-recoverable check")]
     FailedRecovery(RecoverableCheck),
 
