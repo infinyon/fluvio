@@ -31,6 +31,7 @@ use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
 };
+use crate::start::check_and_fix;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
@@ -627,30 +628,8 @@ impl ClusterInstaller {
             Box::new(AlreadyInstalled),
             Box::new(LoadBalancer),
         ];
-
-        let mut results = vec![];
-        for check in checks {
-            let check_result = check.perform_check().await;
-
-            match check_result {
-                // If a check comes back as auto-recoverable, attempt to recover
-                Err(CheckError::AutoRecoverable(it)) => {
-                    let err = format!("{}", it);
-                    let fix_result = self.pre_install_fix(it).await;
-                    match fix_result {
-                        Ok(_) => {
-                            results.push(Ok(format!("Fixed: {}", err)));
-                        }
-                        Err(e) => {
-                            results.push(Err(CheckError::Unrecoverable(e)));
-                        }
-                    }
-                }
-                other => results.push(other),
-            }
-        }
-
-        CheckResults::from(results)
+        let fix = |err| self.pre_install_fix(err);
+        check_and_fix(&checks, fix).await
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {

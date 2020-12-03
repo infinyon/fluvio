@@ -19,8 +19,9 @@ use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
 use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};
-use crate::check::{InstallCheck, HelmVersion, SysChart, CheckError, RecoverableCheck, CheckResults};
+use crate::check::{InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults};
 use crate::start::k8::ClusterInstaller;
+use crate::start::check_and_fix;
 
 const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 
@@ -249,28 +250,8 @@ impl LocalClusterInstaller {
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
         let checks: Vec<Box<dyn InstallCheck>> = vec![Box::new(HelmVersion), Box::new(SysChart)];
-
-        let mut results = vec![];
-        for check in checks {
-            let check_result = check.perform_check().await;
-            match check_result {
-                Err(CheckError::AutoRecoverable(it)) => {
-                    let err = format!("{}", it);
-                    let fix_result = self.pre_install_fix(it).await;
-                    match fix_result {
-                        Ok(_) => {
-                            results.push(Ok(format!("Fixed: {}", err)));
-                        }
-                        Err(e) => {
-                            results.push(Err(CheckError::Unrecoverable(e)));
-                        }
-                    }
-                }
-                other => results.push(other),
-            }
-        }
-
-        CheckResults::from(results)
+        let fix = |err| self.pre_install_fix(err);
+        check_and_fix(&checks, fix).await
     }
 
     /// Given a pre-check error, attempt to automatically correct it
