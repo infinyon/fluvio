@@ -7,9 +7,10 @@ use tracing::debug;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::*;
-use crate::stores::partition::*;
-use crate::stores::spu::*;
+use crate::stores::{StoreContext, Epoch};
+use crate::stores::partition::PartitionSpec;
+use crate::stores::spu::SpuSpec;
+use crate::stores::K8ChangeListener;
 
 use super::reducer::*;
 
@@ -47,13 +48,17 @@ impl PartitionController {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
-        self.sync_spu_changes().await;
+        debug!("starting dispatch loop");
 
+        let mut spu_status_listener = self.spus.change_listener();
         loop {
+            self.sync_spu_changes(&mut spu_status_listener).await;
+
+            debug!("waiting for events");
             select! {
 
-                _ = self.spus.status_listen() => {
-                    self.sync_spu_changes().await;
+                _ = spu_status_listener.listen() => {
+                   debug!("detected spus status changed");
                 }
             }
         }
@@ -63,15 +68,24 @@ impl PartitionController {
 
     /// sync spu states to partition
     /// check to make sure
-    async fn sync_spu_changes(&mut self) {
-        let read_guard = self.spus.store().read().await;
-        let changes = read_guard.changes_since(self.partition_epoch);
-        drop(read_guard);
-        self.spu_epoch = changes.epoch;
+    async fn sync_spu_changes(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
+        if !listener.has_change() {
+            debug!("no change");
+            return;
+        }
+
+        debug!("sync spu changes");
+        let changes = listener.sync_status_changes().await;
+        if changes.is_empty() {
+            debug!("no spu changes");
+            return;
+        }
+
+        let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(
             "received spu epoch: {}, updates: {},deletes: {}",
-            self.spu_epoch,
+            epoch,
             updates.len(),
             deletes.len()
         );

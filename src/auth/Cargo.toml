@@ -19,8 +19,7 @@ dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluv
 fluvio-future = { version = "0.1.12", features = ["net", "openssl_tls"] }
 fluvio-protocol = { version = "0.2.0" }
 fluvio-socket = { version = "0.4.0" }
-fluvio-stream-model = { path = "../stream-model", version = "0.2.0" }
-fluvio-types = { version = "0.1.0", path = "../types" }
+fluvio-types = { version = "0.2.0", path = "../types" }
 flv-tls-proxy = { version = "0.3.0" }
 futures-util = { version = "0.3.5" }
 log = "0.4.11"

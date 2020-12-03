@@ -1,3 +1,4 @@
+use fluvio_controlplane_metadata::partition::Replica;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
@@ -6,6 +7,7 @@ use std::time::Instant;
 
 use tracing::error;
 use tracing::debug;
+use tracing::instrument;
 use async_trait::async_trait;
 use async_channel::Sender;
 use futures_util::stream::Stream;
@@ -13,15 +15,19 @@ use futures_util::stream::Stream;
 use fluvio_types::SpuId;
 use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
-use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_service::FlvService;
-use fluvio_service::wait_for_request;
-use fluvio_socket::*;
-use fluvio_controlplane::*;
+use fluvio_service::{FlvService, wait_for_request};
+use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
+use fluvio_controlplane::{
+    InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
+    UpdateSpuRequest,
+};
+use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
-use crate::core::*;
-use crate::stores::partition::*;
+use crate::core::SharedContext;
+use crate::stores::{K8ChangeListener};
+use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
+use crate::stores::spu::SpuSpec;
 use crate::controllers::spus::SpuAction;
 use crate::stores::actions::WSAction;
 
@@ -119,17 +125,12 @@ async fn dispatch_loop(
     mut sink: FlvSink,
     health_sender: Sender<SpuAction>,
 ) -> Result<(), FlvSocketError> {
-    let mut spu_epoch = context.spus().store().init_epoch().spec_epoch();
-    let mut partition_epoch = context.partitions().store().init_epoch().spec_epoch();
-
-    // send initial spu and replicas
-    spu_epoch = send_spu_spec_changes(spu_epoch, &context, &mut sink, spu_id).await?;
-    partition_epoch =
-        send_replica_spec_changes(partition_epoch, &context, &mut sink, spu_id).await?;
-
     // we wait for update from SPU or wait for updates form SPU channel
 
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
+
+    let mut spu_spec_listener = context.spus().change_listener();
+    let mut partition_spec_listener = context.partitions().change_listener();
 
     loop {
         use tokio::select;
@@ -142,6 +143,11 @@ async fn dispatch_loop(
             spu_id,
             time_left.as_secs()
         );
+
+        send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
+        send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
+
+        debug!("waiting for events");
 
         select! {
 
@@ -188,20 +194,13 @@ async fn dispatch_loop(
             },
 
 
-            _ = context.spus().spec_listen() => {
-
-                debug!("spu spec changed: {}",spu_epoch);
-                spu_epoch = send_spu_spec_changes(spu_epoch, &context, &mut sink,spu_id).await?;
-
+            _ = spu_spec_listener.listen() => {
+                debug!("spu spec changed");
             },
 
-
-            _ = context.partitions().spec_listen() => {
-                debug!("partition spec changed: {}",partition_epoch);
-                partition_epoch = send_replica_spec_changes(partition_epoch, &context, &mut sink,spu_id).await?;
-            },
-
-
+            _ = partition_spec_listener.listen() => {
+                debug!("partition spec changed");
+            }
 
         }
     }
@@ -236,17 +235,22 @@ async fn send_lrs_update(ctx: &SharedContext, lrs_req: UpdateLrsRequest) {
 }
 
 /// send spu spec changes only
+#[instrument(skip(sink))]
 async fn send_spu_spec_changes(
-    epoch: Epoch,
-    ctx: &SharedContext,
+    listener: &mut K8ChangeListener<SpuSpec>,
     sink: &mut FlvSink,
     spu_id: SpuId,
-) -> Result<Epoch, FlvSocketError> {
-    use fluvio_controlplane_metadata::message::*;
+) -> Result<(), FlvSocketError> {
+    if !listener.has_change() {
+        debug!("changes is empty, skipping");
+        return Ok(());
+    }
 
-    let read_guard = ctx.spus().store().read().await;
-    let changes = read_guard.spec_changes_since(epoch);
-    drop(read_guard);
+    let changes = listener.sync_spec_changes().await;
+    if changes.is_empty() {
+        debug!("spec changes is empty, skipping");
+        return Ok(());
+    }
 
     let epoch = changes.epoch;
     let is_sync_all = changes.is_sync_all();
@@ -276,21 +280,27 @@ async fn send_spu_spec_changes(
         message.request.changes.len()
     );
     sink.send_request(&message).await?;
-    Ok(epoch)
+    Ok(())
 }
 
+#[instrument(skip(sink))]
 async fn send_replica_spec_changes(
-    epoch: Epoch,
-    ctx: &SharedContext,
+    listener: &mut K8ChangeListener<PartitionSpec>,
     sink: &mut FlvSink,
     spu_id: SpuId,
-) -> Result<Epoch, FlvSocketError> {
-    use fluvio_controlplane_metadata::message::*;
+) -> Result<(), FlvSocketError> {
+    if !listener.has_change() {
+        debug!("changes is empty, skipping");
+        return Ok(());
+    }
 
-    debug!("sending replica change: {} to spu: {}", epoch, spu_id);
-    let read_guard = ctx.partitions().store().read().await;
-    let changes = read_guard.spec_changes_since(epoch);
-    drop(read_guard);
+    let changes = listener.sync_spec_changes().await;
+    if changes.is_empty() {
+        debug!("spec changes is empty, skipping");
+        return Ok(());
+    }
+
+    let epoch = changes.epoch;
 
     let is_sync_all = changes.is_sync_all();
     let (updates, deletes) = changes.parts();
@@ -335,5 +345,5 @@ async fn send_replica_spec_changes(
         message.request.changes.len()
     );
     sink.send_request(&message).await?;
-    Ok(epoch)
+    Ok(())
 }

@@ -4,14 +4,15 @@
 //! Reconcile Topics
 
 use tracing::debug;
+use tracing::instrument;
 
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::topic::*;
-use crate::stores::spu::*;
-use crate::stores::partition::*;
-use crate::stores::*;
+use crate::stores::topic::TopicSpec;
+use crate::stores::spu::SpuSpec;
+use crate::stores::partition::PartitionSpec;
+use crate::stores::{StoreContext, K8ChangeListener};
 
 use super::reducer::TopicReducer;
 
@@ -20,7 +21,6 @@ pub struct TopicController {
     topics: StoreContext<TopicSpec>,
     partitions: StoreContext<PartitionSpec>,
     spus: StoreContext<SpuSpec>,
-    topic_epoch: Epoch,
     reducer: TopicReducer,
 }
 
@@ -29,7 +29,6 @@ impl TopicController {
     pub fn start(ctx: SharedContext) {
         let topics = ctx.topics().clone();
         let partitions = ctx.partitions().clone();
-        let topic_epoch = topics.store().init_epoch().spec_epoch();
 
         let controller = Self {
             reducer: TopicReducer::new(
@@ -39,7 +38,6 @@ impl TopicController {
             ),
             topics,
             partitions,
-            topic_epoch,
             spus: ctx.spus().clone(),
         };
 
@@ -52,37 +50,43 @@ impl TopicController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        debug!("starting topic controller loop");
+        debug!("starting dispatch loop");
+
+        let mut listener = self.topics.change_listener();
 
         loop {
-            self.sync_topics().await;
+            self.sync_topics(&mut listener).await;
 
             select! {
-                // this is hack until we fix listener
+
+                // just in case
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = self.topics.spec_listen() => {
-                    debug!("detected topic spec changes. topic syncing");
+                _ = listener.listen() => {
+                    debug!("detected topic changes");
 
-                },
-                _ = self.topics.status_listen() => {
-                    debug!("detected topic status changes, topic syncing");
                 }
             }
         }
     }
 
-    /// get list of topics we need to check
-    async fn sync_topics(&mut self) {
-        debug!("syncing topics");
-        let read_guard = self.topics.store().read().await;
-        let changes = read_guard.changes_since(self.topic_epoch);
-        self.topic_epoch = changes.epoch;
-        debug!("setting topic epoch to: {}", self.topic_epoch);
+    /// sync topics with partition
+    #[instrument(skip(self))]
+    async fn sync_topics(&mut self, listener: &mut K8ChangeListener<TopicSpec>) {
+        if !listener.has_change() {
+            debug!("no change");
+            return;
+        }
+
+        let changes = listener.sync_changes().await;
+
+        if changes.is_empty() {
+            debug!("no topic changes");
+            return;
+        }
+
         let (updates, _) = changes.parts();
-        debug!("updates: {}", updates.len());
-        drop(read_guard);
 
         let actions = self.reducer.process_requests(updates).await;
 

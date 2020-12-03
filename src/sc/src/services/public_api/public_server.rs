@@ -14,8 +14,8 @@ use std::io::Error as IoError;
 use async_trait::async_trait;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
-use event_listener::Event;
 
+use fluvio_types::event::SimpleEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
@@ -72,7 +72,7 @@ where
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
 
-        let end_event = Arc::new(Event::new());
+        let end_event = SimpleEvent::shared();
 
         api_loop!(
             api_stream,
@@ -116,7 +116,7 @@ where
         );
 
         // we are done with this tcp stream, notify any controllers use this strep
-        end_event.notify(usize::MAX);
+        end_event.notify();
 
         Ok(())
     }

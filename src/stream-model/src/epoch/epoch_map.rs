@@ -4,6 +4,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::cmp::Eq;
 use std::cmp::PartialEq;
+use std::fmt;
 
 pub type Epoch = i64;
 
@@ -48,8 +49,6 @@ impl<T> DerefMut for EpochCounter<T> {
         &mut self.inner
     }
 }
-
-use std::fmt;
 
 impl<T> fmt::Display for EpochCounter<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -142,6 +141,23 @@ mod old_map {
         }
     }
 
+    impl<K, V> EpochMap<K, V> {
+        pub fn increment_epoch(&mut self) {
+            self.epoch.increment();
+        }
+
+        pub fn epoch(&self) -> Epoch {
+            self.epoch.epoch()
+        }
+
+        /// fence history to current epoch,
+        /// older before fence will be lost
+        pub fn mark_fence(&mut self) {
+            self.deleted = vec![];
+            self.fence = self.epoch.clone();
+        }
+    }
+
     impl<K, V> EpochMap<K, V>
     where
         K: Eq + Hash,
@@ -157,14 +173,6 @@ mod old_map {
                 map,
                 deleted: vec![],
             }
-        }
-
-        pub fn increment_epoch(&mut self) {
-            self.epoch.increment();
-        }
-
-        pub fn epoch(&self) -> Epoch {
-            self.epoch.epoch()
         }
 
         /// insert new value
@@ -193,13 +201,6 @@ mod old_map {
             } else {
                 None
             }
-        }
-
-        /// fence history to current epoch,
-        /// older before fence will be lost
-        pub fn mark_fence(&mut self) {
-            self.deleted = vec![];
-            self.fence = self.epoch.clone();
         }
     }
 
@@ -234,6 +235,13 @@ mod old_map {
                 return EpochChanges {
                     epoch: self.epoch.epoch(),
                     changes: EpochDeltaChanges::SyncAll(self.clone_values()),
+                };
+            }
+
+            if epoch == self.epoch() {
+                return EpochChanges {
+                    epoch: self.epoch.epoch(),
+                    changes: EpochDeltaChanges::empty(),
                 };
             }
 
@@ -273,6 +281,24 @@ mod old_map {
         changes: EpochDeltaChanges<V>,
     }
 
+    impl<V> fmt::Debug for EpochChanges<V> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match &self.changes {
+                EpochDeltaChanges::SyncAll(all) => {
+                    write!(f, "epoch {}, sync_all: {}", self.epoch, all.len())
+                }
+
+                EpochDeltaChanges::Changes(changes) => write!(
+                    f,
+                    "epoch {}, delta updates: {}, deletes: {}",
+                    self.epoch,
+                    changes.0.len(),
+                    changes.1.len()
+                ),
+            }
+        }
+    }
+
     impl<V> EpochChanges<V> {
         pub fn new(epoch: Epoch, changes: EpochDeltaChanges<V>) -> Self {
             Self { epoch, changes }
@@ -292,6 +318,13 @@ mod old_map {
             }
         }
 
+        pub fn is_empty(&self) -> bool {
+            match &self.changes {
+                EpochDeltaChanges::SyncAll(all) => all.is_empty(),
+                EpochDeltaChanges::Changes(changes) => changes.0.is_empty() && changes.1.is_empty(),
+            }
+        }
+
         /// is change contain sync all
         pub fn is_sync_all(&self) -> bool {
             match &self.changes {
@@ -303,6 +336,12 @@ mod old_map {
     pub enum EpochDeltaChanges<V> {
         SyncAll(Vec<V>),
         Changes((Vec<V>, Vec<V>)),
+    }
+
+    impl<V> EpochDeltaChanges<V> {
+        pub fn empty() -> Self {
+            Self::Changes((vec![], vec![]))
+        }
     }
 }
 

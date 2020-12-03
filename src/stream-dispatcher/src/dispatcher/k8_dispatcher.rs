@@ -151,18 +151,10 @@ where
                         match result {
                             Ok(auth_token_msgs) => {
 
-                                if let Some(status) = k8_watch_events_to_metadata_actions(
+                                if k8_watch_events_to_metadata_actions(
                                     Ok(auth_token_msgs),
                                     self.ctx.store(),
-                                ).await
-                                {
-                                    if status.has_spec_changes() {
-                                        self.ctx.notify_spec_changes();
-                                    }
-                                    if status.has_status_changes() {
-                                        self.ctx.notify_status_changes();
-                                    }
-                                } else {
+                                ).await.is_none() {
                                     debug!( "no changes to applying changes to watch events");
                                 }
 
@@ -225,9 +217,6 @@ where
                     format!("error converting k8: {}", err),
                 )
             })?;
-        debug!("{}: notifying update all", S::LABEL);
-        self.ctx.notify_spec_changes();
-        self.ctx.notify_status_changes();
         Ok(version)
     }
 
@@ -291,15 +280,7 @@ where
                             Ok(updated_item) => {
                                 let changes = vec![LSUpdate::Mod(updated_item)];
 
-                                if let Some(changes) = self.ctx.store().apply_changes(changes).await
-                                {
-                                    if changes.has_spec_changes() {
-                                        self.ctx.notify_spec_changes();
-                                    }
-                                    if changes.has_status_changes() {
-                                        self.ctx.notify_status_changes();
-                                    }
-                                }
+                                let _ = self.ctx.store().apply_changes(changes).await;
                             }
                             Err(err) => error!("{},error  converting back: {:#?}", S::LABEL, err),
                         }

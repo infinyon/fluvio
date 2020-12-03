@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use log::info;
 use futures_lite::stream::StreamExt;
 
-use utils::bin::get_fluvio;
+use fluvio_system_util::bin::get_fluvio;
 use fluvio::{Fluvio, Offset, PartitionConsumer};
 use crate::cli::TestOption;
 use crate::util::CommandUtil;

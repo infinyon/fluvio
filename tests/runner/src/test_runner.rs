@@ -1,7 +1,7 @@
 use std::time::Duration;
 use fluvio_future::timer::sleep;
 
-use utils::bin::get_fluvio;
+use fluvio_system_util::bin::get_fluvio;
 
 use crate::cli::TestOption;
 use crate::util::CommandUtil;
@@ -34,8 +34,6 @@ impl TestRunner {
                 .arg(self.option.replication().to_string())
                 .rust_log(self.option.client_log.as_deref())
                 .wait_and_check();
-
-            println!("topic: {}, created", topic_name);
         }
 
         // wait until all partitions are provisioned

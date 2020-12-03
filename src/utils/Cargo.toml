@@ -16,4 +16,4 @@ tracing = "0.1.19"
 rand = "0.7.2"
 
 # Fluvio dependencies
-fluvio-types = { path = "../types", version = "0.1.0" }
+fluvio-types = { version = "0.2.0", path = "../types"  }

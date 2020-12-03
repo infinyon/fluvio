@@ -5,16 +5,19 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use tracing::debug;
-use tracing::error;
+use tracing::{debug, error};
 use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
 use super::MetadataStoreObject;
-use super::{DualEpochMap, DualEpochCounter, Epoch};
+use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
 use super::actions::LSUpdate;
+use super::event::{EventPublisher};
+
+pub use listener::ChangeListener;
+pub type MetadataChanges<S, C> = EpochChanges<MetadataStoreObject<S, C>>;
 
 /// Idempotent local memory cache of meta objects.
 /// There are only 2 write operations are permitted: sync and apply changes which are idempotent.
@@ -22,10 +25,14 @@ use super::actions::LSUpdate;
 /// Hash values are wrapped in EpochCounter.  EpochCounter is also deref.
 /// Using async lock to ensure read/write are thread safe.
 #[derive(Debug)]
-pub struct LocalStore<S, C>(RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>)
+pub struct LocalStore<S, C>
 where
     S: Spec,
-    C: MetadataItem;
+    C: MetadataItem,
+{
+    store: RwLock<DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>>,
+    event_publisher: Arc<EventPublisher>,
+}
 
 impl<S, C> Default for LocalStore<S, C>
 where
@@ -33,7 +40,10 @@ where
     C: MetadataItem,
 {
     fn default() -> Self {
-        Self(RwLock::new(DualEpochMap::new()))
+        Self {
+            store: RwLock::new(DualEpochMap::new()),
+            event_publisher: EventPublisher::shared(),
+        }
     }
 }
 
@@ -52,7 +62,10 @@ where
         for obj in obj {
             map.insert(obj.key.clone(), obj.into());
         }
-        Self(RwLock::new(DualEpochMap::new_with_map(map)))
+        Self {
+            store: RwLock::new(DualEpochMap::new_with_map(map)),
+            event_publisher: EventPublisher::shared(),
+        }
     }
 
     /// create arc wrapper
@@ -65,7 +78,7 @@ where
     pub async fn read<'a>(
         &'_ self,
     ) -> RwLockReadGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
-        self.0.read().await
+        self.store.read().await
     }
 
     /// write guard, this is private, use sync API to make changes
@@ -73,7 +86,7 @@ where
     pub async fn write<'a>(
         &'_ self,
     ) -> RwLockWriteGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
-        self.0.write().await
+        self.store.write().await
     }
 
     /// current epoch
@@ -155,6 +168,15 @@ where
 
     pub async fn clone_values(&self) -> Vec<MetadataStoreObject<S, C>> {
         self.read().await.clone_values()
+    }
+
+    pub fn event_publisher(&self) -> &EventPublisher {
+        &self.event_publisher
+    }
+
+    /// create new change listener
+    pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S, C> {
+        ChangeListener::new(self.clone())
     }
 }
 
@@ -247,7 +269,19 @@ where
         write_guard.mark_fence();
 
         let epoch = write_guard.epoch();
+
+        let status = SyncStatus {
+            epoch,
+            add,
+            update_spec,
+            update_status,
+            delete,
+        };
+
         drop(write_guard);
+
+        self.event_publisher.store_change(epoch);
+        self.event_publisher.notify();
 
         debug!(
             "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
@@ -258,13 +292,7 @@ where
             update_status,
             delete,
         );
-        SyncStatus {
-            epoch,
-            add,
-            update_spec,
-            update_status,
-            delete,
-        }
+        status
     }
 
     /// apply changes to this store
@@ -323,7 +351,20 @@ where
         }
 
         let epoch = write_guard.epoch();
+
+        let status = SyncStatus {
+            epoch,
+            add,
+            update_spec,
+            update_status,
+            delete,
+        };
+
         drop(write_guard);
+
+        debug!("notify epoch changed: {}", epoch);
+        self.event_publisher.store_change(epoch);
+        self.event_publisher.notify();
 
         debug!(
             "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
@@ -334,13 +375,176 @@ where
             delete,
             epoch,
         );
-        Some(SyncStatus {
-            epoch,
-            add,
-            update_spec,
-            update_status,
-            delete,
-        })
+        Some(status)
+    }
+}
+
+mod listener {
+
+    use std::fmt;
+    use std::sync::Arc;
+
+    use tracing::trace;
+    use tracing::debug;
+
+    use crate::store::event::EventPublisher;
+
+    use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
+
+    /// listen for changes local store
+    pub struct ChangeListener<S, C>
+    where
+        S: Spec,
+        C: MetadataItem,
+    {
+        store: Arc<LocalStore<S, C>>,
+        last_change: i64,
+    }
+
+    impl<S, C> fmt::Debug for ChangeListener<S, C>
+    where
+        S: Spec,
+        C: MetadataItem,
+    {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "{} last:{},current:{}",
+                S::LABEL,
+                self.last_change,
+                self.event_publisher().current_change()
+            )
+        }
+    }
+
+    impl<S, C> ChangeListener<S, C>
+    where
+        S: Spec,
+        C: MetadataItem,
+    {
+        pub fn new(store: Arc<LocalStore<S, C>>) -> Self {
+            Self {
+                store,
+                last_change: 0,
+            }
+        }
+
+        #[inline]
+        pub fn event_publisher(&self) -> &EventPublisher {
+            self.store.event_publisher()
+        }
+
+        /// check if there should be any changes
+        /// this should be done before event listener
+        /// to ensure no events are missed
+        #[inline]
+        pub fn has_change(&mut self) -> bool {
+            self.event_publisher().current_change() > self.last_change
+        }
+
+        /// sync change to current change
+        #[inline(always)]
+        pub fn load_last(&mut self) {
+            self.set_last_change(self.event_publisher().current_change());
+        }
+
+        #[inline(always)]
+        pub fn set_last_change(&mut self, updated_change: i64) {
+            self.last_change = updated_change;
+        }
+
+        #[inline]
+        pub fn last_change(&self) -> i64 {
+            self.last_change
+        }
+
+        pub fn current_change(&self) -> i64 {
+            self.event_publisher().current_change()
+        }
+
+        pub async fn listen(&mut self) {
+            if self.has_change() {
+                trace!("before has change: {}", self.last_change());
+                return;
+            }
+
+            let listener = self.event_publisher().listen();
+
+            if self.has_change() {
+                trace!("after has change: {}", self.last_change());
+                return;
+            }
+
+            trace!("waiting for publisher");
+
+            listener.await;
+
+            trace!("new change: {}", self.current_change());
+        }
+
+        /// find all changes derived from this listener
+        pub async fn sync_changes(&mut self) -> MetadataChanges<S, C> {
+            let read_guard = self.store.read().await;
+            let changes = read_guard.changes_since(self.last_change);
+            drop(read_guard);
+            trace!(
+                "finding changes: {}, from: {}",
+                self.last_change,
+                changes.epoch
+            );
+            let current_epoch = self.event_publisher().current_change();
+            if changes.epoch > current_epoch {
+                debug!(
+                    "latest epoch: {} > status epoch: {}",
+                    changes.epoch, current_epoch
+                );
+            }
+            self.set_last_change(changes.epoch);
+            changes
+        }
+
+        /// find all spec related changes
+        pub async fn sync_spec_changes(&mut self) -> MetadataChanges<S, C> {
+            let read_guard = self.store.read().await;
+            let changes = read_guard.spec_changes_since(self.last_change);
+            drop(read_guard);
+            trace!(
+                "finding last spec change: {}, from: {}",
+                self.last_change,
+                changes.epoch
+            );
+            let current_epoch = self.event_publisher().current_change();
+            if changes.epoch > current_epoch {
+                debug!(
+                    "latest epoch: {} > status epoch: {}",
+                    changes.epoch, current_epoch
+                );
+            }
+            self.set_last_change(changes.epoch);
+            changes
+        }
+
+        /// all status related changes
+        pub async fn sync_status_changes(&mut self) -> MetadataChanges<S, C> {
+            let read_guard = self.store.read().await;
+            let changes = read_guard.status_changes_since(self.last_change);
+            drop(read_guard);
+            trace!(
+                "finding last status change: {}, from: {}",
+                self.last_change,
+                changes.epoch
+            );
+
+            let current_epoch = self.event_publisher().current_change();
+            if changes.epoch > current_epoch {
+                debug!(
+                    "latest epoch: {} > spec epoch: {}",
+                    changes.epoch, current_epoch
+                );
+            }
+            self.set_last_change(changes.epoch);
+            changes
+        }
     }
 }
 
@@ -423,6 +627,115 @@ mod test {
             .expect("some changes");
         assert_eq!(changes.update_spec, 0);
         assert_eq!(changes.update_status, 1);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test_notify {
+
+    use std::sync::Arc;
+    use std::time::Duration;
+    use std::sync::atomic::AtomicI64;
+    use std::sync::atomic::Ordering::SeqCst;
+
+    use tracing::debug;
+
+    use fluvio_future::test_async;
+    use fluvio_future::task::spawn;
+    use fluvio_future::timer::sleep;
+
+    use crate::store::actions::LSUpdate;
+    use crate::store::event::SimpleEvent;
+    use crate::test_fixture::{TestSpec, DefaultTest};
+
+    use super::LocalStore;
+
+    type DefaultTestStore = LocalStore<TestSpec, u32>;
+
+    use super::ChangeListener;
+
+    struct TestController {
+        store: Arc<DefaultTestStore>,
+        shutdown: Arc<SimpleEvent>,
+        last_change: Arc<AtomicI64>,
+    }
+
+    impl TestController {
+        fn start(
+            ctx: Arc<DefaultTestStore>,
+            shutdown: Arc<SimpleEvent>,
+            last_change: Arc<AtomicI64>,
+        ) {
+            let controller = Self {
+                store: ctx,
+                shutdown,
+                last_change,
+            };
+
+            spawn(controller.dispatch_loop());
+        }
+
+        async fn dispatch_loop(mut self) {
+            use tokio::select;
+
+            debug!("entering loop");
+
+            let mut spec_listner = self.store.change_listener();
+
+            loop {
+                self.sync(&mut spec_listner).await;
+
+                select! {
+                    _ = spec_listner.listen() => {
+                        debug!("spec change occur: {}",spec_listner.last_change());
+                        continue;
+                    },
+                    _ = self.shutdown.listen() => {
+                        debug!("shutdown");
+                        break;
+                    }
+                }
+            }
+        }
+
+        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, u32>) {
+            debug!("sync start");
+            let (update, _delete) = spec_listner.sync_spec_changes().await.parts();
+            // assert!(update.len() > 0);
+            debug!("changes: {}", update.len());
+            sleep(Duration::from_millis(10)).await;
+            debug!("sync end");
+            self.last_change.fetch_add(1, SeqCst);
+        }
+    }
+
+    #[test_async]
+    async fn test_store_notifications() -> Result<(), ()> {
+        let topic_store = Arc::new(DefaultTestStore::default());
+        let last_change = Arc::new(AtomicI64::new(0));
+        let shutdown = SimpleEvent::shared();
+
+        TestController::start(topic_store.clone(), shutdown.clone(), last_change.clone());
+
+        let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
+        let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
+
+        for i in 0..10u16 {
+            sleep(Duration::from_millis(2)).await;
+            let topic_name = format!("topic{}", i);
+            debug!("creating topic: {}", topic_name);
+            let topic = DefaultTest::with_spec(topic_name, TestSpec::default()).with_context(3);
+            let _ = topic_store.apply_changes(vec![LSUpdate::Mod(topic)]).await;
+        }
+
+        // wait for controller to sync
+        sleep(Duration::from_millis(100)).await;
+        shutdown.notify();
+        sleep(Duration::from_millis(1)).await;
+
+        //  assert_eq!(last_change.load(SeqCst), 4);
+
         Ok(())
     }
 }

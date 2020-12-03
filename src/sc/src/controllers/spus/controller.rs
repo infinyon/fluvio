@@ -63,12 +63,14 @@ impl SpuController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        self.sync_store().await;
+        let mut listener = self.spus.change_listener();
 
         const HEALTH_DURATION: u64 = 90;
 
         let mut time_left = Duration::from_secs(HEALTH_DURATION);
         loop {
+            self.sync_store().await;
+
             let health_time = Instant::now();
             debug!(
                 "waiting on events, health check left: {} secs",
@@ -76,15 +78,9 @@ impl SpuController {
             );
 
             select! {
-                _ = self.spus.spec_listen() => {
-
-                    debug!("detected events in spu speec");
-                    self.sync_store().await;
-                    time_left -= health_time.elapsed();
-                },
-                _ = self.spus.status_listen() => {
-                    debug!("detected events in spu status");
-                    self.sync_store().await;
+                _ = listener.listen() => {
+                    debug!("detected events in spu");
+                    listener.load_last();
                     time_left -= health_time.elapsed();
                 },
                 health_msg = self.health_receiver.recv() => {
@@ -114,6 +110,7 @@ impl SpuController {
     async fn sync_store(&mut self) {
         use std::collections::HashSet;
 
+        debug!("performing sync with spu store");
         // check if we need to sync spu and our health check cache
         if self.spus.store().count().await as usize != self.status.len() {
             let keys = self.spus.store().spu_ids().await;

@@ -38,11 +38,11 @@ event-listener = "2.4.0"
 
 
 # Fluvio dependencies
-fluvio-types = { path = "../types", version = "0.1.0" }
-fluvio-storage = { path = "../storage", version = "0.1.0" }
-fluvio-controlplane = { path = "../controlplane", version = "0.2.0" }
-fluvio-controlplane-metadata = { path = "../controlplane-metadata", version = "0.2.0" }
-fluvio-spu-schema = { path = "../spu-schema", version = "0.1.0" }
+fluvio-types = { version = "0.2.0", path = "../types"  }
+fluvio-storage = { version = "0.1.0", path = "../storage" }
+fluvio-controlplane = { version = "0.2.0", path = "../controlplane"  }
+fluvio-controlplane-metadata = { version = "0.2.0", path = "../controlplane-metadata"  }
+fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema"  }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.4.2" }

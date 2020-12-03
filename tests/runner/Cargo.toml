@@ -15,7 +15,7 @@ async-trait = "0.1.21"
 # Fluvio dependencies
 fluvio-future = { version = "0.1.0", features = ["task","timer","subscriber","fixture"] }
 fluvio = { path = "../../src/client" }
-fluvio-types = { path = "../../src/types", version = "0.1.0" }
+fluvio-types = { version = "0.2.0", path = "../../src/types"  }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../../src/controlplane-metadata" }
 dataplane = { version = "0.1.0", path = "../../src/dataplane-protocol", package = "fluvio-dataplane-protocol" }
-utils = { version = "0.1.0", path = "../../src/utils", package = "fluvio-system-util" }
+fluvio-system-util = { version = "0.1.0", path = "../../src/utils" }

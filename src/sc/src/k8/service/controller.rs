@@ -8,11 +8,10 @@ use tracing::instrument;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::StoreContext;
+use crate::stores::{StoreContext, K8ChangeListener};
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
 use crate::dispatcher::k8::core::service::LoadBalancerIngress;
-use crate::stores::Epoch;
 
 use super::SpuServicespec;
 
@@ -21,9 +20,7 @@ use super::SpuServicespec;
 /// External load balancer update external ip or hostname out of band.
 pub struct SpuServiceController {
     services: StoreContext<SpuServicespec>,
-    service_epoch: Epoch,
     spus: StoreContext<SpuSpec>,
-    spu_epoch: Epoch,
 }
 
 impl fmt::Display for SpuServiceController {
@@ -41,15 +38,8 @@ impl fmt::Debug for SpuServiceController {
 impl SpuServiceController {
     pub fn start(ctx: SharedContext, services: StoreContext<SpuServicespec>) {
         let spus = ctx.spus().clone();
-        let spu_epoch = spus.store().init_epoch().spec_epoch();
-        let service_epoch = services.store().init_epoch().spec_epoch();
 
-        let controller = Self {
-            services,
-            service_epoch,
-            spus,
-            spu_epoch,
-        };
+        let controller = Self { services, spus };
 
         spawn(controller.dispatch_loop());
     }
@@ -60,49 +50,47 @@ impl SpuServiceController {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        loop {
-            debug!("syncing service to spu");
-            self.sync_service_to_spu().await;
-            debug!("synching spu to service");
-            self.sync_spu_to_service().await;
+        let mut service_listener = self.services.change_listener();
+        let mut spu_listener = self.spus.change_listener();
 
-            debug!("waiting  for service and spu updates");
+        loop {
+            self.sync_service_to_spu(&mut service_listener).await;
+            self.sync_spu_to_service(&mut spu_listener).await;
+
+            debug!("waiting events");
 
             select! {
-                // this is hack until we fix listener
+                // just in case, we force
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = self.services.spec_listen() => {
-                    debug!("detected service spec changes");
+                _ = service_listener.listen() => {
+                    debug!("detected service changes");
                 },
-                _ = self.services.status_listen() => {
-                    debug!("detected service status changes");
-                },
-                _ = self.spus.spec_listen() => {
-                    debug!("detected spu spec changes");
-                },
-                _ = self.spus.status_listen() => {
-                    debug!("detected spu event changes");
+                _ = spu_listener.listen() => {
+                    debug!("detected spu changes");
                 }
             }
         }
     }
 
-    #[instrument()]
+    #[instrument(skip(self))]
     /// svc has been changed, update spu
-    async fn sync_service_to_spu(&mut self) {
-        let read_guard = self.services.store().read().await;
-        let changes = read_guard.changes_since(self.service_epoch);
-        drop(read_guard);
-        self.service_epoch = changes.epoch; // update epoch
+    async fn sync_service_to_spu(&mut self, listener: &mut K8ChangeListener<SpuServicespec>) {
+        if !listener.has_change() {
+            debug!("no service change, skipping");
+            return;
+        }
 
+        let changes = listener.sync_changes().await;
+        let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
+
         debug!(
             "received service changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
-            self.service_epoch,
+            epoch,
         );
 
         for svc_md in updates.into_iter() {
@@ -148,18 +136,21 @@ impl SpuServiceController {
 
     #[instrument()]
     /// spu has been changed, sync with existing services
-    async fn sync_spu_to_service(&mut self) {
-        let read_guard = self.spus.store().read().await;
-        let changes = read_guard.changes_since(self.spu_epoch);
-        drop(read_guard);
-        self.spu_epoch = changes.epoch; // update epoch
+    async fn sync_spu_to_service(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
+        if !listener.has_change() {
+            debug!("no spu changes, skipping");
+            return;
+        }
 
+        let changes = listener.sync_changes().await;
+
+        let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(
             "received spu changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
-            self.spu_epoch,
+            epoch
         );
 
         for spu_md in updates.into_iter() {

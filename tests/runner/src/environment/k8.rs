@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use utils::bin::get_fluvio;
+use fluvio_system_util::bin::get_fluvio;
 
 use crate::TestOption;
 use crate::util::CommandUtil;

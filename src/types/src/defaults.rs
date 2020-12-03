@@ -14,7 +14,7 @@ pub const SC_HOSTNAME: &str = "localhost";
 pub const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 5 min
 
 // SPU defaults
-pub const SPU_DEFAULT_ID: i32 = 0;
+
 pub const SPU_DEFAULT_NAME: &str = "spu";
 pub const SPU_CONFIG_FILE: &str = "spu_server";
 pub const SPU_PUBLIC_PORT: u16 = 9005;

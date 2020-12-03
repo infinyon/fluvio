@@ -148,6 +148,20 @@ impl<K, V> DerefMut for DualEpochMap<K, V> {
     }
 }
 
+impl<K, V> DualEpochMap<K, V> {
+    pub fn increment_epoch(&mut self) {
+        self.epoch.increment();
+    }
+
+    pub fn decrement_epoch(&mut self) {
+        self.epoch.decrement();
+    }
+
+    pub fn epoch(&self) -> Epoch {
+        self.epoch.epoch()
+    }
+}
+
 impl<K, V> DualEpochMap<K, V>
 where
     V: DualDiff,
@@ -164,18 +178,6 @@ where
             values,
             deleted: vec![],
         }
-    }
-
-    pub fn increment_epoch(&mut self) {
-        self.epoch.increment();
-    }
-
-    pub fn decrement_epoch(&mut self) {
-        self.epoch.decrement();
-    }
-
-    pub fn epoch(&self) -> Epoch {
-        self.epoch.epoch()
     }
 
     /// updates the metadata if it is different from existing value
@@ -255,7 +257,7 @@ where
         self.values().cloned().map(|c| c.inner_owned()).collect()
     }
 
-    /// find all spec changes
+    /// find all spec changes given epoch
     /// if epoch is before fence, return full changes with epoch,
     /// otherwise return delta changes
     /// user should keep that epoch and do subsequent changes
@@ -269,6 +271,10 @@ where
                 self.epoch.epoch(),
                 EpochDeltaChanges::SyncAll(self.clone_values()),
             );
+        }
+
+        if epoch == self.epoch() {
+            return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
         }
 
         let updates = self
@@ -313,6 +319,10 @@ where
             );
         }
 
+        if epoch == self.epoch() {
+            return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
+        }
+
         let updates = self
             .values()
             .filter_map(|v| {
@@ -330,7 +340,7 @@ where
         )
     }
 
-    /// compatibility with old
+    /// all changes (spec and status) since epoch
     pub fn changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
     where
         Epoch: From<E>,
