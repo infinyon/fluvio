@@ -263,7 +263,7 @@ impl LocalClusterInstaller {
                         }
                         Err(e) => {
                             results.push(Err(CheckError::Unrecoverable(e)));
-                        },
+                        }
                     }
                 }
                 other => results.push(other),
@@ -294,7 +294,7 @@ impl LocalClusterInstaller {
                 })();
 
                 // If any errors occurred, recovery failed
-                if let Err(_) = result {
+                if result.is_err() {
                     return Err(UnrecoverableCheck::FailedRecovery(error));
                 }
             }
@@ -341,10 +341,7 @@ impl LocalClusterInstaller {
         sleep(Duration::from_secs(1)).await;
         self.confirm_spu(self.config.spu_spec.replicas).await?;
 
-        Ok(StartStatus {
-            address,
-            checks,
-        })
+        Ok(StartStatus { address, checks })
     }
 
     /// Launches an SC on the local machine
@@ -556,7 +553,9 @@ impl LocalClusterInstaller {
             let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
             let live_spus = spus
                 .iter()
-                .filter(|spu| spu.status.is_online() && !spu.spec.public_endpoint.ingress.is_empty())
+                .filter(|spu| {
+                    spu.status.is_online() && !spu.spec.public_endpoint.ingress.is_empty()
+                })
                 .count();
             if live_spus == spu as usize {
                 println!("{} spus provisioned", spus.len());

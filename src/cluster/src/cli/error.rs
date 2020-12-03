@@ -43,8 +43,10 @@ impl ClusterError {
         use color_eyre::Section;
         use color_eyre::Report;
 
-        match &self {
-            _ => Report::from(self),
-        }
+        // In the future when we want to annotate errors, we do it here
+        // match &self {
+        //     _ => Report::from(self),
+        // }
+        Report::from(self)
     }
 }

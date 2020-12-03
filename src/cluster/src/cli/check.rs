@@ -31,7 +31,10 @@ impl CheckResults {
                 }
                 Err(e @ CheckError::AutoRecoverable(_)) => {
                     println!("❕ {} {}", "warning:".bold().yellow(), e);
-                    println!("  💡 {} this may be fixed automatically during startup", "note:".bold());
+                    println!(
+                        "  💡 {} this may be fixed automatically during startup",
+                        "note:".bold()
+                    );
                 }
                 Err(e @ CheckError::Unrecoverable(_)) => {
                     // Print one layer of source error
@@ -43,7 +46,11 @@ impl CheckResults {
                     println!("❌ {} {}", "failed:".bold().red(), msg.red());
                 }
                 Err(CheckError::AlreadyInstalled) => {
-                    println!("💙 {} {}", "note:".bold().bright_blue(), "Fluvio is already running".bright_blue());
+                    println!(
+                        "💙 {} {}",
+                        "note:".bold().bright_blue(),
+                        "Fluvio is already running".bright_blue()
+                    );
                 }
             }
         }
@@ -81,23 +88,34 @@ impl CheckResults {
             (0, 0) if !installed => {
                 println!("{}", "All checks passed!".bold());
                 println!("You may proceed with cluster startup");
-                println!("{}: run `fluvio cluster start`", "next".bold().bright_blue());
+                println!(
+                    "{}: run `fluvio cluster start`",
+                    "next".bold().bright_blue()
+                );
             }
             (0, _) if !installed => {
                 println!("{}", "Some checks failed, but may be auto-corrected".bold());
                 println!("You may proceed with cluster startup");
-                println!("{}: run `fluvio cluster start`", "next".bold().bright_blue());
+                println!(
+                    "{}: run `fluvio cluster start`",
+                    "next".bold().bright_blue()
+                );
             }
             _ if !installed => {
                 let s = if failures == 1 { "" } else { "s" };
                 print!("{}", format!("{} check{s} failed:", failures, s = s).bold());
 
                 let it = if failures == 1 { "it" } else { "them" };
-                println!(" Please correct {it} before continuing with cluster startup", it = it);
+                println!(
+                    " Please correct {it} before continuing with cluster startup",
+                    it = it
+                );
             }
             _ => {
                 println!("{}", "Fluvio is already running!".bold());
-                println!("To reset the cluster, run `fluvio cluster delete` then `fluvio cluster start`");
+                println!(
+                    "To reset the cluster, run `fluvio cluster delete` then `fluvio cluster start`"
+                );
             }
         }
     }

@@ -38,7 +38,10 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
             println!("Successfully installed Fluvio!");
         }
         // Successfully performed startup with pre-checks
-        Ok(StartStatus { checks: Some(check_results), .. }) => {
+        Ok(StartStatus {
+            checks: Some(check_results),
+            ..
+        }) => {
             check_results.render_checks();
         }
         // Aborted startup because pre-checks failed

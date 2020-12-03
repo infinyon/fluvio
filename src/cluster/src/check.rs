@@ -14,9 +14,7 @@ use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
 
 use fluvio_helm::{HelmClient, HelmError};
-use crate::{
-    DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
-};
+use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;
@@ -136,7 +134,7 @@ pub enum UnrecoverableCheck {
 
     /// Minikube tunnel not found, this error is used in case of macos we don't try to get tunnel up as it needs elevated context
     #[error(
-"Minikube tunnel may not be running
+        "Minikube tunnel may not be running
     Run `sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &`"
     )]
     MinikubeTunnelNotFound,
@@ -183,8 +181,7 @@ pub(crate) struct HelmVersion;
 #[async_trait]
 impl InstallCheck for HelmVersion {
     async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new()
-            .map_err(UnrecoverableCheck::HelmError)?;
+        let helm_client = HelmClient::new().map_err(UnrecoverableCheck::HelmError)?;
         check_helm_version(&helm_client, DEFAULT_HELM_VERSION)
     }
 }
@@ -194,8 +191,7 @@ pub(crate) struct SysChart;
 #[async_trait]
 impl InstallCheck for SysChart {
     async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new()
-            .map_err(UnrecoverableCheck::HelmError)?;
+        let helm_client = HelmClient::new().map_err(UnrecoverableCheck::HelmError)?;
         check_system_chart(&helm_client, DEFAULT_CHART_SYS_REPO)
     }
 }
@@ -205,8 +201,7 @@ pub(crate) struct AlreadyInstalled;
 #[async_trait]
 impl InstallCheck for AlreadyInstalled {
     async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new()
-            .map_err(UnrecoverableCheck::HelmError)?;
+        let helm_client = HelmClient::new().map_err(UnrecoverableCheck::HelmError)?;
         check_already_installed(&helm_client, DEFAULT_CHART_APP_REPO)
     }
 }
@@ -285,28 +280,25 @@ impl ClusterChecker {
 }
 
 /// Checks that the installed helm version is compatible with the installer requirements
-pub(crate) fn check_helm_version(
-    helm: &HelmClient,
-    required: &str,
-) -> Result<String, CheckError> {
-    let helm_version = helm.get_helm_version()
+pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> Result<String, CheckError> {
+    let helm_version = helm
+        .get_helm_version()
         .map_err(UnrecoverableCheck::HelmError)?;
     if Version::parse(&helm_version) < Version::parse(required) {
         return Err(UnrecoverableCheck::IncompatibleHelmVersion {
             installed: helm_version,
             required: required.to_string(),
-        }.into());
+        }
+        .into());
     }
     Ok("Supported helm version is installed".to_string())
 }
 
 /// Check that the system chart is installed
-pub(crate) fn check_system_chart(
-    helm: &HelmClient,
-    sys_repo: &str,
-) -> Result<String, CheckError> {
+pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> Result<String, CheckError> {
     // check installed system chart version
-    let sys_charts = helm.get_installed_chart_by_name(sys_repo)
+    let sys_charts = helm
+        .get_installed_chart_by_name(sys_repo)
         .map_err(UnrecoverableCheck::HelmError)?;
     if sys_charts.is_empty() {
         return Err(RecoverableCheck::MissingSystemChart.into());
@@ -321,7 +313,8 @@ pub(crate) fn check_already_installed(
     helm: &HelmClient,
     app_repo: &str,
 ) -> Result<String, CheckError> {
-    let app_charts = helm.get_installed_chart_by_name(app_repo)
+    let app_charts = helm
+        .get_installed_chart_by_name(app_repo)
         .map_err(UnrecoverableCheck::HelmError)?;
     if !app_charts.is_empty() {
         return Err(CheckError::AlreadyInstalled);
@@ -331,12 +324,9 @@ pub(crate) fn check_already_installed(
 
 /// Check if load balancer is up
 pub(crate) async fn check_load_balancer_status() -> Result<String, CheckError> {
-    let config = K8Config::load()
-        .map_err(UnrecoverableCheck::K8ConfigError)?;
+    let config = K8Config::load().map_err(UnrecoverableCheck::K8ConfigError)?;
     let context = match config {
-        K8Config::Pod(_) => {
-            return Ok("Pod config found, ignoring the check".to_string())
-        }
+        K8Config::Pod(_) => return Ok("Pod config found, ignoring the check".to_string()),
         K8Config::KubeConfig(context) => context,
     };
 
@@ -431,12 +421,9 @@ fn get_tunnel_error() -> CheckError {
 
 /// Getting server hostname from K8 context
 fn check_cluster_server_host() -> Result<String, CheckError> {
-    let config = K8Config::load()
-        .map_err(UnrecoverableCheck::K8ConfigError)?;
+    let config = K8Config::load().map_err(UnrecoverableCheck::K8ConfigError)?;
     let context = match config {
-        K8Config::Pod(_) => {
-            return Ok("Pod config found, ignoring the check".to_string())
-        }
+        K8Config::Pod(_) => return Ok("Pod config found, ignoring the check".to_string()),
         K8Config::KubeConfig(context) => context,
     };
 
@@ -477,7 +464,8 @@ fn k8_version_check() -> Result<String, CheckError> {
         return Err(UnrecoverableCheck::IncompatibleKubectlVersion {
             installed: version_text_trimmed.to_string(),
             required: KUBE_VERSION.to_string(),
-        }.into());
+        }
+        .into());
     }
     Ok("Supported kubernetes version is installed".to_string())
 }
@@ -487,7 +475,8 @@ fn check_permission(resource: &str) -> Result<String, CheckError> {
     if !res {
         return Err(UnrecoverableCheck::PermissionError {
             resource: resource.to_string(),
-        }.into());
+        }
+        .into());
     }
     Ok(format!("Can create {}", resource))
 }
@@ -500,7 +489,7 @@ fn check_create_permission(resource: &str) -> Result<bool, UnrecoverableCheck> {
         .arg(resource)
         .output()
         .map_err(UnrecoverableCheck::KubectlNotFoundError)?;
-    let res =
-        String::from_utf8(check_command.stdout).map_err(|_| UnrecoverableCheck::FetchPermissionError)?;
+    let res = String::from_utf8(check_command.stdout)
+        .map_err(|_| UnrecoverableCheck::FetchPermissionError)?;
     Ok(res.trim() == "yes")
 }

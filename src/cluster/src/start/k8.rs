@@ -23,9 +23,14 @@ use k8_obj_core::service::ServiceSpec;
 use k8_obj_metadata::InputObjectMeta;
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig, LoadBalancer, CheckError, RecoverableCheck, CheckResults};
+use crate::check::{
+    UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig,
+    LoadBalancer, CheckError, RecoverableCheck, CheckResults,
+};
 use crate::error::K8InstallError;
-use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO};
+use crate::{
+    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
+};
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
@@ -664,7 +669,10 @@ impl ClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    pub(crate) async fn pre_install_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    pub(crate) async fn pre_install_fix(
+        &self,
+        error: RecoverableCheck,
+    ) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, wrap it in UnrecoverableCheck::FailedRecovery
@@ -678,7 +686,8 @@ impl ClusterInstaller {
                 println!(
                     "Load balancer service is not available, trying to bring up minikube tunnel"
                 );
-                self._try_minikube_tunnel().await
+                self._try_minikube_tunnel()
+                    .await
                     .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
             }
             unhandled => {
@@ -747,8 +756,8 @@ impl ClusterInstaller {
             sleep(Duration::from_millis(2000)).await;
 
             // Create a managed SPU cluster
-            let cluster = FluvioConfig::new(address.clone())
-                .with_tls(self.config.client_tls_policy.clone());
+            let cluster =
+                FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
@@ -756,10 +765,7 @@ impl ClusterInstaller {
                 .await?;
         }
 
-        Ok(StartStatus {
-            address,
-            checks,
-        })
+        Ok(StartStatus { address, checks })
     }
 
     /// Install the Fluvio System chart on the configured cluster
