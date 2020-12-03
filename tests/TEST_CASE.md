@@ -1,22 +1,49 @@
-# Test Scenarios
+# Smoke Test Scenarios
 
 
-## Sequential Scenario
+## 1 SPU
 
-Write and Read Sequential:
+Local Non TLS
+
+```
+make RELEASE=true DEFAULT_ITERATION=5000 SERVER_LOG=info smoke-test
+```
+
+Local TLS
+
+```
+make RELEASE=true DEFAULT_ITERATION=5000 SERVER_LOG=info smoke-test-tls-root
+```
+
+K8 Non TLS
+```
+make RELEASE=true DEFAULT_ITERATION=5000 SERVER_LOG=info smoke-test-k8
+```
+
+K8 TLS
+```
+make RELEASE=true DEFAULT_ITERATION=5000 SERVER_LOG=info smoke-test-k8-tls-root
+```
+
+### 2 SPU
+
+Local Non TLS
+```
+make RELEASE=true DEFAULT_ITERATION=5000 DEFAULT_SPU=2 SERVER_LOG=info smoke-test
+```
+
+
+
+## With large record size
 
 Iteration: 5000,
 Record size: 5k
 Log size: 25M
 
-### 1 SPU
-No Issue
-
-### 2 SPU
-
 ```
 flvt --local-driver -p 5000 --record-size 5000 --spu 2 --replication 2
 ```
+
 
 ## Election Scenario
 
