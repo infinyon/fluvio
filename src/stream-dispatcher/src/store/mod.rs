@@ -184,6 +184,20 @@ mod context {
                     let max_wait = Duration::from_secs(MAX_WAIT_TIME);
                     let mut spec_listener = self.change_listener();
                     loop {
+                        // check if we can find old object
+                        if !self.store.contains_key(&key).await {
+                            debug!("store: {}, object: {:#?}, has been deleted", S::LABEL, key);
+                            return Ok(());
+                        } else {
+                            // check if total time expired
+                            if instant.elapsed() > max_wait {
+                                return Err(IoError::new(
+                                    ErrorKind::TimedOut,
+                                    format!("store timed out: {} for {:?}", S::LABEL, key),
+                                ));
+                            }
+                        }
+
                         debug!("{} store, waiting for store event", S::LABEL);
 
                         select! {
@@ -195,19 +209,11 @@ mod context {
                                 ));
                             },
                             _ = spec_listener.listen() => {
-                                // check if we can find old object
-                                if !self.store.contains_key(&key).await {
-                                    debug!("store: {}, object: {:#?}, has been deleted",S::LABEL,key);
-                                    return Ok(())
-                                } else {
-                                    // check if total time expired
-                                    if instant.elapsed() > max_wait {
-                                        return Err(IoError::new(
-                                            ErrorKind::TimedOut,
-                                            format!("store timed out: {} for {:?}", S::LABEL,key)
-                                        ));
-                                    }
-                                }
+
+                                let changes = spec_listener.sync_changes().await;
+                                debug!("{} received changes: {:#?}",S::LABEL,changes);
+
+
                             }
                         }
                     }
