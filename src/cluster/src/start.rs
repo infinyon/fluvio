@@ -651,38 +651,7 @@ impl ClusterInstaller {
             }
         }
 
-        // let mut fail_count = 0;
-        // for check in checks {
-        //     let check_result = check.perform_check().await;
-        //     match check_result {
-        //         Ok(success) => {
-        //             let msg = format!("ok: {}", success);
-        //             println!("✔️  {}", msg.green());
-        //         }
-        //         Err(CheckError::Unrecoverable(e)) => {
-        //             let msg = format!("failed: {}", e);
-        //             println!("❌ {}", msg.red());
-        //             fail_count += 1;
-        //         }
-        //         Err(CheckError::AutoRecoverable(it)) => {
-        //             let fix_result = self.pre_install_fix(it).await;
-        //             match fix_result {
-        //                 // Recovered successfully
-        //                 Ok(_) => {
-        //                     println!("✔️  success");
-        //                 }
-        //                 // Failed to recover, print error
-        //                 Err(e) => {
-        //                     let msg = format!("failed: {}", e);
-        //                     println!("❌ {}", msg.red());
-        //                     fail_count += 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        results
+        CheckResults::from(results)
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
@@ -741,7 +710,7 @@ impl ClusterInstaller {
             let check_results = self.setup().await;
 
             let mut any_failed = false;
-            for result in &check_results {
+            for result in &check_results.0 {
                 match result {
                     // If Fluvio is already installed, return it's SC's address
                     Err(CheckError::AlreadyInstalled) => {

@@ -160,8 +160,10 @@ impl StartOpt {
             if self.setup {
                 run_local_setup(self).await?;
             } else {
-                install_local(self).await?;
-                confirm_spu(spu).await?;
+                let local_success = install_local(self).await?;
+                if local_success {
+                    confirm_spu(spu).await?;
+                }
             }
         } else if self.setup {
             run_setup(self).await?;

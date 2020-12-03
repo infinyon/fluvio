@@ -2,26 +2,32 @@ use structopt::StructOpt;
 
 use crate::ClusterChecker;
 use crate::cli::ClusterCliError;
-use crate::check::CheckError;
+use crate::check::{CheckError, CheckResults};
 
 #[derive(Debug, StructOpt)]
-pub struct CheckOpt {
-    /// run pre-install checks
-    #[structopt(long)]
-    pre_install: bool,
-}
+pub struct CheckOpt {}
 
 impl CheckOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
         use colored::*;
-
         println!("{}", "Running pre-install checks...".bold());
         let check_results = ClusterChecker::run_preflight_checks().await;
+        check_results.render();
+        Ok(())
+    }
+}
+
+// This impl is here so it is only compiled when the "cli" feature is enabled
+impl CheckResults {
+    /// Pretty-prints itself to the terminal
+    pub fn render(&self) {
+        use colored::*;
 
         let mut failures = 0;
         let mut warnings = 0;
         let mut installed = false;
-        for result in check_results {
+
+        for result in self.0.iter() {
             match result {
                 Ok(success) => {
                     let msg = format!("ok: {}", success);
@@ -34,7 +40,12 @@ impl CheckOpt {
                     warnings += 1;
                 }
                 Err(e @ CheckError::Unrecoverable(_)) => {
-                    let msg = format!("failed: {}", e);
+                    // Print one layer of source error
+                    let cause = match std::error::Error::source(e) {
+                        Some(underlying) => format!(": {}", underlying),
+                        None => "".to_string(),
+                    };
+                    let msg = format!("failed: {}{}", e, cause);
                     println!("❌ {}", msg.red());
                     failures += 1;
                 }
@@ -58,15 +69,15 @@ impl CheckOpt {
             }
             _ if !installed => {
                 let s = if failures == 1 { "" } else { "s" };
-                println!("{}", format!("{} check{s} failed", failures, s = s).bold());
-                println!("Please correct them before continuing with cluster startup")
+                print!("{}", format!("{} check{s} failed:", failures, s = s).bold());
+
+                let it = if failures == 1 { "it" } else { "them" };
+                println!(" Please correct {it} before continuing with cluster startup", it = it);
             }
             _ => {
                 println!("{}", "Fluvio is already running!".bold());
                 println!("To reset the cluster, run `fluvio cluster delete` then `fluvio cluster start`");
             }
         }
-
-        Ok(())
     }
 }

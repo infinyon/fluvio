@@ -26,7 +26,14 @@ const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 
-pub type CheckResults = Vec<std::result::Result<String, CheckError>>;
+#[derive(Debug)]
+pub struct CheckResults(pub Vec<Result<String, CheckError>>);
+
+impl From<Vec<Result<String, CheckError>>> for CheckResults {
+    fn from(it: Vec<Result<String, CheckError>>) -> Self {
+        Self(it)
+    }
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum CheckError {
@@ -273,7 +280,7 @@ impl ClusterChecker {
             results.push(check_result);
         }
 
-        results
+        CheckResults::from(results)
     }
 }
 

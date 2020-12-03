@@ -3,11 +3,15 @@ use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 
 use crate::cli::ClusterCliError;
-use crate::LocalClusterInstaller;
+use crate::{LocalClusterInstaller, ClusterError, LocalInstallError};
 
 use super::StartOpt;
 
-pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
+/// Attempts to start a local Fluvio cluster
+///
+/// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
+/// reported, or `Err(e)` if something unexpected occurred.
+pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
     let mut builder = LocalClusterInstaller::new()
         .with_log_dir(opt.log_dir.to_string())
         .with_spu_replicas(opt.spu);
@@ -25,8 +29,27 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
     }
 
     let installer = builder.build()?;
-    installer.install().await?;
-    Ok(())
+    let install_result = installer.install().await;
+
+    match install_result {
+        // Successfully performed startup without pre-checks
+        Ok(None) => {
+            println!("Skipped pre-start checks");
+            println!("Successfully installed Fluvio!");
+        }
+        // Successfully performed startup with pre-checks
+        Ok(Some(check_results)) => {
+            check_results.render();
+        }
+        // Aborted startup because pre-checks failed
+        Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_results))) => {
+            check_results.render();
+            return Ok(false);
+        }
+        Err(other) => return Err(other.into()),
+    }
+
+    Ok(true)
 }
 
 pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {

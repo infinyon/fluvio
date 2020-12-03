@@ -243,6 +243,7 @@ impl LocalClusterInstaller {
             skip_checks: false,
         }
     }
+
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
@@ -267,33 +268,9 @@ impl LocalClusterInstaller {
                 }
                 other => results.push(other),
             }
-
-
-            // match check.perform_check().await {
-            //     Ok(check) => match check {
-            //         StatusCheck::Working(_) => {
-            //             // do nothing check is fine
-            //         }
-            //         // unrecoverable error occured, return error
-            //         StatusCheck::NotWorkingNoRemediation(failure) => {
-            //             return Err(LocalInstallError::PreCheck(failure).into());
-            //         }
-            //         // recoverable error occured, try to fix
-            //         StatusCheck::NotWorking(failure, _) => {
-            //             match self.pre_install_fix(failure).await {
-            //                 Ok(_) => {
-            //                     // recovered correctly
-            //                 }
-            //                 // not able to recover, return error
-            //                 Err(err) => return Err(err),
-            //             };
-            //         }
-            //     },
-            //     Err(err) => return Err(LocalInstallError::PreCheck(err).into()),
-            // };
         }
 
-        results
+        CheckResults::from(results)
     }
 
     /// Given a pre-check error, attempt to automatically correct it
@@ -331,17 +308,20 @@ impl LocalClusterInstaller {
     }
 
     /// Install fluvio locally
-    pub async fn install(&self) -> Result<(), ClusterError> {
-        if !self.config.skip_checks {
-            // Try to setup environment by running pre-checks and auto-fixes
-            let check_results = self.setup().await;
-            if check_results.iter().any(|it| it.is_err()) {
-                // If any check results failed, fail install
-                return Err(LocalInstallError::FailedPrecheck(check_results).into());
+    pub async fn install(&self) -> Result<Option<CheckResults>, ClusterError> {
+        let maybe_check_results = match self.config.skip_checks {
+            true => None,
+            false => {
+                // Try to setup environment by running pre-checks and auto-fixes
+                let check_results = self.setup().await;
+                if check_results.0.iter().any(|it| it.is_err()) {
+                    // If any check results failed, fail install
+                    return Err(LocalInstallError::FailedPrecheck(check_results).into());
+                }
+                Some(check_results)
             }
-        } else {
-            println!("Skipping pre-flight checks, proceeding with the installation");
-        }
+        };
+
         debug!("using log dir: {}", &self.config.log_dir);
         if !Path::new(&self.config.log_dir.to_string()).exists() {
             create_dir_all(&self.config.log_dir.to_string()).map_err(LocalInstallError::IoError)?;
@@ -359,7 +339,7 @@ impl LocalClusterInstaller {
         );
         self.launch_spu_group().await?;
         sleep(Duration::from_secs(1)).await;
-        Ok(())
+        Ok(maybe_check_results)
     }
 
     fn launch_sc(&self) -> Result<(), LocalInstallError> {
