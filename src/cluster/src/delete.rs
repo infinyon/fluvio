@@ -11,7 +11,7 @@ use k8_obj_metadata::{InputObjectMeta, Spec};
 use k8_obj_core::pod::PodSpec;
 
 use crate::helm::HelmClient;
-use crate::start::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
+use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
 use crate::error::UninstallError;
 use crate::ClusterError;
 

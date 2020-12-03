@@ -18,9 +18,9 @@ use k8_obj_metadata::InputK8Obj;
 use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus};
+use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};
 use crate::check::{InstallCheck, HelmVersion, SysChart, CheckError, RecoverableCheck, CheckResults};
-use crate::start::{ClusterInstaller, DEFAULT_NAMESPACE};
+use crate::start::k8::ClusterInstaller;
 
 const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 

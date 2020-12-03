@@ -14,7 +14,7 @@ use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
 
 use fluvio_helm::{HelmClient, HelmError};
-use crate::start::{
+use crate::{
     DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
 };
 

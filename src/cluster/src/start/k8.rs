@@ -25,12 +25,8 @@ use k8_obj_metadata::InputObjectMeta;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig, LoadBalancer, CheckError, RecoverableCheck, CheckResults};
 use crate::error::K8InstallError;
-use crate::{ClusterError, StartStatus};
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO};
 
-pub(crate) const DEFAULT_NAMESPACE: &str = "default";
-pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
-pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
-pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
