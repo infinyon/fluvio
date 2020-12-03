@@ -22,10 +22,31 @@ jobs:
         uses: davidB/rust-cargo-make@v1
         with:
           version: '0.32.9'
+
+      - name: install musl-tools
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update;
+          sudo apt-get install -y musl-tools build-essential;
+
+      - name: Build and publish using fluvio-packages
+        run: cargo make -l verbose --profile production publish-fluvio
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Update fluvio install.sh
+        if: startsWith(matrix.os, 'ubuntu')
+        run: cargo make -l verbose --profile production s3-upload-installer
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - name: Build and upload release to github
         run: cargo make -l verbose --profile production github-release-upload
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+
 
   release_fluvio_pi:
     name: Raspberry Pi Release
@@ -46,6 +67,10 @@ jobs:
     name: docker release
     runs-on: ubuntu-latest
     steps:
+      - name: install musl-tools
+        run: |
+          sudo apt-get update;
+          sudo apt-get install -y musl-tools build-essential;
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Release docker

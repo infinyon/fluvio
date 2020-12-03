@@ -34,11 +34,11 @@ build_test:	install_test_target
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test
 
-install_test_target:	
+install_test_target:
 ifdef TARGET
 	rustup target add $(TARGET)
 endif
-	
+
 
 #
 # List of smoke test steps.  This is used by CI
@@ -47,7 +47,7 @@ endif
 smoke-test:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK}
 
-smoke-test-tls:	test-clean-up	
+smoke-test-tls:	test-clean-up
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}
 
 smoke-test-tls-policy:	test-clean-up
@@ -139,7 +139,7 @@ check-clippy:	install-clippy
 	cd src/client; cargo +$(RUSTV) clippy --all-targets  -- -D warnings
 
 
-build-all-test:	
+build-all-test:
 	cargo build --tests --all-features
 
 run-all-unit-test:

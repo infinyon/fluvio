@@ -1,37 +1,4 @@
 extend = "Base.toml"
-[tasks.build-release.mac]
-args = [
-    "build",
-    "--bin", "fluvio",
-    "--release",
-    "--target=x86_64-apple-darwin",
-    "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )"
-]
-
-[tasks.build-release.linux]
-dependencies = ["setup-musl"]
-args = [
-    "build",
-    "--release",
-    "--bin", "fluvio",
-    "--target=x86_64-unknown-linux-musl",
-    "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )"
-]
-
-[tasks.setup-musl.linux]
-script = '''
-sudo apt-get update
-sudo apt-get install -y musl-tools build-essential
-rustup target add "$CARGO_MAKE_RELEASE_FLOW_TARGET"
-'''
-
-[tasks.setup-musl.condition]
-platforms = ["linux"]
-profiles = [ "production" ]
-
-
-[tasks.setup-musl.env]
-CARGO_MAKE_RELEASE_FLOW_TARGET = "x86_64-unknown-linux-musl"
 
 [tasks.install-github-release.mac]
 script = '''
@@ -66,8 +33,8 @@ args = [
     "upload",
     "--user", "infinyon",
     "--repo", "fluvio",
-    "--tag", "v${GIT_TAG}",
-    "--name", "fluvio-v${GIT_TAG}-${TARGET}",
+    "--tag", "v${FLUVIO_VERSION}",
+    "--name", "fluvio-v${FLUVIO_VERSION}-${TARGET}",
     "--file", "./target/${TARGET}/release/fluvio",
 ]
 
@@ -78,7 +45,7 @@ dependencies = [
     "install-github-release",
 ]
 script = '''
-github-release -v release --user infinyon --repo fluvio --tag "v${GIT_TAG}" --name "v${GIT_TAG}" --pre-release || echo "creating pre-release on github may have failed"
+github-release -v release --user infinyon --repo fluvio --tag "v${FLUVIO_VERSION}" --name "v${FLUVIO_VERSION}" --pre-release || echo "creating pre-release on github may have failed"
 '''
 
 [tasks.release-github-env.linux]
@@ -93,5 +60,5 @@ args = [
     "delete",
     "--user", "infinyon",
     "--repo", "fluvio",
-    "--tag", "v${GIT_TAG}",
+    "--tag", "v${FLUVIO_VERSION}",
 ]
