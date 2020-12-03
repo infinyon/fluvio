@@ -235,7 +235,7 @@ async fn send_lrs_update(ctx: &SharedContext, lrs_req: UpdateLrsRequest) {
 }
 
 /// send spu spec changes only
-#[instrument()]
+#[instrument(skip(sink))]
 async fn send_spu_spec_changes(
     listener: &mut K8ChangeListener<SpuSpec>,
     sink: &mut FlvSink,
@@ -283,7 +283,7 @@ async fn send_spu_spec_changes(
     Ok(())
 }
 
-#[instrument()]
+#[instrument(skip(sink))]
 async fn send_replica_spec_changes(
     listener: &mut K8ChangeListener<PartitionSpec>,
     sink: &mut FlvSink,
