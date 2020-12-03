@@ -10,22 +10,19 @@ pub struct CheckOpt {}
 impl CheckOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
         use colored::*;
-        println!("{}", "Running pre-install checks...".bold());
+        println!("{}", "Running pre-startup checks...".bold());
         let check_results = ClusterChecker::run_preflight_checks().await;
-        check_results.render();
+        check_results.render_checks();
+        check_results.render_next_steps();
         Ok(())
     }
 }
 
-// This impl is here so it is only compiled when the "cli" feature is enabled
+// Impl is here so that it only gets compiled when `feature = "cli"` is on
 impl CheckResults {
     /// Pretty-prints itself to the terminal
-    pub fn render(&self) {
+    pub fn render_checks(&self) {
         use colored::*;
-
-        let mut failures = 0;
-        let mut warnings = 0;
-        let mut installed = false;
 
         for result in self.0.iter() {
             match result {
@@ -37,7 +34,6 @@ impl CheckResults {
                     let msg = format!("warn: {}", e);
                     println!("⚠️ {}", msg.yellow());
                     println!("  💡 {}: this may be fixed automatically during startup", "note".yellow());
-                    warnings += 1;
                 }
                 Err(e @ CheckError::Unrecoverable(_)) => {
                     // Print one layer of source error
@@ -47,10 +43,36 @@ impl CheckResults {
                     };
                     let msg = format!("failed: {}{}", e, cause);
                     println!("❌ {}", msg.red());
-                    failures += 1;
                 }
                 Err(CheckError::AlreadyInstalled) => {
                     println!("{}", "💙 note: Fluvio is already running".bright_blue());
+                }
+            }
+        }
+    }
+
+    /// Prints suggestions of next steps to the user.
+    ///
+    /// This is useful when the user ran `fluvio cluster check` and needs
+    /// to do more to start up the cluster. It is not so useful when this
+    /// `ClusterResults` was produced by already performing the startup.
+    pub fn render_next_steps(&self) {
+        use colored::*;
+
+        let mut failures = 0;
+        let mut warnings = 0;
+        let mut installed = false;
+
+        for result in self.0.iter() {
+            match result {
+                Ok(_) => (),
+                Err(CheckError::AutoRecoverable(_)) => {
+                    warnings += 1;
+                }
+                Err(CheckError::Unrecoverable(_)) => {
+                    failures += 1;
+                }
+                Err(CheckError::AlreadyInstalled) => {
                     installed = true;
                 }
             }

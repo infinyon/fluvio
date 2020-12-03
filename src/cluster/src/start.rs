@@ -619,8 +619,6 @@ impl ClusterInstaller {
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     #[allow(unused)]
     pub async fn setup(&self) -> CheckResults {
-        println!("Performing pre-flight checks");
-
         let checks: Vec<Box<dyn InstallCheck>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),

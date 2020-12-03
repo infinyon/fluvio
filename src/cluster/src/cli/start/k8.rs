@@ -112,8 +112,11 @@ pub async fn run_setup(opt: StartOpt) -> Result<(), ClusterCliError> {
         }
         _ => (),
     }
+
     let installer = builder.build()?;
-    let _results = installer.setup().await;
-    println!("Setup successful, all the steps necessary for cluster startup have been performed successfully");
+    println!("Performing pre-startup checks...");
+    let results = installer.setup().await;
+    results.render_checks();
+    results.render_next_steps();
     Ok(())
 }

@@ -27,7 +27,7 @@ const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 
 #[derive(Debug)]
-pub struct CheckResults(pub Vec<Result<String, CheckError>>);
+pub struct CheckResults(pub(crate) Vec<Result<String, CheckError>>);
 
 impl From<Vec<Result<String, CheckError>>> for CheckResults {
     fn from(it: Vec<Result<String, CheckError>>) -> Self {

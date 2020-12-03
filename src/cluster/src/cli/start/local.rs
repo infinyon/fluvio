@@ -39,11 +39,12 @@ pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
         }
         // Successfully performed startup with pre-checks
         Ok(Some(check_results)) => {
-            check_results.render();
+            check_results.render_checks();
         }
         // Aborted startup because pre-checks failed
         Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_results))) => {
-            check_results.render();
+            check_results.render_checks();
+            check_results.render_next_steps();
             return Ok(false);
         }
         Err(other) => return Err(other.into()),
@@ -54,7 +55,8 @@ pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
 
 pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {
     let installer = LocalClusterInstaller::new().build()?;
-    let _results = installer.setup().await;
-    println!("Setup successful, all the steps necessary for cluster startup have been performed successfully");
+    let results = installer.setup().await;
+    results.render_checks();
+    results.render_next_steps();
     Ok(())
 }
