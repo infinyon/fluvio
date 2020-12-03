@@ -19,8 +19,9 @@ mod context {
     use crate::core::Spec;
 
     use super::MetadataStoreObject;
-    use super::{LocalStore, MetadataChanges};
-    use super::event::ChangeListener;
+    use super::{LocalStore, ChangeListener, MetadataChanges};
+  
+    pub type K8ChangeListener<S> = ChangeListener<S,K8MetaItem>;
 
     pub type StoreChanges<S> = MetadataChanges<S, K8MetaItem>;
 
@@ -58,7 +59,7 @@ mod context {
         }
 
         /// create new listener
-        pub fn change_listener(&self) -> ChangeListener {
+        pub fn change_listener(&self) -> K8ChangeListener<S> {
             self.store.change_listener()
         }
 
@@ -123,7 +124,7 @@ mod context {
                     let instant = Instant::now();
                     let max_wait = Duration::from_secs(*MAX_WAIT_TIME);
                     loop {
-                        debug!("{} store, waiting for store event", S::LABEL);
+                        
 
                         if let Some(value) = self.store.value(&key).await {
                             debug!("store: {}, object: {:#?}, created", S::LABEL, key);
@@ -137,6 +138,8 @@ mod context {
                                 ));
                             }
                         }
+
+                        debug!("{} store, waiting for store event", S::LABEL);
 
                         select! {
                             _ = sleep(Duration::from_secs(POLL_TIME)) => {

@@ -1,6 +1,5 @@
 use std::sync::atomic::{AtomicI64, Ordering, AtomicBool};
 use std::sync::Arc;
-use std::fmt;
 
 use tracing::trace;
 use event_listener::{Event, EventListener};
@@ -44,83 +43,12 @@ impl EventPublisher {
         self.change.store(value, DEFAULT_EVENT_ORDERING);
     }
 
-    /// create new change lister starting
-    pub fn change_listener(self: &Arc<Self>, last_change: i64) -> ChangeListener {
-        ChangeListener {
-            publisher: self.clone(),
-            last_change,
-        }
-    }
 
     pub fn listen(&self) -> EventListener {
         self.event.listen()
     }
 }
 
-/// listen for changes in the event by comparing against last change
-pub struct ChangeListener {
-    publisher: Arc<EventPublisher>,
-    last_change: i64,
-}
-
-impl fmt::Debug for ChangeListener {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "last:{},current:{}",
-            self.last_change,
-            self.publisher.current_change()
-        )
-    }
-}
-
-impl ChangeListener {
-    /// check if there should be any changes
-    /// this should be done before event listener
-    /// to ensure no events are missed
-    #[inline]
-    pub fn has_change(&mut self) -> bool {
-        self.publisher.current_change() != self.last_change
-    }
-
-    /// sync change to current change
-    #[inline(always)]
-    pub fn load_last(&mut self) {
-        self.set_last_change(self.publisher.current_change());
-    }
-
-    #[inline(always)]
-    pub fn set_last_change(&mut self, updated_change: i64) {
-        self.last_change = updated_change;
-    }
-
-    #[inline]
-    pub fn last_change(&self) -> i64 {
-        self.last_change
-    }
-
-    pub fn current_change(&self) -> i64 {
-        self.publisher.current_change()
-    }
-
-    pub async fn listen(&mut self) {
-        if self.has_change() {
-            trace!("before has change: {}", self.last_change());
-            return;
-        }
-
-        let listener = self.publisher.listen();
-
-        if self.has_change() {
-            trace!("after has change: {}", self.last_change());
-            return;
-        }
-
-        listener.await;
-
-        trace!("new change: {}", self.current_change());
-    }
-}
 
 pub struct SimpleEvent {
     flag: AtomicBool,
@@ -162,6 +90,7 @@ impl SimpleEvent {
     }
 }
 
+/*
 #[cfg(test)]
 mod test {
 
@@ -256,3 +185,4 @@ mod test {
         Ok(())
     }
 }
+*/

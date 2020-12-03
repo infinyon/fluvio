@@ -7,10 +7,10 @@ use tracing::debug;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::*;
-use crate::stores::partition::*;
-use crate::stores::spu::*;
-use crate::stores::event::ChangeListener;
+use crate::stores:: { StoreContext, Epoch};
+use crate::stores::partition::PartitionSpec;
+use crate::stores::spu::SpuSpec;
+use crate::stores::K8ChangeListener;
 
 use super::reducer::*;
 
@@ -68,14 +68,14 @@ impl PartitionController {
 
     /// sync spu states to partition
     /// check to make sure
-    async fn sync_spu_changes(&mut self, spu_change: &mut ChangeListener) {
-        if !spu_change.has_change() {
+    async fn sync_spu_changes(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
+        if !listener.has_change() {
             debug!("no change");
             return;
         }
 
         debug!("sync spu changes");
-        let changes = self.spus.store().status_changes_since(spu_change).await;
+        let changes = listener.sync_status_changes().await;
         if changes.is_empty() {
             debug!("no spu changes");
             return;

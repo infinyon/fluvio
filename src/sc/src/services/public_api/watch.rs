@@ -18,8 +18,8 @@ use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
 use crate::services::auth::AuthServiceContext;
-use crate::stores::StoreContext;
-use crate::stores::event::ChangeListener;
+use crate::stores::{ StoreContext, K8ChangeListener };
+
 
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T, AC>(
@@ -119,14 +119,14 @@ where
 
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
-    async fn sync_and_send_changes(&mut self, listener: &mut ChangeListener) -> bool {
+    async fn sync_and_send_changes(&mut self, listener: &mut K8ChangeListener<S>) -> bool {
         use fluvio_controlplane_metadata::message::*;
 
         if !listener.has_change() {
             debug!("no changes, skipping");
         }
 
-        let changes = self.store.store().changes_since(listener).await;
+        let changes = listener.sync_changes().await;
 
         let epoch = changes.epoch;
         debug!(

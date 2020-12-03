@@ -12,8 +12,8 @@ use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
 use crate::stores::spu::SpuSpec;
 use crate::stores::partition::PartitionSpec;
-use crate::stores::StoreContext;
-use crate::stores::event::ChangeListener;
+use crate::stores::{ StoreContext, K8ChangeListener};
+
 
 use super::reducer::TopicReducer;
 
@@ -74,13 +74,13 @@ impl TopicController {
 
     /// sync topics with partition
     #[instrument(skip(self))]
-    async fn sync_topics(&mut self, listener: &mut ChangeListener) {
+    async fn sync_topics(&mut self, listener: &mut K8ChangeListener<TopicSpec>) {
         if !listener.has_change() {
             debug!("no change");
             return;
         }
 
-        let changes = self.topics.store().changes_since(listener).await;
+        let changes = listener.sync_changes().await;
 
         if changes.is_empty() {
             debug!("no topic changes");

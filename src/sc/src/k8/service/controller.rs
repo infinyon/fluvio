@@ -8,8 +8,7 @@ use tracing::instrument;
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::StoreContext;
-use crate::stores::event::ChangeListener;
+use crate::stores::{ StoreContext, K8ChangeListener};
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
 use crate::dispatcher::k8::core::service::LoadBalancerIngress;
@@ -77,13 +76,13 @@ impl SpuServiceController {
 
     #[instrument(skip(self))]
     /// svc has been changed, update spu
-    async fn sync_service_to_spu(&mut self, listener: &mut ChangeListener) {
+    async fn sync_service_to_spu(&mut self, listener: &mut K8ChangeListener<SpuServicespec>) {
         if !listener.has_change() {
             debug!("no service change, skipping");
             return;
         }
 
-        let changes = self.services.store().changes_since(listener).await;
+        let changes = listener.sync_changes().await;
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
 
@@ -137,13 +136,13 @@ impl SpuServiceController {
 
     #[instrument()]
     /// spu has been changed, sync with existing services
-    async fn sync_spu_to_service(&mut self, listener: &mut ChangeListener) {
+    async fn sync_spu_to_service(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
         if !listener.has_change() {
             debug!("no spu changes, skipping");
             return;
         }
 
-        let changes = self.spus.store().changes_since(listener).await;
+        let changes = listener.sync_changes().await;
 
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
