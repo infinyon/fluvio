@@ -11,7 +11,7 @@ use super::StartOpt;
 ///
 /// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
 /// reported, or `Err(e)` if something unexpected occurred.
-pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
+pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
     let mut builder = LocalClusterInstaller::new()
         .with_log_dir(opt.log_dir.to_string())
         .with_spu_replicas(opt.spu);
@@ -45,13 +45,12 @@ pub async fn install_local(opt: StartOpt) -> Result<bool, ClusterCliError> {
         Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_results))) => {
             check_results.render_checks();
             check_results.render_next_steps();
-            return Ok(false);
         }
         // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
     }
 
-    Ok(true)
+    Ok(())
 }
 
 pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {

@@ -339,6 +339,7 @@ impl LocalClusterInstaller {
         );
         self.launch_spu_group().await?;
         sleep(Duration::from_secs(1)).await;
+        self.confirm_spu(self.config.spu_spec.replicas).await?;
 
         Ok(StartStatus {
             address,
@@ -531,5 +532,47 @@ impl LocalClusterInstaller {
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
         Ok(())
+    }
+
+    /// Check to ensure SPUs are all running
+    async fn confirm_spu(&self, spu: u16) -> Result<(), LocalInstallError> {
+        use std::env;
+        use fluvio::Fluvio;
+
+        let delay: u64 = env::var("FLV_SPU_DELAY")
+            .unwrap_or_else(|_| "1".to_string())
+            .parse()
+            .unwrap_or(1);
+
+        println!("waiting for spu to be provisioned for: {} seconds", delay);
+
+        sleep(Duration::from_secs(delay)).await;
+
+        let client = Fluvio::connect().await.expect("sc ");
+        let mut admin = client.admin().await;
+
+        // wait for list of spu
+        for _ in 0..30u16 {
+            let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
+            let live_spus = spus
+                .iter()
+                .filter(|spu| spu.status.is_online() && !spu.spec.public_endpoint.ingress.is_empty())
+                .count();
+            if live_spus == spu as usize {
+                println!("{} spus provisioned", spus.len());
+                drop(client);
+                sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
+                return Ok(());
+            } else {
+                println!("{} out of spu: {} up, waiting 5 sec", live_spus, spu);
+                sleep(Duration::from_secs(5)).await;
+            }
+        }
+
+        println!("waited too long,bailing out");
+        Err(LocalInstallError::Other(format!(
+            "not able to provision:{} spu",
+            spu
+        )))
     }
 }
