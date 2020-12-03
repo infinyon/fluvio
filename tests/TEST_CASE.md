@@ -58,26 +58,36 @@ Create topic with replica 3
 fluvio topic create -r 3 topic
 ```
 
-Produce message
+### Produce message
 
 Identity a leader:
 ```
 fluvio partition list
 ```
 
-Read message
+Produce a message
 ```
-fluvio consume topic -B
+fluvio produce topic
+```
+
+### Read message
+```
+fluvio consume topic -B -d
 ```
 
 Kill a leader SPU
 ```
-ps -ef | grep spu
+ps -ef | grep fluvio
+```
+
+Verify that SPU is offline
+```
+fluvio spu list
 ```
 
 2nd SPU should take over, this should still work:
 ```
-flvd consume topic -B
+flvd consume topic -B -d
 ```
 
 
