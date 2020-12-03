@@ -67,7 +67,6 @@ struct RootOpt {
     AppSettings::VersionlessSubcommands,
     AppSettings::DeriveDisplayOrder,
     AppSettings::DisableVersion,
-    AppSettings::DisableHelpFlags,
     ]
 )]
 enum RootCmd {
@@ -125,13 +124,6 @@ enum RootCmd {
     )]
     Metadata(MetadataOpt),
 
-    /// Give help message
-    #[structopt(
-        name = "help",
-        aliases = &["-h", "--help"],
-    )]
-    Help(HelpOpt),
-
     #[structopt(external_subcommand)]
     External(Vec<String>),
 }
@@ -161,9 +153,6 @@ impl RootCmd {
             }
             Self::Completions(completion) => {
                 completion.process()?;
-            }
-            Self::Help(help) => {
-                help.process()?;
             }
             Self::Metadata(metadata) => {
                 metadata.process()?;

@@ -8,12 +8,22 @@ fn main() -> Result<()> {
     color_eyre::config::HookBuilder::blank()
         .display_env_section(false)
         .install()?;
-    let args = std::env::args();
+    print_help_hack()?;
+    let root: Root = Root::from_args();
+    run_block_on(root.process()).map_err(CliError::into_report)?;
+    Ok(())
+}
+
+fn print_help_hack() -> Result<()> {
+    let mut args = std::env::args();
     if args.len() < 2 {
         HelpOpt {}.process()?;
-    } else {
-        let root: Root = Root::from_args();
-        run_block_on(root.process()).map_err(CliError::into_report)?;
+        std::process::exit(1);
+    } else if let Some(first_arg) = args.nth(1) {
+        if vec!["-h", "--help", "help"].contains(&&first_arg.as_str()) {
+            HelpOpt {}.process()?;
+            std::process::exit(1);
+        }
     }
     Ok(())
 }
