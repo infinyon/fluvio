@@ -34,7 +34,7 @@ pub use start::k8::ClusterInstallerBuilder;
 pub use start::local::LocalClusterInstaller;
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
-pub use check::CheckResults;
+pub use check::{CheckStatus, CheckStatuses};
 pub use check::ClusterChecker;
 pub use check::UnrecoverableCheck;
 pub use delete::ClusterUninstaller;
@@ -54,7 +54,7 @@ pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 /// were run (if any).
 pub struct StartStatus {
     address: String,
-    pub(crate) checks: Option<CheckResults>,
+    pub(crate) checks: Option<CheckStatuses>,
 }
 
 impl StartStatus {

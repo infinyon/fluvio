@@ -25,12 +25,10 @@ use k8_obj_metadata::InputObjectMeta;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{
     UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig,
-    LoadBalancer, CheckError, RecoverableCheck, CheckResults,
+    LoadBalancer, CheckFailed, RecoverableCheck, CheckResults,
 };
 use crate::error::K8InstallError;
-use crate::{
-    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
-};
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, CheckStatus};
 use crate::start::check_and_fix;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -688,32 +686,36 @@ impl ClusterInstaller {
     pub async fn install_fluvio(&self) -> Result<StartStatus, ClusterError> {
         let checks = match self.config.skip_checks {
             true => None,
+            // Check if env is ready for install and tries to fix anything it can
             false => {
-                // Check if env is ready for install and tries to fix anything it can
                 let check_results = self.setup().await;
+                if check_results.0.iter().any(|it| it.is_err()) {
+                    return Err(K8InstallError::PrecheckErrored(check_results).into());
+                }
 
+                let statuses = check_results.into_statuses();
                 let mut any_failed = false;
-                for result in &check_results.0 {
-                    match result {
+                for status in &statuses.0 {
+                    match status {
                         // If Fluvio is already installed, return the SC's address
-                        Err(CheckError::AlreadyInstalled) => {
+                        CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {
                             debug!("Fluvio is already installed. Getting SC address");
                             let address = self.wait_for_sc_service(&self.config.namespace).await?;
                             return Ok(StartStatus {
                                 address,
-                                checks: Some(check_results),
+                                checks: Some(statuses),
                             });
                         }
-                        Err(_) => any_failed = true,
+                        CheckStatus::Fail(_) => any_failed = true,
                         _ => (),
                     }
                 }
 
                 // If any of the pre-checks was a straight-up failure, install should fail
                 if any_failed {
-                    return Err(K8InstallError::FailedPrecheck(check_results).into());
+                    return Err(K8InstallError::FailedPrecheck(statuses).into());
                 }
-                Some(check_results)
+                Some(statuses)
             }
         };
 

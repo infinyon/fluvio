@@ -1,8 +1,8 @@
 use std::future::Future;
 pub mod k8;
 pub mod local;
-use crate::check::{InstallCheck, CheckError, RecoverableCheck};
-use crate::{CheckResults, UnrecoverableCheck};
+use crate::check::{InstallCheck, CheckFailed, RecoverableCheck, CheckResults, CheckResult};
+use crate::{UnrecoverableCheck, CheckStatus};
 
 /// Runs all of the given checks and attempts to fix any errors
 ///
@@ -30,18 +30,25 @@ where
     F: Fn(RecoverableCheck) -> R,
     R: Future<Output = Result<(), UnrecoverableCheck>>,
 {
-    let mut results = vec![];
+    // We want to collect all of the results of the checks
+    let mut results: Vec<CheckResult> = vec![];
+
     for check in checks {
+        // Perform one individual check
         let check_result = check.perform_check().await;
         match check_result {
-            Err(CheckError::AutoRecoverable(it)) => {
+            // If the check failed but is potentially auto-recoverable, try to recover it
+            Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(it))) => {
                 let err = format!("{}", it);
                 let fix_result = fix(it).await;
                 match fix_result {
-                    Ok(_) => results.push(Ok(format!("Fixed: {}", err))),
-                    Err(e) => results.push(Err(CheckError::Unrecoverable(e))),
+                    // If the fix worked, return a passed check
+                    Ok(_) => results.push(Ok(CheckStatus::pass(format!("Fixed: {}", err)))),
+                    // If the fix failed, wrap the original failed check in Unrecoverable
+                    Err(e) => results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e)))),
                 }
             }
+            // If the check passed, errored, or otherwise failed, just collect it
             other => results.push(other),
         }
     }

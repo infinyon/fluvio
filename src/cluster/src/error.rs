@@ -4,7 +4,7 @@ use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
 use fluvio_helm::HelmError;
-use crate::check::CheckResults;
+use crate::check::{CheckResults, CheckStatuses};
 
 /// The types of errors that can occur during cluster management
 #[derive(thiserror::Error, Debug)]
@@ -38,9 +38,12 @@ pub enum K8InstallError {
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
-    /// One or more pre-checks failed when trying to start the cluster
+    /// One or more pre-checks (successfully) failed when trying to start the cluster
     #[error("Pre-checks failed during cluster startup")]
-    FailedPrecheck(CheckResults),
+    FailedPrecheck(CheckStatuses),
+    /// Encountered an error while performing one or more pre-checks
+    #[error("Failed to perform one or more pre-checks")]
+    PrecheckErrored(CheckResults),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
     SCServiceTimeout,

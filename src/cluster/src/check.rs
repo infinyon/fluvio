@@ -9,7 +9,7 @@ use k8_obj_core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 use fluvio_future::timer::sleep;
 use semver::Version;
-use serde_json::{Value};
+use serde_json::{Value, Error as JsonError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
 
@@ -24,19 +24,113 @@ const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 
-/// A collection of the successes and failures of running checks
-#[derive(Debug)]
-pub struct CheckResults(pub(crate) Vec<Result<String, CheckError>>);
+pub type CheckResult = std::result::Result<CheckStatus, CheckError>;
 
-impl From<Vec<Result<String, CheckError>>> for CheckResults {
-    fn from(it: Vec<Result<String, CheckError>>) -> Self {
+/// A collection of the successes, failures, and errors of running checks
+#[derive(Debug)]
+pub struct CheckResults(pub(crate) Vec<CheckResult>);
+
+impl From<Vec<CheckResult>> for CheckResults {
+    fn from(it: Vec<CheckResult>) -> Self {
         Self(it)
     }
 }
 
-/// A description of a failed check
+impl CheckResults {
+    pub fn into_statuses(self) -> CheckStatuses {
+        let statuses: Vec<_> = self.0
+            .into_iter()
+            .filter_map(|it| match it {
+                Ok(status) => Some(status),
+                Err(_) => None,
+            })
+            .collect();
+        CheckStatuses::from(statuses)
+    }
+}
+
+/// An error occurred during the checking process
+///
+/// All of these variants indicate that a check was unable to complete.
+/// This is distinct from a "check failure" in which the check was able
+/// to complete and the verdict is that the system is not prepared to
+/// start a Fluvio cluster.
 #[derive(thiserror::Error, Debug)]
 pub enum CheckError {
+    /// There was a problem with the helm client during pre-check
+    #[error("Helm client error")]
+    HelmError(#[from] HelmError),
+
+    /// There was a problem fetching kubernetes configuration
+    #[error("Kubernetes config error")]
+    K8ConfigError(#[from] K8ConfigError),
+
+    /// Could not connect to K8 client
+    #[error("Kubernetes client error")]
+    K8ClientError(#[from] K8ClientError),
+
+    /// Failed to parse kubernetes cluster server URL
+    #[error("Failed to parse server url from Kubernetes context")]
+    BadKubernetesServerUrl(#[from] ParseError),
+
+    /// Kubectl not found
+    #[error("Kubectl not found")]
+    KubectlNotFoundError(IoError),
+
+    /// Error while fetching create permissions for a resource
+    #[error("Unable to fetch permissions")]
+    FetchPermissionError,
+
+    /// Unable to parse kubectl version
+    #[error("Unable to parse kubectl version from JSON")]
+    KubectlVersionJsonError(JsonError),
+
+    /// Could not create dummy service
+    #[error("Could not create service")]
+    ServiceCreateError,
+
+    /// Could not delete dummy service
+    #[error("Could not delete service")]
+    ServiceDeleteError,
+}
+
+/// A collection of the successes, failures, and errors of running checks
+#[derive(Debug)]
+pub struct CheckStatuses(pub(crate) Vec<CheckStatus>);
+
+impl From<Vec<CheckStatus>> for CheckStatuses {
+    fn from(it: Vec<CheckStatus>) -> Self {
+        Self(it)
+    }
+}
+
+/// When a check completes without error, it either passes or fails
+#[derive(Debug)]
+pub enum CheckStatus {
+    /// This check has passed and has the given success message
+    Pass(CheckSucceeded),
+    /// This check has failed and has the given failure reason
+    Fail(CheckFailed),
+}
+
+impl CheckStatus {
+    /// Creates a passing check status with a success message
+    pub(crate) fn pass<S: Into<String>>(msg: S) -> Self {
+        Self::Pass(msg.into())
+    }
+
+    /// Creates a failed check status with the given failure
+    pub(crate) fn fail<F: Into<CheckFailed>>(fail: F) -> Self {
+        Self::Fail(fail.into())
+    }
+}
+
+/// A successful check yields a success message
+pub type CheckSucceeded = String;
+
+/// A description of a failed check
+#[derive(thiserror::Error, Debug)]
+pub enum CheckFailed {
     /// A cluster pre-start check that is potentially auto-recoverable
     #[error(transparent)]
     AutoRecoverable(#[from] RecoverableCheck),
@@ -63,26 +157,6 @@ pub enum RecoverableCheck {
 /// A type of check failure which is not recoverable
 #[derive(thiserror::Error, Debug)]
 pub enum UnrecoverableCheck {
-    /// There was a problem with the helm client during pre-check
-    #[error("Helm client error")]
-    HelmError(#[from] HelmError),
-
-    /// There was a problem fetching kubernetes configuration
-    #[error("Kubernetes config error")]
-    K8ConfigError(#[from] K8ConfigError),
-
-    /// Could not connect to K8 client
-    #[error("Kubernetes client error")]
-    K8ClientError(#[from] K8ClientError),
-
-    /// Failed to parse kubernetes cluster server URL
-    #[error("Failed to parse server url from Kubernetes context")]
-    BadKubernetesServerUrl(#[from] ParseError),
-
-    /// Kubectl not found
-    #[error("Kubectl not found")]
-    KubectlNotFoundError(IoError),
-
     /// We failed to recover from a potentially-recoverable check failure
     #[error("Failed to recover from auto-recoverable check")]
     FailedRecovery(RecoverableCheck),
@@ -112,7 +186,7 @@ pub enum UnrecoverableCheck {
         required: String,
     },
 
-    /// There is no current kubernetest context
+    /// There is no current Kubernetes context
     #[error("There is no active Kubernetes context")]
     NoActiveKubernetesContext,
 
@@ -128,14 +202,6 @@ pub enum UnrecoverableCheck {
     #[error("Load balancer service is not available")]
     LoadBalancerServiceNotAvailable,
 
-    /// Could not create dummy service
-    #[error("Could not create service")]
-    ServiceCreateError,
-
-    /// Could not delete dummy service
-    #[error("Could not delete service")]
-    ServiceDeleteError,
-
     /// Minikube tunnel not found, this error is used in case of macos we don't try to get tunnel up as it needs elevated context
     #[error(
         "Minikube tunnel may not be running
@@ -146,27 +212,19 @@ pub enum UnrecoverableCheck {
     /// Default unhandled K8 client error
     #[error("Unhandled K8 client error")]
     UnhandledK8ClientError,
-
-    /// Unable to parse kubectl version
-    #[error("Unable to parse kubectl version")]
-    KubectlVersionError,
-
-    /// Error while fetching create permissions for a resource
-    #[error("Unable to fetch permissions")]
-    FetchPermissionError,
 }
 
 #[async_trait]
 pub(crate) trait InstallCheck: Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
-    async fn perform_check(&self) -> Result<String, CheckError>;
+    async fn perform_check(&self) -> CheckResult;
 }
 
 pub(crate) struct LoadableConfig;
 
 #[async_trait]
 impl InstallCheck for LoadableConfig {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> CheckResult {
         check_cluster_server_host()
     }
 }
@@ -175,7 +233,7 @@ pub(crate) struct K8Version;
 
 #[async_trait]
 impl InstallCheck for K8Version {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> CheckResult {
         k8_version_check()
     }
 }
@@ -184,8 +242,8 @@ pub(crate) struct HelmVersion;
 
 #[async_trait]
 impl InstallCheck for HelmVersion {
-    async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new().map_err(UnrecoverableCheck::HelmError)?;
+    async fn perform_check(&self) -> CheckResult {
+        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
         check_helm_version(&helm_client, DEFAULT_HELM_VERSION)
     }
 }
@@ -194,8 +252,8 @@ pub(crate) struct SysChart;
 
 #[async_trait]
 impl InstallCheck for SysChart {
-    async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new().map_err(UnrecoverableCheck::HelmError)?;
+    async fn perform_check(&self) -> CheckResult {
+        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
         check_system_chart(&helm_client, DEFAULT_CHART_SYS_REPO)
     }
 }
@@ -204,8 +262,8 @@ pub(crate) struct AlreadyInstalled;
 
 #[async_trait]
 impl InstallCheck for AlreadyInstalled {
-    async fn perform_check(&self) -> Result<String, CheckError> {
-        let helm_client = HelmClient::new().map_err(UnrecoverableCheck::HelmError)?;
+    async fn perform_check(&self) -> CheckResult {
+        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
         check_already_installed(&helm_client, DEFAULT_CHART_APP_REPO)
     }
 }
@@ -214,7 +272,7 @@ struct CreateServicePermission;
 
 #[async_trait]
 impl InstallCheck for CreateServicePermission {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_SERVICE)
     }
 }
@@ -223,7 +281,7 @@ struct CreateCrdPermission;
 
 #[async_trait]
 impl InstallCheck for CreateCrdPermission {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_CRD)
     }
 }
@@ -232,7 +290,7 @@ struct CreateServiceAccountPermission;
 
 #[async_trait]
 impl InstallCheck for CreateServiceAccountPermission {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_SERVICE_ACCOUNT)
     }
 }
@@ -241,7 +299,7 @@ pub(crate) struct LoadBalancer;
 
 #[async_trait]
 impl InstallCheck for LoadBalancer {
-    async fn perform_check(&self) -> Result<String, CheckError> {
+    async fn perform_check(&self) -> CheckResult {
         check_load_balancer_status().await
     }
 }
@@ -284,61 +342,60 @@ impl ClusterChecker {
 }
 
 /// Checks that the installed helm version is compatible with the installer requirements
-pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> Result<String, CheckError> {
+pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> CheckResult {
     let helm_version = helm
         .get_helm_version()
-        .map_err(UnrecoverableCheck::HelmError)?;
+        .map_err(CheckError::HelmError)?;
     if Version::parse(&helm_version) < Version::parse(required) {
-        return Err(UnrecoverableCheck::IncompatibleHelmVersion {
+        return Ok(CheckStatus::fail(UnrecoverableCheck::IncompatibleHelmVersion {
             installed: helm_version,
             required: required.to_string(),
-        }
-        .into());
+        }));
     }
-    Ok("Supported helm version is installed".to_string())
+    Ok(CheckStatus::pass("Supported helm version is installed"))
 }
 
 /// Check that the system chart is installed
-pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> Result<String, CheckError> {
+pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> CheckResult {
     // check installed system chart version
     let sys_charts = helm
         .get_installed_chart_by_name(sys_repo)
-        .map_err(UnrecoverableCheck::HelmError)?;
+        .map_err(CheckError::HelmError)?;
     if sys_charts.is_empty() {
-        return Err(RecoverableCheck::MissingSystemChart.into());
+        return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
     } else if sys_charts.len() > 1 {
-        return Err(UnrecoverableCheck::MultipleSystemCharts.into());
+        return Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts));
     }
-    Ok("Fluvio system charts are installed".to_string())
+    Ok(CheckStatus::pass("Fluvio system charts are installed"))
 }
 
 /// Checks that Fluvio is not already installed
-pub(crate) fn check_already_installed(
-    helm: &HelmClient,
-    app_repo: &str,
-) -> Result<String, CheckError> {
+pub(crate) fn check_already_installed(helm: &HelmClient, app_repo: &str) -> CheckResult {
     let app_charts = helm
         .get_installed_chart_by_name(app_repo)
-        .map_err(UnrecoverableCheck::HelmError)?;
+        .map_err(CheckError::HelmError)?;
     if !app_charts.is_empty() {
-        return Err(CheckError::AlreadyInstalled);
+        return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));
     }
-    Ok("Previous fluvio installation not found".to_string())
+    Ok(CheckStatus::pass("Previous fluvio installation not found"))
 }
 
 /// Check if load balancer is up
-pub(crate) async fn check_load_balancer_status() -> Result<String, CheckError> {
-    let config = K8Config::load().map_err(UnrecoverableCheck::K8ConfigError)?;
+pub(crate) async fn check_load_balancer_status() -> CheckResult {
+    let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
     let context = match config {
-        K8Config::Pod(_) => return Ok("Pod config found, ignoring the check".to_string()),
+        K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
         K8Config::KubeConfig(context) => context,
     };
 
-    let cluster_context = context
-        .config
-        .current_context()
-        .ok_or(UnrecoverableCheck::NoActiveKubernetesContext)?;
-    let username = cluster_context.context.user.to_owned();
+    let cluster_context = match context.config.current_context() {
+        Some(context) => context,
+        None => {
+            return Ok(CheckStatus::fail(UnrecoverableCheck::NoActiveKubernetesContext));
+        }
+    };
+
+    let username = &cluster_context.context.user;
 
     // create dummy service
     create_dummy_service()?;
@@ -348,17 +405,17 @@ pub(crate) async fn check_load_balancer_status() -> Result<String, CheckError> {
     } else {
         delete_service()?;
         if username == MINIKUBE_USERNAME {
-            // incase of macos we need to run tunnel with elevated context of sudo
-            // hence handle both seperately
-            return Err(get_tunnel_error());
+            // In case of macos we need to run tunnel with elevated context of sudo
+            // hence handle both separately
+            return Ok(CheckStatus::fail(get_tunnel_error()));
         }
-        return Err(UnrecoverableCheck::LoadBalancerServiceNotAvailable.into());
+        return Ok(CheckStatus::fail(UnrecoverableCheck::LoadBalancerServiceNotAvailable));
     }
 
-    Ok("Load balancer is up".to_string())
+    Ok(CheckStatus::pass("Load balancer is up"))
 }
 
-fn create_dummy_service() -> Result<(), UnrecoverableCheck> {
+fn create_dummy_service() -> Result<(), CheckError> {
     Command::new("kubectl")
         .arg("create")
         .arg("service")
@@ -366,22 +423,22 @@ fn create_dummy_service() -> Result<(), UnrecoverableCheck> {
         .arg(DUMMY_LB_SERVICE)
         .arg("--tcp=5678:8080")
         .output()
-        .map_err(|_| UnrecoverableCheck::ServiceCreateError)?;
+        .map_err(|_| CheckError::ServiceCreateError)?;
 
     Ok(())
 }
 
-fn delete_service() -> Result<(), UnrecoverableCheck> {
+fn delete_service() -> Result<(), CheckError> {
     Command::new("kubectl")
         .arg("delete")
         .arg("service")
         .arg(DUMMY_LB_SERVICE)
         .output()
-        .map_err(|_| UnrecoverableCheck::ServiceDeleteError)?;
+        .map_err(|_| CheckError::ServiceDeleteError)?;
     Ok(())
 }
 
-async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, UnrecoverableCheck> {
+async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, CheckError> {
     use k8_client::metadata::MetadataClient;
     use k8_client::http::status::StatusCode;
 
@@ -399,14 +456,10 @@ async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, Unrecoverabl
                     sleep(Duration::from_millis(DELAY)).await;
                 }
             }
-            Err(err) => match err {
-                K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
-                    sleep(Duration::from_millis(DELAY)).await;
-                }
-                _ => {
-                    return Err(UnrecoverableCheck::UnhandledK8ClientError);
-                }
-            },
+            Err(K8ClientError::Client(status)) if status == StatusCode::NOT_FOUND => {
+                sleep(Duration::from_millis(DELAY)).await;
+            }
+            Err(e) => return Err(CheckError::K8ClientError(e)),
         };
     }
 
@@ -414,86 +467,91 @@ async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, Unrecoverabl
 }
 
 #[cfg(target_os = "macos")]
-fn get_tunnel_error() -> CheckError {
+fn get_tunnel_error() -> CheckFailed {
     UnrecoverableCheck::MinikubeTunnelNotFound.into()
 }
 
 #[cfg(not(target_os = "macos"))]
-fn get_tunnel_error() -> CheckError {
+fn get_tunnel_error() -> CheckFailed {
     RecoverableCheck::MinikubeTunnelNotFoundRetry.into()
 }
 
 /// Getting server hostname from K8 context
-fn check_cluster_server_host() -> Result<String, CheckError> {
-    let config = K8Config::load().map_err(UnrecoverableCheck::K8ConfigError)?;
+fn check_cluster_server_host() -> CheckResult {
+    let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
     let context = match config {
-        K8Config::Pod(_) => return Ok("Pod config found, ignoring the check".to_string()),
+        K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
         K8Config::KubeConfig(context) => context,
     };
 
-    let cluster_context = context
-        .config
-        .current_cluster()
-        .ok_or(UnrecoverableCheck::NoActiveKubernetesContext)?;
-    let server_url = cluster_context.cluster.server.to_owned();
-    let url = Url::parse(&server_url).map_err(UnrecoverableCheck::BadKubernetesServerUrl)?;
-    let host = url
-        .host()
-        .ok_or(UnrecoverableCheck::MissingKubernetesServerHost)?
-        .to_string();
-    if host.is_empty() {
-        return Err(UnrecoverableCheck::MissingKubernetesServerHost.into());
+    let cluster_context = match context.config.current_cluster() {
+        Some(context) => context,
+        None => {
+            return Ok(CheckStatus::fail(UnrecoverableCheck::NoActiveKubernetesContext));
+        }
+    };
+
+    let server_url = &cluster_context.cluster.server;
+
+    // Check that the server URL has a hostname, not just an IP
+    let host_present = Url::parse(server_url)
+        .ok()
+        .and_then(|it| it.host().map(|host| host.to_string()))
+        .map(|it| !it.is_empty())
+        .unwrap_or(false);
+
+    if !host_present {
+        return Ok(CheckStatus::fail(UnrecoverableCheck::MissingKubernetesServerHost));
     }
 
-    Ok("Kubernetes config is loadable".to_string())
+    Ok(CheckStatus::pass("Kubernetes config is loadable"))
 }
 
 // Check if required kubectl version is installed
-fn k8_version_check() -> Result<String, CheckError> {
+fn k8_version_check() -> CheckResult {
     let kube_version = Command::new("kubectl")
         .arg("version")
         .arg("-o=json")
         .output()
-        .map_err(UnrecoverableCheck::KubectlNotFoundError)?;
+        .map_err(CheckError::KubectlNotFoundError)?;
     let version_text = String::from_utf8(kube_version.stdout).unwrap();
 
     let kube_version_json: Value =
-        serde_json::from_str(&version_text).map_err(|_| UnrecoverableCheck::KubectlVersionError)?;
+        serde_json::from_str(&version_text)
+            .map_err(CheckError::KubectlVersionJsonError)?;
 
     let mut server_version = kube_version_json["serverVersion"]["gitVersion"].to_string();
     server_version.retain(|c| c != '"');
     let version_text_trimmed = &server_version[1..].trim();
 
     if Version::parse(&version_text_trimmed) < Version::parse(KUBE_VERSION) {
-        return Err(UnrecoverableCheck::IncompatibleKubectlVersion {
+        return Ok(CheckStatus::fail(UnrecoverableCheck::IncompatibleKubectlVersion {
             installed: version_text_trimmed.to_string(),
             required: KUBE_VERSION.to_string(),
-        }
-        .into());
+        }));
     }
-    Ok("Supported kubernetes version is installed".to_string())
+    Ok(CheckStatus::pass("Supported kubernetes version is installed"))
 }
 
-fn check_permission(resource: &str) -> Result<String, CheckError> {
+fn check_permission(resource: &str) -> CheckResult {
     let res = check_create_permission(resource)?;
     if !res {
-        return Err(UnrecoverableCheck::PermissionError {
+        return Ok(CheckStatus::fail(UnrecoverableCheck::PermissionError {
             resource: resource.to_string(),
-        }
-        .into());
+        }));
     }
-    Ok(format!("Can create {}", resource))
+    Ok(CheckStatus::pass(format!("Can create {}", resource)))
 }
 
-fn check_create_permission(resource: &str) -> Result<bool, UnrecoverableCheck> {
+fn check_create_permission(resource: &str) -> Result<bool, CheckError> {
     let check_command = Command::new("kubectl")
         .arg("auth")
         .arg("can-i")
         .arg("create")
         .arg(resource)
         .output()
-        .map_err(UnrecoverableCheck::KubectlNotFoundError)?;
+        .map_err(CheckError::KubectlNotFoundError)?;
     let res = String::from_utf8(check_command.stdout)
-        .map_err(|_| UnrecoverableCheck::FetchPermissionError)?;
+        .map_err(|_| CheckError::FetchPermissionError)?;
     Ok(res.trim() == "yes")
 }

@@ -299,7 +299,8 @@ impl LocalClusterInstaller {
                     // If any check results failed, fail install
                     return Err(LocalInstallError::FailedPrecheck(check_results).into());
                 }
-                Some(check_results)
+                let check_statuses = check_results.into_statuses();
+                Some(check_statuses)
             }
         };
 
