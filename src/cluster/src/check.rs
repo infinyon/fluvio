@@ -494,7 +494,7 @@ fn check_cluster_connection() -> CheckResult {
                 UnrecoverableCheck::NoActiveKubernetesContext,
             ));
         }
-        Err(other) => return Err(CheckError::K8ConfigError(other).into()),
+        Err(other) => return Err(CheckError::K8ConfigError(other)),
     };
 
     let context = match config {
@@ -551,12 +551,16 @@ fn k8_version_check() -> CheckResult {
         server_version: Option<ComponentVersion>,
     }
 
-    let kube_versions: KubernetesVersion = serde_json::from_str(&version_text)
-        .map_err(CheckError::KubectlVersionJsonError)?;
+    let kube_versions: KubernetesVersion =
+        serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
 
     let server_version = match kube_versions.server_version {
         Some(version) => version.git_version,
-        None => return Ok(CheckStatus::fail(UnrecoverableCheck::CannotConnectToKubernetes)),
+        None => {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::CannotConnectToKubernetes,
+            ))
+        }
     };
 
     // Trim off the `v` in v0.1.2 to get just "0.1.2"

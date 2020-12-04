@@ -19,7 +19,9 @@ use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
 use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};
-use crate::check::{InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults, K8Version, LoadableConfig};
+use crate::check::{
+    InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults, K8Version, LoadableConfig,
+};
 use crate::start::k8::ClusterInstaller;
 use crate::start::check_and_fix;
 
@@ -309,7 +311,9 @@ impl LocalClusterInstaller {
 
                 // If any checks successfully completed with a failure, return checks in status
                 let statuses = check_results.into_statuses();
-                let any_failed = statuses.0.iter()
+                let any_failed = statuses
+                    .0
+                    .iter()
                     .any(|it| matches!(it, crate::CheckStatus::Fail(_)));
                 if any_failed {
                     return Err(LocalInstallError::FailedPrecheck(statuses).into());

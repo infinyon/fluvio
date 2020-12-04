@@ -51,7 +51,7 @@ where
                         results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e))));
                         // We return upon the first check failure
                         return CheckResults::from(results);
-                    },
+                    }
                 }
             }
             it @ Ok(CheckStatus::Fail(_)) => {
