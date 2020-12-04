@@ -19,7 +19,7 @@ use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
 use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};
-use crate::check::{InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults};
+use crate::check::{InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults, K8Version, LoadableConfig};
 use crate::start::k8::ClusterInstaller;
 use crate::start::check_and_fix;
 
@@ -249,7 +249,12 @@ impl LocalClusterInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let checks: Vec<Box<dyn InstallCheck>> = vec![Box::new(HelmVersion), Box::new(SysChart)];
+        let checks: Vec<Box<dyn InstallCheck>> = vec![
+            Box::new(HelmVersion),
+            Box::new(K8Version),
+            Box::new(LoadableConfig),
+            Box::new(SysChart),
+        ];
         let fix = |err| self.pre_install_fix(err);
         check_and_fix(&checks, fix).await
     }
@@ -295,12 +300,21 @@ impl LocalClusterInstaller {
             false => {
                 // Try to setup environment by running pre-checks and auto-fixes
                 let check_results = self.setup().await;
+
+                // If any check results encountered an error, bubble the error
                 if check_results.0.iter().any(|it| it.is_err()) {
-                    // If any check results failed, fail install
-                    return Err(LocalInstallError::FailedPrecheck(check_results).into());
+                    return Err(LocalInstallError::PrecheckErrored(check_results).into());
                 }
-                let check_statuses = check_results.into_statuses();
-                Some(check_statuses)
+
+                // If any checks successfully completed with a failure, return checks in status
+                let statuses = check_results.into_statuses();
+                let any_failed = statuses.0.iter()
+                    .any(|it| matches!(it, crate::CheckStatus::Fail(_)));
+                if any_failed {
+                    return Err(LocalInstallError::FailedPrecheck(statuses).into());
+                }
+
+                Some(statuses)
             }
         };
 

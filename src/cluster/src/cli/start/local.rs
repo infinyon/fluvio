@@ -46,7 +46,7 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
         }
         // Aborted startup because pre-checks failed
         Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_results))) => {
-            check_results.render_results();
+            check_results.render_checks();
             check_results.render_next_steps();
         }
         // Another type of error occurred during checking or startup

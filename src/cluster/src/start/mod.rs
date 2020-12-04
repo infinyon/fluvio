@@ -37,6 +37,8 @@ where
         // Perform one individual check
         let check_result = check.perform_check().await;
         match check_result {
+            // If the check passed, add it to the results list
+            it @ Ok(CheckStatus::Pass(_)) => results.push(it),
             // If the check failed but is potentially auto-recoverable, try to recover it
             Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(it))) => {
                 let err = format!("{}", it);
@@ -44,12 +46,22 @@ where
                 match fix_result {
                     // If the fix worked, return a passed check
                     Ok(_) => results.push(Ok(CheckStatus::pass(format!("Fixed: {}", err)))),
-                    // If the fix failed, wrap the original failed check in Unrecoverable
-                    Err(e) => results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e)))),
+                    Err(e) => {
+                        // If the fix failed, wrap the original failed check in Unrecoverable
+                        results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e))));
+                        // We return upon the first check failure
+                        return CheckResults::from(results);
+                    },
                 }
             }
-            // If the check passed, errored, or otherwise failed, just collect it
-            other => results.push(other),
+            it @ Ok(CheckStatus::Fail(_)) => {
+                results.push(it);
+                return CheckResults::from(results);
+            }
+            it @ Err(_) => {
+                results.push(it);
+                return CheckResults::from(results);
+            }
         }
     }
 

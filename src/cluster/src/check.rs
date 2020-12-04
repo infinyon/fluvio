@@ -9,7 +9,7 @@ use k8_obj_core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 use fluvio_future::timer::sleep;
 use semver::Version;
-use serde_json::{Value, Error as JsonError};
+use serde_json::Error as JsonError;
 use k8_config::{ConfigError as K8ConfigError, K8Config};
 use url::{Url, ParseError};
 
@@ -191,6 +191,10 @@ pub enum UnrecoverableCheck {
     #[error("There is no active Kubernetes context")]
     NoActiveKubernetesContext,
 
+    /// Unable to connect to the active context
+    #[error("Failed to connect to Kubernetes via the active context")]
+    CannotConnectToKubernetes,
+
     /// There are multiple fluvio-sys's installed
     #[error("Cannot have multiple versions of fluvio-sys installed")]
     MultipleSystemCharts,
@@ -226,7 +230,7 @@ pub(crate) struct LoadableConfig;
 #[async_trait]
 impl InstallCheck for LoadableConfig {
     async fn perform_check(&self) -> CheckResult {
-        check_cluster_server_host()
+        check_cluster_connection()
     }
 }
 
@@ -481,9 +485,18 @@ fn get_tunnel_error() -> CheckFailed {
     RecoverableCheck::MinikubeTunnelNotFoundRetry.into()
 }
 
-/// Getting server hostname from K8 context
-fn check_cluster_server_host() -> CheckResult {
-    let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
+/// Checks that we can connect to Kubernetes via the active context
+fn check_cluster_connection() -> CheckResult {
+    let config = match K8Config::load() {
+        Ok(config) => config,
+        Err(K8ConfigError::NoCurrentContext) => {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::NoActiveKubernetesContext,
+            ));
+        }
+        Err(other) => return Err(CheckError::K8ConfigError(other).into()),
+    };
+
     let context = match config {
         K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
         K8Config::KubeConfig(context) => context,
@@ -525,17 +538,33 @@ fn k8_version_check() -> CheckResult {
         .map_err(CheckError::KubectlNotFoundError)?;
     let version_text = String::from_utf8(kube_version.stdout).unwrap();
 
-    let kube_version_json: Value =
-        serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
+    #[derive(Debug, serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ComponentVersion {
+        git_version: String,
+    }
 
-    let mut server_version = kube_version_json["serverVersion"]["gitVersion"].to_string();
-    server_version.retain(|c| c != '"');
-    let version_text_trimmed = &server_version[1..].trim();
+    #[derive(Debug, serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct KubernetesVersion {
+        client_version: ComponentVersion,
+        server_version: Option<ComponentVersion>,
+    }
 
-    if Version::parse(&version_text_trimmed) < Version::parse(KUBE_VERSION) {
+    let kube_versions: KubernetesVersion = serde_json::from_str(&version_text)
+        .map_err(CheckError::KubectlVersionJsonError)?;
+
+    let server_version = match kube_versions.server_version {
+        Some(version) => version.git_version,
+        None => return Ok(CheckStatus::fail(UnrecoverableCheck::CannotConnectToKubernetes)),
+    };
+
+    // Trim off the `v` in v0.1.2 to get just "0.1.2"
+    let server_version = &server_version[1..];
+    if Version::parse(&server_version) < Version::parse(KUBE_VERSION) {
         return Ok(CheckStatus::fail(
             UnrecoverableCheck::IncompatibleKubectlVersion {
-                installed: version_text_trimmed.to_string(),
+                installed: server_version.to_string(),
                 required: KUBE_VERSION.to_string(),
             },
         ));

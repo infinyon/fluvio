@@ -85,9 +85,12 @@ pub enum LocalInstallError {
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
-    /// One or more pre-checks failed when trying to start the cluster
+    /// One or more pre-checks (successfully) failed when trying to start the cluster
     #[error("Pre-checks failed during cluster startup")]
-    FailedPrecheck(CheckResults),
+    FailedPrecheck(CheckStatuses),
+    /// Encountered an error while performing one or more pre-checks
+    #[error("Failed to perform one or more pre-checks")]
+    PrecheckErrored(CheckResults),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
     SCServiceTimeout,
