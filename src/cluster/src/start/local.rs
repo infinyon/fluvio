@@ -23,6 +23,7 @@ use crate::check::{InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckR
 use crate::start::k8::ClusterInstaller;
 use crate::start::check_and_fix;
 
+const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 
 #[derive(Debug)]
@@ -363,7 +364,7 @@ impl LocalClusterInstaller {
             .stderr(Stdio::from(errors))
             .spawn()?;
 
-        Ok("localhost:9003".to_string())
+        Ok(LOCAL_SC_ADDRESS.to_string())
     }
 
     fn set_server_tls(
@@ -403,7 +404,7 @@ impl LocalClusterInstaller {
 
     /// set local profile
     fn set_profile(&self) -> Result<String, LocalInstallError> {
-        let local_addr = "localhost:9003".to_owned();
+        let local_addr = LOCAL_SC_ADDRESS.to_owned();
         let mut config_file = ConfigFile::load_default_or_new()?;
 
         let config = config_file.mut_config();
