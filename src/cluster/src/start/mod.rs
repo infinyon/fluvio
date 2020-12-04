@@ -13,8 +13,8 @@ use crate::{UnrecoverableCheck, CheckStatus};
 /// `Ok(())`. Otherwise, it may wrap the failed check and return it,
 /// such as:
 ///
-/// ```no_run
-/// # use fluvio_cluster::UnrecoverableCheck;
+/// ```ignore
+/// # use fluvio_cluster::{RecoverableCheck, UnrecoverableCheck};
 /// async fn fix(check: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
 ///     // Try to fix the check...
 ///     // If the fix did not succeed:
