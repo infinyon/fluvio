@@ -24,16 +24,16 @@ use k8_obj_metadata::InputObjectMeta;
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{
-    CheckError, StatusCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig,
-    LoadBalancer,
+    UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig,
+    LoadBalancer, CheckFailed, RecoverableCheck, CheckResults,
 };
 use crate::error::K8InstallError;
-use crate::ClusterError;
+use crate::{
+    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
+    CheckStatus,
+};
+use crate::start::check_and_fix;
 
-pub(crate) const DEFAULT_NAMESPACE: &str = "default";
-pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
-pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
-pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
@@ -621,10 +621,7 @@ impl ClusterInstaller {
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     #[allow(unused)]
-    pub async fn setup(&self) -> Result<(), ClusterError> {
-        use colored::*;
-        println!("Performing pre-flight checks");
-
+    pub async fn setup(&self) -> CheckResults {
         let checks: Vec<Box<dyn InstallCheck>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),
@@ -632,33 +629,8 @@ impl ClusterInstaller {
             Box::new(AlreadyInstalled),
             Box::new(LoadBalancer),
         ];
-        for check in checks {
-            match check.perform_check().await {
-                Ok(check) => match check {
-                    StatusCheck::Working(success) => {
-                        let msg = format!("ok: {}", success);
-                        println!("✔️  {}", msg.green());
-                    }
-                    // unrecoverable error occured, return error
-                    StatusCheck::NotWorkingNoRemediation(failure) => {
-                        return Err(K8InstallError::PreCheck(failure).into());
-                    }
-                    // recoverable error occured, try to fix
-                    StatusCheck::NotWorking(failure, _) => {
-                        match self.pre_install_fix(failure).await {
-                            Ok(()) => {
-                                println!("✔️  success");
-                            }
-                            // not able to recover, return error
-                            Err(err) => return Err(err.into()),
-                        };
-                    }
-                },
-                Err(err) => return Err(K8InstallError::PreCheck(err).into()),
-            };
-        }
-
-        Ok(())
+        let fix = |err| self.pre_install_fix(err);
+        check_and_fix(&checks, fix).await
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
@@ -677,24 +649,30 @@ impl ClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    pub(crate) async fn pre_install_fix(&self, error: CheckError) -> Result<(), K8InstallError> {
+    pub(crate) async fn pre_install_fix(
+        &self,
+        error: RecoverableCheck,
+    ) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
-        // If we cannot handle this error, return it to bubble up
+        // If we cannot handle this error, wrap it in UnrecoverableCheck::FailedRecovery
         match error {
-            CheckError::MissingSystemChart if self.config.install_sys => {
+            RecoverableCheck::MissingSystemChart if self.config.install_sys => {
                 println!("Fluvio system chart not installed. Attempting to install");
-                self._install_sys()?;
+                self._install_sys()
+                    .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
             }
-            CheckError::MinikubeTunnelNotFoundRetry => {
+            RecoverableCheck::MinikubeTunnelNotFoundRetry => {
                 println!(
                     "Load balancer service is not available, trying to bring up minikube tunnel"
                 );
-                self._try_minikube_tunnel().await?;
+                self._try_minikube_tunnel()
+                    .await
+                    .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
             }
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
-                return Err(unhandled.into());
+                return Err(UnrecoverableCheck::FailedRecovery(unhandled));
             }
         }
 
@@ -708,40 +686,52 @@ impl ClusterInstaller {
         skip(self),
         fields(namespace = &*self.config.namespace),
     )]
-    pub async fn install_fluvio(&self) -> Result<String, ClusterError> {
-        // Checks if env is ready for install and tries to fix anything it can
-        if !self.config.skip_checks {
-            match self.setup().await {
-                // If all checks pass, perform the main installation
-                Ok(()) => {
-                    println!("All checks passed, proceeding with the installation");
-                    self.install_app()?;
+    pub async fn install_fluvio(&self) -> Result<StartStatus, ClusterError> {
+        let checks = match self.config.skip_checks {
+            true => None,
+            // Check if env is ready for install and tries to fix anything it can
+            false => {
+                let check_results = self.setup().await;
+                if check_results.0.iter().any(|it| it.is_err()) {
+                    return Err(K8InstallError::PrecheckErrored(check_results).into());
                 }
-                // If Fluvio is already installed, skip install step
-                Err(ClusterError::InstallK8(K8InstallError::PreCheck(
-                    CheckError::AlreadyInstalled,
-                ))) => {
-                    debug!("Fluvio is already installed. Getting SC address");
-                    let sc_address = self.wait_for_sc_service(&self.config.namespace).await?;
-                    return Ok(sc_address);
-                }
-                // If there were other unhandled errors, return them
-                Err(unhandled) => return Err(unhandled),
-            }
-        } else {
-            println!("Skipping pre-flight checks, proceeding with the installation");
-            self.install_app()?;
-        }
 
+                let statuses = check_results.into_statuses();
+                let mut any_failed = false;
+                for status in &statuses.0 {
+                    match status {
+                        // If Fluvio is already installed, return the SC's address
+                        CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {
+                            debug!("Fluvio is already installed. Getting SC address");
+                            let address = self.wait_for_sc_service(&self.config.namespace).await?;
+                            return Ok(StartStatus {
+                                address,
+                                checks: Some(statuses),
+                            });
+                        }
+                        CheckStatus::Fail(_) => any_failed = true,
+                        _ => (),
+                    }
+                }
+
+                // If any of the pre-checks was a straight-up failure, install should fail
+                if any_failed {
+                    return Err(K8InstallError::FailedPrecheck(statuses).into());
+                }
+                Some(statuses)
+            }
+        };
+
+        self.install_app()?;
         let namespace = &self.config.namespace;
-        let sc_address = self
+        let address = self
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
-        info!(addr = %sc_address, "Fluvio SC is up:");
+        info!(addr = %address, "Fluvio SC is up:");
 
         if self.config.save_profile {
-            self.update_profile(sc_address.clone())?;
+            self.update_profile(address.clone())?;
         }
 
         if self.config.spu_spec.replicas > 0 {
@@ -750,8 +740,8 @@ impl ClusterInstaller {
             sleep(Duration::from_millis(2000)).await;
 
             // Create a managed SPU cluster
-            let cluster = FluvioConfig::new(sc_address.clone())
-                .with_tls(self.config.client_tls_policy.clone());
+            let cluster =
+                FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
@@ -759,7 +749,7 @@ impl ClusterInstaller {
                 .await?;
         }
 
-        Ok(sc_address)
+        Ok(StartStatus { address, checks })
     }
 
     /// Install the Fluvio System chart on the configured cluster
@@ -1138,7 +1128,7 @@ impl ClusterInstaller {
             K8Config::Pod(_) => {
                 return Err(K8InstallError::Other(
                     "Pod config is not valid here".to_owned(),
-                ))
+                ));
             }
             K8Config::KubeConfig(config) => config,
         };
@@ -1152,8 +1142,8 @@ impl ClusterInstaller {
 
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(
-        skip(self, cluster),
-        fields(cluster_addr = &*cluster.addr)
+    skip(self, cluster),
+    fields(cluster_addr = & * cluster.addr)
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), K8InstallError> {
         debug!("trying to create managed spu: {:#?}", cluster);

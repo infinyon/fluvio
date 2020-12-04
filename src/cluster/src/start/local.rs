@@ -18,10 +18,14 @@ use k8_obj_metadata::InputK8Obj;
 use k8_obj_metadata::InputObjectMeta;
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError};
-use crate::check::{CheckError, StatusCheck, InstallCheck, HelmVersion, SysChart};
-use crate::start::{ClusterInstaller, DEFAULT_NAMESPACE};
+use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};
+use crate::check::{
+    InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults, K8Version, LoadableConfig,
+};
+use crate::start::k8::ClusterInstaller;
+use crate::start::check_and_fix;
 
+const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 
 #[derive(Debug)]
@@ -243,57 +247,49 @@ impl LocalClusterInstaller {
             skip_checks: false,
         }
     }
+
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
-    pub async fn setup(&self) -> Result<(), ClusterError> {
+    pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let checks: Vec<Box<dyn InstallCheck>> = vec![Box::new(HelmVersion), Box::new(SysChart)];
-        for check in checks {
-            match check.perform_check().await {
-                Ok(check) => match check {
-                    StatusCheck::Working(_) => {
-                        // do nothing check is fine
-                    }
-                    // unrecoverable error occured, return error
-                    StatusCheck::NotWorkingNoRemediation(failure) => {
-                        return Err(LocalInstallError::PreCheck(failure).into());
-                    }
-                    // recoverable error occured, try to fix
-                    StatusCheck::NotWorking(failure, _) => {
-                        match self.pre_install_fix(failure).await {
-                            Ok(_) => {
-                                // recovered correctly
-                            }
-                            // not able to recover, return error
-                            Err(err) => return Err(err),
-                        };
-                    }
-                },
-                Err(err) => return Err(LocalInstallError::PreCheck(err).into()),
-            };
-        }
-
-        Ok(())
+        let checks: Vec<Box<dyn InstallCheck>> = vec![
+            Box::new(HelmVersion),
+            Box::new(K8Version),
+            Box::new(LoadableConfig),
+            Box::new(SysChart),
+        ];
+        let fix = |err| self.pre_install_fix(err);
+        check_and_fix(&checks, fix).await
     }
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(self, error))]
-    async fn pre_install_fix(&self, error: CheckError) -> Result<(), ClusterError> {
+    async fn pre_install_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
         match error {
-            CheckError::MissingSystemChart if self.config.install_sys => {
+            RecoverableCheck::MissingSystemChart if self.config.install_sys => {
                 debug!("Fluvio system chart not installed. Attempting to install");
-                let installer = ClusterInstaller::new()
-                    .with_namespace(DEFAULT_NAMESPACE)
-                    .with_local_chart(DEFAULT_CHART_LOCATION)
-                    .build()?;
-                installer._install_sys()?;
+
+                // Use closure to catch any errors
+                let result = (|| -> Result<_, ClusterError> {
+                    let installer = ClusterInstaller::new()
+                        .with_namespace(DEFAULT_NAMESPACE)
+                        .with_local_chart(DEFAULT_CHART_LOCATION)
+                        .build()?;
+                    installer._install_sys()?;
+                    Ok(())
+                })();
+
+                // If any errors occurred, recovery failed
+                if result.is_err() {
+                    return Err(UnrecoverableCheck::FailedRecovery(error));
+                }
             }
             unhandled => {
                 warn!("Pre-install was unable to autofix an error");
-                return Err(LocalInstallError::PreCheck(unhandled).into());
+                return Err(UnrecoverableCheck::FailedRecovery(unhandled));
             }
         }
 
@@ -301,12 +297,32 @@ impl LocalClusterInstaller {
     }
 
     /// Install fluvio locally
-    pub async fn install(&self) -> Result<(), ClusterError> {
-        if !self.config.skip_checks {
-            self.setup().await?;
-        } else {
-            println!("Skipping pre-flight checks, proceeding with the installation");
-        }
+    pub async fn install(&self) -> Result<StartStatus, ClusterError> {
+        let checks = match self.config.skip_checks {
+            true => None,
+            false => {
+                // Try to setup environment by running pre-checks and auto-fixes
+                let check_results = self.setup().await;
+
+                // If any check results encountered an error, bubble the error
+                if check_results.0.iter().any(|it| it.is_err()) {
+                    return Err(LocalInstallError::PrecheckErrored(check_results).into());
+                }
+
+                // If any checks successfully completed with a failure, return checks in status
+                let statuses = check_results.into_statuses();
+                let any_failed = statuses
+                    .0
+                    .iter()
+                    .any(|it| matches!(it, crate::CheckStatus::Fail(_)));
+                if any_failed {
+                    return Err(LocalInstallError::FailedPrecheck(statuses).into());
+                }
+
+                Some(statuses)
+            }
+        };
+
         debug!("using log dir: {}", &self.config.log_dir);
         if !Path::new(&self.config.log_dir.to_string()).exists() {
             create_dir_all(&self.config.log_dir.to_string()).map_err(LocalInstallError::IoError)?;
@@ -314,7 +330,7 @@ impl LocalClusterInstaller {
         // ensure we sync files before we launch servers
         Command::new("sync").inherit();
         info!("launching sc");
-        self.launch_sc()?;
+        let address = self.launch_sc()?;
         info!("setting local profile");
         self.set_profile()?;
 
@@ -324,10 +340,15 @@ impl LocalClusterInstaller {
         );
         self.launch_spu_group().await?;
         sleep(Duration::from_secs(1)).await;
-        Ok(())
+        self.confirm_spu(self.config.spu_spec.replicas).await?;
+
+        Ok(StartStatus { address, checks })
     }
 
-    fn launch_sc(&self) -> Result<(), LocalInstallError> {
+    /// Launches an SC on the local machine
+    ///
+    /// Returns the address of the SC if successful
+    fn launch_sc(&self) -> Result<String, LocalInstallError> {
         let outputs = File::create(format!("{}/flv_sc.log", &self.config.log_dir))?;
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
@@ -347,7 +368,7 @@ impl LocalClusterInstaller {
             .stderr(Stdio::from(errors))
             .spawn()?;
 
-        Ok(())
+        Ok(LOCAL_SC_ADDRESS.to_string())
     }
 
     fn set_server_tls(
@@ -387,7 +408,7 @@ impl LocalClusterInstaller {
 
     /// set local profile
     fn set_profile(&self) -> Result<String, LocalInstallError> {
-        let local_addr = "localhost:9003".to_owned();
+        let local_addr = LOCAL_SC_ADDRESS.to_owned();
         let mut config_file = ConfigFile::load_default_or_new()?;
 
         let config = config_file.mut_config();
@@ -509,5 +530,43 @@ impl LocalClusterInstaller {
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
         Ok(())
+    }
+
+    /// Check to ensure SPUs are all running
+    async fn confirm_spu(&self, spu: u16) -> Result<(), LocalInstallError> {
+        use fluvio::Fluvio;
+
+        let delay: u64 = std::env::var("FLV_SPU_DELAY")
+            .unwrap_or_else(|_| "1".to_string())
+            .parse()
+            .unwrap_or(1);
+
+        debug!("waiting for spu to be provisioned for: {} seconds", delay);
+
+        sleep(Duration::from_secs(delay)).await;
+
+        let client = Fluvio::connect().await?;
+        let mut admin = client.admin().await;
+
+        // wait for list of spu
+        for _ in 0..30u16 {
+            let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
+            let live_spus = spus.iter().filter(|spu| spu.status.is_online()).count();
+            if live_spus == spu as usize {
+                info!("{} SPUs provisioned", spus.len());
+                drop(client);
+                sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
+                return Ok(());
+            } else {
+                debug!("{} out of {} SPUs up, waiting 5 sec", live_spus, spu);
+                sleep(Duration::from_secs(5)).await;
+            }
+        }
+
+        println!("waited too long,bailing out");
+        Err(LocalInstallError::Other(format!(
+            "not able to provision:{} spu",
+            spu
+        )))
     }
 }

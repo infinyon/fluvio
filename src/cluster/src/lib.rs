@@ -16,10 +16,11 @@
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
 
+#![warn(missing_docs)]
+
 mod check;
 mod start;
 mod delete;
-mod local;
 mod error;
 
 /// extensions
@@ -28,13 +29,37 @@ pub mod cli;
 
 use fluvio_helm as helm;
 
-pub use start::ClusterInstaller;
-pub use start::ClusterInstallerBuilder;
+pub use start::k8::ClusterInstaller;
+pub use start::k8::ClusterInstallerBuilder;
+pub use start::local::LocalClusterInstaller;
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
-pub use check::ClusterChecker;
-pub use check::CheckError;
+pub use check::{ClusterChecker, CheckStatus, CheckStatuses};
+pub use check::{RecoverableCheck, UnrecoverableCheck};
 pub use delete::ClusterUninstaller;
-pub use local::LocalClusterInstaller;
 
 const VERSION: &str = include_str!("VERSION");
+pub(crate) const DEFAULT_NAMESPACE: &str = "default";
+pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
+pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
+pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
+
+/// The result of a successful startup of a Fluvio cluster
+///
+/// A `StartStatus` carries additional information about the startup
+/// process beyond the simple fact that the startup succeeded. It
+/// contains the address of the Streaming Controller (SC) of the new
+/// cluster as well as the results of any pre-startup checks that
+/// were run (if any).
+pub struct StartStatus {
+    address: String,
+    #[allow(unused)]
+    pub(crate) checks: Option<CheckStatuses>,
+}
+
+impl StartStatus {
+    /// The address where the newly-started Fluvio cluster lives
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+}

@@ -25,6 +25,7 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
 
+/// Manage and view Fluvio clusters
 #[derive(StructOpt, Debug)]
 pub struct ClusterOpt {
     #[structopt(flatten)]
@@ -35,6 +36,7 @@ pub struct ClusterOpt {
 }
 
 impl ClusterOpt {
+    /// Execute a cluster command
     pub async fn process(self) -> Result<(), ClusterCliError> {
         let out = Arc::new(PrintTerminal {});
         self.cmd.process(out, self.target).await?;
