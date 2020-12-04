@@ -132,7 +132,7 @@ where
                                     "api version handler"
                                 ),
 
-                                
+
                                 SpuServerRequest::ProduceRequest(request) => call_service!(
                                     request,
                                     handle_produce_request(request,context.clone()),
