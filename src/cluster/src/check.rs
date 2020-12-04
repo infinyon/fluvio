@@ -38,7 +38,8 @@ impl From<Vec<CheckResult>> for CheckResults {
 
 impl CheckResults {
     pub fn into_statuses(self) -> CheckStatuses {
-        let statuses: Vec<_> = self.0
+        let statuses: Vec<_> = self
+            .0
             .into_iter()
             .filter_map(|it| match it {
                 Ok(status) => Some(status),
@@ -343,14 +344,14 @@ impl ClusterChecker {
 
 /// Checks that the installed helm version is compatible with the installer requirements
 pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> CheckResult {
-    let helm_version = helm
-        .get_helm_version()
-        .map_err(CheckError::HelmError)?;
+    let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
     if Version::parse(&helm_version) < Version::parse(required) {
-        return Ok(CheckStatus::fail(UnrecoverableCheck::IncompatibleHelmVersion {
-            installed: helm_version,
-            required: required.to_string(),
-        }));
+        return Ok(CheckStatus::fail(
+            UnrecoverableCheck::IncompatibleHelmVersion {
+                installed: helm_version,
+                required: required.to_string(),
+            },
+        ));
     }
     Ok(CheckStatus::pass("Supported helm version is installed"))
 }
@@ -391,7 +392,9 @@ pub(crate) async fn check_load_balancer_status() -> CheckResult {
     let cluster_context = match context.config.current_context() {
         Some(context) => context,
         None => {
-            return Ok(CheckStatus::fail(UnrecoverableCheck::NoActiveKubernetesContext));
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::NoActiveKubernetesContext,
+            ));
         }
     };
 
@@ -409,7 +412,9 @@ pub(crate) async fn check_load_balancer_status() -> CheckResult {
             // hence handle both separately
             return Ok(CheckStatus::fail(get_tunnel_error()));
         }
-        return Ok(CheckStatus::fail(UnrecoverableCheck::LoadBalancerServiceNotAvailable));
+        return Ok(CheckStatus::fail(
+            UnrecoverableCheck::LoadBalancerServiceNotAvailable,
+        ));
     }
 
     Ok(CheckStatus::pass("Load balancer is up"))
@@ -487,7 +492,9 @@ fn check_cluster_server_host() -> CheckResult {
     let cluster_context = match context.config.current_cluster() {
         Some(context) => context,
         None => {
-            return Ok(CheckStatus::fail(UnrecoverableCheck::NoActiveKubernetesContext));
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::NoActiveKubernetesContext,
+            ));
         }
     };
 
@@ -501,7 +508,9 @@ fn check_cluster_server_host() -> CheckResult {
         .unwrap_or(false);
 
     if !host_present {
-        return Ok(CheckStatus::fail(UnrecoverableCheck::MissingKubernetesServerHost));
+        return Ok(CheckStatus::fail(
+            UnrecoverableCheck::MissingKubernetesServerHost,
+        ));
     }
 
     Ok(CheckStatus::pass("Kubernetes config is loadable"))
@@ -517,20 +526,23 @@ fn k8_version_check() -> CheckResult {
     let version_text = String::from_utf8(kube_version.stdout).unwrap();
 
     let kube_version_json: Value =
-        serde_json::from_str(&version_text)
-            .map_err(CheckError::KubectlVersionJsonError)?;
+        serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
 
     let mut server_version = kube_version_json["serverVersion"]["gitVersion"].to_string();
     server_version.retain(|c| c != '"');
     let version_text_trimmed = &server_version[1..].trim();
 
     if Version::parse(&version_text_trimmed) < Version::parse(KUBE_VERSION) {
-        return Ok(CheckStatus::fail(UnrecoverableCheck::IncompatibleKubectlVersion {
-            installed: version_text_trimmed.to_string(),
-            required: KUBE_VERSION.to_string(),
-        }));
+        return Ok(CheckStatus::fail(
+            UnrecoverableCheck::IncompatibleKubectlVersion {
+                installed: version_text_trimmed.to_string(),
+                required: KUBE_VERSION.to_string(),
+            },
+        ));
     }
-    Ok(CheckStatus::pass("Supported kubernetes version is installed"))
+    Ok(CheckStatus::pass(
+        "Supported kubernetes version is installed",
+    ))
 }
 
 fn check_permission(resource: &str) -> CheckResult {
@@ -551,7 +563,7 @@ fn check_create_permission(resource: &str) -> Result<bool, CheckError> {
         .arg(resource)
         .output()
         .map_err(CheckError::KubectlNotFoundError)?;
-    let res = String::from_utf8(check_command.stdout)
-        .map_err(|_| CheckError::FetchPermissionError)?;
+    let res =
+        String::from_utf8(check_command.stdout).map_err(|_| CheckError::FetchPermissionError)?;
     Ok(res.trim() == "yes")
 }

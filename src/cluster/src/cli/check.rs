@@ -185,7 +185,10 @@ impl CheckResults {
         // There was one or more errors performing checks
         if !installed && errors > 0 {
             let s = if errors == 1 { "" } else { "s" };
-            println!("{}", format!("There was an error performing {} check{s}", errors, s = s).bold());
+            println!(
+                "{}",
+                format!("There was an error performing {} check{s}", errors, s = s).bold()
+            );
             println!("If you believe this is incorrect, please consider filing a bug report at:");
             println!("  {}", ISSUE_URL.bold());
             return;

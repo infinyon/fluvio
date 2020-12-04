@@ -28,7 +28,10 @@ use crate::check::{
     LoadBalancer, CheckFailed, RecoverableCheck, CheckResults,
 };
 use crate::error::K8InstallError;
-use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, CheckStatus};
+use crate::{
+    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
+    CheckStatus,
+};
 use crate::start::check_and_fix;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
