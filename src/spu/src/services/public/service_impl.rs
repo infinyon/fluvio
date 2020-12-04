@@ -129,15 +129,15 @@ where
                                     request,
                                     handle_kf_lookup_version_request(request),
                                     s_sink,
-                                    "kf api version handler"
+                                    "api version handler"
                                 ),
 
-                                // Kafka
+
                                 SpuServerRequest::ProduceRequest(request) => call_service!(
                                     request,
                                     handle_produce_request(request,context.clone()),
                                     s_sink,
-                                    "ks produce request handler"
+                                    "roduce request handler"
                                 ),
                                 SpuServerRequest::FileFetchRequest(request) => handle_fetch_request(request,context.clone(),s_sink.clone()).await?,
 
