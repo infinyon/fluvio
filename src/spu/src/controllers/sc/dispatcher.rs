@@ -1,4 +1,4 @@
-use std::time::{ Duration, Instant };
+use std::time::{Duration, Instant};
 use std::io::Error as IoError;
 
 use tracing::info;
@@ -136,12 +136,11 @@ impl ScDispatcher<FileReplica> {
     /// dispatch sc request
     #[instrument(skip(self, socket))]
     async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
-       
         use tokio::select;
 
         const MIN_SC_SINK_TIME: Duration = Duration::from_millis(200);
 
-        async fn sink_sleep(duration: Duration)  {
+        async fn sink_sleep(duration: Duration) {
             if duration < MIN_SC_SINK_TIME {
                 sleep(duration).await
             }
@@ -156,7 +155,6 @@ impl ScDispatcher<FileReplica> {
 
         loop {
             debug!("waiting for request from sc");
-
 
             if sink_time.elapsed() >= MIN_SC_SINK_TIME {
                 debug!("min sink time elapsed, triggering sc status");
