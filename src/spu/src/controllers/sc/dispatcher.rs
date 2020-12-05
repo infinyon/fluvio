@@ -1,6 +1,5 @@
 use std::time::Duration;
 use std::io::Error as IoError;
-use std::sync::Arc;
 
 use tracing::info;
 use tracing::trace;
@@ -21,13 +20,11 @@ use fluvio_future::timer::sleep;
 use fluvio_controlplane::InternalSpuApi;
 use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
-use fluvio_controlplane::UpdateSpuRequest;
+use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
 use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
-use fluvio_socket::FlvSocket;
-use fluvio_socket::FlvSocketError;
-use fluvio_socket::ExclusiveFlvSink;
+use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
 use fluvio_storage::FileReplica;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::log_on_err;
@@ -43,9 +40,7 @@ use crate::controllers::leader_replica::LeaderReplicaControllerCommand;
 use crate::InternalServerError;
 
 use super::SupervisorCommand;
-
-/// time to resync to SC
-const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60;
+use super::message_sink::{SharedSinkMessageChannel, ScSinkMessageChannel};
 
 /// Controller for handling connection to SC
 /// including registering and reconnect
@@ -57,18 +52,21 @@ pub struct ScDispatcher<S> {
     supervisor_command_sender: Sender<SupervisorCommand>,
     ctx: SharedGlobalContext<S>,
     max_bytes: u32,
+    sink_channel: SharedSinkMessageChannel,
 }
 
 impl<S> ScDispatcher<S> {
     pub fn new(ctx: SharedGlobalContext<S>, max_bytes: u32) -> Self {
         let (termination_sender, termination_receiver) = bounded(1);
         let (supervisor_command_sender, _supervisor_command_receiver) = bounded(100);
+        let sink_channel = ScSinkMessageChannel::shared();
         Self {
             termination_receiver,
             termination_sender,
             supervisor_command_sender,
             ctx,
             max_bytes,
+            sink_channel,
         }
     }
 }
@@ -140,10 +138,10 @@ impl ScDispatcher<FileReplica> {
     async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
         use tokio::select;
 
-        let (sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
+        const MIN_SC_SINK_TIME: u64 = 5;
 
-        let shared_sink = Arc::new(ExclusiveFlvSink::new(sink));
+        let (mut sink, mut stream) = socket.split();
+        let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
         debug!("entering sc request loop");
 
@@ -151,20 +149,22 @@ impl ScDispatcher<FileReplica> {
             debug!("waiting for request from sc");
             select! {
 
-                _ = (sleep(Duration::from_secs(SC_RECONCILIATION_INTERVAL_SEC))) => {
-                    debug!(sink = shared_sink.id(), "SC request loop timer fired, just checking");
-                   // break;
+                _ = sleep(Duration::from_millis(MIN_SC_SINK_TIME)) =>  {
+                    // check if there are any requests to send back sc_request
+                    if !self.send_status_back_to_sc(&mut sink).await {
+                        break;
+                    }
                 },
 
                 sc_request = api_stream.next() => match sc_request {
                     Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
-                        if let Err(err) = self.handle_update_replica_request(request, shared_sink.clone()).await {
+                        if let Err(err) = self.handle_update_replica_request(request).await {
                             error!("error handling update replica request: {}", err);
                             break;
                         }
                     },
                     Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
-                        if let Err(err) = self.handle_update_spu_request(request, shared_sink.clone()).await {
+                        if let Err(err) = self.handle_update_spu_request(request).await {
                             error!("error handling update spu request: {}", err);
                             break;
                         }
@@ -184,6 +184,23 @@ impl ScDispatcher<FileReplica> {
         debug!("exiting sc request loop");
 
         Ok(())
+    }
+
+    async fn send_status_back_to_sc(&mut self, sc_sink: &mut FlvSink) -> bool {
+        let requests = self.sink_channel.remove_all().await;
+        if !requests.is_empty() {
+            let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
+
+            if let Err(err) = sc_sink.send_request(&message).await {
+                error!("error sending batch status to sc: {}", err);
+                false
+            } else {
+                trace!("send status back");
+                true
+            }
+        } else {
+            true
+        }
     }
 
     /// register local spu to sc
@@ -262,11 +279,10 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self, req_msg, shared_sc_sink), name = "update_replica_request")]
+    #[instrument(skip(self, req_msg), name = "update_replica_request")]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
-        shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
@@ -290,18 +306,17 @@ impl ScDispatcher<FileReplica> {
             self.ctx.replica_localstore().apply_changes(request.changes)
         };
 
-        self.apply_replica_actions(actions, shared_sc_sink).await;
+        self.apply_replica_actions(actions).await;
         Ok(())
     }
 
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self, req_msg, _shared_sc_sink), name = "update_spu_request")]
+    #[instrument(skip(self, req_msg), name = "update_spu_request")]
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
-        _shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
@@ -327,14 +342,10 @@ impl ScDispatcher<FileReplica> {
     }
 
     #[instrument(
-        skip(self, actions, shared_sc_sink),
+        skip(self, actions),
         fields(action_count = actions.count())
     )]
-    async fn apply_replica_actions(
-        &self,
-        actions: Actions<SpecChange<Replica>>,
-        shared_sc_sink: Arc<ExclusiveFlvSink>,
-    ) {
+    async fn apply_replica_actions(&self, actions: Actions<SpecChange<Replica>>) {
         if actions.count() == 0 {
             debug!("no replica actions to process. ignoring");
             return;
@@ -350,8 +361,7 @@ impl ScDispatcher<FileReplica> {
             match replica_action {
                 SpecChange::Add(new_replica) => {
                     if new_replica.leader == local_id {
-                        self.add_leader_replica(new_replica, shared_sc_sink.clone())
-                            .await;
+                        self.add_leader_replica(new_replica).await;
                     } else {
                         self.add_follower_replica(new_replica).await;
                     }
@@ -374,8 +384,7 @@ impl ScDispatcher<FileReplica> {
                     if new_replica.leader != old_replica.leader {
                         if new_replica.leader == local_id {
                             // we become leader
-                            self.promote_replica(new_replica, old_replica, shared_sc_sink.clone())
-                                .await;
+                            self.promote_replica(new_replica, old_replica).await;
                         } else {
                             // we are follower
                             // if we were leader before, we demote out self
@@ -399,10 +408,10 @@ impl ScDispatcher<FileReplica> {
     }
 
     #[instrument(
-        skip(self, replica, shared_sc_sink),
+        skip(self, replica),
         fields(replica_id = &*format!("{}", replica.id))
     )]
-    async fn add_leader_replica(&self, replica: Replica, shared_sc_sink: Arc<ExclusiveFlvSink>) {
+    async fn add_leader_replica(&self, replica: Replica) {
         debug!("adding new leader replica");
 
         let storage_log = self.ctx.config().storage().new_config();
@@ -411,7 +420,7 @@ impl ScDispatcher<FileReplica> {
         match LeaderReplicaState::create_file_replica(replica, &storage_log).await {
             Ok(leader_replica) => {
                 debug!("file replica for leader is created: {}", storage_log);
-                self.spawn_leader_controller(replica_id, leader_replica, shared_sc_sink)
+                self.spawn_leader_controller(replica_id, leader_replica)
                     .await;
             }
             Err(err) => {
@@ -503,14 +512,13 @@ impl ScDispatcher<FileReplica> {
 
     /// spawn new leader controller
     #[instrument(
-        skip(self, replica_id, leader_state, shared_sc_sink),
+        skip(self, replica_id, leader_state),
         fields(replica_id = &*format!("{}", replica_id))
     )]
     async fn spawn_leader_controller(
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
-        shared_sc_sink: Arc<ExclusiveFlvSink>,
     ) {
         debug!("spawning new leader controller");
 
@@ -534,7 +542,7 @@ impl ScDispatcher<FileReplica> {
             receiver,
             self.ctx.leader_state_owned(),
             self.ctx.followers_sink_owned(),
-            shared_sc_sink,
+            self.sink_channel.clone(),
             self.ctx.offset_channel().sender(),
             self.max_bytes,
         );
@@ -546,12 +554,7 @@ impl ScDispatcher<FileReplica> {
     /// // 1: Remove follower replica from followers state
     /// // 2: Terminate followers controller if need to be (if there are no more follower replicas for that controller)
     /// // 3: Start leader controller
-    pub async fn promote_replica(
-        &self,
-        new_replica: Replica,
-        old_replica: Replica,
-        shared_sc_sink: Arc<ExclusiveFlvSink>,
-    ) {
+    pub async fn promote_replica(&self, new_replica: Replica, old_replica: Replica) {
         debug!("promoting replica: {} from: {}", new_replica, old_replica);
 
         if let Some(follower_replica) = self
@@ -571,7 +574,7 @@ impl ScDispatcher<FileReplica> {
                 new_replica.replicas,
             );
 
-            self.spawn_leader_controller(new_replica.id, leader_state, shared_sc_sink)
+            self.spawn_leader_controller(new_replica.id, leader_state)
                 .await;
         }
     }
