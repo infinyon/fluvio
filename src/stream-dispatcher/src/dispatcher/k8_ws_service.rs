@@ -58,12 +58,14 @@ where
         if let Some(parent_metadata) = ctx.owner() {
             let item_name = key.to_string();
 
+            let input_metadata = parent_metadata
+                .make_child_input_metadata::<<<S as Spec>::Owner as K8ExtendedSpec>::K8Spec>(
+                item_name,
+            );
+            
             let new_k8 = InputK8Obj::new(
                 k8_spec,
-                parent_metadata
-                    .make_child_input_metadata::<<<S as Spec>::Owner as K8ExtendedSpec>::K8Spec>(
-                        item_name,
-                    ),
+                input_metadata
             );
 
             self.client.apply(new_k8).await.map(|_| ())
