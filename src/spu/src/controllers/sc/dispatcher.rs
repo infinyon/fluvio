@@ -156,10 +156,7 @@ impl ScDispatcher<FileReplica> {
         let mut sink_time = Instant::now();
 
         loop {
-            debug!("waiting for request from sc");
-
             if sink_time.elapsed() >= MIN_SC_SINK_TIME {
-                debug!("min sink time elapsed, triggering sc status");
                 if !self.send_status_back_to_sc(&mut sink).await {
                     break;
                 }
@@ -168,7 +165,6 @@ impl ScDispatcher<FileReplica> {
             select! {
 
                 _ = sink_sleep(sink_time.elapsed()) =>  {
-                    trace!("sink time elapsed");
                     continue;
                 },
 
