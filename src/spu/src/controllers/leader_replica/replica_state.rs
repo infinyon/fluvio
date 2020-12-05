@@ -12,20 +12,17 @@ use dataplane::api::RequestMessage;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::Replica;
-use fluvio_controlplane::UpdateLrsRequest;
-use fluvio_storage::FileReplica;
-use fluvio_storage::ConfigOption;
-use fluvio_storage::StorageError;
+use fluvio_controlplane::LrsRequest;
+use fluvio_storage::{FileReplica, ConfigOption, StorageError};
 use fluvio_types::SpuId;
-use fluvio_types::log_on_err;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
-use fluvio_socket::ExclusiveFlvSink;
 
+use crate::controllers::sc::SharedSinkMessageChannel;
 use crate::core::storage::create_replica_storage;
-use crate::controllers::follower_replica::FileSyncRequest;
-use crate::controllers::follower_replica::PeerFileTopicResponse;
-use crate::controllers::follower_replica::PeerFilePartitionResponse;
+use crate::controllers::follower_replica::{
+    FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
+};
 
 use super::FollowerOffsetUpdate;
 
@@ -233,7 +230,7 @@ where
     }
 
     /// convert myself as
-    fn as_lrs_request(&self) -> UpdateLrsRequest {
+    fn as_lrs_request(&self) -> LrsRequest {
         let leader = (
             self.leader_id,
             self.storage.get_hw(),
@@ -248,21 +245,11 @@ where
             })
             .collect();
 
-        UpdateLrsRequest::new(self.replica_id.clone(), leader, replicas)
+        LrsRequest::new(self.replica_id.clone(), leader, replicas)
     }
 
-    pub async fn send_status_to_sc(&self, sc_sink: &ExclusiveFlvSink) {
-        let mut message = RequestMessage::new_request(self.as_lrs_request());
-        message.get_mut_header().set_client_id(format!(
-            "spu: {}, replica: {}",
-            self.leader_id, self.replica_id
-        ));
-
-        log_on_err!(sc_sink.send_request(&message).await);
-        debug!(
-            "sent replica status to sc: {}, replica: {}",
-            self.leader_id, self.replica_id
-        );
+    pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
+        sc_sink.send(self.as_lrs_request()).await
     }
 }
 

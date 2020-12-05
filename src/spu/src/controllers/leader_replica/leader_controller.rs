@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use tracing::debug;
@@ -14,11 +13,11 @@ use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
-use fluvio_socket::ExclusiveFlvSink;
 use tokio::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;
 use crate::core::OffsetUpdateEvent;
+use crate::controllers::sc::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
@@ -36,7 +35,7 @@ pub struct ReplicaLeaderController<S> {
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
     leaders_state: SharedReplicaLeadersState<S>,
     follower_sinks: SharedSpuSinks,
-    sc_sink: Arc<ExclusiveFlvSink>,
+    sc_channel: SharedSinkMessageChannel,
     offset_sender: Sender<OffsetUpdateEvent>,
     max_bytes: u32,
 }
@@ -49,7 +48,7 @@ impl<S> ReplicaLeaderController<S> {
         controller_receiver: Receiver<LeaderReplicaControllerCommand>,
         leaders_state: SharedReplicaLeadersState<S>,
         follower_sinks: SharedSpuSinks,
-        sc_sink: Arc<ExclusiveFlvSink>,
+        sc_channel: SharedSinkMessageChannel,
         offset_sender: Sender<OffsetUpdateEvent>,
         max_bytes: u32,
     ) -> Self {
@@ -59,7 +58,7 @@ impl<S> ReplicaLeaderController<S> {
             controller_receiver,
             leaders_state,
             follower_sinks,
-            sc_sink,
+            sc_channel,
             offset_sender,
             max_bytes,
         }
@@ -116,6 +115,10 @@ impl ReplicaLeaderController<FileReplica> {
 
                             LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica) => {
                                 leader_debug!(self,"update replica from sc: {}",replica.id);
+                            },
+                            LeaderReplicaControllerCommand::RemoveReplicaFromSc => {
+                                leader_debug!(self,"remove replica from sc: {}",self.id);
+                                self.remove().await;
                             }
                         }
                     } else {
@@ -137,7 +140,7 @@ impl ReplicaLeaderController<FileReplica> {
             join(
                 async {
                     if update_status {
-                        leader_replica.send_status_to_sc(&self.sc_sink).await;
+                        leader_replica.send_status_to_sc(&self.sc_channel).await;
                     }
                 },
                 async {
@@ -162,6 +165,20 @@ impl ReplicaLeaderController<FileReplica> {
         }
     }
 
+    // remove leader replica and shutdown this controller
+
+    async fn remove(&self) {
+        /*
+        if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
+            leader_replica
+                .remove()
+                .await;
+        } else {
+            leader_warn!(self, "sync followers: no replica is found");
+        }
+        */
+    }
+
     /// go thru each of follower and sync replicas
     async fn sync_followers(&self) {
         debug!("sync followers");
@@ -177,7 +194,7 @@ impl ReplicaLeaderController<FileReplica> {
     /// send status back to sc
     async fn send_status_to_sc(&self) {
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
-            leader_replica.send_status_to_sc(&self.sc_sink).await;
+            leader_replica.send_status_to_sc(&self.sc_channel).await;
         } else {
             leader_warn!(self, "no replica is found");
         }

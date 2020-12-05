@@ -1,6 +1,3 @@
-#![recursion_limit = "512"]
-#![type_length_limit = "8664730"]
-
 mod error;
 mod start;
 mod config;
