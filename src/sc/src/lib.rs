@@ -1,5 +1,3 @@
-#![type_length_limit = "1324680"]
-
 #[cfg(any(feature = "k8"))]
 pub mod k8;
 pub mod cli;
