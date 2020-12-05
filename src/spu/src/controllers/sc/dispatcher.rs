@@ -138,6 +138,8 @@ impl ScDispatcher<FileReplica> {
     async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
         use tokio::select;
 
+        /// Interval between each send to SC
+        /// SC status are not source of truth, it is delayed derived data.  
         const MIN_SC_SINK_TIME: Duration = Duration::from_millis(200);
 
         async fn sink_sleep(duration: Duration) {
