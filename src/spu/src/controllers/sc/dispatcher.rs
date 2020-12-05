@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{ Duration, Instant };
 use std::io::Error as IoError;
 
 use tracing::info;
@@ -136,24 +136,40 @@ impl ScDispatcher<FileReplica> {
     /// dispatch sc request
     #[instrument(skip(self, socket))]
     async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+       
         use tokio::select;
 
-        const MIN_SC_SINK_TIME: u64 = 5;
+        const MIN_SC_SINK_TIME: Duration = Duration::from_millis(200);
+
+        async fn sink_sleep(duration: Duration)  {
+            if duration < MIN_SC_SINK_TIME {
+                sleep(duration).await
+            }
+        }
 
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
         debug!("entering sc request loop");
 
+        let mut sink_time = Instant::now();
+
         loop {
             debug!("waiting for request from sc");
+
+
+            if sink_time.elapsed() >= MIN_SC_SINK_TIME {
+                debug!("min sink time elapsed, triggering sc status");
+                if !self.send_status_back_to_sc(&mut sink).await {
+                    break;
+                }
+                sink_time = Instant::now();
+            }
             select! {
 
-                _ = sleep(Duration::from_millis(MIN_SC_SINK_TIME)) =>  {
-                    // check if there are any requests to send back sc_request
-                    if !self.send_status_back_to_sc(&mut sink).await {
-                        break;
-                    }
+                _ = sink_sleep(sink_time.elapsed()) =>  {
+                    trace!("sink time elapsed");
+                    continue;
                 },
 
                 sc_request = api_stream.next() => match sc_request {
