@@ -143,10 +143,15 @@ where
     }
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+        use k8_metadata_client::options::{ DeleteOptions, PropogationPolicy};
 
+        let options = S::FINALIZER.map(|_| DeleteOptions {
+            propagation_policy: Some(PropogationPolicy::Foreground),
+            ..Default::default()
+        });
         
         self.client
-            .delete_item::<S::K8Spec, _>(meta.inner())
+            .delete_item_with_option::<S::K8Spec, _>(meta.inner(),options)
             .await
             .map(|_| ())
     }
