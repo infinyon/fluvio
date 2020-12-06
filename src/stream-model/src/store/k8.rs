@@ -98,9 +98,13 @@ pub trait K8ExtendedSpec: Spec {
     type K8Spec: K8Spec;
     type K8Status: K8Status;
 
+    const BLOCK_OWNER_DELETE: bool = false;
+    const FINALIZER: Option<&'static str> = None;
+
     fn convert_from_k8(
         k8_obj: K8Obj<Self::K8Spec>,
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
+
 }
 
 pub fn default_convert_from_k8<S>(

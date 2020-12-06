@@ -47,7 +47,7 @@ fluvio-stream-model = { path = "../stream-model", version = "0.3.0" }
 fluvio-controlplane = { version = "0.2.0", path = "../controlplane" }
 fluvio-controlplane-metadata = { version = "0.2.0", features = ["k8", "serde"], path = "../controlplane-metadata" }
 fluvio-stream-dispatcher = { version = "0.3.0", path = "../stream-dispatcher" }
-k8-client = { version = "3.0.1", default-features = false, optional = true }
+k8-client = { version = "4.0.0",  optional = true }
 k8-metadata-client = { version = "1.0.2" }
 k8-obj-metadata = { version = "1.0.0" }
 fluvio-protocol = { version = "0.2.0" }

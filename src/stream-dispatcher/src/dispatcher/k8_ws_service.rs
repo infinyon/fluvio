@@ -58,11 +58,20 @@ where
         if let Some(parent_metadata) = ctx.owner() {
             let item_name = key.to_string();
 
-            let input_metadata = parent_metadata
+            let mut input_metadata = parent_metadata
                 .make_child_input_metadata::<<<S as Spec>::Owner as K8ExtendedSpec>::K8Spec>(
                 item_name,
             );
+
             
+            if let Some(finalizer) = S::FINALIZER {
+                input_metadata.finalizers = vec![finalizer.to_owned()];
+                for o_ref in &mut input_metadata.owner_references {
+                    o_ref.block_owner_deletion = Some(true);
+                }
+                
+            }
+
             let new_k8 = InputK8Obj::new(
                 k8_spec,
                 input_metadata
@@ -134,6 +143,8 @@ where
     }
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+
+        
         self.client
             .delete_item::<S::K8Spec, _>(meta.inner())
             .await

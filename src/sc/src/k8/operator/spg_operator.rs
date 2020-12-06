@@ -388,6 +388,7 @@ impl SpgOperator {
                 namespace: metadata.namespace().to_string(),
                 labels,
                 owner_references: vec![owner_ref],
+                ..Default::default()
             },
             spec: service_spec,
             ..Default::default()
