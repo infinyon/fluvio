@@ -223,7 +223,7 @@ jobs:
         run: |
           make RELEASE=release build_test
       - name: Install Helm
-        run: dev-tools/ci-replace-helm.sh
+        run: actions/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
           OS: ${{ matrix.os }}

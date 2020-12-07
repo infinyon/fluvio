@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Helm
-        run: dev-tools/ci-replace-helm.sh
+        run: actions/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
           OS: ${{ matrix.os }}
