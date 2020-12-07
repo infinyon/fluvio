@@ -53,7 +53,6 @@ mod metadata {
             type K8Spec = Self;
             type K8Status = Self::Status;
 
-            const BLOCK_OWNER_DELETE: bool = true;
             const FINALIZER: Option<&'static str> = Some("partitions.finalizer.fluvio.infinyon.com");
 
             fn convert_from_k8(

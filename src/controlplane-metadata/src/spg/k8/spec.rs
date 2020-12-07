@@ -6,24 +6,17 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_obj_metadata::Crd;
-use k8_obj_metadata::Spec;
-use k8_obj_metadata::DefaultHeader;
-use k8_obj_metadata::Env;
-use k8_obj_metadata::TemplateSpec;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::defaults::SPU_PRIVATE_PORT;
 
 use crate::spu::EncryptionEnum;
 use crate::spg::SpuGroupStatus;
+use crate::k8::metadata::{ Spec,Crd,DefaultHeader,TemplateSpec,Env};
 
 use crd::SPG_API;
 mod crd {
 
-    use k8_obj_metadata::Crd;
-    use k8_obj_metadata::CrdNames;
-    use k8_obj_metadata::GROUP;
-    use k8_obj_metadata::V1;
+    use crate::k8::metadata::{ Crd,CrdNames,GROUP,V1};
 
     pub const SPG_API: Crd = Crd {
         group: GROUP,
@@ -139,7 +132,6 @@ impl K8StorageConfig {
 
 mod convert {
 
-    use k8_obj_metadata::*;
     use crate::spg::*;
 
     use super::*;

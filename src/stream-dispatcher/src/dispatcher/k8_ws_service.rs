@@ -10,16 +10,12 @@ use tracing::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use k8_metadata_client::MetadataClient;
-use k8_metadata_client::SharedClient;
+use k8_metadata_client::{ MetadataClient,SharedClient};
 
-use crate::k8::metadata::InputK8Obj;
-use crate::k8::metadata::K8Obj;
+use crate::k8::app::core::metadata::{ InputK8Obj,K8Obj,Spec as K8Spec,UpdateK8ObjStatus };
 use crate::core::Spec;
-use crate::store::k8::K8ExtendedSpec;
-use crate::store::k8::K8MetaItem;
-use crate::k8::metadata::Spec as K8Spec;
-use crate::k8::metadata::UpdateK8ObjStatus;
+use crate::store::k8::{ K8ExtendedSpec,K8MetaItem };
+
 
 use crate::store::*;
 
@@ -143,13 +139,19 @@ where
     }
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
-        use k8_metadata_client::options::{ DeleteOptions, PropogationPolicy};
+        use k8_metadata_client::metadata::options::{ DeleteOptions, PropogationPolicy};
 
-        let options = S::FINALIZER.map(|_| DeleteOptions {
-            propagation_policy: Some(PropogationPolicy::Foreground),
-            ..Default::default()
-        });
-        
+        let options = if S::DELETE_WAIT_DEPENDENTS {
+            Some(DeleteOptions {
+                propagation_policy: Some(PropogationPolicy::Foreground),
+                ..Default::default()
+            })
+        } else {
+            None
+        };
+
+        debug!("deleting {:#?} with: {:#?}",meta,options);
+                
         self.client
             .delete_item_with_option::<S::K8Spec, _>(meta.inner(),options)
             .await

@@ -17,13 +17,9 @@ use once_cell::sync::Lazy;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 
-use k8_metadata_client::MetadataClient;
-use k8_metadata_client::SharedClient;
-use k8_metadata_client::NameSpace;
+use k8_metadata_client::{ MetadataClient,SharedClient, NameSpace };
 
-use crate::k8::metadata::K8List;
-use crate::k8::metadata::K8Watch;
-use crate::k8::metadata::Spec as K8Spec;
+use crate::k8::app::core::metadata::{ K8List,K8Watch,Spec as K8Spec };
 
 use crate::core::Spec;
 use crate::store::k8::K8ExtendedSpec;
@@ -329,13 +325,9 @@ mod convert {
 
     use tracing::{debug, error, trace};
     use tracing::instrument;
-    use crate::k8::metadata::K8List;
-    use crate::k8::metadata::K8Obj;
-    use crate::k8::metadata::K8Watch;
+    use crate::k8::app::core::metadata::{ K8List,K8Obj,K8Watch };
     use crate::store::actions::*;
-    use crate::store::k8::K8MetaItem;
-    use crate::store::k8::K8ExtendedSpec;
-    use crate::store::k8::K8ConvertError;
+    use crate::store::k8::{ K8MetaItem,K8ExtendedSpec, K8ConvertError };
     use crate::core::Spec;
     use k8_metadata_client::*;
 

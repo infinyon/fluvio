@@ -14,8 +14,7 @@ use fluvio::metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
 use fluvio::metadata::spu::Endpoint;
 use fluvio::metadata::spu::IngressAddr;
-use k8_obj_metadata::InputK8Obj;
-use k8_obj_metadata::InputObjectMeta;
+use k8_client::core::metadata::{ InputK8Obj,InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};

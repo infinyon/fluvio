@@ -1,4 +1,4 @@
-use k8_obj_metadata::*;
+use crate::k8::metadata::{Crd,GROUP,V1,CrdNames,Spec,Status,DefaultHeader};
 
 use super::SpuStatus;
 use super::SpuSpec;

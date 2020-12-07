@@ -1,7 +1,7 @@
+use crate::k8::metadata::{Crd,GROUP,V1,CrdNames,Spec,Status,DefaultHeader};
+
 use super::PartitionStatus;
 use super::PartitionSpec;
-
-use k8_obj_metadata::*;
 
 const PARTITION_API: Crd = Crd {
     group: GROUP,

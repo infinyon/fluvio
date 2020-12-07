@@ -3,18 +3,22 @@ use std::time::Duration;
 use std::process::{Command};
 
 use async_trait::async_trait;
-use k8_client::load_and_share;
-use k8_obj_metadata::InputObjectMeta;
-use k8_obj_core::service::ServiceSpec;
-use k8_client::ClientError as K8ClientError;
+use url::{Url, ParseError};
+
+
+
 use fluvio_future::timer::sleep;
 use semver::Version;
 use serde_json::Error as JsonError;
 use k8_config::{ConfigError as K8ConfigError, K8Config};
-use url::{Url, ParseError};
-
+use k8_client::load_and_share;
+use k8_client::core::metadata::InputObjectMeta;
+use k8_client::core::service::ServiceSpec;
+use k8_client::ClientError as K8ClientError;
 use fluvio_helm::{HelmClient, HelmError};
+
 use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
+
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;

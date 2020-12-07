@@ -7,10 +7,7 @@ use std::fmt::Display;
 use std::fmt::Debug;
 use std::ops::Deref;
 
-use crate::k8::metadata::Spec as K8Spec;
-use crate::k8::metadata::Status as K8Status;
-use crate::k8::metadata::ObjectMeta;
-use crate::k8::metadata::K8Obj;
+use crate::k8::app::core::metadata::{ Spec as K8Spec,Status as K8Status,ObjectMeta,K8Obj};
 use crate::store::{MetadataStoreObject};
 use crate::core::{Spec, MetadataItem, MetadataContext};
 
@@ -98,7 +95,8 @@ pub trait K8ExtendedSpec: Spec {
     type K8Spec: K8Spec;
     type K8Status: K8Status;
 
-    const BLOCK_OWNER_DELETE: bool = false;
+    // if true, use foreground delete
+    const DELETE_WAIT_DEPENDENTS: bool = false;
     const FINALIZER: Option<&'static str> = None;
 
     fn convert_from_k8(

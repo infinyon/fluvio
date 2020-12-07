@@ -17,7 +17,7 @@ TEST_BIN_INNER=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/flv-test,./target
 TEST_BIN=FLV_CMD=true $(TEST_BIN_INNER)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
-DEFAULT_ITERATION=1000
+DEFAULT_ITERATION=1000k
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 SKIP_CHECK=--skip-checks
