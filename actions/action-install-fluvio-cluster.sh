@@ -11,7 +11,7 @@ echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
 . $HOME/.bash_profile
 
 # Install Fluvio System Charts
-fluvio cluster start --setup --local
+fluvio cluster start --setup --local --sys
 
 # Run Fluvio Cluster Pre-Install Check
 
