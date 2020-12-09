@@ -8,7 +8,7 @@ mod context {
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
-    pub trait MetadataItem: Clone + Default + fmt::Debug {
+    pub trait MetadataItem: Clone + Default + fmt::Debug + PartialEq {
         type UId: PartialEq;
 
         fn uid(&self) -> &Self::UId;

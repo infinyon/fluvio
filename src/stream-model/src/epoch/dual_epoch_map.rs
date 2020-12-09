@@ -19,6 +19,7 @@ pub trait DualDiff {
 pub struct MetadataChange {
     pub spec: bool,
     pub status: bool,
+    pub meta: bool
 }
 
 impl MetadataChange {
@@ -28,6 +29,7 @@ impl MetadataChange {
         Self {
             spec: true,
             status: true,
+            meta: true
         }
     }
 
@@ -37,25 +39,29 @@ impl MetadataChange {
         Self {
             spec: false,
             status: false,
+            meta: false
         }
     }
 
     #[inline]
     pub fn has_full_change(&self) -> bool {
-        self.spec && self.status
+        self.spec && self.status && self.meta
     }
 
     /// check if there were any changes
     #[inline]
     pub fn has_no_changes(&self) -> bool {
-        !self.spec && !self.status
+        !self.spec && !self.status && !self.meta
     }
 }
 
+/// Keep track of internal changes to object
+/// Track 3 different changes (spec,status,meta)
 #[derive(Debug, Default, Clone)]
 pub struct DualEpochCounter<T> {
     spec_epoch: Epoch,
     status_epoch: Epoch,
+    meta_epoch: Epoch,
     inner: T,
 }
 
@@ -64,13 +70,16 @@ impl<T> DualEpochCounter<T> {
         Self {
             spec_epoch: 0,
             status_epoch: 0,
+            meta_epoch: 0,
             inner,
         }
     }
 
+    /// set epoch
     fn set_epoch(&mut self, epoch: Epoch) {
         self.spec_epoch = epoch;
         self.status_epoch = epoch;
+        self.meta_epoch = epoch;
     }
 
     #[inline]
@@ -89,6 +98,15 @@ impl<T> DualEpochCounter<T> {
 
     fn set_status_epoch(&mut self, epoch: Epoch) {
         self.status_epoch = epoch;
+    }
+
+    #[inline]
+    pub fn meta_epoch(&self) -> Epoch {
+        self.meta_epoch
+    }
+
+    fn set_meta_epoch(&mut self, epoch: Epoch ) {
+        self.meta_epoch = epoch;
     }
 
     #[inline]
@@ -199,11 +217,17 @@ where
             } else if diff.spec {
                 new_value.set_spec_epoch(current_epoch);
                 new_value.set_status_epoch(existing_value.status_epoch);
+                new_value.set_meta_epoch(existing_value.meta_epoch);
                 *existing_value = new_value;
             } else if diff.status {
                 new_value.set_status_epoch(current_epoch);
                 new_value.set_spec_epoch(existing_value.spec_epoch);
+                new_value.set_meta_epoch(existing_value.meta_epoch);
                 *existing_value = new_value;
+            } else if diff.meta {
+                new_value.set_meta_epoch(current_epoch);
+                new_value.set_spec_epoch(existing_value.spec_epoch);
+                new_value.set_status_epoch(existing_value.status_epoch);
             }
             Some(diff)
         } else {
@@ -266,44 +290,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        if epoch < self.fence.epoch() {
-            return EpochChanges::new(
-                self.epoch.epoch(),
-                EpochDeltaChanges::SyncAll(self.clone_values()),
-            );
-        }
-
-        if epoch == self.epoch() {
-            return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
-        }
-
-        let updates = self
-            .values()
-            .filter_map(|v| {
-                if v.spec_epoch > epoch {
-                    Some(v.inner().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let deletes = self
-            .deleted
-            .iter()
-            .filter_map(|d| {
-                if d.spec_epoch > epoch {
-                    Some(d.inner().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        EpochChanges::new(
-            self.epoch.epoch(),
-            EpochDeltaChanges::Changes((updates, deletes)),
-        )
+        self.changes_since_with_filter(epoch, |v| v.spec_epoch > epoch )
     }
 
     /// find all status changes, only updates are accounted for
@@ -312,6 +299,25 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
+        self.changes_since_with_filter(epoch, |v| v.status_epoch > epoch )
+        
+    }
+
+    /// all changes (spec and status) since epoch
+    pub fn changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
+    where
+        Epoch: From<E>,
+    {
+        let epoch: Epoch = epoch_value.into();
+        self.changes_since_with_filter(epoch, |v| v.status_epoch > epoch || v.spec_epoch > epoch )
+    }
+
+    
+    /// find all status changes, only updates are accounted for
+    pub fn changes_since_with_filter<F>(&self, epoch: Epoch,filter: F) -> EpochChanges<V>
+    where
+        F: Fn(&DualEpochCounter<V>) -> bool
+    {
         if epoch < self.fence.epoch() {
             return EpochChanges::new(
                 self.epoch.epoch(),
@@ -323,40 +329,10 @@ where
             return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
         }
 
-        let updates = self
+        let updates: Vec<V> = self
             .values()
             .filter_map(|v| {
-                if v.status_epoch > epoch {
-                    Some(v.inner().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        EpochChanges::new(
-            self.epoch.epoch(),
-            EpochDeltaChanges::Changes((updates, vec![])),
-        )
-    }
-
-    /// all changes (spec and status) since epoch
-    pub fn changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
-    where
-        Epoch: From<E>,
-    {
-        let epoch = epoch_value.into();
-        if epoch < self.fence.epoch() {
-            return EpochChanges::new(
-                self.epoch.epoch(),
-                EpochDeltaChanges::SyncAll(self.clone_values()),
-            );
-        }
-
-        let updates = self
-            .values()
-            .filter_map(|v| {
-                if v.status_epoch > epoch || v.spec_epoch > epoch {
+                if filter(v) {
                     Some(v.inner().clone())
                 } else {
                     None
@@ -367,9 +343,9 @@ where
         let deletes = self
             .deleted
             .iter()
-            .filter_map(|d| {
-                if d.status_epoch > epoch || d.spec_epoch > epoch {
-                    Some(d.inner().clone())
+            .filter_map(|v| {
+                if filter(v) {
+                    Some(v.inner().clone())
                 } else {
                     None
                 }
@@ -381,6 +357,7 @@ where
             EpochDeltaChanges::Changes((updates, deletes)),
         )
     }
+    
 }
 
 #[cfg(test)]

@@ -134,7 +134,7 @@ where
 impl<S, C> DualDiff for MetadataStoreObject<S, C>
 where
     S: Spec,
-    C: MetadataItem,
+    C: MetadataItem + PartialEq
 {
     /// compute difference, in our case we take account of version as well
     fn diff(&self, another: &Self) -> MetadataChange {
@@ -144,6 +144,7 @@ where
             MetadataChange {
                 spec: self.spec != another.spec,
                 status: self.status != another.status,
+                meta: self.ctx.item() != another.ctx.item()
             }
         }
     }
