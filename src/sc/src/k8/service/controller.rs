@@ -57,18 +57,18 @@ impl SpuServiceController {
             self.sync_service_to_spu(&mut service_listener).await;
             self.sync_spu_to_service(&mut spu_listener).await;
 
-            debug!("waiting events");
+            trace!("waiting events");
 
             select! {
                 // just in case, we force
                 _ = sleep(Duration::from_secs(60)) => {
-                    debug!("timer expired");
+                    trace!("timer expired");
                 },
                 _ = service_listener.listen() => {
-                    debug!("detected service changes");
+                    trace!("detected service changes");
                 },
                 _ = spu_listener.listen() => {
-                    debug!("detected spu changes");
+                    trace!("detected spu changes");
                 }
             }
         }
@@ -78,7 +78,7 @@ impl SpuServiceController {
     /// svc has been changed, update spu
     async fn sync_service_to_spu(&mut self, listener: &mut K8ChangeListener<SpuServicespec>) {
         if !listener.has_change() {
-            debug!("no service change, skipping");
+            trace!("no service change, skipping");
             return;
         }
 

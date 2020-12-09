@@ -6,7 +6,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use tracing::error;
-use tracing::debug;
+use tracing::{debug,trace};
 use tracing::instrument;
 use async_trait::async_trait;
 use async_channel::Sender;
@@ -147,7 +147,7 @@ async fn dispatch_loop(
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
-        debug!("waiting for events");
+        trace!("waiting for events");
 
         select! {
 

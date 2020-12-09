@@ -91,6 +91,7 @@ where
         spawn(dispatcher.outer_loop());
     }
 
+    
     #[instrument(
         fields(
             namespace = self.namespace.named(),
@@ -131,7 +132,7 @@ where
             client.watch_stream_since::<S::K8Spec, _>(self.namespace.clone(), resume_stream);
 
         loop {
-            debug!("dispatcher waiting");
+            trace!("dispatcher waiting");
             let ws_receiver = self.ctx.receiver();
 
             select! {
@@ -200,6 +201,7 @@ where
 
         let version = k8_objects.metadata.resource_version.clone();
         debug!(
+            Spec = S::LABEL,
             version = &*version,
             item_count = k8_objects.items.len(),
             "Retrieving items",
@@ -216,7 +218,7 @@ where
         Ok(version)
     }
 
-    #[instrument(skip(self, action))]
+    #[instrument(skip(self,action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use crate::store::k8::K8MetaItem;
 
@@ -265,7 +267,7 @@ where
                         use crate::store::actions::LSUpdate;
 
                         debug!(
-                            "{} k8 update Status: {}, rev: {},stats: {:#?}",
+                            "{} K8 update Status: {}, rev: {},stats: {:#?}",
                             S::LABEL,
                             item.metadata.name,
                             item.metadata.resource_version,
@@ -357,7 +359,7 @@ mod convert {
                 Ok(k8_value) => k8_value,
                 Err(err) => match err {
                     K8ConvertError::Skip(obj) => {
-                        debug!("skipping: {}", obj.metadata.name);
+                        debug!("skipping: {} {}", S::LABEL,obj.metadata.name);
                         continue;
                     }
                     K8ConvertError::KeyConvertionError(err) => return Err(err.into()),

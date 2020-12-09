@@ -2,7 +2,7 @@
 //! # Auth Controller
 //!
 
-use tracing::debug;
+use tracing::{debug,trace};
 
 use fluvio_future::task::spawn;
 
@@ -54,11 +54,11 @@ impl PartitionController {
         loop {
             self.sync_spu_changes(&mut spu_status_listener).await;
 
-            debug!("waiting for events");
+            trace!("waiting for events");
             select! {
 
                 _ = spu_status_listener.listen() => {
-                   debug!("detected spus status changed");
+                   trace!("detected spus status changed");
                 }
             }
         }
@@ -70,14 +70,14 @@ impl PartitionController {
     /// check to make sure
     async fn sync_spu_changes(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
         if !listener.has_change() {
-            debug!("no change");
+            trace!("no change");
             return;
         }
 
-        debug!("sync spu changes");
+        trace!("sync spu changes");
         let changes = listener.sync_status_changes().await;
         if changes.is_empty() {
-            debug!("no spu changes");
+            trace!("no spu changes");
             return;
         }
 

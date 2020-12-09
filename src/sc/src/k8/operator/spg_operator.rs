@@ -199,7 +199,7 @@ impl SpgOperator {
     }
 
     /// create SPU crd objects from cluster spec
-    #[instrument(skip(self, spg_obj, spg_spec, spg_name))]
+    //#[instrument(skip(self, spg_obj, spg_spec, spg_name))]
     async fn apply_spus(
         &self,
         spg_obj: &SpuGroupObj,

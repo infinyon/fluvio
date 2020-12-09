@@ -45,13 +45,15 @@ where
         &self,
         value: MetadataStoreObject<S, K8MetaItem>,
     ) -> Result<(), C::MetadataClientError> {
-        debug!("K8 Adding {}:{}", S::LABEL, value.key());
+        debug!("K8 Applying {}:{}", S::LABEL, value.key());
         trace!("adding KV {:#?} to k8 kv", value);
 
         let (key, spec, _status, ctx) = value.parts();
         let k8_spec: S::K8Spec = spec.into();
 
         if let Some(parent_metadata) = ctx.owner() {
+
+            debug!("owner exists");
             let item_name = key.to_string();
 
             let mut input_metadata = parent_metadata
@@ -59,7 +61,7 @@ where
                 item_name,
             );
 
-            
+            /*
             if let Some(finalizer) = S::FINALIZER {
                 input_metadata.finalizers = vec![finalizer.to_owned()];
                 for o_ref in &mut input_metadata.owner_references {
@@ -67,11 +69,18 @@ where
                 }
                 
             }
-
+            */
+            
+            for o_ref in &mut input_metadata.owner_references {
+                o_ref.block_owner_deletion = true;
+            }
+            
             let new_k8 = InputK8Obj::new(
                 k8_spec,
                 input_metadata
             );
+
+            debug!("input metadata: {:#?}",new_k8);
 
             self.client.apply(new_k8).await.map(|_| ())
         } else {
