@@ -554,11 +554,11 @@ mod test {
     use fluvio_future::test_async;
 
     use crate::store::actions::LSUpdate;
-    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest};
+    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest, TestMeta};
 
     use super::LocalStore;
 
-    type DefaultTestStore = LocalStore<TestSpec, u32>;
+    type DefaultTestStore = LocalStore<TestSpec, TestMeta>;
 
     #[test_async]
     async fn test_store_sync_all() -> Result<(), ()> {
@@ -647,11 +647,11 @@ mod test_notify {
 
     use crate::store::actions::LSUpdate;
     use crate::store::event::SimpleEvent;
-    use crate::test_fixture::{TestSpec, DefaultTest};
+    use crate::test_fixture::{TestSpec, DefaultTest, TestMeta};
 
     use super::LocalStore;
 
-    type DefaultTestStore = LocalStore<TestSpec, u32>;
+    type DefaultTestStore = LocalStore<TestSpec, TestMeta>;
 
     use super::ChangeListener;
 
@@ -699,7 +699,7 @@ mod test_notify {
             }
         }
 
-        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, u32>) {
+        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, TestMeta>) {
             debug!("sync start");
             let (update, _delete) = spec_listner.sync_spec_changes().await.parts();
             // assert!(update.len() > 0);
