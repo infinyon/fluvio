@@ -95,6 +95,20 @@ impl TopicReducer {
     /// if state is different, apply actions
     ///
     async fn update_actions_next_state(&self, topic: &TopicAdminMd, actions: &mut TopicActions) {
+        use fluvio_controlplane_metadata::core::MetadataItem;
+
+        // if foregroundDeletion is the finalizer, then we can mark it as delete 
+        if topic.ctx().item().is_being_deleted() {
+            debug!("detected topic being deleted");
+            let mut status = topic.status().clone();
+            status.resolution = TopicResolution::Deleting;
+            actions.topics.push(TopicWSAction::UpdateStatus((
+                topic.key_owned(),
+                status,
+            )));
+            return;
+        }
+
         let next_state =
             TopicNextState::compute_next_state(topic, self.spu_store(), self.partition_store())
                 .await;

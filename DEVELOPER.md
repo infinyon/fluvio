@@ -279,5 +279,11 @@ Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the
  kubectl delete storageclass fluvio-spu
  ```
 
+#### Deleting partition
+
+In certain cases, partition may not be deleted correctly.  In this case, you can manually force to delete by:
+```
+kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
+```
 
 

@@ -15,6 +15,11 @@ mod context {
 
         /// checkif item is newer
         fn is_newer(&self, another: &Self) -> bool;
+
+        /// if object is process of being deleted
+        fn is_being_deleted(&self) -> bool {
+            false
+        }
     }
 
     impl MetadataItem for u32 {

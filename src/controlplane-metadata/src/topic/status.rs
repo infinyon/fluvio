@@ -36,11 +36,12 @@ impl fmt::Display for TopicStatus {
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TopicResolution {
-    Init,                  // initializing this is starting state.
+    Init,                  // Initializing this is starting state.
     Pending,               // Has valid config, ready for replica mapping assignment
-    InsufficientResources, // replica map cannot be created due to lack of capacity
-    InvalidConfig,         // invalid configuration
-    Provisioned,           // topics are allocated
+    InsufficientResources, // Replica map cannot be created due to lack of capacity
+    InvalidConfig,         // Invalid configuration
+    Provisioned,           // All partitions has been provisioned
+    Deleting               // Waiting for partitions to be deleted
 }
 
 impl TopicResolution {
@@ -51,6 +52,7 @@ impl TopicResolution {
             TopicResolution::Pending => "pending",
             TopicResolution::InsufficientResources => "insufficient-resources",
             TopicResolution::InvalidConfig => "invalid-config",
+            TopicResolution::Deleting => "Deleting"
         }
     }
 

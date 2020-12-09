@@ -57,6 +57,11 @@ impl MetadataItem for K8MetaItem {
     fn is_newer(&self, another: &Self) -> bool {
         self.revision > another.revision
     }
+
+    fn is_being_deleted(&self) -> bool {
+        self.inner.finalizers.iter().find(|f| *f == "foregroundDeletion").is_some()
+    }
+    
 }
 
 impl TryFrom<ObjectMeta> for K8MetaItem {

@@ -61,18 +61,13 @@ where
                 item_name,
             );
 
-            /*
-            if let Some(finalizer) = S::FINALIZER {
-                input_metadata.finalizers = vec![finalizer.to_owned()];
+            
+            if let Some(_finalizer) = S::FINALIZER {
+               // input_metadata.finalizers = vec![finalizer.to_owned()];
                 for o_ref in &mut input_metadata.owner_references {
-                    o_ref.block_owner_deletion = Some(true);
+                    o_ref.block_owner_deletion = true;
                 }
                 
-            }
-            */
-            
-            for o_ref in &mut input_metadata.owner_references {
-                o_ref.block_owner_deletion = true;
             }
             
             let new_k8 = InputK8Obj::new(
@@ -150,6 +145,7 @@ where
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
         use k8_metadata_client::metadata::options::{ DeleteOptions, PropogationPolicy};
 
+        
         let options = if S::DELETE_WAIT_DEPENDENTS {
             Some(DeleteOptions {
                 propagation_policy: Some(PropogationPolicy::Foreground),
@@ -158,6 +154,7 @@ where
         } else {
             None
         };
+        
 
         debug!("deleting {:#?} with: {:#?}",meta,options);
                 
