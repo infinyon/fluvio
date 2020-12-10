@@ -7,6 +7,8 @@ use std::fmt::Display;
 use std::fmt::Debug;
 use std::ops::Deref;
 
+use tracing::error;
+
 use crate::k8::app::core::metadata::{ Spec as K8Spec,Status as K8Status,ObjectMeta,K8Obj};
 use crate::store::{MetadataStoreObject};
 use crate::core::{Spec, MetadataItem, MetadataContext};
@@ -36,6 +38,34 @@ impl K8MetaItem {
 
     pub fn revision(&self) -> u64 {
         self.revision
+    }
+
+    /// create owner if exists, only worry about first references
+    pub fn owner_owned(&self) -> Option<Self> {
+        
+        if self.inner.owner_references.is_empty() {
+            None
+        } else {
+            if self.inner.owner_references.len() > 1 {
+                error!("too many owners: {:#?}",self.inner);
+            }
+
+            let owner = &self.inner.owner_references[0];
+
+            Some(
+                Self { 
+                    revision: 0,
+                    inner: ObjectMeta {
+                        name: owner.name.to_owned(),
+                        namespace: self.namespace.to_owned(),
+                        uid: owner.uid.to_owned(),
+                        ..Default::default()
+                    }
+
+                }
+            )
+        }
+
     }
 }
 
@@ -132,7 +162,9 @@ where
             match ctx_item_result {
                 Ok(ctx_item) => {
                     //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
-                    let ctx: MetadataContext<K8MetaItem> = ctx_item.into();
+                    let owner = ctx_item.owner_owned();
+                    let ctx  = MetadataContext::new(ctx_item,owner );
+                    
                     let local_kv =
                         MetadataStoreObject::new(key, local_spec, local_status).with_context(ctx);
 

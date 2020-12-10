@@ -25,6 +25,7 @@ where
     S: Spec,
     C: MetadataItem,
     S::Status: Default,
+    
 {
     pub fn new<J>(key: J, spec: S, status: S::Status) -> Self
     where
@@ -120,15 +121,19 @@ where
     }
 
     /// check if metadata is owned by other
-    pub fn is_owned(&self, uid: &C::UId) -> bool {
+    pub fn is_owned(&self, uid: &C::UId) -> bool 
+    {
         match self.ctx().owner() {
-            Some(parent) => parent.uid() == uid,
+            Some(parent) => {
+                parent.uid() == uid
+            },
             None => false,
         }
     }
 
     /// find children of this object
-    pub async fn childrens<T: Spec>(&self, child_stores: &LocalStore<T,C>) -> Vec<MetadataStoreObject<T, C>> {
+    pub async fn childrens<T: Spec>(&self, child_stores: &LocalStore<T,C>) -> Vec<MetadataStoreObject<T, C>>
+    {
 
         let my_uid = self.ctx().item().uid();
         child_stores.read().await

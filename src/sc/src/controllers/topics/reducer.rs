@@ -110,6 +110,7 @@ impl TopicReducer {
                     status,
                 )));
 
+                
                 // find children and delete them
                 let partitions = topic.childrens(&self.partition_store()).await;
 

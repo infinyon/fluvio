@@ -59,6 +59,11 @@ mod context {
     }
 
     impl<C> MetadataContext<C> {
+
+        pub fn new(item: C, owner: Option<C>) -> Self {
+            Self { item, owner}
+        }
+
         pub fn item(&self) -> &C {
             &self.item
         }
