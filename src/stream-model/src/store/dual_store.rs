@@ -195,6 +195,7 @@ pub struct SyncStatus {
     pub add: i32,
     pub update_spec: i32,
     pub update_status: i32,
+    pub update_meta: i32,
     pub delete: i32,
 }
 
@@ -220,7 +221,7 @@ where
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
-        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) = (0, 0, 0, 0, 0);
 
         let mut write_guard = self.write().await;
 
@@ -245,6 +246,9 @@ where
                 }
                 if diff.status {
                     update_status += 1;
+                }
+                if diff.meta {
+                    update_meta += 1;
                 }
             } else {
                 add += 1;
@@ -275,6 +279,7 @@ where
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
         };
 
@@ -284,12 +289,13 @@ where
         self.event_publisher.notify();
 
         debug!(
-            "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
+            "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, mod_meta: {}, del:{}], ",
             S::LABEL,
             epoch,
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
         );
         status
@@ -302,7 +308,7 @@ where
     /// which means this is idempotent operations.
     /// same add result in only 1 single epoch increase.
     pub async fn apply_changes(&self, changes: Vec<LSUpdate<S, C>>) -> Option<SyncStatus> {
-        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) = (0, 0, 0, 0, 0);
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
 
@@ -325,6 +331,9 @@ where
                         if diff.status {
                             update_status += 1;
                         }
+                        if diff.meta {
+                            update_meta += 1;
+                        }
                     } else {
                         // there was no existing, so this is new
                         add += 1;
@@ -338,7 +347,7 @@ where
         }
 
         // if there are no changes, we revert epoch
-        if add == 0 && update_spec == 0 && update_status == 0 && delete == 0 {
+        if add == 0 && update_spec == 0 && update_status == 0 && delete == 0 && update_meta == 0 {
             write_guard.decrement_epoch();
 
             debug!(
@@ -357,6 +366,7 @@ where
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
         };
 
@@ -367,11 +377,12 @@ where
         self.event_publisher.notify();
 
         debug!(
-            "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
+            "Apply changes {} [add:{},mod_spec:{},mod_status: {},mod_update: {}, del:{},epoch: {}",
             S::LABEL,
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
             epoch,
         );

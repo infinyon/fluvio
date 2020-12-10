@@ -392,42 +392,49 @@ mod convert {
         S::IndexKey: Display,
     {
         let events = stream.unwrap();
-        debug!("k8 {}: received  watch events: {}", S::LABEL, events.len());
+        debug!("k8 {}: received watch events: {}", S::LABEL, events.len());
         let mut changes = vec![];
 
         // loop through items and generate add/mod actions
         for token in events {
             match token {
                 Ok(watch_obj) => match watch_obj {
-                    K8Watch::ADDED(k8_obj) => match k8_obj_to_kv_obj(k8_obj) {
-                        Ok(new_kv_value) => {
-                            debug!("K8: Watch Add: {}:{}", S::LABEL, new_kv_value.key());
-                            changes.push(LSUpdate::Mod(new_kv_value));
+                    K8Watch::ADDED(k8_obj) => {
+                        trace!("{} ADDED: {:#?}",S::LABEL, k8_obj);
+                        match k8_obj_to_kv_obj(k8_obj) {
+                            Ok(new_kv_value) => {
+                                debug!("K8: Watch Add: {}:{}", S::LABEL, new_kv_value.key());
+                                changes.push(LSUpdate::Mod(new_kv_value));
+                            }
+                            Err(err) => match err {
+                                K8ConvertError::Skip(obj) => {
+                                    debug!("skipping: {}", obj.metadata.name);
+                                }
+                                _ => {
+                                    error!("converting {} {:#?}", S::LABEL, err);
+                                }
+                            },
                         }
-                        Err(err) => match err {
-                            K8ConvertError::Skip(obj) => {
-                                debug!("skipping: {}", obj.metadata.name);
-                            }
-                            _ => {
-                                error!("converting {} {:#?}", S::LABEL, err);
-                            }
-                        },
                     },
-                    K8Watch::MODIFIED(k8_obj) => match k8_obj_to_kv_obj(k8_obj) {
-                        Ok(updated_kv_value) => {
-                            debug!("K8: Watch Update {}:{}", S::LABEL, updated_kv_value.key());
-                            changes.push(LSUpdate::Mod(updated_kv_value));
+                    K8Watch::MODIFIED(k8_obj) => {
+                        trace!("{} MODIFIED: {:#?}",S::LABEL, k8_obj);
+                        match k8_obj_to_kv_obj(k8_obj) {
+                            Ok(updated_kv_value) => {
+                                debug!("K8: Watch Update {}:{}", S::LABEL, updated_kv_value.key());
+                                changes.push(LSUpdate::Mod(updated_kv_value));
+                            }
+                            Err(err) => match err {
+                                K8ConvertError::Skip(obj) => {
+                                    debug!("skipping: {}", obj.metadata.name);
+                                }
+                                _ => {
+                                    error!("converting {} {:#?}", S::LABEL, err);
+                                }
+                            }
                         }
-                        Err(err) => match err {
-                            K8ConvertError::Skip(obj) => {
-                                debug!("skipping: {}", obj.metadata.name);
-                            }
-                            _ => {
-                                error!("converting {} {:#?}", S::LABEL, err);
-                            }
-                        },
                     },
                     K8Watch::DELETED(k8_obj) => {
+                        trace!("{} DELETE: {:#?}",S::LABEL, k8_obj);
                         let meta: Result<
                             MetadataStoreObject<S, K8MetaItem>,
                             K8ConvertError<S::K8Spec>,
@@ -467,7 +474,7 @@ mod convert {
     {
         S::convert_from_k8(k8_obj)
             .map(|val| {
-                trace!("converted val: {:#?}", val.spec);
+                trace!("converted val: {:#?}", val);
                 val
             })
             .map_err(|err| err)
