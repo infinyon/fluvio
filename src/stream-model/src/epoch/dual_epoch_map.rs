@@ -16,6 +16,7 @@ pub trait DualDiff {
 }
 
 /// What has been changed between two metadata
+#[derive(Debug)]
 pub struct MetadataChange {
     pub spec: bool,
     pub status: bool,
@@ -80,6 +81,13 @@ impl<T> DualEpochCounter<T> {
         self.spec_epoch = epoch;
         self.status_epoch = epoch;
         self.meta_epoch = epoch;
+    }
+
+    // copy epoch values from old value
+    fn copy_epoch(&mut self,old: &Self) {
+        self.spec_epoch = old.spec_epoch;
+        self.status_epoch = old.status_epoch;
+        self.meta_epoch = old.meta_epoch;
     }
 
     #[inline]
@@ -210,25 +218,20 @@ where
 
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
+           
             let diff = existing_value.diff(new_value.inner());
-            if diff.has_full_change() {
-                new_value.set_epoch(current_epoch);
-                *existing_value = new_value;
-            } else if diff.spec {
+            new_value.copy_epoch(existing_value);
+            if diff.spec {
                 new_value.set_spec_epoch(current_epoch);
-                new_value.set_status_epoch(existing_value.status_epoch);
-                new_value.set_meta_epoch(existing_value.meta_epoch);
-                *existing_value = new_value;
-            } else if diff.status {
-                new_value.set_status_epoch(current_epoch);
-                new_value.set_spec_epoch(existing_value.spec_epoch);
-                new_value.set_meta_epoch(existing_value.meta_epoch);
-                *existing_value = new_value;
-            } else if diff.meta {
-                new_value.set_meta_epoch(current_epoch);
-                new_value.set_spec_epoch(existing_value.spec_epoch);
-                new_value.set_status_epoch(existing_value.status_epoch);
             }
+            if diff.status {
+                new_value.set_status_epoch(current_epoch);
+            } 
+            if diff.meta {
+                new_value.set_meta_epoch(current_epoch);
+            }
+
+            *existing_value = new_value;
             Some(diff)
         } else {
             // doesn't exist, so this is new
@@ -638,7 +641,7 @@ mod test {
             assert_eq!(deletes.len(), 0);
 
             let (updates, deletes) = map.meta_changes_since(1).parts();
-            assert_eq!(updates.len(), 1);
+            assert_eq!(updates.len(), 0);
             assert_eq!(deletes.len(), 0);
         }
 
@@ -668,7 +671,7 @@ mod test {
         let test1 = DefaultTest::with_key("t1");
         let mut test2 = test1.clone();
         test2.ctx.item_mut().comment = "test".to_owned();
-
+       
        
         map.increment_epoch();
 
@@ -676,8 +679,9 @@ mod test {
 
         map.increment_epoch();
         let changes = map.update(test2.key_owned(), test2).expect("update");
-        assert!(changes.spec);
+        assert!(!changes.spec);
         assert!(!changes.status);
+        assert!(changes.meta);
 
         // update the
         assert_eq!(map.epoch(), 2);
