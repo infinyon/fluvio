@@ -1,9 +1,9 @@
 use tracing::debug;
 use async_trait::async_trait;
 
-use crate::store::*;
-use crate::core::*;
-use crate::partition::store::*;
+use crate::store::{MetadataStoreObject,LocalStore};
+use crate::core::{MetadataItem};
+use crate::partition::store::{PartitionLocalStore,PartitionMetadata};
 use crate::partition::*;
 use super::*;
 
@@ -18,6 +18,7 @@ pub trait TopicMd<C: MetadataItem> {
         &self,
         partition_store: &PartitionLocalStore<C>,
     ) -> Vec<PartitionMetadata<C>>;
+
 }
 
 #[async_trait]
@@ -44,6 +45,7 @@ where
         }
         partitions
     }
+
 }
 
 #[async_trait]
@@ -52,6 +54,8 @@ where
     C: MetadataItem,
 {
     async fn table_fmt(&self) -> String;
+
+
 }
 
 #[async_trait]

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::core::{Spec, MetadataContext, MetadataItem};
+use crate::store::{LocalStore};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
 
@@ -125,6 +126,19 @@ where
             None => false,
         }
     }
+
+    /// find children of this object
+    pub async fn childrens<T: Spec>(&self, child_stores: &LocalStore<T,C>) -> Vec<MetadataStoreObject<T, C>> {
+
+        let my_uid = self.ctx().item().uid();
+        child_stores.read().await
+            .values()
+            .filter(|child| child.is_owned(my_uid))
+            .map(|child| child.inner().clone())
+            .collect()
+
+    }
+
 
     pub fn is_newer(&self, another: &Self) -> bool {
         self.ctx.item().is_newer(another.ctx().item())

@@ -155,13 +155,13 @@ where
     }
 
     pub async fn clone_specs(&self) -> Vec<S> {
-        self.read()
-            .await
+        self.read().await
             .values()
             .map(|kv| kv.spec.clone())
             .collect()
     }
 
+    
     pub async fn clone_keys(&self) -> Vec<S::IndexKey> {
         self.read().await.clone_keys()
     }

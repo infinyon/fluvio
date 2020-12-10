@@ -63,6 +63,10 @@ impl TopicResolution {
     pub fn no_resource(&self) -> bool {
         matches!(self, Self::InsufficientResources)
     }
+
+    pub fn is_being_deleted(&self) -> bool {
+        matches!(self, Self::Deleting)
+    }
 }
 
 impl std::fmt::Display for TopicResolution {

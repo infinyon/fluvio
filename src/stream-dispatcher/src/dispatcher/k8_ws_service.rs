@@ -62,8 +62,8 @@ where
             );
 
             
-            if let Some(_finalizer) = S::FINALIZER {
-               // input_metadata.finalizers = vec![finalizer.to_owned()];
+            if let Some(finalizer) = S::FINALIZER {
+                input_metadata.finalizers = vec![finalizer.to_owned()];
                 for o_ref in &mut input_metadata.owner_references {
                     o_ref.block_owner_deletion = true;
                 }
