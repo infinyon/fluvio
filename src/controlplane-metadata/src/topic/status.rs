@@ -41,7 +41,7 @@ pub enum TopicResolution {
     InsufficientResources, // Replica map cannot be created due to lack of capacity
     InvalidConfig,         // Invalid configuration
     Provisioned,           // All partitions has been provisioned
-    Deleting               // Waiting for partitions to be deleted
+    Deleting               // Process of being deleted
 }
 
 impl TopicResolution {

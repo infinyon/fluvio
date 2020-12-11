@@ -102,6 +102,12 @@ impl PartitionStatus {
         !self.replicas.is_empty()
     }
 
+    /// set to delet status
+    pub fn set_to_delete(mut self) -> Self {
+        self.resolution = PartitionResolution::Deleting;
+        self
+    }
+
     /// Fnd best candidate from online replicas
     /// If there are multiple matches, find with best score (lowest lag)
     pub fn candidate_leader<P>(&self, online: &HashSet<SpuId>, policy: &P) -> Option<SpuId>
@@ -186,11 +192,18 @@ pub enum PartitionResolution {
     Online,              // Partition is running normally, status contains replica info
     LeaderOffline,       // Election has failed, no suitable leader has been founded
     ElectionLeaderFound, // New leader has been selected
+    Deleting             // Process of being deleted
 }
 
 impl Default for PartitionResolution {
     fn default() -> Self {
         PartitionResolution::Offline
+    }
+}
+
+impl PartitionResolution {
+    pub fn is_being_deleted(&self) -> bool {
+        matches!(self, Self::Deleting)
     }
 }
 

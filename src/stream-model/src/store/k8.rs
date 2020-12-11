@@ -89,7 +89,7 @@ impl MetadataItem for K8MetaItem {
     }
 
     fn is_being_deleted(&self) -> bool {
-        self.inner.finalizers.iter().find(|f| *f == "foregroundDeletion").is_some()
+        self.inner.deletion_grace_period_seconds.is_some()
     }
     
 }

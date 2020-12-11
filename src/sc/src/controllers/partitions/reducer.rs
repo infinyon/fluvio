@@ -8,10 +8,12 @@ use std::sync::Arc;
 use tracing::debug;
 use tracing::warn;
 
-use fluvio_controlplane_metadata::partition::*;
+use fluvio_controlplane_metadata::core::MetadataItem;
 
-use crate::stores::partition::*;
-use crate::stores::spu::*;
+use crate::stores::partition::{PartitionSpec,PartitionAdminStore,ReplicaStatus,
+    PartitionAdminMd,
+    PartitionResolution,ElectionPolicy,ElectionScoring};
+use crate::stores::spu::{SpuAdminStore,SpuAdminMd,SpuLocalStorePolicy};
 use crate::stores::actions::WSAction;
 
 type PartitionWSAction = WSAction<PartitionSpec>;
@@ -75,6 +77,27 @@ impl PartitionReducer {
             partition_store: partition_store.into(),
             spu_store: spu_store.into(),
         }
+    }
+
+    pub async fn process_partition_update(&self,updates: Vec<PartitionAdminMd>) -> Vec<PartitionWSAction> {
+
+        let mut actions = vec![];
+
+        for partition in updates.into_iter() {
+            // check if we are being deleted but our status is not set correctly
+            if partition.ctx().item().is_being_deleted()  &&
+                !partition.status.resolution.is_being_deleted() {
+                
+                debug!("set partition: {} to delete",partition.key());
+                actions.push(PartitionWSAction::UpdateStatus((
+                    partition.key,
+                    partition.status.set_to_delete()
+                )));
+            }
+
+        }
+
+        actions
     }
 
     ///

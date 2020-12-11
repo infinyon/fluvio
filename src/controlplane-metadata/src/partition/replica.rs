@@ -5,7 +5,7 @@ use std::fmt;
 use dataplane::derive::{Decode, Encode};
 use fluvio_types::SpuId;
 use crate::partition::ReplicaKey;
-use crate::core::*;
+use crate::core::{MetadataItem};
 use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
 use super::store::*;
@@ -15,14 +15,20 @@ pub struct Replica {
     pub id: ReplicaKey,
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
+    pub is_being_deleted: bool
 }
 
 impl Replica {
     pub fn new(id: ReplicaKey, leader: SpuId, replicas: Vec<SpuId>) -> Self {
-        Replica {
+        Self::new_with_delete(id, leader, replicas,false)
+    }
+
+    pub fn new_with_delete(id: ReplicaKey, leader: SpuId, replicas: Vec<SpuId>,is_being_deleted: bool) -> Self {
+        Self {
             id,
             leader,
             replicas,
+            is_being_deleted
         }
     }
 }
@@ -33,10 +39,12 @@ where
 {
     fn from(item: PartitionMetadata<C>) -> Self {
         let inner: MetadataStoreObject<PartitionSpec, C> = item;
+        let is_being_deleted = inner.status.resolution.is_being_deleted();
         Self {
             id: inner.key,
             leader: inner.spec.leader,
             replicas: inner.spec.replicas,
+            is_being_deleted
         }
     }
 }
@@ -47,7 +55,12 @@ impl fmt::Display for Replica {
         for replica in &self.replicas {
             write!(f, "{},", replica)?;
         }
-        write!(f, "]")
+        write!(f, "]")?;
+        if self.is_being_deleted {
+            write!(f, " is_deleted")
+        } else {
+            write!(f, "")
+        }
     }
 }
 

@@ -175,7 +175,7 @@ async fn dispatch_loop(
                         match req_message {
                             InternalScRequest::UpdateLrsRequest(msg) => {
                                 debug!("received lrs request: {}",msg);
-                                send_lrs_update(&context,msg.request).await;
+                                receive_lrs_update(&context,msg.request).await;
                             },
                             InternalScRequest::RegisterSpuRequest(msg) => {
                                 error!("registration req only valid during initialization: {:#?}",msg);
@@ -209,7 +209,7 @@ async fn dispatch_loop(
 }
 
 /// send lrs update to metadata stores
-async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
+async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
     let read_guard = ctx.partitions().store().read().await;
     for lrs_req in requests.into_requests().into_iter() {
         let action = if let Some(partition) = read_guard.get(&lrs_req.id) {
@@ -292,6 +292,7 @@ async fn send_replica_spec_changes(
     sink: &mut FlvSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
+    
     if !listener.has_change() {
         debug!("changes is empty, skipping");
         return Ok(());
