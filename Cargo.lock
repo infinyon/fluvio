@@ -1394,6 +1394,7 @@ dependencies = [
  "event-listener",
  "fluvio-future",
  "k8-obj-app",
+ "once_cell",
  "serde",
  "tokio",
  "tracing",

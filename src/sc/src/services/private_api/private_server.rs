@@ -125,7 +125,7 @@ async fn dispatch_loop(
     mut sink: FlvSink,
     health_sender: Sender<SpuAction>,
 ) -> Result<(), FlvSocketError> {
-    // we wait for update from SPU or wait for updates form SPU channel
+   
 
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
 
@@ -292,13 +292,19 @@ async fn send_replica_spec_changes(
     sink: &mut FlvSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
-    
+
+    use crate::stores::ChangeFlag;
+
     if !listener.has_change() {
         debug!("changes is empty, skipping");
         return Ok(());
     }
 
-    let changes = listener.sync_spec_changes().await;
+    let changes = listener.sync_changes_with_filter(&ChangeFlag{
+        spec: true,
+        status: false,
+        meta: true
+    }).await;
     if changes.is_empty() {
         debug!("spec changes is empty, skipping");
         return Ok(());
@@ -351,3 +357,4 @@ async fn send_replica_spec_changes(
     sink.send_request(&message).await?;
     Ok(())
 }
+

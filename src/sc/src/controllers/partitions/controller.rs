@@ -76,7 +76,7 @@ impl PartitionController {
         }
 
         trace!("sync partitions changes");
-        let changes = listener.sync_changes().await;
+        let changes = listener.sync_meta_changes().await;
         if changes.is_empty() {
             trace!("no partitions changes");
             return;

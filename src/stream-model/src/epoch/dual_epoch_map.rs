@@ -5,6 +5,8 @@ use std::cmp::Eq;
 use std::collections::HashMap;
 use std::borrow::Borrow;
 
+use once_cell::sync::Lazy;
+
 use super::EpochCounter;
 use super::Epoch;
 use super::EpochDeltaChanges;
@@ -12,21 +14,40 @@ use super::EpochChanges;
 
 pub trait DualDiff {
     /// check if another is different from myself
-    fn diff(&self, another: &Self) -> MetadataChange;
+    fn diff(&self, another: &Self) -> ChangeFlag;
 }
 
-/// What has been changed between two metadata
+pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new( || ChangeFlag::all());
+
+pub static SPEC_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
+    spec: true,
+    status: false,
+    meta: false
+});
+
+pub static STATUS_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
+    spec: false,
+    status: true,
+    meta: false
+});
+pub static META_FILTER: Lazy<ChangeFlag> = Lazy::new( || ChangeFlag {
+    spec: false,
+    status: false,
+    meta: true
+});
+
+/// Filter for metadata change
 #[derive(Debug)]
-pub struct MetadataChange {
+pub struct ChangeFlag {
     pub spec: bool,
     pub status: bool,
     pub meta: bool
 }
 
-impl MetadataChange {
-    /// create change that change both spec and status
-    #[cfg(test)]
-    pub fn full_change() -> Self {
+impl ChangeFlag {
+    
+    
+    pub fn all() -> Self {
         Self {
             spec: true,
             status: true,
@@ -209,7 +230,7 @@ where
     /// updates the metadata if it is different from existing value
     //  if this return some then it means replace
     //  otherwise change occured
-    pub fn update(&mut self, key: K, new_value: V) -> Option<MetadataChange>
+    pub fn update(&mut self, key: K, new_value: V) -> Option<ChangeFlag>
     where
         K: Clone,
     {
@@ -293,7 +314,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, |v| v.spec_epoch > epoch )
+        self.changes_since_with_filter(epoch, &SPEC_FILTER )
     }
 
     /// find all status changes
@@ -302,7 +323,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, |v| v.status_epoch > epoch )
+        self.changes_since_with_filter(epoch, &STATUS_FILTER )
         
     }
 
@@ -311,7 +332,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, |v| v.meta_epoch > epoch )
+        self.changes_since_with_filter(epoch, &META_FILTER )
         
     }
 
@@ -321,14 +342,13 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, |v| v.status_epoch > epoch || v.spec_epoch > epoch || v.meta_epoch > epoch)
+        
+        self.changes_since_with_filter(epoch, &FULL_FILTER)
     }
 
     
     /// find all status changes, only updates are accounted for
-    pub fn changes_since_with_filter<F>(&self, epoch: Epoch,filter: F) -> EpochChanges<V>
-    where
-        F: Fn(&DualEpochCounter<V>) -> bool
+    pub fn changes_since_with_filter(&self, epoch: Epoch,filter: &ChangeFlag) -> EpochChanges<V>
     {
         if epoch < self.fence.epoch() {
             return EpochChanges::new(
@@ -344,7 +364,9 @@ where
         let updates: Vec<V> = self
             .values()
             .filter_map(|v| {
-                if filter(v) {
+                if filter.spec && v.spec_epoch > epoch
+                || filter.status && v.status_epoch > epoch 
+                || filter.meta && v.meta_epoch > epoch {
                     Some(v.inner().clone())
                 } else {
                     None
@@ -356,7 +378,9 @@ where
             .deleted
             .iter()
             .filter_map(|v| {
-                if filter(v) {
+                if filter.spec && v.spec_epoch > epoch
+                || filter.status && v.status_epoch > epoch 
+                || filter.meta && v.meta_epoch > epoch {
                     Some(v.inner().clone())
                 } else {
                     None
@@ -377,15 +401,15 @@ mod test {
 
     use crate::test_fixture::{DefaultTest, TestEpochMap };
 
-    use super::MetadataChange;
+    use super::ChangeFlag;
 
 
     #[test]
     fn test_metadata_changes() {
-        let full_change = MetadataChange::full_change();
+        let full_change = ChangeFlag::all();
         assert!(full_change.has_full_change());
         assert!(!full_change.has_no_changes());
-        let no_change = MetadataChange::no_change();
+        let no_change = ChangeFlag::no_change();
         assert!(no_change.has_no_changes());
         assert!(!no_change.has_full_change());
     }

@@ -6,7 +6,7 @@ use crate::store::{LocalStore};
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
 
 use super::DualDiff;
-use super::MetadataChange;
+use super::ChangeFlag;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MetadataStoreObject<S, C>
@@ -156,11 +156,11 @@ where
     C: MetadataItem + PartialEq
 {
     /// compute difference, in our case we take account of version as well
-    fn diff(&self, another: &Self) -> MetadataChange {
+    fn diff(&self, another: &Self) -> ChangeFlag {
         if self.is_newer(another) {
-            MetadataChange::no_change()
+            ChangeFlag::no_change()
         } else {
-            MetadataChange {
+            ChangeFlag {
                 spec: self.spec != another.spec,
                 status: self.status != another.status,
                 meta: self.ctx.item() != another.ctx.item()

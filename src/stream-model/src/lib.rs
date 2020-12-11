@@ -43,7 +43,6 @@ pub(crate) mod test_fixture {
 
     #[derive(Debug,Default,PartialEq,Clone)]
     pub struct TestMeta {
-        pub key: u32,
         pub rev: u32,
         pub comment: String
     }
@@ -52,7 +51,7 @@ pub(crate) mod test_fixture {
         type UId = u32;
 
         fn uid(&self) -> &Self::UId {
-            &self.key
+            &self.rev
         }
 
         fn is_newer(&self, another: &Self) -> bool {
@@ -61,10 +60,9 @@ pub(crate) mod test_fixture {
     }
 
     impl TestMeta {
-        pub fn new(key: u32) -> Self {
+        pub fn new(rev: u32) -> Self {
             Self { 
-                key,
-                rev: 0,
+                rev,
                 comment: "new".to_owned(),
             }
         }
