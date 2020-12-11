@@ -31,6 +31,7 @@ pub struct PartitionStatus {
     pub leader: ReplicaStatus,
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
+    pub is_being_deleted: bool
 }
 
 impl fmt::Display for PartitionStatus {
@@ -102,9 +103,9 @@ impl PartitionStatus {
         !self.replicas.is_empty()
     }
 
-    /// set to delet status
+    /// set to being deleted
     pub fn set_to_delete(mut self) -> Self {
-        self.resolution = PartitionResolution::Deleting;
+        self.is_being_deleted = true;
         self
     }
 
@@ -192,7 +193,6 @@ pub enum PartitionResolution {
     Online,              // Partition is running normally, status contains replica info
     LeaderOffline,       // Election has failed, no suitable leader has been founded
     ElectionLeaderFound, // New leader has been selected
-    Deleting             // Process of being deleted
 }
 
 impl Default for PartitionResolution {
@@ -201,11 +201,6 @@ impl Default for PartitionResolution {
     }
 }
 
-impl PartitionResolution {
-    pub fn is_being_deleted(&self) -> bool {
-        matches!(self, Self::Deleting)
-    }
-}
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 #[cfg_attr(

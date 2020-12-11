@@ -86,7 +86,7 @@ impl PartitionReducer {
         for partition in updates.into_iter() {
             // check if we are being deleted but our status is not set correctly
             if partition.ctx().item().is_being_deleted()  &&
-                !partition.status.resolution.is_being_deleted() {
+                !partition.status.is_being_deleted {
                 
                 debug!("set partition: {} to delete",partition.key());
                 actions.push(PartitionWSAction::UpdateStatus((

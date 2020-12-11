@@ -39,7 +39,7 @@ where
 {
     fn from(item: PartitionMetadata<C>) -> Self {
         let inner: MetadataStoreObject<PartitionSpec, C> = item;
-        let is_being_deleted = inner.status.resolution.is_being_deleted();
+        let is_being_deleted = inner.status.is_being_deleted;
         Self {
             id: inner.key,
             leader: inner.spec.leader,

@@ -392,6 +392,12 @@ impl ScDispatcher<FileReplica> {
                         old_replica
                     );
 
+                    if new_replica.is_being_deleted {
+                        debug!("replica being deleted: {:#?}",new_replica);
+                        self.remove_replica(new_replica).await;
+                        return;
+                    }
+
                     // check for leader change
                     if new_replica.leader != old_replica.leader {
                         if new_replica.leader == local_id {
@@ -417,6 +423,11 @@ impl ScDispatcher<FileReplica> {
                 }
             }
         }
+    }
+
+    // remove replica
+    async fn remove_replica(&self, replica: Replica) {
+        
     }
 
     #[instrument(

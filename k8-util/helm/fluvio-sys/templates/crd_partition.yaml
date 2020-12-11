@@ -47,6 +47,10 @@ spec:
         type: string
         description: Partition Status
         jsonPath: .status.resolution
+      - name: Deleting
+        type: boolean
+        description: Being deleted
+        jsonPath: .status.isBeingDeleted
       - name: LSR
         type: integer
         format: int32
