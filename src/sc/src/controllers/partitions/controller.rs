@@ -56,8 +56,12 @@ impl PartitionController {
             select! {
 
                 _ = spu_status_listener.listen() => {
-                   trace!("detected spus status changed");
+                    debug!("detected spus status changed");
+                },
+                _ = partition_listener.listen() => {
+                    debug!("detected partition changes");
                 }
+                
             }
         }
 
