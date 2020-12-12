@@ -1381,6 +1381,7 @@ dependencies = [
  "log",
  "once_cell",
  "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-futures",

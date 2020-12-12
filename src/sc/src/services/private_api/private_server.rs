@@ -20,7 +20,7 @@ use fluvio_service::{FlvService, wait_for_request};
 use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
 use fluvio_controlplane::{
     InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
-    UpdateSpuRequest,
+    UpdateSpuRequest, ReplicaRemovedRequest
 };
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
@@ -182,7 +182,7 @@ async fn dispatch_loop(
                                 return Err(IoError::new(ErrorKind::InvalidData,"register spu request is only valid at init").into())
                             },
                             InternalScRequest::ReplicaRemovedRequest(msg) => {
-
+                                receive_replica_remove(&context,msg.request).await;
                             }
                         }
                     } else {
@@ -213,9 +213,11 @@ async fn dispatch_loop(
 
 /// send lrs update to metadata stores
 async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
+
+    let mut actions = vec![];
     let read_guard = ctx.partitions().store().read().await;
     for lrs_req in requests.into_requests().into_iter() {
-        let action = if let Some(partition) = read_guard.get(&lrs_req.id) {
+        if let Some(partition) = read_guard.get(&lrs_req.id) {
             let mut current_status = partition.inner().status().clone();
             let key = lrs_req.id.clone();
             let new_status = PartitionStatus::new2(
@@ -225,20 +227,57 @@ async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
             );
             current_status.merge(new_status);
 
-            WSAction::UpdateStatus::<PartitionSpec>((key, current_status))
+            actions.push(WSAction::UpdateStatus::<PartitionSpec>((key, current_status)));
         } else {
             error!(
                 "trying to update replica: {}, that doesn't exist",
                 lrs_req.id
             );
             return;
-        };
-
-        ctx.partitions().send_action(action).await;
+        }
     }
 
     drop(read_guard);
+
+    for action in actions.into_iter() {
+        ctx.partitions().send_action(action).await;
+    }
 }
+
+
+async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequest) {
+
+    // create action inside to optimize read locking
+    let read_guard = ctx.partitions().store().read().await;
+    let delete_action = if let Some(partition) = read_guard.get(&request.id) {
+       
+        // check if partiton is being deleted
+        if partition.status.is_being_deleted {
+            Some(WSAction::DeleteFinal::<PartitionSpec>(request.id))
+        } else {
+            error!("replica: {} was not being deleted",request.id);
+            None
+        }
+    } else {
+        error!(
+            "trying to update replica: {}, that doesn't exist",
+            request.id
+        );
+        None
+    };
+    
+    drop(read_guard);
+
+    if let Some(action) = delete_action {
+        ctx.partitions().send_action(action).await;
+    }
+
+   
+}
+
+
+
+
 
 /// send spu spec changes only
 #[instrument(skip(sink))]

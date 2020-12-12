@@ -13,8 +13,8 @@ where
     Apply(MetadataStoreObject<S, K8MetaItem>),
     UpdateSpec((S::IndexKey, S)),
     UpdateStatus((S::IndexKey, S::Status)),
-
     Delete(S::IndexKey),
+    DeleteFinal(S::IndexKey)
 }
 
 impl<S> fmt::Display for WSAction<S>
@@ -28,6 +28,7 @@ where
             Self::UpdateSpec((key, _)) => write!(f, "{} Update Spec: {}", S::LABEL, key),
             Self::UpdateStatus((key, _)) => write!(f, "{} Update Status: {}", S::LABEL, key),
             Self::Delete(key) => write!(f, "{} Delete: {}", S::LABEL, key),
+            Self::DeleteFinal(key) => write!(f, "{} Delete Final: {}", S::LABEL, key),
         }
     }
 }
@@ -43,6 +44,7 @@ where
             Self::UpdateSpec((key, _)) => write!(f, "{} Update Spec: {}", S::LABEL, key),
             Self::UpdateStatus((key, _)) => write!(f, "{} Update Status: {}", S::LABEL, key),
             Self::Delete(key) => write!(f, "{} Delete: {}", S::LABEL, key),
+            Self::DeleteFinal(key) => write!(f, "{} Delete Final: {}", S::LABEL, key),
         }
     }
 }

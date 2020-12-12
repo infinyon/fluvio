@@ -144,7 +144,6 @@ where
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
         use k8_metadata_client::metadata::options::{ DeleteOptions, PropogationPolicy};
-
         
         let options = if S::DELETE_WAIT_DEPENDENTS {
             Some(DeleteOptions {
@@ -154,7 +153,6 @@ where
         } else {
             None
         };
-        
 
         debug!("deleting {:#?} with: {:#?}",meta,options);
                 
@@ -162,5 +160,28 @@ where
             .delete_item_with_option::<S::K8Spec, _>(meta.inner(),options)
             .await
             .map(|_| ())
+    }
+
+    pub async fn final_delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+
+        use once_cell::sync::Lazy;
+        use serde_json::Value;
+
+        use k8_metadata_client::PatchMergeType::JsonMerge;
+
+        // this may not work in non K8
+        static FINALIZER: Lazy<Value> = Lazy::new( || serde_json::from_str(
+            r#"
+                {
+                    "metadata": {
+                        "finalizers":null
+                    }
+                }
+            "#
+        ).expect("finalizer"));
+
+        debug!("final deleting {:#?}",meta);
+
+        self.client.patch::<S::K8Spec,_>(&meta.inner().as_input(),&FINALIZER,JsonMerge).await.map(|_| ())
     }
 }

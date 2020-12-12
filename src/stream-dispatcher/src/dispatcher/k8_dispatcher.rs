@@ -310,7 +310,25 @@ where
                         "Store: trying to delete non existent key",
                     );
                 }
+            },
+            WSAction::DeleteFinal(key) => {
+                let read_guard = self.ctx.store().read().await;
+                if let Some(obj) = read_guard.get(&key) {
+                    if let Err(err) = self
+                        .ws_update_service
+                        .final_delete(obj.inner().ctx().item().clone())
+                        .await
+                    {
+                        error!("error: {}, deleting final {}", S::LABEL, err);
+                    }
+                } else {
+                    error!(
+                        key = &*format!("{}", key),
+                        "Store: trying to delete final non existent key",
+                    );
+                }
             }
+            
         }
     }
 }
