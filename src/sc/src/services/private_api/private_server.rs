@@ -180,6 +180,9 @@ async fn dispatch_loop(
                             InternalScRequest::RegisterSpuRequest(msg) => {
                                 error!("registration req only valid during initialization: {:#?}",msg);
                                 return Err(IoError::new(ErrorKind::InvalidData,"register spu request is only valid at init").into())
+                            },
+                            InternalScRequest::ReplicaRemovedRequest(msg) => {
+
                             }
                         }
                     } else {
