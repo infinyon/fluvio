@@ -17,6 +17,7 @@ pub trait DualDiff {
     fn diff(&self, another: &Self) -> ChangeFlag;
 }
 
+#[allow(clippy::clippy::redundant_closure)]
 pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag::all());
 
 pub static SPEC_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {

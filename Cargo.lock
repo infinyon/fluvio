@@ -580,9 +580,9 @@ dependencies = [
 
 [[package]]
 name = "const_fn"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c478836e029dcef17fb47c89023448c64f781a046e0300e257ad8225ae59afab"
+checksum = "cd51eab21ab4fd6a3bf889e2d0958c0a6e3a61ad04260325e919e652a2a62826"
 
 [[package]]
 name = "constant_time_eq"
@@ -942,7 +942,7 @@ dependencies = [
  "home",
  "http-types",
  "k8-client",
- "k8-config 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-config",
  "rustc_version",
  "semver 0.11.0",
  "serde_json",
@@ -971,7 +971,7 @@ dependencies = [
  "fluvio-runner-local",
  "flv-util",
  "k8-client",
- "k8-config 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-config",
  "k8-metadata-client",
  "prettytable-rs",
  "semver 0.10.0",
@@ -1901,6 +1901,8 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c38df652709cbf5c624096b3a876b0e2a63b87b18c3f32c131494e8716044749"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -1910,7 +1912,7 @@ dependencies = [
  "futures-util",
  "http 0.2.1",
  "hyper",
- "k8-config 1.3.0",
+ "k8-config",
  "k8-diff",
  "k8-metadata-client",
  "k8-obj-core",
@@ -1923,19 +1925,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-futures",
-]
-
-[[package]]
-name = "k8-config"
-version = "1.3.0"
-dependencies = [
- "dirs 2.0.2",
- "hostfile",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -1956,6 +1945,8 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4ba5c6e373d248914c5cef3a3e16d78ffe65812c5926dc39a42487479ed1d27"
 dependencies = [
  "serde",
  "serde_json",
@@ -1965,6 +1956,8 @@ dependencies = [
 [[package]]
 name = "k8-metadata-client"
 version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d83b7ac05c48308b16c17cb4ad68caadf8d08cf96845e3f249df98e3a75c6d32"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -1982,6 +1975,8 @@ dependencies = [
 [[package]]
 name = "k8-obj-app"
 version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a13ab534dd8cddc9217f68128e541b1bc29630507b4b435d6f67d6035cc18919"
 dependencies = [
  "http 0.1.21",
  "k8-obj-core",
@@ -1994,6 +1989,8 @@ dependencies = [
 [[package]]
 name = "k8-obj-core"
 version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cf9c3707756e0514e55f3adba39249a452e1b5028688a5b575b2c280bfd8ad5"
 dependencies = [
  "http 0.1.21",
  "k8-obj-metadata",
@@ -2006,6 +2003,8 @@ dependencies = [
 [[package]]
 name = "k8-obj-metadata"
 version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "393824fd24af728b2d3c4416557986721492e02f773f5704e364a0f03bdbf314"
 dependencies = [
  "serde",
  "serde_json",
@@ -2246,12 +2245,12 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openssl"
-version = "0.10.30"
+version = "0.10.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d575eff3665419f9b83678ff2815858ad9d11567e082f5ac1814baba4e2bcb4"
+checksum = "8d008f51b1acffa0d3450a68606e6a51c123012edaacb0f4e1426bd978869187"
 dependencies = [
  "bitflags",
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
  "foreign-types",
  "lazy_static",
  "libc",
@@ -2266,18 +2265,18 @@ checksum = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 
 [[package]]
 name = "openssl-src"
-version = "111.12.0+1.1.1h"
+version = "111.13.0+1.1.1i"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "858a4132194f8570a7ee9eb8629e85b23cbc4565f2d4a162e87556e5956abf61"
+checksum = "045e4dc48af57aad93d665885789b43222ae26f4886494da12d1ed58d309dcb6"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.58"
+version = "0.9.59"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a842db4709b604f0fe5d1170ae3565899be2ad3d9cbc72dedc789ac0511f78de"
+checksum = "de52d8eabd217311538a39bba130d7dea1f1e118010fee7a033d966845e7d5fe"
 dependencies = [
  "autocfg",
  "cc",
@@ -3191,9 +3190,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "0.2.23"
+version = "0.2.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6d7ad61edd59bfcc7e80dababf0f4aed2e6d5e0ba1659356ae889752dfc12ff"
+checksum = "099837d3464c16a808060bb3f02263b412f6fafcb5d01c533d309985fbeebe48"
 dependencies = [
  "bytes 0.5.6",
  "fnv",
@@ -3409,9 +3408,9 @@ dependencies = [
 
 [[package]]
 name = "vcpkg"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6454029bf181f092ad1b853286f23e2c507d8e8194d01d92da4a55c274a5508c"
+checksum = "b00bca6106a5e23f3eee943593759b7fcddb00554332e856d990c893966879fb"
 
 [[package]]
 name = "vec-arena"

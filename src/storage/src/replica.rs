@@ -654,7 +654,7 @@ mod tests {
     #[test_async]
     async fn test_replica_delete() -> Result<(), StorageError> {
         let option = base_option("test_simple");
-        let mut replica = FileReplica::create("testd", 0, START_OFFSET, &option)
+        let replica = FileReplica::create("testd", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
 
@@ -662,7 +662,7 @@ mod tests {
 
         assert!(test_file.exists());
 
-        replica.delete().await.expect("delet");
+        drop(replica);
 
         assert!(!test_file.exists());
 
