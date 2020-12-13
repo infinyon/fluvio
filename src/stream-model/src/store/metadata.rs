@@ -25,7 +25,6 @@ where
     S: Spec,
     C: MetadataItem,
     S::Status: Default,
-    
 {
     pub fn new<J>(key: J, spec: S, status: S::Status) -> Self
     where
@@ -121,29 +120,27 @@ where
     }
 
     /// check if metadata is owned by other
-    pub fn is_owned(&self, uid: &C::UId) -> bool 
-    {
+    pub fn is_owned(&self, uid: &C::UId) -> bool {
         match self.ctx().owner() {
-            Some(parent) => {
-                parent.uid() == uid
-            },
+            Some(parent) => parent.uid() == uid,
             None => false,
         }
     }
 
     /// find children of this object
-    pub async fn childrens<T: Spec>(&self, child_stores: &LocalStore<T,C>) -> Vec<MetadataStoreObject<T, C>>
-    {
-
+    pub async fn childrens<T: Spec>(
+        &self,
+        child_stores: &LocalStore<T, C>,
+    ) -> Vec<MetadataStoreObject<T, C>> {
         let my_uid = self.ctx().item().uid();
-        child_stores.read().await
+        child_stores
+            .read()
+            .await
             .values()
             .filter(|child| child.is_owned(my_uid))
             .map(|child| child.inner().clone())
             .collect()
-
     }
-
 
     pub fn is_newer(&self, another: &Self) -> bool {
         self.ctx.item().is_newer(another.ctx().item())
@@ -153,7 +150,7 @@ where
 impl<S, C> DualDiff for MetadataStoreObject<S, C>
 where
     S: Spec,
-    C: MetadataItem + PartialEq
+    C: MetadataItem + PartialEq,
 {
     /// compute difference, in our case we take account of version as well
     fn diff(&self, another: &Self) -> ChangeFlag {
@@ -163,7 +160,7 @@ where
             ChangeFlag {
                 spec: self.spec != another.spec,
                 status: self.status != another.status,
-                meta: self.ctx.item() != another.ctx.item()
+                meta: self.ctx.item() != another.ctx.item(),
             }
         }
     }

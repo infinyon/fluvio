@@ -167,7 +167,6 @@ impl ReplicaLeaderController<FileReplica> {
         }
     }
 
-    
     /// go thru each of follower and sync replicas
     async fn sync_followers(&self) {
         debug!("sync followers");

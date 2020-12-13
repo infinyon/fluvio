@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use tracing::{debug,trace};
+use tracing::{debug, trace};
 use tracing::error;
 
 use futures_util::io::AsyncRead;

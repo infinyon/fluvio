@@ -9,7 +9,7 @@ use std::ops::Deref;
 
 use tracing::error;
 
-use crate::k8::app::core::metadata::{ Spec as K8Spec,Status as K8Status,ObjectMeta,K8Obj};
+use crate::k8::app::core::metadata::{Spec as K8Spec, Status as K8Status, ObjectMeta, K8Obj};
 use crate::store::{MetadataStoreObject};
 use crate::core::{Spec, MetadataItem, MetadataContext};
 
@@ -42,30 +42,25 @@ impl K8MetaItem {
 
     /// create owner if exists, only worry about first references
     pub fn owner_owned(&self) -> Option<Self> {
-        
         if self.inner.owner_references.is_empty() {
             None
         } else {
             if self.inner.owner_references.len() > 1 {
-                error!("too many owners: {:#?}",self.inner);
+                error!("too many owners: {:#?}", self.inner);
             }
 
             let owner = &self.inner.owner_references[0];
 
-            Some(
-                Self { 
-                    revision: 0,
-                    inner: ObjectMeta {
-                        name: owner.name.to_owned(),
-                        namespace: self.namespace.to_owned(),
-                        uid: owner.uid.to_owned(),
-                        ..Default::default()
-                    }
-
-                }
-            )
+            Some(Self {
+                revision: 0,
+                inner: ObjectMeta {
+                    name: owner.name.to_owned(),
+                    namespace: self.namespace.to_owned(),
+                    uid: owner.uid.to_owned(),
+                    ..Default::default()
+                },
+            })
         }
-
     }
 }
 
@@ -91,7 +86,6 @@ impl MetadataItem for K8MetaItem {
     fn is_being_deleted(&self) -> bool {
         self.inner.deletion_grace_period_seconds.is_some()
     }
-    
 }
 
 impl TryFrom<ObjectMeta> for K8MetaItem {
@@ -137,7 +131,6 @@ pub trait K8ExtendedSpec: Spec {
     fn convert_from_k8(
         k8_obj: K8Obj<Self::K8Spec>,
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
-
 }
 
 pub fn default_convert_from_k8<S>(
@@ -163,8 +156,8 @@ where
                 Ok(ctx_item) => {
                     //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
                     let owner = ctx_item.owner_owned();
-                    let ctx  = MetadataContext::new(ctx_item,owner );
-                    
+                    let ctx = MetadataContext::new(ctx_item, owner);
+
                     let local_kv =
                         MetadataStoreObject::new(key, local_spec, local_status).with_context(ctx);
 

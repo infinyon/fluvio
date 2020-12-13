@@ -31,7 +31,7 @@ pub struct PartitionStatus {
     pub leader: ReplicaStatus,
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
-    pub is_being_deleted: bool
+    pub is_being_deleted: bool,
 }
 
 impl fmt::Display for PartitionStatus {
@@ -200,7 +200,6 @@ impl Default for PartitionResolution {
         PartitionResolution::Offline
     }
 }
-
 
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 #[cfg_attr(

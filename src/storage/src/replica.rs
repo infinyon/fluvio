@@ -47,20 +47,16 @@ impl ReplicaStorage for FileReplica {
     }
 }
 
-
 impl Drop for FileReplica {
-
     fn drop(&mut self) {
         use std::fs::remove_dir_all;
 
         match remove_dir_all(&self.option.base_dir) {
-            Ok(_) => debug!("removed dir: {:#?}",self.option.base_dir),
-            Err(err) => error!("error: {} removing dir: {:#?}",err,self.option.base_dir)
+            Ok(_) => debug!("removed dir: {:#?}", self.option.base_dir),
+            Err(err) => error!("error: {} removing dir: {:#?}", err, self.option.base_dir),
         }
     }
-
 }
-
 
 impl FileReplica {
     pub const PREFER_MAX_LEN: u32 = 1000000; // 1MB as limit
@@ -126,8 +122,6 @@ impl FileReplica {
             commit_checkpoint,
         })
     }
-
-    
 
     /// update committed offset (high watermark)
     pub async fn update_high_watermark(&mut self, offset: Offset) -> Result<(), IoError> {

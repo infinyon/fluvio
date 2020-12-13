@@ -34,7 +34,7 @@ mod metadata {
     #[cfg(feature = "k8")]
     mod extended {
 
-        use crate::store::k8::{ K8ExtendedSpec,K8ConvertError,K8MetaItem };
+        use crate::store::k8::{K8ExtendedSpec, K8ConvertError, K8MetaItem};
         use crate::store::MetadataStoreObject;
         use crate::k8::metadata::K8Obj;
         use crate::store::k8::default_convert_from_k8;

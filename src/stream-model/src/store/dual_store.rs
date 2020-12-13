@@ -155,13 +155,13 @@ where
     }
 
     pub async fn clone_specs(&self) -> Vec<S> {
-        self.read().await
+        self.read()
+            .await
             .values()
             .map(|kv| kv.spec.clone())
             .collect()
     }
 
-    
     pub async fn clone_keys(&self) -> Vec<S::IndexKey> {
         self.read().await.clone_keys()
     }
@@ -221,7 +221,8 @@ where
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
-        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) = (0, 0, 0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) =
+            (0, 0, 0, 0, 0);
 
         let mut write_guard = self.write().await;
 
@@ -308,7 +309,8 @@ where
     /// which means this is idempotent operations.
     /// same add result in only 1 single epoch increase.
     pub async fn apply_changes(&self, changes: Vec<LSUpdate<S, C>>) -> Option<SyncStatus> {
-        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) = (0, 0, 0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) =
+            (0, 0, 0, 0, 0);
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
 
@@ -399,7 +401,7 @@ mod listener {
     use tracing::debug;
 
     use crate::store::event::EventPublisher;
-    use crate::store::{ChangeFlag, FULL_FILTER,SPEC_FILTER,STATUS_FILTER,META_FILTER};
+    use crate::store::{ChangeFlag, FULL_FILTER, SPEC_FILTER, STATUS_FILTER, META_FILTER};
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
@@ -515,9 +517,12 @@ mod listener {
         }
 
         /// all meta related changes
-        pub async fn sync_changes_with_filter(&mut self,filter: &ChangeFlag) -> MetadataChanges<S, C> {
+        pub async fn sync_changes_with_filter(
+            &mut self,
+            filter: &ChangeFlag,
+        ) -> MetadataChanges<S, C> {
             let read_guard = self.store.read().await;
-            let changes = read_guard.changes_since_with_filter(self.last_change,filter);
+            let changes = read_guard.changes_since_with_filter(self.last_change, filter);
             drop(read_guard);
             trace!(
                 "finding last status change: {}, from: {}",
@@ -596,9 +601,8 @@ mod test {
             .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
             .await
             .is_none());
-        assert_eq!(topic_store.epoch().await,1);
+        assert_eq!(topic_store.epoch().await, 1);
 
-        
         // update spec shold result in increase epoch
         let topic2 =
             DefaultTest::new("t1", TestSpec::default(), TestStatus { up: true }).with_context(3);

@@ -41,7 +41,7 @@ pub enum TopicResolution {
     InsufficientResources, // Replica map cannot be created due to lack of capacity
     InvalidConfig,         // Invalid configuration
     Provisioned,           // All partitions has been provisioned
-    Deleting               // Process of being deleted
+    Deleting,              // Process of being deleted
 }
 
 impl TopicResolution {
@@ -52,7 +52,7 @@ impl TopicResolution {
             TopicResolution::Pending => "pending",
             TopicResolution::InsufficientResources => "insufficient-resources",
             TopicResolution::InvalidConfig => "invalid-config",
-            TopicResolution::Deleting => "Deleting"
+            TopicResolution::Deleting => "Deleting",
         }
     }
 

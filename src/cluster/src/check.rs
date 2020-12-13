@@ -5,8 +5,6 @@ use std::process::{Command};
 use async_trait::async_trait;
 use url::{Url, ParseError};
 
-
-
 use fluvio_future::timer::sleep;
 use semver::Version;
 use serde_json::Error as JsonError;
@@ -18,7 +16,6 @@ use k8_client::ClientError as K8ClientError;
 use fluvio_helm::{HelmClient, HelmError};
 
 use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
-
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;

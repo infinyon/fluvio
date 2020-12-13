@@ -22,7 +22,7 @@ use super::ReplicaRemovedRequest;
 pub enum InternalScKey {
     RegisterSpu = 2000,
     UpdateLrs = 2001,
-    ReplicaRemoved = 2002
+    ReplicaRemoved = 2002,
 }
 
 impl Default for InternalScKey {
@@ -60,7 +60,7 @@ impl ApiMessage for InternalScRequest {
             }
             InternalScKey::UpdateLrs => {
                 api_decode!(InternalScRequest, UpdateLrsRequest, src, header)
-            },
+            }
             InternalScKey::ReplicaRemoved => {
                 api_decode!(InternalScRequest, ReplicaRemovedRequest, src, header)
             }

@@ -10,12 +10,11 @@ use tracing::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use k8_metadata_client::{ MetadataClient,SharedClient};
+use k8_metadata_client::{MetadataClient, SharedClient};
 
-use crate::k8::app::core::metadata::{ InputK8Obj,K8Obj,Spec as K8Spec,UpdateK8ObjStatus };
+use crate::k8::app::core::metadata::{InputK8Obj, K8Obj, Spec as K8Spec, UpdateK8ObjStatus};
 use crate::core::Spec;
-use crate::store::k8::{ K8ExtendedSpec,K8MetaItem };
-
+use crate::store::k8::{K8ExtendedSpec, K8MetaItem};
 
 use crate::store::*;
 
@@ -52,30 +51,24 @@ where
         let k8_spec: S::K8Spec = spec.into();
 
         if let Some(parent_metadata) = ctx.owner() {
-
             debug!("owner exists");
             let item_name = key.to_string();
 
             let mut input_metadata = parent_metadata
                 .make_child_input_metadata::<<<S as Spec>::Owner as K8ExtendedSpec>::K8Spec>(
-                item_name,
-            );
+                    item_name,
+                );
 
-            
             if let Some(finalizer) = S::FINALIZER {
                 input_metadata.finalizers = vec![finalizer.to_owned()];
                 for o_ref in &mut input_metadata.owner_references {
                     o_ref.block_owner_deletion = true;
                 }
-                
             }
-            
-            let new_k8 = InputK8Obj::new(
-                k8_spec,
-                input_metadata
-            );
 
-            debug!("input metadata: {:#?}",new_k8);
+            let new_k8 = InputK8Obj::new(k8_spec, input_metadata);
+
+            debug!("input metadata: {:#?}", new_k8);
 
             self.client.apply(new_k8).await.map(|_| ())
         } else {
@@ -143,8 +136,8 @@ where
     }
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
-        use k8_metadata_client::metadata::options::{ DeleteOptions, PropogationPolicy};
-        
+        use k8_metadata_client::metadata::options::{DeleteOptions, PropogationPolicy};
+
         let options = if S::DELETE_WAIT_DEPENDENTS {
             Some(DeleteOptions {
                 propagation_policy: Some(PropogationPolicy::Foreground),
@@ -154,34 +147,39 @@ where
             None
         };
 
-        debug!("deleting {:#?} with: {:#?}",meta,options);
-                
+        debug!("deleting {:#?} with: {:#?}", meta, options);
+
         self.client
-            .delete_item_with_option::<S::K8Spec, _>(meta.inner(),options)
+            .delete_item_with_option::<S::K8Spec, _>(meta.inner(), options)
             .await
             .map(|_| ())
     }
 
     pub async fn final_delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
-
         use once_cell::sync::Lazy;
         use serde_json::Value;
 
         use k8_metadata_client::PatchMergeType::JsonMerge;
 
         // this may not work in non K8
-        static FINALIZER: Lazy<Value> = Lazy::new( || serde_json::from_str(
-            r#"
+        static FINALIZER: Lazy<Value> = Lazy::new(|| {
+            serde_json::from_str(
+                r#"
                 {
                     "metadata": {
                         "finalizers":null
                     }
                 }
-            "#
-        ).expect("finalizer"));
+            "#,
+            )
+            .expect("finalizer")
+        });
 
-        debug!("final deleting {:#?}",meta);
+        debug!("final deleting {:#?}", meta);
 
-        self.client.patch::<S::K8Spec,_>(&meta.inner().as_input(),&FINALIZER,JsonMerge).await.map(|_| ())
+        self.client
+            .patch::<S::K8Spec, _>(&meta.inner().as_input(), &FINALIZER, JsonMerge)
+            .await
+            .map(|_| ())
     }
 }

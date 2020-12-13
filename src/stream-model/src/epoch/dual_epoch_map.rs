@@ -17,23 +17,23 @@ pub trait DualDiff {
     fn diff(&self, another: &Self) -> ChangeFlag;
 }
 
-pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new( || ChangeFlag::all());
+pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag::all());
 
 pub static SPEC_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
     spec: true,
     status: false,
-    meta: false
+    meta: false,
 });
 
 pub static STATUS_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
     spec: false,
     status: true,
-    meta: false
+    meta: false,
 });
-pub static META_FILTER: Lazy<ChangeFlag> = Lazy::new( || ChangeFlag {
+pub static META_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
     spec: false,
     status: false,
-    meta: true
+    meta: true,
 });
 
 /// Filter for metadata change
@@ -41,17 +41,15 @@ pub static META_FILTER: Lazy<ChangeFlag> = Lazy::new( || ChangeFlag {
 pub struct ChangeFlag {
     pub spec: bool,
     pub status: bool,
-    pub meta: bool
+    pub meta: bool,
 }
 
 impl ChangeFlag {
-    
-    
     pub fn all() -> Self {
         Self {
             spec: true,
             status: true,
-            meta: true
+            meta: true,
         }
     }
 
@@ -61,7 +59,7 @@ impl ChangeFlag {
         Self {
             spec: false,
             status: false,
-            meta: false
+            meta: false,
         }
     }
 
@@ -105,7 +103,7 @@ impl<T> DualEpochCounter<T> {
     }
 
     // copy epoch values from old value
-    fn copy_epoch(&mut self,old: &Self) {
+    fn copy_epoch(&mut self, old: &Self) {
         self.spec_epoch = old.spec_epoch;
         self.status_epoch = old.status_epoch;
         self.meta_epoch = old.meta_epoch;
@@ -134,7 +132,7 @@ impl<T> DualEpochCounter<T> {
         self.meta_epoch
     }
 
-    fn set_meta_epoch(&mut self, epoch: Epoch ) {
+    fn set_meta_epoch(&mut self, epoch: Epoch) {
         self.meta_epoch = epoch;
     }
 
@@ -239,7 +237,6 @@ where
 
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
-           
             let diff = existing_value.diff(new_value.inner());
             new_value.copy_epoch(existing_value);
             if diff.spec {
@@ -247,7 +244,7 @@ where
             }
             if diff.status {
                 new_value.set_status_epoch(current_epoch);
-            } 
+            }
             if diff.meta {
                 new_value.set_meta_epoch(current_epoch);
             }
@@ -314,7 +311,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, &SPEC_FILTER )
+        self.changes_since_with_filter(epoch, &SPEC_FILTER)
     }
 
     /// find all status changes
@@ -323,8 +320,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, &STATUS_FILTER )
-        
+        self.changes_since_with_filter(epoch, &STATUS_FILTER)
     }
 
     pub fn meta_changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
@@ -332,8 +328,7 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        self.changes_since_with_filter(epoch, &META_FILTER )
-        
+        self.changes_since_with_filter(epoch, &META_FILTER)
     }
 
     /// all changes (spec and status) since epoch
@@ -342,14 +337,12 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        
+
         self.changes_since_with_filter(epoch, &FULL_FILTER)
     }
 
-    
     /// find all status changes, only updates are accounted for
-    pub fn changes_since_with_filter(&self, epoch: Epoch,filter: &ChangeFlag) -> EpochChanges<V>
-    {
+    pub fn changes_since_with_filter(&self, epoch: Epoch, filter: &ChangeFlag) -> EpochChanges<V> {
         if epoch < self.fence.epoch() {
             return EpochChanges::new(
                 self.epoch.epoch(),
@@ -365,8 +358,9 @@ where
             .values()
             .filter_map(|v| {
                 if filter.spec && v.spec_epoch > epoch
-                || filter.status && v.status_epoch > epoch 
-                || filter.meta && v.meta_epoch > epoch {
+                    || filter.status && v.status_epoch > epoch
+                    || filter.meta && v.meta_epoch > epoch
+                {
                     Some(v.inner().clone())
                 } else {
                     None
@@ -379,8 +373,9 @@ where
             .iter()
             .filter_map(|v| {
                 if filter.spec && v.spec_epoch > epoch
-                || filter.status && v.status_epoch > epoch 
-                || filter.meta && v.meta_epoch > epoch {
+                    || filter.status && v.status_epoch > epoch
+                    || filter.meta && v.meta_epoch > epoch
+                {
                     Some(v.inner().clone())
                 } else {
                     None
@@ -393,16 +388,14 @@ where
             EpochDeltaChanges::Changes((updates, deletes)),
         )
     }
-    
 }
 
 #[cfg(test)]
 mod test {
 
-    use crate::test_fixture::{DefaultTest, TestEpochMap };
+    use crate::test_fixture::{DefaultTest, TestEpochMap};
 
     use super::ChangeFlag;
-
 
     #[test]
     fn test_metadata_changes() {
@@ -695,8 +688,7 @@ mod test {
         let test1 = DefaultTest::with_key("t1");
         let mut test2 = test1.clone();
         test2.ctx.item_mut().comment = "test".to_owned();
-       
-       
+
         map.increment_epoch();
 
         assert!(map.update(test1.key_owned(), test1).is_none());

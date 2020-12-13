@@ -17,9 +17,9 @@ use once_cell::sync::Lazy;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 
-use k8_metadata_client::{ MetadataClient,SharedClient, NameSpace };
+use k8_metadata_client::{MetadataClient, SharedClient, NameSpace};
 
-use crate::k8::app::core::metadata::{ K8List,K8Watch,Spec as K8Spec };
+use crate::k8::app::core::metadata::{K8List, K8Watch, Spec as K8Spec};
 
 use crate::core::Spec;
 use crate::store::k8::K8ExtendedSpec;
@@ -91,7 +91,6 @@ where
         spawn(dispatcher.outer_loop());
     }
 
-    
     #[instrument(
         fields(
             namespace = self.namespace.named(),
@@ -218,7 +217,7 @@ where
         Ok(version)
     }
 
-    #[instrument(skip(self,action))]
+    #[instrument(skip(self, action))]
     async fn process_ws_action(&mut self, action: WSAction<S>) {
         use crate::store::k8::K8MetaItem;
 
@@ -310,7 +309,7 @@ where
                         "Store: trying to delete non existent key",
                     );
                 }
-            },
+            }
             WSAction::DeleteFinal(key) => {
                 let read_guard = self.ctx.store().read().await;
                 if let Some(obj) = read_guard.get(&key) {
@@ -328,7 +327,6 @@ where
                     );
                 }
             }
-            
         }
     }
 }
@@ -345,9 +343,9 @@ mod convert {
 
     use tracing::{debug, error, trace};
     use tracing::instrument;
-    use crate::k8::app::core::metadata::{ K8List,K8Obj,K8Watch };
+    use crate::k8::app::core::metadata::{K8List, K8Obj, K8Watch};
     use crate::store::actions::*;
-    use crate::store::k8::{ K8MetaItem,K8ExtendedSpec, K8ConvertError };
+    use crate::store::k8::{K8MetaItem, K8ExtendedSpec, K8ConvertError};
     use crate::core::Spec;
     use k8_metadata_client::*;
 
@@ -377,7 +375,7 @@ mod convert {
                 Ok(k8_value) => k8_value,
                 Err(err) => match err {
                     K8ConvertError::Skip(obj) => {
-                        debug!("skipping: {} {}", S::LABEL,obj.metadata.name);
+                        debug!("skipping: {} {}", S::LABEL, obj.metadata.name);
                         continue;
                     }
                     K8ConvertError::KeyConvertionError(err) => return Err(err.into()),
@@ -418,7 +416,7 @@ mod convert {
             match token {
                 Ok(watch_obj) => match watch_obj {
                     K8Watch::ADDED(k8_obj) => {
-                        trace!("{} ADDED: {:#?}",S::LABEL, k8_obj);
+                        trace!("{} ADDED: {:#?}", S::LABEL, k8_obj);
                         match k8_obj_to_kv_obj(k8_obj) {
                             Ok(new_kv_value) => {
                                 debug!("K8: Watch Add: {}:{}", S::LABEL, new_kv_value.key());
@@ -433,9 +431,9 @@ mod convert {
                                 }
                             },
                         }
-                    },
+                    }
                     K8Watch::MODIFIED(k8_obj) => {
-                        trace!("{} MODIFIED: {:#?}",S::LABEL, k8_obj);
+                        trace!("{} MODIFIED: {:#?}", S::LABEL, k8_obj);
                         match k8_obj_to_kv_obj(k8_obj) {
                             Ok(updated_kv_value) => {
                                 debug!("K8: Watch Update {}:{}", S::LABEL, updated_kv_value.key());
@@ -448,11 +446,11 @@ mod convert {
                                 _ => {
                                     error!("converting {} {:#?}", S::LABEL, err);
                                 }
-                            }
+                            },
                         }
-                    },
+                    }
                     K8Watch::DELETED(k8_obj) => {
-                        trace!("{} DELETE: {:#?}",S::LABEL, k8_obj);
+                        trace!("{} DELETE: {:#?}", S::LABEL, k8_obj);
                         let meta: Result<
                             MetadataStoreObject<S, K8MetaItem>,
                             K8ConvertError<S::K8Spec>,

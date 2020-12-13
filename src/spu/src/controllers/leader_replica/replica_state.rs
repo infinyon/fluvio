@@ -20,7 +20,7 @@ use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
 
 use crate::controllers::sc::SharedSinkMessageChannel;
-use crate::core::storage::{ create_replica_storage };
+use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
@@ -78,12 +78,10 @@ pub struct LeaderReplicaState<S> {
     storage: S,
 }
 
-impl <S> fmt::Display for LeaderReplicaState<S> {
-
+impl<S> fmt::Display for LeaderReplicaState<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Leader {}", self.replica_id)
     }
-
 }
 
 impl<S> LeaderReplicaState<S> {
@@ -262,10 +260,7 @@ where
     }
 }
 
-
-
 impl LeaderReplicaState<FileReplica> {
-
     /// create new replica state using file replica
     pub async fn create_file_replica(
         leader: Replica,
@@ -285,8 +280,6 @@ impl LeaderReplicaState<FileReplica> {
             leader.replicas,
         ))
     }
-
-
 
     /// sync specific follower
     pub async fn sync_follower(

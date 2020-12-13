@@ -2,7 +2,7 @@
 //! # Auth Controller
 //!
 
-use tracing::{debug,trace};
+use tracing::{debug, trace};
 
 use fluvio_future::task::spawn;
 
@@ -61,7 +61,7 @@ impl PartitionController {
                 _ = partition_listener.listen() => {
                     debug!("detected partition changes");
                 }
-                
+
             }
         }
 
@@ -69,7 +69,6 @@ impl PartitionController {
     }
 
     async fn sync_partition_changes(&mut self, listener: &mut K8ChangeListener<PartitionSpec>) {
-
         if !listener.has_change() {
             trace!("no partitions change");
             return;
@@ -90,7 +89,6 @@ impl PartitionController {
         for action in actions.into_iter() {
             self.partitions.send_action(action).await;
         }
-
     }
 
     /// sync spu states to partition

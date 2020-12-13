@@ -13,7 +13,6 @@ pub mod store {
 #[cfg(feature = "k8")]
 pub use fluvio_stream_model::k8;
 
-
 pub mod extended {
 
     use super::core::Spec;

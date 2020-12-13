@@ -15,20 +15,25 @@ pub struct Replica {
     pub id: ReplicaKey,
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
-    pub is_being_deleted: bool
+    pub is_being_deleted: bool,
 }
 
 impl Replica {
     pub fn new(id: ReplicaKey, leader: SpuId, replicas: Vec<SpuId>) -> Self {
-        Self::new_with_delete(id, leader, replicas,false)
+        Self::new_with_delete(id, leader, replicas, false)
     }
 
-    pub fn new_with_delete(id: ReplicaKey, leader: SpuId, replicas: Vec<SpuId>,is_being_deleted: bool) -> Self {
+    pub fn new_with_delete(
+        id: ReplicaKey,
+        leader: SpuId,
+        replicas: Vec<SpuId>,
+        is_being_deleted: bool,
+    ) -> Self {
         Self {
             id,
             leader,
             replicas,
-            is_being_deleted
+            is_being_deleted,
         }
     }
 }
@@ -44,7 +49,7 @@ where
             id: inner.key,
             leader: inner.spec.leader,
             replicas: inner.spec.replicas,
-            is_being_deleted
+            is_being_deleted,
         }
     }
 }

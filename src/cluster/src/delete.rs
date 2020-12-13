@@ -239,11 +239,7 @@ impl ClusterUninstaller {
     }
 
     /// in order to remove partitions, finalizers need to be cleared
-    async fn remove_partitions(
-        &self,
-        namespace: &str,
-    ) -> Result<(), UninstallError> {
-
+    async fn remove_partitions(&self, namespace: &str) -> Result<(), UninstallError> {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
         use k8_client::metadata::MetadataClient;
@@ -251,7 +247,9 @@ impl ClusterUninstaller {
 
         let client = load_and_share().map_err(UninstallError::K8ClientError)?;
 
-        let partitions = client.retrieve_items::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(namespace).await?; 
+        let partitions = client
+            .retrieve_items::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(namespace)
+            .await?;
 
         if !partitions.items.is_empty() {
             let finalizer: serde_json::Value = serde_json::from_str(
@@ -261,25 +259,25 @@ impl ClusterUninstaller {
                             "finalizers":null
                         }
                     }
-                "#
-            ).expect("finalizer");
+                "#,
+            )
+            .expect("finalizer");
 
             for partition in partitions.items.into_iter() {
-
-                client.patch::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(
-                    &partition.metadata.as_input(),
-                    &finalizer,
-                    JsonMerge).await?;
+                client
+                    .patch::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(
+                        &partition.metadata.as_input(),
+                        &finalizer,
+                        JsonMerge,
+                    )
+                    .await?;
             }
-        }   
+        }
 
-        // find all partitions 
-
+        // find all partitions
 
         Ok(())
-
     }
-
 
     /// Remove K8 secret
     fn remove_secrets(&self, name: &str) -> Result<(), UninstallError> {

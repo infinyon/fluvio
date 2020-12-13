@@ -14,7 +14,7 @@ where
     UpdateSpec((S::IndexKey, S)),
     UpdateStatus((S::IndexKey, S::Status)),
     Delete(S::IndexKey),
-    DeleteFinal(S::IndexKey)
+    DeleteFinal(S::IndexKey),
 }
 
 impl<S> fmt::Display for WSAction<S>
@@ -48,4 +48,3 @@ where
         }
     }
 }
-
