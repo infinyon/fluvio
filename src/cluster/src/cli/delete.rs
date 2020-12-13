@@ -31,9 +31,9 @@ impl DeleteOpt {
             .with_name(&self.name)
             .build()?;
         if self.sys {
-            uninstaller.uninstall_sys()?;
+            uninstaller.uninstall_sys().await?;
         } else if self.local {
-            uninstaller.uninstall_local()?;
+            uninstaller.uninstall_local().await?;
         } else {
             uninstaller.uninstall().await?;
         }
