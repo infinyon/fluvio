@@ -5,7 +5,7 @@ use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
-use fluvio_future::fs::{ create_dir_all,remove_dir_all};
+use fluvio_future::fs::{create_dir_all, remove_dir_all};
 use dataplane::{ErrorCode, Offset, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
@@ -46,8 +46,6 @@ impl ReplicaStorage for FileReplica {
         self.active_segment.get_end_offset()
     }
 }
-
-
 
 impl FileReplica {
     pub const PREFER_MAX_LEN: u32 = 1000000; // 1MB as limit
@@ -115,8 +113,9 @@ impl FileReplica {
     }
 
     pub async fn remove(&self) -> Result<(), StorageError> {
-       
-        remove_dir_all(&self.option.base_dir).await.map_err(|err| err.into())
+        remove_dir_all(&self.option.base_dir)
+            .await
+            .map_err(|err| err.into())
     }
 
     /// update committed offset (high watermark)
@@ -653,8 +652,6 @@ mod tests {
         let replica = FileReplica::create("testr", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
-
-        
 
         let test_file = option.base_dir.join("testr-0").join(TEST_SEG_NAME);
 

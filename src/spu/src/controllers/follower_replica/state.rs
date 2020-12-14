@@ -310,7 +310,7 @@ impl FollowerReplicaState<FileReplica> {
         self.storage.send_records(records, false).await
     }
 
-    pub async fn remove(self) -> Result<(),StorageError> {
+    pub async fn remove(self) -> Result<(), StorageError> {
         self.storage.remove().await
     }
 }
