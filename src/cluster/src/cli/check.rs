@@ -2,7 +2,7 @@ use structopt::StructOpt;
 
 use crate::{ClusterChecker, CheckStatuses, CheckStatus};
 use crate::cli::ClusterCliError;
-use crate::check::{CheckFailed, CheckResults, CheckResult};
+use crate::check::{CheckFailed, CheckResults, CheckResult, CheckSuggestion};
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
 
@@ -57,6 +57,10 @@ impl CheckStatus {
                 let msg = format!("{}{}", e, cause);
                 println!("❌ {} {}", "failed:".bold().red(), msg.red());
             }
+        }
+
+        if let Some(suggestion) = self.suggestion() {
+            println!("  💡 {} {}", "suggestion:".bold().cyan(), suggestion,)
         }
     }
 }
