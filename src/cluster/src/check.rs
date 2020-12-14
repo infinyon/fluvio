@@ -185,12 +185,8 @@ pub enum RecoverableCheck {
 impl CheckSuggestion for RecoverableCheck {
     fn suggestion(&self) -> Option<String> {
         let suggestion = match self {
-            Self::MissingSystemChart => {
-                "Run 'fluvio cluster start --sys'"
-            }
-            Self::MinikubeTunnelNotFoundRetry => {
-                "Run 'minikube tunnel'"
-            }
+            Self::MissingSystemChart => "Run 'fluvio cluster start --sys'",
+            Self::MinikubeTunnelNotFoundRetry => "Run 'minikube tunnel'",
         };
         Some(suggestion.to_string())
     }

@@ -60,11 +60,7 @@ impl CheckStatus {
         }
 
         if let Some(suggestion) = self.suggestion() {
-            println!(
-                "  💡 {} {}",
-                "suggestion:".bold().cyan(),
-                suggestion,
-            )
+            println!("  💡 {} {}", "suggestion:".bold().cyan(), suggestion,)
         }
     }
 }
