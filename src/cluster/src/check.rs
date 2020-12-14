@@ -96,6 +96,13 @@ pub enum CheckError {
     ServiceDeleteError,
 }
 
+/// Allows checks to suggest further action
+pub trait CheckSuggestion {
+    fn suggestion(&self) -> Option<String> {
+        None
+    }
+}
+
 /// A collection of the successes, failures, and errors of running checks
 #[derive(Debug)]
 pub struct CheckStatuses(pub(crate) Vec<CheckStatus>);
@@ -127,6 +134,15 @@ impl CheckStatus {
     }
 }
 
+impl CheckSuggestion for CheckStatus {
+    fn suggestion(&self) -> Option<String> {
+        match self {
+            Self::Pass(_) => None,
+            Self::Fail(failed) => failed.suggestion(),
+        }
+    }
+}
+
 /// A successful check yields a success message
 pub type CheckSucceeded = String;
 
@@ -144,6 +160,16 @@ pub enum CheckFailed {
     AlreadyInstalled,
 }
 
+impl CheckSuggestion for CheckFailed {
+    fn suggestion(&self) -> Option<String> {
+        match self {
+            Self::AutoRecoverable(check) => check.suggestion(),
+            Self::Unrecoverable(check) => check.suggestion(),
+            Self::AlreadyInstalled => None,
+        }
+    }
+}
+
 /// A type of check failure which may be automatically recovered from
 #[derive(thiserror::Error, Debug)]
 pub enum RecoverableCheck {
@@ -154,6 +180,20 @@ pub enum RecoverableCheck {
     /// Minikube tunnel not found, this error is used in case of linux where we can try to bring tunnel up
     #[error("Minikube tunnel not found")]
     MinikubeTunnelNotFoundRetry,
+}
+
+impl CheckSuggestion for RecoverableCheck {
+    fn suggestion(&self) -> Option<String> {
+        let suggestion = match self {
+            Self::MissingSystemChart => {
+                "Run 'fluvio cluster start --sys'"
+            }
+            Self::MinikubeTunnelNotFoundRetry => {
+                "Run 'minikube tunnel'"
+            }
+        };
+        Some(suggestion.to_string())
+    }
 }
 
 /// A type of check failure which is not recoverable
@@ -209,15 +249,24 @@ pub enum UnrecoverableCheck {
     LoadBalancerServiceNotAvailable,
 
     /// Minikube tunnel not found, this error is used in case of macos we don't try to get tunnel up as it needs elevated context
-    #[error(
-        "Minikube tunnel may not be running
-    Run `sudo nohup  minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out &`"
-    )]
+    #[error("Minikube tunnel may not be running")]
     MinikubeTunnelNotFound,
 
     /// Default unhandled K8 client error
     #[error("Unhandled K8 client error")]
     UnhandledK8ClientError,
+}
+
+impl CheckSuggestion for UnrecoverableCheck {
+    fn suggestion(&self) -> Option<String> {
+        let suggestion = match self {
+            Self::MinikubeTunnelNotFound => {
+                "Run 'minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out'"
+            }
+            _ => return None,
+        };
+        Some(suggestion.to_string())
+    }
 }
 
 #[async_trait]
