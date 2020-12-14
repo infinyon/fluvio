@@ -12,6 +12,7 @@ use dataplane::derive::Decode;
 
 use super::RegisterSpuRequest;
 use super::UpdateLrsRequest;
+use super::ReplicaRemovedRequest;
 
 /// API call from Spu to SC
 
@@ -21,6 +22,7 @@ use super::UpdateLrsRequest;
 pub enum InternalScKey {
     RegisterSpu = 2000,
     UpdateLrs = 2001,
+    ReplicaRemoved = 2002,
 }
 
 impl Default for InternalScKey {
@@ -34,6 +36,7 @@ impl Default for InternalScKey {
 pub enum InternalScRequest {
     RegisterSpuRequest(RequestMessage<RegisterSpuRequest>),
     UpdateLrsRequest(RequestMessage<UpdateLrsRequest>),
+    ReplicaRemovedRequest(RequestMessage<ReplicaRemovedRequest>),
 }
 
 impl Default for InternalScRequest {
@@ -57,6 +60,9 @@ impl ApiMessage for InternalScRequest {
             }
             InternalScKey::UpdateLrs => {
                 api_decode!(InternalScRequest, UpdateLrsRequest, src, header)
+            }
+            InternalScKey::ReplicaRemoved => {
+                api_decode!(InternalScRequest, ReplicaRemovedRequest, src, header)
             }
         }
     }

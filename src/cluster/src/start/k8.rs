@@ -19,8 +19,8 @@ use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::metadata::MetadataClient;
-use k8_obj_core::service::ServiceSpec;
-use k8_obj_metadata::InputObjectMeta;
+use k8_client::core::service::ServiceSpec;
+use k8_client::core::metadata::InputObjectMeta;
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{

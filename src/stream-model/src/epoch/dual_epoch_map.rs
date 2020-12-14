@@ -5,6 +5,8 @@ use std::cmp::Eq;
 use std::collections::HashMap;
 use std::borrow::Borrow;
 
+use once_cell::sync::Lazy;
+
 use super::EpochCounter;
 use super::Epoch;
 use super::EpochDeltaChanges;
@@ -12,22 +14,43 @@ use super::EpochChanges;
 
 pub trait DualDiff {
     /// check if another is different from myself
-    fn diff(&self, another: &Self) -> MetadataChange;
+    fn diff(&self, another: &Self) -> ChangeFlag;
 }
 
-/// What has been changed between two metadata
-pub struct MetadataChange {
+#[allow(clippy::clippy::redundant_closure)]
+pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag::all());
+
+pub static SPEC_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
+    spec: true,
+    status: false,
+    meta: false,
+});
+
+pub static STATUS_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
+    spec: false,
+    status: true,
+    meta: false,
+});
+pub static META_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
+    spec: false,
+    status: false,
+    meta: true,
+});
+
+/// Filter for metadata change
+#[derive(Debug)]
+pub struct ChangeFlag {
     pub spec: bool,
     pub status: bool,
+    pub meta: bool,
 }
 
-impl MetadataChange {
-    /// create change that change both spec and status
-    #[cfg(test)]
-    pub fn full_change() -> Self {
+impl ChangeFlag {
+    pub fn all() -> Self {
         Self {
             spec: true,
             status: true,
+            meta: true,
         }
     }
 
@@ -37,25 +60,29 @@ impl MetadataChange {
         Self {
             spec: false,
             status: false,
+            meta: false,
         }
     }
 
     #[inline]
     pub fn has_full_change(&self) -> bool {
-        self.spec && self.status
+        self.spec && self.status && self.meta
     }
 
     /// check if there were any changes
     #[inline]
     pub fn has_no_changes(&self) -> bool {
-        !self.spec && !self.status
+        !self.spec && !self.status && !self.meta
     }
 }
 
+/// Keep track of internal changes to object
+/// Track 3 different changes (spec,status,meta)
 #[derive(Debug, Default, Clone)]
 pub struct DualEpochCounter<T> {
     spec_epoch: Epoch,
     status_epoch: Epoch,
+    meta_epoch: Epoch,
     inner: T,
 }
 
@@ -64,13 +91,23 @@ impl<T> DualEpochCounter<T> {
         Self {
             spec_epoch: 0,
             status_epoch: 0,
+            meta_epoch: 0,
             inner,
         }
     }
 
+    /// set epoch
     fn set_epoch(&mut self, epoch: Epoch) {
         self.spec_epoch = epoch;
         self.status_epoch = epoch;
+        self.meta_epoch = epoch;
+    }
+
+    // copy epoch values from old value
+    fn copy_epoch(&mut self, old: &Self) {
+        self.spec_epoch = old.spec_epoch;
+        self.status_epoch = old.status_epoch;
+        self.meta_epoch = old.meta_epoch;
     }
 
     #[inline]
@@ -89,6 +126,15 @@ impl<T> DualEpochCounter<T> {
 
     fn set_status_epoch(&mut self, epoch: Epoch) {
         self.status_epoch = epoch;
+    }
+
+    #[inline]
+    pub fn meta_epoch(&self) -> Epoch {
+        self.meta_epoch
+    }
+
+    fn set_meta_epoch(&mut self, epoch: Epoch) {
+        self.meta_epoch = epoch;
     }
 
     #[inline]
@@ -183,7 +229,7 @@ where
     /// updates the metadata if it is different from existing value
     //  if this return some then it means replace
     //  otherwise change occured
-    pub fn update(&mut self, key: K, new_value: V) -> Option<MetadataChange>
+    pub fn update(&mut self, key: K, new_value: V) -> Option<ChangeFlag>
     where
         K: Clone,
     {
@@ -193,18 +239,18 @@ where
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
             let diff = existing_value.diff(new_value.inner());
-            if diff.has_full_change() {
-                new_value.set_epoch(current_epoch);
-                *existing_value = new_value;
-            } else if diff.spec {
+            new_value.copy_epoch(existing_value);
+            if diff.spec {
                 new_value.set_spec_epoch(current_epoch);
-                new_value.set_status_epoch(existing_value.status_epoch);
-                *existing_value = new_value;
-            } else if diff.status {
-                new_value.set_status_epoch(current_epoch);
-                new_value.set_spec_epoch(existing_value.spec_epoch);
-                *existing_value = new_value;
             }
+            if diff.status {
+                new_value.set_status_epoch(current_epoch);
+            }
+            if diff.meta {
+                new_value.set_meta_epoch(current_epoch);
+            }
+
+            *existing_value = new_value;
             Some(diff)
         } else {
             // doesn't exist, so this is new
@@ -266,78 +312,24 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        if epoch < self.fence.epoch() {
-            return EpochChanges::new(
-                self.epoch.epoch(),
-                EpochDeltaChanges::SyncAll(self.clone_values()),
-            );
-        }
-
-        if epoch == self.epoch() {
-            return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
-        }
-
-        let updates = self
-            .values()
-            .filter_map(|v| {
-                if v.spec_epoch > epoch {
-                    Some(v.inner().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let deletes = self
-            .deleted
-            .iter()
-            .filter_map(|d| {
-                if d.spec_epoch > epoch {
-                    Some(d.inner().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        EpochChanges::new(
-            self.epoch.epoch(),
-            EpochDeltaChanges::Changes((updates, deletes)),
-        )
+        self.changes_since_with_filter(epoch, &SPEC_FILTER)
     }
 
-    /// find all status changes, only updates are accounted for
+    /// find all status changes
     pub fn status_changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
     where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
-        if epoch < self.fence.epoch() {
-            return EpochChanges::new(
-                self.epoch.epoch(),
-                EpochDeltaChanges::SyncAll(self.clone_values()),
-            );
-        }
+        self.changes_since_with_filter(epoch, &STATUS_FILTER)
+    }
 
-        if epoch == self.epoch() {
-            return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
-        }
-
-        let updates = self
-            .values()
-            .filter_map(|v| {
-                if v.status_epoch > epoch {
-                    Some(v.inner().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        EpochChanges::new(
-            self.epoch.epoch(),
-            EpochDeltaChanges::Changes((updates, vec![])),
-        )
+    pub fn meta_changes_since<E>(&self, epoch_value: E) -> EpochChanges<V>
+    where
+        Epoch: From<E>,
+    {
+        let epoch = epoch_value.into();
+        self.changes_since_with_filter(epoch, &META_FILTER)
     }
 
     /// all changes (spec and status) since epoch
@@ -346,6 +338,12 @@ where
         Epoch: From<E>,
     {
         let epoch = epoch_value.into();
+
+        self.changes_since_with_filter(epoch, &FULL_FILTER)
+    }
+
+    /// find all status changes, only updates are accounted for
+    pub fn changes_since_with_filter(&self, epoch: Epoch, filter: &ChangeFlag) -> EpochChanges<V> {
         if epoch < self.fence.epoch() {
             return EpochChanges::new(
                 self.epoch.epoch(),
@@ -353,10 +351,17 @@ where
             );
         }
 
-        let updates = self
+        if epoch == self.epoch() {
+            return EpochChanges::new(self.epoch.epoch(), EpochDeltaChanges::empty());
+        }
+
+        let updates: Vec<V> = self
             .values()
             .filter_map(|v| {
-                if v.status_epoch > epoch || v.spec_epoch > epoch {
+                if filter.spec && v.spec_epoch > epoch
+                    || filter.status && v.status_epoch > epoch
+                    || filter.meta && v.meta_epoch > epoch
+                {
                     Some(v.inner().clone())
                 } else {
                     None
@@ -367,9 +372,12 @@ where
         let deletes = self
             .deleted
             .iter()
-            .filter_map(|d| {
-                if d.status_epoch > epoch || d.spec_epoch > epoch {
-                    Some(d.inner().clone())
+            .filter_map(|v| {
+                if filter.spec && v.spec_epoch > epoch
+                    || filter.status && v.status_epoch > epoch
+                    || filter.meta && v.meta_epoch > epoch
+                {
+                    Some(v.inner().clone())
                 } else {
                     None
                 }
@@ -388,14 +396,14 @@ mod test {
 
     use crate::test_fixture::{DefaultTest, TestEpochMap};
 
-    use super::MetadataChange;
+    use super::ChangeFlag;
 
     #[test]
     fn test_metadata_changes() {
-        let full_change = MetadataChange::full_change();
+        let full_change = ChangeFlag::all();
         assert!(full_change.has_full_change());
         assert!(!full_change.has_no_changes());
-        let no_change = MetadataChange::no_change();
+        let no_change = ChangeFlag::no_change();
         assert!(no_change.has_no_changes());
         assert!(!no_change.has_full_change());
     }
@@ -436,6 +444,13 @@ mod test {
             assert_eq!(updates2.len(), 1);
             assert_eq!(deletes2.len(), 0);
 
+            let meta_changes = map.meta_changes_since(-1);
+            assert_eq!(*meta_changes.current_epoch(), 1); // current epoch is 1
+            assert!(meta_changes.is_sync_all());
+            let (updates2, deletes2) = meta_changes.parts();
+            assert_eq!(updates2.len(), 1);
+            assert_eq!(deletes2.len(), 0);
+
             let any_change = map.changes_since(-1);
             assert_eq!(*any_change.current_epoch(), 1);
             assert!(any_change.is_sync_all());
@@ -457,6 +472,13 @@ mod test {
             assert_eq!(*status_changes.current_epoch(), 1); // current epoch is 1
             assert!(!status_changes.is_sync_all()); // this is only delta
             let (updates, deletes) = status_changes.parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let meta_changes = map.meta_changes_since(0);
+            assert_eq!(*meta_changes.current_epoch(), 1); // current epoch is 1
+            assert!(!meta_changes.is_sync_all()); // this is only delta
+            let (updates, deletes) = meta_changes.parts();
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
 
@@ -484,6 +506,13 @@ mod test {
             assert_eq!(updates.len(), 0);
             assert_eq!(deletes.len(), 0);
 
+            let meta_changes = map.meta_changes_since(1);
+            assert_eq!(*meta_changes.current_epoch(), 1); // current epoch is 1
+            assert!(!meta_changes.is_sync_all()); // this is only delta
+            let (updates, deletes) = meta_changes.parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
             let any_change = map.changes_since(1);
             assert_eq!(*any_change.current_epoch(), 1);
             assert!(!any_change.is_sync_all());
@@ -507,6 +536,8 @@ mod test {
         assert!(map.update(test1.key_owned(), test1).is_none());
 
         map.increment_epoch();
+
+        // only update status
         let changes = map.update(test2.key_owned(), test2).expect("update");
         assert!(!changes.spec);
         assert!(changes.status);
@@ -527,6 +558,10 @@ mod test {
             let (updates, deletes) = map.changes_since(0).parts();
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
         }
 
         // test with middle epoch, this should just return status
@@ -543,6 +578,10 @@ mod test {
             let (updates, deletes) = map.changes_since(1).parts();
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(1).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
         }
 
         {
@@ -555,6 +594,10 @@ mod test {
             assert_eq!(deletes.len(), 0);
 
             let (updates, deletes) = map.changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(2).parts();
             assert_eq!(updates.len(), 0);
             assert_eq!(deletes.len(), 0);
         }
@@ -594,6 +637,10 @@ mod test {
             let (updates, deletes) = map.changes_since(0).parts();
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
         }
 
         // test with middle epoch, this should just return status
@@ -610,6 +657,10 @@ mod test {
             let (updates, deletes) = map.changes_since(1).parts();
             assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(1).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
         }
 
         {
@@ -622,6 +673,89 @@ mod test {
             assert_eq!(deletes.len(), 0);
 
             let (updates, deletes) = map.changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_epoch_map_update_meta() {
+        let mut map = TestEpochMap::new();
+
+        let test1 = DefaultTest::with_key("t1");
+        let mut test2 = test1.clone();
+        test2.ctx.item_mut().comment = "test".to_owned();
+
+        map.increment_epoch();
+
+        assert!(map.update(test1.key_owned(), test1).is_none());
+
+        map.increment_epoch();
+        let changes = map.update(test2.key_owned(), test2).expect("update");
+        assert!(!changes.spec);
+        assert!(!changes.status);
+        assert!(changes.meta);
+
+        // update the
+        assert_eq!(map.epoch(), 2);
+
+        // test with base epoch, this should return a single changes for spec and status
+        {
+            let (updates, deletes) = map.spec_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(0).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        // changes with meta changes only
+
+        {
+            let (updates, deletes) = map.spec_changes_since(1).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(1).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.changes_since(1).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(1).parts();
+            assert_eq!(updates.len(), 1);
+            assert_eq!(deletes.len(), 0);
+        }
+
+        {
+            let (updates, deletes) = map.spec_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.status_changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.changes_since(2).parts();
+            assert_eq!(updates.len(), 0);
+            assert_eq!(deletes.len(), 0);
+
+            let (updates, deletes) = map.meta_changes_since(2).parts();
             assert_eq!(updates.len(), 0);
             assert_eq!(deletes.len(), 0);
         }

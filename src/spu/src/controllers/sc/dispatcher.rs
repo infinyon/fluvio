@@ -170,7 +170,7 @@ impl ScDispatcher<FileReplica> {
 
                 sc_request = api_stream.next() => match sc_request {
                     Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
-                        if let Err(err) = self.handle_update_replica_request(request).await {
+                        if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
                             error!("error handling update replica request: {}", err);
                             break;
                         }
@@ -295,7 +295,8 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
-    ) -> Result<(), IoError> {
+        sc_sink: &mut FlvSink,
+    ) -> Result<(), FlvSocketError> {
         let (_, request) = req_msg.get_header_request();
 
         debug!("received replica update from sc: {:#?}", request);
@@ -318,8 +319,7 @@ impl ScDispatcher<FileReplica> {
             self.ctx.replica_localstore().apply_changes(request.changes)
         };
 
-        self.apply_replica_actions(actions).await;
-        Ok(())
+        self.apply_replica_actions(actions, sc_sink).await
     }
 
     ///
@@ -357,10 +357,14 @@ impl ScDispatcher<FileReplica> {
         skip(self, actions),
         fields(action_count = actions.count())
     )]
-    async fn apply_replica_actions(&self, actions: Actions<SpecChange<Replica>>) {
+    async fn apply_replica_actions(
+        &self,
+        actions: Actions<SpecChange<Replica>>,
+        sc_sink: &mut FlvSink,
+    ) -> Result<(), FlvSocketError> {
         if actions.count() == 0 {
             debug!("no replica actions to process. ignoring");
-            return;
+            return Ok(());
         }
 
         trace!("applying replica leader actions");
@@ -380,9 +384,9 @@ impl ScDispatcher<FileReplica> {
                 }
                 SpecChange::Delete(deleted_replica) => {
                     if deleted_replica.leader == local_id {
-                        self.remove_leader_replica(deleted_replica).await;
+                        self.remove_leader_replica(deleted_replica, sc_sink).await?;
                     } else {
-                        self.remove_follower_replica(deleted_replica);
+                        self.remove_follower_replica(deleted_replica).await;
                     }
                 }
                 SpecChange::Mod(new_replica, old_replica) => {
@@ -392,31 +396,42 @@ impl ScDispatcher<FileReplica> {
                         old_replica
                     );
 
-                    // check for leader change
-                    if new_replica.leader != old_replica.leader {
+                    if new_replica.is_being_deleted {
+                        debug!("replica being deleted: {:#?}", new_replica);
                         if new_replica.leader == local_id {
-                            // we become leader
-                            self.promote_replica(new_replica, old_replica).await;
+                            self.remove_leader_replica(new_replica, sc_sink).await?;
                         } else {
-                            // we are follower
-                            // if we were leader before, we demote out self
-                            if old_replica.leader == local_id {
-                                self.demote_replica(new_replica).await;
-                            } else {
-                                // we stay as follower but we switch to new leader
-                                debug!("still follower but switching leader: {}", new_replica);
-                                self.remove_follower_replica(old_replica);
-                                self.add_follower_replica(new_replica).await;
-                            }
+                            self.remove_follower_replica(new_replica).await;
                         }
-                    } else if new_replica.leader == local_id {
-                        self.update_leader_replica(new_replica).await;
                     } else {
-                        self.update_follower_replica(new_replica).await;
+                        // check for leader change
+                        if new_replica.leader != old_replica.leader {
+                            if new_replica.leader == local_id {
+                                // we become leader
+                                self.promote_replica(new_replica, old_replica).await;
+                            } else {
+                                // we are follower
+                                // if we were leader before, we demote out self
+                                if old_replica.leader == local_id {
+                                    self.demote_replica(new_replica).await;
+                                } else {
+                                    // we stay as follower but we switch to new leader
+                                    debug!("still follower but switching leader: {}", new_replica);
+                                    self.switch_leader_for_follower(new_replica, old_replica)
+                                        .await;
+                                }
+                            }
+                        } else if new_replica.leader == local_id {
+                            self.update_leader_replica(new_replica).await;
+                        } else {
+                            self.update_follower_replica(new_replica).await;
+                        }
                     }
                 }
             }
         }
+
+        Ok(())
     }
 
     #[instrument(
@@ -489,37 +504,56 @@ impl ScDispatcher<FileReplica> {
         skip(self, replica),
         fields(replica_id = &*format!("{}", replica.id))
     )]
-    async fn remove_leader_replica(&self, replica: Replica) {
+    async fn remove_leader_replica(
+        &self,
+        replica: Replica,
+        sc_sink: &mut FlvSink,
+    ) -> Result<(), FlvSocketError> {
+        use fluvio_controlplane::ReplicaRemovedRequest;
+
         debug!("trying to remove leader controller: {}", replica);
 
-        if self.ctx.leaders_state().has_replica(&replica.id) {
-            debug!("leader replica was found, sending removing: {}", replica);
-
-            match self
-                .ctx
-                .leaders_state()
-                .send_message(
-                    &replica.id,
-                    LeaderReplicaControllerCommand::RemoveReplicaFromSc,
-                )
-                .await
-            {
-                Ok(status) => {
-                    if !status {
-                        error!("leader controller mailbox was not found for: {}", replica);
-                    }
-                }
-                Err(err) => {
-                    error!(
-                        "error sending external command to replica controller for replica: {}, {:#?}",
-                        replica,
-                        err
-                    );
+        // try to send message to leader controller if still exists
+        match self
+            .ctx
+            .leaders_state()
+            .send_message(
+                &replica.id,
+                LeaderReplicaControllerCommand::RemoveReplicaFromSc,
+            )
+            .await
+        {
+            Ok(status) => {
+                if !status {
+                    error!("leader controller mailbox was not found for: {}", replica);
                 }
             }
-        } else {
-            error!("leader controller: {} was not found", replica)
+            Err(err) => {
+                error!(
+                    "error sending external command to replica controller for replica: {}, {:#?}",
+                    replica, err
+                );
+            }
         }
+
+        let confirm = if let Some(replica_state) =
+            self.ctx.leaders_state().remove_replica(&replica.id).await
+        {
+            debug!("leader replica was found, removing it{}", replica);
+            if let Err(err) = replica_state.remove().await {
+                error!("error: {} removing replica: {}", err, replica);
+            }
+            true
+        } else {
+            debug!("leader replica: {} was not founded, ignoring", replica);
+            false
+        };
+
+        let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
+
+        let message = RequestMessage::new_request(confirm_request);
+
+        sc_sink.send_request(&message).await
     }
 
     /// spawn new leader controller
@@ -665,15 +699,32 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    fn remove_follower_replica(&self, replica: Replica) {
+    async fn remove_follower_replica(&self, replica: Replica) {
         debug!("removing follower replica: {}", replica);
-        if self
+        if let Some(replica_state) = self
             .ctx
             .followers_state()
             .remove_replica(&replica.leader, &replica.id)
+        {
+            if let Err(err) = replica_state.remove().await {
+                error!("error {}, removing replica: {}", err, replica);
+            }
+        } else {
+            error!("there was no follower replica: {} to remove", replica);
+        }
+    }
+
+    async fn switch_leader_for_follower(&self, new: Replica, old: Replica) {
+        // we stay as follower but we switch to new leader
+        debug!("still follower but switching leader: {}", new);
+        if self
+            .ctx
+            .followers_state()
+            .remove_replica(&old.leader, &old.id)
             .is_none()
         {
-            error!("there was no follower replica: {}", replica);
+            error!("there was no follower replica: {} to switch", new);
         }
+        self.add_follower_replica(new).await;
     }
 }

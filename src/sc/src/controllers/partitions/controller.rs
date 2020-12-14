@@ -2,40 +2,34 @@
 //! # Auth Controller
 //!
 
-use tracing::debug;
+use tracing::{debug, trace};
 
 use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
-use crate::stores::{StoreContext, Epoch};
+use crate::stores::{StoreContext};
 use crate::stores::partition::PartitionSpec;
 use crate::stores::spu::SpuSpec;
 use crate::stores::K8ChangeListener;
 
-use super::reducer::*;
+use super::reducer::PartitionReducer;
 
 /// Handles Partition election
 #[derive(Debug)]
 pub struct PartitionController {
     partitions: StoreContext<PartitionSpec>,
-    partition_epoch: Epoch,
     spus: StoreContext<SpuSpec>,
-    spu_epoch: Epoch,
     reducer: PartitionReducer,
 }
 
 impl PartitionController {
     pub fn start(ctx: SharedContext) {
         let partitions = ctx.partitions().clone();
-        let partition_epoch = partitions.store().init_epoch().spec_epoch();
         let spus = ctx.spus().clone();
-        let spu_epoch = spus.store().init_epoch().spec_epoch();
 
         let controller = Self {
             partitions,
-            partition_epoch,
             spus,
-            spu_epoch,
             reducer: PartitionReducer::new(
                 ctx.partitions().store().clone(),
                 ctx.spus().store().clone(),
@@ -51,33 +45,64 @@ impl PartitionController {
         debug!("starting dispatch loop");
 
         let mut spu_status_listener = self.spus.change_listener();
+        let mut partition_listener = self.partitions.change_listener();
+
         loop {
             self.sync_spu_changes(&mut spu_status_listener).await;
+            self.sync_partition_changes(&mut partition_listener).await;
 
-            debug!("waiting for events");
+            trace!("waiting for events");
+
             select! {
 
                 _ = spu_status_listener.listen() => {
-                   debug!("detected spus status changed");
+                    debug!("detected spus status changed");
+                },
+                _ = partition_listener.listen() => {
+                    debug!("detected partition changes");
                 }
+
             }
         }
 
         // info!("spu controller is terminated");
     }
 
+    async fn sync_partition_changes(&mut self, listener: &mut K8ChangeListener<PartitionSpec>) {
+        if !listener.has_change() {
+            trace!("no partitions change");
+            return;
+        }
+
+        trace!("sync partitions changes");
+        let changes = listener.sync_meta_changes().await;
+        if changes.is_empty() {
+            trace!("no partitions changes");
+            return;
+        }
+
+        let (updates, _) = changes.parts();
+
+        let actions = self.reducer.process_partition_update(updates).await;
+
+        debug!("generated partition actions: {}", actions.len());
+        for action in actions.into_iter() {
+            self.partitions.send_action(action).await;
+        }
+    }
+
     /// sync spu states to partition
     /// check to make sure
     async fn sync_spu_changes(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
         if !listener.has_change() {
-            debug!("no change");
+            trace!("no spu changes");
             return;
         }
 
-        debug!("sync spu changes");
+        trace!("sync spu changes");
         let changes = listener.sync_status_changes().await;
         if changes.is_empty() {
-            debug!("no spu changes");
+            trace!("no spu changes");
             return;
         }
 

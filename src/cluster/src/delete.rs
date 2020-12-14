@@ -7,8 +7,8 @@ use fluvio_future::timer::sleep;
 use k8_client::ClientError as K8ClientError;
 use k8_client::{load_and_share, SharedK8Client};
 use k8_client::http::status::StatusCode;
-use k8_obj_metadata::{InputObjectMeta, Spec};
-use k8_obj_core::pod::PodSpec;
+use k8_client::core::metadata::{InputObjectMeta, Spec};
+use k8_client::core::pod::PodSpec;
 
 use crate::helm::HelmClient;
 use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
@@ -137,7 +137,7 @@ impl ClusterUninstaller {
 
         let sc_pod = InputObjectMeta::named("flv-sc", &self.config.namespace);
         self.wait_for_delete::<PodSpec>(client, &sc_pod).await?;
-        self.cleanup()?;
+        self.cleanup().await?;
 
         Ok(())
     }
@@ -154,13 +154,13 @@ impl ClusterUninstaller {
     /// uninstaller.uninstall_sys();
     /// ```
     #[instrument(skip(self))]
-    pub fn uninstall_sys(&self) -> Result<(), ClusterError> {
+    pub async fn uninstall_sys(&self) -> Result<(), ClusterError> {
         info!("Removing fluvio sys chart");
         self.helm_client
             .uninstall(DEFAULT_CHART_SYS_REPO, true)
             .map_err(UninstallError::HelmError)?;
         info!("fluvio sys chart has been uninstalled");
-        self.cleanup()?;
+        self.cleanup().await?;
 
         Ok(())
     }
@@ -176,7 +176,7 @@ impl ClusterUninstaller {
     ///     .build().unwrap();
     /// uninstaller.uninstall_local();
     /// ```
-    pub fn uninstall_local(&self) -> Result<(), ClusterError> {
+    pub async fn uninstall_local(&self) -> Result<(), ClusterError> {
         info!("Removing local cluster");
         Command::new("pkill")
             .arg("-f")
@@ -188,12 +188,12 @@ impl ClusterUninstaller {
         if let Err(err) = remove_dir_all("/tmp/fluvio") {
             warn!("fluvio dir can't be removed: {}", err);
         }
-        self.cleanup()?;
+        self.cleanup().await?;
         Ok(())
     }
 
     /// Clean up objects and secrets created during the installation process
-    fn cleanup(&self) -> Result<(), UninstallError> {
+    async fn cleanup(&self) -> Result<(), UninstallError> {
         let ns = &self.config.namespace;
 
         // delete objects
@@ -205,6 +205,8 @@ impl ClusterUninstaller {
         // delete secrets
         self.remove_secrets("fluvio-ca")?;
         self.remove_secrets("fluvio-tls")?;
+
+        self.remove_partitions(ns).await?;
 
         Ok(())
     }
@@ -232,6 +234,47 @@ impl ClusterUninstaller {
             cmd.arg("--all");
         }
         cmd.output()?;
+
+        Ok(())
+    }
+
+    /// in order to remove partitions, finalizers need to be cleared
+    async fn remove_partitions(&self, namespace: &str) -> Result<(), UninstallError> {
+        use fluvio_controlplane_metadata::partition::PartitionSpec;
+        use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
+        use k8_client::metadata::MetadataClient;
+        use k8_metadata_client::PatchMergeType::JsonMerge;
+
+        let client = load_and_share().map_err(UninstallError::K8ClientError)?;
+
+        let partitions = client
+            .retrieve_items::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(namespace)
+            .await?;
+
+        if !partitions.items.is_empty() {
+            let finalizer: serde_json::Value = serde_json::from_str(
+                r#"
+                    {
+                        "metadata": {
+                            "finalizers":null
+                        }
+                    }
+                "#,
+            )
+            .expect("finalizer");
+
+            for partition in partitions.items.into_iter() {
+                client
+                    .patch::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(
+                        &partition.metadata.as_input(),
+                        &finalizer,
+                        JsonMerge,
+                    )
+                    .await?;
+            }
+        }
+
+        // find all partitions
 
         Ok(())
     }

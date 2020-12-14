@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt;
 
 use tracing::debug;
 use tracing::trace;
@@ -19,7 +20,7 @@ use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
 
 use crate::controllers::sc::SharedSinkMessageChannel;
-use crate::core::storage::create_replica_storage;
+use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
@@ -75,6 +76,12 @@ pub struct LeaderReplicaState<S> {
     leader_id: SpuId,
     followers: BTreeMap<SpuId, FollowerReplicaInfo>,
     storage: S,
+}
+
+impl<S> fmt::Display for LeaderReplicaState<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Leader {}", self.replica_id)
+    }
 }
 
 impl<S> LeaderReplicaState<S> {
@@ -272,6 +279,10 @@ impl LeaderReplicaState<FileReplica> {
             storage,
             leader.replicas,
         ))
+    }
+
+    pub async fn remove(self) -> Result<(), StorageError> {
+        self.storage.remove().await
     }
 
     /// sync specific follower

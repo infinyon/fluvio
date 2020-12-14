@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 
 use crate::core::{Spec, MetadataContext, MetadataItem};
+use crate::store::{LocalStore};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
 
 use super::DualDiff;
-use super::MetadataChange;
+use super::ChangeFlag;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MetadataStoreObject<S, C>
@@ -126,6 +127,21 @@ where
         }
     }
 
+    /// find children of this object
+    pub async fn childrens<T: Spec>(
+        &self,
+        child_stores: &LocalStore<T, C>,
+    ) -> Vec<MetadataStoreObject<T, C>> {
+        let my_uid = self.ctx().item().uid();
+        child_stores
+            .read()
+            .await
+            .values()
+            .filter(|child| child.is_owned(my_uid))
+            .map(|child| child.inner().clone())
+            .collect()
+    }
+
     pub fn is_newer(&self, another: &Self) -> bool {
         self.ctx.item().is_newer(another.ctx().item())
     }
@@ -134,16 +150,17 @@ where
 impl<S, C> DualDiff for MetadataStoreObject<S, C>
 where
     S: Spec,
-    C: MetadataItem,
+    C: MetadataItem + PartialEq,
 {
     /// compute difference, in our case we take account of version as well
-    fn diff(&self, another: &Self) -> MetadataChange {
+    fn diff(&self, another: &Self) -> ChangeFlag {
         if self.is_newer(another) {
-            MetadataChange::no_change()
+            ChangeFlag::no_change()
         } else {
-            MetadataChange {
+            ChangeFlag {
                 spec: self.spec != another.spec,
                 status: self.status != another.status,
+                meta: self.ctx.item() != another.ctx.item(),
             }
         }
     }

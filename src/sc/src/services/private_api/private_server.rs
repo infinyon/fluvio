@@ -6,7 +6,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use tracing::error;
-use tracing::debug;
+use tracing::{debug, trace};
 use tracing::instrument;
 use async_trait::async_trait;
 use async_channel::Sender;
@@ -20,7 +20,7 @@ use fluvio_service::{FlvService, wait_for_request};
 use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
 use fluvio_controlplane::{
     InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
-    UpdateSpuRequest,
+    UpdateSpuRequest, ReplicaRemovedRequest,
 };
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
@@ -125,8 +125,6 @@ async fn dispatch_loop(
     mut sink: FlvSink,
     health_sender: Sender<SpuAction>,
 ) -> Result<(), FlvSocketError> {
-    // we wait for update from SPU or wait for updates form SPU channel
-
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
 
     let mut spu_spec_listener = context.spus().change_listener();
@@ -147,7 +145,7 @@ async fn dispatch_loop(
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
-        debug!("waiting for events");
+        trace!("waiting for events");
 
         select! {
 
@@ -175,11 +173,14 @@ async fn dispatch_loop(
                         match req_message {
                             InternalScRequest::UpdateLrsRequest(msg) => {
                                 debug!("received lrs request: {}",msg);
-                                send_lrs_update(&context,msg.request).await;
+                                receive_lrs_update(&context,msg.request).await;
                             },
                             InternalScRequest::RegisterSpuRequest(msg) => {
                                 error!("registration req only valid during initialization: {:#?}",msg);
                                 return Err(IoError::new(ErrorKind::InvalidData,"register spu request is only valid at init").into())
+                            },
+                            InternalScRequest::ReplicaRemovedRequest(msg) => {
+                                receive_replica_remove(&context,msg.request).await;
                             }
                         }
                     } else {
@@ -209,10 +210,11 @@ async fn dispatch_loop(
 }
 
 /// send lrs update to metadata stores
-async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
+async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
+    let mut actions = vec![];
     let read_guard = ctx.partitions().store().read().await;
     for lrs_req in requests.into_requests().into_iter() {
-        let action = if let Some(partition) = read_guard.get(&lrs_req.id) {
+        if let Some(partition) = read_guard.get(&lrs_req.id) {
             let mut current_status = partition.inner().status().clone();
             let key = lrs_req.id.clone();
             let new_status = PartitionStatus::new2(
@@ -222,19 +224,50 @@ async fn send_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
             );
             current_status.merge(new_status);
 
-            WSAction::UpdateStatus::<PartitionSpec>((key, current_status))
+            actions.push(WSAction::UpdateStatus::<PartitionSpec>((
+                key,
+                current_status,
+            )));
         } else {
             error!(
                 "trying to update replica: {}, that doesn't exist",
                 lrs_req.id
             );
             return;
-        };
-
-        ctx.partitions().send_action(action).await;
+        }
     }
 
     drop(read_guard);
+
+    for action in actions.into_iter() {
+        ctx.partitions().send_action(action).await;
+    }
+}
+
+async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequest) {
+    // create action inside to optimize read locking
+    let read_guard = ctx.partitions().store().read().await;
+    let delete_action = if let Some(partition) = read_guard.get(&request.id) {
+        // check if partiton is being deleted
+        if partition.status.is_being_deleted {
+            Some(WSAction::DeleteFinal::<PartitionSpec>(request.id))
+        } else {
+            error!("replica: {} was not being deleted", request.id);
+            None
+        }
+    } else {
+        error!(
+            "trying to update replica: {}, that doesn't exist",
+            request.id
+        );
+        None
+    };
+
+    drop(read_guard);
+
+    if let Some(action) = delete_action {
+        ctx.partitions().send_action(action).await;
+    }
 }
 
 /// send spu spec changes only
@@ -292,12 +325,20 @@ async fn send_replica_spec_changes(
     sink: &mut FlvSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
+    use crate::stores::ChangeFlag;
+
     if !listener.has_change() {
         debug!("changes is empty, skipping");
         return Ok(());
     }
 
-    let changes = listener.sync_spec_changes().await;
+    let changes = listener
+        .sync_changes_with_filter(&ChangeFlag {
+            spec: true,
+            status: false,
+            meta: true,
+        })
+        .await;
     if changes.is_empty() {
         debug!("spec changes is empty, skipping");
         return Ok(());

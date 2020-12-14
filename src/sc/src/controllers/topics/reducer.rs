@@ -12,7 +12,7 @@
 //!
 use std::sync::Arc;
 
-use tracing::{debug, trace};
+use tracing::{debug, trace, error};
 
 use crate::stores::topic::*;
 use crate::stores::partition::*;
@@ -95,6 +95,45 @@ impl TopicReducer {
     /// if state is different, apply actions
     ///
     async fn update_actions_next_state(&self, topic: &TopicAdminMd, actions: &mut TopicActions) {
+        use fluvio_controlplane_metadata::core::MetadataItem;
+
+        // if foregroundDeletion is the finalizer, then we can mark it as delete
+        if topic.ctx().item().is_being_deleted() {
+            // set to delte if not it set
+            if !topic.status.resolution().is_being_deleted() {
+                debug!(
+                    "topic has forground delete but delet status is not set: {}",
+                    topic.key()
+                );
+                let mut status = topic.status().clone();
+                status.resolution = TopicResolution::Deleting;
+                actions
+                    .topics
+                    .push(TopicWSAction::UpdateStatus((topic.key_owned(), status)));
+
+                // find children and delete them
+                let partitions = topic.childrens(&self.partition_store()).await;
+
+                if partitions.is_empty() {
+                    error!(
+                        "no children found for topic: {} when trying to delete",
+                        topic.key()
+                    );
+                    return;
+                }
+                for partition in partitions.into_iter() {
+                    debug!("Deleting partition: {}", partition.key());
+                    actions
+                        .partitions
+                        .push(PartitionWSAction::Delete(partition.key_owned()));
+                }
+
+                return;
+            }
+
+            return;
+        }
+
         let next_state =
             TopicNextState::compute_next_state(topic, self.spu_store(), self.partition_store())
                 .await;

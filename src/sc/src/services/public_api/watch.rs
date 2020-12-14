@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use tracing::debug;
+use tracing::{debug, trace};
 use tracing::error;
 
 use futures_util::io::AsyncRead;
@@ -99,7 +99,7 @@ where
                 break;
             }
 
-            debug!("{}: waiting for changes", S::LABEL,);
+            trace!("{}: waiting for changes", S::LABEL,);
             select! {
 
                 _ = self.end_event.listen() => {

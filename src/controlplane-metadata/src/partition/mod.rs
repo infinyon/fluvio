@@ -53,6 +53,9 @@ mod metadata {
             type K8Spec = Self;
             type K8Status = Self::Status;
 
+            const FINALIZER: Option<&'static str> =
+                Some("partitions.finalizer.fluvio.infinyon.com");
+
             fn convert_from_k8(
                 k8_obj: K8Obj<Self::K8Spec>,
             ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>

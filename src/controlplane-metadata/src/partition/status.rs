@@ -31,6 +31,7 @@ pub struct PartitionStatus {
     pub leader: ReplicaStatus,
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
+    pub is_being_deleted: bool,
 }
 
 impl fmt::Display for PartitionStatus {
@@ -100,6 +101,12 @@ impl PartitionStatus {
 
     pub fn has_live_replicas(&self) -> bool {
         !self.replicas.is_empty()
+    }
+
+    /// set to being deleted
+    pub fn set_to_delete(mut self) -> Self {
+        self.is_being_deleted = true;
+        self
     }
 
     /// Fnd best candidate from online replicas

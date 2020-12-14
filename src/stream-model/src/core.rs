@@ -8,13 +8,18 @@ mod context {
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
-    pub trait MetadataItem: Clone + Default + fmt::Debug {
+    pub trait MetadataItem: Clone + Default + fmt::Debug + PartialEq {
         type UId: PartialEq;
 
         fn uid(&self) -> &Self::UId;
 
         /// checkif item is newer
         fn is_newer(&self, another: &Self) -> bool;
+
+        /// if object is process of being deleted
+        fn is_being_deleted(&self) -> bool {
+            false
+        }
     }
 
     impl MetadataItem for u32 {
@@ -54,6 +59,10 @@ mod context {
     }
 
     impl<C> MetadataContext<C> {
+        pub fn new(item: C, owner: Option<C>) -> Self {
+            Self { item, owner }
+        }
+
         pub fn item(&self) -> &C {
             &self.item
         }

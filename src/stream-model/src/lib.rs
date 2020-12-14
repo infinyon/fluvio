@@ -4,25 +4,16 @@ pub mod store;
 
 #[cfg(feature = "k8")]
 pub mod k8 {
-
-    pub mod core {
-        pub use k8_obj_core::*;
-    }
-
-    pub mod app {
-        pub use k8_obj_app::*;
-    }
-
-    pub mod metadata {
-        pub use k8_obj_metadata::*;
-    }
+    pub use k8_obj_app as app;
+    pub use k8_obj_app::core;
+    pub use k8_obj_app::core::metadata;
 }
 
 #[cfg(test)]
 pub(crate) mod test_fixture {
 
-    use crate::core::{Spec, Status};
-    use crate::store::{DefaultMetadataObject};
+    use crate::core::{Spec, Status, MetadataItem, MetadataContext};
+    use crate::store::MetadataStoreObject;
     use crate::epoch::DualEpochMap;
 
     // define test spec and status
@@ -45,7 +36,40 @@ pub(crate) mod test_fixture {
 
     impl Status for TestStatus {}
 
-    pub type DefaultTest = DefaultMetadataObject<TestSpec>;
+    pub type DefaultTest = MetadataStoreObject<TestSpec, TestMeta>;
 
     pub type TestEpochMap = DualEpochMap<String, DefaultTest>;
+
+    #[derive(Debug, Default, PartialEq, Clone)]
+    pub struct TestMeta {
+        pub rev: u32,
+        pub comment: String,
+    }
+
+    impl MetadataItem for TestMeta {
+        type UId = u32;
+
+        fn uid(&self) -> &Self::UId {
+            &self.rev
+        }
+
+        fn is_newer(&self, another: &Self) -> bool {
+            self.rev > another.rev
+        }
+    }
+
+    impl TestMeta {
+        pub fn new(rev: u32) -> Self {
+            Self {
+                rev,
+                comment: "new".to_owned(),
+            }
+        }
+    }
+
+    impl From<u32> for MetadataContext<TestMeta> {
+        fn from(val: u32) -> MetadataContext<TestMeta> {
+            TestMeta::new(val).into()
+        }
+    }
 }

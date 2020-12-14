@@ -140,10 +140,10 @@ check-clippy:	install-clippy
 
 
 build-all-test:
-	cargo build --tests --all-features
+	cargo build --lib --tests --all-features
 
 run-all-unit-test:
-	cargo test --all-features
+	cargo test --lib --all-features
 
 install_musl:
 	rustup target add ${TARGET_LINUX}

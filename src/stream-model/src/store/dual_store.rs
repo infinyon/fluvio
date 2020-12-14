@@ -195,6 +195,7 @@ pub struct SyncStatus {
     pub add: i32,
     pub update_spec: i32,
     pub update_status: i32,
+    pub update_meta: i32,
     pub delete: i32,
 }
 
@@ -220,7 +221,8 @@ where
     /// after sync operation, prior history will be removed and any subsequent
     /// change query will return full list instead of changes
     pub async fn sync_all(&self, incoming_changes: Vec<MetadataStoreObject<S, C>>) -> SyncStatus {
-        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) =
+            (0, 0, 0, 0, 0);
 
         let mut write_guard = self.write().await;
 
@@ -245,6 +247,9 @@ where
                 }
                 if diff.status {
                     update_status += 1;
+                }
+                if diff.meta {
+                    update_meta += 1;
                 }
             } else {
                 add += 1;
@@ -275,6 +280,7 @@ where
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
         };
 
@@ -284,12 +290,13 @@ where
         self.event_publisher.notify();
 
         debug!(
-            "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, del:{}], ",
+            "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, mod_meta: {}, del:{}], ",
             S::LABEL,
             epoch,
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
         );
         status
@@ -302,7 +309,8 @@ where
     /// which means this is idempotent operations.
     /// same add result in only 1 single epoch increase.
     pub async fn apply_changes(&self, changes: Vec<LSUpdate<S, C>>) -> Option<SyncStatus> {
-        let (mut add, mut update_spec, mut update_status, mut delete) = (0, 0, 0, 0);
+        let (mut add, mut update_spec, mut update_status, mut update_meta, mut delete) =
+            (0, 0, 0, 0, 0);
         let mut write_guard = self.write().await;
         write_guard.increment_epoch();
 
@@ -325,6 +333,9 @@ where
                         if diff.status {
                             update_status += 1;
                         }
+                        if diff.meta {
+                            update_meta += 1;
+                        }
                     } else {
                         // there was no existing, so this is new
                         add += 1;
@@ -338,7 +349,7 @@ where
         }
 
         // if there are no changes, we revert epoch
-        if add == 0 && update_spec == 0 && update_status == 0 && delete == 0 {
+        if add == 0 && update_spec == 0 && update_status == 0 && delete == 0 && update_meta == 0 {
             write_guard.decrement_epoch();
 
             debug!(
@@ -357,6 +368,7 @@ where
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
         };
 
@@ -367,11 +379,12 @@ where
         self.event_publisher.notify();
 
         debug!(
-            "Apply changes {} [add:{},mod_spec:{},mod_status: {},del:{},epoch: {}",
+            "Apply changes {} [add:{},mod_spec:{},mod_status: {},mod_update: {}, del:{},epoch: {}",
             S::LABEL,
             add,
             update_spec,
             update_status,
+            update_meta,
             delete,
             epoch,
         );
@@ -388,6 +401,7 @@ mod listener {
     use tracing::debug;
 
     use crate::store::event::EventPublisher;
+    use crate::store::{ChangeFlag, FULL_FILTER, SPEC_FILTER, STATUS_FILTER, META_FILTER};
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
@@ -484,50 +498,31 @@ mod listener {
 
         /// find all changes derived from this listener
         pub async fn sync_changes(&mut self) -> MetadataChanges<S, C> {
-            let read_guard = self.store.read().await;
-            let changes = read_guard.changes_since(self.last_change);
-            drop(read_guard);
-            trace!(
-                "finding changes: {}, from: {}",
-                self.last_change,
-                changes.epoch
-            );
-            let current_epoch = self.event_publisher().current_change();
-            if changes.epoch > current_epoch {
-                debug!(
-                    "latest epoch: {} > status epoch: {}",
-                    changes.epoch, current_epoch
-                );
-            }
-            self.set_last_change(changes.epoch);
-            changes
+            self.sync_changes_with_filter(&FULL_FILTER).await
         }
 
         /// find all spec related changes
         pub async fn sync_spec_changes(&mut self) -> MetadataChanges<S, C> {
-            let read_guard = self.store.read().await;
-            let changes = read_guard.spec_changes_since(self.last_change);
-            drop(read_guard);
-            trace!(
-                "finding last spec change: {}, from: {}",
-                self.last_change,
-                changes.epoch
-            );
-            let current_epoch = self.event_publisher().current_change();
-            if changes.epoch > current_epoch {
-                debug!(
-                    "latest epoch: {} > status epoch: {}",
-                    changes.epoch, current_epoch
-                );
-            }
-            self.set_last_change(changes.epoch);
-            changes
+            self.sync_changes_with_filter(&SPEC_FILTER).await
         }
 
         /// all status related changes
         pub async fn sync_status_changes(&mut self) -> MetadataChanges<S, C> {
+            self.sync_changes_with_filter(&STATUS_FILTER).await
+        }
+
+        /// all meta related changes
+        pub async fn sync_meta_changes(&mut self) -> MetadataChanges<S, C> {
+            self.sync_changes_with_filter(&META_FILTER).await
+        }
+
+        /// all meta related changes
+        pub async fn sync_changes_with_filter(
+            &mut self,
+            filter: &ChangeFlag,
+        ) -> MetadataChanges<S, C> {
             let read_guard = self.store.read().await;
-            let changes = read_guard.status_changes_since(self.last_change);
+            let changes = read_guard.changes_since_with_filter(self.last_change, filter);
             drop(read_guard);
             trace!(
                 "finding last status change: {}, from: {}",
@@ -554,11 +549,11 @@ mod test {
     use fluvio_future::test_async;
 
     use crate::store::actions::LSUpdate;
-    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest};
+    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest, TestMeta};
 
     use super::LocalStore;
 
-    type DefaultTestStore = LocalStore<TestSpec, u32>;
+    type DefaultTestStore = LocalStore<TestSpec, TestMeta>;
 
     #[test_async]
     async fn test_store_sync_all() -> Result<(), ()> {
@@ -601,32 +596,23 @@ mod test {
         let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
         assert_eq!(topic_store.epoch().await, 1);
 
-        // applying same data should result in change since version stays same
+        // applying same data should result in zero changes in the store
         assert!(topic_store
             .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
             .await
             .is_none());
+        assert_eq!(topic_store.epoch().await, 1);
 
-        // applying updated version with but same data result in no changes
-        let topic2 = DefaultTest::with_spec("t1", TestSpec::default()).with_context(3);
-        assert!(topic_store
-            .apply_changes(vec![LSUpdate::Mod(topic2)])
-            .await
-            .is_none());
-        assert_eq!(topic_store.epoch().await, 1); // still same epoch
-        let read_guard = topic_store.read().await;
-        let t = read_guard.get("t1").expect("t1");
-        assert_eq!(t.spec_epoch(), 1);
-        drop(read_guard);
-
-        let topic3 =
+        // update spec shold result in increase epoch
+        let topic2 =
             DefaultTest::new("t1", TestSpec::default(), TestStatus { up: true }).with_context(3);
         let changes = topic_store
-            .apply_changes(vec![LSUpdate::Mod(topic3)])
+            .apply_changes(vec![LSUpdate::Mod(topic2)])
             .await
             .expect("some changes");
         assert_eq!(changes.update_spec, 0);
         assert_eq!(changes.update_status, 1);
+        assert_eq!(topic_store.epoch().await, 2);
         Ok(())
     }
 }
@@ -647,11 +633,11 @@ mod test_notify {
 
     use crate::store::actions::LSUpdate;
     use crate::store::event::SimpleEvent;
-    use crate::test_fixture::{TestSpec, DefaultTest};
+    use crate::test_fixture::{TestSpec, DefaultTest, TestMeta};
 
     use super::LocalStore;
 
-    type DefaultTestStore = LocalStore<TestSpec, u32>;
+    type DefaultTestStore = LocalStore<TestSpec, TestMeta>;
 
     use super::ChangeListener;
 
@@ -699,7 +685,7 @@ mod test_notify {
             }
         }
 
-        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, u32>) {
+        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, TestMeta>) {
             debug!("sync start");
             let (update, _delete) = spec_listner.sync_spec_changes().await.parts();
             // assert!(update.len() > 0);
