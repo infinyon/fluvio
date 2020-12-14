@@ -5,7 +5,7 @@ use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
-use fluvio_future::fs::create_dir_all;
+use fluvio_future::fs::{ create_dir_all,remove_dir_all};
 use dataplane::{ErrorCode, Offset, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
@@ -47,16 +47,7 @@ impl ReplicaStorage for FileReplica {
     }
 }
 
-impl Drop for FileReplica {
-    fn drop(&mut self) {
-        use std::fs::remove_dir_all;
 
-        match remove_dir_all(&self.option.base_dir) {
-            Ok(_) => debug!("removed dir: {:#?}", self.option.base_dir),
-            Err(err) => error!("error: {} removing dir: {:#?}", err, self.option.base_dir),
-        }
-    }
-}
 
 impl FileReplica {
     pub const PREFER_MAX_LEN: u32 = 1000000; // 1MB as limit
@@ -121,6 +112,11 @@ impl FileReplica {
             prev_segments: segments,
             commit_checkpoint,
         })
+    }
+
+    pub async fn remove(&self) -> Result<(), StorageError> {
+       
+        remove_dir_all(&self.option.base_dir).await.map_err(|err| err.into())
     }
 
     /// update committed offset (high watermark)
@@ -653,16 +649,18 @@ mod tests {
 
     #[test_async]
     async fn test_replica_delete() -> Result<(), StorageError> {
-        let option = base_option("test_simple");
-        let replica = FileReplica::create("testd", 0, START_OFFSET, &option)
+        let option = base_option("test_delete");
+        let replica = FileReplica::create("testr", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
 
-        let test_file = option.base_dir.join("testd-0").join(TEST_SEG_NAME);
+        
+
+        let test_file = option.base_dir.join("testr-0").join(TEST_SEG_NAME);
 
         assert!(test_file.exists());
 
-        drop(replica);
+        replica.remove().await.expect("removed");
 
         assert!(!test_file.exists());
 

@@ -258,6 +258,7 @@ where
     pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
         sc_sink.send(self.as_lrs_request()).await
     }
+
 }
 
 impl LeaderReplicaState<FileReplica> {
@@ -279,6 +280,10 @@ impl LeaderReplicaState<FileReplica> {
             storage,
             leader.replicas,
         ))
+    }
+
+    pub async fn remove(self) -> Result<(),StorageError> {
+        self.storage.remove().await
     }
 
     /// sync specific follower

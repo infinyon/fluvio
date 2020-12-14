@@ -174,6 +174,7 @@ impl ReplicaLeadersState<FileReplica> {
             Ok(false)
         }
     }
+
 }
 
 #[cfg(test)]
