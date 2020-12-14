@@ -281,7 +281,7 @@ Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the
 
 #### Deleting partition
 
-In certain cases, partition may not be deleted correctly.  In this case, you can manually force to delete by:
+In certain cases, partition may not be deleted correctly.  In this case, you can manually force delete by:
 ```
 kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
 ```
