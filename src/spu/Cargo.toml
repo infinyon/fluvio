@@ -43,7 +43,7 @@ fluvio-types = { version = "0.2.0", path = "../types"  }
 fluvio-storage = { version = "0.2.0", path = "../storage" }
 fluvio-controlplane = { version = "0.3.0", path = "../controlplane"  }
 fluvio-controlplane-metadata = { version = "0.3.0", path = "../controlplane-metadata"  }
-fluvio-spu-schema = { version = "0.1.0", path = "../spu-schema"  }
+fluvio-spu-schema = { version = "0.2.0", path = "../spu-schema"  }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-socket = { version = "0.4.2" }
