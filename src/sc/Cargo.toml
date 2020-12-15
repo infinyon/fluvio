@@ -18,8 +18,10 @@ path = "src/bin/k8.rs"
 [features]
 default = ["k8"]
 k8 = ["k8-client"]
+platform = []
 
 [dependencies]
+cfg-if = "1.0.0"
 rand = "0.7.2"
 log = "0.4.0"
 tracing = "0.1.19"
