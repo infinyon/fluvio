@@ -43,7 +43,7 @@ prettytable-rs = { version = "0.8.0", optional = true }
 fluvio = { version = "0.3.0", path = "../client", default-features = false }
 fluvio-helm = "0.1.0"
 fluvio-future = { version = "0.1.0" }
-fluvio-runner-local = { version = "0.1.0", path = "../extension-runner-local", optional = true }
+fluvio-runner-local = { version = "0.2.0", path = "../extension-runner-local", optional = true }
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common", optional = true }
 fluvio-controlplane-metadata = { version = "0.3.0", path = "../controlplane-metadata", features = ["k8"] }
 flv-util = "0.5.2"
