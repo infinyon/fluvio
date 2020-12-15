@@ -1851,9 +1851,9 @@ checksum = "e0bd112d44d9d870a6819eb505d04dd92b5e4d94bb8c304924a0872ae7016fb5"
 
 [[package]]
 name = "indexmap"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55e2e4c765aa53a0424761bf9f41aa7a6ac1efa87238f59560640e27fca028f2"
+checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -1900,9 +1900,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "4.0.0"
+version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c38df652709cbf5c624096b3a876b0e2a63b87b18c3f32c131494e8716044749"
+checksum = "d3052ac3decef18f8a78adf0371e79140a6318ef93e9422986dc5d26b38913cc"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
