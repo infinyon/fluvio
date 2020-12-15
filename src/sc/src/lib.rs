@@ -16,9 +16,8 @@ cfg_if::cfg_if! {
         const VERSION: &str = include_str!("../../../VERSION");
     } else {
         const VERSION: &str = "UNDEFINED";
-    } 
+    }
 }
-
 
 pub mod dispatcher {
     pub use fluvio_stream_dispatcher::*;
