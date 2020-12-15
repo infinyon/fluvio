@@ -22,7 +22,7 @@ cli = [
     "color-eyre",
     "fluvio-extension-common/target",
     "prettytable-rs",
-    "fluvio-runner-local",
+    "fluvio-runner-local/platform",
 ]
 
 [dependencies]
