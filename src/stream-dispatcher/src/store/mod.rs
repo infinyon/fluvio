@@ -129,16 +129,15 @@ mod context {
                     loop {
                         if let Some(new_value) = self.store.value(&key).await {
                             if let Some(old_value) = &current_value {
-
                                 if new_value.is_newer(&old_value) {
                                     debug!("store: {}, object: {:#?}, updated", S::LABEL, key);
                                     return Ok(new_value.inner_owned());
                                 }
                             } else {
                                 debug!("store: {}, object: {:#?}, created", S::LABEL, key);
-                                    return Ok(new_value.inner_owned());
+                                return Ok(new_value.inner_owned());
                             }
-                        } 
+                        }
 
                         // check if total time expired
                         if instant.elapsed() > max_wait {
@@ -149,7 +148,6 @@ mod context {
                         } else {
                             debug!("store still doesn't exists: {}", key);
                         }
-                    
 
                         debug!("{} store, waiting for store event", S::LABEL);
 
