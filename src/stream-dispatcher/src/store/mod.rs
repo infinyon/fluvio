@@ -85,7 +85,7 @@ mod context {
     where
         S: Spec + PartialEq,
     {
-        /// wait for creation of new metadata
+        /// wait for creation/update of spec
         /// there is 5 second time out
         pub async fn create_spec(
             &self,
@@ -114,6 +114,9 @@ mod context {
             const POLL_TIME: u64 = 1;
 
             debug!("{}: sending WS action to store: {}", S::LABEL, key);
+
+            let current_value = self.store.value(&key).await;
+
             let action = WSAction::UpdateSpec((key.clone(), spec));
             let mut spec_listener = self.change_listener();
 
@@ -124,20 +127,29 @@ mod context {
                     let instant = Instant::now();
                     let max_wait = Duration::from_secs(*MAX_WAIT_TIME);
                     loop {
-                        if let Some(value) = self.store.value(&key).await {
-                            debug!("store: {}, object: {:#?}, created", S::LABEL, key);
-                            return Ok(value.inner_owned());
-                        } else {
-                            // check if total time expired
-                            if instant.elapsed() > max_wait {
-                                return Err(IoError::new(
-                                    ErrorKind::TimedOut,
-                                    format!("store timed out: {} for {:?}", S::LABEL, key),
-                                ));
+                        if let Some(new_value) = self.store.value(&key).await {
+                            if let Some(old_value) = &current_value {
+
+                                if new_value.is_newer(&old_value) {
+                                    debug!("store: {}, object: {:#?}, updated", S::LABEL, key);
+                                    return Ok(new_value.inner_owned());
+                                }
                             } else {
-                                debug!("store still doesn't exists: {}", key);
+                                debug!("store: {}, object: {:#?}, created", S::LABEL, key);
+                                    return Ok(new_value.inner_owned());
                             }
+                        } 
+
+                        // check if total time expired
+                        if instant.elapsed() > max_wait {
+                            return Err(IoError::new(
+                                ErrorKind::TimedOut,
+                                format!("store timed out: {} for {:?}", S::LABEL, key),
+                            ));
+                        } else {
+                            debug!("store still doesn't exists: {}", key);
                         }
+                    
 
                         debug!("{} store, waiting for store event", S::LABEL);
 
