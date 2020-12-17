@@ -25,7 +25,6 @@ use crate::start::k8::ClusterInstaller;
 use crate::start::check_and_fix;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
-const DEFAULT_CHART_LOCATION: &str = "./k8-util/helm";
 
 #[derive(Debug)]
 pub struct LocalClusterInstallerBuilder {
@@ -275,7 +274,6 @@ impl LocalClusterInstaller {
                 let result = (|| -> Result<_, ClusterError> {
                     let installer = ClusterInstaller::new()
                         .with_namespace(DEFAULT_NAMESPACE)
-                        .with_local_chart(DEFAULT_CHART_LOCATION)
                         .build()?;
                     installer._install_sys()?;
                     Ok(())
