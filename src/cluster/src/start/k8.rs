@@ -25,7 +25,7 @@ use k8_client::core::metadata::InputObjectMeta;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
 use crate::error::K8InstallError;
-use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, CheckStatus, ClusterChecker};
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
 
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -672,13 +672,17 @@ impl ClusterInstaller {
             // Check if env is ready for install and tries to fix anything it can
             false => {
                 let check_results = self.setup().await;
-                if check_results.0.iter().any(|it| it.is_err()) {
+                if check_results.iter().any(|it| it.is_err()) {
                     return Err(K8InstallError::PrecheckErrored(check_results).into());
                 }
 
-                let statuses = check_results.into_statuses();
+                let statuses: CheckStatuses = check_results
+                    .into_iter()
+                    .filter_map(|it| it.ok())
+                    .collect();
+
                 let mut any_failed = false;
-                for status in &statuses.0 {
+                for status in &statuses {
                     match status {
                         // If Fluvio is already installed, return the SC's address
                         CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {

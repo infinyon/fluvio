@@ -334,14 +334,17 @@ impl LocalClusterInstaller {
                 let check_results = self.setup().await;
 
                 // If any check results encountered an error, bubble the error
-                if check_results.0.iter().any(|it| it.is_err()) {
+                if check_results.iter().any(|it| it.is_err()) {
                     return Err(LocalInstallError::PrecheckErrored(check_results).into());
                 }
 
                 // If any checks successfully completed with a failure, return checks in status
-                let statuses = check_results.into_statuses();
+                let statuses: Vec<_> = check_results
+                    .into_iter()
+                    .filter_map(|it| it.ok())
+                    .collect();
+
                 let any_failed = statuses
-                    .0
                     .iter()
                     .any(|it| matches!(it, crate::CheckStatus::Fail(_)));
                 if any_failed {

@@ -6,6 +6,7 @@ use crate::cli::ClusterCliError;
 use crate::{LocalClusterInstaller, ClusterError, LocalInstallError, StartStatus};
 
 use super::StartOpt;
+use crate::cli::check::{render_check_statuses, render_statuses_next_steps, render_check_results, render_results_next_steps};
 
 /// Attempts to start a local Fluvio cluster
 ///
@@ -50,15 +51,15 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
         }
         // Successfully performed startup with pre-checks
         Ok(StartStatus {
-            checks: Some(check_results),
+            checks: Some(check_statuses),
             ..
         }) => {
-            check_results.render_checks();
+            render_check_statuses(&check_statuses);
         }
         // Aborted startup because pre-checks failed
-        Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_results))) => {
-            check_results.render_checks();
-            check_results.render_next_steps();
+        Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_statuses))) => {
+            render_check_statuses(&check_statuses);
+            render_statuses_next_steps(&check_statuses);
         }
         // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
@@ -69,8 +70,8 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
 
 pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {
     let installer = LocalClusterInstaller::new().build()?;
-    let results = installer.setup().await;
-    results.render_results();
-    results.render_next_steps();
+    let check_results = installer.setup().await;
+    render_check_results(&check_results);
+    render_results_next_steps(&check_results);
     Ok(())
 }

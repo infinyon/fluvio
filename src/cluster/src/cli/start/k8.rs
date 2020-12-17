@@ -8,6 +8,7 @@ use fluvio::config::TlsPolicy;
 use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
+use crate::cli::check::{render_check_statuses, render_statuses_next_steps, render_check_results, render_results_next_steps};
 
 pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
@@ -87,12 +88,12 @@ pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
             checks: Some(checks),
             ..
         }) => {
-            checks.render_checks();
+            render_check_statuses(&checks);
         }
         // Aborted startup because pre-checks failed
         Err(ClusterError::InstallK8(K8InstallError::FailedPrecheck(check_statuses))) => {
-            check_statuses.render_checks();
-            check_statuses.render_next_steps();
+            render_check_statuses(&check_statuses);
+            render_statuses_next_steps(&check_statuses);
         }
         // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
@@ -137,8 +138,8 @@ pub async fn run_setup(opt: StartOpt) -> Result<(), ClusterCliError> {
 
     let installer = builder.build()?;
     println!("Performing pre-startup checks...");
-    let results = installer.setup().await;
-    results.render_results();
-    results.render_next_steps();
+    let check_results = installer.setup().await;
+    render_check_results(&check_results);
+    render_results_next_steps(&check_results);
     Ok(())
 }

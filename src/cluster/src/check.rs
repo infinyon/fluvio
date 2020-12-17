@@ -33,28 +33,29 @@ const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 pub type CheckResult = std::result::Result<CheckStatus, CheckError>;
 
 /// A collection of the successes, failures, and errors of running checks
-#[derive(Debug)]
-pub struct CheckResults(pub(crate) Vec<CheckResult>);
+// #[derive(Debug)]
+// pub struct CheckResults(pub(crate) Vec<CheckResult>);
+pub type CheckResults = Vec<CheckResult>;
 
-impl From<Vec<CheckResult>> for CheckResults {
-    fn from(it: Vec<CheckResult>) -> Self {
-        Self(it)
-    }
-}
+// impl From<Vec<CheckResult>> for CheckResults {
+//     fn from(it: Vec<CheckResult>) -> Self {
+//         Self(it)
+//     }
+// }
 
-impl CheckResults {
-    pub fn into_statuses(self) -> CheckStatuses {
-        let statuses: Vec<_> = self
-            .0
-            .into_iter()
-            .filter_map(|it| match it {
-                Ok(status) => Some(status),
-                Err(_) => None,
-            })
-            .collect();
-        CheckStatuses::from(statuses)
-    }
-}
+// impl CheckResults {
+//     pub fn into_statuses(self) -> CheckStatuses {
+//         let statuses: Vec<_> = self
+//             .0
+//             .into_iter()
+//             .filter_map(|it| match it {
+//                 Ok(status) => Some(status),
+//                 Err(_) => None,
+//             })
+//             .collect();
+//         CheckStatuses::from(statuses)
+//     }
+// }
 
 /// An error occurred during the checking process
 ///
@@ -109,14 +110,15 @@ pub trait CheckSuggestion {
 }
 
 /// A collection of the successes, failures, and errors of running checks
-#[derive(Debug)]
-pub struct CheckStatuses(pub(crate) Vec<CheckStatus>);
+// #[derive(Debug)]
+// pub struct CheckStatuses(pub(crate) Vec<CheckStatus>);
+pub type CheckStatuses = Vec<CheckStatus>;
 
-impl From<Vec<CheckStatus>> for CheckStatuses {
-    fn from(it: Vec<CheckStatus>) -> Self {
-        Self(it)
-    }
-}
+// impl From<Vec<CheckStatus>> for CheckStatuses {
+//     fn from(it: Vec<CheckStatus>) -> Self {
+//         Self(it)
+//     }
+// }
 
 /// When a check completes without error, it either passes or fails
 #[derive(Debug)]
