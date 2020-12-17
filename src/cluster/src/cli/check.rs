@@ -13,9 +13,17 @@ impl CheckOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
-        let check_results = ClusterChecker::run_preflight_checks().await;
-        check_results.render_results();
-        check_results.render_next_steps();
+        let progress = ClusterChecker::empty()
+            .with_preflight_checks()
+            .run_with_progress();
+
+        let mut results = vec![];
+        while let Ok(check_result) = progress.recv().await {
+            CheckResults::render_result(&check_result);
+            results.push(check_result);
+        }
+
+        CheckResults::from(results).render_next_steps();
         Ok(())
     }
 }

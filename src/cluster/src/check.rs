@@ -1,19 +1,24 @@
 use std::io::Error as IoError;
+use std::fmt::Debug;
 use std::time::Duration;
 use std::process::{Command};
+use std::future::Future;
 
+use tracing::warn;
 use async_trait::async_trait;
+use async_channel::Receiver;
 use url::{Url, ParseError};
-
-use fluvio_future::timer::sleep;
 use semver::Version;
 use serde_json::Error as JsonError;
+
+use fluvio_future::timer::sleep;
+use fluvio_future::task::spawn;
+use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
 use k8_client::load_and_share;
 use k8_client::core::metadata::InputObjectMeta;
 use k8_client::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
-use fluvio_helm::{HelmClient, HelmError};
 
 use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
 
@@ -266,110 +271,144 @@ impl CheckSuggestion for UnrecoverableCheck {
 }
 
 #[async_trait]
-pub(crate) trait InstallCheck: Send + Sync + 'static {
+pub trait ClusterCheck: Debug + Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
     async fn perform_check(&self) -> CheckResult;
 }
 
+#[derive(Debug)]
 pub(crate) struct LoadableConfig;
 
 #[async_trait]
-impl InstallCheck for LoadableConfig {
+impl ClusterCheck for LoadableConfig {
     async fn perform_check(&self) -> CheckResult {
         check_cluster_connection()
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct K8Version;
 
 #[async_trait]
-impl InstallCheck for K8Version {
+impl ClusterCheck for K8Version {
     async fn perform_check(&self) -> CheckResult {
         k8_version_check()
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct HelmVersion;
 
 #[async_trait]
-impl InstallCheck for HelmVersion {
+impl ClusterCheck for HelmVersion {
     async fn perform_check(&self) -> CheckResult {
         let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
         check_helm_version(&helm_client, DEFAULT_HELM_VERSION)
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct SysChart;
 
 #[async_trait]
-impl InstallCheck for SysChart {
+impl ClusterCheck for SysChart {
     async fn perform_check(&self) -> CheckResult {
         let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
         check_system_chart(&helm_client, DEFAULT_CHART_SYS_REPO)
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct AlreadyInstalled;
 
 #[async_trait]
-impl InstallCheck for AlreadyInstalled {
+impl ClusterCheck for AlreadyInstalled {
     async fn perform_check(&self) -> CheckResult {
         let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
         check_already_installed(&helm_client, DEFAULT_CHART_APP_REPO)
     }
 }
 
+#[derive(Debug)]
 struct CreateServicePermission;
 
 #[async_trait]
-impl InstallCheck for CreateServicePermission {
+impl ClusterCheck for CreateServicePermission {
     async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_SERVICE)
     }
 }
 
+#[derive(Debug)]
 struct CreateCrdPermission;
 
 #[async_trait]
-impl InstallCheck for CreateCrdPermission {
+impl ClusterCheck for CreateCrdPermission {
     async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_CRD)
     }
 }
 
+#[derive(Debug)]
 struct CreateServiceAccountPermission;
 
 #[async_trait]
-impl InstallCheck for CreateServiceAccountPermission {
+impl ClusterCheck for CreateServiceAccountPermission {
     async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_SERVICE_ACCOUNT)
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct LoadBalancer;
 
 #[async_trait]
-impl InstallCheck for LoadBalancer {
+impl ClusterCheck for LoadBalancer {
     async fn perform_check(&self) -> CheckResult {
         check_load_balancer_status().await
     }
 }
 
-/// Client to manage cluster check operations
+/// Manages all cluster check operations
+///
+/// A `ClusterChecker` can be configured with different sets of checks to run.
+/// It can wait for all checks to run sequentially using [`run`], or spawn a
+/// task and receive progress updates about checks using [`run_with_progress`].
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct ClusterChecker {}
+pub struct ClusterChecker {
+    checks: Vec<Box<dyn ClusterCheck>>,
+}
 
 impl ClusterChecker {
-    /// Runs all the checks that are needed for fluvio cluster startup
+    /// Creates an empty checker with no checks to be run.
+    ///
+    /// Be sure to use methods like [`with_check`] to add checks before
+    /// calling [`run`] or [`run_with_progress`] or they will do nothing.
+    ///
     /// # Example
-    /// ```no_run
-    /// use fluvio_cluster::ClusterChecker;
-    /// ClusterChecker::run_preflight_checks();
+    ///
     /// ```
-    pub async fn run_preflight_checks() -> CheckResults {
-        // List of checks
-        let checks: Vec<Box<dyn InstallCheck>> = vec![
+    /// # use fluvio_cluster::ClusterChecker;
+    /// let checker: ClusterChecker = ClusterChecker::empty();
+    /// ```
+    pub fn empty() -> Self {
+        ClusterChecker {
+            checks: vec![],
+        }
+    }
+
+    /// Adds a check to this `ClusterChecker`
+    pub fn with_check(mut self, check: Box<dyn ClusterCheck>) -> Self {
+        self.checks.push(check);
+        self
+    }
+
+    /// Adds all preflight checks to this checker.
+    ///
+    /// Note that no checks are run until [`run`] or [`run_with_progress`].
+    pub fn with_preflight_checks(mut self) -> Self {
+        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
             Box::new(K8Version),
             Box::new(HelmVersion),
@@ -379,17 +418,234 @@ impl ClusterChecker {
             Box::new(CreateServiceAccountPermission),
             Box::new(LoadBalancer),
         ];
+        self.checks.extend(checks);
+        self
+    }
 
-        // Collect results from running checks
-        let mut results = vec![];
+    /// Adds all checks required for starting a cluster on minikube.
+    ///
+    /// Note that no checks are run until [`run`] or [`run_with_progress`].
+    pub fn with_minikube_checks(mut self) -> Self {
+        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
+            Box::new(LoadableConfig),
+            Box::new(HelmVersion),
+            Box::new(SysChart),
+            Box::new(AlreadyInstalled),
+            Box::new(LoadBalancer),
+        ];
+        self.checks.extend(checks);
+        self
+    }
 
-        for check in checks {
+    /// Adds all checks required for starting a local cluster.
+    ///
+    /// Note that no checks are run until [`run`] or [`run_with_progress`].
+    pub fn with_local_checks(mut self) -> Self {
+        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
+            Box::new(HelmVersion),
+            Box::new(K8Version),
+            Box::new(LoadableConfig),
+            Box::new(SysChart),
+        ];
+        self.checks.extend(checks);
+        self
+    }
+
+    /// Performs all checks sequentially and returns the results when done.
+    ///
+    /// This may appear to "hang" if there are many checks. In order to see
+    /// fine-grained progress about ongoing checks, use [`run_with_progress`]
+    /// instead.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterChecker;
+    /// # async fn do_run() {
+    /// let check_results: CheckResults = ClusterChecker::empty()
+    ///     .with_preflight_checks()
+    ///     .run()
+    ///     .await;
+    /// # }
+    /// ```
+    pub async fn run(&self) -> CheckResults {
+        let mut check_results = vec![];
+        for check in &self.checks {
+            let result = check.perform_check().await;
+            check_results.push(result);
+        }
+        CheckResults::from(check_results)
+    }
+
+    /// Performs all checks sequentially, attempting to fix any problems along the way.
+    ///
+    /// This may appear to "hang" if there are many checks, or if fixes take a long time.
+    pub async fn run_and_fix<F, R>(&self, fix: F) -> CheckResults
+    where
+        F: Fn(RecoverableCheck) -> R,
+        R: Future<Output = Result<(), UnrecoverableCheck>>,
+    {
+        // We want to collect all of the results of the checks
+        let mut results: Vec<CheckResult> = vec![];
+
+        for check in &self.checks {
+            // Perform one individual check
             let check_result = check.perform_check().await;
-            results.push(check_result);
+            match check_result {
+                // If the check passed, add it to the results list
+                it @ Ok(CheckStatus::Pass(_)) => results.push(it),
+                // If the check failed but is potentially auto-recoverable, try to recover it
+                Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(it))) => {
+                    let err = format!("{}", it);
+                    let fix_result = fix(it).await;
+                    match fix_result {
+                        // If the fix worked, return a passed check
+                        Ok(_) => results.push(Ok(CheckStatus::pass(format!("Fixed: {}", err)))),
+                        Err(e) => {
+                            // If the fix failed, wrap the original failed check in Unrecoverable
+                            results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e))));
+                            // We return upon the first check failure
+                            return CheckResults::from(results);
+                        }
+                    }
+                }
+                it @ Ok(CheckStatus::Fail(_)) => {
+                    results.push(it);
+                    return CheckResults::from(results);
+                }
+                it @ Err(_) => {
+                    results.push(it);
+                    return CheckResults::from(results);
+                }
+            }
         }
 
         CheckResults::from(results)
     }
+
+    /// Performs all checks in an async task, returning the results via a channel.
+    ///
+    /// This function will return immediately with a channel which will yield progress
+    /// updates about checks as they are run.
+    ///
+    /// If you want to run the checks as a single batch and receive all of the results
+    /// at once, use [`run`] instead.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterChecker;
+    /// # async fn do_run_with_progress() {
+    /// use async_channel::Receiver;
+    /// let progress: Receiver<CheckResult> = ClusterChecker::empty()
+    ///     .with_preflight_checks()
+    ///     .run_with_progress();
+    /// while let Ok(check_result) = progress.recv().await {
+    ///     println!("Got check result: {:?}", check_result);
+    /// }
+    /// # }
+    /// ```
+    pub fn run_with_progress(self) -> Receiver<CheckResult> {
+        let (sender, receiver) = async_channel::bounded(100);
+        spawn(async move {
+            for check in self.checks {
+                let check_result = check.perform_check().await;
+
+                // Nothing we can do if channel fails
+                let progress_result = sender.send(check_result).await;
+
+                // If channel fails, the best we can do is log it
+                if let Err(error) = progress_result {
+                    warn!(%error, "Failed to send check progress update to client:");
+                }
+            }
+        });
+        receiver
+    }
+
+    /// Performs all checks in an async task and attempts to fix anything it can.
+    ///
+    /// This function will return immediately with a channel which will yield
+    /// progress updates about checks and fixes as they run.
+    ///
+    /// If you want to run checks and fixes as a single batch and receive all of
+    /// the results at once, use [`run`] instead.
+    pub fn run_and_fix_with_progress<F, R>(self, fix: F) -> Receiver<CheckResult>
+    where
+        F: Fn(RecoverableCheck) -> R + Send + Sync + 'static,
+        R: Future<Output = Result<(), UnrecoverableCheck>> + Send + Sync,
+    {
+        let (sender, receiver) = async_channel::bounded(100);
+        spawn(async move {
+
+            for check in &self.checks {
+                // Perform one individual check
+                let check_result = check.perform_check().await;
+                let send_result = match check_result {
+                    // If the check passed, add it to the results list
+                    it @ Ok(CheckStatus::Pass(_)) => sender.send(it).await,
+                    // If the check failed but is potentially auto-recoverable, try to recover it
+                    Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(it))) => {
+                        let err = format!("{}", it);
+                        let fix_result = fix(it).await;
+                        match fix_result {
+                            // If the fix worked, return a passed check
+                            Ok(_) => sender.send(Ok(CheckStatus::pass(format!("Fixed: {}", err)))).await,
+                            Err(e) => {
+                                // If the fix failed, wrap the original failed check in Unrecoverable
+                                sender.send(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e)))).await
+                                // We return upon the first check failure
+                                // return CheckResults::from(results);
+                            }
+                        }
+                    }
+                    it @ Ok(CheckStatus::Fail(_)) => {
+                        let _ = sender.send(it).await;
+                        return;
+                    }
+                    it @ Err(_) => {
+                        let _ = sender.send(it).await;
+                        return;
+                    }
+                };
+
+                if let Err(e) = send_result {
+                    warn!("Failed to send check progress update: {:?}", e);
+                }
+            }
+        });
+        receiver
+    }
+
+    // /// Runs all the checks that are needed for fluvio cluster startup
+    // /// # Example
+    // /// ```no_run
+    // /// use fluvio_cluster::ClusterChecker;
+    // /// ClusterChecker::run_preflight_checks();
+    // /// ```
+    // pub async fn run_preflight_checks() -> CheckResults {
+    //     // List of checks
+    //     let checks: Vec<Box<dyn InstallCheck>> = vec![
+    //         Box::new(LoadableConfig),
+    //         Box::new(K8Version),
+    //         Box::new(HelmVersion),
+    //         Box::new(SysChart),
+    //         Box::new(CreateServicePermission),
+    //         Box::new(CreateCrdPermission),
+    //         Box::new(CreateServiceAccountPermission),
+    //         Box::new(LoadBalancer),
+    //     ];
+    //
+    //     // Collect results from running checks
+    //     let mut results = vec![];
+    //
+    //     for check in checks {
+    //         let check_result = check.perform_check().await;
+    //         results.push(check_result);
+    //     }
+    //
+    //     CheckResults::from(results)
+    // }
 }
 
 /// Checks that the installed helm version is compatible with the installer requirements

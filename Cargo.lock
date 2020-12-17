@@ -971,6 +971,7 @@ dependencies = [
 name = "fluvio-cluster"
 version = "0.4.2"
 dependencies = [
+ "async-channel",
  "async-trait",
  "color-eyre",
  "colored",
