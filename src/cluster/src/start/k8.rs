@@ -32,26 +32,16 @@ use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
     CheckStatus,
 };
-use crate::start::check_and_fix;
+use crate::start::{check_and_fix, ChartLocation, DEFAULT_CHART_REMOTE};
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
-const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DELAY: u64 = 3000;
-
-/// Distinguishes between a Local and Remote helm chart
-#[derive(Debug)]
-enum ChartLocation {
-    /// Local charts must be located at a valid filesystem path.
-    Local(PathBuf),
-    /// Remote charts will be located at a URL such as `https://...`
-    Remote(String),
-}
 
 /// A builder for cluster startup options
 #[derive(Debug)]
@@ -753,9 +743,6 @@ impl ClusterInstaller {
     }
 
     /// Install the Fluvio System chart on the configured cluster
-    // TODO: Try to make install_sys a subroutine of install_fluvio
-    // TODO: by performing checks before installation.
-    // TODO: Discussion at https://github.com/infinyon/fluvio/issues/235
     #[doc(hidden)]
     #[instrument(skip(self))]
     pub fn _install_sys(&self) -> Result<(), K8InstallError> {
