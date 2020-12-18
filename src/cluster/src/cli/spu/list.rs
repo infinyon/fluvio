@@ -19,10 +19,7 @@ use crate::cli::spu::display::format_spu_response_output;
 
 #[derive(Debug, StructOpt)]
 pub struct ListSpusOpt {
-    /// Whether to list managed SPUs
-    #[structopt(long)]
-    managed: bool,
-    /// Whether to list custom SPUs
+    /// Whether to list only custom SPUs
     #[structopt(long)]
     custom: bool,
     /// The output format to print the SPUs
@@ -39,32 +36,22 @@ impl ListSpusOpt {
     ) -> Result<(), ClusterCliError> {
         let mut admin = fluvio.admin().await;
 
-        let (managed, custom) = match (self.managed, self.custom) {
-            // If neither --managed nor --custom is given, list both
-            (false, false) => (true, true),
-            // Otherwise, list the SPUs for whichever flags are given
-            other => other,
-        };
-
-        let mut spus = vec![];
-
-        if managed {
-            let managed_spus = admin.list::<SpuSpec, _>(vec![]).await?;
-            spus.extend(managed_spus);
-        }
-
-        if custom {
-            let custom_spus = admin.list::<CustomSpuSpec, _>(vec![]).await?;
-            let custom_spus: Vec<Metadata<SpuSpec>> = custom_spus
+        let spus = if self.custom {
+            // List custom SPUs only
+            admin
+                .list::<CustomSpuSpec, _>(vec![])
+                .await?
                 .into_iter()
                 .map(|custom_spu| Metadata {
                     name: custom_spu.name,
                     spec: custom_spu.spec.into(),
                     status: custom_spu.status,
                 })
-                .collect();
-            spus.extend(custom_spus);
-        }
+                .collect()
+        } else {
+            // List all SPUs
+            admin.list::<SpuSpec, _>(vec![]).await?
+        };
 
         // format and dump to screen
         format_spu_response_output(out, spus, self.output.format)?;
