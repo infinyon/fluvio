@@ -16,6 +16,16 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
         .with_log_dir(opt.log_dir.to_string())
         .with_spu_replicas(opt.spu);
 
+    match opt.k8_config.chart_location {
+        Some(chart_location) => {
+            builder = builder.with_local_chart(chart_location);
+        }
+        None if opt.develop => {
+            builder = builder.with_local_chart("./k8-util/helm");
+        }
+        _ => (),
+    }
+
     if let Some(rust_log) = opt.rust_log {
         builder = builder.with_rust_log(rust_log);
     }
@@ -24,6 +34,7 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
         let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
         builder = builder.with_tls(client, server);
     }
+
     if opt.skip_checks {
         builder = builder.with_skip_checks(true);
     }

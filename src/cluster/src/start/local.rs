@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::borrow::Cow;
 use std::fs::{File, create_dir_all};
 use std::process::{Command, Stdio};
@@ -22,7 +22,7 @@ use crate::check::{
     InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults, K8Version, LoadableConfig,
 };
 use crate::start::k8::ClusterInstaller;
-use crate::start::check_and_fix;
+use crate::start::{check_and_fix, ChartLocation, DEFAULT_CHART_REMOTE};
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 
@@ -38,6 +38,8 @@ pub struct LocalClusterInstallerBuilder {
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
     client_tls_policy: TlsPolicy,
+    /// The location to find the fluvio charts
+    chart_location: ChartLocation,
     /// install system charts automatically
     install_sys: bool,
     /// Should the pre install checks be skipped
@@ -176,6 +178,7 @@ impl LocalClusterInstallerBuilder {
         self.server_tls_policy = server_policy;
         self
     }
+
     /// Whether to install the `fluvio-sys` chart in the full installation. Defaults to `true`.
     ///
     /// # Example
@@ -193,6 +196,33 @@ impl LocalClusterInstallerBuilder {
         self.install_sys = install_sys;
         self
     }
+
+    /// Sets a local helm chart location to search for Fluvio charts.
+    ///
+    /// This is often desirable when developing for Fluvio locally and making
+    /// edits to the chart. When using this option, the argument is expected to be
+    /// a local filesystem path. The path given is expected to be the parent directory
+    /// of both the `fluvio-app` and `fluvio-sys` charts.
+    ///
+    /// This option is mutually exclusive from [`with_remote_chart`]; if both are used,
+    /// the latest one defined is the one that's used.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_local_chart("./k8-util/helm")
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    ///
+    /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
+    pub fn with_local_chart<S: Into<PathBuf>>(mut self, local_chart_location: S) -> Self {
+        self.chart_location = ChartLocation::Local(local_chart_location.into());
+        self
+    }
+
     /// Whether to skip pre-install checks before installation. Defaults to `false`.
     ///
     /// # Example
@@ -241,6 +271,7 @@ impl LocalClusterInstaller {
             log_dir: "/tmp".to_string(),
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
+            chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
             install_sys: true,
             skip_checks: false,
         }
@@ -272,9 +303,13 @@ impl LocalClusterInstaller {
 
                 // Use closure to catch any errors
                 let result = (|| -> Result<_, ClusterError> {
-                    let installer = ClusterInstaller::new()
-                        .with_namespace(DEFAULT_NAMESPACE)
-                        .build()?;
+                    let mut builder = ClusterInstaller::new().with_namespace(DEFAULT_NAMESPACE);
+
+                    if let ChartLocation::Local(chart) = &self.config.chart_location {
+                        builder = builder.with_local_chart(chart);
+                    }
+
+                    let installer = builder.build()?;
                     installer._install_sys()?;
                     Ok(())
                 })();

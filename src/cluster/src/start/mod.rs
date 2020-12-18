@@ -1,8 +1,20 @@
+use std::path::PathBuf;
 use std::future::Future;
 pub mod k8;
 pub mod local;
 use crate::check::{InstallCheck, CheckFailed, RecoverableCheck, CheckResults, CheckResult};
 use crate::{UnrecoverableCheck, CheckStatus};
+
+const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
+
+/// Distinguishes between a Local and Remote helm chart
+#[derive(Debug)]
+pub enum ChartLocation {
+    /// Local charts must be located at a valid filesystem path.
+    Local(PathBuf),
+    /// Remote charts will be located at a URL such as `https://...`
+    Remote(String),
+}
 
 /// Runs all of the given checks and attempts to fix any errors
 ///
