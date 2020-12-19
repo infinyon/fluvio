@@ -189,9 +189,9 @@ async fn process_topic_request<AC: AuthContext>(
         let _ = partition_listener.sync_status_changes().await;
 
         let mut provisioned_count = 0;
-        // find all
+
         let read_guard = partition_ctx.store().read().await;
-        // find partition name
+        // find partitions owned by topic which are online
         for partition in read_guard.values() {
             if partition.is_owned(topic_uid) && partition.status.is_online() {
                 provisioned_count += 1;
@@ -209,11 +209,11 @@ async fn process_topic_request<AC: AuthContext>(
 
         select! {
             _ = &mut timer  => {
-                debug!("timer expired waiting for topic creation: {}",name);
+                debug!("timer expired waiting for topic: {} provisioning",name);
                 return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("{} not provisioned",provisioned_count)));
             },
             _ = partition_listener.listen() => {
-                debug!("received partition updated");
+                debug!("partition changed");
             }
         }
     }
