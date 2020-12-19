@@ -17,8 +17,6 @@ impl TestRunner {
     }
 
     async fn setup_topic(&self) {
-        use fluvio::{Fluvio};
-
         // create topics per replication
         let replication = self.option.replication();
 
@@ -35,49 +33,6 @@ impl TestRunner {
                 .rust_log(self.option.client_log.as_deref())
                 .wait_and_check();
         }
-
-        // wait until all partitions are provisioned
-        let client = Fluvio::connect().await.expect("should connect");
-        let mut admin = client.admin().await;
-
-        for _ in 0..60u16 {
-            use fluvio_controlplane_metadata::partition::PartitionSpec;
-
-            let partitions = admin
-                .list::<PartitionSpec, _>(vec![])
-                .await
-                .expect("get partitions status");
-
-            let live_partitions = partitions
-                .iter()
-                .filter(|par| par.status.is_online())
-                .count();
-
-            if live_partitions != replication as usize {
-                println!(
-                    "partition {} of out of {} is ready, sleeping",
-                    live_partitions, replication
-                );
-                sleep(Duration::from_secs(1)).await;
-            } else {
-                println!("all {} partitions are live", live_partitions);
-                break;
-            }
-        }
-
-        // print topic and partition status
-
-        get_fluvio()
-            .expect("fluvio not founded")
-            .arg("topic")
-            .arg("list")
-            .wait_and_check();
-
-        get_fluvio()
-            .expect("fluvio not founded")
-            .arg("partition")
-            .arg("list")
-            .wait_and_check();
     }
 
     /// main entry point
@@ -93,8 +48,6 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
-
-            sleep(Duration::from_secs(1)).await;
         } else {
             println!("no topic initialized");
         }

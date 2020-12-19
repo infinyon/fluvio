@@ -39,6 +39,7 @@ pub enum ErrorCode {
     TopicAlreadyExists = 2002,
     TopicPendingInitialization = 2003,
     TopicInvalidConfiguration = 2004,
+    TopicNotProvisioned = 2005,
 
     // Partition errors
     PartitionPendingInitialization = 3000,

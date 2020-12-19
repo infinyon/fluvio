@@ -207,6 +207,7 @@ impl ClusterUninstaller {
         self.remove_secrets("fluvio-tls")?;
 
         self.remove_partitions(ns).await?;
+        self.remove_objects("partitions", ns, None)?;
 
         Ok(())
     }
