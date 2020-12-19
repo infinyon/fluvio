@@ -151,7 +151,7 @@ async fn process_topic_request<AC: AuthContext>(
         use std::env;
 
         let var_value = env::var("FLV_TOPIC_WAIT").unwrap_or_default();
-        let wait_time: u64 = var_value.parse().unwrap_or(60);
+        let wait_time: u64 = var_value.parse().unwrap_or(90);
         wait_time
     });
 
