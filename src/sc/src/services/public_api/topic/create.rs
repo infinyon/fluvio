@@ -136,7 +136,8 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
     }
 }
 
-/// Process topic, converts topic spec to K8 and sends to KV store
+/// create new topic and wait until all partitions are fully provisioned
+/// if any partitions are not provisioned in time, this will generate error
 async fn process_topic_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
     name: String,
@@ -210,7 +211,7 @@ async fn process_topic_request<AC: AuthContext>(
         select! {
             _ = &mut timer  => {
                 debug!("timer expired waiting for topic: {} provisioning",name);
-                return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("{} not provisioned",provisioned_count)));
+                return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("only {} out of {} provisioned",provisioned_count,partition_count)));
             },
             _ = partition_listener.listen() => {
                 debug!("partition changed");
