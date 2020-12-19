@@ -140,25 +140,68 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 async fn process_topic_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
     name: String,
-    topic_spec: TopicSpec,
-) -> Status {
-    if let Err(err) = create_topic(auth_ctx, name.clone(), topic_spec).await {
-        let error = Some(err.to_string());
-        Status::new(name, ErrorCode::TopicError, error)
-    } else {
-        Status::new_ok(name)
-    }
-}
+    topic_spec: TopicSpec) -> Status 
+{
 
-async fn create_topic<AC: AuthContext>(
-    auth_ctx: &AuthServiceContext<AC>,
-    name: String,
-    topic: TopicSpec,
-) -> Result<(), IoError> {
-    auth_ctx
+    use std::time::Duration;
+    use once_cell::sync::Lazy;
+    use tokio::select;
+    use fluvio_future::timer::sleep;
+
+    static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
+        use std::env;
+
+        let var_value = env::var("FLV_TOPIC_WAIT").unwrap_or_default();
+        let wait_time: u64 = var_value.parse().unwrap_or(10);
+        wait_time
+    });
+    
+
+    let topic_instance = match auth_ctx
         .global_ctx
         .topics()
-        .create_spec(name, topic)
-        .await
-        .map(|_| ())
+        .create_spec(name.clone(), topic_spec)
+        .await {
+            Ok(instance) => instance,
+            Err(err) => return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("error: {}",err))) 
+    };
+
+    let partition_count = topic_instance.spec.partitions().expect("partition count should never be 0");
+    let topic_uid = &topic_instance.ctx().item().uid;
+
+
+    let partition_ctx = auth_ctx.global_ctx.partitions();
+    let mut partition_listener = partition_ctx.change_listener();
+    let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME)); 
+
+    loop {
+        
+        // find all 
+        let mut provisioned_count = 0;
+        let read_guard = partition_ctx.store().read().await;
+        // find partition name
+        for partition in  read_guard.values() {
+
+            if partition.is_owned(topic_uid) && partition.status.is_online() {
+                provisioned_count += 1;
+                if provisioned_count == partition_count {
+                    return Status::new_ok(name)
+                }
+            }
+        }
+        drop(read_guard);
+
+
+        select! {
+            _ = &mut timer  => {
+                debug!("timer expired waiting for topic creation: {}",name);
+                return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("{} not provisioned",provisioned_count)));
+            },
+            _ = partition_listener.listen() => {
+                debug!("received partition updated");
+            }
+        }
+    }
+
+    
 }

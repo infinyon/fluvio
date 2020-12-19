@@ -1197,7 +1197,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "async-channel",
  "async-lock 1.1.5",
@@ -1224,6 +1224,7 @@ dependencies = [
  "k8-client",
  "k8-metadata-client",
  "log",
+ "once_cell",
  "rand 0.7.3",
  "regex",
  "semver 0.11.0",
