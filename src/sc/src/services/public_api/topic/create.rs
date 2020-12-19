@@ -140,9 +140,8 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 async fn process_topic_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
     name: String,
-    topic_spec: TopicSpec) -> Status 
-{
-
+    topic_spec: TopicSpec,
+) -> Status {
     use std::time::Duration;
     use once_cell::sync::Lazy;
     use tokio::select;
@@ -152,45 +151,61 @@ async fn process_topic_request<AC: AuthContext>(
         use std::env;
 
         let var_value = env::var("FLV_TOPIC_WAIT").unwrap_or_default();
-        let wait_time: u64 = var_value.parse().unwrap_or(10);
+        let wait_time: u64 = var_value.parse().unwrap_or(60);
         wait_time
     });
-    
 
     let topic_instance = match auth_ctx
         .global_ctx
         .topics()
         .create_spec(name.clone(), topic_spec)
-        .await {
-            Ok(instance) => instance,
-            Err(err) => return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("error: {}",err))) 
+        .await
+    {
+        Ok(instance) => instance,
+        Err(err) => {
+            return Status::new(
+                name,
+                ErrorCode::TopicNotProvisioned,
+                Some(format!("error: {}", err)),
+            )
+        }
     };
 
-    let partition_count = topic_instance.spec.partitions().expect("partition count should never be 0");
+    let partition_count = topic_instance
+        .spec
+        .partitions()
+        .expect("partition count should never be 0");
+    debug!(
+        "waiting for {} partitions to be provisioned",
+        partition_count
+    );
     let topic_uid = &topic_instance.ctx().item().uid;
-
 
     let partition_ctx = auth_ctx.global_ctx.partitions();
     let mut partition_listener = partition_ctx.change_listener();
-    let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME)); 
+    let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME));
 
     loop {
-        
-        // find all 
+        let _ = partition_listener.sync_status_changes().await;
+
         let mut provisioned_count = 0;
+        // find all
         let read_guard = partition_ctx.store().read().await;
         // find partition name
-        for partition in  read_guard.values() {
-
+        for partition in read_guard.values() {
             if partition.is_owned(topic_uid) && partition.status.is_online() {
                 provisioned_count += 1;
+                trace!(
+                    "partition: {} online, total: {}",
+                    partition.key(),
+                    provisioned_count
+                );
                 if provisioned_count == partition_count {
-                    return Status::new_ok(name)
+                    return Status::new_ok(name);
                 }
             }
         }
         drop(read_guard);
-
 
         select! {
             _ = &mut timer  => {
@@ -202,6 +217,4 @@ async fn process_topic_request<AC: AuthContext>(
             }
         }
     }
-
-    
 }
