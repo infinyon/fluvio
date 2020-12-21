@@ -135,7 +135,7 @@ impl ClusterUninstaller {
 
         let client = load_and_share().map_err(UninstallError::K8ClientError)?;
 
-        let sc_pod = InputObjectMeta::named("flv-sc", &self.config.namespace);
+        let sc_pod = InputObjectMeta::named("fluvio-sc", &self.config.namespace);
         self.wait_for_delete::<PodSpec>(client, &sc_pod).await?;
         self.cleanup().await?;
 

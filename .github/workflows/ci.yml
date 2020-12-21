@@ -348,7 +348,7 @@ jobs:
       - run: minikube delete
       - name: Save logs
         if: failure()
-        run: kubectl logs flv-sc > /tmp/flv_sc.log
+        run: kubectl logs fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
         timeout-minutes: 10
         if: failure()

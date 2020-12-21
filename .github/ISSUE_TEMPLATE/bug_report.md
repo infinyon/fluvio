@@ -31,8 +31,8 @@ Depending on your setup, here's how you can get the logs:
   - Run `cat /usr/local/var/log/fluvio/spu_log_XXXX.log` for each SPU
     - E.g. when running 1 SPU, there will be `spu_log_5001.log`
 - For a Fluvio installation on Minikube:
-  - Run `kubectl logs flv-sc` for SC logs
-  - Run `kubectl logs flv-spg-main-X` for each SPU
+  - Run `kubectl logs fluvio-sc` for SC logs
+  - Run `kubectl logs fluvio-spg-main-X` for each SPU
 
 **Environment (please complete the following information):**
  - OS: [e.g. Linux, Mac]
