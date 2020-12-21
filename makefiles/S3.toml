@@ -39,6 +39,7 @@ script = '''
 mkdir -p ~/.fluvio/extensions
 ./target/${TARGET}/release/fluvio install fluvio/fluvio-package;
 ./target/${TARGET}/release/fluvio package publish ./target/${TARGET}/release/fluvio --version=${FLUVIO_VERSION};
+./target/${TARGET}/release/fluvio package bump latest;
 '''
 
 [tasks.publish-fluvio.linux]
