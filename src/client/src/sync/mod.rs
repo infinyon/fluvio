@@ -32,7 +32,6 @@ mod context {
         wait_time
     });
 
-
     /// context that always updates
     #[derive(Debug, Default, Clone, PartialEq)]
     pub struct AlwaysNewContext {}
@@ -135,7 +134,6 @@ mod context {
 
             use tokio::select;
             use fluvio_future::timer::sleep;
-
 
             let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
 

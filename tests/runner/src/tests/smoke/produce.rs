@@ -103,7 +103,7 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
     use fluvio_future::timer::sleep;
 
     let client = Fluvio::connect().await.expect("should connect");
-    
+
     let replication = option.replication();
 
     for i in 0..replication {
