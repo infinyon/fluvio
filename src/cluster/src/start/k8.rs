@@ -566,7 +566,7 @@ impl ClusterInstaller {
             namespace: DEFAULT_NAMESPACE.to_string(),
             image_tag: None,
             image_registry: DEFAULT_REGISTRY.to_string(),
-            chart_version: crate::VERSION.to_string(),
+            chart_version: crate::VERSION.trim().to_string(),
             chart_name: DEFAULT_CHART_APP_NAME.to_string(),
             chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
             group_name: DEFAULT_GROUP_NAME.to_string(),

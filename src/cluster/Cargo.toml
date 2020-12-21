@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cluster"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -24,6 +24,7 @@ cli = [
     "prettytable-rs",
     "fluvio-runner-local/platform",
 ]
+platform = []
 
 [dependencies]
 colored = "2.0.0"

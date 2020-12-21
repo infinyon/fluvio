@@ -23,7 +23,7 @@ pub struct DefaultVersion(String);
 
 impl Default for DefaultVersion {
     fn default() -> Self {
-        Self(crate::VERSION.to_string())
+        Self(crate::VERSION.trim().to_string())
     }
 }
 

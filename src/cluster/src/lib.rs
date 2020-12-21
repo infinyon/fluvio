@@ -38,7 +38,12 @@ pub use check::{ClusterChecker, CheckStatus, CheckStatuses};
 pub use check::{RecoverableCheck, UnrecoverableCheck};
 pub use delete::ClusterUninstaller;
 
-const VERSION: &str = include_str!("VERSION");
+#[cfg(feature = "platform")]
+const VERSION: &str = include_str!("../../../VERSION");
+
+#[cfg(not(feature = "platform"))]
+const VERSION: &str = "UNDEFINED";
+
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
 pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
