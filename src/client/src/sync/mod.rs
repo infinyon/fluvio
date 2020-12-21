@@ -10,10 +10,10 @@ mod context {
     use std::fmt::Display;
 
     use tracing::debug;
-
     use event_listener::Event;
     use event_listener::EventListener;
     use async_rwlock::RwLockReadGuard;
+    use once_cell::sync::Lazy;
 
     use crate::FluvioError;
     use crate::metadata::core::Spec;
@@ -24,6 +24,13 @@ mod context {
     use crate::metadata::core::MetadataItem;
 
     pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S, AlwaysNewContext>;
+
+    static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
+        use std::env;
+        let var_value = env::var("FLV_METADATA_WAIT").unwrap_or_default();
+        let wait_time: u64 = var_value.parse().unwrap_or(200);
+        wait_time
+    });
 
     /// context that always updates
     #[derive(Debug, Default, Clone, PartialEq)]
@@ -128,9 +135,7 @@ mod context {
             use tokio::select;
             use fluvio_future::timer::sleep;
 
-            const TIMER_DURATION: u64 = 300;
-
-            let mut timer = sleep(Duration::from_millis(TIMER_DURATION));
+            let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
 
             loop {
                 debug!(SPEC = S::LABEL, "checking to see if exists");

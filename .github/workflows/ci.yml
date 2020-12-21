@@ -140,6 +140,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
+      FLV_METADATA_WAIT: 1000
 
     steps:
       - uses: actions/checkout@v2
