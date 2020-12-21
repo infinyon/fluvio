@@ -16,8 +16,8 @@ mod context {
     use async_channel::{Sender, Receiver, bounded, SendError};
     use once_cell::sync::Lazy;
     use tokio::select;
-    use tracing::{debug,trace};
-            
+    use tracing::{debug, trace};
+
     use fluvio_future::timer::sleep;
 
     use crate::actions::WSAction;
@@ -38,8 +38,6 @@ mod context {
         let wait_time: u64 = var_value.parse().unwrap_or(10);
         wait_time
     });
-
-    
 
     #[derive(Debug, Clone)]
     pub struct StoreContext<S>
@@ -101,10 +99,9 @@ mod context {
     where
         S: Spec + PartialEq,
     {
-        
         /// Wait for creation/update of spec.  There is no guarantee that this spec has been applied.
         /// Only that spec has been changed.
-        /// 
+        ///
         /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn create_spec(
@@ -117,12 +114,13 @@ mod context {
         {
             debug!("{}: creating store: {}", S::LABEL, key);
 
-            self.wait_action(&key,WSAction::UpdateSpec((key.clone(), spec))).await
+            self.wait_action(&key, WSAction::UpdateSpec((key.clone(), spec)))
+                .await
         }
 
         /// Wait for status update.  There is no guarantee that this status valus has been applied.
         /// Only that status has been changed.
-        /// 
+        ///
         /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn update_status(
@@ -135,17 +133,15 @@ mod context {
         {
             debug!("{}: updating status: {}", S::LABEL, key);
 
-            self.wait_action(&key,WSAction::UpdateStatus((key.clone(),status))).await
+            self.wait_action(&key, WSAction::UpdateStatus((key.clone(), status)))
+                .await
         }
 
-
         /// Wait for object deletion.  
-        /// 
+        ///
         /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn delete(&self, key: S::IndexKey) -> Result<(), IoError> {
-        
-           
             match self.sender.send(WSAction::Delete(key.clone())).await {
                 Ok(_) => {
                     // wait for object created in the store
@@ -157,7 +153,7 @@ mod context {
                         if !self.store.contains_key(&key).await {
                             debug!("store: {}, object: {:#?}, has been deleted", S::LABEL, key);
                             return Ok(());
-                        } 
+                        }
 
                         debug!("{} store, waiting for delete event", S::LABEL);
 
@@ -186,18 +182,15 @@ mod context {
             }
         }
 
-        
-
-
         /// Wait for action to finish.  There is no guarantee that the status valus has been applied.
         /// Only that status has been changed.
-        /// 
+        ///
         /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn wait_action(
             &self,
             key: &S::IndexKey,
-            action: WSAction<S>
+            action: WSAction<S>,
         ) -> Result<MetadataStoreObject<S, K8MetaItem>, IoError>
         where
             S::IndexKey: Display,
@@ -210,39 +203,35 @@ mod context {
             let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME));
 
             match self.sender.send(action).await {
-                Ok(_) => {
-                
-                    loop {
-
-                        if let Some(new_value) = self.store.value(&key).await {
-                            if let Some(old_value) = &current_value {
-                                if new_value.is_newer(&old_value) {
-                                    debug!("store: {}, object: {:#?}, updated", S::LABEL, key);
-                                    return Ok(new_value.inner_owned());
-                                }
-                            } else {
-                                debug!("store: {}, object: {:#?}, created", S::LABEL, key);
+                Ok(_) => loop {
+                    if let Some(new_value) = self.store.value(&key).await {
+                        if let Some(old_value) = &current_value {
+                            if new_value.is_newer(&old_value) {
+                                debug!("store: {}, object: {:#?}, updated", S::LABEL, key);
                                 return Ok(new_value.inner_owned());
                             }
-                        }
-            
-                        trace!("{} store, waiting for create event", S::LABEL);
-
-                        select! {
-                            _ = &mut timer => {
-                                return Err(IoError::new(
-                                    ErrorKind::TimedOut,
-                                    format!("store timed out: {} for {:?}", S::LABEL, key),
-                                ));
-                            },
-
-                            _ = spec_listener.listen() => {
-                                let changes = spec_listener.sync_changes().await;
-                                trace!("{} received changes: {:#?}",S::LABEL,changes);
-                            }
+                        } else {
+                            debug!("store: {}, object: {:#?}, created", S::LABEL, key);
+                            return Ok(new_value.inner_owned());
                         }
                     }
-                }
+
+                    trace!("{} store, waiting for create event", S::LABEL);
+
+                    select! {
+                        _ = &mut timer => {
+                            return Err(IoError::new(
+                                ErrorKind::TimedOut,
+                                format!("store timed out: {} for {:?}", S::LABEL, key),
+                            ));
+                        },
+
+                        _ = spec_listener.listen() => {
+                            let changes = spec_listener.sync_changes().await;
+                            trace!("{} received changes: {:#?}",S::LABEL,changes);
+                        }
+                    }
+                },
                 Err(err) => {
                     error!("{}, error sending to store: {}", S::LABEL, err);
                     Err(IoError::new(
