@@ -75,7 +75,7 @@ fn print_sc_logs() {
 
     let _ = Command::new("kubectl")
         .arg("logs")
-        .arg("flv-sc")
+        .arg("fluvio-sc")
         .print()
         .inherit();
 

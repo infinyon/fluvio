@@ -267,8 +267,8 @@ impl SpgOperator {
             SpuEndpointTemplate::default_public()
         };
 
-        let full_group_name = format!("flv-spg-{}", group_name);
-        let full_spu_name = format!("flv-spg-{}", spu_name);
+        let full_group_name = format!("fluvio-spg-{}", group_name);
+        let full_spu_name = format!("fluvio-spg-{}", spu_name);
         let spu_spec = SpuSpec {
             id,
             spu_type: SpuType::Managed,
@@ -329,7 +329,7 @@ impl SpgOperator {
         public_port.target_port = Some(public_port.port);
 
         let mut selector = HashMap::new();
-        let pod_name = format!("flv-spg-{}", spu_name);
+        let pod_name = format!("fluvio-spg-{}", spu_name);
         selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), pod_name);
 
         let service_spec = ServiceSpec {
@@ -341,7 +341,7 @@ impl SpgOperator {
         };
         let owner_ref = metadata.make_owner_reference::<ServiceSpec>();
 
-        let svc_name = format!("flv-spu-{}", spu_name);
+        let svc_name = format!("fluvio-spu-{}", spu_name);
 
         let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),
@@ -378,7 +378,7 @@ impl SpgOperator {
         labels.insert("app".to_owned(), SPU_DEFAULT_NAME.to_owned());
         labels.insert("group".to_owned(), spg_name.to_owned());
 
-        let svc_name = format!("flv-spg-{}", spg_name);
+        let svc_name = format!("fluvio-spg-{}", spg_name);
 
         let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),

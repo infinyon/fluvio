@@ -92,7 +92,7 @@ smoke-test-k8-tls-policy:	test-clean-up minikube_image
 		--authorization-config-map authorization \
 		${SKIP_CHECK}
 
-test-permission-k8:	SC_HOST=$(shell kubectl get svc flv-sc-public -o json | jq '.status.loadBalancer.ingress[0].ip' | tr -d '"' )
+test-permission-k8:	SC_HOST=$(shell kubectl get svc fluvio-sc-public -o json | jq '.status.loadBalancer.ingress[0].ip' | tr -d '"' )
 test-permission-k8:	test-permission-user1
 
 smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-k8

@@ -208,7 +208,7 @@ error: linker `x86_64-linux-musl-gcc` not found
  |
  = note: No such file or directory (os error 2)
 error: aborting due to previous error
-error: could not compile `flv-spu`.
+error: could not compile `fluvio-spu`.
 ```
 This is indicative that you need to add standard library for the target platform:
 

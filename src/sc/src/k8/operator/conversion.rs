@@ -32,7 +32,7 @@ pub fn convert_cluster_to_statefulset(
     namespace: &str,
     tls: Option<&TlsConfig>,
 ) -> InputK8Obj<StatefulSetSpec> {
-    let statefulset_name = format!("flv-spg-{}", group_name);
+    let statefulset_name = format!("fluvio-spg-{}", group_name);
     let spec = generate_stateful(group_spec, group_name, group_svc_name, namespace, tls);
     let owner_ref = metadata.make_owner_reference::<K8SpuGroupSpec>();
 
@@ -102,7 +102,7 @@ fn generate_stateful(
         "spu".to_owned(),
         "--sc-addr".to_owned(),
         format!(
-            "flv-sc-internal.{}.svc.cluster.local:{}",
+            "fluvio-sc-internal.{}.svc.cluster.local:{}",
             namespace, SC_PRIVATE_PORT
         ),
         "--log-base-dir".to_owned(),

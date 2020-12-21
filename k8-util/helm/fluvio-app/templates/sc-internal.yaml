@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: flv-sc-internal
+  name: fluvio-sc-internal
 spec:
   selector:
-    app: flv-sc
+    app: fluvio-sc
   ports:
   - protocol: TCP
     port: 9004

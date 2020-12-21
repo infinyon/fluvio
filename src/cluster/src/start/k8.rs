@@ -892,7 +892,7 @@ impl ClusterInstaller {
 
         let result = self
             .kube_client
-            .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("flv-sc-public", ns))
+            .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("fluvio-sc-public", ns))
             .await;
 
         let svc = match result {
