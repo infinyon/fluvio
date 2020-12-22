@@ -9,9 +9,7 @@ mod context {
     use std::sync::Arc;
     use std::fmt::Display;
 
-    use tracing::debug;
-    use event_listener::Event;
-    use event_listener::EventListener;
+    use tracing::{debug, trace};
     use async_rwlock::RwLockReadGuard;
     use once_cell::sync::Lazy;
 
@@ -43,6 +41,7 @@ mod context {
             &0
         }
 
+        /// alwasy return tru, this should be changed
         fn is_newer(&self, _another: &Self) -> bool {
             true
         }
@@ -54,8 +53,6 @@ mod context {
         S: Spec,
     {
         store: Arc<LocalStore<S, AlwaysNewContext>>,
-        spec_event: Arc<Event>,
-        status_event: Arc<Event>,
     }
 
     impl<S> StoreContext<S>
@@ -65,42 +62,11 @@ mod context {
         pub fn new() -> Self {
             Self {
                 store: LocalStore::new_shared(),
-                spec_event: Arc::new(Event::new()),
-                status_event: Arc::new(Event::new()),
             }
         }
 
         pub fn store(&self) -> &Arc<LocalStore<S, AlwaysNewContext>> {
             &self.store
-        }
-
-        pub fn listen(&self) -> EventListener {
-            self.spec_event.listen()
-        }
-
-        #[allow(unused)]
-        pub fn status_listen(&self) -> EventListener {
-            self.status_event.listen()
-        }
-
-        /// notify changes to specs
-        pub fn notify_spec_changes(&self) {
-            self.spec_event.notify(usize::MAX);
-        }
-
-        /// notify changes to status
-        pub fn notify_status_changes(&self) {
-            self.status_event.notify(usize::MAX);
-        }
-
-        /// look up object by index key
-        #[allow(unused)]
-        pub async fn try_lookup_by_key(
-            &self,
-            key: &S::IndexKey,
-        ) -> Option<CacheMetadataStoreObject<S>> {
-            let read_lock = self.store.read().await;
-            read_lock.get(key).map(|value| value.inner().clone())
         }
 
         pub async fn lookup_by_key(
@@ -136,9 +102,11 @@ mod context {
             use fluvio_future::timer::sleep;
 
             let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
+            let mut listener = self.store.change_listener();
 
             loop {
                 debug!(SPEC = S::LABEL, "checking to see if exists");
+
                 if let Some(value) = search(self.store().read().await) {
                     debug!(SPEC = S::LABEL, "found value");
                     return Ok(value);
@@ -155,9 +123,9 @@ mod context {
                             ).into())
                         },
 
-                        _ = self.listen() => {
-
-                            debug!( SPEC = S::LABEL, "store updated");
+                        _ = listener.listen() => {
+                            let changes = listener.sync_changes().await;
+                            trace!("{} received changes: {:#?}",S::LABEL,changes);
                         }
 
                     }

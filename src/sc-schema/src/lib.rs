@@ -19,6 +19,7 @@ pub mod errors {
 
 pub use fluvio_controlplane_metadata::core;
 pub use fluvio_controlplane_metadata::store;
+pub use fluvio_controlplane_metadata::message;
 
 /// Error from api call
 #[derive(thiserror::Error, Debug)]
