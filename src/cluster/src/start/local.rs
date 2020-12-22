@@ -24,6 +24,7 @@ use crate::{
 use crate::check::{RecoverableCheck, CheckResults};
 use crate::start::k8::ClusterInstaller;
 use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
+use crate::check::render::render_check_progress;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 
@@ -45,6 +46,8 @@ pub struct LocalClusterInstallerBuilder {
     install_sys: bool,
     /// Should the pre install checks be skipped
     skip_checks: bool,
+    /// Whether to print check results as they are performed
+    render_checks: bool,
 }
 
 impl LocalClusterInstallerBuilder {
@@ -239,6 +242,24 @@ impl LocalClusterInstallerBuilder {
         self.skip_checks = skip_checks;
         self
     }
+
+    /// Whether to render pre-install checks to stdout as they are performed.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_render_checks(true)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_render_checks(mut self, render_checks: bool) -> Self {
+        self.render_checks = render_checks;
+        self
+    }
 }
 
 /// Install fluvio cluster locally
@@ -275,6 +296,7 @@ impl LocalClusterInstaller {
             chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
             install_sys: true,
             skip_checks: false,
+            render_checks: false,
         }
     }
 
@@ -283,19 +305,27 @@ impl LocalClusterInstaller {
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
         let install_sys = self.config.install_sys;
-        let chart_location = &self.config.chart_location;
-        let fix = move |err| Self::pre_install_fix(install_sys, chart_location, err);
-        ClusterChecker::empty()
-            .with_local_checks()
-            .run_and_fix(fix)
-            .await
+        let chart_location = self.config.chart_location.clone();
+        let fix = move |err| Self::pre_install_fix(install_sys, chart_location.clone(), err);
+
+        if self.config.render_checks {
+            let mut progress = ClusterChecker::empty()
+                .with_local_checks()
+                .run_and_fix_with_progress(fix);
+            render_check_progress(&mut progress).await
+        } else {
+            ClusterChecker::empty()
+                .with_local_checks()
+                .run_and_fix(fix)
+                .await
+        }
     }
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(error))]
     async fn pre_install_fix(
         install_sys: bool,
-        chart_location: &ChartLocation,
+        chart_location: ChartLocation,
         error: RecoverableCheck,
     ) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
