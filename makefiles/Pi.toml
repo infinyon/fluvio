@@ -44,4 +44,5 @@ args = [
     "--tag", "v${FLUVIO_VERSION}",
     "--name", "fluvio-v${FLUVIO_VERSION}-${TARGET}",
     "--file", "./target/${TARGET}/release/fluvio",
+    "${GITHUB_RELEASE_FORCE}",
 ]
