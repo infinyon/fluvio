@@ -12,16 +12,13 @@ use crate::dispatcher::k8::core::pod::SecretVolumeSpec;
 use crate::dispatcher::k8::core::service::*;
 use crate::dispatcher::k8::app::stateful::*;
 use crate::stores::spg::K8SpuGroupSpec;
+use super::spu_k8_config::SpuK8Config;
 
 use fluvio_types::defaults::SPU_DEFAULT_NAME;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::defaults::SPU_PRIVATE_PORT;
 use fluvio_types::defaults::SC_PRIVATE_PORT;
 use fluvio_types::defaults::PRODUCT_NAME;
-
-fn find_spu_image() -> String {
-    std::env::var("SPU_IMAGE").expect("SPU IMAGE must be passed as env")
-}
 
 /// convert SpuGroup to Statefulset
 pub fn convert_cluster_to_statefulset(
@@ -30,10 +27,18 @@ pub fn convert_cluster_to_statefulset(
     group_name: &str,
     group_svc_name: String,
     namespace: &str,
+    spu_k8_config: SpuK8Config,
     tls: Option<&TlsConfig>,
 ) -> InputK8Obj<StatefulSetSpec> {
     let statefulset_name = format!("fluvio-spg-{}", group_name);
-    let spec = generate_stateful(group_spec, group_name, group_svc_name, namespace, tls);
+    let spec = generate_stateful(
+        group_spec,
+        group_name,
+        group_svc_name,
+        namespace,
+        spu_k8_config,
+        tls,
+    );
     let owner_ref = metadata.make_owner_reference::<K8SpuGroupSpec>();
 
     InputK8Obj {
@@ -56,6 +61,7 @@ fn generate_stateful(
     name: &str,
     group_svc_name: String,
     namespace: &str,
+    spu_k8_config: SpuK8Config,
     tls_config: Option<&TlsConfig>,
 ) -> StatefulSetSpec {
     let replicas = spg_spec.replicas;
@@ -173,7 +179,8 @@ fn generate_stateful(
             termination_grace_period_seconds: Some(10),
             containers: vec![ContainerSpec {
                 name: SPU_DEFAULT_NAME.to_owned(),
-                image: Some(find_spu_image()),
+                image: Some(spu_k8_config.image),
+                resources: Some(spu_k8_config.resources),
                 ports: vec![public_port, private_port],
                 volume_mounts,
                 env,

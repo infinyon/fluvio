@@ -38,3 +38,8 @@ members = [
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
 opt-level = 3
+
+[patch.crates-io]
+k8-obj-app = { version = "2.0.0", path = "../k8-api/src/k8-obj-app" }
+k8-obj-core = { version = "2.0.0", path = "../k8-api/src/k8-obj-core" }
+k8-obj-metadata = { version = "2.0.0", path = "../k8-api/src/k8-obj-metadata" }

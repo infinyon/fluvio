@@ -1,6 +1,7 @@
 mod spg_operator;
 mod conversion;
 mod spg_group;
+mod spu_k8_config;
 
 use k8_client::SharedK8Client;
 
@@ -9,6 +10,7 @@ use conversion::generate_service;
 use spg_group::SpuGroupObj;
 use spg_group::SpuValidation;
 use spg_operator::SpgOperator;
+use spu_k8_config::SpuK8Config;
 
 use crate::cli::TlsConfig;
 use crate::core::SharedContext;

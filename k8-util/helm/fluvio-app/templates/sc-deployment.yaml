@@ -10,13 +10,18 @@ spec:
     - name: fluvio-sc
       image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
       imagePullPolicy: {{ .Values.image.pullPolicy }}
+      resources:
+        requests:
+          memory: {{ .Values.scResources.requests.memory }}
+          cpu: {{ .Values.scResources.requests.cpu }}
+        limits:
+          memory: {{ .Values.scResources.limits.memory }}
+          cpu: {{ .Values.scResources.limits.cpu }}
       ports:
         - containerPort: 9003
       env:
         - name: RUST_LOG
           value: {{ .Values.scLog }}
-        - name:  SPU_IMAGE
-          value: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
       command: ["/fluvio", "run", "sc"]
   {{ if .Values.tls }}
       args:
@@ -32,9 +37,9 @@ spec:
         - 0.0.0.0:9005
         {{ if .Values.authorizationConfigMap }}
         - --authorization-policy
-        - /etc/fluvio-authorization/policy.json
+        - /etc/fluvio/authorization/policy.json
         - --authorization-scopes
-        - /etc/fluvio-authorization/scopes.json
+        - /etc/fluvio/authorization/scopes.json
         {{ end }}
       volumeMounts:
         - name: cacert
@@ -44,7 +49,7 @@ spec:
           mountPath: /var/certs/tls
         {{ if .Values.authorizationConfigMap }}
         - name: authorization-config
-          mountPath: /etc/fluvio-authorization
+          mountPath: /etc/fluvio/authorization
         {{ end }}
   volumes:
     - name: cacert

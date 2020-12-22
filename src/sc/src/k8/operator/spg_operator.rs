@@ -33,6 +33,7 @@ use super::convert_cluster_to_statefulset;
 use super::generate_service;
 use super::SpuGroupObj;
 use super::SpuValidation;
+use super::SpuK8Config;
 
 pub struct SpgOperator {
     client: SharedK8Client,
@@ -178,12 +179,15 @@ impl SpgOperator {
         spg_name: &str,
         spg_svc_name: String,
     ) -> Result<(), ClientError> {
+        let spu_k8_config = SpuK8Config::load(&self.client, &self.namespace).await?;
+
         let input_stateful = convert_cluster_to_statefulset(
             spg_spec,
             &spu_group.metadata,
             spg_name,
             spg_svc_name,
             &self.namespace,
+            spu_k8_config,
             self.tls.as_ref(),
         );
         debug!(

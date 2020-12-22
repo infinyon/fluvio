@@ -1989,8 +1989,6 @@ dependencies = [
 [[package]]
 name = "k8-obj-app"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a13ab534dd8cddc9217f68128e541b1bc29630507b4b435d6f67d6035cc18919"
 dependencies = [
  "http 0.1.21",
  "k8-obj-core",
@@ -2003,8 +2001,6 @@ dependencies = [
 [[package]]
 name = "k8-obj-core"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cf9c3707756e0514e55f3adba39249a452e1b5028688a5b575b2c280bfd8ad5"
 dependencies = [
  "http 0.1.21",
  "k8-obj-metadata",
@@ -2017,8 +2013,6 @@ dependencies = [
 [[package]]
 name = "k8-obj-metadata"
 version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dca07bd260ad1526a6606e4a6a5de2d26644780adc17951fed0fe2b96a5cbeb1"
 dependencies = [
  "serde",
  "serde_json",
