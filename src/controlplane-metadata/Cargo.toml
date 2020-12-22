@@ -13,10 +13,7 @@ path = "src/lib.rs"
 
 [features]
 use_serde = ["serde"]
-k8 = [
-    "use_serde",
-    "fluvio-stream-model/k8",
-]
+k8 = ["use_serde", "fluvio-stream-model/k8"]
 
 [dependencies]
 log = "0.4.8"
@@ -27,7 +24,7 @@ async-trait = "0.1.21"
 # Fluvio dependencies
 fluvio-future = { version = "0.1.0" }
 flv-util = { version = "0.5.0" }
-fluvio-types = { version = "0.2.0", path = "../types"  }
+fluvio-types = { version = "0.2.0", path = "../types" }
 fluvio-stream-model = { path = "../stream-model", version = "0.3.0" }
 fluvio-protocol = { version = "0.2.0" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

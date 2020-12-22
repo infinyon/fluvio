@@ -136,7 +136,11 @@ where
         debug!("{} terminated", S::LABEL);
     }
 
+    // process updates from sc
     async fn process_updates(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
+        //use fluvio_sc_schema::message::MsgType;
+        //use crate::metadata::store::actions::LSUpdate;
+
         if !updates.all.is_empty() {
             debug!(
                 "processing {}, sync all items: {}",
@@ -159,9 +163,29 @@ where
                 }
             }
             self.store.store().sync_all(objects).await;
-            self.store.notify_spec_changes();
-            self.store.notify_status_changes();
         }
+
+        /*
+        TODO: Need to fix this, Need conversion from Metadata to LSUpdate
+        if !updates.changes.is_empty() {
+            debug!(
+                "processing {}, sync change items: {}",
+                S::LABEL,
+                updates.changes.len()
+            );
+
+            let changes = updates.changes.into_iter()
+                .map(|change| {
+
+                    match change.header {
+
+                        MsgType::UPDATE => LSUpdate::Mod(change.content),
+                        MsgType::DELETE => LSUpdate::Delete(change.content.key_owned()),
+
+                    }
+                }).collect();
+        }
+        */
 
         Ok(())
     }
