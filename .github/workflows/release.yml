@@ -6,6 +6,9 @@ on:
 #    tags:
 #      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force push this release'
 
 jobs:
   upload_fluvio_cli:
@@ -41,11 +44,13 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          FORCE_RELEASE: ${{ github.event.inputs.force}}
 
       - name: Build and upload release to github
         run: cargo make -l verbose --profile production github-release-upload
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+          FORCE_RELEASE: ${{ github.event.inputs.force}}
 
 
   release_fluvio_pi:
