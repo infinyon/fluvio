@@ -36,6 +36,14 @@ args = [
     "--tag", "v${FLUVIO_VERSION}",
     "--name", "fluvio-v${FLUVIO_VERSION}-${TARGET}",
     "--file", "./target/${TARGET}/release/fluvio",
+    "${GITHUB_RELEASE_FORCE}",
+]
+env_scripts = [
+'''
+if [ "${FORCE_RELEASE}" = "--force" ]; then
+    set_env GITHUB_RELEASE_FORCE "--replace"
+fi
+'''
 ]
 
 [tasks.github-release-create-pre-release]
