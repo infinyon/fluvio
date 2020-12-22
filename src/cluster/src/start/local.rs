@@ -17,7 +17,10 @@ use fluvio::metadata::spu::IngressAddr;
 use k8_client::core::metadata::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE, ClusterChecker};
+use crate::{
+    LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE,
+    ClusterChecker,
+};
 use crate::check::{RecoverableCheck, CheckResults};
 use crate::start::k8::ClusterInstaller;
 use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
@@ -290,7 +293,11 @@ impl LocalClusterInstaller {
 
     /// Given a pre-check error, attempt to automatically correct it
     #[instrument(skip(error))]
-    async fn pre_install_fix(install_sys: bool, chart_location: &ChartLocation, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    async fn pre_install_fix(
+        install_sys: bool,
+        chart_location: &ChartLocation,
+        error: RecoverableCheck,
+    ) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
@@ -339,10 +346,7 @@ impl LocalClusterInstaller {
                 }
 
                 // If any checks successfully completed with a failure, return checks in status
-                let statuses: Vec<_> = check_results
-                    .into_iter()
-                    .filter_map(|it| it.ok())
-                    .collect();
+                let statuses: Vec<_> = check_results.into_iter().filter_map(|it| it.ok()).collect();
 
                 let any_failed = statuses
                     .iter()

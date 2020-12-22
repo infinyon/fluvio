@@ -25,7 +25,10 @@ use k8_client::core::metadata::InputObjectMeta;
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
 use crate::error::K8InstallError;
-use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, CheckStatus, ClusterChecker, CheckStatuses};
+use crate::{
+    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
+    CheckStatus, ClusterChecker, CheckStatuses,
+};
 use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
 
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -676,10 +679,8 @@ impl ClusterInstaller {
                     return Err(K8InstallError::PrecheckErrored(check_results).into());
                 }
 
-                let statuses: CheckStatuses = check_results
-                    .into_iter()
-                    .filter_map(|it| it.ok())
-                    .collect();
+                let statuses: CheckStatuses =
+                    check_results.into_iter().filter_map(|it| it.ok()).collect();
 
                 let mut any_failed = false;
                 for status in &statuses {

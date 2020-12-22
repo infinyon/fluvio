@@ -6,7 +6,10 @@ use crate::cli::ClusterCliError;
 use crate::{LocalClusterInstaller, ClusterError, LocalInstallError, StartStatus};
 
 use super::StartOpt;
-use crate::cli::check::{render_check_statuses, render_statuses_next_steps, render_check_results, render_results_next_steps};
+use crate::cli::check::{
+    render_check_statuses, render_statuses_next_steps, render_check_results,
+    render_results_next_steps,
+};
 
 /// Attempts to start a local Fluvio cluster
 ///

@@ -8,7 +8,10 @@ use fluvio::config::TlsPolicy;
 use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
-use crate::cli::check::{render_check_statuses, render_statuses_next_steps, render_check_results, render_results_next_steps};
+use crate::cli::check::{
+    render_check_statuses, render_statuses_next_steps, render_check_results,
+    render_results_next_steps,
+};
 
 pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;

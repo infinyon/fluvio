@@ -395,9 +395,7 @@ impl ClusterChecker {
     /// let checker: ClusterChecker = ClusterChecker::empty();
     /// ```
     pub fn empty() -> Self {
-        ClusterChecker {
-            checks: vec![],
-        }
+        ClusterChecker { checks: vec![] }
     }
 
     /// Adds a check to this `ClusterChecker`
@@ -579,7 +577,6 @@ impl ClusterChecker {
     {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
-
             for check in &self.checks {
                 // Perform one individual check
                 let check_result = check.perform_check().await;
@@ -592,10 +589,16 @@ impl ClusterChecker {
                         let fix_result = fix(it).await;
                         match fix_result {
                             // If the fix worked, return a passed check
-                            Ok(_) => sender.send(Ok(CheckStatus::pass(format!("Fixed: {}", err)))).await,
+                            Ok(_) => {
+                                sender
+                                    .send(Ok(CheckStatus::pass(format!("Fixed: {}", err))))
+                                    .await
+                            }
                             Err(e) => {
                                 // If the fix failed, wrap the original failed check in Unrecoverable
-                                sender.send(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e)))).await
+                                sender
+                                    .send(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e))))
+                                    .await
                                 // We return upon the first check failure
                                 // return CheckResults::from(results);
                             }
