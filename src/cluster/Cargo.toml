@@ -20,9 +20,9 @@ required-features = ["cli"]
 cli = [
     "structopt",
     "color-eyre",
-    "fluvio-extension-common/target",
     "prettytable-rs",
     "fluvio-runner-local/platform",
+    "fluvio-extension-common/target",
 ]
 platform = []
 

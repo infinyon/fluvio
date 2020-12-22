@@ -4,6 +4,8 @@ use std::time::Duration;
 use std::process::{Command};
 use std::future::Future;
 
+pub mod render;
+
 use tracing::warn;
 use async_trait::async_trait;
 use async_channel::Receiver;
@@ -33,29 +35,7 @@ const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 pub type CheckResult = std::result::Result<CheckStatus, CheckError>;
 
 /// A collection of the successes, failures, and errors of running checks
-// #[derive(Debug)]
-// pub struct CheckResults(pub(crate) Vec<CheckResult>);
 pub type CheckResults = Vec<CheckResult>;
-
-// impl From<Vec<CheckResult>> for CheckResults {
-//     fn from(it: Vec<CheckResult>) -> Self {
-//         Self(it)
-//     }
-// }
-
-// impl CheckResults {
-//     pub fn into_statuses(self) -> CheckStatuses {
-//         let statuses: Vec<_> = self
-//             .0
-//             .into_iter()
-//             .filter_map(|it| match it {
-//                 Ok(status) => Some(status),
-//                 Err(_) => None,
-//             })
-//             .collect();
-//         CheckStatuses::from(statuses)
-//     }
-// }
 
 /// An error occurred during the checking process
 ///
@@ -110,15 +90,7 @@ pub trait CheckSuggestion {
 }
 
 /// A collection of the successes, failures, and errors of running checks
-// #[derive(Debug)]
-// pub struct CheckStatuses(pub(crate) Vec<CheckStatus>);
 pub type CheckStatuses = Vec<CheckStatus>;
-
-// impl From<Vec<CheckStatus>> for CheckStatuses {
-//     fn from(it: Vec<CheckStatus>) -> Self {
-//         Self(it)
-//     }
-// }
 
 /// When a check completes without error, it either passes or fails
 #[derive(Debug)]
@@ -621,36 +593,6 @@ impl ClusterChecker {
         });
         receiver
     }
-
-    // /// Runs all the checks that are needed for fluvio cluster startup
-    // /// # Example
-    // /// ```no_run
-    // /// use fluvio_cluster::ClusterChecker;
-    // /// ClusterChecker::run_preflight_checks();
-    // /// ```
-    // pub async fn run_preflight_checks() -> CheckResults {
-    //     // List of checks
-    //     let checks: Vec<Box<dyn InstallCheck>> = vec![
-    //         Box::new(LoadableConfig),
-    //         Box::new(K8Version),
-    //         Box::new(HelmVersion),
-    //         Box::new(SysChart),
-    //         Box::new(CreateServicePermission),
-    //         Box::new(CreateCrdPermission),
-    //         Box::new(CreateServiceAccountPermission),
-    //         Box::new(LoadBalancer),
-    //     ];
-    //
-    //     // Collect results from running checks
-    //     let mut results = vec![];
-    //
-    //     for check in checks {
-    //         let check_result = check.perform_check().await;
-    //         results.push(check_result);
-    //     }
-    //
-    //     CheckResults::from(results)
-    // }
 }
 
 /// Checks that the installed helm version is compatible with the installer requirements
