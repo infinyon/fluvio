@@ -32,6 +32,12 @@ const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
 const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 
+/// The outcome of a check: it was either successfully performed, or it errored
+///
+/// Note that a check that comes back negative (a "failed" check) is still
+/// captured by the `Ok` variant of a `CheckResult`, since the check completed
+/// successfully. If the process of performing the check is what fails, we get
+/// an `Err`.
 pub type CheckResult = std::result::Result<CheckStatus, CheckError>;
 
 /// A collection of the successes, failures, and errors of running checks
@@ -84,6 +90,8 @@ pub enum CheckError {
 
 /// Allows checks to suggest further action
 pub trait CheckSuggestion {
+    /// Returns `Some(suggestion)` if there is a suggestion
+    /// to give, otherwise returns `None`.
     fn suggestion(&self) -> Option<String> {
         None
     }
@@ -432,7 +440,7 @@ impl ClusterChecker {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio_cluster::ClusterChecker;
+    /// # use fluvio_cluster::{ClusterChecker, CheckResults};
     /// # async fn do_run() {
     /// let check_results: CheckResults = ClusterChecker::empty()
     ///     .with_preflight_checks()
@@ -446,7 +454,7 @@ impl ClusterChecker {
             let result = check.perform_check().await;
             check_results.push(result);
         }
-        CheckResults::from(check_results)
+        check_results
     }
 
     /// Performs all checks sequentially, attempting to fix any problems along the way.
@@ -477,22 +485,22 @@ impl ClusterChecker {
                             // If the fix failed, wrap the original failed check in Unrecoverable
                             results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e))));
                             // We return upon the first check failure
-                            return CheckResults::from(results);
+                            return results;
                         }
                     }
                 }
                 it @ Ok(CheckStatus::Fail(_)) => {
                     results.push(it);
-                    return CheckResults::from(results);
+                    return results;
                 }
                 it @ Err(_) => {
                     results.push(it);
-                    return CheckResults::from(results);
+                    return results;
                 }
             }
         }
 
-        CheckResults::from(results)
+        results
     }
 
     /// Performs all checks in an async task, returning the results via a channel.

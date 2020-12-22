@@ -34,8 +34,8 @@ pub use start::k8::ClusterInstallerBuilder;
 pub use start::local::LocalClusterInstaller;
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
-pub use check::{ClusterChecker, CheckStatus, CheckStatuses};
-pub use check::{RecoverableCheck, UnrecoverableCheck};
+pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
+pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
 
 #[cfg(feature = "platform")]

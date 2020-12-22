@@ -1,6 +1,5 @@
 use async_channel::Receiver;
-use crate::check::{CheckResult, CheckResults, CheckFailed, CheckSuggestion};
-use crate::{CheckStatus, CheckStatuses};
+use crate::{CheckStatus, CheckResult, CheckResults, CheckFailed, CheckSuggestion};
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
 
@@ -132,14 +131,14 @@ pub fn render_next_steps(failures: u32, warnings: u32, installed: bool) {
 }
 
 /// Renders a conclusion message based on the number of failures and warnings
-pub fn render_statuses_next_steps(check_statuses: &CheckStatuses) {
+pub fn render_statuses_next_steps<R: AsRef<[CheckStatus]>>(check_statuses: R) {
     use crate::CheckStatus::*;
 
     let mut installed = false;
     let mut failures = 0;
     let mut warnings = 0;
 
-    for status in check_statuses.iter() {
+    for status in check_statuses.as_ref().iter() {
         match status {
             Pass(_) => (),
             Fail(CheckFailed::AlreadyInstalled) => installed = true,
@@ -156,7 +155,7 @@ pub fn render_statuses_next_steps(check_statuses: &CheckStatuses) {
 /// This is useful when the user ran `fluvio cluster check` and needs
 /// to do more to start up the cluster. It is not so useful when this
 /// `ClusterResults` was produced by already performing the startup.
-pub fn render_results_next_steps(check_results: &CheckResults) {
+pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
     use colored::*;
     use crate::CheckStatus::*;
 
@@ -165,7 +164,7 @@ pub fn render_results_next_steps(check_results: &CheckResults) {
     let mut warnings = 0;
     let mut installed = false;
 
-    for result in check_results.iter() {
+    for result in check_results.as_ref().iter() {
         match result {
             Ok(Pass(_)) => (),
             Ok(Fail(CheckFailed::AlreadyInstalled)) => installed = true,
