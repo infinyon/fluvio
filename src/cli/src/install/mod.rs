@@ -9,27 +9,36 @@ use crate::CliError;
 pub mod update;
 pub mod plugins;
 
-pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
+fn fluvio_base_dir() -> Result<PathBuf, CliError> {
     if let Ok(dir) = std::env::var("FLUVIO_DIR") {
         // Assume this is like `~/.fluvio
-        let path = PathBuf::from(dir).join("extensions");
-        if !path.exists() {
-            std::fs::create_dir(&path)?;
-        }
+        let path = PathBuf::from(dir);
         return Ok(path);
     }
-
     let home =
         home::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
     let path = home.join(".fluvio");
+
     if path.exists() {
-        let path = path.join("extensions/");
-        if !path.exists() {
-            std::fs::create_dir(&path)?;
-        }
         return Ok(path);
     }
-    Err(IoError::new(ErrorKind::NotFound, "Fluvio extensions directory not found").into())
+    Err(IoError::new(ErrorKind::NotFound, "Fluvio base directory not found").into())
+}
+
+pub(crate) fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
+    let base_dir = fluvio_base_dir()?;
+    let path = base_dir.join("bin");
+    Ok(path)
+}
+
+pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
+    let base_dir = fluvio_base_dir()?;
+    let path = base_dir.join("extensions");
+
+    if !path.exists() {
+        std::fs::create_dir(&path)?;
+    }
+    Ok(path)
 }
 pub(crate) fn get_extensions() -> Result<Vec<(String, PathBuf)>, CliError> {
     use std::fs;
