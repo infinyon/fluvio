@@ -1,6 +1,5 @@
 VERSION := $(shell cat VERSION)
 RUSTV=stable
-DOCKER_TAG=$(VERSION)
 GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_REGISTRY=infinyon
@@ -192,13 +191,11 @@ minikube_image:	fluvio_image
 
 # build docker image for fluvio using release mode
 # this will tag with current git tag
-fluvio_image: CARGO_PROFILE=$(if $(RELEASE),release,debug)
 fluvio_image: fluvio_bin_linux
 	echo "Building Fluvio musl image with version: $(VERSION)"
 	export CARGO_PROFILE=$(if $(RELEASE),release,debug); \
 	export MINIKUBE_DOCKER_ENV=$(MINIKUBE_DOCKER_ENV); \
-	export DOCKER_TAG=$(GIT_COMMIT); \
-	k8-util/docker/build.sh
+	k8-util/docker/build.sh "fluvio:$(GIT_COMMIT)" $(if $(RELEASE),release,debug)
 
 
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)

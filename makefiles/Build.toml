@@ -1,0 +1,24 @@
+extend = "Base.toml"
+
+[tasks.build-dev-musl]
+condition = { profiles = ["development"] }
+command = "cargo"
+args = ["build", "--target", "x86_64-unknown-linux-musl"]
+dependencies = ["set-musl-env", "rustup-add-target-musl"]
+
+[tasks.build-release-musl]
+condition = { profiles = ["production"] }
+command = "cargo"
+args = ["build", "--release", "--target", "x86_64-unknown-linux-musl"]
+dependencies = ["set-musl-env", "rustup-add-target-musl"]
+
+[tasks.rustup-add-target-musl]
+command = "rustup"
+args = ["target", "add", "x86_64-unknown-linux-musl"]
+
+[tasks.set-musl-env]
+condition = { platforms = ["mac"] }
+
+[tasks.set-musl-env.env]
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "x86_64-linux-musl-gcc"
+TARGET_CC = "x86_64-linux-musl-gcc"

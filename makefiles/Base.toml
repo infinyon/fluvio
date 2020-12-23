@@ -1,8 +1,10 @@
 [env.development]
 CARGO_PROFILE = "dev"
+CARGO_BUILD_DIR = "debug"
 
 [env.production]
 CARGO_PROFILE = "release"
+CARGO_BUILD_DIR = "release"
 
 [tasks.set-image-tag]
 env = { IMAGE_TAG = "${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}-${CARGO_PROFILE}" }

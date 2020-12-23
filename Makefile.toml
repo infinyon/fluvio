@@ -1,4 +1,6 @@
 extend = [
+    { path = "makefiles/Build.toml" },
+    { path = "makefiles/Docker.toml" },
     { path = "makefiles/Pi.toml" },
     { path = "makefiles/Github.toml" },
     { path = "makefiles/Helm.toml" },

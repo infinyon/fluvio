@@ -1,0 +1,14 @@
+extend = "Base.toml"
+
+[tasks.minikube-image]
+env = { MINIKUBE_DOCKER_ENV = "true" }
+run_task = "build-docker-image"
+
+[tasks.build-docker-image]
+dependencies = [
+    "build-dev-musl",
+    "build-release-musl",
+    "set-image-tag",
+]
+command = "k8-util/docker/build.sh"
+args = ["fluvio:${IMAGE_TAG}", "${CARGO_BUILD_DIR}"]
