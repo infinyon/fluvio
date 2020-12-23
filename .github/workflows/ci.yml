@@ -370,6 +370,7 @@ jobs:
         uses: ./
       - name: Fluvio command test
         run: |
+          sleep 3
           fluvio version
           fluvio topic list
           fluvio topic create "foobar"
@@ -394,10 +395,11 @@ jobs:
           cluster-type: kubernetes
       - name: Fluvio command test
         run: |
+          sleep 3
           fluvio version
           fluvio topic list
-          fluvio topic create "foobar"
           sleep 3
+          fluvio topic create "foobar"
           echo foo | fluvio produce "foobar"
           fluvio consume foobar -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
