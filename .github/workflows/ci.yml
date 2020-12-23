@@ -366,8 +366,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: ./
-        name: Install Fluvio Local Cluster
+      - name: Install Fluvio Local Cluster
+        uses: ./
       - name: Fluvio command test
         run: |
           fluvio version
@@ -388,10 +388,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: ./
-        name: Install Fluvio k8s Cluster
-          with:
-            cluster-type: kubernetes
+      - name: Install Fluvio k8s Cluster
+        uses: ./
+        with:
+          cluster-type: kubernetes
       - name: Fluvio command test
         run: |
           fluvio version
