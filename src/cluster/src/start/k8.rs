@@ -612,7 +612,7 @@ impl ClusterInstaller {
         let fix = |err| self.pre_install_fix(err);
         ClusterChecker::empty()
             .with_minikube_checks()
-            .run_and_fix(fix)
+            .run_wait_and_fix(fix)
             .await
     }
 

@@ -316,7 +316,7 @@ impl LocalClusterInstaller {
         } else {
             ClusterChecker::empty()
                 .with_local_checks()
-                .run_and_fix(fix)
+                .run_wait_and_fix(fix)
                 .await
         }
     }

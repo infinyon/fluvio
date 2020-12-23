@@ -366,7 +366,7 @@ impl ClusterChecker {
     /// Creates an empty checker with no checks to be run.
     ///
     /// Be sure to use methods like [`with_check`] to add checks before
-    /// calling [`run`] or [`run_with_progress`] or they will do nothing.
+    /// calling one of the `run` methods or they will do nothing.
     ///
     /// # Example
     ///
@@ -386,7 +386,12 @@ impl ClusterChecker {
 
     /// Adds all preflight checks to this checker.
     ///
-    /// Note that no checks are run until [`run`] or [`run_with_progress`].
+    /// Note that no checks are run until one of the `run` methods are invoked.
+    ///
+    /// - [`run_wait`]
+    /// - [`run_wait_and_fix`]
+    /// - [`run_with_progress`]
+    /// - [`run_and_fix_with_progress`]
     pub fn with_preflight_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
@@ -404,7 +409,12 @@ impl ClusterChecker {
 
     /// Adds all checks required for starting a cluster on minikube.
     ///
-    /// Note that no checks are run until [`run`] or [`run_with_progress`].
+    /// Note that no checks are run until one of the `run` methods are invoked.
+    ///
+    /// - [`run_wait`]
+    /// - [`run_wait_and_fix`]
+    /// - [`run_with_progress`]
+    /// - [`run_and_fix_with_progress`]
     pub fn with_minikube_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
@@ -419,7 +429,12 @@ impl ClusterChecker {
 
     /// Adds all checks required for starting a local cluster.
     ///
-    /// Note that no checks are run until [`run`] or [`run_with_progress`].
+    /// Note that no checks are run until one of the `run` methods are invoked.
+    ///
+    /// - [`run_wait`]
+    /// - [`run_wait_and_fix`]
+    /// - [`run_with_progress`]
+    /// - [`run_and_fix_with_progress`]
     pub fn with_local_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(HelmVersion),
@@ -444,11 +459,11 @@ impl ClusterChecker {
     /// # async fn do_run() {
     /// let check_results: CheckResults = ClusterChecker::empty()
     ///     .with_preflight_checks()
-    ///     .run()
+    ///     .run_wait()
     ///     .await;
     /// # }
     /// ```
-    pub async fn run(&self) -> CheckResults {
+    pub async fn run_wait(&self) -> CheckResults {
         let mut check_results = vec![];
         for check in &self.checks {
             let result = check.perform_check().await;
@@ -460,7 +475,7 @@ impl ClusterChecker {
     /// Performs all checks sequentially, attempting to fix any problems along the way.
     ///
     /// This may appear to "hang" if there are many checks, or if fixes take a long time.
-    pub async fn run_and_fix<F, R>(&self, fix: F) -> CheckResults
+    pub async fn run_wait_and_fix<F, R>(&self, fix: F) -> CheckResults
     where
         F: Fn(RecoverableCheck) -> R,
         R: Future<Output = Result<(), UnrecoverableCheck>>,
@@ -514,7 +529,7 @@ impl ClusterChecker {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio_cluster::ClusterChecker;
+    /// # use fluvio_cluster::{ClusterChecker, CheckResult};
     /// # async fn do_run_with_progress() {
     /// use async_channel::Receiver;
     /// let progress: Receiver<CheckResult> = ClusterChecker::empty()
