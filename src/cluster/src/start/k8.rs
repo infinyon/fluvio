@@ -23,16 +23,13 @@ use k8_client::core::service::ServiceSpec;
 use k8_client::core::metadata::InputObjectMeta;
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{
-    UnrecoverableCheck, InstallCheck, HelmVersion, AlreadyInstalled, SysChart, LoadableConfig,
-    LoadBalancer, CheckFailed, RecoverableCheck, CheckResults,
-};
+use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
-    CheckStatus,
+    CheckStatus, ClusterChecker, CheckStatuses,
 };
-use crate::start::{check_and_fix, ChartLocation, DEFAULT_CHART_REMOTE};
+use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
@@ -612,15 +609,11 @@ impl ClusterInstaller {
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
     #[allow(unused)]
     pub async fn setup(&self) -> CheckResults {
-        let checks: Vec<Box<dyn InstallCheck>> = vec![
-            Box::new(LoadableConfig),
-            Box::new(HelmVersion),
-            Box::new(SysChart),
-            Box::new(AlreadyInstalled),
-            Box::new(LoadBalancer),
-        ];
         let fix = |err| self.pre_install_fix(err);
-        check_and_fix(&checks, fix).await
+        ClusterChecker::empty()
+            .with_k8_checks()
+            .run_wait_and_fix(fix)
+            .await
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
@@ -682,13 +675,15 @@ impl ClusterInstaller {
             // Check if env is ready for install and tries to fix anything it can
             false => {
                 let check_results = self.setup().await;
-                if check_results.0.iter().any(|it| it.is_err()) {
+                if check_results.iter().any(|it| it.is_err()) {
                     return Err(K8InstallError::PrecheckErrored(check_results).into());
                 }
 
-                let statuses = check_results.into_statuses();
+                let statuses: CheckStatuses =
+                    check_results.into_iter().filter_map(|it| it.ok()).collect();
+
                 let mut any_failed = false;
-                for status in &statuses.0 {
+                for status in &statuses {
                     match status {
                         // If Fluvio is already installed, return the SC's address
                         CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {

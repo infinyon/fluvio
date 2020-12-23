@@ -969,8 +969,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
+ "async-channel",
  "async-trait",
  "color-eyre",
  "colored",

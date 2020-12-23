@@ -17,12 +17,14 @@ use fluvio::metadata::spu::IngressAddr;
 use k8_client::core::metadata::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE};
-use crate::check::{
-    InstallCheck, HelmVersion, SysChart, RecoverableCheck, CheckResults, K8Version, LoadableConfig,
+use crate::{
+    LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE,
+    ClusterChecker,
 };
+use crate::check::{RecoverableCheck, CheckResults};
 use crate::start::k8::ClusterInstaller;
-use crate::start::{check_and_fix, ChartLocation, DEFAULT_CHART_REMOTE};
+use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
+use crate::check::render::render_check_progress;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 
@@ -44,6 +46,8 @@ pub struct LocalClusterInstallerBuilder {
     install_sys: bool,
     /// Should the pre install checks be skipped
     skip_checks: bool,
+    /// Whether to print check results as they are performed
+    render_checks: bool,
 }
 
 impl LocalClusterInstallerBuilder {
@@ -238,6 +242,24 @@ impl LocalClusterInstallerBuilder {
         self.skip_checks = skip_checks;
         self
     }
+
+    /// Whether to render pre-install checks to stdout as they are performed.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::ClusterInstaller;
+    /// let installer = ClusterInstaller::new()
+    ///     .with_render_checks(true)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_render_checks(mut self, render_checks: bool) -> Self {
+        self.render_checks = render_checks;
+        self
+    }
 }
 
 /// Install fluvio cluster locally
@@ -274,6 +296,7 @@ impl LocalClusterInstaller {
             chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
             install_sys: true,
             skip_checks: false,
+            render_checks: false,
         }
     }
 
@@ -281,31 +304,42 @@ impl LocalClusterInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let checks: Vec<Box<dyn InstallCheck>> = vec![
-            Box::new(HelmVersion),
-            Box::new(K8Version),
-            Box::new(LoadableConfig),
-            Box::new(SysChart),
-        ];
-        let fix = |err| self.pre_install_fix(err);
-        check_and_fix(&checks, fix).await
+        let install_sys = self.config.install_sys;
+        let chart_location = self.config.chart_location.clone();
+        let fix = move |err| Self::pre_install_fix(install_sys, chart_location.clone(), err);
+
+        if self.config.render_checks {
+            let mut progress = ClusterChecker::empty()
+                .with_local_checks()
+                .run_and_fix_with_progress(fix);
+            render_check_progress(&mut progress).await
+        } else {
+            ClusterChecker::empty()
+                .with_local_checks()
+                .run_wait_and_fix(fix)
+                .await
+        }
     }
 
     /// Given a pre-check error, attempt to automatically correct it
-    #[instrument(skip(self, error))]
-    async fn pre_install_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    #[instrument(skip(error))]
+    async fn pre_install_fix(
+        install_sys: bool,
+        chart_location: ChartLocation,
+        error: RecoverableCheck,
+    ) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
         // If we handle the error successfully, return Ok(()) to indicate success
         // If we cannot handle this error, return it to bubble up
         match error {
-            RecoverableCheck::MissingSystemChart if self.config.install_sys => {
+            RecoverableCheck::MissingSystemChart if install_sys => {
                 debug!("Fluvio system chart not installed. Attempting to install");
 
                 // Use closure to catch any errors
                 let result = (|| -> Result<_, ClusterError> {
                     let mut builder = ClusterInstaller::new().with_namespace(DEFAULT_NAMESPACE);
 
-                    if let ChartLocation::Local(chart) = &self.config.chart_location {
+                    if let ChartLocation::Local(chart) = &chart_location {
                         builder = builder.with_local_chart(chart);
                     }
 
@@ -337,14 +371,14 @@ impl LocalClusterInstaller {
                 let check_results = self.setup().await;
 
                 // If any check results encountered an error, bubble the error
-                if check_results.0.iter().any(|it| it.is_err()) {
+                if check_results.iter().any(|it| it.is_err()) {
                     return Err(LocalInstallError::PrecheckErrored(check_results).into());
                 }
 
                 // If any checks successfully completed with a failure, return checks in status
-                let statuses = check_results.into_statuses();
+                let statuses: Vec<_> = check_results.into_iter().filter_map(|it| it.ok()).collect();
+
                 let any_failed = statuses
-                    .0
                     .iter()
                     .any(|it| matches!(it, crate::CheckStatus::Fail(_)));
                 if any_failed {
