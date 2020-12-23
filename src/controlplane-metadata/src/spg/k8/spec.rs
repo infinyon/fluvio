@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fluvio_types::defaults::SPU_PUBLIC_PORT;
+use fluvio_types::defaults::{SPU_PUBLIC_PORT, SPU_LOG_BASE_DIR, SPU_LOG_SIZE};
 use fluvio_types::defaults::SPU_PRIVATE_PORT;
 
 use crate::spu::EncryptionEnum;
@@ -122,11 +122,11 @@ impl K8StorageConfig {
     pub fn log_dir(&self) -> String {
         self.log_dir
             .clone()
-            .unwrap_or_else(|| "/tmp/fluvio".to_owned())
+            .unwrap_or_else(|| SPU_LOG_BASE_DIR.to_owned())
     }
 
     pub fn size(&self) -> String {
-        self.size.clone().unwrap_or_else(|| "1Gi".to_owned())
+        self.size.clone().unwrap_or_else(|| SPU_LOG_SIZE.to_owned())
     }
 }
 
