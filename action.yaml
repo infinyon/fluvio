@@ -13,10 +13,6 @@ inputs:
     description: "Add rust log options (e.g. debug, warn, info)"
     required: false
     default: 'info'
-  #version:
-  #  description: "Use a specific version of the fluvio CLI (e.g. latest, 0.6.0)"
-  #  required: false
-  #  default: 'latest'
   development:
     description: "Use a debug release version of fluvio"
     required: false
@@ -37,7 +33,6 @@ runs:
         echo "SPU_NUMBER=${{ inputs.spus }}" >> $GITHUB_ENV
         echo "CLUSTER_TYPE=${{ inputs.cluster-type }}" >> $GITHUB_ENV
         echo "RUST_LOG=${{ inputs.rust-log }}" >> $GITHUB_ENV
-        #echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
         echo "DEVELOPMENT=${{ inputs.development }}" >> $GITHUB_ENV
         echo "HELM_VERSION=${{ inputs.helm-version }}" >> $GITHUB_ENV
         echo "MINIKUBE_VERSION=${{ inputs.minikube-version }}" >> $GITHUB_ENV
