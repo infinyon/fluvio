@@ -415,7 +415,7 @@ impl ClusterChecker {
     /// - [`run_wait_and_fix`]
     /// - [`run_with_progress`]
     /// - [`run_and_fix_with_progress`]
-    pub fn with_minikube_checks(mut self) -> Self {
+    pub fn with_k8_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),

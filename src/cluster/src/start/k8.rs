@@ -611,7 +611,7 @@ impl ClusterInstaller {
     pub async fn setup(&self) -> CheckResults {
         let fix = |err| self.pre_install_fix(err);
         ClusterChecker::empty()
-            .with_minikube_checks()
+            .with_k8_checks()
             .run_wait_and_fix(fix)
             .await
     }
