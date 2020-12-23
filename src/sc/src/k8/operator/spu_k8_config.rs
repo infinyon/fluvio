@@ -22,9 +22,9 @@ impl SpuK8Config {
 
         debug!("ConfigMap {} data: {:?}", CONFIG_MAP_NAME, data);
 
-        let image = data
-            .remove("image")
-            .ok_or_else(|| ClientError::Other("image not found in ConfigMap spu-k8 data".to_owned()))?;
+        let image = data.remove("image").ok_or_else(|| {
+            ClientError::Other("image not found in ConfigMap spu-k8 data".to_owned())
+        })?;
 
         let resources_string = data.remove("resources").ok_or_else(|| {
             ClientError::Other("resources not found in ConfigMap spu-k8 data".to_owned())
