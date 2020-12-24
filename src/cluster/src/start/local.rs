@@ -538,7 +538,10 @@ impl LocalClusterInstaller {
             self.launch_spu(i, client.clone(), &self.config.log_dir)
                 .await?;
         }
-        info!("SC log generated at {}/flv_sc.log", &self.config.log_dir.display());
+        info!(
+            "SC log generated at {}/flv_sc.log",
+            &self.config.log_dir.display()
+        );
         sleep(Duration::from_millis(500)).await;
         Ok(())
     }
