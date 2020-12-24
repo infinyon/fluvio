@@ -51,17 +51,17 @@ runs:
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
       shell: bash
     - name: install-helm
-      if: startsWith(inputs.without-helm, 'false')
+      #if: startsWith(inputs.without-helm, 'false')
       shell: bash
       run: ${{ github.action_path }}/actions/ci-replace-helm.sh
 
     - name: install-minikube
-      if: startsWith(inputs.without-minikube, 'false')
+      #if: startsWith(inputs.without-minikube, 'false')
       shell: bash
       run: ${{ github.action_path }}/actions/action-install-minikube.sh
 
     - name: install-fluvio
-      if: startsWith(inputs.without-fluvio, 'false')
+      #if: startsWith(inputs.without-fluvio, 'false')
       shell: bash
       run: ${{ github.action_path }}/actions/action-install-fluvio-cluster.sh
 
