@@ -1,11 +1,10 @@
 use std::default::Default;
 use std::path::PathBuf;
-use std::path::Path;
 use std::fmt;
 
 use serde::Deserialize;
 
-use fluvio_types::defaults::SPU_LOG_INDEX_MAX_BYTES;
+use fluvio_types::defaults::{SPU_LOG_INDEX_MAX_BYTES, SPU_LOG_BASE_DIR};
 use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 
@@ -31,7 +30,7 @@ impl fmt::Display for ConfigOption {
 }
 
 fn default_base_dir() -> PathBuf {
-    Path::new("/tmp").to_path_buf()
+    PathBuf::from(SPU_LOG_BASE_DIR)
 }
 
 fn default_index_max_bytes() -> Size {

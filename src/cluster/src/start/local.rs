@@ -30,8 +30,10 @@ const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 
 #[derive(Debug)]
 pub struct LocalClusterInstallerBuilder {
-    /// The directory where log files are
-    log_dir: String,
+    /// The directory where application log files are
+    log_dir: PathBuf,
+    /// The directory where streaming data is stored
+    data_dir: PathBuf,
     /// The logging settings to set in the cluster
     rust_log: Option<String>,
     /// SPU spec
@@ -88,7 +90,7 @@ impl LocalClusterInstallerBuilder {
         self
     }
 
-    /// Sets the log directory.
+    /// Sets the application log directory.
     ///
     /// # Example
     ///
@@ -99,8 +101,24 @@ impl LocalClusterInstallerBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn with_log_dir(mut self, log_dir: String) -> Self {
-        self.log_dir = log_dir;
+    pub fn with_log_dir<P: Into<PathBuf>>(mut self, log_dir: P) -> Self {
+        self.log_dir = log_dir.into();
+        self
+    }
+
+    /// Sets the data-log directory. This is where streaming data is stored.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::LocalClusterInstaller;
+    /// let installer = LocalClusterInstaller::new()
+    ///     .with_data_dir("/tmp/fluvio".to_string())
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_data_dir<P: Into<PathBuf>>(mut self, data_dir: P) -> Self {
+        self.data_dir = data_dir.into();
         self
     }
 
@@ -290,7 +308,8 @@ impl LocalClusterInstaller {
         LocalClusterInstallerBuilder {
             spu_spec,
             rust_log: Some("info".to_string()),
-            log_dir: "/tmp".to_string(),
+            log_dir: PathBuf::from("/tmp"),
+            data_dir: PathBuf::from("/tmp/fluvio"),
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
             chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
@@ -389,9 +408,9 @@ impl LocalClusterInstaller {
             }
         };
 
-        debug!("using log dir: {}", &self.config.log_dir);
-        if !Path::new(&self.config.log_dir.to_string()).exists() {
-            create_dir_all(&self.config.log_dir.to_string()).map_err(LocalInstallError::IoError)?;
+        debug!("using log dir: {}", self.config.log_dir.display());
+        if !self.config.log_dir.exists() {
+            create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
         }
         // ensure we sync files before we launch servers
         Command::new("sync").inherit();
@@ -415,7 +434,7 @@ impl LocalClusterInstaller {
     ///
     /// Returns the address of the SC if successful
     fn launch_sc(&self) -> Result<String, LocalInstallError> {
-        let outputs = File::create(format!("{}/flv_sc.log", &self.config.log_dir))?;
+        let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
         let mut binary = {
@@ -516,10 +535,13 @@ impl LocalClusterInstaller {
         let count = self.config.spu_spec.replicas;
         for i in 0..count {
             debug!("launching SPU ({} of {})", i + 1, count);
-            self.launch_spu(i, client.clone(), &self.config.log_dir.to_string())
+            self.launch_spu(i, client.clone(), &self.config.log_dir)
                 .await?;
         }
-        info!("SC log generated at {}/flv_sc.log", &self.config.log_dir);
+        info!(
+            "SC log generated at {}/flv_sc.log",
+            &self.config.log_dir.display()
+        );
         sleep(Duration::from_millis(500)).await;
         Ok(())
     }
@@ -528,7 +550,7 @@ impl LocalClusterInstaller {
         &self,
         spu_index: u16,
         client: SharedK8Client,
-        log_dir: &str,
+        log_dir: &Path,
     ) -> Result<(), LocalInstallError> {
         use k8_client::metadata::MetadataClient;
         const BASE_PORT: u16 = 9010;
@@ -565,7 +587,7 @@ impl LocalClusterInstaller {
         client.create_item(input).await?;
         // sleep 1 seconds for sc to connect
         sleep(Duration::from_millis(300)).await;
-        let log_spu = format!("{}/spu_log_{}.log", log_dir, spu_id);
+        let log_spu = format!("{}/spu_log_{}.log", log_dir.display(), spu_id);
         let outputs = File::create(&log_spu)?;
         let errors = outputs.try_clone()?;
 
@@ -588,6 +610,8 @@ impl LocalClusterInstaller {
             .arg(format!("0.0.0.0:{}", public_port))
             .arg("-v")
             .arg(format!("0.0.0.0:{}", private_port))
+            .arg("--log-base-dir")
+            .arg(&self.config.data_dir)
             .print();
         info!("SPU<{}> cmd: {:#?}", spu_index, cmd);
         info!("SPU log generated at {}", log_spu);

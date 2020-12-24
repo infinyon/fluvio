@@ -969,7 +969,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1361,7 +1361,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-storage"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
@@ -1438,7 +1438,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "event-listener",
  "tracing",
