@@ -25,6 +25,18 @@ inputs:
     description: "Use a specific minikube version"
     required: false
     default: 'v1.13.1'
+  without-minikube:
+    description: "Set to true to not install minikube"
+    required: false
+    default: "false"
+  without-helm:
+    description: "Set to true to not install helm"
+    required: false
+    default: "false"
+  without-fluvio:
+    description: "Set to true to not install fluvio"
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -39,12 +51,15 @@ runs:
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
       shell: bash
     - id: install-helm
+      if: ${{ inputs.without-helm != 'true' }}
       run: ${{ github.action_path }}/actions/ci-replace-helm.sh
       shell: bash
     - id: install-minikube
+      if: ${{ inputs.without-minikueb != 'true' }}
       run: ${{ github.action_path }}/actions/action-install-minikube.sh
       shell: bash
     - id: install-fluvio
+      if: ${{ inputs.without-minikueb != 'true' }}
       run: ${{ github.action_path }}/actions/action-install-fluvio-cluster.sh
       shell: bash
     - id: set-fluvio-path

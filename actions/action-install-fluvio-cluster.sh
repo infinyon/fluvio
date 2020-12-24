@@ -21,6 +21,7 @@ if [ "$CLUSTER_TYPE" = "local" ]; then
     # Run Fluvio Cluster Pre-Install Check
 
 else
+    fluvio cluster start --sys
     # Install Local Fluvio Cluster
     fluvio cluster start --rust-log $RUST_LOG --spu $SPU_NUMBER
 fi
