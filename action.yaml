@@ -40,7 +40,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - id: set-environment-variables
+    - name: set-environment-variables
       run: |
         echo "SPU_NUMBER=${{ inputs.spus }}" >> $GITHUB_ENV
         echo "CLUSTER_TYPE=${{ inputs.cluster-type }}" >> $GITHUB_ENV
@@ -50,19 +50,19 @@ runs:
         echo "MINIKUBE_VERSION=${{ inputs.minikube-version }}" >> $GITHUB_ENV
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
       shell: bash
-    - id: install-helm
+    - name: install-helm
       if: ${{ inputs.without-helm != 'true' }}
       run: ${{ github.action_path }}/actions/ci-replace-helm.sh
       shell: bash
-    - id: install-minikube
+    - name: install-minikube
       if: ${{ inputs.without-minikueb != 'true' }}
       run: ${{ github.action_path }}/actions/action-install-minikube.sh
       shell: bash
-    - id: install-fluvio
+    - name: install-fluvio
       if: ${{ inputs.without-minikueb != 'true' }}
       run: ${{ github.action_path }}/actions/action-install-fluvio-cluster.sh
       shell: bash
-    - id: set-fluvio-path
+    - name: set-fluvio-path
       shell: bash
       run: |
         echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
