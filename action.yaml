@@ -51,7 +51,7 @@ runs:
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
       shell: bash
     - name: install-helm
-      if: !startsWith(inputs.without-helm, 'true')
+      if: ${{ !startsWith(inputs.without-helm, 'true') }}
       shell: bash
       run: ${{ github.action_path }}/actions/ci-replace-helm.sh
 
