@@ -52,16 +52,19 @@ runs:
       shell: bash
     - name: install-helm
       if: ${{ inputs.without-helm != 'true' }}
-      run: ${{ github.action_path }}/actions/ci-replace-helm.sh
       shell: bash
+      run: ${{ github.action_path }}/actions/ci-replace-helm.sh
+
     - name: install-minikube
       if: ${{ inputs.without-minikueb != 'true' }}
-      run: ${{ github.action_path }}/actions/action-install-minikube.sh
       shell: bash
+      run: ${{ github.action_path }}/actions/action-install-minikube.sh
+
     - name: install-fluvio
       if: ${{ inputs.without-minikueb != 'true' }}
-      run: ${{ github.action_path }}/actions/action-install-fluvio-cluster.sh
       shell: bash
+      run: ${{ github.action_path }}/actions/action-install-fluvio-cluster.sh
+
     - name: set-fluvio-path
       shell: bash
       run: |
