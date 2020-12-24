@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spu-k8
+data:
+  image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
+  resources: {{ .Values.spuResources | toJson | quote }}

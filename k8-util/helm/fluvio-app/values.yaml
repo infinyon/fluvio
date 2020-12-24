@@ -16,6 +16,20 @@ cert:
   caCert: fluvio-ca
   tls: fluvio-tls
 authorizationConfigMap: null
+scResources:
+  requests:
+    memory: 64Mi
+    cpu: 20m
+  limits:
+    memory: 256Mi
+    cpu: 500m
+spuResources:
+  requests:
+    memory: 256Mi
+    cpu: 20m
+  limits:
+    memory: 512Mi
+    cpu: 500m
 rbac:
   create: true
 serviceAccount:

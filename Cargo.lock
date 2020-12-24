@@ -2002,9 +2002,9 @@ dependencies = [
 
 [[package]]
 name = "k8-obj-core"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cf9c3707756e0514e55f3adba39249a452e1b5028688a5b575b2c280bfd8ad5"
+checksum = "bfbb519fe59298ed0100c6dd27d9b64b81fad52b2d56e966b9b6da2fa61100fb"
 dependencies = [
  "http 0.1.21",
  "k8-obj-metadata",

@@ -12,6 +12,7 @@ rules:
     - persistentvolumes
     - replicasets
     - deployments
+    - configmaps
   verbs: ["*"]
 - apiGroups:  ["apps"]
   resources:  ["*"]
