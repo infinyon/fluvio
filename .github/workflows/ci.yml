@@ -357,42 +357,20 @@ jobs:
           name: fluvio-k8-logs
           path: /tmp/flv_sc.log
 
-  composite_action_local_test:
+  composite_action_test:
     name: Composite Action Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Fluvio Local Cluster
-        uses: ./
-      - name: Fluvio command test
-        run: |
-          sleep 3
-          fluvio version
-          fluvio topic list
-          fluvio topic create "foobar"
-          sleep 3
-          echo foo | fluvio produce "foobar"
-          fluvio consume foobar -o 0 -d
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"
-
-  composite_action_k8s_test:
-    name: Composite Action Kubernetes Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+        cluster-type: [local, kubernetes]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install Fluvio k8s Cluster
         uses: ./
         with:
-          cluster-type: kubernetes
+          cluster-type: ${{ matrix.cluster-type }}
       - name: Fluvio command test
         run: |
           sleep 3
