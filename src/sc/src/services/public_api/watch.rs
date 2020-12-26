@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 use tracing::{debug, trace};
 use tracing::error;
+use tracing::instrument;
 
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
@@ -88,6 +89,13 @@ where
         spawn(controller.dispatch_loop());
     }
 
+    #[instrument(
+        skip(self),
+        fields(
+            spec = S::LABEL,
+            sink=self.response_sink.id()
+        )
+    )]
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
@@ -103,7 +111,7 @@ where
             select! {
 
                 _ = self.end_event.listen() => {
-                    debug!("watch: {}, connection has been terminated, terminating",S::LABEL);
+                    debug!("connection has been terminated");
                     break;
                 },
 

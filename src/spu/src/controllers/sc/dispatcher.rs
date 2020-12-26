@@ -108,7 +108,7 @@ impl ScDispatcher<FileReplica> {
                     sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
                 } else {
                     // continuously process updates from and send back status to SC
-                    match self.sc_request_loop(socket).await {
+                    match self.request_loop(socket).await {
                         Ok(_) => {
                             debug!(
                                 "sc connection terminated: {}, waiting before reconnecting",
@@ -133,11 +133,13 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    /// dispatch sc request
-    #[instrument(skip(self, socket))]
-    async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
-        use tokio::select;
 
+    #[instrument(
+        skip(self),
+        fields(socket = &*format!("{}", socket.id()))
+    )]
+    async fn request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+      
         /// Interval between each send to SC
         /// SC status are not source of truth, it is delayed derived data.  
         const MIN_SC_SINK_TIME: Duration = Duration::from_millis(200);
@@ -216,6 +218,10 @@ impl ScDispatcher<FileReplica> {
     }
 
     /// register local spu to sc
+    #[instrument(
+        skip(self),
+        fields(socket = socket.id())
+    )]
     async fn send_spu_registeration(
         &self,
         socket: &mut FlvSocket,
@@ -291,7 +297,11 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self, req_msg), name = "update_replica_request")]
+    #[instrument(
+        skip(self,sc_sink,req_msg),
+        name = "update_replica_request",
+        fields( message = &*format!("{:#?}", req_msg.request))
+    )]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
@@ -299,22 +309,10 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), FlvSocketError> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!("received replica update from sc: {:#?}", request);
-
         let actions = if !request.all.is_empty() {
-            debug!(
-                epoch = request.epoch,
-                item_count = request.all.len(),
-                "received replica sync all"
-            );
             trace!("received replica all items: {:#?}", request.all);
             self.ctx.replica_localstore().sync_all(request.all)
         } else {
-            debug!(
-                epoch = request.epoch,
-                item_count = request.changes.len(),
-                "received replica changes"
-            );
             trace!("received replica change items: {:#?}", request.changes);
             self.ctx.replica_localstore().apply_changes(request.changes)
         };
@@ -325,7 +323,7 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self, req_msg), name = "update_spu_request")]
+    #[instrument(skip(self),name = "update_spu_request")]
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
@@ -353,9 +351,13 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
+    
     #[instrument(
-        skip(self, actions),
-        fields(action_count = actions.count())
+        skip(self,actions,sc_sink),
+        fields(
+            action_count = actions.count(),
+            sink = &*format!("{}", sc_sink.id())
+        )
     )]
     async fn apply_replica_actions(
         &self,
@@ -460,8 +462,7 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    #[instrument(
-        skip(self, replica),
+    #[instrument(skip(self, replica),
         fields(replica_id = &*format!("{}", replica.id))
     )]
     async fn update_leader_replica(&self, replica: Replica) {
@@ -501,8 +502,11 @@ impl ScDispatcher<FileReplica> {
 
     /// reemove leader replica
     #[instrument(
-        skip(self, replica),
-        fields(replica_id = &*format!("{}", replica.id))
+        skip(self,replica,sc_sink),
+        fields(
+            replica_id = &*format!("{}", replica.id),
+            sink = &*format!("{}", sc_sink.id())
+        )
     )]
     async fn remove_leader_replica(
         &self,
@@ -558,7 +562,7 @@ impl ScDispatcher<FileReplica> {
 
     /// spawn new leader controller
     #[instrument(
-        skip(self, replica_id, leader_state),
+        skip(self,replica_id, leader_state),
         fields(replica_id = &*format!("{}", replica_id))
     )]
     async fn spawn_leader_controller(

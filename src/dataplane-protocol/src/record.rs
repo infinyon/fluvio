@@ -25,6 +25,9 @@ use crate::Offset;
 
 pub type DefaultRecord = Record<DefaultAsyncBuffer>;
 
+/// maxmimum number of records to display
+const MAX_STRING_DISPLAY: usize = 100;
+
 pub use file::*;
 
 /// slice that can works in Async Context
@@ -93,7 +96,15 @@ impl AsyncBuffer for DefaultAsyncBuffer {
 impl Debug for DefaultAsyncBuffer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
-            Some(ref val) => write!(f, "{:?}", String::from_utf8_lossy(val)),
+            Some(ref value) => {
+                // we assume content is text if it is not binary
+                if matches!(inspect(value), ContentType::BINARY) {
+                    write!(f,"values binary: ({} bytes)", self.len())
+                } else {
+                    writeln!(f,"value text: ({} bytes)", self.len())?;
+                    writeln!(f,"first 100: {}", String::from_utf8_lossy(&value[0..std::cmp::min(value.len(),MAX_STRING_DISPLAY)]))
+                }
+            },
             None => write!(f, "no values"),
         }
     }
@@ -102,7 +113,14 @@ impl Debug for DefaultAsyncBuffer {
 impl Display for DefaultAsyncBuffer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
-            Some(ref val) => write!(f, "{}", String::from_utf8_lossy(val)),
+            Some(ref value) => {
+                if matches!(inspect(value), ContentType::BINARY) {
+                    write!(f,"binary: ({} bytes)", self.len())
+                } else {
+                    writeln!(f,"text: ({} bytes)", self.len())?;
+                    writeln!(f,"first 100: {}", String::from_utf8_lossy(&value[0..std::cmp::min(value.len(),MAX_STRING_DISPLAY)]))
+                }
+            }
             None => write!(f, ""),
         }
     }

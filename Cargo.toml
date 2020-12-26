@@ -34,6 +34,9 @@ members = [
 #[profile.release]
 #debug = true
 
+[patch.crates-io]
+fluvio-socket = { path = '../fluvio-socket/crates/socket' }
+
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]

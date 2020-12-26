@@ -174,7 +174,7 @@ mod produce {
                 print_cli_ok!()
             }
             Err(err) => {
-                print_cli_err!(format!("error processing record: {}", err));
+                print_cli_err!(format!("error processing record: {:#?}", err));
                 std::process::exit(-1);
             }
         }

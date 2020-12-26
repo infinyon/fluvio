@@ -33,7 +33,7 @@ static SC_RECONCILIATION_INTERVAL_SEC: Lazy<u64> = Lazy::new(|| {
     use std::env;
 
     let var_value = env::var("FLV_SC_RECONCILIATION_INTERVAL").unwrap_or_default();
-    let wait_time: u64 = var_value.parse().unwrap_or(60);
+    let wait_time: u64 = var_value.parse().unwrap_or(60*5);
     wait_time
 });
 
@@ -99,16 +99,14 @@ where
     async fn outer_loop(mut self) {
         info!("starting k8 dispatcher loop");
         loop {
-            debug!("starting inner loop");
-            self.inner_loop().await;
+            debug!("starting concilation loop");
+            self.reconcillation_loop().await;
         }
     }
 
     ///
     /// Main Event Loop
-    ///
-    #[instrument(skip(self))]
-    async fn inner_loop(&mut self) {
+    async fn reconcillation_loop(&mut self) {
         use tokio::select;
 
         info!("begin new reconcillation loop");

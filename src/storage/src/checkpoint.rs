@@ -3,6 +3,7 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::SeekFrom;
+use std::path::PathBuf;
 
 use bytes::Buf;
 use bytes::BufMut;
@@ -65,6 +66,7 @@ impl ReadToBuf for i64 {
 pub struct CheckPoint<T> {
     option: ConfigOption,
     offset: T,
+    path: PathBuf,
     file: File,
 }
 
@@ -86,6 +88,7 @@ where
                 let mut checkpoint = CheckPoint {
                     option: option.to_owned(),
                     file,
+                    path: checkpoint_path,
                     offset: initial_offset.clone(),
                 };
                 checkpoint.read().await?;
@@ -93,8 +96,8 @@ where
             }
             Err(_) => {
                 debug!(
-                    "no existing creating checkpoint {:#?}, creating",
-                    checkpoint_path
+                    "no existing creating checkpoint {}, creating",
+                    checkpoint_path.display()
                 );
                 let file = util::open_read_write(&checkpoint_path).await?;
                 trace!("file created: {:#?}", checkpoint_path);
@@ -102,6 +105,7 @@ where
                     option: option.to_owned(),
                     file,
                     offset: initial_offset.clone(),
+                    path: checkpoint_path
                 };
                 checkpoint.write(initial_offset.clone()).await?;
                 Ok(checkpoint)
@@ -138,7 +142,7 @@ where
     }
 
     pub(crate) async fn write(&mut self, pos: T) -> Result<(), IoError> {
-        debug!("writing checkpoint: {}", pos);
+        debug!("Update checkpoint: {} at: {}", pos,self.path.display());
         self.file.seek(SeekFrom::Start(0)).await?;
         let mut contents = Vec::new();
         self.offset = pos;

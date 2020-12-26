@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tracing::debug;
+use tracing::{ debug,trace} ;
 use tracing::warn;
 use tracing::error;
 use async_channel::Receiver;
@@ -169,7 +169,7 @@ impl ReplicaLeaderController<FileReplica> {
 
     /// go thru each of follower and sync replicas
     async fn sync_followers(&self) {
-        debug!("sync followers");
+        trace!("sync followers, replica={}",self.id);
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica
                 .sync_followers(&self.follower_sinks, self.max_bytes)
