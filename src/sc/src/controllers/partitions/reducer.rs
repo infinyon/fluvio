@@ -84,9 +84,9 @@ impl PartitionReducer {
         &self,
         updates: Vec<PartitionAdminMd>,
     ) -> Vec<PartitionWSAction> {
-
         // reconcile delete timestamp in the metadata with delete status
-        updates.into_iter()
+        updates
+            .into_iter()
             .filter_map(|partition| {
                 if partition.ctx().item().is_being_deleted() && !partition.status.is_being_deleted {
                     debug!("set partition: {} to delete", partition.key());

@@ -262,9 +262,7 @@ async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequ
             None
         }
     } else {
-        error!(
-            "replica doesn't exist"
-        );
+        error!("replica doesn't exist");
         None
     };
 

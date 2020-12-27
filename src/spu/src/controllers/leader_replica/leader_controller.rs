@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tracing::{ debug,trace} ;
+use tracing::{debug, trace};
 use tracing::warn;
 use tracing::error;
 use tracing::instrument;

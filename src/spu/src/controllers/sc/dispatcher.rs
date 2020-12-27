@@ -295,10 +295,7 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(
-        skip(self,sc_sink,req_msg),
-        name = "update_replica_request",
-    )]
+    #[instrument(skip(self, sc_sink, req_msg), name = "update_replica_request")]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
@@ -322,7 +319,7 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self,req_msg), name = "update_spu_request")]
+    #[instrument(skip(self, req_msg), name = "update_spu_request")]
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
@@ -352,13 +349,12 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
-    #[instrument(skip(self,actions,sc_sink))]
+    #[instrument(skip(self, actions, sc_sink))]
     async fn apply_replica_actions(
         &self,
         actions: Actions<SpecChange<Replica>>,
         sc_sink: &mut FlvSink,
     ) -> Result<(), FlvSocketError> {
-        
         trace!( actions = ?actions,"replica actions");
 
         if actions.count() == 0 {
@@ -551,7 +547,6 @@ impl ScDispatcher<FileReplica> {
             false
         };
 
-        
         let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
         debug!(
             sc_message = ?confirm_request,

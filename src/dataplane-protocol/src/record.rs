@@ -99,12 +99,18 @@ impl Debug for DefaultAsyncBuffer {
             Some(ref value) => {
                 // we assume content is text if it is not binary
                 if matches!(inspect(value), ContentType::BINARY) {
-                    write!(f,"values binary: ({} bytes)", self.len())
+                    write!(f, "values binary: ({} bytes)", self.len())
                 } else {
-                    writeln!(f,"value text: ({} bytes)", self.len())?;
-                    writeln!(f,"first 100: {}", String::from_utf8_lossy(&value[0..std::cmp::min(value.len(),MAX_STRING_DISPLAY)]))
+                    writeln!(f, "value text: ({} bytes)", self.len())?;
+                    writeln!(
+                        f,
+                        "first 100: {}",
+                        String::from_utf8_lossy(
+                            &value[0..std::cmp::min(value.len(), MAX_STRING_DISPLAY)]
+                        )
+                    )
                 }
-            },
+            }
             None => write!(f, "no values"),
         }
     }
@@ -115,10 +121,16 @@ impl Display for DefaultAsyncBuffer {
         match self.0 {
             Some(ref value) => {
                 if matches!(inspect(value), ContentType::BINARY) {
-                    write!(f,"binary: ({} bytes)", self.len())
+                    write!(f, "binary: ({} bytes)", self.len())
                 } else {
-                    writeln!(f,"text: ({} bytes)", self.len())?;
-                    writeln!(f,"first 100: {}", String::from_utf8_lossy(&value[0..std::cmp::min(value.len(),MAX_STRING_DISPLAY)]))
+                    writeln!(f, "text: ({} bytes)", self.len())?;
+                    writeln!(
+                        f,
+                        "first 100: {}",
+                        String::from_utf8_lossy(
+                            &value[0..std::cmp::min(value.len(), MAX_STRING_DISPLAY)]
+                        )
+                    )
                 }
             }
             None => write!(f, ""),

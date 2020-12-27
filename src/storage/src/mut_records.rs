@@ -94,13 +94,13 @@ impl MutFileRecords {
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
         item.encode(&mut buffer, 0)?;
-       
+
         if self.f_sink.can_be_appended(buffer.len() as u64) {
-            debug!("writing {} bytes at: {}", buffer.len(),self.path.display());
+            debug!("writing {} bytes at: {}", buffer.len(), self.path.display());
             self.f_sink.write_all(&buffer).await?;
             // for now, we flush for every send
             self.f_sink.flush().await?;
-            debug!("flushed {}",self.path.display());
+            debug!("flushed {}", self.path.display());
             Ok(())
         } else {
             Err(StorageError::NoRoom(item))

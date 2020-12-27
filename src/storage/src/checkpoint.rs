@@ -105,7 +105,7 @@ where
                     option: option.to_owned(),
                     file,
                     offset: initial_offset.clone(),
-                    path: checkpoint_path
+                    path: checkpoint_path,
                 };
                 checkpoint.write(initial_offset.clone()).await?;
                 Ok(checkpoint)
@@ -142,7 +142,7 @@ where
     }
 
     pub(crate) async fn write(&mut self, pos: T) -> Result<(), IoError> {
-        debug!("Update checkpoint: {} at: {}", pos,self.path.display());
+        debug!("Update checkpoint: {} at: {}", pos, self.path.display());
         self.file.seek(SeekFrom::Start(0)).await?;
         let mut contents = Vec::new();
         self.offset = pos;
