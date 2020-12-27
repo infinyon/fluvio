@@ -164,10 +164,9 @@ where
     }
 
     /// apply changes coming from sc which generates spec change actions
-    #[instrument(skip(self, changes), fields(spec = S::LABEL, change_count = changes.len()))]
+    #[instrument(level = "TRACE",skip(self, changes), fields(spec = S::LABEL, change_count = changes.len()))]
     pub fn apply_changes(&self, changes: Vec<Message<S>>) -> Actions<SpecChange<S>> {
         let (mut add_cnt, mut mod_cnt, mut del_cnt, mut skip_cnt) = (0, 0, 0, 0);
-        debug!("apply changes");
         // debug!(
         //     spec_label = S::LABEL,
         //     change_count = changes.len(),
@@ -204,13 +203,13 @@ where
             }
         }
 
-        debug!(
+        trace!(
             spec_label = S::LABEL,
             add_count = add_cnt,
             mod_count = mod_cnt,
             del_count = del_cnt,
             skip_count = skip_cnt,
-            "Apply spec changes",
+            "change count",
         );
 
         actions

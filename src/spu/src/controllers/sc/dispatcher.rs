@@ -133,17 +133,15 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-
     #[instrument(
         skip(self),
-        fields(socket = &*format!("{}", socket.id()))
+        name = "sc_dispatch_loop",
+        fields(socket = socket.id())
     )]
     async fn request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
-      
         /// Interval between each send to SC
         /// SC status are not source of truth, it is delayed derived data.  
         const MIN_SC_SINK_TIME: Duration = Duration::from_millis(400);
-
 
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
@@ -153,12 +151,12 @@ impl ScDispatcher<FileReplica> {
         let mut status_timer = sleep(MIN_SC_SINK_TIME);
 
         loop {
-            
             select! {
 
                 _ = &mut status_timer =>  {
                     trace!("status timer expired");
                     if !self.send_status_back_to_sc(&mut sink).await {
+                        debug!("error sending status, exiting request loop");
                         break;
                     }
                     status_timer = sleep(MIN_SC_SINK_TIME);
@@ -201,14 +199,14 @@ impl ScDispatcher<FileReplica> {
     async fn send_status_back_to_sc(&mut self, sc_sink: &mut FlvSink) -> bool {
         let requests = self.sink_channel.remove_all().await;
         if !requests.is_empty() {
-            trace!(requests = requests.len(),"sending status back to sc");
+            debug!(requests = ?requests, "sending status back to sc");
             let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
             if let Err(err) = sc_sink.send_request(&message).await {
                 error!("error sending batch status to sc: {}", err);
                 false
             } else {
-                trace!("send status back");
+                trace!("successfully send status back to sc");
                 true
             }
         } else {
@@ -300,7 +298,6 @@ impl ScDispatcher<FileReplica> {
     #[instrument(
         skip(self,sc_sink,req_msg),
         name = "update_replica_request",
-        fields( message = &*format!("{:#?}", req_msg.request))
     )]
     async fn handle_update_replica_request(
         &mut self,
@@ -308,6 +305,8 @@ impl ScDispatcher<FileReplica> {
         sc_sink: &mut FlvSink,
     ) -> Result<(), FlvSocketError> {
         let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"replica request");
 
         let actions = if !request.all.is_empty() {
             trace!("received replica all items: {:#?}", request.all);
@@ -323,12 +322,14 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self),name = "update_spu_request")]
+    #[instrument(skip(self,req_msg), name = "update_spu_request")]
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"spu request");
 
         let _actions = if !request.all.is_empty() {
             debug!(
@@ -351,19 +352,15 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
-    
-    #[instrument(
-        skip(self,actions,sc_sink),
-        fields(
-            action_count = actions.count(),
-            sink = &*format!("{}", sc_sink.id())
-        )
-    )]
+    #[instrument(skip(self,actions,sc_sink))]
     async fn apply_replica_actions(
         &self,
         actions: Actions<SpecChange<Replica>>,
         sc_sink: &mut FlvSink,
     ) -> Result<(), FlvSocketError> {
+        
+        trace!( actions = ?actions,"replica actions");
+
         if actions.count() == 0 {
             debug!("no replica actions to process. ignoring");
             return Ok(());
@@ -399,7 +396,6 @@ impl ScDispatcher<FileReplica> {
                     );
 
                     if new_replica.is_being_deleted {
-                        debug!("replica being deleted: {:#?}", new_replica);
                         if new_replica.leader == local_id {
                             self.remove_leader_replica(new_replica, sc_sink).await?;
                         } else {
@@ -438,7 +434,7 @@ impl ScDispatcher<FileReplica> {
 
     #[instrument(
         skip(self, replica),
-        fields(replica_id = &*format!("{}", replica.id))
+        fields(replica = %replica.id)
     )]
     async fn add_leader_replica(&self, replica: Replica) {
         debug!("adding new leader replica");
@@ -463,7 +459,7 @@ impl ScDispatcher<FileReplica> {
     }
 
     #[instrument(skip(self, replica),
-        fields(replica_id = &*format!("{}", replica.id))
+        fields(replica = %replica.id)
     )]
     async fn update_leader_replica(&self, replica: Replica) {
         debug!("updating leader controller");
@@ -504,8 +500,7 @@ impl ScDispatcher<FileReplica> {
     #[instrument(
         skip(self,replica,sc_sink),
         fields(
-            replica_id = &*format!("{}", replica.id),
-            sink = &*format!("{}", sc_sink.id())
+            replica = %replica.id,
         )
     )]
     async fn remove_leader_replica(
@@ -515,9 +510,8 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), FlvSocketError> {
         use fluvio_controlplane::ReplicaRemovedRequest;
 
-        debug!("trying to remove leader controller: {}", replica);
-
         // try to send message to leader controller if still exists
+        debug!("sending terminate message to leader controller");
         match self
             .ctx
             .leaders_state()
@@ -543,9 +537,13 @@ impl ScDispatcher<FileReplica> {
         let confirm = if let Some(replica_state) =
             self.ctx.leaders_state().remove_replica(&replica.id).await
         {
-            debug!("leader replica was found, removing it{}", replica);
             if let Err(err) = replica_state.remove().await {
                 error!("error: {} removing replica: {}", err, replica);
+            } else {
+                debug!(
+                    replica = %replica.id,
+                    "leader remove was removed"
+                );
             }
             true
         } else {
@@ -553,7 +551,12 @@ impl ScDispatcher<FileReplica> {
             false
         };
 
+        
         let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
+        debug!(
+            sc_message = ?confirm_request,
+            "sending back delete confirmation to sc"
+        );
 
         let message = RequestMessage::new_request(confirm_request);
 
@@ -563,7 +566,7 @@ impl ScDispatcher<FileReplica> {
     /// spawn new leader controller
     #[instrument(
         skip(self,replica_id, leader_state),
-        fields(replica_id = &*format!("{}", replica_id))
+        fields(replica = %replica_id)
     )]
     async fn spawn_leader_controller(
         &self,

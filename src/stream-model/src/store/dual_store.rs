@@ -532,7 +532,7 @@ mod listener {
 
             let current_epoch = self.event_publisher().current_change();
             if changes.epoch > current_epoch {
-                debug!(
+                trace!(
                     "latest epoch: {} > spec epoch: {}",
                     changes.epoch, current_epoch
                 );
