@@ -25,12 +25,13 @@ pub struct K8MetaItem {
 /// for sake of comparison, we only care about couple of fields in the metadata
 impl PartialEq for K8MetaItem {
     fn eq(&self, other: &Self) -> bool {
-        self.revision == other.revision && 
-            self.inner.uid == other.inner.uid &&
-            self.inner.labels == other.inner.labels &&
-            self.inner.owner_references == other.inner.owner_references &&
-            self.inner.annotations == other.inner.annotations &&
-            self.inner.finalizers == other.inner.finalizers
+        self.inner.uid == other.inner.uid
+            && self.inner.labels == other.inner.labels
+            && self.inner.owner_references == other.inner.owner_references
+            && self.inner.annotations == other.inner.annotations
+            && self.inner.finalizers == other.inner.finalizers
+            && self.deletion_grace_period_seconds == other.inner.deletion_grace_period_seconds
+            && self.deletion_timestamp == other.deletion_timestamp
     }
 }
 
@@ -45,11 +46,9 @@ impl K8MetaItem {
         }
     }
 
-    
     pub fn inner(&self) -> &ObjectMeta {
         &self.inner
     }
-    
 
     pub fn revision(&self) -> u64 {
         self.revision

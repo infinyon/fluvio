@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use std::io::Error as IoError;
 
 use tracing::info;
@@ -142,54 +142,51 @@ impl ScDispatcher<FileReplica> {
       
         /// Interval between each send to SC
         /// SC status are not source of truth, it is delayed derived data.  
-        const MIN_SC_SINK_TIME: Duration = Duration::from_millis(200);
+        const MIN_SC_SINK_TIME: Duration = Duration::from_millis(400);
 
-        async fn sink_sleep(duration: Duration) {
-            if duration < MIN_SC_SINK_TIME {
-                sleep(duration).await
-            }
-        }
 
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
         debug!("entering sc request loop");
 
-        let mut sink_time = Instant::now();
+        let mut status_timer = sleep(MIN_SC_SINK_TIME);
 
         loop {
-            if sink_time.elapsed() >= MIN_SC_SINK_TIME {
-                if !self.send_status_back_to_sc(&mut sink).await {
-                    break;
-                }
-                sink_time = Instant::now();
-            }
+            
             select! {
 
-                _ = sink_sleep(sink_time.elapsed()) =>  {
-                    continue;
+                _ = &mut status_timer =>  {
+                    trace!("status timer expired");
+                    if !self.send_status_back_to_sc(&mut sink).await {
+                        break;
+                    }
+                    status_timer = sleep(MIN_SC_SINK_TIME);
                 },
 
-                sc_request = api_stream.next() => match sc_request {
-                    Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
-                        if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
-                            error!("error handling update replica request: {}", err);
+                sc_request = api_stream.next() => {
+                    trace!("got requests from sc");
+                    match sc_request {
+                        Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
+                            if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
+                                error!("error handling update replica request: {}", err);
+                                break;
+                            }
+                        },
+                        Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
+                            if let Err(err) = self.handle_update_spu_request(request).await {
+                                error!("error handling update spu request: {}", err);
+                                break;
+                            }
+                        },
+                        Some(_) => {
+                            debug!("no more sc msg content, end");
+                            break;
+                        },
+                        _ => {
+                            debug!("sc connection terminated");
                             break;
                         }
-                    },
-                    Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
-                        if let Err(err) = self.handle_update_spu_request(request).await {
-                            error!("error handling update spu request: {}", err);
-                            break;
-                        }
-                    },
-                    Some(_) => {
-                        debug!("no more sc msg content, end");
-                        break;
-                    },
-                    _ => {
-                        debug!("sc connection terminated");
-                        break;
                     }
                 }
             }
@@ -200,9 +197,11 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
+    /// send status back to sc, if there is error return false
     async fn send_status_back_to_sc(&mut self, sc_sink: &mut FlvSink) -> bool {
         let requests = self.sink_channel.remove_all().await;
         if !requests.is_empty() {
+            trace!(requests = requests.len(),"sending status back to sc");
             let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
             if let Err(err) = sc_sink.send_request(&message).await {
@@ -213,6 +212,7 @@ impl ScDispatcher<FileReplica> {
                 true
             }
         } else {
+            trace!("nothing to send back to sc");
             true
         }
     }

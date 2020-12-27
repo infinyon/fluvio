@@ -383,7 +383,7 @@ async fn send_replica_spec_changes(
     message.get_mut_header().set_client_id("sc");
 
     debug!(
-        "sending to spu: {}, all: {}, changes: {}",
+        "sending to spu: {}, replica updates all: {}, changes: {}",
         spu_id,
         message.request.all.len(),
         message.request.changes.len()
