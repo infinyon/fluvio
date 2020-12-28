@@ -352,7 +352,7 @@ impl fmt::Display for PackageId<MaybeVersion> {
             .unwrap_or_else(|| "".to_string());
         write!(
             f,
-            "{registry}{group}/{name}:{version}",
+            "{registry}{group}/{name}{version}",
             registry = registry,
             group = self.group.as_str(),
             name = self.name.as_str(),
@@ -473,5 +473,32 @@ mod tests {
 
         let parsed_package_id: PackageId<WithVersion> = package_id_string.parse().unwrap();
         assert_eq!(package_id, parsed_package_id);
+    }
+
+    #[test]
+    fn test_package_id_display() {
+        let package_id_with_version = PackageId::new_versioned(
+            "fluvio".parse().unwrap(),
+            "fluvio".parse().unwrap(),
+            Version::parse("1.2.3-alpha").unwrap(),
+        );
+        assert_eq!(
+            "fluvio/fluvio:1.2.3-alpha",
+            format!("{}", package_id_with_version)
+        );
+
+        let package_id_maybe_with_version: PackageId<MaybeVersion> =
+            "fluvio/fluvio:3.4.5-beta".parse().unwrap();
+        assert_eq!(
+            "fluvio/fluvio:3.4.5-beta",
+            format!("{}", package_id_maybe_with_version)
+        );
+
+        let package_id_maybe_without_version =
+            PackageId::new_unversioned("fluvio".parse().unwrap(), "fluvio".parse().unwrap());
+        assert_eq!(
+            "fluvio/fluvio",
+            format!("{}", package_id_maybe_without_version)
+        );
     }
 }
