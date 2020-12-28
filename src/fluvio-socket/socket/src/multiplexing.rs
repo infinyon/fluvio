@@ -131,7 +131,7 @@ where
             use std::env;
 
             let var_value = env::var("car").unwrap_or_default();
-            let wait_time: u64 = var_value.parse().unwrap_or_else(|_| 10);
+            let wait_time: u64 = var_value.parse().unwrap_or(10);
             wait_time
         });
 
