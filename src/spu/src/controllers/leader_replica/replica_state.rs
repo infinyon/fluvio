@@ -256,7 +256,9 @@ where
     }
 
     pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
-        sc_sink.send(self.as_lrs_request()).await
+        let lrs = self.as_lrs_request();
+        debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
+        sc_sink.send(lrs).await
     }
 }
 
