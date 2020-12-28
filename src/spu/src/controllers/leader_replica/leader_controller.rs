@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use tracing::debug;
+use tracing::{debug};
 use tracing::warn;
 use tracing::error;
+use tracing::instrument;
 use async_channel::Receiver;
 use futures_util::future::join3;
 use futures_util::future::join;
@@ -84,6 +85,11 @@ impl ReplicaLeaderController<FileReplica> {
         spawn(self.dispatch_loop());
     }
 
+    #[instrument(
+        skip(self),
+        fields(replica_id = %self.id),
+        name = "LeaderController",
+    )]
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
@@ -104,20 +110,19 @@ impl ReplicaLeaderController<FileReplica> {
                     if let Some(command) = controller_req {
                         match command {
                             LeaderReplicaControllerCommand::EndOffsetUpdated => {
-                                leader_debug!(self,"leader replica end offset has updated, update the follower if need to be");
+                                debug!("leader replica end offset has updated, update the follower if need to be");
                                 join3(self.send_status_to_sc(),self.sync_followers(),self.update_offset_to_clients()).await;
                             },
 
                             LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
-                                leader_debug!(self,"Offset update from follower: {}", offsets);
                                 self.update_follower_offsets(offsets).await;
                             },
 
-                            LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica) => {
-                                leader_debug!(self,"update replica from sc: {}",replica.id);
+                            LeaderReplicaControllerCommand::UpdateReplicaFromSc(_) => {
+                                debug!("update replica from sc");
                             },
                             LeaderReplicaControllerCommand::RemoveReplicaFromSc => {
-                                leader_debug!(self,"remove replica from sc: {}",self.id);
+                                debug!("RemoveReplica command, exiting");
                                 break;
                             }
                         }
@@ -131,7 +136,7 @@ impl ReplicaLeaderController<FileReplica> {
             }
         }
 
-        leader_debug!(self, "terminated");
+        debug!("terminated");
     }
 
     /// update the follower offsets
@@ -168,8 +173,8 @@ impl ReplicaLeaderController<FileReplica> {
     }
 
     /// go thru each of follower and sync replicas
+    #[instrument(skip(self))]
     async fn sync_followers(&self) {
-        debug!("sync followers");
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica
                 .sync_followers(&self.follower_sinks, self.max_bytes)
@@ -180,6 +185,7 @@ impl ReplicaLeaderController<FileReplica> {
     }
 
     /// send status back to sc
+    #[instrument(skip(self))]
     async fn send_status_to_sc(&self) {
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             leader_replica.send_status_to_sc(&self.sc_channel).await;

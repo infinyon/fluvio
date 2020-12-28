@@ -244,22 +244,25 @@ async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
     }
 }
 
+#[instrument(
+    skip(ctx,request),
+    fields(replica=%request.id)
+)]
 async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequest) {
+    debug!(request=?request);
     // create action inside to optimize read locking
     let read_guard = ctx.partitions().store().read().await;
-    let delete_action = if let Some(partition) = read_guard.get(&request.id) {
-        // check if partiton is being deleted
-        if partition.status.is_being_deleted {
+    let delete_action = if read_guard.contains_key(&request.id) {
+        // force to delete partition regardless if confirm
+        if request.confirm {
+            debug!("force delete");
             Some(WSAction::DeleteFinal::<PartitionSpec>(request.id))
         } else {
-            error!("replica: {} was not being deleted", request.id);
+            debug!("no delete");
             None
         }
     } else {
-        error!(
-            "trying to update replica: {}, that doesn't exist",
-            request.id
-        );
+        error!("replica doesn't exist");
         None
     };
 
@@ -332,6 +335,8 @@ async fn send_replica_spec_changes(
         return Ok(());
     }
 
+    // we are only interested in spec changes or metadata changes
+    // not rely on partition status deleted because partition status contains offset changes which we don't want
     let changes = listener
         .sync_changes_with_filter(&ChangeFlag {
             spec: true,
@@ -383,7 +388,7 @@ async fn send_replica_spec_changes(
     message.get_mut_header().set_client_id("sc");
 
     debug!(
-        "sending to spu: {}, all: {}, changes: {}",
+        "sending to spu: {}, replica updates all: {}, changes: {}",
         spu_id,
         message.request.all.len(),
         message.request.changes.len()

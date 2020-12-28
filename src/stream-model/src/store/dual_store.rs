@@ -398,7 +398,6 @@ mod listener {
     use std::sync::Arc;
 
     use tracing::trace;
-    use tracing::debug;
 
     use crate::store::event::EventPublisher;
     use crate::store::{ChangeFlag, FULL_FILTER, SPEC_FILTER, STATUS_FILTER, META_FILTER};
@@ -532,9 +531,10 @@ mod listener {
 
             let current_epoch = self.event_publisher().current_change();
             if changes.epoch > current_epoch {
-                debug!(
+                trace!(
                     "latest epoch: {} > spec epoch: {}",
-                    changes.epoch, current_epoch
+                    changes.epoch,
+                    current_epoch
                 );
             }
             self.set_last_change(changes.epoch);

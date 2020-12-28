@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use std::io::Error as IoError;
 
 use tracing::info;
@@ -42,6 +42,15 @@ use crate::InternalServerError;
 use super::SupervisorCommand;
 use super::message_sink::{SharedSinkMessageChannel, ScSinkMessageChannel};
 
+// keep track of various internal state of dispatcher
+#[derive(Default)]
+struct DispatcherCounter {
+    pub replica_changes: u64, // replica changes received from sc
+    pub spu_changes: u64,     // spu changes received from sc
+    pub status_send: u64,     // number of status send to sc
+    pub reconnect: u64,       // number of reconnect to sc
+}
+
 /// Controller for handling connection to SC
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
@@ -53,6 +62,7 @@ pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
     max_bytes: u32,
     sink_channel: SharedSinkMessageChannel,
+    counter: DispatcherCounter,
 }
 
 impl<S> ScDispatcher<S> {
@@ -67,6 +77,7 @@ impl<S> ScDispatcher<S> {
             ctx,
             max_bytes,
             sink_channel,
+            counter: DispatcherCounter::default(),
         }
     }
 }
@@ -108,7 +119,7 @@ impl ScDispatcher<FileReplica> {
                     sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
                 } else {
                     // continuously process updates from and send back status to SC
-                    match self.sc_request_loop(socket).await {
+                    match self.request_loop(socket).await {
                         Ok(_) => {
                             debug!(
                                 "sc connection terminated: {}, waiting before reconnecting",
@@ -133,61 +144,60 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    /// dispatch sc request
-    #[instrument(skip(self, socket))]
-    async fn sc_request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
-        use tokio::select;
-
+    #[instrument(
+        skip(self),
+        name = "sc_dispatch_loop",
+        fields(
+            socket = socket.id()
+        )
+    )]
+    async fn request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
         /// Interval between each send to SC
         /// SC status are not source of truth, it is delayed derived data.  
-        const MIN_SC_SINK_TIME: Duration = Duration::from_millis(200);
-
-        async fn sink_sleep(duration: Duration) {
-            if duration < MIN_SC_SINK_TIME {
-                sleep(duration).await
-            }
-        }
+        const MIN_SC_SINK_TIME: Duration = Duration::from_millis(400);
 
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
-        debug!("entering sc request loop");
-
-        let mut sink_time = Instant::now();
+        let mut status_timer = sleep(MIN_SC_SINK_TIME);
 
         loop {
-            if sink_time.elapsed() >= MIN_SC_SINK_TIME {
-                if !self.send_status_back_to_sc(&mut sink).await {
-                    break;
-                }
-                sink_time = Instant::now();
-            }
             select! {
 
-                _ = sink_sleep(sink_time.elapsed()) =>  {
-                    continue;
+                _ = &mut status_timer =>  {
+                    trace!("status timer expired");
+                    if !self.send_status_back_to_sc(&mut sink).await {
+                        debug!("error sending status, exiting request loop");
+                        break;
+                    }
+                    status_timer = sleep(MIN_SC_SINK_TIME);
                 },
 
-                sc_request = api_stream.next() => match sc_request {
-                    Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
-                        if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
-                            error!("error handling update replica request: {}", err);
+                sc_request = api_stream.next() => {
+                    trace!("got requests from sc");
+                    match sc_request {
+                        Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
+                            self.counter.replica_changes += 1;
+                            if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
+                                error!("error handling update replica request: {}", err);
+                                break;
+                            }
+                        },
+                        Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
+                            self.counter.spu_changes += 1;
+                            if let Err(err) = self.handle_update_spu_request(request).await {
+                                error!("error handling update spu request: {}", err);
+                                break;
+                            }
+                        },
+                        Some(_) => {
+                            debug!("no more sc msg content, end");
+                            break;
+                        },
+                        _ => {
+                            debug!("sc connection terminated");
                             break;
                         }
-                    },
-                    Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
-                        if let Err(err) = self.handle_update_spu_request(request).await {
-                            error!("error handling update spu request: {}", err);
-                            break;
-                        }
-                    },
-                    Some(_) => {
-                        debug!("no more sc msg content, end");
-                        break;
-                    },
-                    _ => {
-                        debug!("sc connection terminated");
-                        break;
                     }
                 }
             }
@@ -198,24 +208,31 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
+    /// send status back to sc, if there is error return false
     async fn send_status_back_to_sc(&mut self, sc_sink: &mut FlvSink) -> bool {
         let requests = self.sink_channel.remove_all().await;
         if !requests.is_empty() {
+            debug!(requests = ?requests, "sending status back to sc");
             let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
             if let Err(err) = sc_sink.send_request(&message).await {
                 error!("error sending batch status to sc: {}", err);
                 false
             } else {
-                trace!("send status back");
+                trace!("successfully send status back to sc");
                 true
             }
         } else {
+            trace!("nothing to send back to sc");
             true
         }
     }
 
     /// register local spu to sc
+    #[instrument(
+        skip(self),
+        fields(socket = socket.id())
+    )]
     async fn send_spu_registeration(
         &self,
         socket: &mut FlvSocket,
@@ -272,6 +289,7 @@ impl ScDispatcher<FileReplica> {
                     match socket_res {
                         Ok(socket) => {
                             debug!("connected to sc for spu: {}",spu_id);
+                            self.counter.reconnect += 1;
                             return Some(socket)
                         }
                         Err(err) => warn!("error connecting to sc: {}",err)
@@ -291,7 +309,11 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self, req_msg), name = "update_replica_request")]
+    #[instrument(
+        skip(self, sc_sink, req_msg),
+        name = "update_replica_request",
+        fields(replica_changes = self.counter.replica_changes))
+    ]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
@@ -299,22 +321,12 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), FlvSocketError> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!("received replica update from sc: {:#?}", request);
+        debug!( message = ?request,"replica request");
 
         let actions = if !request.all.is_empty() {
-            debug!(
-                epoch = request.epoch,
-                item_count = request.all.len(),
-                "received replica sync all"
-            );
             trace!("received replica all items: {:#?}", request.all);
             self.ctx.replica_localstore().sync_all(request.all)
         } else {
-            debug!(
-                epoch = request.epoch,
-                item_count = request.changes.len(),
-                "received replica changes"
-            );
             trace!("received replica change items: {:#?}", request.changes);
             self.ctx.replica_localstore().apply_changes(request.changes)
         };
@@ -331,6 +343,8 @@ impl ScDispatcher<FileReplica> {
         req_msg: RequestMessage<UpdateSpuRequest>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"spu request");
 
         let _actions = if !request.all.is_empty() {
             debug!(
@@ -353,15 +367,14 @@ impl ScDispatcher<FileReplica> {
         Ok(())
     }
 
-    #[instrument(
-        skip(self, actions),
-        fields(action_count = actions.count())
-    )]
+    #[instrument(skip(self, actions, sc_sink))]
     async fn apply_replica_actions(
         &self,
         actions: Actions<SpecChange<Replica>>,
         sc_sink: &mut FlvSink,
     ) -> Result<(), FlvSocketError> {
+        trace!( actions = ?actions,"replica actions");
+
         if actions.count() == 0 {
             debug!("no replica actions to process. ignoring");
             return Ok(());
@@ -397,7 +410,6 @@ impl ScDispatcher<FileReplica> {
                     );
 
                     if new_replica.is_being_deleted {
-                        debug!("replica being deleted: {:#?}", new_replica);
                         if new_replica.leader == local_id {
                             self.remove_leader_replica(new_replica, sc_sink).await?;
                         } else {
@@ -436,7 +448,7 @@ impl ScDispatcher<FileReplica> {
 
     #[instrument(
         skip(self, replica),
-        fields(replica_id = &*format!("{}", replica.id))
+        fields(replica = %replica.id)
     )]
     async fn add_leader_replica(&self, replica: Replica) {
         debug!("adding new leader replica");
@@ -460,9 +472,8 @@ impl ScDispatcher<FileReplica> {
         }
     }
 
-    #[instrument(
-        skip(self, replica),
-        fields(replica_id = &*format!("{}", replica.id))
+    #[instrument(skip(self, replica),
+        fields(replica = %replica.id)
     )]
     async fn update_leader_replica(&self, replica: Replica) {
         debug!("updating leader controller");
@@ -501,8 +512,10 @@ impl ScDispatcher<FileReplica> {
 
     /// reemove leader replica
     #[instrument(
-        skip(self, replica),
-        fields(replica_id = &*format!("{}", replica.id))
+        skip(self,replica,sc_sink),
+        fields(
+            replica = %replica.id,
+        )
     )]
     async fn remove_leader_replica(
         &self,
@@ -511,9 +524,8 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), FlvSocketError> {
         use fluvio_controlplane::ReplicaRemovedRequest;
 
-        debug!("trying to remove leader controller: {}", replica);
-
         // try to send message to leader controller if still exists
+        debug!("sending terminate message to leader controller");
         match self
             .ctx
             .leaders_state()
@@ -539,9 +551,13 @@ impl ScDispatcher<FileReplica> {
         let confirm = if let Some(replica_state) =
             self.ctx.leaders_state().remove_replica(&replica.id).await
         {
-            debug!("leader replica was found, removing it{}", replica);
             if let Err(err) = replica_state.remove().await {
                 error!("error: {} removing replica: {}", err, replica);
+            } else {
+                debug!(
+                    replica = %replica.id,
+                    "leader remove was removed"
+                );
             }
             true
         } else {
@@ -550,6 +566,10 @@ impl ScDispatcher<FileReplica> {
         };
 
         let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
+        debug!(
+            sc_message = ?confirm_request,
+            "sending back delete confirmation to sc"
+        );
 
         let message = RequestMessage::new_request(confirm_request);
 
@@ -558,8 +578,8 @@ impl ScDispatcher<FileReplica> {
 
     /// spawn new leader controller
     #[instrument(
-        skip(self, replica_id, leader_state),
-        fields(replica_id = &*format!("{}", replica_id))
+        skip(self,replica_id, leader_state),
+        fields(replica = %replica_id)
     )]
     async fn spawn_leader_controller(
         &self,

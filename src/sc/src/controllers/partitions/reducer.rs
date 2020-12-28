@@ -84,20 +84,21 @@ impl PartitionReducer {
         &self,
         updates: Vec<PartitionAdminMd>,
     ) -> Vec<PartitionWSAction> {
-        let mut actions = vec![];
-
-        for partition in updates.into_iter() {
-            // check if we are being deleted but our status is not set correctly
-            if partition.ctx().item().is_being_deleted() && !partition.status.is_being_deleted {
-                debug!("set partition: {} to delete", partition.key());
-                actions.push(PartitionWSAction::UpdateStatus((
-                    partition.key,
-                    partition.status.set_to_delete(),
-                )));
-            }
-        }
-
-        actions
+        // reconcile delete timestamp in the metadata with delete status
+        updates
+            .into_iter()
+            .filter_map(|partition| {
+                if partition.ctx().item().is_being_deleted() && !partition.status.is_being_deleted {
+                    debug!("set partition: {} to delete", partition.key());
+                    Some(PartitionWSAction::UpdateStatus((
+                        partition.key,
+                        partition.status.set_to_delete(),
+                    )))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     ///

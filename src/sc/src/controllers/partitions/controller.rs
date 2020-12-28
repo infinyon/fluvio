@@ -74,14 +74,18 @@ impl PartitionController {
             return;
         }
 
-        trace!("sync partitions changes");
+        // we only care about delete timestamp changes which are in metadata only
         let changes = listener.sync_meta_changes().await;
         if changes.is_empty() {
-            trace!("no partitions changes");
+            trace!("no partition metadata changes");
             return;
         }
 
         let (updates, _) = changes.parts();
+        trace!(
+            meta_changes = &*format!("{:#?}", updates),
+            "metadata changes"
+        );
 
         let actions = self.reducer.process_partition_update(updates).await;
 

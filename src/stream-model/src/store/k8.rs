@@ -6,6 +6,7 @@ use std::num::ParseIntError;
 use std::fmt::Display;
 use std::fmt::Debug;
 use std::ops::Deref;
+use std::cmp::PartialEq;
 
 use tracing::error;
 
@@ -15,10 +16,23 @@ use crate::core::{Spec, MetadataItem, MetadataContext};
 
 pub type K8MetadataContext = MetadataContext<K8MetaItem>;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct K8MetaItem {
     revision: u64,
     inner: ObjectMeta,
+}
+
+/// for sake of comparison, we only care about couple of fields in the metadata
+impl PartialEq for K8MetaItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner.uid == other.inner.uid
+            && self.inner.labels == other.inner.labels
+            && self.inner.owner_references == other.inner.owner_references
+            && self.inner.annotations == other.inner.annotations
+            && self.inner.finalizers == other.inner.finalizers
+            && self.deletion_grace_period_seconds == other.inner.deletion_grace_period_seconds
+            && self.deletion_timestamp == other.deletion_timestamp
+    }
 }
 
 impl K8MetaItem {
