@@ -482,15 +482,23 @@ mod tests {
             "fluvio".parse().unwrap(),
             Version::parse("1.2.3-alpha").unwrap(),
         );
-        assert_eq!("fluvio/fluvio:1.2.3-alpha", format!("{}", package_id_with_version));
-
-        let package_id_maybe_with_version: PackageId<MaybeVersion> = "fluvio/fluvio:3.4.5-beta".parse().unwrap();
-        assert_eq!("fluvio/fluvio:3.4.5-beta", format!("{}", package_id_maybe_with_version));
-
-        let package_id_maybe_without_version = PackageId::new_unversioned(
-            "fluvio".parse().unwrap(),
-            "fluvio".parse().unwrap(),
+        assert_eq!(
+            "fluvio/fluvio:1.2.3-alpha",
+            format!("{}", package_id_with_version)
         );
-        assert_eq!("fluvio/fluvio", format!("{}", package_id_maybe_without_version));
+
+        let package_id_maybe_with_version: PackageId<MaybeVersion> =
+            "fluvio/fluvio:3.4.5-beta".parse().unwrap();
+        assert_eq!(
+            "fluvio/fluvio:3.4.5-beta",
+            format!("{}", package_id_maybe_with_version)
+        );
+
+        let package_id_maybe_without_version =
+            PackageId::new_unversioned("fluvio".parse().unwrap(), "fluvio".parse().unwrap());
+        assert_eq!(
+            "fluvio/fluvio",
+            format!("{}", package_id_maybe_without_version)
+        );
     }
 }
