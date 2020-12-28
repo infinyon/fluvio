@@ -42,6 +42,15 @@ use crate::InternalServerError;
 use super::SupervisorCommand;
 use super::message_sink::{SharedSinkMessageChannel, ScSinkMessageChannel};
 
+// keep track of various internal state of dispatcher
+#[derive(Default)]
+struct DispatcherCounter {
+    pub replica_changes: u64, // replica changes received from sc
+    pub spu_changes: u64,     // spu changes received from sc
+    pub status_send: u64,     // number of status send to sc
+    pub reconnect: u64,       // number of reconnect to sc
+}
+
 /// Controller for handling connection to SC
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
@@ -53,6 +62,7 @@ pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
     max_bytes: u32,
     sink_channel: SharedSinkMessageChannel,
+    counter: DispatcherCounter,
 }
 
 impl<S> ScDispatcher<S> {
@@ -67,6 +77,7 @@ impl<S> ScDispatcher<S> {
             ctx,
             max_bytes,
             sink_channel,
+            counter: DispatcherCounter::default(),
         }
     }
 }
@@ -136,7 +147,9 @@ impl ScDispatcher<FileReplica> {
     #[instrument(
         skip(self),
         name = "sc_dispatch_loop",
-        fields(socket = socket.id())
+        fields(
+            socket = socket.id()
+        )
     )]
     async fn request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
         /// Interval between each send to SC
@@ -145,8 +158,6 @@ impl ScDispatcher<FileReplica> {
 
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
-
-        debug!("entering sc request loop");
 
         let mut status_timer = sleep(MIN_SC_SINK_TIME);
 
@@ -166,12 +177,14 @@ impl ScDispatcher<FileReplica> {
                     trace!("got requests from sc");
                     match sc_request {
                         Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
+                            self.counter.replica_changes += 1;
                             if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
                                 error!("error handling update replica request: {}", err);
                                 break;
                             }
                         },
                         Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
+                            self.counter.spu_changes += 1;
                             if let Err(err) = self.handle_update_spu_request(request).await {
                                 error!("error handling update spu request: {}", err);
                                 break;
@@ -276,6 +289,7 @@ impl ScDispatcher<FileReplica> {
                     match socket_res {
                         Ok(socket) => {
                             debug!("connected to sc for spu: {}",spu_id);
+                            self.counter.reconnect += 1;
                             return Some(socket)
                         }
                         Err(err) => warn!("error connecting to sc: {}",err)
@@ -295,7 +309,11 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(skip(self, sc_sink, req_msg), name = "update_replica_request")]
+    #[instrument(
+        skip(self, sc_sink, req_msg),
+        name = "update_replica_request",
+        fields(replica_changes = self.counter.replica_changes))
+    ]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
