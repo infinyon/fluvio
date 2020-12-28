@@ -19,7 +19,7 @@ impl ScSinkMessageChannel {
     /// newer entry will overwrite previous if it has not been cleared
     pub async fn send(&self, request: LrsRequest) {
         let mut lock = self.0.lock().await;
-        lock.insert(request);
+        lock.replace(request);
     }
 
     pub async fn remove_all(&self) -> Vec<LrsRequest> {
