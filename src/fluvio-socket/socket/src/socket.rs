@@ -34,7 +34,7 @@ cfg_if::cfg_if! {
     }
 }
 
-/// FlvSocket is high level socket that can send and receive fluvio protocol
+/// Socket abstract that can send and receive fluvio objects
 #[derive(Debug)]
 pub struct InnerFlvSocket<S> {
     sink: InnerFlvSink<S>,
@@ -72,6 +72,10 @@ impl<S> InnerFlvSocket<S> {
 
     pub fn get_mut_stream(&mut self) -> &mut InnerFlvStream<S> {
         &mut self.stream
+    }
+
+    pub fn id(&self) -> RawFd {
+        self.sink.id()
     }
 }
 
@@ -121,7 +125,7 @@ impl<S> From<(InnerFlvSink<S>, InnerFlvStream<S>)> for InnerFlvSocket<S> {
 
 impl FlvSocket {
     pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
-        Self::connect_with_connector(addr, &DefaultTcpDomainConnector::new()).await
+        Self::connect_with_connector(addr, &DefaultTcpDomainConnector {}).await
     }
 }
 
