@@ -35,14 +35,10 @@ dependencies = [
     "pi-build",
     "github-release-create-pre-release",
 ]
-command = "github-release"
-args = [
-    "-v",
-    "upload",
-    "--user", "infinyon",
-    "--repo", "fluvio",
-    "--tag", "v${FLUVIO_VERSION}",
-    "--name", "fluvio-v${FLUVIO_VERSION}-${TARGET}",
-    "--file", "./target/${TARGET}/release/fluvio",
-    "${GITHUB_RELEASE_FORCE}",
-]
+script = '''
+if [ -n "${GITHUB_RELEASE_FORCE}" ]; then
+    github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio ${GITHUB_RELEASE_FORCE}
+else
+    github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio
+fi
+'''
