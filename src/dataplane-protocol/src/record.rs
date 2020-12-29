@@ -26,7 +26,7 @@ use crate::Offset;
 pub type DefaultRecord = Record<DefaultAsyncBuffer>;
 
 /// maxmimum number of records to display
-const MAX_STRING_DISPLAY: usize = 100;
+const MAX_STRING_DISPLAY: usize = 255;
 
 pub use file::*;
 
@@ -100,14 +100,15 @@ impl Debug for DefaultAsyncBuffer {
                 // we assume content is text if it is not binary
                 if matches!(inspect(value), ContentType::BINARY) {
                     write!(f, "values binary: ({} bytes)", self.len())
+                } else if value.len() < MAX_STRING_DISPLAY {
+                    write!(f, "{}", String::from_utf8_lossy(value))
                 } else {
-                    writeln!(f, "value text: ({} bytes)", self.len())?;
                     writeln!(
                         f,
-                        "first 100: {}",
-                        String::from_utf8_lossy(
-                            &value[0..std::cmp::min(value.len(), MAX_STRING_DISPLAY)]
-                        )
+                        "{} of {}: {}",
+                        MAX_STRING_DISPLAY,
+                        value.len(),
+                        String::from_utf8_lossy(&value[0..MAX_STRING_DISPLAY])
                     )
                 }
             }
@@ -122,14 +123,15 @@ impl Display for DefaultAsyncBuffer {
             Some(ref value) => {
                 if matches!(inspect(value), ContentType::BINARY) {
                     write!(f, "binary: ({} bytes)", self.len())
+                } else if value.len() < MAX_STRING_DISPLAY {
+                    write!(f, "{}", String::from_utf8_lossy(value))
                 } else {
-                    writeln!(f, "text: ({} bytes)", self.len())?;
                     writeln!(
                         f,
-                        "first 100: {}",
-                        String::from_utf8_lossy(
-                            &value[0..std::cmp::min(value.len(), MAX_STRING_DISPLAY)]
-                        )
+                        "{} of {}: {}",
+                        MAX_STRING_DISPLAY,
+                        value.len(),
+                        String::from_utf8_lossy(&value[0..MAX_STRING_DISPLAY])
                     )
                 }
             }
