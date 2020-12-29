@@ -969,7 +969,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.5.1"
+version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1311,7 +1311,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async-channel",
  "async-mutex",
