@@ -1,15 +1,15 @@
 # Release process
 
-bump up version `VERSION` file
+Bump up version `VERSION` file.
 
 ## Release crates
 
-Find crates that has been changed last release
+Find all crates that has been changed last release
 ```
-cargo ws changed 
+cargo workspaces changed 
 ```
 
-publish all Crates
+publish all crates
 
 ## Kick off release
 
