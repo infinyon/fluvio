@@ -122,10 +122,7 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
     &*buffer_checksum == checksum
 }
 
-pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
-    bin_path: P,
-    bytes: B,
-) -> Result<(), CliError> {
+pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Result<(), CliError> {
     use std::io::Write as _;
 
     let bin_path = bin_path.as_ref();

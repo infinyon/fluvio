@@ -4,9 +4,7 @@ use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use crate::CliError;
-use crate::install::{
-    fetch_latest_version, fetch_package_file, install_bin, install_println,
-};
+use crate::install::{fetch_latest_version, fetch_package_file, install_bin, install_println};
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
