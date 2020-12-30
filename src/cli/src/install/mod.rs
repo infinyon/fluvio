@@ -133,13 +133,18 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
     let bin_dir = bin_dir.as_ref();
     std::fs::create_dir_all(&bin_dir)?;
 
-    // Install our package to `<bin_dir>/<name>`
-    let install_path = bin_dir.join(name);
-    let mut install_file = File::create(&install_path)?;
-    install_file.write_all(bytes.as_ref())?;
+    // Write bin to temporary file
+    let tmp_dir = tempdir::TempDir::new("fluvio")?;
+    let tmp_path = tmp_dir.path().join("fluvio");
+    let mut tmp_file = File::create(&tmp_path)?;
+    tmp_file.write_all(bytes.as_ref())?;
 
     // Mark the file as executable
-    make_executable(&mut install_file)?;
+    make_executable(&mut tmp_file)?;
+
+    // Rename (atomic move on unix) temp file to destination
+    let install_path = bin_dir.join(name);
+    std::fs::rename(&tmp_path, &install_path)?;
 
     Ok(())
 }
