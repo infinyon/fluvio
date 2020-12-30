@@ -250,7 +250,7 @@ jobs:
       - name: smoke test tls
         timeout-minutes: 5
         run: |
-          make RUST_LOG=fluvio=debug RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+          make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload SC log
