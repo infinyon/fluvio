@@ -140,7 +140,6 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
-      FLV_METADATA_WAIT: 1000
 
     steps:
       - uses: actions/checkout@v2
@@ -192,6 +191,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
+      FLV_METADATA_WAIT: 10000
 
     steps:
       - uses: actions/checkout@v2
@@ -268,6 +268,8 @@ jobs:
       matrix:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
+    env:
+      FLV_METADATA_WAIT: 10000
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -314,7 +316,8 @@ jobs:
       matrix:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
-
+    env:
+      FLV_METADATA_WAIT: 10000
     steps:
       - uses: actions/checkout@v2
       - run: helm version
