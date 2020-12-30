@@ -115,17 +115,19 @@ mod context {
 
                     select! {
 
-                        _ = &mut timer => {
-                            debug!( SPEC = S::LABEL, "store look up timeout expired");
-                            return Err(IoError::new(
-                                ErrorKind::TimedOut,
-                                format!("{} store lookup failed due to timeout",S::LABEL),
-                            ).into())
-                        },
-
                         _ = listener.listen() => {
                             let changes = listener.sync_changes().await;
                             trace!("{} received changes: {:#?}",S::LABEL,changes);
+                        },
+                        _ = &mut timer => {
+                            debug!(
+                                SPEC = S::LABEL,
+                                Timeout = *MAX_WAIT_TIME,
+                                "store look up timeout expired");
+                            return Err(IoError::new(
+                                ErrorKind::TimedOut,
+                                format!("{} store lookup failed due to timeout: {} ms",S::LABEL,*MAX_WAIT_TIME),
+                            ).into())
                         }
 
                     }

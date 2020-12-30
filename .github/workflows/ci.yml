@@ -140,7 +140,6 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
-      FLV_METADATA_WAIT: 1000
 
     steps:
       - uses: actions/checkout@v2
@@ -192,6 +191,8 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
+      FLV_METADATA_WAIT: 10000
+      FLV_CMD: true
 
     steps:
       - uses: actions/checkout@v2
@@ -240,7 +241,7 @@ jobs:
           minikube status
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/release/fluvio cluster start --setup --local --develop
+          ./target/release/fluvio cluster start --setup --local --develop
       # - name: Setup tmate session
       #  uses: mxschmitt/action-tmate@v3
       - name: Print Fluvio version
@@ -248,10 +249,8 @@ jobs:
           ./target/release/fluvio version
       - name: smoke test tls
         timeout-minutes: 5
-        #run: |
-        #  FLV_CMD=true  FLV_SOCKET_WAIT=600 make UNINSTALL=noclean smoke-test-tls-root
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+          make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload SC log
@@ -268,6 +267,8 @@ jobs:
       matrix:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
+    env:
+      FLV_METADATA_WAIT: 10000
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -314,7 +315,8 @@ jobs:
       matrix:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
-
+    env:
+      FLV_METADATA_WAIT: 10000
     steps:
       - uses: actions/checkout@v2
       - run: helm version

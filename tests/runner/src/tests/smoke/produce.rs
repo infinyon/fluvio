@@ -106,8 +106,8 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
 
     let replication = option.replication();
 
-    for i in 0..replication {
-        let topic_name = option.topic_name(i);
+    for r in 0..replication {
+        let topic_name = option.topic_name(r);
 
         let base_offset = *offsets.get(&topic_name).expect("offsets");
         let producer = get_producer(&client, &topic_name).await;
@@ -117,10 +117,10 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
             let message = generate_message(offset, &topic_name, &option);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
-            producer
-                .send_record(message, 0)
-                .await
-                .expect("message sent");
+            producer.send_record(message, 0).await.unwrap_or_else(|_| {
+                panic!("send record failed for replication: {} iteration: {}", r, i)
+            });
+
             info!(
                 "completed send iter: {}, offset: {},len: {}",
                 topic_name, offset, len
