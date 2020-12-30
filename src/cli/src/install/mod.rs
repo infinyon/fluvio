@@ -25,12 +25,6 @@ fn fluvio_base_dir() -> Result<PathBuf, CliError> {
     Err(IoError::new(ErrorKind::NotFound, "Fluvio base directory not found").into())
 }
 
-pub(crate) fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
-    let base_dir = fluvio_base_dir()?;
-    let path = base_dir.join("bin");
-    Ok(path)
-}
-
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
     let base_dir = fluvio_base_dir()?;
     let path = base_dir.join("extensions");
