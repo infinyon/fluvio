@@ -25,12 +25,6 @@ fn fluvio_base_dir() -> Result<PathBuf, CliError> {
     Err(IoError::new(ErrorKind::NotFound, "Fluvio base directory not found").into())
 }
 
-pub(crate) fn fluvio_bin_dir() -> Result<PathBuf, CliError> {
-    let base_dir = fluvio_base_dir()?;
-    let path = base_dir.join("bin");
-    Ok(path)
-}
-
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
     let base_dir = fluvio_base_dir()?;
     let path = base_dir.join("extensions");
@@ -122,24 +116,27 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
     &*buffer_checksum == checksum
 }
 
-pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
-    bin_dir: P,
-    name: &str,
-    bytes: B,
-) -> Result<(), CliError> {
+pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Result<(), CliError> {
     use std::io::Write as _;
 
-    // Create bin_dir if it does not exist
-    let bin_dir = bin_dir.as_ref();
-    std::fs::create_dir_all(&bin_dir)?;
+    let bin_path = bin_path.as_ref();
 
-    // Install our package to `<bin_dir>/<name>`
-    let install_path = bin_dir.join(name);
-    let mut install_file = File::create(&install_path)?;
-    install_file.write_all(bytes.as_ref())?;
+    // Create directories to bin_path if they do not exist
+    if let Some(parent) = bin_path.parent() {
+        std::fs::create_dir_all(&parent)?;
+    }
+
+    // Write bin to temporary file
+    let tmp_dir = tempdir::TempDir::new("fluvio")?;
+    let tmp_path = tmp_dir.path().join("fluvio");
+    let mut tmp_file = File::create(&tmp_path)?;
+    tmp_file.write_all(bytes.as_ref())?;
 
     // Mark the file as executable
-    make_executable(&mut install_file)?;
+    make_executable(&mut tmp_file)?;
+
+    // Rename (atomic move on unix) temp file to destination
+    std::fs::rename(&tmp_path, &bin_path)?;
 
     Ok(())
 }
