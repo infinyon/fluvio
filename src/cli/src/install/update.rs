@@ -5,7 +5,7 @@ use semver::Version;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use crate::CliError;
 use crate::install::{
-    fetch_latest_version, fetch_package_file, install_bin, fluvio_bin_dir, install_println,
+    fetch_latest_version, fetch_package_file, install_bin, install_println,
 };
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
@@ -47,12 +47,12 @@ async fn update_self(agent: &HttpAgent) -> Result<String, CliError> {
     let package_file = fetch_package_file(agent, &id, target).await?;
     install_println("🔑 Downloaded and verified package file");
 
-    // Install the package to the ~/.fluvio/bin/ dir
-    let fluvio_dir = fluvio_bin_dir()?;
-    install_bin(&fluvio_dir, "fluvio", &package_file)?;
+    // Install the update over the current executable
+    let fluvio_path = std::env::current_exe()?;
+    install_bin(&fluvio_path, &package_file)?;
     install_println(format!(
-        "✅ Successfully installed ~/.fluvio/bin/{}",
-        &id.name
+        "✅ Successfully updated {}",
+        &fluvio_path.display(),
     ));
 
     Ok("".to_string())

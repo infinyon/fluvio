@@ -123,15 +123,17 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
 }
 
 pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
-    bin_dir: P,
-    name: &str,
+    bin_path: P,
     bytes: B,
 ) -> Result<(), CliError> {
     use std::io::Write as _;
 
-    // Create bin_dir if it does not exist
-    let bin_dir = bin_dir.as_ref();
-    std::fs::create_dir_all(&bin_dir)?;
+    let bin_path = bin_path.as_ref();
+
+    // Create directories to bin_path if they do not exist
+    if let Some(parent) = bin_path.parent() {
+        std::fs::create_dir_all(&parent)?;
+    }
 
     // Write bin to temporary file
     let tmp_dir = tempdir::TempDir::new("fluvio")?;
@@ -143,8 +145,7 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(
     make_executable(&mut tmp_file)?;
 
     // Rename (atomic move on unix) temp file to destination
-    let install_path = bin_dir.join(name);
-    std::fs::rename(&tmp_path, &install_path)?;
+    std::fs::rename(&tmp_path, &bin_path)?;
 
     Ok(())
 }
