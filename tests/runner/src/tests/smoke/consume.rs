@@ -88,9 +88,12 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
         let consumer = get_consumer(&client, &topic_name).await;
 
         let mut stream = consumer
-            .stream(Offset::absolute(*base_offset).unwrap())
+            .stream(
+                Offset::absolute(*base_offset)
+                    .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
+            )
             .await
-            .expect("start from beginning");
+            .expect("stream");
 
         let mut total_records: u16 = 0;
         while let Some(Ok(record)) = stream.next().await {
