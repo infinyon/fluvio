@@ -46,14 +46,9 @@ pub struct TestOption {
     /// if iterations are long then consumer may receive large number of batches
     #[structopt(long)]
     pub consumer_wait: bool,
-
     /// number of spu
     #[structopt(short, long, default_value = "1")]
     pub spu: u16,
-
-    /// number topics
-    #[structopt(long, default_value = "1")]
-    pub topics: u16,
 
     /// enable tls
     #[structopt(long)]
@@ -126,10 +121,6 @@ impl TestOption {
 
     pub fn replication(&self) -> u16 {
         self.replication.unwrap_or(self.spu)
-    }
-
-    pub fn topics(&self) -> u16 {
-        self.topics
     }
 
     pub fn produce(&self) -> bool {
