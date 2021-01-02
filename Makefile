@@ -19,9 +19,9 @@ TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
 DEFAULT_ITERATION=1000
 DEFAULT_TOPICS=2
-DEFAULT_METADATA_WAIT=10000
+FLV_METADATA_WAIT?=1000
+FLV_CMD?=true
 DEFAULT_TEST_PARAM=--spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --topics ${DEFAULT_TOPICS}
-TEST_BIN=FLV_CMD=true FLV_METADATA_WAIT=$(DEFAULT_METADATA_WAIT) $(TEST_BIN_INNER)
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 SKIP_CHECK=--skip-checks
@@ -88,8 +88,7 @@ smoke-test-k8-tls-policy:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) \
-		--spu ${DEFAULT_SPU} \
-		--produce-iteration ${DEFAULT_ITERATION} \
+		${DEFAULT_TEST_PARAM}
 		--tls \
 		--develop \
 		${TEST_LOG} \
