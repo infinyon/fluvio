@@ -17,10 +17,7 @@ impl TestRunner {
     }
 
     async fn setup_topic(&self) {
-        // create topics per replication
-        let replication = self.option.replication();
-
-        for i in 0..replication {
+        for i in 0..self.option.topics() {
             let topic_name = self.option.topic_name(i);
             println!("creating test topic: <{}>", topic_name);
             let mut command = get_fluvio().expect("fluvio not founded");

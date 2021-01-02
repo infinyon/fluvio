@@ -1711,6 +1711,7 @@ dependencies = [
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
+ "async-channel",
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
@@ -1723,6 +1724,7 @@ dependencies = [
  "futures-lite",
  "log",
  "structopt",
+ "tokio",
 ]
 
 [[package]]

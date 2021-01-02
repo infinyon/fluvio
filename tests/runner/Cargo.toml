@@ -10,7 +10,8 @@ bytes = "0.5.3"
 futures-lite = "1.11.0"
 structopt = "0.3.5"
 async-trait = "0.1.21"
-
+async-channel = "1.5.1"
+tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
 fluvio = { path = "../../src/client" }

@@ -2,23 +2,22 @@ use std::collections::HashMap;
 
 use log::info;
 
+use fluvio::{Fluvio};
+use fluvio_command::CommandExt;
+
+
 use crate::TestOption;
 use super::message::*;
-use fluvio::{Fluvio, TopicProducer};
-use fluvio_command::CommandExt;
 
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(option: &TestOption) -> Offsets {
-    use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&option).await;
 
     if option.use_cli() {
-        cli::produce_message_with_cli(option, offsets.clone()).await;
-    } else if option.consumer_wait {
-        produce_message_with_api(offsets.clone(), option.clone()).await;
+        cli::produce_message_with_cli(option, &offsets).await;
     } else {
-        spawn(produce_message_with_api(offsets.clone(), option.clone()));
+        produce_message_with_api(&offsets, option).await;
     }
 
     offsets
@@ -36,14 +35,13 @@ mod offsets {
     use super::TestOption;
 
     pub async fn find_offsets(option: &TestOption) -> HashMap<String, i64> {
-        let replication = option.replication();
-
         let mut offsets = HashMap::new();
 
+        println!("reading existing topics offsets");
         let client = Fluvio::connect().await.expect("should connect");
         let mut admin = client.admin().await;
 
-        for i in 0..replication {
+        for i in 0..option.topics() {
             let topic_name = option.topic_name(i);
             // find last offset
             let offset = last_leo(&mut admin, &topic_name).await;
@@ -78,56 +76,56 @@ mod offsets {
     }
 }
 
-async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
-    use std::time::Duration;
-    use fluvio_future::timer::sleep;
+pub async fn produce_message_with_api(offsets: &Offsets, option: &TestOption) {
+    use fluvio_future::task::spawn; // get initial offsets for each of the topic
 
-    for _ in 0..10 {
-        match client.topic_producer(topic).await {
-            Ok(client) => return client,
-            Err(err) => {
-                println!(
-                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
-            }
+    for t in 0..option.topics() {
+        let topic = option.topic_name(t);
+        let base_offset = *offsets.get(&topic).expect("offsets");
+
+        let produce = produce_message_for_topic(topic, option.clone(), base_offset);
+
+        if option.consumer_wait {
+            produce.await
+        } else {
+            spawn(produce);
         }
     }
-
-    panic!("can't get producer");
 }
 
-pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
-    use std::time::Duration;
-    use fluvio_future::timer::sleep;
-
+/// produce using separate client
+async fn produce_message_for_topic(topic: String, option: TestOption, base_offset: i64) {
     let client = Fluvio::connect().await.expect("should connect");
+    let producer = client
+        .topic_producer(&topic)
+        .await
+        .expect("can't get producer");
 
-    let replication = option.replication();
-
-    for r in 0..replication {
-        let topic_name = option.topic_name(r);
-
-        let base_offset = *offsets.get(&topic_name).expect("offsets");
-        let producer = get_producer(&client, &topic_name).await;
-
-        for i in 0..option.produce.produce_iteration {
-            let offset = base_offset + i as i64;
-            let message = generate_message(offset, &topic_name, &option);
-            let len = message.len();
-            info!("trying send: {}, iteration: {}", topic_name, i);
-            producer.send_record(message, 0).await.unwrap_or_else(|_| {
-                panic!("send record failed for replication: {} iteration: {}", r, i)
-            });
-
-            info!(
-                "completed send iter: {}, offset: {},len: {}",
-                topic_name, offset, len
-            );
-            sleep(Duration::from_millis(10)).await;
+    println!(
+        "starting produce for topic: {}, iterations: {}",
+        topic, option.produce.produce_iteration
+    );
+    for i in 0..option.produce.produce_iteration {
+        let offset = base_offset + i as i64;
+        let message = generate_message(offset, &topic, &option);
+        let len = message.len();
+        info!("trying send: {}, iteration: {}", topic, i);
+        if let Err(err) = producer.send_record(message, 0).await {
+            panic!(
+                "send record error: {} for topic: {} iteration: {}",
+                err, topic, i
+            )
         }
+
+        info!(
+            "completed send iter: {}, offset: {},len: {}",
+            topic, offset, len
+        );
     }
+    println!(
+        "completed produce for topic: {}, iterations: {}",
+        topic, option.produce.produce_iteration
+    );
 }
 
 mod cli {
@@ -138,7 +136,7 @@ mod cli {
     use crate::cli::TestOption;
     use fluvio_system_util::bin::get_fluvio;
 
-    pub async fn produce_message_with_cli(option: &TestOption, offsets: Offsets) {
+    pub async fn produce_message_with_cli(option: &TestOption, offsets: &Offsets) {
         println!("starting produce");
 
         let produce_count = option.produce.produce_iteration;
