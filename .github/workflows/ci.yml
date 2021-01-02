@@ -191,7 +191,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
-      FLV_METADATA_WAIT: 10000
+      FLV_METADATA_WAIT: 50000
       FLV_CMD: true
 
     steps:
@@ -268,7 +268,7 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_METADATA_WAIT: 10000
+      FLV_METADATA_WAIT: 50000
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -296,7 +296,7 @@ jobs:
         run: |
           ./target/release/fluvio version
       - name: Run smoke-test
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
@@ -316,7 +316,7 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_METADATA_WAIT: 10000
+      FLV_METADATA_WAIT: 50000
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -344,7 +344,7 @@ jobs:
       - name: Make image
         run: make RELEASE=true minikube_image
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - run: minikube delete
