@@ -112,7 +112,7 @@ async fn produce_message_for_topic(topic: String, option: TestOption, base_offse
         info!("trying send: {}, iteration: {}", topic, i);
         if let Err(err) = producer.send_record(message, 0).await {
             panic!(
-                "send record error: {} for topic: {} iteration: {}",
+                "send record error: {:#?} for topic: {} iteration: {}",
                 err, topic, i
             )
         }
