@@ -170,8 +170,10 @@ where
         &mut self,
         offset: Offset,
     ) -> Result<Option<Offset>, FlvSocketError> {
-        let mut partition_response = FilePartitionResponse::default();
-        partition_response.partition_index = self.replica.partition;
+        let mut partition_response = FilePartitionResponse {
+            partition_index: self.replica.partition,
+            ..Default::default()
+        };
 
         if let Some((hw, leo)) = self
             .ctx

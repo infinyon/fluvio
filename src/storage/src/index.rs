@@ -131,8 +131,10 @@ impl LogIndex {
             ));
         }
 
-        let mut option = ConfigOption::default();
-        option.base_dir = path_ref.parent().unwrap().to_path_buf();
+        let option = ConfigOption {
+            base_dir: path_ref.parent().unwrap().to_path_buf(),
+            ..Default::default()
+        };
 
         LogIndex::open_from_offset(base_offset, &option)
             .await

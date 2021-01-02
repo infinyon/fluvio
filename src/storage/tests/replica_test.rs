@@ -136,10 +136,14 @@ async fn test_fetch(addr: &str, iteration: i16, offset: i64, expected_batch_len:
 
     debug!("testing fetch: {}", iteration);
     let mut request = DefaultFetchRequest::default();
-    let mut topic_request = FetchableTopic::default();
-    topic_request.name = "testsimple".to_owned();
-    let mut part_request = FetchPartition::default();
-    part_request.fetch_offset = offset;
+    let mut topic_request = FetchableTopic {
+        name: "testsimple".to_owned(),
+        ..Default::default()
+    };
+    let part_request = FetchPartition {
+        fetch_offset: offset,
+        ..Default::default()
+    };
     topic_request.fetch_partitions.push(part_request);
     request.topics.push(topic_request);
 

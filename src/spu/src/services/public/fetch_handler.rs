@@ -29,8 +29,10 @@ where
     for topic_request in &fetch_request.topics {
         let topic = &topic_request.name;
 
-        let mut topic_response = FileTopicResponse::default();
-        topic_response.name = topic.clone();
+        let mut topic_response = FileTopicResponse {
+            name: topic.clone(),
+            ..Default::default()
+        };
 
         for partition_req in &topic_request.fetch_partitions {
             let partition = &partition_req.partition_index;
@@ -40,8 +42,10 @@ where
             );
             let fetch_offset = partition_req.fetch_offset;
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
-            let mut partition_response = FilePartitionResponse::default();
-            partition_response.partition_index = *partition;
+            let mut partition_response = FilePartitionResponse {
+                partition_index: *partition,
+                ..Default::default()
+            };
 
             ctx.leaders_state()
                 .read_records(

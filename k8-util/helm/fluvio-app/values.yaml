@@ -18,18 +18,14 @@ cert:
 authorizationConfigMap: null
 scResources:
   requests:
-    memory: 64Mi
-    cpu: 20m
+    memory: 512Mi
   limits:
-    memory: 256Mi
-    cpu: 500m
+    memory: 512Mi
 spuResources:
   requests:
     memory: 256Mi
-    cpu: 20m
   limits:
-    memory: 512Mi
-    cpu: 500m
+    memory: 1Gi
 rbac:
   create: true
 serviceAccount:

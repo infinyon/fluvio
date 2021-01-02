@@ -240,11 +240,12 @@ impl FollowersState<FileReplica> {
         if let Some(replica) = self.get_replica(replica_id) {
             let storage = replica.storage();
 
-            let mut replica_request = ReplicaOffsetRequest::default();
-            replica_request.replica = replica_id.clone();
-            replica_request.leo = storage.get_leo();
-            replica_request.hw = storage.get_hw();
-            offsets.replicas.push(replica_request);
+            let replica_request = ReplicaOffsetRequest {
+                replica: replica_id.clone(),
+                leo: storage.get_leo(),
+                hw: storage.get_hw(),
+            };
+            offsets.replicas.push(replica_request)
         } else {
             error!(
                 "no follow replica found: {}, should not be possible",

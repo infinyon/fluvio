@@ -29,16 +29,20 @@ pub async fn handle_produce_request(
         let topic = &topic_request.name;
         trace!("handling produce request for topic{}", topic);
 
-        let mut topic_response = TopicProduceResponse::default();
-        topic_response.name = topic.to_owned();
+        let mut topic_response = TopicProduceResponse {
+            name: topic.to_owned(),
+            ..Default::default()
+        };
 
         for partition_request in topic_request.partitions {
             let rep_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
 
             trace!("handling produce request for replia: {}", rep_id);
 
-            let mut partition_response = PartitionProduceResponse::default();
-            partition_response.partition_index = rep_id.partition;
+            let mut partition_response = PartitionProduceResponse {
+                partition_index: rep_id.partition,
+                ..Default::default()
+            };
 
             match ctx
                 .leaders_state()

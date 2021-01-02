@@ -274,8 +274,10 @@ impl ReplicaFollowerController<FileReplica> {
             local_spu_id,
             self.leader_id,
         );
-        let mut fetch_request = FetchStreamRequest::default();
-        fetch_request.spu_id = local_spu_id;
+        let fetch_request = FetchStreamRequest {
+            spu_id: local_spu_id,
+            ..Default::default()
+        };
         let mut message = RequestMessage::new_request(fetch_request);
         message
             .get_mut_header()

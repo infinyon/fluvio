@@ -75,9 +75,11 @@ async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
 
     let mut response = FileFetchResponse::default();
     let mut topic_response = FileTopicResponse::default();
-    let mut part_response = FilePartitionResponse::default();
-    part_response.partition_index = 10;
-    part_response.records = file.as_slice(0, None).await?.into();
+    let part_response = FilePartitionResponse {
+        partition_index: 10,
+        records: file.as_slice(0, None).await?.into(),
+        ..Default::default()
+    };
     topic_response.partitions.push(part_response);
     response.topics.push(topic_response);
     let resp_msg = ResponseMessage::new(10, response);

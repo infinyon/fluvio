@@ -34,9 +34,11 @@ impl<C: MetadataItem> SpuMd<C> for SpuMetadata<C> {
     where
         J: Into<String>,
     {
-        let mut spec = SpuSpec::default();
-        spec.id = spu.1;
-        spec.rack = spu.3;
+        let spec = SpuSpec {
+            id: spu.1,
+            rack: spu.3,
+            ..Default::default()
+        };
 
         let mut status = SpuStatus::default();
         if spu.2 {
@@ -404,9 +406,11 @@ pub mod test {
         let spu_0 = DefaultSpuMd::quick(("spu-0", 0, false, None));
         let mut spu_1 = DefaultSpuMd::quick(("spu-1", 1, false, None));
 
-        let mut other_spec = SpuSpec::default();
-        other_spec.id = 1;
-        other_spec.rack = Some("rack".to_string());
+        let other_spec = SpuSpec {
+            id: 1,
+            rack: Some("rack".to_string()),
+            ..Default::default()
+        };
         let other_spu = DefaultSpuMd::new("spu-1", other_spec.clone(), SpuStatus::default());
 
         let spus = DefaultSpuStore::bulk_new(vec![spu_0, spu_1.clone()]);

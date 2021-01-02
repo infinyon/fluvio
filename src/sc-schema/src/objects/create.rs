@@ -63,7 +63,7 @@ mod create {
 
     impl Encoder for AllCreatableSpec {
         fn write_size(&self, version: Version) -> usize {
-            let type_size = (0 as u8).write_size(version);
+            let type_size = (0u8).write_size(version);
 
             type_size
                 + match self {
