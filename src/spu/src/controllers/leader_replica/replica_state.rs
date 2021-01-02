@@ -301,10 +301,14 @@ impl LeaderReplicaState<FileReplica> {
                 follower_id
             );
             let mut sync_request = FileSyncRequest::default();
-            let mut topic_response = PeerFileTopicResponse::default();
-            topic_response.name = self.replica_id.topic.to_owned();
-            let mut partition_response = PeerFilePartitionResponse::default();
-            partition_response.partition_index = self.replica_id.partition;
+            let mut topic_response = PeerFileTopicResponse {
+                name: self.replica_id.topic.to_owned(),
+                ..Default::default()
+            };
+            let mut partition_response = PeerFilePartitionResponse {
+                partition_index: self.replica_id.partition,
+                ..Default::default()
+            };
             self.read_records(
                 follower_info.leo,
                 max_bytes,

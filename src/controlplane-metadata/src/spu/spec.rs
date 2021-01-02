@@ -77,9 +77,10 @@ impl From<SpuId> for SpuSpec {
 impl SpuSpec {
     /// Given an Spu id generate a new SpuSpec
     pub fn new(id: SpuId) -> Self {
-        let mut spec = Self::default();
-        spec.id = id;
-        spec
+        Self {
+            id,
+            ..Default::default()
+        }
     }
 
     pub fn set_custom(mut self) -> Self {
@@ -387,7 +388,7 @@ impl Default for CustomSpu {
 impl Encoder for CustomSpu {
     // compute size
     fn write_size(&self, version: Version) -> usize {
-        let type_size = (0 as u8).write_size(version);
+        let type_size = (0u8).write_size(version);
         match self {
             Self::Name(name) => type_size + name.write_size(version),
             Self::Id(id) => type_size + id.write_size(version),

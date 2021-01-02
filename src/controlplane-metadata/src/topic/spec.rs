@@ -217,7 +217,7 @@ impl Decoder for TopicSpec {
 impl Encoder for TopicSpec {
     // compute size for fluvio replicas
     fn write_size(&self, version: Version) -> usize {
-        let typ_size = (0 as u8).write_size(version);
+        let typ_size = (0u8).write_size(version);
         match self {
             Self::Assigned(partitions) => typ_size + partitions.write_size(version),
             Self::Computed(param) => typ_size + param.write_size(version),

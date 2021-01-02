@@ -80,14 +80,15 @@ impl SpuOpt {
     fn as_spu_config(self) -> Result<(SpuConfig, Option<String>), IoError> {
         use std::path::PathBuf;
 
-        let mut config = SpuConfig::default();
-
-        config.id = match self.id {
-            Some(id) => id,
-            None => {
-                debug!("no id passed as argument, searching in the env");
-                find_spu_id_from_env()?
-            }
+        let mut config = SpuConfig {
+            id: match self.id {
+                Some(id) => id,
+                None => {
+                    debug!("no id passed as argument, searching in the env");
+                    find_spu_id_from_env()?
+                }
+            },
+            ..Default::default()
         };
 
         if let Some(sc_endpoint) = self.sc_addr {

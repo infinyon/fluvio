@@ -25,13 +25,17 @@ pub async fn handle_offset_request(
     for topic_request in &request.topics {
         let topic = &topic_request.name;
 
-        let mut topic_response = FetchOffsetTopicResponse::default();
-        topic_response.name = topic.clone();
+        let mut topic_response = FetchOffsetTopicResponse {
+            name: topic.clone(),
+            ..Default::default()
+        };
 
         for partition_req in &topic_request.partitions {
             let partition = &partition_req.partition_index;
-            let mut partition_response = FetchOffsetPartitionResponse::default();
-            partition_response.partition_index = *partition;
+            let mut partition_response = FetchOffsetPartitionResponse {
+                partition_index: *partition,
+                ..Default::default()
+            };
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
             if let Some(replica) = ctx.leaders_state().get_replica(&rep_id) {
                 trace!("offset fetch request for replica found: {}", rep_id);

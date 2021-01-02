@@ -13,10 +13,8 @@ spec:
       resources:
         requests:
           memory: {{ .Values.scResources.requests.memory }}
-          cpu: {{ .Values.scResources.requests.cpu }}
         limits:
           memory: {{ .Values.scResources.limits.memory }}
-          cpu: {{ .Values.scResources.limits.cpu }}
       ports:
         - containerPort: 9003
       env:

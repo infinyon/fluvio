@@ -34,9 +34,11 @@ impl<C: MetadataItem> SpuMd<C> for SpuMetadata<C> {
     where
         J: Into<String>,
     {
-        let mut spec = SpuSpec::default();
-        spec.id = spu.1;
-        spec.rack = spu.3;
+        let spec = SpuSpec {
+            id: spu.1,
+            rack: spu.3,
+            ..Default::default()
+        };
 
         let mut status = SpuStatus::default();
         if spu.2 {

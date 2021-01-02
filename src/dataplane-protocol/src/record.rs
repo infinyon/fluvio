@@ -344,9 +344,10 @@ where
     B: From<String> + Default,
 {
     fn from(value: String) -> Self {
-        let mut record = Record::default();
-        record.value = value.into();
-        record
+        Record {
+            value: value.into(),
+            ..Default::default()
+        }
     }
 }
 
@@ -355,9 +356,10 @@ where
     B: From<Vec<u8>> + Default,
 {
     fn from(value: Vec<u8>) -> Self {
-        let mut record = Record::default();
-        record.value = value.into();
-        record
+        Record {
+            value: value.into(),
+            ..Default::default()
+        }
     }
 }
 
@@ -366,9 +368,10 @@ where
     B: From<&'a [u8]> + Default,
 {
     fn from(slice: &'a [u8]) -> Self {
-        let mut record = Record::default();
-        record.value = B::from(slice);
-        record
+        Record {
+            value: B::from(slice),
+            ..Default::default()
+        }
     }
 }
 
