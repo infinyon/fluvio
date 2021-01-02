@@ -82,7 +82,7 @@ mod test {
 
     #[test]
     fn test_error_code_from_conversion() {
-        let erro_code: ErrorCode = (1001 as i16).try_into().expect("convert");
+        let erro_code: ErrorCode = (1001i16).try_into().expect("convert");
         assert_eq!(erro_code, ErrorCode::SpuRegisterationFailed);
     }
 }
