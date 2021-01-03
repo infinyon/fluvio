@@ -7,8 +7,11 @@ use std::time::Duration;
 use std::net::SocketAddr;
 use std::process::Stdio;
 use std::fs::File;
+use std::env;
 
 use tracing::{info, warn, debug, error, instrument};
+use once_cell::sync::Lazy;
+
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
@@ -20,7 +23,6 @@ use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::metadata::MetadataClient;
 use k8_client::core::service::ServiceSpec;
-use k8_client::core::metadata::InputObjectMeta;
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
@@ -38,6 +40,19 @@ const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
+const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
+/// maximum time waiting for sc service to come up
+static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
+    let var_value = env::var("FLV_CLUSTER_MAX_SC_SERVICE_WAIT").unwrap_or_default();
+    var_value.parse().unwrap_or(30)
+});
+/// maximum time waiting for network check, DNS or network
+static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
+    let var_value = env::var("FLV_CLUSTER_MAX_SC_NETWORK_LOOP").unwrap_or_default();
+    var_value.parse().unwrap_or(30)
+});
+const NETWORK_SLEEP_MS: u64 = 1000;
+/// time betwen network check
 const DELAY: u64 = 3000;
 
 /// A builder for cluster startup options
@@ -883,76 +898,95 @@ impl ClusterInstaller {
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
     async fn discover_sc_address(&self, ns: &str) -> Result<Option<String>, K8InstallError> {
-        use k8_client::http::status::StatusCode;
+        use tokio::select;
+        use futures_lite::stream::StreamExt;
+        use tracing::trace;
 
-        let result = self
+        use fluvio_future::timer::sleep;
+        use k8_client::core::metadata::K8Watch;
+
+        let mut service_stream = self
             .kube_client
-            .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("fluvio-sc-public", ns))
-            .await;
+            .watch_stream_now::<ServiceSpec>(ns.to_string());
 
-        let svc = match result {
-            Ok(svc) => svc,
-            Err(k8_client::ClientError::Client(status)) if status == StatusCode::NOT_FOUND => {
-                info!("no SC service found");
-                return Ok(None);
+        let mut timer = sleep(Duration::from_secs(*MAX_SC_SERVICE_WAIT));
+        loop {
+            select! {
+                _ = &mut timer => {
+                    debug!(timer = *MAX_SC_SERVICE_WAIT,"timer expired");
+                    return Ok(None)
+                },
+                service_next = service_stream.next() => {
+                    if let Some(service_watches) = service_next {
+
+                        for service_watch in service_watches? {
+                            let service_value = match service_watch? {
+                                K8Watch::ADDED(svc) => Some(svc),
+                                K8Watch::MODIFIED(svc) => Some(svc),
+                                K8Watch::DELETED(_) => None
+                            };
+
+                            if let Some(service) = service_value {
+                                trace!(service = ?service);
+                                if service.metadata.name == FLUVIO_SC_SERVICE {
+                                    let ingress_addr = service
+                                        .status
+                                        .load_balancer
+                                        .ingress
+                                        .iter()
+                                        .find(|_| true)
+                                        .and_then(|ingress| ingress.host_or_ip().to_owned());
+
+                                    let sock_addr = ingress_addr.and_then(|addr| {
+                                        service.spec
+                                        .ports
+                                        .iter()
+                                        .find(|_| true)
+                                        .and_then(|port| port.target_port)
+                                        .map(|target_port| format!("{}:{}", addr, target_port))
+                                    });
+                                    if sock_addr.is_some() {
+                                        return Ok(sock_addr)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        debug!("service stream ended");
+                        return Ok(None)
+                    }
+                }
             }
-            Err(err) => return Err(K8InstallError::from(err)),
-        };
-
-        let ingress_addr = svc
-            .status
-            .load_balancer
-            .ingress
-            .iter()
-            .find(|_| true)
-            .and_then(|ingress| ingress.host_or_ip().to_owned());
-
-        let sock_addr = ingress_addr.and_then(|addr| {
-            svc.spec
-                .ports
-                .iter()
-                .find(|_| true)
-                .and_then(|port| port.target_port)
-                .map(|target_port| format!("{}:{}", addr, target_port))
-        });
-
-        Ok(sock_addr)
+        }
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     #[instrument(skip(self, ns))]
     async fn wait_for_sc_service(&self, ns: &str) -> Result<String, K8InstallError> {
         info!("waiting for SC service");
-        for i in 0..12 {
-            if let Some(sock_addr) = self.discover_sc_address(ns).await? {
-                info!(%sock_addr, "found SC service load balancer, discovered SC address");
-                self.wait_for_sc_port_check(&sock_addr).await?;
-                return Ok(sock_addr);
-            }
-
-            let sleep_ms = 1000 * 2u64.pow(i as u32);
-            info!(
-                attempt = i,
-                "no SC service found, sleeping for {} ms", sleep_ms
-            );
-            sleep(Duration::from_millis(sleep_ms)).await;
+        if let Some(sock_addr) = self.discover_sc_address(ns).await? {
+            info!(%sock_addr, "found SC service load balancer, discovered SC address");
+            self.wait_for_sc_port_check(&sock_addr).await?;
+            Ok(sock_addr)
+        } else {
+            Err(K8InstallError::SCServiceTimeout)
         }
-
-        Err(K8InstallError::SCServiceTimeout)
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
         info!(sock_addr = %sock_addr_str, "waiting for SC port check");
-        for i in 0..12 {
+        for i in 0..*MAX_SC_NETWORK_LOOP {
             let sock_addr = self.wait_for_sc_dns(&sock_addr_str).await?;
             if TcpStream::connect(&*sock_addr).await.is_ok() {
                 info!(sock_addr = %sock_addr_str, "finished SC port check");
                 return Ok(());
             }
-            let sleep_ms = 1000 * 2u64.pow(i as u32);
-            info!(attempt = i, "sc port closed, sleeping for {} ms", sleep_ms);
-            sleep(Duration::from_millis(sleep_ms)).await;
+            info!(
+                attempt = i,
+                "sc port closed, sleeping for {} ms", NETWORK_SLEEP_MS
+            );
+            sleep(Duration::from_millis(NETWORK_SLEEP_MS)).await;
         }
         error!(sock_addr = %sock_addr_str, "timeout for SC port check");
         Err(K8InstallError::SCPortCheckTimeout)
@@ -964,19 +998,18 @@ impl ClusterInstaller {
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, K8InstallError> {
         info!("waiting for SC dns resolution: {}", sock_addr_string);
-        for i in 0..12 {
+        for i in 0..*MAX_SC_NETWORK_LOOP {
             match resolve(sock_addr_string).await {
                 Ok(sock_addr) => {
                     debug!("finished SC dns resolution: {}", sock_addr_string);
                     return Ok(sock_addr);
                 }
                 Err(err) => {
-                    let sleep_ms = 1000 * 2u64.pow(i as u32);
                     info!(
                         attempt = i,
-                        "SC dns resoultion failed {}, sleeping for {} ms", err, sleep_ms
+                        "SC dns resoultion failed {}, sleeping for {} ms", err, NETWORK_SLEEP_MS
                     );
-                    sleep(Duration::from_millis(sleep_ms)).await;
+                    sleep(Duration::from_millis(NETWORK_SLEEP_MS)).await;
                 }
             }
         }
@@ -989,7 +1022,7 @@ impl ClusterInstaller {
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str, spu: u16) -> Result<bool, K8InstallError> {
         info!("waiting for SPU");
-        for i in 0..12 {
+        for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
@@ -1013,12 +1046,11 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                let sleep_ms = 1000 * 2u64.pow(i as u32);
                 info!(
                     attempt = i,
-                    "{} of {} spu ready, sleeping for {} ms", ready_spu, spu, sleep_ms
+                    "{} of {} spu ready, sleeping for {} ms", ready_spu, spu, NETWORK_SLEEP_MS
                 );
-                sleep(Duration::from_millis(sleep_ms)).await;
+                sleep(Duration::from_millis(NETWORK_SLEEP_MS)).await;
             }
         }
 

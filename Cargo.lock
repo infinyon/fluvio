@@ -970,7 +970,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -983,15 +983,18 @@ dependencies = [
  "fluvio-helm",
  "fluvio-runner-local",
  "flv-util",
+ "futures-lite",
  "k8-client",
  "k8-config",
  "k8-metadata-client",
+ "once_cell",
  "prettytable-rs",
  "semver 0.10.0",
  "serde",
  "serde_json",
  "structopt",
  "thiserror",
+ "tokio",
  "tracing",
  "tracing-futures",
  "url",
