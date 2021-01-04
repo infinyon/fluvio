@@ -395,6 +395,8 @@ jobs:
         with:
           name: fluvio-k8-spu-logs
           path: /tmp/flv_spu.log
+      - name: delete minikube
+        run: minikube delete
 
   composite_action_test:
     name: Composite Action Test

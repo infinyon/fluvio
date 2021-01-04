@@ -71,7 +71,6 @@ where
                 },
 
 
-
                 offset_event_res = receiver.recv() => {
 
                     match offset_event_res {
@@ -121,7 +120,7 @@ where
 
                     }
                 },
-
+                */
 
                 api_msg = api_stream.next() => {
 

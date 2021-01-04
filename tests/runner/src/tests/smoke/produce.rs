@@ -81,6 +81,8 @@ pub async fn produce_message_with_api(offsets: &Offsets, option: &TestOption) {
 
 /// produce using separate client
 async fn produce_message_for_topic(topic: String, option: TestOption, base_offset: i64) {
+    use std::time::Instant;
+
     let client = Fluvio::connect().await.expect("should connect");
     let producer = client
         .topic_producer(&topic)
@@ -96,10 +98,12 @@ async fn produce_message_for_topic(topic: String, option: TestOption, base_offse
         let message = generate_message(offset, &topic, &option);
         let len = message.len();
         info!("trying send: {}, iteration: {}", topic, i);
+
+        let now = Instant::now();
         if let Err(err) = producer.send_record(message, 0).await {
             panic!(
-                "send record error: {:#?} for topic: {} iteration: {}",
-                err, topic, i
+                "send record error: {:#?} for topic: {} iteration: {}, elapsed: {}",
+                err, topic, i, now.elapsed().as_millis()
             )
         }
 

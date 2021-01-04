@@ -14,6 +14,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
 
+
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
     ctx: DefaultSharedGlobalContext,

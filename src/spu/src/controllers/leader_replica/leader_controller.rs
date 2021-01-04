@@ -111,7 +111,9 @@ impl ReplicaLeaderController<FileReplica> {
                         match command {
                             LeaderReplicaControllerCommand::EndOffsetUpdated => {
                                 debug!("leader replica end offset has updated, update the follower if need to be");
-                                join3(self.send_status_to_sc(),self.sync_followers(),self.update_offset_to_clients()).await;
+                                self.send_status_to_sc().await;
+                                self.sync_followers().await;
+                                self.update_offset_to_clients().await;
                             },
 
                             LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
@@ -144,26 +146,21 @@ impl ReplicaLeaderController<FileReplica> {
         if let Some(mut leader_replica) = self.leaders_state.get_mut_replica(&self.id) {
             let follower_id = offsets.follower_id;
             let (update_status, sync_follower) = leader_replica.update_follower_offsets(offsets);
-            join(
-                async {
-                    if update_status {
-                        leader_replica.send_status_to_sc(&self.sc_channel).await;
-                    }
-                },
-                async {
-                    if let Some(follower_info) = sync_follower {
-                        leader_replica
-                            .sync_follower(
-                                &self.follower_sinks,
-                                follower_id,
-                                &follower_info,
-                                self.max_bytes,
-                            )
-                            .await;
-                    }
-                },
-            )
-            .await;
+
+            if update_status {
+                leader_replica.send_status_to_sc(&self.sc_channel).await;
+            }
+
+            if let Some(follower_info) = sync_follower {
+                leader_replica
+                    .sync_follower(
+                        &self.follower_sinks,
+                        follower_id,
+                        &follower_info,
+                        self.max_bytes,
+                    )
+                    .await;
+            }
         } else {
             warn!(
                 "no replica is found: {} for update follower offsets",
