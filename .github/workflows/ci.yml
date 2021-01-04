@@ -378,14 +378,23 @@ jobs:
       - run: minikube delete
       - name: Save logs
         if: failure()
-        run: kubectl logs fluvio-sc > /tmp/flv_sc.log
-      - name: Upload logs
+        run: 
+          kubectl logs fluvio-sc > /tmp/flv_sc.log
+          kubectl logs fluvio-spg-main-0 > /tmp/flv_spu.log
+      - name: Upload sc logs
         timeout-minutes: 10
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-k8-logs
+          name: fluvio-k8-sc-logs
           path: /tmp/flv_sc.log
+      - name: Upload spu logs
+        timeout-minutes: 10
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-k8-spu-logs
+          path: /tmp/flv_spu.log
 
   composite_action_test:
     name: Composite Action Test
