@@ -12,7 +12,7 @@ use super::message::*;
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(option: &TestOption) -> Offsets {
-    let offsets = offsets::find_offsets(&option).await;
+    let offsets = offsets::find_offsets().await;
 
     if option.use_cli() {
         cli::produce_message_with_cli(option, &offsets).await;
@@ -27,38 +27,25 @@ mod offsets {
 
     use std::collections::HashMap;
 
-    use fluvio::{Fluvio, FluvioAdmin};
+    use fluvio::{Fluvio};
 
     use fluvio_controlplane_metadata::partition::PartitionSpec;
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-    use super::TestOption;
+    pub async fn find_offsets() -> HashMap<String, i64> {
+        use std::convert::TryInto;
 
-    pub async fn find_offsets(option: &TestOption) -> HashMap<String, i64> {
         let mut offsets = HashMap::new();
 
         println!("reading existing topics offsets");
         let client = Fluvio::connect().await.expect("should connect");
         let mut admin = client.admin().await;
 
-        for i in 0..option.topics() {
-            let topic_name = option.topic_name(i);
-            // find last offset
-            let offset = last_leo(&mut admin, &topic_name).await;
-            println!("found topic: {} offset: {}", topic_name, offset);
-            offsets.insert(topic_name, offset);
-        }
-
-        offsets
-    }
-
-    async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
-        use std::convert::TryInto;
-
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
             .await
             .expect("get partitions status");
+
 
         for partition in partitions {
             let replica: ReplicaKey = partition
@@ -67,12 +54,12 @@ mod offsets {
                 .try_into()
                 .expect("canot parse partition");
 
-            if replica.topic == topic && replica.partition == 0 {
-                return partition.status.leader.leo;
+            if replica.partition == 0 {
+                offsets.insert(replica.topic,partition.status.leader.leo);
             }
         }
 
-        panic!("cannot found partition 0 for topic: {}", topic);
+        offsets
     }
 }
 
@@ -102,8 +89,8 @@ async fn produce_message_for_topic(topic: String, option: TestOption, base_offse
         .expect("can't get producer");
 
     println!(
-        "starting produce for topic: {}, iterations: {}",
-        topic, option.produce.produce_iteration
+        "starting produce for topic: {}, iterations: {}, base_offset: {}",
+        topic, option.produce.produce_iteration,base_offset
     );
     for i in 0..option.produce.produce_iteration {
         let offset = base_offset + i as i64;
