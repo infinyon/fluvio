@@ -122,7 +122,8 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
     let bin_path = bin_path.as_ref();
 
     // Create directories to bin_path if they do not exist
-    let parent = bin_path.parent()
+    let parent = bin_path
+        .parent()
         .ok_or_else(|| IoError::new(ErrorKind::NotFound, "parent directory not found"))?;
     std::fs::create_dir_all(&parent)?;
 
