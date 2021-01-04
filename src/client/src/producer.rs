@@ -64,7 +64,6 @@ async fn send_record_raw<F: SerialFrame>(
     replica: &ReplicaKey,
     record: &[u8],
 ) -> Result<(), FluvioError> {
-
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
     use dataplane::produce::DefaultTopicRequest;
@@ -99,22 +98,23 @@ async fn send_record_raw<F: SerialFrame>(
 
     trace!("produce request: {:#?}", request);
 
-    let response = leader.send_receive(request).await.map_err(| err | {
-        match err {
-            FlvSocketError::IoError{ source: io_error } => {
-                    match io_error.kind() {
-                        ErrorKind::TimedOut => {
-                            IoError::new(
-                                ErrorKind::TimedOut,
-                                format!("Timed out sending record for replica: {} source: {:#?}",replica,io_error)
-                            ).into()
-                        },
-                        _=> io_error.into()
-                    }
+    let response = leader
+        .send_receive(request)
+        .await
+        .map_err(|err| match err {
+            FlvSocketError::IoError { source: io_error } => match io_error.kind() {
+                ErrorKind::TimedOut => IoError::new(
+                    ErrorKind::TimedOut,
+                    format!(
+                        "Timed out sending record for replica: {} source: {:#?}",
+                        replica, io_error
+                    ),
+                )
+                .into(),
+                _ => io_error.into(),
             },
-            _ => err
-        }
-    })?;
+            _ => err,
+        })?;
 
     trace!("received response: {:?}", response);
 

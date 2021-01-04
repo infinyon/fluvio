@@ -46,7 +46,6 @@ mod offsets {
             .await
             .expect("get partitions status");
 
-
         for partition in partitions {
             let replica: ReplicaKey = partition
                 .name
@@ -55,7 +54,7 @@ mod offsets {
                 .expect("canot parse partition");
 
             if replica.partition == 0 {
-                offsets.insert(replica.topic,partition.status.leader.leo);
+                offsets.insert(replica.topic, partition.status.leader.leo);
             }
         }
 
@@ -90,7 +89,7 @@ async fn produce_message_for_topic(topic: String, option: TestOption, base_offse
 
     println!(
         "starting produce for topic: {}, iterations: {}, base_offset: {}",
-        topic, option.produce.produce_iteration,base_offset
+        topic, option.produce.produce_iteration, base_offset
     );
     for i in 0..option.produce.produce_iteration {
         let offset = base_offset + i as i64;
