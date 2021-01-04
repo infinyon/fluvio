@@ -50,6 +50,7 @@ impl TestRunner {
         // we need to test what happens topic gets created before spu
         if self.option.init_topic() {
             self.setup_topic().await;
+            sleep(Duration::from_secs(5)).await; // let it sleep
         } else {
             println!("no topic initialized");
         }
@@ -57,7 +58,6 @@ impl TestRunner {
         if self.option.produce.produce_iteration > 0 {
             let test_driver = create_test_driver(self.option.clone());
             test_driver.run().await;
-            sleep(Duration::from_millis(200)).await; // let it sleep
         } else {
             println!("no produce iteration, ending");
         }

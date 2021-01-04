@@ -225,7 +225,7 @@ impl ScDispatcher<FileReplica> {
                 true
             }
         } else {
-            trace!("nothing to send back to sc");
+            debug!("nothing to send back to sc");
             true
         }
     }
