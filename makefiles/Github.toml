@@ -27,24 +27,13 @@ dependencies = [
     "build-release",
     "github-release-create-pre-release",
 ]
-command = "github-release"
-args = [
-    "-v",
-    "upload",
-    "--user", "infinyon",
-    "--repo", "fluvio",
-    "--tag", "v${FLUVIO_VERSION}",
-    "--name", "fluvio-v${FLUVIO_VERSION}-${TARGET}",
-    "--file", "./target/${TARGET}/release/fluvio",
-    "${GITHUB_RELEASE_FORCE}",
-]
-env_scripts = [
-'''
-if [ "${FORCE_RELEASE}" = "--force" ]; then
-    set_env GITHUB_RELEASE_FORCE "--replace"
+script = '''
+if [ -n "${GITHUB_RELEASE_FORCE}" ]; then
+    github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio ${GITHUB_RELEASE_FORCE}
+else
+    github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio
 fi
 '''
-]
 
 [tasks.github-release-create-pre-release]
 description = "Create Pre-release on Github"
