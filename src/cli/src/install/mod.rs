@@ -122,12 +122,13 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
     let bin_path = bin_path.as_ref();
 
     // Create directories to bin_path if they do not exist
-    if let Some(parent) = bin_path.parent() {
-        std::fs::create_dir_all(&parent)?;
-    }
+    let parent = bin_path
+        .parent()
+        .ok_or_else(|| IoError::new(ErrorKind::NotFound, "parent directory not found"))?;
+    std::fs::create_dir_all(&parent)?;
 
     // Write bin to temporary file
-    let tmp_dir = tempdir::TempDir::new("fluvio")?;
+    let tmp_dir = tempdir::TempDir::new_in(parent, "fluvio-tmp")?;
     let tmp_path = tmp_dir.path().join("fluvio");
     let mut tmp_file = File::create(&tmp_path)?;
     tmp_file.write_all(bytes.as_ref())?;
