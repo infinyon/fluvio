@@ -136,7 +136,7 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
     make_executable(&mut tmp_file)?;
 
     // Rename (atomic move on unix) temp file to destination
-    std::fs::rename(&tmp_path, &bin_path)?;
+    std::fs::copy(&tmp_path, &bin_path)?;
 
     Ok(())
 }
