@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "examples/00-echo",
     "examples/01-consume",
+    "examples/02-echo",
     "src/auth",
     "src/cli",
     "src/client",
