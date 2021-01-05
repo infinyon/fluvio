@@ -539,6 +539,14 @@ impl ClusterInstallerBuilder {
         self.resource_requirments = Some(resource_requirments);
         self
     }
+
+    /// Use cluster ip instead of load balancer for communication to SC
+    /// This is is useful inside k8 cluster
+    pub fn with_cluster_ip(mut self, use_cluster_ip: bool) -> Self {
+        self.use_cluster_ip = use_cluster_ip;
+        self
+    }
+
 }
 
 /// Compute resource requirements for fluvio server components
@@ -724,7 +732,7 @@ impl ClusterInstaller {
     /// Get installed system chart
     pub fn sys_charts() -> Result<Vec<InstalledChart>, K8InstallError> {
         let helm_client = HelmClient::new()?;
-        let sys_charts = helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO)?;
+        let sys_charts = helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO,"default")?;
         Ok(sys_charts)
     }
 
