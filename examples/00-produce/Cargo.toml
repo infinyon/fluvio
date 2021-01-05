@@ -1,0 +1,11 @@
+[package]
+name = "produce"
+version = "0.1.0"
+authors = ["Nick Mosher <nicholastmosher@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fluvio = "0.3.2"
+async-std = "1.8.0"
