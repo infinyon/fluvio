@@ -95,6 +95,8 @@ pub struct ClusterInstallerBuilder {
     resource_requirments: Option<ResourceRequirments>,
     /// Should the pre install checks be skipped
     skip_checks: bool,
+    /// if set use cluster ip instead of egress
+    use_cluster_ip: bool,
 }
 
 impl ClusterInstallerBuilder {
@@ -706,6 +708,7 @@ impl ClusterInstaller {
             authorization_config_map: None,
             resource_requirments: None,
             skip_checks: false,
+            use_cluster_ip: false,
         }
     }
 
@@ -1100,6 +1103,10 @@ impl ClusterInstaller {
                             if let Some(service) = service_value {
                                 trace!(service = ?service);
                                 if service.metadata.name == FLUVIO_SC_SERVICE {
+
+                                    if self.config.use_cluster_ip  {
+                                        return Ok(Some(service.spec.cluster_ip))
+                                    };
                                     let ingress_addr = service
                                         .status
                                         .load_balancer
@@ -1203,7 +1210,9 @@ impl ClusterInstaller {
                 .items
                 .iter()
                 .filter(|spu_obj| {
-                    !spu_obj.spec.public_endpoint.ingress.is_empty() && spu_obj.status.is_online()
+                    // if cluster ip is used then we skip checkking ingress
+                    (self.config.use_cluster_ip || !spu_obj.spec.public_endpoint.ingress.is_empty())
+                        && spu_obj.status.is_online()
                 })
                 .count();
 
