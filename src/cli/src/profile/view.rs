@@ -46,25 +46,24 @@ impl TableOutputHandler for ListConfig<'_> {
     }
 
     fn content(&self) -> Vec<Row> {
-        self.0.profile.iter()
+        self.0
+            .profile
+            .iter()
             .map(|(profile_name, profile)| {
-
-                let active = self.0.current_profile_name()
+                let active = self
+                    .0
+                    .current_profile_name()
                     .map(|it| it == profile_name)
                     .map(|active| if active { "*" } else { "" })
                     .unwrap_or("");
 
-                let (cluster, addr, tls) = self.0.cluster(&profile.cluster)
+                let (cluster, addr, tls) = self
+                    .0
+                    .cluster(&profile.cluster)
                     .map(|it| (&*profile.cluster, &*it.addr, format_tls(&it.tls)))
                     .unwrap_or(("", "", ""));
 
-                row![
-                    active,
-                    profile_name,
-                    cluster,
-                    addr,
-                    tls,
-                ]
+                row![active, profile_name, cluster, addr, tls,]
             })
             .collect()
     }
