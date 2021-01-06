@@ -953,52 +953,49 @@ impl ClusterInstaller {
             ));
         }
 
+        const SC_CPU_REQUEST: &str = "scResources.requests.cpu";
+        const SC_MEM_REQUEST: &str = "scResources.requests.memory";
+        const SC_CPU_LIMIT: &str = "scResources.limit.cpu";
+        const SC_MEM_LIMIT: &str = "scResources.limit.memory";
+        const SPU_CPU_REQUEST: &str = "spuResources.requests.cpu";
+        const SPU_MEM_REQUEST: &str = "spuResources.requests.memory";
+        const SPU_CPU_LIMIT: &str = "spuResources.limit.cpu";
+        const SPU_MEM_LIMIT: &str = "spuResources.limit.memory";
+
         if let Some(ref resource_requirments) = &self.config.resource_requirments {
             if let Some(ref sc_resource_requirments) = resource_requirments.sc {
                 if let Some(ref requests) = sc_resource_requirments.requests {
                     if let Some(ref cpu) = requests.cpu {
-                        install_settings
-                            .push(("scResources.requests.cpu", Cow::Owned(cpu.to_string())));
+                        install_settings.push((SC_CPU_REQUEST, Cow::Owned(cpu.to_string())));
                     }
                     if let Some(ref memory) = requests.memory {
-                        install_settings.push((
-                            "scResources.requests.memory",
-                            Cow::Owned(memory.to_string()),
-                        ));
+                        install_settings.push((SC_MEM_REQUEST, Cow::Owned(memory.to_string())));
                     }
                 }
                 if let Some(ref limits) = sc_resource_requirments.limits {
                     if let Some(ref cpu) = limits.cpu {
-                        install_settings
-                            .push(("scResources.limits.cpu", Cow::Owned(cpu.to_string())));
+                        install_settings.push((SC_CPU_LIMIT, Cow::Owned(cpu.to_string())));
                     }
                     if let Some(ref memory) = limits.memory {
-                        install_settings
-                            .push(("scResources.limits.memory", Cow::Owned(memory.to_string())));
+                        install_settings.push((SC_MEM_LIMIT, Cow::Owned(memory.to_string())));
                     }
                 }
             }
             if let Some(ref spu_resource_requirments) = resource_requirments.spu {
                 if let Some(ref requests) = spu_resource_requirments.requests {
                     if let Some(ref cpu) = requests.cpu {
-                        install_settings
-                            .push(("spuResources.requests.cpu", Cow::Owned(cpu.to_string())));
+                        install_settings.push((SPU_CPU_REQUEST, Cow::Owned(cpu.to_string())));
                     }
                     if let Some(ref memory) = requests.memory {
-                        install_settings.push((
-                            "spuResources.requests.memory",
-                            Cow::Owned(memory.to_string()),
-                        ));
+                        install_settings.push((SPU_MEM_REQUEST, Cow::Owned(memory.to_string())));
                     }
                 }
                 if let Some(ref limits) = spu_resource_requirments.limits {
                     if let Some(ref cpu) = limits.cpu {
-                        install_settings
-                            .push(("spuResources.limits.cpu", Cow::Owned(cpu.to_string())));
+                        install_settings.push((SPU_CPU_LIMIT, Cow::Owned(cpu.to_string())));
                     }
                     if let Some(ref memory) = limits.memory {
-                        install_settings
-                            .push(("spuResources.limits.memory", Cow::Owned(memory.to_string())));
+                        install_settings.push((SPU_MEM_LIMIT, Cow::Owned(memory.to_string())));
                     }
                 }
             }
