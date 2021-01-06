@@ -10,6 +10,7 @@ use structopt::StructOpt;
 mod sync;
 mod current;
 mod switch;
+mod rename;
 mod delete_profile;
 mod delete_cluster;
 mod view;
@@ -22,6 +23,7 @@ use crate::profile::delete_profile::DeleteProfileOpt;
 use crate::profile::switch::SwitchOpt;
 use crate::profile::sync::SyncCmd;
 use crate::profile::view::ViewOpt;
+use crate::profile::rename::RenameOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
@@ -37,6 +39,10 @@ pub enum ProfileCmd {
     /// Delete the named cluster
     #[structopt(name = "delete-cluster")]
     DeleteCluster(DeleteClusterOpt),
+
+    /// Rename a profile
+    #[structopt(name = "rename")]
+    Rename(RenameOpt),
 
     /// Switch to the named profile
     #[structopt(name = "switch")]
@@ -54,22 +60,25 @@ pub enum ProfileCmd {
 impl ProfileCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
         match self {
-            ProfileCmd::View(view) => {
+            Self::View(view) => {
                 view.process(out).await?;
             }
-            ProfileCmd::DisplayCurrent(current) => {
+            Self::DisplayCurrent(current) => {
                 current.process().await?;
             }
-            ProfileCmd::Switch(switch) => {
+            Self::Rename(rename) => {
+                rename.process()?;
+            }
+            Self::Switch(switch) => {
                 switch.process(out).await?;
             }
-            ProfileCmd::DeleteProfile(delete_profile) => {
+            Self::DeleteProfile(delete_profile) => {
                 delete_profile.process(out).await?;
             }
-            ProfileCmd::DeleteCluster(delete_cluster) => {
+            Self::DeleteCluster(delete_cluster) => {
                 delete_cluster.process().await?;
             }
-            ProfileCmd::Sync(sync) => {
+            Self::Sync(sync) => {
                 sync.process().await?;
             }
         }
