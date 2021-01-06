@@ -205,6 +205,28 @@ impl Config {
         }
     }
 
+    pub fn rename_profile(&mut self, from: &str, to: String) -> bool {
+        // Remove the profile from its old name, or return if it didn't exist
+        let profile = match self.profile.remove(from) {
+            Some(profile) => profile,
+            None => return false,
+        };
+
+        // Re-add the profile under its new name
+        self.add_profile(profile, to.clone());
+
+        // If the renamed profile was current, we need to update the current name
+        let update_current = self
+            .current_profile_name()
+            .map(|it| it == from)
+            .unwrap_or(false);
+        if update_current {
+            self.current_profile = Some(to);
+        }
+
+        true
+    }
+
     /// delete profile
     pub fn delete_profile(&mut self, profile_name: &str) -> bool {
         if self.profile.remove(profile_name).is_some() {
@@ -426,6 +448,19 @@ pub mod test {
 
         let cluster = config.current_cluster().expect("cluster should exist");
         assert_eq!(cluster.addr, "127.0.0.1:9003");
+    }
+
+    #[test]
+    fn test_rename_profile() {
+        let mut conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("parse failed");
+
+        let config = conf_file.mut_config();
+        assert_eq!(config.current_profile_name(), Some("local"));
+        config.rename_profile("local", "remote".to_string());
+        assert_eq!(config.current_profile_name(), Some("remote"));
+        assert!(!config.profile.contains_key("local"));
+        assert!(config.profile.contains_key("remote"));
     }
 
     /// test TOML save generation
