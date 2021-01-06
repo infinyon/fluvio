@@ -46,7 +46,7 @@ once_cell = "1.5"
 
 # Fluvio dependencies
 fluvio = { version = "0.3.0", path = "../client", default-features = false }
-fluvio-helm = "0.1.0"
+fluvio-helm = "0.2.0"
 fluvio-future = { version = "0.1.13" }
 fluvio-runner-local = { version = "0.2.0", path = "../extension-runner-local", optional = true }
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common", optional = true }
