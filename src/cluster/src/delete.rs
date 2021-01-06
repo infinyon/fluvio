@@ -157,7 +157,7 @@ impl ClusterUninstaller {
     pub async fn uninstall_sys(&self) -> Result<(), ClusterError> {
         info!("Removing fluvio sys chart");
         self.helm_client
-            .uninstall(DEFAULT_CHART_SYS_REPO, &self.config.namespace,true)
+            .uninstall(DEFAULT_CHART_SYS_REPO, &self.config.namespace, true)
             .map_err(UninstallError::HelmError)?;
         info!("fluvio sys chart has been uninstalled");
         self.cleanup().await?;

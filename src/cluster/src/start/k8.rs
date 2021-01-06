@@ -732,7 +732,8 @@ impl ClusterInstaller {
     /// Get installed system chart
     pub fn sys_charts() -> Result<Vec<InstalledChart>, K8InstallError> {
         let helm_client = HelmClient::new()?;
-        let sys_charts = helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO,"default")?;
+        let sys_charts =
+            helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, "default")?;
         Ok(sys_charts)
     }
 
@@ -747,7 +748,9 @@ impl ClusterInstaller {
     ///
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
-    #[allow(unused)]
+    #[instrument(
+        skip(self)
+    )]
     pub async fn setup(&self) -> CheckResults {
         let fix = |err| self.pre_install_fix(err);
         ClusterChecker::empty()
