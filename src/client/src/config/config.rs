@@ -216,7 +216,8 @@ impl Config {
         self.add_profile(profile, to.clone());
 
         // If the renamed profile was current, we need to update the current name
-        let update_current = self.current_profile_name()
+        let update_current = self
+            .current_profile_name()
             .map(|it| it == from)
             .unwrap_or(false);
         if update_current {
