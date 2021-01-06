@@ -29,8 +29,9 @@ pub mod cli;
 
 use fluvio_helm as helm;
 
-pub use start::k8::ClusterInstaller;
-pub use start::k8::ClusterInstallerBuilder;
+pub use start::k8::{ClusterInstaller, ClusterInstallerBuilder};
+pub use start::k8::{ResourceRequirments, ContainerResourceRequirments};
+pub use start::k8::{ContainerResourceRequirmentValues, MilliCpu, Memory};
 pub use start::local::LocalClusterInstaller;
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
