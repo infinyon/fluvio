@@ -55,7 +55,7 @@ impl ProfileCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
         match self {
             ProfileCmd::View(view) => {
-                view.process().await?;
+                view.process(out).await?;
             }
             ProfileCmd::DisplayCurrent(current) => {
                 current.process().await?;

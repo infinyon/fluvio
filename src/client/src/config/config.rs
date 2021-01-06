@@ -139,8 +139,8 @@ const CONFIG_VERSION: &str = "2.0";
 pub struct Config {
     version: String,
     current_profile: Option<String>,
-    profile: HashMap<String, Profile>,
-    cluster: HashMap<String, FluvioConfig>,
+    pub profile: HashMap<String, Profile>,
+    pub cluster: HashMap<String, FluvioConfig>,
     client_id: Option<String>,
 }
 
