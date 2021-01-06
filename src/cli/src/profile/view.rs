@@ -5,19 +5,19 @@ use prettytable::{Row, row, cell};
 
 use crate::Result;
 use fluvio::config::{ConfigFile, Config, TlsPolicy};
-use fluvio_extension_common::Terminal;
+use fluvio_extension_common::{Terminal, OutputFormat};
 use fluvio_extension_common::output::{TableOutputHandler, OutputType};
 
 #[derive(Debug, StructOpt)]
 pub struct ViewOpt {
-    #[structopt(default_value, short, long)]
-    output: OutputType,
+    #[structopt(flatten)]
+    output: OutputFormat,
 }
 
 impl ViewOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
         let config_file = ConfigFile::load(None)?;
-        format_config_file(out, config_file.config(), self.output)?;
+        format_config_file(out, config_file.config(), self.output.format)?;
         Ok(())
     }
 }
