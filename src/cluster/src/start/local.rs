@@ -27,6 +27,7 @@ use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
 use crate::check::render::render_check_progress;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
+const LOCAL_SC_PORT: u16 = 9003;
 
 #[derive(Debug)]
 pub struct LocalClusterInstallerBuilder {
@@ -415,7 +416,7 @@ impl LocalClusterInstaller {
         // ensure we sync files before we launch servers
         Command::new("sync").inherit();
         info!("launching sc");
-        let address = self.launch_sc()?;
+        let (address, port) = self.launch_sc()?;
         info!("setting local profile");
         self.set_profile()?;
 
@@ -427,13 +428,17 @@ impl LocalClusterInstaller {
         sleep(Duration::from_secs(1)).await;
         self.confirm_spu(self.config.spu_spec.replicas).await?;
 
-        Ok(StartStatus { address, checks })
+        Ok(StartStatus {
+            address,
+            port,
+            checks,
+        })
     }
 
     /// Launches an SC on the local machine
     ///
     /// Returns the address of the SC if successful
-    fn launch_sc(&self) -> Result<String, LocalInstallError> {
+    fn launch_sc(&self) -> Result<(String, u16), LocalInstallError> {
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
@@ -453,7 +458,7 @@ impl LocalClusterInstaller {
             .stderr(Stdio::from(errors))
             .spawn()?;
 
-        Ok(LOCAL_SC_ADDRESS.to_string())
+        Ok((LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT))
     }
 
     fn set_server_tls(

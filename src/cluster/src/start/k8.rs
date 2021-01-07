@@ -95,6 +95,8 @@ pub struct ClusterInstallerBuilder {
     resource_requirments: Option<ResourceRequirments>,
     /// Should the pre install checks be skipped
     skip_checks: bool,
+    /// if set use cluster ip instead of egress
+    use_cluster_ip: bool,
 }
 
 impl ClusterInstallerBuilder {
@@ -537,6 +539,13 @@ impl ClusterInstallerBuilder {
         self.resource_requirments = Some(resource_requirments);
         self
     }
+
+    /// Use cluster ip instead of load balancer for communication to SC
+    /// This is is useful inside k8 cluster
+    pub fn with_cluster_ip(mut self, use_cluster_ip: bool) -> Self {
+        self.use_cluster_ip = use_cluster_ip;
+        self
+    }
 }
 
 /// Compute resource requirements for fluvio server components
@@ -706,6 +715,7 @@ impl ClusterInstaller {
             authorization_config_map: None,
             resource_requirments: None,
             skip_checks: false,
+            use_cluster_ip: false,
         }
     }
 
@@ -721,7 +731,7 @@ impl ClusterInstaller {
     /// Get installed system chart
     pub fn sys_charts() -> Result<Vec<InstalledChart>, K8InstallError> {
         let helm_client = HelmClient::new()?;
-        let sys_charts = helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO)?;
+        let sys_charts = helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)?;
         Ok(sys_charts)
     }
 
@@ -736,7 +746,7 @@ impl ClusterInstaller {
     ///
     /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
     /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
-    #[allow(unused)]
+    #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
         let fix = |err| self.pre_install_fix(err);
         ClusterChecker::empty()
@@ -817,9 +827,11 @@ impl ClusterInstaller {
                         // If Fluvio is already installed, return the SC's address
                         CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {
                             debug!("Fluvio is already installed. Getting SC address");
-                            let address = self.wait_for_sc_service(&self.config.namespace).await?;
+                            let (address, port) =
+                                self.wait_for_sc_service(&self.config.namespace).await?;
                             return Ok(StartStatus {
                                 address,
+                                port,
                                 checks: Some(statuses),
                             });
                         }
@@ -838,7 +850,7 @@ impl ClusterInstaller {
 
         self.install_app()?;
         let namespace = &self.config.namespace;
-        let address = self
+        let (address, port) = self
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
@@ -863,7 +875,11 @@ impl ClusterInstaller {
                 .await?;
         }
 
-        Ok(StartStatus { address, checks })
+        Ok(StartStatus {
+            address,
+            port,
+            checks,
+        })
     }
 
     /// Install the Fluvio System chart on the configured cluster
@@ -1068,10 +1084,9 @@ impl ClusterInstaller {
 
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
-    async fn discover_sc_address(&self, ns: &str) -> Result<Option<String>, K8InstallError> {
+    async fn discover_sc_address(&self, ns: &str) -> Result<Option<(String, u16)>, K8InstallError> {
         use tokio::select;
         use futures_lite::stream::StreamExt;
-        use tracing::trace;
 
         use fluvio_future::timer::sleep;
         use k8_client::core::metadata::K8Watch;
@@ -1098,8 +1113,20 @@ impl ClusterInstaller {
                             };
 
                             if let Some(service) = service_value {
-                                trace!(service = ?service);
+
                                 if service.metadata.name == FLUVIO_SC_SERVICE {
+                                    debug!(service = ?service,"found sc service");
+
+                                    let target_port =  service.spec
+                                        .ports
+                                        .iter()
+                                        .find(|_| true)
+                                        .and_then(|port| port.target_port).expect("target port should be there");
+
+                                    if self.config.use_cluster_ip  {
+                                        return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
+                                    };
+
                                     let ingress_addr = service
                                         .status
                                         .load_balancer
@@ -1108,17 +1135,13 @@ impl ClusterInstaller {
                                         .find(|_| true)
                                         .and_then(|ingress| ingress.host_or_ip().to_owned());
 
-                                    let sock_addr = ingress_addr.and_then(|addr| {
-                                        service.spec
-                                        .ports
-                                        .iter()
-                                        .find(|_| true)
-                                        .and_then(|port| port.target_port)
-                                        .map(|target_port| format!("{}:{}", addr, target_port))
-                                    });
-                                    if sock_addr.is_some() {
-                                        return Ok(sock_addr)
+                                    if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+
+
+                                            debug!(%sock_addr,"found lb address");
+                                            return Ok(Some((sock_addr,target_port)))
                                     }
+
                                 }
                             }
                         }
@@ -1132,13 +1155,14 @@ impl ClusterInstaller {
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
+    /// return address and port
     #[instrument(skip(self, ns))]
-    async fn wait_for_sc_service(&self, ns: &str) -> Result<String, K8InstallError> {
-        info!("waiting for SC service");
-        if let Some(sock_addr) = self.discover_sc_address(ns).await? {
-            info!(%sock_addr, "found SC service load balancer, discovered SC address");
+    async fn wait_for_sc_service(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
+        debug!("waiting for SC service");
+        if let Some((sock_addr, port)) = self.discover_sc_address(ns).await? {
+            debug!(%sock_addr, "found SC service addr");
             self.wait_for_sc_port_check(&sock_addr).await?;
-            Ok(sock_addr)
+            Ok((sock_addr, port))
         } else {
             Err(K8InstallError::SCServiceTimeout)
         }
@@ -1168,7 +1192,7 @@ impl ClusterInstaller {
         &self,
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, K8InstallError> {
-        info!("waiting for SC dns resolution: {}", sock_addr_string);
+        debug!("waiting for SC dns resolution: {}", sock_addr_string);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             match resolve(sock_addr_string).await {
                 Ok(sock_addr) => {
@@ -1203,7 +1227,9 @@ impl ClusterInstaller {
                 .items
                 .iter()
                 .filter(|spu_obj| {
-                    !spu_obj.spec.public_endpoint.ingress.is_empty() && spu_obj.status.is_online()
+                    // if cluster ip is used then we skip checkking ingress
+                    (self.config.use_cluster_ip || !spu_obj.spec.public_endpoint.ingress.is_empty())
+                        && spu_obj.status.is_online()
                 })
                 .count();
 

@@ -57,8 +57,10 @@ pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 /// contains the address of the Streaming Controller (SC) of the new
 /// cluster as well as the results of any pre-startup checks that
 /// were run (if any).
+/// TODO: In future release, we should return address without port
 pub struct StartStatus {
     address: String,
+    port: u16,
     #[allow(unused)]
     pub(crate) checks: Option<CheckStatuses>,
 }
@@ -67,5 +69,11 @@ impl StartStatus {
     /// The address where the newly-started Fluvio cluster lives
     pub fn address(&self) -> &str {
         &self.address
+    }
+
+    /// get port
+    #[allow(unused)]
+    pub fn port(&self) -> u16 {
+        self.port
     }
 }
