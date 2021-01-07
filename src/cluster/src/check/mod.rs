@@ -633,10 +633,11 @@ pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> CheckResu
 }
 
 /// Check that the system chart is installed
+/// This uses whatever namespace it is being called
 pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> CheckResult {
     // check installed system chart version
     let sys_charts = helm
-        .get_installed_chart_by_name(sys_repo, "default")
+        .get_installed_chart_by_name(sys_repo, None)
         .map_err(CheckError::HelmError)?;
     if sys_charts.is_empty() {
         return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
@@ -649,7 +650,7 @@ pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> CheckResu
 /// Checks that Fluvio is not already installed
 pub(crate) fn check_already_installed(helm: &HelmClient, app_repo: &str) -> CheckResult {
     let app_charts = helm
-        .get_installed_chart_by_name(app_repo, "default")
+        .get_installed_chart_by_name(app_repo, None)
         .map_err(CheckError::HelmError)?;
     if !app_charts.is_empty() {
         return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));
