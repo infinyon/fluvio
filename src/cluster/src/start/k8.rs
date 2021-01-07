@@ -827,9 +827,11 @@ impl ClusterInstaller {
                         // If Fluvio is already installed, return the SC's address
                         CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {
                             debug!("Fluvio is already installed. Getting SC address");
-                            let address = self.wait_for_sc_service(&self.config.namespace).await?;
+                            let (address, port) =
+                                self.wait_for_sc_service(&self.config.namespace).await?;
                             return Ok(StartStatus {
                                 address,
+                                port,
                                 checks: Some(statuses),
                             });
                         }
@@ -848,7 +850,7 @@ impl ClusterInstaller {
 
         self.install_app()?;
         let namespace = &self.config.namespace;
-        let address = self
+        let (address, port) = self
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
@@ -873,7 +875,11 @@ impl ClusterInstaller {
                 .await?;
         }
 
-        Ok(StartStatus { address, checks })
+        Ok(StartStatus {
+            address,
+            port,
+            checks,
+        })
     }
 
     /// Install the Fluvio System chart on the configured cluster
@@ -1078,7 +1084,7 @@ impl ClusterInstaller {
 
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
-    async fn discover_sc_address(&self, ns: &str) -> Result<Option<String>, K8InstallError> {
+    async fn discover_sc_address(&self, ns: &str) -> Result<Option<(String, u16)>, K8InstallError> {
         use tokio::select;
         use futures_lite::stream::StreamExt;
 
@@ -1118,8 +1124,9 @@ impl ClusterInstaller {
                                         .and_then(|port| port.target_port).expect("target port should be there");
 
                                     if self.config.use_cluster_ip  {
-                                        return Ok(Some(format!("{}:{}",service.spec.cluster_ip,target_port)))
+                                        return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
                                     };
+
                                     let ingress_addr = service
                                         .status
                                         .load_balancer
@@ -1128,13 +1135,13 @@ impl ClusterInstaller {
                                         .find(|_| true)
                                         .and_then(|ingress| ingress.host_or_ip().to_owned());
 
-                                    let sock_addr = ingress_addr.map(|addr| {
-                                        format!("{}:{}", addr, target_port) }
-                                    );
-                                    if sock_addr.is_some() {
-                                        debug!("found lb address");
-                                        return Ok(sock_addr)
+                                    if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+
+
+                                            debug!(%sock_addr,"found lb address");
+                                            return Ok(Some((sock_addr,target_port)))
                                     }
+
                                 }
                             }
                         }
@@ -1148,13 +1155,14 @@ impl ClusterInstaller {
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
+    /// return address and port
     #[instrument(skip(self, ns))]
-    async fn wait_for_sc_service(&self, ns: &str) -> Result<String, K8InstallError> {
+    async fn wait_for_sc_service(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
         debug!("waiting for SC service");
-        if let Some(sock_addr) = self.discover_sc_address(ns).await? {
+        if let Some((sock_addr, port)) = self.discover_sc_address(ns).await? {
             debug!(%sock_addr, "found SC service addr");
             self.wait_for_sc_port_check(&sock_addr).await?;
-            Ok(sock_addr)
+            Ok((sock_addr, port))
         } else {
             Err(K8InstallError::SCServiceTimeout)
         }
