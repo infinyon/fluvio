@@ -258,6 +258,11 @@ jobs:
         timeout-minutes: 5
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+      - name: Test examples
+        run: |
+          target/release fluvio topic create example
+          cargo run --bin produce
+          cargo run --bin consume
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload Sc logs
