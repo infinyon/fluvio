@@ -224,7 +224,7 @@ impl FluvioCmd {
                 consume.process(out, &fluvio).await?;
             }
             Self::Produce(produce) => {
-                produce.process(out, &fluvio).await?;
+                produce.process(&fluvio).await?;
             }
             Self::Topic(topic) => {
                 topic.process(out, &fluvio).await?;
