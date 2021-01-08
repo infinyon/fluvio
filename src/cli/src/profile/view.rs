@@ -21,7 +21,7 @@ impl ViewOpt {
             Err(_) => {
                 eprintln!("Unable to find Fluvio config");
                 eprintln!("Try using 'fluvio cloud login' or 'fluvio cluster start'");
-                return Ok(())
+                return Ok(());
             }
         };
         format_config_file(out, config_file.config(), self.output.format)?;
