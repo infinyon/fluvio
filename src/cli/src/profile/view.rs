@@ -16,7 +16,14 @@ pub struct ViewOpt {
 
 impl ViewOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
-        let config_file = ConfigFile::load(None)?;
+        let config_file = match ConfigFile::load(None) {
+            Ok(config) => config,
+            Err(_) => {
+                eprintln!("Unable to find Fluvio config");
+                eprintln!("Try using 'fluvio cloud login' or 'fluvio cluster start'");
+                return Ok(())
+            }
+        };
         format_config_file(out, config_file.config(), self.output.format)?;
         Ok(())
     }
