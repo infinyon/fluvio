@@ -121,9 +121,12 @@ impl CreateTopicOpt {
             })
         };
 
-        let is_alphanumeric = self.topic.is_ascii() && self.topic.chars().all(|c| c.is_alphanumeric());
+        let is_alphanumeric =
+            self.topic.is_ascii() && self.topic.chars().all(|c| c.is_alphanumeric());
         if !is_alphanumeric {
-            return Err(ConsumerError::InvalidArg("Topic name must be alphanumeric".to_string()));
+            return Err(ConsumerError::InvalidArg(
+                "Topic name must be alphanumeric".to_string(),
+            ));
         }
 
         // return server separately from config
