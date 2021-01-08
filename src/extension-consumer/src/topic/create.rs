@@ -13,7 +13,7 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::Result;
+use crate::{Result, ConsumerError};
 
 // -----------------------------------
 // CLI Options
@@ -120,6 +120,14 @@ impl CreateTopicOpt {
                 ignore_rack_assignment: self.ignore_rack_assigment,
             })
         };
+
+        let is_alphanumeric =
+            self.topic.is_ascii() && self.topic.chars().all(|c| c.is_alphanumeric());
+        if !is_alphanumeric {
+            return Err(ConsumerError::InvalidArg(
+                "Topic name must be alphanumeric".to_string(),
+            ));
+        }
 
         // return server separately from config
         Ok((self.topic, topic))
