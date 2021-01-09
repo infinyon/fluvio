@@ -12,6 +12,8 @@ pub enum FluvioError {
     TopicNotFound(String),
     #[error("Partition not found: {0}-{1}")]
     PartitionNotFound(String, i32),
+    #[error("Spu not found: {0}")]
+    SPUNotFound(i32),
     #[error(transparent)]
     IoError {
         #[from]

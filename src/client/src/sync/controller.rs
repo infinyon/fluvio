@@ -49,7 +49,7 @@ impl SimpleEvent {
     }
 }
 
-///
+/// Synchronize metadata from SC
 pub struct MetadataSyncController<S>
 where
     S: Spec,

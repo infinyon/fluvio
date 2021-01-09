@@ -91,32 +91,28 @@ impl SpuPool {
         })
     }
 
-    // create serial socket connection to replica
+    /// Create request/response socket to SPU for a replica
+    ///
+    /// All sockets to same SPU use a single TCP connection.
+    /// First this looks up SPU address in SPU metadata and try to see if there is an existing TCP connection.
+    /// If not, it will create a new connection and creates socket to it
     pub async fn create_serial_socket(
         &self,
         replica: &ReplicaKey,
     ) -> Result<VersionedSerialSocket, FluvioError> {
-        use std::io::ErrorKind;
-
-        let partition = match self.metadata.partitions().lookup_by_key(replica).await {
-            Ok(m) => Ok(m),
-            Err(err) => Err(match err {
-                FluvioError::IoError { source } => match source.kind() {
-                    ErrorKind::TimedOut => {
-                        return Err(FluvioError::PartitionNotFound(
-                            replica.topic.to_string(),
-                            replica.partition,
-                        ))
-                    }
-                    _ => source.into(),
-                },
-                _ => err,
-            }),
-        }?;
+        let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
+        let partition = if let Some(partition) = partition_search {
+            partition
+        } else {
+            return Err(FluvioError::PartitionNotFound(
+                replica.topic.to_string(),
+                replica.partition,
+            ));
+        };
 
         let leader_id = partition.spec.leader;
 
-        // check if already have existing leader
+        // check if already have existing connection to same SPU
         let mut client_lock = self.spu_clients.lock().await;
 
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
@@ -136,7 +132,16 @@ impl SpuPool {
         replica: &ReplicaKey,
         request: R,
     ) -> Result<AsyncResponse<R>, FluvioError> {
-        let partition = self.metadata.partitions().lookup_by_key(replica).await?;
+        let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
+
+        let partition = if let Some(partition) = partition_search {
+            partition
+        } else {
+            return Err(FluvioError::PartitionNotFound(
+                replica.topic.to_owned(),
+                replica.partition,
+            ));
+        };
 
         let leader_id = partition.spec.leader;
 
