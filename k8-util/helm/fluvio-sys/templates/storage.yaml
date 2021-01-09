@@ -8,7 +8,7 @@ metadata:
     {{- end }}
 {{- if eq .Values.cloud "minikube" }}
 provisioner: k8s.io/minikube-hostpath
-reclaimPolicy: Retain
+reclaimPolicy: Delete
 {{- else if eq .Values.cloud "aws" }}
 provisioner: kubernetes.io/aws-ebs
 parameters:
