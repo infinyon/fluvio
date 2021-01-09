@@ -5,7 +5,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 
 use content_inspector::{inspect, ContentType};
-use log::{ trace,warn};
+use log::{trace, warn};
 use once_cell::sync::Lazy;
 
 use crate::core::bytes::Buf;
@@ -30,7 +30,6 @@ static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
     let var_value = std::env::var("FLV_MAX_STRING_DISPLAY").unwrap_or_default();
     var_value.parse().unwrap_or(16384)
 });
-
 
 pub use file::*;
 
