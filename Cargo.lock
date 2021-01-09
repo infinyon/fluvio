@@ -188,7 +188,7 @@ dependencies = [
  "httparse",
  "lazy_static",
  "log",
- "pin-project 1.0.3",
+ "pin-project 1.0.4",
 ]
 
 [[package]]
@@ -311,7 +311,7 @@ dependencies = [
  "memchr",
  "num_cpus",
  "once_cell",
- "pin-project-lite 0.2.1",
+ "pin-project-lite 0.2.3",
  "pin-utils",
  "slab",
  "wasm-bindgen-futures",
@@ -1115,7 +1115,7 @@ dependencies = [
  "nix 0.17.0",
  "openssl",
  "openssl-sys",
- "pin-project 1.0.3",
+ "pin-project 1.0.4",
  "pin-utils",
  "thiserror",
  "tracing",
@@ -1315,7 +1315,7 @@ dependencies = [
  "futures-util",
  "log",
  "once_cell",
- "pin-project 1.0.3",
+ "pin-project 1.0.4",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -1573,7 +1573,7 @@ dependencies = [
  "futures-io",
  "memchr",
  "parking",
- "pin-project-lite 0.2.1",
+ "pin-project-lite 0.2.3",
  "waker-fn",
 ]
 
@@ -1616,7 +1616,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project-lite 0.2.1",
+ "pin-project-lite 0.2.3",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -1840,7 +1840,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project 1.0.3",
+ "pin-project 1.0.4",
  "tokio",
  "tower-service",
  "tracing",
@@ -2017,9 +2017,9 @@ dependencies = [
 
 [[package]]
 name = "k8-obj-metadata"
-version = "2.0.1"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dca07bd260ad1526a6606e4a6a5de2d26644780adc17951fed0fe2b96a5cbeb1"
+checksum = "0eade50cc4869cba545e3d289895d3891a68dd33e2c484b7f124bba6931744d1"
 dependencies = [
  "serde",
  "serde_json",
@@ -2363,11 +2363,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a83804639aad6ba65345661744708855f9fbcb71176ea8d28d05aeb11d975e7"
+checksum = "95b70b68509f17aa2857863b6fa00bf21fc93674c7a8893de2f469f6aa7ca2f2"
 dependencies = [
- "pin-project-internal 1.0.3",
+ "pin-project-internal 1.0.4",
 ]
 
 [[package]]
@@ -2383,9 +2383,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-internal"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7bcc46b8f73443d15bc1c5fecbb315718491fa9187fa483f0e359323cde8b3a"
+checksum = "caa25a6393f22ce819b0f50e0be89287292fda8d425be38ee0ca14c4931d9e71"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2400,9 +2400,9 @@ checksum = "c917123afa01924fc84bb20c4c03f004d9c38e5127e3c039bbf7f4b9c76a2f6b"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.1"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e36743d754ccdf9954c2e352ce2d4b106e024c814f6499c2dadff80da9a442d8"
+checksum = "ba36e0a6cc5a4c645073f4984f1ed55d09f5857d4de7c14550baa81a39ef5a17"
 
 [[package]]
 name = "pin-utils"
@@ -3266,7 +3266,7 @@ checksum = "9f47026cdc4080c07e49b37087de021820269d996f581aac150ef9e5583eefe3"
 dependencies = [
  "cfg-if 1.0.0",
  "log",
- "pin-project-lite 0.2.1",
+ "pin-project-lite 0.2.3",
  "tracing-attributes",
  "tracing-core",
 ]

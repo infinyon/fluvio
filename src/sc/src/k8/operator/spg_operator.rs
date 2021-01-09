@@ -347,6 +347,12 @@ impl SpgOperator {
 
         let svc_name = format!("fluvio-spu-{}", spu_name);
 
+        let mut input_service_annotations = HashMap::new();
+        input_service_annotations.insert(
+            "service.beta.kubernetes.io/aws-load-balancer-type".to_owned(),
+            "nlb".to_owned(),
+        );
+
         let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),
             kind: ServiceSpec::kind(),
@@ -354,6 +360,7 @@ impl SpgOperator {
                 name: svc_name,
                 namespace: metadata.namespace().to_string(),
                 owner_references: vec![owner_ref],
+                annotations: input_service_annotations,
                 ..Default::default()
             }
             .set_labels(vec![("fluvio.io/spu-name", spu_name)]),
