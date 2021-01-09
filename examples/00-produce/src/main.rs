@@ -18,12 +18,14 @@
 fn main() {
     let result = async_std::task::block_on(produce());
     if let Err(e) = result {
-        println!("Error: {:?}", e);
+        println!("Produce error: {:?}", e);
     }
 }
 
 async fn produce() -> Result<(), fluvio::FluvioError> {
-    let producer = fluvio::producer("example").await?;
-    producer.send_record("Hello, Fluvio!", 0).await?;
+    let producer = fluvio::producer("simple-example").await?;
+    let message = "Hello, Fluvio!";
+    producer.send_record(&message, 0).await?;
+    println!("{}", message);
     Ok(())
 }

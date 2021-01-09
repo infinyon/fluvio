@@ -89,15 +89,46 @@
 //! ```
 
 use std::time::Duration;
-use futures_lite::StreamExt;
 use fluvio::{FluvioError, Offset};
+use futures::future::join;
+use async_std::task::{sleep, block_on};
+use async_std::future::timeout;
 
 const TOPIC: &str = "echo";
+const TIMEOUT_MS: u64 = 5_000;
 
 fn main() {
-    async_std::task::spawn(produce());
-    if let Err(e) = async_std::task::block_on(consume()) {
-        println!("Error: {}", e);
+    let produce_handle = async_std::task::spawn(produce());
+    let consume_handle = async_std::task::spawn(consume());
+
+    let timed_result = block_on(timeout(
+         Duration::from_millis(TIMEOUT_MS),
+         join(produce_handle, consume_handle),
+    ));
+
+    let (produce_result, consume_result) = match timed_result {
+        Ok(results) => results,
+        Err(_) => {
+            println!("Echo timed out after {}ms", TIMEOUT_MS);
+            std::process::exit(1);
+        }
+    };
+
+    match (produce_result, consume_result) {
+        (Err(produce_err), Err(consume_err)) => {
+            println!("Echo produce error: {:?}", produce_err);
+            println!("Echo consume error: {:?}", consume_err);
+            std::process::exit(1);
+        }
+        (Err(produce_err), _) => {
+            println!("Echo produce error: {:?}", produce_err);
+            std::process::exit(1);
+        }
+        (_, Err(consume_err)) => {
+            println!("Echo consume error: {:?}", consume_err);
+            std::process::exit(1);
+        }
+        _ => (),
     }
 }
 
@@ -105,12 +136,14 @@ fn main() {
 async fn produce() -> Result<(), FluvioError> {
     let producer = fluvio::producer(TOPIC).await?;
 
+    std::thread::sleep(Duration::from_secs(10));
+
     for i in 0..10 {
         println!("Sending record {}", i);
         producer
             .send_record(format!("Hello Fluvio {}!", i), 0)
             .await?;
-        async_std::task::sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_millis(100)).await;
     }
     producer.send_record("Done!", 0).await?;
 
@@ -119,6 +152,8 @@ async fn produce() -> Result<(), FluvioError> {
 
 /// Consumes events until a "Done!" event is read
 async fn consume() -> Result<(), FluvioError> {
+    use futures::StreamExt;
+
     let consumer = fluvio::consumer(TOPIC, 0).await?;
     let mut stream = consumer.stream(Offset::beginning()).await?;
 
