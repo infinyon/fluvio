@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use k8_client::{ClientError, SharedK8Client};
 use k8_metadata_client::MetadataClient;
 use tracing::debug;
@@ -12,6 +14,7 @@ const CONFIG_MAP_NAME: &str = "spu-k8";
 pub struct SpuK8Config {
     pub image: String,
     pub resources: ResourceRequirements,
+    pub lb_service_annotations: HashMap<String, String>,
 }
 
 impl SpuK8Config {
@@ -32,6 +35,17 @@ impl SpuK8Config {
 
         let resources = serde_json::from_str(&resources_string)?;
 
-        Ok(Self { image, resources })
+        let lb_service_annotations =
+            if let Some(lb_service_annotations) = data.remove("lbServiceAnnotations") {
+                serde_json::from_str(&lb_service_annotations)?
+            } else {
+                HashMap::new()
+            };
+
+        Ok(Self {
+            image,
+            resources,
+            lb_service_annotations,
+        })
     }
 }

@@ -124,6 +124,8 @@ impl SpgOperator {
 
         let spg_spec = &spu_group.spec;
 
+        let spu_k8_config = SpuK8Config::load(&self.client, &self.namespace).await?;
+
         // ensure we don't have conflict with existing spu group
         if let Some(conflict_id) = spu_group.is_conflict_with(&self.spu_store).await {
             warn!(conflict_id, "spg is in conflict with existing id");
@@ -148,7 +150,13 @@ impl SpgOperator {
             {
                 Ok(svc_name) => {
                     if let Err(err) = self
-                        .apply_stateful_set(&spu_group, spg_spec, &spg_name, svc_name)
+                        .apply_stateful_set(
+                            &spu_group,
+                            spg_spec,
+                            &spg_name,
+                            svc_name,
+                            &spu_k8_config,
+                        )
                         .await
                     {
                         error!("error applying stateful sets: {}", err);
@@ -159,7 +167,10 @@ impl SpgOperator {
                 }
             }
 
-            if let Err(err) = self.apply_spus(&spu_group, spg_spec, &spg_name).await {
+            if let Err(err) = self
+                .apply_spus(&spu_group, spg_spec, &spg_name, &spu_k8_config)
+                .await
+            {
                 error!("error applying spus: {}", err);
             }
         }
@@ -178,9 +189,8 @@ impl SpgOperator {
         spg_spec: &K8SpuGroupSpec,
         spg_name: &str,
         spg_svc_name: String,
+        spu_k8_config: &SpuK8Config,
     ) -> Result<(), ClientError> {
-        let spu_k8_config = SpuK8Config::load(&self.client, &self.namespace).await?;
-
         let input_stateful = convert_cluster_to_statefulset(
             spg_spec,
             &spu_group.metadata,
@@ -209,6 +219,7 @@ impl SpgOperator {
         spg_obj: &SpuGroupObj,
         spg_spec: &K8SpuGroupSpec,
         spg_name: &str,
+        spu_k8_config: &SpuK8Config,
     ) -> Result<(), ClientError> {
         let replicas = spg_spec.replicas;
 
@@ -228,7 +239,7 @@ impl SpgOperator {
                 .await;
 
             if let Err(err) = self
-                .apply_spu_load_balancers(spg_obj, spg_spec, &spu_name)
+                .apply_spu_load_balancers(spg_obj, spg_spec, &spu_name, &spu_k8_config)
                 .await
             {
                 error!("error trying to create load balancer for spu: {}", err);
@@ -318,6 +329,7 @@ impl SpgOperator {
         spg_obj: &SpuGroupObj,
         spg_spec: &K8SpuGroupSpec,
         spu_name: &str,
+        spu_k8_config: &SpuK8Config,
     ) -> Result<ApplyResult<ServiceSpec>, ClientError> {
         let metadata = &spg_obj.metadata;
 
@@ -347,12 +359,6 @@ impl SpgOperator {
 
         let svc_name = format!("fluvio-spu-{}", spu_name);
 
-        let mut input_service_annotations = HashMap::new();
-        input_service_annotations.insert(
-            "service.beta.kubernetes.io/aws-load-balancer-type".to_owned(),
-            "nlb".to_owned(),
-        );
-
         let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
             api_version: ServiceSpec::api_version(),
             kind: ServiceSpec::kind(),
@@ -360,7 +366,7 @@ impl SpgOperator {
                 name: svc_name,
                 namespace: metadata.namespace().to_string(),
                 owner_references: vec![owner_ref],
-                annotations: input_service_annotations,
+                annotations: spu_k8_config.lb_service_annotations.clone(),
                 ..Default::default()
             }
             .set_labels(vec![("fluvio.io/spu-name", spu_name)]),
