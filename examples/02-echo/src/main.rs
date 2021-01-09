@@ -102,8 +102,8 @@ fn main() {
     let consume_handle = async_std::task::spawn(consume());
 
     let timed_result = block_on(timeout(
-         Duration::from_millis(TIMEOUT_MS),
-         join(produce_handle, consume_handle),
+        Duration::from_millis(TIMEOUT_MS),
+        join(produce_handle, consume_handle),
     ));
 
     let (produce_result, consume_result) = match timed_result {
