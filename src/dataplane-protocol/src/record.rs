@@ -5,8 +5,8 @@ use std::io::Error;
 use std::io::ErrorKind;
 
 use content_inspector::{inspect, ContentType};
-use log::trace;
-use log::warn;
+use log::{ trace,warn};
+use once_cell::sync::Lazy;
 
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufExt;
@@ -25,8 +25,12 @@ use crate::Offset;
 
 pub type DefaultRecord = Record<DefaultAsyncBuffer>;
 
-/// maxmimum number of records to display
-const MAX_STRING_DISPLAY: usize = 255;
+/// maximum text to display
+static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
+    let var_value = std::env::var("FLV_MAX_STRING_DISPLAY").unwrap_or_default();
+    var_value.parse().unwrap_or(16384)
+});
+
 
 pub use file::*;
 
@@ -100,15 +104,13 @@ impl Debug for DefaultAsyncBuffer {
                 // we assume content is text if it is not binary
                 if matches!(inspect(value), ContentType::BINARY) {
                     write!(f, "values binary: ({} bytes)", self.len())
-                } else if value.len() < MAX_STRING_DISPLAY {
+                } else if value.len() < *MAX_STRING_DISPLAY {
                     write!(f, "{}", String::from_utf8_lossy(value))
                 } else {
-                    writeln!(
+                    write!(
                         f,
-                        "{} of {}: {}",
-                        MAX_STRING_DISPLAY,
-                        value.len(),
-                        String::from_utf8_lossy(&value[0..MAX_STRING_DISPLAY])
+                        "{}...",
+                        String::from_utf8_lossy(&value[0..*MAX_STRING_DISPLAY])
                     )
                 }
             }
@@ -123,15 +125,13 @@ impl Display for DefaultAsyncBuffer {
             Some(ref value) => {
                 if matches!(inspect(value), ContentType::BINARY) {
                     write!(f, "binary: ({} bytes)", self.len())
-                } else if value.len() < MAX_STRING_DISPLAY {
+                } else if value.len() < *MAX_STRING_DISPLAY {
                     write!(f, "{}", String::from_utf8_lossy(value))
                 } else {
-                    writeln!(
+                    write!(
                         f,
-                        "{} of {}: {}",
-                        MAX_STRING_DISPLAY,
-                        value.len(),
-                        String::from_utf8_lossy(&value[0..MAX_STRING_DISPLAY])
+                        "{}...",
+                        String::from_utf8_lossy(&value[0..*MAX_STRING_DISPLAY])
                     )
                 }
             }
