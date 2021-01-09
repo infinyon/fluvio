@@ -8,8 +8,9 @@ mod context {
 
     use std::sync::Arc;
     use std::fmt::Display;
+    use std::io::Error as IoError;
 
-    use tracing::{debug, trace};
+    use tracing::{debug, trace, instrument};
     use async_rwlock::RwLockReadGuard;
     use once_cell::sync::Lazy;
 
@@ -23,10 +24,11 @@ mod context {
 
     pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S, AlwaysNewContext>;
 
+    /// Timeout
     static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
         use std::env;
-        let var_value = env::var("FLV_METADATA_WAIT").unwrap_or_default();
-        let wait_time: u64 = var_value.parse().unwrap_or(200);
+        let var_value = env::var("FLV_METADATA_TIMEOUT").unwrap_or_default();
+        let wait_time: u64 = var_value.parse().unwrap_or(60000); // up to 60 seconds
         wait_time
     });
 
@@ -69,24 +71,29 @@ mod context {
             &self.store
         }
 
+        /// L by key if doesn't exist return None
+        /// This will generate timeout if metadata has not been filled
+        #[instrument(
+            skip(self),
+            fields(
+                Store = %S::LABEL            )
+        )]
         pub async fn lookup_by_key(
             &self,
             key: &S::IndexKey,
-        ) -> Result<CacheMetadataStoreObject<S>, FluvioError>
+        ) -> Result<Option<CacheMetadataStoreObject<S>>, IoError>
         where
             S: 'static,
             S::IndexKey: Display,
         {
-            debug!("lookup for {} key: {}", S::LABEL, key);
             self.lookup_and_wait(|g| g.get(key).map(|v| v.inner().clone()))
                 .await
         }
 
-        /// look up value for key, if it doesn't exists, wait with max timeout
-        pub async fn lookup_and_wait<'a, F>(
+        async fn lookup_and_wait<'a, F>(
             &'a self,
             search: F,
-        ) -> Result<CacheMetadataStoreObject<S>, FluvioError>
+        ) -> Result<Option<CacheMetadataStoreObject<S>>, IoError>
         where
             S: 'static,
             S::IndexKey: Display,
@@ -95,7 +102,6 @@ mod context {
             ) -> Option<CacheMetadataStoreObject<S>>,
         {
             use std::time::Duration;
-            use std::io::Error as IoError;
             use std::io::ErrorKind;
 
             use tokio::select;
@@ -104,34 +110,27 @@ mod context {
             let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
             let mut listener = self.store.change_listener();
 
-            loop {
-                debug!(SPEC = S::LABEL, "checking to see if exists");
+            // wait for either changes from store or timeout
+            select! {
 
-                if let Some(value) = search(self.store().read().await) {
-                    debug!(SPEC = S::LABEL, "found value");
-                    return Ok(value);
-                } else {
-                    debug!(SPEC = S::LABEL, "value not found, waiting");
+                _ = listener.listen() => {
+                    // this should be full sync
+                    let changes = listener.sync_changes().await;
+                    trace!("{} received changes: {:#?}",S::LABEL,changes);
 
-                    select! {
-
-                        _ = listener.listen() => {
-                            let changes = listener.sync_changes().await;
-                            trace!("{} received changes: {:#?}",S::LABEL,changes);
-                        },
-                        _ = &mut timer => {
-                            debug!(
-                                SPEC = S::LABEL,
-                                Timeout = *MAX_WAIT_TIME,
-                                "store look up timeout expired");
-                            return Err(IoError::new(
-                                ErrorKind::TimedOut,
-                                format!("{} store lookup failed due to timeout: {} ms",S::LABEL,*MAX_WAIT_TIME),
-                            ).into())
-                        }
-
-                    }
+                    Ok(search(self.store().read().await))
+                },
+                _ = &mut timer => {
+                    debug!(
+                        SPEC = S::LABEL,
+                        Timeout = *MAX_WAIT_TIME,
+                        "store look up timeout expired");
+                    return Err(IoError::new(
+                        ErrorKind::TimedOut,
+                        format!("timed out searching metadata {} failed due to timeout: {} ms",S::LABEL,*MAX_WAIT_TIME),
+                    ))
                 }
+
             }
         }
     }
@@ -158,7 +157,8 @@ mod context {
                 }
                 None
             })
-            .await
+            .await?
+            .ok_or(FluvioError::SPUNotFound(id))
         }
     }
 }
