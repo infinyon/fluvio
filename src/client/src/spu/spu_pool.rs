@@ -62,7 +62,7 @@ impl SpuPool {
     /// start synchronize based on pool
     pub async fn start(
         config: ClientConfig,
-        sc_socket: &AllMultiplexerSocket,
+        sc_socket: SharedAllMultiplexerSocket,
     ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");

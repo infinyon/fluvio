@@ -84,7 +84,7 @@ impl Fluvio {
     fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
         self.spu_pool
             .get_or_try_init(|| -> Result<Arc<SpuPool>, FluvioError> {
-                let pool = run_block_on(SpuPool::start(self.config.clone(), &self.socket));
+                let pool = run_block_on(SpuPool::start(self.config.clone(), self.socket.clone()));
                 Ok(Arc::new(pool?))
             })
             .map(|pool| pool.clone())
