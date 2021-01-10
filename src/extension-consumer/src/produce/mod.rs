@@ -116,14 +116,13 @@ async fn produce_from_files(
     cfg: ProduceLogConfig,
     records: FileRecord,
 ) -> Result<()> {
-
     match records {
         FileRecord::Files(paths) => {
             for path in paths {
                 let bytes = std::fs::read(&path)?;
                 producer.send_record(&bytes, cfg.partition).await?;
             }
-        },
+        }
         FileRecord::Lines(path) => {
             let file = File::open(&path)?;
             let mut lines = BufReader::new(file).lines();
@@ -137,10 +136,7 @@ async fn produce_from_files(
 }
 
 /// Sends each line of stdin as a record
-async fn produce_stdin(
-    producer: &mut TopicProducer,
-    cfg: ProduceLogConfig,
-) -> Result<()> {
+async fn produce_stdin(producer: &mut TopicProducer, cfg: ProduceLogConfig) -> Result<()> {
     let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
     while let Some(Ok(line)) = stdin_lines.next() {
         producer.send_record(&line, cfg.partition).await?;
