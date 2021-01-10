@@ -36,8 +36,8 @@ dependencies = [
     "github-release-create-pre-release",
 ]
 script = '''
-if [ -n "${GITHUB_RELEASE_FORCE}" ]; then
-    github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio ${GITHUB_RELEASE_FORCE}
+if [ "${FORCE_RELEASE}" = "--force" ]; then
+    github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio --replace
 else
     github-release -v upload --user infinyon --repo fluvio --tag v${FLUVIO_VERSION} --name fluvio-v${FLUVIO_VERSION}-${TARGET} --file ./target/${TARGET}/release/fluvio
 fi
