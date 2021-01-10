@@ -121,11 +121,10 @@ impl CreateTopicOpt {
             })
         };
 
-        let is_alphanumeric =
-            self.topic.is_ascii() && self.topic.chars().all(|c| c.is_alphanumeric());
-        if !is_alphanumeric {
+        let is_valid = hostname_validator::is_valid(&self.topic);
+        if !is_valid {
             return Err(ConsumerError::InvalidArg(
-                "Topic name must be alphanumeric".to_string(),
+                "Topic name must only contain alphanumeric characters, '-', or '.'".to_string(),
             ));
         }
 
