@@ -124,7 +124,7 @@ impl CreateTopicOpt {
         let is_valid = hostname_validator::is_valid(&self.topic);
         if !is_valid {
             return Err(ConsumerError::InvalidArg(
-                "Topic name must be a valid hostname".to_string(),
+                "Topic name must only contain alphanumeric characters, '-', or '.'".to_string(),
             ));
         }
 
