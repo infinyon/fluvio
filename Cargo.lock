@@ -1084,6 +1084,7 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "futures-lite",
+ "hostname-validator",
  "prettytable-rs",
  "serde",
  "serde_json",
@@ -1757,6 +1758,12 @@ name = "hostfile"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2733206bcc0550a15b450c64d8aa859f486d7281c4c0c36ef904b361960d658"
+
+[[package]]
+name = "hostname-validator"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70b8bcb948d9f63a35f0527cde7ca4f4794e817451eaebd47a3c92ef6905c129"
 
 [[package]]
 name = "http"
