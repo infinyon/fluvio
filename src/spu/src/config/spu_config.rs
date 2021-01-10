@@ -29,6 +29,7 @@ use fluvio_types::defaults::FLV_LOG_BASE_DIR;
 use fluvio_types::defaults::FLV_LOG_SIZE;
 use fluvio_types::SpuId;
 use fluvio_storage::ConfigOption;
+use fluvio_storage::DEFAULT_FLUSH_WRITE_COUNT;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Replication {
@@ -50,6 +51,7 @@ pub struct Log {
     pub index_max_bytes: u32,
     pub index_max_interval_bytes: u32,
     pub segment_max_bytes: u32,
+    pub flush_write_count: u32,
 }
 
 impl Default for Log {
@@ -62,6 +64,7 @@ impl Default for Log {
             index_max_bytes: SPU_LOG_INDEX_MAX_BYTES,
             index_max_interval_bytes: SPU_LOG_INDEX_MAX_INTERVAL_BYTES,
             segment_max_bytes: SPU_LOG_SEGMENT_MAX_BYTES,
+            flush_write_count: DEFAULT_FLUSH_WRITE_COUNT,
         }
     }
 }
@@ -74,6 +77,7 @@ impl Log {
             self.index_max_bytes,
             self.index_max_interval_bytes,
             self.segment_max_bytes,
+            self.flush_write_count,
         )
     }
 }

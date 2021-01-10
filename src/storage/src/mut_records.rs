@@ -24,15 +24,37 @@ use crate::records::FileRecords;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
+/// MutFileRecordsFlushPolicy describes and implements a flush policy
+pub enum MutFileRecordsFlushPolicy {
+    NoFlush,
+    EveryWrite,
+    CountWrites { n_writes: u32, write_tracking: u32 },
+}
+
 /// Can append new batch to file
 pub struct MutFileRecords {
     base_offset: Offset,
     item_last_offset_delta: Size,
     f_sink: BoundedFileSink,
+    flush_policy: MutFileRecordsFlushPolicy,
+    write_count: u64,
     path: PathBuf,
 }
 
 impl Unpin for MutFileRecords {}
+
+fn get_flush_policy_from_config(option: &ConfigOption) -> MutFileRecordsFlushPolicy {
+    if option.flush_write_count == 0 {
+        MutFileRecordsFlushPolicy::NoFlush
+    } else if option.flush_write_count == 1 {
+        MutFileRecordsFlushPolicy::EveryWrite
+    } else {
+        MutFileRecordsFlushPolicy::CountWrites {
+            n_writes: option.flush_write_count,
+            write_tracking: 0,
+        }
+    }
+}
 
 impl MutFileRecords {
     pub async fn create(
@@ -48,6 +70,8 @@ impl MutFileRecords {
         Ok(MutFileRecords {
             base_offset,
             f_sink,
+            flush_policy: get_flush_policy_from_config(option),
+            write_count: 0,
             item_last_offset_delta: 0,
             path: log_path.to_owned(),
         })
@@ -68,6 +92,8 @@ impl MutFileRecords {
         Ok(MutFileRecords {
             base_offset,
             f_sink,
+            flush_policy: get_flush_policy_from_config(option),
+            write_count: 0,
             item_last_offset_delta: 0,
             path: log_path.to_owned(),
         })
@@ -98,9 +124,10 @@ impl MutFileRecords {
         if self.f_sink.can_be_appended(buffer.len() as u64) {
             debug!("writing {} bytes at: {}", buffer.len(), self.path.display());
             self.f_sink.write_all(&buffer).await?;
-            // for now, we flush for every send
-            self.f_sink.flush().await?;
-            debug!("flushed {}", self.path.display());
+            self.write_count = self.write_count.saturating_add(1);
+            if self.flush_policy.should_flush() {
+                self.f_sink.flush().await?;
+            }
             Ok(())
         } else {
             Err(StorageError::NoRoom(item))
@@ -136,6 +163,32 @@ impl FileRecords for MutFileRecords {
     }
 }
 
+impl MutFileRecordsFlushPolicy {
+    /// Evaluates the flush policy and returns true
+    /// if the policy determines the need to flush
+    fn should_flush(&mut self) -> bool {
+        use MutFileRecordsFlushPolicy::*;
+
+        match self {
+            NoFlush => false,
+
+            EveryWrite => true,
+
+            CountWrites {
+                n_writes: n_max,
+                write_tracking: wcount,
+            } => {
+                *wcount += 1;
+                if *wcount >= *n_max {
+                    *wcount = 0;
+                    return true;
+                }
+                false
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -157,9 +210,10 @@ mod tests {
     use crate::ConfigOption;
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
+    const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
 
     #[test_async]
-    async fn test_write_records() -> Result<(), StorageError> {
+    async fn test_write_records_every() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         ensure_clean_file(&test_file);
 
@@ -189,11 +243,71 @@ mod tests {
         assert_eq!(record2.value.inner_value(), Some(vec![10, 20]));
 
         msg_sink.send(create_batch()).await?;
+
         let bytes = read_bytes_from_file(&test_file)?;
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
         let old_msg_sink = MutFileRecords::open(100, &options).await?;
         assert_eq!(old_msg_sink.get_base_offset(), 100);
+
+        Ok(())
+    }
+
+    // This Test configures policy to flush after every NUM_WRITES and ensure
+    // the data is still durably retained on a postive test of triggering the
+    // flush. A negative test of the flush being held off was performed by
+    // inspection, and is not automated because of variable results. When a
+    // fs/storage system does committed internal writes is a race between the
+    // system and an application flushing above.
+    #[test_async]
+    async fn test_write_records_count() -> Result<(), StorageError> {
+        let test_file = temp_dir().join(TEST_FILE_NAMEC);
+        ensure_clean_file(&test_file);
+
+        const NUM_WRITES: u32 = 4;
+        const OFFSET: i64 = 200;
+
+        let options = ConfigOption {
+            base_dir: temp_dir(),
+            segment_max_bytes: 1000,
+            flush_write_count: NUM_WRITES,
+            ..Default::default()
+        };
+        let mut msg_sink = MutFileRecords::create(OFFSET, &options)
+            .await
+            .expect("create");
+
+        let batch = create_batch();
+        let write_size = batch.write_size(0);
+        debug!("write size: {}", write_size); // for now, this is 79 bytes
+        msg_sink.send(create_batch()).await.expect("create");
+        msg_sink.flush().await.expect("create flush"); // ensure the file is created
+
+        let bytes = read_bytes_from_file(&test_file).expect("read bytes");
+        assert_eq!(bytes.len(), write_size, "incorrect size for write");
+
+        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        assert_eq!(batch.get_header().magic, 2, "check magic");
+        assert_eq!(batch.records.len(), 2);
+        let mut records = batch.records;
+        assert_eq!(records.len(), 2);
+        let record1 = records.remove(0);
+        assert_eq!(record1.value.inner_value(), Some(vec![10, 20]));
+        let record2 = records.remove(0);
+        assert_eq!(record2.value.inner_value(), Some(vec![10, 20]));
+
+        for _ in 1..NUM_WRITES {
+            msg_sink.send(create_batch()).await.expect("send");
+        }
+
+        let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
+        let nbytes = write_size * NUM_WRITES as usize;
+        assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
+
+        let old_msg_sink = MutFileRecords::open(OFFSET, &options)
+            .await
+            .expect("check old sink");
+        assert_eq!(old_msg_sink.get_base_offset(), OFFSET);
 
         Ok(())
     }
