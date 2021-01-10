@@ -23,7 +23,7 @@ fn main() {
 }
 
 async fn produce() -> Result<(), fluvio::FluvioError> {
-    let producer = fluvio::producer("simple-example").await?;
+    let producer = fluvio::producer("simple").await?;
     let message = "Hello, Fluvio!";
     producer.send_record(&message, 0).await?;
     println!("{}", message);

@@ -136,8 +136,6 @@ fn main() {
 async fn produce() -> Result<(), FluvioError> {
     let producer = fluvio::producer(TOPIC).await?;
 
-    std::thread::sleep(Duration::from_secs(10));
-
     for i in 0..10 {
         println!("Sending record {}", i);
         producer

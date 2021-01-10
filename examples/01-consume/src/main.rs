@@ -25,7 +25,7 @@ fn main() {
 async fn consume() -> Result<(), fluvio::FluvioError> {
     use futures_lite::StreamExt;
 
-    let consumer = fluvio::consumer("simple-example", 0).await?;
+    let consumer = fluvio::consumer("simple", 0).await?;
     let mut stream = consumer.stream(fluvio::Offset::beginning()).await?;
 
     while let Some(Ok(record)) = stream.next().await {
