@@ -27,7 +27,7 @@ pub fn convert_cluster_to_statefulset(
     group_name: &str,
     group_svc_name: String,
     namespace: &str,
-    spu_k8_config: SpuK8Config,
+    spu_k8_config: &SpuK8Config,
     tls: Option<&TlsConfig>,
 ) -> InputK8Obj<StatefulSetSpec> {
     let statefulset_name = format!("fluvio-spg-{}", group_name);
@@ -61,7 +61,7 @@ fn generate_stateful(
     name: &str,
     group_svc_name: String,
     namespace: &str,
-    spu_k8_config: SpuK8Config,
+    spu_k8_config: &SpuK8Config,
     tls_config: Option<&TlsConfig>,
 ) -> StatefulSetSpec {
     let replicas = spg_spec.replicas;
@@ -179,8 +179,8 @@ fn generate_stateful(
             termination_grace_period_seconds: Some(10),
             containers: vec![ContainerSpec {
                 name: SPU_DEFAULT_NAME.to_owned(),
-                image: Some(spu_k8_config.image),
-                resources: Some(spu_k8_config.resources),
+                image: Some(spu_k8_config.image.clone()),
+                resources: Some(spu_k8_config.resources.clone()),
                 ports: vec![public_port, private_port],
                 volume_mounts,
                 env,
