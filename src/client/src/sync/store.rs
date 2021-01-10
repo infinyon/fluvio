@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::debug;
 
-use fluvio_socket::AllMultiplexerSocket;
+use fluvio_socket::SharedAllMultiplexerSocket;
 use fluvio_socket::FlvSocketError;
 
 use crate::metadata::spu::SpuSpec;
@@ -17,19 +17,21 @@ pub struct MetadataStores {
     shutdown: Arc<SimpleEvent>,
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,
+    socket: SharedAllMultiplexerSocket,
 }
 
 impl MetadataStores {
     /// start synchronization
-    pub async fn start(socket: &AllMultiplexerSocket) -> Result<Self, FlvSocketError> {
+    pub async fn start(socket: SharedAllMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
             partitions: StoreContext::new(),
+            socket: socket.clone(),
         };
 
-        store.start_watch_for_spu(socket).await?;
-        store.start_watch_for_partition(socket).await?;
+        store.start_watch_for_spu().await?;
+        store.start_watch_for_partition().await?;
 
         Ok(store)
     }
@@ -47,17 +49,14 @@ impl MetadataStores {
     }
 
     /// start watch for spu
-    pub async fn start_watch_for_spu(
-        &self,
-        socket: &AllMultiplexerSocket,
-    ) -> Result<(), FlvSocketError> {
+    pub async fn start_watch_for_spu(&self) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for spu");
 
         let req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
-        let async_response = socket.create_stream(req_msg, 10).await?;
+        let async_response = self.socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<SpuSpec>::start(
             self.spus.clone(),
@@ -68,17 +67,14 @@ impl MetadataStores {
         Ok(())
     }
 
-    pub async fn start_watch_for_partition(
-        &self,
-        socket: &AllMultiplexerSocket,
-    ) -> Result<(), FlvSocketError> {
+    pub async fn start_watch_for_partition(&self) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for partition");
 
         let req_msg = RequestMessage::new_request(WatchRequest::Partition(0));
-        let async_response = socket.create_stream(req_msg, 10).await?;
+        let async_response = self.socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<PartitionSpec>::start(
             self.partitions.clone(),
