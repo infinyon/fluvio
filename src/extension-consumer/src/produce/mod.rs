@@ -1,12 +1,9 @@
+use std::fs::File;
+use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
-use std::sync::Arc;
-
-use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio::Fluvio;
-
-use crate::common::output::Terminal;
+use fluvio::{Fluvio, TopicProducer};
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
 
@@ -68,15 +65,14 @@ pub struct ProduceLogOpt {
 }
 
 impl ProduceLogOpt {
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let (cfg, file_records) = self.validate()?;
-        let producer = fluvio.topic_producer(&cfg.topic).await?;
+        let mut producer = fluvio.topic_producer(&cfg.topic).await?;
 
-        debug!("got producer");
         if let Some(records) = file_records {
-            produce::produce_file_records(producer, out, cfg, records).await?;
+            produce_from_files(&mut producer, cfg, records).await?;
         } else {
-            produce::produce_from_stdin(producer, cfg).await?;
+            produce_stdin(&mut producer, cfg).await?;
         }
 
         Ok(())
@@ -87,7 +83,7 @@ impl ProduceLogOpt {
         let file_records = if let Some(record_per_line) = self.record_per_line {
             Some(FileRecord::Lines(record_per_line))
         } else if !self.record_file.is_empty() {
-            Some(FileRecord::Files(self.record_file.clone()))
+            Some(FileRecord::Files(self.record_file))
         } else {
             None
         };
@@ -110,107 +106,40 @@ impl ProduceLogOpt {
     }
 }
 
-#[allow(clippy::module_inception)]
-mod produce {
-    use tracing::debug;
-    use futures_lite::StreamExt;
-
-    use fluvio_future::fs::File;
-    use fluvio_future::io::stdin;
-    use fluvio_future::io::ReadExt;
-    use futures_lite::io::BufReader;
-    use futures_lite::io::AsyncBufReadExt;
-    use fluvio_types::{print_cli_err, print_cli_ok};
-    use fluvio::TopicProducer;
-
-    use crate::common::t_println;
-
-    use super::*;
-
-    pub type RecordTuples = Vec<(String, Vec<u8>)>;
-
-    pub async fn produce_file_records<O: Terminal>(
-        mut producer: TopicProducer,
-        out: std::sync::Arc<O>,
-        cfg: ProduceLogConfig,
-        file: FileRecord,
-    ) -> Result<()> {
-        let tuples = file_to_records(file).await?;
-        for r_tuple in tuples {
-            t_println!(out, "{}", r_tuple.0);
-            process_record(&mut producer, cfg.partition, r_tuple.1).await;
-        }
-        Ok(())
-    }
-
-    /// Dispatch records based on the content of the record tuples variable
-    pub async fn produce_from_stdin(
-        mut producer: TopicProducer,
-        opt: ProduceLogConfig,
-    ) -> Result<()> {
-        let stdin = stdin();
-        let mut lines = BufReader::new(stdin).lines();
-        while let Some(line) = lines.next().await {
-            let text = line?;
-            debug!("read lines {} bytes", text);
-            let record = text.as_bytes().to_vec();
-            process_record(&mut producer, opt.partition, record).await;
-            if !opt.continuous {
-                return Ok(());
+/// Sends records to a Topic based on the file configuration given
+///
+/// This will either send the lines of a single file as individual records,
+/// or it will send the entirety of a list of files as records, where each
+/// whole file is one record.
+async fn produce_from_files(
+    producer: &mut TopicProducer,
+    cfg: ProduceLogConfig,
+    records: FileRecord,
+) -> Result<()> {
+    match records {
+        FileRecord::Files(paths) => {
+            for path in paths {
+                let bytes = std::fs::read(&path)?;
+                producer.send_record(&bytes, cfg.partition).await?;
             }
         }
-
-        debug!("done sending records");
-
-        Ok(())
-    }
-
-    /// Process record and print success or error
-    /// TODO: Add version handling for SPU
-    async fn process_record(producer: &mut TopicProducer, partition: i32, record: Vec<u8>) {
-        match producer.send_record(record, partition).await {
-            Ok(()) => {
-                debug!("record send success");
-                print_cli_ok!()
-            }
-            Err(err) => {
-                print_cli_err!(format!("error processing record: {:#?}", err));
-                std::process::exit(-1);
+        FileRecord::Lines(path) => {
+            let file = File::open(&path)?;
+            let mut lines = BufReader::new(file).lines();
+            while let Some(Ok(line)) = lines.next() {
+                producer.send_record(&line, cfg.partition).await?;
             }
         }
     }
 
-    /// Retrieve one or more files and converts them into a list of (name, record) touples
-    async fn file_to_records(file_record_options: FileRecord) -> Result<RecordTuples> {
-        let mut records: RecordTuples = vec![];
+    Ok(())
+}
 
-        match file_record_options {
-            // lines as records
-            FileRecord::Lines(lines2rec_path) => {
-                let f = File::open(lines2rec_path).await?;
-                let mut lines = BufReader::new(f).lines();
-                // reach each line and convert to byte array
-                if let Some(line) = lines.next().await {
-                    if let Ok(text) = line {
-                        records.push((text.clone(), text.as_bytes().to_vec()));
-                    }
-                }
-            }
-
-            // files as records
-            FileRecord::Files(files_to_rec_path) => {
-                for file_path in files_to_rec_path {
-                    let file_name = file_path.to_str().unwrap_or("?");
-                    let mut f = File::open(&file_path).await?;
-                    let mut buffer = Vec::new();
-
-                    // read the whole file in a byte array
-                    f.read_to_end(&mut buffer).await?;
-                    records.push((file_name.to_owned(), buffer));
-                }
-            }
-        }
-
-        Ok(records)
+/// Sends each line of stdin as a record
+async fn produce_stdin(producer: &mut TopicProducer, cfg: ProduceLogConfig) -> Result<()> {
+    let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
+    while let Some(Ok(line)) = stdin_lines.next() {
+        producer.send_record(&line, cfg.partition).await?;
     }
+    Ok(())
 }
