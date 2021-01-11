@@ -2,7 +2,9 @@
 
 set -e
 
-cargo run --bin fluvio -- topic delete echo || true
-cargo run --bin fluvio -- topic create echo
+RELEASE=$1
 
-cargo run --bin echo
+cargo run $RELEASE --bin fluvio -- topic delete echo || true
+cargo run $RELEASE --bin fluvio -- topic create echo
+
+cargo run $RELEASE --bin echo
