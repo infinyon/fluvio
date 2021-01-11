@@ -4,7 +4,7 @@ set -e
 
 # Tests the 00-produce and 01-consume examples
 
-cargo run --bin fluvio -- topic delete simple >/dev/null 2>&1 || true
+cargo run --bin fluvio -- topic delete simple || true
 cargo run --bin fluvio -- topic create simple
 
 cargo build --bin produce
