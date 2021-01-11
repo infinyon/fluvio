@@ -1,7 +1,10 @@
 //! A minimal example showing how to produce messages on Fluvio
 //!
+//! This consumer will run for 3 seconds and print all of the messages
+//! that it reads during that time.
+//!
 //! Before running this example, make sure you have created a topic
-//! named `example` with the following command:
+//! named `simple` with the following command:
 //!
 //! ```text
 //! $ fluvio topic create simple
