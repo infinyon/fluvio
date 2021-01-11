@@ -166,10 +166,9 @@ impl ReplicaLeadersState<FileReplica> {
         records: RecordSet,
         update_hw: bool,
     ) -> Result<bool, InternalServerError> {
-        
         if let Some(mut leader_replica) = self.get_mut_replica(rep_id) {
             leader_replica.send_records(records, update_hw).await?;
-            
+
             self.send_message(rep_id, LeaderReplicaControllerCommand::EndOffsetUpdated)
                 .await
                 .map_err(|err| err.into())
