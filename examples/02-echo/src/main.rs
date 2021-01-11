@@ -105,7 +105,8 @@ async fn main() {
     let timed_result = timeout(
         Duration::from_millis(TIMEOUT_MS),
         join(produce_handle, consume_handle),
-    ).await;
+    )
+    .await;
 
     let (produce_result, consume_result) = match timed_result {
         Ok(results) => results,
