@@ -87,7 +87,7 @@ smoke-test-k8-tls-policy:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) \
-		${DEFAULT_TEST_PARAM}
+		${DEFAULT_TEST_PARAM} \
 		--tls \
 		--develop \
 		${TEST_LOG} \
