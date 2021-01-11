@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use fluvio::{Fluvio, TopicProducer};
+use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
 
@@ -121,6 +122,7 @@ async fn produce_from_files(
             for path in paths {
                 let bytes = std::fs::read(&path)?;
                 producer.send_record(&bytes, cfg.partition).await?;
+                print_cli_ok!();
             }
         }
         FileRecord::Lines(path) => {
@@ -129,6 +131,7 @@ async fn produce_from_files(
             while let Some(Ok(line)) = lines.next() {
                 producer.send_record(&line, cfg.partition).await?;
             }
+            print_cli_ok!();
         }
     }
 
@@ -140,6 +143,7 @@ async fn produce_stdin(producer: &mut TopicProducer, cfg: ProduceLogConfig) -> R
     let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
     while let Some(Ok(line)) = stdin_lines.next() {
         producer.send_record(&line, cfg.partition).await?;
+        print_cli_ok!();
     }
     Ok(())
 }
