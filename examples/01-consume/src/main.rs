@@ -15,10 +15,25 @@
 //! $ echo "Hello, Fluvio" | fluvio produce simple
 //! ```
 
+use std::time::Duration;
+use async_std::future::timeout;
+
+const TIMEOUT_MS: u64 = 3_000;
+
 #[async_std::main]
 async fn main() {
-    if let Err(e) = consume().await {
-        println!("Consume error: {:?}", e);
+    // The consumer will run forever if we let it, so we set a timeout
+    let result = timeout(Duration::from_millis(TIMEOUT_MS), consume()).await;
+
+    match result {
+        // Success case: timeout is up, we are done consuming
+        Err(_timeout) => (),
+        // We encountered an error before having a chance to time out
+        Ok(Err(e)) => {
+            eprintln!("Consume error: {:?}", e);
+        }
+        // The consumer should run forever except for the timeout above
+        _ => unreachable!("Consumer should last forever"),
     }
 }
 
