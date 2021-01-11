@@ -91,20 +91,21 @@
 use std::time::Duration;
 use fluvio::{FluvioError, Offset};
 use futures::future::join;
-use async_std::task::{sleep, block_on};
+use async_std::task::{sleep, spawn};
 use async_std::future::timeout;
 
 const TOPIC: &str = "echo";
 const TIMEOUT_MS: u64 = 5_000;
 
-fn main() {
-    let produce_handle = async_std::task::spawn(produce());
-    let consume_handle = async_std::task::spawn(consume());
+#[async_std::main]
+async fn main() {
+    let produce_handle = spawn(produce());
+    let consume_handle = spawn(consume());
 
-    let timed_result = block_on(timeout(
+    let timed_result = timeout(
         Duration::from_millis(TIMEOUT_MS),
         join(produce_handle, consume_handle),
-    ));
+    ).await;
 
     let (produce_result, consume_result) = match timed_result {
         Ok(results) => results,

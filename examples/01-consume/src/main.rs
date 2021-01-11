@@ -4,7 +4,7 @@
 //! named `example` with the following command:
 //!
 //! ```text
-//! $ fluvio topic create example
+//! $ fluvio topic create simple
 //! ```
 //!
 //! You will also need to send some messages to the topic. You can
@@ -12,12 +12,12 @@
 //! or you can use the following command:
 //!
 //! ```text
-//! $ echo "Hello, Fluvio" | fluvio produce example
+//! $ echo "Hello, Fluvio" | fluvio produce simple
 //! ```
 
-fn main() {
-    let result = async_std::task::block_on(consume());
-    if let Err(e) = result {
+#[async_std::main]
+async fn main() {
+    if let Err(e) = consume().await {
         println!("Consume error: {:?}", e);
     }
 }

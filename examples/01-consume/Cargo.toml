@@ -9,5 +9,5 @@ publish = false
 
 [dependencies]
 fluvio = { path = "../../src/client" }
-async-std = "1.8.0"
+async-std = { version = "1.8.0", features = ["attributes"] }
 futures-lite = "1.11.3"

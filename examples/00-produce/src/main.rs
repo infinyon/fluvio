@@ -4,20 +4,20 @@
 //! named `example` with the following command:
 //!
 //! ```text
-//! $ fluvio topic create example
+//! $ fluvio topic create simple
 //! ```
 //!
 //! After running this example, you can see the messages that have
 //! been sent to the topic using the following command:
 //!
 //! ```text
-//! $ fluvio consume example -B -d
+//! $ fluvio consume simple -B -d
 //! Hello, Fluvio!
 //! ```
 
-fn main() {
-    let result = async_std::task::block_on(produce());
-    if let Err(e) = result {
+#[async_std::main]
+async fn main() {
+    if let Err(e) = produce().await {
         println!("Produce error: {:?}", e);
     }
 }

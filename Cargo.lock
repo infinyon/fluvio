@@ -115,6 +115,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
+name = "async-attributes"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efd3d156917d94862e779f356c5acae312b08fd3121e792c857d7928c8088423"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -297,6 +307,7 @@ version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9f06685bad74e0570f5213741bea82158279a4103d988e57bfada11ad230341"
 dependencies = [
+ "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -605,7 +616,7 @@ name = "consume"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "fluvio 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio",
  "futures-lite",
 ]
 
@@ -843,7 +854,7 @@ name = "echo"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "fluvio 0.3.5",
+ "fluvio",
  "futures",
 ]
 
@@ -890,45 +901,13 @@ dependencies = [
  "base64 0.12.3",
  "dirs 1.0.5",
  "event-listener",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-sc-schema 0.4.0",
+ "fluvio-sc-schema",
  "fluvio-socket",
- "fluvio-spu-schema 0.2.0",
- "fluvio-types 0.2.1",
- "futures-util",
- "once_cell",
- "semver 0.11.0",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "toml",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "fluvio"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a86ce57c6bc2ed6fbc6d4a411a65d318ea8f43d499ed6433a883db8ebdba5f9a"
-dependencies = [
- "async-channel",
- "async-mutex",
- "async-rwlock",
- "async-trait",
- "base64 0.12.3",
- "dirs 1.0.5",
- "event-listener",
- "fluvio-dataplane-protocol 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-future",
- "fluvio-protocol",
- "fluvio-sc-schema 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-socket",
- "fluvio-spu-schema 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-types 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-spu-schema",
+ "fluvio-types",
  "futures-util",
  "once_cell",
  "semver 0.11.0",
@@ -946,12 +925,12 @@ name = "fluvio-auth"
 version = "0.2.1"
 dependencies = [
  "async-trait",
- "fluvio-controlplane-metadata 0.4.0",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "flv-tls-proxy",
  "futures-util",
  "log",
@@ -971,9 +950,9 @@ dependencies = [
  "color-eyre",
  "dirs 1.0.5",
  "eyre",
- "fluvio 0.3.5",
+ "fluvio",
  "fluvio-cluster",
- "fluvio-controlplane-metadata 0.4.0",
+ "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-extension-consumer",
  "fluvio-future",
@@ -1008,8 +987,8 @@ dependencies = [
  "async-trait",
  "color-eyre",
  "colored",
- "fluvio 0.3.5",
- "fluvio-controlplane-metadata 0.4.0",
+ "fluvio",
+ "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
@@ -1037,10 +1016,10 @@ dependencies = [
 name = "fluvio-controlplane"
 version = "0.4.0"
 dependencies = [
- "fluvio-controlplane-metadata 0.4.0",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-protocol",
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "log",
  "tracing",
 ]
@@ -1050,31 +1029,14 @@ name = "fluvio-controlplane-metadata"
 version = "0.4.0"
 dependencies = [
  "async-trait",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-stream-model 0.4.0",
- "fluvio-types 0.2.1",
+ "fluvio-stream-model",
+ "fluvio-types",
  "flv-util",
  "log",
  "serde",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-controlplane-metadata"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b307e92aec439d65c6e032a8c46e32e284babd54bacb3c373966789e5caaa25"
-dependencies = [
- "async-trait",
- "fluvio-dataplane-protocol 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-future",
- "fluvio-protocol",
- "fluvio-stream-model 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-types 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "flv-util",
- "log",
  "tracing",
 ]
 
@@ -1096,29 +1058,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-dataplane-protocol"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2aacbf31ca77c4bddd745a2ee3bd795b8d74c0036aa377ac2d1d84c69a2d27b"
-dependencies = [
- "bytes 0.5.6",
- "content_inspector",
- "crc32c",
- "fluvio-future",
- "fluvio-protocol",
- "flv-util",
- "futures-util",
- "log",
- "once_cell",
- "semver 0.11.0",
-]
-
-[[package]]
 name = "fluvio-extension-common"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "fluvio 0.3.5",
+ "fluvio",
  "futures-lite",
  "prettytable-rs",
  "serde",
@@ -1136,12 +1080,12 @@ version = "0.1.3"
 dependencies = [
  "ctrlc",
  "eyre",
- "fluvio 0.3.5",
- "fluvio-controlplane-metadata 0.4.0",
+ "fluvio",
+ "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
- "fluvio-sc-schema 0.4.0",
- "fluvio-types 0.2.1",
+ "fluvio-sc-schema",
+ "fluvio-types",
  "flv-util",
  "futures-lite",
  "hostname-validator",
@@ -1295,16 +1239,16 @@ dependencies = [
  "event-listener",
  "fluvio-auth",
  "fluvio-controlplane",
- "fluvio-controlplane-metadata 0.4.0",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
- "fluvio-sc-schema 0.4.0",
+ "fluvio-sc-schema",
  "fluvio-service",
  "fluvio-socket",
  "fluvio-stream-dispatcher",
- "fluvio-stream-model 0.4.0",
- "fluvio-types 0.2.1",
+ "fluvio-stream-model",
+ "fluvio-types",
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
@@ -1328,28 +1272,12 @@ dependencies = [
 name = "fluvio-sc-schema"
 version = "0.4.0"
 dependencies = [
- "fluvio-controlplane-metadata 0.4.0",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-protocol",
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "log",
  "serde",
- "static_assertions",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-sc-schema"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc062f8e9f12e0e200dc6f3d824145d79cfbf6befadebcea6d08adeb6586d38"
-dependencies = [
- "fluvio-controlplane-metadata 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-dataplane-protocol 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-protocol",
- "fluvio-types 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "log",
  "static_assertions",
  "thiserror",
  "tracing",
@@ -1414,15 +1342,15 @@ dependencies = [
  "chrono",
  "event-listener",
  "fluvio-controlplane",
- "fluvio-controlplane-metadata 0.4.0",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
  "fluvio-socket",
- "fluvio-spu-schema 0.2.0",
+ "fluvio-spu-schema",
  "fluvio-storage",
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
@@ -1443,22 +1371,7 @@ name = "fluvio-spu-schema"
 version = "0.2.0"
 dependencies = [
  "bytes 0.5.6",
- "fluvio-dataplane-protocol 0.1.5",
- "fluvio-protocol",
- "log",
- "serde",
- "static_assertions",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-spu-schema"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "725114c2aebc4d4323ff53e6f4ac6378f2d99a85d9de23b82ae3b39d56453274"
-dependencies = [
- "bytes 0.5.6",
- "fluvio-dataplane-protocol 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-dataplane-protocol",
  "fluvio-protocol",
  "log",
  "serde",
@@ -1472,11 +1385,11 @@ version = "0.2.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "flv-util",
  "futures-lite",
  "libc",
@@ -1495,8 +1408,8 @@ dependencies = [
  "async-trait",
  "event-listener",
  "fluvio-future",
- "fluvio-stream-model 0.4.0",
- "fluvio-types 0.2.1",
+ "fluvio-stream-model",
+ "fluvio-types",
  "flv-util",
  "futures-lite",
  "k8-metadata-client",
@@ -1524,22 +1437,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-stream-model"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3e13f76e152ebdb69c98a887eea4de5d4a2f103c2d2ea1cd9a75f262a7c3907"
-dependencies = [
- "async-rwlock",
- "event-listener",
- "once_cell",
- "tracing",
-]
-
-[[package]]
 name = "fluvio-system-util"
 version = "0.1.1"
 dependencies = [
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "rand 0.7.3",
  "tracing",
 ]
@@ -1564,26 +1465,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-types"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62f47151b9b7faec3345e87bc209b512fe22a301a08f55abd4e2f2edcd65d293"
-dependencies = [
- "tracing",
-]
-
-[[package]]
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
  "async-trait",
  "bytes 0.5.6",
- "fluvio 0.3.5",
- "fluvio-controlplane-metadata 0.4.0",
- "fluvio-dataplane-protocol 0.1.5",
+ "fluvio",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-system-util",
- "fluvio-types 0.2.1",
+ "fluvio-types",
  "futures-lite",
  "log",
  "structopt",
@@ -2615,7 +2507,7 @@ name = "produce"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "fluvio 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio",
 ]
 
 [[package]]
