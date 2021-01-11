@@ -8,6 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
+  cancel_previous_runs:
+    name: Cancel Previous Runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
   # check_helm_versions:
   #   runs-on: ubuntu-latest
   #   steps:
