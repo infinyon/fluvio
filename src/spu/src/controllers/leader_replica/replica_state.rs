@@ -344,7 +344,7 @@ impl LeaderReplicaState<FileReplica> {
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
         let follower_sync = self.need_follower_updates();
 
-        debug!(follower=follower_sync.len(),"syncing followers");
+        debug!(follower = follower_sync.len(), "syncing followers");
         for (follower_id, follower_info) in follower_sync {
             self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
                 .await;
@@ -389,12 +389,9 @@ impl LeaderReplicaState<FileReplica> {
             self.leader_id,
             self.replica_id
         );
-        /* 
         self.storage
             .send_records(records, update_highwatermark)
             .await
-        */
-        Ok(())
     }
 
     #[allow(dead_code)]

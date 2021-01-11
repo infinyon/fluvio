@@ -59,9 +59,7 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
     use fluvio_future::timer::sleep;
 
     println!("starting consumer test");
-    sleep(Duration::from_secs(option.topics as u64 *3)).await;
-
-    /* 
+    //sleep(Duration::from_secs(option.topics as u64 *3)).await;
 
     let mut async_consumers = HashSet::new();
     let (sender, mut receiver) = bounded::<String>(5);
@@ -105,9 +103,8 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
             }
         }
     }
-    */
 
-    println!("all tests copmleted");
+    println!("all tests completed");
 }
 
 async fn validate_consume_for_topic(

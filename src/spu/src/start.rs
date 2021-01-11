@@ -25,7 +25,6 @@ pub fn main_loop(opt: SpuOpt) {
         std::process::exit(-1);
     }));
 
-    
     let (spu_config, tls_acceptor_option) = opt.process_spu_cli_or_exit();
 
     println!("starting spu server (id:{})", spu_config.id);

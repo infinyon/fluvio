@@ -173,7 +173,7 @@ impl ScDispatcher<FileReplica> {
                         break;
                     }
                 },
-                
+
                 sc_request = api_stream.next() => {
                     trace!("got requests from sc");
                     match sc_request {

@@ -5,8 +5,6 @@ use tracing::warn;
 use tracing::error;
 use tracing::instrument;
 use async_channel::Receiver;
-use futures_util::future::join3;
-use futures_util::future::join;
 use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;

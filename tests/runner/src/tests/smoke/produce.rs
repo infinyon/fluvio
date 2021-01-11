@@ -103,7 +103,10 @@ async fn produce_message_for_topic(topic: String, option: TestOption, base_offse
         if let Err(err) = producer.send_record(message, 0).await {
             panic!(
                 "send record error: {:#?} for topic: {} iteration: {}, elapsed: {}",
-                err, topic, i, now.elapsed().as_millis()
+                err,
+                topic,
+                i,
+                now.elapsed().as_millis()
             )
         }
 
