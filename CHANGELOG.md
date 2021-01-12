@@ -13,7 +13,6 @@
 ## Client
 * API Docs
 * Stream based Fetch
-* 
   
 ## Platform
 * Cluster Installer with API and CLI support
