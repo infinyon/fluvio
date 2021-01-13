@@ -130,7 +130,7 @@ where
         static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
             use std::env;
 
-            let var_value = env::var("car").unwrap_or_default();
+            let var_value = env::var("FLV_SOCKET_WAIT").unwrap_or_default();
             let wait_time: u64 = var_value.parse().unwrap_or(10);
             wait_time
         });

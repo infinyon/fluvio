@@ -124,10 +124,10 @@ where
         stream.next().await
     }
 
-    pub fn response_stream<'a, R>(
-        &'a mut self,
+    pub fn response_stream<R>(
+        &mut self,
         req_msg: RequestMessage<R>,
-    ) -> impl Stream<Item = R::Response> + 'a
+    ) -> impl Stream<Item = R::Response> + '_
     where
         R: Request,
     {

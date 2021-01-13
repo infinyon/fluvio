@@ -121,8 +121,9 @@ impl TestService {
 async fn handle_echo_request(
     msg: RequestMessage<EchoRequest>,
 ) -> Result<ResponseMessage<EchoResponse>, IoError> {
-    let mut response = EchoResponse::default();
-    response.msg = msg.request.msg.clone();
+    let response = EchoResponse {
+        msg: msg.request.msg.clone(),
+    };
     Ok(msg.new_response(response))
 }
 
