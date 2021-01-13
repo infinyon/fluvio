@@ -198,8 +198,8 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
-      FLV_METADATA_WAIT: 50000
       FLV_CMD: true
+      FLV_SOCKET_WAIT:  600 
 
     steps:
       - uses: actions/checkout@v2
@@ -275,7 +275,8 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_METADATA_WAIT: 50000
+      FLV_CMD:  true 
+      FLV_SOCKET_WAIT:  600 
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -298,14 +299,14 @@ jobs:
           make RELEASE=release build_test
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true ./target/release/fluvio cluster start --setup --local --develop
+          ./target/release/fluvio cluster start --setup --local --develop
       - name: Print Fluvio version
         run: |
           ./target/release/fluvio version
       - name: Run smoke-test
         timeout-minutes: 5
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+          make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
@@ -323,7 +324,8 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_METADATA_WAIT: 50000
+      FLV_CMD:  true 
+      FLV_SOCKET_WAIT:  600 
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -347,13 +349,13 @@ jobs:
           make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
       - name: Setup installation pre-requisites
         run: |
-          FLV_CMD=true make RELEASE=true TARGET=x86_64-unknown-linux-musl  k8-setup
+          make RELEASE=true TARGET=x86_64-unknown-linux-musl  k8-setup
       - name: Make image
         run: make RELEASE=true minikube_image
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          FLV_CMD=true FLV_SOCKET_WAIT=600 make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
+          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - run: minikube delete
       - name: Save logs
         if: failure()
