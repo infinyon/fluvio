@@ -149,7 +149,6 @@ impl MutFileRecords {
     }
 
     pub async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
-        
         trace!("start sending using batch {:#?}", item.get_header());
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
