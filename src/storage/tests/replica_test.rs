@@ -35,6 +35,7 @@ fn default_option() -> ConfigOption {
         base_dir: temp_dir().join(TEST_REP_DIR),
         index_max_interval_bytes: 1000,
         index_max_bytes: 1000,
+        ..Default::default()
     }
 }
 

@@ -51,6 +51,7 @@ pub fn default_option(index_max_interval_bytes: Size) -> ConfigOption {
         index_max_interval_bytes,
         base_dir: temp_dir(),
         index_max_bytes: 1000,
+        ..Default::default()
     }
 }
 

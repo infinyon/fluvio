@@ -401,6 +401,7 @@ mod tests {
             base_dir,
             index_max_interval_bytes,
             index_max_bytes: 1000,
+            ..Default::default()
         }
     }
 

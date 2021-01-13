@@ -10,6 +10,8 @@ use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 
 use dataplane::Size;
 
+pub const DEFAULT_FLUSH_WRITE_COUNT: u32 = 1;
+
 // common option
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct ConfigOption {
@@ -21,6 +23,8 @@ pub struct ConfigOption {
     pub index_max_interval_bytes: Size,
     #[serde(default = "default_segment_max_bytes")]
     pub segment_max_bytes: Size,
+    #[serde(default = "default_flush_write_count")]
+    pub flush_write_count: Size,
 }
 
 impl fmt::Display for ConfigOption {
@@ -45,18 +49,24 @@ fn default_segment_max_bytes() -> Size {
     SPU_LOG_SEGMENT_MAX_BYTES
 }
 
+fn default_flush_write_count() -> Size {
+    DEFAULT_FLUSH_WRITE_COUNT
+}
+
 impl ConfigOption {
     pub fn new(
         base_dir: PathBuf,
         index_max_bytes: u32,
         index_max_interval_bytes: u32,
         segment_max_bytes: u32,
+        flush_write_count: u32,
     ) -> Self {
         ConfigOption {
             base_dir,
             index_max_bytes,
             index_max_interval_bytes,
             segment_max_bytes,
+            flush_write_count,
         }
     }
 
@@ -83,6 +93,7 @@ impl Default for ConfigOption {
             index_max_bytes: default_index_max_bytes(),
             index_max_interval_bytes: default_index_max_interval_bytes(),
             segment_max_bytes: default_segment_max_bytes(),
+            flush_write_count: default_flush_write_count(),
         }
     }
 }

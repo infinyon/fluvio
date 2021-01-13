@@ -17,6 +17,7 @@ mod validator;
 mod config;
 
 pub use crate::config::ConfigOption;
+pub use crate::config::DEFAULT_FLUSH_WRITE_COUNT;
 pub use crate::batch::DefaultFileBatchStream;
 pub use crate::batch_header::BatchHeaderPos;
 pub use crate::batch_header::BatchHeaderStream;
