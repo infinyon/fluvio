@@ -342,6 +342,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         match self.msg_log.send(item).await {
             Ok(_) => {
                 let batch_len = self.msg_log.get_pos();
+
                 self.index
                     .send((batch_offset_delta as u32, pos, batch_len))
                     .await?;
@@ -349,7 +350,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
                 let last_offset_delta = self.msg_log.get_item_last_offset_delta();
                 trace!("flushing: last offset delta: {}", last_offset_delta);
                 self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
-                debug!("send flushed leo: {}", self.end_offset);
+                debug!(end_offset = self.end_offset, "updated leo");
                 Ok(())
             }
             Err(err) => Err(err),
