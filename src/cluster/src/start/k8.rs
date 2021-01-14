@@ -97,6 +97,8 @@ pub struct ClusterInstallerBuilder {
     skip_checks: bool,
     /// if set use cluster ip instead of egress
     use_cluster_ip: bool,
+    /// if set, disable spu liveness checking
+    skip_spu_liveness_check: bool,
 }
 
 impl ClusterInstallerBuilder {
@@ -546,6 +548,12 @@ impl ClusterInstallerBuilder {
         self.use_cluster_ip = use_cluster_ip;
         self
     }
+
+    /// If set, skip spu liveness check
+    pub fn with_skip_spu_livness_check(mut self, skip_checks: bool) -> Self {
+        self.skip_spu_liveness_check = skip_checks;
+        self
+    }
 }
 
 /// Compute resource requirements for fluvio server components
@@ -716,6 +724,7 @@ impl ClusterInstaller {
             resource_requirments: None,
             skip_checks: false,
             use_cluster_ip: false,
+            skip_spu_liveness_check: false,
         }
     }
 
@@ -871,8 +880,10 @@ impl ClusterInstaller {
             self.create_managed_spu_group(&cluster).await?;
 
             // Wait for the SPU cluster to spin up
-            self.wait_for_spu(namespace, self.config.spu_spec.replicas)
-                .await?;
+            if !self.config.skip_spu_liveness_check {
+                self.wait_for_spu(namespace, self.config.spu_spec.replicas)
+                    .await?;
+            }
         }
 
         Ok(StartStatus {
