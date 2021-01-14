@@ -550,7 +550,7 @@ impl ClusterInstallerBuilder {
     }
 
     /// If set, skip spu liveness check
-    pub fn with_skip_spu_livness_check(mut self, skip_checks: bool) -> Self {
+    pub fn with_skip_spu_liveness_check(mut self, skip_checks: bool) -> Self {
         self.skip_spu_liveness_check = skip_checks;
         self
     }
