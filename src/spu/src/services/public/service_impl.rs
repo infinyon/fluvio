@@ -9,17 +9,14 @@ use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use futures_util::stream::StreamExt;
 use tokio::select;
-use event_listener::Event;
 
-use dataplane::api::RequestMessage;
-use fluvio_socket::InnerFlvSocket;
-use fluvio_socket::InnerFlvSink;
-use fluvio_socket::FlvSocketError;
-use fluvio_service::call_service;
-use fluvio_service::FlvService;
-use fluvio_spu_schema::server::SpuServerApiKey;
-use fluvio_spu_schema::server::SpuServerRequest;
+use fluvio_types::event::SimpleEvent;
+use fluvio_socket::{InnerFlvSocket, InnerFlvSink};
 use fluvio_future::zero_copy::ZeroCopyWrite;
+use fluvio_socket::FlvSocketError;
+use fluvio_service::{call_service, FlvService};
+use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
+use dataplane::api::RequestMessage;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
@@ -63,10 +60,18 @@ where
 
         let mut receiver = context.offset_channel().receiver();
 
-        let end_event = Arc::new(Event::new());
+        let end_event = SimpleEvent::shared();
 
         loop {
             select! {
+
+                _ = end_event.listen() => {
+                    debug!("end event has been received from stream fetch, terminating");
+                    break;
+                },
+
+
+
                 offset_event_res = receiver.recv() => {
 
                     match offset_event_res {
@@ -123,6 +128,7 @@ where
                     if let Some(msg) = api_msg {
 
                         if let Ok(req_message) = msg {
+                            debug!(sink = s_sink.id(),"received request");
                             trace!("conn: {}, received request: {:#?}",s_sink.id(),req_message);
                             match req_message {
                                 SpuServerRequest::ApiVersionsRequest(request) => call_service!(
@@ -172,7 +178,7 @@ where
             }
         }
 
-        end_event.notify(usize::MAX);
+        end_event.notify();
 
         debug!("conn: {}, loop terminated ", s_sink.id());
         Ok(())

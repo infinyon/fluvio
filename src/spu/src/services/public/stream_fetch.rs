@@ -1,38 +1,33 @@
 use std::sync::Arc;
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 
-use tracing::debug;
-use tracing::trace;
-use tracing::warn;
-use tracing::error;
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
+use tracing::{debug, trace, error};
+use tracing::instrument;
+use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio::select;
-use event_listener::Event;
 use tokio::sync::broadcast::RecvError;
 
+use fluvio_types::event::SimpleEvent;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
-use fluvio_socket::InnerFlvSink;
-use fluvio_socket::InnerExclusiveFlvSink;
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::{InnerFlvSink, InnerExclusiveFlvSink, FlvSocketError};
 use dataplane::api::{RequestMessage, RequestHeader};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
-use fluvio_spu_schema::server::stream_fetch::FileStreamFetchRequest;
-use fluvio_spu_schema::server::stream_fetch::StreamFetchResponse;
+use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetchResponse};
 
 use crate::core::DefaultSharedGlobalContext;
 
-/// continuous fetch handler
-/// while client is active, it continuously send back new records
+/// Fetch records as stream
 pub struct StreamFetchHandler<S> {
     ctx: DefaultSharedGlobalContext,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
     header: RequestHeader,
-    kf_sink: InnerExclusiveFlvSink<S>,
-    end_event: Arc<Event>,
+    sink: InnerExclusiveFlvSink<S>,
+    end_event: Arc<SimpleEvent>,
 }
 
 impl<S> StreamFetchHandler<S>
@@ -44,8 +39,8 @@ where
     pub fn handle_stream_fetch(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
-        kf_sink: InnerExclusiveFlvSink<S>,
-        end_event: Arc<Event>,
+        sink: InnerExclusiveFlvSink<S>,
+        end_event: Arc<SimpleEvent>,
     ) {
         // first get receiver to offset update channel to we don't missed events
 
@@ -57,7 +52,7 @@ where
         let max_bytes = msg.max_bytes as u32;
         debug!(
             "conn: {}, start continuous fetch replica: {} offset: {}, max_bytes: {}",
-            kf_sink.id(),
+            sink.id(),
             replica,
             current_offset,
             max_bytes
@@ -69,41 +64,48 @@ where
             replica,
             header,
             max_bytes,
-            kf_sink,
+            sink,
             end_event,
         };
 
         spawn(async move { handler.process(current_offset).await });
     }
 
-    async fn process(mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
+    #[instrument(
+        skip(self),
+        name = "stream fetch",
+        fields(
+            replica = %self.replica,
+            sink = self.sink.id()
+        )
+    )]
+    async fn process(mut self, starting_offset: Offset) {
+        if let Err(err) = self.inner_process(starting_offset).await {
+            error!("error: {:#?}", err);
+            self.end_event.notify();
+        }
+    }
+
+    async fn inner_process(&mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
         let mut current_offset =
             if let Some(offset) = self.send_back_records(starting_offset).await? {
                 offset
             } else {
-                debug!(
-                    "conn: {}, no records, finishing processing",
-                    self.kf_sink.id()
-                );
+                debug!("conn: {}, no records, finishing processing", self.sink.id());
                 return Ok(());
             };
 
         let mut receiver = self.ctx.offset_channel().receiver();
-        //pin_mut!(receiver);
 
         let mut counter: i32 = 0;
         loop {
             counter += 1;
-            debug!(
-                "conn: {}, waiting event, counter: {}",
-                self.kf_sink.id(),
-                counter
-            );
+            debug!(counter, "waiting for event",);
 
             select! {
 
                 _ = self.end_event.listen() => {
-                    debug!("stream fetch: {}, connection has been terminated, terminating",self.kf_sink.id());
+                    debug!("end event has been received, terminating");
                     break;
                 },
 
@@ -112,28 +114,32 @@ where
                     match offset_event_res {
                         Ok(offset_event) => {
 
-                            debug!("conn: {}, received offset event connection: {:#?}", self.kf_sink.id(),offset_event);
+                            debug!(leo = offset_event.hw,
+                                hw = offset_event.hw,
+                                "received offset");
                             if offset_event.replica_id == self.replica {
                                 // depends on isolation, we need to keep track different offset
                                 let update_offset = match self.isolation {
                                     Isolation::ReadCommitted => offset_event.hw,
                                     Isolation::ReadUncommitted => offset_event.leo
                                 };
-                                debug!("conn: {}, update offset: {}",self.kf_sink.id(),update_offset);
+                                debug!("conn: {}, update offset: {}",self.sink.id(),update_offset);
                                 if update_offset != current_offset {
-                                    debug!("conn: {}, updated offset replica: {} offset: {} diff from prev: {}",self.kf_sink.id(), self.replica,update_offset,current_offset);
+                                    debug!(update_offset,
+                                        current_offset,
+                                        "updated offsets");
                                     if let Some(offset) = self.send_back_records(current_offset).await? {
-                                        debug!("conn: {}, replica: {} read offset: {}",self.kf_sink.id(), self.replica,offset);
+                                        debug!(offset, "readed offset");
                                         current_offset = offset;
                                     } else {
-                                        debug!("conn: {}, no more replica: {} records can be read", self.kf_sink.id(),self.replica);
+                                        debug!("no more replica records can be read");
                                         break;
                                     }
                                 } else {
-                                    debug!("conn: {}, no changed in offset: {} offset: {} ignoring",self.kf_sink.id(), self.replica,update_offset);
+                                    debug!("changed in offset: {} offset: {} ignoring",self.replica,update_offset);
                                 }
                             } else {
-                                debug!("conn: {}, ignoring event because replica does not match",self.kf_sink.id());
+                                trace!("ignoring event because replica does not match");
                             }
 
 
@@ -141,31 +147,30 @@ where
                         Err(err) => {
                             match err {
                                 RecvError::Closed => {
-                                    warn!("conn: {}, lost connection to leader controller",self.kf_sink.id());
+                                    error!("lost connection to leader controller");
+                                    return Err(IoError::new(
+                                        ErrorKind::Other,
+                                        format!("lost connection to leader: {}",self.replica)
+                                    ).into())
                                 },
-                                RecvError::Lagged(lag) => {
-                                    error!("conn: {}, lagging: {}",self.kf_sink.id(),lag);
+                                RecvError::Lagged(lagging) => {
+                                    error!(lagging);
                                 }
                             }
 
                         }
                     }
-
-
-
-
                 },
             }
         }
 
-        debug!(
-            "conn: {}, done with stream fetch loop exiting",
-            self.kf_sink.id()
-        );
+        debug!("done with stream fetch loop exiting");
 
         Ok(())
     }
 
+    /// send back records
+    #[instrument(skip(self))]
     async fn send_back_records(
         &mut self,
         offset: Offset,
@@ -188,13 +193,8 @@ where
             .await
         {
             debug!(
-                "conn: {}, retrieved slice len: {} replica: {}, from: {} to hw: {}, leo: {}",
-                partition_response.records.len(),
-                self.kf_sink.id(),
-                self.replica,
-                offset,
-                hw,
-                leo,
+                recods = partition_response.records.len(),
+                offset, hw, leo, "retrieved slices",
             );
             let response = StreamFetchResponse {
                 topic: self.replica.topic.clone(),
@@ -205,18 +205,16 @@ where
                 &self.header,
                 response,
             );
-            trace!(
-                "conn: {}, sending back file fetch response: {:#?}",
-                self.kf_sink.id(),
-                response
-            );
+            trace!("sending back file fetch response: {:#?}", response);
 
-            let mut inner_sink = self.kf_sink.lock().await;
+            let mut inner_sink = self.sink.lock().await;
             inner_sink
                 .encode_file_slices(&response, self.header.api_version())
                 .await?;
 
-            trace!("conn: {}, finish sending fetch response", self.kf_sink.id());
+            drop(inner_sink);
+
+            trace!("finish sending fetch response");
 
             // get next offset
             let next_offset = match self.isolation {
@@ -228,7 +226,7 @@ where
         } else {
             debug!(
                 "conn: {} unable to retrieve records from replica: {}, from: {}",
-                self.kf_sink.id(),
+                self.sink.id(),
                 self.replica,
                 offset
             );

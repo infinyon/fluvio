@@ -152,6 +152,8 @@ impl ScDispatcher<FileReplica> {
         )
     )]
     async fn request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+        use async_io::Timer;
+
         /// Interval between each send to SC
         /// SC status are not source of truth, it is delayed derived data.  
         const MIN_SC_SINK_TIME: Duration = Duration::from_millis(400);
@@ -159,18 +161,17 @@ impl ScDispatcher<FileReplica> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalSpuRequest, InternalSpuApi>();
 
-        let mut status_timer = sleep(MIN_SC_SINK_TIME);
+        let mut status_timer = Timer::interval(MIN_SC_SINK_TIME);
 
         loop {
             select! {
 
-                _ = &mut status_timer =>  {
+                _ = status_timer.next() =>  {
                     trace!("status timer expired");
                     if !self.send_status_back_to_sc(&mut sink).await {
                         debug!("error sending status, exiting request loop");
                         break;
                     }
-                    status_timer = sleep(MIN_SC_SINK_TIME);
                 },
 
                 sc_request = api_stream.next() => {
@@ -200,6 +201,7 @@ impl ScDispatcher<FileReplica> {
                         }
                     }
                 }
+
             }
         }
 
@@ -212,14 +214,14 @@ impl ScDispatcher<FileReplica> {
     async fn send_status_back_to_sc(&mut self, sc_sink: &mut FlvSink) -> bool {
         let requests = self.sink_channel.remove_all().await;
         if !requests.is_empty() {
-            debug!(requests = ?requests, "sending status back to sc");
+            trace!(requests = ?requests, "sending status back to sc");
             let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
             if let Err(err) = sc_sink.send_request(&message).await {
                 error!("error sending batch status to sc: {}", err);
                 false
             } else {
-                trace!("successfully send status back to sc");
+                debug!("successfully send status back to sc");
                 true
             }
         } else {
