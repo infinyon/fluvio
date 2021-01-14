@@ -260,12 +260,21 @@ jobs:
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Stop sccache server
         run: sccache --stop-server
-      - name: Upload SC log
+      - name: Upload Sc logs
+        timeout-minutes: 10
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-sc-logs
+          name: fluvio-local-sc-logs
           path: /usr/local/var/log/fluvio/flv_sc.log
+      - name: Upload Spu logs
+        timeout-minutes: 10
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-local-spu-logs
+          path: /usr/local/var/log/fluvio/spu_log_5001.log
+
 
   local_cluster_test:
     name: Local cluster test
