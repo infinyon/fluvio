@@ -1,6 +1,5 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::fmt::Display;
 use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
@@ -91,8 +90,6 @@ pub struct ClusterInstallerBuilder {
     client_tls_policy: TlsPolicy,
     /// The authorization ConfigMap name
     authorization_config_map: Option<String>,
-    /// K8 resource requiremets
-    resource_requirments: Option<ResourceRequirments>,
     /// Should the pre install checks be skipped
     skip_checks: bool,
     /// if set use cluster ip instead of egress
@@ -501,49 +498,6 @@ impl ClusterInstallerBuilder {
         self
     }
 
-    /// Sets the resource requirments
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use fluvio_cluster::ClusterInstaller;
-    /// use fluvio_cluster::{ResourceRequirments, ContainerResourceRequirments};
-    /// use fluvio_cluster::{ContainerResourceRequirmentValues, MilliCpu, Memory};
-    ///
-    /// let resource_requirements = ResourceRequirments {
-    ///     sc: Some(ContainerResourceRequirments {
-    ///         limits: Some(ContainerResourceRequirmentValues {
-    ///             cpu: Some(MilliCpu(1000)),
-    ///             memory: Some(Memory::Megabytes(512))
-    ///         }),
-    ///         requests: Some(ContainerResourceRequirmentValues {
-    ///             cpu: Some(MilliCpu(20)),
-    ///             memory: Some(Memory::Megabytes(64))
-    ///         })
-    ///     }),
-    ///     spu: Some(ContainerResourceRequirments {
-    ///         limits: Some(ContainerResourceRequirmentValues {
-    ///             cpu: Some(MilliCpu(1000)),
-    ///             memory: Some(Memory::Gigabytes(1))
-    ///         }),
-    ///         requests: Some(ContainerResourceRequirmentValues {
-    ///             cpu: Some(MilliCpu(20)),
-    ///             memory: Some(Memory::Megabytes(512))
-    ///         })
-    ///     })
-    /// };
-    ///
-    /// let installer = ClusterInstaller::new()
-    ///     .with_resource_requirements(resource_requirements)
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    ///
-    pub fn with_resource_requirements(mut self, resource_requirments: ResourceRequirments) -> Self {
-        self.resource_requirments = Some(resource_requirments);
-        self
-    }
-
     /// Use cluster ip instead of load balancer for communication to SC
     /// This is is useful inside k8 cluster
     pub fn with_cluster_ip(mut self, use_cluster_ip: bool) -> Self {
@@ -561,73 +515,6 @@ impl ClusterInstallerBuilder {
     pub fn with_chart_values(mut self, values: Vec<PathBuf>) -> Self {
         self.chart_values = values;
         self
-    }
-}
-
-/// Compute resource requirements for fluvio server components
-#[derive(Debug)]
-pub struct ResourceRequirments {
-    /// Resource requirements for SC container
-    pub sc: Option<ContainerResourceRequirments>,
-    /// Resource requirements for SPU container
-    pub spu: Option<ContainerResourceRequirments>,
-}
-
-/// Container compute resource requirements
-#[derive(Debug)]
-pub struct ContainerResourceRequirments {
-    /// Maximum amount of compute resources allowed
-    pub limits: Option<ContainerResourceRequirmentValues>,
-    /// Minimum amount of compute resources required
-    pub requests: Option<ContainerResourceRequirmentValues>,
-}
-
-/// K8 container resource requirement values
-#[derive(Debug)]
-pub struct ContainerResourceRequirmentValues {
-    /// CPU
-    pub cpu: Option<MilliCpu>,
-    /// Memory
-    pub memory: Option<Memory>,
-}
-
-/// One thousandth of a cpu
-#[derive(Debug)]
-pub struct MilliCpu(pub u16);
-
-impl Display for MilliCpu {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}m", self.0)
-    }
-}
-
-/// Units for representing memory
-#[derive(Debug)]
-pub enum Memory {
-    /// Memory in Kilobytes
-    Kilobytes(u64),
-    /// Memory in Megabytes
-    Megabytes(u64),
-    /// Memory in Gigabytes
-    Gigabytes(u64),
-    /// Memory in Terabytes
-    Terabytes(u64),
-    /// Memory in Petabytes
-    Petabytes(u64),
-    /// Memory in Exabytes
-    Exabytes(u64),
-}
-
-impl Display for Memory {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Memory::Kilobytes(value) => write!(f, "{}Ki", value),
-            Memory::Megabytes(value) => write!(f, "{}Mi", value),
-            Memory::Gigabytes(value) => write!(f, "{}Gi", value),
-            Memory::Terabytes(value) => write!(f, "{}Ti", value),
-            Memory::Petabytes(value) => write!(f, "{}Pi", value),
-            Memory::Exabytes(value) => write!(f, "{}Ei", value),
-        }
     }
 }
 
@@ -729,7 +616,6 @@ impl ClusterInstaller {
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
             authorization_config_map: None,
-            resource_requirments: None,
             skip_checks: false,
             use_cluster_ip: false,
             skip_spu_liveness_check: false,
@@ -991,54 +877,6 @@ impl ClusterInstaller {
                 "authorizationConfigMap",
                 Cow::Borrowed(authorization_config_map),
             ));
-        }
-
-        const SC_CPU_REQUEST: &str = "scResources.requests.cpu";
-        const SC_MEM_REQUEST: &str = "scResources.requests.memory";
-        const SC_CPU_LIMIT: &str = "scResources.limit.cpu";
-        const SC_MEM_LIMIT: &str = "scResources.limit.memory";
-        const SPU_CPU_REQUEST: &str = "spuResources.requests.cpu";
-        const SPU_MEM_REQUEST: &str = "spuResources.requests.memory";
-        const SPU_CPU_LIMIT: &str = "spuResources.limit.cpu";
-        const SPU_MEM_LIMIT: &str = "spuResources.limit.memory";
-
-        if let Some(ref resource_requirments) = &self.config.resource_requirments {
-            if let Some(ref sc_resource_requirments) = resource_requirments.sc {
-                if let Some(ref requests) = sc_resource_requirments.requests {
-                    if let Some(ref cpu) = requests.cpu {
-                        install_settings.push((SC_CPU_REQUEST, Cow::Owned(cpu.to_string())));
-                    }
-                    if let Some(ref memory) = requests.memory {
-                        install_settings.push((SC_MEM_REQUEST, Cow::Owned(memory.to_string())));
-                    }
-                }
-                if let Some(ref limits) = sc_resource_requirments.limits {
-                    if let Some(ref cpu) = limits.cpu {
-                        install_settings.push((SC_CPU_LIMIT, Cow::Owned(cpu.to_string())));
-                    }
-                    if let Some(ref memory) = limits.memory {
-                        install_settings.push((SC_MEM_LIMIT, Cow::Owned(memory.to_string())));
-                    }
-                }
-            }
-            if let Some(ref spu_resource_requirments) = resource_requirments.spu {
-                if let Some(ref requests) = spu_resource_requirments.requests {
-                    if let Some(ref cpu) = requests.cpu {
-                        install_settings.push((SPU_CPU_REQUEST, Cow::Owned(cpu.to_string())));
-                    }
-                    if let Some(ref memory) = requests.memory {
-                        install_settings.push((SPU_MEM_REQUEST, Cow::Owned(memory.to_string())));
-                    }
-                }
-                if let Some(ref limits) = spu_resource_requirments.limits {
-                    if let Some(ref cpu) = limits.cpu {
-                        install_settings.push((SPU_CPU_LIMIT, Cow::Owned(cpu.to_string())));
-                    }
-                    if let Some(ref memory) = limits.memory {
-                        install_settings.push((SPU_MEM_LIMIT, Cow::Owned(memory.to_string())));
-                    }
-                }
-            }
         }
 
         use fluvio_helm::InstallArg;
