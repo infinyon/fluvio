@@ -897,7 +897,9 @@ impl ClusterInstaller {
     #[doc(hidden)]
     #[instrument(skip(self))]
     pub fn _install_sys(&self) -> Result<(), K8InstallError> {
-        let install_settings = &[("cloud", &*self.config.cloud)];
+        use fluvio_helm::InstallArg;
+
+        let install_settings = vec![("cloud".to_owned(), self.config.cloud.to_owned())];
         match &self.config.chart_location {
             ChartLocation::Remote(chart_location) => {
                 debug!(
@@ -908,11 +910,12 @@ impl ClusterInstaller {
                     .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
                 self.helm_client.install(
-                    &self.config.namespace,
-                    DEFAULT_CHART_SYS_REPO,
-                    DEFAULT_CHART_SYS_NAME,
-                    None,
-                    install_settings,
+                    InstallArg::new(
+                        DEFAULT_CHART_SYS_NAME.to_owned(),
+                        DEFAULT_CHART_SYS_REPO.to_owned(),
+                    )
+                    .namespace(self.config.namespace.to_owned())
+                    .opts(install_settings),
                 )?;
             }
             ChartLocation::Local(chart_home) => {
@@ -923,11 +926,9 @@ impl ClusterInstaller {
                     "Using local helm chart:"
                 );
                 self.helm_client.install(
-                    &self.config.namespace,
-                    DEFAULT_CHART_SYS_REPO,
-                    chart_string.as_ref(),
-                    None,
-                    install_settings,
+                    InstallArg::new(DEFAULT_CHART_SYS_NAME.to_owned(), chart_string.to_string())
+                        .namespace(self.config.namespace.to_owned())
+                        .opts(install_settings),
                 )?;
             }
         }
@@ -1028,11 +1029,12 @@ impl ClusterInstaller {
             }
         }
 
-        use std::borrow::Borrow;
-        let install_settings = install_settings
-            .iter()
-            .map(|(k, v)| (*k, v.borrow()))
-            .collect::<Vec<(&str, &str)>>();
+        use fluvio_helm::InstallArg;
+
+        let install_settings: Vec<(String, String)> = install_settings
+            .into_iter()
+            .map(|(k, v)| (k.to_owned(), v.to_string()))
+            .collect();
 
         match &self.config.chart_location {
             // For remote, we add a repo pointing to the chart location.
@@ -1054,11 +1056,13 @@ impl ClusterInstaller {
                     "Using remote helm chart:"
                 );
                 self.helm_client.install(
-                    &self.config.namespace,
-                    DEFAULT_CHART_APP_REPO,
-                    &self.config.chart_name,
-                    Some(&self.config.chart_version),
-                    &install_settings,
+                    InstallArg::new(
+                        self.config.chart_name.to_owned(),
+                        DEFAULT_CHART_APP_REPO.to_owned(),
+                    )
+                    .namespace(self.config.namespace.to_owned())
+                    .opts(install_settings)
+                    .version(self.config.chart_version.to_owned()),
                 )?;
             }
             // For local, we do not use a repo but install from the chart location directly.
@@ -1070,11 +1074,13 @@ impl ClusterInstaller {
                     "Using local helm chart:"
                 );
                 self.helm_client.install(
-                    &self.config.namespace,
-                    DEFAULT_CHART_APP_REPO,
-                    chart_string.as_ref(),
-                    Some(&self.config.chart_version),
-                    &install_settings,
+                    InstallArg::new(
+                        chart_string.to_owned().to_string(),
+                        DEFAULT_CHART_APP_REPO.to_owned(),
+                    )
+                    .namespace(self.config.namespace.to_owned())
+                    .opts(install_settings)
+                    .version(self.config.chart_version.to_owned()),
                 )?;
             }
         }

@@ -24,6 +24,10 @@ members = [
     "tests/runner",
 ]
 
+[patch.crates-io]
+fluvio-helm = { git = "https://github.com/sehz/fluvio-helm.git", branch = "value_option" }
+
+
 # profile to make image sizer smaller
 # comment out for now
 #[profile.release]

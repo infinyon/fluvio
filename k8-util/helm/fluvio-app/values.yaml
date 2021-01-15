@@ -3,9 +3,8 @@
 # Declare variables to be passed into your templates.
 
 cloud: minikube
-aws:
-  serviceAnnotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+loadBalancer:
+  serviceAnnotations: {}
 scLog: info
 tls: false
 imagePullSecrets: []
