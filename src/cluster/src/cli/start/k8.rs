@@ -21,7 +21,8 @@ pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
         .with_group_name(opt.k8_config.group_name)
         .with_spu_replicas(opt.spu)
         .with_save_profile(!opt.skip_profile_creation)
-        .with_tls(client, server);
+        .with_tls(client, server)
+        .with_chart_values(opt.k8_config.chart_values);
 
     match opt.k8_config.image_version {
         // If an image tag is given, use it

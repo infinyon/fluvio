@@ -5,9 +5,4 @@ metadata:
 data:
   image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
   resources: {{ .Values.spuResources | toJson | quote }}
-  {{ if eq .Values.cloud "aws" }}
-  lbServiceAnnotations: |+
-    {
-      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb" 
-    }
-  {{ end }}
+  lbServiceAnnotations: {{ .Values.loadBalancer.serviceAnnotations | toJson | quote }}

@@ -1,4 +1,6 @@
 use std::{fmt, str::FromStr};
+use std::path::PathBuf;
+
 use structopt::StructOpt;
 
 mod local;
@@ -97,6 +99,10 @@ pub struct K8Install {
     /// k8
     #[structopt(long, default_value = "minikube")]
     pub cloud: String,
+
+    /// chart values
+    #[structopt(long, parse(from_os_str))]
+    pub chart_values: Vec<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]

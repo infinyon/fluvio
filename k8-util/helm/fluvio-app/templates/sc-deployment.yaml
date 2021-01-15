@@ -6,6 +6,7 @@ metadata:
     app: fluvio-sc
 spec:
   serviceAccountName: {{ .Values.serviceAccount.name }}
+  securityContext: {{ .Values.podSecurityContext | toJson  }}
   containers:
     - name: fluvio-sc
       image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
@@ -21,6 +22,7 @@ spec:
         - name: RUST_LOG
           value: {{ .Values.scLog }}
       command: ["/fluvio", "run", "sc"]
+      securityContext: {{ .Values.securityContext | toJson  }}
   {{ if .Values.tls }}
       args:
         - --tls

@@ -3,6 +3,8 @@
 # Declare variables to be passed into your templates.
 
 cloud: minikube
+loadBalancer:
+  serviceAnnotations: {}
 scLog: info
 tls: false
 imagePullSecrets: []
