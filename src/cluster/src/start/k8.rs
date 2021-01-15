@@ -935,8 +935,9 @@ impl ClusterInstaller {
                     chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
+                println!("installing");
                 self.helm_client.install(
-                    InstallArg::new(chart_string.to_string(), DEFAULT_CHART_SYS_NAME.to_owned())
+                    InstallArg::new(DEFAULT_CHART_SYS_REPO.to_owned(), chart_string.to_string())
                         .namespace(self.config.namespace.to_owned())
                         .develop()
                         .opts(install_settings),
