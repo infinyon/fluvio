@@ -24,7 +24,7 @@ use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{ServiceSpec, TargetPort};
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
+use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults, AlreadyInstalled};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
@@ -80,6 +80,8 @@ pub struct ClusterInstallerBuilder {
     install_sys: bool,
     /// Whether to update the `kubectl` context
     update_context: bool,
+    /// Whether to upgrade an existing installation
+    upgrade: bool,
     /// How much storage to allocate on SPUs
     spu_spec: SpuGroupSpec,
     /// The logging settings to set in the cluster
@@ -366,6 +368,12 @@ impl ClusterInstallerBuilder {
         self
     }
 
+    /// Whether to upgrade an existing installation
+    pub fn with_upgrade(mut self, upgrade: bool) -> Self {
+        self.upgrade = upgrade;
+        self
+    }
+
     /// Sets the number of SPU replicas that should be provisioned. Defaults to 1.
     ///
     /// # Example
@@ -611,6 +619,7 @@ impl ClusterInstaller {
             save_profile: false,
             install_sys: true,
             update_context: false,
+            upgrade: false,
             spu_spec,
             rust_log: None,
             server_tls_policy: TlsPolicy::Disabled,
@@ -653,9 +662,11 @@ impl ClusterInstaller {
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
         let fix = |err| self.pre_install_fix(err);
-        ClusterChecker::empty()
-            .with_k8_checks()
-            .run_wait_and_fix(fix)
+        let mut checker = ClusterChecker::empty().with_k8_checks();
+        if !self.config.upgrade {
+            checker = checker.with_check(Box::new(AlreadyInstalled));
+        }
+        checker.run_wait_and_fix(fix)
             .await
     }
 
@@ -811,7 +822,11 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop();
-                self.helm_client.install(&args)?;
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
             ChartLocation::Local(chart_home) => {
                 let chart_location = chart_home.join(DEFAULT_SYS_NAME);
@@ -825,7 +840,11 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .develop()
                     .opts(install_settings);
-                self.helm_client.install(&args)?;
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
         }
 
@@ -912,7 +931,11 @@ impl ClusterInstaller {
                     .develop()
                     .values(self.config.chart_values.clone())
                     .version(&self.config.chart_version);
-                self.helm_client.install(&args)?;
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
             // For local, we do not use a repo but install from the chart location directly.
             ChartLocation::Local(chart_home) => {
@@ -931,7 +954,11 @@ impl ClusterInstaller {
                     .develop()
                     .values(self.config.chart_values.clone())
                     .version(&self.config.chart_version);
-                self.helm_client.install(&args)?;
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
         }
 

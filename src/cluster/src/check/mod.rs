@@ -420,7 +420,6 @@ impl ClusterChecker {
             Box::new(LoadableConfig),
             Box::new(HelmVersion),
             Box::new(SysChart),
-            Box::new(AlreadyInstalled),
             Box::new(LoadBalancer),
         ];
         self.checks.extend(checks);
