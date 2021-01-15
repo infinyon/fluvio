@@ -100,7 +100,7 @@ pub struct ClusterInstallerBuilder {
     /// if set, disable spu liveness checking
     skip_spu_liveness_check: bool,
     /// chart values
-    chart_values: Vec<PathBuf>
+    chart_values: Vec<PathBuf>,
 }
 
 impl ClusterInstallerBuilder {
@@ -733,7 +733,7 @@ impl ClusterInstaller {
             skip_checks: false,
             use_cluster_ip: false,
             skip_spu_liveness_check: false,
-            chart_values: vec![]
+            chart_values: vec![],
         }
     }
 
@@ -1067,7 +1067,7 @@ impl ClusterInstaller {
                 self.helm_client.install(
                     InstallArg::new(
                         DEFAULT_CHART_APP_REPO.to_owned(),
-                        self.config.chart_name.to_owned()
+                        self.config.chart_name.to_owned(),
                     )
                     .namespace(self.config.namespace.to_owned())
                     .opts(install_settings)
@@ -1087,7 +1087,7 @@ impl ClusterInstaller {
                 self.helm_client.install(
                     InstallArg::new(
                         DEFAULT_CHART_APP_REPO.to_owned(),
-                        chart_string.to_owned().to_string()
+                        chart_string.to_owned().to_string(),
                     )
                     .namespace(self.config.namespace.to_owned())
                     .opts(install_settings)

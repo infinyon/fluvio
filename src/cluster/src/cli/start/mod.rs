@@ -101,8 +101,8 @@ pub struct K8Install {
     pub cloud: String,
 
     /// chart values
-    #[structopt(long,parse(from_os_str))]
-    pub chart_values: Vec<PathBuf>
+    #[structopt(long, parse(from_os_str))]
+    pub chart_values: Vec<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]
