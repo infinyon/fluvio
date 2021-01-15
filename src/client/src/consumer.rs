@@ -391,23 +391,26 @@ impl Default for ConsumerConfig {
 }
 
 impl ConsumerConfig {
-    /// TODO describe what the max_bytes option does
+    /// Maximum number of bytes to be fetched at a time.
     pub fn with_max_bytes(mut self, max_bytes: i32) -> Self {
         self.max_bytes = max_bytes;
         self
     }
 }
 
+/// The individual record for a given stream.
 pub struct Record {
     offset: i64,
     record: DefaultRecord,
 }
 
 impl Record {
+    /// The offset from the initial offset for a given stream.
     pub fn offset(&self) -> i64 {
         self.offset
     }
 
+    /// The actual bytes for this record.
     pub fn try_into_bytes(self) -> Option<Vec<u8>> {
         self.record.value.inner_value()
     }

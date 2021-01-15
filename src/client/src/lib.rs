@@ -86,7 +86,7 @@ mod error;
 mod client;
 mod admin;
 mod params;
-mod consumer;
+pub mod consumer;
 mod producer;
 mod offset;
 mod sync;
