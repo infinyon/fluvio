@@ -2,11 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-cloud:
-  name: minikube
-  aws:
-    serviceAnnotations:
-      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+cloud: minikube
+aws:
+  serviceAnnotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
 scLog: info
 tls: false
 imagePullSecrets: []

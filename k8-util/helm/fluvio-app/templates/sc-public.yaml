@@ -2,8 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fluvio-sc-public
-  {{ if eq .Values.cloud.name "aws" }}
-  annotations:  {{ .Values.cloud.aws.serviceAnnotations | toJson | quote }}
+  {{ if eq .Values.cloud "aws" }}
+  annotations:  {{ .Values.aws.serviceAnnotations | toJson | quote }}
   {{ end }}
 spec:
   type: LoadBalancer
