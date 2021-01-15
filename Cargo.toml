@@ -27,6 +27,8 @@ members = [
     "tests/runner",
 ]
 
+[patch.crates-io]
+fluvio-helm = { path = "../fluvio-helm" }
 
 # profile to make image sizer smaller
 # comment out for now

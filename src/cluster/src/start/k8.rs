@@ -804,15 +804,14 @@ impl ClusterInstaller {
                 self.helm_client
                     .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
-                self.helm_client.install(
-                    InstallArg::new(
-                        DEFAULT_CHART_SYS_REPO.to_owned(),
-                        DEFAULT_CHART_SYS_NAME.to_owned(),
-                    )
-                    .namespace(self.config.namespace.to_owned())
+                let args = InstallArg::new(
+                    DEFAULT_CHART_SYS_REPO,
+                    DEFAULT_CHART_SYS_NAME,
+                )
+                    .namespace(&self.config.namespace)
                     .opts(install_settings)
-                    .develop(),
-                )?;
+                    .develop();
+                self.helm_client.install(&args)?;
             }
             ChartLocation::Local(chart_home) => {
                 let chart_location = chart_home.join(DEFAULT_SYS_NAME);
@@ -822,12 +821,11 @@ impl ClusterInstaller {
                     "Using local helm chart:"
                 );
                 println!("installing");
-                self.helm_client.install(
-                    InstallArg::new(DEFAULT_CHART_SYS_REPO.to_owned(), chart_string.to_string())
-                        .namespace(self.config.namespace.to_owned())
-                        .develop()
-                        .opts(install_settings),
-                )?;
+                let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
+                    .namespace(&self.config.namespace)
+                    .develop()
+                    .opts(install_settings);
+                self.helm_client.install(&args)?;
             }
         }
 
@@ -905,17 +903,16 @@ impl ClusterInstaller {
                     chart_location = &**chart_location,
                     "Using remote helm chart:"
                 );
-                self.helm_client.install(
-                    InstallArg::new(
-                        DEFAULT_CHART_APP_REPO.to_owned(),
-                        self.config.chart_name.to_owned(),
-                    )
-                    .namespace(self.config.namespace.to_owned())
+                let args = InstallArg::new(
+                    DEFAULT_CHART_APP_REPO,
+                    &self.config.chart_name,
+                )
+                    .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
                     .values(self.config.chart_values.clone())
-                    .version(self.config.chart_version.to_owned()),
-                )?;
+                    .version(&self.config.chart_version);
+                self.helm_client.install(&args)?;
             }
             // For local, we do not use a repo but install from the chart location directly.
             ChartLocation::Local(chart_home) => {
@@ -925,17 +922,16 @@ impl ClusterInstaller {
                     chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
-                self.helm_client.install(
-                    InstallArg::new(
-                        DEFAULT_CHART_APP_REPO.to_owned(),
-                        chart_string.to_owned().to_string(),
-                    )
-                    .namespace(self.config.namespace.to_owned())
+                let args = InstallArg::new(
+                    DEFAULT_CHART_APP_REPO,
+                    chart_string,
+                )
+                    .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
                     .values(self.config.chart_values.clone())
-                    .version(self.config.chart_version.to_owned()),
-                )?;
+                    .version(&self.config.chart_version);
+                self.helm_client.install(&args)?;
             }
         }
 
