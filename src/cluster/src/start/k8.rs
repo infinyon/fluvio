@@ -99,6 +99,7 @@ pub struct ClusterInstallerBuilder {
     use_cluster_ip: bool,
     /// if set, disable spu liveness checking
     skip_spu_liveness_check: bool,
+    
 }
 
 impl ClusterInstallerBuilder {
@@ -1057,11 +1058,12 @@ impl ClusterInstaller {
                 );
                 self.helm_client.install(
                     InstallArg::new(
-                        self.config.chart_name.to_owned(),
                         DEFAULT_CHART_APP_REPO.to_owned(),
+                        self.config.chart_name.to_owned()
                     )
                     .namespace(self.config.namespace.to_owned())
                     .opts(install_settings)
+                    .develop()
                     .version(self.config.chart_version.to_owned()),
                 )?;
             }
@@ -1075,11 +1077,12 @@ impl ClusterInstaller {
                 );
                 self.helm_client.install(
                     InstallArg::new(
-                        chart_string.to_owned().to_string(),
                         DEFAULT_CHART_APP_REPO.to_owned(),
+                        chart_string.to_owned().to_string()
                     )
                     .namespace(self.config.namespace.to_owned())
                     .opts(install_settings)
+                    .develop()
                     .version(self.config.chart_version.to_owned()),
                 )?;
             }
