@@ -99,7 +99,8 @@ pub struct ClusterInstallerBuilder {
     use_cluster_ip: bool,
     /// if set, disable spu liveness checking
     skip_spu_liveness_check: bool,
-    
+    /// chart values
+    chart_values: Vec<PathBuf>
 }
 
 impl ClusterInstallerBuilder {
@@ -555,6 +556,12 @@ impl ClusterInstallerBuilder {
         self.skip_spu_liveness_check = skip_checks;
         self
     }
+
+    /// set list of chart value path
+    pub fn with_chart_values(mut self, values: Vec<PathBuf>) -> Self {
+        self.chart_values = values;
+        self
+    }
 }
 
 /// Compute resource requirements for fluvio server components
@@ -726,6 +733,7 @@ impl ClusterInstaller {
             skip_checks: false,
             use_cluster_ip: false,
             skip_spu_liveness_check: false,
+            chart_values: vec![]
         }
     }
 
@@ -1064,6 +1072,7 @@ impl ClusterInstaller {
                     .namespace(self.config.namespace.to_owned())
                     .opts(install_settings)
                     .develop()
+                    .values(self.config.chart_values.clone())
                     .version(self.config.chart_version.to_owned()),
                 )?;
             }
@@ -1083,6 +1092,7 @@ impl ClusterInstaller {
                     .namespace(self.config.namespace.to_owned())
                     .opts(install_settings)
                     .develop()
+                    .values(self.config.chart_values.clone())
                     .version(self.config.chart_version.to_owned()),
                 )?;
             }

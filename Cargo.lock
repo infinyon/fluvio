@@ -1126,7 +1126,8 @@ dependencies = [
 [[package]]
 name = "fluvio-helm"
 version = "0.3.0"
-source = "git+https://github.com/sehz/fluvio-helm.git?branch=value_option#f37667bbde2b66b6d232e6b0c243e00636285a9b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "939417933748f2aea4748d6f2fdf2d079f76221e38a3c65357bf3f53f5e28959"
 dependencies = [
  "flv-util",
  "serde",
