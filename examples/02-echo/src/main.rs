@@ -91,7 +91,7 @@
 use std::time::Duration;
 use fluvio::{FluvioError, Offset};
 use futures::future::join;
-use async_std::task::{sleep, spawn};
+use async_std::task::spawn;
 use async_std::future::timeout;
 
 const TOPIC: &str = "echo";
@@ -143,7 +143,6 @@ async fn produce() -> Result<(), FluvioError> {
         producer
             .send_record(format!("Hello Fluvio {}!", i), 0)
             .await?;
-        sleep(Duration::from_millis(100)).await;
     }
     producer.send_record("Done!", 0).await?;
 
