@@ -4,21 +4,3 @@ cloud:  minikube
 localPVPath: ""
 localPVStorageSize: 1Gi
 localPVReclaimPolicy: Delete
-nameOverride: ""
-fullnameOverride: ""
-imagePolicy:  IfNotPresent
-
-rbac:
-  create: true
-
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
