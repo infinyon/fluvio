@@ -180,7 +180,7 @@ fn generate_stateful(
             containers: vec![ContainerSpec {
                 name: SPU_DEFAULT_NAME.to_owned(),
                 image: Some(spu_k8_config.image.clone()),
-                resources: Some(spu_k8_config.resources.clone()),
+                resources: spu_k8_config.resources.clone(),
                 ports: vec![public_port, private_port],
                 volume_mounts,
                 env,
@@ -188,6 +188,7 @@ fn generate_stateful(
                 ..Default::default()
             }],
             volumes,
+            security_context: spu_k8_config.pod_security_context.clone(),
             ..Default::default()
         },
     };

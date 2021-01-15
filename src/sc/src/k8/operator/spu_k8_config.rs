@@ -4,7 +4,7 @@ use k8_client::{ClientError, SharedK8Client};
 use k8_metadata_client::MetadataClient;
 use tracing::debug;
 
-use crate::dispatcher::k8::core::pod::ResourceRequirements;
+use crate::dispatcher::k8::core::pod::{ResourceRequirements, PodSecurityContext};
 use crate::dispatcher::k8::core::config_map::ConfigMapSpec;
 use crate::dispatcher::k8::metadata::InputObjectMeta;
 
@@ -13,7 +13,8 @@ const CONFIG_MAP_NAME: &str = "spu-k8";
 #[derive(Debug)]
 pub struct SpuK8Config {
     pub image: String,
-    pub resources: ResourceRequirements,
+    pub resources: Option<ResourceRequirements>,
+    pub pod_security_context: Option<PodSecurityContext>,
     pub lb_service_annotations: HashMap<String, String>,
 }
 
@@ -29,11 +30,18 @@ impl SpuK8Config {
             ClientError::Other("image not found in ConfigMap spu-k8 data".to_owned())
         })?;
 
-        let resources_string = data.remove("resources").ok_or_else(|| {
-            ClientError::Other("resources not found in ConfigMap spu-k8 data".to_owned())
-        })?;
+        let resources = if let Some(resources_string) = data.remove("resources") {
+            serde_json::from_str(&resources_string)?
+        } else {
+            None
+        };
 
-        let resources = serde_json::from_str(&resources_string)?;
+        let pod_security_context =
+            if let Some(pod_security_context_string) = data.remove("podSecurityContext") {
+                serde_json::from_str(&pod_security_context_string)?
+            } else {
+                None
+            };
 
         let lb_service_annotations =
             if let Some(lb_service_annotations) = data.remove("lbServiceAnnotations") {
@@ -45,6 +53,7 @@ impl SpuK8Config {
         Ok(Self {
             image,
             resources,
+            pod_security_context,
             lb_service_annotations,
         })
     }

@@ -8,8 +8,6 @@ loadBalancer:
 scLog: info
 tls: false
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
 image:
   registry: infinyon
   tag:  ""
@@ -18,21 +16,20 @@ cert:
   caCert: fluvio-ca
   tls: fluvio-tls
 authorizationConfigMap: null
-scResources:
-  requests:
-    memory: 512Mi
-  limits:
-    memory: 512Mi
-spuResources:
-  requests:
-    memory: 256Mi
-  limits:
-    memory: 1Gi
+scPod:
+  resources:
+    requests:
+      memory: 512Mi
+    limits:
+      memory: 512Mi
+spuPod:
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1Gi
 rbac:
   create: true
 serviceAccount:
   name: fluvio
 podSecurityContext: {}
-# fsGroup: 2000
-
-securityContext: {}
