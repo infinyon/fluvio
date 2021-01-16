@@ -1,4 +1,18 @@
 # Release Notes
+
+## Version 0.6.1 - 2020-1-16
+
+## Bug Fixes
+* Restore Ok ([#675](https://github.com/infinyon/fluvio/pull/675))
+  
+## Client
+* Expose Consumer Record ([#687](https://github.com/infinyon/fluvio/pull/687))
+
+## Installer
+* Ability to customize chart using helm values ([688](https://github.com/infinyon/fluvio/pull/688))
+* Disable SPU check ([686](https://github.com/infinyon/fluvio/pull/686))
+
+
 ## Version 0.6.0 - 2020-01-11
 
 ## New Features

@@ -3,10 +3,11 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
+use k8_types::core::service::ServiceStatus;
+use k8_types::core::service::LoadBalancerIngress;
+
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
-use crate::dispatcher::k8::core::service::ServiceStatus;
-use crate::dispatcher::k8::core::service::LoadBalancerIngress;
 
 /// Service associated with SPU
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
@@ -47,9 +48,10 @@ mod extended {
     use tracing::debug;
     use tracing::trace;
 
-    use crate::dispatcher::k8::core::service::ServiceSpec;
-    use crate::dispatcher::k8::core::service::ServiceStatus;
-    use crate::dispatcher::k8::metadata::K8Obj;
+    use k8_types::core::service::ServiceSpec;
+    use k8_types::core::service::ServiceStatus;
+    use k8_types::K8Obj;
+
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
     use crate::stores::k8::K8MetaItem;
