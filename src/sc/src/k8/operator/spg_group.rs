@@ -1,9 +1,11 @@
 use async_trait::async_trait;
 
 use fluvio_types::SpuId;
-use crate::stores::spu::*;
+use k8_types::K8Obj;
+
+use crate::stores::spu::{SpuAdminStore};
 use crate::stores::spg::K8SpuGroupSpec;
-use crate::dispatcher::k8::metadata::K8Obj;
+use crate::stores::spu::is_conflict;
 
 pub type SpuGroupObj = K8Obj<K8SpuGroupSpec>;
 

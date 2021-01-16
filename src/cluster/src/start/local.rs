@@ -14,7 +14,7 @@ use fluvio::metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
 use fluvio::metadata::spu::Endpoint;
 use fluvio::metadata::spu::IngressAddr;
-use k8_client::core::metadata::{InputK8Obj, InputObjectMeta};
+use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::{
@@ -557,7 +557,7 @@ impl LocalClusterInstaller {
         client: SharedK8Client,
         log_dir: &Path,
     ) -> Result<(), LocalInstallError> {
-        use k8_client::metadata::MetadataClient;
+        use k8_client::meta_client::MetadataClient;
         const BASE_PORT: u16 = 9010;
         const BASE_SPU: u16 = 5001;
         let spu_id = (BASE_SPU + spu_index) as i32;

@@ -7,8 +7,8 @@ use fluvio_future::timer::sleep;
 use k8_client::ClientError as K8ClientError;
 use k8_client::{load_and_share, SharedK8Client};
 use k8_client::http::status::StatusCode;
-use k8_client::core::metadata::{InputObjectMeta, Spec};
-use k8_client::core::pod::PodSpec;
+use k8_types::{InputObjectMeta, Spec};
+use k8_types::core::pod::PodSpec;
 
 use crate::helm::HelmClient;
 use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
@@ -253,7 +253,7 @@ impl ClusterUninstaller {
     async fn remove_partitions(&self, namespace: &str) -> Result<(), UninstallError> {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
-        use k8_client::metadata::MetadataClient;
+        use k8_client::meta_client::MetadataClient;
         use k8_metadata_client::PatchMergeType::JsonMerge;
 
         let client = load_and_share().map_err(UninstallError::K8ClientError)?;
@@ -307,7 +307,7 @@ impl ClusterUninstaller {
         client: SharedK8Client,
         input: &InputObjectMeta,
     ) -> Result<(), UninstallError> {
-        use k8_client::metadata::MetadataClient;
+        use k8_client::meta_client::MetadataClient;
         let mut success = false;
         for i in 0..self.config.retry_count {
             debug!("checking to see if {} is deleted, count: {}", S::label(), i);

@@ -1,17 +1,22 @@
 /// convert spu group spec to statefulset for input
 use std::collections::HashMap;
 
-use crate::cli::TlsConfig;
-use crate::dispatcher::k8::metadata::*;
-use crate::dispatcher::k8::core::pod::ContainerSpec;
-use crate::dispatcher::k8::core::pod::ContainerPortSpec;
-use crate::dispatcher::k8::core::pod::PodSpec;
-use crate::dispatcher::k8::core::pod::VolumeMount;
-use crate::dispatcher::k8::core::pod::VolumeSpec;
-use crate::dispatcher::k8::core::pod::SecretVolumeSpec;
-use crate::dispatcher::k8::core::service::*;
-use crate::dispatcher::k8::app::stateful::*;
+use k8_types::*;
+use k8_types::core::pod::ContainerSpec;
+use k8_types::core::pod::ContainerPortSpec;
+use k8_types::core::pod::PodSpec;
+use k8_types::core::pod::VolumeMount;
+use k8_types::core::pod::VolumeSpec;
+use k8_types::core::pod::SecretVolumeSpec;
+use k8_types::core::service::*;
+
+use k8_types::app::stateful::{
+    StatefulSetSpec, PersistentVolumeClaim, VolumeAccessMode, ResourceRequirements, VolumeRequest,
+};
+
 use crate::stores::spg::K8SpuGroupSpec;
+use crate::cli::TlsConfig;
+
 use super::spu_k8_config::SpuK8Config;
 
 use fluvio_types::defaults::SPU_DEFAULT_NAME;

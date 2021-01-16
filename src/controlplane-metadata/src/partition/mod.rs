@@ -44,7 +44,7 @@ mod metadata {
         use crate::store::k8::K8ConvertError;
         use crate::store::k8::K8MetaItem;
         use crate::store::MetadataStoreObject;
-        use crate::k8::metadata::K8Obj;
+        use crate::k8_types::K8Obj;
         use crate::store::k8::default_convert_from_k8;
 
         use super::metadata::PartitionSpec;

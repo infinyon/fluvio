@@ -19,7 +19,7 @@ use fluvio_future::timer::sleep;
 
 use k8_metadata_client::{MetadataClient, SharedClient, NameSpace};
 
-use crate::k8::app::core::metadata::{K8List, K8Watch, Spec as K8Spec};
+use crate::k8_types::{K8List, K8Watch, Spec as K8Spec};
 
 use crate::core::Spec;
 use crate::store::k8::K8ExtendedSpec;
@@ -341,7 +341,7 @@ mod convert {
 
     use tracing::{debug, error, trace};
     use tracing::instrument;
-    use crate::k8::app::core::metadata::{K8List, K8Obj, K8Watch};
+    use crate::k8_types::{K8List, K8Obj, K8Watch};
     use crate::store::actions::*;
     use crate::store::k8::{K8MetaItem, K8ExtendedSpec, K8ConvertError};
     use crate::core::Spec;

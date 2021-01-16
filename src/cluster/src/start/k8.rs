@@ -21,8 +21,8 @@ use fluvio_future::timer::sleep;
 use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
-use k8_client::metadata::MetadataClient;
-use k8_client::core::service::ServiceSpec;
+use k8_client::meta_client::MetadataClient;
+use k8_types::core::service::{ServiceSpec, TargetPort};
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
 use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
@@ -960,7 +960,7 @@ impl ClusterInstaller {
         use futures_lite::stream::StreamExt;
 
         use fluvio_future::timer::sleep;
-        use k8_client::core::metadata::K8Watch;
+        use k8_types::K8Watch;
 
         let mut service_stream = self
             .kube_client
@@ -991,8 +991,15 @@ impl ClusterInstaller {
                                     let target_port =  service.spec
                                         .ports
                                         .iter()
-                                        .find(|_| true)
-                                        .and_then(|port| port.target_port).expect("target port should be there");
+                                        .filter_map(|port| {
+                                            match port.target_port {
+                                                Some(TargetPort::Number(value)) => Some(value),
+                                                Some(TargetPort::Name(_)) => None,
+                                                None => None
+                                            }
+                                        })
+                                        .next()
+                                        .expect("target port should be there");
 
                                     if self.config.use_cluster_ip  {
                                         return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))

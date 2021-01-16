@@ -6,9 +6,10 @@ use fluvio::config::{Profile, ConfigFile};
 use fluvio::FluvioConfig;
 use k8_config::K8Config;
 use k8_client::K8Client;
-use k8_client::metadata::MetadataClient;
-use fluvio_controlplane_metadata::k8::core::service::ServiceSpec;
-use fluvio_controlplane_metadata::k8::metadata::InputObjectMeta;
+use k8_client::meta_client::MetadataClient;
+use k8_types::core::service::ServiceSpec;
+use k8_types::InputObjectMeta;
+
 use crate::{Result, CliError};
 use crate::common::tls::TlsClientOpt;
 
@@ -145,7 +146,7 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
     Ok(if let Some(external_address) = ingress_addr {
         // find target port
         if let Some(port) = svc.spec.ports.iter().find(|_| true) {
-            if let Some(target_port) = port.target_port {
+            if let Some(ref target_port) = port.target_port {
                 Some(format!("{}:{}", external_address, target_port))
             } else {
                 None
