@@ -40,8 +40,3 @@ members = [
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
 opt-level = 3
-
-[patch.crates-io]
-k8-metadata-client = { git = "https://github.com/infinyon/k8-api.git", branch = "consolidate" }
-k8-types = { git = "https://github.com/infinyon/k8-api.git", branch = "consolidate" }
-k8-client = { git = "https://github.com/infinyon/k8-api.git", branch = "consolidate" }

@@ -941,7 +941,7 @@ dependencies = [
  "home",
  "http-types",
  "k8-client",
- "k8-config 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-config",
  "k8-types",
  "prettytable-rs",
  "rustc_version",
@@ -976,7 +976,7 @@ dependencies = [
  "flv-util",
  "futures-lite",
  "k8-client",
- "k8-config 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-config",
  "k8-metadata-client",
  "k8-types",
  "once_cell",
@@ -1900,7 +1900,8 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "5.0.0"
-source = "git+https://github.com/infinyon/k8-api.git?branch=consolidate#f2899bd62c5f3e7dc864efdf9f3c7f1c18fef4fa"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6fbd22662691b8d3f2900833339236dbdbf091381c410bb70bf54e6768ca90d"
 dependencies = [
  "async-trait",
  "base64 0.13.0",
@@ -1910,7 +1911,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "k8-config 1.3.0 (git+https://github.com/infinyon/k8-api.git?branch=consolidate)",
+ "k8-config",
  "k8-diff",
  "k8-metadata-client",
  "openssl",
@@ -1940,23 +1941,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "k8-config"
-version = "1.3.0"
-source = "git+https://github.com/infinyon/k8-api.git?branch=consolidate#f2899bd62c5f3e7dc864efdf9f3c7f1c18fef4fa"
-dependencies = [
- "dirs 2.0.2",
- "hostfile",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tracing",
-]
-
-[[package]]
 name = "k8-diff"
 version = "0.1.2"
-source = "git+https://github.com/infinyon/k8-api.git?branch=consolidate#f2899bd62c5f3e7dc864efdf9f3c7f1c18fef4fa"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef435d912eeb448129d7ae11d3c497691f1f383d2d2ff1dff4365a81c7bd4f3b"
 dependencies = [
  "serde",
  "serde_json",
@@ -1966,7 +1954,8 @@ dependencies = [
 [[package]]
 name = "k8-metadata-client"
 version = "3.0.0"
-source = "git+https://github.com/infinyon/k8-api.git?branch=consolidate#f2899bd62c5f3e7dc864efdf9f3c7f1c18fef4fa"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d40e8f06a1422be58accaab7b7b0e0a19aaf9e09645d4fd785595b6dec83580d"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -1984,7 +1973,8 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/k8-api.git?branch=consolidate#f2899bd62c5f3e7dc864efdf9f3c7f1c18fef4fa"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78d8defab8f4b847803a400f465798386a4af3da129eb8d8f331453dc7ce1348"
 dependencies = [
  "serde",
  "serde_json",
