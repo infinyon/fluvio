@@ -12,7 +12,7 @@ use serde::Serialize;
 
 use k8_metadata_client::{MetadataClient, SharedClient};
 
-use crate::k8::app::core::metadata::{InputK8Obj, K8Obj, Spec as K8Spec, UpdateK8ObjStatus};
+use crate::k8_types::{InputK8Obj, K8Obj, Spec as K8Spec, UpdateK8ObjStatus};
 use crate::core::Spec;
 use crate::store::k8::{K8ExtendedSpec, K8MetaItem};
 
@@ -136,7 +136,7 @@ where
     }
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
-        use k8_metadata_client::metadata::options::{DeleteOptions, PropogationPolicy};
+        use k8_metadata_client::k8_types::options::{DeleteOptions, PropogationPolicy};
 
         let options = if S::DELETE_WAIT_DEPENDENTS {
             Some(DeleteOptions {

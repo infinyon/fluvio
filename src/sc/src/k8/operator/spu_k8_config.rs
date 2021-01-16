@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use k8_client::{ClientError, SharedK8Client};
-use k8_metadata_client::MetadataClient;
 use tracing::debug;
 
-use crate::dispatcher::k8::core::pod::{ResourceRequirements, PodSecurityContext};
-use crate::dispatcher::k8::core::config_map::ConfigMapSpec;
-use crate::dispatcher::k8::metadata::InputObjectMeta;
+use k8_client::{ClientError, SharedK8Client};
+use k8_metadata_client::MetadataClient;
+use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
+use k8_types::core::config_map::ConfigMapSpec;
+use k8_types::InputObjectMeta;
 
 const CONFIG_MAP_NAME: &str = "spu-k8";
 

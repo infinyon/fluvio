@@ -18,8 +18,8 @@ use fluvio_future::task::spawn;
 use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
 use k8_client::load_and_share;
-use k8_client::core::metadata::InputObjectMeta;
-use k8_client::core::service::ServiceSpec;
+use k8_types::InputObjectMeta;
+use k8_types::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 
 use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
@@ -721,7 +721,7 @@ fn delete_service() -> Result<(), CheckError> {
 }
 
 async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, CheckError> {
-    use k8_client::metadata::MetadataClient;
+    use k8_client::meta_client::MetadataClient;
     use k8_client::http::status::StatusCode;
 
     let client = load_and_share()?;

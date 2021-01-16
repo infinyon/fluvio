@@ -9,25 +9,23 @@ use tracing::warn;
 use tracing::instrument;
 use futures_util::stream::StreamExt;
 
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
+use fluvio_types::defaults::SPU_DEFAULT_NAME;
+use fluvio_types::SpuId;
+use k8_types::*;
+use k8_types::core::service::*;
+use fluvio_future::task::spawn;
+use k8_client::ClientError;
+use k8_client::meta_client::{MetadataClient, ApplyResult};
+use k8_client::SharedK8Client;
+
 use crate::cli::TlsConfig;
-use crate::dispatcher::k8::metadata::*;
-use crate::dispatcher::k8::core::service::*;
 use crate::stores::spg::K8SpuGroupSpec;
 use crate::stores::spg::SpuGroupStatus;
 use crate::stores::spg::SpuEndpointTemplate;
 use crate::stores::spu::*;
 use crate::stores::spu::SpuAdminStore;
 use crate::core::SharedContext;
-
-use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use fluvio_types::defaults::SPU_DEFAULT_NAME;
-use fluvio_types::SpuId;
-use fluvio_future::task::spawn;
-
-use k8_client::ClientError;
-use k8_client::metadata::MetadataClient;
-use k8_client::metadata::ApplyResult;
-use k8_client::SharedK8Client;
 
 use super::convert_cluster_to_statefulset;
 use super::generate_service;
@@ -342,7 +340,7 @@ impl SpgOperator {
                 .unwrap_or(SPU_PUBLIC_PORT),
             ..Default::default()
         };
-        public_port.target_port = Some(public_port.port);
+        public_port.target_port = Some(TargetPort::Number(public_port.port));
 
         let mut selector = HashMap::new();
         let pod_name = format!("fluvio-spg-{}", spu_name);

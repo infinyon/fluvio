@@ -6,12 +6,12 @@ use tracing::error;
 use tracing::instrument;
 
 use fluvio_future::task::spawn;
+use k8_types::core::service::LoadBalancerIngress;
 
 use crate::core::SharedContext;
 use crate::stores::{StoreContext, K8ChangeListener};
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
-use crate::dispatcher::k8::core::service::LoadBalancerIngress;
 
 use super::SpuServicespec;
 

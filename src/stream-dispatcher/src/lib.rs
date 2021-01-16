@@ -10,7 +10,4 @@ pub mod core {
     pub use fluvio_stream_model::core::*;
 }
 
-pub mod k8 {
-
-    pub use fluvio_stream_model::k8::*;
-}
+pub use fluvio_stream_model::k8_types;

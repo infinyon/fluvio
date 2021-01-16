@@ -473,16 +473,6 @@ checksum = "ae44d1a3d5a19df61dd0c8beb138458ac2a53a7ac09eba97d55592540004306b"
 
 [[package]]
 name = "bytes"
-version = "0.4.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c"
-dependencies = [
- "byteorder",
- "iovec",
-]
-
-[[package]]
-name = "bytes"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
@@ -629,7 +619,7 @@ dependencies = [
  "base64 0.12.3",
  "hkdf",
  "hmac",
- "percent-encoding 2.1.0",
+ "percent-encoding",
  "rand 0.7.3",
  "sha2",
  "time 0.2.24",
@@ -855,16 +845,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
-name = "error-chain"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
-dependencies = [
- "backtrace",
- "version_check",
-]
-
-[[package]]
 name = "event-listener"
 version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -891,7 +871,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -922,7 +902,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-auth"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
@@ -962,6 +942,7 @@ dependencies = [
  "http-types",
  "k8-client",
  "k8-config",
+ "k8-types",
  "prettytable-rs",
  "rustc_version",
  "semver 0.11.0",
@@ -997,6 +978,7 @@ dependencies = [
  "k8-client",
  "k8-config",
  "k8-metadata-client",
+ "k8-types",
  "once_cell",
  "prettytable-rs",
  "semver 0.10.0",
@@ -1012,7 +994,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1024,7 +1006,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1074,7 +1056,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-consumer"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "ctrlc",
  "eyre",
@@ -1226,7 +1208,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "async-channel",
  "async-lock 1.1.5",
@@ -1252,6 +1234,7 @@ dependencies = [
  "futures-util",
  "k8-client",
  "k8-metadata-client",
+ "k8-types",
  "log",
  "once_cell",
  "rand 0.7.3",
@@ -1267,7 +1250,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1327,7 +1310,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "async-channel",
  "async-io",
@@ -1398,7 +1381,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1421,12 +1404,12 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "async-rwlock",
  "event-listener",
  "fluvio-future",
- "k8-obj-app",
+ "k8-types",
  "once_cell",
  "serde",
  "tokio",
@@ -1536,7 +1519,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ece68d15c92e84fa4f19d3780f1294e5ca82a78a6d515f1efaabcc144688be00"
 dependencies = [
  "matches",
- "percent-encoding 2.1.0",
+ "percent-encoding",
 ]
 
 [[package]]
@@ -1699,7 +1682,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http 0.2.3",
+ "http",
  "indexmap",
  "slab",
  "tokio",
@@ -1781,17 +1764,6 @@ checksum = "70b8bcb948d9f63a35f0527cde7ca4f4794e817451eaebd47a3c92ef6905c129"
 
 [[package]]
 name = "http"
-version = "0.1.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6ccf5ede3a895d8856620237b2f02972c1bbc78d2965ad7fe8838d4a0ed41f0"
-dependencies = [
- "bytes 0.4.12",
- "fnv",
- "itoa",
-]
-
-[[package]]
-name = "http"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7245cd7449cc792608c3c8a9eaf69bd4eabbabf802713748fd739c98b82f0747"
@@ -1808,7 +1780,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13d5ff830006f7646652e057693569bfe0d51760c0085a071769d142a205111b"
 dependencies = [
  "bytes 0.5.6",
- "http 0.2.3",
+ "http",
 ]
 
 [[package]]
@@ -1856,7 +1828,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http 0.2.3",
+ "http",
  "http-body",
  "httparse",
  "httpdate",
@@ -1911,15 +1883,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iovec"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1936,28 +1899,27 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "4.0.1"
+version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3052ac3decef18f8a78adf0371e79140a6318ef93e9422986dc5d26b38913cc"
+checksum = "c6fbd22662691b8d3f2900833339236dbdbf091381c410bb70bf54e6768ca90d"
 dependencies = [
  "async-trait",
- "base64 0.12.3",
+ "base64 0.13.0",
  "bytes 0.5.6",
  "cfg-if 1.0.0",
  "fluvio-future",
  "futures-util",
- "http 0.2.3",
+ "http",
  "hyper",
  "k8-config",
  "k8-diff",
  "k8-metadata-client",
- "k8-obj-core",
  "openssl",
  "pin-utils",
  "rand 0.7.3",
  "serde",
  "serde_json",
- "serde_qs 0.5.2",
+ "serde_qs 0.8.2",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -1991,56 +1953,28 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "2.0.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d83b7ac05c48308b16c17cb4ad68caadf8d08cf96845e3f249df98e3a75c6d32"
+checksum = "d40e8f06a1422be58accaab7b7b0e0a19aaf9e09645d4fd785595b6dec83580d"
 dependencies = [
  "async-trait",
  "futures-util",
- "http 0.1.21",
+ "http",
  "k8-diff",
- "k8-obj-metadata",
+ "k8-types",
  "pin-utils",
  "serde",
  "serde_json",
- "serde_qs 0.5.2",
+ "serde_qs 0.8.2",
  "tracing",
  "tracing-futures",
 ]
 
 [[package]]
-name = "k8-obj-app"
-version = "2.0.0"
+name = "k8-types"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a13ab534dd8cddc9217f68128e541b1bc29630507b4b435d6f67d6035cc18919"
-dependencies = [
- "http 0.1.21",
- "k8-obj-core",
- "serde",
- "serde_json",
- "serde_qs 0.4.6",
- "tracing",
-]
-
-[[package]]
-name = "k8-obj-core"
-version = "2.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffe2d95987c4689537251bae74d35975b287e9bd6ba746fd7bab1e0ceeeefce1"
-dependencies = [
- "http 0.1.21",
- "k8-obj-metadata",
- "serde",
- "serde_json",
- "serde_qs 0.4.6",
- "tracing",
-]
-
-[[package]]
-name = "k8-obj-metadata"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0eade50cc4869cba545e3d289895d3891a68dd33e2c484b7f124bba6931744d1"
+checksum = "78d8defab8f4b847803a400f465798386a4af3da129eb8d8f331453dc7ce1348"
 dependencies = [
  "serde",
  "serde_json",
@@ -2351,12 +2285,6 @@ dependencies = [
  "smallvec 0.6.14",
  "winapi",
 ]
-
-[[package]]
-name = "percent-encoding"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 
 [[package]]
 name = "percent-encoding"
@@ -2873,36 +2801,12 @@ dependencies = [
 
 [[package]]
 name = "serde_qs"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35965fa1d2413717053d67c2df1f5c3e1763fbf77200ea7e767523707bd5a0af"
-dependencies = [
- "data-encoding",
- "error-chain",
- "percent-encoding 1.0.1",
- "serde",
-]
-
-[[package]]
-name = "serde_qs"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d43eef44996bbe16e99ac720e1577eefa16f7b76b5172165c98ced20ae9903e1"
-dependencies = [
- "data-encoding",
- "error-chain",
- "percent-encoding 1.0.1",
- "serde",
-]
-
-[[package]]
-name = "serde_qs"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5af82de3c6549b001bec34961ff2d6a54339a87bab37ce901b693401f27de6cb"
 dependencies = [
  "data-encoding",
- "percent-encoding 2.1.0",
+ "percent-encoding",
  "serde",
  "thiserror",
 ]
@@ -2913,7 +2817,7 @@ version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5cb0f0564a84554436c4ceff5c896308d4e09d0eb4bd0215b8f698f88084601"
 dependencies = [
- "percent-encoding 2.1.0",
+ "percent-encoding",
  "serde",
  "thiserror",
 ]
@@ -3486,7 +3390,7 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "matches",
- "percent-encoding 2.1.0",
+ "percent-encoding",
  "serde",
 ]
 

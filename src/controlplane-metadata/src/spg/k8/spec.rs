@@ -11,12 +11,12 @@ use fluvio_types::defaults::SPU_PRIVATE_PORT;
 
 use crate::spu::EncryptionEnum;
 use crate::spg::SpuGroupStatus;
-use crate::k8::metadata::{Spec, Crd, DefaultHeader, TemplateSpec, Env};
+use crate::k8_types::{Spec, Crd, DefaultHeader, TemplateSpec, Env};
 
 use crd::SPG_API;
 mod crd {
 
-    use crate::k8::metadata::{Crd, CrdNames, GROUP, V1};
+    use crate::k8_types::{Crd, CrdNames, GROUP, V1};
 
     pub const SPG_API: Crd = Crd {
         group: GROUP,

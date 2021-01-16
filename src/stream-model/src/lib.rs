@@ -3,11 +3,7 @@ pub mod core;
 pub mod store;
 
 #[cfg(feature = "k8")]
-pub mod k8 {
-    pub use k8_obj_app as app;
-    pub use k8_obj_app::core;
-    pub use k8_obj_app::core::metadata;
-}
+pub use k8_types;
 
 #[cfg(test)]
 pub(crate) mod test_fixture {
