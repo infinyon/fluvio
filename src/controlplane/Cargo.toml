@@ -16,7 +16,7 @@ log = "0.4.8"
 tracing = "0.1.19"
 
 # Fluvio dependencies
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { path = "../types", version = "0.2.1" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", version = "0.4.0" }
 fluvio-protocol = { version = "0.2.0" }
-dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.1.5", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

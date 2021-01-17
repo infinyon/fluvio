@@ -22,7 +22,7 @@ thiserror = "1.0.20"
 static_assertions = "1.1.0"
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.0", path = "../types" }
+fluvio-types = { version = "0.2.1", path = "../types" }
 fluvio-controlplane-metadata = { version = "0.4.0", default-features = false, path = "../controlplane-metadata" }
 fluvio-protocol = { version = "0.2.0" }
-dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.1.5", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

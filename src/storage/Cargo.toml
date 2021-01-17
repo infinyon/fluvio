@@ -27,10 +27,10 @@ structopt = { version = "0.3.5", optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.0" , path = "../types" }
+fluvio-types = { version = "0.2.1" , path = "../types" }
 fluvio-future = { version = "0.1.8", features = ["fs","mmap"] }
 fluvio-protocol = { version = "0.2.1" }
-dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.1.5", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 
 [dev-dependencies]

@@ -3,7 +3,9 @@ name: Publish Crates
 on:
   workflow_dispatch:
   push:
-    branches: [stable]
+    branches: [stable, crates-publish-ci]
+  pull_request:
+    branches: [stable, master]
 
 jobs:
   publish_crates:
@@ -16,5 +18,13 @@ jobs:
           toolchain: stable
           override: true
       - uses: katyo/publish-crates@v1
+        name: Run a full publish
+        if: github.event_name == 'push' && github.ref == 'refs/heads/crates-publish-ci' #TODO: Change to stable branch
         with:
-          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          #registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          dry-run: true #TODO: remove this
+      - uses: katyo/publish-crates@v1
+        name: Do a dryrun of publish
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        with:
+          dry-run: true
