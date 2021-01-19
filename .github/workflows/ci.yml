@@ -258,6 +258,11 @@ jobs:
         timeout-minutes: 5
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+      - name: Build examples
+        run: examples/tests/build.sh --release
+      - name: Test examples
+        timeout-minutes: 5
+        run: examples/tests/run.sh --release
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload Sc logs
@@ -284,8 +289,8 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_CMD:  true 
-      FLV_SOCKET_WAIT:  600 
+      FLV_CMD: true
+      FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -316,6 +321,11 @@ jobs:
         timeout-minutes: 5
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+      - name: Build examples
+        run: examples/tests/build.sh --release
+      - name: Test examples
+        timeout-minutes: 5
+        run: examples/tests/run.sh --release
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
