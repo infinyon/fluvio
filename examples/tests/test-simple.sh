@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -e
-
 RELEASE=$1
 
 # Tests the 00-produce and 01-consume examples
