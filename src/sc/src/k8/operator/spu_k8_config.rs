@@ -17,7 +17,7 @@ pub struct SpuK8Config {
     pub resources: Option<ResourceRequirements>,
     pub pod_security_context: Option<PodSecurityContext>,
     pub lb_service_annotations: HashMap<String, String>,
-    pub service: Option<ServiceSpec>
+    pub service: Option<ServiceSpec>,
 }
 
 impl SpuK8Config {
@@ -52,19 +52,18 @@ impl SpuK8Config {
                 HashMap::new()
             };
 
-        let service = 
-            if let Some(service_data) = data.remove("service") {
-                Some(serde_json::from_str(&service_data)?)
-            } else {
-                None
-            };
+        let service = if let Some(service_data) = data.remove("service") {
+            Some(serde_json::from_str(&service_data)?)
+        } else {
+            None
+        };
 
         Ok(Self {
             image,
             resources,
             pod_security_context,
             lb_service_annotations,
-            service
+            service,
         })
     }
 
