@@ -7,6 +7,7 @@ use k8_metadata_client::MetadataClient;
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
 use k8_types::core::config_map::ConfigMapSpec;
 use k8_types::InputObjectMeta;
+use k8_types::core::service::ServiceSpec;
 
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
@@ -16,6 +17,7 @@ pub struct SpuK8Config {
     pub resources: Option<ResourceRequirements>,
     pub pod_security_context: Option<PodSecurityContext>,
     pub lb_service_annotations: HashMap<String, String>,
+    pub service: Option<ServiceSpec>
 }
 
 impl SpuK8Config {
@@ -50,11 +52,28 @@ impl SpuK8Config {
                 HashMap::new()
             };
 
+        let service = 
+            if let Some(service_data) = data.remove("service") {
+                Some(serde_json::from_str(&service_data)?)
+            } else {
+                None
+            };
+
         Ok(Self {
             image,
             resources,
             pod_security_context,
             lb_service_annotations,
+            service
         })
+    }
+
+    /// apply service config to service
+    pub fn apply_service(&self, service: &mut ServiceSpec) {
+        if let Some(service_template) = &self.service {
+            if let Some(ty) = &service_template.r#type {
+                service.r#type = Some(ty.clone());
+            }
+        }
     }
 }

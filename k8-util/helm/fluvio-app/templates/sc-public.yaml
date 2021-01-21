@@ -5,7 +5,7 @@ metadata:
   annotations:
     {{- toYaml .Values.loadBalancer.serviceAnnotations | nindent 4 }}
 spec:
-  type: LoadBalancer
+  type: {{ .Values.service.type }}
   selector:
     app: fluvio-sc
   ports:
