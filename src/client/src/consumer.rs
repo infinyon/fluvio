@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use std::convert::TryFrom;
+use std::string::FromUtf8Error;
 
 use futures_util::stream::Stream;
 use tracing::debug;
@@ -410,8 +412,20 @@ impl Record {
         self.offset
     }
 
-    /// The actual bytes for this record.
-    pub fn try_into_bytes(self) -> Option<Vec<u8>> {
-        self.record.value.inner_value()
+    pub fn to_string_lossy(&self) -> String {
+        String::from_utf8_lossy(self.as_ref()).to_string()
+    }
+}
+
+impl AsRef<[u8]> for Record {
+    fn as_ref(&self) -> &[u8] {
+        self.record.value.as_ref()
+    }
+}
+
+impl TryFrom<Record> for String {
+    type Error = FromUtf8Error;
+    fn try_from(record: Record) -> Result<String, FromUtf8Error> {
+        String::from_utf8(record.as_ref().to_vec())
     }
 }

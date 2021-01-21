@@ -98,23 +98,22 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
         let mut total_records: u16 = 0;
         while let Some(Ok(record)) = stream.next().await {
             let offset = record.offset();
-            if let Some(bytes) = record.try_into_bytes() {
-                info!(
-                    "* consumer iter: {}, received offset: {}, bytes: {}",
-                    total_records,
-                    offset,
-                    bytes.len()
-                );
-                validate_message(iteration, offset, &topic_name, option, &bytes);
-                info!(
-                    " total records: {}, validated offset: {}",
-                    total_records, offset
-                );
-                total_records += 1;
-                if total_records == iteration {
-                    println!("<<consume test done for: {} >>>>", topic_name);
-                    break;
-                }
+            let bytes = record.as_ref();
+            info!(
+                "* consumer iter: {}, received offset: {}, bytes: {}",
+                total_records,
+                offset,
+                bytes.len()
+            );
+            validate_message(iteration, offset, &topic_name, option, &bytes);
+            info!(
+                " total records: {}, validated offset: {}",
+                total_records, offset
+            );
+            total_records += 1;
+            if total_records == iteration {
+                println!("<<consume test done for: {} >>>>", topic_name);
+                break;
             }
         }
         println!("consume message validated!");

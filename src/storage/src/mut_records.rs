@@ -414,9 +414,9 @@ mod tests {
         let mut records = batch.records;
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
-        assert_eq!(record1.value.inner_value(), Some(vec![10, 20]));
+        assert_eq!(record1.value.as_ref(), vec![10, 20]);
         let record2 = records.remove(0);
-        assert_eq!(record2.value.inner_value(), Some(vec![10, 20]));
+        assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         debug!("write 2");
         msg_sink.send(create_batch()).await?;
@@ -465,9 +465,9 @@ mod tests {
         let mut records = batch.records;
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
-        assert_eq!(record1.value.inner_value(), Some(vec![10, 20]));
+        assert_eq!(record1.value.as_ref(), vec![10, 20]);
         let record2 = records.remove(0);
-        assert_eq!(record2.value.inner_value(), Some(vec![10, 20]));
+        assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         // check flush counts don't increment yet
         let flush_count = msg_sink.flush_count();
@@ -540,9 +540,9 @@ mod tests {
         let mut records = batch.records;
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
-        assert_eq!(record1.value.inner_value(), Some(vec![10, 20]));
+        assert_eq!(record1.value.as_ref(), vec![10, 20]);
         let record2 = records.remove(0);
-        assert_eq!(record2.value.inner_value(), Some(vec![10, 20]));
+        assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         // check flush counts don't increment immediately
         let flush_count = msg_sink.flush_count();

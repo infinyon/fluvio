@@ -721,15 +721,21 @@ pub mod test {
         // test encode
         let result = topic_spec.encode(&mut dest, 0);
         assert!(result.is_ok());
-
         let expected_dest = [
-            0x00, // type
-            0x00, 0x00, 0x00, 0x01, // partition cnt
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x13, 0x89, 0x00, 0x00, 0x13,
+            0x8a,
+        ];
+
+        /*
+        let expected_dest = [
+            0, 2, 0, 0, 0, 0, 4, 0, 0,
+            0x00,
+            0x02, // partition cnt
             0x00, 0x00, 0x00, 0x00, // partition id
             0x00, 0x00, 0x00, 0x02, // replica cnt
             0x00, 0x00, 0x13, 0x89, // spu id: 5001
             0x00, 0x00, 0x13, 0x8a, // spu id: 5002
-        ];
+        ];*/
         assert_eq!(dest, expected_dest);
 
         // test encode

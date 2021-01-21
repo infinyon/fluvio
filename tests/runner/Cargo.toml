@@ -17,5 +17,5 @@ fluvio-future = { version = "0.1.0", features = ["task","timer","subscriber","fi
 fluvio = { path = "../../src/client" }
 fluvio-types = { version = "0.2.0", path = "../../src/types"  }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../../src/controlplane-metadata" }
-dataplane = { version = "0.1.0", path = "../../src/dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.2.0", path = "../../src/dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-system-util = { version = "0.1.0", path = "../../src/utils" }
