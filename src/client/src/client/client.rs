@@ -2,7 +2,7 @@ use std::default::Default;
 use std::fmt;
 use std::fmt::Display;
 
-use tracing::trace;
+use tracing::{debug, trace};
 use async_trait::async_trait;
 
 use dataplane::api::RequestMessage;
@@ -177,22 +177,20 @@ impl ClientConfig {
         VersionedSocket::connect(socket, self).await
     }
 
-    /// create copy of the client config with sni domain which is only applied to TLS SNI
-    pub fn with_sni_domain(&self,domain: &str) -> Self {
-
+    /// create new config with prefix add to domain, this is useful for SNI
+    pub fn with_prefix_sni_domain(&self, prefix: &str) -> Self {
         let mut connector = self.connector.clone();
-        match &mut connector {
-            AllDomainConnector::TlsDomain(domain_connector) => {
-                domain_connector.set_domain(domain.to_owned());
-            },
-            _ => {}
+        if let AllDomainConnector::TlsDomain(domain_connector) = &mut connector {
+            let new_domain = format!("{}.{}", prefix, domain_connector.domain());
+            debug!(sni_domain = %new_domain);
+            domain_connector.set_domain(new_domain);
         };
+
         Self {
             addr: self.addr.clone(),
             client_id: self.client_id.clone(),
-            connector
+            connector,
         }
-
     }
 }
 
