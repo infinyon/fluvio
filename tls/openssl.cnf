@@ -20,4 +20,5 @@ basicConstraints = CA:true
 keyUsage = cRLSign, keyCertSign, digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment, keyAgreement, keyCertSign, cRLSign
 
 [ alt_names ]
-DNS.2 = fluvio.local
+DNS.2 = *.fluvio.local
+DNS.1 = fluvio.local
