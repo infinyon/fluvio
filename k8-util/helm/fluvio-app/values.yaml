@@ -5,6 +5,8 @@
 cloud: minikube
 loadBalancer:
   serviceAnnotations: {}
+service:
+  type: LoadBalancer
 scLog: info
 tls: false
 imagePullSecrets: []

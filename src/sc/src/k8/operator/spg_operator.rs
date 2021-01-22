@@ -346,13 +346,15 @@ impl SpgOperator {
         let pod_name = format!("fluvio-spg-{}", spu_name);
         selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), pod_name);
 
-        let service_spec = ServiceSpec {
-            r#type: Some(LoadBalancerType::LoadBalancer),
+        let mut service_spec = ServiceSpec {
             external_traffic_policy: Some(ExternalTrafficPolicy::Local),
             selector: Some(selector),
             ports: vec![public_port.clone()],
             ..Default::default()
         };
+
+        spu_k8_config.apply_service(&mut service_spec);
+
         let owner_ref = metadata.make_owner_reference::<ServiceSpec>();
 
         let svc_name = format!("fluvio-spu-{}", spu_name);
