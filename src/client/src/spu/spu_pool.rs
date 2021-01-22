@@ -78,7 +78,7 @@ impl SpuPool {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
         debug!("connecting to spu: {}", spu.spec);
-        let mut client_config = self.config.clone();
+        let mut client_config = self.config.with_sni_domain(spu.key());
         let spu_addr = spu.spec.public_endpoint.addr();
         debug!("spu addr: {}", spu_addr);
         client_config.set_addr(spu_addr);

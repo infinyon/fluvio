@@ -1,7 +1,6 @@
 use std::default::Default;
 use std::fmt;
 use std::fmt::Display;
-use std::sync::Arc;
 
 use tracing::trace;
 use async_trait::async_trait;
@@ -127,7 +126,7 @@ impl VersionedSocket {
 pub struct ClientConfig {
     addr: String,
     client_id: String,
-    connector: Arc<AllDomainConnector>,
+    connector: AllDomainConnector,
 }
 
 impl fmt::Display for ClientConfig {
@@ -143,7 +142,7 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(addr: S, connector: Arc<AllDomainConnector>) -> Self {
+    pub fn new<S: Into<String>>(addr: S, connector: AllDomainConnector) -> Self {
         Self {
             addr: addr.into(),
             client_id: "fluvio".to_owned(),
@@ -152,7 +151,7 @@ impl ClientConfig {
     }
 
     pub fn with_addr(addr: String) -> Self {
-        Self::new(addr, Arc::new(AllDomainConnector::default()))
+        Self::new(addr, AllDomainConnector::default())
     }
 
     pub fn addr(&self) -> &str {
@@ -174,8 +173,26 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = AllFlvSocket::connect_with_connector(&self.addr, &*self.connector).await?;
+        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
         VersionedSocket::connect(socket, self).await
+    }
+
+    /// create copy of the client config with sni domain which is only applied to TLS SNI
+    pub fn with_sni_domain(&self,domain: &str) -> Self {
+
+        let mut connector = self.connector.clone();
+        match &mut connector {
+            AllDomainConnector::TlsDomain(domain_connector) => {
+                domain_connector.set_domain(domain.to_owned());
+            },
+            _ => {}
+        };
+        Self {
+            addr: self.addr.clone(),
+            client_id: self.client_id.clone(),
+            connector
+        }
+
     }
 }
 

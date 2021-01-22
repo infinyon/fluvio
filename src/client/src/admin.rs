@@ -101,9 +101,8 @@ impl FluvioAdmin {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        use std::sync::Arc;
 
-        let connector = Arc::new(AllDomainConnector::try_from(config.tls.clone())?);
+        let connector = AllDomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.addr, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
