@@ -666,8 +666,7 @@ impl ClusterInstaller {
         if !self.config.upgrade {
             checker = checker.with_check(Box::new(AlreadyInstalled));
         }
-        checker.run_wait_and_fix(fix)
-            .await
+        checker.run_wait_and_fix(fix).await
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
@@ -775,7 +774,7 @@ impl ClusterInstaller {
             self.update_profile(address.clone())?;
         }
 
-        if self.config.spu_spec.replicas > 0  && !self.config.upgrade {
+        if self.config.spu_spec.replicas > 0 && !self.config.upgrade {
             debug!("waiting for SC to spin up");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
@@ -802,7 +801,7 @@ impl ClusterInstaller {
                     Err(_) => {
                         sleep(Duration::from_millis(2_000)).await;
                         continue;
-                    },
+                    }
                 };
                 let version = fluvio.platform_version();
                 if version.to_string() == self.config.chart_version {
@@ -845,10 +844,7 @@ impl ClusterInstaller {
                 self.helm_client
                     .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
-                let args = InstallArg::new(
-                    DEFAULT_CHART_SYS_REPO,
-                    DEFAULT_CHART_SYS_NAME,
-                )
+                let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop();
@@ -952,10 +948,7 @@ impl ClusterInstaller {
                     chart_location = &**chart_location,
                     "Using remote helm chart:"
                 );
-                let args = InstallArg::new(
-                    DEFAULT_CHART_APP_REPO,
-                    &self.config.chart_name,
-                )
+                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, &self.config.chart_name)
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
@@ -975,10 +968,7 @@ impl ClusterInstaller {
                     chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
-                let args = InstallArg::new(
-                    DEFAULT_CHART_APP_REPO,
-                    chart_string,
-                )
+                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, chart_string)
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()

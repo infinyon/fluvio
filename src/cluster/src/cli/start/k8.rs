@@ -13,7 +13,11 @@ use crate::check::render::{
     render_results_next_steps,
 };
 
-pub async fn install_core(opt: StartOpt, upgrade: bool, skip_sys: bool) -> Result<(), ClusterCliError> {
+pub async fn install_core(
+    opt: StartOpt,
+    upgrade: bool,
+    skip_sys: bool,
+) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
