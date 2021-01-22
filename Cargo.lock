@@ -981,7 +981,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1140,6 +1140,8 @@ dependencies = [
 [[package]]
 name = "fluvio-helm"
 version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16a817c2db1feda2efcb63d7fa73438439ede7404a4db1bae6966d3e564c893b"
 dependencies = [
  "flv-util",
  "serde",
