@@ -1383,6 +1383,8 @@ dependencies = [
 name = "fluvio-storage"
 version = "0.2.1"
 dependencies = [
+ "async-channel",
+ "async-mutex",
  "async-trait",
  "bytes 0.5.6",
  "fluvio-dataplane-protocol",
