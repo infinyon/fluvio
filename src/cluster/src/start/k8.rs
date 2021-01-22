@@ -775,7 +775,7 @@ impl ClusterInstaller {
             self.update_profile(address.clone())?;
         }
 
-        if self.config.spu_spec.replicas > 0 {
+        if self.config.spu_spec.replicas > 0  && !self.config.upgrade {
             debug!("waiting for SC to spin up");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
@@ -784,6 +784,36 @@ impl ClusterInstaller {
             let cluster =
                 FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
+
+            // Wait for the SPU cluster to spin up
+            if !self.config.skip_spu_liveness_check {
+                self.wait_for_spu(namespace, self.config.spu_spec.replicas)
+                    .await?;
+            }
+        }
+
+        // When upgrading, wait for platform version to match new version
+        println!("Waiting up to 60 seconds for cluster upgrade...");
+        if self.config.upgrade {
+            const ATTEMPTS: u8 = 30;
+            for attempt in 0..ATTEMPTS {
+                let fluvio = match fluvio::Fluvio::connect().await {
+                    Ok(fluvio) => fluvio,
+                    Err(_) => {
+                        sleep(Duration::from_millis(2_000)).await;
+                        continue;
+                    },
+                };
+                let version = fluvio.platform_version();
+                if version.to_string() == self.config.chart_version {
+                    // Success
+                    break;
+                }
+                if attempt >= ATTEMPTS - 1 {
+                    return Err(K8InstallError::FailedUpdate.into());
+                }
+                sleep(Duration::from_millis(2_000)).await;
+            }
 
             // Wait for the SPU cluster to spin up
             if !self.config.skip_spu_liveness_check {
