@@ -783,42 +783,16 @@ impl ClusterInstaller {
             let cluster =
                 FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
-
-            // Wait for the SPU cluster to spin up
-            if !self.config.skip_spu_liveness_check {
-                self.wait_for_spu(namespace, self.config.spu_spec.replicas)
-                    .await?;
-            }
         }
 
         // When upgrading, wait for platform version to match new version
-        println!("Waiting up to 60 seconds for cluster upgrade...");
-        if self.config.upgrade {
-            const ATTEMPTS: u8 = 30;
-            for attempt in 0..ATTEMPTS {
-                let fluvio = match fluvio::Fluvio::connect().await {
-                    Ok(fluvio) => fluvio,
-                    Err(_) => {
-                        sleep(Duration::from_millis(2_000)).await;
-                        continue;
-                    }
-                };
-                let version = fluvio.platform_version();
-                if version.to_string() == self.config.chart_version {
-                    // Success
-                    break;
-                }
-                if attempt >= ATTEMPTS - 1 {
-                    return Err(K8InstallError::FailedUpdate.into());
-                }
-                sleep(Duration::from_millis(2_000)).await;
-            }
+        println!("Waiting up to 60 seconds for Fluvio cluster version check...");
+        self.wait_for_fluvio_version().await?;
 
-            // Wait for the SPU cluster to spin up
-            if !self.config.skip_spu_liveness_check {
-                self.wait_for_spu(namespace, self.config.spu_spec.replicas)
-                    .await?;
-            }
+        // Wait for the SPU cluster to spin up
+        if !self.config.skip_spu_liveness_check {
+            self.wait_for_spu(namespace, self.config.spu_spec.replicas)
+                .await?;
         }
 
         Ok(StartStatus {
@@ -1073,6 +1047,32 @@ impl ClusterInstaller {
                 }
             }
         }
+    }
+
+    /// Wait until the platform version of the cluster matches the chart version here
+    #[instrument(skip(self))]
+    async fn wait_for_fluvio_version(&self) -> Result<(), K8InstallError> {
+        const ATTEMPTS: u8 = 30;
+        for attempt in 0..ATTEMPTS {
+            let fluvio = match fluvio::Fluvio::connect().await {
+                Ok(fluvio) => fluvio,
+                Err(_) => {
+                    sleep(Duration::from_millis(2_000)).await;
+                    continue;
+                }
+            };
+            let version = fluvio.platform_version();
+            if version.to_string() == self.config.chart_version {
+                // Success
+                break;
+            }
+            if attempt >= ATTEMPTS - 1 {
+                return Err(K8InstallError::FailedVersionTimeout(self.config.chart_version.to_string()).into());
+            }
+            sleep(Duration::from_millis(2_000)).await;
+        }
+
+        Ok(())
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
