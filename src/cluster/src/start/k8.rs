@@ -1069,8 +1069,7 @@ impl ClusterInstaller {
             if attempt >= ATTEMPTS - 1 {
                 return Err(K8InstallError::FailedVersionTimeout(
                     self.config.chart_version.to_string(),
-                )
-                .into());
+                ));
             }
             sleep(Duration::from_millis(2_000)).await;
         }
