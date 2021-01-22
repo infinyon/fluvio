@@ -22,6 +22,7 @@ libc = "0.2.58"
 bytes = "0.5.3"
 futures-lite = "1.7.0"
 pin-utils = "0.1.0-alpha.4"
+async-channel = "1.5.1"
 async-trait = "0.1.18"
 structopt = { version = "0.3.5", optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
@@ -31,6 +32,7 @@ fluvio-types = { version = "0.2.0" , path = "../types" }
 fluvio-future = { version = "0.1.8", features = ["fs","mmap"] }
 fluvio-protocol = { version = "0.2.1" }
 dataplane = { version = "0.1.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+async-mutex = "1.4.0"
 
 
 [dev-dependencies]

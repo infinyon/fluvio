@@ -22,7 +22,7 @@ pub(crate) const MESSAGE_LOG_EXTENSION: &str = "log";
 pub(crate) trait FileRecords {
     fn get_base_offset(&self) -> Offset;
 
-    fn get_file(&self) -> &File;
+    // fn get_file(&self) -> &File;
 
     fn get_path(&self) -> &Path;
 
@@ -74,9 +74,9 @@ impl FileRecords for FileRecordsSlice {
         self.base_offset
     }
 
-    fn get_file(&self) -> &File {
-        &self.file
-    }
+    // fn get_file(&self) -> &File {
+    //     &self.file
+    // }
 
     fn get_path(&self) -> &Path {
         &self.path

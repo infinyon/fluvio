@@ -11,6 +11,7 @@ use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 use dataplane::Size;
 
 pub const DEFAULT_FLUSH_WRITE_COUNT: u32 = 1;
+pub const DEFAULT_FLUSH_IDLE_MSEC: u32 = 0;
 
 // common option
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -25,6 +26,8 @@ pub struct ConfigOption {
     pub segment_max_bytes: Size,
     #[serde(default = "default_flush_write_count")]
     pub flush_write_count: Size,
+    #[serde(default = "default_flush_idle_msec")]
+    pub flush_idle_msec: Size,
 }
 
 impl fmt::Display for ConfigOption {
@@ -53,6 +56,10 @@ fn default_flush_write_count() -> Size {
     DEFAULT_FLUSH_WRITE_COUNT
 }
 
+fn default_flush_idle_msec() -> Size {
+    DEFAULT_FLUSH_IDLE_MSEC
+}
+
 impl ConfigOption {
     pub fn new(
         base_dir: PathBuf,
@@ -60,6 +67,7 @@ impl ConfigOption {
         index_max_interval_bytes: u32,
         segment_max_bytes: u32,
         flush_write_count: u32,
+        flush_idle_msec: u32,
     ) -> Self {
         ConfigOption {
             base_dir,
@@ -67,6 +75,7 @@ impl ConfigOption {
             index_max_interval_bytes,
             segment_max_bytes,
             flush_write_count,
+            flush_idle_msec,
         }
     }
 
@@ -94,6 +103,7 @@ impl Default for ConfigOption {
             index_max_interval_bytes: default_index_max_interval_bytes(),
             segment_max_bytes: default_segment_max_bytes(),
             flush_write_count: default_flush_write_count(),
+            flush_idle_msec: default_flush_idle_msec(),
         }
     }
 }
