@@ -153,14 +153,14 @@ where
     C: MetadataItem + PartialEq,
 {
     /// compute difference, in our case we take account of version as well
-    fn diff(&self, another: &Self) -> ChangeFlag {
-        if self.is_newer(another) {
+    fn diff(&self, new_value: &Self) -> ChangeFlag {
+        if self.is_newer(new_value) {
             ChangeFlag::no_change()
         } else {
             ChangeFlag {
-                spec: self.spec != another.spec,
-                status: self.status != another.status,
-                meta: self.ctx.item() != another.ctx.item(),
+                spec: self.spec != new_value.spec,
+                status: self.status != new_value.status,
+                meta: self.ctx.item() != new_value.ctx.item(),
             }
         }
     }

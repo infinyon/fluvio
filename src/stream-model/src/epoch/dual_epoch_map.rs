@@ -14,7 +14,7 @@ use super::EpochChanges;
 
 pub trait DualDiff {
     /// check if another is different from myself
-    fn diff(&self, another: &Self) -> ChangeFlag;
+    fn diff(&self, new_value: &Self) -> ChangeFlag;
 }
 
 #[allow(clippy::clippy::redundant_closure)]
@@ -239,18 +239,20 @@ where
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
             let diff = existing_value.diff(new_value.inner());
-            new_value.copy_epoch(existing_value);
-            if diff.spec {
-                new_value.set_spec_epoch(current_epoch);
-            }
-            if diff.status {
-                new_value.set_status_epoch(current_epoch);
-            }
-            if diff.meta {
-                new_value.set_meta_epoch(current_epoch);
-            }
+            if !diff.has_no_changes() {
+                new_value.copy_epoch(existing_value);
+                if diff.spec {
+                    new_value.set_spec_epoch(current_epoch);
+                }
+                if diff.status {
+                    new_value.set_status_epoch(current_epoch);
+                }
+                if diff.meta {
+                    new_value.set_meta_epoch(current_epoch);
+                }
 
-            *existing_value = new_value;
+                *existing_value = new_value;
+            }
             Some(diff)
         } else {
             // doesn't exist, so this is new

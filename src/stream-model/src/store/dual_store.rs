@@ -620,15 +620,31 @@ mod test {
         assert_eq!(changes.update_spec, 0);
         assert_eq!(changes.update_status, 1);
         assert_eq!(topic_store.epoch().await, 2);
+        assert_eq!(
+            topic_store.value("t1").await.expect("t1").ctx().item().rev,
+            3
+        );
 
-        // re-sync with initial topics should only result in epoch
-        let re_sync = topic_store.sync_all(vec![initial_topic]).await;
+        // updating topics should only result in epoch
+
+        assert_eq!(initial_topic.ctx().item().rev, 2);
+        let changes = topic_store
+            .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
+            .await;
+        assert_eq!(topic_store.epoch().await, 2);
+        assert!(changes.is_none());
+        assert_eq!(
+            topic_store.value("t1").await.expect("t1").status,
+            TestStatus { up: true }
+        );
+
+        // re-syching with initial topic should only cause epoch to change
+        let sync_all = topic_store.sync_all(vec![initial_topic]).await;
         assert_eq!(topic_store.epoch().await, 3);
-        assert_eq!(re_sync.add, 0);
-        assert_eq!(re_sync.delete, 0);
-        assert_eq!(re_sync.update_spec, 0);
-        assert_eq!(re_sync.update_status, 0);
-        assert_eq!(topic_store.value("t1").await.expect("t1").status,TestStatus { up: true});
+        assert_eq!(sync_all.add, 0);
+        assert_eq!(sync_all.delete, 0);
+        assert_eq!(sync_all.update_spec, 0);
+        assert_eq!(sync_all.update_status, 0);
 
         Ok(())
     }
