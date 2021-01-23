@@ -574,16 +574,24 @@ mod test {
         assert_eq!(test1.spec_epoch(), 1);
         drop(read_guard);
 
-        // apply same changes should have no effect
+        // sync all with spec changes only
 
-        let sync2 = test_store
-            .sync_all(vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 })])
-            .await;
+        let spec_changes =
+            vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 }).with_context(2)];
+        let sync2 = test_store.sync_all(spec_changes.clone()).await;
         assert_eq!(test_store.epoch().await, 2);
         assert_eq!(sync2.add, 0);
         assert_eq!(sync2.delete, 0);
         assert_eq!(sync2.update_spec, 1);
         assert_eq!(sync2.update_status, 0);
+
+        // apply again, this time there should not be any change all
+        let sync3 = test_store.sync_all(spec_changes.clone()).await;
+        assert_eq!(test_store.epoch().await, 3);
+        assert_eq!(sync3.add, 0);
+        assert_eq!(sync3.delete, 0);
+        assert_eq!(sync3.update_spec, 0);
+        assert_eq!(sync3.update_status, 0);
 
         Ok(())
     }
@@ -613,6 +621,32 @@ mod test {
         assert_eq!(changes.update_spec, 0);
         assert_eq!(changes.update_status, 1);
         assert_eq!(topic_store.epoch().await, 2);
+        assert_eq!(
+            topic_store.value("t1").await.expect("t1").ctx().item().rev,
+            3
+        );
+
+        // updating topics should only result in epoch
+
+        assert_eq!(initial_topic.ctx().item().rev, 2);
+        let changes = topic_store
+            .apply_changes(vec![LSUpdate::Mod(initial_topic.clone())])
+            .await;
+        assert_eq!(topic_store.epoch().await, 2);
+        assert!(changes.is_none());
+        assert_eq!(
+            topic_store.value("t1").await.expect("t1").status,
+            TestStatus { up: true }
+        );
+
+        // re-syching with initial topic should only cause epoch to change
+        let sync_all = topic_store.sync_all(vec![initial_topic]).await;
+        assert_eq!(topic_store.epoch().await, 3);
+        assert_eq!(sync_all.add, 0);
+        assert_eq!(sync_all.delete, 0);
+        assert_eq!(sync_all.update_spec, 0);
+        assert_eq!(sync_all.update_status, 0);
+
         Ok(())
     }
 }

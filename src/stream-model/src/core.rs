@@ -22,6 +22,11 @@ mod context {
         }
     }
 
+    pub trait MetadataRevExtension: MetadataItem {
+        // return next revision
+        fn next_rev(&self) -> Self;
+    }
+
     impl MetadataItem for u32 {
         type UId = u32;
 
@@ -92,6 +97,15 @@ mod context {
                 item: C::default(),
                 owner: Some(self.item.clone()),
             }
+        }
+    }
+
+    impl<C> MetadataContext<C>
+    where
+        C: MetadataRevExtension,
+    {
+        pub fn next_rev(&self) -> Self {
+            Self::new(self.item.next_rev(), None)
         }
     }
 

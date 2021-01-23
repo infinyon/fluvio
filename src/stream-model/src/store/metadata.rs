@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::core::{Spec, MetadataContext, MetadataItem};
+use crate::core::{Spec, MetadataContext, MetadataItem, MetadataRevExtension};
 use crate::store::{LocalStore};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
@@ -153,16 +153,28 @@ where
     C: MetadataItem + PartialEq,
 {
     /// compute difference, in our case we take account of version as well
-    fn diff(&self, another: &Self) -> ChangeFlag {
-        if self.is_newer(another) {
+    fn diff(&self, new_value: &Self) -> ChangeFlag {
+        if self.is_newer(new_value) {
             ChangeFlag::no_change()
         } else {
             ChangeFlag {
-                spec: self.spec != another.spec,
-                status: self.status != another.status,
-                meta: self.ctx.item() != another.ctx.item(),
+                spec: self.spec != new_value.spec,
+                status: self.status != new_value.status,
+                meta: self.ctx.item() != new_value.ctx.item(),
             }
         }
+    }
+}
+
+impl<S, C> MetadataStoreObject<S, C>
+where
+    S: Spec,
+    C: MetadataRevExtension,
+{
+    // create clone of my self with next rev, useful for testing and other
+    #[allow(unused)]
+    pub fn next_rev(&self) -> Self {
+        self.clone().with_context(self.ctx.next_rev())
     }
 }
 
