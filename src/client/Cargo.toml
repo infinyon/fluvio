@@ -4,6 +4,8 @@ version = "0.3.6"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
+categories = ["database"]
+keywords = ["streaming", "stream", "queue"]
 repository = "https://github.com/infinyon/fluvio"
 description = "The offical Fluvio driver for Rust"
 
