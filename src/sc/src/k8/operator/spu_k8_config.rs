@@ -73,6 +73,15 @@ impl SpuK8Config {
             if let Some(ty) = &service_template.r#type {
                 service.r#type = Some(ty.clone());
             }
+            if let Some(local_traffic) = &service_template.external_traffic_policy {
+                service.external_traffic_policy = Some(local_traffic.clone());
+            }
+            if let Some(external_name) = &service_template.external_name {
+                service.external_name = Some(external_name.clone());
+            }
+            if let Some(lb_ip) = &service.load_balancer_ip {
+                service.load_balancer_ip = Some(lb_ip.clone());
+            }
         }
     }
 }

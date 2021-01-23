@@ -502,6 +502,7 @@ mod tests {
 
     // The test still verifies that flushes on writes have occured within the
     // expected timeframe
+    #[cfg(not(target_os = "macos"))]
     #[test_async]
     async fn test_write_records_idle_delay() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAMEI);
