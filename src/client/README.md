@@ -1,6 +1,6 @@
-# flv-client
+# Fluvio Client
 
-Fluvio Rust Client
+The official Fluvio Rust Client. For usage see [fluvio.io](https://www.fluvio.io/).
 
 ## License
 
