@@ -8,6 +8,12 @@ spec:
   type: {{ .Values.service.type }}
   selector:
     app: fluvio-sc
+{{ if .Values.service.externalTrafficPolicy }}
+    externalTrafficPolicy: .Values.service.externalTrafficPolicy
+{{ end }}
+{{ if .Values.service.externalName }}
+    externalName: .Values.service.externalName
+{{ end }}
   ports:
   - protocol: TCP
     port: 9003

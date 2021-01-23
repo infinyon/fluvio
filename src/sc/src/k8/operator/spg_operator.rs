@@ -347,7 +347,6 @@ impl SpgOperator {
         selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), pod_name);
 
         let mut service_spec = ServiceSpec {
-            external_traffic_policy: Some(ExternalTrafficPolicy::Local),
             selector: Some(selector),
             ports: vec![public_port.clone()],
             ..Default::default()
