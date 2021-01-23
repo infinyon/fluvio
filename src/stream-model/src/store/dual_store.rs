@@ -574,16 +574,23 @@ mod test {
         assert_eq!(test1.spec_epoch(), 1);
         drop(read_guard);
 
-        // apply same changes should have no effect
+        // sync all with spec changes only
 
-        let sync2 = test_store
-            .sync_all(vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 })])
-            .await;
+        let spec_changes = vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 })];
+        let sync2 = test_store.sync_all(spec_changes.clone()).await;
         assert_eq!(test_store.epoch().await, 2);
         assert_eq!(sync2.add, 0);
         assert_eq!(sync2.delete, 0);
         assert_eq!(sync2.update_spec, 1);
         assert_eq!(sync2.update_status, 0);
+
+        // apply again, this time there should not be any change all
+        let sync3 = test_store.sync_all(spec_changes.clone()).await;
+        assert_eq!(test_store.epoch().await, 3);
+        assert_eq!(sync3.add, 0);
+        assert_eq!(sync3.delete, 0);
+        assert_eq!(sync3.update_spec, 0);
+        assert_eq!(sync3.update_status, 0);
 
         Ok(())
     }
@@ -613,6 +620,16 @@ mod test {
         assert_eq!(changes.update_spec, 0);
         assert_eq!(changes.update_status, 1);
         assert_eq!(topic_store.epoch().await, 2);
+
+        // re-sync with initial topics should only result in epoch
+        let re_sync = topic_store.sync_all(vec![initial_topic]).await;
+        assert_eq!(topic_store.epoch().await, 3);
+        assert_eq!(re_sync.add, 0);
+        assert_eq!(re_sync.delete, 0);
+        assert_eq!(re_sync.update_spec, 0);
+        assert_eq!(re_sync.update_status, 0);
+        assert_eq!(topic_store.value("t1").await.expect("t1").status,TestStatus { up: true});
+
         Ok(())
     }
 }
