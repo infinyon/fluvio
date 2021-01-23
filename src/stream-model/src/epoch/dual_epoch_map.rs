@@ -239,7 +239,9 @@ where
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
             let diff = existing_value.diff(new_value.inner());
-            if !diff.has_no_changes() {
+            if diff.has_no_changes() {
+                Some(diff)
+            } else {
                 new_value.copy_epoch(existing_value);
                 if diff.spec {
                     new_value.set_spec_epoch(current_epoch);
@@ -252,10 +254,10 @@ where
                 }
 
                 *existing_value = new_value;
+                Some(diff)
             }
-            Some(diff)
         } else {
-            // doesn't exist, so this is new
+            // doesn't exist, so everything is new
             new_value.set_epoch(current_epoch);
             self.values.insert(key, new_value);
             None
@@ -426,7 +428,7 @@ mod test {
         map.increment_epoch();
 
         let test1 = DefaultTest::with_key("t1");
-        assert!(map.update(test1.key_owned(), test1).is_none());
+        assert!(map.update(test1.key_owned(), test1).is_none()); // new
 
         assert_eq!(map.epoch(), 1);
 
@@ -535,12 +537,15 @@ mod test {
         // first epoch
         map.increment_epoch();
 
+        assert_eq!(test1.ctx().item().rev, 0);
         assert!(map.update(test1.key_owned(), test1).is_none());
 
         map.increment_epoch();
 
         // only update status
-        let changes = map.update(test2.key_owned(), test2).expect("update");
+        let changes = map
+            .update(test2.key_owned(), test2.next_rev())
+            .expect("update");
         assert!(!changes.spec);
         assert!(changes.status);
 
@@ -582,7 +587,7 @@ mod test {
             assert_eq!(deletes.len(), 0);
 
             let (updates, deletes) = map.meta_changes_since(1).parts();
-            assert_eq!(updates.len(), 0);
+            assert_eq!(updates.len(), 1); // rev has changed
             assert_eq!(deletes.len(), 0);
         }
 
@@ -616,10 +621,13 @@ mod test {
         // first epoch
         map.increment_epoch();
 
+        // there is no test 1 prior, so update should not occur
         assert!(map.update(test1.key_owned(), test1).is_none());
 
         map.increment_epoch();
-        let changes = map.update(test2.key_owned(), test2).expect("update");
+        let changes = map
+            .update(test2.key_owned(), test2.next_rev())
+            .expect("update");
         assert!(changes.spec);
         assert!(!changes.status);
 
@@ -661,7 +669,7 @@ mod test {
             assert_eq!(deletes.len(), 0);
 
             let (updates, deletes) = map.meta_changes_since(1).parts();
-            assert_eq!(updates.len(), 0);
+            assert_eq!(updates.len(), 1);
             assert_eq!(deletes.len(), 0);
         }
 
@@ -696,8 +704,16 @@ mod test {
 
         assert!(map.update(test1.key_owned(), test1).is_none());
 
+        // without rev update, no updates
+        assert!(map
+            .update(test2.key_owned(), test2.clone())
+            .expect("update")
+            .has_no_changes());
+
         map.increment_epoch();
-        let changes = map.update(test2.key_owned(), test2).expect("update");
+        let changes = map
+            .update(test2.key_owned(), test2.next_rev())
+            .expect("update");
         assert!(!changes.spec);
         assert!(!changes.status);
         assert!(changes.meta);

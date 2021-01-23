@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::core::{Spec, MetadataContext, MetadataItem};
+use crate::core::{Spec, MetadataContext, MetadataItem, MetadataRevExtension};
 use crate::store::{LocalStore};
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
@@ -163,6 +163,18 @@ where
                 meta: self.ctx.item() != new_value.ctx.item(),
             }
         }
+    }
+}
+
+impl<S, C> MetadataStoreObject<S, C>
+where
+    S: Spec,
+    C: MetadataRevExtension,
+{
+    // create clone of my self with next rev, useful for testing and other
+    #[allow(unused)]
+    pub fn next_rev(&self) -> Self {
+        self.clone().with_context(self.ctx.next_rev())
     }
 }
 

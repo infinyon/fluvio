@@ -576,7 +576,8 @@ mod test {
 
         // sync all with spec changes only
 
-        let spec_changes = vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 })];
+        let spec_changes =
+            vec![DefaultTest::with_spec("t1", TestSpec { replica: 6 }).with_context(2)];
         let sync2 = test_store.sync_all(spec_changes.clone()).await;
         assert_eq!(test_store.epoch().await, 2);
         assert_eq!(sync2.add, 0);

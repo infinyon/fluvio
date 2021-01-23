@@ -8,7 +8,7 @@ pub use k8_types;
 #[cfg(test)]
 pub(crate) mod test_fixture {
 
-    use crate::core::{Spec, Status, MetadataItem, MetadataContext};
+    use crate::core::{Spec, Status, MetadataItem, MetadataContext, MetadataRevExtension};
     use crate::store::MetadataStoreObject;
     use crate::epoch::DualEpochMap;
 
@@ -50,7 +50,16 @@ pub(crate) mod test_fixture {
         }
 
         fn is_newer(&self, another: &Self) -> bool {
-            self.rev > another.rev
+            self.rev >= another.rev
+        }
+    }
+
+    impl MetadataRevExtension for TestMeta {
+        fn next_rev(&self) -> Self {
+            Self {
+                rev: self.rev + 1,
+                comment: self.comment.clone(),
+            }
         }
     }
 
