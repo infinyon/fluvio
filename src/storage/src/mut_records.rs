@@ -527,23 +527,7 @@ mod tests {
     async fn test_write_records_idle_delay() -> Result<(), StorageError> {
         //use tracing_subscriber::prelude::*;
         use tracing::{span, Level};
-        // let fsub = tracing_subscriber::fmt()
-        //     .with_max_level(tracing::Level::DEBUG)
-        //     .with_env_filter("debug")
-        //     .with_test_writer()
-        //     .finish();
-        // fsub.set_default();
 
-        let _ = tracing::subscriber::set_default(
-            tracing_subscriber::fmt()
-                .with_max_level(Level::DEBUG)
-                .with_env_filter("debug")
-                .with_test_writer()
-                .finish(),
-        );
-        // tracing::collect::with_default(fsub || {
-        //     debug!("test me");
-        // });
         // span start
         let span = span!(Level::DEBUG, "test_write_records_idle_delay");
         let _enter = span.enter();
@@ -613,7 +597,7 @@ mod tests {
         msg_sink.send(create_batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
 
-        let dur = Duration::from_millis((IDLE_FLUSH + 100).into());
+        let dur = Duration::from_millis((IDLE_FLUSH + 50).into());
         timer::after(dur).await;
         assert_eq!(flush_count + 1, msg_sink.flush_count());
 
