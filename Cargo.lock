@@ -1399,6 +1399,7 @@ dependencies = [
  "serde",
  "structopt",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

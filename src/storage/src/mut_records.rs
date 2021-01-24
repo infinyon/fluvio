@@ -500,11 +500,54 @@ mod tests {
     // main mut_records context, the test is verifid by inspection of the trace
     // RUST_LOG=debug cargo test test_write_records_idle_delay
 
+    /* temporarioly setup for DEBUG level trace for macos CI debugging */
+    #[test]
+    fn test_write_records_idle_delay_dbg() {
+        use tracing::{span, Level};
+        use tracing_subscriber::EnvFilter;
+        let _ = tracing_subscriber::fmt()
+            .with_max_level(Level::DEBUG)
+            .with_env_filter(EnvFilter::from_default_env().add_directive(Level::DEBUG.into()))
+            .try_init();
+
+        let span = span!(Level::DEBUG, "test_write_records_idle_delay");
+        let _enter = span.enter();
+
+        let ft = async { test_write_records_idle_delay().await };
+
+        if let Err(err) = fluvio_future::task::run_block_on(ft) {
+            assert!(false, "error: {:?}", err);
+        }
+    }
+
     // The test still verifies that flushes on writes have occured within the
     // expected timeframe
-    #[cfg(not(target_os = "macos"))]
-    #[test_async]
+    // #[cfg(not(target_os = "macos"))]
+    // #[test_async]
     async fn test_write_records_idle_delay() -> Result<(), StorageError> {
+        //use tracing_subscriber::prelude::*;
+        use tracing::{span, Level};
+        // let fsub = tracing_subscriber::fmt()
+        //     .with_max_level(tracing::Level::DEBUG)
+        //     .with_env_filter("debug")
+        //     .with_test_writer()
+        //     .finish();
+        // fsub.set_default();
+
+        let _ = tracing::subscriber::set_default(
+            tracing_subscriber::fmt()
+                .with_max_level(Level::DEBUG)
+                .with_env_filter("debug")
+                .with_test_writer()
+                .finish(),
+        );
+        // tracing::collect::with_default(fsub || {
+        //     debug!("test me");
+        // });
+        // span start
+        let span = span!(Level::DEBUG, "test_write_records_idle_delay");
+        let _enter = span.enter();
+
         let test_file = temp_dir().join(TEST_FILE_NAMEI);
         ensure_clean_file(&test_file);
 
