@@ -17,6 +17,7 @@
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
 
 #![warn(missing_docs)]
+#![deny(broken_intra_doc_links)]
 
 use std::path::PathBuf;
 

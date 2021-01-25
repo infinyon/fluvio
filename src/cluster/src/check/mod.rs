@@ -354,8 +354,11 @@ impl ClusterCheck for LoadBalancer {
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
-/// It can wait for all checks to run sequentially using [`run`], or spawn a
+/// It can wait for all checks to run sequentially using [`run_wait`], or spawn a
 /// task and receive progress updates about checks using [`run_with_progress`].
+///
+/// [`run_wait`]: ClusterChecker::run_wait
+/// [`run_with_progress`]: ClusterChecker::run_with_progress
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ClusterChecker {
@@ -374,6 +377,8 @@ impl ClusterChecker {
     /// # use fluvio_cluster::ClusterChecker;
     /// let checker: ClusterChecker = ClusterChecker::empty();
     /// ```
+    ///
+    /// [`with_check`]: ClusterChecker::with_check
     pub fn empty() -> Self {
         ClusterChecker { checks: vec![] }
     }
@@ -388,10 +393,10 @@ impl ClusterChecker {
     ///
     /// Note that no checks are run until one of the `run` methods are invoked.
     ///
-    /// - [`run_wait`]
-    /// - [`run_wait_and_fix`]
-    /// - [`run_with_progress`]
-    /// - [`run_and_fix_with_progress`]
+    /// - [`run_wait`](ClusterChecker::run_wait)
+    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
+    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
+    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_preflight_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
@@ -411,10 +416,10 @@ impl ClusterChecker {
     ///
     /// Note that no checks are run until one of the `run` methods are invoked.
     ///
-    /// - [`run_wait`]
-    /// - [`run_wait_and_fix`]
-    /// - [`run_with_progress`]
-    /// - [`run_and_fix_with_progress`]
+    /// - [`run_wait`](ClusterChecker::run_wait)
+    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
+    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
+    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_k8_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
@@ -430,10 +435,10 @@ impl ClusterChecker {
     ///
     /// Note that no checks are run until one of the `run` methods are invoked.
     ///
-    /// - [`run_wait`]
-    /// - [`run_wait_and_fix`]
-    /// - [`run_with_progress`]
-    /// - [`run_and_fix_with_progress`]
+    /// - [`run_wait`](ClusterChecker::run_wait)
+    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
+    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
+    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_local_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(HelmVersion),
@@ -462,6 +467,8 @@ impl ClusterChecker {
     ///     .await;
     /// # }
     /// ```
+    ///
+    /// [`run_with_progress`]: ClusterChecker::run_with_progress
     pub async fn run_wait(&self) -> CheckResults {
         let mut check_results = vec![];
         for check in &self.checks {
@@ -523,7 +530,7 @@ impl ClusterChecker {
     /// updates about checks as they are run.
     ///
     /// If you want to run the checks as a single batch and receive all of the results
-    /// at once, use [`run`] instead.
+    /// at once, use [`run_wait`] instead.
     ///
     /// # Example
     ///
@@ -539,6 +546,8 @@ impl ClusterChecker {
     /// }
     /// # }
     /// ```
+    ///
+    /// [`run_wait`]: ClusterChecker::run_wait
     pub fn run_with_progress(self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
@@ -563,7 +572,9 @@ impl ClusterChecker {
     /// progress updates about checks and fixes as they run.
     ///
     /// If you want to run checks and fixes as a single batch and receive all of
-    /// the results at once, use [`run`] instead.
+    /// the results at once, use [`run_wait`] instead.
+    ///
+    /// [`run_wait`]: ClusterChecker::run_wait
     pub fn run_and_fix_with_progress<F, R>(self, fix: F) -> Receiver<CheckResult>
     where
         F: Fn(RecoverableCheck) -> R + Send + Sync + 'static,
