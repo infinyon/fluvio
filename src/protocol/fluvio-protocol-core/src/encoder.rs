@@ -64,11 +64,11 @@ where
                 "not enough capacity for vec",
             ));
         }
-
-        dest.put_u32(self.len() as u32);
+        let len : i64 = self.len() as i64;
+        len.encode_varint(dest)?;
 
         for ref v in self {
-            v.encode(dest, version)?;
+            v.encode::<T>(dest, version)?;
         }
 
         Ok(())
@@ -122,7 +122,7 @@ where
     V: Encoder,
 {
     fn write_size(&self, version: Version) -> usize {
-        let mut len: usize = (0 as u16).write_size(version);
+        let mut len: usize = (0_u16).write_size(version);
 
         for (key, value) in self.iter() {
             len += key.write_size(version);
@@ -365,49 +365,6 @@ impl Encoder for String {
     }
 }
 
-impl EncoderVarInt for Option<Vec<u8>> {
-    fn var_write_size(&self) -> usize {
-        if self.is_none() {
-            let len: i64 = -1;
-            return variant_size(len);
-        }
-
-        let b_values = self.as_ref().unwrap();
-
-        let len: i64 = b_values.len() as i64;
-        let bytes = variant_size(len);
-
-        bytes + b_values.len()
-    }
-
-    fn encode_varint<T>(&self, dest: &mut T) -> Result<(), Error>
-    where
-        T: BufMut,
-    {
-        if self.is_none() {
-            let len: i64 = -1;
-            variant_encode(dest, len)?;
-            return Ok(());
-        }
-
-        let b_values = self.as_ref().unwrap();
-
-        let len: i64 = b_values.len() as i64;
-        len.encode_varint(dest)?;
-
-        if dest.remaining_mut() < b_values.len() {
-            return Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!("not enough capacity for byte array: {}", b_values.len()),
-            ));
-        }
-
-        dest.put_slice(b_values);
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod test {
 
@@ -415,7 +372,6 @@ mod test {
     use std::io::Error as IoError;
 
     use crate::Encoder;
-    use crate::EncoderVarInt;
     use crate::Version;
 
     #[test]
@@ -568,9 +524,12 @@ mod test {
         let value: Vec<String> = vec![String::from("test")];
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 10);
-        assert_eq!(dest[3], 0x01);
-        assert_eq!(dest[9], 0x74);
+        assert_eq!(dest.len(), 7);
+        assert_eq!(dest[0], 0x02);
+        assert_eq!(dest[3], 't' as u8);
+        assert_eq!(dest[4], 'e' as u8);
+        assert_eq!(dest[5], 's' as u8);
+        assert_eq!(dest[6], 't' as u8);
         assert_eq!(value.write_size(0), 10); // vec len 4: string len: 2, string 4
     }
 
@@ -580,29 +539,11 @@ mod test {
         let value: Vec<u8> = vec![0x10, 0x11];
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 6);
-        assert_eq!(dest[3], 0x02);
-        assert_eq!(dest[5], 0x11);
+        assert_eq!(dest.len(), 3);
+        assert_eq!(dest[0], 0x04);
+        assert_eq!(dest[1], 0x10);
+        assert_eq!(dest[2], 0x11);
         assert_eq!(value.write_size(0), 6);
-    }
-
-    #[test]
-    fn test_varint_encode_array_opton_vec8_none() {
-        let mut dest = vec![];
-        let value: Option<Vec<u8>> = None;
-        let result = value.encode_varint(&mut dest);
-        assert!(result.is_ok());
-        assert_eq!(dest.len(), 1);
-        assert_eq!(dest[0], 0x01);
-    }
-
-    #[test]
-    fn test_varint_encode_array_opton_vec8_simple_array() {
-        let mut dest = vec![];
-        let value: Option<Vec<u8>> = Some(vec![0x64, 0x6f, 0x67]);
-        let result = value.encode_varint(&mut dest);
-        assert!(result.is_ok());
-        assert_eq!(dest.len(), 4);
     }
 
     #[derive(Default)]

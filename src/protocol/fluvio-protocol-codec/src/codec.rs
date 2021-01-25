@@ -27,7 +27,7 @@ impl Decoder for FluvioCodec {
     type Error = IoError;
 
     fn decode(&mut self, bytes: &mut BytesMut) -> Result<Option<BytesMut>, Self::Error> {
-    
+
         let len = bytes.len();
         if len == 0 {
             return Ok(None)
@@ -44,7 +44,7 @@ impl Decoder for FluvioCodec {
                     bytes.len() - (packet_len + 4) as usize
                 );
                 let mut buf = bytes.split_to((packet_len + 4) as usize);
-                let message = buf.split_off(4);   // truncate length  
+                let message = buf.split_off(4);   // truncate length
                 Ok(Some(message))
             } else {
                 trace!(
@@ -119,7 +119,7 @@ mod test {
                 let data: Vec<u8> = vec![0x1, 0x02, 0x03, 0x04, 0x5];
                 // send 2 times in order
                 for _ in 0..2u16  {
-                    
+
                     //  debug!("server encoding original vector with len: {}", data.len());
                     let mut buf = vec![];
                     data.encode(&mut buf, 0)?;
@@ -127,7 +127,7 @@ mod test {
                         "server: writing to client vector encoded len: {}",
                         buf.len()
                     );
-                    assert_eq!(buf.len(), 9); //  4(array len)+ 5 bytes
+                    assert_eq!(buf.len(), 6); //  4(array len)+ 5 bytes
 
                     // write buffer length since encoder doesn't write
                     // need to send out len
@@ -147,7 +147,7 @@ mod test {
                         "server: writing to client vector encoded len: {}",
                         buf.len()
                     );
-                    assert_eq!(buf.len(), 9); //  4(array len)+ 5 bytes
+                    assert_eq!(buf.len(), 6); //  4(array len)+ 5 bytes
 
                     // write buffer length since encoder doesn't write
                     // need to send out len
@@ -163,7 +163,7 @@ mod test {
                     sink.send(Bytes::from(buf2)).await.expect("sending");
 
                 }
-                
+
                 fluvio_future::timer::sleep(time::Duration::from_millis(50)).await;
                 debug!("finishing. terminating server");
                 return Ok(()) as Result<(), Error>;
@@ -185,7 +185,7 @@ mod test {
                     debug!("client :received first value from server");
                     let mut bytes = value.expect("bytes");
                     debug!("client: received bytes len: {}", bytes.len());
-                    assert_eq!(bytes.len(), 9, "total bytes is 9");
+                    assert_eq!(bytes.len(), 6, "total bytes is 6");
                     let mut decoded_values: Vec<u8> = vec![];
                     decoded_values
                         .decode(&mut bytes, 0)

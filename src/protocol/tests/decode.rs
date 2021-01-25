@@ -34,11 +34,10 @@ fn test_decode_record() {
 #[test]
 fn test_decode_recordset() {
     let data = [
-        0x00, 0x00, 0x00, 0x01, // record count
+        0x02, // record count
         0x14, // record length of 7
         0x04, // attributes
     ];
-
     let result = RecordSet::decode_from(&mut Cursor::new(&data), 0);
     assert!(result.is_ok());
     let recordset = result.unwrap();

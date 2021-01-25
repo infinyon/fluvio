@@ -17,7 +17,7 @@ where
 fn test_generic() {
     let record = GenericRecord {
         len: 20,
-        value: 25 as i64,
+        value: 25_i64,
     };
 
     let mut src = vec![];

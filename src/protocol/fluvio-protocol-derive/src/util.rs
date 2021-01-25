@@ -48,7 +48,7 @@ pub(crate) fn find_meta<'a>(meta: &'a Meta, name: &str) -> Option<&'a Meta> {
 }
 
 /// find name value with integer value
-pub(crate) fn find_int_name_value<'a>(version_meta: &'a Meta, attr_name: &str) -> Option<u64> {
+pub(crate) fn find_int_name_value(version_meta: &Meta, attr_name: &str) -> Option<u64> {
     if let Some(attr) = find_name_attribute(&version_meta, attr_name) {
         match &attr.lit {
             Lit::Int(version_val) => {
@@ -63,8 +63,8 @@ pub(crate) fn find_int_name_value<'a>(version_meta: &'a Meta, attr_name: &str) -
 }
 
 /// find name value with str value
-pub(crate) fn find_string_name_value<'a>(
-    version_meta: &'a Meta,
+pub(crate) fn find_string_name_value(
+    version_meta: &Meta,
     attr_name: &str,
 ) -> Option<LitStr> {
     if let Some(attr) = find_name_attribute(&version_meta, attr_name) {

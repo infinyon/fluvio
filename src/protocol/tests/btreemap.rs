@@ -17,7 +17,7 @@ fn test_encode_treemap() -> Result<(), Error> {
     v1.values.insert(5, vec![1]); //  4 (key) + 4 (vec len) + 4  = 12
     let mut src = vec![];
     v1.encode(&mut src, 0)?;
-    assert_eq!(src.len(), 30);
+    assert_eq!(src.len(), 24);
     let v2 = MapHolder::decode_from(&mut Cursor::new(src), 0)?;
     assert_eq!(v2.values.len(), 2);
     let r1 = v2.values.get(&1).unwrap();

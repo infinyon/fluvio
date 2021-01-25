@@ -28,11 +28,11 @@ impl Encoder for Mix {
     {
         match self {
             Mix::A => {
-                let val = 2 as u8;
+                let val = 2_u8;
                 val.encode(src, version)?;
             }
             Mix::C => {
-                let val = 3 as u8;
+                let val = 3_u8;
                 val.encode(src, version)?;
             }
         }
