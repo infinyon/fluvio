@@ -379,9 +379,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5378886be367e1bbaa5b9400e2ed09aaa768a854787d2e2abd5644dec4119d70"
+checksum = "6d06bb9a34769434a029c4c6424b5cf104e6372e619e9da1c49bf5c6ffbfe6b3"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -394,9 +394,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-api"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66bb46225f77d4cfbad80803726d8375610db258212ae84873f70a9458c932df"
+checksum = "4997e09168ef29658b02986e570ac1c483536df2775da134c60c617ba53a7425"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -406,9 +406,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-codec"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b24aefa4cd4fa185411fd093df2b0cb4114f07eb05fea1f5df15659ec62383a"
+checksum = "3aa87d4b153d262a270aa8dea9ef2f816f512ad4decf4c4048e1890ce9c9f26f"
 dependencies = [
  "bytes",
  "fluvio-protocol-core",
@@ -418,9 +418,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-core"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b87eb252268040aa1e9696dbb61fc5b7f61c013db73e8c96e69a5632ad2f6e2"
+checksum = "958c9854d468dc13ad040d9cd7e8174cd9c40c84d29afa1640c0309d78f94666"
 dependencies = [
  "bytes",
  "log",
@@ -428,9 +428,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fa0af14b0a687ffff20252d6bee29f1922f11e695425c0d283bc64187fcadfd"
+checksum = "c1a2bb5eeabcfffd406155caa7dfc1e75367c6dd825c769572815f6300f9c50f"
 dependencies = [
  "log",
  "proc-macro2",
@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -457,7 +457,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.4.4"
+version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-mutex",
