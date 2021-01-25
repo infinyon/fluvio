@@ -38,7 +38,6 @@ pub struct SysConfig {
     #[builder(setter(into))]
     pub namespace: String,
     /// The location at which to find the system chart to install
-    #[builder(private)]
     pub chart_location: ChartLocation,
 }
 
@@ -204,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_config_builder() {
-        let config = SysConfig::builder()
+        let _config = SysConfig::builder()
             .with_namespace("fluvio")
             .with_cloud("minikube")
             .with_local_chart("./helm/fluvio-sys")

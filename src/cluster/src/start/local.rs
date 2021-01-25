@@ -17,12 +17,11 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::{
-    LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, ClusterChecker,
-    ChartLocation, DEFAULT_CHART_REMOTE,
+    LocalInstallError, ClusterError, StartStatus, ClusterChecker, ChartLocation,
+    DEFAULT_CHART_REMOTE, SysConfig,
 };
-use crate::check::{RecoverableCheck, CheckResults};
+use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
-use crate::sys::{SysConfig, SysInstaller};
 use fluvio_command::CommandExt;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
@@ -323,63 +322,68 @@ impl LocalClusterInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let install_sys = self.config.install_sys;
-        let chart_location = self.config.chart_location.clone();
-        let fix = move |err| Self::pre_install_fix(install_sys, chart_location.clone(), err);
+        // let install_sys = self.config.install_sys;
+        // let chart_location = self.config.chart_location.clone();
+        let sys_config: SysConfig = SysConfig::builder()
+            .with_chart_location(self.config.chart_location.clone())
+            .build()
+            .expect("TODO remove");
 
         if self.config.render_checks {
             let mut progress = ClusterChecker::empty()
                 .with_local_checks()
-                .run_and_fix_with_progress(fix);
+                .with_check(SysChartCheck::new(sys_config))
+                .run_and_fix_with_progress();
             render_check_progress(&mut progress).await
         } else {
             ClusterChecker::empty()
                 .with_local_checks()
-                .run_wait_and_fix(fix)
+                .with_check(SysChartCheck::new(sys_config))
+                .run_wait_and_fix()
                 .await
         }
     }
 
-    /// Given a pre-check error, attempt to automatically correct it
-    #[instrument(skip(error))]
-    async fn pre_install_fix(
-        install_sys: bool,
-        sys_chart_location: ChartLocation,
-        error: RecoverableCheck,
-    ) -> Result<(), UnrecoverableCheck> {
-        // Depending on what error occurred, try to fix the error.
-        // If we handle the error successfully, return Ok(()) to indicate success
-        // If we cannot handle this error, return it to bubble up
-        match error {
-            RecoverableCheck::MissingSystemChart if install_sys => {
-                debug!("Fluvio system chart not installed. Attempting to install");
-
-                // Use closure to catch any errors
-                let result = (|| -> Result<_, ClusterError> {
-                    let mut builder = SysConfig::builder();
-                    if let ChartLocation::Local(path) = &sys_chart_location {
-                        builder.with_local_chart(path);
-                    }
-
-                    let config: SysConfig = builder.build()?;
-                    let installer = SysInstaller::with_config(config)?;
-                    installer.install()?;
-                    Ok(())
-                })();
-
-                // If any errors occurred, recovery failed
-                if result.is_err() {
-                    return Err(UnrecoverableCheck::FailedRecovery(error));
-                }
-            }
-            unhandled => {
-                warn!("Pre-install was unable to autofix an error");
-                return Err(UnrecoverableCheck::FailedRecovery(unhandled));
-            }
-        }
-
-        Ok(())
-    }
+    // /// Given a pre-check error, attempt to automatically correct it
+    // #[instrument(skip(error))]
+    // async fn pre_install_fix(
+    //     install_sys: bool,
+    //     sys_chart_location: ChartLocation,
+    //     error: RecoverableCheck,
+    // ) -> Result<(), UnrecoverableCheck> {
+    //     // Depending on what error occurred, try to fix the error.
+    //     // If we handle the error successfully, return Ok(()) to indicate success
+    //     // If we cannot handle this error, return it to bubble up
+    //     match error {
+    //         RecoverableCheck::MissingSystemChart if install_sys => {
+    //             debug!("Fluvio system chart not installed. Attempting to install");
+    //
+    //             // Use closure to catch any errors
+    //             let result = (|| -> Result<_, ClusterError> {
+    //                 let mut builder = SysConfig::builder();
+    //                 if let ChartLocation::Local(path) = &sys_chart_location {
+    //                     builder.with_local_chart(path);
+    //                 }
+    //
+    //                 let config: SysConfig = builder.build()?;
+    //                 let installer = SysInstaller::with_config(config)?;
+    //                 installer.install()?;
+    //                 Ok(())
+    //             })();
+    //
+    //             // If any errors occurred, recovery failed
+    //             if result.is_err() {
+    //                 return Err(UnrecoverableCheck::FailedRecovery(error));
+    //             }
+    //         }
+    //         unhandled => {
+    //             warn!("Pre-install was unable to autofix an error");
+    //             return Err(UnrecoverableCheck::FailedRecovery(unhandled));
+    //         }
+    //     }
+    //
+    //     Ok(())
+    // }
 
     /// Install fluvio locally
     #[instrument(skip(self))]
