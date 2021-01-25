@@ -60,9 +60,11 @@ fn test_type() {
 
 #[test]
 fn test_derive_api_version() {
-    let mut record = TestRequest::default();
-    record.value2 = 10;
-    record.value3 = 5;
+    let record = TestRequest {
+        value2: 10,
+        value3: 5,
+        ..Default::default()
+    };
 
     // version 0 should only encode value
     let mut dest = vec![];
@@ -90,9 +92,10 @@ fn test_api_request() {
 
 #[test]
 fn test_api_getter() {
-    let mut record = TestRequest::default();
-
-    record.value2 = 10;
+    let record = TestRequest {
+        value2: 10,
+        ..Default::default()
+    };
     assert_eq!(record.value2, 10);
 }
 

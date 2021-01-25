@@ -16,8 +16,8 @@ pub struct Child {
 #[test]
 fn test_encode() {
     let mut v1 = Parent::default();
-    let mut child = Child::default();
-    child.flag = true;
+    let child = Child { flag: true };
+
     v1.child = Some(child);
     let mut src = vec![];
     let result = v1.encode(&mut src, 0);
