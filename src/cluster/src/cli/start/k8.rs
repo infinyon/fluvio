@@ -9,7 +9,8 @@ use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
 use crate::check::render::{
-    render_check_statuses, render_statuses_next_steps, render_check_results,
+    render_statuses_next_steps,
+    render_check_results,
     render_results_next_steps,
 };
 
@@ -27,6 +28,7 @@ pub async fn install_core(
         .with_save_profile(!opt.skip_profile_creation)
         .with_tls(client, server)
         .with_chart_values(opt.k8_config.chart_values)
+        .with_render_checks(true)
         .with_upgrade(upgrade);
 
     if skip_sys {
@@ -97,15 +99,14 @@ pub async fn install_core(
             println!("Successfully installed Fluvio!");
         }
         // Successfully performed startup with pre-checks
-        Ok(StartStatus {
-            checks: Some(checks),
-            ..
-        }) => {
-            render_check_statuses(&checks);
+        Ok(StartStatus { checks, .. }) => {
+            if checks.is_none() {
+                println!("Skipped pre-start checks");
+            }
+            println!("Successfully installed Fluvio!");
         }
         // Aborted startup because pre-checks failed
         Err(ClusterError::InstallK8(K8InstallError::FailedPrecheck(check_statuses))) => {
-            render_check_statuses(&check_statuses);
             render_statuses_next_steps(&check_statuses);
         }
         // Another type of error occurred during checking or startup

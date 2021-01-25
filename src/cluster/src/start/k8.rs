@@ -28,6 +28,7 @@ use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, CheckStatus,
     ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE, ChartLocation, SysConfig,
 };
+use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
@@ -96,6 +97,8 @@ pub struct ClusterInstallerBuilder {
     skip_spu_liveness_check: bool,
     /// chart values
     chart_values: Vec<PathBuf>,
+    /// Whether to print check results as they are performed
+    render_checks: bool,
 }
 
 impl ClusterInstallerBuilder {
@@ -520,6 +523,24 @@ impl ClusterInstallerBuilder {
         self.chart_values = values;
         self
     }
+
+    /// Whether to render pre-install checks to stdout as they are performed.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio_cluster::LocalClusterInstaller;
+    /// let installer = LocalClusterInstaller::new()
+    ///     .with_render_checks(true)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn with_render_checks(mut self, render_checks: bool) -> Self {
+        self.render_checks = render_checks;
+        self
+    }
 }
 
 /// Allows installing Fluvio on a Kubernetes cluster
@@ -625,6 +646,7 @@ impl ClusterInstaller {
             use_cluster_ip: false,
             skip_spu_liveness_check: false,
             chart_values: vec![],
+            render_checks: false,
         }
     }
 
@@ -660,67 +682,18 @@ impl ClusterInstaller {
         let mut checker = ClusterChecker::empty()
             .with_k8_checks()
             .with_check(SysChartCheck::new(sys_config));
+
         if !self.config.upgrade {
             checker = checker.with_check(AlreadyInstalled);
         }
-        checker.run_wait_and_fix().await
+
+        if self.config.render_checks {
+            let mut progress = checker.run_and_fix_with_progress();
+            render_check_progress(&mut progress).await
+        } else {
+            checker.run_wait_and_fix().await
+        }
     }
-
-    // async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
-    //     let log_file = File::create("/tmp/tunnel.out")?;
-    //     let error_file = log_file.try_clone()?;
-    //
-    //     // run minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out
-    //     Command::new("minikube")
-    //         .arg("tunnel")
-    //         .stdout(Stdio::from(log_file))
-    //         .stderr(Stdio::from(error_file))
-    //         .spawn()?;
-    //     sleep(Duration::from_millis(DELAY)).await;
-    //     Ok(())
-    // }
-
-    // /// Given a pre-check error, attempt to automatically correct it
-    // #[instrument(skip(self, error))]
-    // pub(crate) async fn pre_install_fix(
-    //     &self,
-    //     error: RecoverableCheck,
-    // ) -> Result<(), UnrecoverableCheck> {
-    //     // Depending on what error occurred, try to fix the error.
-    //     // If we handle the error successfully, return Ok(()) to indicate success
-    //     // If we cannot handle this error, wrap it in UnrecoverableCheck::FailedRecovery
-    //     match error {
-    //         RecoverableCheck::MissingSystemChart if self.config.install_sys => {
-    //             println!("Fluvio system chart not installed. Attempting to install");
-    //
-    //             // Use closure to catch errors
-    //             let result = (|| -> Result<(), SysInstallError> {
-    //                 let config: SysConfig = SysConfig::builder()
-    //                     .with_namespace(&self.config.namespace)
-    //                     .with_cloud(&self.config.cloud)
-    //                     .build()?;
-    //                 let sys_installer = SysInstaller::with_config(config)?;
-    //                 sys_installer.install()?;
-    //                 Ok(())
-    //             })();
-    //             result.map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
-    //         }
-    //         RecoverableCheck::MinikubeTunnelNotFoundRetry => {
-    //             println!(
-    //                 "Load balancer service is not available, trying to bring up minikube tunnel"
-    //             );
-    //             self._try_minikube_tunnel()
-    //                 .await
-    //                 .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
-    //         }
-    //         unhandled => {
-    //             warn!("Pre-install was unable to autofix an error");
-    //             return Err(UnrecoverableCheck::FailedRecovery(unhandled));
-    //         }
-    //     }
-    //
-    //     Ok(())
-    // }
 
     /// Installs Fluvio according to the installer's configuration
     ///
