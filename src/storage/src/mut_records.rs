@@ -508,6 +508,7 @@ mod tests {
         let _ = tracing_subscriber::fmt()
             .with_max_level(Level::DEBUG)
             .with_env_filter(EnvFilter::from_default_env().add_directive(Level::DEBUG.into()))
+            .with_test_writer()
             .try_init();
 
         let span = span!(Level::DEBUG, "test_write_records_idle_delay");
@@ -543,7 +544,6 @@ mod tests {
 
         #[cfg(target_os = "macos")]
         const TEST_F_MARGIN: u32 = 500;
-
 
         let options = ConfigOption {
             base_dir: temp_dir(),
