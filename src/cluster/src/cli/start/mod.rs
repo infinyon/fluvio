@@ -5,6 +5,7 @@ use structopt::StructOpt;
 
 mod local;
 mod k8;
+mod sys;
 mod tls;
 
 use crate::cli::ClusterCliError;
@@ -153,10 +154,9 @@ pub struct StartOpt {
 
 impl StartOpt {
     pub async fn process(self, upgrade: bool, skip_sys: bool) -> Result<(), ClusterCliError> {
-        use k8::install_sys;
         use k8::install_core;
         use k8::run_setup;
-
+        use sys::install_sys;
         use local::{install_local, run_local_setup};
 
         if self.sys {

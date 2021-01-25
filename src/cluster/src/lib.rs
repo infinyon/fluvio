@@ -18,10 +18,13 @@
 
 #![warn(missing_docs)]
 
+use std::path::PathBuf;
+
 mod check;
 mod start;
 mod delete;
 mod error;
+mod sys;
 
 /// extensions
 #[cfg(feature = "cli")]
@@ -36,6 +39,7 @@ pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
+pub use sys::{SysConfig, SysConfigBuilder, SysInstaller};
 
 #[cfg(feature = "platform")]
 const VERSION: &str = include_str!("../../../VERSION");
@@ -47,6 +51,7 @@ pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
 pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
 pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
+pub(crate) const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 
 /// The result of a successful startup of a Fluvio cluster
 ///
@@ -74,4 +79,13 @@ impl StartStatus {
     pub fn port(&self) -> u16 {
         self.port
     }
+}
+
+/// Distinguishes between a Local and Remote helm chart
+#[derive(Debug, Clone)]
+pub enum ChartLocation {
+    /// Local charts must be located at a valid filesystem path.
+    Local(PathBuf),
+    /// Remote charts will be located at a URL such as `https://...`
+    Remote(String),
 }

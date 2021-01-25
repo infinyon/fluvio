@@ -17,13 +17,12 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::{
-    LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, DEFAULT_NAMESPACE,
-    ClusterChecker,
+    LocalInstallError, ClusterError, UnrecoverableCheck, StartStatus, ClusterChecker,
+    ChartLocation, DEFAULT_CHART_REMOTE,
 };
 use crate::check::{RecoverableCheck, CheckResults};
-use crate::start::k8::ClusterInstaller;
-use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
 use crate::check::render::render_check_progress;
+use crate::sys::{SysConfig, SysInstaller};
 use fluvio_command::CommandExt;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
@@ -269,8 +268,8 @@ impl LocalClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// # use fluvio_cluster::LocalClusterInstaller;
+    /// let installer = LocalClusterInstaller::new()
     ///     .with_render_checks(true)
     ///     .build()
     ///     .unwrap();
@@ -345,7 +344,7 @@ impl LocalClusterInstaller {
     #[instrument(skip(error))]
     async fn pre_install_fix(
         install_sys: bool,
-        chart_location: ChartLocation,
+        sys_chart_location: ChartLocation,
         error: RecoverableCheck,
     ) -> Result<(), UnrecoverableCheck> {
         // Depending on what error occurred, try to fix the error.
@@ -357,14 +356,14 @@ impl LocalClusterInstaller {
 
                 // Use closure to catch any errors
                 let result = (|| -> Result<_, ClusterError> {
-                    let mut builder = ClusterInstaller::new().with_namespace(DEFAULT_NAMESPACE);
-
-                    if let ChartLocation::Local(chart) = &chart_location {
-                        builder = builder.with_local_chart(chart);
+                    let mut builder = SysConfig::builder();
+                    if let ChartLocation::Local(path) = &sys_chart_location {
+                        builder.with_local_chart(path);
                     }
 
-                    let installer = builder.build()?;
-                    installer._install_sys()?;
+                    let config: SysConfig = builder.build()?;
+                    let installer = SysInstaller::with_config(config)?;
+                    installer.install()?;
                     Ok(())
                 })();
 

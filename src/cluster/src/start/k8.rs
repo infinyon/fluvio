@@ -23,20 +23,18 @@ use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{ServiceSpec, TargetPort};
 
-use crate::helm::{HelmClient, Chart, InstalledChart};
+use crate::helm::{HelmClient, Chart};
 use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults, AlreadyInstalled};
-use crate::error::K8InstallError;
+use crate::error::{K8InstallError, SysInstallError};
 use crate::{
-    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
-    CheckStatus, ClusterChecker, CheckStatuses,
+    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, CheckStatus,
+    ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE, ChartLocation,
 };
-use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
+use crate::sys::{SysConfig, SysInstaller};
 use fluvio_command::CommandExt;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
-const DEFAULT_SYS_NAME: &str = "fluvio-sys";
-const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
@@ -641,13 +639,6 @@ impl ClusterInstaller {
         Ok(versions)
     }
 
-    /// Get installed system chart
-    pub fn sys_charts() -> Result<Vec<InstalledChart>, K8InstallError> {
-        let helm_client = HelmClient::new()?;
-        let sys_charts = helm_client.get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)?;
-        Ok(sys_charts)
-    }
-
     /// Checks if all of the prerequisites for installing Fluvio are met
     ///
     /// This will attempt to automatically fix any missing prerequisites,
@@ -695,8 +686,18 @@ impl ClusterInstaller {
         match error {
             RecoverableCheck::MissingSystemChart if self.config.install_sys => {
                 println!("Fluvio system chart not installed. Attempting to install");
-                self._install_sys()
-                    .map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
+
+                // Use closure to catch errors
+                let result = (|| -> Result<(), SysInstallError> {
+                    let config: SysConfig = SysConfig::builder()
+                        .with_namespace(&self.config.namespace)
+                        .with_cloud(&self.config.cloud)
+                        .build()?;
+                    let sys_installer = SysInstaller::with_config(config)?;
+                    sys_installer.install()?;
+                    Ok(())
+                })();
+                result.map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
             }
             RecoverableCheck::MinikubeTunnelNotFoundRetry => {
                 println!(
@@ -801,56 +802,6 @@ impl ClusterInstaller {
             port,
             checks,
         })
-    }
-
-    /// Install the Fluvio System chart on the configured cluster
-    #[doc(hidden)]
-    #[instrument(skip(self))]
-    pub fn _install_sys(&self) -> Result<(), K8InstallError> {
-        use fluvio_helm::InstallArg;
-
-        let install_settings = vec![("cloud".to_owned(), self.config.cloud.to_owned())];
-        match &self.config.chart_location {
-            ChartLocation::Remote(chart_location) => {
-                debug!(
-                    chart_location = &**chart_location,
-                    "Using remote helm chart:"
-                );
-                self.helm_client
-                    .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
-                self.helm_client.repo_update()?;
-                let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
-                    .namespace(&self.config.namespace)
-                    .opts(install_settings)
-                    .develop();
-                if self.config.upgrade {
-                    self.helm_client.upgrade(&args)?;
-                } else {
-                    self.helm_client.install(&args)?;
-                }
-            }
-            ChartLocation::Local(chart_home) => {
-                let chart_location = chart_home.join(DEFAULT_SYS_NAME);
-                let chart_string = chart_location.to_string_lossy();
-                debug!(
-                    chart_location = chart_string.as_ref(),
-                    "Using local helm chart:"
-                );
-                println!("installing");
-                let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
-                    .namespace(&self.config.namespace)
-                    .develop()
-                    .opts(install_settings);
-                if self.config.upgrade {
-                    self.helm_client.upgrade(&args)?;
-                } else {
-                    self.helm_client.install(&args)?;
-                }
-            }
-        }
-
-        info!("Fluvio sys chart has been installed");
-        Ok(())
     }
 
     /// Install Fluvio Core chart on the configured cluster

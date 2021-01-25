@@ -16,9 +16,19 @@ pub enum ClusterError {
     /// An error occurred while trying to install Fluvio locally
     #[error("Failed to install Fluvio locally")]
     InstallLocal(#[from] LocalInstallError),
+    /// An error occurred while trying to install Fluvio system charts
+    #[error("Failed to install Fluvio system charts")]
+    InstallSys(#[from] SysInstallError),
     /// An error occurred while trying to uninstall Fluvio
     #[error("Failed to uninstall Fluvio")]
     Uninstall(#[from] UninstallError),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum SysInstallError {
+    /// An error occurred while running helm.
+    #[error("Helm client error")]
+    HelmError(#[from] HelmError),
 }
 
 /// Errors that may occur while trying to install Fluvio on Kubernetes
