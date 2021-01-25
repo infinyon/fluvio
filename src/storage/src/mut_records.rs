@@ -543,7 +543,8 @@ mod tests {
         const TEST_F_MARGIN: u32 = 100;
 
         #[cfg(target_os = "macos")]
-        const TEST_F_MARGIN: u32 = 20; //500;
+        const TEST_F_MARGIN: u32 = 10;
+        // const TEST_F_MARGIN: u32 = 500;
 
         let options = ConfigOption {
             base_dir: temp_dir(),
