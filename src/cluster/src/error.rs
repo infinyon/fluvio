@@ -49,8 +49,8 @@ pub enum K8InstallError {
     #[error("Failed to perform one or more pre-checks")]
     PrecheckErrored(CheckResults),
     /// Failed to update Fluvio cluster
-    #[error("Failed to witness expected Fluvio cluster version: {0}")]
-    FailedVersionTimeout(String),
+    #[error("Failed to to upgrade cluster to version {0}")]
+    FailedClusterUpgrade(String),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
     SCServiceTimeout,
