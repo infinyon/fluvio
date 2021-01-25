@@ -538,6 +538,13 @@ mod tests {
         const IDLE_FLUSH: u32 = 500;
         const OFFSET: i64 = 300;
 
+        #[cfg(not(target_os = "macos"))]
+        const TEST_F_MARGIN: u32 = 100;
+
+        #[cfg(target_os = "macos")]
+        const TEST_F_MARGIN: u32 = 500;
+
+
         let options = ConfigOption {
             base_dir: temp_dir(),
             segment_max_bytes: 1000,
@@ -597,7 +604,7 @@ mod tests {
         msg_sink.send(create_batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
 
-        let dur = Duration::from_millis((IDLE_FLUSH + 50).into());
+        let dur = Duration::from_millis((IDLE_FLUSH + TEST_F_MARGIN).into());
         timer::after(dur).await;
         assert_eq!(flush_count + 1, msg_sink.flush_count());
 
