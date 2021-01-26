@@ -4,6 +4,7 @@ use thiserror::Error;
 use fluvio_socket::FlvSocketError;
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
+use semver::Version;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(Error, Debug)]
@@ -36,6 +37,11 @@ pub enum FluvioError {
     },
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
+    #[error("Cluster (with platform version {cluster_version}) is older than the client minimum version {client_minimum_version}")]
+    MinimumPlatformVersion {
+        cluster_version: Version,
+        client_minimum_version: Version,
+    },
     #[error("Unknown error: {0}")]
     Other(String),
 }
