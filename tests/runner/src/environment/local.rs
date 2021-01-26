@@ -3,9 +3,9 @@ use async_trait::async_trait;
 use fluvio_system_util::bin::get_fluvio;
 
 use crate::TestOption;
-use crate::util::CommandUtil;
 
 use super::EnvironmentDriver;
+use fluvio_command::CommandExt;
 
 /// Local Env driver where we should SPU locally
 pub struct LocalEnvDriver {
@@ -23,15 +23,17 @@ impl EnvironmentDriver for LocalEnvDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
         get_fluvio()
-            .expect("fluvio not founded")
+            .expect("fluvio not found")
             .arg("cluster")
             .arg("delete")
             .arg("--local")
-            .inherit();
+            .inherit()
+            .result()
+            .expect("fluvio cluster delete --local should work");
     }
 
     async fn start_cluster(&self) {
-        let mut cmd = get_fluvio().expect("fluvio not founded");
+        let mut cmd = get_fluvio().expect("fluvio not found");
 
         cmd.arg("cluster")
             .arg("start")
@@ -51,6 +53,8 @@ impl EnvironmentDriver for LocalEnvDriver {
             self.set_tls(&self.option, &mut cmd);
         }
 
-        cmd.inherit();
+        cmd.inherit()
+            .result()
+            .expect("fluvio cluster start --local should work");
     }
 }

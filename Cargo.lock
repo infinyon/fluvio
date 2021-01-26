@@ -988,6 +988,7 @@ dependencies = [
  "color-eyre",
  "colored",
  "fluvio",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
@@ -1010,6 +1011,15 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "url",
+]
+
+[[package]]
+name = "fluvio-command"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -1473,6 +1483,7 @@ dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",

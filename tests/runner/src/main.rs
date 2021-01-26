@@ -1,7 +1,6 @@
 mod setup;
 mod cli;
 mod tests;
-mod util;
 mod environment;
 mod tls;
 mod test_runner;

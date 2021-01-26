@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use fluvio_system_util::bin::get_fluvio;
 
 use crate::TestOption;
-use crate::util::CommandUtil;
 use super::EnvironmentDriver;
+use fluvio_command::CommandExt;
 
 pub struct K8EnvironmentDriver {
     option: TestOption,
@@ -20,12 +20,13 @@ impl K8EnvironmentDriver {
 impl EnvironmentDriver for K8EnvironmentDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
-        get_fluvio()
-            .expect("fluvio not founded")
-            .arg("cluster")
-            .arg("delete")
-            .print()
-            .inherit();
+        let mut command = get_fluvio().expect("fluvio not founded");
+        command.arg("cluster").arg("delete");
+        println!("Executing> {}", command.display());
+        command
+            .inherit()
+            .result()
+            .expect("fluvio cluster delete should work");
     }
 
     async fn start_cluster(&self) {
@@ -60,12 +61,12 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             cmd.arg("--skip-checks");
         }
 
-        cmd.print().inherit();
+        println!("Executing> {}", cmd.display());
+        cmd.inherit()
+            .result()
+            .expect("fluvio cluster start should work");
 
         sleep(Duration::from_millis(2000)).await;
-
-        // display sc pod
-        // print_sc_logs();
     }
 }
 

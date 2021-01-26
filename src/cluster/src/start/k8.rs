@@ -16,7 +16,6 @@ use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
-use flv_util::cmd::CommandExt;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
@@ -32,6 +31,7 @@ use crate::{
     CheckStatus, ClusterChecker, CheckStatuses,
 };
 use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
+use fluvio_command::CommandExt;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
@@ -944,7 +944,7 @@ impl ClusterInstaller {
     }
 
     /// Uploads TLS secrets to Kubernetes
-    fn upload_tls_secrets(&self, tls: &TlsConfig) -> Result<(), IoError> {
+    fn upload_tls_secrets(&self, tls: &TlsConfig) -> Result<(), K8InstallError> {
         let paths: Cow<TlsPaths> = match tls {
             TlsConfig::Files(paths) => Cow::Borrowed(paths),
             TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
@@ -1134,7 +1134,7 @@ impl ClusterInstaller {
 
     /// Install server-side TLS by uploading secrets to kubernetes
     #[instrument(skip(self, paths))]
-    fn upload_tls_secrets_from_files(&self, paths: &TlsPaths) -> Result<(), IoError> {
+    fn upload_tls_secrets_from_files(&self, paths: &TlsPaths) -> Result<(), K8InstallError> {
         let ca_cert = paths
             .ca_cert
             .to_str()
@@ -1151,25 +1151,29 @@ impl ClusterInstaller {
         Command::new("kubectl")
             .args(&["delete", "secret", "fluvio-ca", "--ignore-not-found=true"])
             .args(&["--namespace", &self.config.namespace])
-            .inherit();
+            .inherit()
+            .result()?;
 
         Command::new("kubectl")
             .args(&["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
             .args(&["--namespace", &self.config.namespace])
-            .inherit();
+            .inherit()
+            .result()?;
 
         Command::new("kubectl")
             .args(&["create", "secret", "generic", "fluvio-ca"])
             .args(&["--from-file", ca_cert])
             .args(&["--namespace", &self.config.namespace])
-            .inherit();
+            .inherit()
+            .result()?;
 
         Command::new("kubectl")
             .args(&["create", "secret", "tls", "fluvio-tls"])
             .args(&["--cert", server_cert])
             .args(&["--key", server_key])
             .args(&["--namespace", &self.config.namespace])
-            .inherit();
+            .inherit()
+            .result()?;
 
         Ok(())
     }
