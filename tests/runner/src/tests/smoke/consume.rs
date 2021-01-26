@@ -10,8 +10,8 @@ use futures_lite::stream::StreamExt;
 use fluvio_system_util::bin::get_fluvio;
 use fluvio::{Fluvio, Offset, PartitionConsumer};
 use crate::cli::TestOption;
-use crate::util::CommandUtil;
 use super::message::*;
+use fluvio_command::CommandExt;
 
 type Offsets = HashMap<String, i64>;
 
@@ -30,20 +30,18 @@ fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
     for i in 0..replication {
         let topic_name = option.topic_name(i);
         let offset = offsets.get(&topic_name).expect("topic offset");
-        let output = get_fluvio()
-            .expect("fluvio not founded")
+        let mut command = get_fluvio().expect("fluvio not found");
+        command
             .arg("consume")
             .arg(&topic_name)
             .arg("--partition")
             .arg("0")
             .arg("-d")
             .arg("-o")
-            .arg(offset.to_string())
-            .print()
-            .output()
-            .expect("no output");
+            .arg(offset.to_string());
+        println!("Executing> {}", command.display());
+        let output = command.result().expect("fluvio command failed");
 
-        // io::stdout().write_all(&output.stdout).unwrap();
         io::stderr().write_all(&output.stderr).unwrap();
 
         let msg = output.stdout.as_slice();

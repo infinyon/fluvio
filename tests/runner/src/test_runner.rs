@@ -4,7 +4,7 @@ use fluvio_future::timer::sleep;
 use fluvio_system_util::bin::get_fluvio;
 
 use crate::cli::TestOption;
-use crate::util::CommandUtil;
+use fluvio_command::CommandExt;
 
 /// run test
 pub struct TestRunner {
@@ -23,15 +23,20 @@ impl TestRunner {
         for i in 0..replication {
             let topic_name = self.option.topic_name(i);
             println!("creating test topic: <{}>", topic_name);
-            get_fluvio()
-                .expect("fluvio not founded")
+            let mut command = get_fluvio().expect("fluvio not founded");
+            command
                 .arg("topic")
                 .arg("create")
                 .arg(&topic_name)
                 .arg("--replication")
-                .arg(self.option.replication().to_string())
-                .rust_log(self.option.client_log.as_deref())
-                .wait_and_check();
+                .arg(self.option.replication().to_string());
+            if let Some(log) = &self.option.client_log {
+                command.env("RUST_LOG", log);
+            }
+
+            let _output = command
+                .result()
+                .expect("fluvio topic create should succeed");
         }
     }
 

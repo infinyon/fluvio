@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use log::info;
 
-use fluvio::{Fluvio, TopicProducer};
-
 use crate::TestOption;
 use super::message::*;
+use fluvio::{Fluvio, TopicProducer};
+use fluvio_command::CommandExt;
 
 type Offsets = HashMap<String, i64>;
 
@@ -131,16 +131,12 @@ pub async fn produce_message_with_api(offsets: Offsets, option: TestOption) {
 }
 
 mod cli {
+    use super::*;
 
     use std::io::Write;
     use std::process::Stdio;
-
-    use fluvio_system_util::bin::get_fluvio;
-
     use crate::cli::TestOption;
-    use crate::util::CommandUtil;
-
-    use super::*;
+    use fluvio_system_util::bin::get_fluvio;
 
     pub async fn produce_message_with_cli(option: &TestOption, offsets: Offsets) {
         println!("starting produce");
@@ -175,15 +171,13 @@ mod cli {
             topic_name, base_offset
         );
 
-        let mut child = get_fluvio()
-            .expect("no fluvio")
-            .rust_log(option.client_log.as_deref())
-            .stdin(Stdio::piped())
-            .arg("produce")
-            .arg(topic_name)
-            .print()
-            .spawn()
-            .expect("no child");
+        let mut child = get_fluvio().expect("no fluvio");
+        if let Some(log) = &option.client_log {
+            child.env("RUST_LOG", log);
+        }
+        child.stdin(Stdio::piped()).arg("produce").arg(topic_name);
+        println!("Executing: {}", child.display());
+        let mut child = child.spawn().expect("no child");
 
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
         let msg = generate_message(base_offset, topic_name, option);
