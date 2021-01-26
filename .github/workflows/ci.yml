@@ -198,7 +198,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
-      FLV_CMD: true
+      FLUVIO_CMD: true
       FLV_SOCKET_WAIT:  600 
 
     steps:
@@ -289,7 +289,7 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_CMD: true
+      FLUVIO_CMD: true
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
@@ -343,7 +343,7 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLV_CMD:  true 
+      FLUVIO_CMD:  true 
       FLV_SOCKET_WAIT:  600 
     steps:
       - uses: actions/checkout@v2
