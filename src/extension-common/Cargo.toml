@@ -28,4 +28,4 @@ futures-lite = { version = "1.7.0" }
 thiserror = "1.0.20"
 
 
-fluvio = { version = "0.3.0", path = "../client",  optional = true }
+fluvio = { version = "0.4.0", path = "../client",  optional = true }

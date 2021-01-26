@@ -157,12 +157,11 @@ async fn consume() -> Result<(), FluvioError> {
     let mut stream = consumer.stream(Offset::beginning()).await?;
 
     while let Some(Ok(record)) = stream.next().await {
-        if let Some(bytes) = record.try_into_bytes() {
-            let string = String::from_utf8_lossy(&bytes);
-            println!("Got record: {}", string);
-            if string == "Done!" {
-                return Ok(());
-            }
+        let bytes = record.as_ref();
+        let string = String::from_utf8_lossy(&bytes);
+        println!("Got record: {}", string);
+        if string == "Done!" {
+            return Ok(());
         }
     }
 

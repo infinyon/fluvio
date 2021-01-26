@@ -1,10 +1,13 @@
 # Release Notes
 
+## Client 0.40
+* Added `bytes` and `bytes_ref` for `Record` and removing `try_into_bytes` ([#706](https://github.com/infinyon/fluvio/pull/706))
+
 ## Version 0.6.1 - 2020-1-16
 
 ## Bug Fixes
 * Restore Ok ([#675](https://github.com/infinyon/fluvio/pull/675))
-  
+
 ## Client
 * Expose Consumer Record ([#687](https://github.com/infinyon/fluvio/pull/687))
 
@@ -27,7 +30,7 @@
 ## Client
 * API Docs
 * Stream based Fetch
-  
+
 ## Platform
 * Cluster Installer with API and CLI support
 * Support for Installing in Minikube without workaround

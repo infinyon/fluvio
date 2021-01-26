@@ -47,7 +47,7 @@ tempdir = "0.3.7"
 k8-config = { version = "1.3.0" }
 k8-client = { version = "5.0.0" }
 fluvio-future = { version = "0.1.8", features = ["fs", "io", "subscriber"] }
-fluvio = { version = "0.3.0", path = "../client", default-features = false }
+fluvio = { version = "0.4.0", path = "../client", default-features = false }
 fluvio-cluster = { version = "0.6.0", path = "../cluster", default-features = false, features = ["cli", "platform"] }
 fluvio-package-index = { version = "0.2.0", path = "../package-index" }
 fluvio-extension-consumer = { version = "0.1.2", path = "../extension-consumer" }

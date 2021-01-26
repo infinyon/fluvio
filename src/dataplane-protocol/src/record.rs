@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::io::Error;
 use std::io::ErrorKind;
+use std::sync::Arc;
 
 use content_inspector::{inspect, ContentType};
 use log::{trace, warn};
@@ -41,147 +42,133 @@ pub trait AsyncBuffer {
 pub trait Records {}
 
 #[derive(Default)]
-pub struct DefaultAsyncBuffer(Option<Vec<u8>>);
+pub struct DefaultAsyncBuffer(Arc<Vec<u8>>);
 
 impl DefaultAsyncBuffer {
-    pub fn new(val: Option<Vec<u8>>) -> Self {
-        DefaultAsyncBuffer(val)
+    pub fn new<T>(val: T) -> Self
+    where
+        T: Into<Arc<Vec<u8>>>,
+    {
+        DefaultAsyncBuffer(val.into())
     }
 
-    pub fn inner_value(self) -> Option<Vec<u8>> {
-        self.0
+    /*
+    pub fn inner_value(self) -> Vec<u8> {
+        *self.0.clone()
     }
-
-    pub fn inner_value_ref(&self) -> &Option<Vec<u8>> {
-        &self.0
-    }
+    */
 
     pub fn len(&self) -> usize {
-        if self.0.is_some() {
-            self.0.as_ref().unwrap().len()
-        } else {
-            0
-        }
+        self.0.len()
     }
 
     /// Check if value is binary content
     pub fn is_binary(&self) -> bool {
-        if let Some(value) = self.inner_value_ref() {
-            matches!(inspect(value), ContentType::BINARY)
-        } else {
-            false
-        }
+        matches!(inspect(&self.0), ContentType::BINARY)
     }
 
     /// Describe value - return text, binary, or 0 bytes
     pub fn describe(&self) -> String {
-        if self.inner_value_ref().is_some() {
-            if self.is_binary() {
-                format!("binary: ({} bytes)", self.len())
-            } else {
-                format!("text: '{}'", self)
-            }
+        if self.is_binary() {
+            format!("binary: ({} bytes)", self.len())
         } else {
-            "empty: (0 bytes)".to_string()
+            format!("text: '{}'", self)
         }
+    }
+}
+
+impl AsRef<[u8]> for DefaultAsyncBuffer {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
     }
 }
 
 impl AsyncBuffer for DefaultAsyncBuffer {
     fn len(&self) -> usize {
-        match self.0 {
-            Some(ref val) => val.len(),
-            None => 0,
-        }
+        self.len()
     }
 }
 
 impl Debug for DefaultAsyncBuffer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.0 {
-            Some(ref value) => {
-                // we assume content is text if it is not binary
-                if matches!(inspect(value), ContentType::BINARY) {
-                    write!(f, "values binary: ({} bytes)", self.len())
-                } else if value.len() < *MAX_STRING_DISPLAY {
-                    write!(f, "{}", String::from_utf8_lossy(value))
-                } else {
-                    write!(
-                        f,
-                        "{}...",
-                        String::from_utf8_lossy(&value[0..*MAX_STRING_DISPLAY])
-                    )
-                }
-            }
-            None => write!(f, "no values"),
+        let value = &self.0;
+        if matches!(inspect(value), ContentType::BINARY) {
+            write!(f, "values binary: ({} bytes)", self.len())
+        } else if value.len() < *MAX_STRING_DISPLAY {
+            write!(f, "{}", String::from_utf8_lossy(value))
+        } else {
+            write!(
+                f,
+                "{}...",
+                String::from_utf8_lossy(&value[0..*MAX_STRING_DISPLAY])
+            )
         }
     }
 }
 
 impl Display for DefaultAsyncBuffer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.0 {
-            Some(ref value) => {
-                if matches!(inspect(value), ContentType::BINARY) {
-                    write!(f, "binary: ({} bytes)", self.len())
-                } else if value.len() < *MAX_STRING_DISPLAY {
-                    write!(f, "{}", String::from_utf8_lossy(value))
-                } else {
-                    write!(
-                        f,
-                        "{}...",
-                        String::from_utf8_lossy(&value[0..*MAX_STRING_DISPLAY])
-                    )
-                }
-            }
-            None => write!(f, ""),
+        let value = &self.0;
+        if matches!(inspect(value), ContentType::BINARY) {
+            write!(f, "binary: ({} bytes)", self.len())
+        } else if value.len() < *MAX_STRING_DISPLAY {
+            write!(f, "{}", String::from_utf8_lossy(value))
+        } else {
+            write!(
+                f,
+                "{}...",
+                String::from_utf8_lossy(&value[0..*MAX_STRING_DISPLAY])
+            )
         }
     }
 }
 
 impl From<String> for DefaultAsyncBuffer {
     fn from(value: String) -> Self {
-        Self(Some(value.into_bytes()))
+        Self::new(value.into_bytes())
     }
 }
 
 impl From<Vec<u8>> for DefaultAsyncBuffer {
     fn from(value: Vec<u8>) -> Self {
-        Self(Some(value))
+        Self::new(value)
     }
 }
 
 impl<'a> From<&'a [u8]> for DefaultAsyncBuffer {
     fn from(bytes: &'a [u8]) -> Self {
         let value = bytes.to_owned();
-        Self(Some(value))
+        Self::new(value)
     }
 }
 
 impl Encoder for DefaultAsyncBuffer {
-    fn write_size(&self, _version: Version) -> usize {
-        self.0.var_write_size()
+    fn write_size(&self, version: Version) -> usize {
+        self.0.write_size(version)
     }
 
-    fn encode<T>(&self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn encode<T>(&self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: BufMut,
     {
-        self.0.encode_varint(src)?;
-
-        Ok(())
+        self.0.encode(src, version)
     }
 }
 
 impl Decoder for DefaultAsyncBuffer {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         trace!("decoding default asyncbuffer");
-        self.0.decode_varint(src)?;
-        trace!("value: {:#?}", self);
-        Ok(())
+        if let Some(ref mut buffer) = Arc::get_mut(&mut self.0) {
+            buffer.decode(src, version)
+        } else {
+            Err(Error::new(
+                ErrorKind::Other,
+                "Can't decode buffer while cloning".to_string(),
+            ))
+        }
     }
 }
 
@@ -446,25 +433,24 @@ mod test {
 
     #[test]
     fn test_decode_encode_record() -> Result<(), IoError> {
-        let data = [
-            0x14, // record length of 10
-            0x00, // attributes
-            0xea, 0x0e, // timestamp
-            0x02, // offset delta, 1
-            0x01, // key
-            0x06, 0x64, 0x6f, 0x67, // value, 3 bytes len (dog)
-            0x00, // 0 header
-        ];
+        /*
+         * Below is how you generate the vec<u8> for the `data` varible below.
+        let mut record = DefaultRecord::from(String::from("dog"));
+        record.preamble.set_offset_delta(1);
+        let mut out = vec![];
+        record.encode(&mut out, 0)?;
+        println!("ENCODED: {:#x?}", out);
+        */
+        let data: Vec<u8> = vec![0x12, 0x0, 0x0, 0x2, 0x0, 0x6, 0x64, 0x6f, 0x67, 0x0];
 
         let record = DefaultRecord::decode_from(&mut Cursor::new(&data), 0)?;
         assert_eq!(record.as_bytes(0)?.len(), data.len());
 
         assert_eq!(record.write_size(0), data.len());
+        println!("offset_delta: {:?}", record.get_offset_delta());
         assert_eq!(record.get_offset_delta(), 1);
-        assert!(record.key.inner_value().is_none());
-        let val = record.value.inner_value();
-        assert!(val.is_some());
-        let value = val.unwrap();
+
+        let value = record.value.as_ref();
         assert_eq!(value.len(), 3);
         assert_eq!(value[0], 0x64);
 

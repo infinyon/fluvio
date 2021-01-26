@@ -92,15 +92,14 @@ pub fn partition_to_json_records(
     // convert all batches to json records
     for batch in &partition.records.batches {
         for record in &batch.records {
-            if let Some(batch_record) = record.get_value().inner_value_ref() {
-                match serde_json::from_slice(&batch_record) {
-                    Ok(value) => json_records.push(value),
-                    Err(_) => {
-                        if !suppress {
-                            json_records.push(serde_json::json!({
-                                "error": record.get_value().describe()
-                            }));
-                        }
+            let batch_record = record.get_value().as_ref();
+            match serde_json::from_slice(&batch_record) {
+                Ok(value) => json_records.push(value),
+                Err(_) => {
+                    if !suppress {
+                        json_records.push(serde_json::json!({
+                            "error": record.get_value().describe()
+                        }));
                     }
                 }
             }
@@ -141,14 +140,12 @@ pub fn print_text_records<O>(
 
         for batch in &r_partition.records.batches {
             for record in &batch.records {
-                if record.get_value().inner_value_ref().is_some() {
-                    if record.get_value().is_binary() {
-                        if !suppress {
-                            t_println!(out, "{}", record.get_value().describe());
-                        }
-                    } else {
-                        t_println!(out, "{}", record.get_value());
+                if record.get_value().is_binary() {
+                    if !suppress {
+                        t_println!(out, "{}", record.get_value().describe());
                     }
+                } else {
+                    t_println!(out, "{}", record.get_value());
                 }
             }
         }
@@ -183,11 +180,10 @@ pub fn print_binary_records<O>(
 
         for batch in &r_partition.records.batches {
             for record in &batch.records {
-                if let Some(batch_record) = record.get_value().inner_value_ref() {
-                    t_println!(out, "{}", hex_dump_separator());
-                    t_println!(out, "{}", bytes_to_hex_dump(&batch_record));
-                    printed = true;
-                }
+                let batch_record = record.get_value().as_ref();
+                t_println!(out, "{}", hex_dump_separator());
+                t_println!(out, "{}", bytes_to_hex_dump(&batch_record));
+                printed = true;
             }
         }
     }
@@ -216,18 +212,16 @@ pub fn print_dynamic_records<O>(
 
         for batch in &r_partition.records.batches {
             for record in &batch.records {
-                if let Some(batch_record) = record.get_value().inner_value_ref() {
-                    // TODO: this should be refactored
-                    if let Some(bytes) = record.get_value().inner_value_ref() {
-                        debug!("len: {}", bytes.len());
-                    }
-                    if record.get_value().is_binary() {
-                        t_println!(out, "{}", hex_dump_separator());
-                        t_println!(out, "{}", bytes_to_hex_dump(&batch_record));
-                        t_println!(out, "{}", hex_dump_separator());
-                    } else {
-                        t_println!(out, "{}", record.get_value());
-                    }
+                let batch_record = record.get_value().as_ref();
+                // TODO: this should be refactored
+                let bytes = record.get_value().as_ref();
+                debug!("len: {}", bytes.len());
+                if record.get_value().is_binary() {
+                    t_println!(out, "{}", hex_dump_separator());
+                    t_println!(out, "{}", bytes_to_hex_dump(&batch_record));
+                    t_println!(out, "{}", hex_dump_separator());
+                } else {
+                    t_println!(out, "{}", record.get_value());
                 }
             }
         }
@@ -254,10 +248,9 @@ pub fn print_raw_records<O>(
 
         for batch in &r_partition.records.batches {
             for record in &batch.records {
-                if let Some(value) = record.get_value().inner_value_ref() {
-                    let str_value = std::str::from_utf8(value).unwrap();
-                    t_println!(out, "{}", str_value);
-                }
+                let value = record.get_value().as_ref();
+                let str_value = std::str::from_utf8(value).unwrap();
+                t_println!(out, "{}", str_value);
             }
         }
     }
