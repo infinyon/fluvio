@@ -11,6 +11,7 @@ mod releases;
 mod error;
 
 use start::StartOpt;
+use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
 use releases::ReleasesCmd;
@@ -50,6 +51,10 @@ pub enum ClusterCmd {
     /// Start a Fluvio cluster, locally or on Minikube
     #[structopt(name = "start")]
     Start(Box<StartOpt>),
+
+    /// Upgrades an already-started Fluvio cluster
+    #[structopt(name = "upgrade")]
+    Upgrade(Box<UpgradeOpt>),
 
     /// Delete a Fluvio cluster from the local machine or Minikube
     #[structopt(name = "delete")]
@@ -92,7 +97,10 @@ impl ClusterCmd {
     ) -> Result<(), ClusterCliError> {
         match self {
             Self::Start(start) => {
-                start.process().await?;
+                start.process(false, false).await?;
+            }
+            Self::Upgrade(upgrade) => {
+                upgrade.process().await?;
             }
             Self::Delete(uninstall) => {
                 uninstall.process().await?;

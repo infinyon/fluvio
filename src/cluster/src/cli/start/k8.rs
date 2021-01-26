@@ -13,7 +13,11 @@ use crate::check::render::{
     render_results_next_steps,
 };
 
-pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
+pub async fn install_core(
+    opt: StartOpt,
+    upgrade: bool,
+    skip_sys: bool,
+) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterInstaller::new()
@@ -22,7 +26,12 @@ pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
         .with_spu_replicas(opt.spu)
         .with_save_profile(!opt.skip_profile_creation)
         .with_tls(client, server)
-        .with_chart_values(opt.k8_config.chart_values);
+        .with_chart_values(opt.k8_config.chart_values)
+        .with_upgrade(upgrade);
+
+    if skip_sys {
+        builder = builder.with_system_chart(false);
+    }
 
     match opt.k8_config.image_version {
         // If an image tag is given, use it
@@ -106,8 +115,10 @@ pub async fn install_core(opt: StartOpt) -> Result<(), ClusterCliError> {
     Ok(())
 }
 
-pub fn install_sys(opt: StartOpt) -> Result<(), ClusterCliError> {
-    let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
+pub fn install_sys(opt: StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {
+    let mut builder = ClusterInstaller::new()
+        .with_namespace(opt.k8_config.namespace)
+        .with_upgrade(upgrade);
 
     match opt.k8_config.chart_location {
         // If a chart location is given, use it

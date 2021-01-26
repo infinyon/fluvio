@@ -152,7 +152,7 @@ pub struct StartOpt {
 }
 
 impl StartOpt {
-    pub async fn process(self) -> Result<(), ClusterCliError> {
+    pub async fn process(self, upgrade: bool, skip_sys: bool) -> Result<(), ClusterCliError> {
         use k8::install_sys;
         use k8::install_core;
         use k8::run_setup;
@@ -160,7 +160,7 @@ impl StartOpt {
         use local::{install_local, run_local_setup};
 
         if self.sys {
-            install_sys(self)?;
+            install_sys(self, upgrade)?;
         } else if self.local {
             if self.setup {
                 run_local_setup(self).await?;
@@ -170,9 +170,25 @@ impl StartOpt {
         } else if self.setup {
             run_setup(self).await?;
         } else {
-            install_core(self).await?;
+            install_core(self, upgrade, skip_sys).await?;
         }
 
+        Ok(())
+    }
+}
+
+#[derive(Debug, StructOpt)]
+pub struct UpgradeOpt {
+    #[structopt(flatten)]
+    start: StartOpt,
+    /// Whether to skip upgrading the sys chart
+    #[structopt(long)]
+    skip_sys: bool,
+}
+
+impl UpgradeOpt {
+    pub async fn process(self) -> Result<(), ClusterCliError> {
+        self.start.process(true, self.skip_sys).await?;
         Ok(())
     }
 }

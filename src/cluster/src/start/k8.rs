@@ -24,7 +24,7 @@ use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{ServiceSpec, TargetPort};
 
 use crate::helm::{HelmClient, Chart, InstalledChart};
-use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults};
+use crate::check::{UnrecoverableCheck, CheckFailed, RecoverableCheck, CheckResults, AlreadyInstalled};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO,
@@ -80,6 +80,8 @@ pub struct ClusterInstallerBuilder {
     install_sys: bool,
     /// Whether to update the `kubectl` context
     update_context: bool,
+    /// Whether to upgrade an existing installation
+    upgrade: bool,
     /// How much storage to allocate on SPUs
     spu_spec: SpuGroupSpec,
     /// The logging settings to set in the cluster
@@ -366,6 +368,12 @@ impl ClusterInstallerBuilder {
         self
     }
 
+    /// Whether to upgrade an existing installation
+    pub fn with_upgrade(mut self, upgrade: bool) -> Self {
+        self.upgrade = upgrade;
+        self
+    }
+
     /// Sets the number of SPU replicas that should be provisioned. Defaults to 1.
     ///
     /// # Example
@@ -611,6 +619,7 @@ impl ClusterInstaller {
             save_profile: false,
             install_sys: true,
             update_context: false,
+            upgrade: false,
             spu_spec,
             rust_log: None,
             server_tls_policy: TlsPolicy::Disabled,
@@ -653,10 +662,11 @@ impl ClusterInstaller {
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
         let fix = |err| self.pre_install_fix(err);
-        ClusterChecker::empty()
-            .with_k8_checks()
-            .run_wait_and_fix(fix)
-            .await
+        let mut checker = ClusterChecker::empty().with_k8_checks();
+        if !self.config.upgrade {
+            checker = checker.with_check(Box::new(AlreadyInstalled));
+        }
+        checker.run_wait_and_fix(fix).await
     }
 
     async fn _try_minikube_tunnel(&self) -> Result<(), K8InstallError> {
@@ -764,21 +774,26 @@ impl ClusterInstaller {
             self.update_profile(address.clone())?;
         }
 
-        if self.config.spu_spec.replicas > 0 {
+        let cluster =
+            FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
+
+        if self.config.spu_spec.replicas > 0 && !self.config.upgrade {
             debug!("waiting for SC to spin up");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
 
             // Create a managed SPU cluster
-            let cluster =
-                FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
+        }
 
-            // Wait for the SPU cluster to spin up
-            if !self.config.skip_spu_liveness_check {
-                self.wait_for_spu(namespace, self.config.spu_spec.replicas)
-                    .await?;
-            }
+        // When upgrading, wait for platform version to match new version
+        println!("Waiting up to 60 seconds for Fluvio cluster version check...");
+        self.wait_for_fluvio_version(&cluster).await?;
+
+        // Wait for the SPU cluster to spin up
+        if !self.config.skip_spu_liveness_check {
+            self.wait_for_spu(namespace, self.config.spu_spec.replicas)
+                .await?;
         }
 
         Ok(StartStatus {
@@ -804,15 +819,15 @@ impl ClusterInstaller {
                 self.helm_client
                     .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
-                self.helm_client.install(
-                    InstallArg::new(
-                        DEFAULT_CHART_SYS_REPO.to_owned(),
-                        DEFAULT_CHART_SYS_NAME.to_owned(),
-                    )
-                    .namespace(self.config.namespace.to_owned())
+                let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
+                    .namespace(&self.config.namespace)
                     .opts(install_settings)
-                    .develop(),
-                )?;
+                    .develop();
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
             ChartLocation::Local(chart_home) => {
                 let chart_location = chart_home.join(DEFAULT_SYS_NAME);
@@ -822,12 +837,15 @@ impl ClusterInstaller {
                     "Using local helm chart:"
                 );
                 println!("installing");
-                self.helm_client.install(
-                    InstallArg::new(DEFAULT_CHART_SYS_REPO.to_owned(), chart_string.to_string())
-                        .namespace(self.config.namespace.to_owned())
-                        .develop()
-                        .opts(install_settings),
-                )?;
+                let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
+                    .namespace(&self.config.namespace)
+                    .develop()
+                    .opts(install_settings);
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
         }
 
@@ -905,17 +923,17 @@ impl ClusterInstaller {
                     chart_location = &**chart_location,
                     "Using remote helm chart:"
                 );
-                self.helm_client.install(
-                    InstallArg::new(
-                        DEFAULT_CHART_APP_REPO.to_owned(),
-                        self.config.chart_name.to_owned(),
-                    )
-                    .namespace(self.config.namespace.to_owned())
+                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, &self.config.chart_name)
+                    .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
                     .values(self.config.chart_values.clone())
-                    .version(self.config.chart_version.to_owned()),
-                )?;
+                    .version(&self.config.chart_version);
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
             // For local, we do not use a repo but install from the chart location directly.
             ChartLocation::Local(chart_home) => {
@@ -925,17 +943,17 @@ impl ClusterInstaller {
                     chart_location = chart_string.as_ref(),
                     "Using local helm chart:"
                 );
-                self.helm_client.install(
-                    InstallArg::new(
-                        DEFAULT_CHART_APP_REPO.to_owned(),
-                        chart_string.to_owned().to_string(),
-                    )
-                    .namespace(self.config.namespace.to_owned())
+                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, chart_string)
+                    .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
                     .values(self.config.chart_values.clone())
-                    .version(self.config.chart_version.to_owned()),
-                )?;
+                    .version(&self.config.chart_version);
+                if self.config.upgrade {
+                    self.helm_client.upgrade(&args)?;
+                } else {
+                    self.helm_client.install(&args)?;
+                }
             }
         }
 
@@ -1030,6 +1048,34 @@ impl ClusterInstaller {
                 }
             }
         }
+    }
+
+    /// Wait until the platform version of the cluster matches the chart version here
+    #[instrument(skip(self))]
+    async fn wait_for_fluvio_version(&self, config: &FluvioConfig) -> Result<(), K8InstallError> {
+        const ATTEMPTS: u8 = 30;
+        for attempt in 0..ATTEMPTS {
+            let fluvio = match fluvio::Fluvio::connect_with_config(config).await {
+                Ok(fluvio) => fluvio,
+                Err(_) => {
+                    sleep(Duration::from_millis(2_000)).await;
+                    continue;
+                }
+            };
+            let version = fluvio.platform_version();
+            if version.to_string() == self.config.chart_version {
+                // Success
+                break;
+            }
+            if attempt >= ATTEMPTS - 1 {
+                return Err(K8InstallError::FailedClusterUpgrade(
+                    self.config.chart_version.to_string(),
+                ));
+            }
+            sleep(Duration::from_millis(2_000)).await;
+        }
+
+        Ok(())
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
