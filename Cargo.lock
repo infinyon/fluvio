@@ -988,6 +988,7 @@ dependencies = [
  "color-eyre",
  "colored",
  "fluvio",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",

@@ -8,7 +8,6 @@ use fluvio::{FluvioConfig};
 use tracing::{info, warn, debug, instrument};
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio::metadata::spg::SpuGroupSpec;
-use flv_util::cmd::CommandExt;
 use fluvio_future::timer::sleep;
 use fluvio::metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
@@ -25,6 +24,7 @@ use crate::check::{RecoverableCheck, CheckResults};
 use crate::start::k8::ClusterInstaller;
 use crate::start::{ChartLocation, DEFAULT_CHART_REMOTE};
 use crate::check::render::render_check_progress;
+use fluvio_command::CommandExt;
 
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const LOCAL_SC_PORT: u16 = 9003;
@@ -383,6 +383,7 @@ impl LocalClusterInstaller {
     }
 
     /// Install fluvio locally
+    #[instrument(skip(self))]
     pub async fn install(&self) -> Result<StartStatus, ClusterError> {
         let checks = match self.config.skip_checks {
             true => None,
@@ -414,7 +415,10 @@ impl LocalClusterInstaller {
             create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
         }
         // ensure we sync files before we launch servers
-        Command::new("sync").inherit();
+        Command::new("sync")
+            .inherit()
+            .result()
+            .map_err(|e| ClusterError::InstallLocal(e.into()))?;
         info!("launching sc");
         let (address, port) = self.launch_sc()?;
         info!("setting local profile");
@@ -438,6 +442,7 @@ impl LocalClusterInstaller {
     /// Launches an SC on the local machine
     ///
     /// Returns the address of the SC if successful
+    #[instrument(skip(self))]
     fn launch_sc(&self) -> Result<(String, u16), LocalInstallError> {
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
@@ -453,8 +458,9 @@ impl LocalClusterInstaller {
         if let Some(log) = &self.config.rust_log {
             binary.env("RUST_LOG", log);
         }
-        let cmd = binary.print();
-        cmd.stdout(Stdio::from(outputs))
+        debug!("Invoking command: \"{}\"", binary.display());
+        binary
+            .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()?;
 
@@ -551,6 +557,7 @@ impl LocalClusterInstaller {
         Ok(())
     }
 
+    #[instrument(skip(self, client, log_dir))]
     async fn launch_spu(
         &self,
         spu_index: u16,
@@ -616,8 +623,8 @@ impl LocalClusterInstaller {
             .arg("-v")
             .arg(format!("0.0.0.0:{}", private_port))
             .arg("--log-base-dir")
-            .arg(&self.config.data_dir)
-            .print();
+            .arg(&self.config.data_dir);
+        debug!("Invoking command: \"{}\"", cmd.display());
         info!("SPU<{}> cmd: {:#?}", spu_index, cmd);
         info!("SPU log generated at {}", log_spu);
         cmd.stdout(Stdio::from(outputs))
