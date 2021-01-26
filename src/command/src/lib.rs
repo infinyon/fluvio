@@ -2,14 +2,14 @@
 
 #![warn(missing_docs)]
 
-use std::process::Command;
+use std::process::{Command, Output};
 
-/// `Ok(())` when a child process successfully runs and returns exit code `0`.
+/// `Ok(Output)` when a child process successfully runs and returns exit code `0`.
 ///
 /// All other circumstances are regarded as `Err(CommandError)`. This includes
 /// when there is an error invoking a child process, if a child process is
 /// terminated, or if the child process runs and returns a non-zero exit code.
-pub type CommandResult = Result<(), CommandError>;
+pub type CommandResult = Result<Output, CommandError>;
 
 /// An error type describing the kinds of failure a child process may have
 #[derive(thiserror::Error, Debug)]
@@ -64,10 +64,11 @@ pub trait CommandExt {
     /// Returns a result signaling the outcome of executing this command.
     ///
     /// ```
-    /// use std::process::Command;
+    /// use std::process::{Command, Output};
     /// use fluvio_command::{CommandExt, CommandErrorKind};
     ///
-    /// let success = Command::new("true").result().unwrap();
+    /// // On success, we get the stdout and stderr output
+    /// let output: Output = Command::new("true").result().unwrap();
     ///
     /// let error = Command::new("false").result().unwrap_err();
     /// assert!(matches!(error.source, CommandErrorKind::ExitError(1)));
@@ -91,13 +92,13 @@ impl CommandExt for Command {
     }
 
     fn result(&mut self) -> CommandResult {
-        self.status()
+        self.output()
             .map_err(|e| CommandError {
                 command: self.display(),
                 source: CommandErrorKind::IoError(e),
             })
-            .and_then(|status| match status.code() {
-                Some(0i32) => Ok(()),
+            .and_then(|output| match output.status.code() {
+                Some(0i32) => Ok(output),
                 None => Err(CommandError {
                     command: self.display(),
                     source: CommandErrorKind::Terminated,
