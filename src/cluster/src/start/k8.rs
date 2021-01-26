@@ -774,20 +774,21 @@ impl ClusterInstaller {
             self.update_profile(address.clone())?;
         }
 
+        let cluster =
+            FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
+
         if self.config.spu_spec.replicas > 0 && !self.config.upgrade {
             debug!("waiting for SC to spin up");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
 
             // Create a managed SPU cluster
-            let cluster =
-                FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
             self.create_managed_spu_group(&cluster).await?;
         }
 
         // When upgrading, wait for platform version to match new version
         println!("Waiting up to 60 seconds for Fluvio cluster version check...");
-        self.wait_for_fluvio_version().await?;
+        self.wait_for_fluvio_version(&cluster).await?;
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
@@ -1051,10 +1052,10 @@ impl ClusterInstaller {
 
     /// Wait until the platform version of the cluster matches the chart version here
     #[instrument(skip(self))]
-    async fn wait_for_fluvio_version(&self) -> Result<(), K8InstallError> {
+    async fn wait_for_fluvio_version(&self, config: &FluvioConfig) -> Result<(), K8InstallError> {
         const ATTEMPTS: u8 = 30;
         for attempt in 0..ATTEMPTS {
-            let fluvio = match fluvio::Fluvio::connect().await {
+            let fluvio = match fluvio::Fluvio::connect_with_config(config).await {
                 Ok(fluvio) => fluvio,
                 Err(_) => {
                     sleep(Duration::from_millis(2_000)).await;
