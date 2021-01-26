@@ -33,5 +33,5 @@ fn test_encode_recordset() {
     assert!(result.is_ok());
     assert_eq!(src.len(), 3);
     assert_eq!(src[2], 0x0a);
-    assert_eq!(recordset.write_size(0), 6);
+    assert_eq!(recordset.write_size(0), src.len());
 }

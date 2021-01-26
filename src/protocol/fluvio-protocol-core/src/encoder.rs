@@ -51,7 +51,7 @@ where
 {
     fn write_size(&self, version: Version) -> usize {
         self.iter()
-            .fold(4, |sum, val| sum + val.write_size(version))
+            .fold(variant_size(self.len() as i64), |sum, val| sum + val.write_size(version))
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -530,7 +530,7 @@ mod test {
         assert_eq!(dest[4], 'e' as u8);
         assert_eq!(dest[5], 's' as u8);
         assert_eq!(dest[6], 't' as u8);
-        assert_eq!(value.write_size(0), 10); // vec len 4: string len: 2, string 4
+        assert_eq!(value.write_size(0), dest.len()); // vec len 4: string len: 2, string 4
     }
 
     #[test]
@@ -543,7 +543,17 @@ mod test {
         assert_eq!(dest[0], 0x04);
         assert_eq!(dest[1], 0x10);
         assert_eq!(dest[2], 0x11);
-        assert_eq!(value.write_size(0), 6);
+        assert_eq!(value.write_size(0), dest.len());
+    }
+    #[test]
+    fn test_encode_u8_vectors_big() {
+        let mut dest = vec![];
+        let value: Vec<u8> = vec![0x10; 257];
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(dest.len(), 259);
+        assert_eq!(dest[2..259], vec![0x10; 257]);
+        assert_eq!(value.write_size(0), dest.len());
     }
 
     #[derive(Default)]
