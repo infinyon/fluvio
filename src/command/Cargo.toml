@@ -1,10 +1,9 @@
 [package]
 name = "fluvio-command"
 version = "0.1.0"
-authors = ["Nick Mosher <nicholastmosher@gmail.com>"]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+tracing = "0.1.22"
 thiserror = "1.0.23"

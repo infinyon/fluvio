@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 
 use std::process::{Command, Output};
+use tracing::debug;
 
 /// `Ok(Output)` when a child process successfully runs and returns exit code `0`.
 ///
@@ -92,6 +93,13 @@ impl CommandExt for Command {
     }
 
     fn result(&mut self) -> CommandResult {
+        let should_log = std::env::var("FLUVIO_CMD")
+            .map(|it| it.eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
+        if should_log {
+            debug!("Executing> {}", self.display());
+        }
+
         self.output()
             .map_err(|e| CommandError {
                 command: self.display(),
