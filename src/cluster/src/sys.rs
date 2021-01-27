@@ -1,6 +1,9 @@
 use tracing::{info, debug, instrument};
 use derive_builder::Builder;
-use crate::{ChartLocation, DEFAULT_CHART_APP_REPO, DEFAULT_CHART_SYS_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_REMOTE};
+use crate::{
+    ChartLocation, DEFAULT_CHART_APP_REPO, DEFAULT_CHART_SYS_REPO, DEFAULT_NAMESPACE,
+    DEFAULT_CHART_REMOTE,
+};
 use fluvio_helm::{HelmClient, InstallArg};
 use std::path::{Path, PathBuf};
 use crate::error::SysInstallError;
@@ -58,9 +61,17 @@ impl SysConfig {
 impl SysConfigBuilder {
     /// Validates all builder options and constructs a `SysConfig`
     pub fn build(&self) -> Result<SysConfig, SysInstallError> {
-        let cloud = self.cloud.clone().unwrap_or_else(|| DEFAULT_CLOUD_NAME.to_string());
-        let namespace = self.namespace.clone().unwrap_or_else(|| DEFAULT_NAMESPACE.to_string());
-        let chart_location = self.chart_location.clone()
+        let cloud = self
+            .cloud
+            .clone()
+            .unwrap_or_else(|| DEFAULT_CLOUD_NAME.to_string());
+        let namespace = self
+            .namespace
+            .clone()
+            .unwrap_or_else(|| DEFAULT_NAMESPACE.to_string());
+        let chart_location = self
+            .chart_location
+            .clone()
             .unwrap_or_else(|| ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()));
 
         Ok(SysConfig {
@@ -158,8 +169,7 @@ impl SysInstaller {
         settings: Vec<(String, String)>,
     ) -> Result<(), SysInstallError> {
         debug!(?chart, "Using remote helm chart:");
-        self.helm_client
-            .repo_add(DEFAULT_CHART_APP_REPO, chart)?;
+        self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart)?;
         self.helm_client.repo_update()?;
         let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
             .namespace(&self.config.namespace)
