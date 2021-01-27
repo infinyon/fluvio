@@ -21,7 +21,10 @@ use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 
-use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION, SysConfig, SysInstaller};
+use crate::{
+    DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
+    SysConfig, SysInstaller,
+};
 use crate::error::SysInstallError;
 use std::fs::File;
 
@@ -273,8 +276,50 @@ pub(crate) struct LoadableConfig;
 
 #[async_trait]
 impl ClusterCheck for LoadableConfig {
+    /// Checks that we can connect to Kubernetes via the active context
     async fn perform_check(&self) -> CheckResult {
-        check_cluster_connection()
+        let config = match K8Config::load() {
+            Ok(config) => config,
+            Err(K8ConfigError::NoCurrentContext) => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::NoActiveKubernetesContext,
+                ));
+            }
+            Err(other) => return Err(CheckError::K8ConfigError(other)),
+        };
+
+        let context = match config {
+            K8Config::Pod(_) => {
+                return Ok(CheckStatus::pass("Pod config found, ignoring the check"))
+            }
+            K8Config::KubeConfig(context) => context,
+        };
+
+        let cluster_context = match context.config.current_cluster() {
+            Some(context) => context,
+            None => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::NoActiveKubernetesContext,
+                ));
+            }
+        };
+
+        let server_url = &cluster_context.cluster.server;
+
+        // Check that the server URL has a hostname, not just an IP
+        let host_present = Url::parse(server_url)
+            .ok()
+            .and_then(|it| it.host().map(|host| host.to_string()))
+            .map(|it| !it.is_empty())
+            .unwrap_or(false);
+
+        if !host_present {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::MissingKubernetesServerHost,
+            ));
+        }
+
+        Ok(CheckStatus::pass("Kubernetes config is loadable"))
     }
 }
 
@@ -283,8 +328,53 @@ pub(crate) struct K8Version;
 
 #[async_trait]
 impl ClusterCheck for K8Version {
+    /// Check if required kubectl version is installed
     async fn perform_check(&self) -> CheckResult {
-        k8_version_check()
+        let kube_version = Command::new("kubectl")
+            .arg("version")
+            .arg("-o=json")
+            .output()
+            .map_err(CheckError::KubectlNotFoundError)?;
+        let version_text = String::from_utf8(kube_version.stdout).unwrap();
+
+        #[derive(Debug, serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct ComponentVersion {
+            git_version: String,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct KubernetesVersion {
+            client_version: ComponentVersion,
+            server_version: Option<ComponentVersion>,
+        }
+
+        let kube_versions: KubernetesVersion =
+            serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
+
+        let server_version = match kube_versions.server_version {
+            Some(version) => version.git_version,
+            None => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::CannotConnectToKubernetes,
+                ))
+            }
+        };
+
+        // Trim off the `v` in v0.1.2 to get just "0.1.2"
+        let server_version = &server_version[1..];
+        if Version::parse(&server_version) < Version::parse(KUBE_VERSION) {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::IncompatibleKubectlVersion {
+                    installed: server_version.to_string(),
+                    required: KUBE_VERSION.to_string(),
+                },
+            ));
+        }
+        Ok(CheckStatus::pass(
+            "Supported kubernetes version is installed",
+        ))
     }
 }
 
@@ -293,9 +383,20 @@ pub(crate) struct HelmVersion;
 
 #[async_trait]
 impl ClusterCheck for HelmVersion {
+    /// Checks that the installed helm version is compatible with the installer requirements
     async fn perform_check(&self) -> CheckResult {
-        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
-        check_helm_version(&helm_client, DEFAULT_HELM_VERSION)
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
+        let required = DEFAULT_HELM_VERSION;
+        if Version::parse(&helm_version) < Version::parse(required) {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::IncompatibleHelmVersion {
+                    installed: helm_version,
+                    required: required.to_string(),
+                },
+            ));
+        }
+        Ok(CheckStatus::pass("Supported helm version is installed"))
     }
 }
 
@@ -312,9 +413,20 @@ impl SysChartCheck {
 
 #[async_trait]
 impl ClusterCheck for SysChartCheck {
+    /// Check that the system chart is installed
+    /// This uses whatever namespace it is being called
     async fn perform_check(&self) -> CheckResult {
-        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
-        check_system_chart(&helm_client, DEFAULT_CHART_SYS_REPO)
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        // check installed system chart version
+        let sys_charts = helm
+            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)
+            .map_err(CheckError::HelmError)?;
+        if sys_charts.is_empty() {
+            return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
+        } else if sys_charts.len() > 1 {
+            return Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts));
+        }
+        Ok(CheckStatus::pass("Fluvio system charts are installed"))
     }
 
     async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
@@ -340,9 +452,16 @@ pub(crate) struct AlreadyInstalled;
 
 #[async_trait]
 impl ClusterCheck for AlreadyInstalled {
+    /// Checks that Fluvio is not already installed
     async fn perform_check(&self) -> CheckResult {
-        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
-        check_already_installed(&helm_client, DEFAULT_CHART_APP_REPO)
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        let app_charts = helm
+            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO, None)
+            .map_err(CheckError::HelmError)?;
+        if !app_charts.is_empty() {
+            return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));
+        }
+        Ok(CheckStatus::pass("Previous fluvio installation not found"))
     }
 }
 
@@ -384,7 +503,9 @@ impl ClusterCheck for LoadBalancer {
     async fn perform_check(&self) -> CheckResult {
         let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
         let context = match config {
-            K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
+            K8Config::Pod(_) => {
+                return Ok(CheckStatus::pass("Pod config found, ignoring the check"))
+            }
             K8Config::KubeConfig(context) => context,
         };
 
@@ -710,46 +831,6 @@ impl ClusterChecker {
     }
 }
 
-/// Checks that the installed helm version is compatible with the installer requirements
-pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> CheckResult {
-    let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
-    if Version::parse(&helm_version) < Version::parse(required) {
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::IncompatibleHelmVersion {
-                installed: helm_version,
-                required: required.to_string(),
-            },
-        ));
-    }
-    Ok(CheckStatus::pass("Supported helm version is installed"))
-}
-
-/// Check that the system chart is installed
-/// This uses whatever namespace it is being called
-pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> CheckResult {
-    // check installed system chart version
-    let sys_charts = helm
-        .get_installed_chart_by_name(sys_repo, None)
-        .map_err(CheckError::HelmError)?;
-    if sys_charts.is_empty() {
-        return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
-    } else if sys_charts.len() > 1 {
-        return Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts));
-    }
-    Ok(CheckStatus::pass("Fluvio system charts are installed"))
-}
-
-/// Checks that Fluvio is not already installed
-pub(crate) fn check_already_installed(helm: &HelmClient, app_repo: &str) -> CheckResult {
-    let app_charts = helm
-        .get_installed_chart_by_name(app_repo, None)
-        .map_err(CheckError::HelmError)?;
-    if !app_charts.is_empty() {
-        return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));
-    }
-    Ok(CheckStatus::pass("Previous fluvio installation not found"))
-}
-
 fn create_dummy_service() -> Result<(), CheckError> {
     Command::new("kubectl")
         .arg("create")
@@ -809,99 +890,6 @@ fn get_tunnel_error() -> CheckFailed {
 #[cfg(not(target_os = "macos"))]
 fn get_tunnel_error() -> CheckFailed {
     RecoverableCheck::MinikubeTunnelNotFoundRetry.into()
-}
-
-/// Checks that we can connect to Kubernetes via the active context
-fn check_cluster_connection() -> CheckResult {
-    let config = match K8Config::load() {
-        Ok(config) => config,
-        Err(K8ConfigError::NoCurrentContext) => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::NoActiveKubernetesContext,
-            ));
-        }
-        Err(other) => return Err(CheckError::K8ConfigError(other)),
-    };
-
-    let context = match config {
-        K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
-        K8Config::KubeConfig(context) => context,
-    };
-
-    let cluster_context = match context.config.current_cluster() {
-        Some(context) => context,
-        None => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::NoActiveKubernetesContext,
-            ));
-        }
-    };
-
-    let server_url = &cluster_context.cluster.server;
-
-    // Check that the server URL has a hostname, not just an IP
-    let host_present = Url::parse(server_url)
-        .ok()
-        .and_then(|it| it.host().map(|host| host.to_string()))
-        .map(|it| !it.is_empty())
-        .unwrap_or(false);
-
-    if !host_present {
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::MissingKubernetesServerHost,
-        ));
-    }
-
-    Ok(CheckStatus::pass("Kubernetes config is loadable"))
-}
-
-// Check if required kubectl version is installed
-fn k8_version_check() -> CheckResult {
-    let kube_version = Command::new("kubectl")
-        .arg("version")
-        .arg("-o=json")
-        .output()
-        .map_err(CheckError::KubectlNotFoundError)?;
-    let version_text = String::from_utf8(kube_version.stdout).unwrap();
-
-    #[derive(Debug, serde::Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct ComponentVersion {
-        git_version: String,
-    }
-
-    #[derive(Debug, serde::Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct KubernetesVersion {
-        client_version: ComponentVersion,
-        server_version: Option<ComponentVersion>,
-    }
-
-    let kube_versions: KubernetesVersion =
-        serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
-
-    let server_version = match kube_versions.server_version {
-        Some(version) => version.git_version,
-        None => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::CannotConnectToKubernetes,
-            ))
-        }
-    };
-
-    // Trim off the `v` in v0.1.2 to get just "0.1.2"
-    let server_version = &server_version[1..];
-    if Version::parse(&server_version) < Version::parse(KUBE_VERSION) {
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::IncompatibleKubectlVersion {
-                installed: server_version.to_string(),
-                required: KUBE_VERSION.to_string(),
-            },
-        ));
-    }
-    Ok(CheckStatus::pass(
-        "Supported kubernetes version is installed",
-    ))
 }
 
 fn check_permission(resource: &str) -> CheckResult {
