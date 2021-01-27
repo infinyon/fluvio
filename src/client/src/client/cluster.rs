@@ -190,7 +190,7 @@ fn check_platform_compatible(cluster_version: &Version) -> Result<(), FluvioErro
     let client_minimum_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
         .expect("MINIMUM_PLATFORM_VERSION must be semver");
 
-    if client_minimum_version < *cluster_version {
+    if *cluster_version < client_minimum_version {
         return Err(FluvioError::MinimumPlatformVersion {
             cluster_version: cluster_version.clone(),
             client_minimum_version,

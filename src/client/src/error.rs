@@ -37,7 +37,7 @@ pub enum FluvioError {
     },
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
-    #[error("Cluster (with platform version {cluster_version}) is older than the client minimum version {client_minimum_version}")]
+    #[error("Cluster (with platform version {cluster_version}) is older than the minimum required version {client_minimum_version}")]
     MinimumPlatformVersion {
         cluster_version: Version,
         client_minimum_version: Version,
