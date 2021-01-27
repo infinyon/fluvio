@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use async_channel::Receiver;
 use crate::{CheckStatus, CheckResult, CheckResults, CheckFailed, CheckSuggestion};
 

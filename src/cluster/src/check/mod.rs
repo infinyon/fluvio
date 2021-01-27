@@ -558,7 +558,7 @@ impl ClusterCheck for LoadBalancer {
             Ok(())
         })();
 
-        if let Err(_) = result {
+        if result.is_err() {
             return Err(UnrecoverableCheck::FailedRecovery(error));
         }
 
