@@ -24,6 +24,7 @@ pub enum ClusterError {
     Uninstall(#[from] UninstallError),
 }
 
+/// Errors that may occur while trying to install Fluvio system charts
 #[derive(thiserror::Error, Debug)]
 pub enum SysInstallError {
     /// An error occurred while running helm.

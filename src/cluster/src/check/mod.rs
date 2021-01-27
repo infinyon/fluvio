@@ -8,7 +8,7 @@ pub mod render;
 use tracing::warn;
 use async_trait::async_trait;
 use async_channel::Receiver;
-use url::{Url, ParseError};
+use url::ParseError;
 use semver::Version;
 use serde_json::Error as JsonError;
 
@@ -295,7 +295,7 @@ impl ClusterCheck for LoadableConfig {
             K8Config::KubeConfig(context) => context,
         };
 
-        let cluster_context = match context.config.current_cluster() {
+        let _cluster_context = match context.config.current_cluster() {
             Some(context) => context,
             None => {
                 return Ok(CheckStatus::fail(
@@ -303,21 +303,6 @@ impl ClusterCheck for LoadableConfig {
                 ));
             }
         };
-
-        let server_url = &cluster_context.cluster.server;
-
-        // Check that the server URL has a hostname, not just an IP
-        let host_present = Url::parse(server_url)
-            .ok()
-            .and_then(|it| it.host().map(|host| host.to_string()))
-            .map(|it| !it.is_empty())
-            .unwrap_or(false);
-
-        if !host_present {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::MissingKubernetesServerHost,
-            ));
-        }
 
         Ok(CheckStatus::pass("Kubernetes config is loadable"))
     }
@@ -335,7 +320,6 @@ impl ClusterCheck for K8Version {
             .arg("-o=json")
             .output()
             .map_err(CheckError::KubectlNotFoundError)?;
-        let version_text = String::from_utf8(kube_version.stdout).unwrap();
 
         #[derive(Debug, serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
@@ -350,8 +334,8 @@ impl ClusterCheck for K8Version {
             server_version: Option<ComponentVersion>,
         }
 
-        let kube_versions: KubernetesVersion =
-            serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
+        let kube_versions: KubernetesVersion = serde_json::from_slice(&kube_version.stdout)
+            .map_err(CheckError::KubectlVersionJsonError)?;
 
         let server_version = match kube_versions.server_version {
             Some(version) => version.git_version,

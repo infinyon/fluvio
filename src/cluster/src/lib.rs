@@ -35,7 +35,7 @@ use fluvio_helm as helm;
 
 pub use start::k8::{ClusterInstaller, ClusterInstallerBuilder};
 pub use start::local::LocalClusterInstaller;
-pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
+pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError, SysInstallError};
 pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};

@@ -110,6 +110,39 @@ impl SysConfigBuilder {
         self.chart_location = Some(ChartLocation::Remote(location.into()));
         self
     }
+
+    /// A builder helper for conditionally setting options
+    ///
+    /// This is useful for maintaining a fluid call chain even when
+    /// we only want to set certain options conditionally.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{SysConfig, SysInstallError};
+    /// # fn do_thing() -> Result<(), SysInstallError> {
+    /// let should_use_custom_namespace = true;
+    /// let config: SysConfig = SysConfig::builder()
+    ///     .with(|builder| {
+    ///         if should_use_custom_namespace {
+    ///             // Only use custom namespace in this condition
+    ///             builder.with_namespace("my-namespace")
+    ///         }
+    ///         else {
+    ///             // Otherwise don't edit the builder
+    ///             builder
+    ///         }
+    ///     })
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(&mut Self) -> &mut Self,
+    {
+        f(self)
+    }
 }
 
 /// Installs or upgrades the Fluvio system charts
