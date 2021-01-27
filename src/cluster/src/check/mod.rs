@@ -2,14 +2,13 @@ use std::io::Error as IoError;
 use std::fmt::Debug;
 use std::time::Duration;
 use std::process::{Command};
-use std::future::Future;
 
 pub mod render;
 
 use tracing::warn;
 use async_trait::async_trait;
 use async_channel::Receiver;
-use url::{Url, ParseError};
+use url::ParseError;
 use semver::Version;
 use serde_json::Error as JsonError;
 
@@ -22,7 +21,12 @@ use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 
-use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
+use crate::{
+    DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
+    SysConfig, SysInstaller,
+};
+use crate::error::SysInstallError;
+use std::fs::File;
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;
@@ -256,6 +260,15 @@ impl CheckSuggestion for UnrecoverableCheck {
 pub trait ClusterCheck: Debug + Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
     async fn perform_check(&self) -> CheckResult;
+
+    /// Attempt to fix a recoverable error.
+    ///
+    /// The default implementation is to fail with `FailedRecovery`. Concrete instances
+    /// may override this implementation with functionality to actually attempt to fix
+    /// errors.
+    async fn attempt_fix(&self, check: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+        Err(UnrecoverableCheck::FailedRecovery(check))
+    }
 }
 
 #[derive(Debug)]
@@ -263,8 +276,35 @@ pub(crate) struct LoadableConfig;
 
 #[async_trait]
 impl ClusterCheck for LoadableConfig {
+    /// Checks that we can connect to Kubernetes via the active context
     async fn perform_check(&self) -> CheckResult {
-        check_cluster_connection()
+        let config = match K8Config::load() {
+            Ok(config) => config,
+            Err(K8ConfigError::NoCurrentContext) => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::NoActiveKubernetesContext,
+                ));
+            }
+            Err(other) => return Err(CheckError::K8ConfigError(other)),
+        };
+
+        let context = match config {
+            K8Config::Pod(_) => {
+                return Ok(CheckStatus::pass("Pod config found, ignoring the check"))
+            }
+            K8Config::KubeConfig(context) => context,
+        };
+
+        let _cluster_context = match context.config.current_cluster() {
+            Some(context) => context,
+            None => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::NoActiveKubernetesContext,
+                ));
+            }
+        };
+
+        Ok(CheckStatus::pass("Kubernetes config is loadable"))
     }
 }
 
@@ -273,8 +313,52 @@ pub(crate) struct K8Version;
 
 #[async_trait]
 impl ClusterCheck for K8Version {
+    /// Check if required kubectl version is installed
     async fn perform_check(&self) -> CheckResult {
-        k8_version_check()
+        let kube_version = Command::new("kubectl")
+            .arg("version")
+            .arg("-o=json")
+            .output()
+            .map_err(CheckError::KubectlNotFoundError)?;
+
+        #[derive(Debug, serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct ComponentVersion {
+            git_version: String,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct KubernetesVersion {
+            client_version: ComponentVersion,
+            server_version: Option<ComponentVersion>,
+        }
+
+        let kube_versions: KubernetesVersion = serde_json::from_slice(&kube_version.stdout)
+            .map_err(CheckError::KubectlVersionJsonError)?;
+
+        let server_version = match kube_versions.server_version {
+            Some(version) => version.git_version,
+            None => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::CannotConnectToKubernetes,
+                ))
+            }
+        };
+
+        // Trim off the `v` in v0.1.2 to get just "0.1.2"
+        let server_version = &server_version[1..];
+        if Version::parse(&server_version) < Version::parse(KUBE_VERSION) {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::IncompatibleKubectlVersion {
+                    installed: server_version.to_string(),
+                    required: KUBE_VERSION.to_string(),
+                },
+            ));
+        }
+        Ok(CheckStatus::pass(
+            "Supported kubernetes version is installed",
+        ))
     }
 }
 
@@ -283,20 +367,67 @@ pub(crate) struct HelmVersion;
 
 #[async_trait]
 impl ClusterCheck for HelmVersion {
+    /// Checks that the installed helm version is compatible with the installer requirements
     async fn perform_check(&self) -> CheckResult {
-        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
-        check_helm_version(&helm_client, DEFAULT_HELM_VERSION)
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
+        let required = DEFAULT_HELM_VERSION;
+        if Version::parse(&helm_version) < Version::parse(required) {
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::IncompatibleHelmVersion {
+                    installed: helm_version,
+                    required: required.to_string(),
+                },
+            ));
+        }
+        Ok(CheckStatus::pass("Supported helm version is installed"))
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct SysChart;
+pub(crate) struct SysChartCheck {
+    config: SysConfig,
+}
+
+impl SysChartCheck {
+    pub(crate) fn new(config: SysConfig) -> Self {
+        Self { config }
+    }
+}
 
 #[async_trait]
-impl ClusterCheck for SysChart {
+impl ClusterCheck for SysChartCheck {
+    /// Check that the system chart is installed
+    /// This uses whatever namespace it is being called
     async fn perform_check(&self) -> CheckResult {
-        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
-        check_system_chart(&helm_client, DEFAULT_CHART_SYS_REPO)
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        // check installed system chart version
+        let sys_charts = helm
+            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)
+            .map_err(CheckError::HelmError)?;
+        if sys_charts.is_empty() {
+            return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
+        } else if sys_charts.len() > 1 {
+            return Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts));
+        }
+        Ok(CheckStatus::pass("Fluvio system charts are installed"))
+    }
+
+    async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+        println!("Fluvio system chart not installed. Attempting to install");
+
+        // Use closure to catch errors
+        let result = (|| -> Result<(), SysInstallError> {
+            let config: SysConfig = SysConfig::builder()
+                .with_namespace(&self.config.namespace)
+                .with_cloud(&self.config.cloud)
+                .build()?;
+            let sys_installer = SysInstaller::with_config(config)?;
+            sys_installer.install()?;
+            Ok(())
+        })();
+        result.map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
+        Ok(())
     }
 }
 
@@ -305,9 +436,16 @@ pub(crate) struct AlreadyInstalled;
 
 #[async_trait]
 impl ClusterCheck for AlreadyInstalled {
+    /// Checks that Fluvio is not already installed
     async fn perform_check(&self) -> CheckResult {
-        let helm_client = HelmClient::new().map_err(CheckError::HelmError)?;
-        check_already_installed(&helm_client, DEFAULT_CHART_APP_REPO)
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        let app_charts = helm
+            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO, None)
+            .map_err(CheckError::HelmError)?;
+        if !app_charts.is_empty() {
+            return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));
+        }
+        Ok(CheckStatus::pass("Previous fluvio installation not found"))
     }
 }
 
@@ -347,15 +485,80 @@ pub(crate) struct LoadBalancer;
 #[async_trait]
 impl ClusterCheck for LoadBalancer {
     async fn perform_check(&self) -> CheckResult {
-        check_load_balancer_status().await
+        let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
+        let context = match config {
+            K8Config::Pod(_) => {
+                return Ok(CheckStatus::pass("Pod config found, ignoring the check"))
+            }
+            K8Config::KubeConfig(context) => context,
+        };
+
+        let cluster_context = match context.config.current_context() {
+            Some(context) => context,
+            None => {
+                return Ok(CheckStatus::fail(
+                    UnrecoverableCheck::NoActiveKubernetesContext,
+                ));
+            }
+        };
+
+        let username = &cluster_context.context.user;
+
+        // create dummy service
+        create_dummy_service()?;
+        if wait_for_service_exist(DEFAULT_NAMESPACE).await?.is_some() {
+            // IP found, everything good
+            delete_service()?;
+        } else {
+            delete_service()?;
+            if username == MINIKUBE_USERNAME {
+                // In case of macos we need to run tunnel with elevated context of sudo
+                // hence handle both separately
+                return Ok(CheckStatus::fail(get_tunnel_error()));
+            }
+            return Ok(CheckStatus::fail(
+                UnrecoverableCheck::LoadBalancerServiceNotAvailable,
+            ));
+        }
+
+        Ok(CheckStatus::pass("Load balancer is up"))
+    }
+
+    /// Attempt to fix missing load balancer by running `minikube tunnel`
+    async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+        use std::process::Stdio;
+
+        // Use closure to catch potential errors
+        let result = (|| -> Result<(), std::io::Error> {
+            let log_file = File::create("/tmp/tunnel.out")?;
+            let error_file = log_file.try_clone()?;
+
+            // run minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out
+            Command::new("minikube")
+                .arg("tunnel")
+                .stdout(Stdio::from(log_file))
+                .stderr(Stdio::from(error_file))
+                .spawn()?;
+            Ok(())
+        })();
+
+        if result.is_err() {
+            return Err(UnrecoverableCheck::FailedRecovery(error));
+        }
+
+        sleep(Duration::from_millis(DELAY)).await;
+        Ok(())
     }
 }
 
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
-/// It can wait for all checks to run sequentially using [`run`], or spawn a
+/// It can wait for all checks to run sequentially using [`run_wait`], or spawn a
 /// task and receive progress updates about checks using [`run_with_progress`].
+///
+/// [`run_wait`]: ClusterChecker::run_wait
+/// [`run_with_progress`]: ClusterChecker::run_with_progress
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ClusterChecker {
@@ -374,13 +577,15 @@ impl ClusterChecker {
     /// # use fluvio_cluster::ClusterChecker;
     /// let checker: ClusterChecker = ClusterChecker::empty();
     /// ```
+    ///
+    /// [`with_check`]: ClusterChecker::with_check
     pub fn empty() -> Self {
         ClusterChecker { checks: vec![] }
     }
 
     /// Adds a check to this `ClusterChecker`
-    pub fn with_check(mut self, check: Box<dyn ClusterCheck>) -> Self {
-        self.checks.push(check);
+    pub fn with_check<C: ClusterCheck, B: Into<Box<C>>>(mut self, check: B) -> Self {
+        self.checks.push(check.into());
         self
     }
 
@@ -388,16 +593,15 @@ impl ClusterChecker {
     ///
     /// Note that no checks are run until one of the `run` methods are invoked.
     ///
-    /// - [`run_wait`]
-    /// - [`run_wait_and_fix`]
-    /// - [`run_with_progress`]
-    /// - [`run_and_fix_with_progress`]
+    /// - [`run_wait`](ClusterChecker::run_wait)
+    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
+    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
+    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_preflight_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
             Box::new(K8Version),
             Box::new(HelmVersion),
-            Box::new(SysChart),
             Box::new(CreateServicePermission),
             Box::new(CreateCrdPermission),
             Box::new(CreateServiceAccountPermission),
@@ -411,15 +615,14 @@ impl ClusterChecker {
     ///
     /// Note that no checks are run until one of the `run` methods are invoked.
     ///
-    /// - [`run_wait`]
-    /// - [`run_wait_and_fix`]
-    /// - [`run_with_progress`]
-    /// - [`run_and_fix_with_progress`]
+    /// - [`run_wait`](ClusterChecker::run_wait)
+    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
+    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
+    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_k8_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),
-            Box::new(SysChart),
             Box::new(LoadBalancer),
         ];
         self.checks.extend(checks);
@@ -430,16 +633,15 @@ impl ClusterChecker {
     ///
     /// Note that no checks are run until one of the `run` methods are invoked.
     ///
-    /// - [`run_wait`]
-    /// - [`run_wait_and_fix`]
-    /// - [`run_with_progress`]
-    /// - [`run_and_fix_with_progress`]
+    /// - [`run_wait`](ClusterChecker::run_wait)
+    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
+    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
+    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_local_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(HelmVersion),
             Box::new(K8Version),
             Box::new(LoadableConfig),
-            Box::new(SysChart),
         ];
         self.checks.extend(checks);
         self
@@ -462,6 +664,8 @@ impl ClusterChecker {
     ///     .await;
     /// # }
     /// ```
+    ///
+    /// [`run_with_progress`]: ClusterChecker::run_with_progress
     pub async fn run_wait(&self) -> CheckResults {
         let mut check_results = vec![];
         for check in &self.checks {
@@ -474,27 +678,22 @@ impl ClusterChecker {
     /// Performs all checks sequentially, attempting to fix any problems along the way.
     ///
     /// This may appear to "hang" if there are many checks, or if fixes take a long time.
-    pub async fn run_wait_and_fix<F, R>(&self, fix: F) -> CheckResults
-    where
-        F: Fn(RecoverableCheck) -> R,
-        R: Future<Output = Result<(), UnrecoverableCheck>>,
-    {
+    pub async fn run_wait_and_fix(&self) -> CheckResults {
         // We want to collect all of the results of the checks
         let mut results: Vec<CheckResult> = vec![];
 
         for check in &self.checks {
             // Perform one individual check
-            let check_result = check.perform_check().await;
-            match check_result {
+            match check.perform_check().await {
                 // If the check passed, add it to the results list
                 it @ Ok(CheckStatus::Pass(_)) => results.push(it),
                 // If the check failed but is potentially auto-recoverable, try to recover it
-                Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(it))) => {
-                    let err = format!("{}", it);
-                    let fix_result = fix(it).await;
-                    match fix_result {
-                        // If the fix worked, return a passed check
-                        Ok(_) => results.push(Ok(CheckStatus::pass(format!("Fixed: {}", err)))),
+                Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(recoverable))) => {
+                    let err = format!("{}", recoverable);
+                    match check.attempt_fix(recoverable).await {
+                        Ok(_) => {
+                            results.push(Ok(CheckStatus::pass(format!("Fixed: {}", err))));
+                        }
                         Err(e) => {
                             // If the fix failed, wrap the original failed check in Unrecoverable
                             results.push(Ok(CheckStatus::fail(CheckFailed::Unrecoverable(e))));
@@ -523,7 +722,7 @@ impl ClusterChecker {
     /// updates about checks as they are run.
     ///
     /// If you want to run the checks as a single batch and receive all of the results
-    /// at once, use [`run`] instead.
+    /// at once, use [`run_wait`] instead.
     ///
     /// # Example
     ///
@@ -539,6 +738,8 @@ impl ClusterChecker {
     /// }
     /// # }
     /// ```
+    ///
+    /// [`run_wait`]: ClusterChecker::run_wait
     pub fn run_with_progress(self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
@@ -563,12 +764,10 @@ impl ClusterChecker {
     /// progress updates about checks and fixes as they run.
     ///
     /// If you want to run checks and fixes as a single batch and receive all of
-    /// the results at once, use [`run`] instead.
-    pub fn run_and_fix_with_progress<F, R>(self, fix: F) -> Receiver<CheckResult>
-    where
-        F: Fn(RecoverableCheck) -> R + Send + Sync + 'static,
-        R: Future<Output = Result<(), UnrecoverableCheck>> + Send + Sync,
-    {
+    /// the results at once, use [`run_wait`] instead.
+    ///
+    /// [`run_wait`]: ClusterChecker::run_wait
+    pub fn run_and_fix_with_progress(self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
             for check in &self.checks {
@@ -578,10 +777,9 @@ impl ClusterChecker {
                     // If the check passed, add it to the results list
                     it @ Ok(CheckStatus::Pass(_)) => sender.send(it).await,
                     // If the check failed but is potentially auto-recoverable, try to recover it
-                    Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(it))) => {
-                        let err = format!("{}", it);
-                        let fix_result = fix(it).await;
-                        match fix_result {
+                    Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(recoverable))) => {
+                        let err = format!("{}", recoverable);
+                        match check.attempt_fix(recoverable).await {
                             // If the fix worked, return a passed check
                             Ok(_) => {
                                 sender
@@ -615,85 +813,6 @@ impl ClusterChecker {
         });
         receiver
     }
-}
-
-/// Checks that the installed helm version is compatible with the installer requirements
-pub(crate) fn check_helm_version(helm: &HelmClient, required: &str) -> CheckResult {
-    let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
-    if Version::parse(&helm_version) < Version::parse(required) {
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::IncompatibleHelmVersion {
-                installed: helm_version,
-                required: required.to_string(),
-            },
-        ));
-    }
-    Ok(CheckStatus::pass("Supported helm version is installed"))
-}
-
-/// Check that the system chart is installed
-/// This uses whatever namespace it is being called
-pub(crate) fn check_system_chart(helm: &HelmClient, sys_repo: &str) -> CheckResult {
-    // check installed system chart version
-    let sys_charts = helm
-        .get_installed_chart_by_name(sys_repo, None)
-        .map_err(CheckError::HelmError)?;
-    if sys_charts.is_empty() {
-        return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
-    } else if sys_charts.len() > 1 {
-        return Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts));
-    }
-    Ok(CheckStatus::pass("Fluvio system charts are installed"))
-}
-
-/// Checks that Fluvio is not already installed
-pub(crate) fn check_already_installed(helm: &HelmClient, app_repo: &str) -> CheckResult {
-    let app_charts = helm
-        .get_installed_chart_by_name(app_repo, None)
-        .map_err(CheckError::HelmError)?;
-    if !app_charts.is_empty() {
-        return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));
-    }
-    Ok(CheckStatus::pass("Previous fluvio installation not found"))
-}
-
-/// Check if load balancer is up
-pub(crate) async fn check_load_balancer_status() -> CheckResult {
-    let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
-    let context = match config {
-        K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
-        K8Config::KubeConfig(context) => context,
-    };
-
-    let cluster_context = match context.config.current_context() {
-        Some(context) => context,
-        None => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::NoActiveKubernetesContext,
-            ));
-        }
-    };
-
-    let username = &cluster_context.context.user;
-
-    // create dummy service
-    create_dummy_service()?;
-    if wait_for_service_exist(DEFAULT_NAMESPACE).await?.is_some() {
-        // IP found, everything good
-        delete_service()?;
-    } else {
-        delete_service()?;
-        if username == MINIKUBE_USERNAME {
-            // In case of macos we need to run tunnel with elevated context of sudo
-            // hence handle both separately
-            return Ok(CheckStatus::fail(get_tunnel_error()));
-        }
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::LoadBalancerServiceNotAvailable,
-        ));
-    }
-
-    Ok(CheckStatus::pass("Load balancer is up"))
 }
 
 fn create_dummy_service() -> Result<(), CheckError> {
@@ -755,99 +874,6 @@ fn get_tunnel_error() -> CheckFailed {
 #[cfg(not(target_os = "macos"))]
 fn get_tunnel_error() -> CheckFailed {
     RecoverableCheck::MinikubeTunnelNotFoundRetry.into()
-}
-
-/// Checks that we can connect to Kubernetes via the active context
-fn check_cluster_connection() -> CheckResult {
-    let config = match K8Config::load() {
-        Ok(config) => config,
-        Err(K8ConfigError::NoCurrentContext) => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::NoActiveKubernetesContext,
-            ));
-        }
-        Err(other) => return Err(CheckError::K8ConfigError(other)),
-    };
-
-    let context = match config {
-        K8Config::Pod(_) => return Ok(CheckStatus::pass("Pod config found, ignoring the check")),
-        K8Config::KubeConfig(context) => context,
-    };
-
-    let cluster_context = match context.config.current_cluster() {
-        Some(context) => context,
-        None => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::NoActiveKubernetesContext,
-            ));
-        }
-    };
-
-    let server_url = &cluster_context.cluster.server;
-
-    // Check that the server URL has a hostname, not just an IP
-    let host_present = Url::parse(server_url)
-        .ok()
-        .and_then(|it| it.host().map(|host| host.to_string()))
-        .map(|it| !it.is_empty())
-        .unwrap_or(false);
-
-    if !host_present {
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::MissingKubernetesServerHost,
-        ));
-    }
-
-    Ok(CheckStatus::pass("Kubernetes config is loadable"))
-}
-
-// Check if required kubectl version is installed
-fn k8_version_check() -> CheckResult {
-    let kube_version = Command::new("kubectl")
-        .arg("version")
-        .arg("-o=json")
-        .output()
-        .map_err(CheckError::KubectlNotFoundError)?;
-    let version_text = String::from_utf8(kube_version.stdout).unwrap();
-
-    #[derive(Debug, serde::Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct ComponentVersion {
-        git_version: String,
-    }
-
-    #[derive(Debug, serde::Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct KubernetesVersion {
-        client_version: ComponentVersion,
-        server_version: Option<ComponentVersion>,
-    }
-
-    let kube_versions: KubernetesVersion =
-        serde_json::from_str(&version_text).map_err(CheckError::KubectlVersionJsonError)?;
-
-    let server_version = match kube_versions.server_version {
-        Some(version) => version.git_version,
-        None => {
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::CannotConnectToKubernetes,
-            ))
-        }
-    };
-
-    // Trim off the `v` in v0.1.2 to get just "0.1.2"
-    let server_version = &server_version[1..];
-    if Version::parse(&server_version) < Version::parse(KUBE_VERSION) {
-        return Ok(CheckStatus::fail(
-            UnrecoverableCheck::IncompatibleKubectlVersion {
-                installed: server_version.to_string(),
-                required: KUBE_VERSION.to_string(),
-            },
-        ));
-    }
-    Ok(CheckStatus::pass(
-        "Supported kubernetes version is installed",
-    ))
 }
 
 fn check_permission(resource: &str) -> CheckResult {

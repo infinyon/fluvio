@@ -9,8 +9,7 @@ use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
 use crate::check::render::{
-    render_check_statuses, render_statuses_next_steps, render_check_results,
-    render_results_next_steps,
+    render_statuses_next_steps, render_check_results, render_results_next_steps,
 };
 
 pub async fn install_core(
@@ -27,6 +26,7 @@ pub async fn install_core(
         .with_save_profile(!opt.skip_profile_creation)
         .with_tls(client, server)
         .with_chart_values(opt.k8_config.chart_values)
+        .with_render_checks(true)
         .with_upgrade(upgrade);
 
     if skip_sys {
@@ -97,43 +97,20 @@ pub async fn install_core(
             println!("Successfully installed Fluvio!");
         }
         // Successfully performed startup with pre-checks
-        Ok(StartStatus {
-            checks: Some(checks),
-            ..
-        }) => {
-            render_check_statuses(&checks);
+        Ok(StartStatus { checks, .. }) => {
+            if checks.is_none() {
+                println!("Skipped pre-start checks");
+            }
+            println!("Successfully installed Fluvio!");
         }
         // Aborted startup because pre-checks failed
         Err(ClusterError::InstallK8(K8InstallError::FailedPrecheck(check_statuses))) => {
-            render_check_statuses(&check_statuses);
             render_statuses_next_steps(&check_statuses);
         }
         // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
     }
 
-    Ok(())
-}
-
-pub fn install_sys(opt: StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {
-    let mut builder = ClusterInstaller::new()
-        .with_namespace(opt.k8_config.namespace)
-        .with_upgrade(upgrade);
-
-    match opt.k8_config.chart_location {
-        // If a chart location is given, use it
-        Some(chart_location) => {
-            builder = builder.with_local_chart(chart_location);
-        }
-        // If we're in develop mode (but no explicit chart location), use local path
-        None if opt.develop => {
-            builder = builder.with_local_chart("./k8-util/helm");
-        }
-        _ => (),
-    }
-    let installer = builder.build()?;
-    installer._install_sys().map_err(ClusterError::InstallK8)?;
-    println!("fluvio sys chart has been installed");
     Ok(())
 }
 
