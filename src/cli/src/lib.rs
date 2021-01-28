@@ -32,7 +32,7 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
 
-pub const VERSION: &str = include_str!("../../../VERSION");
+pub const VERSION: &str = include_str!("VERSION");
 static_assertions::const_assert!(!VERSION.is_empty());
 
 /// Fluvio Command Line Interface

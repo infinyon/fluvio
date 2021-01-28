@@ -22,7 +22,7 @@ cli = [
     "structopt",
     "color-eyre",
     "prettytable-rs",
-    "fluvio-runner-local/platform",
+    "fluvio-runner-local",
     "fluvio-extension-common/target",
 ]
 

@@ -2,6 +2,9 @@ use std::process::Command;
 use rustc_version::version_meta;
 
 fn main() {
+    // Copy VERSION file
+    std::fs::copy("../../VERSION", "./src/VERSION").expect("should copy VERSION file into CLI");
+
     // Fetch current git hash to print version output
     let git_version_output = Command::new("git")
         .args(&["rev-parse", "HEAD"])

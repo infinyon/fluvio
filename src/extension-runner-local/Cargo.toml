@@ -16,9 +16,6 @@ name = "fluvio_runner_local_cli"
 path = "src/bin/main.rs"
 doc = false
 
-[features]
-platform = ["fluvio-sc/platform"]
-
 [dependencies]
 structopt = { version = "0.3.16", default-features = false }
 thiserror = "1.0.20"
