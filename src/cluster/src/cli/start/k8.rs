@@ -12,7 +12,7 @@ use crate::check::render::{
     render_statuses_next_steps, render_check_results, render_results_next_steps,
 };
 
-pub async fn install_core(
+pub async fn process_k8(
     opt: StartOpt,
     upgrade: bool,
     skip_sys: bool,
@@ -89,8 +89,17 @@ pub async fn install_core(
     }
 
     let installer = builder.build()?;
-    let results = installer.install_fluvio().await;
-    match results {
+    if opt.setup {
+        setup_k8(&installer).await?;
+    } else {
+        start_k8(&installer).await?;
+    }
+
+    Ok(())
+}
+
+pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliError> {
+    match installer.install_fluvio().await {
         // Successfully performed startup without pre-checks
         Ok(StartStatus { checks: None, .. }) => {
             println!("Skipped pre-start checks");
@@ -114,21 +123,7 @@ pub async fn install_core(
     Ok(())
 }
 
-pub async fn run_setup(opt: StartOpt) -> Result<(), ClusterCliError> {
-    let mut builder = ClusterInstaller::new().with_namespace(opt.k8_config.namespace);
-    match opt.k8_config.chart_location {
-        // If a chart location is given, use it
-        Some(chart_location) => {
-            builder = builder.with_local_chart(chart_location);
-        }
-        // If we're in develop mode (but no explicit chart location), use local path
-        None if opt.develop => {
-            builder = builder.with_local_chart("./k8-util/helm");
-        }
-        _ => (),
-    }
-
-    let installer = builder.build()?;
+pub async fn setup_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliError> {
     println!("Performing pre-startup checks...");
     let check_results = installer.setup().await;
     render_check_results(&check_results);

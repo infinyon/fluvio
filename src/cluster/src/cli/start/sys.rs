@@ -4,7 +4,7 @@ use crate::sys::{SysConfig, SysInstaller};
 use crate::ClusterError;
 use crate::error::SysInstallError;
 
-pub fn install_sys(opt: StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {
+pub fn process_sys(opt: StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {
     install_sys_impl(opt, upgrade).map_err(ClusterError::InstallSys)?;
     Ok(())
 }

@@ -12,7 +12,7 @@ use crate::check::render::{render_statuses_next_steps, render_results_next_steps
 ///
 /// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
 /// reported, or `Err(e)` if something unexpected occurred.
-pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
+pub async fn process_local(opt: StartOpt) -> Result<(), ClusterCliError> {
     let mut builder = LocalClusterInstaller::new()
         .with_log_dir(opt.log_dir.to_string())
         .with_render_checks(true)
@@ -42,9 +42,17 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
     }
 
     let installer = builder.build()?;
-    let install_result = installer.install().await;
+    if opt.setup {
+        setup_local(&installer).await?;
+    } else {
+        install_local(&installer).await?;
+    }
 
-    match install_result {
+    Ok(())
+}
+
+pub async fn install_local(installer: &LocalClusterInstaller) -> Result<(), ClusterCliError> {
+    match installer.install().await {
         // Successfully performed startup
         Ok(StartStatus { checks, .. }) => {
             if checks.is_none() {
@@ -59,14 +67,10 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
         // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
     }
-
     Ok(())
 }
 
-pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {
-    let installer = LocalClusterInstaller::new()
-        .with_render_checks(true)
-        .build()?;
+pub async fn setup_local(installer: &LocalClusterInstaller) -> Result<(), ClusterCliError> {
     let check_results = installer.setup().await;
     render_results_next_steps(&check_results);
     Ok(())

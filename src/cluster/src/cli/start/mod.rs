@@ -154,23 +154,16 @@ pub struct StartOpt {
 
 impl StartOpt {
     pub async fn process(self, upgrade: bool, skip_sys: bool) -> Result<(), ClusterCliError> {
-        use k8::install_core;
-        use k8::run_setup;
-        use sys::install_sys;
-        use local::{install_local, run_local_setup};
+        use crate::cli::start::local::process_local;
+        use crate::cli::start::sys::process_sys;
+        use crate::cli::start::k8::process_k8;
 
         if self.sys {
-            install_sys(self, upgrade)?;
+            process_sys(self, upgrade)?;
         } else if self.local {
-            if self.setup {
-                run_local_setup(self).await?;
-            } else {
-                install_local(self).await?;
-            }
-        } else if self.setup {
-            run_setup(self).await?;
+            process_local(self).await?;
         } else {
-            install_core(self, upgrade, skip_sys).await?;
+            process_k8(self, upgrade, skip_sys).await?;
         }
 
         Ok(())
