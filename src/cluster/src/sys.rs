@@ -13,7 +13,7 @@ const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 
 /// Configuration options for installing Fluvio system charts
-#[derive(Builder, Debug)]
+#[derive(Builder, Debug, Clone)]
 #[builder(build_fn(skip), setter(prefix = "with"))]
 pub struct SysConfig {
     /// The type of cloud infrastructure the cluster will be running on
@@ -282,6 +282,7 @@ impl SysInstaller {
 
         let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
             .namespace(&self.config.namespace)
+            .version(&self.config.chart_version)
             .develop()
             .opts(settings);
         if upgrade {

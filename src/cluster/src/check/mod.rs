@@ -5,7 +5,7 @@ use std::process::{Command};
 
 pub mod render;
 
-use tracing::warn;
+use tracing::{error, warn, debug};
 use async_trait::async_trait;
 use async_channel::Receiver;
 use url::ParseError;
@@ -187,7 +187,7 @@ impl CheckSuggestion for RecoverableCheck {
 #[derive(thiserror::Error, Debug)]
 pub enum UnrecoverableCheck {
     /// We failed to recover from a potentially-recoverable check failure
-    #[error("Failed to recover from auto-recoverable check")]
+    #[error("Could not repair check: {0}")]
     FailedRecovery(RecoverableCheck),
 
     /// Check permissions to create k8 resources
@@ -414,19 +414,20 @@ impl ClusterCheck for SysChartCheck {
     }
 
     async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
-        println!("Fluvio system chart not installed. Attempting to install");
-
         // Use closure to catch errors
         let result = (|| -> Result<(), SysInstallError> {
-            let config: SysConfig = SysConfig::builder()
-                .with_namespace(&self.config.namespace)
-                .with_cloud(&self.config.cloud)
-                .build()?;
-            let sys_installer = SysInstaller::with_config(config)?;
+            debug!(
+                "Installing Fluvio sys chart with config: {:#?}",
+                &self.config
+            );
+            let sys_installer = SysInstaller::with_config(self.config.clone())?;
             sys_installer.install()?;
             Ok(())
         })();
-        result.map_err(|_| UnrecoverableCheck::FailedRecovery(error))?;
+        result.map_err(|e| {
+            error!("Failed to install Fluvio system chart: {:?}", e);
+            UnrecoverableCheck::FailedRecovery(error)
+        })?;
         Ok(())
     }
 }
