@@ -42,11 +42,7 @@ pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggesti
 pub use delete::ClusterUninstaller;
 pub use sys::{SysConfig, SysConfigBuilder, SysInstaller};
 
-#[cfg(feature = "platform")]
-const VERSION: &str = include_str!("../../../VERSION");
-
-#[cfg(not(feature = "platform"))]
-const VERSION: &str = "UNDEFINED";
+const VERSION: &str = include_str!("VERSION");
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
