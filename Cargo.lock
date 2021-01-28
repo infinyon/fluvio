@@ -1041,7 +1041,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "async-channel",
  "async-trait",
