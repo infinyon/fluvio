@@ -383,7 +383,7 @@ impl ClusterConfigBuilder {
     pub fn build(&self) -> Result<ClusterConfig, ClusterError> {
         let config = self
             .build_impl()
-            .map_err(|s| K8InstallError::MissingRequiredConfig(s))?;
+            .map_err(K8InstallError::MissingRequiredConfig)?;
         Ok(config)
     }
 

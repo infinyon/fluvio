@@ -216,7 +216,7 @@ impl LocalConfigBuilder {
     pub fn build(&self) -> Result<LocalConfig, ClusterError> {
         let config = self
             .build_impl()
-            .map_err(|s| LocalInstallError::MissingRequiredConfig(s))?;
+            .map_err(LocalInstallError::MissingRequiredConfig)?;
         Ok(config)
     }
 
