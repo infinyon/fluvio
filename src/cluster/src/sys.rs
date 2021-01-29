@@ -14,7 +14,7 @@ const DEFAULT_CLOUD_NAME: &str = "minikube";
 
 /// Configuration options for installing Fluvio system charts
 #[derive(Builder, Debug, Clone)]
-#[builder(build_fn(skip), setter(prefix = "with"))]
+#[builder(build_fn(skip))]
 pub struct SysConfig {
     /// The type of cloud infrastructure the cluster will be running on
     ///
@@ -23,7 +23,7 @@ pub struct SysConfig {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_cloud(builder: &mut SysConfigBuilder) {
-    /// builder.with_cloud("minikube");
+    /// builder.cloud("minikube");
     /// # }
     /// ```
     #[builder(setter(into))]
@@ -35,7 +35,7 @@ pub struct SysConfig {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_namespace(builder: &mut SysConfigBuilder) {
-    /// builder.with_namespace("fluvio");
+    /// builder.namespace("fluvio");
     /// # }
     /// ```
     #[builder(setter(into))]
@@ -49,7 +49,7 @@ pub struct SysConfig {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn example(builder: &mut SysConfigBuilder) {
-    /// builder.with_chart_version("0.6.1");
+    /// builder.chart_version("0.6.1");
     /// # }
     /// ```
     #[builder(setter(into))]
@@ -105,10 +105,10 @@ impl SysConfigBuilder {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_local_chart(builder: &mut SysConfigBuilder) {
-    /// builder.with_local_chart("./helm/fluvio-sys");
+    /// builder.local_chart("./helm/fluvio-sys");
     /// # }
     /// ```
-    pub fn with_local_chart<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
+    pub fn local_chart<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
         self.chart_location = Some(ChartLocation::Local(path.into()));
         self
     }
@@ -120,10 +120,10 @@ impl SysConfigBuilder {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_remote_chart(builder: &mut SysConfigBuilder) {
-    /// builder.with_remote_chart("https://charts.fluvio.io");
+    /// builder.remote_chart("https://charts.fluvio.io");
     /// # }
     /// ```
-    pub fn with_remote_chart<S: Into<String>>(&mut self, location: S) -> &mut Self {
+    pub fn remote_chart<S: Into<String>>(&mut self, location: S) -> &mut Self {
         self.chart_location = Some(ChartLocation::Remote(location.into()));
         self
     }
@@ -146,8 +146,8 @@ impl SysConfigBuilder {
     /// fn make_config(ns: NamespaceCandidate) -> Result<SysConfig, SysInstallError> {
     ///     let config = SysConfig::builder()
     ///         .with(|builder| match &ns {
-    ///             NamespaceCandidate::UserGiven(user) => builder.with_namespace(user),
-    ///             NamespaceCandidate::System => builder.with_namespace("system"),
+    ///             NamespaceCandidate::UserGiven(user) => builder.namespace(user),
+    ///             NamespaceCandidate::System => builder.namespace("system"),
     ///             NamespaceCandidate::Default => builder,
     ///         })
     ///         .build()?;
@@ -174,7 +174,7 @@ impl SysConfigBuilder {
     /// let custom_namespace = false;
     /// let config = SysConfig::builder()
     ///     // Custom namespace is not applied
-    ///     .with_if(custom_namespace, |builder| builder.with_namespace("my-namespace"))
+    ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -199,8 +199,8 @@ impl SysConfigBuilder {
 /// # use fluvio_cluster::{SysInstallError, SysConfig, SysInstaller};
 /// # fn example() -> Result<(), SysInstallError> {
 /// let config = SysConfig::builder()
-///     .with_namespace("fluvio")
-///     .with_chart_version("0.7.0-alpha.1")
+///     .namespace("fluvio")
+///     .chart_version("0.7.0-alpha.1")
 ///     .build()?;
 /// let installer = SysInstaller::from_config(config)?;
 /// installer.install()?;
@@ -320,7 +320,7 @@ mod tests {
     #[test]
     fn test_required_config() {
         let config: SysConfig = SysConfig::builder()
-            .with_chart_version("0.7.0-alpha.1")
+            .chart_version("0.7.0-alpha.1")
             .build()
             .expect("should build config with required options");
         assert_eq!(config.chart_version, "0.7.0-alpha.1");

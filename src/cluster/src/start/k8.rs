@@ -53,7 +53,7 @@ const NETWORK_SLEEP_MS: u64 = 1000;
 
 /// A builder for cluster startup options
 #[derive(Builder, Debug)]
-#[builder(build_fn(skip), setter(prefix = "with"))]
+#[builder(build_fn(skip))]
 pub struct ClusterConfig {
     /// Sets the Kubernetes namespace to install Fluvio into.
     ///
@@ -65,7 +65,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_namespace("my-namespace")
+    ///     .namespace("my-namespace")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -88,7 +88,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_image_tag("0.6.0")
+    ///     .image_tag("0.6.0")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -114,13 +114,13 @@ pub struct ClusterConfig {
     /// to your `localhost:5000` registry. Your image is now located at
     /// `localhost:5000/infinyon`. You can specify that to the installer like so:
     ///
-    /// > **NOTE**: See [`with_image_tag`] to see how to specify the `0.1.0` shown here.
+    /// > **NOTE**: See [`image_tag`] to see how to specify the `0.1.0` shown here.
     ///
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_image_registry("localhost:5000/infinyon")
+    ///     .image_registry("localhost:5000/infinyon")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -129,7 +129,7 @@ pub struct ClusterConfig {
     /// Then, when you use `installer.install_fluvio()`, it will pull the images
     /// from your local docker registry.
     ///
-    /// [`with_image_tag`]: ./struct.ClusterInstaller.html#method.with_image_tag
+    /// [`image_tag`]: ./struct.ClusterInstaller.html#method.image_tag
     #[builder(setter(into))]
     image_registry: String,
     /// The name of the Fluvio helm chart to install
@@ -149,7 +149,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_chart_version("0.6.0")
+    ///     .chart_version("0.6.0")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -169,7 +169,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_group_name("orange")
+    ///     .group_name("orange")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -184,7 +184,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_cloud("minikube")
+    ///     .cloud("minikube")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -200,7 +200,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_spu_replicas(2)
+    ///     .spu_replicas(2)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -214,7 +214,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_rust_log("debug")
+    ///     .rust_log("debug")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -237,7 +237,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_authorization_config_map("authorization")
+    ///     .authorization_config_map("authorization")
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -253,7 +253,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_save_profile(true)
+    ///     .save_profile(true)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -269,7 +269,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_install_sys(false)
+    ///     .install_sys(false)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -285,7 +285,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_update_context(false)
+    ///     .update_context(false)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -301,7 +301,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_skip_checks(true)
+    ///     .skip_checks(true)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -323,7 +323,7 @@ pub struct ClusterConfig {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_render_checks(true)
+    ///     .render_checks(true)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -441,7 +441,7 @@ impl ClusterConfigBuilder {
     /// a local filesystem path. The path given is expected to be the parent directory
     /// of both the `fluvio-app` and `fluvio-sys` charts.
     ///
-    /// This option is mutually exclusive from [`with_remote_chart`]; if both are used,
+    /// This option is mutually exclusive from [`remote_chart`]; if both are used,
     /// the latest one defined is the one that's used.
     ///
     /// # Example
@@ -450,14 +450,14 @@ impl ClusterConfigBuilder {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_local_chart("./k8-util/helm")
+    ///     .local_chart("./k8-util/helm")
     ///     .build()?;
     /// # Ok(())
     /// # }
     /// ```
     ///
-    /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
-    pub fn with_local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
+    /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
+    pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
         self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
         self
     }
@@ -468,7 +468,7 @@ impl ClusterConfigBuilder {
     /// where official Fluvio helm charts are located. Remote helm charts are expected
     /// to be a valid URL.
     ///
-    /// This option is mutually exclusive from [`with_local_chart`]; if both are used,
+    /// This option is mutually exclusive from [`local_chart`]; if both are used,
     /// the latest one defined is the one that's used.
     ///
     /// # Example
@@ -477,14 +477,14 @@ impl ClusterConfigBuilder {
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_remote_chart("https://charts.fluvio.io")
+    ///     .remote_chart("https://charts.fluvio.io")
     ///     .build()?;
     /// # Ok(())
     /// # }
     /// ```
     ///
-    /// [`with_local_chart`]: ./struct.ClusterInstallerBuilder#method.with_local_chart
-    pub fn with_remote_chart<S: Into<String>>(&mut self, remote_chart_location: S) -> &mut Self {
+    /// [`local_chart`]: ./struct.ClusterInstallerBuilder#method.local_chart
+    pub fn remote_chart<S: Into<String>>(&mut self, remote_chart_location: S) -> &mut Self {
         self.chart_location = Some(ChartLocation::Remote(remote_chart_location.into()));
         self
     }
@@ -516,12 +516,12 @@ impl ClusterConfigBuilder {
     /// };
     ///
     /// let config = ClusterConfig::builder()
-    ///     .with_tls(client, server)
+    ///     .tls(client, server)
     ///     .build()?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn with_tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
+    pub fn tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
         &mut self,
         client: C,
         server: S,
@@ -554,39 +554,6 @@ impl ClusterConfigBuilder {
 
     /// A builder helper for conditionally setting options
     ///
-    /// This is useful for maintaining a fluid call chain even when
-    /// we only want to set certain options conditionally and the
-    /// conditions are more complicated than a simple boolean.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
-    /// enum NamespaceCandidate {
-    ///     UserGiven(String),
-    ///     System,
-    ///     Default,
-    /// }
-    /// fn make_config(ns: NamespaceCandidate) -> Result<ClusterConfig, ClusterError> {
-    ///     let config = ClusterConfig::builder()
-    ///         .with(|builder| match &ns {
-    ///             NamespaceCandidate::UserGiven(user) => builder.with_namespace(user),
-    ///             NamespaceCandidate::System => builder.with_namespace("system"),
-    ///             NamespaceCandidate::Default => builder,
-    ///         })
-    ///         .build()?;
-    ///     Ok(config)
-    /// }
-    /// ```
-    pub fn with<F>(&mut self, f: F) -> &mut Self
-    where
-        F: Fn(&mut Self) -> &mut Self,
-    {
-        f(self)
-    }
-
-    /// A builder helper for conditionally setting options
-    ///
     /// This is useful for maintaining a builder call chain even when you
     /// only want to apply some options conditionally based on a boolean value.
     ///
@@ -598,7 +565,7 @@ impl ClusterConfigBuilder {
     /// let custom_namespace = false;
     /// let config = ClusterConfig::builder()
     ///     // Custom namespace is not applied
-    ///     .with_if(custom_namespace, |builder| builder.with_namespace("my-namespace"))
+    ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -635,7 +602,7 @@ impl ClusterConfigBuilder {
 /// # use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
 /// # async fn example() -> Result<(), ClusterError> {
 /// let config = ClusterConfig::builder()
-///     .with_chart_version("0.7.0-alpha.1")
+///     .chart_version("0.7.0-alpha.1")
 ///     .build()?;
 /// let installer = ClusterInstaller::from_config(config)?;
 /// let _status = installer.install_fluvio().await?;
@@ -690,18 +657,18 @@ impl ClusterInstaller {
     /// depending on the installer configuration. See the following options
     /// for more details:
     ///
-    /// - [`with_system_chart`]
-    /// - [`with_update_context`]
+    /// - [`system_chart`]
+    /// - [`update_context`]
     ///
-    /// [`with_system_chart`]: ./struct.ClusterInstaller.html#method.with_system_chart
-    /// [`with_update_context`]: ./struct.ClusterInstaller.html#method.with_update_context
+    /// [`system_chart`]: ./struct.ClusterInstaller.html#method.system_chart
+    /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
         let sys_config: SysConfig = SysConfig::builder()
-            .with_namespace(&self.config.namespace)
-            .with_chart_location(self.config.chart_location.clone())
-            .with_chart_version(self.config.chart_version.clone())
-            .with_cloud(&self.config.cloud)
+            .namespace(&self.config.namespace)
+            .chart_location(self.config.chart_location.clone())
+            .chart_version(self.config.chart_version.clone())
+            .cloud(&self.config.cloud)
             .build()
             .unwrap();
 
@@ -1277,7 +1244,7 @@ mod tests {
     #[test]
     fn test_required_config() {
         let config: ClusterConfig = ClusterConfig::builder()
-            .with_chart_version("0.7.0-alpha.1")
+            .chart_version("0.7.0-alpha.1")
             .build()
             .expect("should succeed with required config options");
         assert_eq!(config.chart_version, "0.7.0-alpha.1")

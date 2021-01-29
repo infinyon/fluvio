@@ -28,47 +28,47 @@ pub async fn process_k8(
 
     let mut builder = ClusterConfig::builder();
     builder
-        .with_namespace(opt.k8_config.namespace)
-        .with_group_name(opt.k8_config.group_name)
-        .with_spu_replicas(opt.spu)
-        .with_save_profile(!opt.skip_profile_creation)
-        .with_tls(client, server)
-        .with_chart_values(opt.k8_config.chart_values)
-        .with_chart_version(chart_version)
-        .with_render_checks(true)
-        .with_upgrade(upgrade)
-        .with_if(skip_sys, |b| b.with_install_sys(false))
-        .with_if(opt.skip_checks, |b| b.with_skip_checks(true));
+        .namespace(opt.k8_config.namespace)
+        .group_name(opt.k8_config.group_name)
+        .spu_replicas(opt.spu)
+        .save_profile(!opt.skip_profile_creation)
+        .tls(client, server)
+        .chart_values(opt.k8_config.chart_values)
+        .chart_version(chart_version)
+        .render_checks(true)
+        .upgrade(upgrade)
+        .with_if(skip_sys, |b| b.install_sys(false))
+        .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
     match opt.k8_config.chart_location {
         // If a chart location is given, use it
         Some(chart_location) => {
-            builder.with_local_chart(chart_location);
+            builder.local_chart(chart_location);
         }
         // If we're in develop mode (but no explicit chart location), use hardcoded local path
         None if opt.develop => {
-            builder.with_local_chart("./k8-util/helm");
+            builder.local_chart("./k8-util/helm");
         }
         _ => (),
     }
 
     match opt.k8_config.registry {
         // If a registry is given, use it
-        Some(registry) => builder.with_image_registry(registry),
-        None => builder.with_image_registry("infinyon"),
+        Some(registry) => builder.image_registry(registry),
+        None => builder.image_registry("infinyon"),
     };
 
     if let Some(rust_log) = opt.rust_log {
-        builder.with_rust_log(rust_log);
+        builder.rust_log(rust_log);
     }
     if let Some(map) = opt.authorization_config_map {
-        builder.with_authorization_config_map(map);
+        builder.authorization_config_map(map);
     }
 
     match opt.k8_config.image_version {
         // If an image tag is given, use it
         Some(image_tag) => {
-            builder.with_image_tag(image_tag.trim());
+            builder.image_tag(image_tag.trim());
         }
         // If we're in develop mode (but no explicit tag), use current git hash
         None if opt.develop => {
@@ -79,7 +79,7 @@ pub async fn process_k8(
                     format!("failed to get git hash: {}", e),
                 )
             })?;
-            builder.with_image_tag(git_hash.trim());
+            builder.image_tag(git_hash.trim());
         }
         _ => (),
     }
