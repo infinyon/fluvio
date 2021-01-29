@@ -12,7 +12,7 @@
 //! use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
 //! # async fn example() -> Result<(), ClusterError> {
 //! let config = ClusterConfig::builder()
-//!     .with_chart_version("0.7.0-alpha.1")
+//!     .chart_version("0.7.0-alpha.1")
 //!     .build()?;
 //! let installer = ClusterInstaller::from_config(config)?;
 //! installer.install_fluvio().await?;

@@ -53,7 +53,7 @@ const NETWORK_SLEEP_MS: u64 = 1000;
 
 /// A builder for cluster startup options
 #[derive(Builder, Debug)]
-#[builder(build_fn(skip))]
+#[builder(build_fn(private, name = "build_impl"))]
 pub struct ClusterConfig {
     /// Sets the Kubernetes namespace to install Fluvio into.
     ///
@@ -70,7 +70,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_NAMESPACE.to_string()")]
     namespace: String,
     /// Sets the docker image tag of the Fluvio image to install.
     ///
@@ -93,7 +93,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(setter(into, strip_option))]
+    #[builder(setter(into, strip_option), default)]
     image_tag: Option<String>,
     /// Sets the docker image registry to use to download Fluvio images.
     ///
@@ -130,10 +130,10 @@ pub struct ClusterConfig {
     /// from your local docker registry.
     ///
     /// [`image_tag`]: ./struct.ClusterInstaller.html#method.image_tag
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_REGISTRY.to_string()")]
     image_registry: String,
     /// The name of the Fluvio helm chart to install
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_CHART_APP_NAME.to_string()")]
     chart_name: String,
     /// Sets a specific version of the Fluvio helm chart to install.
     ///
@@ -159,7 +159,10 @@ pub struct ClusterConfig {
     #[builder(setter(into))]
     chart_version: String,
     /// The location to search for the Helm charts to install
-    #[builder(private)]
+    #[builder(
+        private,
+        default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())"
+    )]
     chart_location: ChartLocation,
     /// Sets a custom SPU group name. The default is `main`.
     ///
@@ -174,7 +177,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_GROUP_NAME.to_string()")]
     group_name: String,
     /// Sets the K8 cluster cloud environment.
     ///
@@ -190,7 +193,7 @@ pub struct ClusterConfig {
     /// # }
     /// ```
     ///
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_CLOUD_NAME.to_string()")]
     cloud: String,
     /// How many SPUs to provision for this Fluvio cluster. Defaults to 1
     ///
@@ -205,6 +208,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[builder(default = "DEFAULT_SPU_REPLICAS")]
     spu_replicas: u16,
     /// Sets the [`RUST_LOG`] environment variable for the installation.
     ///
@@ -221,13 +225,16 @@ pub struct ClusterConfig {
     /// ```
     ///
     /// [`RUST_LOG`]: https://docs.rs/tracing-subscriber/0.2.11/tracing_subscriber/filter/struct.EnvFilter.html
-    #[builder(setter(into, strip_option))]
+    #[builder(setter(into, strip_option), default)]
     rust_log: Option<String>,
     /// The TLS policy for the SC and SPU servers
+    #[builder(default = "TlsPolicy::Disabled")]
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
+    #[builder(default = "TlsPolicy::Disabled")]
     client_tls_policy: TlsPolicy,
     /// Set a list of chart value paths.
+    #[builder(default)]
     chart_values: Vec<PathBuf>,
     /// Sets the ConfigMap for authorization.
     ///
@@ -243,7 +250,7 @@ pub struct ClusterConfig {
     /// # }
     /// ```
     ///
-    #[builder(setter(into, strip_option))]
+    #[builder(setter(into, strip_option), default)]
     authorization_config_map: Option<String>,
     /// Whether to save a profile of this installation to `~/.fluvio/config`. Defaults to `false`.
     ///
@@ -258,6 +265,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[builder(default = "false")]
     save_profile: bool,
     /// Whether to install the `fluvio-sys` chart in the full installation. Defaults to `true`.
     ///
@@ -274,6 +282,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[builder(default = "true")]
     install_sys: bool,
     /// Whether to update the `kubectl` context to match the Fluvio installation. Defaults to `true`.
     ///
@@ -290,8 +299,10 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[builder(default = "false")]
     update_context: bool,
     /// Whether to upgrade an existing installation
+    #[builder(default = "false")]
     upgrade: bool,
     /// Whether to skip pre-install checks before installation. Defaults to `false`.
     ///
@@ -306,12 +317,15 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[builder(default = "false")]
     skip_checks: bool,
     /// Use cluster IP instead of load balancer for communication to SC
     ///
     /// This is is useful inside k8 cluster
+    #[builder(default = "false")]
     use_cluster_ip: bool,
     /// If set, skip spu liveness check
+    #[builder(default = "false")]
     skip_spu_liveness_check: bool,
     /// Whether to render pre-install checks to stdout as they are performed.
     ///
@@ -328,6 +342,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[builder(default = "false")]
     render_checks: bool,
 }
 
@@ -346,91 +361,29 @@ impl ClusterConfig {
 }
 
 impl ClusterConfigBuilder {
-    /// Creates a [`ClusterInstaller`] with the current configuration.
+    /// Creates a [`ClusterConfig`] with the collected configuration options.
     ///
-    /// This may fail if there is a problem conencting to Kubernetes or
-    /// finding the `helm` executable on the local system.
+    /// This may fail if there are missing required configuration options.
     ///
     /// # Example
     ///
-    /// The simplest flow to create a `ClusterInstaller` looks like the
-    /// following:
+    /// The simplest flow to create a `ClusterConfig` is the following:
     ///
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// // Note that the builder must be given all required arguments
-    /// let config = builder.build()?;
+    /// let config = ClusterConfig::builder()
+    ///     .chart_version("0.7.0-alpha.1")
+    ///     .build()?;
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// [`ClusterInstaller`]: ./struct.ClusterInstaller.html
     pub fn build(&self) -> Result<ClusterConfig, ClusterError> {
-        let namespace = self
-            .namespace
-            .clone()
-            .unwrap_or_else(|| DEFAULT_NAMESPACE.to_string());
-        let image_tag = self.image_tag.clone().flatten();
-        let image_registry = self
-            .image_registry
-            .clone()
-            .unwrap_or_else(|| DEFAULT_REGISTRY.to_string());
-        let chart_name = DEFAULT_CHART_APP_NAME.to_string();
-        let chart_version = self
-            .chart_version
-            .clone()
-            .ok_or_else(|| K8InstallError::MissingRequiredConfig("chart_version".to_string()))?;
-        let chart_location = self
-            .chart_location
-            .clone()
-            .unwrap_or_else(|| ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()));
-        let group_name = self
-            .group_name
-            .clone()
-            .unwrap_or_else(|| DEFAULT_GROUP_NAME.to_string());
-        let cloud = self
-            .cloud
-            .clone()
-            .unwrap_or_else(|| DEFAULT_CLOUD_NAME.to_string());
-        let spu_replicas = self.spu_replicas.unwrap_or(DEFAULT_SPU_REPLICAS);
-        let rust_log = self.rust_log.clone().flatten();
-        let server_tls_policy = self
-            .server_tls_policy
-            .clone()
-            .unwrap_or(TlsPolicy::Disabled);
-        let client_tls_policy = self
-            .client_tls_policy
-            .clone()
-            .unwrap_or(TlsPolicy::Disabled);
-        let chart_values = self.chart_values.clone().unwrap_or_else(Vec::new);
-        let authorization_config_map = self.authorization_config_map.clone().flatten();
-
-        let config = ClusterConfig {
-            namespace,
-            image_tag,
-            image_registry,
-            chart_name,
-            chart_version,
-            chart_location,
-            group_name,
-            cloud,
-            spu_replicas,
-            rust_log,
-            server_tls_policy,
-            client_tls_policy,
-            chart_values,
-            authorization_config_map,
-            save_profile: self.save_profile.unwrap_or(false),
-            install_sys: self.install_sys.unwrap_or(true),
-            update_context: self.update_context.unwrap_or(false),
-            upgrade: self.upgrade.unwrap_or(false),
-            skip_checks: self.skip_checks.unwrap_or(false),
-            use_cluster_ip: self.use_cluster_ip.unwrap_or(false),
-            skip_spu_liveness_check: self.skip_spu_liveness_check.unwrap_or(false),
-            render_checks: self.render_checks.unwrap_or(false),
-        };
-
+        let config = self
+            .build_impl()
+            .map_err(|s| K8InstallError::MissingRequiredConfig(s))?;
         Ok(config)
     }
 
