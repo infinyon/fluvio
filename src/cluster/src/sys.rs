@@ -42,7 +42,7 @@ pub struct SysConfig {
     pub namespace: String,
     /// The location at which to find the system chart to install
     pub chart_location: ChartLocation,
-    /// The version of the system chart to install. Defaults to `crate::VERSION`.
+    /// The version of the system chart to install (REQUIRED).
     ///
     /// # Example
     ///
@@ -87,7 +87,7 @@ impl SysConfigBuilder {
         let chart_version = self
             .chart_version
             .clone()
-            .unwrap_or_else(|| crate::VERSION.to_string());
+            .ok_or_else(|| SysInstallError::MissingRequiredConfig("chart_version".to_string()))?;
 
         Ok(SysConfig {
             cloud,

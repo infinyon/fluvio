@@ -24,6 +24,13 @@ fn get_log_directory() -> &'static str {
 #[derive(Debug)]
 pub struct DefaultVersion(String);
 
+impl DefaultVersion {
+    /// Returns a reference to the inner String
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 impl Default for DefaultVersion {
     fn default() -> Self {
         Self(crate::VERSION.trim().to_string())

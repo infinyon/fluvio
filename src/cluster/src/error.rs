@@ -30,6 +30,8 @@ pub enum SysInstallError {
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
+    #[error("Missing required config option {0}")]
+    MissingRequiredConfig(String),
 }
 
 /// Errors that may occur while trying to install Fluvio on Kubernetes
@@ -80,6 +82,8 @@ pub enum K8InstallError {
     /// Unable to find a needed Helm chart
     #[error("Unable to find chart in Helm: {0}")]
     HelmChartNotFound(String),
+    #[error("Missing required config option {0}")]
+    MissingRequiredConfig(String),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),

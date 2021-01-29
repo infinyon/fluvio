@@ -5,7 +5,7 @@ use std::process::Command;
 
 use fluvio::config::TlsPolicy;
 
-use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus};
+use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus, ClusterConfig};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
 use crate::check::render::{
@@ -19,24 +19,49 @@ pub async fn process_k8(
 ) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
-    let mut builder = ClusterInstaller::new()
+    let mut builder = ClusterConfig::builder();
+    builder
         .with_namespace(opt.k8_config.namespace)
         .with_group_name(opt.k8_config.group_name)
         .with_spu_replicas(opt.spu)
         .with_save_profile(!opt.skip_profile_creation)
         .with_tls(client, server)
         .with_chart_values(opt.k8_config.chart_values)
+        .with_chart_version(opt.k8_config.chart_version.as_str())
         .with_render_checks(true)
-        .with_upgrade(upgrade);
+        .with_upgrade(upgrade)
+        .with_if(skip_sys, |b| b.with_install_sys(false))
+        .with_if(opt.skip_checks, |b| b.with_skip_checks(true));
 
-    if skip_sys {
-        builder = builder.with_system_chart(false);
+    match opt.k8_config.chart_location {
+        // If a chart location is given, use it
+        Some(chart_location) => {
+            builder.with_local_chart(chart_location);
+        }
+        // If we're in develop mode (but no explicit chart location), use hardcoded local path
+        None if opt.develop => {
+            builder.with_local_chart("./k8-util/helm");
+        }
+        _ => (),
+    }
+
+    match opt.k8_config.registry {
+        // If a registry is given, use it
+        Some(registry) => builder.with_image_registry(registry),
+        None => builder.with_image_registry("infinyon"),
+    };
+
+    if let Some(rust_log) = opt.rust_log {
+        builder.with_rust_log(rust_log);
+    }
+    if let Some(map) = opt.authorization_config_map {
+        builder.with_authorization_config_map(map);
     }
 
     match opt.k8_config.image_version {
         // If an image tag is given, use it
         Some(image_tag) => {
-            builder = builder.with_image_tag(image_tag.trim());
+            builder.with_image_tag(image_tag.trim());
         }
         // If we're in develop mode (but no explicit tag), use current git hash
         None if opt.develop => {
@@ -47,48 +72,13 @@ pub async fn process_k8(
                     format!("failed to get git hash: {}", e),
                 )
             })?;
-            builder = builder.with_image_tag(git_hash.trim());
+            builder.with_image_tag(git_hash.trim());
         }
         _ => (),
     }
 
-    match opt.k8_config.chart_location {
-        // If a chart location is given, use it
-        Some(chart_location) => {
-            builder = builder.with_local_chart(chart_location);
-        }
-        // If we're in develop mode (but no explicit chart location), use hardcoded local path
-        None if opt.develop => {
-            builder = builder.with_local_chart("./k8-util/helm");
-        }
-        _ => (),
-    }
-
-    match opt.k8_config.registry {
-        // If a registry is given, use it
-        Some(registry) => {
-            builder = builder.with_image_registry(registry);
-        }
-        None => {
-            builder = builder.with_image_registry("infinyon");
-        }
-    }
-
-    builder = builder.with_chart_version(opt.k8_config.chart_version.to_string());
-
-    if let Some(rust_log) = opt.rust_log {
-        builder = builder.with_rust_log(rust_log);
-    }
-
-    if let Some(authorization_config_map) = opt.authorization_config_map {
-        builder = builder.with_authorization_config_map(authorization_config_map);
-    }
-
-    if opt.skip_checks {
-        builder = builder.with_skip_checks(true);
-    }
-
-    let installer = builder.build()?;
+    let config = builder.build()?;
+    let installer = ClusterInstaller::from_config(config)?;
     if opt.setup {
         setup_k8(&installer).await?;
     } else {
