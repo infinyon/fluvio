@@ -136,6 +136,9 @@ pub enum LocalInstallError {
     /// Unable to find a needed Helm chart
     #[error("Unable to find chart in Helm: {0}")]
     HelmChartNotFound(String),
+    /// Attempted to construct a Config object without all required fields
+    #[error("Missing required config option {0}")]
+    MissingRequiredConfig(String),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),

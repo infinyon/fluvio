@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 
 use crate::cli::ClusterCliError;
-use crate::{LocalClusterInstaller, ClusterError, LocalInstallError, StartStatus};
+use crate::{LocalInstaller, ClusterError, LocalInstallError, StartStatus, LocalConfig};
 
 use super::StartOpt;
 use crate::check::render::{render_statuses_next_steps, render_results_next_steps};
@@ -16,35 +16,38 @@ pub async fn process_local(
     opt: StartOpt,
     default_chart_version: &str,
 ) -> Result<(), ClusterCliError> {
-    let mut builder = LocalClusterInstaller::new(default_chart_version.to_string())
-        .with_log_dir(opt.log_dir.to_string())
-        .with_render_checks(true)
-        .with_spu_replicas(opt.spu);
+    let mut builder = LocalConfig::builder();
+    builder
+        .chart_version(default_chart_version)
+        .log_dir(opt.log_dir.to_string())
+        .render_checks(true)
+        .spu_replicas(opt.spu);
 
     match opt.k8_config.chart_location {
         Some(chart_location) => {
-            builder = builder.with_local_chart(chart_location);
+            builder.local_chart(chart_location);
         }
         None if opt.develop => {
-            builder = builder.with_local_chart("./k8-util/helm");
+            builder.local_chart("./k8-util/helm");
         }
         _ => (),
     }
 
     if let Some(rust_log) = opt.rust_log {
-        builder = builder.with_rust_log(rust_log);
+        builder.rust_log(rust_log);
     }
 
     if opt.tls.tls {
         let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
-        builder = builder.with_tls(client, server);
+        builder.tls(client, server);
     }
 
     if opt.skip_checks {
-        builder = builder.with_skip_checks(true);
+        builder.skip_checks(true);
     }
 
-    let installer = builder.build()?;
+    let config = builder.build()?;
+    let installer = LocalInstaller::from_config(config);
     if opt.setup {
         setup_local(&installer).await?;
     } else {
@@ -54,7 +57,7 @@ pub async fn process_local(
     Ok(())
 }
 
-pub async fn install_local(installer: &LocalClusterInstaller) -> Result<(), ClusterCliError> {
+pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
     match installer.install().await {
         // Successfully performed startup
         Ok(StartStatus { checks, .. }) => {
@@ -73,7 +76,7 @@ pub async fn install_local(installer: &LocalClusterInstaller) -> Result<(), Clus
     Ok(())
 }
 
-pub async fn setup_local(installer: &LocalClusterInstaller) -> Result<(), ClusterCliError> {
+pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
     let check_results = installer.setup().await;
     render_results_next_steps(&check_results);
     Ok(())

@@ -51,7 +51,7 @@ static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
 });
 const NETWORK_SLEEP_MS: u64 = 1000;
 
-/// A builder for cluster startup options
+/// Describes how to install Fluvio onto Kubernetes
 #[derive(Builder, Debug)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ClusterConfig {

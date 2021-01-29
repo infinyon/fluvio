@@ -5,9 +5,9 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{FluvioConfig};
 
+use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
-use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio_future::timer::sleep;
 use fluvio::metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
@@ -24,36 +24,165 @@ use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
 
+const DEFAULT_LOG_DIR: &str = "/tmp";
+const DEFAULT_DATA_DIR: &str = "/tmp/fluvio";
+const DEFAULT_RUST_LOG: &str = "info";
+const DEFAULT_SPU_REPLICAS: u16 = 1;
+const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const LOCAL_SC_PORT: u16 = 9003;
 
-#[derive(Debug)]
-pub struct LocalClusterInstallerBuilder {
-    /// The directory where application log files are
+/// Describes how to install Fluvio locally
+#[derive(Builder, Debug)]
+#[builder(build_fn(private, name = "build_impl"))]
+pub struct LocalConfig {
+    /// Sets the application log directory.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .log_dir("/tmp")
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[builder(setter(into), default = "PathBuf::from(DEFAULT_LOG_DIR)")]
     log_dir: PathBuf,
-    /// The directory where streaming data is stored
+    /// Sets the data-log directory. This is where streaming data is stored.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .data_dir("/tmp/fluvio")
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[builder(setter(into), default = "PathBuf::from(DEFAULT_DATA_DIR)")]
     data_dir: PathBuf,
-    /// The logging settings to set in the cluster
-    rust_log: Option<String>,
-    /// SPU spec
-    spu_spec: SpuGroupSpec,
+    /// Sets the [`RUST_LOG`] environment variable for the installation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .rust_log("debug")
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`RUST_LOG`]: https://docs.rs/tracing-subscriber/0.2.11/tracing_subscriber/filter/struct.EnvFilter.html
+    #[builder(setter(into), default = "DEFAULT_RUST_LOG.to_string()")]
+    rust_log: String,
+    /// Sets the number of SPU replicas that should be provisioned. Defaults to 1.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .spu_replicas(2)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[builder(default = "DEFAULT_SPU_REPLICAS")]
+    spu_replicas: u16,
     /// The TLS policy for the SC and SPU servers
+    #[builder(private, default = "DEFAULT_TLS_POLICY")]
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
+    #[builder(private, default = "DEFAULT_TLS_POLICY")]
     client_tls_policy: TlsPolicy,
     /// The version of the Fluvio system chart to install
+    #[builder(setter(into))]
     chart_version: String,
     /// The location to find the fluvio charts
+    #[builder(
+        private,
+        default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())"
+    )]
     chart_location: ChartLocation,
-    /// install system charts automatically
+    /// Whether to install the `fluvio-sys` chart in the full installation.
+    ///
+    /// Defaults to `true`.
+    ///
+    /// # Example
+    ///
+    /// If you want to disable installing the system chart, you can do this
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .install_sys(false)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[builder(default = "true")]
     install_sys: bool,
-    /// Should the pre install checks be skipped
+    /// Whether to skip pre-install checks before installation.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .skip_checks(false)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[builder(default = "false")]
     skip_checks: bool,
-    /// Whether to print check results as they are performed
+    /// Whether to render pre-install checks to stdout as they are performed.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .render_checks(true)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[builder(default = "false")]
     render_checks: bool,
 }
 
-impl LocalClusterInstallerBuilder {
+impl LocalConfig {
+    /// Creates a new default [`LocalConfigBuilder`]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::LocalConfig;
+    /// let mut builder = LocalConfig::builder();
+    /// ```
+    pub fn builder() -> LocalConfigBuilder {
+        LocalConfigBuilder::default()
+    }
+}
+
+impl LocalConfigBuilder {
     /// Creates a `LocalClusterInstaller` with the current configuration.
     ///
     /// This may fail if there is a problem conencting to Kubernetes or
@@ -64,81 +193,18 @@ impl LocalClusterInstallerBuilder {
     /// The simplest flow to create a `ClusterInstaller` looks like the
     /// following:
     ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
+    /// ```
+    /// # use fluvio_cluster::LocalInstaller;
+    /// let installer = LocalInstaller::new()
     ///     .build()
     ///     .expect("should create LocalClusterInstaller");
     /// ```
     ///
-    pub fn build(self) -> Result<LocalClusterInstaller, ClusterError> {
-        Ok(LocalClusterInstaller { config: self })
-    }
-
-    /// Sets the number of SPU replicas that should be provisioned. Defaults to 1.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_spu_replicas(2)
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn with_spu_replicas(mut self, spu_replicas: u16) -> Self {
-        self.spu_spec.replicas = spu_replicas;
-        self
-    }
-
-    /// Sets the application log directory.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_log_dir("/tmp".to_string())
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn with_log_dir<P: Into<PathBuf>>(mut self, log_dir: P) -> Self {
-        self.log_dir = log_dir.into();
-        self
-    }
-
-    /// Sets the data-log directory. This is where streaming data is stored.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_data_dir("/tmp/fluvio".to_string())
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn with_data_dir<P: Into<PathBuf>>(mut self, data_dir: P) -> Self {
-        self.data_dir = data_dir.into();
-        self
-    }
-
-    /// Sets the [`RUST_LOG`] environment variable for the installation.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_rust_log("debug")
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    ///
-    /// [`RUST_LOG`]: https://docs.rs/tracing-subscriber/0.2.11/tracing_subscriber/filter/struct.EnvFilter.html
-    pub fn with_rust_log<S: Into<String>>(mut self, rust_log: S) -> Self {
-        self.rust_log = Some(rust_log.into());
-        self
+    pub fn build(&self) -> Result<LocalConfig, ClusterError> {
+        let config = self
+            .build_impl()
+            .map_err(|s| LocalInstallError::MissingRequiredConfig(s))?;
+        Ok(config)
     }
 
     /// Sets the TLS Policy that the client and server will use to communicate.
@@ -150,7 +216,7 @@ impl LocalClusterInstallerBuilder {
     /// ```no_run
     /// use std::path::PathBuf;
     /// use fluvio::config::TlsPaths;
-    /// use fluvio_cluster::LocalClusterInstaller;
+    /// use fluvio_cluster::LocalInstaller;
     ///
     /// let cert_path = PathBuf::from("/tmp/certs");
     /// let client = TlsPaths {
@@ -166,16 +232,16 @@ impl LocalClusterInstallerBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let installer = LocalClusterInstaller::new()
+    /// let installer = LocalInstaller::new()
     ///     .with_tls(client, server)
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn with_tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
-        mut self,
+    pub fn tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
+        &mut self,
         client: C,
         server: S,
-    ) -> Self {
+    ) -> &mut Self {
         let client_policy = client.into();
         let server_policy = server.into();
 
@@ -197,26 +263,8 @@ impl LocalClusterInstallerBuilder {
             }
             _ => (),
         }
-        self.client_tls_policy = client_policy;
-        self.server_tls_policy = server_policy;
-        self
-    }
-
-    /// Whether to install the `fluvio-sys` chart in the full installation. Defaults to `true`.
-    ///
-    /// # Example
-    ///
-    /// If you want to disable installing the system chart, you can do this
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_system_chart(false)
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn with_system_chart(mut self, install_sys: bool) -> Self {
-        self.install_sys = install_sys;
+        self.client_tls_policy = Some(client_policy);
+        self.server_tls_policy = Some(server_policy);
         self
     }
 
@@ -232,93 +280,47 @@ impl LocalClusterInstallerBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_local_chart("./k8-util/helm")
-    ///     .build()
-    ///     .unwrap();
+    /// ```
+    /// # use fluvio_cluster::{ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .local_chart("./k8-util/helm")
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
-    pub fn with_local_chart<S: Into<PathBuf>>(mut self, local_chart_location: S) -> Self {
-        self.chart_location = ChartLocation::Local(local_chart_location.into());
-        self
-    }
-
-    /// Whether to skip pre-install checks before installation. Defaults to `false`.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_skip_checks(true)
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn with_skip_checks(mut self, skip_checks: bool) -> Self {
-        self.skip_checks = skip_checks;
-        self
-    }
-
-    /// Whether to render pre-install checks to stdout as they are performed.
-    ///
-    /// Defaults to `false`.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new()
-    ///     .with_render_checks(true)
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn with_render_checks(mut self, render_checks: bool) -> Self {
-        self.render_checks = render_checks;
+    pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
+        self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
         self
     }
 }
 
 /// Install fluvio cluster locally
 #[derive(Debug)]
-pub struct LocalClusterInstaller {
+pub struct LocalInstaller {
     /// Configuration options for this process
-    config: LocalClusterInstallerBuilder,
+    config: LocalConfig,
 }
 
-impl LocalClusterInstaller {
-    /// Creates a default `LocalClusterInstallerBuilder` which can build a `LocalClusterInstaller`
+impl LocalInstaller {
+    /// Creates a `LocalInstaller` with the given configuration options
     ///
     /// # Example
     ///
-    /// The easiest way to build a `LocalClusterInstaller` is as follows:
-    ///
-    /// ```no_run
-    /// use fluvio_cluster::LocalClusterInstaller;
-    /// let installer = LocalClusterInstaller::new("0.7.0-alpha.1").build().unwrap();
     /// ```
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new<S: Into<String>>(chart_version: S) -> LocalClusterInstallerBuilder {
-        let spu_spec = SpuGroupSpec {
-            replicas: 1,
-            min_id: 0,
-            ..SpuGroupSpec::default()
-        };
-        LocalClusterInstallerBuilder {
-            spu_spec,
-            rust_log: Some("info".to_string()),
-            log_dir: PathBuf::from("/tmp"),
-            data_dir: PathBuf::from("/tmp/fluvio"),
-            server_tls_policy: TlsPolicy::Disabled,
-            client_tls_policy: TlsPolicy::Disabled,
-            chart_version: chart_version.into(),
-            chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
-            install_sys: true,
-            skip_checks: false,
-            render_checks: false,
-        }
+    /// # use fluvio_cluster::{ClusterError, LocalInstaller, LocalConfig};
+    /// # fn example() -> Result<(), ClusterError> {
+    /// let config = LocalConfig::builder()
+    ///     .chart_version("0.7.0-alpha.1") // Used to install system charts
+    ///     .build()?;
+    /// let installer = LocalInstaller::from_config(config);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_config(config: LocalConfig) -> Self {
+        Self { config }
     }
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met
@@ -390,11 +392,11 @@ impl LocalClusterInstaller {
 
         info!(
             "launching spu group with size: {}",
-            &self.config.spu_spec.replicas
+            &self.config.spu_replicas
         );
         self.launch_spu_group().await?;
         sleep(Duration::from_secs(1)).await;
-        self.confirm_spu(self.config.spu_spec.replicas).await?;
+        self.confirm_spu(self.config.spu_replicas).await?;
 
         Ok(StartStatus {
             address,
@@ -419,9 +421,7 @@ impl LocalClusterInstaller {
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
             self.set_server_tls(&mut binary, tls, 9005)?;
         }
-        if let Some(log) = &self.config.rust_log {
-            binary.env("RUST_LOG", log);
-        }
+        binary.env("RUST_LOG", &self.config.rust_log);
         debug!("Invoking command: \"{}\"", binary.display());
         binary
             .stdout(Stdio::from(outputs))
@@ -507,7 +507,7 @@ impl LocalClusterInstaller {
     async fn launch_spu_group(&self) -> Result<(), LocalInstallError> {
         use k8_client::load_and_share;
         let client = load_and_share()?;
-        let count = self.config.spu_spec.replicas;
+        let count = self.config.spu_replicas;
         for i in 0..count {
             debug!("launching SPU ({} of {})", i + 1, count);
             self.launch_spu(i, client.clone(), &self.config.log_dir)
@@ -576,9 +576,7 @@ impl LocalClusterInstaller {
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
             self.set_server_tls(&mut binary, tls, private_port + 1)?;
         }
-        if let Some(log) = &self.config.rust_log {
-            binary.env("RUST_LOG", log);
-        }
+        binary.env("RUST_LOG", &self.config.rust_log);
         let cmd = binary
             .arg("-i")
             .arg(format!("{}", spu_id))
