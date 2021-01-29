@@ -398,12 +398,12 @@ impl ClusterConfigBuilder {
         let server_tls_policy = self
             .server_tls_policy
             .clone()
-            .unwrap_or_else(|| TlsPolicy::Disabled);
+            .unwrap_or(TlsPolicy::Disabled);
         let client_tls_policy = self
             .client_tls_policy
             .clone()
-            .unwrap_or_else(|| TlsPolicy::Disabled);
-        let chart_values = self.chart_values.clone().unwrap_or_else(|| vec![]);
+            .unwrap_or(TlsPolicy::Disabled);
+        let chart_values = self.chart_values.clone().unwrap_or_else(Vec::new);
         let authorization_config_map = self.authorization_config_map.clone().flatten();
 
         let config = ClusterConfig {
