@@ -43,7 +43,7 @@ impl From<Element> for Option<EventTarget> {
 impl Element {
     // Create an element from a tag name
     pub fn create_element(tag: &str) -> Option<Element> {
-        if let Some(el) = web_sys::window()?.document()?.create_element(tag).ok() {
+        if let Ok(el) = web_sys::window()?.document()?.create_element(tag) {
             Some(el.into())
         } else {
             None
@@ -82,7 +82,7 @@ impl Element {
         mut handler: T,
         use_capture: bool,
     ) where
-        T: 'static + FnMut(web_sys::Event) -> (),
+        T: 'static + FnMut(web_sys::Event),
     {
         let el = match self.el.take() {
             Some(e) => e,

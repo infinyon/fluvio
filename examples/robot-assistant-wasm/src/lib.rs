@@ -72,7 +72,7 @@ pub fn start_websocket() -> Result<(), JsValue> {
             {
                 let v = input_el.value(); // TODO remove with nll
                 let txt = v.trim();
-                if txt != "" {
+                if !txt.is_empty() {
                     input_el.set_value("");
                     cloned_ws.send_with_str(txt).unwrap();
                     console_log!("{}", txt);
@@ -85,7 +85,7 @@ pub fn start_websocket() -> Result<(), JsValue> {
     let onmessage_cb = Closure::wrap(Box::new(move |e: MessageEvent| {
         if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
             let txt: String = txt.into();
-            process_message(&mut all_messages, &format!("{}", txt));
+            process_message(&mut all_messages, &txt);
             console_log!("message event, received Text: {:?}", txt);
         } else {
             console_log!("message event, received Unknown: {:?}", e.data());

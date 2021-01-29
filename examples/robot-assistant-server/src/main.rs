@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
             let mut ws_stream_clone = ws_stream.clone();
             let mut robot = Robot::new().unwrap();
             ws_stream
-                .send_string(format!("{}", robot.state().start()))
+                .send_string(format!("<div>{}</div>", robot.state().start()))
                 .await
                 .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
 
@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
                                 }
                             }
                             State::End { message } => ws_stream
-                                .send_string(format!("{}", message))
+                                .send_string(format!("<div>{}</div>", message))
                                 .await
                                 .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
                         }
