@@ -192,6 +192,21 @@ impl SysConfigBuilder {
 }
 
 /// Installs or upgrades the Fluvio system charts
+///
+/// # Example
+///
+/// ```
+/// # use fluvio_cluster::{SysInstallError, SysConfig, SysInstaller};
+/// # fn example() -> Result<(), SysInstallError> {
+/// let config = SysConfig::builder()
+///     .with_namespace("fluvio")
+///     .with_chart_version("0.7.0-alpha.1")
+///     .build()?;
+/// let installer = SysInstaller::from_config(config)?;
+/// installer.install()?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct SysInstaller {
     config: SysConfig,
@@ -199,14 +214,8 @@ pub struct SysInstaller {
 }
 
 impl SysInstaller {
-    /// Create a new `SysInstaller` using the default config
-    pub fn new() -> Result<Self, SysInstallError> {
-        let config = SysConfig::builder().build()?;
-        Self::with_config(config)
-    }
-
     /// Create a new `SysInstaller` using the given config
-    pub fn with_config(config: SysConfig) -> Result<Self, SysInstallError> {
+    pub fn from_config(config: SysConfig) -> Result<Self, SysInstallError> {
         let helm_client = HelmClient::new()?;
         Ok(Self {
             config,

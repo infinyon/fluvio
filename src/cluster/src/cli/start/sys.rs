@@ -35,7 +35,7 @@ fn install_sys_impl(
             _ => builder,
         })
         .build()?;
-    let installer = SysInstaller::with_config(config)?;
+    let installer = SysInstaller::from_config(config)?;
 
     if upgrade {
         installer.install()?;

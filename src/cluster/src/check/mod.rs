@@ -420,7 +420,7 @@ impl ClusterCheck for SysChartCheck {
                 "Installing Fluvio sys chart with config: {:#?}",
                 &self.config
             );
-            let sys_installer = SysInstaller::with_config(self.config.clone())?;
+            let sys_installer = SysInstaller::from_config(self.config.clone())?;
             sys_installer.install()?;
             Ok(())
         })();
