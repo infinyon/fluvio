@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Robot Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="assistant.css"/>
+    <script type="module">
+      import init from '/pkg/robot_assistant_wasm.js';
+      async function run() {
+        window.WASM = await init();
+      }
+      run();
+    </script>
+  </head>
+  <body>
+    <div class="assistant"></div>
+
+    <div class="all-messages"></div>
+    <input class="new-message" type="text"></input>
+  </body>
+</html>

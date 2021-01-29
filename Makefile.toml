@@ -3,6 +3,7 @@ extend = [
     { path = "makefiles/Github.toml" },
     { path = "makefiles/Helm.toml" },
     { path = "makefiles/S3.toml" },
+    { path = "examples/robot-assistant.toml" },
 ]
 
 [config]

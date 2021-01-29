@@ -1,0 +1,17 @@
+[package]
+name = "robot-assistant-server"
+version = "0.1.0"
+authors = ["Yinchu Xia <larry.fantasy@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+tide = "0.15.0"
+async-std = { version = "1.9.0", features = ["attributes"] }
+serde = "1.0.123"
+tide-websockets = "0.1.0"
+fluvio = "0.3.5"
+futures = "0.3.12"
+anyhow = "1.0.38"
+uuid = { version = "0.8", features = ["serde", "v4"] }
+serde_yaml = "0.8.15"

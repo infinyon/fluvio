@@ -1,0 +1,21 @@
+[tasks.robot-assistant-server]
+script = 'cargo run --bin robot-assistant-server'
+
+[tasks.robot-assistant-wasm]
+script = 'wasm-pack build examples/robot-assistant-wasm --target web --out-dir ../robot-assistant-pkg'
+
+[tasks.robot-assistant-wasm-watch]
+dependencies = ['robot-assistant-wasm']
+watch = { postpone = true, watch = ["./examples/robot-assistant-wasm/src"] }
+
+[tasks.robot-assistant-dev]
+run_task = { name = [
+    "robot-assistant-server",
+    "robot-assistant-wasm-watch"
+], parallel = true }
+
+[tasks.robot-assistant-build]
+run_task = { name = [
+    "robot-assistant-server",
+    "robot-assistant-wasm"
+], parallel = true }

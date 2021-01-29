@@ -3,6 +3,8 @@ members = [
     "examples/00-produce",
     "examples/01-consume",
     "examples/02-echo",
+    "examples/robot-assistant-server",
+    "examples/robot-assistant-wasm",
     "src/auth",
     "src/cli",
     "src/client",
@@ -27,18 +29,14 @@ members = [
     "tests/runner",
 ]
 
-
 # profile to make image sizer smaller
 # comment out for now
 #[profile.release]
 #lto = true
 #codegen-units = 1
 #incremental = false
-
 #[profile.release]
 #debug = true
-
-
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
