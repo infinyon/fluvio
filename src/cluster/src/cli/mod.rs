@@ -25,25 +25,6 @@ use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
 
-// /// Manage and view Fluvio clusters
-// #[derive(StructOpt, Debug)]
-// pub struct ClusterOpt {
-//     #[structopt(flatten)]
-//     target: ClusterTarget,
-//
-//     #[structopt(subcommand)]
-//     cmd: ClusterCmd,
-// }
-//
-// impl ClusterOpt {
-//     /// Execute a cluster command
-//     pub async fn process(self) -> Result<(), ClusterCliError> {
-//         let out = Arc::new(PrintTerminal {});
-//         self.cmd.process(out, self.target).await?;
-//         Ok(())
-//     }
-// }
-
 /// Manage and view Fluvio clusters
 #[derive(StructOpt, Debug)]
 pub enum ClusterCmd {
