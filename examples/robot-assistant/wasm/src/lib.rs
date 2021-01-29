@@ -23,11 +23,6 @@ extern "C" {
     fn log(s: &str);
 }
 
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, robot-assistant-wasm!");
-}
-
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }

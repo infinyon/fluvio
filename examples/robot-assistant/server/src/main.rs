@@ -49,12 +49,12 @@ async fn main() -> Result<()> {
             request
         },
     ));
-    app.at("/").serve_dir("examples/robot-assistant-html")?;
-    app.at("/pkg/").serve_dir("examples/robot-assistant-pkg/")?;
+    app.at("/").serve_dir("examples/robot-assistant/html")?;
+    app.at("/pkg/").serve_dir("examples/robot-assistant/pkg/")?;
     app.at("/ws/")
         .get(WebSocket::new(|req, ws_stream| async move {
             let topic_id: String = req.session().get("topic_id").unwrap();
-            let topic_id_clone = topic_id.to_string();
+            let topic_id_clone = topic_id.clone();
             let mut ws_stream_clone = ws_stream.clone();
             let mut robot = Robot::new().unwrap();
             ws_stream
@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
                 }
                 Ok(())
             });
-            let topic_id_clone = topic_id.to_string();
+            let topic_id_clone = topic_id.clone();
             let consume_handle = spawn(async move {
                 let consumer = fluvio::consumer(topic_id_clone, 0).await?;
                 let mut fluvio_stream = consumer.stream(fluvio::Offset::beginning()).await?;
