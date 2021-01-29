@@ -431,29 +431,6 @@ impl ClusterConfigBuilder {
             render_checks: self.render_checks.unwrap_or(false),
         };
 
-        // namespace: DEFAULT_NAMESPACE.to_string(),
-        // image_tag: None,
-        // image_registry: DEFAULT_REGISTRY.to_string(),
-        // chart_version: crate::VERSION.trim().to_string(),
-        // chart_name: DEFAULT_CHART_APP_NAME.to_string(),
-        // chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
-        // group_name: DEFAULT_GROUP_NAME.to_string(),
-        // cloud: DEFAULT_CLOUD_NAME.to_string(),
-        // save_profile: false,
-        // install_sys: true,
-        // update_context: false,
-        // upgrade: false,
-        // spu_spec,
-        // rust_log: None,
-        // server_tls_policy: TlsPolicy::Disabled,
-        // client_tls_policy: TlsPolicy::Disabled,
-        // authorization_config_map: None,
-        // skip_checks: false,
-        // use_cluster_ip: false,
-        // skip_spu_liveness_check: false,
-        // chart_values: vec![],
-        // render_checks: false,
-
         Ok(config)
     }
 
@@ -1279,5 +1256,30 @@ impl ClusterInstaller {
 
         admin.create(name, false, spu_spec).await?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_missing_config() {
+        let error = ClusterConfig::builder()
+            .build()
+            .expect_err("should fail without required config options");
+        assert!(matches!(
+            error,
+            ClusterError::InstallK8(K8InstallError::MissingRequiredConfig(_))
+        ));
+    }
+
+    #[test]
+    fn test_required_config() {
+        let config: ClusterConfig = ClusterConfig::builder()
+            .with_chart_version("0.7.0-alpha.1")
+            .build()
+            .expect("should succeed with required config options");
+        assert_eq!(config.chart_version, "0.7.0-alpha.1")
     }
 }

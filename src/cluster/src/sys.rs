@@ -310,12 +310,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_config_builder() {
-        let _config = SysConfig::builder()
-            .with_namespace("fluvio")
-            .with_cloud("minikube")
-            .with_local_chart("./helm/fluvio-sys")
+    fn test_missing_config() {
+        let error = SysConfig::builder()
             .build()
-            .expect("should build config");
+            .expect_err("should fail without required config options");
+        assert!(matches!(error, SysInstallError::MissingRequiredConfig(_),));
+    }
+
+    #[test]
+    fn test_required_config() {
+        let config: SysConfig = SysConfig::builder()
+            .with_chart_version("0.7.0-alpha.1")
+            .build()
+            .expect("should build config with required options");
+        assert_eq!(config.chart_version, "0.7.0-alpha.1");
     }
 }
