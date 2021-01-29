@@ -448,7 +448,7 @@ impl ClusterConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// use std::path::PathBuf;

@@ -41,7 +41,7 @@ pub struct LocalConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .log_dir("/tmp")
@@ -56,7 +56,7 @@ pub struct LocalConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .data_dir("/tmp/fluvio")
@@ -71,7 +71,7 @@ pub struct LocalConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .rust_log("debug")
@@ -88,7 +88,7 @@ pub struct LocalConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .spu_replicas(2)
@@ -105,6 +105,20 @@ pub struct LocalConfig {
     #[builder(private, default = "DEFAULT_TLS_POLICY")]
     client_tls_policy: TlsPolicy,
     /// The version of the Fluvio system chart to install
+    ///
+    /// This is the only required field that does not have a default value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
+    ///     .chart_version("0.7.0-alpha.1")
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[builder(setter(into))]
     chart_version: String,
     /// The location to find the fluvio charts
@@ -122,7 +136,7 @@ pub struct LocalConfig {
     /// If you want to disable installing the system chart, you can do this
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .install_sys(false)
@@ -139,7 +153,7 @@ pub struct LocalConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .skip_checks(false)
@@ -156,7 +170,7 @@ pub struct LocalConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .render_checks(true)
@@ -183,21 +197,20 @@ impl LocalConfig {
 }
 
 impl LocalConfigBuilder {
-    /// Creates a `LocalClusterInstaller` with the current configuration.
-    ///
-    /// This may fail if there is a problem conencting to Kubernetes or
-    /// finding the `helm` executable on the local system.
+    /// Creates a `LocalConfig` with the current configuration.
     ///
     /// # Example
     ///
-    /// The simplest flow to create a `ClusterInstaller` looks like the
-    /// following:
+    /// The simplest flow to create a `ClusterConfig` looks like:
     ///
     /// ```
-    /// # use fluvio_cluster::LocalInstaller;
-    /// let installer = LocalInstaller::new()
-    ///     .build()
-    ///     .expect("should create LocalClusterInstaller");
+    /// # use fluvio_cluster::{ClusterError, LocalConfig};
+    /// # fn example() -> Result<(), ClusterError> {
+    /// let config: LocalConfig = LocalConfig::builder()
+    ///     .chart_version("0.7.0-alpha.1") // Required field
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     pub fn build(&self) -> Result<LocalConfig, ClusterError> {
@@ -213,7 +226,9 @@ impl LocalConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
+    /// # use fluvio_cluster::{LocalConfig, LocalConfigBuilder, ClusterError};
+    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// use std::path::PathBuf;
     /// use fluvio::config::TlsPaths;
     /// use fluvio_cluster::LocalInstaller;
@@ -232,10 +247,11 @@ impl LocalConfigBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let installer = LocalInstaller::new()
-    ///     .with_tls(client, server)
-    ///     .build()
-    ///     .unwrap();
+    /// let config = LocalConfig::builder()
+    ///     .tls(client, server)
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
         &mut self,
@@ -281,7 +297,7 @@ impl LocalConfigBuilder {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterError};
+    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .local_chart("./k8-util/helm")
@@ -632,5 +648,30 @@ impl LocalInstaller {
             "not able to provision:{} spu",
             spu
         )))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_missing_config() {
+        let error = LocalConfig::builder()
+            .build()
+            .expect_err("should fail without required config options");
+        assert!(matches!(
+            error,
+            ClusterError::InstallLocal(LocalInstallError::MissingRequiredConfig(_))
+        ));
+    }
+
+    #[test]
+    fn test_required_config() {
+        let config: LocalConfig = LocalConfig::builder()
+            .chart_version("0.7.0-alpha.1")
+            .build()
+            .expect("should succeed with required config options");
+        assert_eq!(config.chart_version, "0.7.0-alpha.1")
     }
 }
