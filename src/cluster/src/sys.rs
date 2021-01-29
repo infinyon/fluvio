@@ -47,7 +47,8 @@ pub struct SysConfig {
     /// # Example
     ///
     /// ```
-    /// # fn add_version(builder: &mut SysConfigBuilder) {
+    /// # use fluvio_cluster::SysConfigBuilder;
+    /// # fn example(builder: &mut SysConfigBuilder) {
     /// builder.with_chart_version("0.6.1");
     /// # }
     /// ```
@@ -144,12 +145,12 @@ impl SysConfigBuilder {
     /// }
     /// fn make_config(ns: NamespaceCandidate) -> Result<SysConfig, SysInstallError> {
     ///     let config = SysConfig::builder()
-    ///         .with(|builder| match ns {
+    ///         .with(|builder| match &ns {
     ///             NamespaceCandidate::UserGiven(user) => builder.with_namespace(user),
     ///             NamespaceCandidate::System => builder.with_namespace("system"),
     ///             NamespaceCandidate::Default => builder,
     ///         })
-    ///         .build();
+    ///         .build()?;
     ///     Ok(config)
     /// }
     /// ```
@@ -169,12 +170,13 @@ impl SysConfigBuilder {
     ///
     /// ```
     /// # use fluvio_cluster::{SysInstallError, SysConfig};
-    /// # fn do_thing() -> Result<(), SysInstallError> {
+    /// # fn example() -> Result<(), SysInstallError> {
     /// let custom_namespace = false;
     /// let config = SysConfig::builder()
     ///     // Custom namespace is not applied
     ///     .with_if(custom_namespace, |builder| builder.with_namespace("my-namespace"))
     ///     .build()?;
+    /// # Ok(())
     /// # }
     /// ```
     pub fn with_if<F>(&mut self, cond: bool, f: F) -> &mut Self

@@ -62,7 +62,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_namespace("my-namespace")
@@ -85,7 +85,7 @@ pub struct ClusterConfig {
     /// You can do that like this:
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_image_tag("0.6.0")
@@ -117,7 +117,7 @@ pub struct ClusterConfig {
     /// > **NOTE**: See [`with_image_tag`] to see how to specify the `0.1.0` shown here.
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_image_registry("localhost:5000/infinyon")
@@ -146,7 +146,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_chart_version("0.6.0")
@@ -166,7 +166,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_group_name("orange")
@@ -181,7 +181,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_cloud("minikube")
@@ -197,7 +197,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_spu_replicas(2)
@@ -211,7 +211,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_rust_log("debug")
@@ -234,7 +234,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_authorization_config_map("authorization")
@@ -250,7 +250,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_save_profile(true)
@@ -266,10 +266,10 @@ pub struct ClusterConfig {
     /// If you want to disable installing the system chart, you can do this
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
-    ///     .with_system_chart(false)
+    ///     .with_install_sys(false)
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -282,7 +282,7 @@ pub struct ClusterConfig {
     /// If you do not want your Kubernetes contexts to be updated, you can do this
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_update_context(false)
@@ -298,7 +298,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_skip_checks(true)
@@ -320,7 +320,7 @@ pub struct ClusterConfig {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError};
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// let config = builder
     ///     .with_render_checks(true)
@@ -356,11 +356,13 @@ impl ClusterConfigBuilder {
     /// The simplest flow to create a `ClusterInstaller` looks like the
     /// following:
     ///
-    /// ```no_run
-    /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
-    ///     .build()
-    ///     .expect("should create ClusterInstaller");
+    /// ```
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
+    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
+    /// // Note that the builder must be given all required arguments
+    /// let config = builder.build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`ClusterInstaller`]: ./struct.ClusterInstaller.html
@@ -467,12 +469,14 @@ impl ClusterConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
-    /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// ```
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
+    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
     ///     .with_local_chart("./k8-util/helm")
-    ///     .build()
-    ///     .unwrap();
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
@@ -492,12 +496,14 @@ impl ClusterConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
-    /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// ```
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
+    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
+    /// let config = builder
     ///     .with_remote_chart("https://charts.fluvio.io")
-    ///     .build()
-    ///     .unwrap();
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`with_local_chart`]: ./struct.ClusterInstallerBuilder#method.with_local_chart
@@ -513,9 +519,10 @@ impl ClusterConfigBuilder {
     /// # Example
     ///
     /// ```no_run
+    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
+    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// use std::path::PathBuf;
     /// use fluvio::config::TlsPaths;
-    /// use fluvio_cluster::ClusterInstaller;
     ///
     /// let cert_path = PathBuf::from("/tmp/certs");
     /// let client = TlsPaths {
@@ -531,10 +538,11 @@ impl ClusterConfigBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let installer = ClusterInstaller::new()
+    /// let config = ClusterConfig::builder()
     ///     .with_tls(client, server)
-    ///     .build()
-    ///     .unwrap();
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn with_tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
         &mut self,
@@ -584,12 +592,12 @@ impl ClusterConfigBuilder {
     /// }
     /// fn make_config(ns: NamespaceCandidate) -> Result<ClusterConfig, ClusterError> {
     ///     let config = ClusterConfig::builder()
-    ///         .with(|builder| match ns {
+    ///         .with(|builder| match &ns {
     ///             NamespaceCandidate::UserGiven(user) => builder.with_namespace(user),
     ///             NamespaceCandidate::System => builder.with_namespace("system"),
     ///             NamespaceCandidate::Default => builder,
     ///         })
-    ///         .build();
+    ///         .build()?;
     ///     Ok(config)
     /// }
     /// ```
@@ -647,15 +655,15 @@ impl ClusterConfigBuilder {
 /// `ClusterInstaller::new()`
 ///
 /// ```no_run
-/// # use fluvio_cluster::ClusterInstaller;
-/// let installer = ClusterInstaller::new()
-///     .build()
-///     .expect("should initialize installer");
-///
-/// // Installing Fluvio is asynchronous, so you'll need an async runtime
-/// let result = fluvio_future::task::run_block_on(async {
-///     installer.install_fluvio().await
-/// });
+/// # use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
+/// # async fn example() -> Result<(), ClusterError> {
+/// let config = ClusterConfig::builder()
+///     .with_chart_version("0.7.0-alpha.1")
+///     .build()?;
+/// let installer = ClusterInstaller::from_config(config)?;
+/// let _status = installer.install_fluvio().await?;
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// [Helm Charts]: https://helm.sh/
@@ -677,8 +685,9 @@ impl ClusterInstaller {
     ///
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterError, ClusterInstaller};
-    /// # fn make_installer(config: ClusterConfig) -> Result<(), ClusterError> {
+    /// # fn example(config: ClusterConfig) -> Result<(), ClusterError> {
     /// let installer = ClusterInstaller::from_config(config)?;
+    /// # Ok(())
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {

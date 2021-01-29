@@ -8,10 +8,16 @@
 //!
 //! To install a basic Fluvio cluster, just do the following:
 //!
-//! ```no_run
-//! use fluvio_cluster::ClusterInstaller;
-//! let installer = ClusterInstaller::new().build().unwrap();
-//! fluvio_future::task::run_block_on(installer.install_fluvio()).unwrap();
+//! ```
+//! use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
+//! # async fn example() -> Result<(), ClusterError> {
+//! let config = ClusterConfig::builder()
+//!     .with_chart_version("0.7.0-alpha.1")
+//!     .build()?;
+//! let installer = ClusterInstaller::from_config(config)?;
+//! installer.install_fluvio().await?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html

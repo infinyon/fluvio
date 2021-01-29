@@ -231,8 +231,8 @@ impl LocalClusterInstallerBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio_cluster::ClusterInstaller;
-    /// let installer = ClusterInstaller::new()
+    /// # use fluvio_cluster::LocalClusterInstaller;
+    /// let installer = LocalClusterInstaller::new()
     ///     .with_local_chart("./k8-util/helm")
     ///     .build()
     ///     .unwrap();
