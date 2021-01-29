@@ -13,8 +13,8 @@ const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 
 /// Configuration options for installing Fluvio system charts
-#[derive(Builder, Debug)]
-#[builder(build_fn(skip), setter(prefix = "with"))]
+#[derive(Builder, Debug, Clone)]
+#[builder(build_fn(skip))]
 pub struct SysConfig {
     /// The type of cloud infrastructure the cluster will be running on
     ///
@@ -23,7 +23,7 @@ pub struct SysConfig {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_cloud(builder: &mut SysConfigBuilder) {
-    /// builder.with_cloud("minikube");
+    /// builder.cloud("minikube");
     /// # }
     /// ```
     #[builder(setter(into))]
@@ -35,13 +35,25 @@ pub struct SysConfig {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_namespace(builder: &mut SysConfigBuilder) {
-    /// builder.with_namespace("fluvio");
+    /// builder.namespace("fluvio");
     /// # }
     /// ```
     #[builder(setter(into))]
     pub namespace: String,
     /// The location at which to find the system chart to install
     pub chart_location: ChartLocation,
+    /// The version of the system chart to install (REQUIRED).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::SysConfigBuilder;
+    /// # fn example(builder: &mut SysConfigBuilder) {
+    /// builder.chart_version("0.6.1");
+    /// # }
+    /// ```
+    #[builder(setter(into))]
+    pub chart_version: String,
 }
 
 impl SysConfig {
@@ -73,11 +85,16 @@ impl SysConfigBuilder {
             .chart_location
             .clone()
             .unwrap_or_else(|| ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()));
+        let chart_version = self
+            .chart_version
+            .clone()
+            .ok_or_else(|| SysInstallError::MissingRequiredConfig("chart_version".to_string()))?;
 
         Ok(SysConfig {
             cloud,
             namespace,
             chart_location,
+            chart_version,
         })
     }
 
@@ -88,10 +105,10 @@ impl SysConfigBuilder {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_local_chart(builder: &mut SysConfigBuilder) {
-    /// builder.with_local_chart("./helm/fluvio-sys");
+    /// builder.local_chart("./helm/fluvio-sys");
     /// # }
     /// ```
-    pub fn with_local_chart<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
+    pub fn local_chart<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
         self.chart_location = Some(ChartLocation::Local(path.into()));
         self
     }
@@ -103,10 +120,10 @@ impl SysConfigBuilder {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn add_remote_chart(builder: &mut SysConfigBuilder) {
-    /// builder.with_remote_chart("https://charts.fluvio.io");
-    /// }
+    /// builder.remote_chart("https://charts.fluvio.io");
+    /// # }
     /// ```
-    pub fn with_remote_chart<S: Into<String>>(&mut self, location: S) -> &mut Self {
+    pub fn remote_chart<S: Into<String>>(&mut self, location: S) -> &mut Self {
         self.chart_location = Some(ChartLocation::Remote(location.into()));
         self
     }
@@ -114,28 +131,28 @@ impl SysConfigBuilder {
     /// A builder helper for conditionally setting options
     ///
     /// This is useful for maintaining a fluid call chain even when
-    /// we only want to set certain options conditionally.
+    /// we only want to set certain options conditionally and the
+    /// conditions are more complicated than a simple boolean.
     ///
     /// # Example
     ///
     /// ```
     /// # use fluvio_cluster::{SysConfig, SysInstallError};
-    /// # fn do_thing() -> Result<(), SysInstallError> {
-    /// let should_use_custom_namespace = true;
-    /// let config: SysConfig = SysConfig::builder()
-    ///     .with(|builder| {
-    ///         if should_use_custom_namespace {
-    ///             // Only use custom namespace in this condition
-    ///             builder.with_namespace("my-namespace")
-    ///         }
-    ///         else {
-    ///             // Otherwise don't edit the builder
-    ///             builder
-    ///         }
-    ///     })
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
+    /// enum NamespaceCandidate {
+    ///     UserGiven(String),
+    ///     System,
+    ///     Default,
+    /// }
+    /// fn make_config(ns: NamespaceCandidate) -> Result<SysConfig, SysInstallError> {
+    ///     let config = SysConfig::builder()
+    ///         .with(|builder| match &ns {
+    ///             NamespaceCandidate::UserGiven(user) => builder.namespace(user),
+    ///             NamespaceCandidate::System => builder.namespace("system"),
+    ///             NamespaceCandidate::Default => builder,
+    ///         })
+    ///         .build()?;
+    ///     Ok(config)
+    /// }
     /// ```
     pub fn with<F>(&mut self, f: F) -> &mut Self
     where
@@ -143,9 +160,53 @@ impl SysConfigBuilder {
     {
         f(self)
     }
+
+    /// A builder helper for conditionally setting options
+    ///
+    /// This is useful for maintaining a builder call chain even when you
+    /// only want to apply some options conditionally based on a boolean value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio_cluster::{SysInstallError, SysConfig};
+    /// # fn example() -> Result<(), SysInstallError> {
+    /// let custom_namespace = false;
+    /// let config = SysConfig::builder()
+    ///     // Custom namespace is not applied
+    ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
+    ///     .build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_if<F>(&mut self, cond: bool, f: F) -> &mut Self
+    where
+        F: Fn(&mut Self) -> &mut Self,
+    {
+        if cond {
+            f(self)
+        } else {
+            self
+        }
+    }
 }
 
 /// Installs or upgrades the Fluvio system charts
+///
+/// # Example
+///
+/// ```
+/// # use fluvio_cluster::{SysInstallError, SysConfig, SysInstaller};
+/// # fn example() -> Result<(), SysInstallError> {
+/// let config = SysConfig::builder()
+///     .namespace("fluvio")
+///     .chart_version("0.7.0-alpha.1")
+///     .build()?;
+/// let installer = SysInstaller::from_config(config)?;
+/// installer.install()?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct SysInstaller {
     config: SysConfig,
@@ -153,14 +214,8 @@ pub struct SysInstaller {
 }
 
 impl SysInstaller {
-    /// Create a new `SysInstaller` using the default config
-    pub fn new() -> Result<Self, SysInstallError> {
-        let config = SysConfig::builder().build()?;
-        Self::with_config(config)
-    }
-
     /// Create a new `SysInstaller` using the given config
-    pub fn with_config(config: SysConfig) -> Result<Self, SysInstallError> {
+    pub fn from_config(config: SysConfig) -> Result<Self, SysInstallError> {
         let helm_client = HelmClient::new()?;
         Ok(Self {
             config,
@@ -176,6 +231,14 @@ impl SysInstaller {
     /// Upgrade the Fluvio System chart on the configured cluster
     pub fn upgrade(&self) -> Result<(), SysInstallError> {
         self.process(true)
+    }
+
+    /// Tells whether a system chart with the configured details is already installed
+    pub fn is_installed(&self) -> Result<bool, SysInstallError> {
+        let sys_charts = self
+            .helm_client
+            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)?;
+        Ok(!sys_charts.is_empty())
     }
 
     #[instrument(skip(self))]
@@ -206,6 +269,7 @@ impl SysInstaller {
         self.helm_client.repo_update()?;
         let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
             .namespace(&self.config.namespace)
+            .version(&self.config.chart_version)
             .opts(settings)
             .develop();
         if upgrade {
@@ -229,6 +293,7 @@ impl SysInstaller {
 
         let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
             .namespace(&self.config.namespace)
+            .version(&self.config.chart_version)
             .develop()
             .opts(settings);
         if upgrade {
@@ -245,12 +310,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_config_builder() {
-        let _config = SysConfig::builder()
-            .with_namespace("fluvio")
-            .with_cloud("minikube")
-            .with_local_chart("./helm/fluvio-sys")
+    fn test_missing_config() {
+        let error = SysConfig::builder()
             .build()
-            .expect("should build config");
+            .expect_err("should fail without required config options");
+        assert!(matches!(error, SysInstallError::MissingRequiredConfig(_),));
+    }
+
+    #[test]
+    fn test_required_config() {
+        let config: SysConfig = SysConfig::builder()
+            .chart_version("0.7.0-alpha.1")
+            .build()
+            .expect("should build config with required options");
+        assert_eq!(config.chart_version, "0.7.0-alpha.1");
     }
 }

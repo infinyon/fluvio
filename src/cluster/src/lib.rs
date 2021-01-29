@@ -8,10 +8,16 @@
 //!
 //! To install a basic Fluvio cluster, just do the following:
 //!
-//! ```no_run
-//! use fluvio_cluster::ClusterInstaller;
-//! let installer = ClusterInstaller::new().build().unwrap();
-//! fluvio_future::task::run_block_on(installer.install_fluvio()).unwrap();
+//! ```
+//! use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
+//! # async fn example() -> Result<(), ClusterError> {
+//! let config = ClusterConfig::builder()
+//!     .chart_version("0.7.0-alpha.1")
+//!     .build()?;
+//! let installer = ClusterInstaller::from_config(config)?;
+//! installer.install_fluvio().await?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
@@ -33,20 +39,14 @@ pub mod cli;
 
 use fluvio_helm as helm;
 
-pub use start::k8::{ClusterInstaller, ClusterInstallerBuilder};
-pub use start::local::LocalClusterInstaller;
+pub use start::k8::{ClusterInstaller, ClusterConfig, ClusterConfigBuilder};
+pub use start::local::{LocalInstaller, LocalConfig, LocalConfigBuilder};
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError, SysInstallError};
 pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
 pub use sys::{SysConfig, SysConfigBuilder, SysInstaller};
-
-#[cfg(feature = "platform")]
-const VERSION: &str = include_str!("../../../VERSION");
-
-#[cfg(not(feature = "platform"))]
-const VERSION: &str = "UNDEFINED";
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";

@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 
 use crate::cli::ClusterCliError;
-use crate::{LocalClusterInstaller, ClusterError, LocalInstallError, StartStatus};
+use crate::{LocalInstaller, ClusterError, LocalInstallError, StartStatus, LocalConfig};
 
 use super::StartOpt;
 use crate::check::render::{render_statuses_next_steps, render_results_next_steps};
@@ -12,39 +12,53 @@ use crate::check::render::{render_statuses_next_steps, render_results_next_steps
 ///
 /// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
 /// reported, or `Err(e)` if something unexpected occurred.
-pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
-    let mut builder = LocalClusterInstaller::new()
-        .with_log_dir(opt.log_dir.to_string())
-        .with_render_checks(true)
-        .with_spu_replicas(opt.spu);
+pub async fn process_local(
+    opt: StartOpt,
+    default_chart_version: &str,
+) -> Result<(), ClusterCliError> {
+    let mut builder = LocalConfig::builder();
+    builder
+        .chart_version(default_chart_version)
+        .log_dir(opt.log_dir.to_string())
+        .render_checks(true)
+        .spu_replicas(opt.spu);
 
     match opt.k8_config.chart_location {
         Some(chart_location) => {
-            builder = builder.with_local_chart(chart_location);
+            builder.local_chart(chart_location);
         }
         None if opt.develop => {
-            builder = builder.with_local_chart("./k8-util/helm");
+            builder.local_chart("./k8-util/helm");
         }
         _ => (),
     }
 
     if let Some(rust_log) = opt.rust_log {
-        builder = builder.with_rust_log(rust_log);
+        builder.rust_log(rust_log);
     }
 
     if opt.tls.tls {
         let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
-        builder = builder.with_tls(client, server);
+        builder.tls(client, server);
     }
 
     if opt.skip_checks {
-        builder = builder.with_skip_checks(true);
+        builder.skip_checks(true);
     }
 
-    let installer = builder.build()?;
-    let install_result = installer.install().await;
+    let config = builder.build()?;
+    let installer = LocalInstaller::from_config(config);
+    if opt.setup {
+        setup_local(&installer).await?;
+    } else {
+        install_local(&installer).await?;
+    }
 
-    match install_result {
+    Ok(())
+}
+
+pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
+    match installer.install().await {
         // Successfully performed startup
         Ok(StartStatus { checks, .. }) => {
             if checks.is_none() {
@@ -59,14 +73,10 @@ pub async fn install_local(opt: StartOpt) -> Result<(), ClusterCliError> {
         // Another type of error occurred during checking or startup
         Err(other) => return Err(other.into()),
     }
-
     Ok(())
 }
 
-pub async fn run_local_setup(_opt: StartOpt) -> Result<(), ClusterCliError> {
-    let installer = LocalClusterInstaller::new()
-        .with_render_checks(true)
-        .build()?;
+pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
     let check_results = installer.setup().await;
     render_results_next_steps(&check_results);
     Ok(())

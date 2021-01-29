@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cluster"
-version = "0.6.1"
+version = "0.7.0"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -11,20 +11,14 @@ description = "Tools for installing and managing Fluvio clusters"
 name = "fluvio_cluster"
 path = "src/lib.rs"
 
-[[bin]]
-name = "fluvio-cluster"
-path = "src/main.rs"
-required-features = ["cli"]
-
 [features]
 cli = [
     "structopt",
     "color-eyre",
     "prettytable-rs",
-    "fluvio-runner-local/platform",
+    "fluvio-runner-local",
     "fluvio-extension-common/target",
 ]
-platform = []
 
 [dependencies]
 colored = "2.0.0"
