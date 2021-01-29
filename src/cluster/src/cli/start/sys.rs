@@ -4,14 +4,29 @@ use crate::sys::{SysConfig, SysInstaller};
 use crate::ClusterError;
 use crate::error::SysInstallError;
 
-pub fn process_sys(opt: StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {
-    install_sys_impl(opt, upgrade).map_err(ClusterError::InstallSys)?;
+pub fn process_sys(
+    opt: StartOpt,
+    default_chart_version: &str,
+    upgrade: bool,
+) -> Result<(), ClusterCliError> {
+    install_sys_impl(opt, default_chart_version, upgrade).map_err(ClusterError::InstallSys)?;
     Ok(())
 }
 
-fn install_sys_impl(opt: StartOpt, upgrade: bool) -> Result<(), SysInstallError> {
+fn install_sys_impl(
+    opt: StartOpt,
+    default_chart_version: &str,
+    upgrade: bool,
+) -> Result<(), SysInstallError> {
+    let chart_version = opt
+        .k8_config
+        .chart_version
+        .as_deref()
+        .unwrap_or(default_chart_version);
+
     let config = SysConfig::builder()
         .with_namespace(&opt.k8_config.namespace)
+        .with_chart_version(chart_version)
         .with(|builder| match &opt.k8_config.chart_location {
             // If a chart location is given, use it
             Some(chart_location) => builder.with_local_chart(chart_location),

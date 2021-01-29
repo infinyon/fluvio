@@ -11,10 +11,10 @@ description = "Tools for installing and managing Fluvio clusters"
 name = "fluvio_cluster"
 path = "src/lib.rs"
 
-[[bin]]
-name = "fluvio-cluster"
-path = "src/main.rs"
-required-features = ["cli"]
+#[[bin]]
+#name = "fluvio-cluster"
+#path = "src/main.rs"
+#required-features = ["cli"]
 
 [features]
 cli = [

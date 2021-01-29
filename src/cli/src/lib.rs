@@ -140,7 +140,7 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                cluster.process(out, root.target).await?;
+                cluster.process(out, crate::VERSION, root.target).await?;
             }
             Self::Install(install) => {
                 install.process().await?;
