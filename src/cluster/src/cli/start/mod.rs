@@ -143,7 +143,7 @@ impl StartOpt {
         if self.sys {
             process_sys(self, default_chart_version, upgrade)?;
         } else if self.local {
-            process_local(self).await?;
+            process_local(self, default_chart_version).await?;
         } else {
             process_k8(self, default_chart_version, upgrade, skip_sys).await?;
         }

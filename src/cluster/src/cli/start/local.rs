@@ -12,8 +12,11 @@ use crate::check::render::{render_statuses_next_steps, render_results_next_steps
 ///
 /// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
 /// reported, or `Err(e)` if something unexpected occurred.
-pub async fn process_local(opt: StartOpt) -> Result<(), ClusterCliError> {
-    let mut builder = LocalClusterInstaller::new()
+pub async fn process_local(
+    opt: StartOpt,
+    default_chart_version: &str,
+) -> Result<(), ClusterCliError> {
+    let mut builder = LocalClusterInstaller::new(default_chart_version.to_string())
         .with_log_dir(opt.log_dir.to_string())
         .with_render_checks(true)
         .with_spu_replicas(opt.spu);

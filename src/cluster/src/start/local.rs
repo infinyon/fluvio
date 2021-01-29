@@ -41,6 +41,8 @@ pub struct LocalClusterInstallerBuilder {
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
     client_tls_policy: TlsPolicy,
+    /// The version of the Fluvio system chart to install
+    chart_version: String,
     /// The location to find the fluvio charts
     chart_location: ChartLocation,
     /// install system charts automatically
@@ -298,7 +300,7 @@ impl LocalClusterInstaller {
     /// let installer = LocalClusterInstaller::new().build().unwrap();
     /// ```
     #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> LocalClusterInstallerBuilder {
+    pub fn new(chart_version: String) -> LocalClusterInstallerBuilder {
         let spu_spec = SpuGroupSpec {
             replicas: 1,
             min_id: 0,
@@ -311,6 +313,7 @@ impl LocalClusterInstaller {
             data_dir: PathBuf::from("/tmp/fluvio"),
             server_tls_policy: TlsPolicy::Disabled,
             client_tls_policy: TlsPolicy::Disabled,
+            chart_version,
             chart_location: ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()),
             install_sys: true,
             skip_checks: false,
@@ -323,9 +326,10 @@ impl LocalClusterInstaller {
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
         let sys_config: SysConfig = SysConfig::builder()
+            .with_chart_version(&self.config.chart_version)
             .with_chart_location(self.config.chart_location.clone())
             .build()
-            .expect("TODO remove");
+            .expect("should build config since all required arguments are given");
 
         if self.config.render_checks {
             let mut progress = ClusterChecker::empty()
