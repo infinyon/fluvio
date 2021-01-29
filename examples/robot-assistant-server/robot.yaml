@@ -1,0 +1,52 @@
+---
+- Text:
+    prompt: "Hi there! I'm Bot."
+    next: 1
+- Number:
+    prompt: "Here are a few suggestions for you:"
+    items:
+      - answer: Setup a Fluvio Account
+        next: 2
+      - answer: Start streaming with Node.Js
+        next: 3
+      - answer: Start streaming with Rust
+        next: 4
+      - answer: I have a question
+        next: 5
+- Text:
+    prompt: "Fluvio <a href=\"https://fluvio.io/docs/getting-started/\" target=\"_blank\">Getting Started</a> reference guide is a good place to start on how to create a Fluvio account"
+    next: 10
+- Text:
+    prompt: "Checkout <a href=\"https://fluvio.io/tutorials/node/hello-world/\" target=\"_blank\">Hello World</a> app or the <a href=\"https://infinyon.github.io/fluvio-client-node/\" target=\"_blank\">Node API</a> library to get going"
+    next: 10
+- Text:
+    prompt: "Checkout <a href=\"https://docs.rs/fluvio/\" target=\"_blank\">Rust API</a> library to get going"
+    next: 10
+- Text:
+    prompt: Type your question here...
+    next: 6
+- Number:
+    prompt: How should we reply?
+    items:
+      - answer: Send me an email
+        next: 7
+      - answer: Connect me to discord
+        next: 8
+- Text:
+    prompt: Type your email here...
+    next: 9
+- Text:
+    prompt: "Join our community at <a href=\"https://discordapp.com/invite/bBG2dTz\" target=\"_blank\">Discord</a>"
+    next: 10
+- Text:
+    prompt: "Great, we'll have an answer shortly."
+    next: 10
+- Number:
+    prompt: More suggestions?
+    items:
+      - answer: Sure
+        next: 1
+      - answer: "No, thanks"
+        next: 11
+- End:
+    message: Have a great day.
