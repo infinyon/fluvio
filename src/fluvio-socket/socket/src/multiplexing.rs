@@ -52,7 +52,7 @@ enum SharedSender {
     /// Serial socket
     Serial(SharedMsg),
     /// Batch Socket
-    Queue(Sender<BytesMut>),
+    Queue(Sender<Option<BytesMut>>),
 }
 
 type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
@@ -248,7 +248,7 @@ where
 #[pin_project(PinnedDrop)]
 pub struct AsyncResponse<R> {
     #[pin]
-    receiver: Receiver<BytesMut>,
+    receiver: Receiver<Option<BytesMut>>,
     header: RequestHeader,
     correlation_id: i32,
     data: PhantomData<R>,
@@ -258,7 +258,7 @@ pub struct AsyncResponse<R> {
 impl<R> PinnedDrop for AsyncResponse<R> {
     fn drop(self: Pin<&mut Self>) {
         self.receiver.close();
-        debug!("multiplexor stream: {} closed", self.correlation_id);
+        debug!("multiplexer stream: {} closed", self.correlation_id);
     }
 }
 
@@ -274,7 +274,7 @@ impl<R: Request> Stream for AsyncResponse<R> {
     )]
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let next = match this.receiver.poll_next(cx) {
+        let next: Option<Option<_>> = match this.receiver.poll_next(cx) {
             Poll::Pending => {
                 trace!("Waiting for async response");
                 return Poll::Pending;
@@ -282,9 +282,16 @@ impl<R: Request> Stream for AsyncResponse<R> {
             Poll::Ready(next) => next,
         };
 
-        let bytes = match next {
-            Some(bytes) => bytes,
-            None => return Poll::Ready(None),
+        let bytes = if let Some(bytes) = next {
+            bytes
+        } else {
+            return Poll::Ready(None);
+        };
+
+        let bytes = if let Some(bytes) = bytes {
+            bytes
+        } else {
+            return Poll::Ready(Some(Err(FlvSocketError::SocketClosed)));
         };
 
         let mut cursor = Cursor::new(&bytes);
@@ -350,6 +357,16 @@ impl MultiPlexingResponseDispatcher {
                         }
                     } else {
                         debug!("dispatcher: inner stream has terminated ");
+
+                        let guard = self.senders.lock().await;
+                        for sender in guard.values() {
+                            match sender {
+                                SharedSender::Serial(_) => {},
+                                SharedSender::Queue(stream_sender) => {
+                                    let _ = stream_sender.send(None).await;
+                                }
+                            }
+                        }
                         break;
                     }
                 },
@@ -367,7 +384,7 @@ impl MultiPlexingResponseDispatcher {
                         }
                     }
 
-                    debug!("multiplexor terminated");
+                    debug!("multiplexer terminated");
                     break;
 
                 }
@@ -400,16 +417,18 @@ impl MultiPlexingResponseDispatcher {
                         .into()),
                     }
                 }
-                SharedSender::Queue(queue_sender) => queue_sender.send(msg).await.map_err(|err| {
-                    IoError::new(
-                        ErrorKind::BrokenPipe,
-                        format!(
-                            "problem sending to queue socket: {}, err: {}",
-                            correlation_id, err
-                        ),
-                    )
-                    .into()
-                }),
+                SharedSender::Queue(queue_sender) => {
+                    queue_sender.send(Some(msg)).await.map_err(|err| {
+                        IoError::new(
+                            ErrorKind::BrokenPipe,
+                            format!(
+                                "problem sending to queue socket: {}, err: {}",
+                                correlation_id, err
+                            ),
+                        )
+                        .into()
+                    })
+                }
             }
         } else {
             Err(IoError::new(
@@ -810,7 +829,7 @@ mod tests {
         #[test_async]
         async fn test_multiplexing_native_tls() -> Result<(), FlvSocketError> {
             debug!("start testing");
-            let addr = "127.0.0.1:6000";
+            let addr = "127.0.0.1:6001";
 
             let _r = join(
                 test_client(addr, TlsConnectorHandler::new()),

@@ -9,6 +9,9 @@ pub enum FlvSocketError {
         #[from]
         source: IoError,
     },
+    #[error("Socket closed")]
+    SocketClosed,
+
     #[error("Zero-copy IO error")]
     SendFileError {
         #[from]
