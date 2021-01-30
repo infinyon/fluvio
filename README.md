@@ -43,7 +43,6 @@ built on three core principles:
 ## Release Status
 
 Fluvio is currently in **Alpha** and is not ready to be used in production.
-Do not rely on Fluvio with any data that you would care to lose.
 Our CLI and APIs are also in rapid development and may experience breaking
 changes at any time. We do our best to adhere to semantic versioning but
 until our R1 release we cannot guarantee it.
