@@ -38,11 +38,11 @@ fn install_sys_impl(
     let installer = SysInstaller::from_config(config)?;
 
     if upgrade {
-        installer.install()?;
-        println!("Fluvio system chart has been installed");
-    } else {
         installer.upgrade()?;
         println!("Fluvio system chart has been upgraded");
+    } else {
+        installer.install()?;
+        println!("Fluvio system chart has been installed");
     }
 
     Ok(())
