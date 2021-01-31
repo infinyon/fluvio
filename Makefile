@@ -227,8 +227,11 @@ helm-login:
 	helm repo remove fluvio
 	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
 
+helm-publish-sys:
+	helm push k8-util/helm/fluvio-sys --version="$(VERSION)" --force fluvio
+
 helm-publish-app:
-	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
+	helm push k8-util/helm/fluvio-app --version="$(VERSION)" --force fluvio
 
 
 
