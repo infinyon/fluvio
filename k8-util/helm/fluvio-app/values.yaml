@@ -8,6 +8,8 @@ loadBalancer:
 service:
   type: LoadBalancer
 scLog: info
+sc:
+  disableSPU: false
 tls: false
 imagePullSecrets: []
 image:

@@ -17,7 +17,7 @@ use k8_types::app::stateful::{
 use crate::stores::spg::K8SpuGroupSpec;
 use crate::cli::TlsConfig;
 
-use super::spu_k8_config::SpuK8Config;
+use super::spu_k8_config::ScK8Config;
 
 use fluvio_types::defaults::SPU_DEFAULT_NAME;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
@@ -32,7 +32,7 @@ pub fn convert_cluster_to_statefulset(
     group_name: &str,
     group_svc_name: String,
     namespace: &str,
-    spu_k8_config: &SpuK8Config,
+    spu_k8_config: &ScK8Config,
     tls: Option<&TlsConfig>,
 ) -> InputK8Obj<StatefulSetSpec> {
     let statefulset_name = format!("fluvio-spg-{}", group_name);
@@ -66,7 +66,7 @@ fn generate_stateful(
     name: &str,
     group_svc_name: String,
     namespace: &str,
-    spu_k8_config: &SpuK8Config,
+    spu_k8_config: &ScK8Config,
     tls_config: Option<&TlsConfig>,
 ) -> StatefulSetSpec {
     let replicas = spg_spec.replicas;
