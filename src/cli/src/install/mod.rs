@@ -60,6 +60,7 @@ async fn fetch_latest_version<T>(
     agent: &HttpAgent,
     id: &PackageId<T>,
     target: Target,
+    prerelease: bool,
 ) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
     debug!(
@@ -68,7 +69,7 @@ async fn fetch_latest_version<T>(
     );
     let response = crate::http::execute(request).await?;
     let package = agent.package_from_response(response).await?;
-    let latest_release = package.latest_release_for_target(target)?;
+    let latest_release = package.latest_release_for_target(target, prerelease)?;
     debug!(release = ?latest_release, "Latest release for package:");
     if !latest_release.target_exists(target) {
         return Err(fluvio_index::Error::MissingTarget(target).into());

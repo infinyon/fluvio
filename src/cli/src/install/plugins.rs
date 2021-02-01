@@ -16,6 +16,9 @@ pub struct InstallOpt {
     /// Used for testing. Specifies alternate package location, e.g. "test/"
     #[structopt(hidden = true, long)]
     prefix: Option<String>,
+    /// Install the latest prerelease rather than the latest release
+    #[structopt(long)]
+    devel: bool,
 }
 
 impl InstallOpt {
@@ -33,13 +36,14 @@ impl InstallOpt {
             return Ok("".to_string());
         }
 
+        let prerelease = self.devel;
         self.install_plugin(&agent).await?;
 
         // After any 'install' command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let update_available = check_update_available(&agent).await?;
+        let update_available = check_update_available(&agent, prerelease).await?;
         if update_available {
-            prompt_available_update(&agent).await?;
+            prompt_available_update(&agent, prerelease).await?;
         }
 
         Ok("".to_string())
@@ -64,7 +68,7 @@ impl InstallOpt {
                     "🎣 Fetching latest version for package: {}...",
                     &id
                 ));
-                let version = fetch_latest_version(agent, &id, target).await?;
+                let version = fetch_latest_version(agent, &id, target, self.devel).await?;
                 let id = id.into_versioned(version);
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
