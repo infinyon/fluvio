@@ -87,7 +87,7 @@ impl ClusterCmd {
                 uninstall.process().await?;
             }
             Self::Check(check) => {
-                check.process().await?;
+                check.process(default_chart_version).await?;
             }
             Self::Releases(releases) => {
                 releases.process().await?;

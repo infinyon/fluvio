@@ -349,14 +349,19 @@ pub struct ClusterConfig {
 impl ClusterConfig {
     /// Creates a default [`ClusterConfigBuilder`].
     ///
+    /// The required option `chart_version` must be provided when constructing
+    /// the builder.
+    ///
     /// # Example
     ///
     /// ```
     /// # use fluvio_cluster::ClusterConfig;
-    /// let builder = ClusterConfig::builder();
+    /// let builder = ClusterConfig::builder("0.7.0-alpha.1");
     /// ```
-    pub fn builder() -> ClusterConfigBuilder {
-        ClusterConfigBuilder::default()
+    pub fn builder<S: Into<String>>(chart_version: S) -> ClusterConfigBuilder {
+        let mut builder = ClusterConfigBuilder::default();
+        builder.chart_version(chart_version);
+        builder
     }
 }
 
@@ -372,9 +377,7 @@ impl ClusterConfigBuilder {
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = ClusterConfig::builder()
-    ///     .chart_version("0.7.0-alpha.1")
-    ///     .build()?;
+    /// let config = ClusterConfig::builder("0.7.0-alpha.1").build()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -468,7 +471,7 @@ impl ClusterConfigBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let config = ClusterConfig::builder()
+    /// let config = ClusterConfig::builder("0.7.0-alpha.1")
     ///     .tls(client, server)
     ///     .build()?;
     /// # Ok(())
@@ -516,7 +519,7 @@ impl ClusterConfigBuilder {
     /// # use fluvio_cluster::{ClusterError, ClusterConfig};
     /// # fn example() -> Result<(), ClusterError> {
     /// let custom_namespace = false;
-    /// let config = ClusterConfig::builder()
+    /// let config = ClusterConfig::builder("0.7.0-alpha.1")
     ///     // Custom namespace is not applied
     ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
@@ -548,15 +551,10 @@ impl ClusterConfigBuilder {
 ///
 /// # Example
 ///
-/// To install Fluvio using all the default settings, use
-/// `ClusterInstaller::new()`
-///
-/// ```no_run
+/// ```
 /// # use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
 /// # async fn example() -> Result<(), ClusterError> {
-/// let config = ClusterConfig::builder()
-///     .chart_version("0.7.0-alpha.1")
-///     .build()?;
+/// let config = ClusterConfig::builder("0.7.0-alpha.1").build()?;
 /// let installer = ClusterInstaller::from_config(config)?;
 /// let _status = installer.install_fluvio().await?;
 /// # Ok(())
@@ -617,10 +615,9 @@ impl ClusterInstaller {
     /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
-        let sys_config: SysConfig = SysConfig::builder()
+        let sys_config: SysConfig = SysConfig::builder(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
             .chart_location(self.config.chart_location.clone())
-            .chart_version(self.config.chart_version.clone())
             .cloud(&self.config.cloud)
             .build()
             .unwrap();
@@ -1184,20 +1181,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_missing_config() {
-        let error = ClusterConfig::builder()
-            .build()
-            .expect_err("should fail without required config options");
-        assert!(matches!(
-            error,
-            ClusterError::InstallK8(K8InstallError::MissingRequiredConfig(_))
-        ));
-    }
-
-    #[test]
-    fn test_required_config() {
-        let config: ClusterConfig = ClusterConfig::builder()
-            .chart_version("0.7.0-alpha.1")
+    fn test_build_config() {
+        let config: ClusterConfig = ClusterConfig::builder("0.7.0-alpha.1")
             .build()
             .expect("should succeed with required config options");
         assert_eq!(config.chart_version, "0.7.0-alpha.1")

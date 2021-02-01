@@ -14,7 +14,7 @@ const DEFAULT_CLOUD_NAME: &str = "minikube";
 
 /// Configuration options for installing Fluvio system charts
 #[derive(Builder, Debug, Clone)]
-#[builder(build_fn(skip))]
+#[builder(build_fn(private, name = "build_impl"))]
 pub struct SysConfig {
     /// The type of cloud infrastructure the cluster will be running on
     ///
@@ -26,7 +26,7 @@ pub struct SysConfig {
     /// builder.cloud("minikube");
     /// # }
     /// ```
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_CLOUD_NAME.to_string()")]
     pub cloud: String,
     /// The namespace in which to install the system chart
     ///
@@ -38,9 +38,10 @@ pub struct SysConfig {
     /// builder.namespace("fluvio");
     /// # }
     /// ```
-    #[builder(setter(into))]
+    #[builder(setter(into), default = "DEFAULT_NAMESPACE.to_string()")]
     pub namespace: String,
     /// The location at which to find the system chart to install
+    #[builder(default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())")]
     pub chart_location: ChartLocation,
     /// The version of the system chart to install (REQUIRED).
     ///
@@ -59,43 +60,29 @@ pub struct SysConfig {
 impl SysConfig {
     /// Creates a default [`SysConfigBuilder`].
     ///
+    /// The required argument `chart_version` must be provdied when
+    /// constructing the builder.
+    ///
     /// # Example
     ///
     /// ```
     /// use fluvio_cluster::SysConfig;
-    /// let builder = SysConfig::builder();
+    /// let builder = SysConfig::builder("0.7.0-alpha.1");
     /// ```
-    pub fn builder() -> SysConfigBuilder {
-        SysConfigBuilder::default()
+    pub fn builder<S: Into<String>>(chart_version: S) -> SysConfigBuilder {
+        let mut builder = SysConfigBuilder::default();
+        builder.chart_version(chart_version);
+        builder
     }
 }
 
 impl SysConfigBuilder {
     /// Validates all builder options and constructs a `SysConfig`
     pub fn build(&self) -> Result<SysConfig, SysInstallError> {
-        let cloud = self
-            .cloud
-            .clone()
-            .unwrap_or_else(|| DEFAULT_CLOUD_NAME.to_string());
-        let namespace = self
-            .namespace
-            .clone()
-            .unwrap_or_else(|| DEFAULT_NAMESPACE.to_string());
-        let chart_location = self
-            .chart_location
-            .clone()
-            .unwrap_or_else(|| ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string()));
-        let chart_version = self
-            .chart_version
-            .clone()
-            .ok_or_else(|| SysInstallError::MissingRequiredConfig("chart_version".to_string()))?;
-
-        Ok(SysConfig {
-            cloud,
-            namespace,
-            chart_location,
-            chart_version,
-        })
+        let config = self
+            .build_impl()
+            .map_err(SysInstallError::MissingRequiredConfig)?;
+        Ok(config)
     }
 
     /// The local chart location to install sys charts from
@@ -144,7 +131,7 @@ impl SysConfigBuilder {
     ///     Default,
     /// }
     /// fn make_config(ns: NamespaceCandidate) -> Result<SysConfig, SysInstallError> {
-    ///     let config = SysConfig::builder()
+    ///     let config = SysConfig::builder("0.7.0-alpha.1")
     ///         .with(|builder| match &ns {
     ///             NamespaceCandidate::UserGiven(user) => builder.namespace(user),
     ///             NamespaceCandidate::System => builder.namespace("system"),
@@ -172,7 +159,7 @@ impl SysConfigBuilder {
     /// # use fluvio_cluster::{SysInstallError, SysConfig};
     /// # fn example() -> Result<(), SysInstallError> {
     /// let custom_namespace = false;
-    /// let config = SysConfig::builder()
+    /// let config = SysConfig::builder("0.7.0-alpha.1")
     ///     // Custom namespace is not applied
     ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
@@ -198,7 +185,7 @@ impl SysConfigBuilder {
 /// ```
 /// # use fluvio_cluster::{SysInstallError, SysConfig, SysInstaller};
 /// # fn example() -> Result<(), SysInstallError> {
-/// let config = SysConfig::builder()
+/// let config = SysConfig::builder("0.7.0-alpha.1")
 ///     .namespace("fluvio")
 ///     .chart_version("0.7.0-alpha.1")
 ///     .build()?;
@@ -310,17 +297,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_missing_config() {
-        let error = SysConfig::builder()
-            .build()
-            .expect_err("should fail without required config options");
-        assert!(matches!(error, SysInstallError::MissingRequiredConfig(_),));
-    }
-
-    #[test]
-    fn test_required_config() {
-        let config: SysConfig = SysConfig::builder()
-            .chart_version("0.7.0-alpha.1")
+    fn test_build_config() {
+        let config: SysConfig = SysConfig::builder("0.7.0-alpha.1")
             .build()
             .expect("should build config with required options");
         assert_eq!(config.chart_version, "0.7.0-alpha.1");
