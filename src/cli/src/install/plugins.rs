@@ -17,12 +17,14 @@ pub struct InstallOpt {
     #[structopt(hidden = true, long)]
     prefix: Option<String>,
     /// Install the latest prerelease rather than the latest release
+    ///
+    /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
     #[structopt(long)]
     devel: bool,
 }
 
 impl InstallOpt {
-    pub async fn process(self) -> Result<String, CliError> {
+    pub async fn process(self) -> Result<(), CliError> {
         let agent = match &self.prefix {
             Some(prefix) => HttpAgent::with_prefix(prefix)?,
             None => HttpAgent::default(),
@@ -33,7 +35,7 @@ impl InstallOpt {
         let require_update = check_update_required(&agent).await?;
         if require_update {
             prompt_required_update(&agent).await?;
-            return Ok("".to_string());
+            return Ok(());
         }
 
         let prerelease = self.devel;
@@ -46,10 +48,10 @@ impl InstallOpt {
             prompt_available_update(&agent, prerelease).await?;
         }
 
-        Ok("".to_string())
+        Ok(())
     }
 
-    async fn install_plugin(self, agent: &HttpAgent) -> Result<String, CliError> {
+    async fn install_plugin(self, agent: &HttpAgent) -> Result<(), CliError> {
         let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
@@ -87,6 +89,6 @@ impl InstallOpt {
         let package_path = fluvio_dir.join(id.name.as_str());
         install_bin(&package_path, &package_file)?;
 
-        Ok("".to_string())
+        Ok(())
     }
 }
