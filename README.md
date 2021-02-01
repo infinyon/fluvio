@@ -25,12 +25,7 @@
 </div>
 
 Fluvio is a high-performance distributed streaming platform that's written
-in Rust, built to make it easy to develop real-time applications. Fluvio is
-built on three core principles:
-
-1) **Data is modeled as streams of events**, and streams should deliver data as fast as possible
-2) **Services should compose seamlessly** by using streams as their interface boundary
-3) **APIs and tools should be easy to use**, so that anybody can build real-time applications
+in Rust, built to make it easy to develop real-time applications.
 
 ## Quick Links
 
