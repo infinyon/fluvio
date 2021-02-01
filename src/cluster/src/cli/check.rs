@@ -9,10 +9,11 @@ use crate::check::SysChartCheck;
 pub struct CheckOpt {}
 
 impl CheckOpt {
-    pub async fn process(self) -> Result<(), ClusterCliError> {
+    pub async fn process(self, default_chart_version: &str) -> Result<(), ClusterCliError> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
         let sys_config: SysConfig = SysConfig::builder()
+            .chart_version(default_chart_version)
             .build()
             .map_err(ClusterError::InstallSys)?;
         let mut progress = ClusterChecker::empty()
