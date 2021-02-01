@@ -26,7 +26,7 @@ pub async fn process_k8(
         .as_deref()
         .unwrap_or(default_chart_version);
 
-    let mut builder = ClusterConfig::builder();
+    let mut builder = ClusterConfig::builder(chart_version);
     builder
         .namespace(opt.k8_config.namespace)
         .group_name(opt.k8_config.group_name)
@@ -34,7 +34,6 @@ pub async fn process_k8(
         .save_profile(!opt.skip_profile_creation)
         .tls(client, server)
         .chart_values(opt.k8_config.chart_values)
-        .chart_version(chart_version)
         .render_checks(true)
         .upgrade(upgrade)
         .with_if(skip_sys, |b| b.install_sys(false))

@@ -189,10 +189,12 @@ impl LocalConfig {
     ///
     /// ```
     /// # use fluvio_cluster::LocalConfig;
-    /// let mut builder = LocalConfig::builder();
+    /// let mut builder = LocalConfig::builder("0.7.0-alpha.1");
     /// ```
-    pub fn builder() -> LocalConfigBuilder {
-        LocalConfigBuilder::default()
+    pub fn builder<S: Into<String>>(chart_version: S) -> LocalConfigBuilder {
+        let mut builder = LocalConfigBuilder::default();
+        builder.chart_version(chart_version);
+        builder
     }
 }
 
@@ -206,9 +208,7 @@ impl LocalConfigBuilder {
     /// ```
     /// # use fluvio_cluster::{ClusterError, LocalConfig};
     /// # fn example() -> Result<(), ClusterError> {
-    /// let config: LocalConfig = LocalConfig::builder()
-    ///     .chart_version("0.7.0-alpha.1") // Required field
-    ///     .build()?;
+    /// let config: LocalConfig = LocalConfig::builder("0.7.0-alpha.1").build()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -247,7 +247,7 @@ impl LocalConfigBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let config = LocalConfig::builder()
+    /// let config = LocalConfig::builder("0.7.0-alpha.1")
     ///     .tls(client, server)
     ///     .build()?;
     /// # Ok(())
@@ -328,9 +328,7 @@ impl LocalInstaller {
     /// ```
     /// # use fluvio_cluster::{ClusterError, LocalInstaller, LocalConfig};
     /// # fn example() -> Result<(), ClusterError> {
-    /// let config = LocalConfig::builder()
-    ///     .chart_version("0.7.0-alpha.1") // Used to install system charts
-    ///     .build()?;
+    /// let config = LocalConfig::builder("0.7.0-alpha.1").build()?;
     /// let installer = LocalInstaller::from_config(config);
     /// # Ok(())
     /// # }
@@ -343,8 +341,7 @@ impl LocalInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let sys_config: SysConfig = SysConfig::builder()
-            .chart_version(&self.config.chart_version)
+        let sys_config: SysConfig = SysConfig::builder(&self.config.chart_version)
             .chart_location(self.config.chart_location.clone())
             .build()
             .expect("should build config since all required arguments are given");
@@ -656,20 +653,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_missing_config() {
-        let error = LocalConfig::builder()
-            .build()
-            .expect_err("should fail without required config options");
-        assert!(matches!(
-            error,
-            ClusterError::InstallLocal(LocalInstallError::MissingRequiredConfig(_))
-        ));
-    }
-
-    #[test]
-    fn test_required_config() {
-        let config: LocalConfig = LocalConfig::builder()
-            .chart_version("0.7.0-alpha.1")
+    fn test_build_config() {
+        let config: LocalConfig = LocalConfig::builder("0.7.0-alpha.1")
             .build()
             .expect("should succeed with required config options");
         assert_eq!(config.chart_version, "0.7.0-alpha.1")

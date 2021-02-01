@@ -12,8 +12,7 @@ impl CheckOpt {
     pub async fn process(self, default_chart_version: &str) -> Result<(), ClusterCliError> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
-        let sys_config: SysConfig = SysConfig::builder()
-            .chart_version(default_chart_version)
+        let sys_config: SysConfig = SysConfig::builder(default_chart_version)
             .build()
             .map_err(ClusterError::InstallSys)?;
         let mut progress = ClusterChecker::empty()

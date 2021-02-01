@@ -16,9 +16,8 @@ pub async fn process_local(
     opt: StartOpt,
     default_chart_version: &str,
 ) -> Result<(), ClusterCliError> {
-    let mut builder = LocalConfig::builder();
+    let mut builder = LocalConfig::builder(default_chart_version);
     builder
-        .chart_version(default_chart_version)
         .log_dir(opt.log_dir.to_string())
         .render_checks(true)
         .spu_replicas(opt.spu);

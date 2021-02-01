@@ -24,9 +24,8 @@ fn install_sys_impl(
         .as_deref()
         .unwrap_or(default_chart_version);
 
-    let config = SysConfig::builder()
+    let config = SysConfig::builder(chart_version)
         .namespace(&opt.k8_config.namespace)
-        .chart_version(chart_version)
         .with(|builder| match &opt.k8_config.chart_location {
             // If a chart location is given, use it
             Some(chart_location) => builder.local_chart(chart_location),
