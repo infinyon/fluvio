@@ -40,8 +40,13 @@ pub enum CommandErrorKind {
     #[error("Child process was terminated and has no exit code")]
     Terminated,
     /// The child process completed with a non-zero exit code
-    #[error("Child process completed with non-zero exit code {0}")]
-    ExitError(i32),
+    #[error("\
+Child process completed with non-zero exit code {0}
+  stdout: {}
+  stderr: {}",
+        String::from_utf8_lossy(&.1.stdout).to_string(),
+        String::from_utf8_lossy(&.1.stderr).to_string())]
+    ExitError(i32, Output),
     /// There was an error invoking the command
     #[error("An error occurred while invoking child process")]
     IoError(#[from] std::io::Error),
@@ -82,9 +87,18 @@ pub trait CommandExt {
     /// // On success, we get the stdout and stderr output
     /// let output: Output = Command::new("true").result().unwrap();
     ///
-    /// let error = Command::new("false").result().unwrap_err();
-    /// assert!(matches!(error.source, CommandErrorKind::ExitError(1)));
-    /// assert_eq!(error.command, "false");
+    /// let error = Command::new("ls")
+    ///     .arg("does-not-exist")
+    ///     .result()
+    ///     .unwrap_err();
+    /// if let CommandErrorKind::ExitError(1i32, output) = error.source {
+    ///     assert_eq!(
+    ///         String::from_utf8_lossy(&output.stderr).to_string(),
+    ///         "ls: does-not-exist: No such file or directory\n",
+    ///     );
+    /// } else {
+    ///     panic!("should fail with stderr output");
+    /// }
     ///
     /// let error = Command::new("foobar").result().unwrap_err();
     /// assert!(matches!(error.source, CommandErrorKind::IoError(_)));
@@ -121,8 +135,28 @@ impl CommandExt for Command {
                 }),
                 Some(code) => Err(CommandError {
                     command: self.display(),
-                    source: CommandErrorKind::ExitError(code),
+                    source: CommandErrorKind::ExitError(code, output),
                 }),
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_output_display() {
+        let error = Command::new("ls")
+            .arg("does-not-exist")
+            .result()
+            .unwrap_err();
+        assert_eq!(
+            format!("{}", error.source),
+            "Child process completed with non-zero exit code 1
+  stdout: 
+  stderr: ls: does-not-exist: No such file or directory
+"
+        );
     }
 }
