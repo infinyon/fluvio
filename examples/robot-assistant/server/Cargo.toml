@@ -1,8 +1,11 @@
 [package]
 name = "robot-assistant-server"
 version = "0.1.0"
-authors = ["Yinchu Xia <larry.fantasy@gmail.com>"]
+authors = ["Fluvio Contributors team@fluvio.io"]
 edition = "2018"
+license = "Apache-2.0"
+repository = "https://github.com/infinyon/fluvio"
+description = "Authorization framework for Fluvio"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

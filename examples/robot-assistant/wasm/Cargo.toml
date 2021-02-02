@@ -1,8 +1,11 @@
 [package]
 name = "robot-assistant-wasm"
 version = "0.1.0"
-authors = ["Yinchu Xia <larry.fantasy@gmail.com>"]
+authors = ["Fluvio Contributors team@fluvio.io"]
 edition = "2018"
+license = "Apache-2.0"
+repository = "https://github.com/infinyon/fluvio"
+description = "Authorization framework for Fluvio"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
