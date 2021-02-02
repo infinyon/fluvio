@@ -12,10 +12,10 @@ use k8_types::core::service::ServiceSpec;
 
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
-#[derive(Deserialize,Default,Debug)]
+#[derive(Deserialize, Default, Debug)]
 pub struct ScConfig {
     #[serde(rename = "disableSPU")]
-    pub disable_spu: bool
+    pub disable_spu: bool,
 }
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ pub struct ScK8Config {
     pub pod_security_context: Option<PodSecurityContext>,
     pub lb_service_annotations: HashMap<String, String>,
     pub service: Option<ServiceSpec>,
-    pub sc_config: ScConfig
+    pub sc_config: ScConfig,
 }
 
 impl ScK8Config {
@@ -78,7 +78,7 @@ impl ScK8Config {
             pod_security_context,
             lb_service_annotations,
             service,
-            sc_config
+            sc_config,
         })
     }
 

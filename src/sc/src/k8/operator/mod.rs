@@ -3,17 +3,14 @@ mod conversion;
 mod spg_group;
 mod spu_k8_config;
 
-
-
 pub use spu_k8_config::ScK8Config;
-pub use operator::run_k8_operators;
+pub use k8_operator::run_k8_operators;
 
-mod operator {
+mod k8_operator {
     use k8_client::SharedK8Client;
 
     use super::{ScK8Config};
-    use super:: spg_operator::SpgOperator;
-
+    use super::spg_operator::SpgOperator;
 
     use crate::cli::TlsConfig;
     use crate::core::SharedContext;
@@ -27,7 +24,7 @@ mod operator {
         k8_client: SharedK8Client,
         ctx: SharedContext,
         tls: Option<TlsConfig>,
-        sc_config: &ScK8Config
+        sc_config: &ScK8Config,
     ) {
         SpgOperator::new(k8_client.clone(), namespace.clone(), ctx.clone(), tls).run();
 
@@ -36,7 +33,6 @@ mod operator {
         K8ClusterStateDispatcher::<SpuServicespec, _>::start(namespace, k8_client, svc_ctx.clone());
 
         if !sc_config.sc_config.disable_spu {
-
             SpuServiceController::start(ctx, svc_ctx);
         }
     }

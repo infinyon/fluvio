@@ -27,8 +27,8 @@ use crate::stores::spu::*;
 use crate::stores::spu::SpuAdminStore;
 use crate::core::SharedContext;
 
-use super::conversion::{convert_cluster_to_statefulset,generate_service};
-use super::spg_group::{SpuGroupObj,SpuValidation};
+use super::conversion::{convert_cluster_to_statefulset, generate_service};
+use super::spg_group::{SpuGroupObj, SpuValidation};
 use super::ScK8Config;
 
 pub struct SpgOperator {
