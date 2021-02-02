@@ -19,10 +19,14 @@ fn fluvio_base_dir() -> Result<PathBuf, CliError> {
         home::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
     let path = home.join(".fluvio");
 
-    if path.exists() {
-        return Ok(path);
+    match path.exists() {
+        true => Ok(path),
+        false => {
+            // Create the base dir if it doesn't exist yet (#718)
+            std::fs::create_dir(&path)?;
+            Ok(path)
+        },
     }
-    Err(IoError::new(ErrorKind::NotFound, "Fluvio base directory not found").into())
 }
 
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
