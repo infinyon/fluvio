@@ -66,10 +66,8 @@
 //!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
 //!     while let Some(Ok(record)) = stream.next().await {
-//!         if let Some(bytes) = record.try_into_bytes() {
-//!             let string = String::from_utf8_lossy(&bytes);
-//!             println!("Got record: {}", string);
-//!         }
+//!         let string = String::from_utf8_lossy(record.as_ref());
+//!         println!("Got record: {}", string);
 //!     }
 //!     Ok(())
 //! }
@@ -140,15 +138,13 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// # mod futures {
 /// #     pub use futures_util::stream::StreamExt;
 /// # }
-/// #  async fn do_consume() -> Result<(), FluvioError> {
+/// #  async fn example() -> Result<(), FluvioError> {
 /// use futures::StreamExt;
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
 /// let mut stream = consumer.stream(Offset::beginning()).await?;
 /// while let Some(Ok(record)) = stream.next().await {
-///     if let Some(bytes) = record.try_into_bytes() {
-///         let string = String::from_utf8_lossy(&bytes);
-///         println!("Got record: {}", string);
-///     }
+///     let string = String::from_utf8_lossy(record.as_ref());
+///     println!("Got record: {}", string);
 /// }
 /// # Ok(())
 /// # }

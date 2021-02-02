@@ -37,7 +37,7 @@ use crate::spu::SpuPool;
 ///
 /// ```no_run
 /// # use fluvio::{Fluvio, Offset, ConsumerConfig, FluvioError};
-/// # async fn do_create_consumer(fluvio: &Fluvio) -> Result<(), FluvioError> {
+/// # async fn example(fluvio: &Fluvio) -> Result<(), FluvioError> {
 /// let consumer = fluvio.partition_consumer("my-topic", 0).await?;
 /// let records = consumer.fetch(Offset::beginning()).await?;
 /// # Ok(())
@@ -76,15 +76,12 @@ impl PartitionConsumer {
     ///
     /// ```no_run
     /// # use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
-    /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// let response = consumer.fetch(Offset::beginning()).await?;
     /// for batch in response.records.batches {
     ///     for record in batch.records {
-    ///         if let Some(record) = record.value.inner_value() {
-    ///             let string = String::from_utf8(record)
-    ///                 .expect("record should be a string");
-    ///             println!("Got record: {}", string);
-    ///         }
+    ///         let string = String::from_utf8_lossy(record.value.as_ref());
+    ///         println!("Got record: {}", string);
     ///     }
     /// }
     /// # Ok(())
@@ -119,7 +116,7 @@ impl PartitionConsumer {
     ///
     /// ```no_run
     /// # use fluvio::{PartitionConsumer, FluvioError, Offset, ConsumerConfig};
-    /// # async fn do_fetch(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// // Use custom fetching configurations
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
@@ -127,11 +124,8 @@ impl PartitionConsumer {
     /// let response = consumer.fetch_with_config(Offset::beginning(), fetch_config).await?;
     /// for batch in response.records.batches {
     ///     for record in batch.records {
-    ///         if let Some(record) = record.value.inner_value() {
-    ///             let string = String::from_utf8(record)
-    ///                 .expect("record should be a string");
-    ///             println!("Got record: {}", string);
-    ///         }
+    ///         let string = String::from_utf8_lossy(record.value.as_ref());
+    ///         println!("Got record: {}", string);
     ///     }
     /// }
     /// # Ok(())
@@ -217,14 +211,12 @@ impl PartitionConsumer {
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     if let Some(bytes) = record.try_into_bytes() {
-    ///         let string = String::from_utf8_lossy(&bytes);
-    ///         println!("Got event: {}", string);
-    ///     }
+    ///     let string = String::from_utf8_lossy(record.as_ref());
+    ///     println!("Got event: {}", string);
     /// }
     /// # Ok(())
     /// # }
@@ -264,17 +256,15 @@ impl PartitionConsumer {
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn do_stream(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::default()
     ///     .with_max_bytes(1000);
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     if let Some(bytes) = record.try_into_bytes() {
-    ///         let string = String::from_utf8_lossy(&bytes);
-    ///         println!("Got event: {}", string);
-    ///     }
+    ///     let string = String::from_utf8_lossy(record.as_ref());
+    ///     println!("Got event: {}", string);
     /// }
     /// # Ok(())
     /// # }
