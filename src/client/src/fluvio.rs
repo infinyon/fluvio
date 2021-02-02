@@ -122,6 +122,11 @@ impl Fluvio {
     ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
+
+        if !self.spu_pool().await?.topic_exists(&topic).await {
+            return Err(FluvioError::TopicNotFound(topic));
+        }
+
         Ok(TopicProducer::new(topic, self.spu_pool().await?))
     }
 
