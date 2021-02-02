@@ -13,7 +13,7 @@ tide = "0.15.0"
 async-std = { version = "1.9.0", features = ["attributes"] }
 serde = "1.0.123"
 tide-websockets = "0.1.0"
-fluvio = "0.3.5"
+fluvio = "0.4.0"
 futures = "0.3.12"
 anyhow = "1.0.38"
 uuid = { version = "0.8", features = ["serde", "v4"] }

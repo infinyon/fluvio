@@ -75,46 +75,42 @@ async fn main() -> Result<()> {
                 let consumer = fluvio::consumer(topic_id_clone, 0).await?;
                 let mut fluvio_stream = consumer.stream(fluvio::Offset::beginning()).await?;
                 while let Some(Ok(record)) = fluvio_stream.next().await {
-                    if let Some(bytes) = record.try_into_bytes() {
-                        let s = String::from_utf8_lossy(&bytes);
-                        ws_stream
-                            .send_string(format!("<div style=\"text-align: right;\">{}</div>", s))
+                    let bytes = record.as_ref();
+                    let s = String::from_utf8_lossy(&bytes);
+                    ws_stream
+                        .send_string(format!("<div style=\"text-align: right;\">{}</div>", s))
+                        .await
+                        .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
+                    let message = if let Ok(num) = s.parse::<usize>() {
+                        robot::Message::Number(num)
+                    } else {
+                        robot::Message::Text(s.to_string())
+                    };
+                    let state = robot.process(message);
+                    match state {
+                        State::Text { prompt, .. } => ws_stream
+                            .send_string(format!("<div class=\"bot-message\">{}</div>", prompt))
                             .await
-                            .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
-                        let message = if let Ok(num) = s.parse::<usize>() {
-                            robot::Message::Number(num)
-                        } else {
-                            robot::Message::Text(s.to_string())
-                        };
-                        let state = robot.process(message);
-                        match state {
-                            State::Text { prompt, .. } => ws_stream
+                            .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
+                        State::Number { prompt, items } => {
+                            ws_stream
                                 .send_string(format!("<div class=\"bot-message\">{}</div>", prompt))
                                 .await
-                                .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
-                            State::Number { prompt, items } => {
+                                .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
+                            for item in items {
                                 ws_stream
                                     .send_string(format!(
-                                        "<div class=\"bot-message\">{}</div>",
-                                        prompt
+                                        "<div>[ {} ] {}</div>",
+                                        item.next, item.answer
                                     ))
                                     .await
                                     .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
-                                for item in items {
-                                    ws_stream
-                                        .send_string(format!(
-                                            "<div>[ {} ] {}</div>",
-                                            item.next, item.answer
-                                        ))
-                                        .await
-                                        .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
-                                }
                             }
-                            State::End { message } => ws_stream
-                                .send_string(format!("<div>{}</div>", message))
-                                .await
-                                .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
                         }
+                        State::End { message } => ws_stream
+                            .send_string(format!("<div>{}</div>", message))
+                            .await
+                            .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
                     }
                 }
                 Ok(())
