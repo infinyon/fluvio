@@ -274,7 +274,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-core"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "bytes",
  "log",

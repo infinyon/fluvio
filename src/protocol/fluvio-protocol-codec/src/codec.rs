@@ -127,7 +127,7 @@ mod test {
                         "server: writing to client vector encoded len: {}",
                         buf.len()
                     );
-                    assert_eq!(buf.len(), 6); //  4(array len)+ 5 bytes
+                    assert_eq!(buf.len(), 9); //  4(array len)+ 5 bytes
 
                     // write buffer length since encoder doesn't write
                     // need to send out len
@@ -147,7 +147,7 @@ mod test {
                         "server: writing to client vector encoded len: {}",
                         buf.len()
                     );
-                    assert_eq!(buf.len(), 6); //  4(array len)+ 5 bytes
+                    assert_eq!(buf.len(), 9); //  4(array len)+ 5 bytes
 
                     // write buffer length since encoder doesn't write
                     // need to send out len
@@ -185,7 +185,7 @@ mod test {
                     debug!("client :received first value from server");
                     let mut bytes = value.expect("bytes");
                     debug!("client: received bytes len: {}", bytes.len());
-                    assert_eq!(bytes.len(), 6, "total bytes is 6");
+                    assert_eq!(bytes.len(), 9, "total bytes is 6");
                     let mut decoded_values: Vec<u8> = vec![];
                     decoded_values
                         .decode(&mut bytes, 0)
