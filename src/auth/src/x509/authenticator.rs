@@ -62,6 +62,9 @@ impl X509Authenticator {
                 .await
                 .map_err(|err| match err {
                     fluvio_socket::FlvSocketError::IoError { source } => source,
+                    fluvio_socket::FlvSocketError::SocketClosed => {
+                        IoError::new(IoErrorKind::BrokenPipe, "connection closed")
+                    }
                     fluvio_socket::FlvSocketError::SendFileError { .. } => {
                         panic!("shoud not be doing zero copy here")
                     }
