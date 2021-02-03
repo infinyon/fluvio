@@ -15,7 +15,7 @@ pub struct UpdateOpt {
     prefix: Option<String>,
     /// Update to the latest prerelease rather than the latest release
     #[structopt(long)]
-    devel: bool,
+    develop: bool,
 }
 
 impl UpdateOpt {
@@ -36,7 +36,7 @@ impl UpdateOpt {
 
         // Find the latest version of this package
         install_println("🎣 Fetching latest version for fluvio/fluvio...");
-        let latest_version = fetch_latest_version(agent, &id, target, self.devel).await?;
+        let latest_version = fetch_latest_version(agent, &id, target, self.develop).await?;
         let id = id.into_versioned(latest_version);
 
         // Download the package file from the package registry

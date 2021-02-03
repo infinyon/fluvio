@@ -20,7 +20,7 @@ pub struct InstallOpt {
     ///
     /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
     #[structopt(long)]
-    devel: bool,
+    develop: bool,
 }
 
 impl InstallOpt {
@@ -38,14 +38,14 @@ impl InstallOpt {
             return Ok(());
         }
 
-        let prerelease = self.devel;
+        let prerelease = self.develop;
         self.install_plugin(&agent).await?;
 
-        // After any 'install' command, check if the CLI has an available update,
+        // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let update_available = check_update_available(&agent, prerelease).await?;
+        let update_available = check_update_available(&agent, false).await?;
         if update_available {
-            prompt_available_update(&agent, prerelease).await?;
+            prompt_available_update(&agent, false).await?;
         }
 
         Ok(())
@@ -70,7 +70,7 @@ impl InstallOpt {
                     "🎣 Fetching latest version for package: {}...",
                     &id
                 ));
-                let version = fetch_latest_version(agent, &id, target, self.devel).await?;
+                let version = fetch_latest_version(agent, &id, target, self.develop).await?;
                 let id = id.into_versioned(version);
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
