@@ -17,6 +17,7 @@ use crate::FluvioConfig;
 use crate::spu::SpuPool;
 
 use super::*;
+use semver::Version;
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
@@ -69,6 +70,7 @@ impl Fluvio {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
+        check_platform_compatible(versions.platform_version())?;
         let socket = AllMultiplexerSocket::shared(socket);
 
         let spu_pool = OnceCell::new();
@@ -179,4 +181,21 @@ impl Fluvio {
             self.versions.clone(),
         )
     }
+}
+
+/// The remote cluster is compatible with this client if its
+/// platform version is greater than this crate's
+/// `MINIMUM_PLATFORM_VERSION`.
+fn check_platform_compatible(cluster_version: &Version) -> Result<(), FluvioError> {
+    let client_minimum_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
+        .expect("MINIMUM_PLATFORM_VERSION must be semver");
+
+    if *cluster_version < client_minimum_version {
+        return Err(FluvioError::MinimumPlatformVersion {
+            cluster_version: cluster_version.clone(),
+            client_minimum_version,
+        });
+    }
+
+    Ok(())
 }

@@ -101,6 +101,9 @@ pub use offset::Offset;
 pub use crate::admin::FluvioAdmin;
 pub use crate::client::Fluvio;
 
+/// The minimum VERSION of the Fluvio Platform that this client is compatible with.
+const MINIMUM_PLATFORM_VERSION: &str = "0.7.0-alpha.1";
+
 /// Creates a producer that sends events to the named topic
 ///
 /// This is a shortcut function that uses the current profile
