@@ -433,7 +433,6 @@ mod test {
 
     #[test]
     fn test_decode_encode_record() -> Result<(), IoError> {
-        
         /* Below is how you generate the vec<u8> for the `data` varible below.
         let mut record = DefaultRecord::from(String::from("dog"));
         record.preamble.set_offset_delta(1);
@@ -441,24 +440,9 @@ mod test {
         record.encode(&mut out, 0)?;
         println!("ENCODED: {:#x?}", out);
         */
-        
+
         let data = [
-            0x1e,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x64,
-            0x6f,
-            0x67,
-            0x0,
+            0x1e, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x64, 0x6f, 0x67, 0x0,
         ];
 
         let record = DefaultRecord::decode_from(&mut Cursor::new(&data), 0)?;
