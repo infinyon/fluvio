@@ -31,7 +31,7 @@ fn test_encode_recordset() {
     let mut src = vec![];
     let result = recordset.encode(&mut src, 0);
     assert!(result.is_ok());
-    assert_eq!(src.len(), 3);
-    assert_eq!(src[2], 0x0a);
+    assert_eq!(src.len(), 6);
+    assert_eq!(src[5], 0x0a);
     assert_eq!(recordset.write_size(0), src.len());
 }

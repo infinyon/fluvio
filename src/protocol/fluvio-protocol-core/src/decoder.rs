@@ -45,9 +45,8 @@ where
     where
         T: Buf,
     {
-        let mut len: i64 = 0;
-
-        len.decode_varint(src)?;
+        let mut len: i32 = 0;
+        len.decode(src, version)?;
 
         trace!("decoding Vec len:{}", len);
 
@@ -62,7 +61,7 @@ where
     }
 }
 
-fn decode_vec<T, M>(len: i64, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
+fn decode_vec<T, M>(len: i32, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
 where
     T: Buf,
     M: Default + Decoder,
@@ -630,7 +629,7 @@ mod test {
     #[test]
     fn test_decode_valid_string_vectors() {
         // array of strings with "test"
-        let data = [0x02, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74];
+        let data = [0,0,0,0x01, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74];
 
         let mut values: Vec<String> = Vec::new();
         let result = values.decode(&mut Cursor::new(&data), 0);

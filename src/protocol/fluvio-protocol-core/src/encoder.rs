@@ -51,7 +51,7 @@ where
 {
     fn write_size(&self, version: Version) -> usize {
         self.iter()
-            .fold(variant_size(self.len() as i64), |sum, val| sum + val.write_size(version))
+            .fold(4, |sum, val| sum + val.write_size(version))
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -64,11 +64,11 @@ where
                 "not enough capacity for vec",
             ));
         }
-        let len : i64 = self.len() as i64;
-        len.encode_varint(dest)?;
+
+        dest.put_u32(self.len() as u32);
 
         for ref v in self {
-            v.encode::<T>(dest, version)?;
+            v.encode(dest, version)?;
         }
 
         Ok(())
@@ -524,12 +524,9 @@ mod test {
         let value: Vec<String> = vec![String::from("test")];
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 7);
-        assert_eq!(dest[0], 0x02);
-        assert_eq!(dest[3], 't' as u8);
-        assert_eq!(dest[4], 'e' as u8);
-        assert_eq!(dest[5], 's' as u8);
-        assert_eq!(dest[6], 't' as u8);
+        assert_eq!(dest.len(), 10);
+         assert_eq!(dest[3], 0x01);
+        assert_eq!(dest[9], 0x74);
         assert_eq!(value.write_size(0), dest.len()); // vec len 4: string len: 2, string 4
     }
 
@@ -539,10 +536,9 @@ mod test {
         let value: Vec<u8> = vec![0x10, 0x11];
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 3);
-        assert_eq!(dest[0], 0x04);
-        assert_eq!(dest[1], 0x10);
-        assert_eq!(dest[2], 0x11);
+        assert_eq!(dest.len(), 6);
+        assert_eq!(dest[3], 0x02);
+        assert_eq!(dest[5], 0x11);
         assert_eq!(value.write_size(0), dest.len());
     }
     #[test]
@@ -551,8 +547,8 @@ mod test {
         let value: Vec<u8> = vec![0x10; 257];
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 259);
-        assert_eq!(dest[2..259], vec![0x10; 257]);
+        assert_eq!(dest.len(), 257+4);
+        assert_eq!(dest[4..257+4], vec![0x10; 257]);
         assert_eq!(value.write_size(0), dest.len());
     }
 
