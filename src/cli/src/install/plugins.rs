@@ -38,7 +38,6 @@ impl InstallOpt {
             return Ok(());
         }
 
-        let prerelease = self.develop;
         self.install_plugin(&agent).await?;
 
         // After any "install" command, check if the CLI has an available update,
