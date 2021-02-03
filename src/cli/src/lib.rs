@@ -32,6 +32,7 @@ use common::COMMAND_TEMPLATE;
 use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
+use fluvio::config::ConfigFile;
 
 pub const VERSION: &str = include_str!("VERSION");
 static_assertions::const_assert!(!VERSION.is_empty());
@@ -263,7 +264,16 @@ impl VersionOpt {
             }
         }
 
-        println!("Fluvio Platform   : {}", platform_version);
+        let profile_name = ConfigFile::load(None)
+            .ok()
+            .and_then(|it| {
+                it.config()
+                    .current_profile_name()
+                    .map(|name| name.to_string())
+            })
+            .map(|name| format!(" ({})", name))
+            .unwrap_or_else(|| "".to_string());
+        println!("Fluvio Platform   : {}{}", platform_version, profile_name);
 
         println!("Git Commit        : {}", env!("GIT_HASH"));
         if let Some(os_info) = option_env!("UNAME") {
