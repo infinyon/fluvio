@@ -57,8 +57,7 @@ impl ClusterError {
         match &self {
             Self::InstallLocal(LocalInstallError::K8ClientError(K8::Client(it))) if it.as_u16() == 409 => {
                 let report = Report::from(self);
-                let report = report.suggestion("Run `fluvio cluster delete --local`, then retry");
-                report
+                report.suggestion("Run `fluvio cluster delete --local`, then retry")
             }
             _ => Report::from(self),
         }
