@@ -16,7 +16,7 @@ mod test {
     #[test]
     fn test_zero_copy() {
         let b = Buffer {
-            i1: (10 as u16).to_be(),
+            i1: (10u16).to_be(),
             i2: 11,
         };
 

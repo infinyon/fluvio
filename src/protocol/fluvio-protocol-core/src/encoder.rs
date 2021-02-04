@@ -585,9 +585,10 @@ mod test {
     fn test_encoding_struct() {
         // v1
         let mut dest = vec![];
-        let mut record = TestRecord::default();
-        record.value = 20;
-        record.value2 = 10;
+        let record = TestRecord {
+            value: 20,
+            value2: 10,
+        };
         record.encode(&mut dest, 0).expect("encode");
         assert_eq!(dest.len(), 1);
         assert_eq!(dest[0], 20);
