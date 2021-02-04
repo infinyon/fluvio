@@ -255,25 +255,25 @@ jobs:
         run: |
           ./target/release/fluvio version
       - name: smoke test tls
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Build examples
         run: examples/tests/build.sh --release
       - name: Test examples
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: examples/tests/run.sh --release
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload Sc logs
-        timeout-minutes: 10
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-local-sc-logs
           path: /usr/local/var/log/fluvio/flv_sc.log
       - name: Upload Spu logs
-        timeout-minutes: 10
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
