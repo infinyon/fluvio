@@ -22,7 +22,7 @@ use fluvio_socket::InnerFlvSocket;
 
 use crate::api_loop;
 use crate::call_service;
-use crate::FlvService;
+use crate::KfService;
 
 #[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
@@ -128,7 +128,7 @@ async fn handle_echo_request(
 }
 
 #[async_trait]
-impl<S> FlvService<S> for TestService
+impl<S> KfService<S> for TestService
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
