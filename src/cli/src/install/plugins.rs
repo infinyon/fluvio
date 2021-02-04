@@ -16,10 +16,15 @@ pub struct InstallOpt {
     /// Used for testing. Specifies alternate package location, e.g. "test/"
     #[structopt(hidden = true, long)]
     prefix: Option<String>,
+    /// Install the latest prerelease rather than the latest release
+    ///
+    /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
+    #[structopt(long)]
+    develop: bool,
 }
 
 impl InstallOpt {
-    pub async fn process(self) -> Result<String, CliError> {
+    pub async fn process(self) -> Result<(), CliError> {
         let agent = match &self.prefix {
             Some(prefix) => HttpAgent::with_prefix(prefix)?,
             None => HttpAgent::default(),
@@ -30,22 +35,22 @@ impl InstallOpt {
         let require_update = check_update_required(&agent).await?;
         if require_update {
             prompt_required_update(&agent).await?;
-            return Ok("".to_string());
+            return Ok(());
         }
 
         self.install_plugin(&agent).await?;
 
-        // After any 'install' command, check if the CLI has an available update,
+        // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let update_available = check_update_available(&agent).await?;
+        let update_available = check_update_available(&agent, false).await?;
         if update_available {
-            prompt_available_update(&agent).await?;
+            prompt_available_update(&agent, false).await?;
         }
 
-        Ok("".to_string())
+        Ok(())
     }
 
-    async fn install_plugin(self, agent: &HttpAgent) -> Result<String, CliError> {
+    async fn install_plugin(self, agent: &HttpAgent) -> Result<(), CliError> {
         let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
@@ -64,7 +69,7 @@ impl InstallOpt {
                     "🎣 Fetching latest version for package: {}...",
                     &id
                 ));
-                let version = fetch_latest_version(agent, &id, target).await?;
+                let version = fetch_latest_version(agent, &id, target, self.develop).await?;
                 let id = id.into_versioned(version);
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
@@ -83,6 +88,6 @@ impl InstallOpt {
         let package_path = fluvio_dir.join(id.name.as_str());
         install_bin(&package_path, &package_file)?;
 
-        Ok("".to_string())
+        Ok(())
     }
 }
