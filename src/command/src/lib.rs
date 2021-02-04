@@ -151,10 +151,9 @@ mod tests {
             .arg("does-not-exist")
             .result()
             .unwrap_err();
-        assert!(format!("{}", error.source).starts_with(
-            "Child process completed with non-zero exit code 1
-  stdout: 
-  stderr: "
-        ));
+        let error_display = format!("{}", error.source);
+        assert!(error_display.starts_with("Child process completed with non-zero exit code"));
+        assert!(error_display.contains("stdout:"));
+        assert!(error_display.contains("stderr:"));
     }
 }
