@@ -8,7 +8,6 @@ pub use self::decoder::DecoderVarInt;
 pub use self::encoder::Encoder;
 pub use self::encoder::EncoderVarInt;
 
-
 pub mod bytes {
     pub use bytes::Buf;
     pub use bytes::BufMut;

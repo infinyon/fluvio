@@ -63,10 +63,7 @@ pub(crate) fn find_int_name_value(version_meta: &Meta, attr_name: &str) -> Optio
 }
 
 /// find name value with str value
-pub(crate) fn find_string_name_value(
-    version_meta: &Meta,
-    attr_name: &str,
-) -> Option<LitStr> {
+pub(crate) fn find_string_name_value(version_meta: &Meta, attr_name: &str) -> Option<LitStr> {
     if let Some(attr) = find_name_attribute(&version_meta, attr_name) {
         match &attr.lit {
             Lit::Str(val) => Some(val.clone()),

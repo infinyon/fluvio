@@ -2,7 +2,6 @@ mod api;
 mod request;
 mod response;
 
-
 pub mod core {
     pub use fluvio_protocol::*;
 }
@@ -11,19 +10,15 @@ pub mod derive {
     pub use fluvio_protocol_derive::*;
 }
 
-
 pub use self::api::*;
 pub use self::response::*;
 pub use self::request::*;
-
-
 
 //pub use self::group_protocol_metadata::ProtocolMetadata;
 //pub use self::group_protocol_metadata::Metadata;
 //pub use self::group_assigment::GroupAssignment;
 //pub use self::group_assigment::Assignment;
 // pub use self::common::*;
-
 
 pub const MAX_BYTES: i32 = 52428800;
 
@@ -35,6 +30,3 @@ macro_rules! api_decode {
         Ok($api::$req(RequestMessage::new($header, request)))
     }};
 }
-
-
-

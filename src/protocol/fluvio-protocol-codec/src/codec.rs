@@ -27,16 +27,19 @@ impl Decoder for FluvioCodec {
     type Error = IoError;
 
     fn decode(&mut self, bytes: &mut BytesMut) -> Result<Option<BytesMut>, Self::Error> {
-
         let len = bytes.len();
         if len == 0 {
-            return Ok(None)
+            return Ok(None);
         }
         if len >= 4 {
             let mut src = Cursor::new(&*bytes);
             let mut packet_len: i32 = 0;
             packet_len.decode(&mut src, 0)?;
-            trace!("Decoder: received buffer: {}, message size: {}", len, packet_len);
+            trace!(
+                "Decoder: received buffer: {}, message size: {}",
+                len,
+                packet_len
+            );
             if (packet_len + 4) as usize <= bytes.len() {
                 trace!(
                     "Decoder: all packets are in buffer len: {}, excess {}",
@@ -44,7 +47,7 @@ impl Decoder for FluvioCodec {
                     bytes.len() - (packet_len + 4) as usize
                 );
                 let mut buf = bytes.split_to((packet_len + 4) as usize);
-                let message = buf.split_off(4);   // truncate length
+                let message = buf.split_off(4); // truncate length
                 Ok(Some(message))
             } else {
                 trace!(
@@ -55,7 +58,10 @@ impl Decoder for FluvioCodec {
                 Ok(None)
             }
         } else {
-            trace!("Decoder received raw bytes len: {} less than 4 not enough for size", len);
+            trace!(
+                "Decoder received raw bytes len: {} less than 4 not enough for size",
+                len
+            );
             Ok(None)
         }
     }
@@ -64,7 +70,6 @@ impl Decoder for FluvioCodec {
 /// Implement encoder for Kafka Codec
 /// This is straight pass thru, actual encoding is done file slice
 impl Encoder<Bytes> for FluvioCodec {
-
     type Error = IoError;
 
     fn encode(&mut self, data: Bytes, buf: &mut BytesMut) -> Result<(), IoError> {
@@ -118,8 +123,7 @@ mod test {
 
                 let data: Vec<u8> = vec![0x1, 0x02, 0x03, 0x04, 0x5];
                 // send 2 times in order
-                for _ in 0..2u16  {
-
+                for _ in 0..2u16 {
                     //  debug!("server encoding original vector with len: {}", data.len());
                     let mut buf = vec![];
                     data.encode(&mut buf, 0)?;
@@ -161,7 +165,6 @@ mod test {
                     sink.send(Bytes::from(buf)).await.expect("sending");
                     fluvio_future::timer::sleep(time::Duration::from_millis(10)).await;
                     sink.send(Bytes::from(buf2)).await.expect("sending");
-
                 }
 
                 fluvio_future::timer::sleep(time::Duration::from_millis(50)).await;
@@ -178,7 +181,7 @@ mod test {
             debug!("client: trying to connect");
             let tcp_stream = TcpStream::connect(&addr).await.expect("connect");
             debug!("client: got connection. waiting");
-            let framed = Framed::new(tcp_stream.compat(), FluvioCodec{});
+            let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
             let (_, mut stream) = framed.split();
             for _ in 0..3u16 {
                 if let Some(value) = stream.next().await {
@@ -198,7 +201,6 @@ mod test {
                     assert!(false, "no first value received");
                 }
             }
-
 
             debug!("finished client");
 

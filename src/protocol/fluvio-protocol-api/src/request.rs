@@ -29,13 +29,14 @@ impl<R> RequestMessage<R> {
     }
 }
 
-
-impl <R>fmt::Display for RequestMessage<R> where R: Display{
+impl<R> fmt::Display for RequestMessage<R>
+where
+    R: Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{} {}",self.header,self.request)      
+        write!(f, "{} {}", self.header, self.request)
     }
 }
-
 
 impl<R> Default for RequestMessage<R>
 where
@@ -154,7 +155,12 @@ where
         T: BufMut,
     {
         let len = self.write_size(version) as i32;
-        trace!("encoding kf request: {} version: {}, len: {}", std::any::type_name::<R>(),version,len);
+        trace!(
+            "encoding kf request: {} version: {}, len: {}",
+            std::any::type_name::<R>(),
+            version,
+            len
+        );
         len.encode(out, version)?;
 
         trace!("encoding request header: {:#?}", &self.header);
@@ -185,12 +191,12 @@ mod test {
     use crate::ApiMessage;
 
     use crate::Request;
-    
+
     #[fluvio(encode_discriminant)]
     #[derive(PartialEq, Debug, Clone, Copy, Encode, Decode)]
     #[repr(u16)]
     pub enum TestApiKey {
-        ApiVersion = 0
+        ApiVersion = 0,
     }
 
     impl Default for TestApiKey {
@@ -352,5 +358,4 @@ mod test {
             }
         }
     }
-
 }

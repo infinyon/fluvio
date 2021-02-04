@@ -629,7 +629,7 @@ mod test {
     #[test]
     fn test_decode_valid_string_vectors() {
         // array of strings with "test"
-        let data = [0,0,0,0x01, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74];
+        let data = [0, 0, 0, 0x01, 0x00, 0x04, 0x74, 0x65, 0x73, 0x74];
 
         let mut values: Vec<String> = Vec::new();
         let result = values.decode(&mut Cursor::new(&data), 0);
@@ -663,8 +663,8 @@ mod test {
     #[test]
     fn test_vec8_encode_and_decode() {
         use crate::encoder::Encoder;
-        let in_vec : Vec<u8> = vec![1, 2, 3];
-        let mut out : Vec<u8> = vec![];
+        let in_vec: Vec<u8> = vec![1, 2, 3];
+        let mut out: Vec<u8> = vec![];
         let ret = in_vec.encode(&mut out, 0);
         assert!(ret.is_ok());
     }

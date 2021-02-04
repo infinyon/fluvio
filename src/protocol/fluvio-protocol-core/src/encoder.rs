@@ -525,7 +525,7 @@ mod test {
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
         assert_eq!(dest.len(), 10);
-         assert_eq!(dest[3], 0x01);
+        assert_eq!(dest[3], 0x01);
         assert_eq!(dest[9], 0x74);
         assert_eq!(value.write_size(0), dest.len()); // vec len 4: string len: 2, string 4
     }
@@ -547,8 +547,8 @@ mod test {
         let value: Vec<u8> = vec![0x10; 257];
         let result = value.encode(&mut dest, 0);
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 257+4);
-        assert_eq!(dest[4..257+4], vec![0x10; 257]);
+        assert_eq!(dest.len(), 257 + 4);
+        assert_eq!(dest[4..257 + 4], vec![0x10; 257]);
         assert_eq!(value.write_size(0), dest.len());
     }
 

@@ -26,12 +26,12 @@ impl ContainerAttributes {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
                             if name_value.path.is_ident("api_min_version") {
                                 if let Lit::Int(lit_int) = &name_value.lit {
-                                    cont_attr.api_min_version =
-                                        lit_int.base10_parse::<u16>()?;
+                                    cont_attr.api_min_version = lit_int.base10_parse::<u16>()?;
                                 }
                             } else if name_value.path.is_ident("api_max_version") {
                                 if let Lit::Int(lit_int) = &name_value.lit {
-                                    cont_attr.api_max_version = Some(lit_int.base10_parse::<u16>()?);
+                                    cont_attr.api_max_version =
+                                        Some(lit_int.base10_parse::<u16>()?);
                                 }
                             } else if name_value.path.is_ident("api_key") {
                                 if let Lit::Int(lit_int) = &name_value.lit {

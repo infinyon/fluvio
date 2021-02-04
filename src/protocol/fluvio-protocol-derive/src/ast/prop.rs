@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
-use syn::{Field, Lit, Meta, NestedMeta, Error};
+use syn::{Error, Field, Lit, Meta, NestedMeta};
 
 #[derive(Default)]
 pub(crate) struct Prop {
@@ -25,7 +25,10 @@ impl Prop {
         let field_ident = if let Some(ident) = &field.ident {
             ident.clone()
         } else {
-            return Err(Error::new(field.span(), "Named field must have an `ident`."));
+            return Err(Error::new(
+                field.span(),
+                "Named field must have an `ident`.",
+            ));
         };
         prop.field_name = field_ident.to_string();
         // Find all supported field level attributes in one go.
@@ -38,8 +41,7 @@ impl Prop {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
                             if name_value.path.is_ident("min_version") {
                                 if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.min_version =
-                                        lit_int.base10_parse::<i16>()?;
+                                    prop.min_version = lit_int.base10_parse::<i16>()?;
                                 }
                             } else if name_value.path.is_ident("max_version") {
                                 if let Lit::Int(lit_int) = name_value.lit {

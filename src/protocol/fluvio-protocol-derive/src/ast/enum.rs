@@ -1,10 +1,10 @@
-use syn::{
-    Expr, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum, Lit, Meta, NestedMeta,
-    Variant, ExprLit, ExprUnary, Error
-};
-use syn::spanned::Spanned;
 use proc_macro2::TokenStream;
 use quote::quote;
+use syn::spanned::Spanned;
+use syn::{
+    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum,
+    Lit, Meta, NestedMeta, Variant,
+};
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
@@ -14,9 +14,8 @@ pub(crate) struct FluvioEnum {
 
 impl FluvioEnum {
     pub fn from_ast(item: ItemEnum) -> syn::Result<Self> {
-        
         let enum_ident = item.ident;
-        
+
         let mut props = vec![];
         for variant in item.variants {
             props.push(EnumProp::from_ast(variant)?);
@@ -32,23 +31,19 @@ impl FluvioEnum {
     }
 }
 
-
 pub(crate) enum DiscrimantExpr {
     Lit(ExprLit),
-    Unary(ExprUnary)
+    Unary(ExprUnary),
 }
 
 impl DiscrimantExpr {
-
     pub fn as_token_stream(&self) -> TokenStream {
         match self {
             Self::Lit(exp) => quote! { #exp },
-            Self::Unary(exp) => quote! { #exp }
+            Self::Unary(exp) => quote! { #exp },
         }
     }
 }
-
-
 
 #[derive(Default)]
 pub(crate) struct EnumProp {
@@ -59,7 +54,6 @@ pub(crate) struct EnumProp {
 }
 impl EnumProp {
     pub fn from_ast(variant: Variant) -> syn::Result<Self> {
-        
         let mut prop = EnumProp::default();
         let variant_ident = variant.ident.clone();
         prop.variant_name = variant_ident.to_string();
@@ -82,22 +76,21 @@ impl EnumProp {
                 }
             }
         }
-        prop.discriminant = if let Some((_,discriminant)) = variant.discriminant {
+        prop.discriminant = if let Some((_, discriminant)) = variant.discriminant {
             match discriminant {
-                Expr::Lit(elit) =>  {
-                    Some(DiscrimantExpr::Lit(elit))
-                },
-                Expr::Unary(elit) => {
-                    Some(DiscrimantExpr::Unary(elit))
-                },
+                Expr::Lit(elit) => Some(DiscrimantExpr::Lit(elit)),
+                Expr::Unary(elit) => Some(DiscrimantExpr::Unary(elit)),
                 _ => {
-                    return Err(Error::new(discriminant.span(), "not supported discriminant type"))
+                    return Err(Error::new(
+                        discriminant.span(),
+                        "not supported discriminant type",
+                    ))
                 }
             }
         } else {
             None
         };
-        
+
         /*
         if let Some((_, Expr::Lit(elit))) = &variant.discriminant {
             if let Lit::Int(lit_int) = &elit.lit {

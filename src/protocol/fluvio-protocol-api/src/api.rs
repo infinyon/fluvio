@@ -12,84 +12,65 @@ use std::convert::TryFrom;
 use log::trace;
 use log::debug;
 
-
-
 use crate::core::Decoder;
 use crate::core::Encoder;
 use crate::derive::Decode;
 use crate::derive::Encode;
 use crate::core::bytes::Buf;
 
-
 pub trait Request: Encoder + Decoder + Debug {
-
     const API_KEY: u16;
 
     const DEFAULT_API_VERSION: i16 = 0;
     const MIN_API_VERSION: i16 = 0;
     const MAX_API_VERSION: i16 = -1;
 
-    type Response: Encoder + Decoder + Debug ;
-
+    type Response: Encoder + Decoder + Debug;
 }
 
+pub trait ApiMessage: Sized + Default {
+    type ApiKey: Decoder + Debug;
 
-pub trait ApiMessage: Sized + Default 
+    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
+    where
+        Self: Default + Sized,
+        Self::ApiKey: Sized,
+        T: Buf;
 
-{
-        type ApiKey: Decoder + Debug ;
-       
-        fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self,IoError>
-        where
-                Self: Default + Sized,
-                Self::ApiKey: Sized,
-                T: Buf;
+    fn decode_from<T>(src: &mut T) -> Result<Self, IoError>
+    where
+        T: Buf,
+    {
+        let header = RequestHeader::decode_from(src, 0)?;
+        Self::decode_with_header(src, header)
+    }
 
-        
-        fn decode_from<T>(src: &mut T) -> Result<Self,IoError>
-                where T: Buf,
-                    
-        {
-                let header = RequestHeader::decode_from(src,0)?;
-                Self::decode_with_header(src,header)
+    fn decode_from_file<P: AsRef<Path>>(file_name: P) -> Result<Self, IoError> {
+        debug!("decoding from file: {:#?}", file_name.as_ref());
+        let mut f = File::open(file_name)?;
+        let mut buffer: [u8; 1000] = [0; 1000];
 
+        f.read_exact(&mut buffer)?;
+
+        let data = buffer.to_vec();
+        let mut src = Cursor::new(&data);
+
+        let mut size: i32 = 0;
+        size.decode(&mut src, 0)?;
+        trace!("decoded request size: {} bytes", size);
+
+        if src.remaining() < size as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought bytes for request message",
+            ));
         }
 
-        fn decode_from_file<P: AsRef<Path>>(file_name: P) -> Result<Self,IoError> {
-
-                debug!("decoding from file: {:#?}", file_name.as_ref());
-                let mut f = File::open(file_name)?;
-                let mut buffer: [u8; 1000] = [0; 1000];
-
-                f.read_exact(&mut buffer)?;
-
-                let data = buffer.to_vec();
-                let mut src = Cursor::new(&data);
-
-                let mut size: i32 = 0;
-                size.decode(&mut src,0)?;
-                trace!("decoded request size: {} bytes", size);
-
-                if src.remaining() < size as usize {
-                         return Err(IoError::new(
-                                ErrorKind::UnexpectedEof,
-                                "not enought bytes for request message",
-                        ));
-                }
-
-
-                Self::decode_from(&mut src)
-        }
-
+        Self::decode_from(&mut src)
+    }
 }
 
-
-pub trait ApiKey: Sized + Encoder + Decoder + TryFrom<u16> {
-    
-}
-
-
-
+pub trait ApiKey: Sized + Encoder + Decoder + TryFrom<u16> {}
 
 #[derive(Debug, Encode, Decode, Default)]
 pub struct RequestHeader {
@@ -101,29 +82,26 @@ pub struct RequestHeader {
 
 impl fmt::Display for RequestHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"api: {} client: {}",self.api_key,self.client_id)
+        write!(f, "api: {} client: {}", self.api_key, self.client_id)
     }
 }
 
-
-
 impl RequestHeader {
-
-    
     pub fn new(api_key: u16) -> Self {
         // TODO: generate random client id
-        Self::new_with_client(api_key,"dummy".to_owned())
+        Self::new_with_client(api_key, "dummy".to_owned())
     }
 
-    pub fn new_with_client<T>(api_key: u16,client_id: T) -> Self 
-        where T: Into<String>
+    pub fn new_with_client<T>(api_key: u16, client_id: T) -> Self
+    where
+        T: Into<String>,
     {
         RequestHeader {
             api_key,
             api_version: 1,
             correlation_id: 1,
 
-            client_id: client_id.into()
+            client_id: client_id.into(),
         }
     }
 
@@ -135,7 +113,7 @@ impl RequestHeader {
         self.api_version
     }
 
-    pub fn set_api_version(&mut self,version: i16) -> &mut Self {
+    pub fn set_api_version(&mut self, version: i16) -> &mut Self {
         self.api_version = version;
         self
     }
@@ -144,7 +122,7 @@ impl RequestHeader {
         self.correlation_id
     }
 
-    pub fn set_correlation_id(&mut self,id: i32) -> &mut Self  {
+    pub fn set_correlation_id(&mut self, id: i32) -> &mut Self {
         self.correlation_id = id;
         self
     }
@@ -153,13 +131,13 @@ impl RequestHeader {
         &self.client_id
     }
 
-    pub fn set_client_id<T>(&mut self,client_id: T) -> &mut Self
-        where T: Into<String>
+    pub fn set_client_id<T>(&mut self, client_id: T) -> &mut Self
+    where
+        T: Into<String>,
     {
         self.client_id = client_id.into();
         self
     }
-    
 }
 
 impl From<&RequestHeader> for i32 {
