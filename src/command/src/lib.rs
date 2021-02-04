@@ -151,12 +151,10 @@ mod tests {
             .arg("does-not-exist")
             .result()
             .unwrap_err();
-        assert_eq!(
-            format!("{}", error.source),
+        assert!(format!("{}", error.source).starts_with(
             "Child process completed with non-zero exit code 1
   stdout: 
-  stderr: ls: does-not-exist: No such file or directory
-"
-        );
+  stderr: "
+        ));
     }
 }
