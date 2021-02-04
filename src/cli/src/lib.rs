@@ -3,8 +3,6 @@
 //! CLI configurations at the top of the tree
 
 use sha2::{Digest, Sha256};
-use std::fs::File;
-use std::io::BufReader;
 use std::sync::Arc;
 use std::process::Command;
 use structopt::clap::{AppSettings, Shell, App, SubCommand};
@@ -249,10 +247,11 @@ impl VersionOpt {
         println!("Fluvio CLI        : {}", crate::VERSION.trim());
 
         // Read CLI and compute its sha256
-        let fluvio_bin = File::open(std::env::current_exe()?.into_os_string())?;
-        let reader = BufReader::new(fluvio_bin);
-        let fluvio_bin_sha256 = Sha256::digest(reader.buffer());
-        println!("Fluvio CLI SHA256 : {:x}", fluvio_bin_sha256);
+        let fluvio_bin = std::fs::read(std::env::current_exe()?)?;
+        let mut hasher = Sha256::new();
+        hasher.update(fluvio_bin);
+        let fluvio_bin_sha256 = hasher.finalize();
+        println!("Fluvio CLI SHA256 : {:x}", &fluvio_bin_sha256);
 
         // Attempt to connect to a Fluvio cluster to get platform version
         // Even if we fail to connect, we should not fail the other printouts
