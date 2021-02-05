@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use fluvio_service::api_loop;
-use fluvio_service::KfService;
+use fluvio_service::FlvService;
 use fluvio_socket::FlvSocket;
 use fluvio_socket::FlvSocketError;
 use fluvio_future::net::TcpStream;
@@ -24,7 +24,7 @@ impl InternalService {
 }
 
 #[async_trait]
-impl KfService<TcpStream> for InternalService {
+impl FlvService<TcpStream> for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
 

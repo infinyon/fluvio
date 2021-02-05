@@ -5,7 +5,7 @@ mod fetch_stream_request;
 
 use tracing::info;
 
-use fluvio_service::KfApiServer;
+use fluvio_service::FlvApiServer;
 use service_impl::InternalService;
 
 use crate::core::DefaultSharedGlobalContext;
@@ -16,7 +16,7 @@ pub use self::api::SPUPeerApiEnum;
 pub use self::api::SpuPeerRequest;
 
 pub(crate) type InternalApiServer =
-    KfApiServer<SpuPeerRequest, SPUPeerApiEnum, DefaultSharedGlobalContext, InternalService>;
+    FlvApiServer<SpuPeerRequest, SPUPeerApiEnum, DefaultSharedGlobalContext, InternalService>;
 
 // start server
 pub fn create_internal_server(addr: String, ctx: DefaultSharedGlobalContext) -> InternalApiServer {
@@ -26,5 +26,5 @@ pub fn create_internal_server(addr: String, ctx: DefaultSharedGlobalContext) -> 
         addr
     );
 
-    KfApiServer::new(addr, ctx, InternalService::new())
+    FlvApiServer::new(addr, ctx, InternalService::new())
 }

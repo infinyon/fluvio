@@ -62,7 +62,7 @@ impl SocketBuilder for DefaultSocketBuilder {
 /// Request -> Response is type specific
 /// Each response is responsible for sending back to socket
 #[async_trait]
-pub trait KfService<S>
+pub trait FlvService<S>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
 {
@@ -81,7 +81,7 @@ where
 
 /// Transform Service into Futures 01
 #[derive(Debug)]
-pub struct InnerKfApiServer<R, A, C, S, T> {
+pub struct InnerFlvApiServer<R, A, C, S, T> {
     req: PhantomData<R>,
     api: PhantomData<A>,
     context: C,
@@ -90,12 +90,12 @@ pub struct InnerKfApiServer<R, A, C, S, T> {
     builder: T,
 }
 
-impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
+impl<R, A, C, S, T> InnerFlvApiServer<R, A, C, S, T>
 where
     C: Clone,
 {
     pub fn inner_new(addr: String, context: C, service: S, builder: T) -> Self {
-        InnerKfApiServer {
+        InnerFlvApiServer {
             req: PhantomData,
             api: PhantomData,
             service: Arc::new(service),
@@ -106,9 +106,9 @@ where
     }
 }
 
-pub type KfApiServer<R, A, C, S> = InnerKfApiServer<R, A, C, S, DefaultSocketBuilder>;
+pub type FlvApiServer<R, A, C, S> = InnerFlvApiServer<R, A, C, S, DefaultSocketBuilder>;
 
-impl<R, A, C, S> KfApiServer<R, A, C, S>
+impl<R, A, C, S> FlvApiServer<R, A, C, S>
 where
     C: Clone,
 {
@@ -117,12 +117,12 @@ where
     }
 }
 
-impl<R, A, C, S, T> InnerKfApiServer<R, A, C, S, T>
+impl<R, A, C, S, T> InnerFlvApiServer<R, A, C, S, T>
 where
     R: ApiMessage<ApiKey = A> + Send + Debug + 'static,
     C: Clone + Sync + Send + Debug + 'static,
     A: Send + FluvioDecoder + Debug + 'static,
-    S: KfService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
+    S: FlvService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
     T: SocketBuilder + Send + Debug + 'static,
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
     InnerFlvSink<T::Stream>: ZeroCopyWrite,
@@ -242,10 +242,10 @@ mod test {
 
     fn create_server(
         addr: String,
-    ) -> KfApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> {
+    ) -> FlvApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> {
         let ctx = Arc::new(TestContext::new());
-        let server: KfApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> =
-            KfApiServer::new(addr, ctx, TestService::new());
+        let server: FlvApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> =
+            FlvApiServer::new(addr, ctx, TestService::new());
 
         server
     }

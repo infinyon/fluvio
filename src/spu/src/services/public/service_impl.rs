@@ -14,7 +14,7 @@ use fluvio_types::event::SimpleEvent;
 use fluvio_socket::{InnerFlvSocket, InnerFlvSink};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_socket::FlvSocketError;
-use fluvio_service::{call_service, KfService};
+use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::api::RequestMessage;
 
@@ -36,7 +36,7 @@ impl PublicService {
 }
 
 #[async_trait]
-impl<S> KfService<S> for PublicService
+impl<S> FlvService<S> for PublicService
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
