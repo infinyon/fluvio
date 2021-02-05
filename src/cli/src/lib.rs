@@ -185,13 +185,11 @@ pub enum FluvioCmd {
 
     /// Write messages to a topic/partition
     ///
-    /// By default, this reads a single line from stdin to
-    /// use as the message. If you run this with no file options,
-    /// the command will hang until you type a line in the terminal.
-    /// Alternatively, you can pipe a message into the command
-    /// like this:
-    ///
-    /// $ echo "Hello, world" | fluvio produce greetings
+    /// By default, this reads input from stdin until EOF, and
+    /// sends the contents as one record. Alternatively, input
+    /// files may be given with '-f' and input may be sent
+    /// line-by-line with '-l'. In any case, the producer
+    /// continues reading until it encounters EOF.
     #[structopt(name = "produce")]
     Produce(ProduceLogOpt),
 
