@@ -940,6 +940,9 @@ impl ClusterInstaller {
                 break;
             }
             if attempt >= ATTEMPTS - 1 {
+                debug!(platform = %version,
+                    chart_version = %self.config.chart_version,
+                    "got different platform version");
                 return Err(K8InstallError::FailedClusterUpgrade(
                     self.config.chart_version.to_string(),
                 ));
