@@ -669,7 +669,6 @@ mod tests {
         Ok(())
     }
 
-
     #[cfg(all(unix, feature = "tls"))]
     mod tls_test {
         use std::os::unix::io::AsRawFd;
