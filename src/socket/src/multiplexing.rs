@@ -35,15 +35,10 @@ use crate::InnerFlvStream;
 #[allow(unused)]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "tls")] {
-        pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::rust_tls::AllTcpStream>;
-        pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
-    } else if #[cfg(feature  = "native_tls")] {
-        pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
-        pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
-    }
-}
+#[cfg(feature = "tls")]
+pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
+#[cfg(feature = "tls")]
+pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
 

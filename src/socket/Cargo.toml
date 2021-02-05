@@ -13,8 +13,7 @@ name = "fluvio_socket"
 path = "src/lib.rs"
 
 [features]
-tls = ["fluvio-future/rust_tls"]
-native_tls = ["fluvio-future/native2_tls"]
+tls = []
 
 [dependencies]
 log = "0.4.0"
