@@ -16,7 +16,7 @@ use fluvio_types::SpuId;
 use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
-use fluvio_service::{FlvService, wait_for_request};
+use fluvio_service::{KfService, wait_for_request};
 use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
 use fluvio_controlplane::{
     InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
@@ -43,7 +43,7 @@ impl ScInternalService {
 }
 
 #[async_trait]
-impl FlvService<TcpStream> for ScInternalService {
+impl KfService<TcpStream> for ScInternalService {
     type Context = SharedContext;
     type Request = InternalScRequest;
 

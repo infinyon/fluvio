@@ -52,12 +52,6 @@ impl DefaultAsyncBuffer {
         DefaultAsyncBuffer(val.into())
     }
 
-    /*
-    pub fn inner_value(self) -> Vec<u8> {
-        *self.0.clone()
-    }
-    */
-
     pub fn len(&self) -> usize {
         self.0.len()
     }

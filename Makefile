@@ -142,10 +142,10 @@ check-clippy:	install-clippy
 build-all-test:
 	cargo build --lib --tests --all-features
 
-test_native_tls_multiplex:
-	cd src/socket; cargo test --no-default-features --features native_tls test_multiplexing_native_tls
+test_tls_multiplex:
+	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
 
-run-all-unit-test: test_native_tls_multiplex
+run-all-unit-test: test_tls_multiplex
 	cargo test --lib --all-features
 
 install_musl:

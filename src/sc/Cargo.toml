@@ -51,10 +51,10 @@ fluvio-stream-dispatcher = { version = "0.4.0", path = "../stream-dispatcher" }
 k8-client = { version = "5.0.0", optional = true }
 k8-metadata-client = { version = "3.0.0" }
 k8-types = { version = "0.1.0", features = ["app"]}
-fluvio-protocol = { version = "0.3.0" }
+fluvio-protocol = { path = "../protocol", version = "0.3.0" }
 dataplane = { version = "0.2.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-socket = { version = "0.5.0" }
-fluvio-service = { version = "0.4.0" }
+fluvio-socket = { path = "../socket", version = "0.5.0" }
+fluvio-service = { path = "../service", version = "0.4.0" }
 flv-tls-proxy = { version = "0.3.0" }
 
 
