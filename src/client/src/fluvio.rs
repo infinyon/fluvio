@@ -123,11 +123,12 @@ impl Fluvio {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 
-        if !self.spu_pool().await?.topic_exists(&topic).await {
+        let spu_pool = self.spu_pool().await?;
+        if !spu_pool.topic_exists(&topic).await {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
-        Ok(TopicProducer::new(topic, self.spu_pool().await?))
+        Ok(TopicProducer::new(topic, spu_pool))
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
