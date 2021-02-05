@@ -114,6 +114,7 @@ mod test {
             let listener = TcpListener::bind(&addr).await.expect("bind");
             debug!("server: successfully binding. waiting for incoming");
             let mut incoming = listener.incoming();
+            #[allow(clippy::never_loop)]
             while let Some(stream) = incoming.next().await {
                 debug!("server: got connection from client");
                 let tcp_stream = stream.expect("stream");
@@ -198,7 +199,7 @@ mod test {
                     assert_eq!(decoded_values[1], 2);
                     debug!("all test pass");
                 } else {
-                    assert!(false, "no first value received");
+                    panic!("no first value received");
                 }
             }
 

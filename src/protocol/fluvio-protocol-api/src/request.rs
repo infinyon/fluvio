@@ -303,9 +303,9 @@ mod test {
             match header.api_key().try_into()? {
                 TestApiEnum::ApiVersion => {
                     let request = ApiVersionRequest::decode_from(src, header.api_version())?;
-                    return Ok(TestApiRequest::ApiVersionRequest(RequestMessage::new(
+                    Ok(TestApiRequest::ApiVersionRequest(RequestMessage::new(
                         header, request,
-                    )));
+                    )))
                 }
             }
         }
