@@ -22,7 +22,7 @@ use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::InnerFlvSocket;
 use fluvio_socket::FlvSocketError;
-use fluvio_service::KfService;
+use fluvio_service::FlvService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;
@@ -41,7 +41,7 @@ impl<A> PublicService<A> {
 }
 
 #[async_trait]
-impl<A, S> KfService<S> for PublicService<A>
+impl<A, S> FlvService<S> for PublicService<A>
 where
     S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
     A: Authorization<Stream = S> + Sync + Send,
