@@ -669,82 +669,8 @@ mod tests {
         Ok(())
     }
 
-    // this doesn't work
-    /*
-    #[cfg(feature = "tls")]
-    mod tls_test {
-        use std::os::unix::io::AsRawFd;
 
-        use fluvio_future::tls::{ AllTcpStream,
-            TlsAcceptor,
-            TlsConnector,
-            AcceptorBuilder,
-            ConnectorBuilder,
-            DefaultClientTlsStream,
-            DefaultServerTlsStream };
-
-        use super::*;
-
-        struct TlsAcceptorHandler(TlsAcceptor);
-
-        impl TlsAcceptorHandler {
-            fn new() -> Self {
-                Self(AcceptorBuilder::new_client_authenticate(CA_PATH).expect("ca")
-                .load_server_certs(X509_SERVER, X509_SERVER_KEY).expect("cert")
-                .build())
-            }
-        }
-
-        #[async_trait]
-        impl AcceptorHandler for TlsAcceptorHandler {
-
-            type Stream = DefaultServerTlsStream;
-
-            async fn accept(&mut self,stream: TcpStream) -> InnerFlvSocket<Self::Stream> {
-                let fd = stream.as_raw_fd();
-                let handshake = self.0.accept(stream);
-                let tls_stream = handshake.await.expect("hand shake failed");
-                InnerFlvSocket::from_stream(tls_stream,fd)
-            }
-        }
-
-        struct TlsConnectorHandler(TlsConnector);
-
-        impl TlsConnectorHandler {
-            fn new() -> Self {
-                Self(ConnectorBuilder::new()
-                .load_client_certs(X509_CLIENT, X509_CLIENT_KEY).expect("cert")
-                .load_ca_cert(CA_PATH).expect("CA")
-                .build())
-            }
-        }
-
-        #[async_trait]
-        impl ConnectorHandler for TlsConnectorHandler {
-
-            type Stream = DefaultClientTlsStream;
-
-            async fn connect(&mut self,stream: TcpStream) -> InnerFlvSocket<Self::Stream> {
-                let fd = stream.as_raw_fd();
-                InnerFlvSocket::from_stream(self.0.connect("localhost",stream).await.expect("hand shakefailed"),fd)
-            }
-        }
-
-
-
-
-        #[test_async]
-        async fn test_multiplexing_tls() -> Result<(), FlvSocketError> {
-            debug!("start testing");
-            let addr = "127.0.0.1:6000";
-
-            let _r = join(test_client(addr,TlsConnectorHandler::new()), test_server(addr,TlsAcceptorHandler::new())).await;
-            Ok(())
-        }
-    }
-    */
-
-    #[cfg(all(unix, feature = "native_tls"))]
+    #[cfg(all(unix, feature = "tls"))]
     mod tls_test {
         use std::os::unix::io::AsRawFd;
 
