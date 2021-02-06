@@ -276,14 +276,28 @@ impl VersionOpt {
         println!("Fluvio Platform   : {}{}", platform_version, profile_name);
 
         println!("Git Commit        : {}", env!("GIT_HASH"));
-        if let Some(os_info) = option_env!("UNAME") {
+        if let Some(os_info) = os_info() {
             println!("OS Details        : {}", os_info);
         }
-
         println!("Rustc Version     : {}", env!("RUSTC_VERSION"));
 
         Ok(())
     }
+}
+
+/// Fetch OS information
+fn os_info() -> Option<String> {
+    use sysinfo::SystemExt;
+    let sys = sysinfo::System::new_all();
+
+    let info = format!(
+        "{} {} (kernel {})",
+        sys.get_name()?,
+        sys.get_os_version()?,
+        sys.get_kernel_version()?,
+    );
+
+    Some(info)
 }
 
 #[derive(Debug, StructOpt)]
