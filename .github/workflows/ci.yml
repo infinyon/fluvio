@@ -344,7 +344,8 @@ jobs:
         rust: [stable]
     env:
       FLUVIO_CMD:  true 
-      FLV_SOCKET_WAIT:  600 
+      FLV_SOCKET_WAIT:  600
+      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 90 
     steps:
       - uses: actions/checkout@v2
       - run: helm version
