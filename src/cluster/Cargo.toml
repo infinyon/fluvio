@@ -45,7 +45,7 @@ remoteprocess = "0.4.2"
 fluvio = { version = "0.4.1", path = "../client", default-features = false }
 fluvio-helm = "0.4.1"
 fluvio-future = { version = "0.1.13" }
-fluvio-command = { version = "0.1.0", path = "../command" }
+fluvio-command = { version = "0.2.0", path = "../command" }
 fluvio-runner-local = { version = "0.2.0", path = "../extension-runner-local", optional = true }
 fluvio-extension-common = { version = "0.1.0", path = "../extension-common", optional = true }
 fluvio-controlplane-metadata = { version = "0.5.0", path = "../controlplane-metadata", features = ["k8"] }
