@@ -181,9 +181,9 @@ impl SpuPool {
         let replica = ReplicaKey::new(topic, 0);
         self.metadata
             .partitions()
-            .lookup_by_key(&replica)
+            .store()
+            .contains_key(&replica)
             .await
-            .is_ok()
     }
 
     pub fn shutdown(&mut self) {
