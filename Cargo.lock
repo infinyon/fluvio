@@ -1216,7 +1216,7 @@ dependencies = [
  "colored",
  "derive_builder",
  "fluvio",
- "fluvio-command 0.1.0",
+ "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
@@ -1246,6 +1246,8 @@ dependencies = [
 [[package]]
 name = "fluvio-command"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2dcf39df27ca6854ecf6adaf0e5cf83eafd668d27c1efc891ecc3a0b8a1f097"
 dependencies = [
  "once_cell",
  "thiserror",
@@ -1254,9 +1256,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-command"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2dcf39df27ca6854ecf6adaf0e5cf83eafd668d27c1efc891ecc3a0b8a1f097"
+version = "0.2.0"
 dependencies = [
  "once_cell",
  "thiserror",
@@ -1384,7 +1384,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10b6e3e6219becb39f3cc3a436ebbcdaf9a4cc1db70d310891e9b08a9f8baadf"
 dependencies = [
- "fluvio-command 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-command 0.1.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -1714,7 +1714,7 @@ dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
- "fluvio-command 0.1.0",
+ "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
