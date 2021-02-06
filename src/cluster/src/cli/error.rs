@@ -4,7 +4,7 @@ use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
 use fluvio_runner_local::RunnerError;
-use crate::ClusterError;
+use crate::{ClusterError, LocalInstallError};
 
 /// Cluster Command Error
 #[derive(thiserror::Error, Debug)]
@@ -51,11 +51,17 @@ impl ClusterError {
         #[allow(unused)]
         use color_eyre::Section;
         use color_eyre::Report;
+        use k8_client::ClientError as K8;
 
         // In the future when we want to annotate errors, we do it here
-        // match &self {
-        //     _ => Report::from(self),
-        // }
-        Report::from(self)
+        match &self {
+            Self::InstallLocal(LocalInstallError::K8ClientError(K8::Client(it)))
+                if it.as_u16() == 409 =>
+            {
+                let report = Report::from(self);
+                report.suggestion("Run `fluvio cluster delete --local`, then retry")
+            }
+            _ => Report::from(self),
+        }
     }
 }

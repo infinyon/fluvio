@@ -552,6 +552,27 @@ impl ClusterCheck for LoadBalancer {
     }
 }
 
+#[derive(Debug)]
+pub struct LocalClusterExists;
+
+#[async_trait]
+impl ClusterCheck for LocalClusterExists {
+    async fn perform_check(&self) -> CheckResult {
+        proclist::iterate_processes_info()
+            .filter_map(|it| it.ok())
+            .filter(|it| it.name.eq_ignore_ascii_case("fluvio"))
+            .inspect(|proc| println!("Found process: {:?}", proc))
+            .for_each(|proc| {
+                let pid = proc.pid as remoteprocess::Pid;
+                if let Ok(process) = remoteprocess::Process::new(pid) {
+                    println!("Process cmd: {:#?}", process.cmdline());
+                    println!("{:#?}", process.exe());
+                }
+            });
+        Ok(CheckStatus::pass("Testing fluvio process"))
+    }
+}
+
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
@@ -643,6 +664,7 @@ impl ClusterChecker {
             Box::new(HelmVersion),
             Box::new(K8Version),
             Box::new(LoadableConfig),
+            Box::new(LocalClusterExists),
         ];
         self.checks.extend(checks);
         self
