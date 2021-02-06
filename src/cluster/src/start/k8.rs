@@ -925,7 +925,7 @@ impl ClusterInstaller {
     /// Wait until the platform version of the cluster matches the chart version here
     #[instrument(skip(self))]
     async fn wait_for_fluvio_version(&self, config: &FluvioConfig) -> Result<(), K8InstallError> {
-        const ATTEMPTS: u8 = 30;
+        const ATTEMPTS: u8 = 60;
         for attempt in 0..ATTEMPTS {
             let fluvio = match fluvio::Fluvio::connect_with_config(config).await {
                 Ok(fluvio) => fluvio,
