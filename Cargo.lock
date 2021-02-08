@@ -1327,7 +1327,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-consumer"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ctrlc",
  "eyre",
@@ -1546,7 +1546,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "async-channel",
  "async-mutex",
