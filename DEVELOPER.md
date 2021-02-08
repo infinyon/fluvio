@@ -253,8 +253,7 @@ make: *** [spu_image] Error 2
 Re-build i.e.delete and restart minikube cluster
 
 ```
-minikube delete
-minikube start
+sh k8-util/minikube/reset-minikube.sh
 ```
 
 
