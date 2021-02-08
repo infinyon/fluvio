@@ -8,8 +8,6 @@ use anyhow::Result;
 use std::io::{Error, ErrorKind};
 use tide::sessions::SessionMiddleware;
 use tide::sessions::CookieStore;
-use uuid::Uuid;
-use std::process::Command;
 use robot::Robot;
 use robot::State;
 
@@ -23,33 +21,7 @@ async fn main() -> Result<()> {
         b"936DA01F9ABD4d9d80C702AF85C822A8",
     ));
 
-    app.with(tide::utils::Before(
-        |mut request: tide::Request<()>| async move {
-            let session = request.session_mut();
-            let topic_id = if let Some(topic_id) = session.get("topic_id") {
-                topic_id
-            } else {
-                let my_uuid = Uuid::new_v4();
-                let topic_id = format!("{}", my_uuid.to_simple());
-                // FIXME
-                Command::new("cargo")
-                    .args(&[
-                        "run",
-                        "--bin",
-                        "fluvio",
-                        "topic",
-                        "create",
-                        topic_id.as_str(),
-                    ])
-                    .output()
-                    .expect("Failed to execute command");
-                topic_id
-            };
-            session.insert("topic_id", topic_id).unwrap();
-            request
-        },
-    ));
-    app.at("/").serve_dir("examples/robot-assistant/html")?;
+    app.at("/").serve_dir("examples/robot-assistant/html/")?;
     app.at("/pkg/").serve_dir("examples/robot-assistant/pkg/")?;
     app.at("/ws/")
         .get(WebSocket::new(|req, ws_stream| async move {
@@ -118,7 +90,6 @@ async fn main() -> Result<()> {
             let (_, _): (Result<()>, Result<()>) = join(produce_handle, consume_handle).await;
             Ok(())
         }));
-
     app.listen("127.0.0.1:8080").await?;
     Ok(())
 }
