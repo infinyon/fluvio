@@ -78,15 +78,9 @@ pub mod target {
     #[derive(thiserror::Error, Debug)]
     pub enum TargetError {
         #[error(transparent)]
-        IoError {
-            #[from]
-            source: IoError,
-        },
+        IoError(#[from] IoError),
         #[error("Fluvio client error")]
-        ClientError {
-            #[from]
-            source: FluvioError,
-        },
+        ClientError(#[from] FluvioError),
         #[error("Invalid argument: {0}")]
         InvalidArg(String),
         #[error("Unknown error: {0}")]

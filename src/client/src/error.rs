@@ -16,25 +16,13 @@ pub enum FluvioError {
     #[error("Spu not found: {0}")]
     SPUNotFound(i32),
     #[error(transparent)]
-    IoError {
-        #[from]
-        source: IoError,
-    },
+    IoError(#[from] IoError),
     #[error("Fluvio socket error")]
-    FlvSocketError {
-        #[from]
-        source: FlvSocketError,
-    },
+    FlvSocketError(#[from] FlvSocketError),
     #[error("Fluvio SC schema error")]
-    ApiError {
-        #[from]
-        source: ApiError,
-    },
+    ApiError(#[from] ApiError),
     #[error("Fluvio config error")]
-    ConfigError {
-        #[from]
-        source: ConfigError,
-    },
+    ConfigError(#[from] ConfigError),
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
     #[error("Cluster (with platform version {cluster_version}) is older than the minimum required version {client_minimum_version}")]
