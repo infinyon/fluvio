@@ -1117,7 +1117,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1148,7 +1148,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-auth"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
@@ -1170,7 +1170,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "async-h1",
  "color-eyre",
@@ -1265,7 +1265,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1277,7 +1277,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1293,7 +1293,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bytes 0.5.6",
  "content_inspector",
@@ -1310,7 +1310,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "fluvio",
@@ -1462,7 +1462,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-runner-local"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "fluvio-future",
  "fluvio-sc",
@@ -1473,7 +1473,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.4.3"
+version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-lock 1.1.5",
@@ -1514,7 +1514,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1571,7 +1571,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "async-channel",
  "async-io",
@@ -1609,7 +1609,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bytes 0.5.6",
  "fluvio-dataplane-protocol",
@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-storage"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "async-channel",
  "async-mutex",
