@@ -939,8 +939,13 @@ impl ClusterInstaller {
                 // Success
                 break;
             }
+            debug!(
+                platform = %version,
+                chart_version = %self.config.chart_version,
+                "Existing platform version is different than chart version",
+            );
             if attempt >= ATTEMPTS - 1 {
-                return Err(K8InstallError::FailedClusterUpgrade(
+                return Err(K8InstallError::FailedPlatformVersion(
                     self.config.chart_version.to_string(),
                 ));
             }
