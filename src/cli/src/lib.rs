@@ -19,7 +19,7 @@ use install::update::UpdateOpt;
 use install::plugins::InstallOpt;
 pub use error::{Result, CliError};
 
-use fluvio::Fluvio;
+use fluvio::{Fluvio, FluvioError};
 use fluvio_extension_common::FluvioExtensionMetadata;
 use fluvio_extension_consumer::consume::ConsumeLogOpt;
 use fluvio_extension_consumer::produce::ProduceLogOpt;
@@ -33,6 +33,9 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
 use fluvio::config::ConfigFile;
+use fluvio_sc_schema::ApiError;
+use fluvio_sc_schema::errors::ErrorCode;
+use fluvio_extension_consumer::ConsumerError;
 
 pub const VERSION: &str = include_str!("VERSION");
 static_assertions::const_assert!(!VERSION.is_empty());
@@ -229,7 +232,23 @@ impl FluvioCmd {
                 produce.process(&fluvio).await?;
             }
             Self::Topic(topic) => {
-                topic.process(out, &fluvio).await?;
+                let result = topic.process(out, &fluvio).await;
+                match result {
+                    Err(ConsumerError::ClientError(FluvioError::ApiError(ApiError::Code(
+                        ErrorCode::TopicAlreadyExists,
+                        _,
+                    )))) => {
+                        println!("Topic already exists");
+                    }
+                    Err(ConsumerError::ClientError(FluvioError::ApiError(ApiError::Code(
+                        ErrorCode::TopicNotFound,
+                        _,
+                    )))) => {
+                        println!("Topic not found");
+                    }
+                    Err(e) => return Err(e.into()),
+                    Ok(_) => (),
+                }
             }
             Self::Partition(partition) => {
                 partition.process(out, &fluvio).await?;

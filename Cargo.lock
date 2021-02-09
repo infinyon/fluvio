@@ -1183,6 +1183,7 @@ dependencies = [
  "fluvio-extension-consumer",
  "fluvio-future",
  "fluvio-package-index",
+ "fluvio-sc-schema",
  "hex",
  "home",
  "http-types",
