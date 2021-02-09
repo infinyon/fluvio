@@ -373,7 +373,7 @@ jobs:
       - name: Make image
         run: make RELEASE=true minikube_image
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 1
+        timeout-minutes: 3
         run: |
           make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - run: minikube delete
@@ -381,7 +381,7 @@ jobs:
         if: failure()
         run: kubectl logs fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
-        timeout-minutes: 10
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
