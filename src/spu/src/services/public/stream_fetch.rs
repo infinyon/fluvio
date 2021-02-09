@@ -235,3 +235,99 @@ where
         }
     }
 }
+
+mod events {
+    use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::Arc;
+
+    use tracing::trace;
+    use event_listener::{Event, EventListener};
+
+    const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
+
+
+
+    /// publish shared offset
+    pub struct OffsetPublisher {
+        current_value: AtomicI64,
+        event: Event,
+    }
+
+    impl OffsetPublisher {
+        pub fn shared(initial_value: i64) -> Arc<Self> {
+            Arc::new(Self {
+                current_value: AtomicI64::new(initial_value),
+                event: Event::new(),
+            })
+        }
+
+        // get current value
+        pub fn current_value(&self) -> i64 {
+            self.current_value.load(DEFAULT_EVENT_ORDERING)
+        }
+
+        pub fn listen(&self) -> EventListener {
+            self.event.listen()
+        }
+
+        /// update with new value, this will trigger 
+        pub fn update(&mut self,new_value: i64) {
+            self.current_value.store(new_value, DEFAULT_EVENT_ORDERING);
+            self.event.notify(usize::MAX);
+        }
+
+        pub fn change_listner(self: &Arc<Self>) -> OffsetChangeListener {
+            OffsetChangeListener::new(self.clone())
+        }
+    }
+
+    pub struct OffsetChangeListener {
+        publisher: Arc<OffsetPublisher>,
+        last_value: i64
+    }
+
+    impl OffsetChangeListener {
+
+        fn new(publisher: Arc<OffsetPublisher>) -> Self {
+            Self {
+                publisher,
+                last_value: 0
+            }
+        }
+    
+        #[inline]
+        pub fn has_change(&self) -> bool {
+            self.current_value() != self.last_value
+        }
+
+        #[inline]
+        pub fn current_value(&self) -> i64 {
+            self.publisher.current_value()
+        }
+
+        pub async fn listen(&self) {
+
+            if self.has_change() {
+                trace!(last_value = self.last_value,"before has change");
+                return;
+            }
+
+            let listener = self.publisher.listen();
+
+            if self.has_change() {
+                trace!(last_value = self.last_value, "after has change");
+                return;
+            }
+
+            trace!("waiting for publisher");
+
+            listener.await;
+
+            trace!(current_value = self.publisher.current_value());
+        }
+
+        
+    }
+
+
+}
