@@ -85,7 +85,7 @@ where
                 }
                 Err(source) => {
                     error!("error receiving response: {:?}", source);
-                    Err(FlvSocketError::IoError { source })
+                    Err(FlvSocketError::IoError(source))
                 }
             }
         } else {

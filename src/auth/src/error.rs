@@ -5,16 +5,13 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum AuthError {
     #[error("IoError")]
-    IoError {
-        #[from]
-        source: IoError,
-    },
+    IoError(#[from] IoError),
 }
 
 impl Into<IoError> for AuthError {
     fn into(self) -> IoError {
         match self {
-            Self::IoError { source } => source,
+            Self::IoError(source) => source,
         }
     }
 }

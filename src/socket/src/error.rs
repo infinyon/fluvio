@@ -5,16 +5,9 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum FlvSocketError {
     #[error(transparent)]
-    IoError {
-        #[from]
-        source: IoError,
-    },
+    IoError(#[from] IoError),
     #[error("Socket closed")]
     SocketClosed,
-
     #[error("Zero-copy IO error")]
-    SendFileError {
-        #[from]
-        source: SendFileError,
-    },
+    SendFileError(#[from] SendFileError),
 }
