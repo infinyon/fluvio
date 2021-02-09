@@ -10,7 +10,14 @@ fn main() -> Result<()> {
         .install()?;
     print_help_hack()?;
     let root: Root = Root::from_args();
-    run_block_on(root.process()).map_err(CliError::into_report)?;
+    let result = run_block_on(root.process());
+
+    // If an error was handled gracefully, we still want to exit with the right code
+    if let Err(CliError::ExitWithCode(code)) = result {
+        std::process::exit(code);
+    }
+
+    result.map_err(CliError::into_report)?;
     Ok(())
 }
 

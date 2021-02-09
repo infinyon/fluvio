@@ -233,20 +233,19 @@ impl FluvioCmd {
             }
             Self::Topic(topic) => {
                 let result = topic.process(out, &fluvio).await;
-                match result {
-                    Err(ConsumerError::ClientError(FluvioError::ApiError(ApiError::Code(
-                        ErrorCode::TopicAlreadyExists,
-                        _,
-                    )))) => {
-                        println!("Topic already exists");
-                    }
-                    Err(ConsumerError::ClientError(FluvioError::ApiError(ApiError::Code(
-                        ErrorCode::TopicNotFound,
-                        _,
-                    )))) => {
-                        println!("Topic not found");
-                    }
-                    Err(e) => return Err(e.into()),
+                match &result {
+                    Err(ConsumerError::ClientError(FluvioError::ApiError(api))) => match api {
+                        ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
+                            println!("Topic already exists");
+                            return Err(CliError::ExitWithCode(1));
+                        }
+                        ApiError::Code(ErrorCode::TopicNotFound, _) => {
+                            println!("Topic not found");
+                            return Err(CliError::ExitWithCode(1));
+                        }
+                        _ => result?,
+                    },
+                    Err(_) => result?,
                     Ok(_) => (),
                 }
             }

@@ -36,6 +36,8 @@ pub enum CliError {
     InvalidArg(String),
     #[error("Unknown error: {0}")]
     Other(String),
+    #[error("An error was handled and requires exit code {0}")]
+    ExitWithCode(i32),
 }
 
 #[derive(thiserror::Error, Debug)]
