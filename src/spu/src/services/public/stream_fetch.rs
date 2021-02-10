@@ -307,28 +307,19 @@ mod events {
             self.last_value
         }
 
+        // wait for new values from publisher in lock-free fashin
         pub async fn listen(&mut self) {
             if self.has_change() {
-                trace!(
-                    last_value = self.last_value,
-                    current_value = self.current_value(),
-                    "before has change"
-                );
+                self.last_value = self.publisher.current_value();
                 return;
             }
 
             let listener = self.publisher.listen();
 
             if self.has_change() {
-                trace!(
-                    last_value = self.last_value,
-                    current_value = self.current_value(),
-                    "after liste"
-                );
+                self.last_value = self.publisher.current_value();
                 return;
             }
-
-            trace!("waiting for publisher");
 
             listener.await;
 
@@ -374,7 +365,7 @@ mod test {
 
             let mut timer = sleep(Duration::from_millis(50));
 
-            let mut count = 0;
+            let mut last_value = 0;
             loop {
                 debug!("waiting");
 
@@ -385,11 +376,13 @@ mod test {
                     },
                     _ = self.listener.listen() => {
                         debug!("listen occur");
-                        count += 1;
                         let fetch_last_value = self.listener.last_value();
                         debug!(fetch_last_value);
-                        assert_eq!(fetch_last_value,(count*2) as i64);
-                        if count >= ITER {
+
+                        // value from listener should be always be incremental and greater than prev value
+                        assert!(fetch_last_value > last_value);
+                        last_value = fetch_last_value;
+                        if last_value >= (ITER-1) as i64 {
                             debug!("end controller");
                             self.status.store(true, Ordering::SeqCst);
                             break;
@@ -401,7 +394,7 @@ mod test {
     }
 
     #[test_async]
-    async fn test_offset_listener() -> Result<(), ()> {
+    async fn test_offset_listener_no_wait() -> Result<(), ()> {
         let publisher = OffsetPublisher::shared(0);
         let listener = publisher.change_listner();
         let status = Arc::new(AtomicBool::new(false));
@@ -410,16 +403,40 @@ mod test {
         // wait util controller to catch
         sleep(Duration::from_millis(1)).await;
 
-        for i in 0..ITER {
-            sleep(Duration::from_millis(1)).await;
-            let new_value = ((i + 1) * 2) as i64;
-            debug!(new_value, "publishing value");
-            publisher.update(new_value);
-            assert_eq!(publisher.current_value(), new_value);
+        for i in 1..ITER {
+            publisher.update(i as i64);
+            assert_eq!(publisher.current_value(), i as i64);
+            debug!(i, "publishing value");
+           // sleep(Duration::from_millis(1)).await;
         }
 
         // wait for test controller to finish
-        sleep(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(100)).await;
+        debug!("test finished");
+        assert!(status.load(Ordering::SeqCst), "status should be set");
+
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_offset_listener_wait() -> Result<(), ()> {
+        let publisher = OffsetPublisher::shared(0);
+        let listener = publisher.change_listner();
+        let status = Arc::new(AtomicBool::new(false));
+
+        TestController::start(listener, status.clone());
+        // wait util controller to catch
+        sleep(Duration::from_millis(1)).await;
+
+        for i in 1..ITER {
+            publisher.update(i as i64);
+            assert_eq!(publisher.current_value(), i as i64);
+            debug!(i, "publishing value");
+            sleep(Duration::from_millis(1)).await;
+        }
+
+        // wait for test controller to finish
+        sleep(Duration::from_millis(100)).await;
         debug!("test finished");
         assert!(status.load(Ordering::SeqCst), "status should be set");
 
