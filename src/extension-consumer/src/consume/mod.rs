@@ -4,7 +4,6 @@
 //! CLI command for Consume operation
 //!
 
-use std::sync::Arc;
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 
@@ -13,7 +12,6 @@ mod logs_output;
 
 use fluvio::Fluvio;
 
-use crate::common::output::Terminal;
 use crate::consume::fetch_log_loop::fetch_log_loop;
 use crate::ConsumerError;
 use crate::common::FluvioExtensionMetadata;
@@ -61,15 +59,11 @@ pub struct ConsumeLogOpt {
 }
 
 impl ConsumeLogOpt {
-    pub async fn process<O: Terminal>(
-        self,
-        out: Arc<O>,
-        fluvio: &Fluvio,
-    ) -> Result<(), ConsumerError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
         let consumer = fluvio
             .partition_consumer(&self.topic, self.partition)
             .await?;
-        fetch_log_loop(out, consumer, self).await?;
+        fetch_log_loop(consumer, self).await?;
         Ok(())
     }
 

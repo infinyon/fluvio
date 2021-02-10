@@ -223,7 +223,7 @@ impl FluvioCmd {
 
         match self {
             Self::Consume(consume) => {
-                consume.process(out, &fluvio).await?;
+                consume.process(&fluvio).await?;
             }
             Self::Produce(produce) => {
                 produce.process(&fluvio).await?;
