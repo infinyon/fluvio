@@ -1,0 +1,36 @@
+name: Composite Action Test Workflow
+
+on:
+  push:
+    branches: [master]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  composite_action_test:
+    name: Composite Action Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        name: Install Fluvio Local Cluster
+      - name: Fluvio command test
+        continue-on-error: true
+        run: |
+          fluvio version
+          fluvio topic list
+          fluvio topic create "foobar"
+          sleep 3
+          echo foo | fluvio produce "foobar"
+          fluvio consume foobar -o 0 -d
+          # Delete the topic afterword but this looks to not work right now.
+          # fluvio topic delete "foobar"

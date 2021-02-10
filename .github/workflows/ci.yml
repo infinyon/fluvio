@@ -199,7 +199,7 @@ jobs:
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
       FLUVIO_CMD: true
-      FLV_SOCKET_WAIT:  600 
+      FLV_SOCKET_WAIT:  600
 
     steps:
       - uses: actions/checkout@v2
@@ -343,7 +343,7 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLUVIO_CMD:  true 
+      FLUVIO_CMD:  true
       FLV_SOCKET_WAIT:  600
       FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 90
       RUST_LOG: fluvio=debug
@@ -388,26 +388,3 @@ jobs:
         with:
           name: fluvio-k8-logs
           path: /tmp/flv_sc.log
-
-  composite_action_test:
-    name: Composite Action Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        rust: [stable]
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./
-        name: Install Fluvio Local Cluster
-      - name: Fluvio command test
-        run: |
-          fluvio version
-          fluvio topic list
-          fluvio topic create "foobar"
-          sleep 3
-          echo foo | fluvio produce "foobar"
-          fluvio consume foobar -o 0 -d
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"
