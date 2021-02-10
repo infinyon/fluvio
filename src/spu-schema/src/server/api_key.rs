@@ -11,7 +11,6 @@ static_assertions::const_assert_eq!(
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
 pub enum SpuServerApiKey {
-
     ApiVersion = 18, // API_VERSIONS_KEY
 
     Produce = 0,
@@ -20,7 +19,7 @@ pub enum SpuServerApiKey {
     FetchOffsets = 1002,
     StreamFetch = 1003,
     RegisterSyncReplicaRequest = 1004,
-    UpdateOffsets = 1005
+    UpdateOffsets = 1005,
 }
 
 impl Default for SpuServerApiKey {

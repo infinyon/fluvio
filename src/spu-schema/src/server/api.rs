@@ -24,7 +24,6 @@ use super::register_replica::RegisterSyncReplicaRequest;
 use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
-
 /// Request to Spu Server
 #[derive(Debug, Encode)]
 pub enum SpuServerRequest {
@@ -37,7 +36,7 @@ pub enum SpuServerRequest {
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     RegisterSyncReplicaRequest(RequestMessage<RegisterSyncReplicaRequest>),
-    UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>)
+    UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
 }
 
 impl Default for SpuServerRequest {
@@ -70,7 +69,7 @@ impl ApiMessage for SpuServerRequest {
                 api_decode!(Self, RegisterSyncReplicaRequest, src, header)
             }
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
-            SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header)
+            SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
         }
     }
 }

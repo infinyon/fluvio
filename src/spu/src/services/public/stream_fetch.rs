@@ -245,9 +245,7 @@ mod events {
 
     const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
-
-
-    /// publish shared offset
+    /// publish current offsets to listeners
     pub struct OffsetPublisher {
         current_value: AtomicI64,
         event: Event,
@@ -270,8 +268,8 @@ mod events {
             self.event.listen()
         }
 
-        /// update with new value, this will trigger 
-        pub fn update(&self,new_value: i64) {
+        /// update with new value, this will trigger
+        pub fn update(&self, new_value: i64) {
             self.current_value.store(new_value, DEFAULT_EVENT_ORDERING);
             self.event.notify(usize::MAX);
         }
@@ -283,18 +281,17 @@ mod events {
 
     pub struct OffsetChangeListener {
         publisher: Arc<OffsetPublisher>,
-        last_value: i64
+        last_value: i64,
     }
 
     impl OffsetChangeListener {
-
         fn new(publisher: Arc<OffsetPublisher>) -> Self {
             Self {
                 publisher,
-                last_value: 0
+                last_value: 0,
             }
         }
-    
+
         #[inline]
         pub fn has_change(&self) -> bool {
             self.current_value() != self.last_value
@@ -310,15 +307,13 @@ mod events {
             self.last_value
         }
 
-
-
         pub async fn listen(&mut self) {
-
             if self.has_change() {
                 trace!(
                     last_value = self.last_value,
                     current_value = self.current_value(),
-                    "before has change");
+                    "before has change"
+                );
                 return;
             }
 
@@ -328,7 +323,8 @@ mod events {
                 trace!(
                     last_value = self.last_value,
                     current_value = self.current_value(),
-                    "after liste");
+                    "after liste"
+                );
                 return;
             }
 
@@ -340,22 +336,17 @@ mod events {
 
             trace!(current_value = self.last_value);
         }
-
-        
     }
-
-
 }
-
-
-
-
 
 #[cfg(test)]
 mod test {
 
-    use std::time::Duration;
-
+    use std::{
+        sync::{Arc, atomic::Ordering},
+        time::Duration,
+    };
+    use std::sync::atomic::AtomicBool;
 
     use tracing::debug;
 
@@ -363,67 +354,75 @@ mod test {
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
-    use super::events::{ OffsetChangeListener,OffsetPublisher };
-
+    use super::events::{OffsetChangeListener, OffsetPublisher};
 
     const ITER: u16 = 10;
 
     struct TestController {
         listener: OffsetChangeListener,
+        status: Arc<AtomicBool>,
     }
 
     impl TestController {
-        fn start(listener: OffsetChangeListener) {
-            let controller = Self {
-                listener,
-            };
+        fn start(listener: OffsetChangeListener, status: Arc<AtomicBool>) {
+            let controller = Self { listener, status };
             spawn(controller.dispatch_loop());
         }
 
         async fn dispatch_loop(mut self) {
             use tokio::select;
 
-            
-            for i in 0..ITER {
-                debug!("entering loop");
-                
-                assert_eq!(self.listener.last_value(),(i*2) as i64);
+            let mut timer = sleep(Duration::from_millis(50));
+
+            let mut count = 0;
+            loop {
+                debug!("waiting");
 
                 select! {
+                    _ = &mut timer => {
+                        debug!("timer expired");
+                        break;
+                    },
                     _ = self.listener.listen() => {
                         debug!("listen occur");
-                        assert_eq!(self.listener.last_value(),(i*2) as i64);
-                        continue;
+                        count += 1;
+                        let fetch_last_value = self.listener.last_value();
+                        debug!(fetch_last_value);
+                        assert_eq!(fetch_last_value,(count*2) as i64);
+                        if count >= ITER {
+                            debug!("end controller");
+                            self.status.store(true, Ordering::SeqCst);
+                            break;
+                        }
                     }
                 }
             }
-    
         }
-
     }
 
     #[test_async]
     async fn test_offset_listener() -> Result<(), ()> {
         let publisher = OffsetPublisher::shared(0);
         let listener = publisher.change_listner();
-       
-        TestController::start(listener);
+        let status = Arc::new(AtomicBool::new(false));
+
+        TestController::start(listener, status.clone());
         // wait util controller to catch
         sleep(Duration::from_millis(1)).await;
 
         for i in 0..ITER {
-            sleep(Duration::from_millis(10)).await;
-            publisher.update((i*2) as i64);
-            assert_eq!(publisher.current_value(),(i*2) as i64);
+            sleep(Duration::from_millis(1)).await;
+            let new_value = ((i + 1) * 2) as i64;
+            debug!(new_value, "publishing value");
+            publisher.update(new_value);
+            assert_eq!(publisher.current_value(), new_value);
         }
 
         // wait for test controller to finish
-        sleep(Duration::from_millis(20)).await;
-
-
-        // assert_eq!(last_change.load(SeqCst), 2); // there should be 2 sync happenings
+        sleep(Duration::from_millis(200)).await;
+        debug!("test finished");
+        assert!(status.load(Ordering::SeqCst), "status should be set");
 
         Ok(())
     }
 }
-

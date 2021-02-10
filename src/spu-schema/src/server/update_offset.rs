@@ -2,7 +2,6 @@
 //! # Update Offsets
 //!
 
-
 use dataplane::api::Request;
 use dataplane::derive::Decode;
 use dataplane::derive::Encode;
@@ -12,11 +11,10 @@ use dataplane::ReplicaKey;
 use crate::errors::ErrorCode;
 use super::SpuServerApiKey;
 
-
 #[derive(Decode, Encode, Default, Debug)]
 pub struct OffsetUpdate {
     pub replica: ReplicaKey,
-    pub offset: Offset
+    pub offset: Offset,
 }
 
 /// send out current offset to SPU
@@ -33,19 +31,17 @@ impl Request for UpdateOffsetsRequest {
 
 impl UpdateOffsetsRequest {
     pub fn new(offsets: Vec<OffsetUpdate>) -> Self {
-        Self {
-            offsets
-        }
+        Self { offsets }
     }
 }
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct OffsetUpdateStatus {
     pub replica: ReplicaKey,
-    pub error: ErrorCode
+    pub error: ErrorCode,
 }
 
 #[derive(Encode, Decode, Default, Debug)]
 pub struct UpdateOffsetsResponse {
-    pub status: Vec<OffsetUpdateStatus>
+    pub status: Vec<OffsetUpdateStatus>,
 }
