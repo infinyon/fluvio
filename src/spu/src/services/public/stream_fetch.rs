@@ -271,7 +271,7 @@ mod events {
         }
 
         /// update with new value, this will trigger 
-        pub fn update(&mut self,new_value: i64) {
+        pub fn update(&self,new_value: i64) {
             self.current_value.store(new_value, DEFAULT_EVENT_ORDERING);
             self.event.notify(usize::MAX);
         }
@@ -301,21 +301,34 @@ mod events {
         }
 
         #[inline]
-        pub fn current_value(&self) -> i64 {
+        fn current_value(&self) -> i64 {
             self.publisher.current_value()
         }
 
-        pub async fn listen(&self) {
+        #[inline]
+        pub fn last_value(&self) -> i64 {
+            self.last_value
+        }
+
+
+
+        pub async fn listen(&mut self) {
 
             if self.has_change() {
-                trace!(last_value = self.last_value,"before has change");
+                trace!(
+                    last_value = self.last_value,
+                    current_value = self.current_value(),
+                    "before has change");
                 return;
             }
 
             let listener = self.publisher.listen();
 
             if self.has_change() {
-                trace!(last_value = self.last_value, "after has change");
+                trace!(
+                    last_value = self.last_value,
+                    current_value = self.current_value(),
+                    "after liste");
                 return;
             }
 
@@ -323,7 +336,9 @@ mod events {
 
             listener.await;
 
-            trace!(current_value = self.publisher.current_value());
+            self.last_value = self.publisher.current_value();
+
+            trace!(current_value = self.last_value);
         }
 
         
@@ -331,3 +346,84 @@ mod events {
 
 
 }
+
+
+
+
+
+#[cfg(test)]
+mod test {
+
+    use std::time::Duration;
+
+
+    use tracing::debug;
+
+    use fluvio_future::test_async;
+    use fluvio_future::task::spawn;
+    use fluvio_future::timer::sleep;
+
+    use super::events::{ OffsetChangeListener,OffsetPublisher };
+
+
+    const ITER: u16 = 10;
+
+    struct TestController {
+        listener: OffsetChangeListener,
+    }
+
+    impl TestController {
+        fn start(listener: OffsetChangeListener) {
+            let controller = Self {
+                listener,
+            };
+            spawn(controller.dispatch_loop());
+        }
+
+        async fn dispatch_loop(mut self) {
+            use tokio::select;
+
+            
+            for i in 0..ITER {
+                debug!("entering loop");
+                
+                assert_eq!(self.listener.last_value(),(i*2) as i64);
+
+                select! {
+                    _ = self.listener.listen() => {
+                        debug!("listen occur");
+                        assert_eq!(self.listener.last_value(),(i*2) as i64);
+                        continue;
+                    }
+                }
+            }
+    
+        }
+
+    }
+
+    #[test_async]
+    async fn test_offset_listener() -> Result<(), ()> {
+        let publisher = OffsetPublisher::shared(0);
+        let listener = publisher.change_listner();
+       
+        TestController::start(listener);
+        // wait util controller to catch
+        sleep(Duration::from_millis(1)).await;
+
+        for i in 0..ITER {
+            sleep(Duration::from_millis(10)).await;
+            publisher.update((i*2) as i64);
+            assert_eq!(publisher.current_value(),(i*2) as i64);
+        }
+
+        // wait for test controller to finish
+        sleep(Duration::from_millis(20)).await;
+
+
+        // assert_eq!(last_change.load(SeqCst), 2); // there should be 2 sync happenings
+
+        Ok(())
+    }
+}
+
