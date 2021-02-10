@@ -302,8 +302,8 @@ jobs:
       - name: Setup Minikube for Linux
         run: |
           minikube delete
-          minikube start --driver=docker --kubernetes-version 1.19.6
-          sleep 30
+          minikube start --driver=docker --kubernetes-version 1.19.6 --cpus 4
+          sleep 10
       - name: Test minikube
         run: |
           minikube profile list
@@ -359,8 +359,8 @@ jobs:
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
           minikube delete
-          minikube start --driver=docker --kubernetes-version 1.19.6
-          sleep 30
+          minikube start --driver=docker --kubernetes-version 1.19.6 --cpus 4
+          sleep 5
       - name: Test minikube
         run: |
           minikube profile list
@@ -374,7 +374,7 @@ jobs:
       - name: Make image
         run: make RELEASE=true minikube_image
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 20
+        timeout-minutes: 5
         run: |
           make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - run: minikube delete
