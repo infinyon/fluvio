@@ -349,13 +349,7 @@ mod test {
         let res_msg_result: Result<RequestMessage<ApiVersionRequest>, IoError> =
             Decoder::decode_from(&mut encode_bytes, 0);
 
-        match res_msg_result {
-            Ok(msg) => {
-                assert_eq!(msg.header.correlation_id(), 5);
-            }
-            Err(err) => {
-                assert!(false, "error: {}", err);
-            }
-        }
+        let msg = res_msg_result.unwrap();
+        assert_eq!(msg.header.correlation_id(), 5);
     }
 }

@@ -23,6 +23,7 @@ use super::*;
 /// marker trait for List
 pub trait WatchSpec: Spec {
     /// convert to list request with filters
+    #[allow(clippy::wrong_self_convention)]
     fn into_list_request(epoch: Epoch) -> WatchRequest;
 }
 

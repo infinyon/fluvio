@@ -36,6 +36,7 @@ pub(crate) trait Index {
 
 pub trait OffsetPosition: Sized {
     /// convert to be endian
+    #[allow(clippy::wrong_self_convention)]
     fn to_be(self) -> Self;
 
     fn offset(&self) -> Size;
