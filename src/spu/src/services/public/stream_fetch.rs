@@ -29,7 +29,7 @@ pub struct StreamFetchHandler<S> {
     header: RequestHeader,
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
-    offset_listener: OffsetChangeListener
+    offset_listener: OffsetChangeListener,
 }
 
 impl<S> StreamFetchHandler<S>
@@ -43,7 +43,7 @@ where
         ctx: DefaultSharedGlobalContext,
         sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<SimpleEvent>,
-        offset_listener: OffsetChangeListener
+        offset_listener: OffsetChangeListener,
     ) {
         // first get receiver to offset update channel to we don't missed events
 
@@ -69,7 +69,7 @@ where
             max_bytes,
             sink,
             end_event,
-            offset_listener
+            offset_listener,
         };
 
         spawn(async move { handler.process(current_offset).await });
@@ -98,6 +98,8 @@ where
                 debug!("conn: {}, no records, finishing processing", self.sink.id());
                 return Ok(());
             };
+
+        debug!(current_offset, "initial records fetch");
 
         let mut receiver = self.ctx.offset_channel().receiver();
 
@@ -411,7 +413,7 @@ mod test {
             publisher.update(i as i64);
             assert_eq!(publisher.current_value(), i as i64);
             debug!(i, "publishing value");
-           // sleep(Duration::from_millis(1)).await;
+            // sleep(Duration::from_millis(1)).await;
         }
 
         // wait for test controller to finish

@@ -21,6 +21,7 @@ DEFAULT_ITERATION=1000
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 SKIP_CHECK=--skip-checks
+EXTRA_ARG=
 
 
 # install all tools required
@@ -45,7 +46,10 @@ endif
 #
 
 smoke-test:	test-clean-up	build_test
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK}
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG}
+
+smoke-test-stream:	test-clean-up	build_test
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK} --consumer-wait
 
 smoke-test-tls:	test-clean-up build_test
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK}

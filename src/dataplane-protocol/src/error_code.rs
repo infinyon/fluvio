@@ -47,7 +47,7 @@ pub enum ErrorCode {
     PartitionNotLeader = 3001,
 
     // Stream Fetch error
-    FetchSessionNotFoud = 3002
+    FetchSessionNotFoud = 3002,
 }
 
 impl Default for ErrorCode {

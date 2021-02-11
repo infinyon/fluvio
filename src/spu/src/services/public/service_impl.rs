@@ -184,7 +184,7 @@ where
                                         s_sink,
                                         "roduce request handler"
                                     ),
-                            
+
                             }
                         } else {
                             tracing::debug!("conn: {} msg can't be decoded, ending connection",s_sink.id());
@@ -211,16 +211,17 @@ mod offset {
 
     use std::{io::Error as IoError, sync::Arc};
 
-    use fluvio_spu_schema::server::update_offset::{OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse};
+    use fluvio_spu_schema::server::update_offset::{
+        OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
+    };
     use dataplane::api::ResponseMessage;
 
-
-    use super::{ RequestMessage, ErrorCode,OffsetPublisher,HashMap};
+    use super::{RequestMessage, ErrorCode, OffsetPublisher, HashMap};
 
     pub async fn handle_offset_update(
         request: RequestMessage<UpdateOffsetsRequest>,
-        offset_publishers: &HashMap<u32,Arc<OffsetPublisher>>) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError>
-    {
+        offset_publishers: &HashMap<u32, Arc<OffsetPublisher>>,
+    ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
         let (header, updates) = request.get_header_request();
         let status: Vec<OffsetUpdateStatus> = updates
             .offsets

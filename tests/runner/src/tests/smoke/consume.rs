@@ -1,17 +1,18 @@
 // test consumer
 
-use std::io;
+use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
 
-use log::info;
+use log::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
 use fluvio::{Fluvio, Offset, PartitionConsumer};
+use fluvio_command::CommandExt;
+
 use crate::cli::TestOption;
 use super::message::*;
-use fluvio_command::CommandExt;
 
 type Offsets = HashMap<String, i64>;
 
@@ -51,7 +52,6 @@ fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
     }
 }
 async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
-    use std::time::Duration;
     use fluvio_future::timer::sleep;
 
     for _ in 0..10 {
@@ -71,6 +71,9 @@ async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
 }
 
 async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
+    use tokio::select;
+    use fluvio_future::timer::sleep;
+
     let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
     let iteration = option.produce.produce_iteration;
@@ -94,26 +97,47 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
             .expect("stream");
 
         let mut total_records: u16 = 0;
-        while let Some(Ok(record)) = stream.next().await {
-            let offset = record.offset();
-            let bytes = record.as_ref();
-            info!(
-                "* consumer iter: {}, received offset: {}, bytes: {}",
-                total_records,
-                offset,
-                bytes.len()
-            );
-            validate_message(iteration, offset, &topic_name, option, &bytes);
-            info!(
-                " total records: {}, validated offset: {}",
-                total_records, offset
-            );
-            total_records += 1;
-            if total_records == iteration {
-                println!("<<consume test done for: {} >>>>", topic_name);
-                break;
+
+        let mut timer = sleep(Duration::from_millis(30000)); // 30 seconds
+
+        loop {
+            select! {
+
+                _ = &mut timer => {
+                    debug!("timer expired");
+                    panic!("timer expired");
+                },
+
+                stream_next = stream.next() => {
+
+                    if let Some(Ok(record)) = stream_next {
+
+                        let offset = record.offset();
+                        let bytes = record.as_ref();
+                        info!(
+                            "* consumer iter: {}, received offset: {}, bytes: {}",
+                            total_records,
+                            offset,
+                            bytes.len()
+                        );
+                        validate_message(iteration, offset, &topic_name, option, &bytes);
+                        info!(
+                            " total records: {}, validated offset: {}",
+                            total_records, offset
+                        );
+                        total_records += 1;
+                        if total_records == iteration {
+                            println!("<<consume test done for: {} >>>>", topic_name);
+                            println!("consume message validated!, records: {}",total_records);
+                            break;
+                        }
+
+                    } else {
+                        panic!("no more stream");
+                    }
+                }
+
             }
         }
-        println!("consume message validated!");
     }
 }
