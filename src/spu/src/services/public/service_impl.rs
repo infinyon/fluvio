@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use std::collections::HashSet;
 
 use tracing::debug;
@@ -16,14 +16,14 @@ use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
-use dataplane::api::RequestMessage;
+use dataplane::{ErrorCode, api::RequestMessage};
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
 use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
-use super::stream_fetch::StreamFetchHandler;
+use super::stream_fetch::{StreamFetchHandler, events::OffsetPublisher};
 use super::OffsetReplicaList;
 
 #[derive(Debug)]
@@ -61,6 +61,9 @@ where
         let mut receiver = context.offset_channel().receiver();
 
         let end_event = SimpleEvent::shared();
+
+        let mut offset_publishers = HashMap::new();
+        let mut last_stream_id: u32 = 0;
 
         loop {
             select! {
@@ -161,11 +164,27 @@ where
                                     debug!("registered offset sync request: {:#?}",sync_request);
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
                                 },
-                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone(),end_event.clone()),
-                                SpuServerRequest::UpdateOffsetsRequest(_request) => {
+                                SpuServerRequest::FileStreamFetchRequest(request) =>  {
+                                    let offset_publisher = OffsetPublisher::shared(-1);
+                                    let listener =  offset_publisher.change_listner();
+                                    offset_publishers.insert(last_stream_id,offset_publisher);
+                                    last_stream_id += 1;
 
-                                }
-
+                                    StreamFetchHandler::start(
+                                        request,context.clone(),
+                                        s_sink.clone(),
+                                        end_event.clone(),
+                                        listener
+                                    );
+                                },
+                                SpuServerRequest::UpdateOffsetsRequest(request) =>
+                                    call_service!(
+                                        request,
+                                        offset::handle_offset_update(request,&offset_publishers),
+                                        s_sink,
+                                        "roduce request handler"
+                                    ),
+                            
                             }
                         } else {
                             tracing::debug!("conn: {} msg can't be decoded, ending connection",s_sink.id());
@@ -185,5 +204,43 @@ where
 
         debug!("conn: {}, loop terminated ", s_sink.id());
         Ok(())
+    }
+}
+
+mod offset {
+
+    use std::{io::Error as IoError, sync::Arc};
+
+    use fluvio_spu_schema::server::update_offset::{OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse};
+    use dataplane::api::ResponseMessage;
+
+
+    use super::{ RequestMessage, ErrorCode,OffsetPublisher,HashMap};
+
+    pub async fn handle_offset_update(
+        request: RequestMessage<UpdateOffsetsRequest>,
+        offset_publishers: &HashMap<u32,Arc<OffsetPublisher>>) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError>
+    {
+        let (header, updates) = request.get_header_request();
+        let status: Vec<OffsetUpdateStatus> = updates
+            .offsets
+            .iter()
+            .map(|offset_update| {
+                if let Some(publisher) = offset_publishers.get(&offset_update.session_id) {
+                    publisher.update(offset_update.offset);
+                    OffsetUpdateStatus {
+                        session_id: offset_update.session_id,
+                        error: ErrorCode::None,
+                    }
+                } else {
+                    OffsetUpdateStatus {
+                        session_id: offset_update.session_id,
+                        error: ErrorCode::FetchSessionNotFoud,
+                    }
+                }
+            })
+            .collect();
+        let response = UpdateOffsetsResponse { status };
+        Ok(RequestMessage::<UpdateOffsetsRequest>::response_with_header(&header, response))
     }
 }

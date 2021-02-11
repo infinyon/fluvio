@@ -45,6 +45,9 @@ pub enum ErrorCode {
     // Partition errors
     PartitionPendingInitialization = 3000,
     PartitionNotLeader = 3001,
+
+    // Stream Fetch error
+    FetchSessionNotFoud = 3002
 }
 
 impl Default for ErrorCode {

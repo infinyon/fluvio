@@ -6,15 +6,14 @@ use dataplane::api::Request;
 use dataplane::derive::Decode;
 use dataplane::derive::Encode;
 use dataplane::Offset;
-use dataplane::ReplicaKey;
 
 use crate::errors::ErrorCode;
 use super::SpuServerApiKey;
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct OffsetUpdate {
-    pub replica: ReplicaKey,
     pub offset: Offset,
+    pub session_id: u32
 }
 
 /// send out current offset to SPU
@@ -37,7 +36,7 @@ impl UpdateOffsetsRequest {
 
 #[derive(Decode, Encode, Default, Debug)]
 pub struct OffsetUpdateStatus {
-    pub replica: ReplicaKey,
+    pub session_id: u32,
     pub error: ErrorCode,
 }
 

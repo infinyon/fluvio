@@ -18,6 +18,7 @@ use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetchResponse};
 
 use crate::core::DefaultSharedGlobalContext;
+use events::OffsetChangeListener;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler<S> {
@@ -28,6 +29,7 @@ pub struct StreamFetchHandler<S> {
     header: RequestHeader,
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
+    offset_listener: OffsetChangeListener
 }
 
 impl<S> StreamFetchHandler<S>
@@ -36,11 +38,12 @@ where
     InnerFlvSink<S>: ZeroCopyWrite,
 {
     /// handle fluvio continuous fetch request
-    pub fn handle_stream_fetch(
+    pub fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<SimpleEvent>,
+        offset_listener: OffsetChangeListener
     ) {
         // first get receiver to offset update channel to we don't missed events
 
@@ -66,6 +69,7 @@ where
             max_bytes,
             sink,
             end_event,
+            offset_listener
         };
 
         spawn(async move { handler.process(current_offset).await });
@@ -236,7 +240,7 @@ where
     }
 }
 
-mod events {
+pub mod events {
     use std::sync::atomic::{AtomicI64, Ordering};
     use std::sync::Arc;
 
@@ -264,7 +268,7 @@ mod events {
             self.current_value.load(DEFAULT_EVENT_ORDERING)
         }
 
-        pub fn listen(&self) -> EventListener {
+        fn listen(&self) -> EventListener {
             self.event.listen()
         }
 
@@ -293,7 +297,7 @@ mod events {
         }
 
         #[inline]
-        pub fn has_change(&self) -> bool {
+        fn has_change(&self) -> bool {
             self.current_value() != self.last_value
         }
 
