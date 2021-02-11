@@ -4,6 +4,7 @@ use std::string::FromUtf8Error;
 
 use futures_util::stream::Stream;
 use tracing::debug;
+use once_cell::sync::Lazy;
 
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
 use dataplane::Isolation;
@@ -364,7 +365,13 @@ fn bytes_count(records: &RecordSet) -> usize {
         .sum()
 }
 
-const MAX_FETCH_BYTES: i32 = 1000000;
+/// MAX FETCH BYTES
+static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
+    use std::env;
+    let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
+    let max_bytes: i32 = var_value.parse().unwrap_or(1000000);
+    max_bytes
+});
 
 /// Configures the behavior of consumer fetching and streaming
 #[derive(Debug)]
@@ -376,7 +383,7 @@ pub struct ConsumerConfig {
 impl Default for ConsumerConfig {
     fn default() -> Self {
         Self {
-            max_bytes: MAX_FETCH_BYTES,
+            max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
         }
     }

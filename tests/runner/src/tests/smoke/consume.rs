@@ -98,7 +98,7 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
 
         let mut total_records: u16 = 0;
 
-        let mut timer = sleep(Duration::from_millis(30000)); // 30 seconds
+        let mut timer = sleep(Duration::from_millis(15000)); // 30 seconds
 
         loop {
             select! {
