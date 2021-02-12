@@ -26,6 +26,7 @@ use crate::AdminRequest;
 
 pub trait DeleteSpec: Removable {
     /// convert delete key into request
+    #[allow(clippy::wrong_self_convention)]
     fn into_request<K>(key: K) -> DeleteRequest
     where
         K: Into<Self::DeleteKey>;

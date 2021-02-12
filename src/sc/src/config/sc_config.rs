@@ -13,6 +13,7 @@ use fluvio_types::defaults::SC_PRIVATE_PORT;
 // -----------------------------------
 
 pub trait ScConfigBuilder {
+    #[allow(clippy::wrong_self_convention)]
     fn to_sc_config(self) -> Result<ScConfig, IoError>;
 }
 

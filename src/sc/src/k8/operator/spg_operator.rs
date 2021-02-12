@@ -220,14 +220,7 @@ impl SpgOperator {
         let replicas = spg_spec.replicas;
 
         for i in 0..replicas {
-            let spu_id = match self.compute_spu_id(spg_spec.min_id, i) {
-                Ok(id) => id,
-                Err(err) => {
-                    error!("{}", err);
-                    continue;
-                }
-            };
-
+            let spu_id = self.compute_spu_id(spg_spec.min_id, i);
             let spu_name = format!("{}-{}", spg_name, i);
             debug!("generating spu with name: {}", spu_name);
 
@@ -419,7 +412,7 @@ impl SpgOperator {
     }
 
     /// compute spu id with min_id as base
-    fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> Result<i32, ClientError> {
-        Ok(replica_index as i32 + min_id)
+    fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> i32 {
+        replica_index as i32 + min_id
     }
 }
