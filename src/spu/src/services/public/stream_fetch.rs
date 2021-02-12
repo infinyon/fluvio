@@ -91,19 +91,21 @@ where
     }
 
     async fn inner_process(&mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
-        let mut current_offset =
-            if let Some(offset) = self.send_back_records(starting_offset).await? {
-                offset
-            } else {
-                debug!("conn: {}, no records, finishing processing", self.sink.id());
-                return Ok(());
-            };
+        
+        let mut last_end_offset = if let Some(read_offset) = self.send_back_records(starting_offset).await? {
+            debug!(read_offset, "initial records offsets read");
+            read_offset
+        } else {
+            debug!("conn: {}, no records, finishing processing", self.sink.id());
+            return Ok(());
+        };
 
-        debug!(current_offset, "initial records fetch");
-
+    
         let mut receiver = self.ctx.offset_channel().receiver();
 
         let mut counter: i32 = 0;
+        let mut consumer_offset: Option<Offset> = None;     // offset for consumer
+     
         loop {
             counter += 1;
             debug!(counter, "waiting for event",);
@@ -113,6 +115,23 @@ where
                 _ = self.end_event.listen() => {
                     debug!("end event has been received, terminating");
                     break;
+                },
+
+
+                changed_consumer_offset = self.offset_listener.listen() => {
+
+                    if changed_consumer_offset < last_end_offset {
+                        // there were something to read
+                        if let Some(offset_read) = self.send_back_records(changed_consumer_offset).await? {
+                            debug!(offset_read);
+                            last_end_offset = offset_read;
+                            consumer_offset = None;
+                        } else {
+                            debug!("no more replica records can be read");
+                            break;
+                        }
+                    }
+                    
                 },
 
                 offset_event_res = receiver.recv() => {
@@ -129,20 +148,33 @@ where
                                     Isolation::ReadCommitted => offset_event.hw,
                                     Isolation::ReadUncommitted => offset_event.leo
                                 };
-                                debug!("conn: {}, update offset: {}",self.sink.id(),update_offset);
-                                if update_offset != current_offset {
-                                    debug!(update_offset,
-                                        current_offset,
-                                        "updated offsets");
-                                    if let Some(offset) = self.send_back_records(current_offset).await? {
-                                        debug!(offset, "readed offset");
-                                        current_offset = offset;
+
+                                debug!(update_offset);
+                                if let Some(last_consumer_offset) = consumer_offset {
+                                    // we know what consumer offset is
+                                    if update_offset > last_consumer_offset {
+                                        debug!(update_offset,
+                                            consumer_offset = last_consumer_offset,
+                                            "reading offset event");
+                                        if let Some(offset_read) = self.send_back_records(last_consumer_offset).await? {
+                                            debug!(offset_read);
+                                            // actual read should be end offset since it might been changed since during read
+                                            last_end_offset = offset_read;
+                                            consumer_offset = None;
+                                        } else {
+                                            debug!("no more replica records can be read");
+                                            break;
+                                        }
                                     } else {
-                                        debug!("no more replica records can be read");
-                                        break;
+                                        debug!(ignored_update_offset = update_offset);
+                                        last_end_offset = update_offset;
                                     }
                                 } else {
-                                    debug!("changed in offset: {} offset: {} ignoring",self.replica,update_offset);
+
+                                    // we don't know consumer offset, so we delay
+                                    debug!(delay_consumer_offset = update_offset);
+                                    last_end_offset = update_offset;
+                                    
                                 }
                             } else {
                                 trace!("ignoring event because replica does not match");
@@ -175,7 +207,8 @@ where
         Ok(())
     }
 
-    /// send back records
+    /// send back records back to consumer
+    /// return known current LEO
     #[instrument(skip(self))]
     async fn send_back_records(
         &mut self,
@@ -314,17 +347,17 @@ pub mod events {
         }
 
         // wait for new values from publisher in lock-free fashin
-        pub async fn listen(&mut self) {
+        pub async fn listen(&mut self) -> i64{
             if self.has_change() {
                 self.last_value = self.publisher.current_value();
-                return;
+                return self.last_value
             }
 
             let listener = self.publisher.listen();
 
             if self.has_change() {
                 self.last_value = self.publisher.current_value();
-                return;
+                return self.last_value
             }
 
             listener.await;
@@ -332,6 +365,8 @@ pub mod events {
             self.last_value = self.publisher.current_value();
 
             trace!(current_value = self.last_value);
+
+            self.last_value
         }
     }
 }
@@ -380,10 +415,9 @@ mod test {
                         debug!("timer expired");
                         break;
                     },
-                    _ = self.listener.listen() => {
-                        debug!("listen occur");
-                        let fetch_last_value = self.listener.last_value();
-                        debug!(fetch_last_value);
+                    fetch_last_value = self.listener.listen() => {
+                    
+                        debug!(fetch_last_value,"fetched last value");
 
                         // value from listener should be always be incremental and greater than prev value
                         assert!(fetch_last_value > last_value);
