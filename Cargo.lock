@@ -1706,6 +1706,8 @@ name = "fluvio-types"
 version = "0.2.1"
 dependencies = [
  "event-listener",
+ "fluvio-future",
+ "tokio",
  "tracing",
 ]
 

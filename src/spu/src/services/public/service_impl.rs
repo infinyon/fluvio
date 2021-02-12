@@ -17,13 +17,14 @@ use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
+use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
 use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
-use super::stream_fetch::{StreamFetchHandler, events::OffsetPublisher};
+use super::stream_fetch::StreamFetchHandler;
 use super::OffsetReplicaList;
 
 #[derive(Debug)]
