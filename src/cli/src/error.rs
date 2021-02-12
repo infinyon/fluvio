@@ -5,6 +5,8 @@ use fluvio_extension_common::output::OutputError;
 use fluvio_extension_consumer::ConsumerError;
 use fluvio_cluster::cli::ClusterCliError;
 use crate::common::target::TargetError;
+use fluvio_sc_schema::ApiError;
+use fluvio_sc_schema::errors::ErrorCode;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 
@@ -36,8 +38,6 @@ pub enum CliError {
     InvalidArg(String),
     #[error("Unknown error: {0}")]
     Other(String),
-    #[error("An error was handled and requires exit code {0}")]
-    ExitWithCode(i32),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -63,6 +63,30 @@ impl CliError {
         match self {
             CliError::ClusterCliError(cluster) => cluster.into_report(),
             _ => Report::from(self),
+        }
+    }
+
+    /// Looks at the error value and attempts to gracefully handle reporting it
+    ///
+    /// Sometimes, specific errors require specific user-facing error messages.
+    /// Here is where we define those messages, as well as the exit code that the
+    /// program should return when exiting after those errors.
+    pub fn try_handle(self) -> std::result::Result<i32, CliError> {
+        match &self {
+            Self::ConsumerError(ConsumerError::ClientError(FluvioError::ApiError(api))) => {
+                match api {
+                    ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
+                        println!("Topic already exists");
+                        return Ok(1);
+                    }
+                    ApiError::Code(ErrorCode::TopicNotFound, _) => {
+                        println!("Topic not found");
+                        return Ok(1);
+                    }
+                    _ => Err(self),
+                }
+            }
+            _ => Err(self),
         }
     }
 }
