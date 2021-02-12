@@ -77,11 +77,11 @@ impl CliError {
                 match api {
                     ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
                         println!("Topic already exists");
-                        return Ok(1);
+                        Ok(1)
                     }
                     ApiError::Code(ErrorCode::TopicNotFound, _) => {
                         println!("Topic not found");
-                        return Ok(1);
+                        Ok(1)
                     }
                     _ => Err(self),
                 }
