@@ -1,0 +1,14 @@
+name: Chargelog CI
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  changelog_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run Changelog CI
+        uses: saadmk11/changelog-ci@master
