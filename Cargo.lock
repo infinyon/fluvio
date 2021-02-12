@@ -1136,6 +1136,7 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "once_cell",
+ "pin-project-lite 0.2.4",
  "semver 0.11.0",
  "serde",
  "serde_json",

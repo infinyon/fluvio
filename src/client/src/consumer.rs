@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::string::FromUtf8Error;
 
 use futures_util::stream::Stream;
-use tracing::{debug,error};
+use tracing::{debug, error};
 use once_cell::sync::Lazy;
 
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
@@ -344,8 +344,8 @@ impl PartitionConsumer {
         let mut listener = publisher.change_listner();
 
         spawn(async move {
-            use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest,OffsetUpdate};
-            
+            use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
+
             loop {
                 let fetch_last_value = listener.listen().await;
                 if fetch_last_value < 0 {
@@ -353,13 +353,15 @@ impl PartitionConsumer {
                     break;
                 } else {
                     let response = serial_socket
-                        .send_receive(UpdateOffsetsRequest { offsets: vec![OffsetUpdate {
-                            offset: fetch_last_value,
-                            session_id: stream_id
-                        }] })
+                        .send_receive(UpdateOffsetsRequest {
+                            offsets: vec![OffsetUpdate {
+                                offset: fetch_last_value,
+                                session_id: stream_id,
+                            }],
+                        })
                         .await;
                     if let Err(err) = response {
-                        error!("error sending offset: {:#?}",err);
+                        error!("error sending offset: {:#?}", err);
                     }
                 }
             }
@@ -376,17 +378,67 @@ impl PartitionConsumer {
         };
 
         use futures_util::StreamExt;
+
         let stream = self.pool.create_stream(&replica, stream_request).await?;
-        Ok(stream.map(move |item| {
+
+        let response_publisher = publisher.clone();
+        let update_stream = stream.map(move |item| {
             item.map(|response| {
                 if let Some(last_offset) = response.partition.records.last_offset() {
                     debug!(last_offset, stream_id);
-                    publisher.update(last_offset);
+                    response_publisher.update(last_offset);
                 }
                 response
             })
             .map_err(|e| e.into())
-        }))
+        });
+        Ok(publish_stream::EndPublishSt::new(update_stream,publisher))
+    }
+}
+
+mod publish_stream {
+
+    use std::pin::Pin;
+    use std::sync::Arc;
+    use std::task::{Poll, Context};
+
+    use pin_project_lite::pin_project;
+    use futures_util::ready;
+
+    use super::Stream;
+    use super::OffsetPublisher;
+
+    // signal offset when stream is done
+    pin_project! {
+        pub struct EndPublishSt<St> {
+            #[pin]
+            stream: St,
+            publisher: Arc<OffsetPublisher>
+        }
+    }
+
+    impl<St> EndPublishSt<St> {
+        pub fn new(stream: St, publisher: Arc<OffsetPublisher>) -> Self {
+            Self { stream, publisher }
+        }
+    }
+
+    impl<S: Stream> Stream for EndPublishSt<S> {
+        type Item = S::Item;
+
+        fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<S::Item>> {
+            let this = self.project();
+
+            let item = ready!(this.stream.poll_next(cx));
+            if item.is_none() {
+                this.publisher.update(-1);
+            }
+            Poll::Ready(item)
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            self.stream.size_hint()
+        }
     }
 }
 

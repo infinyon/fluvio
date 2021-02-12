@@ -34,6 +34,7 @@ tokio = { version = "0.2.21", features = ["macros"] }
 thiserror = "1.0.20"
 once_cell = "1.5.2"
 semver = "0.11.0"
+pin-project-lite = "0.2"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.1.15", features = ["task", "native2_tls"] }
