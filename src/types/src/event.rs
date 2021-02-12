@@ -63,10 +63,14 @@ pub mod offsets {
 
     impl OffsetPublisher {
         pub fn shared(initial_value: i64) -> Arc<Self> {
-            Arc::new(Self {
+            Arc::new(Self::new(initial_value))
+        }
+
+        pub fn new(initial_value: i64) -> Self {
+            Self {
                 current_value: AtomicI64::new(initial_value),
                 event: Event::new(),
-            })
+            }
         }
 
         // get current value

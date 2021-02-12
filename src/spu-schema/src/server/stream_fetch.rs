@@ -41,6 +41,7 @@ where
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,
+    pub stream_id: u16,
     pub data: PhantomData<R>,
 }
 

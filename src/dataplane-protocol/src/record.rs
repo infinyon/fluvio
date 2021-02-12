@@ -197,6 +197,14 @@ impl RecordSet {
         self.batches.push(batch);
         self
     }
+
+    /// last offset
+    pub fn last_offset(&self) -> Option<Offset> {
+        self.batches
+            .last()
+            .map(|batch| batch.get_last_offset() )
+        
+    }
 }
 
 impl Decoder for RecordSet {

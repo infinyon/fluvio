@@ -64,7 +64,7 @@ where
         let end_event = SimpleEvent::shared();
 
         let mut offset_publishers = HashMap::new();
-        let mut last_stream_id: u32 = 0;
+
 
         loop {
             select! {
@@ -168,8 +168,8 @@ where
                                 SpuServerRequest::FileStreamFetchRequest(request) =>  {
                                     let offset_publisher = OffsetPublisher::shared(-1);
                                     let listener =  offset_publisher.change_listner();
-                                    offset_publishers.insert(last_stream_id,offset_publisher);
-                                    last_stream_id += 1;
+                                    offset_publishers.insert(request.request.stream_id,offset_publisher);
+                                   
 
                                     StreamFetchHandler::start(
                                         request,context.clone(),
@@ -221,7 +221,7 @@ mod offset {
 
     pub async fn handle_offset_update(
         request: RequestMessage<UpdateOffsetsRequest>,
-        offset_publishers: &HashMap<u32, Arc<OffsetPublisher>>,
+        offset_publishers: &HashMap<u16, Arc<OffsetPublisher>>,
     ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
         let (header, updates) = request.get_header_request();
         let status: Vec<OffsetUpdateStatus> = updates
