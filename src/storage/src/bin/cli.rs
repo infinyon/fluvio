@@ -53,7 +53,6 @@ async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
             batch_pos.len(),
         );
     }
-
     println!("done");
 
     Ok(())
