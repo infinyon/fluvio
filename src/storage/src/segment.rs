@@ -25,10 +25,10 @@ use crate::index::OffsetPosition;
 use crate::validator::LogValidationError;
 use crate::util::OffsetError;
 
-pub(crate) type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
-pub(crate) type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
+pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
+pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
 
-pub(crate) enum SegmentSlice<'a> {
+pub enum SegmentSlice<'a> {
     MutableSegment(&'a MutableSegment),
     Segment(&'a ReadSegment),
 }
@@ -54,7 +54,7 @@ impl<'a> SegmentSlice<'a> {
 }
 
 /// Segment contains both message log and index
-pub(crate) struct Segment<I, L> {
+pub struct Segment<I, L> {
     option: ConfigOption,
     msg_log: L,
     index: I,

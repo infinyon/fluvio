@@ -11,7 +11,7 @@ mod mut_records;
 mod mut_index;
 mod range_map;
 mod replica;
-mod segment;
+pub mod segment;
 mod util;
 mod validator;
 mod config;
@@ -27,7 +27,7 @@ pub use crate::records::FileRecordsSlice;
 pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
-pub(crate) use crate::segment::SegmentSlice;
+pub use crate::segment::SegmentSlice;
 
 use dataplane::{ErrorCode, Offset};
 use dataplane::fetch::FilePartitionResponse;

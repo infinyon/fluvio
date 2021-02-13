@@ -17,9 +17,9 @@ use crate::validator::LogValidationError;
 use crate::ConfigOption;
 use crate::StorageError;
 
-pub(crate) const MESSAGE_LOG_EXTENSION: &str = "log";
+pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
-pub(crate) trait FileRecords {
+pub trait FileRecords {
     fn get_base_offset(&self) -> Offset;
 
     // fn get_file(&self) -> &File;

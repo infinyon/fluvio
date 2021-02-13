@@ -25,7 +25,7 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 
 pub const EXTENSION: &str = "index";
 
-pub(crate) trait Index {
+pub trait Index {
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)>;
 
     fn len(&self) -> Size;

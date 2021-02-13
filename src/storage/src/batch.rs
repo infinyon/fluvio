@@ -223,7 +223,7 @@ impl<R> FileBatchStream<R>
 where
     R: BatchRecords,
 {
-    pub(crate) async fn next(&mut self) -> Option<FileBatchPos<R>> {
+    pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!("reading next from pos: {}", self.pos);
         match FileBatchPos::from(&mut self.file, self.pos).await {
             Ok(batch_res) => {

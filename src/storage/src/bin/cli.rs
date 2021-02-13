@@ -6,10 +6,7 @@ use structopt::StructOpt;
 use fluvio_future::task::run_block_on;
 use fluvio_future::fs::util as fs_util;
 
-use fluvio_storage::DefaultFileBatchStream;
-use fluvio_storage::LogIndex;
-use fluvio_storage::StorageError;
-use fluvio_storage::OffsetPosition;
+use fluvio_storage::{ LogIndex,StorageError, OffsetPosition, BatchHeaderStream };
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]
@@ -41,32 +38,26 @@ pub(crate) struct LogOpt {
     file_name: PathBuf,
 }
 
-async fn print_logs(path: PathBuf) -> Result<(), IoError> {
+async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
+
+
     let file = fs_util::open(path).await?;
 
-    let mut _batch_stream = DefaultFileBatchStream::new(file);
+    let mut header = BatchHeaderStream::new_with_pos(file,0).await?;
 
     //  println!("base offset: {}",batch_stream.get_base_offset());
-    /*
-    TODO: comment out
-    while let Some(file_batch) = batch_stream.next().await {
-        // let batch_base_offset = batch.get_base_offset();
-        let batch = file_batch.get_batch();
-        //let header = batch.get_header();
-        // let offset_delta = header.last_offset_delta;
-
+ 
+    while let Some(batch_pos) = header.next().await {
+        
         println!(
-            "batch offset: {}, len: {}, pos: {}",
-            batch.get_base_offset(),
-            file_batch.len(),
-            file_batch.get_pos()
+            "batch offset: {}, pos: {}, len: {}, ",
+            batch_pos.get_base_offset(),
+            batch_pos.get_pos(),
+            batch_pos.len(),
         );
-
-        for record in &batch.records {
-            println!("record offset: {}", record.get_offset_delta());
-        }
     }
-    */
+    
+    println!("done");
 
     Ok(())
 }
