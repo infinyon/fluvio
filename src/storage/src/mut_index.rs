@@ -15,7 +15,7 @@ use fluvio_future::fs::mmap::MemoryMappedMutFile;
 use dataplane::{Offset, Size};
 
 use crate::util::generate_file_name;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::index::lookup_entry;
 use crate::index::Index;
 use crate::index::OffsetPosition;

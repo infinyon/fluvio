@@ -1,6 +1,7 @@
 use std::io::Error as IoError;
 use std::mem;
 
+use fluvio_protocol::Encoder;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -13,7 +14,7 @@ use dataplane::record::RecordSet;
 use crate::checkpoint::CheckPoint;
 use crate::range_map::SegmentList;
 use crate::segment::MutableSegment;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::SegmentSlice;
 use crate::StorageError;
 use crate::SlicePartitionResponse;
@@ -174,6 +175,15 @@ impl FileReplica {
         records: RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
+
+        let max_batch_size = self.option.max_batch_size as usize;
+        // check if any of the records's batch exceed max length
+        for batch in &records.batches {
+            if batch.write_size(0) > max_batch_size {
+                return Err(StorageError::BatchTooBig(max_batch_size))
+            }
+        }
+
         for batch in records.batches {
             self.send(batch).await?;
         }
@@ -348,7 +358,7 @@ mod tests {
     use super::FileReplica;
     use crate::fixture::create_batch;
     use crate::fixture::read_bytes_from_file;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::ReplicaStorage;
 

@@ -6,7 +6,7 @@ use structopt::StructOpt;
 use fluvio_future::task::run_block_on;
 use fluvio_future::fs::util as fs_util;
 
-use fluvio_storage::{ LogIndex,StorageError, OffsetPosition, BatchHeaderStream };
+use fluvio_storage::{ LogIndex,StorageError, OffsetPosition, batch_header::BatchHeaderStream };
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]

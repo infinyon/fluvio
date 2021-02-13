@@ -17,7 +17,7 @@ use dataplane::{Offset, Size};
 use crate::util::generate_file_name;
 use crate::util::log_path_get_offset;
 use crate::validator::LogValidationError;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::StorageError;
 
 /// size of the memory mapped isze
@@ -196,7 +196,7 @@ mod tests {
     use super::lookup_entry;
     use super::LogIndex;
     use crate::mut_index::MutLogIndex;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use super::OffsetPosition;
 
     #[allow(unused)]

@@ -17,7 +17,7 @@ use fluvio_future::fs::File;
 use fluvio_future::fs::metadata;
 use fluvio_future::fs::util;
 
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 
 pub trait ReadToBuf: Sized {
     fn read_from<B>(buf: &mut B) -> Self
@@ -162,7 +162,7 @@ mod tests {
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
 
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use super::CheckPoint;
 
     #[test_async]

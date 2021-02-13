@@ -14,7 +14,7 @@ use dataplane::{Offset, Size};
 use crate::util::generate_file_name;
 use crate::validator::validate;
 use crate::validator::LogValidationError;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::StorageError;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";

@@ -15,6 +15,7 @@ pub enum StorageError {
     OffsetError(OffsetError),
     LogValidationError(LogValidationError),
     SendFileError(SendFileError),
+    BatchTooBig(usize)
 }
 
 impl fmt::Display for StorageError {
@@ -25,6 +26,7 @@ impl fmt::Display for StorageError {
             Self::OffsetError(err) => write!(f, "{}", err),
             Self::LogValidationError(err) => write!(f, "{}", err),
             Self::SendFileError(err) => write!(f, "{}", err),
+            Self::BatchTooBig(max) => write!(f, "one of batch exceed maximum bytes: {}", max),
         }
     }
 }

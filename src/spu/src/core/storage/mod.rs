@@ -1,4 +1,4 @@
-use fluvio_storage::ConfigOption;
+use fluvio_storage::config::ConfigOption;
 use fluvio_storage::FileReplica;
 use fluvio_storage::StorageError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;

@@ -26,7 +26,7 @@ use dataplane::core::Encoder;
 use crate::util::generate_file_name;
 use crate::validator::validate;
 use crate::validator::LogValidationError;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::StorageError;
 use crate::records::FileRecords;
 
@@ -377,7 +377,7 @@ mod tests {
     use super::StorageError;
     use crate::fixture::create_batch;
     use crate::fixture::read_bytes_from_file;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
     const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200

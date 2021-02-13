@@ -9,7 +9,7 @@ use dataplane::record::DefaultRecord;
 use dataplane::batch::DefaultBatch;
 use dataplane::Size;
 
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 
 pub fn create_batch() -> DefaultBatch {
     create_batch_with_producer(12, 2)

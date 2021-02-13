@@ -253,7 +253,7 @@ mod tests {
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
 
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::segment::MutableSegment;
     use crate::fixture::create_batch;
