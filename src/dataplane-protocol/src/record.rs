@@ -10,8 +10,8 @@ use log::{trace, warn};
 use once_cell::sync::Lazy;
 
 use crate::core::bytes::Buf;
-use crate::core::bytes::BufExt;
 use crate::core::bytes::BufMut;
+use bytes::buf::BufExt;
 
 use crate::core::Decoder;
 use crate::core::DecoderVarInt;
@@ -51,12 +51,6 @@ impl DefaultAsyncBuffer {
     {
         DefaultAsyncBuffer(val.into())
     }
-
-    /*
-    pub fn inner_value(self) -> Vec<u8> {
-        *self.0.clone()
-    }
-    */
 
     pub fn len(&self) -> usize {
         self.0.len()
@@ -144,14 +138,22 @@ impl<'a> From<&'a [u8]> for DefaultAsyncBuffer {
 
 impl Encoder for DefaultAsyncBuffer {
     fn write_size(&self, version: Version) -> usize {
-        self.0.write_size(version)
+        let len = self.0.len() as i64;
+        self.0.iter().fold(len.var_write_size(), |sum, val| {
+            sum + val.write_size(version)
+        })
     }
 
-    fn encode<T>(&self, src: &mut T, version: Version) -> Result<(), Error>
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
     where
         T: BufMut,
     {
-        self.0.encode(src, version)
+        let len: i64 = self.0.len() as i64;
+        len.encode_varint(dest)?;
+        for v in self.0.iter() {
+            v.encode(dest, version)?;
+        }
+        Ok(())
     }
 }
 
@@ -162,7 +164,14 @@ impl Decoder for DefaultAsyncBuffer {
     {
         trace!("decoding default asyncbuffer");
         if let Some(ref mut buffer) = Arc::get_mut(&mut self.0) {
-            buffer.decode(src, version)
+            let mut len: i64 = 0;
+            len.decode_varint(src)?;
+            for _ in 0..len {
+                let mut value = <u8>::default();
+                value.decode(src, version)?;
+                buffer.push(value);
+            }
+            Ok(())
         } else {
             Err(Error::new(
                 ErrorKind::Other,
@@ -433,15 +442,14 @@ mod test {
 
     #[test]
     fn test_decode_encode_record() -> Result<(), IoError> {
-        /*
-         * Below is how you generate the vec<u8> for the `data` varible below.
+        /* Below is how you generate the vec<u8> for the `data` varible below.
         let mut record = DefaultRecord::from(String::from("dog"));
         record.preamble.set_offset_delta(1);
         let mut out = vec![];
         record.encode(&mut out, 0)?;
         println!("ENCODED: {:#x?}", out);
         */
-        let data: Vec<u8> = vec![0x12, 0x0, 0x0, 0x2, 0x0, 0x6, 0x64, 0x6f, 0x67, 0x0];
+        let data = [0x12, 0x0, 0x0, 0x2, 0x0, 0x6, 0x64, 0x6f, 0x67, 0x0];
 
         let record = DefaultRecord::decode_from(&mut Cursor::new(&data), 0)?;
         assert_eq!(record.as_bytes(0)?.len(), data.len());

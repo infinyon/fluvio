@@ -99,4 +99,5 @@ jobs:
         run: |
           make helm-install-plugin
           helm repo add fluvio https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
+          make helm-publish-sys
           make helm-publish-app

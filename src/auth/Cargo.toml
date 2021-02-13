@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-auth"
-version = "0.2.1"
+version = "0.4.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -14,11 +14,11 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.41"
-fluvio-controlplane-metadata = { version = "0.4.0", path = "../controlplane-metadata" }
-dataplane = { version = "0.2.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata" }
+dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.1.12", features = ["net", "openssl_tls"] }
-fluvio-protocol = { version = "0.3.0" }
-fluvio-socket = { version = "0.5.0" }
+fluvio-protocol = { path = "../protocol",  version = "0.3.0" }
+fluvio-socket = { path = "../socket", version = "0.6.0" }
 fluvio-types = { version = "0.2.0", path = "../types" }
 flv-tls-proxy = { version = "0.3.0" }
 futures-util = { version = "0.3.5" }

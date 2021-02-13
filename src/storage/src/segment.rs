@@ -453,7 +453,7 @@ mod tests {
             (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
-        assert_eq!(offset_position.len(), 55);
+        assert_eq!(offset_position.len(), 58);
         assert!((active_segment.find_offset_position(30).await?).is_none());
         Ok(())
     }
@@ -492,7 +492,7 @@ mod tests {
             (active_segment.find_offset_position(20).await?).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
-        assert_eq!(offset_position.len(), 82);
+        assert_eq!(offset_position.len(), 85);
         assert!((active_segment.find_offset_position(30).await?).is_none());
 
         Ok(())
@@ -516,10 +516,10 @@ mod tests {
 
         assert_eq!(seg_sink.get_end_offset(), 46);
 
-        assert_eq!(seg_sink.get_log_pos(), 228); // each takes 91 bytes
+        assert_eq!(seg_sink.get_log_pos(), 237); // each takes 79 bytes
 
         let index = seg_sink.get_index();
-        assert_eq!(index[0].to_be(), (2, 76));
+        assert_eq!(index[0].to_be(), (2, 79));
 
         let bytes = read_bytes_from_file(&test_dir.join(TEST2_FILE_NAME))?;
         debug!("read {} bytes", bytes.len());
@@ -536,16 +536,16 @@ mod tests {
         let offset_pos1 = seg_sink.find_offset_position(40).await?.expect("pos");
         assert_eq!(offset_pos1.get_base_offset(), 40);
         assert_eq!(offset_pos1.get_pos(), 0);
-        assert_eq!(offset_pos1.len(), 64);
+        assert_eq!(offset_pos1.len(), 67);
         let offset_pos2 = seg_sink.find_offset_position(42).await?.expect("pos");
         assert_eq!(offset_pos2.get_base_offset(), 42);
-        assert_eq!(offset_pos2.get_pos(), 76);
-        assert_eq!(offset_pos2.len(), 64);
+        assert_eq!(offset_pos2.get_pos(), 79);
+        assert_eq!(offset_pos2.len(), 67);
 
         let offset_pos3 = seg_sink.find_offset_position(44).await?.expect("pos");
         assert_eq!(offset_pos3.get_base_offset(), 44);
-        assert_eq!(offset_pos3.get_pos(), 152);
-        assert_eq!(offset_pos3.len(), 64);
+        assert_eq!(offset_pos3.get_pos(), 158);
+        assert_eq!(offset_pos3.len(), 67);
 
         // test whether you can send batch with non zero base offset
         let mut next_batch = create_batch();

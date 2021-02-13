@@ -34,6 +34,7 @@ pub trait ListSpec: Spec {
     type Filter: ListFilter;
 
     /// convert to list request with filters
+    #[allow(clippy::wrong_self_convention)]
     fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest;
 }
 

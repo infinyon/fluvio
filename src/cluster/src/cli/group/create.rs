@@ -41,7 +41,7 @@ pub struct CreateManagedSpuGroupOpt {
 
 impl CreateManagedSpuGroupOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
-        let (name, spec) = self.validate()?;
+        let (name, spec) = self.validate();
         debug!("creating spg: {}, spec: {:#?}", name, spec);
 
         let mut admin = fluvio.admin().await;
@@ -51,7 +51,7 @@ impl CreateManagedSpuGroupOpt {
     }
 
     /// Validate cli options. Generate target-server and create spu group config.
-    fn validate(self) -> Result<(String, SpuGroupSpec), ClusterCliError> {
+    fn validate(self) -> (String, SpuGroupSpec) {
         let storage = self.storage_size.map(|storage_size| StorageConfig {
             size: Some(storage_size),
             ..Default::default()
@@ -62,15 +62,12 @@ impl CreateManagedSpuGroupOpt {
             rack: self.rack,
             ..Default::default()
         };
-        let group = (
-            self.name,
-            SpuGroupSpec {
-                replicas: self.replicas,
-                min_id: self.min_id,
-                spu_config,
-            },
-        );
 
-        Ok(group)
+        let spec = SpuGroupSpec {
+            replicas: self.replicas,
+            min_id: self.min_id,
+            spu_config,
+        };
+        (self.name, spec)
     }
 }

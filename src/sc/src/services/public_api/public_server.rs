@@ -22,7 +22,7 @@ use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::InnerFlvSocket;
 use fluvio_socket::FlvSocketError;
-use fluvio_service::{FlvService};
+use fluvio_service::FlvService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 use fluvio_future::zero_copy::ZeroCopyWrite;

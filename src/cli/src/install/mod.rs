@@ -13,16 +13,21 @@ fn fluvio_base_dir() -> Result<PathBuf, CliError> {
     if let Ok(dir) = std::env::var("FLUVIO_DIR") {
         // Assume this is like `~/.fluvio
         let path = PathBuf::from(dir);
-        return Ok(path);
+        return fluvio_base_dir_create(path);
     }
     let home =
         home::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
     let path = home.join(".fluvio");
 
-    if path.exists() {
-        return Ok(path);
+    fluvio_base_dir_create(path)
+}
+
+fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf, CliError> {
+    if !path.exists() {
+        // Create the base dir if it doesn't exist yet (#718)
+        std::fs::create_dir_all(&path)?
     }
-    Err(IoError::new(ErrorKind::NotFound, "Fluvio base directory not found").into())
+    Ok(path)
 }
 
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
@@ -60,6 +65,7 @@ async fn fetch_latest_version<T>(
     agent: &HttpAgent,
     id: &PackageId<T>,
     target: Target,
+    prerelease: bool,
 ) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
     debug!(
@@ -68,7 +74,7 @@ async fn fetch_latest_version<T>(
     );
     let response = crate::http::execute(request).await?;
     let package = agent.package_from_response(response).await?;
-    let latest_release = package.latest_release_for_target(target)?;
+    let latest_release = package.latest_release_for_target(target, prerelease)?;
     debug!(release = ?latest_release, "Latest release for package:");
     if !latest_release.target_exists(target) {
         return Err(fluvio_index::Error::MissingTarget(target).into());

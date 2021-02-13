@@ -27,11 +27,9 @@ use crate::stores::spu::*;
 use crate::stores::spu::SpuAdminStore;
 use crate::core::SharedContext;
 
-use super::convert_cluster_to_statefulset;
-use super::generate_service;
-use super::SpuGroupObj;
-use super::SpuValidation;
-use super::SpuK8Config;
+use super::conversion::{convert_cluster_to_statefulset, generate_service};
+use super::spg_group::{SpuGroupObj, SpuValidation};
+use super::ScK8Config;
 
 pub struct SpgOperator {
     client: SharedK8Client,
@@ -122,7 +120,7 @@ impl SpgOperator {
 
         let spg_spec = &spu_group.spec;
 
-        let spu_k8_config = SpuK8Config::load(&self.client, &self.namespace).await?;
+        let spu_k8_config = ScK8Config::load(&self.client, &self.namespace).await?;
 
         // ensure we don't have conflict with existing spu group
         if let Some(conflict_id) = spu_group.is_conflict_with(&self.spu_store).await {
@@ -187,7 +185,7 @@ impl SpgOperator {
         spg_spec: &K8SpuGroupSpec,
         spg_name: &str,
         spg_svc_name: String,
-        spu_k8_config: &SpuK8Config,
+        spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
         let input_stateful = convert_cluster_to_statefulset(
             spg_spec,
@@ -217,19 +215,12 @@ impl SpgOperator {
         spg_obj: &SpuGroupObj,
         spg_spec: &K8SpuGroupSpec,
         spg_name: &str,
-        spu_k8_config: &SpuK8Config,
+        spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
         let replicas = spg_spec.replicas;
 
         for i in 0..replicas {
-            let spu_id = match self.compute_spu_id(spg_spec.min_id, i) {
-                Ok(id) => id,
-                Err(err) => {
-                    error!("{}", err);
-                    continue;
-                }
-            };
-
+            let spu_id = self.compute_spu_id(spg_spec.min_id, i);
             let spu_name = format!("{}-{}", spg_name, i);
             debug!("generating spu with name: {}", spu_name);
 
@@ -327,7 +318,7 @@ impl SpgOperator {
         spg_obj: &SpuGroupObj,
         spg_spec: &K8SpuGroupSpec,
         spu_name: &str,
-        spu_k8_config: &SpuK8Config,
+        spu_k8_config: &ScK8Config,
     ) -> Result<ApplyResult<ServiceSpec>, ClientError> {
         let metadata = &spg_obj.metadata;
 
@@ -421,7 +412,7 @@ impl SpgOperator {
     }
 
     /// compute spu id with min_id as base
-    fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> Result<i32, ClientError> {
-        Ok(replica_index as i32 + min_id)
+    fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> i32 {
+        replica_index as i32 + min_id
     }
 }

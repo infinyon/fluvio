@@ -26,7 +26,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     sudo apt install conntrack
 
     # Start Minikube with `none` driver
-    sudo minikube start --driver=none
+    sudo minikube start --driver=none --kubernetes-version 1.19.6
 
     # Update permissions for .kube and .minikube
     sudo chown -R $USER $HOME/.kube $HOME/.minikube
@@ -48,7 +48,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     # Start Minikube with `hyperkit` driver
     # OSx does not have `none` bare metal option
     # https://github.com/kubernetes/minikube/issues/6143 has an issue macos in the github CI VM.
-    minikube start --driver=virtualbox
+    minikube start --driver=virtualbox --kubernetes-version 1.19.6
 
     # Download kubectl
     minikube kubectl -- get po -A

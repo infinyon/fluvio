@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cli"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio CLI"
@@ -41,18 +41,19 @@ serde_json = "1.0"
 prettytable-rs = "0.8.0"
 static_assertions = "1.1.0"
 tempdir = "0.3.7"
+sysinfo = "0.16.1"
 
 # Fluvio dependencies
 
 k8-config = { version = "1.3.0" }
 k8-client = { version = "5.0.0" }
 fluvio-future = { version = "0.1.8", features = ["fs", "io", "subscriber"] }
-fluvio = { version = "0.4.0", path = "../client", default-features = false }
-fluvio-cluster = { version = "0.6.0", path = "../cluster", default-features = false, features = ["cli", "platform"] }
+fluvio = { version = "0.5.0", path = "../client", default-features = false }
+fluvio-cluster = { version = "0.7.0", path = "../cluster", default-features = false, features = ["cli"] }
 fluvio-package-index = { version = "0.2.0", path = "../package-index" }
-fluvio-extension-consumer = { version = "0.1.2", path = "../extension-consumer" }
-fluvio-extension-common = { version = "0.1.0", path = "../extension-common", features = ["target"]}
-fluvio-controlplane-metadata = { version = "0.4.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
+fluvio-extension-common = { version = "0.2.0", path = "../extension-common", features = ["target"]}
+fluvio-extension-consumer = { version = "0.3.0", path = "../extension-consumer" }
+fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
 k8-types = { version = "0.1.0", features = ["core"]}
 
 [dev-dependencies]

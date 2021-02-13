@@ -24,26 +24,6 @@ use fluvio_runner_local::RunCmd;
 use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
-use common::PrintTerminal;
-
-/// Manage and view Fluvio clusters
-#[derive(StructOpt, Debug)]
-pub struct ClusterOpt {
-    #[structopt(flatten)]
-    target: ClusterTarget,
-
-    #[structopt(subcommand)]
-    cmd: ClusterCmd,
-}
-
-impl ClusterOpt {
-    /// Execute a cluster command
-    pub async fn process(self) -> Result<(), ClusterCliError> {
-        let out = Arc::new(PrintTerminal {});
-        self.cmd.process(out, self.target).await?;
-        Ok(())
-    }
-}
 
 /// Manage and view Fluvio clusters
 #[derive(StructOpt, Debug)]
@@ -93,20 +73,21 @@ impl ClusterCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
+        default_chart_version: &str,
         target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
             Self::Start(start) => {
-                start.process(false, false).await?;
+                start.process(default_chart_version, false, false).await?;
             }
             Self::Upgrade(upgrade) => {
-                upgrade.process().await?;
+                upgrade.process(default_chart_version).await?;
             }
             Self::Delete(uninstall) => {
                 uninstall.process().await?;
             }
             Self::Check(check) => {
-                check.process().await?;
+                check.process(default_chart_version).await?;
             }
             Self::Releases(releases) => {
                 releases.process().await?;

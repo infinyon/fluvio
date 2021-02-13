@@ -129,7 +129,7 @@ impl TopicSpec {
     pub fn partition_map_str(&self) -> Option<String> {
         match self {
             Self::Computed(_) => None,
-            Self::Assigned(partition_map) => partition_map.partition_map_string(),
+            Self::Assigned(partition_map) => Some(partition_map.partition_map_string()),
         }
     }
 
@@ -369,7 +369,7 @@ impl PartitionMaps {
         }
     }
 
-    fn partition_map_string(&self) -> Option<String> {
+    fn partition_map_string(&self) -> String {
         let mut res = String::new();
         for partition in &self.maps {
             res.push_str(&format!("{}:{:?}, ", partition.id, partition.replicas));
@@ -377,7 +377,7 @@ impl PartitionMaps {
         if !res.is_empty() {
             res.truncate(res.len() - 2);
         }
-        Some(res)
+        res
     }
 
     // -----------------------------------
@@ -722,20 +722,13 @@ pub mod test {
         let result = topic_spec.encode(&mut dest, 0);
         assert!(result.is_ok());
         let expected_dest = [
-            0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x13, 0x89, 0x00, 0x00, 0x13,
-            0x8a,
-        ];
-
-        /*
-        let expected_dest = [
-            0, 2, 0, 0, 0, 0, 4, 0, 0,
-            0x00,
-            0x02, // partition cnt
+            0x00, // type
+            0x00, 0x00, 0x00, 0x01, // partition cnt
             0x00, 0x00, 0x00, 0x00, // partition id
             0x00, 0x00, 0x00, 0x02, // replica cnt
             0x00, 0x00, 0x13, 0x89, // spu id: 5001
             0x00, 0x00, 0x13, 0x8a, // spu id: 5002
-        ];*/
+        ];
         assert_eq!(dest, expected_dest);
 
         // test encode
@@ -754,11 +747,7 @@ pub mod test {
                     .into()
                 );
             }
-            _ => assert!(
-                false,
-                "expect assigned topic spec, found {:?}",
-                topic_spec_decoded
-            ),
+            _ => panic!("expect assigned topic spec, found {:?}", topic_spec_decoded),
         }
     }
 
@@ -790,11 +779,7 @@ pub mod test {
                 assert_eq!(param.replication_factor, 3);
                 assert_eq!(param.ignore_rack_assignment, true);
             }
-            _ => assert!(
-                false,
-                "expect computed topic spec, found {:?}",
-                topic_spec_decoded
-            ),
+            _ => panic!("expect computed topic spec, found {:?}", topic_spec_decoded),
         }
     }
 

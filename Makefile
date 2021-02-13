@@ -142,7 +142,10 @@ check-clippy:	install-clippy
 build-all-test:
 	cargo build --lib --tests --all-features
 
-run-all-unit-test:
+test_tls_multiplex:
+	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
+
+run-all-unit-test: test_tls_multiplex
 	cargo test --lib --all-features
 
 install_musl:
@@ -227,8 +230,11 @@ helm-login:
 	helm repo remove fluvio
 	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
 
+helm-publish-sys:
+	helm push k8-util/helm/fluvio-sys --version="$(VERSION)" --force fluvio
+
 helm-publish-app:
-	helm push k8-util/helm/fluvio-app  --version="$(VERSION)" --force fluvio
+	helm push k8-util/helm/fluvio-app --version="$(VERSION)" --force fluvio
 
 
 

@@ -10,8 +10,6 @@ mod service;
 
 use k8_client::new_shared;
 
-use operator::run_k8_operators;
-
 use crate::cli::ScOpt;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -23,6 +21,8 @@ pub fn main_k8_loop(opt: ScOpt) {
     use fluvio_future::timer::sleep;
 
     use crate::init::start_main_loop;
+    use operator::run_k8_operators;
+
     // parse configuration (program exits on error)
     let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
@@ -39,7 +39,8 @@ pub fn main_k8_loop(opt: ScOpt) {
             k8_client,
             ctx,
             tls_option.clone().map(|(_, config)| config),
-        );
+        )
+        .await;
 
         if let Some((proxy_port, tls_config)) = tls_option {
             let tls_acceptor = tls_config

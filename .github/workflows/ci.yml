@@ -199,7 +199,7 @@ jobs:
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
       FLUVIO_CMD: true
-      FLV_SOCKET_WAIT:  600 
+      FLV_SOCKET_WAIT:  600
 
     steps:
       - uses: actions/checkout@v2
@@ -241,7 +241,7 @@ jobs:
         run: brew install minikube
       - name: Setup Minikube for Mac
         run: |
-          minikube start --driver=virtualbox
+          minikube start --driver=virtualbox --kubernetes-version 1.19.6
       - name: Test minikube
         run: |
           minikube profile list
@@ -255,25 +255,25 @@ jobs:
         run: |
           ./target/release/fluvio version
       - name: smoke test tls
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Build examples
         run: examples/tests/build.sh --release
       - name: Test examples
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: examples/tests/run.sh --release
       - name: Stop sccache server
         run: sccache --stop-server
       - name: Upload Sc logs
-        timeout-minutes: 10
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-local-sc-logs
           path: /usr/local/var/log/fluvio/flv_sc.log
       - name: Upload Spu logs
-        timeout-minutes: 10
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
@@ -302,7 +302,7 @@ jobs:
       - name: Setup Minikube for Linux
         run: |
           minikube delete
-          minikube start --driver=docker
+          minikube start --driver=docker --kubernetes-version 1.19.6
           sleep 30
       - name: Test minikube
         run: |
@@ -318,13 +318,13 @@ jobs:
         run: |
           ./target/release/fluvio version
       - name: Run smoke-test
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Build examples
         run: examples/tests/build.sh --release
       - name: Test examples
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: examples/tests/run.sh --release
       - run: minikube delete
       - name: Upload SC log
@@ -343,8 +343,10 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLUVIO_CMD:  true 
-      FLV_SOCKET_WAIT:  600 
+      FLUVIO_CMD:  true
+      FLV_SOCKET_WAIT:  600
+      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 90
+      RUST_LOG: fluvio=debug
     steps:
       - uses: actions/checkout@v2
       - run: helm version
@@ -357,7 +359,7 @@ jobs:
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
           minikube delete
-          minikube start --driver=docker
+          minikube start --driver=docker --kubernetes-version 1.19.6
           sleep 30
       - name: Test minikube
         run: |
@@ -372,7 +374,7 @@ jobs:
       - name: Make image
         run: make RELEASE=true minikube_image
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - run: minikube delete
@@ -380,32 +382,9 @@ jobs:
         if: failure()
         run: kubectl logs fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
-        timeout-minutes: 10
+        timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-k8-logs
           path: /tmp/flv_sc.log
-
-  composite_action_test:
-    name: Composite Action Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        rust: [stable]
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./
-        name: Install Fluvio Local Cluster
-      - name: Fluvio command test
-        run: |
-          fluvio version
-          fluvio topic list
-          fluvio topic create "foobar"
-          sleep 3
-          echo foo | fluvio produce "foobar"
-          fluvio consume foobar -o 0 -d
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"

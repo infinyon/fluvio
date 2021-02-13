@@ -25,15 +25,9 @@ use crate::{FluvioConfig, FluvioError};
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error(transparent)]
-    ConfigFileError {
-        #[from]
-        source: IoError,
-    },
+    ConfigFileError(#[from] IoError),
     #[error("Failed to deserialize Fluvio config")]
-    TomlError {
-        #[from]
-        source: toml::de::Error,
-    },
+    TomlError(#[from] toml::de::Error),
     #[error("Config has no active profile")]
     NoActiveProfile,
     #[error("No cluster config for profile {profile}")]
@@ -73,18 +67,15 @@ impl ConfigFile {
 
     /// try to load from default locations
     pub fn load(optional_path: Option<String>) -> Result<Self, FluvioError> {
-        let path = Self::default_file_path(optional_path)
-            .map_err(|source| ConfigError::ConfigFileError { source })?;
+        let path = Self::default_file_path(optional_path).map_err(ConfigError::ConfigFileError)?;
         Self::from_file(path)
     }
 
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let file_str: String =
-            read_to_string(path_ref).map_err(|source| ConfigError::ConfigFileError { source })?;
-        let config =
-            toml::from_str(&file_str).map_err(|source| ConfigError::TomlError { source })?;
+        let file_str: String = read_to_string(path_ref).map_err(ConfigError::ConfigFileError)?;
+        let config = toml::from_str(&file_str).map_err(ConfigError::TomlError)?;
         Ok(Self::new(path_ref.to_owned(), config))
     }
 
@@ -123,11 +114,10 @@ impl ConfigFile {
 
     // save to file
     pub fn save(&self) -> Result<(), FluvioError> {
-        create_dir_all(self.path.parent().unwrap())
-            .map_err(|source| ConfigError::ConfigFileError { source })?;
+        create_dir_all(self.path.parent().unwrap()).map_err(ConfigError::ConfigFileError)?;
         self.config
             .save_to(&self.path)
-            .map_err(|source| ConfigError::ConfigFileError { source })?;
+            .map_err(ConfigError::ConfigFileError)?;
         Ok(())
     }
 }

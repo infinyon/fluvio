@@ -113,11 +113,14 @@ impl Package {
     }
 
     /// Returns a reference to the latest release with this target
-    pub fn latest_release_for_target(&self, target: Target) -> Result<&Release> {
+    ///
+    /// If `prerelease` is false, this will return only the latest release
+    /// whose version does not include a prerelease tag.
+    pub fn latest_release_for_target(&self, target: Target, prerelease: bool) -> Result<&Release> {
         self.releases
             .iter()
             .rev()
-            .find(|it| it.targets.contains(&target))
+            .find(|it| it.targets.contains(&target) && (prerelease || !it.version.is_prerelease()))
             .ok_or(Error::MissingTarget(target))
     }
 
@@ -199,6 +202,40 @@ impl Release {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use semver::Version;
+
+    fn test_package() -> Package {
+        Package {
+            name: "my-package".parse().unwrap(),
+            group: "my-group".parse().unwrap(),
+            kind: PackageKind::Binary,
+            author: None,
+            description: None,
+            repository: None,
+            releases: vec![
+                Release {
+                    version: Version::parse("0.1.0-alpha.1").unwrap(),
+                    yanked: false,
+                    targets: vec![Target::X86_64AppleDarwin],
+                },
+                Release {
+                    version: Version::parse("0.1.0").unwrap(),
+                    yanked: false,
+                    targets: vec![Target::X86_64AppleDarwin],
+                },
+                Release {
+                    version: Version::parse("0.2.0-alpha.1").unwrap(),
+                    yanked: false,
+                    targets: vec![Target::X86_64AppleDarwin],
+                },
+                Release {
+                    version: Version::parse("0.2.0-alpha.2").unwrap(),
+                    yanked: false,
+                    targets: vec![Target::X86_64AppleDarwin],
+                },
+            ],
+        }
+    }
 
     #[test]
     fn test_serialize_package() {
@@ -209,5 +246,23 @@ mod tests {
             stringified,
             r#"{"name":"fluvio","group":"fluvio","kind":"bin","author":"Bob","description":"A package","repository":"https://github.com"}"#
         )
+    }
+
+    #[test]
+    fn test_get_latest_prerelease() {
+        let package = test_package();
+        let release = package
+            .latest_release_for_target(Target::X86_64AppleDarwin, true)
+            .unwrap();
+        assert_eq!(release.version, Version::parse("0.2.0-alpha.2").unwrap());
+    }
+
+    #[test]
+    fn test_get_latest_release() {
+        let package = test_package();
+        let release = package
+            .latest_release_for_target(Target::X86_64AppleDarwin, false)
+            .unwrap();
+        assert_eq!(release.version, Version::parse("0.1.0").unwrap());
     }
 }

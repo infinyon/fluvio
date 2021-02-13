@@ -243,7 +243,7 @@ mod test {
 
         let decoded_record = batch.records.get(0).unwrap();
         println!("record crc: {}", batch.header.crc);
-        assert_eq!(batch.header.crc, 1910360147);
+        assert_eq!(batch.header.crc, 843514105);
         let b = decoded_record.value.as_ref();
         assert_eq!(b, b"test");
 

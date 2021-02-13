@@ -2,6 +2,7 @@
 //!
 //! CLI configurations at the top of the tree
 
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::process::Command;
 use structopt::clap::{AppSettings, Shell, App, SubCommand};
@@ -31,8 +32,9 @@ use common::COMMAND_TEMPLATE;
 use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
+use fluvio::config::ConfigFile;
 
-pub const VERSION: &str = include_str!("../../../VERSION");
+pub const VERSION: &str = include_str!("VERSION");
 static_assertions::const_assert!(!VERSION.is_empty());
 
 /// Fluvio Command Line Interface
@@ -140,7 +142,7 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                cluster.process(out, root.target).await?;
+                cluster.process(out, crate::VERSION, root.target).await?;
             }
             Self::Install(install) => {
                 install.process().await?;
@@ -243,7 +245,14 @@ struct VersionOpt {}
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        println!("Fluvio CLI      : {}", crate::VERSION.trim());
+        println!("Fluvio CLI        : {}", crate::VERSION.trim());
+
+        // Read CLI and compute its sha256
+        let fluvio_bin = std::fs::read(std::env::current_exe()?)?;
+        let mut hasher = Sha256::new();
+        hasher.update(fluvio_bin);
+        let fluvio_bin_sha256 = hasher.finalize();
+        println!("Fluvio CLI SHA256 : {:x}", &fluvio_bin_sha256);
 
         // Attempt to connect to a Fluvio cluster to get platform version
         // Even if we fail to connect, we should not fail the other printouts
@@ -254,15 +263,41 @@ impl VersionOpt {
                 platform_version = version.to_string();
             }
         }
-        println!("Fluvio Platform : {}", platform_version);
 
-        println!("Git Commit      : {}", env!("GIT_HASH"));
-        if let Some(os_info) = option_env!("UNAME") {
-            println!("OS Details      : {}", os_info);
+        let profile_name = ConfigFile::load(None)
+            .ok()
+            .and_then(|it| {
+                it.config()
+                    .current_profile_name()
+                    .map(|name| name.to_string())
+            })
+            .map(|name| format!(" ({})", name))
+            .unwrap_or_else(|| "".to_string());
+        println!("Fluvio Platform   : {}{}", platform_version, profile_name);
+
+        println!("Git Commit        : {}", env!("GIT_HASH"));
+        if let Some(os_info) = os_info() {
+            println!("OS Details        : {}", os_info);
         }
-        println!("Rustc Version   : {}", env!("RUSTC_VERSION"));
+        println!("Rustc Version     : {}", env!("RUSTC_VERSION"));
+
         Ok(())
     }
+}
+
+/// Fetch OS information
+fn os_info() -> Option<String> {
+    use sysinfo::SystemExt;
+    let sys = sysinfo::System::new_all();
+
+    let info = format!(
+        "{} {} (kernel {})",
+        sys.get_name()?,
+        sys.get_os_version()?,
+        sys.get_kernel_version()?,
+    );
+
+    Some(info)
 }
 
 #[derive(Debug, StructOpt)]

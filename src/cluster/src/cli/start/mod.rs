@@ -22,29 +22,6 @@ fn get_log_directory() -> &'static str {
 }
 
 #[derive(Debug)]
-pub struct DefaultVersion(String);
-
-impl Default for DefaultVersion {
-    fn default() -> Self {
-        Self(crate::VERSION.trim().to_string())
-    }
-}
-
-impl fmt::Display for DefaultVersion {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromStr for DefaultVersion {
-    type Err = std::io::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.to_string()))
-    }
-}
-
-#[derive(Debug)]
 pub struct DefaultLogDirectory(String);
 
 impl Default for DefaultLogDirectory {
@@ -70,8 +47,8 @@ impl FromStr for DefaultLogDirectory {
 #[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific chart version
-    #[structopt(long, default_value)]
-    pub chart_version: DefaultVersion,
+    #[structopt(long)]
+    pub chart_version: Option<String>,
 
     /// k8: use specific image version
     #[structopt(long)]
@@ -153,24 +130,22 @@ pub struct StartOpt {
 }
 
 impl StartOpt {
-    pub async fn process(self, upgrade: bool, skip_sys: bool) -> Result<(), ClusterCliError> {
-        use k8::install_core;
-        use k8::run_setup;
-        use sys::install_sys;
-        use local::{install_local, run_local_setup};
+    pub async fn process(
+        self,
+        default_chart_version: &str,
+        upgrade: bool,
+        skip_sys: bool,
+    ) -> Result<(), ClusterCliError> {
+        use crate::cli::start::local::process_local;
+        use crate::cli::start::sys::process_sys;
+        use crate::cli::start::k8::process_k8;
 
         if self.sys {
-            install_sys(self, upgrade)?;
+            process_sys(self, default_chart_version, upgrade)?;
         } else if self.local {
-            if self.setup {
-                run_local_setup(self).await?;
-            } else {
-                install_local(self).await?;
-            }
-        } else if self.setup {
-            run_setup(self).await?;
+            process_local(self, default_chart_version).await?;
         } else {
-            install_core(self, upgrade, skip_sys).await?;
+            process_k8(self, default_chart_version, upgrade, skip_sys).await?;
         }
 
         Ok(())
@@ -187,8 +162,10 @@ pub struct UpgradeOpt {
 }
 
 impl UpgradeOpt {
-    pub async fn process(self) -> Result<(), ClusterCliError> {
-        self.start.process(true, self.skip_sys).await?;
+    pub async fn process(self, default_chart_version: &str) -> Result<(), ClusterCliError> {
+        self.start
+            .process(default_chart_version, true, self.skip_sys)
+            .await?;
         Ok(())
     }
 }

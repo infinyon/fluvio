@@ -30,6 +30,9 @@ pub enum SysInstallError {
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
+    /// Attempted to construct a Config object without all required fields
+    #[error("Missing required config option {0}")]
+    MissingRequiredConfig(String),
 }
 
 /// Errors that may occur while trying to install Fluvio on Kubernetes
@@ -60,8 +63,8 @@ pub enum K8InstallError {
     #[error("Failed to perform one or more pre-checks")]
     PrecheckErrored(CheckResults),
     /// Failed to update Fluvio cluster
-    #[error("Failed to to upgrade cluster to version {0}")]
-    FailedClusterUpgrade(String),
+    #[error("Expected to find cluster with platform version {0}")]
+    FailedPlatformVersion(String),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
     SCServiceTimeout,
@@ -80,6 +83,9 @@ pub enum K8InstallError {
     /// Unable to find a needed Helm chart
     #[error("Unable to find chart in Helm: {0}")]
     HelmChartNotFound(String),
+    /// Attempted to construct a Config object without all required fields
+    #[error("Missing required config option {0}")]
+    MissingRequiredConfig(String),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),
@@ -130,6 +136,9 @@ pub enum LocalInstallError {
     /// Unable to find a needed Helm chart
     #[error("Unable to find chart in Helm: {0}")]
     HelmChartNotFound(String),
+    /// Attempted to construct a Config object without all required fields
+    #[error("Missing required config option {0}")]
+    MissingRequiredConfig(String),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),
