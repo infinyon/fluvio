@@ -10,7 +10,7 @@ use dataplane::{Offset, Size};
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::util as file_util;
 
-use crate::batch_header::{ BatchHeaderStream, BatchHeaderPos};
+use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
 use crate::index::LogIndex;
 use crate::index::Index;

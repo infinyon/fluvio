@@ -175,12 +175,11 @@ impl FileReplica {
         records: RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
-
         let max_batch_size = self.option.max_batch_size as usize;
         // check if any of the records's batch exceed max length
         for batch in &records.batches {
             if batch.write_size(0) > max_batch_size {
-                return Err(StorageError::BatchTooBig(max_batch_size))
+                return Err(StorageError::BatchTooBig(max_batch_size));
             }
         }
 

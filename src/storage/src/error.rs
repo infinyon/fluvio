@@ -15,7 +15,7 @@ pub enum StorageError {
     OffsetError(OffsetError),
     LogValidationError(LogValidationError),
     SendFileError(SendFileError),
-    BatchTooBig(usize)
+    BatchTooBig(usize),
 }
 
 impl fmt::Display for StorageError {

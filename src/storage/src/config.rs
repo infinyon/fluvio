@@ -67,8 +67,6 @@ const fn default_max_batch_size() -> Size {
     DEFAULT_MAX_BATCH_SIZE
 }
 
-
-
 impl ConfigOption {
     pub fn new(
         base_dir: PathBuf,
@@ -77,8 +75,7 @@ impl ConfigOption {
         segment_max_bytes: Size,
         flush_write_count: Size,
         flush_idle_msec: Size,
-        max_batch_size: Size
-
+        max_batch_size: Size,
     ) -> Self {
         ConfigOption {
             base_dir,
@@ -87,7 +84,7 @@ impl ConfigOption {
             segment_max_bytes,
             flush_write_count,
             flush_idle_msec,
-            max_batch_size
+            max_batch_size,
         }
     }
 
@@ -116,7 +113,7 @@ impl Default for ConfigOption {
             segment_max_bytes: default_segment_max_bytes(),
             flush_write_count: default_flush_write_count(),
             flush_idle_msec: default_flush_idle_msec(),
-            max_batch_size: default_max_batch_size()
+            max_batch_size: default_max_batch_size(),
         }
     }
 }

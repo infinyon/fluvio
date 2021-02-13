@@ -24,7 +24,7 @@ use fluvio_socket::FlvSocketError;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::StorageError;
 use fluvio_storage::FileReplica;
-use fluvio_storage::ConfigOption;
+use fluvio_storage::config::ConfigOption;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;

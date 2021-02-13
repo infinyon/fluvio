@@ -129,7 +129,7 @@ mod tests {
     use dataplane::Offset;
 
     use crate::mut_records::MutFileRecords;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
 
     use super::validate;
     use crate::StorageError;

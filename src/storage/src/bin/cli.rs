@@ -6,7 +6,7 @@ use structopt::StructOpt;
 use fluvio_future::task::run_block_on;
 use fluvio_future::fs::util as fs_util;
 
-use fluvio_storage::{ LogIndex,StorageError, OffsetPosition, batch_header::BatchHeaderStream };
+use fluvio_storage::{LogIndex, StorageError, OffsetPosition, batch_header::BatchHeaderStream};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]
@@ -39,16 +39,13 @@ pub(crate) struct LogOpt {
 }
 
 async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
-
-
     let file = fs_util::open(path).await?;
 
-    let mut header = BatchHeaderStream::new_with_pos(file,0).await?;
+    let mut header = BatchHeaderStream::new_with_pos(file, 0).await?;
 
     //  println!("base offset: {}",batch_stream.get_base_offset());
- 
+
     while let Some(batch_pos) = header.next().await {
-        
         println!(
             "batch offset: {}, pos: {}, len: {}, ",
             batch_pos.get_base_offset(),
@@ -56,7 +53,7 @@ async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
             batch_pos.len(),
         );
     }
-    
+
     println!("done");
 
     Ok(())
