@@ -65,7 +65,6 @@ where
 
         let mut offset_publishers = HashMap::new();
 
-
         loop {
             select! {
 
@@ -169,7 +168,7 @@ where
                                     let offset_publisher = OffsetPublisher::shared(-1);
                                     let listener =  offset_publisher.change_listner();
                                     offset_publishers.insert(request.request.stream_id,offset_publisher);
-                                   
+
 
                                     StreamFetchHandler::start(
                                         request,context.clone(),

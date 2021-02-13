@@ -49,7 +49,7 @@ pub struct SpuPool {
     config: ClientConfig,
     metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
-    stream_id: AtomicU16
+    stream_id: AtomicU16,
 }
 
 impl Drop for SpuPool {
@@ -71,13 +71,14 @@ impl SpuPool {
             metadata,
             config,
             spu_clients: Arc::new(Mutex::new(HashMap::new())),
-            stream_id: AtomicU16::new(0)
+            stream_id: AtomicU16::new(0),
         })
     }
 
     // get next stream id
     pub fn next_stream_id(&self) -> u16 {
-        self.stream_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+        self.stream_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
     }
 
     /// create new spu socket

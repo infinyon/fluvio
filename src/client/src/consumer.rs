@@ -392,7 +392,7 @@ impl PartitionConsumer {
             })
             .map_err(|e| e.into())
         });
-        Ok(publish_stream::EndPublishSt::new(update_stream,publisher))
+        Ok(publish_stream::EndPublishSt::new(update_stream, publisher))
     }
 }
 
