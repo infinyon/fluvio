@@ -52,7 +52,6 @@ web-sys = { version = "0.3.46", features = [
     'Storage',
 ] }
 js-sys = "0.3.46"
-serde_json = "1.0.61"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

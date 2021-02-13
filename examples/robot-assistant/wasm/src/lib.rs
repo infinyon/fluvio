@@ -69,7 +69,7 @@ pub fn start_websocket() -> Result<(), JsValue> {
                 let txt = v.trim();
                 if !txt.is_empty() {
                     input_el.set_value("");
-                    cloned_ws.send_with_str(txt).unwrap();
+                    cloned_ws.send_with_str(&txt).unwrap();
                     console_log!("{}", txt);
                 }
             }

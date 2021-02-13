@@ -1,95 +1,254 @@
-mod robot;
-
-use tide_websockets::{Message, WebSocket};
-use async_std::prelude::*;
+use actix::prelude::*;
+use actix_session::{CookieSession, Session};
+use actix_web::{web, get, App, HttpServer, Error, HttpRequest, HttpResponse, Result};
+use actix_web_actors::ws;
+use actix_files::NamedFile;
 use async_std::task::spawn;
-use futures::future::join;
-use anyhow::Result;
-use std::io::{Error, ErrorKind};
-use tide::sessions::SessionMiddleware;
-use tide::sessions::CookieStore;
-use robot::Robot;
-use robot::State;
+use fluvio::{producer, TopicProducer, Offset};
+use futures::StreamExt;
+use serde::{Serialize, Deserialize};
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use uuid::Uuid;
 
-#[async_std::main]
-async fn main() -> Result<()> {
-    println!("server");
-    tide::log::start();
-    let mut app = tide::new();
-    app.with(SessionMiddleware::new(
-        CookieStore::new(),
-        b"936DA01F9ABD4d9d80C702AF85C822A8",
-    ));
+const TOPIC_ID: &str = "robot-assistant";
 
-    app.at("/").serve_dir("examples/robot-assistant/html/")?;
-    app.at("/pkg/").serve_dir("examples/robot-assistant/pkg/")?;
-    app.at("/ws/")
-        .get(WebSocket::new(|req, ws_stream| async move {
-            let topic_id: String = req.session().get("topic_id").unwrap();
-            let topic_id_clone = topic_id.clone();
-            let mut ws_stream_clone = ws_stream.clone();
-            let mut robot = Robot::new().unwrap();
-            ws_stream
-                .send_string(format!("<div>{}</div>", robot.state().start()))
-                .await
-                .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
+#[derive(Message, Debug, Clone, Serialize, Deserialize)]
+#[rtype(result = "()")]
+pub enum Command {
+    Text(String),
+    Number(usize),
+}
 
-            let produce_handle = spawn(async move {
-                let producer = fluvio::producer(topic_id_clone).await?;
-                while let Some(Ok(Message::Text(input))) = ws_stream_clone.next().await {
-                    println!("{}", input);
-                    producer.send_record(&input, 0).await?;
+impl Command {
+    pub fn new(text: String) -> Self {
+        if let Ok(num) = text.parse::<usize>() {
+            Command::Number(num)
+        } else {
+            Command::Text(text)
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Message {
+    pub session_id: Uuid,
+    pub cmd: Command,
+}
+
+impl Message {
+    pub fn new(session_id: Uuid, cmd: Command) -> Self {
+        Message { session_id, cmd }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum State {
+    Text { prompt: String, next: usize },
+    Number { prompt: String, items: Vec<Item> },
+    End { message: String },
+}
+
+impl State {
+    pub fn start(&self) -> String {
+        if let State::Text { prompt, .. } = self {
+            prompt.to_string()
+        } else {
+            "start".to_string()
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Item {
+    pub answer: String,
+    pub next: usize,
+}
+
+pub struct RobotClient {
+    uuid: Uuid,
+    state_id: usize,
+    states: Vec<State>,
+    shared_producer: Arc<Mutex<TopicProducer>>,
+}
+
+impl RobotClient {
+    fn new(uuid: Uuid, shared_producer: Arc<Mutex<TopicProducer>>) -> Self {
+        let state_id = 0;
+        let yaml = include_str!("../robot.yaml");
+        let states: Vec<State> = serde_yaml::from_str(&yaml).expect("yaml");
+        RobotClient {
+            uuid,
+            state_id,
+            states,
+            shared_producer,
+        }
+    }
+
+    fn send_to_fluvio(
+        &mut self,
+        ctx: &mut <Self as Actor>::Context,
+        text: String,
+        shared_producer: Arc<Mutex<TopicProducer>>,
+    ) {
+        let uuid = self.uuid;
+        async move {
+            let cmd = Command::new(text);
+            let message = Message::new(uuid, cmd);
+            let json = serde_json::to_string(&message).expect("json");
+            let guard = shared_producer.lock().await;
+            guard.send_record(&json, 0).await.expect("sent");
+        }
+        .into_actor(self)
+        .wait(ctx);
+    }
+
+    fn send_current_state(&mut self, ctx: &mut <Self as Actor>::Context) {
+        let state = self.state();
+        match state {
+            State::Text { prompt, .. } => {
+                ctx.text(format!("<div class=\"bot-message\">{}</div>", prompt))
+            }
+            State::Number { prompt, items } => {
+                ctx.text(format!("<div class=\"bot-message\">{}</div>", prompt));
+                for item in items {
+                    ctx.text(format!("<div>[ {} ] {}</div>", item.next, item.answer));
                 }
-                Ok(())
-            });
-            let topic_id_clone = topic_id.clone();
-            let consume_handle = spawn(async move {
-                let consumer = fluvio::consumer(topic_id_clone, 0).await?;
-                let mut fluvio_stream = consumer.stream(fluvio::Offset::beginning()).await?;
-                while let Some(Ok(record)) = fluvio_stream.next().await {
-                    let bytes = record.as_ref();
-                    let s = String::from_utf8_lossy(&bytes);
-                    ws_stream
-                        .send_string(format!("<div style=\"text-align: right;\">{}</div>", s))
-                        .await
-                        .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
-                    let message = if let Ok(num) = s.parse::<usize>() {
-                        robot::Message::Number(num)
-                    } else {
-                        robot::Message::Text(s.to_string())
-                    };
-                    let state = robot.process(message);
-                    match state {
-                        State::Text { prompt, .. } => ws_stream
-                            .send_string(format!("<div class=\"bot-message\">{}</div>", prompt))
-                            .await
-                            .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
-                        State::Number { prompt, items } => {
-                            ws_stream
-                                .send_string(format!("<div class=\"bot-message\">{}</div>", prompt))
-                                .await
-                                .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
-                            for item in items {
-                                ws_stream
-                                    .send_string(format!(
-                                        "<div>[ {} ] {}</div>",
-                                        item.next, item.answer
-                                    ))
-                                    .await
-                                    .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
-                            }
+            }
+            State::End { message } => ctx.text(format!("<div>{}</div>", message)),
+        }
+    }
+
+    fn state(&self) -> State {
+        self.states[self.state_id].clone()
+    }
+}
+
+impl Actor for RobotClient {
+    type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.send_current_state(ctx);
+    }
+}
+
+impl Handler<Command> for RobotClient {
+    type Result = ();
+
+    fn handle(&mut self, cmd: Command, ctx: &mut Self::Context) {
+        let cur = self.states[self.state_id].clone();
+        let cmd_text = match &cmd {
+            Command::Text(text) => text.to_string(),
+            Command::Number(num) => num.to_string(),
+        };
+        ctx.text(format!(
+            "<div style=\"text-align: right;\">{}</div>",
+            cmd_text
+        ));
+        let next_id = match (cur, cmd) {
+            (State::Text { next: next_id, .. }, Command::Text(_)) => next_id,
+            (State::Number { items, .. }, Command::Number(next_id)) => {
+                if items.iter().any(|item| item.next == next_id) {
+                    next_id
+                } else {
+                    self.state_id
+                }
+            }
+            (_, _) => self.state_id,
+        };
+        self.state_id = next_id;
+        self.send_current_state(ctx);
+    }
+}
+
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for RobotClient {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        match msg {
+            Ok(ws::Message::Ping(_)) => {}
+            Ok(ws::Message::Pong(_)) => {}
+            Ok(ws::Message::Text(text)) => {
+                self.send_to_fluvio(ctx, text, self.shared_producer.clone())
+            }
+            Ok(ws::Message::Binary(_)) => {}
+            Ok(ws::Message::Close(reason)) => {
+                ctx.close(reason);
+                ctx.stop();
+            }
+            _ => ctx.stop(),
+        }
+    }
+}
+
+#[get("/pkg/{filename:.*}")]
+async fn client_files(req: HttpRequest) -> Result<NamedFile> {
+    let filename = req.match_info().query("filename");
+    let path: PathBuf = ["examples", "robot-assistant", "pkg", filename]
+        .iter()
+        .collect();
+    Ok(NamedFile::open(path)?)
+}
+
+#[get("/{filename:.*}")]
+async fn html_files(req: HttpRequest) -> Result<NamedFile> {
+    let filename = req.match_info().query("filename");
+    let path: PathBuf = ["examples", "robot-assistant", "html", filename]
+        .iter()
+        .collect();
+    Ok(NamedFile::open(path)?)
+}
+
+async fn ws_index(
+    r: HttpRequest,
+    stream: web::Payload,
+    session: Session,
+    shared_producer: web::Data<Arc<Mutex<TopicProducer>>>,
+) -> Result<HttpResponse, Error> {
+    let uuid = if let Some(uuid) = session.get::<Uuid>("uuid")? {
+        uuid
+    } else {
+        Uuid::new_v4()
+    };
+    session.set("uuid", uuid)?;
+    let robot_client = RobotClient::new(uuid, shared_producer.get_ref().clone());
+    match ws::start_with_addr(robot_client, &r, stream) {
+        Ok((addr, res)) => {
+            spawn(async move {
+                let consumer = fluvio::consumer(TOPIC_ID, 0).await.expect("consumer");
+                let mut stream = consumer
+                    .stream(Offset::beginning())
+                    .await
+                    .expect("consumer");
+                while let Some(Ok(record)) = stream.next().await {
+                    if let Some(bytes) = record.try_into_bytes() {
+                        let json: String = String::from_utf8_lossy(&bytes).to_string();
+                        let message: Message = serde_json::from_str(&json).expect("message");
+                        let Message { session_id, cmd } = message;
+                        if session_id == uuid {
+                            addr.do_send(cmd)
                         }
-                        State::End { message } => ws_stream
-                            .send_string(format!("<div>{}</div>", message))
-                            .await
-                            .map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?,
                     }
                 }
-                Ok(())
             });
-            let (_, _): (Result<()>, Result<()>) = join(produce_handle, consume_handle).await;
-            Ok(())
-        }));
-    app.listen("127.0.0.1:8080").await?;
-    Ok(())
+            Ok(res)
+        }
+        Err(err) => Err(err),
+    }
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let producer: TopicProducer = producer(TOPIC_ID).await.expect("producer");
+    let shared_producer = Arc::new(Mutex::new(producer));
+    HttpServer::new(move || {
+        App::new()
+            .data(shared_producer.clone())
+            .wrap(CookieSession::signed(&[0; 32]).secure(false))
+            .service(web::resource("/ws/").to(ws_index))
+            .service(client_files)
+            .service(html_files)
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await
 }
