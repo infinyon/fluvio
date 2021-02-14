@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod fixture;
+pub mod fixture;
 
 pub mod batch;
 pub mod batch_header;

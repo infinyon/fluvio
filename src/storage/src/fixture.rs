@@ -1,5 +1,5 @@
 use tracing::info;
-use std::fs::File;
+use std::{fs::File, sync::Arc};
 use std::io;
 use std::io::Read;
 use std::path::Path;
@@ -7,22 +7,34 @@ use std::env::temp_dir;
 
 use derive_builder::Builder;
 
-use dataplane::record::DefaultRecord;
+use dataplane::record::{DefaultRecord, RecordSet};
 use dataplane::batch::DefaultBatch;
 use dataplane::Size;
 
 use crate::config::ConfigOption;
 
-#[derive(Builder, Debug)]
+const DEFAULT_TEST_BYTE: u8 = 5;
+
+fn default_record_producer(_record_index: usize,producer: &BatchProducer) -> DefaultRecord {
+    let mut record = DefaultRecord::default();
+    let bytes: Vec<u8> = vec![DEFAULT_TEST_BYTE;producer.per_record_bytes];
+    record.value = bytes.into();
+    record
+}
+
+#[derive(Builder)]
 pub struct BatchProducer {
 
     #[builder(setter(into), default = "0")]
     producer_id: i64,
     #[builder(setter(into), default = "1")]
     pub records: u16,
-    // how many bytes in a record
-    #[builder(setter(into), default = "2")]
-    pub per_record_bytes: usize
+    /// how many bytes in a record
+    #[builder(setter, default = "2")]
+    pub per_record_bytes: usize,
+    /// generate record
+    #[builder(setter, default = "Arc::new(default_record_producer)")]
+    pub record_generator: Arc<dyn Fn(usize,&BatchProducer) -> DefaultRecord>
 }
 
 impl BatchProducer {
@@ -31,7 +43,7 @@ impl BatchProducer {
         BatchProducerBuilder::default()
     }
 
-    pub fn generate_batch(&self) -> DefaultBatch {
+    fn generate_batch(&self) -> DefaultBatch {
 
         let mut batches = DefaultBatch::default();
         let header = batches.get_mut_header();
@@ -39,14 +51,15 @@ impl BatchProducer {
         header.producer_id = self.producer_id;
         header.producer_epoch = -1;
 
-        for _ in 0..self.records {
-            let mut record = DefaultRecord::default();
-            let bytes: Vec<u8> = vec![5;self.per_record_bytes];
-            record.value = bytes.into();
-            batches.add_record(record);
+        for i in 0..self.records {
+            batches.add_record((self.record_generator)(i as usize,&self));
         }
 
         batches
+    }
+
+    pub fn records(&self)  -> RecordSet {
+        RecordSet::default().add(self.generate_batch())
     }
 }
 
@@ -94,6 +107,7 @@ pub fn default_option(index_max_interval_bytes: Size) -> ConfigOption {
     }
 }
 
+#[cfg(test)]
 mod pin_tests {
 
     use std::pin::Pin;

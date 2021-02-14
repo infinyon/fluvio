@@ -311,7 +311,7 @@ impl FileReplica {
         }
     }
 
-    pub async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
+    async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
         trace!("start_send");
         if let Err(err) = self.active_segment.send(item).await {
             match err {
@@ -354,12 +354,15 @@ mod tests {
     use dataplane::record::RecordSet;
     use flv_util::fixture::ensure_clean_dir;
 
-    use super::FileReplica;
+    
     use crate::fixture::{BatchProducer, create_batch};
     use crate::fixture::read_bytes_from_file;
     use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::ReplicaStorage;
+
+
+    use super::FileReplica;
 
     const TEST_SEG_NAME: &str = "00000000000000000020.log";
     const TEST_SE2_NAME: &str = "00000000000000000022.log";
@@ -680,24 +683,25 @@ mod tests {
 
     #[test_async]
     async fn test_replica_limit_batch() -> Result<(), StorageError> {
-        let option = base_option("test_batch_limit");
+        let mut option = base_option("test_batch_limit");
+        option.max_batch_size = 100;
+
         let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
 
-        let batch = BatchProducer::builder()
+        let small_batch = BatchProducer::builder()
             .build().expect("batch")
-            .generate_batch();
+            .records();
+        assert!(small_batch.write_size(0) < 100);         // ensure we are writing less than 100 bytes
+        replica.send_records(small_batch,false).await.expect("writing records");
 
-       
-        assert!(batch.write_size(0) < 100);         // ensure we are writing less than 100 bytes
-        replica.send(batch).await.expect("writing records");
-
-       // assert!(test_file.exists());
-
-       // replica.remove().await.expect("removed");
-
-       // assert!(!test_file.exists());
+        let larget_batch = BatchProducer::builder()
+            .per_record_bytes(200)
+            .build().expect("batch")
+            .records();
+        assert!(larget_batch.write_size(0) > 100);         // ensure we are writing more than 100
+        assert!(matches!(replica.send_records(larget_batch,false).await.unwrap_err(),StorageError::BatchTooBig(_)));
 
         Ok(())
     }
