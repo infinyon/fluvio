@@ -5,11 +5,50 @@ use std::io::Read;
 use std::path::Path;
 use std::env::temp_dir;
 
+use derive_builder::Builder;
+
 use dataplane::record::DefaultRecord;
 use dataplane::batch::DefaultBatch;
 use dataplane::Size;
 
 use crate::config::ConfigOption;
+
+#[derive(Builder, Debug)]
+pub struct BatchProducer {
+
+    #[builder(setter(into), default = "0")]
+    producer_id: i64,
+    #[builder(setter(into), default = "1")]
+    pub records: u16,
+    // how many bytes in a record
+    #[builder(setter(into), default = "2")]
+    pub per_record_bytes: usize
+}
+
+impl BatchProducer {
+
+    pub fn builder() -> BatchProducerBuilder {
+        BatchProducerBuilder::default()
+    }
+
+    pub fn generate_batch(&self) -> DefaultBatch {
+
+        let mut batches = DefaultBatch::default();
+        let header = batches.get_mut_header();
+        header.magic = 2;
+        header.producer_id = self.producer_id;
+        header.producer_epoch = -1;
+
+        for _ in 0..self.records {
+            let mut record = DefaultRecord::default();
+            let bytes: Vec<u8> = vec![5;self.per_record_bytes];
+            record.value = bytes.into();
+            batches.add_record(record);
+        }
+
+        batches
+    }
+}
 
 pub fn create_batch() -> DefaultBatch {
     create_batch_with_producer(12, 2)

@@ -355,7 +355,7 @@ mod tests {
     use flv_util::fixture::ensure_clean_dir;
 
     use super::FileReplica;
-    use crate::fixture::create_batch;
+    use crate::fixture::{BatchProducer, create_batch};
     use crate::fixture::read_bytes_from_file;
     use crate::config::ConfigOption;
     use crate::StorageError;
@@ -367,6 +367,7 @@ mod tests {
     const TEST_SEG2_IDX: &str = "00000000000000000022.index";
     const START_OFFSET: Offset = 20;
 
+    /// create option, ensure they are clean
     fn base_option(dir: &str) -> ConfigOption {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
@@ -659,7 +660,9 @@ mod tests {
 
     #[test_async]
     async fn test_replica_delete() -> Result<(), StorageError> {
-        let option = base_option("test_delete");
+        let mut option = base_option("test_delete");
+        option.max_batch_size = 50; // enforce 50 length
+
         let replica = FileReplica::create("testr", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
@@ -671,6 +674,30 @@ mod tests {
         replica.remove().await.expect("removed");
 
         assert!(!test_file.exists());
+
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_replica_limit_batch() -> Result<(), StorageError> {
+        let option = base_option("test_batch_limit");
+        let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
+            .await
+            .expect("test replica");
+
+        let batch = BatchProducer::builder()
+            .build().expect("batch")
+            .generate_batch();
+
+       
+        assert!(batch.write_size(0) < 100);         // ensure we are writing less than 100 bytes
+        replica.send(batch).await.expect("writing records");
+
+       // assert!(test_file.exists());
+
+       // replica.remove().await.expect("removed");
+
+       // assert!(!test_file.exists());
 
         Ok(())
     }
