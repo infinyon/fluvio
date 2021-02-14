@@ -1,5 +1,6 @@
 use std::io::Error;
 
+use fluvio_storage::StorageError;
 use tracing::warn;
 use tracing::trace;
 use tracing::error;
@@ -13,6 +14,7 @@ use dataplane::api::ResponseMessage;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::InternalServerError;
 
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
@@ -60,7 +62,16 @@ pub async fn handle_produce_request(
                 }
                 Err(err) => {
                     error!("error: {:#?} writing to replica: {}", err, rep_id);
-                    partition_response.error_code = ErrorCode::StorageError;
+                    match err {
+                        InternalServerError::StorageError(storage_err)
+                            if matches!(storage_err, StorageError::BatchTooBig(_)) =>
+                        {
+                            partition_response.error_code = ErrorCode::MessageTooLarge
+                        }
+                        _ => {
+                            partition_response.error_code = ErrorCode::StorageError;
+                        }
+                    }
                 }
             }
 

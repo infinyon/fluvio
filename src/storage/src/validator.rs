@@ -8,7 +8,7 @@ use tracing::trace;
 use dataplane::Offset;
 use fluvio_future::fs::util as file_util;
 
-use crate::BatchHeaderStream;
+use crate::batch_header::BatchHeaderStream;
 use crate::util::log_path_get_offset;
 use crate::util::OffsetError;
 
@@ -129,7 +129,7 @@ mod tests {
     use dataplane::Offset;
 
     use crate::mut_records::MutFileRecords;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
 
     use super::validate;
     use crate::StorageError;

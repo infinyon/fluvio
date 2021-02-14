@@ -1,6 +1,6 @@
 // test fetch of replica
 
-use std::env::temp_dir;
+use std::{env::temp_dir, sync::Arc};
 use std::time::Duration;
 
 use tracing::debug;
@@ -10,12 +10,14 @@ use futures_lite::future::zip;
 use fluvio_future::test_async;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
-use dataplane::fetch::{
-    FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
-    FilePartitionResponse, FileTopicResponse,
+use dataplane::{
+    fetch::{
+        FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
+        FilePartitionResponse, FileTopicResponse,
+    },
+    record::RecordSet,
 };
 use dataplane::api::RequestMessage;
-use dataplane::batch::DefaultBatch;
 use dataplane::record::DefaultRecord;
 use dataplane::Offset;
 
@@ -24,7 +26,8 @@ use fluvio_socket::FlvSocketError;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::StorageError;
 use fluvio_storage::FileReplica;
-use fluvio_storage::ConfigOption;
+use fluvio_storage::config::ConfigOption;
+use fluvio_storage::fixture::BatchProducer;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;
@@ -39,21 +42,20 @@ fn default_option() -> ConfigOption {
     }
 }
 
+fn generate_record(record_index: usize, _producer: &BatchProducer) -> DefaultRecord {
+    let msg = format!("record {}", record_index);
+    let record: DefaultRecord = msg.into();
+    record
+}
+
 /// create sample batches with variable number of records
-fn create_batch(records: u16) -> DefaultBatch {
-    let mut batches = DefaultBatch::default();
-    let header = batches.get_mut_header();
-    header.magic = 2;
-    header.producer_id = 20;
-    header.producer_epoch = -1;
-
-    for i in 0..records {
-        let msg = format!("record {}", i);
-        let record: DefaultRecord = msg.into();
-        batches.add_record(record);
-    }
-
-    batches
+fn create_records(records: u16) -> RecordSet {
+    BatchProducer::builder()
+        .records(records)
+        .record_generator(Arc::new(generate_record))
+        .build()
+        .expect("batch")
+        .records()
 }
 
 // create new replica and add two batches
@@ -65,8 +67,14 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
     let mut replica = FileReplica::create("testsimple", 0, START_OFFSET, &option)
         .await
         .expect("test replica");
-    replica.send(create_batch(2)).await.expect("first batch");
-    replica.send(create_batch(2)).await.expect("second batch");
+    replica
+        .send_records(create_records(2), false)
+        .await
+        .expect("first batch");
+    replica
+        .send_records(create_records(2), false)
+        .await
+        .expect("second batch");
 
     Ok(replica)
 }

@@ -1,8 +1,7 @@
-#[cfg(test)]
-mod fixture;
+pub mod fixture;
 
-mod batch;
-mod batch_header;
+pub mod batch;
+pub mod batch_header;
 mod checkpoint;
 mod error;
 mod records;
@@ -11,23 +10,17 @@ mod mut_records;
 mod mut_index;
 mod range_map;
 mod replica;
-mod segment;
+pub mod segment;
 mod util;
 mod validator;
-mod config;
+pub mod config;
 
-pub use crate::config::ConfigOption;
-pub use crate::config::DEFAULT_FLUSH_WRITE_COUNT;
-pub use crate::config::DEFAULT_FLUSH_IDLE_MSEC;
-pub use crate::batch::DefaultFileBatchStream;
-pub use crate::batch_header::BatchHeaderPos;
-pub use crate::batch_header::BatchHeaderStream;
 pub use crate::error::StorageError;
 pub use crate::records::FileRecordsSlice;
 pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
-pub(crate) use crate::segment::SegmentSlice;
+pub use crate::segment::SegmentSlice;
 
 use dataplane::{ErrorCode, Offset};
 use dataplane::fetch::FilePartitionResponse;

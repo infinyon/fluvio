@@ -12,6 +12,7 @@ use dataplane::Size;
 
 pub const DEFAULT_FLUSH_WRITE_COUNT: u32 = 1;
 pub const DEFAULT_FLUSH_IDLE_MSEC: u32 = 0;
+pub const DEFAULT_MAX_BATCH_SIZE: u32 = 1048588;
 
 // common option
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -28,6 +29,8 @@ pub struct ConfigOption {
     pub flush_write_count: Size,
     #[serde(default = "default_flush_idle_msec")]
     pub flush_idle_msec: Size,
+    #[serde(default = "default_max_batch_size")]
+    pub max_batch_size: Size,
 }
 
 impl fmt::Display for ConfigOption {
@@ -40,34 +43,39 @@ fn default_base_dir() -> PathBuf {
     PathBuf::from(SPU_LOG_BASE_DIR)
 }
 
-fn default_index_max_bytes() -> Size {
+const fn default_index_max_bytes() -> Size {
     SPU_LOG_INDEX_MAX_BYTES
 }
 
-fn default_index_max_interval_bytes() -> Size {
+const fn default_index_max_interval_bytes() -> Size {
     SPU_LOG_INDEX_MAX_INTERVAL_BYTES
 }
 
-fn default_segment_max_bytes() -> Size {
+const fn default_segment_max_bytes() -> Size {
     SPU_LOG_SEGMENT_MAX_BYTES
 }
 
-fn default_flush_write_count() -> Size {
+const fn default_flush_write_count() -> Size {
     DEFAULT_FLUSH_WRITE_COUNT
 }
 
-fn default_flush_idle_msec() -> Size {
+const fn default_flush_idle_msec() -> Size {
     DEFAULT_FLUSH_IDLE_MSEC
+}
+
+const fn default_max_batch_size() -> Size {
+    DEFAULT_MAX_BATCH_SIZE
 }
 
 impl ConfigOption {
     pub fn new(
         base_dir: PathBuf,
-        index_max_bytes: u32,
-        index_max_interval_bytes: u32,
-        segment_max_bytes: u32,
-        flush_write_count: u32,
-        flush_idle_msec: u32,
+        index_max_bytes: Size,
+        index_max_interval_bytes: Size,
+        segment_max_bytes: Size,
+        flush_write_count: Size,
+        flush_idle_msec: Size,
+        max_batch_size: Size,
     ) -> Self {
         ConfigOption {
             base_dir,
@@ -76,6 +84,7 @@ impl ConfigOption {
             segment_max_bytes,
             flush_write_count,
             flush_idle_msec,
+            max_batch_size,
         }
     }
 
@@ -104,6 +113,7 @@ impl Default for ConfigOption {
             segment_max_bytes: default_segment_max_bytes(),
             flush_write_count: default_flush_write_count(),
             flush_idle_msec: default_flush_idle_msec(),
+            max_batch_size: default_max_batch_size(),
         }
     }
 }

@@ -56,7 +56,7 @@ mod tests {
     use crate::fixture::create_batch;
     use crate::fixture::create_batch_with_producer;
     use crate::mut_records::MutFileRecords;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use crate::StorageError;
 
     use super::BatchHeaderStream;

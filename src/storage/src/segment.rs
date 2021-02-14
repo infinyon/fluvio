@@ -10,25 +10,24 @@ use dataplane::{Offset, Size};
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::util as file_util;
 
-use crate::BatchHeaderStream;
+use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
 use crate::index::LogIndex;
 use crate::index::Index;
 use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
-use crate::BatchHeaderPos;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::StorageError;
-use crate::DefaultFileBatchStream;
+use crate::batch::DefaultFileBatchStream;
 use crate::index::OffsetPosition;
 use crate::validator::LogValidationError;
 use crate::util::OffsetError;
 
-pub(crate) type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
-pub(crate) type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
+pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
+pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
 
-pub(crate) enum SegmentSlice<'a> {
+pub enum SegmentSlice<'a> {
     MutableSegment(&'a MutableSegment),
     Segment(&'a ReadSegment),
 }
@@ -54,7 +53,7 @@ impl<'a> SegmentSlice<'a> {
 }
 
 /// Segment contains both message log and index
-pub(crate) struct Segment<I, L> {
+pub struct Segment<I, L> {
     option: ConfigOption,
     msg_log: L,
     index: I,
@@ -390,7 +389,7 @@ mod tests {
     use crate::fixture::create_batch_with_producer;
     use crate::fixture::create_batch;
     use crate::fixture::read_bytes_from_file;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::index::OffsetPosition;
 

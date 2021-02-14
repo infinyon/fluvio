@@ -1,6 +1,7 @@
 use std::io::Error as IoError;
 use std::mem;
 
+use fluvio_protocol::Encoder;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -13,7 +14,7 @@ use dataplane::record::RecordSet;
 use crate::checkpoint::CheckPoint;
 use crate::range_map::SegmentList;
 use crate::segment::MutableSegment;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::SegmentSlice;
 use crate::StorageError;
 use crate::SlicePartitionResponse;
@@ -174,6 +175,14 @@ impl FileReplica {
         records: RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
+        let max_batch_size = self.option.max_batch_size as usize;
+        // check if any of the records's batch exceed max length
+        for batch in &records.batches {
+            if batch.write_size(0) > max_batch_size {
+                return Err(StorageError::BatchTooBig(max_batch_size));
+            }
+        }
+
         for batch in records.batches {
             self.send(batch).await?;
         }
@@ -302,7 +311,7 @@ impl FileReplica {
         }
     }
 
-    pub async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
+    async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
         trace!("start_send");
         if let Err(err) = self.active_segment.send(item).await {
             match err {
@@ -345,12 +354,13 @@ mod tests {
     use dataplane::record::RecordSet;
     use flv_util::fixture::ensure_clean_dir;
 
-    use super::FileReplica;
-    use crate::fixture::create_batch;
+    use crate::fixture::{BatchProducer, create_batch};
     use crate::fixture::read_bytes_from_file;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::ReplicaStorage;
+
+    use super::FileReplica;
 
     const TEST_SEG_NAME: &str = "00000000000000000020.log";
     const TEST_SE2_NAME: &str = "00000000000000000022.log";
@@ -358,6 +368,7 @@ mod tests {
     const TEST_SEG2_IDX: &str = "00000000000000000022.index";
     const START_OFFSET: Offset = 20;
 
+    /// create option, ensure they are clean
     fn base_option(dir: &str) -> ConfigOption {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
@@ -650,7 +661,9 @@ mod tests {
 
     #[test_async]
     async fn test_replica_delete() -> Result<(), StorageError> {
-        let option = base_option("test_delete");
+        let mut option = base_option("test_delete");
+        option.max_batch_size = 50; // enforce 50 length
+
         let replica = FileReplica::create("testr", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
@@ -662,6 +675,36 @@ mod tests {
         replica.remove().await.expect("removed");
 
         assert!(!test_file.exists());
+
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_replica_limit_batch() -> Result<(), StorageError> {
+        let mut option = base_option("test_batch_limit");
+        option.max_batch_size = 100;
+
+        let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
+            .await
+            .expect("test replica");
+
+        let small_batch = BatchProducer::builder().build().expect("batch").records();
+        assert!(small_batch.write_size(0) < 100); // ensure we are writing less than 100 bytes
+        replica
+            .send_records(small_batch, false)
+            .await
+            .expect("writing records");
+
+        let larget_batch = BatchProducer::builder()
+            .per_record_bytes(200)
+            .build()
+            .expect("batch")
+            .records();
+        assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
+        assert!(matches!(
+            replica.send_records(larget_batch, false).await.unwrap_err(),
+            StorageError::BatchTooBig(_)
+        ));
 
         Ok(())
     }

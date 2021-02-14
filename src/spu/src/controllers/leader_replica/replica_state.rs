@@ -14,7 +14,7 @@ use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, ConfigOption, StorageError};
+use fluvio_storage::{FileReplica, config::ConfigOption, StorageError};
 use fluvio_types::SpuId;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;

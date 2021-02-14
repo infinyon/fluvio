@@ -34,6 +34,7 @@ where
 
 impl<R> Unpin for FileBatchPos<R> where R: BatchRecords {}
 
+#[allow(clippy::len_without_is_empty)]
 impl<R> FileBatchPos<R>
 where
     R: BatchRecords,
@@ -223,7 +224,7 @@ impl<R> FileBatchStream<R>
 where
     R: BatchRecords,
 {
-    pub(crate) async fn next(&mut self) -> Option<FileBatchPos<R>> {
+    pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!("reading next from pos: {}", self.pos);
         match FileBatchPos::from(&mut self.file, self.pos).await {
             Ok(batch_res) => {
@@ -253,7 +254,7 @@ mod tests {
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
 
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::segment::MutableSegment;
     use crate::fixture::create_batch;

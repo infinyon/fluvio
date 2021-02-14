@@ -26,16 +26,18 @@ async-channel = "1.5.1"
 async-trait = "0.1.18"
 structopt = { version = "0.3.5", optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
+async-mutex = "1.4.0"
+derive_builder = "0.9.0"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.0" , path = "../types" }
 fluvio-future = { version = "0.1.8", features = ["fs","mmap"] }
 fluvio-protocol = { path = "../protocol", version = "0.3.0" }
 dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
-async-mutex = "1.4.0"
 
 
 [dev-dependencies]
+
 fluvio-future = { version = "0.1.8", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../socket", version = "0.6.0" }

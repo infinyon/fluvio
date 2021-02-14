@@ -1628,6 +1628,7 @@ dependencies = [
  "async-mutex",
  "async-trait",
  "bytes 0.5.6",
+ "derive_builder",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",

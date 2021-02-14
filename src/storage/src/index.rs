@@ -17,7 +17,7 @@ use dataplane::{Offset, Size};
 use crate::util::generate_file_name;
 use crate::util::log_path_get_offset;
 use crate::validator::LogValidationError;
-use crate::ConfigOption;
+use crate::config::ConfigOption;
 use crate::StorageError;
 
 /// size of the memory mapped isze
@@ -25,7 +25,7 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 
 pub const EXTENSION: &str = "index";
 
-pub(crate) trait Index {
+pub trait Index {
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)>;
 
     fn len(&self) -> Size;
@@ -196,7 +196,7 @@ mod tests {
     use super::lookup_entry;
     use super::LogIndex;
     use crate::mut_index::MutLogIndex;
-    use crate::ConfigOption;
+    use crate::config::ConfigOption;
     use super::OffsetPosition;
 
     #[allow(unused)]

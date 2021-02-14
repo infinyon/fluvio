@@ -28,9 +28,9 @@ use fluvio_types::defaults::SPU_MIN_IN_SYNC_REPLICAS;
 use fluvio_types::defaults::FLV_LOG_BASE_DIR;
 use fluvio_types::defaults::FLV_LOG_SIZE;
 use fluvio_types::SpuId;
-use fluvio_storage::ConfigOption;
-use fluvio_storage::DEFAULT_FLUSH_WRITE_COUNT;
-use fluvio_storage::DEFAULT_FLUSH_IDLE_MSEC;
+use fluvio_storage::config::{
+    ConfigOption, DEFAULT_FLUSH_WRITE_COUNT, DEFAULT_FLUSH_IDLE_MSEC, DEFAULT_MAX_BATCH_SIZE,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Replication {
@@ -54,6 +54,7 @@ pub struct Log {
     pub segment_max_bytes: u32,
     pub flush_write_count: u32,
     pub flush_idle_msec: u32,
+    pub max_batch_size: u32,
 }
 
 impl Default for Log {
@@ -68,6 +69,7 @@ impl Default for Log {
             segment_max_bytes: SPU_LOG_SEGMENT_MAX_BYTES,
             flush_write_count: DEFAULT_FLUSH_WRITE_COUNT,
             flush_idle_msec: DEFAULT_FLUSH_IDLE_MSEC,
+            max_batch_size: DEFAULT_MAX_BATCH_SIZE,
         }
     }
 }
@@ -82,6 +84,7 @@ impl Log {
             self.segment_max_bytes,
             self.flush_write_count,
             self.flush_idle_msec,
+            self.max_batch_size,
         )
     }
 }
