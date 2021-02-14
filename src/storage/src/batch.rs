@@ -34,6 +34,7 @@ where
 
 impl<R> Unpin for FileBatchPos<R> where R: BatchRecords {}
 
+#[allow(clippy::len_without_is_empty)]
 impl<R> FileBatchPos<R>
 where
     R: BatchRecords,

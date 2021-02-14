@@ -23,6 +23,7 @@ pub enum ErrorCode {
 
     OffsetOutOfRange = 1,
     NotLeaderForPartition = 6,
+    MessageTooLarge = 10,
     PermissionDenied = 13,
     StorageError = 56,
 
