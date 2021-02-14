@@ -63,14 +63,15 @@ pub async fn handle_produce_request(
                 Err(err) => {
                     error!("error: {:#?} writing to replica: {}", err, rep_id);
                     match err {
-                        InternalServerError::StorageError(storage_err) if matches!(storage_err,StorageError::BatchTooBig(_)) => {
+                        InternalServerError::StorageError(storage_err)
+                            if matches!(storage_err, StorageError::BatchTooBig(_)) =>
+                        {
                             partition_response.error_code = ErrorCode::MessageTooLarge
-                        },
-                        _ =>  {
+                        }
+                        _ => {
                             partition_response.error_code = ErrorCode::StorageError;
                         }
                     }
-                    
                 }
             }
 
