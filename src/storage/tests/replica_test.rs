@@ -10,10 +10,13 @@ use futures_lite::future::zip;
 use fluvio_future::test_async;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
-use dataplane::{fetch::{
-    FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
-    FilePartitionResponse, FileTopicResponse,
-}, record::RecordSet};
+use dataplane::{
+    fetch::{
+        FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
+        FilePartitionResponse, FileTopicResponse,
+    },
+    record::RecordSet,
+};
 use dataplane::api::RequestMessage;
 use dataplane::record::DefaultRecord;
 use dataplane::Offset;
@@ -39,7 +42,7 @@ fn default_option() -> ConfigOption {
     }
 }
 
-fn generate_record(record_index: usize,_producer: &BatchProducer) -> DefaultRecord {
+fn generate_record(record_index: usize, _producer: &BatchProducer) -> DefaultRecord {
     let msg = format!("record {}", record_index);
     let record: DefaultRecord = msg.into();
     record
@@ -47,11 +50,11 @@ fn generate_record(record_index: usize,_producer: &BatchProducer) -> DefaultReco
 
 /// create sample batches with variable number of records
 fn create_records(records: u16) -> RecordSet {
-
     BatchProducer::builder()
         .records(records)
         .record_generator(Arc::new(generate_record))
-        .build().expect("batch")
+        .build()
+        .expect("batch")
         .records()
 }
 
@@ -64,8 +67,14 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
     let mut replica = FileReplica::create("testsimple", 0, START_OFFSET, &option)
         .await
         .expect("test replica");
-    replica.send_records(create_records(2),false).await.expect("first batch");
-    replica.send_records(create_records(2),false).await.expect("second batch");
+    replica
+        .send_records(create_records(2), false)
+        .await
+        .expect("first batch");
+    replica
+        .send_records(create_records(2), false)
+        .await
+        .expect("second batch");
 
     Ok(replica)
 }

@@ -354,13 +354,11 @@ mod tests {
     use dataplane::record::RecordSet;
     use flv_util::fixture::ensure_clean_dir;
 
-    
     use crate::fixture::{BatchProducer, create_batch};
     use crate::fixture::read_bytes_from_file;
     use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::ReplicaStorage;
-
 
     use super::FileReplica;
 
@@ -690,18 +688,23 @@ mod tests {
             .await
             .expect("test replica");
 
-        let small_batch = BatchProducer::builder()
-            .build().expect("batch")
-            .records();
-        assert!(small_batch.write_size(0) < 100);         // ensure we are writing less than 100 bytes
-        replica.send_records(small_batch,false).await.expect("writing records");
+        let small_batch = BatchProducer::builder().build().expect("batch").records();
+        assert!(small_batch.write_size(0) < 100); // ensure we are writing less than 100 bytes
+        replica
+            .send_records(small_batch, false)
+            .await
+            .expect("writing records");
 
         let larget_batch = BatchProducer::builder()
             .per_record_bytes(200)
-            .build().expect("batch")
+            .build()
+            .expect("batch")
             .records();
-        assert!(larget_batch.write_size(0) > 100);         // ensure we are writing more than 100
-        assert!(matches!(replica.send_records(larget_batch,false).await.unwrap_err(),StorageError::BatchTooBig(_)));
+        assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
+        assert!(matches!(
+            replica.send_records(larget_batch, false).await.unwrap_err(),
+            StorageError::BatchTooBig(_)
+        ));
 
         Ok(())
     }
