@@ -377,7 +377,7 @@ jobs:
         run: |
           make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - name: Clean minikube
-        run:
+        run: |
           minikube delete
           pkill -f "minikube tunnel"
       - name: Save logs
