@@ -1,11 +1,9 @@
 use async_trait::async_trait;
 
-use fluvio_system_util::bin::get_fluvio;
-
-use crate::TestOption;
+use crate::{TestOption, load_tls};
 
 use super::EnvironmentDriver;
-use fluvio_command::CommandExt;
+use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller};
 
 /// Local Env driver where we should SPU locally
 pub struct LocalEnvDriver {
@@ -22,39 +20,37 @@ impl LocalEnvDriver {
 impl EnvironmentDriver for LocalEnvDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
-        get_fluvio()
-            .expect("fluvio not found")
-            .arg("cluster")
-            .arg("delete")
-            .arg("--local")
-            .inherit()
-            .result()
-            .expect("fluvio cluster delete --local should work");
+        let uninstaller = ClusterUninstaller::new().build().unwrap();
+        uninstaller.uninstall_local().await.unwrap();
     }
 
     async fn start_cluster(&self) {
-        let mut cmd = get_fluvio().expect("fluvio not found");
+        let mut builder = LocalConfig::builder(crate::VERSION);
 
-        cmd.arg("cluster")
-            .arg("start")
-            .arg("--spu")
-            .arg(self.option.spu.to_string())
-            .arg("--local");
+        let fluvio_exe = std::env::current_exe()
+            .ok()
+            .and_then(|it| it.parent().map(|parent| parent.join("fluvio")));
 
-        if let Some(log) = &self.option.server_log {
-            cmd.arg("--rust-log").arg(log);
+        builder
+            .spu_replicas(self.option.spu)
+            .render_checks(true)
+            .launcher(fluvio_exe);
+
+        if let Some(rust_log) = &self.option.server_log {
+            builder.rust_log(rust_log);
         }
 
-        if let Some(log) = &self.option.log_dir {
-            cmd.arg("--log-dir").arg(log);
+        if let Some(log_dir) = &self.option.log_dir {
+            builder.log_dir(log_dir);
         }
 
         if self.option.tls() {
-            self.set_tls(&self.option, &mut cmd);
+            let (client, server) = load_tls(&self.option.tls_user);
+            builder.tls(client, server);
         }
 
-        cmd.inherit()
-            .result()
-            .expect("fluvio cluster start --local should work");
+        let config = builder.build().expect("should build LocalConfig");
+        let installer = LocalInstaller::from_config(config);
+        installer.install().await.unwrap();
     }
 }
