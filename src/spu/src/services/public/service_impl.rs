@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{sync::Arc};
 use std::collections::HashSet;
 
 use tracing::debug;
@@ -17,7 +17,6 @@ use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
-use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
@@ -62,8 +61,6 @@ where
         let mut receiver = context.offset_channel().receiver();
 
         let end_event = SimpleEvent::shared();
-
-        let mut offset_publishers = HashMap::new();
 
         loop {
             select! {
@@ -165,22 +162,21 @@ where
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
                                 },
                                 SpuServerRequest::FileStreamFetchRequest(request) =>  {
-                                    let offset_publisher = OffsetPublisher::shared(-1);
+                                    let (stream_id,offset_publisher) = context.stream_publishers().create_new_publisher().await;
                                     let listener =  offset_publisher.change_listner();
-                                    offset_publishers.insert(request.request.stream_id,offset_publisher);
-
 
                                     StreamFetchHandler::start(
                                         request,context.clone(),
                                         s_sink.clone(),
                                         end_event.clone(),
-                                        listener
+                                        listener,
+                                        stream_id
                                     );
                                 },
                                 SpuServerRequest::UpdateOffsetsRequest(request) =>
                                     call_service!(
                                         request,
-                                        offset::handle_offset_update(request,&offset_publishers),
+                                        offset::handle_offset_update(&context,request),
                                         s_sink,
                                         "roduce request handler"
                                     ),
@@ -209,39 +205,42 @@ where
 
 mod offset {
 
-    use std::{io::Error as IoError, sync::Arc};
+    use std::{io::Error as IoError};
 
     use fluvio_spu_schema::server::update_offset::{
         OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
     };
     use dataplane::api::ResponseMessage;
 
-    use super::{RequestMessage, ErrorCode, OffsetPublisher, HashMap};
+    use super::{DefaultSharedGlobalContext, RequestMessage, ErrorCode};
 
     pub async fn handle_offset_update(
+        ctx: &DefaultSharedGlobalContext,
         request: RequestMessage<UpdateOffsetsRequest>,
-        offset_publishers: &HashMap<u16, Arc<OffsetPublisher>>,
     ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
         let (header, updates) = request.get_header_request();
-        let status: Vec<OffsetUpdateStatus> = updates
-            .offsets
-            .iter()
-            .map(|offset_update| {
-                if let Some(publisher) = offset_publishers.get(&offset_update.session_id) {
-                    publisher.update(offset_update.offset);
-                    OffsetUpdateStatus {
-                        session_id: offset_update.session_id,
-                        error: ErrorCode::None,
-                    }
-                } else {
-                    OffsetUpdateStatus {
-                        session_id: offset_update.session_id,
-                        error: ErrorCode::FetchSessionNotFoud,
-                    }
+        let publishers = ctx.stream_publishers();
+        let mut status_list = vec![];
+
+        for update in updates.offsets {
+            let status = if let Some(publisher) = publishers.get_publisher(update.session_id).await
+            {
+                publisher.update(update.offset);
+                OffsetUpdateStatus {
+                    session_id: update.session_id,
+                    error: ErrorCode::None,
                 }
-            })
-            .collect();
-        let response = UpdateOffsetsResponse { status };
+            } else {
+                OffsetUpdateStatus {
+                    session_id: update.session_id,
+                    error: ErrorCode::FetchSessionNotFoud,
+                }
+            };
+            status_list.push(status);
+        }
+        let response = UpdateOffsetsResponse {
+            status: status_list,
+        };
         Ok(RequestMessage::<UpdateOffsetsRequest>::response_with_header(&header, response))
     }
 }

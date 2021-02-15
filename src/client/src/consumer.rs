@@ -5,6 +5,8 @@ use std::string::FromUtf8Error;
 use futures_util::stream::Stream;
 use tracing::{debug, error};
 use once_cell::sync::Lazy;
+use futures_util::future::{Either, err};
+use futures_util::stream::{StreamExt, once, iter};
 
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
 use dataplane::Isolation;
@@ -280,9 +282,6 @@ impl PartitionConsumer {
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
-        use futures_util::future::{Either, err};
-        use futures_util::stream::{StreamExt, once, iter};
-
         let stream = self._stream_batches_with_config(offset, config).await?;
         let flattened = stream.flat_map(|batch_result| {
             let batch = match batch_result {
@@ -325,6 +324,7 @@ impl PartitionConsumer {
     ) -> Result<impl Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>>, FluvioError>
     {
         use fluvio_future::task::spawn;
+        use futures_util::stream::empty;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
@@ -338,61 +338,70 @@ impl PartitionConsumer {
             .to_absolute(&mut serial_socket, &self.topic, self.partition)
             .await?;
 
-        let stream_id = self.pool.next_stream_id();
-
-        let publisher = OffsetPublisher::shared(0);
-        let mut listener = publisher.change_listner();
-
-        spawn(async move {
-            use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
-
-            loop {
-                let fetch_last_value = listener.listen().await;
-                if fetch_last_value < 0 {
-                    debug!(fetch_last_value, stream_id, "received end fetch");
-                    break;
-                } else {
-                    let response = serial_socket
-                        .send_receive(UpdateOffsetsRequest {
-                            offsets: vec![OffsetUpdate {
-                                offset: fetch_last_value,
-                                session_id: stream_id,
-                            }],
-                        })
-                        .await;
-                    if let Err(err) = response {
-                        error!("error sending offset: {:#?}", err);
-                    }
-                }
-            }
-        });
-
         let stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),
             partition: self.partition,
             fetch_offset: offset,
             isolation: config.isolation,
-            max_bytes: config.max_bytes,
-            stream_id,
             ..Default::default()
         };
 
-        use futures_util::StreamExt;
+        let mut stream = self.pool.create_stream(&replica, stream_request).await?;
 
-        let stream = self.pool.create_stream(&replica, stream_request).await?;
+        if let Some(first_response) = stream.next().await {
+            if let Ok(response) = first_response {
+                let stream_id = response.stream_id;
 
-        let response_publisher = publisher.clone();
-        let update_stream = stream.map(move |item| {
-            item.map(|response| {
-                if let Some(last_offset) = response.partition.records.last_offset() {
-                    debug!(last_offset, stream_id);
-                    response_publisher.update(last_offset);
-                }
-                response
-            })
-            .map_err(|e| e.into())
-        });
-        Ok(publish_stream::EndPublishSt::new(update_stream, publisher))
+                debug!(stream_id,"got stream id from stream");
+
+                let publisher = OffsetPublisher::shared(0);
+                let mut listener = publisher.change_listner();
+
+                // update stream with received offsets
+                spawn(async move {
+                    use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
+
+                    loop {
+                        let fetch_last_value = listener.listen().await;
+                        if fetch_last_value < 0 {
+                            debug!(fetch_last_value, stream_id, "received end fetch");
+                            break;
+                        } else {
+                            let response = serial_socket
+                                .send_receive(UpdateOffsetsRequest {
+                                    offsets: vec![OffsetUpdate {
+                                        offset: fetch_last_value,
+                                        session_id: stream_id,
+                                    }],
+                                })
+                                .await;
+                            if let Err(err) = response {
+                                error!("error sending offset: {:#?}", err);
+                            }
+                        }
+                    }
+                });
+
+                let response_publisher = publisher.clone();
+                let update_stream = stream.map(move |item| {
+                    item.map(|response| {
+                        if let Some(last_offset) = response.partition.records.last_offset() {
+                            debug!(last_offset, stream_id);
+                            response_publisher.update(last_offset);
+                        }
+                        response
+                    })
+                    .map_err(|e| e.into())
+                });
+                Ok(Either::Left(iter(vec![Ok(response)]).chain(
+                    publish_stream::EndPublishSt::new(update_stream, publisher),
+                )))
+            } else {
+                Ok(Either::Right(empty()))
+            }
+        } else {
+            Ok(Either::Right(empty()))
+        }
     }
 }
 

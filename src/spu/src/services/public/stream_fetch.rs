@@ -8,7 +8,7 @@ use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio::select;
 use tokio::sync::broadcast::RecvError;
 
-use fluvio_types::event::SimpleEvent;
+use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
 use fluvio_socket::{InnerFlvSink, InnerExclusiveFlvSink, FlvSocketError};
@@ -30,6 +30,7 @@ pub struct StreamFetchHandler<S> {
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
     offset_listener: OffsetChangeListener,
+    stream_id: u32,
 }
 
 impl<S> StreamFetchHandler<S>
@@ -44,6 +45,7 @@ where
         sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<SimpleEvent>,
         offset_listener: OffsetChangeListener,
+        stream_id: u32,
     ) {
         // first get receiver to offset update channel to we don't missed events
 
@@ -70,6 +72,7 @@ where
             sink,
             end_event,
             offset_listener,
+            stream_id,
         };
 
         spawn(async move { handler.process(current_offset).await });
@@ -203,6 +206,11 @@ where
 
         debug!("done with stream fetch loop exiting");
 
+        self.ctx
+            .stream_publishers()
+            .remove_publisher(self.stream_id)
+            .await;
+
         Ok(())
     }
 
@@ -236,6 +244,7 @@ where
             );
             let response = StreamFetchResponse {
                 topic: self.replica.topic.clone(),
+                stream_id: self.stream_id,
                 partition: partition_response,
             };
 
@@ -270,6 +279,71 @@ where
             );
             // in this case, partition is not founded
             Ok(None)
+        }
+    }
+}
+
+pub mod publishers {
+
+    use std::{
+        collections::HashMap,
+        sync::{Arc, atomic::AtomicU32},
+    };
+    use std::sync::atomic::Ordering::SeqCst;
+    use std::fmt::Debug;
+
+    use async_mutex::Mutex;
+    use tracing::debug;
+
+    use super::OffsetPublisher;
+
+    pub struct StreamPublishers {
+        publishers: Mutex<HashMap<u32, Arc<OffsetPublisher>>>,
+        stream_id: AtomicU32,
+    }
+
+    impl Debug for StreamPublishers {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "stream {}", self.stream_id.load(SeqCst))
+        }
+    }
+
+    impl StreamPublishers {
+        pub fn new() -> Self {
+            Self {
+                publishers: Mutex::new(HashMap::new()),
+                stream_id: AtomicU32::new(0),
+            }
+        }
+
+        // get next stream id
+        fn next_stream_id(&self) -> u32 {
+            self.stream_id.fetch_add(1, SeqCst)
+        }
+
+        pub async fn create_new_publisher(&self) -> (u32, Arc<OffsetPublisher>) {
+            let stream_id = self.next_stream_id();
+            let offset_publisher = OffsetPublisher::shared(-1);
+            let mut publisher_lock = self.publishers.lock().await;
+            publisher_lock.insert(stream_id, offset_publisher.clone());
+            (stream_id, offset_publisher)
+        }
+
+        /// get publisher with stream id
+        pub async fn get_publisher(&self, stream_id: u32) -> Option<Arc<OffsetPublisher>> {
+            let publisher_lock = self.publishers.lock().await;
+            publisher_lock
+                .get(&stream_id)
+                .map(|publisher| publisher.clone())
+        }
+
+        pub async fn remove_publisher(&self, stream_id: u32) {
+            let mut publisher_lock = self.publishers.lock().await;
+            if let Some(_) = publisher_lock.remove(&stream_id) {
+                debug!(stream_id, "removed stream publisher");
+            } else {
+                debug!(stream_id, "no stream publisher founded");
+            }
         }
     }
 }
