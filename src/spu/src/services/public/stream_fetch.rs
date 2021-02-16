@@ -56,11 +56,12 @@ where
         let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
         debug!(
-            "conn: {}, start continuous fetch replica: {} offset: {}, max_bytes: {}",
-            sink.id(),
-            replica,
+            
+            sink = sink.id(),
+            %replica,
             current_offset,
-            max_bytes
+            max_bytes,
+            "start stream fetch"
         );
 
         let handler = Self {
@@ -245,6 +246,7 @@ where
                 partition: partition_response,
             };
 
+        
             debug!(
                // stream_id = response.stream_id,
                 len = response.partition.records.len(),
@@ -257,7 +259,7 @@ where
                 response,
             );
 
-            trace!("sending back file fetch response: {:#?}", response_msg);
+            trace!("sending back file fetch response msg: {:#?}", response_msg);
 
             let mut inner_sink = self.sink.lock().await;
             inner_sink
