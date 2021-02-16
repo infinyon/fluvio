@@ -200,7 +200,9 @@ impl RecordSet {
 
     /// last offset
     pub fn last_offset(&self) -> Option<Offset> {
-        self.batches.last().map(|batch| batch.get_last_offset())
+        self.batches
+            .last()
+            .map(|batch| batch.computed_last_offset())
     }
 }
 

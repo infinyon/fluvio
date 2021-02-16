@@ -7,7 +7,6 @@ use std::os::unix::io::RawFd;
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
 use bytes::Bytes;
-use tracing::debug;
 use tracing::trace;
 
 use futures_util::io::{AsyncRead, AsyncWrite};
@@ -130,14 +129,14 @@ where
         for value in values {
             match value {
                 StoreValue::Bytes(bytes) => {
-                    debug!("writing store bytes to socket len: {}", bytes.len());
+                    trace!("writing store bytes to socket len: {}", bytes.len());
                     self.get_mut_tcp_sink().send(bytes).await?;
                 }
                 StoreValue::FileSlice(f_slice) => {
                     if f_slice.is_empty() {
-                        debug!("empty slice, skipping");
+                        trace!("empty slice, skipping");
                     } else {
-                        debug!(
+                        trace!(
                             "writing file slice pos: {} len: {} to socket",
                             f_slice.position(),
                             f_slice.len()

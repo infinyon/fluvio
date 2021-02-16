@@ -207,6 +207,7 @@ mod offset {
 
     use std::{io::Error as IoError};
 
+    use tracing::{debug, error};
     use fluvio_spu_schema::server::update_offset::{
         OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
     };
@@ -218,6 +219,7 @@ mod offset {
         ctx: &DefaultSharedGlobalContext,
         request: RequestMessage<UpdateOffsetsRequest>,
     ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
+        debug!("received stream updates");
         let (header, updates) = request.get_header_request();
         let publishers = ctx.stream_publishers();
         let mut status_list = vec![];
@@ -225,12 +227,21 @@ mod offset {
         for update in updates.offsets {
             let status = if let Some(publisher) = publishers.get_publisher(update.session_id).await
             {
+                debug!(
+                    offset_update = update.offset,
+                    session_id = update.session_id,
+                    "published offsets"
+                );
                 publisher.update(update.offset);
                 OffsetUpdateStatus {
                     session_id: update.session_id,
                     error: ErrorCode::None,
                 }
             } else {
+                error!(
+                    "invalid offset {}, session_id:{}",
+                    update.offset, update.session_id
+                );
                 OffsetUpdateStatus {
                     session_id: update.session_id,
                     error: ErrorCode::FetchSessionNotFoud,

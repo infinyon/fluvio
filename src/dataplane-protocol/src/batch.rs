@@ -123,6 +123,11 @@ impl Batch<DefaultBatchRecords> {
         self.header.last_offset_delta = last_offset_delta as i32;
         self.records.push(record)
     }
+
+    /// computed last offset which is base offset + number of records
+    pub fn computed_last_offset(&self) -> Offset {
+        self.get_base_offset() + self.records.len() as Offset
+    }
 }
 
 impl<R> Decoder for Batch<R>

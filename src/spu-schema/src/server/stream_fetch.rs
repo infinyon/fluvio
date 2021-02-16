@@ -73,7 +73,7 @@ impl FileWrite for StreamFetchResponse<FileRecordSet> {
         trace!("file encoding FlvContinuousFetchResponse");
         trace!("topic {}", self.topic);
         self.topic.encode(src, version)?;
-        self.stream_id.encode(src,version)?;
+        self.stream_id.encode(src, version)?;
         self.partition.file_encode(src, data, version)?;
         Ok(())
     }

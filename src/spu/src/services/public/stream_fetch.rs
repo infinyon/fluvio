@@ -19,6 +19,7 @@ use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetc
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
+use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler<S> {
@@ -56,7 +57,7 @@ where
         let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
         debug!(
-            
+
             sink = sink.id(),
             %replica,
             current_offset,
@@ -111,7 +112,8 @@ where
 
         loop {
             counter += 1;
-            debug!(counter, "waiting for event",);
+
+            debug!(counter, ?consumer_offset, last_end_offset, "waiting");
 
             select! {
 
@@ -123,16 +125,39 @@ where
 
                 changed_consumer_offset = self.offset_listener.listen() => {
 
-                    if changed_consumer_offset < last_end_offset {
-                        // there were something to read
-                        if let Some(offset_read) = self.send_back_records(changed_consumer_offset).await? {
-                            debug!(offset_read);
-                            last_end_offset = offset_read;
-                            consumer_offset = None;
+
+                    if changed_consumer_offset != INIT_OFFSET  {
+
+                        if changed_consumer_offset < last_end_offset {
+                            debug!(
+                                changed_consumer_offset,
+                                last_end_offset,
+                                "need send back"
+                            );
+                            if let Some(offset_read) = self.send_back_records(changed_consumer_offset).await? {
+                                debug!(offset_read);
+                                last_end_offset = offset_read;
+                                consumer_offset = None;
+                                debug!(
+                                    last_end_offset,
+                                    "reset"
+                                );
+                            } else {
+                                debug!("no more replica records can be read");
+                                break;
+                            }
                         } else {
-                            debug!("no more replica records can be read");
-                            break;
+                            debug!(
+                                changed_consumer_offset,
+                                last_end_offset,
+                                "consume caught up"
+                            );
+                            consumer_offset = Some(changed_consumer_offset);
                         }
+                    } else {
+                        debug!(
+                            changed_consumer_offset,
+                            "ignoring offset update")
                     }
 
                 },
@@ -152,7 +177,7 @@ where
                                     Isolation::ReadUncommitted => offset_event.leo
                                 };
 
-                                debug!(update_offset);
+                                debug!(update_offset,"producer");
                                 if let Some(last_consumer_offset) = consumer_offset {
                                     // we know what consumer offset is
                                     if update_offset > last_consumer_offset {
@@ -239,18 +264,18 @@ where
             )
             .await
         {
-            
             let response = StreamFetchResponse {
                 topic: self.replica.topic.clone(),
                 stream_id: self.stream_id,
                 partition: partition_response,
             };
 
-        
             debug!(
                 stream_id = response.stream_id,
                 len = response.partition.records.len(),
-                offset, hw, leo, 
+                offset,
+                hw,
+                leo,
                 "start back stream response",
             );
 
@@ -304,6 +329,8 @@ pub mod publishers {
 
     use super::OffsetPublisher;
 
+    pub const INIT_OFFSET: i64 = -1;
+
     pub struct StreamPublishers {
         publishers: Mutex<HashMap<u32, Arc<OffsetPublisher>>>,
         stream_id: AtomicU32,
@@ -330,7 +357,7 @@ pub mod publishers {
 
         pub async fn create_new_publisher(&self) -> (u32, Arc<OffsetPublisher>) {
             let stream_id = self.next_stream_id();
-            let offset_publisher = OffsetPublisher::shared(-1);
+            let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
             let mut publisher_lock = self.publishers.lock().await;
             publisher_lock.insert(stream_id, offset_publisher.clone());
             (stream_id, offset_publisher)

@@ -289,24 +289,23 @@ impl PartitionConsumer {
                 Err(e) => return Either::Right(once(err(e))),
             };
 
-            let records = batch
-                .partition
-                .records
-                .batches
-                .into_iter()
-                .flat_map(|batch| {
-                    let base_offset = batch.base_offset;
-                    batch
-                        .own_records()
-                        .into_iter()
-                        .enumerate()
-                        .map(move |(relative, record)| {
-                            Ok(Record {
-                                offset: base_offset + relative as i64,
-                                record
-                            })
-                        })
-                });
+            let records =
+                batch
+                    .partition
+                    .records
+                    .batches
+                    .into_iter()
+                    .flat_map(|batch| {
+                        let base_offset = batch.base_offset;
+                        batch.own_records().into_iter().enumerate().map(
+                            move |(relative, record)| {
+                                Ok(Record {
+                                    offset: base_offset + relative as i64,
+                                    record,
+                                })
+                            },
+                        )
+                    });
             Either::Left(iter(records))
         });
 
@@ -398,9 +397,9 @@ impl PartitionConsumer {
 
                 // send back first offset
                 if let Some(last_offset) = response.partition.records.last_offset() {
-                    debug!("published last offset");
+                    debug!(last_offset, "notify new last offset");
                     publisher.update(last_offset);
-                } 
+                }
 
                 let response_publisher = publisher.clone();
                 let update_stream = stream.map(move |item| {
