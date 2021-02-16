@@ -366,9 +366,7 @@ pub mod publishers {
         /// get publisher with stream id
         pub async fn get_publisher(&self, stream_id: u32) -> Option<Arc<OffsetPublisher>> {
             let publisher_lock = self.publishers.lock().await;
-            publisher_lock
-                .get(&stream_id)
-                .cloned()
+            publisher_lock.get(&stream_id).cloned()
         }
 
         pub async fn remove_publisher(&self, stream_id: u32) {
