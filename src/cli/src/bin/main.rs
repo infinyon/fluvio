@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use color_eyre::eyre::Result;
-use fluvio_cli::{Root, CliError, HelpOpt};
+use fluvio_cli::{Root, HelpOpt};
 use fluvio_future::task::run_block_on;
 
 fn main() -> Result<()> {
@@ -10,7 +10,13 @@ fn main() -> Result<()> {
         .install()?;
     print_help_hack()?;
     let root: Root = Root::from_args();
-    run_block_on(root.process()).map_err(CliError::into_report)?;
+
+    // If the CLI comes back with an error, attempt to handle it
+    if let Err(e) = run_block_on(root.process()) {
+        e.print()?;
+        std::process::exit(1);
+    }
+
     Ok(())
 }
 
