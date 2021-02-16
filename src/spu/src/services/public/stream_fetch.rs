@@ -241,12 +241,12 @@ where
             
             let response = StreamFetchResponse {
                 topic: self.replica.topic.clone(),
-                stream_id: self.stream_id,
+                //stream_id: self.stream_id,
                 partition: partition_response,
             };
 
             debug!(
-                stream_id = response.stream_id,
+               // stream_id = response.stream_id,
                 len = response.partition.records.len(),
                 offset, hw, leo, 
                 "start back stream response",

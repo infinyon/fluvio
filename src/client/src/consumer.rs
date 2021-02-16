@@ -350,7 +350,8 @@ impl PartitionConsumer {
 
         if let Some(first_response) = stream.next().await {
             if let Ok(response) = first_response {
-                let stream_id = response.stream_id;
+              //  let stream_id = response.stream_id;
+                let stream_id = 0;
 
                 trace!("first stream response: {:#?}",response);
                 debug!(stream_id,"got stream id from stream");
