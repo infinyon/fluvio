@@ -410,8 +410,8 @@ mod tests {
         debug!("read ok");
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
-        assert_eq!(batch.records.len(), 2);
-        let mut records = batch.records;
+        assert_eq!(batch.records().len(), 2);
+        let mut records = batch.own_records();
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
         assert_eq!(record1.value.as_ref(), vec![10, 20]);
@@ -461,8 +461,8 @@ mod tests {
 
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
-        assert_eq!(batch.records.len(), 2);
-        let mut records = batch.records;
+        assert_eq!(batch.records().len(), 2);
+        let mut records = batch.own_records();
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
         assert_eq!(record1.value.as_ref(), vec![10, 20]);
@@ -536,8 +536,8 @@ mod tests {
 
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
-        assert_eq!(batch.records.len(), 2);
-        let mut records = batch.records;
+        assert_eq!(batch.records().len(), 2);
+        let mut records = batch.own_records();
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
         assert_eq!(record1.value.as_ref(), vec![10, 20]);

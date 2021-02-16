@@ -91,7 +91,7 @@ pub fn partition_to_json_records(
 
     // convert all batches to json records
     for batch in &partition.records.batches {
-        for record in &batch.records {
+        for record in batch.records() {
             let batch_record = record.get_value().as_ref();
             match serde_json::from_slice(&batch_record) {
                 Ok(value) => json_records.push(value),
@@ -139,7 +139,7 @@ pub fn print_text_records<O>(
         }
 
         for batch in &r_partition.records.batches {
-            for record in &batch.records {
+            for record in batch.records() {
                 if record.get_value().is_binary() {
                     if !suppress {
                         t_println!(out, "{}", record.get_value().describe());
@@ -179,7 +179,7 @@ pub fn print_binary_records<O>(
         }
 
         for batch in &r_partition.records.batches {
-            for record in &batch.records {
+            for record in batch.records() {
                 let batch_record = record.get_value().as_ref();
                 t_println!(out, "{}", hex_dump_separator());
                 t_println!(out, "{}", bytes_to_hex_dump(&batch_record));
@@ -211,7 +211,7 @@ pub fn print_dynamic_records<O>(
         }
 
         for batch in &r_partition.records.batches {
-            for record in &batch.records {
+            for record in batch.records() {
                 let batch_record = record.get_value().as_ref();
                 // TODO: this should be refactored
                 let bytes = record.get_value().as_ref();
@@ -247,7 +247,7 @@ pub fn print_raw_records<O>(
         }
 
         for batch in &r_partition.records.batches {
-            for record in &batch.records {
+            for record in batch.records() {
                 let value = record.get_value().as_ref();
                 let str_value = std::str::from_utf8(value).unwrap();
                 t_println!(out, "{}", str_value);

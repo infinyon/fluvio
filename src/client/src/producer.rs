@@ -84,7 +84,7 @@ async fn send_record_raw<F: SerialFrame>(
 
     let record_msg: DefaultRecord = record.into();
     let mut batch = DefaultBatch::default();
-    batch.records.push(record_msg);
+    batch.add_record(record_msg);
 
     partition_request.partition_index = replica.partition;
     partition_request.records.batches.push(batch);

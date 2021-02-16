@@ -70,7 +70,7 @@ where
     }
 
     pub fn records_remainder_bytes(&self, remainder: usize) -> usize {
-        self.inner.records.remainder_bytes(remainder)
+        self.inner.records().remainder_bytes(remainder)
     }
 
     /// decode next batch from file
@@ -150,7 +150,7 @@ where
         }
 
         let mut cursor = Cursor::new(bytes);
-        self.inner.records.decode(&mut cursor, 0)?;
+        self.inner.mut_records().decode(&mut cursor, 0)?;
 
         Ok(())
     }

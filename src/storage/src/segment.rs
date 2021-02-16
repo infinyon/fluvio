@@ -365,7 +365,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
 /// compute total number of values in the default batch
 fn compute_batch_record_size(batch: &DefaultBatch) -> usize {
     batch
-        .records
+        .records()
         .iter()
         .fold(0, |acc, batch| acc + batch.value.len())
 }
@@ -437,7 +437,7 @@ mod tests {
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
-        assert_eq!(batch.records.len(), 1);
+        assert_eq!(batch.records().len(), 1);
 
         let seg1_metadata = metadata(test_dir.join(SEG_INDEX)).expect("read metadata");
         assert_eq!(seg1_metadata.len(), 1000);
@@ -481,7 +481,7 @@ mod tests {
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
-        assert_eq!(batch.records.len(), 4);
+        assert_eq!(batch.records().len(), 4);
 
         let seg1_metadata = metadata(test_dir.join(SEG_INDEX))?;
         assert_eq!(seg1_metadata.len(), 1000);

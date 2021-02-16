@@ -59,7 +59,7 @@ where
     R: Encoder + Decoder + Default + Debug,
 {
     pub topic: String,
-  //  pub stream_id: u32,
+    pub stream_id: u32,
     pub partition: FetchablePartitionResponse<R>,
 }
 
@@ -73,7 +73,7 @@ impl FileWrite for StreamFetchResponse<FileRecordSet> {
         trace!("file encoding FlvContinuousFetchResponse");
         trace!("topic {}", self.topic);
         self.topic.encode(src, version)?;
-    //    self.stream_id.encode(src,version)?;
+        self.stream_id.encode(src,version)?;
         self.partition.file_encode(src, data, version)?;
         Ok(())
     }

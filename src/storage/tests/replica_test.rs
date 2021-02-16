@@ -171,7 +171,7 @@ async fn test_fetch(addr: &str, iteration: i16, offset: i64, expected_batch_len:
     assert_eq!(part_responses.len(), 1);
     let batches = &part_responses[0].records.batches;
     assert_eq!(batches.len(), expected_batch_len);
-    let records = &batches[0].records;
+    let records = &batches[0].records();
     assert_eq!(records.len(), 2);
     assert_eq!(records[0].value.to_string(), "record 0");
     assert_eq!(records[1].value.to_string(), "record 1");

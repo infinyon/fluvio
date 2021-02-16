@@ -480,7 +480,7 @@ mod test {
         fn create_batch() -> DefaultBatch {
             let record: DefaultRecord = vec![0x74, 0x65, 0x73, 0x74].into();
             let mut batch = DefaultBatch::default();
-            batch.records.push(record);
+            batch.add_record(record);
             batch
         }
 

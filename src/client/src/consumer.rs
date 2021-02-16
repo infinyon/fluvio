@@ -297,13 +297,13 @@ impl PartitionConsumer {
                 .flat_map(|batch| {
                     let base_offset = batch.base_offset;
                     batch
-                        .records
+                        .own_records()
                         .into_iter()
                         .enumerate()
                         .map(move |(relative, record)| {
                             Ok(Record {
                                 offset: base_offset + relative as i64,
-                                record,
+                                record
                             })
                         })
                 });
@@ -343,6 +343,7 @@ impl PartitionConsumer {
             partition: self.partition,
             fetch_offset: offset,
             isolation: config.isolation,
+            max_bytes: config.max_bytes,
             ..Default::default()
         };
 
@@ -350,12 +351,15 @@ impl PartitionConsumer {
 
         if let Some(first_response) = stream.next().await {
             if let Ok(response) = first_response {
-              //  let stream_id = response.stream_id;
-                let stream_id = 0;
+                let stream_id = response.stream_id;
 
-                trace!("first stream response: {:#?}",response);
-                debug!(stream_id,"got stream id from stream");
-                
+                trace!("first stream response: {:#?}", response);
+                debug!(
+                    stream_id,
+                    last_offset = ?response.partition.records.last_offset(),
+                    "first stream response"
+                );
+
                 let publisher = OffsetPublisher::shared(0);
                 let mut listener = publisher.change_listner();
 
@@ -389,14 +393,20 @@ impl PartitionConsumer {
                             }
                         }
                     }
-                    debug!(stream_id,"offset fetch update loop end");
+                    debug!(stream_id, "offset fetch update loop end");
                 });
+
+                // send back first offset
+                if let Some(last_offset) = response.partition.records.last_offset() {
+                    debug!("published last offset");
+                    publisher.update(last_offset);
+                } 
 
                 let response_publisher = publisher.clone();
                 let update_stream = stream.map(move |item| {
                     item.map(|response| {
                         if let Some(last_offset) = response.partition.records.last_offset() {
-                            debug!(last_offset, stream_id,"received last offset from spu");
+                            debug!(last_offset, stream_id, "received last offset from spu");
                             response_publisher.update(last_offset);
                         }
                         response
@@ -468,7 +478,7 @@ fn bytes_count(records: &RecordSet) -> usize {
         .iter()
         .map(|batch| {
             batch
-                .records
+                .records()
                 .iter()
                 .map(|record| record.value.len())
                 .sum::<usize>()
