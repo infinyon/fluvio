@@ -13,10 +13,8 @@ fn main() -> Result<()> {
 
     // If the CLI comes back with an error, attempt to handle it
     if let Err(e) = run_block_on(root.process()) {
-        match e.try_handle() {
-            Ok(exit_code) => std::process::exit(exit_code),
-            Err(unhandled) => return Err(unhandled.into_report()),
-        }
+        e.print()?;
+        std::process::exit(1);
     }
 
     Ok(())

@@ -71,17 +71,17 @@ impl CliError {
     /// Sometimes, specific errors require specific user-facing error messages.
     /// Here is where we define those messages, as well as the exit code that the
     /// program should return when exiting after those errors.
-    pub fn try_handle(self) -> std::result::Result<i32, CliError> {
+    pub fn print(self) -> Result<()> {
         match &self {
             Self::ConsumerError(ConsumerError::ClientError(FluvioError::ApiError(api))) => {
                 match api {
                     ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
                         println!("Topic already exists");
-                        Ok(1)
+                        Ok(())
                     }
                     ApiError::Code(ErrorCode::TopicNotFound, _) => {
                         println!("Topic not found");
-                        Ok(1)
+                        Ok(())
                     }
                     _ => Err(self),
                 }
