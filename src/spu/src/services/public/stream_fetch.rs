@@ -368,12 +368,12 @@ pub mod publishers {
             let publisher_lock = self.publishers.lock().await;
             publisher_lock
                 .get(&stream_id)
-                .map(|publisher| publisher.clone())
+                .cloned()
         }
 
         pub async fn remove_publisher(&self, stream_id: u32) {
             let mut publisher_lock = self.publishers.lock().await;
-            if let Some(_) = publisher_lock.remove(&stream_id) {
+            if publisher_lock.remove(&stream_id).is_some() {
                 debug!(stream_id, "removed stream publisher");
             } else {
                 debug!(stream_id, "no stream publisher founded");
