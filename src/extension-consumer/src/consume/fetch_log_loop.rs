@@ -111,6 +111,7 @@ where
         }
 
         debug!("fetch loop exited");
+        println!("Consumer stream has closed");
     }
 
     Ok(())
