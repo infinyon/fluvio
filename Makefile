@@ -11,7 +11,7 @@ CLI_BUILD=fluvio_cli
 TEST_BUILD=$(if $(RELEASE),release,debug)
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/fluvio,./target/$(TEST_BUILD)/fluvio)
 CLIENT_LOG=warn
-SERVER_LOG=debug
+SERVER_LOG=fluvio=debug
 TEST_LOG=warn
 TEST_BIN_INNER=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/flv-test,./target/$(TEST_BUILD)/flv-test)
 TEST_BIN=FLUVIO_CMD=true $(TEST_BIN_INNER)

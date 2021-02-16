@@ -238,30 +238,35 @@ where
             )
             .await
         {
-            debug!(
-                recods = partition_response.records.len(),
-                offset, hw, leo, "retrieved slices",
-            );
+            
             let response = StreamFetchResponse {
                 topic: self.replica.topic.clone(),
                 stream_id: self.stream_id,
                 partition: partition_response,
             };
 
-            let response = RequestMessage::<FileStreamFetchRequest>::response_with_header(
+            debug!(
+                stream_id = response.stream_id,
+                len = response.partition.records.len(),
+                offset, hw, leo, 
+                "start back stream response",
+            );
+
+            let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
                 &self.header,
                 response,
             );
-            trace!("sending back file fetch response: {:#?}", response);
+
+            trace!("sending back file fetch response: {:#?}", response_msg);
 
             let mut inner_sink = self.sink.lock().await;
             inner_sink
-                .encode_file_slices(&response, self.header.api_version())
+                .encode_file_slices(&response_msg, self.header.api_version())
                 .await?;
 
             drop(inner_sink);
 
-            trace!("finish sending fetch response");
+            debug!("finish sending stream response");
 
             // get next offset
             let next_offset = match self.isolation {

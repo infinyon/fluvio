@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::string::FromUtf8Error;
 
 use futures_util::stream::Stream;
-use tracing::{debug, error};
+use tracing::{debug, error, trace};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err};
 use futures_util::stream::{StreamExt, once, iter};
@@ -352,8 +352,9 @@ impl PartitionConsumer {
             if let Ok(response) = first_response {
                 let stream_id = response.stream_id;
 
+                trace!("first stream response: {:#?}",response);
                 debug!(stream_id,"got stream id from stream");
-
+                
                 let publisher = OffsetPublisher::shared(0);
                 let mut listener = publisher.change_listner();
 
@@ -363,10 +364,16 @@ impl PartitionConsumer {
 
                     loop {
                         let fetch_last_value = listener.listen().await;
+                        debug!(fetch_last_value, stream_id, "received end fetch");
                         if fetch_last_value < 0 {
-                            debug!(fetch_last_value, stream_id, "received end fetch");
+                            debug!("fetch last is end, terminating");
                             break;
                         } else {
+                            debug!(
+                                offset = fetch_last_value,
+                                session_id = stream_id,
+                                "sending back offset to spu"
+                            );
                             let response = serial_socket
                                 .send_receive(UpdateOffsetsRequest {
                                     offsets: vec![OffsetUpdate {
@@ -377,16 +384,18 @@ impl PartitionConsumer {
                                 .await;
                             if let Err(err) = response {
                                 error!("error sending offset: {:#?}", err);
+                                break;
                             }
                         }
                     }
+                    debug!(stream_id,"offset fetch update loop end");
                 });
 
                 let response_publisher = publisher.clone();
                 let update_stream = stream.map(move |item| {
                     item.map(|response| {
                         if let Some(last_offset) = response.partition.records.last_offset() {
-                            debug!(last_offset, stream_id);
+                            debug!(last_offset, stream_id,"received last offset from spu");
                             response_publisher.update(last_offset);
                         }
                         response
