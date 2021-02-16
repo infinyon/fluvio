@@ -1715,6 +1715,7 @@ dependencies = [
  "async-trait",
  "bytes 0.5.6",
  "fluvio",
+ "fluvio-cluster",
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",

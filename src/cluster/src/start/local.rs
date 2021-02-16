@@ -66,6 +66,14 @@ pub struct LocalConfig {
     /// ```
     #[builder(setter(into), default = "PathBuf::from(DEFAULT_DATA_DIR)")]
     data_dir: PathBuf,
+    /// Internal API: Path to the executable for running `cluster run`
+    ///
+    /// This is necessary because when `fluvio-cluster` is linked into any
+    /// binary other than the Fluvio CLI, it needs to know how to invoke
+    /// the cluster components. This is currently used for testing.
+    #[doc(hidden)]
+    #[builder(setter(into), default)]
+    launcher: Option<PathBuf>,
     /// Sets the [`RUST_LOG`] environment variable for the installation.
     ///
     /// # Example
@@ -195,6 +203,15 @@ impl LocalConfig {
         let mut builder = LocalConfigBuilder::default();
         builder.chart_version(chart_version);
         builder
+    }
+
+    fn launcher_path(&self) -> std::io::Result<PathBuf> {
+        let path = self
+            .launcher
+            .clone()
+            .ok_or(())
+            .or_else(|_| std::env::current_exe())?;
+        Ok(path)
     }
 }
 
@@ -427,7 +444,8 @@ impl LocalInstaller {
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
         let mut binary = {
-            let mut cmd = Command::new(std::env::current_exe()?);
+            let base = self.config.launcher_path()?;
+            let mut cmd = Command::new(base);
             cmd.arg("cluster").arg("run").arg("sc");
             cmd
         };
@@ -581,7 +599,8 @@ impl LocalInstaller {
         let errors = outputs.try_clone()?;
 
         let mut binary = {
-            let mut cmd = Command::new(std::env::current_exe()?);
+            let base = self.config.launcher_path()?;
+            let mut cmd = Command::new(base);
             cmd.arg("cluster").arg("run").arg("spu");
             cmd
         };

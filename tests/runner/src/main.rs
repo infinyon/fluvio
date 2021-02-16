@@ -8,6 +8,8 @@ mod test_runner;
 pub use cli::*;
 pub use tls::*;
 
+const VERSION: &str = include_str!("../../../VERSION");
+
 fn main() {
     use fluvio_future::task::run_block_on;
     use setup::Setup;

@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 
-use fluvio_system_util::bin::get_fluvio;
-
-use crate::TestOption;
+use crate::{TestOption, load_tls};
 use super::EnvironmentDriver;
-use fluvio_command::CommandExt;
+use fluvio_cluster::{ClusterUninstaller, ClusterConfig, ClusterInstaller};
 
 pub struct K8EnvironmentDriver {
     option: TestOption,
@@ -20,70 +18,32 @@ impl K8EnvironmentDriver {
 impl EnvironmentDriver for K8EnvironmentDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
-        let mut command = get_fluvio().expect("fluvio not founded");
-        command.arg("cluster").arg("delete");
-        println!("Executing> {}", command.display());
-        command
-            .inherit()
-            .result()
-            .expect("fluvio cluster delete should work");
+        let uninstaller = ClusterUninstaller::new().build().unwrap();
+        uninstaller.uninstall().await.unwrap();
     }
 
     async fn start_cluster(&self) {
-        use std::time::Duration;
-        use fluvio_future::timer::sleep;
-
-        let mut cmd = get_fluvio().expect("fluvio not founded");
-
-        cmd.arg("cluster")
-            .arg("start")
-            .arg("--spu")
-            .arg(self.option.spu.to_string());
+        let mut builder = ClusterConfig::builder(crate::VERSION);
+        builder
+            .spu_replicas(self.option.spu)
+            .skip_checks(self.option.skip_checks())
+            .save_profile(true);
 
         if self.option.tls() {
-            self.set_tls(&self.option, &mut cmd);
+            let (client, server) = load_tls(&self.option.tls_user);
+            builder.tls(client, server);
         }
 
-        if let Some(ref authorization_config_map) = self.option.authorization_config_map {
-            cmd.arg("--authorization-config-map")
-                .arg(authorization_config_map);
-        }
-
-        if self.option.develop_mode() {
-            cmd.arg("--develop");
+        if let Some(authorization_config_map) = &self.option.authorization_config_map {
+            builder.authorization_config_map(authorization_config_map);
         }
 
         if let Some(log) = &self.option.server_log {
-            cmd.arg("--rust-log").arg(log);
+            builder.rust_log(log);
         }
 
-        if self.option.skip_checks() {
-            cmd.arg("--skip-checks");
-        }
-
-        println!("Executing> {}", cmd.display());
-        cmd.inherit()
-            .result()
-            .expect("fluvio cluster start should work");
-
-        sleep(Duration::from_millis(2000)).await;
+        let config = builder.build().unwrap();
+        let installer = ClusterInstaller::from_config(config).unwrap();
+        installer.install_fluvio().await.unwrap();
     }
 }
-
-/*
-fn print_sc_logs() {
-    use std::process::Command;
-
-    let _ = Command::new("kubectl")
-        .arg("logs")
-        .arg("fluvio-sc")
-        .print()
-        .inherit();
-
-    let _ = Command::new("kubectl")
-        .arg("get")
-        .arg("spu")
-        .print()
-        .inherit();
-}
-*/

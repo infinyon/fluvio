@@ -4,9 +4,6 @@ mod local;
 pub use common::*;
 
 mod common {
-
-    use std::process::Command;
-
     use async_trait::async_trait;
 
     use crate::TestOption;
@@ -19,30 +16,6 @@ mod common {
 
         /// install cluster
         async fn start_cluster(&self);
-
-        fn set_tls(&self, option: &TestOption, cmd: &mut Command) {
-            use crate::tls::Cert;
-
-            if option.tls() {
-                let client_dir = Cert::load_client(&option.tls_user);
-
-                cmd.arg("--tls")
-                    .arg("--domain")
-                    .arg("fluvio.local")
-                    .arg("--ca-cert")
-                    .arg(client_dir.ca.as_os_str())
-                    .arg("--client-cert")
-                    .arg(client_dir.cert.as_os_str())
-                    .arg("--client-key")
-                    .arg(client_dir.key.as_os_str());
-
-                let server_dir = Cert::load_server();
-                cmd.arg("--server-key")
-                    .arg(server_dir.key.as_os_str())
-                    .arg("--server-cert")
-                    .arg(server_dir.cert.as_os_str());
-            }
-        }
     }
 
     use super::k8::K8EnvironmentDriver;
