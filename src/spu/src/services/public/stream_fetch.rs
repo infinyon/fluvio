@@ -108,7 +108,11 @@ where
         let mut receiver = self.ctx.offset_channel().receiver();
 
         let mut counter: i32 = 0;
-        let mut consumer_offset: Option<Offset> = None; // offset for consumer
+        let mut consumer_offset: Option<Offset> = if last_end_offset == starting_offset {
+            Some(last_end_offset) // no records, we reset to start
+        } else {
+            None // offset for consumer
+        };
 
         loop {
             counter += 1;

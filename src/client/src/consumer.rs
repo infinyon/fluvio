@@ -333,14 +333,14 @@ impl PartitionConsumer {
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
         debug!("created serial socket {}", serial_socket);
-        let offset = offset
+        let start_absolute_offset = offset
             .to_absolute(&mut serial_socket, &self.topic, self.partition)
             .await?;
 
         let stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),
             partition: self.partition,
-            fetch_offset: offset,
+            fetch_offset: start_absolute_offset,
             isolation: config.isolation,
             max_bytes: config.max_bytes,
             ..Default::default()
@@ -394,7 +394,7 @@ impl PartitionConsumer {
                 debug!(stream_id, "offset fetch update loop end");
             });
 
-            // send back first offset
+            // send back first offset records exists
             if let Some(last_offset) = response.partition.records.last_offset() {
                 debug!(last_offset, "notify new last offset");
                 publisher.update(last_offset);
