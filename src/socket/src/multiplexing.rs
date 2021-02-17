@@ -329,7 +329,7 @@ impl MultiPlexingResponseDispatcher {
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
-            debug!("dispatcher: waiting for next response from stream ");
+            trace!("dispatcher: waiting for next response from stream ");
 
             select! {
                 frame = frame_stream.next() => {
@@ -338,7 +338,7 @@ impl MultiPlexingResponseDispatcher {
                             let mut correlation_id: i32 = 0;
                             match correlation_id.decode(&mut msg, 0) {
                                 Ok(_) => {
-                                    debug!("dispatcher: decoded correlation id: {}", correlation_id);
+                                    trace!(correlation_id,"decoded correlation");
 
                                     if let Err(err) = self.send(correlation_id, msg).await {
                                         error!("error sending to socket, {}", err)

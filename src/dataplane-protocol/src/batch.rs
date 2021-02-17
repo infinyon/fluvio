@@ -41,7 +41,7 @@ where
     pub base_offset: Offset,
     pub batch_len: i32, // only for decoding
     pub header: BatchHeader,
-    pub records: R,
+    records: R,
 }
 
 impl<R> Batch<R>
@@ -54,6 +54,21 @@ where
 
     pub fn get_header(&self) -> &BatchHeader {
         &self.header
+    }
+
+    #[inline(always)]
+    pub fn own_records(self) -> R {
+        self.records
+    }
+
+    #[inline(always)]
+    pub fn records(&self) -> &R {
+        &self.records
+    }
+
+    #[inline(always)]
+    pub fn mut_records(&mut self) -> &mut R {
+        &mut self.records
     }
 
     pub fn get_base_offset(&self) -> Offset {
@@ -107,6 +122,11 @@ impl Batch<DefaultBatchRecords> {
         record.preamble.set_offset_delta(last_offset_delta);
         self.header.last_offset_delta = last_offset_delta as i32;
         self.records.push(record)
+    }
+
+    /// computed last offset which is base offset + number of records
+    pub fn computed_last_offset(&self) -> Offset {
+        self.get_base_offset() + self.records.len() as Offset
     }
 }
 

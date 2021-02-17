@@ -197,6 +197,13 @@ impl RecordSet {
         self.batches.push(batch);
         self
     }
+
+    /// last offset
+    pub fn last_offset(&self) -> Option<Offset> {
+        self.batches
+            .last()
+            .map(|batch| batch.computed_last_offset())
+    }
 }
 
 impl Decoder for RecordSet {
@@ -475,7 +482,7 @@ mod test {
         fn create_batch() -> DefaultBatch {
             let record: DefaultRecord = vec![0x74, 0x65, 0x73, 0x74].into();
             let mut batch = DefaultBatch::default();
-            batch.records.push(record);
+            batch.add_record(record);
             batch
         }
 

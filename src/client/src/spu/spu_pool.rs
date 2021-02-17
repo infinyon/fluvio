@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 use std::sync::Arc;
 
 use tracing::{debug, trace};
@@ -145,7 +145,7 @@ impl SpuPool {
 
         let leader_id = partition.spec.leader;
 
-        // check if already have existing leader
+        // check if already have existing leader or create new connection to leader
         let mut client_lock = self.spu_clients.lock().await;
 
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {

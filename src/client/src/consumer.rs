@@ -3,7 +3,10 @@ use std::convert::TryFrom;
 use std::string::FromUtf8Error;
 
 use futures_util::stream::Stream;
-use tracing::debug;
+use tracing::{debug, error, trace};
+use once_cell::sync::Lazy;
+use futures_util::future::{Either, err};
+use futures_util::stream::{StreamExt, once, iter};
 
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
 use dataplane::Isolation;
@@ -14,6 +17,8 @@ use dataplane::fetch::FetchableTopic;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::record::DefaultRecord;
+use fluvio_types::event::offsets::OffsetPublisher;
+
 use crate::FluvioError;
 use crate::offset::Offset;
 use crate::client::SerialFrame;
@@ -277,9 +282,6 @@ impl PartitionConsumer {
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
-        use futures_util::future::{Either, err};
-        use futures_util::stream::{StreamExt, once, iter};
-
         let stream = self._stream_batches_with_config(offset, config).await?;
         let flattened = stream.flat_map(|batch_result| {
             let batch = match batch_result {
@@ -287,24 +289,23 @@ impl PartitionConsumer {
                 Err(e) => return Either::Right(once(err(e))),
             };
 
-            let records = batch
-                .partition
-                .records
-                .batches
-                .into_iter()
-                .flat_map(|batch| {
-                    let base_offset = batch.base_offset;
-                    batch
-                        .records
-                        .into_iter()
-                        .enumerate()
-                        .map(move |(relative, record)| {
-                            Ok(Record {
-                                offset: base_offset + relative as i64,
-                                record,
-                            })
-                        })
-                });
+            let records =
+                batch
+                    .partition
+                    .records
+                    .batches
+                    .into_iter()
+                    .flat_map(|batch| {
+                        let base_offset = batch.base_offset;
+                        batch.own_records().into_iter().enumerate().map(
+                            move |(relative, record)| {
+                                Ok(Record {
+                                    offset: base_offset + relative as i64,
+                                    record,
+                                })
+                            },
+                        )
+                    });
             Either::Left(iter(records))
         });
 
@@ -321,6 +322,9 @@ impl PartitionConsumer {
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>>, FluvioError>
     {
+        use fluvio_future::task::spawn;
+        use futures_util::stream::empty;
+
         let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
             "starting fetch log once: {:#?} from replica: {}",
@@ -329,23 +333,136 @@ impl PartitionConsumer {
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
         debug!("created serial socket {}", serial_socket);
-        let offset = offset
+        let start_absolute_offset = offset
             .to_absolute(&mut serial_socket, &self.topic, self.partition)
             .await?;
-        drop(serial_socket);
 
         let stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),
             partition: self.partition,
-            fetch_offset: offset,
+            fetch_offset: start_absolute_offset,
             isolation: config.isolation,
             max_bytes: config.max_bytes,
             ..Default::default()
         };
 
-        use futures_util::StreamExt;
-        let stream = self.pool.create_stream(&replica, stream_request).await?;
-        Ok(stream.map(|item| item.map_err(|e| e.into())))
+        let mut stream = self.pool.create_stream(&replica, stream_request).await?;
+
+        if let Some(Ok(response)) = stream.next().await {
+            let stream_id = response.stream_id;
+
+            trace!("first stream response: {:#?}", response);
+            debug!(
+                stream_id,
+                last_offset = ?response.partition.records.last_offset(),
+                "first stream response"
+            );
+
+            let publisher = OffsetPublisher::shared(0);
+            let mut listener = publisher.change_listner();
+
+            // update stream with received offsets
+            spawn(async move {
+                use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
+
+                loop {
+                    let fetch_last_value = listener.listen().await;
+                    debug!(fetch_last_value, stream_id, "received end fetch");
+                    if fetch_last_value < 0 {
+                        debug!("fetch last is end, terminating");
+                        break;
+                    } else {
+                        debug!(
+                            offset = fetch_last_value,
+                            session_id = stream_id,
+                            "sending back offset to spu"
+                        );
+                        let response = serial_socket
+                            .send_receive(UpdateOffsetsRequest {
+                                offsets: vec![OffsetUpdate {
+                                    offset: fetch_last_value,
+                                    session_id: stream_id,
+                                }],
+                            })
+                            .await;
+                        if let Err(err) = response {
+                            error!("error sending offset: {:#?}", err);
+                            break;
+                        }
+                    }
+                }
+                debug!(stream_id, "offset fetch update loop end");
+            });
+
+            // send back first offset records exists
+            if let Some(last_offset) = response.partition.records.last_offset() {
+                debug!(last_offset, "notify new last offset");
+                publisher.update(last_offset);
+            }
+
+            let response_publisher = publisher.clone();
+            let update_stream = stream.map(move |item| {
+                item.map(|response| {
+                    if let Some(last_offset) = response.partition.records.last_offset() {
+                        debug!(last_offset, stream_id, "received last offset from spu");
+                        response_publisher.update(last_offset);
+                    }
+                    response
+                })
+                .map_err(|e| e.into())
+            });
+            Ok(Either::Left(iter(vec![Ok(response)]).chain(
+                publish_stream::EndPublishSt::new(update_stream, publisher),
+            )))
+        } else {
+            Ok(Either::Right(empty()))
+        }
+    }
+}
+
+mod publish_stream {
+
+    use std::pin::Pin;
+    use std::sync::Arc;
+    use std::task::{Poll, Context};
+
+    use pin_project_lite::pin_project;
+    use futures_util::ready;
+
+    use super::Stream;
+    use super::OffsetPublisher;
+
+    // signal offset when stream is done
+    pin_project! {
+        pub struct EndPublishSt<St> {
+            #[pin]
+            stream: St,
+            publisher: Arc<OffsetPublisher>
+        }
+    }
+
+    impl<St> EndPublishSt<St> {
+        pub fn new(stream: St, publisher: Arc<OffsetPublisher>) -> Self {
+            Self { stream, publisher }
+        }
+    }
+
+    impl<S: Stream> Stream for EndPublishSt<S> {
+        type Item = S::Item;
+
+        fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<S::Item>> {
+            let this = self.project();
+
+            let item = ready!(this.stream.poll_next(cx));
+            if item.is_none() {
+                this.publisher.update(-1);
+            }
+            Poll::Ready(item)
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            self.stream.size_hint()
+        }
     }
 }
 
@@ -356,7 +473,7 @@ fn bytes_count(records: &RecordSet) -> usize {
         .iter()
         .map(|batch| {
             batch
-                .records
+                .records()
                 .iter()
                 .map(|record| record.value.len())
                 .sum::<usize>()
@@ -364,7 +481,13 @@ fn bytes_count(records: &RecordSet) -> usize {
         .sum()
 }
 
-const MAX_FETCH_BYTES: i32 = 1000000;
+/// MAX FETCH BYTES
+static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
+    use std::env;
+    let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
+    let max_bytes: i32 = var_value.parse().unwrap_or(1000000);
+    max_bytes
+});
 
 /// Configures the behavior of consumer fetching and streaming
 #[derive(Debug)]
@@ -376,7 +499,7 @@ pub struct ConsumerConfig {
 impl Default for ConsumerConfig {
     fn default() -> Self {
         Self {
-            max_bytes: MAX_FETCH_BYTES,
+            max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
         }
     }
@@ -419,3 +542,5 @@ impl TryFrom<Record> for String {
         String::from_utf8(record.as_ref().to_vec())
     }
 }
+
+mod offset_update {}

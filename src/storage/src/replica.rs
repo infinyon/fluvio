@@ -422,7 +422,7 @@ mod tests {
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.get_base_offset(), START_OFFSET);
         assert_eq!(batch.get_header().last_offset_delta, 1);
-        assert_eq!(batch.records.len(), 2);
+        assert_eq!(batch.records().len(), 2);
 
         // there should not be any segment for offset 0 since base offset is 20
         let segment = replica.find_segment(0);
@@ -558,7 +558,7 @@ mod tests {
 
         let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
-        assert_eq!(batch.records.len(), 2);
+        assert_eq!(batch.records().len(), 2);
         assert_eq!(batch.get_base_offset(), 22);
 
         let metadata_res = metadata(replica_dir.join(TEST_SEG2_IDX));

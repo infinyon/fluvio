@@ -113,7 +113,7 @@ async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
     assert_eq!(part_responses.len(), 1);
     let batches = &part_responses[0].records.batches;
     assert_eq!(batches.len(), 1);
-    let records = &batches[0].records;
+    let records = &batches[0].records();
     assert_eq!(records.len(), 2);
     assert_eq!(records[0].value.to_string(), "record 0");
     assert_eq!(records[1].value.to_string(), "record 1");

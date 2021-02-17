@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc};
 use std::collections::HashSet;
 
 use tracing::debug;
@@ -16,7 +16,7 @@ use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
-use dataplane::api::RequestMessage;
+use dataplane::{ErrorCode, api::RequestMessage};
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
@@ -161,7 +161,25 @@ where
                                     debug!("registered offset sync request: {:#?}",sync_request);
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
                                 },
-                                SpuServerRequest::FileStreamFetchRequest(request) =>  StreamFetchHandler::handle_stream_fetch(request,context.clone(),s_sink.clone(),end_event.clone())
+                                SpuServerRequest::FileStreamFetchRequest(request) =>  {
+                                    let (stream_id,offset_publisher) = context.stream_publishers().create_new_publisher().await;
+                                    let listener =  offset_publisher.change_listner();
+
+                                    StreamFetchHandler::start(
+                                        request,context.clone(),
+                                        s_sink.clone(),
+                                        end_event.clone(),
+                                        listener,
+                                        stream_id
+                                    );
+                                },
+                                SpuServerRequest::UpdateOffsetsRequest(request) =>
+                                    call_service!(
+                                        request,
+                                        offset::handle_offset_update(&context,request),
+                                        s_sink,
+                                        "roduce request handler"
+                                    ),
 
                             }
                         } else {
@@ -182,5 +200,58 @@ where
 
         debug!("conn: {}, loop terminated ", s_sink.id());
         Ok(())
+    }
+}
+
+mod offset {
+
+    use std::{io::Error as IoError};
+
+    use tracing::{debug, error};
+    use fluvio_spu_schema::server::update_offset::{
+        OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
+    };
+    use dataplane::api::ResponseMessage;
+
+    use super::{DefaultSharedGlobalContext, RequestMessage, ErrorCode};
+
+    pub async fn handle_offset_update(
+        ctx: &DefaultSharedGlobalContext,
+        request: RequestMessage<UpdateOffsetsRequest>,
+    ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
+        debug!("received stream updates");
+        let (header, updates) = request.get_header_request();
+        let publishers = ctx.stream_publishers();
+        let mut status_list = vec![];
+
+        for update in updates.offsets {
+            let status = if let Some(publisher) = publishers.get_publisher(update.session_id).await
+            {
+                debug!(
+                    offset_update = update.offset,
+                    session_id = update.session_id,
+                    "published offsets"
+                );
+                publisher.update(update.offset);
+                OffsetUpdateStatus {
+                    session_id: update.session_id,
+                    error: ErrorCode::None,
+                }
+            } else {
+                error!(
+                    "invalid offset {}, session_id:{}",
+                    update.offset, update.session_id
+                );
+                OffsetUpdateStatus {
+                    session_id: update.session_id,
+                    error: ErrorCode::FetchSessionNotFoud,
+                }
+            };
+            status_list.push(status);
+        }
+        let response = UpdateOffsetsResponse {
+            status: status_list,
+        };
+        Ok(RequestMessage::<UpdateOffsetsRequest>::response_with_header(&header, response))
     }
 }
