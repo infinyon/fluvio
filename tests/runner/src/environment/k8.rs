@@ -24,6 +24,9 @@ impl EnvironmentDriver for K8EnvironmentDriver {
 
     async fn start_cluster(&self) {
         let mut builder = ClusterConfig::builder(crate::VERSION);
+        if self.option.develop_mode() {
+            builder.development().expect("should test in develop mode");
+        }
         builder
             .spu_replicas(self.option.spu)
             .skip_checks(self.option.skip_checks())

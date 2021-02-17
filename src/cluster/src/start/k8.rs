@@ -38,6 +38,8 @@ const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
+const DEFAULT_DEV_CHART: &str = "./k8-util/helm";
+
 const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
 /// maximum time waiting for sc service to come up
 static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
@@ -388,6 +390,30 @@ impl ClusterConfigBuilder {
             .build_impl()
             .map_err(K8InstallError::MissingRequiredConfig)?;
         Ok(config)
+    }
+
+    /// Applies development options to this cluster configuration.
+    ///
+    /// The following options are applied when using this method.
+    /// NOTE that these options will be overwritten even if they were
+    /// previously assigned.
+    ///
+    /// - Use local_chart "./k8-util/helm"
+    /// - Use the git hash of HEAD as the image_tag
+    pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
+        let output = Command::new("git")
+            .args(&["rev-parse", "HEAD"])
+            .result()
+            .map_err(K8InstallError::CommandError)?;
+        let git_hash = String::from_utf8(output.stdout).map_err(|e| {
+            K8InstallError::IoError(IoError::new(
+                ErrorKind::InvalidData,
+                format!("failed to get git hash: {}", e),
+            ))
+        })?;
+        self.image_tag(git_hash.trim());
+        self.local_chart(DEFAULT_DEV_CHART);
+        Ok(self)
     }
 
     /// Sets a local helm chart location to search for Fluvio charts.
