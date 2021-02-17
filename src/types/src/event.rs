@@ -179,7 +179,7 @@ mod test {
         async fn dispatch_loop(mut self) {
             use tokio::select;
 
-            let mut timer = sleep(Duration::from_millis(50));
+            let mut timer = sleep(Duration::from_millis(300));
 
             let mut last_value = 0;
             loop {
@@ -216,7 +216,7 @@ mod test {
 
         TestController::start(listener, status.clone());
         // wait util controller to catch
-        sleep(Duration::from_millis(1)).await;
+        sleep(Duration::from_millis(10)).await;
 
         for i in 1..ITER {
             publisher.update(i as i64);
@@ -226,7 +226,7 @@ mod test {
         }
 
         // wait for test controller to finish
-        sleep(Duration::from_millis(100)).await;
+        sleep(Duration::from_millis(500)).await;
         debug!("test finished");
         assert!(status.load(Ordering::SeqCst), "status should be set");
 
@@ -241,17 +241,17 @@ mod test {
 
         TestController::start(listener, status.clone());
         // wait util controller to catch
-        sleep(Duration::from_millis(1)).await;
+        sleep(Duration::from_millis(10)).await;
 
         for i in 1..ITER {
             publisher.update(i as i64);
             assert_eq!(publisher.current_value(), i as i64);
             debug!(i, "publishing value");
-            sleep(Duration::from_millis(1)).await;
+            sleep(Duration::from_millis(5)).await;
         }
 
         // wait for test controller to finish
-        sleep(Duration::from_millis(100)).await;
+        sleep(Duration::from_millis(500)).await;
         debug!("test finished");
         assert!(status.load(Ordering::SeqCst), "status should be set");
 
