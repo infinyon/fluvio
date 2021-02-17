@@ -1,8 +1,4 @@
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::convert::TryInto;
-use std::process::Command;
-
 use fluvio::config::TlsPolicy;
 
 use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus, ClusterConfig};
@@ -27,6 +23,11 @@ pub async fn process_k8(
         .unwrap_or(default_chart_version);
 
     let mut builder = ClusterConfig::builder(chart_version);
+
+    if opt.develop {
+        builder.development()?;
+    }
+
     builder
         .namespace(opt.k8_config.namespace)
         .group_name(opt.k8_config.group_name)
@@ -39,48 +40,24 @@ pub async fn process_k8(
         .with_if(skip_sys, |b| b.install_sys(false))
         .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
-    match opt.k8_config.chart_location {
-        // If a chart location is given, use it
-        Some(chart_location) => {
-            builder.local_chart(chart_location);
-        }
-        // If we're in develop mode (but no explicit chart location), use hardcoded local path
-        None if opt.develop => {
-            builder.local_chart("./k8-util/helm");
-        }
-        _ => (),
+    if let Some(chart_location) = opt.k8_config.chart_location {
+        builder.local_chart(chart_location);
     }
 
-    match opt.k8_config.registry {
-        // If a registry is given, use it
-        Some(registry) => builder.image_registry(registry),
-        None => builder.image_registry("infinyon"),
-    };
+    if let Some(registry) = opt.k8_config.registry {
+        builder.image_registry(registry);
+    }
 
     if let Some(rust_log) = opt.rust_log {
         builder.rust_log(rust_log);
     }
+
     if let Some(map) = opt.authorization_config_map {
         builder.authorization_config_map(map);
     }
 
-    match opt.k8_config.image_version {
-        // If an image tag is given, use it
-        Some(image_tag) => {
-            builder.image_tag(image_tag.trim());
-        }
-        // If we're in develop mode (but no explicit tag), use current git hash
-        None if opt.develop => {
-            let output = Command::new("git").args(&["rev-parse", "HEAD"]).output()?;
-            let git_hash = String::from_utf8(output.stdout).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("failed to get git hash: {}", e),
-                )
-            })?;
-            builder.image_tag(git_hash.trim());
-        }
-        _ => (),
+    if let Some(image_tag) = opt.k8_config.image_version {
+        builder.image_tag(image_tag.trim());
     }
 
     let config = builder.build()?;
