@@ -384,7 +384,7 @@ jobs:
           pkill -f "minikube tunnel"
       - name: Save logs
         if: failure()
-        run: kubectl logs fluvio-sc > /tmp/flv_sc.log
+        run: kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
