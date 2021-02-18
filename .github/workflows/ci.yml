@@ -381,7 +381,7 @@ jobs:
       - name: Clean minikube
         run: |
           minikube delete
-          pkill -f "minikube tunnel"
+          pkill -f "minikube tunnel" || true
       - name: Save logs
         if: failure()
         run: kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
