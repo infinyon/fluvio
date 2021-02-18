@@ -45,6 +45,10 @@ pub struct ProduceLogOpt {
     #[structopt(short, long)]
     pub lines: bool,
 
+    /// Do not print progress output when sending records
+    #[structopt(short, long)]
+    pub quiet: bool,
+
     /// Paths to files to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub files: Vec<PathBuf>,
@@ -72,13 +76,19 @@ impl ProduceLogOpt {
         for path in &self.files {
             if self.lines {
                 let file = File::open(path)?;
-                let mut lines = BufReader::new(file).lines();
-                while let Some(Ok(line)) = lines.next() {
+                let mut lines = BufReader::new(file).lines().enumerate();
+                while let Some((i, Ok(line))) = lines.next() {
                     producer.send_record(&line, self.partition).await?;
+                    if !self.quiet {
+                        println!("{}:{} {}", path.display(), i, line);
+                    }
                 }
             } else {
                 let bytes = std::fs::read(path)?;
                 producer.send_record(&bytes, self.partition).await?;
+                if !self.quiet {
+                    println!("{}", path.display());
+                }
             }
             print_cli_ok!();
         }
@@ -90,14 +100,20 @@ impl ProduceLogOpt {
     async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
         use std::io::Read;
         if self.lines {
-            let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
-            while let Some(Ok(line)) = stdin_lines.next() {
+            let mut stdin_lines = BufReader::new(std::io::stdin()).lines().enumerate();
+            while let Some((i, Ok(line))) = stdin_lines.next() {
                 producer.send_record(&line, self.partition).await?;
+                if !self.quiet {
+                    println!("stdin:{} {}", i, line);
+                }
             }
         } else {
             let mut buffer = vec![];
             std::io::stdin().read_to_end(&mut buffer)?;
             producer.send_record(&buffer, self.partition).await?;
+            if !self.quiet {
+                println!("produced stdin");
+            }
         }
         print_cli_ok!();
         Ok(())
