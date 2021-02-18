@@ -42,7 +42,7 @@ proclist = "0.9.2"
 remoteprocess = "0.4.2"
 
 # Fluvio dependencies
-fluvio = { version = "0.5.0", path = "../client", default-features = false }
+fluvio = { version = "0.5.0-beta.1", path = "../client", default-features = false }
 fluvio-helm = "0.4.1"
 fluvio-future = { version = "0.1.13" }
 fluvio-command = { version = "0.2.0", path = "../command" }
