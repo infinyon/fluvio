@@ -45,7 +45,7 @@ pub struct ProduceLogOpt {
     #[structopt(short, long)]
     pub lines: bool,
 
-    /// Paths to files to produce to the topic
+    /// Paths to files to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub files: Vec<PathBuf>,
 }
