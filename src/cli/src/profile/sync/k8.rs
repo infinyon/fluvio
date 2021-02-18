@@ -80,7 +80,7 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
     match config.cluster_mut(&profile_name) {
         Some(cluster) => {
-            cluster.addr = external_addr;
+            cluster.endpoint = external_addr;
             cluster.tls = opt.tls.try_into()?;
         }
         None => {

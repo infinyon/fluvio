@@ -437,7 +437,7 @@ pub mod test {
         assert_eq!(config.current_profile_name().unwrap(), "local2");
 
         let cluster = config.current_cluster().expect("cluster should exist");
-        assert_eq!(cluster.addr, "127.0.0.1:9003");
+        assert_eq!(cluster.endpoint, "127.0.0.1:9003");
     }
 
     #[test]
@@ -507,6 +507,6 @@ pub mod test {
 
         assert_eq!(config.current_profile_name().unwrap(), "local");
         let cluster = config.current_cluster().expect("cluster should exists");
-        assert_eq!(cluster.addr, "localhost:9003");
+        assert_eq!(cluster.endpoint, "localhost:9003");
     }
 }

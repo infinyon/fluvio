@@ -14,7 +14,7 @@ pub struct FluvioConfig {
     /// The address to connect to the Fluvio cluster
     // TODO use a validated address type.
     // We don't want to have a "" address.
-    pub addr: String,
+    pub endpoint: String,
     /// The TLS policy to use when connecting to the cluster
     // If no TLS field is present in config file,
     // use the default of NoTls
@@ -26,7 +26,7 @@ impl FluvioConfig {
     /// Create a new cluster configuration with no TLS.
     pub fn new<S: Into<String>>(addr: S) -> Self {
         Self {
-            addr: addr.into(),
+            endpoint: addr.into(),
             tls: TlsPolicy::Disabled,
         }
     }
