@@ -509,11 +509,11 @@ impl LocalInstaller {
         };
         match config.cluster_mut(LOCAL_PROFILE) {
             Some(cluster) => {
-                cluster.endpoint = endpoint;
+                cluster.endpoint = endpoint.clone();
                 cluster.tls = self.config.client_tls_policy.clone();
             }
             None => {
-                let mut local_cluster = FluvioConfig::new_from_endpoint(endpoint);
+                let mut local_cluster = FluvioConfig::new_from_endpoint(endpoint.clone());
                 local_cluster.tls = self.config.client_tls_policy.clone();
                 config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
             }
@@ -535,10 +535,7 @@ impl LocalInstaller {
 
         config_file.save()?;
 
-        Ok(format!(
-            "local context is set to: {}:{}",
-            LOCAL_SC_ADDRESS, LOCAL_SC_PORT
-        ))
+        Ok(format!("local context is set to: {}", endpoint))
     }
 
     async fn launch_spu_group(&self) -> Result<(), LocalInstallError> {

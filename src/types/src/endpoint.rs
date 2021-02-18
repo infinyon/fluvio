@@ -4,10 +4,31 @@ use std::io::Error as IoError;
 use std::io::ErrorKind as IoErrorKind;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Endpoint {
     pub host: String,
     pub port: u16,
+}
+
+impl Serialize for Endpoint {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Endpoint {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(
+            Self::from_str(&String::deserialize(deserializer)?)
+                .map_err(serde::de::Error::custom)?,
+        )
+    }
 }
 
 impl fmt::Display for Endpoint {

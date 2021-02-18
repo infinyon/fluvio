@@ -248,7 +248,7 @@ impl Config {
     /// # use fluvio::FluvioConfig;
     /// # use fluvio::config::{Config, Profile};
     /// let mut config = Config::new();
-    /// let cluster = FluvioConfig::new("https://cloud.fluvio.io".to_string());
+    /// let cluster = FluvioConfig::new("localhost", 9003);
     /// config.add_cluster(cluster, "fluvio-cloud".to_string());
     /// let profile = Profile::new("fluvio-cloud".to_string());
     /// config.add_profile(profile, "fluvio-cloud".to_string());
@@ -275,7 +275,7 @@ impl Config {
     /// # use fluvio::FluvioConfig;
     /// # use fluvio::config::{Config, Profile};
     /// let mut config = Config::new();
-    /// let cluster = FluvioConfig::new("https://cloud.fluvio.io".to_string());
+    /// let cluster = FluvioConfig::new("localhost", 9003);
     /// config.add_cluster(cluster, "fluvio-cloud".to_string());
     /// let profile = Profile::new("fluvio-cloud".to_string());
     /// config.add_profile(profile, "fluvio-cloud".to_string());
@@ -440,7 +440,13 @@ pub mod test {
         assert_eq!(config.current_profile_name().unwrap(), "local2");
 
         let cluster = config.current_cluster().expect("cluster should exist");
-        assert_eq!(cluster.addr, "127.0.0.1:9003");
+        assert_eq!(
+            cluster.endpoint,
+            Endpoint {
+                host: "127.0.0.1".to_owned(),
+                port: 9003
+            }
+        );
     }
 
     #[test]
@@ -459,7 +465,13 @@ pub mod test {
     /// test TOML save generation
     #[test]
     fn test_tls_save() {
-        let mut config = Config::new_with_local_cluster("localhost:9003".to_owned());
+        let mut config = Config::new_with_local_cluster(
+            Endpoint {
+                host: "localhost".to_owned(),
+                port: 9003,
+            }
+            .to_owned(),
+        );
         let inline_tls_config = TlsConfig::Inline(TlsCerts {
             key: "ABCDEFF".to_owned(),
             cert: "JJJJ".to_owned(),
@@ -506,10 +518,19 @@ pub mod test {
 
     #[test]
     fn test_local_cluster() {
-        let config = Config::new_with_local_cluster("localhost:9003".to_owned());
+        let config = Config::new_with_local_cluster(Endpoint {
+            host: "localhost".to_owned(),
+            port: 9003,
+        });
 
         assert_eq!(config.current_profile_name().unwrap(), "local");
         let cluster = config.current_cluster().expect("cluster should exists");
-        assert_eq!(cluster.endpoint, "localhost:9003");
+        assert_eq!(
+            cluster.endpoint,
+            Endpoint {
+                host: "localhost".to_owned(),
+                port: 9003
+            }
+        );
     }
 }

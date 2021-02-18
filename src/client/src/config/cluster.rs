@@ -23,6 +23,17 @@ pub struct FluvioConfig {
 
 impl FluvioConfig {
     /// Create a new cluster configuration with no TLS.
+    pub fn new<S: Into<String>>(host: S, port: u16) -> Self {
+        Self {
+            endpoint: Endpoint {
+                host: host.into(),
+                port,
+            },
+            tls: TlsPolicy::Disabled,
+        }
+    }
+
+    /// Create a new cluster configuration with no TLS.
     pub fn new_from_endpoint(endpoint: Endpoint) -> Self {
         Self {
             endpoint,
