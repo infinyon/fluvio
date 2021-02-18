@@ -18,7 +18,7 @@ type Offsets = HashMap<String, i64>;
 
 fn consume_wait_timeout() -> u64 {
     let var_value = std::env::var("FLV_TEST_CONSUMER_WAIT").unwrap_or_default();
-    var_value.parse().unwrap_or(15000)  // 15 seconds
+    var_value.parse().unwrap_or(15000) // 15 seconds
 }
 
 /// verify consumers
