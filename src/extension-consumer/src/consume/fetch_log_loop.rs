@@ -9,13 +9,13 @@ use std::io::ErrorKind;
 use std::convert::TryFrom;
 
 use tracing::debug;
-use fluvio::{PartitionConsumer, Offset, ConsumerConfig};
+use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
 use futures_lite::StreamExt;
 
-use crate::common::output::Terminal;
 use crate::consume::ConsumeLogOpt;
-use crate::consume::logs_output::process_fetch_topic_response;
+use crate::consume::logs_output::print_record;
 use crate::ConsumerError;
+use fluvio_sc_schema::ApiError;
 
 // -----------------------------------
 // SPU - Fetch Loop
@@ -23,14 +23,10 @@ use crate::ConsumerError;
 
 /// Fetch log continuously
 #[allow(clippy::neg_multiply)]
-pub async fn fetch_log_loop<O>(
-    out: std::sync::Arc<O>,
+pub async fn fetch_log_loop(
     consumer: PartitionConsumer,
     opt: ConsumeLogOpt,
-) -> Result<(), ConsumerError>
-where
-    O: Terminal,
-{
+) -> Result<(), ConsumerError> {
     debug!("starting fetch loop: {:#?}", opt);
 
     // attach sender to Ctrl-C event handler
@@ -88,25 +84,30 @@ where
             response.records.batches.len(),
         );
 
-        process_fetch_topic_response(out.clone(), response, &opt).await?;
+        for batch in response.records.batches.iter() {
+            for record in batch.records().iter() {
+                print_record(record.value.as_ref(), &opt)?;
+            }
+        }
     } else {
-        let mut log_stream = consumer
-            ._stream_batches_with_config(initial_offset, fetch_config)
+        let mut stream = consumer
+            .stream_with_config(initial_offset, fetch_config)
             .await?;
 
-        while let Some(Ok(response)) = log_stream.next().await {
-            let partition = response.partition;
-            debug!(
-                "got response: LSO: {} batchs: {}",
-                partition.log_start_offset,
-                partition.records.batches.len(),
-            );
-
-            process_fetch_topic_response(out.clone(), partition, &opt).await?;
-
-            if opt.disable_continuous {
-                debug!("finishing fetch loop");
-                break;
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(record) => {
+                    print_record(record.as_ref(), &opt)?;
+                }
+                Err(FluvioError::ApiError(ApiError::Code(code, _))) => {
+                    println!(
+                        "topic '{}/{}': {}",
+                        consumer.topic(),
+                        consumer.partition(),
+                        code.to_sentence(),
+                    );
+                }
+                Err(other) => return Err(other.into()),
             }
         }
 

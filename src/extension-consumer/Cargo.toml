@@ -25,6 +25,7 @@ thiserror = "1.0.20"
 eyre = "0.6.1"
 which = "4.0.2"
 hostname-validator = "1.0.0"
+content_inspector = "0.2.4"
 
 # Fluvio dependencies
 

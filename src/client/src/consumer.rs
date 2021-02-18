@@ -11,12 +11,14 @@ use futures_util::stream::{StreamExt, once, iter};
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
+use dataplane::ErrorCode;
 use dataplane::fetch::DefaultFetchRequest;
 use dataplane::fetch::FetchPartition;
 use dataplane::fetch::FetchableTopic;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::record::DefaultRecord;
+use dataplane::batch::DefaultBatch;
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
@@ -40,7 +42,7 @@ use crate::spu::SpuPool;
 /// You can create a `PartitionConsumer` via the [`partition_consumer`]
 /// method on the [`Fluvio`] client, like so:
 ///
-/// ```no_run
+/// ```
 /// # use fluvio::{Fluvio, Offset, ConsumerConfig, FluvioError};
 /// # async fn example(fluvio: &Fluvio) -> Result<(), FluvioError> {
 /// let consumer = fluvio.partition_consumer("my-topic", 0).await?;
@@ -67,6 +69,16 @@ impl PartitionConsumer {
         }
     }
 
+    /// Returns the name of the Topic that this consumer reads from
+    pub fn topic(&self) -> &str {
+        &self.topic
+    }
+
+    /// Returns the ID of the partition that this consumer reads from
+    pub fn partition(&self) -> i32 {
+        self.partition
+    }
+
     /// Fetches events from a particular offset in the consumer's partition
     ///
     /// A "fetch" is one of the two ways to consume events in Fluvio.
@@ -79,12 +91,12 @@ impl PartitionConsumer {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
     /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// let response = consumer.fetch(Offset::beginning()).await?;
     /// for batch in response.records.batches {
-    ///     for record in batch.records {
+    ///     for record in batch.records() {
     ///         let string = String::from_utf8_lossy(record.value.as_ref());
     ///         println!("Got record: {}", string);
     ///     }
@@ -119,7 +131,7 @@ impl PartitionConsumer {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use fluvio::{PartitionConsumer, FluvioError, Offset, ConsumerConfig};
     /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// // Use custom fetching configurations
@@ -128,7 +140,7 @@ impl PartitionConsumer {
     ///
     /// let response = consumer.fetch_with_config(Offset::beginning(), fetch_config).await?;
     /// for batch in response.records.batches {
-    ///     for record in batch.records {
+    ///     for record in batch.records() {
     ///         let string = String::from_utf8_lossy(record.value.as_ref());
     ///         println!("Got record: {}", string);
     ///     }
@@ -210,7 +222,7 @@ impl PartitionConsumer {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
@@ -255,7 +267,7 @@ impl PartitionConsumer {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use fluvio::{PartitionConsumer, FluvioError};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
@@ -282,31 +294,72 @@ impl PartitionConsumer {
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
-        let stream = self._stream_batches_with_config(offset, config).await?;
-        let flattened = stream.flat_map(|batch_result| {
-            let batch = match batch_result {
-                Ok(batch) => batch,
+        let stream = self.stream_batches_with_config(offset, config).await?;
+        let flattened =
+            stream.flat_map(|result: Result<DefaultBatch, _>| match result {
+                Err(e) => Either::Right(once(err(e))),
+                Ok(batch) => {
+                    let base_offset = batch.base_offset;
+                    let records = batch.own_records().into_iter().enumerate().map(
+                        move |(relative, record)| {
+                            Ok(Record {
+                                offset: base_offset + relative as i64,
+                                record,
+                            })
+                        },
+                    );
+                    Either::Left(iter(records))
+                }
+            });
+
+        Ok(flattened)
+    }
+
+    /// Continuously streams batches of messages, starting an offset in the consumer's partition
+    ///
+    /// ```
+    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{Offset, ConsumerConfig};
+    /// # mod futures {
+    /// #     pub use futures_util::stream::StreamExt;
+    /// # }
+    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// use futures::StreamExt;
+    /// // Use a custom max_bytes value in the config
+    /// let fetch_config = ConsumerConfig::default()
+    ///     .with_max_bytes(1000);
+    /// let mut stream = consumer.stream_batches_with_config(Offset::beginning(), fetch_config).await?;
+    /// while let Some(Ok(batch)) = stream.next().await {
+    ///     for record in batch.records() {
+    ///         let string = String::from_utf8_lossy(record.value.as_ref());
+    ///         println!("Got event: {}", string);
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn stream_batches_with_config(
+        &self,
+        offset: Offset,
+        config: ConsumerConfig,
+    ) -> Result<impl Stream<Item = Result<DefaultBatch, FluvioError>>, FluvioError> {
+        let stream = self.request_stream(offset, config).await?;
+        let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
+            let response: DefaultStreamFetchResponse = match batch_result {
+                // If error code is None, continue
+                Ok(response) if response.partition.error_code == ErrorCode::None => response,
+                // If error code is anything else, wrap it in an error
+                Ok(response) => {
+                    let code = response.partition.error_code;
+                    return Either::Right(once(err(FluvioError::ApiError(
+                        fluvio_sc_schema::ApiError::Code(code, None),
+                    ))));
+                }
                 Err(e) => return Either::Right(once(err(e))),
             };
 
-            let records =
-                batch
-                    .partition
-                    .records
-                    .batches
-                    .into_iter()
-                    .flat_map(|batch| {
-                        let base_offset = batch.base_offset;
-                        batch.own_records().into_iter().enumerate().map(
-                            move |(relative, record)| {
-                                Ok(Record {
-                                    offset: base_offset + relative as i64,
-                                    record,
-                                })
-                            },
-                        )
-                    });
-            Either::Left(iter(records))
+            let batches = response.partition.records.batches.into_iter().map(Ok);
+            Either::Left(iter(batches))
         });
 
         Ok(flattened)
@@ -315,8 +368,7 @@ impl PartitionConsumer {
     /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely
     /// on the internal structure of the fetch response. New clients should use the
     /// `stream` and `stream_with_config` methods.
-    #[doc(hidden)]
-    pub async fn _stream_batches_with_config(
+    async fn request_stream(
         &self,
         offset: Offset,
         config: ConsumerConfig,
@@ -515,7 +567,9 @@ impl ConsumerConfig {
 
 /// The individual record for a given stream.
 pub struct Record {
+    /// The offset of this Record into its partition
     offset: i64,
+    /// The Record contents
     record: DefaultRecord,
 }
 

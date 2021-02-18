@@ -1331,6 +1331,7 @@ dependencies = [
 name = "fluvio-extension-consumer"
 version = "0.3.0"
 dependencies = [
+ "content_inspector",
  "ctrlc",
  "eyre",
  "fluvio",
