@@ -16,6 +16,11 @@ use super::message::*;
 
 type Offsets = HashMap<String, i64>;
 
+fn consume_wait_timeout() -> u64 {
+    let var_value = std::env::var("FLV_TEST_CONSUMER_WAIT").unwrap_or_default();
+    var_value.parse().unwrap_or(15000) // 15 seconds
+}
+
 /// verify consumers
 pub async fn validate_consume_message(option: &TestOption, offsets: Offsets) {
     if option.use_cli() {
@@ -98,7 +103,7 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
 
         let mut total_records: u16 = 0;
 
-        let mut timer = sleep(Duration::from_millis(15000)); // 30 seconds
+        let mut timer = sleep(Duration::from_millis(consume_wait_timeout()));
 
         loop {
             select! {
