@@ -39,7 +39,7 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
     // check if local cluster exists otherwise, create new one
     match config.cluster_mut(LOCAL_PROFILE) {
         Some(cluster) => {
-            cluster.addr = local_addr.clone();
+            cluster.endpoint = local_addr.clone();
             cluster.tls = local_config.tls.try_into()?;
         }
         None => {

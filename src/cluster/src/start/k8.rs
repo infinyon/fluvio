@@ -1140,7 +1140,7 @@ impl ClusterInstaller {
 
         match config.cluster_mut(&profile_name) {
             Some(cluster) => {
-                cluster.addr = external_addr;
+                cluster.endpoint = external_addr;
                 cluster.tls = self.config.client_tls_policy.clone();
             }
             None => {
@@ -1188,7 +1188,7 @@ impl ClusterInstaller {
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(
     skip(self, cluster),
-    fields(cluster_addr = & * cluster.addr)
+    fields(cluster_endpoint = & * cluster.endpoint)
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), K8InstallError> {
         debug!("trying to create managed spu: {:#?}", cluster);
