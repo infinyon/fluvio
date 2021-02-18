@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use std::env;
 
 use derive_builder::Builder;
+use fluvio_types::Endpoint;
 use tracing::{info, warn, debug, error, instrument};
 use once_cell::sync::Lazy;
 
@@ -690,11 +691,9 @@ impl ClusterInstaller {
                         // If Fluvio is already installed, return the SC's address
                         CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {
                             debug!("Fluvio is already installed. Getting SC address");
-                            let (address, port) =
-                                self.wait_for_sc_service(&self.config.namespace).await?;
+                            let endpoint = self.wait_for_sc_service(&self.config.namespace).await?;
                             return Ok(StartStatus {
-                                address,
-                                port,
+                                endpoint,
                                 checks: Some(statuses),
                             });
                         }
@@ -713,18 +712,18 @@ impl ClusterInstaller {
 
         self.install_app()?;
         let namespace = &self.config.namespace;
-        let (address, port) = self
+        let endpoint = self
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
-        info!(addr = %address, "Fluvio SC is up:");
+        info!(endpoint = %endpoint, "Fluvio SC is up");
 
         if self.config.save_profile {
-            self.update_profile(address.clone())?;
+            self.update_profile(&endpoint)?;
         }
 
-        let cluster =
-            FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
+        let cluster = FluvioConfig::new_from_endpoint(endpoint.clone())
+            .with_tls(self.config.client_tls_policy.clone());
 
         if self.config.spu_replicas > 0 && !self.config.upgrade {
             debug!("waiting for SC to spin up");
@@ -744,11 +743,7 @@ impl ClusterInstaller {
             self.wait_for_spu(namespace).await?;
         }
 
-        Ok(StartStatus {
-            address,
-            port,
-            checks,
-        })
+        Ok(StartStatus { endpoint, checks })
     }
 
     /// Install Fluvio Core chart on the configured cluster
@@ -871,7 +866,7 @@ impl ClusterInstaller {
 
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
-    async fn discover_sc_address(&self, ns: &str) -> Result<Option<(String, u16)>, K8InstallError> {
+    async fn discover_sc_address(&self, ns: &str) -> Result<Option<Endpoint>, K8InstallError> {
         use tokio::select;
         use futures_lite::stream::StreamExt;
 
@@ -904,7 +899,7 @@ impl ClusterInstaller {
                                 if service.metadata.name == FLUVIO_SC_SERVICE {
                                     debug!(service = ?service,"found sc service");
 
-                                    let target_port =  service.spec
+                                    let target_port = service.spec
                                         .ports
                                         .iter()
                                         .filter_map(|port| {
@@ -918,7 +913,10 @@ impl ClusterInstaller {
                                         .expect("target port should be there");
 
                                     if self.config.use_cluster_ip  {
-                                        return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
+                                        return Ok(Some(Endpoint {
+                                            host: service.spec.cluster_ip,
+                                            port: target_port
+                                        }))
                                     };
 
                                     let ingress_addr = service
@@ -929,11 +927,13 @@ impl ClusterInstaller {
                                         .find(|_| true)
                                         .and_then(|ingress| ingress.host_or_ip().to_owned());
 
-                                    if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+                                    if let Some(sock_addr) = ingress_addr {
+                                        debug!(%sock_addr,"found ingress address");
 
-
-                                            debug!(%sock_addr,"found lb address");
-                                            return Ok(Some((sock_addr,target_port)))
+                                        return Ok(Some(Endpoint {
+                                            host: service.spec.cluster_ip,
+                                            port: target_port
+                                        }))
                                     }
 
                                 }
@@ -984,24 +984,24 @@ impl ClusterInstaller {
     /// Wait until the Fluvio SC public service appears in Kubernetes
     /// return address and port
     #[instrument(skip(self, ns))]
-    async fn wait_for_sc_service(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
+    async fn wait_for_sc_service(&self, ns: &str) -> Result<Endpoint, K8InstallError> {
         debug!("waiting for SC service");
-        if let Some((sock_addr, port)) = self.discover_sc_address(ns).await? {
-            debug!(%sock_addr, "found SC service addr");
-            self.wait_for_sc_port_check(&sock_addr).await?;
-            Ok((sock_addr, port))
+        if let Some(endpoint) = self.discover_sc_address(ns).await? {
+            debug!(%endpoint, "found SC service endpoint");
+            self.wait_for_sc_port_check(&endpoint).await?;
+            Ok(endpoint)
         } else {
             Err(K8InstallError::SCServiceTimeout)
         }
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
-    async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
-        info!(sock_addr = %sock_addr_str, "waiting for SC port check");
+    async fn wait_for_sc_port_check(&self, endpoint: &Endpoint) -> Result<(), K8InstallError> {
+        info!(endpoint = %endpoint, "waiting for SC port check");
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            let sock_addr = self.wait_for_sc_dns(&sock_addr_str).await?;
+            let sock_addr = self.wait_for_sc_dns(&endpoint).await?;
             if TcpStream::connect(&*sock_addr).await.is_ok() {
-                info!(sock_addr = %sock_addr_str, "finished SC port check");
+                info!(endpoint = %endpoint, "finished SC port check");
                 return Ok(());
             }
             info!(
@@ -1010,21 +1010,21 @@ impl ClusterInstaller {
             );
             sleep(Duration::from_millis(NETWORK_SLEEP_MS)).await;
         }
-        error!(sock_addr = %sock_addr_str, "timeout for SC port check");
+        error!(endpoint = %endpoint, "timeout for SC port check");
         Err(K8InstallError::SCPortCheckTimeout)
     }
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     async fn wait_for_sc_dns(
         &self,
-        sock_addr_string: &str,
+        endpoint: &Endpoint,
     ) -> Result<Vec<SocketAddr>, K8InstallError> {
-        debug!("waiting for SC dns resolution: {}", sock_addr_string);
+        debug!("waiting for SC dns resolution: {}", endpoint);
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            match resolve(sock_addr_string).await {
-                Ok(sock_addr) => {
-                    debug!("finished SC dns resolution: {}", sock_addr_string);
-                    return Ok(sock_addr);
+            match resolve(endpoint.to_string()).await {
+                Ok(sock_addrs) => {
+                    debug!("finished SC dns resolution: {:#?}", sock_addrs);
+                    return Ok(sock_addrs);
                 }
                 Err(err) => {
                     info!(
@@ -1036,7 +1036,7 @@ impl ClusterInstaller {
             }
         }
 
-        error!("timedout sc dns: {}", sock_addr_string);
+        error!(endpoint = %endpoint, "timedout sc dns");
         Err(K8InstallError::SCDNSTimeout)
     }
 
@@ -1131,8 +1131,8 @@ impl ClusterInstaller {
     }
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
-    fn update_profile(&self, external_addr: String) -> Result<(), K8InstallError> {
-        debug!("updating profile for: {}", external_addr);
+    fn update_profile(&self, endpoint: &Endpoint) -> Result<(), K8InstallError> {
+        debug!("updating profile for: {}", endpoint);
         let mut config_file = ConfigFile::load_default_or_new()?;
         let config = config_file.mut_config();
 
@@ -1140,11 +1140,11 @@ impl ClusterInstaller {
 
         match config.cluster_mut(&profile_name) {
             Some(cluster) => {
-                cluster.addr = external_addr;
+                cluster.endpoint = endpoint.clone();
                 cluster.tls = self.config.client_tls_policy.clone();
             }
             None => {
-                let mut local_cluster = FluvioConfig::new(external_addr);
+                let mut local_cluster = FluvioConfig::new_from_endpoint(endpoint.clone());
                 local_cluster.tls = self.config.client_tls_policy.clone();
                 config.add_cluster(local_cluster, profile_name.clone());
             }
@@ -1188,7 +1188,7 @@ impl ClusterInstaller {
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(
     skip(self, cluster),
-    fields(cluster_addr = & * cluster.addr)
+    fields(cluster_endpoint = %cluster.endpoint)
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), K8InstallError> {
         debug!("trying to create managed spu: {:#?}", cluster);

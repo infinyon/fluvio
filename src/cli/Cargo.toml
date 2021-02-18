@@ -55,6 +55,7 @@ fluvio-extension-common = { version = "0.2.0", path = "../extension-common", fea
 fluvio-extension-consumer = { version = "0.3.0", path = "../extension-consumer" }
 fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
 fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema" }
+fluvio-types = { version = "0.2.2", path = "../types" }
 k8-types = { version = "0.2.0", features = ["core"]}
 
 [dev-dependencies]

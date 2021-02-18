@@ -3,11 +3,13 @@ use std::collections::BTreeMap;
 pub mod defaults;
 pub mod macros;
 pub mod partition;
+pub mod endpoint;
 
 #[cfg(feature = "events")]
 pub mod event;
 
 pub use partition::PartitionError;
+pub use endpoint::Endpoint;
 
 //
 // Types

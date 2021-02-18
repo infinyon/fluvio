@@ -11,6 +11,7 @@ use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::{AllFlvSocket, SharedAllMultiplexerSocket};
 use fluvio_future::native_tls::AllDomainConnector;
+use fluvio_types::Endpoint;
 
 use crate::FluvioError;
 
@@ -111,7 +112,7 @@ impl VersionedSocket {
         trace!(
             "send API '{}' req to srv '{}'",
             R::API_KEY,
-            self.config.addr()
+            self.config.endpoint()
         );
 
         let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
@@ -124,38 +125,28 @@ impl VersionedSocket {
 /// Connection Config to any client
 #[derive(Clone)]
 pub struct ClientConfig {
-    addr: String,
+    endpoint: Endpoint,
     client_id: String,
     connector: AllDomainConnector,
 }
 
 impl fmt::Display for ClientConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "addr {}", self.addr)
-    }
-}
-
-impl From<String> for ClientConfig {
-    fn from(addr: String) -> Self {
-        Self::with_addr(addr)
+        write!(f, "endpoint {}", self.endpoint)
     }
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(addr: S, connector: AllDomainConnector) -> Self {
+    pub fn new(endpoint: Endpoint, connector: AllDomainConnector) -> Self {
         Self {
-            addr: addr.into(),
+            endpoint,
             client_id: "fluvio".to_owned(),
             connector,
         }
     }
 
-    pub fn with_addr(addr: String) -> Self {
-        Self::new(addr, AllDomainConnector::default())
-    }
-
-    pub fn addr(&self) -> &str {
-        &self.addr
+    pub fn endpoint(&self) -> &Endpoint {
+        &self.endpoint
     }
 
     /// set client id
@@ -168,12 +159,14 @@ impl ClientConfig {
         self
     }
 
-    pub fn set_addr(&mut self, domain: String) {
-        self.addr = domain
+    pub fn set_endpoint(&mut self, endpoint: Endpoint) {
+        self.endpoint = endpoint
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
+        let socket =
+            AllFlvSocket::connect_with_connector(&self.endpoint.to_string(), &self.connector)
+                .await?;
         VersionedSocket::connect(socket, self).await
     }
 
@@ -187,7 +180,7 @@ impl ClientConfig {
         };
 
         Self {
-            addr: self.addr.clone(),
+            endpoint: self.endpoint.clone(),
             client_id: self.client_id.clone(),
             connector,
         }

@@ -281,7 +281,7 @@ impl SpgOperator {
                 encryption: spu_public_ep.encryption,
                 ingress: vec![],
             },
-            private_endpoint: Endpoint {
+            private_endpoint: FluvioEndpoint {
                 host: format!("{}.{}", full_spu_name, full_group_name),
                 port: spu_private_ep.port,
                 encryption: spu_private_ep.encryption,

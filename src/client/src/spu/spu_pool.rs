@@ -79,9 +79,9 @@ impl SpuPool {
 
         debug!("connecting to spu: {}", spu.spec);
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
-        let spu_addr = spu.spec.public_endpoint.addr();
-        debug!("spu addr: {}", spu_addr);
-        client_config.set_addr(spu_addr);
+        let spu_endpoint = spu.spec.public_endpoint.endpoint();
+        debug!("spu endpoint: {}", spu_endpoint);
+        client_config.set_endpoint(spu_endpoint);
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
         Ok(SpuSocket {

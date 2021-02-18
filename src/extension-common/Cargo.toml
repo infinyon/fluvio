@@ -27,5 +27,5 @@ async-trait = "0.1.21"
 futures-lite = { version = "1.7.0" }
 thiserror = "1.0.20"
 
-
+fluvio-types = { version = "0.2.2", path = "../types" }
 fluvio = { version = "0.5.0", path = "../client",  optional = true }

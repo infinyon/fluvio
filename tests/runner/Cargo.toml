@@ -14,7 +14,7 @@ tokio = { version = "0.2.21", features = ["macros"] }
 
 # Fluvio dependencies
 fluvio = { path = "../../src/client" }
-fluvio-types = { version = "0.2.0", path = "../../src/types" }
+fluvio-types = { version = "0.2.2", path = "../../src/types" }
 fluvio-future = { version = "0.1.0", features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-command = { path = "../../src/command" }
 fluvio-cluster = { path = "../../src/cluster" }

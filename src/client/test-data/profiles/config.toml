@@ -3,11 +3,11 @@ version = "1.0"
 current_profile = "local"
 
 [cluster.local]
-addr = "127.0.0.1:9003"
+endpoint = "127.0.0.1:9003"
 
 
 [cluster.ec2]
-addr = "sandbox.xxxx.eksctl.io"
+endpoint = "sandbox.xxxx.eksctl.io:9003"
 
 
 # no default topic

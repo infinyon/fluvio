@@ -67,6 +67,7 @@ impl Terminal for PrintTerminal {
 pub mod target {
     use std::io::{ErrorKind, Error as IoError};
     use std::convert::TryInto;
+    use fluvio_types::Endpoint;
     use structopt::StructOpt;
 
     use fluvio::FluvioConfig;
@@ -96,9 +97,9 @@ pub mod target {
     /// server configuration
     #[derive(Debug, StructOpt, Default)]
     pub struct ClusterTarget {
-        /// Address of cluster
+        /// Endpoint of cluster
         #[structopt(short = "c", long, value_name = "host:port")]
-        pub cluster: Option<String>,
+        pub endpoint: Option<Endpoint>,
 
         #[structopt(flatten)]
         pub tls: TlsClientOpt,
@@ -121,9 +122,9 @@ pub mod target {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
-            match (self.profile, self.cluster) {
+            match (self.profile, self.endpoint) {
                 // Profile and Cluster together is illegal
-                (Some(_profile), Some(_cluster)) => Err(TargetError::invalid_arg(
+                (Some(_profile), Some(_endpoint)) => Err(TargetError::invalid_arg(
                     "cluster addr is not valid when profile is used",
                 )),
                 (Some(profile), _) => {
@@ -145,9 +146,8 @@ pub mod target {
                         })?;
                     Ok(cluster.clone())
                 }
-                (None, Some(cluster)) => {
-                    let cluster = FluvioConfig::new(cluster).with_tls(tls);
-                    Ok(cluster)
+                (None, Some(endpoint)) => {
+                    Ok(FluvioConfig::new_from_endpoint(endpoint).with_tls(tls))
                 }
                 (None, None) => {
                     // TLS specification is illegal without Cluster
