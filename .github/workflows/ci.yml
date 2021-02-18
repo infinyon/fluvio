@@ -200,6 +200,7 @@ jobs:
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
       FLUVIO_CMD: true
       FLV_SOCKET_WAIT:  600
+      FLV_TEST_CONSUMER_WAIT: 120000
 
     steps:
       - uses: actions/checkout@v2
@@ -255,7 +256,7 @@ jobs:
         run: |
           ./target/release/fluvio version
       - name: smoke test tls
-        timeout-minutes: 1
+        timeout-minutes: 2
         run: |
           make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
       - name: Build examples
