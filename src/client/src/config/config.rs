@@ -19,7 +19,10 @@ use dirs::home_dir;
 use serde::Deserialize;
 use serde::Serialize;
 
-use fluvio_types::defaults::{CLI_CONFIG_PATH};
+use fluvio_types::{
+    Endpoint,
+    defaults::{CLI_CONFIG_PATH},
+};
 use crate::{FluvioConfig, FluvioError};
 
 #[derive(Error, Debug)]
@@ -143,8 +146,8 @@ impl Config {
     }
 
     /// create new config with a single local cluster
-    pub fn new_with_local_cluster(domain: String) -> Self {
-        let cluster = FluvioConfig::new(domain);
+    pub fn new_with_local_cluster(endpoint: Endpoint) -> Self {
+        let cluster = FluvioConfig::new_from_endpoint(endpoint);
         let mut config = Self::new();
 
         config.cluster.insert(LOCAL_PROFILE.to_owned(), cluster);
@@ -507,6 +510,6 @@ pub mod test {
 
         assert_eq!(config.current_profile_name().unwrap(), "local");
         let cluster = config.current_cluster().expect("cluster should exists");
-        assert_eq!(cluster.addr, "localhost:9003");
+        assert_eq!(cluster.endpoint, "localhost:9003");
     }
 }

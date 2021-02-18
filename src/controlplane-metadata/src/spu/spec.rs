@@ -10,11 +10,9 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt;
 
-use flv_util::socket_helpers::EndPoint as SocketEndPoint;
-use flv_util::socket_helpers::EndPointEncryption;
 use fluvio_types::defaults::{SPU_PRIVATE_HOSTNAME, SPU_PRIVATE_PORT};
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use fluvio_types::SpuId;
+use fluvio_types::{SpuId, Endpoint};
 use flv_util::socket_helpers::ServerAddress;
 
 use dataplane::derive::{Decode, Encode};
@@ -34,7 +32,7 @@ pub struct SpuSpec {
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub spu_type: SpuType,
     pub public_endpoint: IngressPort,
-    pub private_endpoint: Endpoint,
+    pub private_endpoint: FluvioEndpoint,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub rack: Option<String>,
 }
@@ -58,7 +56,7 @@ impl Default for SpuSpec {
                 port: SPU_PUBLIC_PORT,
                 ..Default::default()
             },
-            private_endpoint: Endpoint {
+            private_endpoint: FluvioEndpoint {
                 port: SPU_PRIVATE_PORT,
                 host: SPU_PRIVATE_HOSTNAME.to_string(),
                 encryption: EncryptionEnum::default(),
@@ -128,7 +126,7 @@ impl SpuSpec {
 pub struct CustomSpuSpec {
     pub id: SpuId,
     pub public_endpoint: IngressPort,
-    pub private_endpoint: Endpoint,
+    pub private_endpoint: FluvioEndpoint,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub rack: Option<String>,
 }
@@ -219,9 +217,11 @@ impl IngressPort {
         }
     }
 
-    // convert to host:addr format
-    pub fn addr(&self) -> String {
-        format!("{}:{}", self.host_string(), self.port)
+    pub fn endpoint(&self) -> Endpoint {
+        Endpoint {
+            host: self.host_string(),
+            port: self.port,
+        }
     }
 }
 
@@ -264,13 +264,13 @@ impl IngressAddr {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct Endpoint {
+pub struct FluvioEndpoint {
     pub port: u16,
     pub host: String,
     pub encryption: EncryptionEnum,
 }
 
-impl From<ServerAddress> for Endpoint {
+impl From<ServerAddress> for FluvioEndpoint {
     fn from(addr: ServerAddress) -> Self {
         Self {
             port: addr.port,
@@ -280,35 +280,22 @@ impl From<ServerAddress> for Endpoint {
     }
 }
 
-impl fmt::Display for Endpoint {
+impl fmt::Display for FluvioEndpoint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.host, self.port)
     }
 }
 
-impl TryFrom<&Endpoint> for SocketEndPoint {
-    type Error = IoError;
-
-    fn try_from(endpoint: &Endpoint) -> Result<Self, Self::Error> {
-        flv_util::socket_helpers::host_port_to_socket_addr(&endpoint.host, endpoint.port).map(
-            |addr| SocketEndPoint {
-                addr,
-                encryption: EndPointEncryption::PLAINTEXT,
-            },
-        )
-    }
-}
-
 #[allow(dead_code)]
-impl TryFrom<&Endpoint> for std::net::SocketAddr {
+impl TryFrom<&FluvioEndpoint> for std::net::SocketAddr {
     type Error = IoError;
 
-    fn try_from(endpoint: &Endpoint) -> Result<Self, Self::Error> {
+    fn try_from(endpoint: &FluvioEndpoint) -> Result<Self, Self::Error> {
         flv_util::socket_helpers::host_port_to_socket_addr(&endpoint.host, endpoint.port)
     }
 }
 
-impl Default for Endpoint {
+impl Default for FluvioEndpoint {
     fn default() -> Self {
         Self {
             host: "127.0.0.1".to_owned(),
@@ -318,7 +305,7 @@ impl Default for Endpoint {
     }
 }
 
-impl Endpoint {
+impl FluvioEndpoint {
     pub fn from_port_host(port: u16, host: String) -> Self {
         Self {
             port,

@@ -6,12 +6,13 @@ use std::time::Duration;
 use fluvio::{FluvioConfig};
 
 use derive_builder::Builder;
+use fluvio_types::Endpoint;
 use tracing::{info, warn, debug, instrument};
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio_future::timer::sleep;
 use fluvio::metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
-use fluvio::metadata::spu::Endpoint;
+use fluvio::metadata::spu::FluvioEndpoint;
 use fluvio::metadata::spu::IngressAddr;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
@@ -29,7 +30,7 @@ const DEFAULT_DATA_DIR: &str = "/tmp/fluvio";
 const DEFAULT_RUST_LOG: &str = "info";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
-const LOCAL_SC_ADDRESS: &str = "localhost:9003";
+const LOCAL_SC_ADDRESS: &str = "localhost";
 const LOCAL_SC_PORT: u16 = 9003;
 
 /// Describes how to install Fluvio locally
@@ -416,7 +417,7 @@ impl LocalInstaller {
             .result()
             .map_err(|e| ClusterError::InstallLocal(e.into()))?;
         info!("launching sc");
-        let (address, port) = self.launch_sc()?;
+        let endpoint = self.launch_sc()?;
         info!("setting local profile");
         self.set_profile()?;
 
@@ -428,18 +429,14 @@ impl LocalInstaller {
         sleep(Duration::from_secs(1)).await;
         self.confirm_spu(self.config.spu_replicas).await?;
 
-        Ok(StartStatus {
-            address,
-            port,
-            checks,
-        })
+        Ok(StartStatus { endpoint, checks })
     }
 
     /// Launches an SC on the local machine
     ///
     /// Returns the address of the SC if successful
     #[instrument(skip(self))]
-    fn launch_sc(&self) -> Result<(String, u16), LocalInstallError> {
+    fn launch_sc(&self) -> Result<Endpoint, LocalInstallError> {
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
@@ -459,7 +456,10 @@ impl LocalInstaller {
             .stderr(Stdio::from(errors))
             .spawn()?;
 
-        Ok((LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT))
+        Ok(Endpoint {
+            host: LOCAL_SC_ADDRESS.to_owned(),
+            port: LOCAL_SC_PORT,
+        })
     }
 
     fn set_server_tls(
@@ -499,18 +499,21 @@ impl LocalInstaller {
 
     /// set local profile
     fn set_profile(&self) -> Result<String, LocalInstallError> {
-        let local_addr = LOCAL_SC_ADDRESS.to_owned();
         let mut config_file = ConfigFile::load_default_or_new()?;
 
         let config = config_file.mut_config();
         // check if local cluster exists otherwise, create new one
+        let endpoint = Endpoint {
+            host: LOCAL_SC_ADDRESS.to_owned(),
+            port: LOCAL_SC_PORT,
+        };
         match config.cluster_mut(LOCAL_PROFILE) {
             Some(cluster) => {
-                cluster.addr = local_addr.clone();
+                cluster.endpoint = endpoint;
                 cluster.tls = self.config.client_tls_policy.clone();
             }
             None => {
-                let mut local_cluster = FluvioConfig::new(local_addr.clone());
+                let mut local_cluster = FluvioConfig::new_from_endpoint(endpoint);
                 local_cluster.tls = self.config.client_tls_policy.clone();
                 config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
             }
@@ -532,7 +535,10 @@ impl LocalInstaller {
 
         config_file.save()?;
 
-        Ok(format!("local context is set to: {}", local_addr))
+        Ok(format!(
+            "local context is set to: {}:{}",
+            LOCAL_SC_ADDRESS, LOCAL_SC_PORT
+        ))
     }
 
     async fn launch_spu_group(&self) -> Result<(), LocalInstallError> {
@@ -576,7 +582,7 @@ impl LocalInstaller {
                 }],
                 ..Default::default()
             },
-            private_endpoint: Endpoint {
+            private_endpoint: FluvioEndpoint {
                 port: private_port,
                 host: "localhost".to_owned(),
                 ..Default::default()

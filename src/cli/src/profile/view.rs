@@ -62,15 +62,21 @@ impl TableOutputHandler for ListConfig<'_> {
                     .current_profile_name()
                     .map(|it| it == profile_name)
                     .map(|active| if active { "*" } else { "" })
-                    .unwrap_or("");
+                    .unwrap_or_default();
 
-                let (cluster, addr, tls) = self
+                let (cluster, endpoint, tls) = self
                     .0
                     .cluster(&profile.cluster)
-                    .map(|it| (&*profile.cluster, &*it.addr, format_tls(&it.tls)))
-                    .unwrap_or(("", "", ""));
+                    .map(|it| {
+                        (
+                            &*profile.cluster,
+                            it.endpoint.to_string(),
+                            format_tls(&it.tls),
+                        )
+                    })
+                    .unwrap_or_default();
 
-                row![active, profile_name, cluster, addr, tls,]
+                row![active, profile_name, cluster, endpoint, tls,]
             })
             .collect()
     }

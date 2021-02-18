@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use fluvio_types::Endpoint;
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -7,7 +8,7 @@ use fluvio::FluvioConfig;
 use k8_config::K8Config;
 use k8_client::K8Client;
 use k8_client::meta_client::MetadataClient;
-use k8_types::core::service::ServiceSpec;
+use k8_types::core::service::{ServiceSpec, TargetPort};
 use k8_types::InputObjectMeta;
 
 use crate::{Result, CliError};
@@ -68,7 +69,7 @@ fn compute_profile_name() -> Result<String> {
 }
 
 /// create new k8 cluster and profile
-pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile> {
+pub async fn set_k8_context(opt: K8Opt, endpoint: Endpoint) -> Result<Profile> {
     let mut config_file = ConfigFile::load_default_or_new()?;
     let config = config_file.mut_config();
 
@@ -80,11 +81,11 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
     match config.cluster_mut(&profile_name) {
         Some(cluster) => {
-            cluster.addr = external_addr;
+            cluster.endpoint = endpoint;
             cluster.tls = opt.tls.try_into()?;
         }
         None => {
-            let mut local_cluster = FluvioConfig::new(external_addr);
+            let mut local_cluster = FluvioConfig::new_from_endpoint(endpoint);
             local_cluster.tls = opt.tls.try_into()?;
             config.add_cluster(local_cluster, profile_name.clone());
         }
@@ -113,8 +114,8 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
     Ok(new_profile)
 }
 
-/// find fluvio addr
-pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>> {
+/// Find fluvio endpoint
+pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Endpoint>> {
     use k8_client::http::status::StatusCode;
 
     let ns = namespace.unwrap_or("default");
@@ -143,11 +144,11 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
         None => None,
     };
 
-    Ok(if let Some(external_address) = ingress_addr {
+    Ok(if let Some(host) = ingress_addr {
         // find target port
         if let Some(port) = svc.spec.ports.iter().find(|_| true) {
-            if let Some(ref target_port) = port.target_port {
-                Some(format!("{}:{}", external_address, target_port))
+            if let Some(TargetPort::Number(port)) = port.target_port {
+                Some(Endpoint { host, port })
             } else {
                 None
             }

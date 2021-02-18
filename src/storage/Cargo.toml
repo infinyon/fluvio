@@ -30,7 +30,7 @@ async-mutex = "1.4.0"
 derive_builder = "0.9.0"
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.0" , path = "../types" }
+fluvio-types = { version = "0.2.2", path = "../types" }
 fluvio-future = { version = "0.1.8", features = ["fs","mmap"] }
 fluvio-protocol = { path = "../protocol", version = "0.3.0" }
 dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

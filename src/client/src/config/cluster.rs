@@ -4,6 +4,7 @@
 //! Stores configuration parameter retrieved from the default or custom profile file.
 //!
 use serde::{Serialize, Deserialize};
+use fluvio_types::Endpoint;
 
 use crate::config::TlsPolicy;
 
@@ -12,9 +13,7 @@ use crate::config::TlsPolicy;
 #[non_exhaustive]
 pub struct FluvioConfig {
     /// The address to connect to the Fluvio cluster
-    // TODO use a validated address type.
-    // We don't want to have a "" address.
-    pub addr: String,
+    pub endpoint: Endpoint,
     /// The TLS policy to use when connecting to the cluster
     // If no TLS field is present in config file,
     // use the default of NoTls
@@ -24,9 +23,9 @@ pub struct FluvioConfig {
 
 impl FluvioConfig {
     /// Create a new cluster configuration with no TLS.
-    pub fn new<S: Into<String>>(addr: S) -> Self {
+    pub fn new_from_endpoint(endpoint: Endpoint) -> Self {
         Self {
-            addr: addr.into(),
+            endpoint,
             tls: TlsPolicy::Disabled,
         }
     }

@@ -3,13 +3,14 @@ use structopt::StructOpt;
 
 use fluvio::FluvioConfig;
 use fluvio::config::{ConfigFile, LOCAL_PROFILE, Profile};
+use fluvio_types::Endpoint;
 use crate::Result;
 use crate::common::tls::TlsClientOpt;
 
-#[derive(Debug, Default, StructOpt)]
+#[derive(Debug, StructOpt)]
 pub struct LocalOpt {
     #[structopt(value_name = "host:port", default_value = "localhost:9003")]
-    pub local: String,
+    pub local: Endpoint,
 
     #[structopt(flatten)]
     pub tls: TlsClientOpt,
@@ -31,7 +32,7 @@ impl LocalOpt {
 
 /// create new local cluster and profile
 pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
-    let local_addr = local_config.local;
+    let local_endpoint = local_config.local;
     let mut config_file = ConfigFile::load_default_or_new()?;
 
     let config = config_file.mut_config();
@@ -39,11 +40,11 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
     // check if local cluster exists otherwise, create new one
     match config.cluster_mut(LOCAL_PROFILE) {
         Some(cluster) => {
-            cluster.addr = local_addr.clone();
+            cluster.endpoint = local_endpoint.clone();
             cluster.tls = local_config.tls.try_into()?;
         }
         None => {
-            let mut local_cluster = FluvioConfig::new(local_addr.clone());
+            let mut local_cluster = FluvioConfig::new_from_endpoint(local_endpoint.clone());
             local_cluster.tls = local_config.tls.try_into()?;
             config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
         }
@@ -65,5 +66,5 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
 
     config_file.save()?;
 
-    Ok(format!("local context is set to: {}", local_addr))
+    Ok(format!("local context is set to: {}", local_endpoint))
 }

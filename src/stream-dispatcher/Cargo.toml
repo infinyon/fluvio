@@ -26,7 +26,7 @@ tokio = { version = "0.2.21", features = ["macros"] }
 once_cell = "1.5"
 
 # Fluvio dependencies
-fluvio-types = { path = "../types", version = "0.2.0" }
+fluvio-types = { version = "0.2.2", path = "../types" }
 fluvio-stream-model = { features = ["k8"], version = "0.4.0", path = "../stream-model" }
 k8-metadata-client = { version = "3.0.0" }
 fluvio-future = { version = "0.1.10" }

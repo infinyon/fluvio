@@ -1185,6 +1185,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-sc-schema",
+ "fluvio-types",
  "hex",
  "home",
  "http-types",
@@ -1224,6 +1225,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-helm",
  "fluvio-runner-local",
+ "fluvio-types",
  "flv-util 0.5.2",
  "futures-lite",
  "k8-client",
@@ -1316,6 +1318,7 @@ version = "0.2.0"
 dependencies = [
  "async-trait",
  "fluvio",
+ "fluvio-types",
  "futures-lite",
  "prettytable-rs",
  "serde",
@@ -1705,10 +1708,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "event-listener",
  "fluvio-future",
+ "serde",
  "tokio",
  "tracing",
 ]

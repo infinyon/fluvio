@@ -37,6 +37,7 @@ pub mod cli;
 
 use fluvio_helm as helm;
 
+use fluvio_types::Endpoint;
 pub use start::k8::{ClusterInstaller, ClusterConfig, ClusterConfigBuilder};
 pub use start::local::{LocalInstaller, LocalConfig, LocalConfigBuilder};
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError, SysInstallError};
@@ -61,22 +62,15 @@ pub(crate) const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 /// were run (if any).
 /// TODO: In future release, we should return address without port
 pub struct StartStatus {
-    address: String,
-    port: u16,
+    endpoint: Endpoint,
     #[allow(unused)]
     pub(crate) checks: Option<CheckStatuses>,
 }
 
 impl StartStatus {
-    /// The address where the newly-started Fluvio cluster lives
-    pub fn address(&self) -> &str {
-        &self.address
-    }
-
-    /// get port
-    #[allow(unused)]
-    pub fn port(&self) -> u16 {
-        self.port
+    /// The endpoint where the newly-started Fluvio cluster lives
+    pub fn endpoint(&self) -> &Endpoint {
+        &self.endpoint
     }
 }
 
