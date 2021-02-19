@@ -3,17 +3,38 @@ use futures_lite::StreamExt;
 use fluvio_future::task::spawn;
 use md5::Digest;
 use std::sync::mpsc::{Receiver, Sender};
+use fluvio_system_util::bin::get_fluvio;
+use fluvio_command::CommandExt;
+use crate::TestOption;
 
 const TOPIC: &str = "test-bug";
 const PARTITION: i32 = 0;
 
 type Record = Vec<u8>;
 
-pub async fn test_concurrent_consume_produce() {
+pub async fn test_concurrent_consume_produce(option: &TestOption) {
     println!("Testing concurrent consumer and producer");
+    setup_produce_then_consume(option);
     let (sender, receiver) = std::sync::mpsc::channel();
     spawn(consumer_stream(receiver));
     producer(sender).await;
+}
+
+fn setup_produce_then_consume(option: &TestOption) {
+    let mut command = get_fluvio().expect("fluvio not founded");
+    command
+        .arg("topic")
+        .arg("create")
+        .arg(TOPIC)
+        .arg("--replication")
+        .arg(option.replication().to_string());
+    if let Some(log) = &option.client_log {
+        command.env("RUST_LOG", log);
+    }
+
+    let _output = command
+        .result()
+        .expect("fluvio topic create should succeed");
 }
 
 async fn consumer_stream(digests: Receiver<String>) {
@@ -26,8 +47,11 @@ async fn consumer_stream(digests: Receiver<String>) {
         let existing_record_digest = digests.recv().unwrap();
         let current_record_digest = hash_record(record.as_ref());
         println!(
-            "Consuming {}: was produced: {}, was consumed: {}",
-            index, existing_record_digest, current_record_digest
+            "Consuming {:<5} (size {:<5}): was produced: {}, was consumed: {}",
+            index,
+            record.as_ref().len(),
+            existing_record_digest,
+            current_record_digest
         );
         assert_eq!(existing_record_digest, current_record_digest);
         index += 1;
@@ -39,7 +63,7 @@ async fn producer(digests: Sender<String>) {
     let producer = fluvio.topic_producer(TOPIC).await.unwrap();
 
     // Iterations ranging approx. 5000 - 20_000
-    let iterations: u16 = (rand::random::<u16>() / 4) + 5000;
+    let iterations: u16 = (rand::random::<u16>() / 2) + 20000;
     println!("Producing {} records", iterations);
     for _ in 0..iterations {
         let record = rand_record();

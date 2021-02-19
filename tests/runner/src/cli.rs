@@ -82,6 +82,9 @@ pub struct TestOption {
     #[structopt(long)]
     pub authorization_config_map: Option<String>,
 
+    #[structopt(long)]
+    pub test: Option<String>,
+
     /// skip pre-install checks
     #[structopt(long)]
     skip_checks: bool,

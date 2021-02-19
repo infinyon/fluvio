@@ -48,6 +48,9 @@ endif
 smoke-test:	test-clean-up	build_test
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG}
 
+smoke-test-bug:	test-clean-up	build_test
+	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --test=concurrent --local ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG}
+
 smoke-test-stream:	test-clean-up	build_test
 	$(TEST_BIN) --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --local ${TEST_LOG} ${SKIP_CHECK} --consumer-wait
 

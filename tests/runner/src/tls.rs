@@ -22,29 +22,3 @@ pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
     });
     (client_policy, server_policy)
 }
-
-pub struct Cert {
-    pub ca: PathBuf,
-    pub cert: PathBuf,
-    pub key: PathBuf,
-}
-
-impl Cert {
-    pub fn load_client(client_user: &str) -> Self {
-        let cert_dir = cert_dir();
-        Cert {
-            ca: cert_dir.join("ca.crt"),
-            cert: cert_dir.join(format!("client-{}.crt", client_user)),
-            key: cert_dir.join(format!("client-{}.key", client_user)),
-        }
-    }
-
-    pub fn load_server() -> Self {
-        let cert_dir = cert_dir();
-        Cert {
-            ca: cert_dir.join("ca.crt"),
-            cert: cert_dir.join("server.crt"),
-            key: cert_dir.join("server.key"),
-        }
-    }
-}
