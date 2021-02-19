@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "fluvio-service"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP service wrapper over fluvio protocol"
 repository = "https://github.com/infinyon/fluvio-socket"
