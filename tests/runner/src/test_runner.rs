@@ -27,7 +27,8 @@ impl TestRunner {
             command
                 .arg("topic")
                 .arg("create")
-                .arg(&topic_name)
+                .arg("test-bug")
+                // .arg(&topic_name)
                 .arg("--replication")
                 .arg(self.option.replication().to_string());
             if let Some(log) = &self.option.client_log {

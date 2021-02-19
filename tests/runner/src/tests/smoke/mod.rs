@@ -1,6 +1,7 @@
 mod consume;
 mod produce;
 mod message;
+mod concurrent;
 
 pub use runner::*;
 
@@ -12,6 +13,7 @@ mod runner {
 
     use crate::TestOption;
     use super::*;
+    use crate::tests::smoke::concurrent::test_concurrent_consume_produce;
 
     /// simple smoke test runner which tests
     pub struct SmokeTestRunner {
@@ -24,8 +26,10 @@ mod runner {
         }
 
         async fn produce_and_consume_cli(&self) {
-            let start_offsets = super::produce::produce_message(&self.option).await;
-            super::consume::validate_consume_message(&self.option, start_offsets).await;
+            // let start_offsets = super::produce::produce_message(&self.option).await;
+            // super::consume::validate_consume_message(&self.option, start_offsets).await;
+
+            test_concurrent_consume_produce().await;
         }
     }
 

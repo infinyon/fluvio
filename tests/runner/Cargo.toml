@@ -11,6 +11,8 @@ futures-lite = "1.11.0"
 structopt = "0.3.5"
 async-trait = "0.1.21"
 tokio = { version = "0.2.21", features = ["macros"] }
+rand = "0.8.3"
+md-5 = "0.9.1"
 
 # Fluvio dependencies
 fluvio = { path = "../../src/client" }
