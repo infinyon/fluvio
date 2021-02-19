@@ -131,9 +131,9 @@ dependencies = [
 
 [[package]]
 name = "async-channel"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ead32ec3da16a4ce0ca8de4614295a1e06d019d17978b774faa8b4d4b8a6a51b"
+checksum = "2114d64672151c0c5eaa5e131ec84a74f06e1e559830dabba01ca30605d66319"
 dependencies = [
  "concurrent-queue",
  "event-listener",
@@ -480,9 +480,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.6.0"
+version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "099e596ef14349721d9016f6b80dd3419ea1bf289ab9b44df8e4dfd3a005d5d9"
+checksum = "63396b8a4b9de3f4fdfb320ab6080762242f66a8ef174c49d8e19b674db4cdbe"
 
 [[package]]
 name = "byte-pool"
@@ -1171,7 +1171,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "async-h1",
  "color-eyre",
@@ -1210,7 +1210,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1476,7 +1476,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "async-channel",
  "async-lock 1.1.5",
@@ -1671,7 +1671,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "async-rwlock",
  "event-listener",
@@ -1705,7 +1705,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "event-listener",
  "fluvio-future",
@@ -2185,9 +2185,9 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "idna"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de910d521f7cc3135c4de8db1cb910e0b5ed1dc6f57c381cd07e8e661ce10094"
+checksum = "89829a5d69c23d348314a7ac337fe39173b61149a9864deabd260983aed48c21"
 dependencies = [
  "matches",
  "unicode-bidi",
@@ -2660,9 +2660,9 @@ checksum = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 
 [[package]]
 name = "openssl-src"
-version = "111.13.0+1.1.1i"
+version = "111.14.0+1.1.1j"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "045e4dc48af57aad93d665885789b43222ae26f4886494da12d1ed58d309dcb6"
+checksum = "055b569b5bd7e5462a1700f595c7c7d487691d73b5ce064176af7f9f0cbb80a9"
 dependencies = [
  "cc",
 ]
@@ -3958,9 +3958,9 @@ dependencies = [
 
 [[package]]
 name = "url"
-version = "2.2.0"
+version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5909f2b0817350449ed73e8bcd81c8c3c8d9a7a5d8acba4b27db277f1868976e"
+checksum = "9ccd964113622c8e9322cfac19eb1004a07e636c545f325da085d5cdde6f1f8b"
 dependencies = [
  "form_urlencoded",
  "idna",
