@@ -1482,6 +1482,7 @@ dependencies = [
  "async-lock 1.1.5",
  "async-trait",
  "base64 0.11.0",
+ "cfg-if 1.0.0",
  "chashmap",
  "event-listener",
  "fluvio-auth",
@@ -1532,7 +1533,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "async-trait",
  "event-listener",
