@@ -14,7 +14,7 @@ pub fn package_target() -> Result<Target, Error> {
     Ok(target)
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 pub enum Target {
     #[serde(rename = "x86_64-apple-darwin")]
@@ -24,6 +24,9 @@ pub enum Target {
 }
 
 impl Target {
+    pub const ALL_TARGETS: &'static [Target] =
+        &[Target::X86_64AppleDarwin, Target::X86_64UnknownLinuxMusl];
+
     pub fn as_str(&self) -> &str {
         match self {
             Self::X86_64AppleDarwin => "x86_64-apple-darwin",
