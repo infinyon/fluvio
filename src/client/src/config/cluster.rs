@@ -14,6 +14,7 @@ pub struct FluvioConfig {
     /// The address to connect to the Fluvio cluster
     // TODO use a validated address type.
     // We don't want to have a "" address.
+    #[serde(alias = "addr")]
     pub endpoint: String,
     /// The TLS policy to use when connecting to the cluster
     // If no TLS field is present in config file,
