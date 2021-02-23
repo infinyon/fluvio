@@ -6,8 +6,10 @@ set -u
 set -o pipefail
 
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
+readonly FLUVIO_PREFIX="https://packages.fluvio.io/v1"
+readonly FLUVIO_STABLE="${FLUVIO_PREFIX}/stable"
+readonly FLUVIO_PRERELEASE="${FLUVIO_PREFIX}/latest"
 readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
-readonly FLUVIO_LATEST_URL="https://packages.fluvio.io/v1/latest"
 
 # Ensure that this architecture is supported and matches the
 # naming convention of known platform releases in the registry
@@ -39,13 +41,16 @@ assert_supported_architecture() {
 # Fetch the latest released version for this architecture
 #
 # @param $1: The target triple of this architecture
+# @param $2 (optional): The release channel to find the version to download
+#   - Defaults to $FLUVIO_STABLE
 # @return <stdout>: The version of the latest release
 fetch_latest_version_for_architecture() {
     local _status _downloaded _newest
     local _arch="$1"; shift
+    local _channel="${1:-"$FLUVIO_STABLE"}"
 
     # Download the list of latest releases
-    _downloaded="$(ensure downloader "${FLUVIO_LATEST_URL}" - 2>&1)"
+    _downloaded="$(ensure downloader "${_channel}" - 2>&1)"
     _status=$?
 
     if [ $_status -ne 0 ]; then
@@ -476,16 +481,30 @@ main() {
         abort_prompt_issue
     fi
 
+    # If a VERSION env variable is set:
     if [ -n "${VERSION:-""}" ]; then
-        # If a VERSION env variable is set, try to install that version
-        _version="${VERSION}"
+
+        # If VERSION is equal to exactly "latest", use PRERELEASE channel
+        if [ "${VERSION}" == "latest" ]; then
+            _version=$(fetch_latest_version_for_architecture "${_target}" "${FLUVIO_PRERELEASE}")
+            _status=$?
+            if [ $_status -ne 0 ]; then
+                err "❌ Failed to fetch latest version information!"
+                err "    Error downloading from ${FLUVIO_PRERELEASE}"
+                abort_prompt_issue
+            fi
+        else
+            # Otherwise, try to install the specific given version
+            _version="${VERSION}"
+        fi
+
     else
-        # Otherwise, fetch the latest version information
+        # Otherwise, fetch the latest STABLE version information
         _version=$(fetch_latest_version_for_architecture "${_target}")
         _status=$?
         if [ $_status -ne 0 ]; then
             err "❌ Failed to fetch latest version information!"
-            err "    Error downloading from ${FLUVIO_LATEST_URL}"
+            err "    Error downloading from ${FLUVIO_STABLE}"
             abort_prompt_issue
         fi
     fi
