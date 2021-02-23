@@ -17,9 +17,6 @@ name = "fluvio"
 path = "src/bin/main.rs"
 doc = false
 
-[build-dependencies]
-rustc_version = "0.2.3"
-
 [dependencies]
 tracing = "0.1.19"
 tracing-futures = "0.2.4"

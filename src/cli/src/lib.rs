@@ -279,7 +279,6 @@ impl VersionOpt {
         if let Some(os_info) = os_info() {
             println!("OS Details        : {}", os_info);
         }
-        println!("Rustc Version     : {}", env!("RUSTC_VERSION"));
 
         Ok(())
     }
