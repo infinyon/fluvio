@@ -1192,7 +1192,6 @@ dependencies = [
  "k8-config",
  "k8-types",
  "prettytable-rs",
- "rustc_version",
  "semver 0.11.0",
  "serde",
  "serde_json",
