@@ -3,6 +3,7 @@
 use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use log::{info, debug};
 use futures_lite::stream::StreamExt;
@@ -11,7 +12,7 @@ use fluvio_system_util::bin::get_fluvio;
 use fluvio::{Fluvio, Offset, PartitionConsumer};
 use fluvio_command::CommandExt;
 
-use crate::cli::TestOption;
+use crate::test_meta::TestOption;
 use super::message::*;
 
 type Offsets = HashMap<String, i64>;
@@ -23,11 +24,11 @@ fn consume_wait_timeout() -> u64 {
 }
 
 /// verify consumers
-pub async fn validate_consume_message(option: &TestOption, offsets: Offsets) {
+pub async fn validate_consume_message(client: Arc<Fluvio>, option: &TestOption, offsets: Offsets) {
     if option.use_cli() {
         validate_consume_message_cli(option, offsets);
     } else {
-        validate_consume_message_api(offsets, option).await;
+        validate_consume_message_api(client, offsets, option).await;
     }
 }
 
@@ -35,7 +36,7 @@ fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
     let replication = option.replication();
 
     for i in 0..replication {
-        let topic_name = option.topic_name(i);
+        let topic_name = option.topic_name.clone();
         let offset = offsets.get(&topic_name).expect("topic offset");
         let mut command = get_fluvio().expect("fluvio not found");
         command
@@ -76,16 +77,15 @@ async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
     panic!("can't get consumer");
 }
 
-async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
+async fn validate_consume_message_api(client: Arc<Fluvio>, offsets: Offsets, option: &TestOption) {
     use tokio::select;
     use fluvio_future::timer::sleep;
 
-    let client = Fluvio::connect().await.expect("should connect");
     let replication = option.replication();
     let iteration = option.produce.produce_iteration;
 
     for i in 0..replication {
-        let topic_name = option.topic_name(i);
+        let topic_name = option.topic_name.clone();
         let base_offset = offsets.get(&topic_name).expect("offsets");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
