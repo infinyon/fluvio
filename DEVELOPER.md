@@ -50,6 +50,17 @@ $ alias flvd=./target/debug/fluvio
 
 This avoid collision with released version of Fluvio.
 
+## Download a published version of Fluvio
+
+If, instead of building Fluvio, you would prefer to just download it and get to work,
+you can use our one-line installation script. You can use it to install the latest
+release or prerelease, or to install a specific version:
+
+```
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | bash                 # Install latest release
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash  # Install latest pre-release
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # Install specific version
+```
 
 ## Setting Kubernetes up for running Fluvio in development
 
