@@ -79,7 +79,10 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> 
     skip(agent),
     fields(prefix = agent.base_url())
 )]
-pub async fn check_update_available(agent: &HttpAgent, prerelease: bool) -> Result<bool, CliError> {
+pub async fn check_update_available(
+    agent: &HttpAgent,
+    prerelease: bool,
+) -> Result<Option<Version>, CliError> {
     let target = fluvio_index::package_target()?;
     let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
@@ -89,11 +92,15 @@ pub async fn check_update_available(agent: &HttpAgent, prerelease: bool) -> Resu
     let package = agent.package_from_response(response).await?;
 
     let release = package.latest_release_for_target(target, prerelease)?;
-    let latest_version = &release.version;
+    let latest_version = release.version.clone();
     let current_version =
         Version::parse(crate::VERSION).expect("Fluvio CLI 'VERSION' should be a valid semver");
 
-    Ok(current_version < *latest_version)
+    if current_version < latest_version {
+        Ok(Some(latest_version))
+    } else {
+        Ok(None)
+    }
 }
 
 /// Prompt the user about a new required version of the Fluvio CLI
@@ -117,21 +124,11 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
 }
 
 /// Prompt the user about a new available version of the Fluvio CLI
-#[instrument(
-    skip(agent),
-    fields(prefix = agent.base_url())
-)]
-pub async fn prompt_available_update(agent: &HttpAgent, prerelease: bool) -> Result<(), CliError> {
-    let target = fluvio_index::package_target()?;
-    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
-    debug!(%target, %id, "Fetching latest package version:");
-    let latest_version = fetch_latest_version(agent, &id, target, prerelease).await?;
-
+pub fn prompt_available_update(latest_version: &Version) {
     println!();
     println!("💡 An update to Fluvio is available!");
     println!(
         "💡     Run 'fluvio update' to install v{} of Fluvio",
         &latest_version
     );
-    Ok(())
 }
