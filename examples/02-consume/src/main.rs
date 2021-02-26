@@ -47,8 +47,7 @@ async fn consume() -> Result<(), fluvio::FluvioError> {
     let mut stream = consumer.stream(fluvio::Offset::beginning()).await?;
 
     while let Some(Ok(record)) = stream.next().await {
-        let bytes = record.as_ref();
-        let string = String::from_utf8_lossy(&bytes);
+        let string = String::from_utf8_lossy(record.value());
         println!("{}", string);
     }
     Ok(())

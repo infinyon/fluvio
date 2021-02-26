@@ -15,7 +15,7 @@ use fluvio_future::net::TcpListener;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::{Request, ResponseMessage, RequestMessage};
 use fluvio_dataplane_protocol::batch::DefaultBatch;
-use fluvio_dataplane_protocol::record::DefaultRecord;
+use fluvio_dataplane_protocol::record::{DefaultRecord, DefaultAsyncBuffer};
 use fluvio_dataplane_protocol::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,
@@ -34,8 +34,13 @@ fn create_batches(records: u16) -> DefaultBatch {
     header.producer_epoch = -1;
 
     for i in 0..records {
-        let msg = format!("record {}", i);
-        let record: DefaultRecord = msg.into();
+        let key = format!("key {}", i);
+        let value = format!("value {}", i);
+        let record = DefaultRecord {
+            key: Some(DefaultAsyncBuffer::new(key.into_bytes())),
+            value: DefaultAsyncBuffer::new(value.into_bytes()),
+            ..Default::default()
+        };
         batches.add_record(record);
     }
     batches
@@ -115,8 +120,10 @@ async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
     assert_eq!(batches.len(), 1);
     let records = &batches[0].records();
     assert_eq!(records.len(), 2);
-    assert_eq!(records[0].value.to_string(), "record 0");
-    assert_eq!(records[1].value.to_string(), "record 1");
+    assert_eq!(records[0].value().to_string(), "value 0");
+    assert_eq!(records[0].key().as_ref().unwrap().to_string(), "key 0");
+    assert_eq!(records[1].value().to_string(), "value 1");
+    assert_eq!(records[1].key().as_ref().unwrap().to_string(), "key 1");
 
     Ok(())
 }

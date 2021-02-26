@@ -141,7 +141,7 @@ async fn produce() -> Result<(), FluvioError> {
     for i in 0..10 {
         println!("Sending record {}", i);
         producer
-            .send_record(format!("Hello Fluvio {}!", i), 0)
+            .send(format!("Key {}", i), format!("Value {}", i))
             .await?;
     }
     producer.send_record("Done!", 0).await?;
@@ -157,10 +157,12 @@ async fn consume() -> Result<(), FluvioError> {
     let mut stream = consumer.stream(Offset::beginning()).await?;
 
     while let Some(Ok(record)) = stream.next().await {
-        let bytes = record.as_ref();
-        let string = String::from_utf8_lossy(&bytes);
-        println!("Got record: {}", string);
-        if string == "Done!" {
+        let key = record
+            .key()
+            .map(|key| String::from_utf8_lossy(key).to_string());
+        let value = String::from_utf8_lossy(record.value()).to_string();
+        println!("Got record: key={:?}, value={}", key, value);
+        if value == "Done!" {
             return Ok(());
         }
     }

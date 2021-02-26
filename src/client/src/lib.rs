@@ -66,8 +66,9 @@
 //!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
 //!     while let Some(Ok(record)) = stream.next().await {
-//!         let string = String::from_utf8_lossy(record.as_ref());
-//!         println!("Got record: {}", string);
+//!         let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
+//!         let value = String::from_utf8_lossy(record.value()).to_string();
+//!         println!("Got record: key={:?}, value={}", key, value);
 //!     }
 //!     Ok(())
 //! }
@@ -104,19 +105,43 @@ pub use crate::client::Fluvio;
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.7.1-alpha.0";
 
-/// Creates a producer that sends events to the named topic
+/// Creates a producer that sends records to the named topic
 ///
 /// This is a shortcut function that uses the current profile
 /// settings. If you need to specify any custom configurations,
 /// try directly creating a [`Fluvio`] client object instead.
 ///
-/// # Example
+/// # Example: Simple records
+///
+/// Fluvio can send "simple" records that contain arbitrary
+/// binary data. An easy way to demonstrate this is by sending
+/// a string:
 ///
 /// ```no_run
 /// # use fluvio::FluvioError;
 /// # async fn do_produce() -> Result<(), FluvioError> {
 /// let producer = fluvio::producer("my-topic").await?;
 /// producer.send_record("Hello, world!", 0).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # Example: Key-value records
+///
+/// Fluvio also supports "key-value" records, where the key and
+/// the value given may each be any binary data. Typically, the
+/// key represents some unique property of the value, such as
+/// an email address, username, or request ID.
+///
+/// ```no_run
+/// # use fluvio::FluvioError;
+/// # async fn do_produce() -> Result<(), FluvioError> {
+/// let producer = fluvio::producer("my-topic").await?;
+/// let key = "fluvio";
+/// let value = r#"
+/// {"project":"fluvio","about":"Data streaming in Rust!"}
+/// "#;
+/// producer.send(key, value).await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -146,8 +171,9 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
 /// let mut stream = consumer.stream(Offset::beginning()).await?;
 /// while let Some(Ok(record)) = stream.next().await {
-///     let string = String::from_utf8_lossy(record.as_ref());
-///     println!("Got record: {}", string);
+///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
+///     let value = String::from_utf8_lossy(record.value()).to_string();
+///     println!("Got record: key={:?}, value={}", key, value);
 /// }
 /// # Ok(())
 /// # }

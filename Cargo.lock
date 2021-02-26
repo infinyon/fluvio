@@ -1276,7 +1276,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -3115,6 +3115,14 @@ dependencies = [
 
 [[package]]
 name = "produce"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "fluvio",
+]
+
+[[package]]
+name = "produce-key-value"
 version = "0.1.0"
 dependencies = [
  "async-std",

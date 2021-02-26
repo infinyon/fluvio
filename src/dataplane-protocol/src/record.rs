@@ -307,7 +307,7 @@ where
     B: Default,
 {
     pub preamble: RecordHeader,
-    pub key: B,
+    pub key: Option<B>,
     pub value: B,
     pub headers: i64,
 }
@@ -320,24 +320,48 @@ where
         self.preamble.offset_delta
     }
 
-    pub fn get_value(&self) -> &B {
+    /// Returns a reference to the inner value
+    pub fn value(&self) -> &B {
         &self.value
     }
 
-    pub fn value(self) -> B {
+    /// Returns a reference to the inner key if it exists
+    pub fn key(&self) -> Option<&B> {
+        self.key.as_ref()
+    }
+
+    /// Consumes this record, returning the inner value
+    pub fn into_value(self) -> B {
         self.value
+    }
+
+    /// Consumes this record, returning the inner key if it esists
+    pub fn into_key(self) -> Option<B> {
+        self.key
     }
 }
 
-impl<B> Debug for Record<B>
-where
-    B: AsyncBuffer + Debug + Default,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "{:?}", &self.preamble)?;
-        writeln!(f, "{:?}", &self.key)?;
-        writeln!(f, "{:?}", &self.value)?;
-        write!(f, "{:?}", &self.headers)
+impl DefaultRecord {
+    pub fn new<V>(value: V) -> Self
+    where
+        V: Into<Vec<u8>>,
+    {
+        DefaultRecord {
+            value: DefaultAsyncBuffer::new(value.into()),
+            ..Default::default()
+        }
+    }
+
+    pub fn new_key_value<K, V>(key: K, value: V) -> Self
+    where
+        K: Into<Vec<u8>>,
+        V: Into<Vec<u8>>,
+    {
+        DefaultRecord {
+            key: Some(DefaultAsyncBuffer::new(key.into())),
+            value: DefaultAsyncBuffer::new(value.into()),
+            ..Default::default()
+        }
     }
 }
 
@@ -374,6 +398,18 @@ where
             value: B::from(slice),
             ..Default::default()
         }
+    }
+}
+
+impl<B> Debug for Record<B>
+where
+    B: AsyncBuffer + Debug + Default,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "{:?}", &self.preamble)?;
+        writeln!(f, "{:?}", &self.key)?;
+        writeln!(f, "{:?}", &self.value)?;
+        write!(f, "{:?}", &self.headers)
     }
 }
 
@@ -480,7 +516,8 @@ mod test {
         use crate::record::DefaultRecord;
 
         fn create_batch() -> DefaultBatch {
-            let record: DefaultRecord = vec![0x74, 0x65, 0x73, 0x74].into();
+            let value = vec![0x74, 0x65, 0x73, 0x74];
+            let record = DefaultRecord::new(value);
             let mut batch = DefaultBatch::default();
             batch.add_record(record);
             batch
@@ -510,6 +547,62 @@ mod test {
         println!("decoding...");
         let decoded_batches = RecordSet::decode_from(&mut Cursor::new(out), 0).expect("decoding");
         assert_eq!(decoded_batches.batches.len(), 2);
+    }
+
+    #[test]
+    fn test_key_value_encoding() {
+        let key = "KKKKKKKKKK".to_string();
+        let value = "VVVVVVVVVV".to_string();
+        let record = DefaultRecord::new_key_value(key, value);
+
+        let mut encoded = Vec::new();
+        record.encode(&mut encoded, 0).unwrap();
+        let decoded = DefaultRecord::decode_from(&mut Cursor::new(encoded), 0).unwrap();
+
+        let record_key = record.key.unwrap();
+        let decoded_key = decoded.key.unwrap();
+        assert_eq!(record_key.0.as_ref(), decoded_key.0.as_ref());
+        assert_eq!(record.value.0.as_ref(), decoded.value.0.as_ref());
+    }
+
+    // Test Specification:
+    //
+    // A record was encoded and written to a file, using the following code:
+    //
+    // ```rust
+    // use fluvio_dataplane_protocol::record::{DefaultRecord, DefaultAsyncBuffer};
+    // use fluvio_protocol::Encoder;
+    // let value = "VVVVVVVVVV".to_string();
+    // let record = DefaultRecord {
+    //     key: DefaultAsyncBuffer::default(),
+    //     value: DefaultAsyncBuffer::new(value.into_bytes()),
+    //     ..Default::default()
+    // };
+    // let mut encoded = Vec::new();
+    // record.encode(&mut encoded, 0);
+    // ```
+    //
+    // This was back when records defined keys as `key: B` rather than `key: Option<B>`.
+    //
+    // It just so happens that our public API never allowed any records to be sent with
+    // any contents in the `key` field, so what was sent over the wire was a buffer whose
+    // length was zero, encoded as a single zero `0x00` (for "length-zero buffer").
+    //
+    // In the new `key: Option<B>` encoding, a key is encoded with a tag for
+    // Some or None, with 0x00 representing None and 0x01 representing Some.
+    // So, when reading old records, the 0x00 "length encoding" will be re-interpreted
+    // as the 0x00 "None encoding". Since all old keys were empty, this should work for
+    // all old records _in practice_. This will not work if any record is decoded which
+    // artificially was given contents in the key field.
+    #[test]
+    fn test_decode_old_record_empty_key() {
+        let old_encoded = std::fs::read("./tests/test_old_record_empty_key.bin").unwrap();
+        let decoded = DefaultRecord::decode_from(&mut Cursor::new(old_encoded), 0).unwrap();
+        assert_eq!(
+            std::str::from_utf8(decoded.value.0.as_ref()).unwrap(),
+            "VVVVVVVVVV"
+        );
+        assert!(decoded.key.is_none());
     }
 }
 
