@@ -19,7 +19,7 @@ type Offsets = HashMap<String, i64>;
 /// total time allotted for consumer test
 fn consume_wait_timeout() -> u64 {
     let var_value = std::env::var("FLV_TEST_CONSUMER_WAIT").unwrap_or_default();
-    var_value.parse().unwrap_or(15000) // 15 seconds
+    var_value.parse().unwrap_or(30000) // 30 seconds
 }
 
 /// verify consumers
@@ -124,7 +124,7 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
                     if let Some(Ok(record)) = stream_next {
 
                         let offset = record.offset();
-                        let bytes = record.as_ref();
+                        let bytes = record.value();
                         info!(
                             "* consumer iter: {}, received offset: {}, bytes: {}",
                             total_records,

@@ -1,8 +1,9 @@
 [workspace]
 members = [
     "examples/00-produce",
-    "examples/01-consume",
-    "examples/02-echo",
+    "examples/01-produce-key-value",
+    "examples/02-consume",
+    "examples/03-echo",
     "src/auth",
     "src/cli",
     "src/client",

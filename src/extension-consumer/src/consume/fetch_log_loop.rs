@@ -97,7 +97,8 @@ pub async fn fetch_log_loop(
         while let Some(result) = stream.next().await {
             match result {
                 Ok(record) => {
-                    print_record(record.as_ref(), &opt)?;
+                    println!("Key: {:?}", record.key());
+                    print_record(record.value(), &opt)?;
                 }
                 Err(FluvioError::ApiError(ApiError::Code(code, _))) => {
                     println!(

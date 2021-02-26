@@ -19,6 +19,7 @@ use dataplane::{
 };
 use dataplane::api::RequestMessage;
 use dataplane::record::DefaultRecord;
+use dataplane::record::DefaultAsyncBuffer;
 use dataplane::Offset;
 
 use fluvio_socket::{FlvSocket, FlvSocketError};
@@ -42,8 +43,10 @@ fn default_option() -> ConfigOption {
 
 fn generate_record(record_index: usize, _producer: &BatchProducer) -> DefaultRecord {
     let msg = format!("record {}", record_index);
-    let record: DefaultRecord = msg.into();
-    record
+    DefaultRecord {
+        value: DefaultAsyncBuffer::new(msg.into_bytes()),
+        ..Default::default()
+    }
 }
 
 /// create sample batches with variable number of records

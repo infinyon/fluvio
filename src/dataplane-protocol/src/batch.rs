@@ -236,7 +236,7 @@ mod test {
 
     use crate::core::Decoder;
     use crate::core::Encoder;
-    use crate::record::DefaultRecord;
+    use crate::record::{DefaultRecord, DefaultAsyncBuffer};
     use crate::batch::DefaultBatch;
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
@@ -249,7 +249,11 @@ mod test {
 
     #[test]
     fn test_encode_and_decode_batch() -> Result<(), IoError> {
-        let record: DefaultRecord = vec![0x74, 0x65, 0x73, 0x74].into();
+        let value = vec![0x74, 0x65, 0x73, 0x74];
+        let record = DefaultRecord {
+            value: DefaultAsyncBuffer::new(value),
+            ..Default::default()
+        };
         let mut batch = DefaultBatch::default();
         batch.records.push(record);
         batch.header.first_timestamp = 1555478494747;

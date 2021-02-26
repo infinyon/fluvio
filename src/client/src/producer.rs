@@ -25,6 +25,45 @@ impl TopicProducer {
         Self { topic, pool }
     }
 
+    /// Sends a key/value record to this producer's Topic.
+    ///
+    /// The partition that the record will be sent to is derived from the Key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::{TopicProducer, FluvioError};
+    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// producer.send("Key", "Value").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[instrument(
+        skip(self, key, value),
+        fields(topic = %self.topic),
+    )]
+    pub async fn send<K, V>(&self, key: K, value: V) -> Result<(), FluvioError>
+    where
+        K: AsRef<[u8]>,
+        V: AsRef<[u8]>,
+    {
+        let key = key.as_ref();
+        let value = value.as_ref();
+        debug!(
+            key_size = key.len(),
+            value_size = value.len(),
+            "sending records:"
+        );
+
+        let replica = ReplicaKey::new(&self.topic, 0);
+        let spu_client = self.pool.create_serial_socket(&replica).await?;
+        debug!(
+            addr = spu_client.config().addr(),
+            "Connected to replica leader:"
+        );
+        send_record_raw(spu_client, &replica, Some(key), value).await
+    }
+
     /// Sends an event to a specific partition within this producer's topic
     ///
     /// # Example
@@ -39,7 +78,7 @@ impl TopicProducer {
     /// ```
     #[instrument(
         skip(self, buffer),
-        fields(topic = &*self.topic),
+        fields(topic = %self.topic),
     )]
     pub async fn send_record<B: AsRef<[u8]>>(
         &self,
@@ -54,7 +93,7 @@ impl TopicProducer {
 
         debug!("connect to replica leader at: {}", spu_client);
 
-        send_record_raw(spu_client, &replica, record).await
+        send_record_raw(spu_client, &replica, None, record).await
     }
 }
 
@@ -62,13 +101,15 @@ impl TopicProducer {
 async fn send_record_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
-    record: &[u8],
+    key: Option<&[u8]>,
+    value: &[u8],
 ) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
     use dataplane::produce::DefaultTopicRequest;
     use dataplane::batch::DefaultBatch;
     use dataplane::record::DefaultRecord;
+    use dataplane::record::DefaultAsyncBuffer;
 
     // build produce log request message
     let mut request = DefaultProduceRequest::default();
@@ -77,12 +118,18 @@ async fn send_record_raw<F: SerialFrame>(
 
     debug!(
         "send record {} bytes to: replica: {}, {}",
-        record.len(),
+        value.len(),
         replica,
         leader
     );
 
-    let record_msg: DefaultRecord = record.into();
+    let mut record_msg = DefaultRecord {
+        value: DefaultAsyncBuffer::new(value.to_owned()),
+        ..Default::default()
+    };
+    if let Some(key) = key {
+        record_msg.key = Some(key.into());
+    }
     let mut batch = DefaultBatch::default();
     batch.add_record(record_msg);
 

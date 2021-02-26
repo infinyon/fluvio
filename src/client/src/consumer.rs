@@ -1,6 +1,4 @@
 use std::sync::Arc;
-use std::convert::TryFrom;
-use std::string::FromUtf8Error;
 
 use futures_util::stream::Stream;
 use tracing::{debug, error, trace};
@@ -232,8 +230,9 @@ impl PartitionConsumer {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let string = String::from_utf8_lossy(record.as_ref());
-    ///     println!("Got event: {}", string);
+    ///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
+    ///     let value = String::from_utf8_lossy(record.value()).to_string();
+    ///     println!("Got event: key={:?}, value={}", key, value);
     /// }
     /// # Ok(())
     /// # }
@@ -280,8 +279,9 @@ impl PartitionConsumer {
     ///     .with_max_bytes(1000);
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let string = String::from_utf8_lossy(record.as_ref());
-    ///     println!("Got event: {}", string);
+    ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
+    ///     let value = String::from_utf8_lossy(record.value());
+    ///     println!("Got record: key={:?}, value={}", key, value);
     /// }
     /// # Ok(())
     /// # }
@@ -331,8 +331,9 @@ impl PartitionConsumer {
     /// let mut stream = consumer.stream_batches_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(batch)) = stream.next().await {
     ///     for record in batch.records() {
-    ///         let string = String::from_utf8_lossy(record.value.as_ref());
-    ///         println!("Got event: {}", string);
+    ///         let key = record.key.as_ref().map(|key| String::from_utf8_lossy(key.as_ref()).to_string());
+    ///         let value = String::from_utf8_lossy(record.value.as_ref()).to_string();
+    ///         println!("Got record: key={:?}, value={}", key, value);
     ///     }
     /// }
     /// # Ok(())
@@ -579,22 +580,24 @@ impl Record {
         self.offset
     }
 
-    pub fn to_string_lossy(&self) -> String {
-        String::from_utf8_lossy(self.as_ref()).to_string()
+    /// Returns the contents of this Record's key, if it exists
+    pub fn key(&self) -> Option<&[u8]> {
+        self.record.key().map(|it| it.as_ref())
+    }
+
+    /// Returns the contents of this Record's value
+    pub fn value(&self) -> &[u8] {
+        self.record.value().as_ref()
+    }
+
+    /// Returns the inner representation of the Record
+    pub fn into_inner(self) -> DefaultRecord {
+        self.record
     }
 }
 
 impl AsRef<[u8]> for Record {
     fn as_ref(&self) -> &[u8] {
-        self.record.value.as_ref()
+        self.value()
     }
 }
-
-impl TryFrom<Record> for String {
-    type Error = FromUtf8Error;
-    fn try_from(record: Record) -> Result<String, FromUtf8Error> {
-        String::from_utf8(record.as_ref().to_vec())
-    }
-}
-
-mod offset_update {}

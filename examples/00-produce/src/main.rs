@@ -1,10 +1,17 @@
 //! A minimal example showing how to produce messages on Fluvio
 //!
 //! Before running this example, make sure you have created a topic
-//! named `example` with the following command:
+//! named `simple` with the following command:
 //!
 //! ```text
 //! $ fluvio topic create simple
+//! ```
+//!
+//! Run this example using the following:
+//!
+//! ```text
+//! $ cargo run --bin produce
+//! Sent simple record: Hello, Fluvio!
 //! ```
 //!
 //! After running this example, you can see the messages that have
@@ -24,8 +31,10 @@ async fn main() {
 
 async fn produce() -> Result<(), fluvio::FluvioError> {
     let producer = fluvio::producer("simple").await?;
-    let message = "Hello, Fluvio!";
-    producer.send_record(&message, 0).await?;
-    println!("{}", message);
+
+    let record = "Hello, Fluvio!";
+    producer.send_record(&record, 0).await?;
+    println!("{}", &record);
+
     Ok(())
 }
