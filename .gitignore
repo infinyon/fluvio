@@ -6,3 +6,4 @@ target-docker
 .vscode/tasks.json
 .idea/
 VERSION
+.scripts

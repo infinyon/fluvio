@@ -46,4 +46,4 @@ fluvio-protocol = { path = "../protocol", version = "0.3.0" }
 dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [dev-dependencies]
-async-std = "1.6.4"
+async-std = { version = "1.6.4", default-features = false}
