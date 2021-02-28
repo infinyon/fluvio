@@ -314,7 +314,6 @@ impl FileReplica {
     async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {
         trace!("start_send");
         if !(self.active_segment.write_batch(item).await?) {
-           
             debug!("segment has no room, rolling over previous segment");
             self.active_segment.roll_over().await?;
             let last_offset = self.active_segment.get_end_offset();
@@ -400,7 +399,10 @@ mod tests {
         assert_eq!(replica.get_leo(), START_OFFSET);
         assert_eq!(replica.get_hw(), START_OFFSET);
 
-        replica.write_batch(&mut create_batch()).await.expect("send");
+        replica
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send");
         assert_eq!(replica.get_leo(), START_OFFSET + 2); // 2 batches
         assert_eq!(replica.get_hw(), START_OFFSET); // hw should not change since we have not committed them
 
@@ -608,7 +610,10 @@ mod tests {
 
         let mut batch = create_batch();
         let batch_len = batch.write_size(0);
-        replica.write_batch(&mut batch).await.expect("writing records");
+        replica
+            .write_batch(&mut batch)
+            .await
+            .expect("writing records");
 
         let mut partition_response = FilePartitionResponse::default();
         replica
@@ -637,7 +642,10 @@ mod tests {
 
         // write 1 more batch
         let mut batch = create_batch();
-        replica.write_batch(&mut batch).await.expect("writing 2nd batch");
+        replica
+            .write_batch(&mut batch)
+            .await
+            .expect("writing 2nd batch");
         debug!(
             "2nd batch: replica end: {} high: {}",
             replica.get_leo(),
@@ -698,7 +706,10 @@ mod tests {
             .records();
         assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
         assert!(matches!(
-            replica.write_recordset(&mut larget_batch, false).await.unwrap_err(),
+            replica
+                .write_recordset(&mut larget_batch, false)
+                .await
+                .unwrap_err(),
             StorageError::BatchTooBig(_)
         ));
 

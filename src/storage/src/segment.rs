@@ -315,7 +315,6 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
-
     pub async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
@@ -340,7 +339,6 @@ impl Segment<MutLogIndex, MutFileRecords> {
         );
 
         if self.msg_log.write_batch(item).await? {
-            
             let batch_len = self.msg_log.get_pos();
 
             self.index
@@ -355,7 +353,6 @@ impl Segment<MutLogIndex, MutFileRecords> {
         } else {
             Ok(false)
         }
-        
     }
 
     #[allow(unused)]

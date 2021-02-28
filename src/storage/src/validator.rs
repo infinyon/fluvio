@@ -177,6 +177,7 @@ mod tests {
     const SUCCESS_BASE_OFFSET: Offset = 601;
 
     #[test_async]
+    #[allow(clippy::unnecessary_mut_passed)]
     async fn test_validate_success() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_SUCCESS_NAME);
         ensure_clean_file(&test_file);
@@ -189,7 +190,9 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(SUCCESS_BASE_OFFSET, &options).await?;
 
-        msg_sink.write_batch(&mut create_batch(SUCCESS_BASE_OFFSET, 2)).await?;
+        msg_sink
+            .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET, 2))
+            .await?;
         msg_sink
             .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET + 2, 3))
             .await?;
@@ -203,6 +206,7 @@ mod tests {
     const TEST_FILE_NAME_FAIL: &str = "00000000000000000401.log"; // for offset 301
 
     #[test_async]
+    #[allow(clippy::unnecessary_mut_passed)]
     async fn test_validate_offset() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME_FAIL);
         ensure_clean_file(&test_file);
@@ -225,6 +229,7 @@ mod tests {
 
     const TEST_FILE_NAME_FAIL2: &str = "00000000000000000501.log"; // for offset 301
 
+    #[allow(clippy::unnecessary_mut_passed)]
     #[test_async]
     async fn test_validate_invalid_contents() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME_FAIL2);

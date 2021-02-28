@@ -149,7 +149,7 @@ impl MutFileRecords {
     }
 
     /// try to write batch
-    /// if there is enough room, return true, false otherwise 
+    /// if there is enough room, return true, false otherwise
     pub async fn write_batch(&mut self, item: &DefaultBatch) -> Result<bool, StorageError> {
         trace!("start sending using batch {:#?}", item.get_header());
         self.item_last_offset_delta = item.get_last_offset_delta();
@@ -385,6 +385,7 @@ mod tests {
     const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
     const TEST_FILE_NAMEI: &str = "00000000000000000300.log"; // for offset 300
 
+    #[allow(clippy::unnecessary_mut_passed)]
     #[test_async]
     async fn test_write_records_every() -> Result<(), StorageError> {
         debug!("test_write_records_every");
@@ -404,7 +405,10 @@ mod tests {
         let batch = create_batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink.write_batch(&mut create_batch()).await.expect("create");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("create");
 
         debug!("read start");
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
@@ -434,6 +438,7 @@ mod tests {
 
     // This Test configures policy to flush after every NUM_WRITES
     // and checks to see when the flush occurs relative to the write count
+    #[allow(clippy::unnecessary_mut_passed)]
     #[test_async]
     async fn test_write_records_count() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAMEC);
@@ -455,7 +460,10 @@ mod tests {
         let batch = create_batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink.write_batch(&mut create_batch()).await.expect("create");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("create");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
@@ -473,14 +481,23 @@ mod tests {
 
         // check flush counts don't increment yet
         let flush_count = msg_sink.flush_count();
-        msg_sink.write_batch(&mut create_batch()).await.expect("send");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send");
         for _ in 1..(NUM_WRITES - 2) {
-            msg_sink.write_batch(&mut create_batch()).await.expect("send");
+            msg_sink
+                .write_batch(&mut create_batch())
+                .await
+                .expect("send");
             assert_eq!(flush_count, msg_sink.flush_count());
         }
 
         // flush count should increment after final write
-        msg_sink.write_batch(&mut create_batch()).await.expect("send");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send");
         assert_eq!(flush_count + 1, msg_sink.flush_count());
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
@@ -505,6 +522,7 @@ mod tests {
     // The test still verifies that flushes on writes have occured within the
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
+    #[allow(clippy::unnecessary_mut_passed)]
     #[test_async]
     async fn test_write_records_idle_delay() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAMEI);
@@ -527,7 +545,10 @@ mod tests {
         let batch = create_batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink.write_batch(&mut create_batch()).await.expect("create");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("create");
 
         debug!("direct flush");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
@@ -549,7 +570,10 @@ mod tests {
         // check flush counts don't increment immediately
         let flush_count = msg_sink.flush_count();
         // debug!("flush_count: {} {:?}", flush_count, Instant::now());
-        msg_sink.write_batch(&mut create_batch()).await.expect("send");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send");
         // debug!("flush_count: {}", flush_count);
         assert_eq!(flush_count, msg_sink.flush_count());
 
@@ -567,9 +591,15 @@ mod tests {
         debug!("check multi write delayed flush: wait for flush");
         let flush_count = msg_sink.flush_count();
 
-        msg_sink.write_batch(&mut create_batch()).await.expect("send");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
-        msg_sink.write_batch(&mut create_batch()).await.expect("send");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
 
         let dur = Duration::from_millis((IDLE_FLUSH + 100).into());

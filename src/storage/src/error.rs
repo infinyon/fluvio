@@ -1,7 +1,6 @@
 use std::io::Error as IoError;
 use std::fmt;
 
-
 use fluvio_future::fs::BoundedFileSinkError;
 use fluvio_future::zero_copy::SendFileError;
 

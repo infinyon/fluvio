@@ -183,7 +183,10 @@ impl FollowersState<FileReplica> {
                 let replica_key = ReplicaKey::new(topic.clone(), rep_id);
                 trace!("sync request for replica: {}", replica_key);
                 if let Some(mut replica) = self.get_mut_replica(&replica_key) {
-                    match replica.write_recordsets(&mut partition_request.records).await {
+                    match replica
+                        .write_recordsets(&mut partition_request.records)
+                        .await
+                    {
                         Ok(_) => {
                             trace!(
                                 "successfully written send to follower replica: {}",
