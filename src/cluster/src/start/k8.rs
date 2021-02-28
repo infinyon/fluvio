@@ -1043,7 +1043,7 @@ impl ClusterInstaller {
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
-        info!("waiting for SPU with: {} loop, MAX_SC_NETWORK_LOOP");
+        info!("waiting for SPU with: {} loop", MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
