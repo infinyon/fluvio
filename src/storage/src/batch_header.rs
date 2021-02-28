@@ -74,7 +74,7 @@ mod tests {
         }
     }
 
-    #[allow(unused)]
+    #[allow(unused, clippy::unnecessary_mut_passed)]
     //#[test_async]
     async fn test_decode_batch_header_simple() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME);
@@ -86,7 +86,10 @@ mod tests {
             .await
             .expect("create sink");
 
-        msg_sink.send(create_batch()).await.expect("send batch");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("send batch");
 
         let mut file = file_util::open(&test_file).await.expect("open test file");
 
@@ -107,7 +110,7 @@ mod tests {
     #[allow(unused)]
     const TEST_FILE_NAME2: &str = "00000000000000000201.log"; // for offset 200
 
-    #[allow(unused)]
+    #[allow(unused, clippy::unnecessary_mut_passed)]
     //#[test_async]
     async fn test_decode_batch_header_multiple() -> Result<(), StorageError> {
         let test_file = temp_dir().join(TEST_FILE_NAME2);
@@ -117,8 +120,10 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(201, &options).await?;
 
-        msg_sink.send(create_batch()).await?;
-        msg_sink.send(create_batch_with_producer(25, 2)).await?;
+        msg_sink.write_batch(&mut create_batch()).await?;
+        msg_sink
+            .write_batch(&mut create_batch_with_producer(25, 2))
+            .await?;
 
         let file = file_util::open(&test_file).await?;
 

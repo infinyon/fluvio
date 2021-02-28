@@ -156,16 +156,15 @@ impl ReplicaLeadersState<FileReplica> {
         }
     }
 
-    /// write new record and notify the leader replica controller
-    /// TODO: may replica should be moved it's own map
-    pub async fn send_records(
+    /// write new record set and update shared offsets
+    pub async fn write_record_set(
         &self,
         rep_id: &ReplicaKey,
-        records: RecordSet,
+        records: &mut RecordSet,
         update_hw: bool,
     ) -> Result<bool, InternalServerError> {
         if let Some(mut leader_replica) = self.get_mut_replica(rep_id) {
-            leader_replica.send_records(records, update_hw).await?;
+            leader_replica.write_recordset(records, update_hw).await?;
             self.send_message(rep_id, LeaderReplicaControllerCommand::EndOffsetUpdated)
                 .await
                 .map_err(|err| err.into())

@@ -378,9 +378,9 @@ impl LeaderReplicaState<FileReplica> {
         (self.hw(), self.leo())
     }
 
-    pub async fn send_records(
+    pub async fn write_recordset(
         &mut self,
-        records: RecordSet,
+        records: &mut RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
         trace!(
@@ -389,7 +389,7 @@ impl LeaderReplicaState<FileReplica> {
             self.replica_id
         );
         self.storage
-            .send_records(records, update_highwatermark)
+            .write_recordset(records, update_highwatermark)
             .await
     }
 
