@@ -51,7 +51,7 @@ static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_NETWORK_LOOP").unwrap_or_default();
     var_value.parse().unwrap_or(30)
 });
-const NETWORK_SLEEP_MS: u64 = 1000;
+const NETWORK_SLEEP_MS: u64 = 2000;
 
 /// Describes how to install Fluvio onto Kubernetes
 #[derive(Builder, Debug)]
@@ -1043,7 +1043,7 @@ impl ClusterInstaller {
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
-        info!("waiting for SPU");
+        info!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;

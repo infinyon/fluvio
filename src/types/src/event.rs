@@ -106,9 +106,21 @@ pub mod offsets {
             }
         }
 
+        #[allow(unused)]
         #[inline]
         fn has_change(&self) -> bool {
             self.current_value() != self.last_value
+        }
+
+        /// check if publisher has new value, if so return new value
+        #[inline]
+        fn has_new_value(&self) -> Option<i64> {
+            let current_value = self.current_value();
+            if current_value == self.last_value {
+                None
+            } else {
+                Some(current_value)
+            }
         }
 
         #[inline]
@@ -123,16 +135,16 @@ pub mod offsets {
 
         // wait for new values from publisher in lock-free fashin
         pub async fn listen(&mut self) -> i64 {
-            if self.has_change() {
-                self.last_value = self.publisher.current_value();
-                return self.last_value;
+            if let Some(new_value) = self.has_new_value() {
+                self.last_value = new_value;
+                return new_value;
             }
 
             let listener = self.publisher.listen();
 
-            if self.has_change() {
-                self.last_value = self.publisher.current_value();
-                return self.last_value;
+            if let Some(new_value) = self.has_new_value() {
+                self.last_value = new_value;
+                return new_value;
             }
 
             listener.await;
