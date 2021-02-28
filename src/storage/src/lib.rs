@@ -26,8 +26,6 @@ use dataplane::{ErrorCode, Offset};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_future::file_slice::AsyncFileSlice;
 
-pub trait Captures<'a> {}
-impl<'a, T: ?Sized> Captures<'a> for T {}
 
 /// output from storage is represented as slice
 pub trait SlicePartitionResponse {
