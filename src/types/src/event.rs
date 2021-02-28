@@ -137,14 +137,14 @@ pub mod offsets {
         pub async fn listen(&mut self) -> i64 {
             if let Some(new_value) = self.has_new_value() {
                 self.last_value = new_value;
-                return new_value
+                return new_value;
             }
 
             let listener = self.publisher.listen();
 
             if let Some(new_value) = self.has_new_value() {
                 self.last_value = new_value;
-                return new_value
+                return new_value;
             }
 
             listener.await;
