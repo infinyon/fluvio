@@ -174,16 +174,16 @@ where
 impl FollowersState<FileReplica> {
     /// write records from leader to followe replica
     /// return updated offsets
-    pub(crate) async fn send_records(&self, req: DefaultSyncRequest) -> UpdateOffsetRequest {
+    pub(crate) async fn send_records(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
         let mut offsets = UpdateOffsetRequest::default();
-        for topic_request in req.topics {
+        for topic_request in &mut req.topics {
             let topic = &topic_request.name;
-            for partition_request in topic_request.partitions {
+            for partition_request in &mut topic_request.partitions {
                 let rep_id = partition_request.partition_index;
                 let replica_key = ReplicaKey::new(topic.clone(), rep_id);
                 trace!("sync request for replica: {}", replica_key);
                 if let Some(mut replica) = self.get_mut_replica(&replica_key) {
-                    match replica.send_records(partition_request.records).await {
+                    match replica.write_recordsets(&mut partition_request.records).await {
                         Ok(_) => {
                             trace!(
                                 "successfully written send to follower replica: {}",
@@ -302,13 +302,13 @@ impl FollowerReplicaState<FileReplica> {
         })
     }
 
-    pub async fn send_records(&mut self, records: RecordSet) -> Result<(), StorageError> {
+    pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<(), StorageError> {
         trace!(
             "writing records to follower replica: {}, leader: {}",
             self.replica,
             self.leader
         );
-        self.storage.send_records(records, false).await
+        self.storage.write_recordset(records, false).await
     }
 
     pub async fn remove(self) -> Result<(), StorageError> {

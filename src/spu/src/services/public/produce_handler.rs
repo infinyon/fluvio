@@ -20,14 +20,14 @@ pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<ProduceResponse>, Error> {
-    let (header, produce_request) = request.get_header_request();
+    let (header, mut produce_request) = request.get_header_request();
     trace!("handling produce request: {:#?}", produce_request);
 
     let mut response = ProduceResponse::default();
 
     //let ack = produce_request.acks;
 
-    for topic_request in produce_request.topics {
+    for topic_request in &mut produce_request.topics {
         let topic = &topic_request.name;
         trace!("handling produce request for topic{}", topic);
 
@@ -36,7 +36,7 @@ pub async fn handle_produce_request(
             ..Default::default()
         };
 
-        for partition_request in topic_request.partitions {
+        for partition_request in &mut topic_request.partitions {
             let rep_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
 
             trace!("handling produce request for replia: {}", rep_id);
@@ -48,7 +48,7 @@ pub async fn handle_produce_request(
 
             match ctx
                 .leaders_state()
-                .send_records(&rep_id, partition_request.records, true)
+                .write_record_set(&rep_id, &mut partition_request.records, true)
                 .await
             {
                 Ok(found_flag) => {

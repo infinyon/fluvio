@@ -1613,7 +1613,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-runner-local"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "fluvio-future",
  "fluvio-sc",
@@ -1723,7 +1723,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-io",
@@ -1775,7 +1775,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-storage"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-channel",
  "async-mutex",

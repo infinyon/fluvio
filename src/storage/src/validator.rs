@@ -189,9 +189,9 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(SUCCESS_BASE_OFFSET, &options).await?;
 
-        msg_sink.send(create_batch(SUCCESS_BASE_OFFSET, 2)).await?;
+        msg_sink.write_batch(&mut create_batch(SUCCESS_BASE_OFFSET, 2)).await?;
         msg_sink
-            .send(create_batch(SUCCESS_BASE_OFFSET + 2, 3))
+            .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET + 2, 3))
             .await?;
 
         let next_offset = validate(&test_file).await?;
@@ -215,8 +215,8 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(401, &options).await?;
 
-        msg_sink.send(create_batch(401, 0)).await?;
-        msg_sink.send(create_batch(111, 1)).await?;
+        msg_sink.write_batch(&mut create_batch(401, 0)).await?;
+        msg_sink.write_batch(&mut create_batch(111, 1)).await?;
 
         //   assert!(validate(&test_file).await.is_err());
 
@@ -240,7 +240,7 @@ mod tests {
             .await
             .expect("record created");
         msg_sink
-            .send(create_batch(501, 2))
+            .write_batch(&mut create_batch(501, 2))
             .await
             .expect("create batch");
 

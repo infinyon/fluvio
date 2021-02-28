@@ -86,7 +86,7 @@ mod tests {
             .await
             .expect("create sink");
 
-        msg_sink.send(create_batch()).await.expect("send batch");
+        msg_sink.write_batch(&mut create_batch()).await.expect("send batch");
 
         let mut file = file_util::open(&test_file).await.expect("open test file");
 
@@ -117,8 +117,8 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(201, &options).await?;
 
-        msg_sink.send(create_batch()).await?;
-        msg_sink.send(create_batch_with_producer(25, 2)).await?;
+        msg_sink.write_batch(&mut create_batch()).await?;
+        msg_sink.write_batch(&mut create_batch_with_producer(25, 2)).await?;
 
         let file = file_util::open(&test_file).await?;
 

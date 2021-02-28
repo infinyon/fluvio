@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-spu"
 edition = "2018"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["fluvio.io"]
 description = "Fluvio Stream Processing Unit"
 repository = "https://github.com/infinyon/fluvio"
@@ -41,7 +41,7 @@ wasmtime = "0.23.0"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
-fluvio-storage = { version = "0.3.0", path = "../storage" }
+fluvio-storage = { version = "0.4.0", path = "../storage" }
 fluvio-controlplane = { version = "0.6.0", path = "../controlplane" }
 fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata" }
 fluvio-spu-schema = { version = "0.4.0", path = "../spu-schema" }

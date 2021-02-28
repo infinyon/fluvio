@@ -315,7 +315,8 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
-    pub async fn send(&mut self, mut item: DefaultBatch) -> Result<(), StorageError> {
+
+    pub async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
         let pos = self.get_log_pos();
@@ -338,22 +339,23 @@ impl Segment<MutLogIndex, MutFileRecords> {
             compute_batch_record_size(&item)
         );
 
-        match self.msg_log.send(item).await {
-            Ok(_) => {
-                let batch_len = self.msg_log.get_pos();
+        if self.msg_log.write_batch(item).await? {
+            
+            let batch_len = self.msg_log.get_pos();
 
-                self.index
-                    .send((batch_offset_delta as u32, pos, batch_len))
-                    .await?;
+            self.index
+                .send((batch_offset_delta as u32, pos, batch_len))
+                .await?;
 
-                let last_offset_delta = self.msg_log.get_item_last_offset_delta();
-                trace!("flushing: last offset delta: {}", last_offset_delta);
-                self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
-                debug!(end_offset = self.end_offset, "updated leo");
-                Ok(())
-            }
-            Err(err) => Err(err),
+            let last_offset_delta = self.msg_log.get_item_last_offset_delta();
+            trace!("flushing: last offset delta: {}", last_offset_delta);
+            self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
+            debug!(end_offset = self.end_offset, "updated leo");
+            Ok(true)
+        } else {
+            Ok(false)
         }
+        
     }
 
     #[allow(unused)]
@@ -424,7 +426,7 @@ mod tests {
 
         // batch of 1
         active_segment
-            .send(create_batch_with_producer(100, 1))
+            .write_batch(&mut create_batch_with_producer(100, 1))
             .await
             .expect("write");
         assert_eq!(active_segment.get_end_offset(), 21);
@@ -469,7 +471,7 @@ mod tests {
         let mut active_segment = MutableSegment::create(base_offset, &option).await?;
 
         active_segment
-            .send(create_batch_with_producer(100, 4))
+            .write_batch(&mut create_batch_with_producer(100, 4))
             .await?;
 
         // each record contains 9 bytes
@@ -509,9 +511,9 @@ mod tests {
         let option = default_option(test_dir.clone(), 50);
 
         let mut seg_sink = MutableSegment::create(base_offset, &option).await?;
-        seg_sink.send(create_batch()).await?;
-        seg_sink.send(create_batch()).await?;
-        seg_sink.send(create_batch()).await?;
+        seg_sink.write_batch(&mut create_batch()).await?;
+        seg_sink.write_batch(&mut create_batch()).await?;
+        seg_sink.write_batch(&mut create_batch()).await?;
 
         assert_eq!(seg_sink.get_end_offset(), 46);
 
@@ -549,11 +551,11 @@ mod tests {
         // test whether you can send batch with non zero base offset
         let mut next_batch = create_batch();
         next_batch.base_offset = 46;
-        assert!(seg_sink.send(next_batch).await.is_ok());
+        assert!(seg_sink.write_batch(&mut next_batch).await.is_ok());
 
         let mut fail_batch = create_batch();
         fail_batch.base_offset = 45;
-        assert!(seg_sink.send(fail_batch).await.is_err());
+        assert!(seg_sink.write_batch(&mut fail_batch).await.is_err());
 
         Ok(())
     }

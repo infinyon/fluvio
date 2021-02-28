@@ -170,9 +170,9 @@ impl FileReplica {
     }
 
     /// write records to this replica, update high watermark if required
-    pub async fn send_records(
+    pub async fn write_recordset(
         &mut self,
-        records: RecordSet,
+        records: &mut RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
         let max_batch_size = self.option.max_batch_size as usize;
@@ -183,8 +183,8 @@ impl FileReplica {
             }
         }
 
-        for batch in records.batches {
-            self.send(batch).await?;
+        for mut batch in &mut records.batches {
+            self.write_batch(&mut batch).await?;
         }
 
         if update_highwatermark {
@@ -311,22 +311,18 @@ impl FileReplica {
         }
     }
 
-    async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
+    async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {
         trace!("start_send");
-        if let Err(err) = self.active_segment.send(item).await {
-            match err {
-                StorageError::NoRoom(item) => {
-                    debug!("segment has no room, rolling over previous segment");
-                    self.active_segment.roll_over().await?;
-                    let last_offset = self.active_segment.get_end_offset();
-                    let new_segment = MutableSegment::create(last_offset, &self.option).await?;
-                    let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
-                    let old_segment = old_mut_segment.as_segment().await?;
-                    self.prev_segments.add_segment(old_segment);
-                    self.active_segment.send(item).await?;
-                }
-                _ => return Err(err),
-            }
+        if !(self.active_segment.write_batch(item).await?) {
+           
+            debug!("segment has no room, rolling over previous segment");
+            self.active_segment.roll_over().await?;
+            let last_offset = self.active_segment.get_end_offset();
+            let new_segment = MutableSegment::create(last_offset, &self.option).await?;
+            let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
+            let old_segment = old_mut_segment.as_segment().await?;
+            self.prev_segments.add_segment(old_segment);
+            self.active_segment.write_batch(item).await?;
         }
         Ok(())
     }
@@ -404,7 +400,7 @@ mod tests {
         assert_eq!(replica.get_leo(), START_OFFSET);
         assert_eq!(replica.get_hw(), START_OFFSET);
 
-        replica.send(create_batch()).await.expect("send");
+        replica.write_batch(&mut create_batch()).await.expect("send");
         assert_eq!(replica.get_leo(), START_OFFSET + 2); // 2 batches
         assert_eq!(replica.get_hw(), START_OFFSET); // hw should not change since we have not committed them
 
@@ -458,10 +454,10 @@ mod tests {
         assert_eq!(empty_response.error_code, ErrorCode::None);
 
         // write batches
-        let batch = create_batch();
+        let mut batch = create_batch();
         let batch_len = batch.write_size(0);
         debug!("batch len: {}", batch_len);
-        replica.send(batch).await.expect("write");
+        replica.write_batch(&mut batch).await.expect("write");
 
         assert_eq!(replica.get_leo(), 2); // 2
         assert_eq!(replica.get_hw(), 0);
@@ -476,9 +472,9 @@ mod tests {
         replica.update_high_watermark(2).await?; // first batch
         assert_eq!(replica.get_hw(), 2);
 
-        let batch = create_batch();
+        let mut batch = create_batch();
         let batch_len = batch.write_size(0);
-        replica.send(batch).await?;
+        replica.write_batch(&mut batch).await?;
 
         let mut partition_response = FilePartitionResponse::default();
         replica
@@ -487,7 +483,7 @@ mod tests {
         debug!("partiton response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
 
-        replica.send(create_batch()).await?;
+        replica.write_batch(&mut create_batch()).await?;
         let mut partition_response = FilePartitionResponse::default();
         replica
             .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
@@ -512,8 +508,8 @@ mod tests {
         let mut rep_sink = FileReplica::create("test", 0, START_OFFSET, &option)
             .await
             .expect("test replica");
-        rep_sink.send(create_batch()).await?;
-        rep_sink.send(create_batch()).await?;
+        rep_sink.write_batch(&mut create_batch()).await?;
+        rep_sink.write_batch(&mut create_batch()).await?;
         drop(rep_sink);
 
         // open replica
@@ -539,13 +535,13 @@ mod tests {
 
         // first batch
         debug!(">>>> sending first batch");
-        let batches = create_batch();
-        replica.send(batches).await?;
+        let mut batches = create_batch();
+        replica.write_batch(&mut batches).await?;
 
         // second batch
         debug!(">>>> sending second batch. this should rollover");
-        let batches = create_batch();
-        replica.send(batches).await?;
+        let mut batches = create_batch();
+        replica.write_batch(&mut batches).await?;
         debug!("finish sending next batch");
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
@@ -581,9 +577,9 @@ mod tests {
             .await
             .expect("test replica");
 
-        let records = RecordSet::default().add(create_batch());
+        let mut records = RecordSet::default().add(create_batch());
 
-        replica.send_records(records, true).await?;
+        replica.write_recordset(&mut records, true).await?;
 
         // record contains 2 batch
         assert_eq!(replica.get_hw(), 2);
@@ -610,9 +606,9 @@ mod tests {
             .await
             .expect("test replica");
 
-        let batch = create_batch();
+        let mut batch = create_batch();
         let batch_len = batch.write_size(0);
-        replica.send(batch).await.expect("writing records");
+        replica.write_batch(&mut batch).await.expect("writing records");
 
         let mut partition_response = FilePartitionResponse::default();
         replica
@@ -640,8 +636,8 @@ mod tests {
         assert_eq!(partition_response.records.len(), batch_len);
 
         // write 1 more batch
-        let batch = create_batch();
-        replica.send(batch).await.expect("writing 2nd batch");
+        let mut batch = create_batch();
+        replica.write_batch(&mut batch).await.expect("writing 2nd batch");
         debug!(
             "2nd batch: replica end: {} high: {}",
             replica.get_leo(),
@@ -688,21 +684,21 @@ mod tests {
             .await
             .expect("test replica");
 
-        let small_batch = BatchProducer::builder().build().expect("batch").records();
+        let mut small_batch = BatchProducer::builder().build().expect("batch").records();
         assert!(small_batch.write_size(0) < 100); // ensure we are writing less than 100 bytes
         replica
-            .send_records(small_batch, false)
+            .write_recordset(&mut small_batch, false)
             .await
             .expect("writing records");
 
-        let larget_batch = BatchProducer::builder()
+        let mut larget_batch = BatchProducer::builder()
             .per_record_bytes(200)
             .build()
             .expect("batch")
             .records();
         assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
         assert!(matches!(
-            replica.send_records(larget_batch, false).await.unwrap_err(),
+            replica.write_recordset(&mut larget_batch, false).await.unwrap_err(),
             StorageError::BatchTooBig(_)
         ));
 

@@ -148,7 +148,9 @@ impl MutFileRecords {
         self.item_last_offset_delta
     }
 
-    pub async fn send(&mut self, item: DefaultBatch) -> Result<(), StorageError> {
+    /// try to write batch
+    /// if there is enough room, return true, false otherwise 
+    pub async fn write_batch(&mut self, item: &DefaultBatch) -> Result<bool, StorageError> {
         trace!("start sending using batch {:#?}", item.get_header());
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
@@ -177,9 +179,9 @@ impl MutFileRecords {
                 }
             }
 
-            Ok(())
+            Ok(true)
         } else {
-            Err(StorageError::NoRoom(item))
+            Ok(false)
         }
     }
 
@@ -402,7 +404,7 @@ mod tests {
         let batch = create_batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink.send(create_batch()).await.expect("create");
+        msg_sink.write_batch(&mut create_batch()).await.expect("create");
 
         debug!("read start");
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
@@ -419,7 +421,7 @@ mod tests {
         assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         debug!("write 2");
-        msg_sink.send(create_batch()).await?;
+        msg_sink.write_batch(&mut create_batch()).await?;
 
         let bytes = read_bytes_from_file(&test_file)?;
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
@@ -453,7 +455,7 @@ mod tests {
         let batch = create_batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink.send(create_batch()).await.expect("create");
+        msg_sink.write_batch(&mut create_batch()).await.expect("create");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
@@ -471,14 +473,14 @@ mod tests {
 
         // check flush counts don't increment yet
         let flush_count = msg_sink.flush_count();
-        msg_sink.send(create_batch()).await.expect("send");
+        msg_sink.write_batch(&mut create_batch()).await.expect("send");
         for _ in 1..(NUM_WRITES - 2) {
-            msg_sink.send(create_batch()).await.expect("send");
+            msg_sink.write_batch(&mut create_batch()).await.expect("send");
             assert_eq!(flush_count, msg_sink.flush_count());
         }
 
         // flush count should increment after final write
-        msg_sink.send(create_batch()).await.expect("send");
+        msg_sink.write_batch(&mut create_batch()).await.expect("send");
         assert_eq!(flush_count + 1, msg_sink.flush_count());
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
@@ -525,7 +527,7 @@ mod tests {
         let batch = create_batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink.send(create_batch()).await.expect("create");
+        msg_sink.write_batch(&mut create_batch()).await.expect("create");
 
         debug!("direct flush");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
@@ -547,7 +549,7 @@ mod tests {
         // check flush counts don't increment immediately
         let flush_count = msg_sink.flush_count();
         // debug!("flush_count: {} {:?}", flush_count, Instant::now());
-        msg_sink.send(create_batch()).await.expect("send");
+        msg_sink.write_batch(&mut create_batch()).await.expect("send");
         // debug!("flush_count: {}", flush_count);
         assert_eq!(flush_count, msg_sink.flush_count());
 
@@ -565,9 +567,9 @@ mod tests {
         debug!("check multi write delayed flush: wait for flush");
         let flush_count = msg_sink.flush_count();
 
-        msg_sink.send(create_batch()).await.expect("send");
+        msg_sink.write_batch(&mut create_batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
-        msg_sink.send(create_batch()).await.expect("send");
+        msg_sink.write_batch(&mut create_batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
 
         let dur = Duration::from_millis((IDLE_FLUSH + 100).into());

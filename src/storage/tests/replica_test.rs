@@ -68,11 +68,11 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
         .await
         .expect("test replica");
     replica
-        .send_records(create_records(2), false)
+        .write_recordset(&mut create_records(2), false)
         .await
         .expect("first batch");
     replica
-        .send_records(create_records(2), false)
+        .write_recordset(&mut create_records(2), false)
         .await
         .expect("second batch");
 
