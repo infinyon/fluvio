@@ -1,0 +1,30 @@
+
+pub struct Foo {
+    pub data: i32
+}
+
+impl Foo {
+    fn new(val: i32) -> Foo {
+        Foo{data: val}
+    }
+
+    fn f(&self, a: i32, b: i32) -> i32 {
+        self.data + a + b
+    }
+
+    fn set_field(&mut self, v: i32) {
+        self.data = v;
+    }
+    fn as_string(&self) -> String {
+        format!("FOO: {:?}", self.data)
+    }
+}
+
+foreign_class!(class Foo {
+    self_type Foo;
+    constructor Foo::new(_: i32) -> Foo;
+    fn Foo::set_field(&mut self, _: i32);
+    fn Foo::f(&self, _: i32, _: i32) -> i32;
+    fn Foo::as_string(&self) -> String;
+    //fn f2(_: i32) -> i32;
+});

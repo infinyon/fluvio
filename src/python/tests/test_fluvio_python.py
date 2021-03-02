@@ -1,4 +1,4 @@
-from namespace_package import rust, python
+from fluvio import Foo, python
 import unittest
 
 class TestPythonMethods(unittest.TestCase):
@@ -7,4 +7,6 @@ class TestPythonMethods(unittest.TestCase):
 
 class TestRustMethods(unittest.TestCase):
     def test_main(self):
-        self.assertTrue(rust.rust_func() == 14)
+        foo = Foo(10)
+        print(foo.as_string())
+        self.assertTrue(foo.as_string() == "FOO: 10")

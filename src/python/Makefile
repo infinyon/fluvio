@@ -16,7 +16,7 @@ build-dev: venv-pip
 	$(PYTHON) setup.py develop
 
 test: build-dev
-	$(PYTHON) -m unittest
+	$(PYTHON) setup.py test
 
 clean:
-	rm -r target build dist venv
+	rm -r venv fluvio/fluvio_rust.*.so
