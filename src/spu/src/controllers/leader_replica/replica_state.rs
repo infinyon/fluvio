@@ -168,7 +168,7 @@ impl<S> LeaderReplicaState<S>
 
     /// write new record set and wait for new offsets
     pub async fn write_record_set(
-        &mut self,
+        &self,
         records: RecordSet,
     ) -> Result<(),InternalServerError> {
 

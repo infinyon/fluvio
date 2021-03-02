@@ -44,7 +44,7 @@ pub async fn handle_produce_request(
                 ..Default::default()
             };
 
-            if let Some(mut leader_state) = ctx
+            if let Some(leader_state) = ctx
             .leaders_state()
             .get_mut(&rep_id) {
 

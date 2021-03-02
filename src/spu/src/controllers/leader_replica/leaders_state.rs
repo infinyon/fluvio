@@ -1,5 +1,5 @@
 use std::{sync::Arc};
-use std::ops::{Deref,DerefMut};
+use std::ops::{Deref};
 
 
 use dashmap::DashMap;
@@ -28,12 +28,6 @@ impl<S> Deref for ReplicaLeadersState<S> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-impl<S> DerefMut for ReplicaLeadersState<S>{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 

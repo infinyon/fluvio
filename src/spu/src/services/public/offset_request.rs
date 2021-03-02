@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 
+use fluvio_storage::ReplicaStorage;
 use tracing::trace;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
@@ -37,7 +38,7 @@ pub async fn handle_offset_request(
                 ..Default::default()
             };
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
-            if let Some(replica) = ctx.leaders_state().get_replica(&rep_id) {
+            if let Some(replica) = ctx.leaders_state().get(&rep_id) {
                 trace!("offset fetch request for replica found: {}", rep_id);
                 let storage = replica.storage();
                 partition_response.error_code = ErrorCode::None;
