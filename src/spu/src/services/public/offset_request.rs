@@ -40,7 +40,8 @@ pub async fn handle_offset_request(
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
             if let Some(replica) = ctx.leaders_state().get(&rep_id) {
                 trace!("offset fetch request for replica found: {}", rep_id);
-                let storage = replica.storage();
+                let reader = replica.read().await;
+                let storage = reader.storage();
                 partition_response.error_code = ErrorCode::None;
                 partition_response.start_offset = storage.get_log_start_offset();
                 partition_response.last_stable_offset = storage.get_hw();

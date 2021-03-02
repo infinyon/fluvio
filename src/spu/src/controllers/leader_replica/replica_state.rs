@@ -28,7 +28,7 @@ use crate::controllers::follower_replica::{
 
 use super::LeaderReplicaControllerCommand;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct SharedLeaderState<S> {
     state: Arc<RwLock<LeaderReplicaState<S>>>,
     leo_event: Arc<OffsetPublisher>,

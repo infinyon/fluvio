@@ -19,7 +19,7 @@ use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetc
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::controllers::leader_replica::LeaderReplicaState;
+use crate::controllers::leader_replica::{SharedLeaderState};
 use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
@@ -32,6 +32,7 @@ pub struct StreamFetchHandler<S> {
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
     offset_listener: OffsetChangeListener,
+    leader_state: SharedLeaderState<S>,
     stream_id: u32,
 }
 
@@ -48,6 +49,7 @@ where
         end_event: Arc<SimpleEvent>,
         offset_listener: OffsetChangeListener,
         stream_id: u32,
+        leader_state: SharedLeaderState<S>
     ) {
         // first get receiver to offset update channel to we don't missed events
 
@@ -76,6 +78,7 @@ where
             end_event,
             offset_listener,
             stream_id,
+            leader_state
         };
 
         spawn(async move { handler.process(current_offset).await });
@@ -257,9 +260,7 @@ where
             ..Default::default()
         };
 
-        if let Some((hw, leo)) = self
-            .ctx
-            .leaders_state()
+        self.leader_state
             .read_records(
                 &self.replica,
                 offset,
@@ -267,56 +268,47 @@ where
                 self.isolation.clone(),
                 &mut partition_response,
             )
-            .await
-        {
-            let response = StreamFetchResponse {
-                topic: self.replica.topic.clone(),
-                stream_id: self.stream_id,
-                partition: partition_response,
-            };
+            .await;
+        
+        let response = StreamFetchResponse {
+            topic: self.replica.topic.clone(),
+            stream_id: self.stream_id,
+            partition: partition_response,
+        };
 
-            debug!(
-                stream_id = response.stream_id,
-                len = response.partition.records.len(),
-                offset,
-                hw,
-                leo,
-                "start back stream response",
-            );
+        debug!(
+            stream_id = response.stream_id,
+            len = response.partition.records.len(),
+            offset,
+            hw,
+            leo,
+            "start back stream response",
+        );
 
-            let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
-                &self.header,
-                response,
-            );
+        let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
+            &self.header,
+            response,
+        );
 
-            trace!("sending back file fetch response msg: {:#?}", response_msg);
+        trace!("sending back file fetch response msg: {:#?}", response_msg);
 
-            let mut inner_sink = self.sink.lock().await;
-            inner_sink
-                .encode_file_slices(&response_msg, self.header.api_version())
-                .await?;
+        let mut inner_sink = self.sink.lock().await;
+        inner_sink
+            .encode_file_slices(&response_msg, self.header.api_version())
+            .await?;
 
-            drop(inner_sink);
+        drop(inner_sink);
 
-            debug!("finish sending stream response");
+        debug!("finish sending stream response");
 
-            // get next offset
-            let next_offset = match self.isolation {
-                Isolation::ReadCommitted => hw,
-                Isolation::ReadUncommitted => leo,
-            };
+        // get next offset
+        let next_offset = match self.isolation {
+            Isolation::ReadCommitted => hw,
+            Isolation::ReadUncommitted => leo,
+        };
 
-            Ok(Some(next_offset))
-        } else {
-            debug!(
-                "conn: {} unable to retrieve records from replica: {}, from: {}",
-                self.sink.id(),
-                self.replica,
-                offset
-            );
-            // in this case, partition is not founded
-            Ok(None)
-        }
+        Ok(Some(next_offset))
+       
     }
 }
 

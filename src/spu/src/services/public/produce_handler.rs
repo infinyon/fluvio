@@ -12,7 +12,6 @@ use dataplane::api::ResponseMessage;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::InternalServerError;
 
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
