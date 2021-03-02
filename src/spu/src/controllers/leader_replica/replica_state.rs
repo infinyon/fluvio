@@ -1,31 +1,126 @@
 use std::{collections::BTreeMap, sync::Arc};
 use std::fmt;
+use std::ops::{Deref};
 
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
 use tracing::warn;
-use async_channel::Sender;
 use event_listener::Event;
+use async_rwlock::{RwLock,RwLockReadGuard,RwLockWriteGuard};
 
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
-use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_controlplane_metadata::partition::{ReplicaKey,Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, config::ConfigOption, StorageError};
+use fluvio_storage::{FileReplica, config::ConfigOption, StorageError,OffsetUpdate,SlicePartitionResponse,ReplicaStorage};
 use fluvio_types::SpuId;
-use fluvio_storage::SlicePartitionResponse;
-use fluvio_storage::ReplicaStorage;
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{controllers::sc::SharedSinkMessageChannel, error::InternalServerError};
+use crate::{controllers::sc::SharedSinkMessageChannel};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
+
+#[derive(Debug)]
+pub struct SharedLeaderState<S> {
+    state: Arc<RwLock<LeaderReplicaState<S>>>,
+    leo_event: Arc<OffsetPublisher>,
+    hw_event: Arc<OffsetPublisher>
+}
+
+impl<S> Deref for SharedLeaderState<S> {
+    type Target = Arc<RwLock<LeaderReplicaState<S>>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl <S> SharedLeaderState<S>
+    where S: ReplicaStorage
+ {
+
+    fn new(state: LeaderReplicaState<S>) -> Self {
+        let storage = state.storage();
+        let leo_event = Arc::new(OffsetPublisher::new(storage.get_hw()));
+        let hw_event = Arc::new(OffsetPublisher::new(storage.get_leo()));
+        Self {
+           state: Arc::new(RwLock::new(state)),
+           leo_event,
+           hw_event
+        }
+    }
+
+    
+    #[inline(always)]
+    pub async fn read(&self) -> RwLockReadGuard<'_,LeaderReplicaState<S>> {
+        self.state.read().await
+    }
+    
+
+    #[inline(always)]
+    pub async fn write(&self) -> RwLockWriteGuard<'_,LeaderReplicaState<S>> {
+        self.state.write().await
+    }
+
+}
+
+impl SharedLeaderState<FileReplica> {
+
+    /// read records into partition response
+    /// return hw and leo
+    pub async fn read_records<P>(
+        &self,
+        offset: Offset,
+        max_len: u32,
+        isolation: Isolation,
+        partition_response: &mut P,
+    ) -> (Offset, Offset)
+    where
+        P: SlicePartitionResponse,
+    {
+        let reader = self.read().await;
+        match isolation {
+            Isolation::ReadCommitted => {
+                reader.storage()
+                    .read_committed_records(offset, max_len, partition_response)
+                    .await;
+            }
+            Isolation::ReadUncommitted => {
+                reader.storage()
+                    .read_records(offset, None, max_len, partition_response)
+                    .await;
+            }
+        }
+        (reader.hw(), reader.leo())
+    }
+
+    /// write new record set and update shared offsets
+    pub async fn write_record_set(
+        &self,
+        records: &mut RecordSet,
+    ) -> Result<(),StorageError> {
+
+        let mut writer = self.write().await;
+        let offset_updates = writer.mut_storage()
+                .write_recordset(records)
+                .await?;
+
+        match offset_updates {
+            OffsetUpdate::Leo(offset) => self.leo_event.update(offset),
+            OffsetUpdate::LeoHw(offset) => self.hw_event.update(offset)
+        }
+
+        Ok(())
+        
+    }
+
+}
+
 
 pub type FileLeaderReplicateState = LeaderReplicaState<FileReplica>;
 
@@ -85,10 +180,7 @@ pub struct RecordSetWrite {
 pub struct LeaderReplicaState<S> {
     replica_id: ReplicaKey,
     leader_id: SpuId,
-    hw: OffsetPublisher,
-    leo: OffsetPublisher,
     followers: BTreeMap<SpuId, FollowerReplicaInfo>,
-    write_senders: Sender<RecordSetWrite>,
     storage: S,
 }
 
@@ -106,8 +198,7 @@ impl<S> LeaderReplicaState<S>
         replica_id: R, 
         leader_id: SpuId, 
         storage: S, 
-        follower_ids: Vec<SpuId>,
-        write_senders: Sender<RecordSetWrite>) -> Self
+        follower_ids: Vec<SpuId>) -> Self
     where
         R: Into<ReplicaKey>,
     {
@@ -121,7 +212,6 @@ impl<S> LeaderReplicaState<S>
             storage,
             hw,
             leo,
-            write_senders
         };
         state.add_follower_replica(follower_ids);
         state
@@ -168,23 +258,7 @@ impl<S> LeaderReplicaState<S>
         }
     }
 
-    /// write new record set and wait for new offsets
-    pub async fn write_record_set(
-        &self,
-        records: RecordSet,
-    ) -> Result<(),InternalServerError> {
-
-        let event = Arc::new(Event::new());
-        let status = RecordSetWrite {
-            records,
-            event: event.clone()
-        };
-
-        let wait = event.listen();
-        self.write_senders.send(status).await;
-        wait.wait();
-        Ok(())
-    }
+    
 }
 
 impl<S> LeaderReplicaState<S>
@@ -312,7 +386,6 @@ impl LeaderReplicaState<FileReplica> {
     pub async fn create_file_replica(
         leader: Replica,
         config: &ConfigOption,
-        write_senders: Sender<RecordSetWrite>
     ) -> Result<Self, StorageError> {
         trace!(
             "creating new leader replica state: {:#?} using file replica",
@@ -325,9 +398,7 @@ impl LeaderReplicaState<FileReplica> {
             leader.id,
             leader.leader,
             storage,
-            leader.replicas,
-            write_senders
-
+            leader.replicas
         ))
     }
 
@@ -398,33 +469,7 @@ impl LeaderReplicaState<FileReplica> {
         }
     }
 
-    /// read records into partition response
-    /// return hw and leo
-    pub async fn read_records<P>(
-        &self,
-        offset: Offset,
-        max_len: u32,
-        isolation: Isolation,
-        partition_response: &mut P,
-    ) -> (Offset, Offset)
-    where
-        P: SlicePartitionResponse,
-    {
-        match isolation {
-            Isolation::ReadCommitted => {
-                self.storage
-                    .read_committed_records(offset, max_len, partition_response)
-                    .await;
-            }
-            Isolation::ReadUncommitted => {
-                self.storage
-                    .read_records(offset, None, max_len, partition_response)
-                    .await;
-            }
-        }
-
-        (self.hw(), self.leo())
-    }
+    
 
     pub async fn write_recordset(
         &mut self,

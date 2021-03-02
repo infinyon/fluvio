@@ -21,6 +21,7 @@ pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub use crate::segment::SegmentSlice;
+pub use crate::replica::OffsetUpdate;
 
 use dataplane::{ErrorCode, Offset};
 use dataplane::fetch::FilePartitionResponse;

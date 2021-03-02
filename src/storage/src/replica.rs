@@ -20,6 +20,11 @@ use crate::StorageError;
 use crate::SlicePartitionResponse;
 use crate::ReplicaStorage;
 
+pub enum OffsetUpdate {
+    Leo(Offset),            // only leo has been update
+    LeoHw(Offset)           // both Leo and Hw has been updated
+}
+
 /// Replica is public abstraction for commit log which are distributed.
 /// Internally it is stored as list of segments.  Each segment contains finite sets of record batches.
 ///
@@ -120,27 +125,28 @@ impl FileReplica {
     }
 
     /// update committed offset (high watermark)
-    pub async fn update_high_watermark(&mut self, offset: Offset) -> Result<(), IoError> {
+    pub async fn update_high_watermark(&mut self, offset: Offset) -> Result<OffsetUpdate, IoError> {
         let old_offset = self.get_hw();
         if old_offset == offset {
             trace!(
                 "new high watermark: {} is same as existing one, skipping",
                 offset
             );
-            Ok(())
+            Ok(OffsetUpdate::Leo(offset))
         } else {
             trace!(
                 "updating to new high watermark: {} old: {}",
                 old_offset,
                 offset
             );
-            self.commit_checkpoint.write(offset).await
+            self.commit_checkpoint.write(offset).await?;
+            Ok(OffsetUpdate::LeoHw(offset))
         }
     }
 
     /// update high watermark to end
-    pub async fn update_high_watermark_to_end(&mut self) -> Result<(), IoError> {
-        self.update_high_watermark(self.get_leo()).await
+    pub async fn update_high_watermark_to_end(&mut self) -> Result<OffsetUpdate, StorageError> {
+        self.update_high_watermark(self.get_leo()).await.map_err(|err| err.into())
     }
 
     /// earliest offset
@@ -173,7 +179,7 @@ impl FileReplica {
     pub async fn write_recordset(
         &mut self,
         records: &mut RecordSet,
-    ) -> Result<(), StorageError> {
+    ) -> Result<OffsetUpdate, StorageError> {
         let max_batch_size = self.option.max_batch_size as usize;
         // check if any of the records's batch exceed max length
         for batch in &records.batches {
@@ -186,10 +192,8 @@ impl FileReplica {
             self.write_batch(&mut batch).await?;
         }
 
-        self.update_high_watermark_to_end().await?;
+        self.update_high_watermark_to_end().await
         
-
-        Ok(())
     }
 
     /// read all uncommitted records

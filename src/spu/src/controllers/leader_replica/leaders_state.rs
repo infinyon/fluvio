@@ -7,14 +7,14 @@ use dashmap::DashMap;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 
-use super::replica_state::LeaderReplicaState;
+use super::replica_state::SharedLeaderState;
 
 
-pub type SharedReplicaLeadersState<S> = Arc<ReplicaLeadersState<S>>;
+pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
 /// Collection of replicas
 #[derive(Debug)]
-pub struct ReplicaLeadersState<S>(DashMap<ReplicaKey, Arc<LeaderReplicaState<S>>>);
+pub struct ReplicaLeadersState<S>(DashMap<ReplicaKey, SharedLeaderState<S>>);
 
 impl<S> Default for ReplicaLeadersState<S> {
     fn default() -> Self {
@@ -22,9 +22,15 @@ impl<S> Default for ReplicaLeadersState<S> {
     }
 }
 
+impl <S> Clone for ReplicaLeadersState<S> where SharedLeaderState<S>: Clone {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
 
 impl<S> Deref for ReplicaLeadersState<S> {
-    type Target = DashMap<ReplicaKey, Arc<LeaderReplicaState<S>>>;
+    type Target = DashMap<ReplicaKey, SharedLeaderState<S>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

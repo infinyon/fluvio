@@ -1,7 +1,7 @@
 use std::io::Error;
 
 use fluvio_storage::StorageError;
-use tracing::{ debug, trace,error };
+use tracing::{debug, trace, error};
 
 use dataplane::ErrorCode;
 use dataplane::produce::{
@@ -34,7 +34,7 @@ pub async fn handle_produce_request(
             ..Default::default()
         };
 
-        for partition_request in topic_request.partitions.into_iter() {
+        for mut partition_request in topic_request.partitions.into_iter() {
             let rep_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
 
             trace!("handling produce request for replia: {}", rep_id);
@@ -44,32 +44,26 @@ pub async fn handle_produce_request(
                 ..Default::default()
             };
 
-            if let Some(leader_state) = ctx
-            .leaders_state()
-            .get_mut(&rep_id) {
-
+            if let Some(leader_state) = ctx.leaders_state().get(&rep_id) {
                 match leader_state
-                    .write_record_set(partition_request.records)
+                    .write_record_set(&mut partition_request.records)
                     .await
-                    {
-                        Ok(_) => {
-                            partition_response.error_code = ErrorCode::None;
-                        }
-                        Err(err) => {
-                            error!("error: {:#?} writing to replica: {}", err, rep_id);
-                            match err {
-                                InternalServerError::StorageError(storage_err)
-                                    if matches!(storage_err, StorageError::BatchTooBig(_)) =>
-                                {
-                                    partition_response.error_code = ErrorCode::MessageTooLarge
-                                }
-                                _ => {
-                                    partition_response.error_code = ErrorCode::StorageError;
-                                }
+                {
+                    Ok(_) => {
+                        partition_response.error_code = ErrorCode::None;
+                    }
+                    Err(err) => {
+                        error!("error: {:#?} writing to replica: {}", err, rep_id);
+                        match err {
+                            StorageError::BatchTooBig(_) => {
+                                partition_response.error_code = ErrorCode::MessageTooLarge
+                            }
+                            _ => {
+                                partition_response.error_code = ErrorCode::StorageError;
                             }
                         }
                     }
-            
+                }
             } else {
                 debug!(%rep_id,"no replica found");
                 partition_response.error_code = ErrorCode::NotLeaderForPartition;

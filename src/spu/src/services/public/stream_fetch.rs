@@ -25,7 +25,6 @@ use publishers::INIT_OFFSET;
 /// Fetch records as stream
 pub struct StreamFetchHandler<S> {
     ctx: DefaultSharedGlobalContext,
-    leader: Arc<FileLeaderReplicateState>,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
