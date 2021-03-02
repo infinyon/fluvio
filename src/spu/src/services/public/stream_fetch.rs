@@ -19,11 +19,13 @@ use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetc
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::controllers::leader_replica::LeaderReplicaState;
 use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler<S> {
     ctx: DefaultSharedGlobalContext,
+    leader: Arc<FileLeaderReplicateState>,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,

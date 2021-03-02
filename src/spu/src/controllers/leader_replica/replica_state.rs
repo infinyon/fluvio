@@ -27,6 +27,8 @@ use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
 
+pub type FileLeaderReplicateState = LeaderReplicaState<FileReplica>;
+
 use super::FollowerOffsetUpdate;
 
 #[derive(Debug, Clone, PartialEq)]
