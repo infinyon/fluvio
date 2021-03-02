@@ -173,7 +173,6 @@ impl FileReplica {
     pub async fn write_recordset(
         &mut self,
         records: &mut RecordSet,
-        update_highwatermark: bool,
     ) -> Result<(), StorageError> {
         let max_batch_size = self.option.max_batch_size as usize;
         // check if any of the records's batch exceed max length
@@ -187,9 +186,8 @@ impl FileReplica {
             self.write_batch(&mut batch).await?;
         }
 
-        if update_highwatermark {
-            self.update_high_watermark_to_end().await?;
-        }
+        self.update_high_watermark_to_end().await?;
+        
 
         Ok(())
     }

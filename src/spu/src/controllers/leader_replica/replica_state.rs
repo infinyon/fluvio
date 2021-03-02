@@ -1,16 +1,17 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 use std::fmt;
 
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
 use tracing::warn;
+use async_channel::Sender;
+use event_listener::Event;
 
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
-
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_controlplane::LrsRequest;
@@ -18,8 +19,9 @@ use fluvio_storage::{FileReplica, config::ConfigOption, StorageError};
 use fluvio_types::SpuId;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_storage::ReplicaStorage;
+use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::controllers::sc::SharedSinkMessageChannel;
+use crate::{controllers::sc::SharedSinkMessageChannel, error::InternalServerError};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
@@ -69,12 +71,22 @@ impl From<(Offset, Offset)> for FollowerReplicaInfo {
     }
 }
 
+/// RecordSet to write with event callback
+pub struct RecordSetWrite {
+    pub records: RecordSet,
+    pub event: Arc<Event>
+
+}
+
 /// Maintain state for Leader replica
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     replica_id: ReplicaKey,
     leader_id: SpuId,
+    hw: OffsetPublisher,
+    leo: OffsetPublisher,
     followers: BTreeMap<SpuId, FollowerReplicaInfo>,
+    write_senders: Sender<RecordSetWrite>,
     storage: S,
 }
 
@@ -84,17 +96,30 @@ impl<S> fmt::Display for LeaderReplicaState<S> {
     }
 }
 
-impl<S> LeaderReplicaState<S> {
+impl<S> LeaderReplicaState<S> 
+    where S: ReplicaStorage,
+{
     /// create new, followers_id contains leader id
-    pub fn new<R>(replica_id: R, leader_id: SpuId, storage: S, follower_ids: Vec<SpuId>) -> Self
+    pub fn new<R>(
+        replica_id: R, 
+        leader_id: SpuId, 
+        storage: S, 
+        follower_ids: Vec<SpuId>,
+        write_senders: Sender<RecordSetWrite>) -> Self
     where
         R: Into<ReplicaKey>,
     {
+     
+        let hw = OffsetPublisher::new(storage.get_hw());
+        let leo = OffsetPublisher::new(storage.get_leo());
         let mut state = Self {
             replica_id: replica_id.into(),
             leader_id,
             followers: BTreeMap::new(),
             storage,
+            hw,
+            leo,
+            write_senders
         };
         state.add_follower_replica(follower_ids);
         state
@@ -139,6 +164,24 @@ impl<S> LeaderReplicaState<S> {
                 self.followers.insert(id, FollowerReplicaInfo::default());
             }
         }
+    }
+
+    /// write new record set and wait for new offsets
+    pub async fn write_record_set(
+        &mut self,
+        records: RecordSet,
+    ) -> Result<(),InternalServerError> {
+
+        let event = Arc::new(Event::new());
+        let status = RecordSetWrite {
+            records,
+            event: event.clone()
+        };
+
+        let wait = event.listen();
+        self.write_senders.send(status).await;
+        wait.wait();
+        Ok(())
     }
 }
 
@@ -267,6 +310,7 @@ impl LeaderReplicaState<FileReplica> {
     pub async fn create_file_replica(
         leader: Replica,
         config: &ConfigOption,
+        write_senders: Sender<RecordSetWrite>
     ) -> Result<Self, StorageError> {
         trace!(
             "creating new leader replica state: {:#?} using file replica",
@@ -280,6 +324,8 @@ impl LeaderReplicaState<FileReplica> {
             leader.leader,
             storage,
             leader.replicas,
+            write_senders
+
         ))
     }
 

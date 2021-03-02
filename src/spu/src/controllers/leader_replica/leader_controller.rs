@@ -1,8 +1,6 @@
-use std::time::Duration;
+
 
 use tracing::{debug};
-use tracing::warn;
-use tracing::error;
 use tracing::instrument;
 use async_channel::Receiver;
 use futures_util::future::join3;
@@ -10,7 +8,6 @@ use futures_util::future::join;
 use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 use fluvio_types::SpuId;
@@ -22,7 +19,7 @@ use crate::controllers::sc::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
-use super::SharedReplicaLeadersState;
+use super::replica_state::{ LeaderReplicaState,RecordSetWrite};
 
 /// time for complete re-sync with followers
 pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
@@ -34,10 +31,11 @@ pub struct ReplicaLeaderController<S> {
     local_spu: SpuId,
     id: ReplicaKey,
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
-    leaders_state: SharedReplicaLeadersState<S>,
+    state: LeaderReplicaState<S>,
     follower_sinks: SharedSpuSinks,
     sc_channel: SharedSinkMessageChannel,
     offset_sender: Sender<OffsetUpdateEvent>,
+    write_receivers: Receiver<RecordSetWrite>,
     max_bytes: u32,
 }
 
@@ -47,38 +45,27 @@ impl<S> ReplicaLeaderController<S> {
         local_spu: SpuId,
         id: ReplicaKey,
         controller_receiver: Receiver<LeaderReplicaControllerCommand>,
-        leaders_state: SharedReplicaLeadersState<S>,
+        state: LeaderReplicaState<S>,
         follower_sinks: SharedSpuSinks,
         sc_channel: SharedSinkMessageChannel,
         offset_sender: Sender<OffsetUpdateEvent>,
+        write_receivers: Receiver<RecordSetWrite>,
         max_bytes: u32,
     ) -> Self {
         Self {
             local_spu,
             id,
             controller_receiver,
-            leaders_state,
+            state,
             follower_sinks,
             sc_channel,
             offset_sender,
+            write_receivers,
             max_bytes,
         }
     }
 }
 
-/// debug leader, this should be only used in replica leader controller
-/// example:  leader_debug!("{}",expression)
-macro_rules! leader_debug {
-    ($self:ident, $message:expr,$($arg:expr)*) => ( debug!(concat!("replica: <{}> => ",$message),$self.id, $($arg)*) ) ;
-
-    ($self:ident, $message:expr) => ( debug!(concat!("replica: <{}> => ",$message),$self.id))
-}
-
-macro_rules! leader_warn {
-    ($self:ident, $message:expr,$($arg:expr)*) => ( warn!(concat!("replica: <{}> => ",$message),$self.id, $($arg)*) ) ;
-
-    ($self:ident, $message:expr) => ( warn!(concat!("replica: {} => ",$message),$self.id))
-}
 
 impl ReplicaLeaderController<FileReplica> {
     pub fn run(self) {
@@ -93,17 +80,18 @@ impl ReplicaLeaderController<FileReplica> {
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
-        leader_debug!(self, "starting");
+
         self.send_status_to_sc().await;
 
         loop {
             self.sync_followers().await;
-            leader_debug!(self, "waiting for next command");
+            debug!("waiting for next command");
 
             select! {
 
-                _ = sleep(Duration::from_secs(FOLLOWER_RECONCILIATION_INTERVAL_SEC)) => {
-                    debug!("reconcillation timer expired");
+                new_record = self.write_receivers.recv() => {
+
+
                 },
 
                 controller_req = self.controller_receiver.next() => {
@@ -127,8 +115,7 @@ impl ReplicaLeaderController<FileReplica> {
                             }
                         }
                     } else {
-                        leader_debug!(
-                            self,
+                        debug!(
                             "mailbox has terminated, terminating loop"
                         );
                     }
@@ -140,62 +127,49 @@ impl ReplicaLeaderController<FileReplica> {
     }
 
     /// update the follower offsets
-    async fn update_follower_offsets(&self, offsets: FollowerOffsetUpdate) {
-        if let Some(mut leader_replica) = self.leaders_state.get_mut_replica(&self.id) {
-            let follower_id = offsets.follower_id;
-            let (update_status, sync_follower) = leader_replica.update_follower_offsets(offsets);
-            join(
-                async {
-                    if update_status {
-                        leader_replica.send_status_to_sc(&self.sc_channel).await;
-                    }
-                },
-                async {
-                    if let Some(follower_info) = sync_follower {
-                        leader_replica
-                            .sync_follower(
-                                &self.follower_sinks,
-                                follower_id,
-                                &follower_info,
-                                self.max_bytes,
-                            )
-                            .await;
-                    }
-                },
-            )
-            .await;
-        } else {
-            warn!(
-                "no replica is found: {} for update follower offsets",
-                self.id
-            );
-        }
+    async fn update_follower_offsets(&mut self, offsets: FollowerOffsetUpdate) {
+       
+        let follower_id = offsets.follower_id;
+        let (update_status, sync_follower) = self.state.update_follower_offsets(offsets);
+        join(
+            async {
+                if update_status {
+                    self.state.send_status_to_sc(&self.sc_channel).await;
+                }
+            },
+            async {
+                if let Some(follower_info) = sync_follower {
+                    self.state
+                        .sync_follower(
+                            &self.follower_sinks,
+                            follower_id,
+                            &follower_info,
+                            self.max_bytes,
+                        )
+                        .await;
+                }
+            },
+        )
+        .await;
+        
     }
 
     /// go thru each of follower and sync replicas
     #[instrument(skip(self))]
     async fn sync_followers(&self) {
-        if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
-            leader_replica
-                .sync_followers(&self.follower_sinks, self.max_bytes)
+        self.state.sync_followers(&self.follower_sinks, self.max_bytes)
                 .await;
-        } else {
-            leader_warn!(self, "sync followers: no replica is found");
-        }
     }
 
     /// send status back to sc
     #[instrument(skip(self))]
     async fn send_status_to_sc(&self) {
-        if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
-            leader_replica.send_status_to_sc(&self.sc_channel).await;
-        } else {
-            leader_warn!(self, "no replica is found");
-        }
+        self.state.send_status_to_sc(&self.sc_channel).await;
     }
 
     /// update the clients that we have offset changed
     async fn update_offset_to_clients(&self) {
+        /* 
         if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
             let event = OffsetUpdateEvent {
                 hw: leader_replica.hw(),
@@ -209,5 +183,6 @@ impl ReplicaLeaderController<FileReplica> {
         } else {
             leader_warn!(self, "no replica is found");
         }
+        */
     }
 }

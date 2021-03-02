@@ -29,6 +29,7 @@ serde_yaml = "0.8.8"
 serde = { version = "1.0.103", features = ['derive'] }
 chrono = { version = "0.4.6", features = ["serde"] }
 chashmap = "2.2.0"
+dashmap = "4.0.2"
 pin-utils = "0.1.0-alpha.4"
 regex = "1.3.1"
 tokio = { version = "0.2.21", features = ["macros", "sync"] }
@@ -40,7 +41,7 @@ async-io = "1.3.1"
 wasmtime = "0.23.0"
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
+fluvio-types = { version = "0.2.3", features = ["events"], path = "../types" }
 fluvio-storage = { version = "0.4.0", path = "../storage" }
 fluvio-controlplane = { version = "0.6.0", path = "../controlplane" }
 fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata" }

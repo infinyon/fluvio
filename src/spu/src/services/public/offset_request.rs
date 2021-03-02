@@ -9,7 +9,7 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::ErrorCode;
-use fluvio_storage::ReplicaStorage;
+
 
 use crate::core::DefaultSharedGlobalContext;
 
