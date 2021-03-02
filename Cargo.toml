@@ -27,6 +27,7 @@ members = [
     "src/extension-consumer",
     "src/extension-common",
     "src/extension-runner-local",
+    "src/python",
     "tests/runner",
 ]
 
