@@ -4,28 +4,21 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
-use async_channel::Sender;
-use async_channel::Receiver;
-use async_channel::bounded as channel;
+use tracing::{debug,trace,error};
+use tracing::instrument;
+use async_channel::{Sender,Receiver,bounded as channel};
 use chashmap::CHashMap;
 use chashmap::ReadGuard;
 use chashmap::WriteGuard;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::record::RecordSet;
-use fluvio_storage::FileReplica;
-use fluvio_storage::config::ConfigOption;
-use fluvio_storage::StorageError;
-use fluvio_storage::ReplicaStorage;
+use fluvio_storage::{ FileReplica,config::ConfigOption,StorageError,ReplicaStorage,OffsetUpdate};
 use fluvio_types::SpuId;
 use flv_util::SimpleConcurrentBTreeMap;
 
 use crate::core::storage::create_replica_storage;
-use crate::controllers::leader_replica::UpdateOffsetRequest;
-use crate::controllers::leader_replica::ReplicaOffsetRequest;
+use crate::controllers::leader_replica::{UpdateOffsetRequest,ReplicaOffsetRequest};
 use super::FollowerReplicaControllerCommand;
 use super::DefaultSyncRequest;
 
@@ -305,13 +298,9 @@ impl FollowerReplicaState<FileReplica> {
         })
     }
 
-    pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<(), StorageError> {
-        trace!(
-            "writing records to follower replica: {}, leader: {}",
-            self.replica,
-            self.leader
-        );
-        self.storage.write_recordset(records, false).await
+    #[instrument()]
+    pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<OffsetUpdate, StorageError> {
+        self.storage.write_recordset(records).await
     }
 
     pub async fn remove(self) -> Result<(), StorageError> {

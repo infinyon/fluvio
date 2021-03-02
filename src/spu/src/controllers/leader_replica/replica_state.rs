@@ -8,6 +8,7 @@ use tracing::error;
 use tracing::warn;
 use event_listener::Event;
 use async_rwlock::{RwLock,RwLockReadGuard,RwLockWriteGuard};
+use async_channel::{Sender,SendError};
 
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
@@ -25,11 +26,14 @@ use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
 
+use super::LeaderReplicaControllerCommand;
+
 #[derive(Debug)]
 pub struct SharedLeaderState<S> {
     state: Arc<RwLock<LeaderReplicaState<S>>>,
     leo_event: Arc<OffsetPublisher>,
-    hw_event: Arc<OffsetPublisher>
+    hw_event: Arc<OffsetPublisher>,
+    commands: Sender<LeaderReplicaControllerCommand>
 }
 
 impl<S> Deref for SharedLeaderState<S> {
@@ -44,14 +48,15 @@ impl <S> SharedLeaderState<S>
     where S: ReplicaStorage
  {
 
-    fn new(state: LeaderReplicaState<S>) -> Self {
+    fn new(state: LeaderReplicaState<S>,commands: Sender<LeaderReplicaControllerCommand>) -> Self {
         let storage = state.storage();
         let leo_event = Arc::new(OffsetPublisher::new(storage.get_hw()));
         let hw_event = Arc::new(OffsetPublisher::new(storage.get_leo()));
         Self {
            state: Arc::new(RwLock::new(state)),
            leo_event,
-           hw_event
+           hw_event,
+           commands
         }
     }
 
@@ -65,6 +70,14 @@ impl <S> SharedLeaderState<S>
     #[inline(always)]
     pub async fn write(&self) -> RwLockWriteGuard<'_,LeaderReplicaState<S>> {
         self.state.write().await
+    }
+
+    /// send message to leader controller
+    pub async fn send_message(
+        &self,
+        command: LeaderReplicaControllerCommand,
+    ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
+        self.commands.send(command).await
     }
 
 }

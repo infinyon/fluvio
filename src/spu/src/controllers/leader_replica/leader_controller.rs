@@ -19,7 +19,7 @@ use crate::controllers::sc::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
-use super::replica_state::{ LeaderReplicaState,RecordSetWrite};
+use super::replica_state::{ LeaderReplicaState};
 
 /// time for complete re-sync with followers
 pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
@@ -35,7 +35,6 @@ pub struct ReplicaLeaderController<S> {
     follower_sinks: SharedSpuSinks,
     sc_channel: SharedSinkMessageChannel,
     offset_sender: Sender<OffsetUpdateEvent>,
-    write_receivers: Receiver<RecordSetWrite>,
     max_bytes: u32,
 }
 
@@ -49,7 +48,6 @@ impl<S> ReplicaLeaderController<S> {
         follower_sinks: SharedSpuSinks,
         sc_channel: SharedSinkMessageChannel,
         offset_sender: Sender<OffsetUpdateEvent>,
-        write_receivers: Receiver<RecordSetWrite>,
         max_bytes: u32,
     ) -> Self {
         Self {
@@ -60,7 +58,6 @@ impl<S> ReplicaLeaderController<S> {
             follower_sinks,
             sc_channel,
             offset_sender,
-            write_receivers,
             max_bytes,
         }
     }
