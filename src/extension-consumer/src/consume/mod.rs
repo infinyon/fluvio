@@ -4,17 +4,26 @@
 //! CLI command for Consume operation
 //!
 
+use std::io::Error as IoError;
+use std::io::ErrorKind;
+use std::convert::TryFrom;
+use tracing::debug;
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
+use futures_lite::StreamExt;
 
-mod fetch_log_loop;
-mod logs_output;
+mod record_format;
 
-use fluvio::Fluvio;
+use fluvio::{Fluvio, PartitionConsumer, Offset, ConsumerConfig, FluvioError};
+use fluvio_sc_schema::ApiError;
+use fluvio::consumer::Record;
 
-use crate::consume::fetch_log_loop::fetch_log_loop;
 use crate::ConsumerError;
 use crate::common::FluvioExtensionMetadata;
+use crate::consume::record_format::{
+    format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
+};
+use fluvio_extension_common::output::OutputError;
 
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
@@ -46,6 +55,10 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "s", long = "suppress-unknown")]
     pub suppress_unknown: bool,
 
+    /// Separator to print between keys and values
+    #[structopt(long, default_value = ":", validator = validate_key_separator)]
+    pub key_separator: String,
+
     /// Output
     #[structopt(
         short = "O",
@@ -58,12 +71,21 @@ pub struct ConsumeLogOpt {
     pub output: ConsumeOutputType,
 }
 
+fn validate_key_separator(separator: String) -> Result<(), String> {
+    if separator.is_empty() {
+        return Err(
+            "must be non-empty. If using '=', type it as '--key-separator \"=\"'".to_string(),
+        );
+    }
+    Ok(())
+}
+
 impl ConsumeLogOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
         let consumer = fluvio
             .partition_consumer(&self.topic, self.partition)
             .await?;
-        fetch_log_loop(consumer, self).await?;
+        self.consume_records(consumer).await?;
         Ok(())
     }
 
@@ -73,6 +95,157 @@ impl ConsumeLogOpt {
             description: "Consume new data in a stream".into(),
             version: env!("CARGO_PKG_VERSION").into(),
         }
+    }
+
+    /// Consume records according to the given configuration.
+    pub async fn consume_records(&self, consumer: PartitionConsumer) -> Result<(), ConsumerError> {
+        debug!("starting fetch loop: {:#?}", self);
+        self.init_ctrlc()?;
+        let offset = self.calculate_offset()?;
+
+        let consume_config = {
+            let mut config = ConsumerConfig::default();
+            if let Some(max_bytes) = self.max_bytes {
+                config = config.with_max_bytes(max_bytes);
+            }
+            config
+        };
+
+        if self.disable_continuous {
+            self.consume_records_batch(&consumer, offset, consume_config)
+                .await?;
+        } else {
+            self.consume_records_stream(&consumer, offset, consume_config)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    /// Consume records in a single batch, then exit
+    async fn consume_records_batch(
+        &self,
+        consumer: &PartitionConsumer,
+        offset: Offset,
+        config: ConsumerConfig,
+    ) -> Result<(), ConsumerError> {
+        let response = consumer.fetch_with_config(offset, config).await?;
+
+        debug!(
+            "got a single response: LSO: {} batches: {}",
+            response.log_start_offset,
+            response.records.batches.len(),
+        );
+
+        for batch in response.records.batches.iter() {
+            for record in batch.records().iter() {
+                let key = record.key.as_ref().map(|it| it.as_ref());
+                self.print_record(key, record.value.as_ref())?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Consume records as a stream, waiting for new records to arrive
+    async fn consume_records_stream(
+        &self,
+        consumer: &PartitionConsumer,
+        offset: Offset,
+        config: ConsumerConfig,
+    ) -> Result<(), ConsumerError> {
+        let mut stream = consumer.stream_with_config(offset, config).await?;
+
+        while let Some(result) = stream.next().await {
+            let result: Result<Record, _> = result;
+            let record = match result {
+                Ok(record) => record,
+                Err(FluvioError::ApiError(ApiError::Code(code, _))) => {
+                    println!(
+                        "topic '{}/{}': {}",
+                        consumer.topic(),
+                        consumer.partition(),
+                        code.to_sentence(),
+                    );
+                    continue;
+                }
+                Err(other) => return Err(other.into()),
+            };
+
+            self.print_record(record.key(), record.value())?;
+        }
+
+        debug!("fetch loop exited");
+        println!("Consumer stream has closed");
+        Ok(())
+    }
+
+    /// Process fetch topic response based on output type
+    pub fn print_record(&self, key: Option<&[u8]>, value: &[u8]) -> Result<(), OutputError> {
+        let formatted_key = key.map(|key| {
+            String::from_utf8(key.to_owned())
+                .unwrap_or_else(|_| "<cannot print non-UTF8 key>".to_string())
+        });
+
+        let formatted_value = match self.output {
+            ConsumeOutputType::json => format_json(value, self.suppress_unknown),
+            ConsumeOutputType::text => Some(format_text_record(value, self.suppress_unknown)),
+            ConsumeOutputType::binary => Some(format_binary_record(value)),
+            ConsumeOutputType::dynamic => Some(format_dynamic_record(value)),
+            ConsumeOutputType::raw => Some(format_raw_record(value)),
+        };
+
+        match (formatted_key, formatted_value) {
+            (Some(key), Some(value)) => {
+                println!("{}{}{}", key, self.key_separator, value);
+            }
+            (None, Some(value)) => {
+                println!("{}", value);
+            }
+            // (Some(_), None) only if JSON cannot be printed, so skip.
+            _ => debug!("Skipping record that cannot be formatted"),
+        }
+
+        Ok(())
+    }
+
+    /// Initialize Ctrl-C event handler
+    fn init_ctrlc(&self) -> Result<(), ConsumerError> {
+        let result = ctrlc::set_handler(move || {
+            debug!("detected control c, setting end");
+            std::process::exit(0);
+        });
+
+        if let Err(err) = result {
+            return Err(IoError::new(
+                ErrorKind::InvalidData,
+                format!("CTRL-C handler can't be initialized {}", err),
+            )
+            .into());
+        }
+        Ok(())
+    }
+
+    /// Calculate the Offset to use with the consumer based on the provided offset number
+    fn calculate_offset(&self) -> Result<Offset, ConsumerError> {
+        let maybe_initial_offset = if self.from_beginning {
+            let big_offset = self.offset.unwrap_or(0);
+            // Try to convert to u32
+            u32::try_from(big_offset).ok().map(Offset::from_beginning)
+        } else if let Some(big_offset) = self.offset {
+            // if it is negative, we start from end
+            if big_offset < 0 {
+                // Try to convert to u32
+                u32::try_from(big_offset * -1).ok().map(Offset::from_end)
+            } else {
+                Offset::absolute(big_offset).ok()
+            }
+        } else {
+            Some(Offset::end())
+        };
+
+        let offset = maybe_initial_offset
+            .ok_or_else(|| ConsumerError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()))?;
+        Ok(offset)
     }
 }
 
