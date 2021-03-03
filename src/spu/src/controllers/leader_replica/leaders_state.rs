@@ -12,7 +12,7 @@ use super::replica_state::SharedLeaderState;
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
 /// Collection of replicas
-#[derive(Debug,Clone)]
+#[derive(Debug)]
 pub struct ReplicaLeadersState<S>(DashMap<ReplicaKey, SharedLeaderState<S>>);
 
 impl<S> Default for ReplicaLeadersState<S> {
@@ -20,7 +20,6 @@ impl<S> Default for ReplicaLeadersState<S> {
         ReplicaLeadersState(DashMap::new())
     }
 }
-
 
 
 impl<S> Deref for ReplicaLeadersState<S> {
@@ -40,8 +39,8 @@ impl<S> DerefMut for ReplicaLeadersState<S>  {
 
 
 impl<S> ReplicaLeadersState<S> {
-    pub fn new_shared() -> Arc<ReplicaLeadersState<S>> {
-        Arc::new(Self::default())
+    pub fn new_shared() -> SharedReplicaLeadersState<S> {
+       Self::default()
     }
 
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {

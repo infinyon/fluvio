@@ -90,9 +90,6 @@ where
         &self.leaders_state
     }
 
-    pub fn leader_state_owned(&self) -> SharedReplicaLeadersState<S> {
-        self.leaders_state.clone()
-    }
 
     pub fn followers_state(&self) -> &FollowersState<S> {
         &self.followers_state

@@ -481,35 +481,27 @@ impl ScDispatcher<FileReplica> {
     async fn update_leader_replica(&self, replica: Replica) {
         debug!("updating leader controller");
 
-        if self.ctx.leaders_state().has_replica(&replica.id) {
+        if let Some(leader_state) = self.ctx.leaders_state().get(&replica.id) {
             debug!(
                 "leader replica was found, sending replica info: {}",
                 replica
             );
 
-            match self
-                .ctx
-                .leaders_state()
+            if let Err(err) = leader_state
                 .send_message(
-                    &replica.id,
                     LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica.clone()),
                 )
                 .await
             {
-                Ok(status) => {
-                    if !status {
-                        error!("leader controller mailbox was not found");
-                    }
-                }
-                Err(err) => {
-                    error!(
-                        "error sending external command to replica controller: {:#?}",
-                        err
-                    );
-                }
+               
+                error!(
+                    "error sending external command to replica controller: {:#?}",
+                    err
+                );
+                
             }
         } else {
-            error!("leader controller was not found")
+            error!("leader controller was not found: {}",replica.id);
         }
     }
 
@@ -529,32 +521,16 @@ impl ScDispatcher<FileReplica> {
 
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
-        match self
-            .ctx
-            .leaders_state()
-            .send_message(
-                &replica.id,
+        let confirm = if let Some((_,previous_state)) = self.ctx.leaders_state().remove(&replica.id) {
+
+            
+            previous_state
+                .send_message(
                 LeaderReplicaControllerCommand::RemoveReplicaFromSc,
             )
-            .await
-        {
-            Ok(status) => {
-                if !status {
-                    error!("leader controller mailbox was not found for: {}", replica);
-                }
-            }
-            Err(err) => {
-                error!(
-                    "error sending external command to replica controller for replica: {}, {:#?}",
-                    replica, err
-                );
-            }
-        }
+            .await;
 
-        let confirm = if let Some(replica_state) =
-            self.ctx.leaders_state().remove_replica(&replica.id).await
-        {
-            if let Err(err) = replica_state.remove().await {
+            if let Err(err) = previous_state.remove().await {
                 error!("error: {} removing replica: {}", err, replica);
             } else {
                 debug!(
@@ -563,8 +539,13 @@ impl ScDispatcher<FileReplica> {
                 );
             }
             true
+
         } else {
-            debug!("leader replica: {} was not founded, ignoring", replica);
+          
+            error!(
+                "error sending external command to replica controller for replica: {}",
+                replica
+            );
             false
         };
 
@@ -595,7 +576,7 @@ impl ScDispatcher<FileReplica> {
         if let Some(old_replica) = self
             .ctx
             .leaders_state()
-            .insert(replica_id.clone(), shared_state)
+            .insert(replica_id.clone(), shared_state.clone())
         {
             error!(
                 "there was existing replica when creating new leader replica: {}",
@@ -607,12 +588,11 @@ impl ScDispatcher<FileReplica> {
             self.ctx.local_spu_id(),
             replica_id,
             receiver,
-            self.ctx.leader_state_owned(),
+            shared_state,
             self.ctx.followers_sink_owned(),
             self.sink_channel.clone(),
             self.ctx.offset_channel().sender(),
             self.max_bytes,
-            shared_state
         );
         leader_controller.run();
     }

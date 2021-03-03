@@ -127,7 +127,7 @@ impl <S> LeaderReplicaState<S>
     /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
     /// //          Input:  leo: 2, hw: 2,
     /// //          Expect, status change, follower sync  
-    pub async fn update_follower_offsets<F>(&mut self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
+    pub async fn update_follower_offsets<F>(&self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
     where
         F: Into<FollowerOffsetUpdate>,
     {
@@ -352,7 +352,7 @@ impl LeaderReplicaState<FileReplica> {
 
     
     /// delete storage
-    pub async fn remove(self) -> Result<(), StorageError> {
+    pub async fn remove(&self) -> Result<(), StorageError> {
         let write = self.storage.write().await;
         write.remove().await
     }

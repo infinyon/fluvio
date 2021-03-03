@@ -31,12 +31,11 @@ pub struct ReplicaLeaderController<S> {
     local_spu: SpuId,
     id: ReplicaKey,
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
-    state: LeaderReplicaState<S>,
+    state: SharedLeaderState<S>,
     follower_sinks: SharedSpuSinks,
     sc_channel: SharedSinkMessageChannel,
     offset_sender: Sender<OffsetUpdateEvent>,
-    max_bytes: u32,
-    leader_state: SharedLeaderState<S>
+    max_bytes: u32
 }
 
 impl<S> ReplicaLeaderController<S> {
@@ -45,12 +44,11 @@ impl<S> ReplicaLeaderController<S> {
         local_spu: SpuId,
         id: ReplicaKey,
         controller_receiver: Receiver<LeaderReplicaControllerCommand>,
-        state: LeaderReplicaState<S>,
+        state: SharedLeaderState<S>,
         follower_sinks: SharedSpuSinks,
         sc_channel: SharedSinkMessageChannel,
         offset_sender: Sender<OffsetUpdateEvent>,
         max_bytes: u32,
-        leader_state: SharedLeaderState<S>
     ) -> Self {
         Self {
             local_spu,
@@ -61,7 +59,6 @@ impl<S> ReplicaLeaderController<S> {
             sc_channel,
             offset_sender,
             max_bytes,
-            leader_state
         }
     }
 }
