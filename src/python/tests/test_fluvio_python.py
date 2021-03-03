@@ -1,9 +1,9 @@
-from fluvio import python, Fluvio
+from fluvio import python_func, Fluvio
 import unittest
 
 class TestPythonMethods(unittest.TestCase):
     def test_main(self):
-        self.assertTrue(python.python_func() == 15)
+        self.assertTrue(python_func() == 15)
 
 class TestFluvioMethods(unittest.TestCase):
     def test_connect(self):
