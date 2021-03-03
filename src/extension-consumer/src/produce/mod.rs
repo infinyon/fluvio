@@ -34,7 +34,7 @@ pub struct ProduceLogOpt {
 
     /// Do not print progress output when sending records
     #[structopt(short, long)]
-    pub quiet: bool,
+    pub verbose: bool,
 
     /// Sends key/value records split on the first instance of the separator. Implies --lines.
     #[structopt(long, validator = validate_key_separator)]
@@ -97,15 +97,15 @@ impl ProduceLogOpt {
     /// Sends each line from a file as a unique record to the producer's topic.
     async fn produce_file_lines(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
         let file = File::open(path)?;
-        let mut lines = BufReader::new(file).lines().enumerate();
-        while let Some((i, Ok(line))) = lines.next() {
+        let mut lines = BufReader::new(file).lines();
+        while let Some(Ok(line)) = lines.next() {
             if self.kv_mode() {
                 self.produce_key_value(producer, line.as_bytes()).await?;
             } else {
                 producer.send_record(&line, self.partition).await?;
-            }
-            if !self.quiet {
-                println!("{}:{} {}", path.display(), i, line);
+                if self.verbose {
+                    println!("[null]: {}", line);
+                }
             }
         }
         Ok(())
@@ -118,9 +118,9 @@ impl ProduceLogOpt {
             self.produce_key_value(producer, &bytes).await?;
         } else {
             producer.send_record(&bytes, self.partition).await?;
-        }
-        if !self.quiet {
-            println!("{}", path.display());
+            if self.verbose {
+                println!("[null]:");
+            }
         }
         Ok(())
     }
@@ -138,15 +138,15 @@ impl ProduceLogOpt {
 
     /// Sends each line of stdin as a unique record
     async fn produce_stdin_lines(&self, producer: &mut TopicProducer) -> Result<()> {
-        let mut stdin_lines = BufReader::new(std::io::stdin()).lines().enumerate();
-        while let Some((i, Ok(line))) = stdin_lines.next() {
+        let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
+        while let Some(Ok(line)) = stdin_lines.next() {
             if self.kv_mode() {
                 self.produce_key_value(producer, line.as_bytes()).await?;
             } else {
                 producer.send_record(&line, self.partition).await?;
-            }
-            if !self.quiet {
-                println!("stdin:{} {}", i, line);
+                if self.verbose {
+                    println!("[null]: {}", line);
+                }
             }
         }
         Ok(())
@@ -161,9 +161,9 @@ impl ProduceLogOpt {
             self.produce_key_value(producer, &buffer).await?;
         } else {
             producer.send_record(&buffer, self.partition).await?;
-        }
-        if !self.quiet {
-            println!("produced stdin");
+            if self.verbose {
+                println!("[null]:");
+            }
         }
         Ok(())
     }
@@ -211,7 +211,10 @@ impl ProduceLogOpt {
 
         let key = pieces[0];
         let value: String = (&pieces[1..]).join(&*separator);
-        producer.send(key, value).await?;
+        producer.send(key, &value).await?;
+        if self.verbose {
+            println!("[{}]: {}", key, value);
+        }
         Ok(())
     }
 
@@ -221,8 +224,10 @@ impl ProduceLogOpt {
         contents: &[u8],
         jsonpath: &str,
     ) -> Result<()> {
+        let string =
+            std::str::from_utf8(contents).map_err(|e| ConsumerError::Other(e.to_string()))?;
         let json: serde_json::Value =
-            serde_json::from_slice(contents).map_err(|e| ConsumerError::Other(e.to_string()))?;
+            serde_json::from_str(string).map_err(|e| ConsumerError::Other(e.to_string()))?;
         let selector =
             jsonpath::Selector::new(jsonpath).map_err(|e| ConsumerError::Other(e.to_string()))?;
         let key_results: Vec<_> = selector.find(&json).collect();
@@ -239,7 +244,9 @@ impl ProduceLogOpt {
             .as_str()
             .ok_or_else(|| ConsumerError::Other("Selected value must be a string".to_string()))?;
         producer.send(key_string, contents).await?;
-
+        if self.verbose {
+            println!("[{}]: {}", key_string, string);
+        }
         Ok(())
     }
 
