@@ -1,11 +1,10 @@
 use std::{sync::Arc};
-use std::ops::{Deref};
+use std::ops::{Deref,DerefMut};
 
 
 use dashmap::DashMap;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-
 
 use super::replica_state::SharedLeaderState;
 
@@ -13,7 +12,7 @@ use super::replica_state::SharedLeaderState;
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
 /// Collection of replicas
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct ReplicaLeadersState<S>(DashMap<ReplicaKey, SharedLeaderState<S>>);
 
 impl<S> Default for ReplicaLeadersState<S> {
@@ -22,11 +21,6 @@ impl<S> Default for ReplicaLeadersState<S> {
     }
 }
 
-impl <S> Clone for ReplicaLeadersState<S> where SharedLeaderState<S>: Clone {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
 
 
 impl<S> Deref for ReplicaLeadersState<S> {
@@ -36,6 +30,13 @@ impl<S> Deref for ReplicaLeadersState<S> {
         &self.0
     }
 }
+
+impl<S> DerefMut for ReplicaLeadersState<S>  {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 
 
 impl<S> ReplicaLeadersState<S> {

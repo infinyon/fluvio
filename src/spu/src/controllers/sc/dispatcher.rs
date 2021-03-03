@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use std::io::Error as IoError;
 
 use tracing::info;
@@ -35,8 +35,7 @@ use crate::core::SpecChange;
 use crate::controllers::follower_replica::ReplicaFollowerController;
 use crate::controllers::follower_replica::FollowerReplicaControllerCommand;
 use crate::controllers::leader_replica::ReplicaLeaderController;
-use crate::controllers::leader_replica::LeaderReplicaState;
-use crate::controllers::leader_replica::LeaderReplicaControllerCommand;
+use crate::controllers::leader_replica::{LeaderReplicaState,LeaderReplicaControllerCommand};
 use crate::InternalServerError;
 
 use super::SupervisorCommand;
@@ -458,10 +457,12 @@ impl ScDispatcher<FileReplica> {
         let storage_log = self.ctx.config().storage().new_config();
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create_file_replica(replica, &storage_log).await {
+        let (sender, receiver) = bounded(10);
+
+        match LeaderReplicaState::create_file_replica(replica, &storage_log,sender).await {
             Ok(leader_replica) => {
                 debug!("file replica for leader is created: {}", storage_log);
-                self.spawn_leader_controller(replica_id, leader_replica)
+                self.spawn_leader_controller(replica_id, leader_replica,receiver)
                     .await;
             }
             Err(err) => {
@@ -587,16 +588,14 @@ impl ScDispatcher<FileReplica> {
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
+        receiver: Receiver<LeaderReplicaControllerCommand>
     ) {
-        debug!("spawning new leader controller");
-
-        let (sender, receiver) = bounded(10);
-
+        
+        let shared_state = Arc::new(leader_state);
         if let Some(old_replica) = self
             .ctx
             .leaders_state()
-            .insert_replica(replica_id.clone(), leader_state, sender)
-            .await
+            .insert(replica_id.clone(), shared_state)
         {
             error!(
                 "there was existing replica when creating new leader replica: {}",
@@ -613,6 +612,7 @@ impl ScDispatcher<FileReplica> {
             self.sink_channel.clone(),
             self.ctx.offset_channel().sender(),
             self.max_bytes,
+            shared_state
         );
         leader_controller.run();
     }
@@ -628,21 +628,24 @@ impl ScDispatcher<FileReplica> {
         if let Some(follower_replica) = self
             .ctx
             .followers_state()
-            .remove_replica(&old_replica.leader, &old_replica.id)
+            .remove(&old_replica.leader, &old_replica.id)
         {
             debug!(
                 "old follower replica exists, converting to leader: {}",
                 old_replica.id
             );
 
+            let (sender, receiver) = bounded(10);
+
             let leader_state = LeaderReplicaState::new(
                 new_replica.id.clone(),
                 new_replica.leader,
                 follower_replica.storage_owned(),
                 new_replica.replicas,
+                sender
             );
 
-            self.spawn_leader_controller(new_replica.id, leader_state)
+            self.spawn_leader_controller(new_replica.id, leader_state,receiver)
                 .await;
         }
     }

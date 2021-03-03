@@ -1,13 +1,12 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::{BTreeMap, HashSet}, sync::Arc};
 use std::fmt;
-use std::ops::{Deref};
+
 
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
 use tracing::warn;
-use event_listener::Event;
-use async_rwlock::{RwLock,RwLockReadGuard,RwLockWriteGuard};
+use async_rwlock::{RwLock};
 use async_channel::{Sender,SendError};
 
 use fluvio_socket::SinkPool;
@@ -26,51 +25,81 @@ use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
 
+pub type SharedLeaderState<S> = Arc<LeaderReplicaState<S>>;
+pub type SharedFileLeaderState = Arc<LeaderReplicaState<FileReplica>>;
+
 use super::LeaderReplicaControllerCommand;
 
-#[derive(Debug,Clone)]
-pub struct SharedLeaderState<S> {
-    state: Arc<RwLock<LeaderReplicaState<S>>>,
-    leo_event: Arc<OffsetPublisher>,
-    hw_event: Arc<OffsetPublisher>,
+#[derive(Debug)]
+pub struct LeaderReplicaState<S> {
+    replica_id: ReplicaKey,
+    leader_id: SpuId,
+    storage: RwLock<S>,
+    followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
+    leo: OffsetPublisher,
+    hw: OffsetPublisher,
     commands: Sender<LeaderReplicaControllerCommand>
 }
 
-impl<S> Deref for SharedLeaderState<S> {
-    type Target = Arc<RwLock<LeaderReplicaState<S>>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
+impl<S> fmt::Display for LeaderReplicaState<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Leader {}", self.replica_id)
     }
 }
 
-impl <S> SharedLeaderState<S>
-    where S: ReplicaStorage
- {
 
-    fn new(state: LeaderReplicaState<S>,commands: Sender<LeaderReplicaControllerCommand>) -> Self {
-        let storage = state.storage();
-        let leo_event = Arc::new(OffsetPublisher::new(storage.get_hw()));
-        let hw_event = Arc::new(OffsetPublisher::new(storage.get_leo()));
+impl <S> LeaderReplicaState<S>
+    where S: ReplicaStorage
+{
+
+    pub fn new<R>(
+        replica_id: R, 
+        leader_id: SpuId, 
+        storage: S, 
+        follower_ids: HashSet<SpuId>,
+        commands: Sender<LeaderReplicaControllerCommand>
+    ) -> Self 
+    where
+        R: Into<ReplicaKey>
+    {
+       
+        let leo = OffsetPublisher::new(storage.get_hw());
+        let hw = OffsetPublisher::new(storage.get_leo());
+        let followers = FollowerReplicaInfo::ids_to_map(leader_id, follower_ids);
         Self {
-           state: Arc::new(RwLock::new(state)),
-           leo_event,
-           hw_event,
-           commands
+            replica_id: replica_id.into(),
+            leader_id,
+            followers: RwLock::new(followers),
+            storage: RwLock::new(storage),
+            leo,
+            hw,
+            commands
         }
     }
 
-    
-    #[inline(always)]
-    pub async fn read(&self) -> RwLockReadGuard<'_,LeaderReplicaState<S>> {
-        self.state.read().await
-    }
-    
 
-    #[inline(always)]
-    pub async fn write(&self) -> RwLockWriteGuard<'_,LeaderReplicaState<S>> {
-        self.state.write().await
+    pub fn replica_id(&self) -> &ReplicaKey {
+        &self.replica_id
     }
+
+    /// log end offset
+    pub fn leo(&self) -> Offset {
+        self.leo.current_value()
+    }
+
+    /// high watermark
+    pub fn hw(&self) -> Offset {
+        self.hw.current_value()
+    }
+
+    // probably only used in the test
+    /* 
+    #[allow(dead_code)]
+    pub(crate) fn followers(&self, spu: &SpuId) -> Option<FollowerReplicaInfo> {
+        self.followers.read().await.get(spu).cloned()
+    }
+    */
+    
 
     /// send message to leader controller
     pub async fn send_message(
@@ -80,211 +109,7 @@ impl <S> SharedLeaderState<S>
         self.commands.send(command).await
     }
 
-}
-
-impl SharedLeaderState<FileReplica> {
-
-    /// read records into partition response
-    /// return hw and leo
-    pub async fn read_records<P>(
-        &self,
-        offset: Offset,
-        max_len: u32,
-        isolation: Isolation,
-        partition_response: &mut P,
-    ) -> (Offset, Offset)
-    where
-        P: SlicePartitionResponse,
-    {
-        let reader = self.read().await;
-        match isolation {
-            Isolation::ReadCommitted => {
-                reader.storage()
-                    .read_committed_records(offset, max_len, partition_response)
-                    .await;
-            }
-            Isolation::ReadUncommitted => {
-                reader.storage()
-                    .read_records(offset, None, max_len, partition_response)
-                    .await;
-            }
-        }
-        (reader.hw(), reader.leo())
-    }
-
-    /// write new record set and update shared offsets
-    pub async fn write_record_set(
-        &self,
-        records: &mut RecordSet,
-    ) -> Result<(),StorageError> {
-
-        let mut writer = self.write().await;
-        let offset_updates = writer.mut_storage()
-                .write_recordset(records)
-                .await?;
-
-        match offset_updates {
-            OffsetUpdate::Leo(offset) => self.leo_event.update(offset),
-            OffsetUpdate::LeoHw(offset) => self.hw_event.update(offset)
-        }
-
-        Ok(())
-        
-    }
-
-}
-
-
-pub type FileLeaderReplicateState = LeaderReplicaState<FileReplica>;
-
-use super::FollowerOffsetUpdate;
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct FollowerReplicaInfo {
-    hw: Offset,
-    leo: Offset,
-}
-
-impl Default for FollowerReplicaInfo {
-    fn default() -> Self {
-        Self { hw: -1, leo: -1 }
-    }
-}
-
-impl FollowerReplicaInfo {
-    pub fn new(leo: Offset, hw: Offset) -> Self {
-        assert!(leo >= hw, "end offset >= high watermark");
-        Self { leo, hw }
-    }
-
-    pub fn hw(&self) -> Offset {
-        self.hw
-    }
-
-    pub fn leo(&self) -> Offset {
-        self.leo
-    }
-
-    pub fn is_same(&self, hw: Offset, leo: Offset) -> bool {
-        self.hw == hw && self.leo == leo
-    }
-
-    // is valid as long as it's offset are not at default
-    pub fn is_valid(&self) -> bool {
-        self.hw != -1 && self.leo != -1
-    }
-}
-
-impl From<(Offset, Offset)> for FollowerReplicaInfo {
-    fn from(value: (Offset, Offset)) -> Self {
-        Self::new(value.0, value.1)
-    }
-}
-
-/// RecordSet to write with event callback
-pub struct RecordSetWrite {
-    pub records: RecordSet,
-    pub event: Arc<Event>
-
-}
-
-/// Maintain state for Leader replica
-#[derive(Debug)]
-pub struct LeaderReplicaState<S> {
-    replica_id: ReplicaKey,
-    leader_id: SpuId,
-    followers: BTreeMap<SpuId, FollowerReplicaInfo>,
-    storage: S,
-}
-
-impl<S> fmt::Display for LeaderReplicaState<S> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Leader {}", self.replica_id)
-    }
-}
-
-impl<S> LeaderReplicaState<S> 
-    where S: ReplicaStorage,
-{
-    /// create new, followers_id contains leader id
-    pub fn new<R>(
-        replica_id: R, 
-        leader_id: SpuId, 
-        storage: S, 
-        follower_ids: Vec<SpuId>) -> Self
-    where
-        R: Into<ReplicaKey>,
-    {
-     
-        let hw = OffsetPublisher::new(storage.get_hw());
-        let leo = OffsetPublisher::new(storage.get_leo());
-        let mut state = Self {
-            replica_id: replica_id.into(),
-            leader_id,
-            followers: BTreeMap::new(),
-            storage,
-            hw,
-            leo,
-        };
-        state.add_follower_replica(follower_ids);
-        state
-    }
-
-    pub fn replica_id(&self) -> &ReplicaKey {
-        &self.replica_id
-    }
-
-    pub fn storage(&self) -> &S {
-        &self.storage
-    }
-
-    #[allow(dead_code)]
-    pub fn mut_storage(&mut self) -> &mut S {
-        &mut self.storage
-    }
-
-    /// probably only used in the test
-    #[allow(dead_code)]
-    pub(crate) fn followers(&self, spu: &SpuId) -> Option<FollowerReplicaInfo> {
-        self.followers.get(spu).cloned()
-    }
-
-    /// if replica id's doesn't exists, then add, otherwise ignore it
-    #[allow(clippy::map_entry)]
-    fn add_follower_replica(&mut self, follower_ids: Vec<SpuId>) {
-        let leader_id = self.leader_id;
-        for id in follower_ids.into_iter().filter(|id| *id != leader_id) {
-            if self.followers.contains_key(&id) {
-                warn!(
-                    "try to add existing follower id : {} to replica: {}, ignoring",
-                    id, self.replica_id
-                );
-            } else {
-                trace!(
-                    "inserting: new follower idx for leader: {}, replica: {}, follower: {}",
-                    leader_id,
-                    self.replica_id,
-                    id
-                );
-                self.followers.insert(id, FollowerReplicaInfo::default());
-            }
-        }
-    }
-
     
-}
-
-impl<S> LeaderReplicaState<S>
-where
-    S: ReplicaStorage,
-{
-    pub fn leo(&self) -> Offset {
-        self.storage.get_leo()
-    }
-
-    pub fn hw(&self) -> Offset {
-        self.storage.get_hw()
-    }
 
     /// update followers offset, return (status_needs_to_changed,follower to be synced)
     ///
@@ -302,7 +127,7 @@ where
     /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
     /// //          Input:  leo: 2, hw: 2,
     /// //          Expect, status change, follower sync  
-    pub fn update_follower_offsets<F>(&mut self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
+    pub async fn update_follower_offsets<F>(&mut self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
     where
         F: Into<FollowerOffsetUpdate>,
     {
@@ -323,8 +148,10 @@ where
             follower_info.leo = leader_leo;
         }
 
+        let mut followers = self.followers.write().await;
+
         let changed =
-            if let Some(old_info) = self.followers.insert(follower_id, follower_info.clone()) {
+            if let Some(old_info) = followers.insert(follower_id, follower_info.clone()) {
                 old_info != follower_info
             } else {
                 false
@@ -342,13 +169,14 @@ where
 
     /// compute list of followers that need to be sync
     /// this is done by checking diff of end offset and high watermark
-    fn need_follower_updates(&self) -> Vec<(SpuId, FollowerReplicaInfo)> {
+    async fn need_follower_updates(&self) -> Vec<(SpuId, FollowerReplicaInfo)> {
         let leo = self.leo();
         let hw = self.hw();
 
         trace!("computing follower offset for leader: {}, replica: {}, end offset: {}, high watermarkK {}",self.leader_id,self.replica_id,leo,hw);
 
-        self.followers
+        let reader = self.followers.read().await;
+        reader
             .iter()
             .filter(|(_, follower_info)| {
                 follower_info.is_valid() && !follower_info.is_same(hw, leo)
@@ -369,15 +197,16 @@ where
     }
 
     /// convert myself as
-    fn as_lrs_request(&self) -> LrsRequest {
+    async fn as_lrs_request(&self) -> LrsRequest {
+
         let leader = (
             self.leader_id,
-            self.storage.get_hw(),
-            self.storage.get_leo(),
+            self.hw(),
+            self.leo(),
         )
             .into();
         let replicas = self
-            .followers
+            .followers.read().await
             .iter()
             .map(|(follower_id, follower_info)| {
                 (*follower_id, follower_info.hw(), follower_info.leo()).into()
@@ -388,17 +217,23 @@ where
     }
 
     pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
-        let lrs = self.as_lrs_request();
+        let lrs = self.as_lrs_request().await;
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
         sc_sink.send(lrs).await
     }
+
+
 }
 
+
+
 impl LeaderReplicaState<FileReplica> {
+
     /// create new replica state using file replica
     pub async fn create_file_replica(
         leader: Replica,
         config: &ConfigOption,
+        commands: Sender<LeaderReplicaControllerCommand>
     ) -> Result<Self, StorageError> {
         trace!(
             "creating new leader replica state: {:#?} using file replica",
@@ -406,18 +241,61 @@ impl LeaderReplicaState<FileReplica> {
         );
 
         let storage = create_replica_storage(leader.leader, &leader.id, &config).await?;
-
+        let replica_ids: HashSet<SpuId> = leader.replicas.into_iter().collect();
         Ok(Self::new(
             leader.id,
             leader.leader,
             storage,
-            leader.replicas
+            replica_ids,
+            commands
         ))
     }
 
-    pub async fn remove(self) -> Result<(), StorageError> {
-        self.storage.remove().await
+    /// read records into partition response
+    /// return hw and leo
+    pub async fn read_records<P>(
+        &self,
+        offset: Offset,
+        max_len: u32,
+        isolation: Isolation,
+        partition_response: &mut P,
+    ) -> (Offset, Offset)
+    where
+        P: SlicePartitionResponse,
+    {
+        let read_storage = self.storage.read().await;
+        match isolation {
+            Isolation::ReadCommitted => {
+                read_storage
+                    .read_committed_records(offset, max_len, partition_response)
+                    .await
+            }
+            Isolation::ReadUncommitted => {
+                read_storage
+                    .read_records(offset, None, max_len, partition_response)
+                    .await
+            }
+        }
     }
+
+    /// write new record set and update shared offsets
+    pub async fn write_record_set(
+        &self,
+        records: &mut RecordSet,
+    ) -> Result<(),StorageError> {
+
+        let mut writer = self.storage.write().await;
+        let offset_updates = writer.write_recordset(records).await?;
+
+        match offset_updates {
+            OffsetUpdate::Leo(offset) => self.leo.update(offset),
+            OffsetUpdate::LeoHw(offset) => self.hw.update(offset)
+        }
+
+        Ok(())
+        
+    }
+
 
     /// sync specific follower
     pub async fn sync_follower(
@@ -472,41 +350,111 @@ impl LeaderReplicaState<FileReplica> {
         }
     }
 
+    
+    /// delete storage
+    pub async fn remove(self) -> Result<(), StorageError> {
+        let write = self.storage.write().await;
+        write.remove().await
+    }
+
+    
+
     /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
-        let follower_sync = self.need_follower_updates();
+        let follower_sync = self.need_follower_updates().await;
 
         for (follower_id, follower_info) in follower_sync {
             self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
                 .await;
         }
     }
-
     
 
-    pub async fn write_recordset(
-        &mut self,
-        records: &mut RecordSet,
-        update_highwatermark: bool,
-    ) -> Result<(), StorageError> {
-        trace!(
-            "writing records to leader: {} replica: {}, ",
-            self.leader_id,
-            self.replica_id
-        );
-        self.storage
-            .write_recordset(records, update_highwatermark)
-            .await
+    #[allow(dead_code)]
+    pub async fn live_replicas(&self) -> Vec<SpuId> {
+        self.followers.read().await.keys().cloned().collect()
     }
 
-    #[allow(dead_code)]
-    pub fn live_replicas(&self) -> Vec<SpuId> {
-        self.followers.keys().cloned().collect()
-    }
     #[allow(dead_code)]
     pub fn leader_id(&self) -> SpuId {
         self.leader_id
     }
+
+}
+
+
+
+use super::FollowerOffsetUpdate;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FollowerReplicaInfo {
+    hw: Offset,
+    leo: Offset,
+}
+
+impl Default for FollowerReplicaInfo {
+    fn default() -> Self {
+        Self { hw: -1, leo: -1 }
+    }
+}
+
+impl FollowerReplicaInfo {
+
+    /// convert follower ids into BtreeMap of this
+    fn ids_to_map(leader_id: SpuId,follower_ids: HashSet<SpuId>) -> BTreeMap<SpuId, Self>
+    {
+        let mut followers = BTreeMap::new();
+        for id in follower_ids.into_iter().filter(|id| *id != leader_id) {
+            followers.insert(id, Self::default());
+        };
+        followers
+    }
+
+    pub fn new(leo: Offset, hw: Offset) -> Self {
+        assert!(leo >= hw, "end offset >= high watermark");
+        Self { leo, hw }
+    }
+
+    pub fn hw(&self) -> Offset {
+        self.hw
+    }
+
+    pub fn leo(&self) -> Offset {
+        self.leo
+    }
+
+    pub fn is_same(&self, hw: Offset, leo: Offset) -> bool {
+        self.hw == hw && self.leo == leo
+    }
+
+    // is valid as long as it's offset are not at default
+    pub fn is_valid(&self) -> bool {
+        self.hw != -1 && self.leo != -1
+    }
+}
+
+impl From<(Offset, Offset)> for FollowerReplicaInfo {
+    fn from(value: (Offset, Offset)) -> Self {
+        Self::new(value.0, value.1)
+    }
+}
+
+
+
+
+
+
+impl<S> LeaderReplicaState<S>
+where
+    S: ReplicaStorage,
+{
+    
+
+    
+}
+
+impl LeaderReplicaState<FileReplica> {
+    
 }
 
 #[cfg(test)]

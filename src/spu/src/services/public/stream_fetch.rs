@@ -19,7 +19,7 @@ use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetc
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::controllers::leader_replica::{SharedLeaderState};
+use crate::controllers::leader_replica::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
@@ -32,7 +32,7 @@ pub struct StreamFetchHandler<S> {
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
     offset_listener: OffsetChangeListener,
-    leader_state: SharedLeaderState<S>,
+    leader_state: SharedFileLeaderState,
     stream_id: u32,
 }
 
@@ -49,7 +49,7 @@ where
         end_event: Arc<SimpleEvent>,
         offset_listener: OffsetChangeListener,
         stream_id: u32,
-        leader_state: SharedLeaderState<S>
+        leader_state: SharedFileLeaderState
     ) {
         // first get receiver to offset update channel to we don't missed events
 
@@ -260,7 +260,7 @@ where
             ..Default::default()
         };
 
-        self.leader_state
+        let (hw, leo) = self.leader_state
             .read_records(
                 &self.replica,
                 offset,

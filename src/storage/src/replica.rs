@@ -197,7 +197,7 @@ impl FileReplica {
     }
 
     /// read all uncommitted records
-    pub async fn read_uncommitted_records<P>(&self, max_len: u32, response: &mut P)
+    pub async fn read_uncommitted_records<P>(&self, max_len: u32, response: &mut P) -> (Offset,Offset)
     where
         P: SlicePartitionResponse,
     {
@@ -211,7 +211,7 @@ impl FileReplica {
         start_offset: Offset,
         max_len: u32,
         response: &mut impl SlicePartitionResponse,
-    ) {
+    ) -> (Offset,Offset) {
         self.read_records(start_offset, Some(self.get_hw()), max_len, response)
             .await
     }
@@ -221,23 +221,26 @@ impl FileReplica {
     /// * `max_offset`:  max offset (exclusive)
     /// * `responsive`:  output
     /// * `max_len`:  max length of the slice
+    //  return leo, hw
     pub async fn read_records<P>(
         &self,
         start_offset: Offset,
         max_offset: Option<Offset>,
         max_len: u32,
         response: &mut P,
-    ) where
+    ) -> (Offset,Offset) 
+    where
         P: SlicePartitionResponse,
     {
-        let high_watermark = self.get_hw();
+        let hw = self.get_hw();
+        let leo = self.get_leo();
         debug!(
             "read records at: {}, max: max: {:#?}, hw: {}",
-            start_offset, max_offset, high_watermark,
+            start_offset, max_offset, hw,
         );
 
-        response.set_hw(high_watermark);
-        response.set_last_stable_offset(high_watermark);
+        response.set_hw(hw);
+        response.set_last_stable_offset(hw);
         response.set_log_start_offset(self.get_log_start_offset());
 
         match self.find_segment(start_offset) {
@@ -247,7 +250,7 @@ impl FileReplica {
                         // optimization
                         if start_offset == self.get_leo() {
                             trace!("start offset is same as end offset, skipping");
-                            return;
+                            return (leo,hw);
                         } else {
                             debug!(
                                 "active segment with base offset: {} found for offset: {}",
@@ -311,6 +314,8 @@ impl FileReplica {
                 debug!("segment not found for offset: {}", start_offset);
             }
         }
+
+        (leo,hw)
     }
 
     async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {

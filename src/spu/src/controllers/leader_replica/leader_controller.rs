@@ -19,7 +19,7 @@ use crate::controllers::sc::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
-use super::replica_state::{ LeaderReplicaState};
+use super::replica_state::{ LeaderReplicaState,SharedLeaderState};
 
 /// time for complete re-sync with followers
 pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
@@ -36,6 +36,7 @@ pub struct ReplicaLeaderController<S> {
     sc_channel: SharedSinkMessageChannel,
     offset_sender: Sender<OffsetUpdateEvent>,
     max_bytes: u32,
+    leader_state: SharedLeaderState<S>
 }
 
 impl<S> ReplicaLeaderController<S> {
@@ -49,6 +50,7 @@ impl<S> ReplicaLeaderController<S> {
         sc_channel: SharedSinkMessageChannel,
         offset_sender: Sender<OffsetUpdateEvent>,
         max_bytes: u32,
+        leader_state: SharedLeaderState<S>
     ) -> Self {
         Self {
             local_spu,
@@ -59,6 +61,7 @@ impl<S> ReplicaLeaderController<S> {
             sc_channel,
             offset_sender,
             max_bytes,
+            leader_state
         }
     }
 }
@@ -85,11 +88,6 @@ impl ReplicaLeaderController<FileReplica> {
             debug!("waiting for next command");
 
             select! {
-
-                new_record = self.write_receivers.recv() => {
-
-
-                },
 
                 controller_req = self.controller_receiver.next() => {
                     if let Some(command) = controller_req {
@@ -127,7 +125,7 @@ impl ReplicaLeaderController<FileReplica> {
     async fn update_follower_offsets(&mut self, offsets: FollowerOffsetUpdate) {
        
         let follower_id = offsets.follower_id;
-        let (update_status, sync_follower) = self.state.update_follower_offsets(offsets);
+        let (update_status, sync_follower) = self.state.update_follower_offsets(offsets).await;
         join(
             async {
                 if update_status {
