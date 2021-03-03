@@ -1,5 +1,6 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 use std::io::Error as IoError;
+use std::iter::FromIterator;
 
 use tracing::info;
 use tracing::trace;
@@ -621,7 +622,7 @@ impl ScDispatcher<FileReplica> {
                 new_replica.id.clone(),
                 new_replica.leader,
                 follower_replica.storage_owned(),
-                new_replica.replicas,
+                HashSet::from_iter(new_replica.replicas),
                 sender
             );
 
@@ -635,8 +636,7 @@ impl ScDispatcher<FileReplica> {
     pub async fn demote_replica(&self, replica: Replica) {
         debug!("demoting replica: {}", replica);
 
-        if let Some(leader_replica_state) =
-            self.ctx.leaders_state().remove_replica(&replica.id).await
+        if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id)
         {
             drop(leader_replica_state);
             // for now, we re-scan file replica

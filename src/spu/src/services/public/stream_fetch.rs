@@ -262,7 +262,6 @@ where
 
         let (hw, leo) = self.leader_state
             .read_records(
-                &self.replica,
                 offset,
                 self.max_bytes,
                 self.isolation.clone(),

@@ -1,21 +1,26 @@
-use std::{collections::{BTreeMap, HashSet}, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashSet},
+    sync::Arc,
+};
 use std::fmt;
-
 
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
 use tracing::warn;
 use async_rwlock::{RwLock};
-use async_channel::{Sender,SendError};
+use async_channel::{Sender, SendError};
 
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
-use fluvio_controlplane_metadata::partition::{ReplicaKey,Replica};
+use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, config::ConfigOption, StorageError,OffsetUpdate,SlicePartitionResponse,ReplicaStorage};
+use fluvio_storage::{
+    FileReplica, config::ConfigOption, StorageError, OffsetUpdate, SlicePartitionResponse,
+    ReplicaStorage,
+};
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -38,7 +43,7 @@ pub struct LeaderReplicaState<S> {
     followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
     leo: OffsetPublisher,
     hw: OffsetPublisher,
-    commands: Sender<LeaderReplicaControllerCommand>
+    commands: Sender<LeaderReplicaControllerCommand>,
 }
 
 impl<S> fmt::Display for LeaderReplicaState<S> {
@@ -47,22 +52,20 @@ impl<S> fmt::Display for LeaderReplicaState<S> {
     }
 }
 
-
-impl <S> LeaderReplicaState<S>
-    where S: ReplicaStorage
+impl<S> LeaderReplicaState<S>
+where
+    S: ReplicaStorage,
 {
-
     pub fn new<R>(
-        replica_id: R, 
-        leader_id: SpuId, 
-        storage: S, 
+        replica_id: R,
+        leader_id: SpuId,
+        storage: S,
         follower_ids: HashSet<SpuId>,
-        commands: Sender<LeaderReplicaControllerCommand>
-    ) -> Self 
+        commands: Sender<LeaderReplicaControllerCommand>,
+    ) -> Self
     where
-        R: Into<ReplicaKey>
+        R: Into<ReplicaKey>,
     {
-       
         let leo = OffsetPublisher::new(storage.get_hw());
         let hw = OffsetPublisher::new(storage.get_leo());
         let followers = FollowerReplicaInfo::ids_to_map(leader_id, follower_ids);
@@ -73,10 +76,9 @@ impl <S> LeaderReplicaState<S>
             storage: RwLock::new(storage),
             leo,
             hw,
-            commands
+            commands,
         }
     }
-
 
     pub fn replica_id(&self) -> &ReplicaKey {
         &self.replica_id
@@ -92,14 +94,14 @@ impl <S> LeaderReplicaState<S>
         self.hw.current_value()
     }
 
+
     // probably only used in the test
-    /* 
+    /*
     #[allow(dead_code)]
     pub(crate) fn followers(&self, spu: &SpuId) -> Option<FollowerReplicaInfo> {
         self.followers.read().await.get(spu).cloned()
     }
     */
-    
 
     /// send message to leader controller
     pub async fn send_message(
@@ -108,8 +110,6 @@ impl <S> LeaderReplicaState<S>
     ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
         self.commands.send(command).await
     }
-
-    
 
     /// update followers offset, return (status_needs_to_changed,follower to be synced)
     ///
@@ -150,12 +150,11 @@ impl <S> LeaderReplicaState<S>
 
         let mut followers = self.followers.write().await;
 
-        let changed =
-            if let Some(old_info) = followers.insert(follower_id, follower_info.clone()) {
-                old_info != follower_info
-            } else {
-                false
-            };
+        let changed = if let Some(old_info) = followers.insert(follower_id, follower_info.clone()) {
+            old_info != follower_info
+        } else {
+            false
+        };
 
         (
             changed,
@@ -198,15 +197,11 @@ impl <S> LeaderReplicaState<S>
 
     /// convert myself as
     async fn as_lrs_request(&self) -> LrsRequest {
-
-        let leader = (
-            self.leader_id,
-            self.hw(),
-            self.leo(),
-        )
-            .into();
+        let leader = (self.leader_id, self.hw(), self.leo()).into();
         let replicas = self
-            .followers.read().await
+            .followers
+            .read()
+            .await
             .iter()
             .map(|(follower_id, follower_info)| {
                 (*follower_id, follower_info.hw(), follower_info.leo()).into()
@@ -221,19 +216,14 @@ impl <S> LeaderReplicaState<S>
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
         sc_sink.send(lrs).await
     }
-
-
 }
 
-
-
 impl LeaderReplicaState<FileReplica> {
-
     /// create new replica state using file replica
     pub async fn create_file_replica(
         leader: Replica,
         config: &ConfigOption,
-        commands: Sender<LeaderReplicaControllerCommand>
+        commands: Sender<LeaderReplicaControllerCommand>,
     ) -> Result<Self, StorageError> {
         trace!(
             "creating new leader replica state: {:#?} using file replica",
@@ -247,10 +237,16 @@ impl LeaderReplicaState<FileReplica> {
             leader.leader,
             storage,
             replica_ids,
-            commands
+            commands,
         ))
     }
 
+    /// get start offset and hw
+    pub async fn start_offset_info(&self) -> (Offset, Offset) {
+        let reader = self.storage.read().await;
+        (reader.get_log_start_offset(), reader.get_hw())
+    }
+    
     /// read records into partition response
     /// return hw and leo
     pub async fn read_records<P>(
@@ -279,23 +275,18 @@ impl LeaderReplicaState<FileReplica> {
     }
 
     /// write new record set and update shared offsets
-    pub async fn write_record_set(
-        &self,
-        records: &mut RecordSet,
-    ) -> Result<(),StorageError> {
-
+    pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         let mut writer = self.storage.write().await;
         let offset_updates = writer.write_recordset(records).await?;
+        drop(writer);
 
         match offset_updates {
             OffsetUpdate::Leo(offset) => self.leo.update(offset),
-            OffsetUpdate::LeoHw(offset) => self.hw.update(offset)
+            OffsetUpdate::LeoHw(offset) => self.hw.update(offset),
         }
 
         Ok(())
-        
     }
-
 
     /// sync specific follower
     pub async fn sync_follower(
@@ -350,14 +341,11 @@ impl LeaderReplicaState<FileReplica> {
         }
     }
 
-    
     /// delete storage
     pub async fn remove(&self) -> Result<(), StorageError> {
         let write = self.storage.write().await;
         write.remove().await
     }
-
-    
 
     /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
@@ -368,7 +356,6 @@ impl LeaderReplicaState<FileReplica> {
                 .await;
         }
     }
-    
 
     #[allow(dead_code)]
     pub async fn live_replicas(&self) -> Vec<SpuId> {
@@ -379,10 +366,7 @@ impl LeaderReplicaState<FileReplica> {
     pub fn leader_id(&self) -> SpuId {
         self.leader_id
     }
-
 }
-
-
 
 use super::FollowerOffsetUpdate;
 
@@ -399,14 +383,12 @@ impl Default for FollowerReplicaInfo {
 }
 
 impl FollowerReplicaInfo {
-
     /// convert follower ids into BtreeMap of this
-    fn ids_to_map(leader_id: SpuId,follower_ids: HashSet<SpuId>) -> BTreeMap<SpuId, Self>
-    {
+    fn ids_to_map(leader_id: SpuId, follower_ids: HashSet<SpuId>) -> BTreeMap<SpuId, Self> {
         let mut followers = BTreeMap::new();
         for id in follower_ids.into_iter().filter(|id| *id != leader_id) {
             followers.insert(id, Self::default());
-        };
+        }
         followers
     }
 
@@ -439,27 +421,18 @@ impl From<(Offset, Offset)> for FollowerReplicaInfo {
     }
 }
 
+impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
 
-
-
-
-
-impl<S> LeaderReplicaState<S>
-where
-    S: ReplicaStorage,
-{
-    
-
-    
-}
-
-impl LeaderReplicaState<FileReplica> {
-    
-}
+impl LeaderReplicaState<FileReplica> {}
 
 #[cfg(test)]
 mod test {
 
+    use std::collections::HashSet;
+    use std::iter::FromIterator;
+
+    use async_channel::bounded;
+    use fluvio_future::test_async;
     use fluvio_storage::ReplicaStorage;
     use dataplane::Offset;
 
@@ -486,73 +459,84 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_follower_update() {
-        fluvio_future::subscriber::init_logger();
+    #[test_async]
+    async fn test_follower_update() -> Result<(), ()> {
         let mock_replica = MockReplica::new(20, 10); // eof, hw
-
+        let (sender, _) = bounded(10);
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let mut replica_state =
-            LeaderReplicaState::new(("test", 1), 5000, mock_replica, vec![5001]);
-        let follower_info = replica_state
-            .followers
-            .get(&5001)
-            .expect("follower should exists");
+        let replica_state = LeaderReplicaState::new(
+            ("test", 1),
+            5000,
+            mock_replica,
+            HashSet::from_iter(vec![5001]),
+            sender,
+        );
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
         assert_eq!(follower_info.hw, -1);
         assert_eq!(follower_info.leo, -1);
 
         // follower sends update with it's current state 10,10
         // this should trigger status update and follower sync
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 10, 10)),
+            replica_state.update_follower_offsets((5001, 10, 10)).await,
             (true, Some((10, 10).into()))
         );
 
         // follower resync which sends same offset status, in this case no update but should trigger resync
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 10, 10)),
+            replica_state.update_follower_offsets((5001, 10, 10)).await,
             (false, Some((10, 10).into()))
         );
 
         // finally follower updates the offset, this should trigger update but no resync
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 20, 10)),
+            replica_state.update_follower_offsets((5001, 20, 10)).await,
             (true, None)
         );
 
         // follower resync with same value, in this case no update and no resync
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 20, 10)),
+            replica_state.update_follower_offsets((5001, 20, 10)).await,
             (false, None)
         );
+        Ok(())
     }
 
-    #[test]
-    fn test_leader_update() {
-        fluvio_future::subscriber::init_logger();
+    #[test_async]
+    async fn test_leader_update() -> Result<(), ()> {
         let mock_replica = MockReplica::new(20, 10); // eof, hw
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let mut replica_state =
-            LeaderReplicaState::new(("test", 1), 5000, mock_replica, vec![5001]);
-        assert_eq!(replica_state.need_follower_updates().len(), 0);
+        let (sender, _) = bounded(10);
+        let replica_state = LeaderReplicaState::new(
+            ("test", 1),
+            5000,
+            mock_replica,
+            HashSet::from_iter(vec![5001]),
+            sender,
+        );
+        assert_eq!(replica_state.need_follower_updates().await.len(), 0);
 
         // update high watermark of our replica to same as endoffset
-        replica_state.mut_storage().hw = 20;
-        assert_eq!(replica_state.need_follower_updates().len(), 0);
+        let mut storage = replica_state.storage.write().await;
+        storage.hw = 20;
+        assert_eq!(replica_state.need_follower_updates().await.len(), 0);
 
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 10, 10)),
+            replica_state.update_follower_offsets((5001, 10, 10)).await,
             (true, Some((10, 10).into()))
         );
-        let updates = replica_state.need_follower_updates();
+        let updates = replica_state.need_follower_updates().await;
         assert_eq!(updates.len(), 1);
         assert_eq!(updates[0], (5001, (10, 10).into()));
 
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 20, 20)),
+            replica_state.update_follower_offsets((5001, 20, 20)).await,
             (true, None)
         );
-        assert_eq!(replica_state.need_follower_updates().len(), 0);
+        assert_eq!(replica_state.need_follower_updates().await.len(), 0);
+
+        Ok(())
     }
 }
