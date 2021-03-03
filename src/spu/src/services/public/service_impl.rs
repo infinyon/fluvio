@@ -17,6 +17,7 @@ use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
+use dataplane::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
@@ -162,16 +163,28 @@ where
                                     offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
                                 },
                                 SpuServerRequest::FileStreamFetchRequest(request) =>  {
-                                    let (stream_id,offset_publisher) = context.stream_publishers().create_new_publisher().await;
-                                    let listener =  offset_publisher.change_listner();
 
-                                    StreamFetchHandler::start(
-                                        request,context.clone(),
-                                        s_sink.clone(),
-                                        end_event.clone(),
-                                        listener,
-                                        stream_id
-                                    );
+                                    let (header, msg) = request.get_header_request();
+
+                                    let current_offset = msg.fetch_offset;
+                                    let isolation = msg.isolation;
+                                    let replica = ReplicaKey::new(msg.topic, msg.partition);
+                                    let max_bytes = msg.max_bytes as u32;
+                                    if let Some(leader_state) = context.leaders_state().get(&replica) {
+                                        let (stream_id,offset_publisher) = context.stream_publishers().create_new_publisher().await;
+                                        let listener =  offset_publisher.change_listner();
+
+                                        StreamFetchHandler::start(
+                                            request,context.clone(),
+                                            s_sink.clone(),
+                                            end_event.clone(),
+                                            listener,
+                                            stream_id
+                                        );
+                                    } else {
+
+                                    }
+                                    
                                 },
                                 SpuServerRequest::UpdateOffsetsRequest(request) =>
                                     call_service!(

@@ -43,6 +43,9 @@ where
 {
     /// handle fluvio continuous fetch request
     pub fn start(
+        replica: ReplicaKey,
+        header: RequestHeader,
+        max_bytes: u32,
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: InnerExclusiveFlvSink<S>,
