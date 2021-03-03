@@ -40,6 +40,10 @@ pub struct ProduceLogOpt {
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
+    /// Sends key/value JSON records where the key is selected using this JSON path.
+    #[structopt(long, conflicts_with("key-separator"))]
+    pub json_path: Option<String>,
+
     /// Paths to files to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub files: Vec<PathBuf>,
@@ -96,7 +100,7 @@ impl ProduceLogOpt {
         let mut lines = BufReader::new(file).lines().enumerate();
         while let Some((i, Ok(line))) = lines.next() {
             if self.kv_mode() {
-                self.produce_key_value(producer, &line).await?;
+                self.produce_key_value(producer, line.as_bytes()).await?;
             } else {
                 producer.send_record(&line, self.partition).await?;
             }
@@ -137,7 +141,7 @@ impl ProduceLogOpt {
         let mut stdin_lines = BufReader::new(std::io::stdin()).lines().enumerate();
         while let Some((i, Ok(line))) = stdin_lines.next() {
             if self.kv_mode() {
-                self.produce_key_value(producer, &line).await?;
+                self.produce_key_value(producer, line.as_bytes()).await?;
             } else {
                 producer.send_record(&line, self.partition).await?;
             }
@@ -165,39 +169,78 @@ impl ProduceLogOpt {
     }
 
     fn kv_mode(&self) -> bool {
-        self.key_separator.is_some()
+        self.key_separator.is_some() || self.json_path.is_some()
     }
 
-    async fn produce_key_value<C: AsRef<[u8]>>(
-        &self,
-        producer: &mut TopicProducer,
-        contents: C,
-    ) -> Result<()> {
-        let contents = contents.as_ref();
-
+    async fn produce_key_value(&self, producer: &mut TopicProducer, contents: &[u8]) -> Result<()> {
         if let Some(separator) = &self.key_separator {
-            debug!(?separator, "Producing Key/Value:");
-            let string = std::str::from_utf8(contents).map_err(|_| {
-                ConsumerError::Other("--key-separator requires records to be UTF-8".to_string())
-            })?;
+            self.produce_key_value_via_separator(producer, contents, separator)
+                .await?;
+            return Ok(());
+        }
 
-            let pieces: Vec<_> = string.split(separator).collect();
-            if pieces.len() < 2 {
-                return Err(ConsumerError::Other(format!(
-                    "Failed to find separator '{}' in record '{}'",
-                    separator, string
-                )));
-            }
-
-            let key = pieces[0];
-            let value: String = (&pieces[1..]).join(&*separator);
-            producer.send(key, value).await?;
+        if let Some(jsonpath) = &self.json_path {
+            self.produce_key_value_via_jsonpath(producer, contents, jsonpath)
+                .await?;
             return Ok(());
         }
 
         Err(ConsumerError::Other(
             "Failed to send key-value record".to_string(),
         ))
+    }
+
+    async fn produce_key_value_via_separator(
+        &self,
+        producer: &mut TopicProducer,
+        contents: &[u8],
+        separator: &str,
+    ) -> Result<()> {
+        debug!(?separator, "Producing Key/Value:");
+        let string = std::str::from_utf8(contents).map_err(|_| {
+            ConsumerError::Other("--key-separator requires records to be UTF-8".to_string())
+        })?;
+
+        let pieces: Vec<_> = string.split(separator).collect();
+        if pieces.len() < 2 {
+            return Err(ConsumerError::Other(format!(
+                "Failed to find separator '{}' in record '{}'",
+                separator, string
+            )));
+        }
+
+        let key = pieces[0];
+        let value: String = (&pieces[1..]).join(&*separator);
+        producer.send(key, value).await?;
+        Ok(())
+    }
+
+    async fn produce_key_value_via_jsonpath(
+        &self,
+        producer: &mut TopicProducer,
+        contents: &[u8],
+        jsonpath: &str,
+    ) -> Result<()> {
+        let json: serde_json::Value =
+            serde_json::from_slice(contents).map_err(|e| ConsumerError::Other(e.to_string()))?;
+        let selector =
+            jsonpath::Selector::new(jsonpath).map_err(|e| ConsumerError::Other(e.to_string()))?;
+        let key_results: Vec<_> = selector.find(&json).collect();
+        let len = key_results.len();
+        if len != 1 {
+            return Err(ConsumerError::Other(format!(
+                "Jsonpath must select 1 key: found {}",
+                len
+            )));
+        }
+
+        let key = key_results[0];
+        let key_string = key
+            .as_str()
+            .ok_or_else(|| ConsumerError::Other("Selected value must be a string".to_string()))?;
+        producer.send(key_string, contents).await?;
+
+        Ok(())
     }
 
     pub fn metadata() -> FluvioExtensionMetadata {
