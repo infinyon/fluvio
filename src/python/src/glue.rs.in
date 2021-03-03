@@ -1,30 +1,101 @@
-
-pub struct Foo {
-    pub data: i32
+use fluvio::{
+    Fluvio,
+    PartitionConsumer,
+    TopicProducer,
+    FluvioError,
+    Offset,
+    consumer::Record,
+};
+use async_std::{
+    task::block_on,
+    stream::{
+        Stream,
+        StreamExt,
+    },
+};
+use std::pin::Pin;
+mod _Fluvio {
+    use super::*;
+    pub fn connect() -> Fluvio {
+        block_on(Fluvio::connect()).expect("Failed to connect to fluvio")
+    }
+    pub fn partition_consumer(fluvio: &Fluvio, topic: String, partition: i32) -> Result<PartitionConsumer, FluvioError> {
+        block_on(fluvio.partition_consumer(topic, partition))
+    }
+    pub fn topic_producer(
+        fluvio: &Fluvio,
+        topic: String,
+    ) -> Result<TopicProducer, FluvioError> {
+        block_on(fluvio.topic_producer(topic))
+    }
 }
 
-impl Foo {
-    fn new(val: i32) -> Foo {
-        Foo{data: val}
-    }
+foreign_class!(class Fluvio {
+    self_type Fluvio;
+    private constructor = empty;
+    fn _Fluvio::connect() -> Fluvio;
+    fn _Fluvio::partition_consumer(&self, _: String, _ : i32) -> Result<PartitionConsumer, FluvioError>;
+    fn _Fluvio::topic_producer(&self, _: String) -> Result<TopicProducer, FluvioError>;
+});
 
-    fn f(&self, a: i32, b: i32) -> i32 {
-        self.data + a + b
-    }
 
-    fn set_field(&mut self, v: i32) {
-        self.data = v;
+mod _PartitionConsumer {
+    use super::*;
+    pub fn stream(
+        consumer: &PartitionConsumer,
+        offset: u32,
+    ) -> Result<PartitionConsumerStream, FluvioError> {
+        Ok(PartitionConsumerStream {
+            inner: Box::pin(block_on(consumer.stream(Offset::from_beginning(offset)))?)
+        })
     }
-    fn as_string(&self) -> String {
-        format!("FOO: {:?}", self.data)
+}
+foreign_class!(class PartitionConsumer {
+    self_type PartitionConsumer;
+    private constructor = empty;
+    fn _PartitionConsumer::stream(&self, _: u32) -> Result<PartitionConsumerStream, FluvioError>;
+});
+
+type PartitionConsumerIteratorInner =
+    Pin<Box<dyn Stream<Item = Result<Record, FluvioError>> + Send>>;
+
+pub struct PartitionConsumerStream {
+    pub inner: PartitionConsumerIteratorInner,
+}
+impl PartitionConsumerStream {
+    pub fn next(&mut self) -> Result<Option<String>, FluvioError> {
+         use std::convert::TryFrom;
+        if let Some(record) = block_on(self.inner.next()) {
+            let record = record?;
+            if let Ok(record) = String::try_from(record) {
+                Ok(Some(record))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
     }
 }
 
-foreign_class!(class Foo {
-    self_type Foo;
-    constructor Foo::new(_: i32) -> Foo;
-    fn Foo::set_field(&mut self, _: i32);
-    fn Foo::f(&self, _: i32, _: i32) -> i32;
-    fn Foo::as_string(&self) -> String;
-    //fn f2(_: i32) -> i32;
+foreign_class!(class PartitionConsumerStream{
+    self_type PartitionConsumerStream;
+    private constructor = empty;
+    fn PartitionConsumerStream::next(&mut self) -> Result<Option<String>, FluvioError>;
+});
+
+mod _TopicProducer {
+    use super::*;
+    pub fn send_record(
+        producer: &TopicProducer,
+        buffer: String,
+        partition: i32,
+    ) -> Result<(), FluvioError> {
+        block_on(producer.send_record(buffer, partition))
+    }
+}
+foreign_class!(class TopicProducer {
+    self_type TopicProducer;
+    private constructor = empty;
+    fn _TopicProducer::send_record(&self, _: String, _ : i32) -> Result<(), FluvioError>;
 });

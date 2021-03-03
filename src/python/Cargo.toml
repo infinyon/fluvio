@@ -9,9 +9,11 @@ crate-type = ["cdylib"]
 name = "fluvio_rust"
 
 [build-dependencies]
-flapigen = { git = "https://github.com/Dushistov/flapigen-rs" }
+flapigen = "0.6.0-pre7"
 env_logger = "^0.7"
 log = "^0.4.6"
 
 [dependencies]
 cpython = { version = "0.5", features = ["extension-module"] }
+fluvio = { version = "0.5", path = "../client" }
+async-std = "1.9.0"

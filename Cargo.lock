@@ -1272,8 +1272,9 @@ checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
 
 [[package]]
 name = "flapigen"
-version = "0.6.0-pre8"
-source = "git+https://github.com/Dushistov/flapigen-rs#04fc721e60f65cf92ba1fbef0064e2a827f4e754"
+version = "0.6.0-pre7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18e3cb9f00b5290d5868d0519678d2d872421d0a0e4aa1d37a3dbef88abd7f2e"
 dependencies = [
  "bitflags",
  "heck",
@@ -1664,9 +1665,11 @@ dependencies = [
 name = "fluvio-rust"
 version = "0.1.0"
 dependencies = [
+ "async-std",
  "cpython",
  "env_logger",
  "flapigen",
+ "fluvio",
  "log",
 ]
 
