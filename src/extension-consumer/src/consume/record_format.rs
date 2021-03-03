@@ -66,8 +66,7 @@ pub fn format_dynamic_record(record: &[u8]) -> String {
 
 /// Print records in raw format
 pub fn format_raw_record(record: &[u8]) -> String {
-    let str_value = std::str::from_utf8(record).unwrap();
-    format!("{}", str_value)
+    String::from_utf8_lossy(record).to_string()
 }
 
 // -----------------------------------

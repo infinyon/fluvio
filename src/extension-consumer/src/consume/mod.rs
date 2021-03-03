@@ -235,7 +235,7 @@ impl ConsumeLogOpt {
             // if it is negative, we start from end
             if big_offset < 0 {
                 // Try to convert to u32
-                u32::try_from(big_offset * -1).ok().map(Offset::from_end)
+                u32::try_from(-big_offset).ok().map(Offset::from_end)
             } else {
                 Offset::absolute(big_offset).ok()
             }
