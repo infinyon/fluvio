@@ -55,10 +55,6 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "s", long = "suppress-unknown")]
     pub suppress_unknown: bool,
 
-    /// Separator to print between keys and values
-    #[structopt(long, default_value = ":", validator = validate_key_separator)]
-    pub key_separator: String,
-
     /// Output
     #[structopt(
         short = "O",
@@ -69,15 +65,6 @@ pub struct ConsumeLogOpt {
         default_value
     )]
     pub output: ConsumeOutputType,
-}
-
-fn validate_key_separator(separator: String) -> Result<(), String> {
-    if separator.is_empty() {
-        return Err(
-            "must be non-empty. If using '=', type it as '--key-separator \"=\"'".to_string(),
-        );
-    }
-    Ok(())
 }
 
 impl ConsumeLogOpt {
@@ -196,7 +183,7 @@ impl ConsumeLogOpt {
 
         match (formatted_key, formatted_value) {
             (Some(key), Some(value)) => {
-                println!("{}{}{}", key, self.key_separator, value);
+                println!("[{}]: {}", key, value);
             }
             (None, Some(value)) => {
                 println!("{}", value);
