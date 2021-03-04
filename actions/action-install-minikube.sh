@@ -26,7 +26,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     sudo apt install conntrack
 
     # Start Minikube with `none` driver
-    sudo minikube start --driver=none --kubernetes-version 1.19.6
+    minikube start --driver=none --kubernetes-version 1.19.6
 
     # Update permissions for .kube and .minikube
     sudo chown -R $USER $HOME/.kube $HOME/.minikube

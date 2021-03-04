@@ -28,7 +28,7 @@ inputs:
   minikube-version:
     description: "Use a specific minikube version"
     required: false
-    default: 'v1.17.0'
+    default: 'v1.18.0'
 runs:
   using: "composite"
   steps:
