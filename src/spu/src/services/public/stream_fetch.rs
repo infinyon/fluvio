@@ -12,7 +12,7 @@ use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
 use fluvio_socket::{InnerFlvSink, InnerExclusiveFlvSink, FlvSocketError};
-use dataplane::api::{RequestMessage, RequestHeader};
+use dataplane::{ErrorCode, api::{RequestMessage, RequestHeader}};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetchResponse};
@@ -42,18 +42,12 @@ where
     InnerFlvSink<S>: ZeroCopyWrite,
 {
     /// handle fluvio continuous fetch request
-    pub fn start(
-        replica: ReplicaKey,
-        header: RequestHeader,
-        max_bytes: u32,
+    pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<SimpleEvent>,
-        offset_listener: OffsetChangeListener,
-        stream_id: u32,
-        leader_state: SharedFileLeaderState
-    ) {
+    ) -> Result<(), FlvSocketError> {
         // first get receiver to offset update channel to we don't missed events
 
         let (header, msg) = request.get_header_request();
@@ -62,29 +56,59 @@ where
         let isolation = msg.isolation;
         let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
-        debug!(
 
-            sink = sink.id(),
-            %replica,
-            current_offset,
-            max_bytes,
-            "start stream fetch"
-        );
+        if let Some(leader_state) = ctx.leaders_state().get(&replica) {
+            let (stream_id, offset_publisher) =
+                ctx.stream_publishers().create_new_publisher().await;
+            let offset_listener = offset_publisher.change_listner();
 
-        let handler = Self {
-            ctx,
-            isolation,
-            replica,
-            header,
-            max_bytes,
-            sink,
-            end_event,
-            offset_listener,
-            stream_id,
-            leader_state
-        };
+            debug!(
 
-        spawn(async move { handler.process(current_offset).await });
+                sink = sink.id(),
+                %replica,
+                current_offset,
+                max_bytes,
+                "start stream fetch"
+            );
+
+            let handler = Self {
+                ctx: ctx.clone(),
+                isolation,
+                replica,
+                header,
+                max_bytes,
+                sink,
+                end_event,
+                offset_listener,
+                stream_id,
+                leader_state: leader_state.clone(),
+            };
+
+            spawn(async move { handler.process(current_offset).await });
+        } else {
+
+            let response = StreamFetchResponse {
+                topic: replica.topic,
+                stream_id: 0,
+                partition: FilePartitionResponse {
+                    partition_index: replica.partition,
+                    error_code: ErrorCode::NotLeaderForPartition,
+                    ..Default::default()
+                }
+            };
+        
+        
+            let response_msg =
+                RequestMessage::<FileStreamFetchRequest>::response_with_header(&header, response);
+        
+            trace!("sending back file fetch response msg: {:#?}", response_msg);
+        
+            let mut inner_sink = sink.lock().await;
+            inner_sink.send_response(&response_msg, header.api_version()).await?;
+            debug!("finish sending not valid");
+        }
+
+        Ok(())
     }
 
     #[instrument(
@@ -263,7 +287,8 @@ where
             ..Default::default()
         };
 
-        let (hw, leo) = self.leader_state
+        let (hw, leo) = self
+            .leader_state
             .read_records(
                 offset,
                 self.max_bytes,
@@ -271,7 +296,7 @@ where
                 &mut partition_response,
             )
             .await;
-        
+
         let response = StreamFetchResponse {
             topic: self.replica.topic.clone(),
             stream_id: self.stream_id,
@@ -287,10 +312,8 @@ where
             "start back stream response",
         );
 
-        let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
-            &self.header,
-            response,
-        );
+        let response_msg =
+            RequestMessage::<FileStreamFetchRequest>::response_with_header(&self.header, response);
 
         trace!("sending back file fetch response msg: {:#?}", response_msg);
 
@@ -310,9 +333,10 @@ where
         };
 
         Ok(Some(next_offset))
-       
     }
+
 }
+
 
 pub mod publishers {
 

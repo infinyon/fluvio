@@ -19,10 +19,10 @@ use crate::controllers::sc::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;
-use super::replica_state::{ LeaderReplicaState,SharedLeaderState};
+use super::replica_state::{ SharedLeaderState};
 
 /// time for complete re-sync with followers
-pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
+//pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
 
 /// Controller for managing leader replica.
 /// Each leader replica controller is spawned and managed by master controller to ensure max parallism.

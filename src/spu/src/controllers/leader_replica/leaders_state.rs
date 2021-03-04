@@ -1,4 +1,3 @@
-use std::{sync::Arc};
 use std::ops::{Deref,DerefMut};
 
 
@@ -42,11 +41,6 @@ impl<S> ReplicaLeadersState<S> {
     pub fn new_shared() -> SharedReplicaLeadersState<S> {
        Self::default()
     }
-
-    pub fn has_replica(&self, key: &ReplicaKey) -> bool {
-        self.contains_key(key)
-    }
-
    
 }
 

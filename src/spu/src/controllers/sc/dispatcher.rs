@@ -36,7 +36,7 @@ use crate::core::SpecChange;
 use crate::controllers::follower_replica::ReplicaFollowerController;
 use crate::controllers::follower_replica::FollowerReplicaControllerCommand;
 use crate::controllers::leader_replica::ReplicaLeaderController;
-use crate::controllers::leader_replica::{LeaderReplicaState,LeaderReplicaControllerCommand};
+use crate::controllers::leader_replica::{LeaderReplicaState, LeaderReplicaControllerCommand};
 use crate::InternalServerError;
 
 use super::SupervisorCommand;
@@ -460,10 +460,10 @@ impl ScDispatcher<FileReplica> {
 
         let (sender, receiver) = bounded(10);
 
-        match LeaderReplicaState::create_file_replica(replica, &storage_log,sender).await {
+        match LeaderReplicaState::create_file_replica(replica, &storage_log, sender).await {
             Ok(leader_replica) => {
                 debug!("file replica for leader is created: {}", storage_log);
-                self.spawn_leader_controller(replica_id, leader_replica,receiver)
+                self.spawn_leader_controller(replica_id, leader_replica, receiver)
                     .await;
             }
             Err(err) => {
@@ -489,20 +489,18 @@ impl ScDispatcher<FileReplica> {
             );
 
             if let Err(err) = leader_state
-                .send_message(
-                    LeaderReplicaControllerCommand::UpdateReplicaFromSc(replica.clone()),
-                )
+                .send_message(LeaderReplicaControllerCommand::UpdateReplicaFromSc(
+                    replica.clone(),
+                ))
                 .await
             {
-               
                 error!(
                     "error sending external command to replica controller: {:#?}",
                     err
                 );
-                
             }
         } else {
-            error!("leader controller was not found: {}",replica.id);
+            error!("leader controller was not found: {}", replica.id);
         }
     }
 
@@ -522,14 +520,18 @@ impl ScDispatcher<FileReplica> {
 
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
-        let confirm = if let Some((_,previous_state)) = self.ctx.leaders_state().remove(&replica.id) {
-
-            
-            previous_state
-                .send_message(
-                LeaderReplicaControllerCommand::RemoveReplicaFromSc,
-            )
-            .await;
+        let confirm = if let Some((_, previous_state)) =
+            self.ctx.leaders_state().remove(&replica.id)
+        {
+            if let Err(err) = previous_state
+                .send_message(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
+                .await
+            {
+                error!(
+                    "error sending external command to replica controller for replica: {}, {:#?}",
+                    replica, err
+                );
+            }
 
             if let Err(err) = previous_state.remove().await {
                 error!("error: {} removing replica: {}", err, replica);
@@ -540,9 +542,7 @@ impl ScDispatcher<FileReplica> {
                 );
             }
             true
-
         } else {
-          
             error!(
                 "error sending external command to replica controller for replica: {}",
                 replica
@@ -570,9 +570,8 @@ impl ScDispatcher<FileReplica> {
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
-        receiver: Receiver<LeaderReplicaControllerCommand>
+        receiver: Receiver<LeaderReplicaControllerCommand>,
     ) {
-        
         let shared_state = Arc::new(leader_state);
         if let Some(old_replica) = self
             .ctx
@@ -609,7 +608,7 @@ impl ScDispatcher<FileReplica> {
         if let Some(follower_replica) = self
             .ctx
             .followers_state()
-            .remove(&old_replica.leader, &old_replica.id)
+            .remove_replica(&old_replica.leader, &old_replica.id)
         {
             debug!(
                 "old follower replica exists, converting to leader: {}",
@@ -623,10 +622,10 @@ impl ScDispatcher<FileReplica> {
                 new_replica.leader,
                 follower_replica.storage_owned(),
                 HashSet::from_iter(new_replica.replicas),
-                sender
+                sender,
             );
 
-            self.spawn_leader_controller(new_replica.id, leader_state,receiver)
+            self.spawn_leader_controller(new_replica.id, leader_state, receiver)
                 .await;
         }
     }
@@ -636,8 +635,7 @@ impl ScDispatcher<FileReplica> {
     pub async fn demote_replica(&self, replica: Replica) {
         debug!("demoting replica: {}", replica);
 
-        if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id)
-        {
+        if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id) {
             drop(leader_replica_state);
             // for now, we re-scan file replica
             self.add_follower_replica(replica).await;

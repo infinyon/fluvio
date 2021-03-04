@@ -1,6 +1,5 @@
 use std::io::Error as IoError;
 
-use fluvio_storage::ReplicaStorage;
 use tracing::trace;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
