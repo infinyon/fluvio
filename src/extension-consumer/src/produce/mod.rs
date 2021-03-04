@@ -13,6 +13,15 @@ use crate::{Result, ConsumerError};
 // CLI Options
 // -----------------------------------
 
+/// Write messages to a topic/partition
+///
+/// By default, this reads input from stdin until EOF, and sends the
+/// contents as one record. Alternatively, input files may be given with
+/// '--files' and input may be sent line-by-line with '--lines'.
+///
+/// If '--key-separator' or '--json-path' are used, records are sent as
+/// key/value pairs. In this case, '--partition' is ignored and the partition
+/// each record is sent to is derived from the record's key.
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
     /// The name of the Topic to produce to
@@ -32,7 +41,7 @@ pub struct ProduceLogOpt {
     #[structopt(short, long)]
     pub lines: bool,
 
-    /// Do not print progress output when sending records
+    /// Print progress output when sending records
     #[structopt(short, long)]
     pub verbose: bool,
 
@@ -68,6 +77,13 @@ impl ProduceLogOpt {
         }
 
         if self.files.is_empty() {
+            if atty::is(atty::Stream::Stdin) {
+                if self.lines {
+                    eprintln!("Reading one record per line from stdin:");
+                } else {
+                    eprintln!("Reading one record from stdin (use ctrl-D to send):");
+                }
+            }
             self.produce_stdin(&mut producer).await?;
         } else {
             self.produce_from_files(&mut producer).await?;
@@ -104,7 +120,7 @@ impl ProduceLogOpt {
             } else {
                 producer.send_record(&line, self.partition).await?;
                 if self.verbose {
-                    println!("[null]: {}", line);
+                    println!("[null] {}", line);
                 }
             }
         }
@@ -119,7 +135,7 @@ impl ProduceLogOpt {
         } else {
             producer.send_record(&bytes, self.partition).await?;
             if self.verbose {
-                println!("[null]:");
+                println!("[null]");
             }
         }
         Ok(())
@@ -145,8 +161,11 @@ impl ProduceLogOpt {
             } else {
                 producer.send_record(&line, self.partition).await?;
                 if self.verbose {
-                    println!("[null]: {}", line);
+                    println!("[null] {}", line);
                 }
+            }
+            if atty::is(atty::Stream::Stdin) {
+                print_cli_ok!();
             }
         }
         Ok(())
@@ -162,7 +181,7 @@ impl ProduceLogOpt {
         } else {
             producer.send_record(&buffer, self.partition).await?;
             if self.verbose {
-                println!("[null]:");
+                println!("[null]");
             }
         }
         Ok(())
@@ -213,7 +232,7 @@ impl ProduceLogOpt {
         let value: String = (&pieces[1..]).join(&*separator);
         producer.send(key, &value).await?;
         if self.verbose {
-            println!("[{}]: {}", key, value);
+            println!("[{}] {}", key, value);
         }
         Ok(())
     }
@@ -245,7 +264,7 @@ impl ProduceLogOpt {
             .ok_or_else(|| ConsumerError::Other("Selected value must be a string".to_string()))?;
         producer.send(key_string, contents).await?;
         if self.verbose {
-            println!("[{}]: {}", key_string, string);
+            println!("[{}] {}", key_string, string);
         }
         Ok(())
     }

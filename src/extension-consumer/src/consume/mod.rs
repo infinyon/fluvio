@@ -25,10 +25,17 @@ use crate::consume::record_format::{
 };
 use fluvio_extension_common::output::OutputError;
 
+/// Read messages from a topic/partition
+///
+/// By default, consume operates in "streaming" mode, where the command will remain
+/// active and wait for new messages, printing them as they arrive. You can use the
+/// '-d' flag to exit after consuming all available messages.
+///
+/// Records are printed in "[key] value" format, where "null" is used for no key.
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
     /// Topic name
-    #[structopt(value_name = "string")]
+    #[structopt(value_name = "topic")]
     pub topic: String,
 
     /// Partition id
@@ -183,10 +190,10 @@ impl ConsumeLogOpt {
 
         match (formatted_key, formatted_value) {
             (Some(key), Some(value)) => {
-                println!("[{}]: {}", key, value);
+                println!("[{}] {}", key, value);
             }
             (None, Some(value)) => {
-                println!("{}", value);
+                println!("[null] {}", value);
             }
             // (Some(_), None) only if JSON cannot be printed, so skip.
             _ => debug!("Skipping record that cannot be formatted"),

@@ -27,6 +27,7 @@ eyre = "0.6.1"
 which = "4.0.2"
 hostname-validator = "1.0.0"
 content_inspector = "0.2.4"
+atty = "0.2.14"
 
 # Fluvio dependencies
 

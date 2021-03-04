@@ -174,22 +174,10 @@ impl RootCmd {
 #[derive(StructOpt, Debug)]
 pub enum FluvioCmd {
     /// Read messages from a topic/partition
-    ///
-    /// By default, this activates in "follow" mode, where
-    /// the command will hang and continue to wait for new
-    /// messages, printing them as they arrive. You can use
-    /// the `-d` switch to consume all available messages,
-    /// but exit upon reaching the end of the stream.
     #[structopt(name = "consume")]
     Consume(ConsumeLogOpt),
 
     /// Write messages to a topic/partition
-    ///
-    /// By default, this reads input from stdin until EOF, and
-    /// sends the contents as one record. Alternatively, input
-    /// files may be given with '-f' and input may be sent
-    /// line-by-line with '-l'. In any case, the producer
-    /// continues reading until it encounters EOF.
     #[structopt(name = "produce")]
     Produce(ProduceLogOpt),
 
