@@ -475,6 +475,7 @@ mod test {
         let follower_info = followers.get(&5001).expect("follower should exists");
         assert_eq!(follower_info.hw, -1);
         assert_eq!(follower_info.leo, -1);
+        drop(followers);
 
         // follower sends update with it's current state 10,10
         // this should trigger status update and follower sync
