@@ -15,37 +15,30 @@ use crate::{Result, ConsumerError};
 
 /// Write messages to a topic/partition
 ///
-/// By default, this reads input from stdin until EOF, and sends the
-/// contents as one record. Alternatively, input files may be given with
-/// '--files' and input may be sent line-by-line with '--lines'.
+/// When no '--files' are provided, the producer will read from 'stdin'
+/// and send each line of input as one record.
+///
+/// If one or more files are given with '--files', each file is sent as
+/// one entire record.
 ///
 /// If '--key-separator' or '--json-path' are used, records are sent as
-/// key/value pairs. In this case, '--partition' is ignored and the partition
-/// each record is sent to is derived from the record's key.
+/// key/value pairs, and the keys are used to determine which partition
+/// the records are sent to.
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
     /// The name of the Topic to produce to
     #[structopt(value_name = "topic")]
     pub topic: String,
 
-    /// The ID of the Partition to produce to
-    #[structopt(
-        short = "p",
-        long = "partition",
-        value_name = "integer",
-        default_value = "0"
-    )]
-    pub partition: i32,
-
     /// Send each line of input as its own record (using '\n')
-    #[structopt(short, long)]
+    #[structopt(hidden = true, short, long)]
     pub lines: bool,
 
     /// Print progress output when sending records
     #[structopt(short, long)]
     pub verbose: bool,
 
-    /// Sends key/value records split on the first instance of the separator. Implies --lines.
+    /// Sends key/value records split on the first instance of the separator.
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
@@ -77,12 +70,9 @@ impl ProduceLogOpt {
         }
 
         if self.files.is_empty() {
+            self.lines = true;
             if atty::is(atty::Stream::Stdin) {
-                if self.lines {
-                    eprintln!("Reading one record per line from stdin:");
-                } else {
-                    eprintln!("Reading one record from stdin (use ctrl-D to send):");
-                }
+                eprintln!("Reading one record per line from stdin:");
             }
             self.produce_stdin(&mut producer).await?;
         } else {
@@ -118,7 +108,7 @@ impl ProduceLogOpt {
             if self.kv_mode() {
                 self.produce_key_value(producer, line.as_bytes()).await?;
             } else {
-                producer.send_record(&line, self.partition).await?;
+                producer.send_record(&line, 0).await?;
                 if self.verbose {
                     println!("[null] {}", line);
                 }
@@ -133,7 +123,7 @@ impl ProduceLogOpt {
         if self.kv_mode() {
             self.produce_key_value(producer, &bytes).await?;
         } else {
-            producer.send_record(&bytes, self.partition).await?;
+            producer.send_record(&bytes, 0).await?;
             if self.verbose {
                 println!("[null]");
             }
@@ -159,7 +149,7 @@ impl ProduceLogOpt {
             if self.kv_mode() {
                 self.produce_key_value(producer, line.as_bytes()).await?;
             } else {
-                producer.send_record(&line, self.partition).await?;
+                producer.send_record(&line, 0).await?;
                 if self.verbose {
                     println!("[null] {}", line);
                 }
@@ -179,7 +169,7 @@ impl ProduceLogOpt {
         if self.kv_mode() {
             self.produce_key_value(producer, &buffer).await?;
         } else {
-            producer.send_record(&buffer, self.partition).await?;
+            producer.send_record(&buffer, 0).await?;
             if self.verbose {
                 println!("[null]");
             }
