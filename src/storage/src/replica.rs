@@ -20,6 +20,7 @@ use crate::StorageError;
 use crate::SlicePartitionResponse;
 use crate::ReplicaStorage;
 
+#[derive(Debug)]
 pub enum OffsetUpdate {
     Leo(Offset),            // only leo has been update
     LeoHw(Offset)           // both Leo and Hw has been updated
@@ -118,6 +119,7 @@ impl FileReplica {
         })
     }
 
+
     pub async fn remove(&self) -> Result<(), StorageError> {
         remove_dir_all(&self.option.base_dir)
             .await
@@ -139,7 +141,9 @@ impl FileReplica {
                 old_offset,
                 offset
             );
-            self.commit_checkpoint.write(offset).await?;
+            if self.option.update_hw {
+                self.commit_checkpoint.write(offset).await?;
+            }
             Ok(OffsetUpdate::LeoHw(offset))
         }
     }
@@ -192,7 +196,7 @@ impl FileReplica {
             self.write_batch(&mut batch).await?;
         }
 
-        self.update_high_watermark_to_end().await
+        self.update_high_watermark_to_end().await  
         
     }
 
@@ -588,7 +592,7 @@ mod tests {
 
         let mut records = RecordSet::default().add(create_batch());
 
-        replica.write_recordset(&mut records, true).await?;
+        replica.write_recordset(&mut records).await?;
 
         // record contains 2 batch
         assert_eq!(replica.get_hw(), 2);
@@ -694,6 +698,7 @@ mod tests {
     async fn test_replica_limit_batch() -> Result<(), StorageError> {
         let mut option = base_option("test_batch_limit");
         option.max_batch_size = 100;
+        option.update_hw = false;
 
         let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
             .await
@@ -702,7 +707,7 @@ mod tests {
         let mut small_batch = BatchProducer::builder().build().expect("batch").records();
         assert!(small_batch.write_size(0) < 100); // ensure we are writing less than 100 bytes
         replica
-            .write_recordset(&mut small_batch, false)
+            .write_recordset(&mut small_batch)
             .await
             .expect("writing records");
 
@@ -714,7 +719,7 @@ mod tests {
         assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
         assert!(matches!(
             replica
-                .write_recordset(&mut larget_batch, false)
+                .write_recordset(&mut larget_batch)
                 .await
                 .unwrap_err(),
             StorageError::BatchTooBig(_)
