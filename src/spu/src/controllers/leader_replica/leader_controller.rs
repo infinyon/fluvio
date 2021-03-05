@@ -1,5 +1,6 @@
 
 
+use dataplane::Isolation;
 use tracing::{debug};
 use tracing::instrument;
 use async_channel::Receiver;
@@ -27,14 +28,12 @@ use super::replica_state::{ SharedLeaderState};
 /// Controller for managing leader replica.
 /// Each leader replica controller is spawned and managed by master controller to ensure max parallism.
 pub struct ReplicaLeaderController<S> {
-    #[allow(dead_code)]
     local_spu: SpuId,
     id: ReplicaKey,
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
     state: SharedLeaderState<S>,
     follower_sinks: SharedSpuSinks,
     sc_channel: SharedSinkMessageChannel,
-    offset_sender: Sender<OffsetUpdateEvent>,
     max_bytes: u32
 }
 
@@ -47,7 +46,6 @@ impl<S> ReplicaLeaderController<S> {
         state: SharedLeaderState<S>,
         follower_sinks: SharedSpuSinks,
         sc_channel: SharedSinkMessageChannel,
-        offset_sender: Sender<OffsetUpdateEvent>,
         max_bytes: u32,
     ) -> Self {
         Self {
@@ -57,7 +55,6 @@ impl<S> ReplicaLeaderController<S> {
             state,
             follower_sinks,
             sc_channel,
-            offset_sender,
             max_bytes,
         }
     }
@@ -80,6 +77,8 @@ impl ReplicaLeaderController<FileReplica> {
 
         self.send_status_to_sc().await;
 
+
+        let mut leader_offset_receiver = self.state.offset_listener(&Isolation::ReadCommitted);
         loop {
             self.sync_followers().await;
             debug!("waiting for next command");
@@ -91,7 +90,7 @@ impl ReplicaLeaderController<FileReplica> {
                         match command {
                             LeaderReplicaControllerCommand::EndOffsetUpdated => {
                                 debug!("leader replica end offset has updated, update the follower if need to be");
-                                join3(self.send_status_to_sc(),self.sync_followers(),self.update_offset_to_clients()).await;
+                                join3(self.send_status_to_sc(),self.sync_followers()).await;
                             },
 
                             LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
@@ -159,22 +158,5 @@ impl ReplicaLeaderController<FileReplica> {
         self.state.send_status_to_sc(&self.sc_channel).await;
     }
 
-    /// update the clients that we have offset changed
-    async fn update_offset_to_clients(&self) {
-        /* 
-        if let Some(leader_replica) = self.leaders_state.get_replica(&self.id) {
-            let event = OffsetUpdateEvent {
-                hw: leader_replica.hw(),
-                leo: leader_replica.leo(),
-                replica_id: self.id.clone(),
-            };
-
-            if let Err(err) = self.offset_sender.send(event) {
-                error!("error sending offset {:#?}", err);
-            }
-        } else {
-            leader_warn!(self, "no replica is found");
-        }
-        */
-    }
+    
 }

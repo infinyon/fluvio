@@ -21,7 +21,7 @@ use fluvio_storage::{
     FileReplica, config::ConfigOption, StorageError, OffsetUpdate, SlicePartitionResponse,
     ReplicaStorage,
 };
-use fluvio_types::SpuId;
+use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::{controllers::sc::SharedSinkMessageChannel};
@@ -41,8 +41,8 @@ pub struct LeaderReplicaState<S> {
     leader_id: SpuId,
     storage: RwLock<S>,
     followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
-    leo: OffsetPublisher,
-    hw: OffsetPublisher,
+    leo: Arc<OffsetPublisher>,
+    hw: Arc<OffsetPublisher>,
     commands: Sender<LeaderReplicaControllerCommand>,
 }
 
@@ -66,8 +66,8 @@ where
     where
         R: Into<ReplicaKey>,
     {
-        let leo = OffsetPublisher::new(storage.get_leo());
-        let hw = OffsetPublisher::new(storage.get_hw());
+        let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
+        let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
         let followers = FollowerReplicaInfo::ids_to_map(leader_id, follower_ids);
         Self {
             replica_id: replica_id.into(),
@@ -92,6 +92,15 @@ where
     /// high watermark
     pub fn hw(&self) -> Offset {
         self.hw.current_value()
+    }
+
+    /// listen to offset based on isolation
+    pub fn offset_listener(&self,isolation: &Isolation) -> OffsetChangeListener {
+
+        match isolation {
+            Isolation::ReadCommitted => self.hw.change_listner(),
+            Isolation::ReadUncommitted => self.leo.change_listner()
+        }
     }
 
     // probably only used in the test

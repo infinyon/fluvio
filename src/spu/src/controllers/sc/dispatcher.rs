@@ -591,7 +591,6 @@ impl ScDispatcher<FileReplica> {
             shared_state,
             self.ctx.followers_sink_owned(),
             self.sink_channel.clone(),
-            self.ctx.offset_channel().sender(),
             self.max_bytes,
         );
         leader_controller.run();

@@ -24,22 +24,6 @@ pub type DefaultSharedGlobalContext = SharedGlobalContext<FileReplica>;
 pub type SharedSpuSinks = Arc<SinkPool<SpuId>>;
 pub type SharedSpuConfig = Arc<SpuConfig>;
 
-pub use event::OffsetUpdateEvent;
-
-mod event {
-
-    use dataplane::Offset;
-    use fluvio_controlplane_metadata::partition::ReplicaKey;
-
-    /// used for communicating change in offset for any replica
-    #[derive(Debug, Clone)]
-    pub struct OffsetUpdateEvent {
-        pub replica_id: ReplicaKey,
-        pub leo: Offset,
-        pub hw: Offset,
-    }
-}
-
 mod broadcast {
 
     pub use tokio::sync::broadcast::Receiver;

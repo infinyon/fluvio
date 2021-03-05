@@ -58,7 +58,6 @@ where
 
         let mut offset_replica_list: OffsetReplicaList = HashSet::new();
 
-        let mut receiver = context.offset_channel().receiver();
 
         let end_event = SimpleEvent::shared();
 
@@ -69,59 +68,6 @@ where
                     debug!("end event has been received from stream fetch, terminating");
                     break;
                 },
-
-
-
-                offset_event_res = receiver.recv() => {
-
-                    match offset_event_res {
-
-                        Ok(offset_event) => {
-                            trace!("conn: {}, offset event from leader {:#?}", s_sink.id(),offset_event);
-                            if offset_replica_list.contains(&offset_event.replica_id) {
-
-                                use fluvio_spu_schema::client::offset::ReplicaOffsetUpdateRequest;
-                                use fluvio_spu_schema::client::offset::ReplicaOffsetUpdate;
-                                use dataplane::ErrorCode;
-
-                                debug!("conn: {}, sending replica: {} hw: {}, leo: {}",s_sink.id(),
-                                    offset_event.replica_id,
-                                    offset_event.hw,
-                                    offset_event.leo);
-
-                                let req = ReplicaOffsetUpdateRequest {
-                                    offsets: vec![ReplicaOffsetUpdate {
-                                        replica: offset_event.replica_id,
-                                        error_code: ErrorCode::None,
-                                        start_offset: 0,
-                                        leo: offset_event.leo,
-                                        hw: offset_event.hw
-                                    }]
-                                };
-                                s_sink.send_request(&RequestMessage::new_request(req)).await?;
-
-                            }
-                        },
-
-                        Err(err) => {
-
-                            use tokio::sync::broadcast::RecvError;
-
-                            match err {
-                                RecvError::Closed => {
-                                    warn!("conn: {}, lost connection to event channel, closing conn",s_sink.id());
-                                    break;
-                                },
-                                RecvError::Lagged(lag) => {
-                                    warn!("conn: {}, lagging: {}",s_sink.id(),lag);
-                                }
-                            }
-
-                        }
-
-                    }
-                },
-
 
                 api_msg = api_stream.next() => {
 

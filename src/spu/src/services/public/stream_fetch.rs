@@ -31,7 +31,7 @@ pub struct StreamFetchHandler<S> {
     header: RequestHeader,
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
-    offset_listener: OffsetChangeListener,
+    consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
 }
@@ -79,7 +79,7 @@ where
                 max_bytes,
                 sink,
                 end_event,
-                offset_listener,
+                consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
             };
@@ -136,7 +136,9 @@ where
                 return Ok(());
             };
 
-        let mut receiver = self.ctx.offset_channel().receiver();
+        
+        let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
+       
 
         let mut counter: i32 = 0;
         let mut consumer_offset: Option<Offset> = if last_end_offset == starting_offset {
@@ -158,7 +160,7 @@ where
                 },
 
 
-                changed_consumer_offset = self.offset_listener.listen() => {
+                changed_consumer_offset = self.consumer_offset_listener.listen() => {
 
 
                     if changed_consumer_offset != INIT_OFFSET  {
@@ -197,70 +199,37 @@ where
 
                 },
 
-                offset_event_res = receiver.recv() => {
+                leader_offset_update = leader_offset_receiver.listen() => {
 
-                    match offset_event_res {
-                        Ok(offset_event) => {
-
-                            debug!(leo = offset_event.hw,
-                                hw = offset_event.hw,
-                                "received offset");
-                            if offset_event.replica_id == self.replica {
-                                // depends on isolation, we need to keep track different offset
-                                let update_offset = match self.isolation {
-                                    Isolation::ReadCommitted => offset_event.hw,
-                                    Isolation::ReadUncommitted => offset_event.leo
-                                };
-
-                                debug!(update_offset,"producer");
-                                if let Some(last_consumer_offset) = consumer_offset {
-                                    // we know what consumer offset is
-                                    if update_offset > last_consumer_offset {
-                                        debug!(update_offset,
-                                            consumer_offset = last_consumer_offset,
-                                            "reading offset event");
-                                        if let Some(offset_read) = self.send_back_records(last_consumer_offset).await? {
-                                            debug!(offset_read);
-                                            // actual read should be end offset since it might been changed since during read
-                                            last_end_offset = offset_read;
-                                            consumer_offset = None;
-                                        } else {
-                                            debug!("no more replica records can be read");
-                                            break;
-                                        }
-                                    } else {
-                                        debug!(ignored_update_offset = update_offset);
-                                        last_end_offset = update_offset;
-                                    }
-                                } else {
-
-                                    // we don't know consumer offset, so we delay
-                                    debug!(delay_consumer_offset = update_offset);
-                                    last_end_offset = update_offset;
-
-                                }
+                    debug!(leader_offset_update);
+                    
+                    if let Some(last_consumer_offset) = consumer_offset {
+                        // we know what consumer offset is
+                        if leader_offset_update > last_consumer_offset {
+                            debug!(leader_offset_update,
+                                consumer_offset = last_consumer_offset,
+                                "reading offset event");
+                            if let Some(offset_read) = self.send_back_records(last_consumer_offset).await? {
+                                debug!(offset_read);
+                                // actual read should be end offset since it might been changed since during read
+                                last_end_offset = offset_read;
+                                consumer_offset = None;
                             } else {
-                                trace!("ignoring event because replica does not match");
+                                debug!("no more replica records can be read");
+                                break;
                             }
-
-
-                        },
-                        Err(err) => {
-                            match err {
-                                RecvError::Closed => {
-                                    error!("lost connection to leader controller");
-                                    return Err(IoError::new(
-                                        ErrorKind::Other,
-                                        format!("lost connection to leader: {}",self.replica)
-                                    ).into())
-                                },
-                                RecvError::Lagged(lagging) => {
-                                    error!(lagging);
-                                }
-                            }
-
+                        } else {
+                            debug!(ignored_update_offset = leader_offset_update);
+                            last_end_offset = leader_offset_update;
                         }
+                    } else {
+
+                        // we don't know consumer offset, so we delay
+                        debug!(delay_consumer_offset = leader_offset_update);
+                        last_end_offset = leader_offset_update;
+
                     }
+                     
                 },
             }
         }
