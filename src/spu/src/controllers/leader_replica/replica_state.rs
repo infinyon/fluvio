@@ -243,6 +243,7 @@ where
                 );
             },
             OffsetUpdate::LeoHw(hw_offset_update) => {
+                self.leo.update(hw_offset_update);
                 self.hw.update(hw_offset_update);
                 debug!(
                     replica = %self.replica_id,
