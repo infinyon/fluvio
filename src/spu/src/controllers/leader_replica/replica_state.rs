@@ -234,8 +234,22 @@ where
         drop(writer);
 
         match offset_updates {
-            OffsetUpdate::Leo(offset) => self.leo.update(offset),
-            OffsetUpdate::LeoHw(offset) => self.hw.update(offset),
+            OffsetUpdate::Leo(leo_offset_update) => {
+                self.leo.update(leo_offset_update);
+                debug!(
+                    replica = %self.replica_id,
+                    last_offset = records.last_offset().unwrap_or(-1),
+                    leo_offset_update,
+                );
+            },
+            OffsetUpdate::LeoHw(hw_offset_update) => {
+                self.hw.update(hw_offset_update);
+                debug!(
+                    replica = %self.replica_id,
+                    last_offset = records.last_offset().unwrap_or(-1),
+                    hw_offset_update,
+                );
+            }
         }
 
         Ok(())
