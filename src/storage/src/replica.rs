@@ -370,7 +370,7 @@ mod tests {
     use std::io::Cursor;
 
     use fluvio_future::test_async;
-    use dataplane::batch::DefaultBatch;
+    use dataplane::{Isolation, batch::DefaultBatch};
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fetch::FilePartitionResponse;
@@ -495,7 +495,7 @@ mod tests {
         // read records
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), batch_len);
 
@@ -508,7 +508,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         debug!("partiton response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
@@ -516,13 +516,13 @@ mod tests {
         replica.write_batch(&mut create_batch()).await?;
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), batch_len * 2);
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(50, &mut partition_response)
+            .read_all_uncommitted_records(50, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), 50);
 
@@ -645,7 +645,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_partition_slice(0, FileReplica::PREFER_MAX_LEN, Isolation::ReadCommitted, &mut partition_response)
             .await;
         debug!("partition response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), 0);
@@ -663,7 +663,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_partition_slice(0, FileReplica::PREFER_MAX_LEN, Isolation::ReadCommitted,&mut partition_response)
             .await;
         debug!("partition response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
@@ -682,7 +682,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_partition_slice(0, FileReplica::PREFER_MAX_LEN, Isolation::ReadCommitted,&mut partition_response)
             .await;
         debug!("partition response: {:#?}", partition_response);
         // should return same records as 1 batch since we didn't commit 2nd batch
