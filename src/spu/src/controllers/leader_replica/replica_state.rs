@@ -217,6 +217,40 @@ where
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
         sc_sink.send(lrs).await
     }
+
+    /// write new record set and update shared offsets
+    pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
+        let mut writer = self.storage.write().await;
+        let offset_updates = writer.write_recordset(records).await?;
+        drop(writer);
+
+        match offset_updates {
+            OffsetUpdate::Leo(offset) => self.leo.update(offset),
+            OffsetUpdate::LeoHw(offset) => self.hw.update(offset),
+        }
+
+        Ok(())
+    }
+
+    /// read records into partition response
+    /// return hw and leo
+    pub async fn read_records<P>(
+        &self,
+        offset: Offset,
+        max_len: u32,
+        isolation: Isolation,
+        partition_response: &mut P,
+    ) -> (Offset, Offset)
+    where
+        P: SlicePartitionResponse + Send,
+    {
+        let read_storage = self.storage.read().await;
+        
+        read_storage
+                    .read_partition_slice(offset, max_len,isolation,partition_response)
+                    .await
+    }
+
 }
 
 impl LeaderReplicaState<FileReplica> {
@@ -248,46 +282,8 @@ impl LeaderReplicaState<FileReplica> {
         (reader.get_log_start_offset(), reader.get_hw())
     }
 
-    /// read records into partition response
-    /// return hw and leo
-    pub async fn read_records<P>(
-        &self,
-        offset: Offset,
-        max_len: u32,
-        isolation: Isolation,
-        partition_response: &mut P,
-    ) -> (Offset, Offset)
-    where
-        P: SlicePartitionResponse,
-    {
-        let read_storage = self.storage.read().await;
-        match isolation {
-            Isolation::ReadCommitted => {
-                read_storage
-                    .read_committed_records(offset, max_len, partition_response)
-                    .await
-            }
-            Isolation::ReadUncommitted => {
-                read_storage
-                    .read_records(offset, None, max_len, partition_response)
-                    .await
-            }
-        }
-    }
-
-    /// write new record set and update shared offsets
-    pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
-        let mut writer = self.storage.write().await;
-        let offset_updates = writer.write_recordset(records).await?;
-        drop(writer);
-
-        match offset_updates {
-            OffsetUpdate::Leo(offset) => self.leo.update(offset),
-            OffsetUpdate::LeoHw(offset) => self.hw.update(offset),
-        }
-
-        Ok(())
-    }
+    
+    
 
     /// sync specific follower
     pub async fn sync_follower(
@@ -429,27 +425,34 @@ impl LeaderReplicaState<FileReplica> {}
 #[cfg(test)]
 mod test {
 
-    use std::collections::HashSet;
+    use std::{collections::HashSet};
     use std::iter::FromIterator;
 
     use async_channel::bounded;
+    use async_trait::async_trait;
+
     use fluvio_future::test_async;
-    use fluvio_storage::ReplicaStorage;
+    use dataplane::fetch::{FetchablePartitionResponse};
+    use fluvio_storage::{ ReplicaStorage, OffsetUpdate};
     use dataplane::Offset;
+    use dataplane::record::RecordSet;
 
     use super::LeaderReplicaState;
+
 
     struct MockReplica {
         hw: Offset,
         leo: Offset,
+        hw_update: Option<Offset>
     }
 
     impl MockReplica {
         fn new(leo: Offset, hw: Offset) -> Self {
-            MockReplica { hw, leo }
+            MockReplica { hw, leo,hw_update: None }
         }
     }
 
+    #[async_trait]
     impl ReplicaStorage for MockReplica {
         fn get_hw(&self) -> Offset {
             self.hw
@@ -457,6 +460,30 @@ mod test {
 
         fn get_leo(&self) -> Offset {
             self.leo
+        }
+
+        async fn read_partition_slice<P>(
+            &self,
+            _offset: Offset,
+            _max_len: u32,
+            _isolation: dataplane::Isolation,
+            _partition_response: &mut P,
+        ) -> (Offset, Offset)
+        where
+            P: fluvio_storage::SlicePartitionResponse + Send {
+        todo!()
+    }
+
+        // do dummy implementations of write
+        async fn write_recordset(
+            &mut self,
+            _records: &mut dataplane::record::RecordSet,
+        ) -> Result<OffsetUpdate, fluvio_storage::StorageError> {
+            if let Some(hw) = self.hw_update.take() {
+                Ok(OffsetUpdate::LeoHw(hw))
+            } else {
+                Ok(OffsetUpdate::Leo(self.leo))
+            }
         }
     }
 
@@ -544,8 +571,12 @@ mod test {
 
         // update high watermark of our replica to same as endoffset
         let mut storage = replica_state.storage.write().await;
-        storage.hw = 20;
+        storage.hw_update = Some(20);
         drop(storage);
+
+        replica_state.write_record_set(&mut RecordSet::default()).await.expect("write");
+        
+        
 
         // since we don't have followers, no updates need
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);
