@@ -4,18 +4,14 @@ use dataplane::Isolation;
 use tracing::{debug};
 use tracing::instrument;
 use async_channel::Receiver;
-use futures_util::future::join3;
 use futures_util::future::join;
 use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
-use fluvio_types::SpuId;
-use tokio::sync::broadcast::Sender;
 
 use crate::core::SharedSpuSinks;
-use crate::core::OffsetUpdateEvent;
 use crate::controllers::sc::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
@@ -28,7 +24,6 @@ use super::replica_state::{ SharedLeaderState};
 /// Controller for managing leader replica.
 /// Each leader replica controller is spawned and managed by master controller to ensure max parallism.
 pub struct ReplicaLeaderController<S> {
-    local_spu: SpuId,
     id: ReplicaKey,
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
     state: SharedLeaderState<S>,
@@ -40,7 +35,6 @@ pub struct ReplicaLeaderController<S> {
 impl<S> ReplicaLeaderController<S> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        local_spu: SpuId,
         id: ReplicaKey,
         controller_receiver: Receiver<LeaderReplicaControllerCommand>,
         state: SharedLeaderState<S>,
@@ -49,7 +43,6 @@ impl<S> ReplicaLeaderController<S> {
         max_bytes: u32,
     ) -> Self {
         Self {
-            local_spu,
             id,
             controller_receiver,
             state,
@@ -78,21 +71,29 @@ impl ReplicaLeaderController<FileReplica> {
         self.send_status_to_sc().await;
 
 
-        let mut leader_offset_receiver = self.state.offset_listener(&Isolation::ReadCommitted);
+        let mut hw_listener = self.state.offset_listener(&Isolation::ReadCommitted);
+        let mut leo_listener = self.state.offset_listener(&Isolation::ReadUncommitted);
         loop {
             self.sync_followers().await;
             debug!("waiting for next command");
 
             select! {
 
+
+                offset = hw_listener.listen() => {
+                    debug!(hw_update = offset);
+                    join(self.send_status_to_sc(),self.sync_followers()).await;
+                },
+
+                offset = leo_listener.listen() => {
+                    debug!(leo_update = offset);
+                    join(self.send_status_to_sc(),self.sync_followers()).await;
+                },
+
                 controller_req = self.controller_receiver.next() => {
                     if let Some(command) = controller_req {
                         match command {
-                            LeaderReplicaControllerCommand::EndOffsetUpdated => {
-                                debug!("leader replica end offset has updated, update the follower if need to be");
-                                join3(self.send_status_to_sc(),self.sync_followers()).await;
-                            },
-
+                            
                             LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
                                 self.update_follower_offsets(offsets).await;
                             },
@@ -109,6 +110,7 @@ impl ReplicaLeaderController<FileReplica> {
                         debug!(
                             "mailbox has terminated, terminating loop"
                         );
+                        break;
                     }
                 }
             }

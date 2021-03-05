@@ -129,11 +129,7 @@ impl<S> FollowersState<S> {
         Arc::new(Self::new())
     }
 
-    pub fn replica_keys(&self) -> &ReplicaKeys {
-        &self.replica_keys
-    }
     
-
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {
         self.contains_key(key)
     }
@@ -392,9 +388,9 @@ mod test {
         states.insert_replica(f2);
         states.insert_replica(f3);
 
-        assert_eq!(states.replica_keys().followers_count(&10), 2);
-        assert_eq!(states.replica_keys().followers_count(&20), 1);
-        assert_eq!(states.replica_keys().followers_count(&30), 0);
+        assert_eq!(states.replica_keys.followers_count(&10), 2);
+        assert_eq!(states.replica_keys.followers_count(&20), 1);
+        assert_eq!(states.replica_keys.followers_count(&30), 0);
 
         let old_state = states.remove_replica(&10, &k1).expect("old state exists");
         assert_eq!(old_state.leader, 10);

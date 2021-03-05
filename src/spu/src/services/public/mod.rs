@@ -11,12 +11,11 @@ use fluvio_service::FlvApiServer;
 use service_impl::PublicService;
 use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
-use dataplane::ReplicaKey;
+
 
 use crate::core::DefaultSharedGlobalContext;
 pub use stream_fetch::publishers::StreamPublishers;
 
-pub type OffsetReplicaList = std::collections::HashSet<ReplicaKey>;
 
 pub(crate) type PublicApiServer =
     FlvApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;

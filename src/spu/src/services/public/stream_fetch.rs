@@ -1,12 +1,10 @@
 use std::sync::Arc;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 
 use tracing::{debug, trace, error};
 use tracing::instrument;
 use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio::select;
-use tokio::sync::broadcast::RecvError;
+
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::zero_copy::ZeroCopyWrite;

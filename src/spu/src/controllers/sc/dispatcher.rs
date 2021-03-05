@@ -585,7 +585,6 @@ impl ScDispatcher<FileReplica> {
         }
 
         let leader_controller = ReplicaLeaderController::new(
-            self.ctx.local_spu_id(),
             replica_id,
             receiver,
             shared_state,

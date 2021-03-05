@@ -1,9 +1,7 @@
 use std::{sync::Arc};
-use std::collections::HashSet;
 
 use tracing::debug;
 use tracing::trace;
-use tracing::warn;
 use async_trait::async_trait;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
@@ -24,7 +22,7 @@ use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
 use super::stream_fetch::StreamFetchHandler;
-use super::OffsetReplicaList;
+
 
 #[derive(Debug)]
 pub struct PublicService {}
@@ -56,9 +54,7 @@ where
         let mut s_sink = sink.as_shared();
         let mut api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
 
-        let mut offset_replica_list: OffsetReplicaList = HashSet::new();
-
-
+    
         let end_event = SimpleEvent::shared();
 
         loop {
@@ -100,13 +96,6 @@ where
                                     "handling offset fetch request"
                                 ),
 
-                                SpuServerRequest::RegisterSyncReplicaRequest(request) => {
-                                    use std::iter::FromIterator;
-
-                                    let (_, sync_request) = request.get_header_request();
-                                    debug!("registered offset sync request: {:#?}",sync_request);
-                                    offset_replica_list = HashSet::from_iter(sync_request.leader_replicas);
-                                },
                                 SpuServerRequest::FileStreamFetchRequest(request) =>  {
 
                                         StreamFetchHandler::start(

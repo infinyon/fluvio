@@ -441,7 +441,6 @@ mod test {
     use async_trait::async_trait;
 
     use fluvio_future::test_async;
-    use dataplane::fetch::{FetchablePartitionResponse};
     use fluvio_storage::{ ReplicaStorage, OffsetUpdate};
     use dataplane::Offset;
     use dataplane::record::RecordSet;
