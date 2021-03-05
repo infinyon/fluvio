@@ -22,50 +22,79 @@ pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub use crate::segment::SegmentSlice;
 pub use crate::replica::OffsetUpdate;
+pub use inner::*;
+mod inner {
+    use async_trait::async_trait;
 
-use dataplane::{ErrorCode, Offset};
-use dataplane::fetch::FilePartitionResponse;
-use fluvio_future::file_slice::AsyncFileSlice;
+    use dataplane::{ErrorCode, Offset,Isolation};
+    use dataplane::fetch::FilePartitionResponse;
+    use dataplane::record::RecordSet;
+    use fluvio_future::file_slice::AsyncFileSlice;
 
-/// output from storage is represented as slice
-pub trait SlicePartitionResponse {
-    fn set_hw(&mut self, offset: i64);
+    use crate::StorageError;
+    use crate::OffsetUpdate;
 
-    fn set_last_stable_offset(&mut self, offset: i64);
+    /// output from storage is represented as slice
+    pub trait SlicePartitionResponse {
+        fn set_hw(&mut self, offset: i64);
 
-    fn set_log_start_offset(&mut self, offset: i64);
+        fn set_last_stable_offset(&mut self, offset: i64);
 
-    fn set_slice(&mut self, slice: AsyncFileSlice);
+        fn set_log_start_offset(&mut self, offset: i64);
 
-    fn set_error_code(&mut self, error: ErrorCode);
-}
+        fn set_slice(&mut self, slice: AsyncFileSlice);
 
-impl SlicePartitionResponse for FilePartitionResponse {
-    fn set_hw(&mut self, offset: i64) {
-        self.high_watermark = offset;
+        fn set_error_code(&mut self, error: ErrorCode);
     }
 
-    fn set_last_stable_offset(&mut self, offset: i64) {
-        self.last_stable_offset = offset;
+    impl SlicePartitionResponse for FilePartitionResponse {
+        fn set_hw(&mut self, offset: i64) {
+            self.high_watermark = offset;
+        }
+
+        fn set_last_stable_offset(&mut self, offset: i64) {
+            self.last_stable_offset = offset;
+        }
+
+        fn set_log_start_offset(&mut self, offset: i64) {
+            self.log_start_offset = offset;
+        }
+
+        fn set_slice(&mut self, slice: AsyncFileSlice) {
+            self.records = slice.into();
+        }
+
+        fn set_error_code(&mut self, error: ErrorCode) {
+            self.error_code = error;
+        }
     }
 
-    fn set_log_start_offset(&mut self, offset: i64) {
-        self.log_start_offset = offset;
+    #[async_trait]
+    pub trait ReplicaStorage {
+
+        /// high water mark offset (records that has been replicated)
+        fn get_hw(&self) -> Offset;
+
+        /// log end offset ( records that has been stored)
+        fn get_leo(&self) -> Offset;
+
+        /// read partition slice
+        /// return hw and leo
+        async fn read_partition_slice<P>(
+            &self,
+            offset: Offset,
+            max_len: u32,
+            isolation: Isolation,
+            partition_response: &mut P,
+        ) -> (Offset, Offset)
+        where
+            P: SlicePartitionResponse + Send;
+
+
+        /// write record set
+        async fn write_recordset(
+            &mut self,
+            records: &mut RecordSet,
+        ) -> Result<OffsetUpdate, StorageError>;
     }
-
-    fn set_slice(&mut self, slice: AsyncFileSlice) {
-        self.records = slice.into();
-    }
-
-    fn set_error_code(&mut self, error: ErrorCode) {
-        self.error_code = error;
-    }
-}
-
-pub trait ReplicaStorage {
-    /// high water mark offset (records that has been replicated)
-    fn get_hw(&self) -> Offset;
-
-    /// log end offset ( records that has been stored)
-    fn get_leo(&self) -> Offset;
 }

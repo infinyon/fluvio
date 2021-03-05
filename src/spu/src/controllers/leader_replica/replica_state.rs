@@ -66,8 +66,8 @@ where
     where
         R: Into<ReplicaKey>,
     {
-        let leo = OffsetPublisher::new(storage.get_hw());
-        let hw = OffsetPublisher::new(storage.get_leo());
+        let leo = OffsetPublisher::new(storage.get_leo());
+        let hw = OffsetPublisher::new(storage.get_hw());
         let followers = FollowerReplicaInfo::ids_to_map(leader_id, follower_ids);
         Self {
             replica_id: replica_id.into(),
@@ -93,7 +93,6 @@ where
     pub fn hw(&self) -> Offset {
         self.hw.current_value()
     }
-
 
     // probably only used in the test
     /*
@@ -132,13 +131,15 @@ where
         F: Into<FollowerOffsetUpdate>,
     {
         let follower_offset = offset.into();
-        // if update offset is greater than leader than something is wrong, in this case
-        // we truncate the the follower offset
+
         let follower_id = follower_offset.follower_id;
         let mut follower_info = FollowerReplicaInfo::new(follower_offset.leo, follower_offset.hw);
 
         let leader_leo = self.leo();
         let leader_hw = self.hw();
+
+        // if update offset is greater than leader than something is wrong, in this case
+        // we truncate the the follower offset
 
         if follower_info.leo > leader_leo {
             warn!(
@@ -246,7 +247,7 @@ impl LeaderReplicaState<FileReplica> {
         let reader = self.storage.read().await;
         (reader.get_log_start_offset(), reader.get_hw())
     }
-    
+
     /// read records into partition response
     /// return hw and leo
     pub async fn read_records<P>(
@@ -461,7 +462,7 @@ mod test {
 
     #[test_async]
     async fn test_follower_update() -> Result<(), ()> {
-        let mock_replica = MockReplica::new(20, 10); // eof, hw
+        let mock_replica = MockReplica::new(20, 10); // leo, hw
         let (sender, _) = bounded(10);
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let replica_state = LeaderReplicaState::new(
@@ -471,6 +472,8 @@ mod test {
             HashSet::from_iter(vec![5001]),
             sender,
         );
+
+
         let followers = replica_state.followers.read().await;
         let follower_info = followers.get(&5001).expect("follower should exists");
         assert_eq!(follower_info.hw, -1);
@@ -484,17 +487,37 @@ mod test {
             (true, Some((10, 10).into()))
         );
 
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.hw, 10);
+        assert_eq!(follower_info.leo, 10);
+        drop(followers);
+
         // follower resync which sends same offset status, in this case no update but should trigger resync
+        // since follower still has not caught up with leader
         assert_eq!(
             replica_state.update_follower_offsets((5001, 10, 10)).await,
             (false, Some((10, 10).into()))
         );
 
-        // finally follower updates the offset, this should trigger update but no resync
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.hw, 10);
+        assert_eq!(follower_info.leo, 10);
+        drop(followers);
+
+        // finally follower updates the offset same as leader
+        // this should trigger update but no resync since follower has caught up with leader
         assert_eq!(
             replica_state.update_follower_offsets((5001, 20, 10)).await,
             (true, None)
         );
+
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.leo, 20);
+        assert_eq!(follower_info.hw, 10);
+        drop(followers);
 
         // follower resync with same value, in this case no update and no resync
         assert_eq!(
@@ -506,7 +529,7 @@ mod test {
 
     #[test_async]
     async fn test_leader_update() -> Result<(), ()> {
-        let mock_replica = MockReplica::new(20, 10); // eof, hw
+        let mock_replica = MockReplica::new(20, 10); // leo, hw
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let (sender, _) = bounded(10);
@@ -522,8 +545,12 @@ mod test {
         // update high watermark of our replica to same as endoffset
         let mut storage = replica_state.storage.write().await;
         storage.hw = 20;
+        drop(storage);
+
+        // since we don't have followers, no updates need
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);
 
+        // add follower offsets info
         assert_eq!(
             replica_state.update_follower_offsets((5001, 10, 10)).await,
             (true, Some((10, 10).into()))
