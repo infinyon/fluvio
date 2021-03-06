@@ -175,6 +175,63 @@ where
         )
     }
 
+    /// compute hw based on follow update
+    ///
+    /// // case 1:  follower offset has same value as leader
+    /// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2
+    /// //          Input: leo 2, hw: 2,  this happens during follower resync.
+    /// //          Expect:  no changes,
+    ///
+    /// // case 2:  follower offset is same as previous
+    /// //          leader: leo: 2, hw: 2,  follower: leo: 1, hw: 1
+    /// //          Input:  leo: 1, hw:1,  
+    /// //          Expect, no status but follower sync
+    /// //
+    /// // case 3:  different follower offset
+    /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
+    /// //          Input:  leo: 2, hw: 2,
+    /// //          Expect, status change, follower sync  
+    pub async fn compute_hw<F>(&self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
+    where
+        F: Into<FollowerOffsetUpdate>,
+    {
+        let follower_offset = offset.into();
+
+        let follower_id = follower_offset.follower_id;
+        let mut follower_info = FollowerReplicaInfo::new(follower_offset.leo, follower_offset.hw);
+
+        let leader_leo = self.leo();
+        let leader_hw = self.hw();
+
+        // if update offset is greater than leader than something is wrong, in this case
+        // we truncate the the follower offset
+
+        if follower_info.leo > leader_leo {
+            warn!(
+                "offset leo: {} is greater than leader leo{} ",
+                follower_info.leo, leader_leo
+            );
+            follower_info.leo = leader_leo;
+        }
+
+        let mut followers = self.followers.write().await;
+
+        let changed = if let Some(old_info) = followers.insert(follower_id, follower_info.clone()) {
+            old_info != follower_info
+        } else {
+            false
+        };
+
+        (
+            changed,
+            if leader_leo != follower_info.leo || leader_hw != follower_info.hw {
+                Some(follower_info)
+            } else {
+                None
+            },
+        )
+    }
+
     /// compute list of followers that need to be sync
     /// this is done by checking diff of end offset and high watermark
     async fn need_follower_updates(&self) -> Vec<(SpuId, FollowerReplicaInfo)> {
