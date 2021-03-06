@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashSet},
-    sync::Arc,
-};
+use std::{cmp::min, collections::{BTreeMap, HashMap, HashSet}, sync::Arc};
 use std::fmt;
 
 use tracing::debug;
@@ -175,13 +172,13 @@ where
         )
     }
 
-    /// compute hw based on follow update
+    /// compute hw based on updates follow
     ///
     /// // case 1:  follower offset has same value as leader
     /// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2
     /// //          Input: leo 2, hw: 2,  this happens during follower resync.
     /// //          Expect:  no changes,
-    ///
+    /// 
     /// // case 2:  follower offset is same as previous
     /// //          leader: leo: 2, hw: 2,  follower: leo: 1, hw: 1
     /// //          Input:  leo: 1, hw:1,  
@@ -191,7 +188,16 @@ where
     /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
     /// //          Input:  leo: 2, hw: 2,
     /// //          Expect, status change, follower sync  
-    pub async fn compute_hw<F>(&self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
+    ///
+    ///  Simple HW mark calculation (assume LSR = 2) which is find minimum offset values that satisfy
+    ///     Assume: Leader leo = 10, hw = 2
+    ///         follower: leo(2,4)  =>   no change, since it doesn't satisfy minim LSR
+    ///         follower: leo(3,4)  =>   hw = 3  that is smallest leo that satisfy
+    ///         follower: leo(4,4)  =>   hw = 4
+    ///         follower: leo(6,7,9) =>  hw = 6,
+
+
+    pub async fn compute_hw<F>(&self, offset: F) -> (bool, Option<FollowerReplicaInfo>,Option<Offset>)
     where
         F: Into<FollowerOffsetUpdate>,
     {
@@ -222,14 +228,45 @@ where
             false
         };
 
-        (
-            changed,
+        let resync_flag = 
             if leader_leo != follower_info.leo || leader_hw != follower_info.hw {
                 Some(follower_info)
             } else {
                 None
-            },
-        )
+            };
+
+        // if our leo and hw is same there is no need to recompute hw
+        if leader_leo == leader_hw {
+            (changed,resync_flag,None)
+        } else {
+            // compute new HW that is min in sync
+            let min_lsr = min(self.spu_config.replication.min_in_sync_replicas,followers.len() as u16);
+            
+            let mut hw_candidates: HashMap<Offset,u16> = HashMap::new();
+            for follower in followers.values() {
+                // only consider offset that are not committed yet
+                if follower.is_valid() && follower.leo > leader_hw {
+                    let current_count = *hw_candidates.get(&follower.leo).unwrap_or_else(||&0);
+                    hw_candidates.insert(follower.leo,current_count+1);
+                }
+            }
+
+            // filter out how many satisfy min_lsr
+            let hw_offset  = hw_candidates
+                .iter()
+                .filter_map( |(&leo,&count)| {
+                    if count >= min_lsr {
+                        Some(leo)
+                    } else {
+                        None
+                    }
+                })
+                .min();
+
+            (changed,resync_flag,hw_offset)
+
+            
+        }
     }
 
     /// compute list of followers that need to be sync
@@ -637,6 +674,82 @@ mod test {
             replica_state.update_follower_offsets((5001, 20, 10)).await,
             (false, None)
         );
+        Ok(())
+    }
+
+
+    // test hw calculation after follows update
+    #[test_async]
+    async fn test_follower_hw() -> Result<(), ()> {
+        let mut spu_config = SpuConfig::default();
+        spu_config.replication.min_in_sync_replicas = 2;
+        let config = Arc::new(spu_config);
+        let mock_replica = MockReplica::new(20, 10); // leo, hw
+        let (sender, _) = bounded(10);
+
+        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        let replica_state = LeaderReplicaState::new(
+            ("test", 1),
+            5000,
+            config,
+            mock_replica,
+            HashSet::from_iter(vec![5001,5002]),
+            sender,
+        );
+
+        // ensure followers hw, leo should be initialized to -1
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.hw, -1);
+        assert_eq!(follower_info.leo, -1);
+        drop(followers);
+
+        /* 
+        // follower sends update with it's current state 10,10
+        // this should trigger status update and follower sync
+        assert_eq!(
+            replica_state.update_follower_offsets((5001, 10, 10)).await,
+            (true, Some((10, 10).into()))
+        );
+
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.hw, 10);
+        assert_eq!(follower_info.leo, 10);
+        drop(followers);
+
+        // follower resync which sends same offset status, in this case no update but should trigger resync
+        // since follower still has not caught up with leader
+        assert_eq!(
+            replica_state.update_follower_offsets((5001, 10, 10)).await,
+            (false, Some((10, 10).into()))
+        );
+
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.hw, 10);
+        assert_eq!(follower_info.leo, 10);
+        drop(followers);
+
+        // finally follower updates the offset same as leader
+        // this should trigger update but no resync since follower has caught up with leader
+        assert_eq!(
+            replica_state.update_follower_offsets((5001, 20, 10)).await,
+            (true, None)
+        );
+
+        let followers = replica_state.followers.read().await;
+        let follower_info = followers.get(&5001).expect("follower should exists");
+        assert_eq!(follower_info.leo, 20);
+        assert_eq!(follower_info.hw, 10);
+        drop(followers);
+
+        // follower resync with same value, in this case no update and no resync
+        assert_eq!(
+            replica_state.update_follower_offsets((5001, 20, 10)).await,
+            (false, None)
+        );
+        */
         Ok(())
     }
 
