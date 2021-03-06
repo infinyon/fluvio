@@ -84,7 +84,7 @@ async fn route_replica_offset(
 
     if let Some(leader) = ctx.leaders_state().get(&replica_key) {
         if let Err(err) = leader
-            .send_message(LeaderReplicaControllerCommand::FollowerOffsetUpdate(
+            .send_message_to_controller(LeaderReplicaControllerCommand::FollowerOffsetUpdate(
                 follower_update,
             ))
             .await

@@ -112,14 +112,14 @@ where
     */
 
     /// send message to leader controller
-    pub async fn send_message(
+    pub async fn send_message_to_controller(
         &self,
         command: LeaderReplicaControllerCommand,
     ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
         self.commands.send(command).await
     }
 
-    /// update followers offset, return (status_needs_to_changed,follower to be synced)
+    /// update followers offset, return (status changes back to sc,follower to be synced)
     ///
     /// // case 1:  follower offset has same value as leader
     /// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2

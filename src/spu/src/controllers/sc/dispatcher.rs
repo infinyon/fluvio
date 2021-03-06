@@ -489,7 +489,7 @@ impl ScDispatcher<FileReplica> {
             );
 
             if let Err(err) = leader_state
-                .send_message(LeaderReplicaControllerCommand::UpdateReplicaFromSc(
+                .send_message_to_controller(LeaderReplicaControllerCommand::UpdateReplicaFromSc(
                     replica.clone(),
                 ))
                 .await
@@ -524,7 +524,7 @@ impl ScDispatcher<FileReplica> {
             self.ctx.leaders_state().remove(&replica.id)
         {
             if let Err(err) = previous_state
-                .send_message(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
+                .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
                 .await
             {
                 error!(
