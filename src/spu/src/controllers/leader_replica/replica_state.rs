@@ -17,14 +17,11 @@ use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{
-    FileReplica, config::ConfigOption, StorageError, OffsetUpdate, SlicePartitionResponse,
-    ReplicaStorage,
-};
+use fluvio_storage::{FileReplica, StorageError, OffsetUpdate, SlicePartitionResponse, ReplicaStorage};
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{controllers::sc::SharedSinkMessageChannel};
+use crate::{config::SpuConfig, controllers::sc::SharedSinkMessageChannel};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
@@ -38,6 +35,7 @@ use super::LeaderReplicaControllerCommand;
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     replica_id: ReplicaKey,
+    spu_config: Arc<SpuConfig>,
     leader_id: SpuId,
     storage: RwLock<S>,
     followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
@@ -59,6 +57,7 @@ where
     pub fn new<R>(
         replica_id: R,
         leader_id: SpuId,
+        spu_config: Arc<SpuConfig>,
         storage: S,
         follower_ids: HashSet<SpuId>,
         commands: Sender<LeaderReplicaControllerCommand>,
@@ -72,6 +71,7 @@ where
         Self {
             replica_id: replica_id.into(),
             leader_id,
+            spu_config,
             followers: RwLock::new(followers),
             storage: RwLock::new(storage),
             leo,
@@ -95,11 +95,10 @@ where
     }
 
     /// listen to offset based on isolation
-    pub fn offset_listener(&self,isolation: &Isolation) -> OffsetChangeListener {
-
+    pub fn offset_listener(&self, isolation: &Isolation) -> OffsetChangeListener {
         match isolation {
             Isolation::ReadCommitted => self.hw.change_listner(),
-            Isolation::ReadUncommitted => self.leo.change_listner()
+            Isolation::ReadUncommitted => self.leo.change_listner(),
         }
     }
 
@@ -241,7 +240,7 @@ where
                     last_offset = records.last_offset().unwrap_or(-1),
                     leo_offset_update,
                 );
-            },
+            }
             OffsetUpdate::LeoHw(hw_offset_update) => {
                 self.leo.update(hw_offset_update);
                 self.hw.update(hw_offset_update);
@@ -269,19 +268,18 @@ where
         P: SlicePartitionResponse + Send,
     {
         let read_storage = self.storage.read().await;
-        
-        read_storage
-                    .read_partition_slice(offset, max_len,isolation,partition_response)
-                    .await
-    }
 
+        read_storage
+            .read_partition_slice(offset, max_len, isolation, partition_response)
+            .await
+    }
 }
 
 impl LeaderReplicaState<FileReplica> {
     /// create new replica state using file replica
     pub async fn create_file_replica(
         leader: Replica,
-        config: &ConfigOption,
+        config: Arc<SpuConfig>,
         commands: Sender<LeaderReplicaControllerCommand>,
     ) -> Result<Self, StorageError> {
         trace!(
@@ -289,11 +287,13 @@ impl LeaderReplicaState<FileReplica> {
             leader
         );
 
-        let storage = create_replica_storage(leader.leader, &leader.id, &config).await?;
+        let storage_config = config.storage().new_config();
+        let storage = create_replica_storage(leader.leader, &leader.id, &storage_config).await?;
         let replica_ids: HashSet<SpuId> = leader.replicas.into_iter().collect();
         Ok(Self::new(
             leader.id,
             leader.leader,
+            config,
             storage,
             replica_ids,
             commands,
@@ -305,9 +305,6 @@ impl LeaderReplicaState<FileReplica> {
         let reader = self.storage.read().await;
         (reader.get_log_start_offset(), reader.get_hw())
     }
-
-    
-    
 
     /// sync specific follower
     pub async fn sync_follower(
@@ -449,29 +446,34 @@ impl LeaderReplicaState<FileReplica> {}
 #[cfg(test)]
 mod test {
 
-    use std::{collections::HashSet};
+    use std::{collections::HashSet, sync::Arc};
     use std::iter::FromIterator;
 
     use async_channel::bounded;
     use async_trait::async_trait;
 
+   
     use fluvio_future::test_async;
-    use fluvio_storage::{ ReplicaStorage, OffsetUpdate};
+    use fluvio_storage::{ReplicaStorage, OffsetUpdate};
     use dataplane::Offset;
     use dataplane::record::RecordSet;
 
+    use crate::config::SpuConfig;
     use super::LeaderReplicaState;
-
 
     struct MockReplica {
         hw: Offset,
         leo: Offset,
-        hw_update: Option<Offset>
+        hw_update: Option<Offset>,
     }
 
     impl MockReplica {
         fn new(leo: Offset, hw: Offset) -> Self {
-            MockReplica { hw, leo,hw_update: None }
+            MockReplica {
+                hw,
+                leo,
+                hw_update: None,
+            }
         }
     }
 
@@ -493,9 +495,10 @@ mod test {
             _partition_response: &mut P,
         ) -> (Offset, Offset)
         where
-            P: fluvio_storage::SlicePartitionResponse + Send {
-        todo!()
-    }
+            P: fluvio_storage::SlicePartitionResponse + Send,
+        {
+            todo!()
+        }
 
         // do dummy implementations of write
         async fn write_recordset(
@@ -512,18 +515,21 @@ mod test {
 
     #[test_async]
     async fn test_follower_update() -> Result<(), ()> {
+        let spu_config = Arc::new(SpuConfig::default());
         let mock_replica = MockReplica::new(20, 10); // leo, hw
         let (sender, _) = bounded(10);
+
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let replica_state = LeaderReplicaState::new(
             ("test", 1),
             5000,
+            spu_config,
             mock_replica,
             HashSet::from_iter(vec![5001]),
             sender,
         );
 
-
+        // ensure followers hw, leo should be initialized to -1
         let followers = replica_state.followers.read().await;
         let follower_info = followers.get(&5001).expect("follower should exists");
         assert_eq!(follower_info.hw, -1);
@@ -580,12 +586,14 @@ mod test {
     #[test_async]
     async fn test_leader_update() -> Result<(), ()> {
         let mock_replica = MockReplica::new(20, 10); // leo, hw
+        let spu_config = Arc::new(SpuConfig::default());
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let (sender, _) = bounded(10);
         let replica_state = LeaderReplicaState::new(
             ("test", 1),
             5000,
+            spu_config,
             mock_replica,
             HashSet::from_iter(vec![5001]),
             sender,
@@ -597,9 +605,10 @@ mod test {
         storage.hw_update = Some(20);
         drop(storage);
 
-        replica_state.write_record_set(&mut RecordSet::default()).await.expect("write");
-        
-        
+        replica_state
+            .write_record_set(&mut RecordSet::default())
+            .await
+            .expect("write");
 
         // since we don't have followers, no updates need
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);

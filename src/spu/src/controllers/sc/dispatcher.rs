@@ -455,21 +455,21 @@ impl ScDispatcher<FileReplica> {
     async fn add_leader_replica(&self, replica: Replica) {
         debug!("adding new leader replica");
 
-        let storage_log = self.ctx.config().storage().new_config();
+        let spu_config = self.ctx.config_owned();
         let replica_id = replica.id.clone();
 
         let (sender, receiver) = bounded(10);
 
-        match LeaderReplicaState::create_file_replica(replica, &storage_log, sender).await {
+        match LeaderReplicaState::create_file_replica(replica,spu_config, sender).await {
             Ok(leader_replica) => {
-                debug!("file replica for leader is created: {}", storage_log);
+                debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(replica_id, leader_replica, receiver)
                     .await;
             }
             Err(err) => {
                 error!(
-                    "error creating storage leader replica {:#?}, log: {:#?}",
-                    err, storage_log
+                    "error creating storage leader replica {:#?}",
+                    err
                 );
                 // TODO: send status back to SC
             }
@@ -615,9 +615,11 @@ impl ScDispatcher<FileReplica> {
 
             let (sender, receiver) = bounded(10);
 
+            let spu_config = self.ctx.config_owned();
             let leader_state = LeaderReplicaState::new(
                 new_replica.id.clone(),
                 new_replica.leader,
+                spu_config,
                 follower_replica.storage_owned(),
                 HashSet::from_iter(new_replica.replicas),
                 sender,
