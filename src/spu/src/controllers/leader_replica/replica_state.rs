@@ -5,10 +5,8 @@ use std::{
 };
 use std::fmt;
 
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
-use tracing::warn;
+use tracing::instrument;
+use tracing::{debug,trace,error,warn};
 use async_rwlock::{RwLock};
 use async_channel::{Sender, SendError};
 
@@ -18,7 +16,7 @@ use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, StorageError, OffsetUpdate, SlicePartitionResponse, ReplicaStorage};
+use fluvio_storage::{FileReplica, StorageError, SlicePartitionResponse, ReplicaStorage};
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -119,62 +117,7 @@ where
         self.commands.send(command).await
     }
 
-    /// update followers offset, return (status changes back to sc,follower to be synced)
-    ///
-    /// // case 1:  follower offset has same value as leader
-    /// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2
-    /// //          Input: leo 2, hw: 2,  this happens during follower resync.
-    /// //          Expect:  no changes,
-    ///
-    /// // case 2:  follower offset is same as previous
-    /// //          leader: leo: 2, hw: 2,  follower: leo: 1, hw: 1
-    /// //          Input:  leo: 1, hw:1,  
-    /// //          Expect, no status but follower sync
-    /// //
-    /// // case 3:  different follower offset
-    /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
-    /// //          Input:  leo: 2, hw: 2,
-    /// //          Expect, status change, follower sync  
-    pub async fn update_follower_offsets<F>(&self, offset: F) -> (bool, Option<FollowerReplicaInfo>)
-    where
-        F: Into<FollowerOffsetUpdate>,
-    {
-        let follower_offset = offset.into();
-
-        let follower_id = follower_offset.follower_id;
-        let mut follower_info = FollowerReplicaInfo::new(follower_offset.leo, follower_offset.hw);
-
-        let leader_leo = self.leo();
-        let leader_hw = self.hw();
-
-        // if update offset is greater than leader than something is wrong, in this case
-        // we truncate the the follower offset
-
-        if follower_info.leo > leader_leo {
-            warn!(
-                "offset leo: {} is greater than leader leo{} ",
-                follower_info.leo, leader_leo
-            );
-            follower_info.leo = leader_leo;
-        }
-
-        let mut followers = self.followers.write().await;
-
-        let changed = if let Some(old_info) = followers.insert(follower_id, follower_info.clone()) {
-            old_info != follower_info
-        } else {
-            false
-        };
-
-        (
-            changed,
-            if leader_leo != follower_info.leo || leader_hw != follower_info.hw {
-                Some(follower_info)
-            } else {
-                None
-            },
-        )
-    }
+    
 
     /// compute hw based on updates follow
     ///
@@ -200,7 +143,7 @@ where
     ///         follower: leo(4,4)  =>   hw = 4
     ///         follower: leo(6,7,9) =>  hw = 7,
 
-    pub async fn update_follow_with_hw<F>(
+    pub async fn update_followers<F>(
         &self,
         offset: F,
     ) -> (bool, Option<FollowerReplicaInfo>, Option<Offset>)
@@ -342,32 +285,30 @@ where
     }
 
     /// write new record set and update shared offsets
+    #[instrument(
+        skip(self)
+    )]
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
+        let hw_update = self.spu_config.replication.min_in_sync_replicas == 1;
         let mut writer = self.storage.write().await;
-        let offset_updates = writer.write_recordset(records,self.spu_config.replication.min_in_sync_replicas == 1).await?;
-        drop(writer);
-
-        match offset_updates {
-            OffsetUpdate::Leo(leo_offset_update) => {
-                self.leo.update(leo_offset_update);
-                debug!(
-                    replica = %self.replica_id,
-                    last_offset = records.last_offset().unwrap_or(-1),
-                    leo_offset_update,
-                );
-            }
-            OffsetUpdate::LeoHw(hw_offset_update) => {
-                self.leo.update(hw_offset_update);
-                self.hw.update(hw_offset_update);
-                debug!(
-                    replica = %self.replica_id,
-                    last_offset = records.last_offset().unwrap_or(-1),
-                    hw_offset_update,
-                );
-            }
-        }
+        let _offset_updates = writer.write_recordset(records,hw_update).await?;
+        
+        let leo = writer.get_leo();
+        debug!(leo);
+        self.leo.update(writer.get_leo());
+        if hw_update {
+            let hw = writer.get_hw();
+            debug!(hw);
+            self.hw.update(hw);
+        }    
+         
 
         Ok(())
+    }
+
+    pub async fn update_hw(&self, hw: Offset) -> Result<bool, StorageError> {
+        let mut writer = self.storage.write().await;
+        writer.update_high_watermark(hw).await
     }
 
     /// read records into partition response
@@ -629,75 +570,7 @@ mod test {
         }
     }
 
-    #[test_async]
-    async fn test_follower_update() -> Result<(), ()> {
-        let spu_config = Arc::new(SpuConfig::default());
-        let mock_replica = MockReplica::new(20, 10); // leo, hw
-        let (sender, _) = bounded(10);
-
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let replica_state = LeaderReplicaState::new(
-            ("test", 1),
-            5000,
-            spu_config,
-            mock_replica,
-            HashSet::from_iter(vec![5001]),
-            sender,
-        );
-
-        // ensure followers hw, leo should be initialized to -1
-        let followers = replica_state.followers.read().await;
-        let follower_info = followers.get(&5001).expect("follower should exists");
-        assert_eq!(follower_info.hw, -1);
-        assert_eq!(follower_info.leo, -1);
-        drop(followers);
-
-        // follower sends update with it's current state 10,10
-        // this should trigger status update and follower sync
-        assert_eq!(
-            replica_state.update_follower_offsets((5001, 10, 10)).await,
-            (true, Some((10, 10).into()))
-        );
-
-        let followers = replica_state.followers.read().await;
-        let follower_info = followers.get(&5001).expect("follower should exists");
-        assert_eq!(follower_info.hw, 10);
-        assert_eq!(follower_info.leo, 10);
-        drop(followers);
-
-        // follower resync which sends same offset status, in this case no update but should trigger resync
-        // since follower still has not caught up with leader
-        assert_eq!(
-            replica_state.update_follower_offsets((5001, 10, 10)).await,
-            (false, Some((10, 10).into()))
-        );
-
-        let followers = replica_state.followers.read().await;
-        let follower_info = followers.get(&5001).expect("follower should exists");
-        assert_eq!(follower_info.hw, 10);
-        assert_eq!(follower_info.leo, 10);
-        drop(followers);
-
-        // finally follower updates the offset same as leader
-        // this should trigger update but no resync since follower has caught up with leader
-        assert_eq!(
-            replica_state.update_follower_offsets((5001, 20, 10)).await,
-            (true, None)
-        );
-
-        let followers = replica_state.followers.read().await;
-        let follower_info = followers.get(&5001).expect("follower should exists");
-        assert_eq!(follower_info.leo, 20);
-        assert_eq!(follower_info.hw, 10);
-        drop(followers);
-
-        // follower resync with same value, in this case no update and no resync
-        assert_eq!(
-            replica_state.update_follower_offsets((5001, 20, 10)).await,
-            (false, None)
-        );
-        Ok(())
-    }
+    
 
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test_async]
@@ -734,7 +607,7 @@ mod test {
         // follower sends leo=4,hw = 2
         // status = true, Some(4,2), None
         assert_eq!(
-            state.update_follow_with_hw((5001, 4, 2)).await,
+            state.update_followers((5001, 4, 2)).await,
             (true, Some((4, 2).into()), None)
         );
 
@@ -747,7 +620,7 @@ mod test {
         // 2nd spu send leo = 2, hw = 2,
         // status = true, Some(2,2), None
         assert_eq!(
-            state.update_follow_with_hw((5002, 2, 2)).await,
+            state.update_followers((5002, 2, 2)).await,
             (true, Some((2, 2).into()), None)
         );
 
@@ -755,7 +628,7 @@ mod test {
         // 1nd spu send different leo, 1 spu need to resync since it's not fully sync with leader
         // status = false, Some(3,2), None
         assert_eq!(
-            state.update_follow_with_hw((5001, 3, 2)).await,
+            state.update_followers((5001, 3, 2)).await,
             (true, Some((3, 2).into()), None)
         );
 
@@ -764,7 +637,7 @@ mod test {
         // is still behind new hw = 3
         // status = true, Some(2,2), None
         assert_eq!(
-            state.update_follow_with_hw((5002, 4, 2)).await,
+            state.update_followers((5002, 4, 2)).await,
             (true, Some((4, 2).into()), Some(3))
         );
 
@@ -772,7 +645,7 @@ mod test {
         // both followers have caught up
         // status = true, Some(2,2), None
         assert_eq!(
-            state.update_follow_with_hw((5001, 4, 2)).await,
+            state.update_followers((5001, 4, 2)).await,
             (true, Some((4, 2).into()), Some(4))
         );
 
@@ -801,16 +674,16 @@ mod test {
         );
 
         // leo(6,7,9) => 7
-        state.update_follow_with_hw((5001,6,2)).await;
-        state.update_follow_with_hw((5002,7,2)).await;
+        state.update_followers((5001,6,2)).await;
+        state.update_followers((5002,7,2)).await;
         assert_eq!(
-            state.update_follow_with_hw((5003, 9, 2)).await,
+            state.update_followers((5003, 9, 2)).await,
             (true, Some((9, 2).into()), Some(7))
         );
 
         // leo(9,7,9) => 9
         assert_eq!(
-            state.update_follow_with_hw((5001, 9, 2)).await,
+            state.update_followers((5001, 9, 2)).await,
             (true, Some((9, 2).into()), Some(9))
         );
 
@@ -838,21 +711,21 @@ mod test {
         );
 
         // only 2 is satisifed so no HW 
-        state.update_follow_with_hw((5001,6,2)).await;
+        state.update_followers((5001,6,2)).await;
         assert_eq!(
-            state.update_follow_with_hw((5002, 7, 2)).await,
+            state.update_followers((5002, 7, 2)).await,
             (true, Some((7, 2).into()), None)
         );
 
     
         assert_eq!(
-            state.update_follow_with_hw((5003, 9, 2)).await,
+            state.update_followers((5003, 9, 2)).await,
             (true, Some((9, 2).into()), Some(6))
         );
         
         // leo(9,7,9) => 9
         assert_eq!(
-            state.update_follow_with_hw((5001, 9, 2)).await,
+            state.update_followers((5001, 9, 2)).await,
             (true, Some((9, 2).into()), Some(7))
         );
         
@@ -891,16 +764,16 @@ mod test {
 
         // add follower offsets info
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 10, 10)).await,
-            (true, Some((10, 10).into()))
+            replica_state.update_followers((5001, 10, 10)).await,
+            (true, Some((10, 10).into()),None)
         );
         let updates = replica_state.need_follower_updates().await;
         assert_eq!(updates.len(), 1);
         assert_eq!(updates[0], (5001, (10, 10).into()));
 
         assert_eq!(
-            replica_state.update_follower_offsets((5001, 20, 20)).await,
-            (true, None)
+            replica_state.update_followers((5001, 20, 20)).await,
+            (true, None,Some(20))
         );
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);
 

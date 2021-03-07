@@ -1,4 +1,3 @@
-use std::io::Error as IoError;
 use std::mem;
 
 use fluvio_protocol::Encoder;
@@ -21,11 +20,6 @@ use crate::StorageError;
 use crate::SlicePartitionResponse;
 use crate::ReplicaStorage;
 
-#[derive(Debug)]
-pub enum OffsetUpdate {
-    Leo(Offset),            // only leo has been update
-    LeoHw(Offset)           // both Leo and Hw has been updated
-}
 
 /// Replica is public abstraction for commit log which are distributed.
 /// Internally it is stored as list of segments.  Each segment contains finite sets of record batches.
@@ -86,7 +80,7 @@ impl ReplicaStorage for FileReplica {
         &mut self,
         records: &mut RecordSet,
         update_highwatermark: bool,
-    ) -> Result<OffsetUpdate, StorageError> {
+    ) -> Result<(), StorageError> {
         let max_batch_size = self.option.max_batch_size as usize;
         // check if any of the records's batch exceed max length
         for batch in &records.batches {
@@ -100,11 +94,31 @@ impl ReplicaStorage for FileReplica {
         }
 
         if update_highwatermark {
-            self.update_high_watermark_to_end().await
-        } else {
-            Ok(OffsetUpdate::Leo(self.get_leo()))
-        }
+            self.update_high_watermark_to_end().await?;
+        } 
+        Ok(())
        
+    }
+
+    /// update committed offset (high watermark)
+    /// if true, hw is updated 
+    async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError> {
+        let old_offset = self.get_hw();
+        if old_offset == offset {
+            trace!(
+                "new high watermark: {} is same as existing one, skipping",
+                offset
+            );
+            Ok(false)
+        } else {
+            trace!(
+                "updating to new high watermark: {} old: {}",
+                old_offset,
+                offset
+            );
+            self.commit_checkpoint.write(offset).await?;
+            Ok(true)
+        }
     }
 }
 
@@ -180,30 +194,10 @@ impl FileReplica {
             .map_err(|err| err.into())
     }
 
-    /// update committed offset (high watermark)
-    pub async fn update_high_watermark(&mut self, offset: Offset) -> Result<OffsetUpdate, IoError> {
-        let old_offset = self.get_hw();
-        if old_offset == offset {
-            trace!(
-                "new high watermark: {} is same as existing one, skipping",
-                offset
-            );
-            Ok(OffsetUpdate::Leo(offset))
-        } else {
-            trace!(
-                "updating to new high watermark: {} old: {}",
-                old_offset,
-                offset
-            );
-            if self.option.update_hw {
-                self.commit_checkpoint.write(offset).await?;
-            }
-            Ok(OffsetUpdate::LeoHw(offset))
-        }
-    }
+    
 
     /// update high watermark to end
-    pub async fn update_high_watermark_to_end(&mut self) -> Result<OffsetUpdate, StorageError> {
+    pub async fn update_high_watermark_to_end(&mut self) -> Result<bool, StorageError> {
         self.update_high_watermark(self.get_leo()).await.map_err(|err| err.into())
     }
 

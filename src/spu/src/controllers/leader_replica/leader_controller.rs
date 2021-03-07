@@ -1,10 +1,10 @@
 
 
 use dataplane::Isolation;
-use tracing::{debug};
+use tracing::{debug,error};
 use tracing::instrument;
 use async_channel::Receiver;
-use futures_util::future::join;
+use futures_util::future::{join,join3};
 use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
@@ -123,8 +123,8 @@ impl ReplicaLeaderController<FileReplica> {
     async fn update_follower_offsets(&mut self, offsets: FollowerOffsetUpdate) {
        
         let follower_id = offsets.follower_id;
-        let (update_status, sync_follower) = self.state.update_follower_offsets(offsets).await;
-        join(
+        let (update_status, sync_follower,hw_update) = self.state.update_followers(offsets).await;
+        join3(
             async {
                 if update_status {
                     self.state.send_status_to_sc(&self.sc_channel).await;
@@ -142,6 +142,13 @@ impl ReplicaLeaderController<FileReplica> {
                         .await;
                 }
             },
+            async {
+                if let Some(hw) = hw_update {
+                    if let Err(err) = self.state.update_hw(hw).await {
+                        error!("error updating hw: {}",err);
+                    };
+                }
+            }
         )
         .await;
         

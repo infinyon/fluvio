@@ -21,7 +21,7 @@ pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub use crate::segment::SegmentSlice;
-pub use crate::replica::OffsetUpdate;
+
 pub use inner::*;
 mod inner {
     use async_trait::async_trait;
@@ -32,7 +32,7 @@ mod inner {
     use fluvio_future::file_slice::AsyncFileSlice;
 
     use crate::StorageError;
-    use crate::OffsetUpdate;
+
 
     /// output from storage is represented as slice
     pub trait SlicePartitionResponse {
@@ -96,6 +96,8 @@ mod inner {
             &mut self,
             records: &mut RecordSet,
             update_highwatermark: bool,
-        ) -> Result<OffsetUpdate, StorageError>;
+        ) -> Result<(), StorageError>;
+
+        async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError>;
     }
 }

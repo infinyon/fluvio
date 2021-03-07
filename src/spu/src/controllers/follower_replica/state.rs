@@ -13,7 +13,7 @@ use dashmap::DashMap;
 use flv_util::SimpleConcurrentBTreeMap;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::record::RecordSet;
-use fluvio_storage::{ FileReplica,config::ConfigOption,StorageError,ReplicaStorage,OffsetUpdate};
+use fluvio_storage::{ FileReplica,config::ConfigOption,StorageError,ReplicaStorage};
 use fluvio_types::SpuId;
 
 use crate::core::storage::create_replica_storage;
@@ -343,7 +343,7 @@ impl FollowerReplicaState<FileReplica> {
     }
 
     #[instrument()]
-    pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<OffsetUpdate, StorageError> {
+    pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<(), StorageError> {
         self.storage.write_recordset(records,false).await
     }
 
