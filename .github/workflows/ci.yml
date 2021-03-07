@@ -385,7 +385,7 @@ jobs:
           pkill -f "minikube tunnel" || true
       - name: Save logs
         if: failure()
-        run: 
+        run: |
           kubectl get spu
           kubectl get pods
           kubectl get svc
