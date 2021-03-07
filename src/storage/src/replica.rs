@@ -191,8 +191,7 @@ impl FileReplica {
 
     /// update high watermark to end
     pub async fn update_high_watermark_to_end(&mut self) -> Result<bool, StorageError> {
-        self.update_high_watermark(self.get_leo())
-            .await
+        self.update_high_watermark(self.get_leo()).await
     }
 
     /// earliest offset
