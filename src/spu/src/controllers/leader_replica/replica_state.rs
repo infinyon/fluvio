@@ -510,7 +510,7 @@ mod test {
     use async_trait::async_trait;
 
     use fluvio_future::test_async;
-    use fluvio_storage::{ReplicaStorage, OffsetUpdate};
+    use fluvio_storage::{ReplicaStorage};
     use dataplane::Offset;
     use dataplane::record::RecordSet;
 
@@ -561,12 +561,13 @@ mod test {
             &mut self,
             _records: &mut dataplane::record::RecordSet,
             _update_highwatermark: bool,
-        ) -> Result<OffsetUpdate, fluvio_storage::StorageError> {
-            if let Some(hw) = self.hw_update.take() {
-                Ok(OffsetUpdate::LeoHw(hw))
-            } else {
-                Ok(OffsetUpdate::Leo(self.leo))
-            }
+        ) -> Result<(), fluvio_storage::StorageError> {
+            let _ = self.hw_update.take();
+            Ok(())
+        }
+
+        async fn update_high_watermark(&mut self, _offset: Offset) -> Result<bool, fluvio_storage::StorageError> {
+            todo!()
         }
     }
 
