@@ -32,7 +32,7 @@ pub struct ConfigOption {
     #[serde(default = "default_max_batch_size")]
     pub max_batch_size: Size,
     #[serde(default = "default_update_hw")]
-    pub update_hw: bool         // if true, enable hw update
+    pub update_hw: bool, // if true, enable hw update
 }
 
 impl fmt::Display for ConfigOption {
@@ -44,7 +44,6 @@ impl fmt::Display for ConfigOption {
 fn default_base_dir() -> PathBuf {
     PathBuf::from(SPU_LOG_BASE_DIR)
 }
-
 
 const fn default_update_hw() -> bool {
     true
@@ -92,7 +91,7 @@ impl ConfigOption {
             flush_write_count,
             flush_idle_msec,
             max_batch_size,
-            update_hw: true
+            update_hw: true,
         }
     }
 
@@ -128,7 +127,7 @@ impl Default for ConfigOption {
             flush_write_count: default_flush_write_count(),
             flush_idle_msec: default_flush_idle_msec(),
             max_batch_size: default_max_batch_size(),
-            update_hw: true
+            update_hw: true,
         }
     }
 }

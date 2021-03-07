@@ -26,13 +26,12 @@ pub use inner::*;
 mod inner {
     use async_trait::async_trait;
 
-    use dataplane::{ErrorCode, Offset,Isolation};
+    use dataplane::{ErrorCode, Offset, Isolation};
     use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
 
     use crate::StorageError;
-
 
     /// output from storage is represented as slice
     pub trait SlicePartitionResponse {
@@ -71,7 +70,6 @@ mod inner {
 
     #[async_trait]
     pub trait ReplicaStorage {
-
         /// high water mark offset (records that has been replicated)
         fn get_hw(&self) -> Offset;
 
@@ -89,7 +87,6 @@ mod inner {
         ) -> (Offset, Offset)
         where
             P: SlicePartitionResponse + Send;
-
 
         /// write record set
         async fn write_recordset(

@@ -3,21 +3,21 @@ use std::sync::Arc;
 use std::fmt::Debug;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::ops::{Deref,DerefMut};
+use std::ops::{Deref, DerefMut};
 
-use tracing::{debug,trace,error};
+use tracing::{debug, trace, error};
 use tracing::instrument;
-use async_channel::{Sender,Receiver,bounded as channel};
+use async_channel::{Sender, Receiver, bounded as channel};
 use dashmap::DashMap;
 
 use flv_util::SimpleConcurrentBTreeMap;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::record::RecordSet;
-use fluvio_storage::{ FileReplica,config::ConfigOption,StorageError,ReplicaStorage};
+use fluvio_storage::{FileReplica, config::ConfigOption, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 
 use crate::core::storage::create_replica_storage;
-use crate::controllers::leader_replica::{UpdateOffsetRequest,ReplicaOffsetRequest};
+use crate::controllers::leader_replica::{UpdateOffsetRequest, ReplicaOffsetRequest};
 use super::FollowerReplicaControllerCommand;
 use super::DefaultSyncRequest;
 
@@ -35,15 +35,14 @@ impl ReplicaKeys {
     #[allow(dead_code)]
     pub fn followers_count(&self, leader: &SpuId) -> usize {
         let keys_lock = self.read().unwrap();
-        keys_lock.get(leader).map(|keys| keys.len()).unwrap_or_default()
+        keys_lock
+            .get(leader)
+            .map(|keys| keys.len())
+            .unwrap_or_default()
     }
 
     /// remove keys by SPU, tru if empty
-    fn remove_replica_keys(
-        &self,
-        leader: &SpuId,
-        key: &ReplicaKey,
-    ) -> bool {
+    fn remove_replica_keys(&self, leader: &SpuId, key: &ReplicaKey) -> bool {
         let mut keys_lock = self.write().unwrap();
         if let Some(keys_by_spu) = keys_lock.get_mut(leader) {
             keys_by_spu.remove(key);
@@ -55,7 +54,7 @@ impl ReplicaKeys {
 
     /// insert new replica, once replica has been insert, need to update the leader
     /// this is called by follower controller
-    pub fn insert_replica(&self, leader: SpuId,replica: ReplicaKey) {
+    pub fn insert_replica(&self, leader: SpuId, replica: ReplicaKey) {
         debug!( leader, %replica, "inserting new follower replica");
         let mut keys_lock = self.write().unwrap();
         if let Some(keys_by_pus) = keys_lock.get_mut(&leader) {
@@ -65,9 +64,7 @@ impl ReplicaKeys {
             keys.insert(replica);
             keys_lock.insert(leader, keys);
         }
-
     }
-    
 }
 
 impl Deref for ReplicaKeys {
@@ -84,17 +81,16 @@ impl DerefMut for ReplicaKeys {
     }
 }
 
-
 /// Maintains state for followers
 /// Each follower controller maintains by SPU
 #[derive(Debug)]
 pub struct FollowersState<S> {
-    replicas: DashMap<ReplicaKey,FollowerReplicaState<S>>,
-    replica_keys: ReplicaKeys,    // list of replica key mapping for each spu
-    mailboxes: SimpleConcurrentBTreeMap<SpuId, Sender<FollowerReplicaControllerCommand>>
+    replicas: DashMap<ReplicaKey, FollowerReplicaState<S>>,
+    replica_keys: ReplicaKeys, // list of replica key mapping for each spu
+    mailboxes: SimpleConcurrentBTreeMap<SpuId, Sender<FollowerReplicaControllerCommand>>,
 }
 
-/* 
+/*
     mailboxes: SimpleConcurrentBTreeMap<SpuId, Sender<FollowerReplicaControllerCommand>>,
     replica_keys: RwLock<HashMap<SpuId, HashSet<ReplicaKey>>>, // replicas maintained by follower controller
     replicas: CHashMap<ReplicaKey, FollowerReplicaState<S>>,
@@ -108,13 +104,11 @@ impl<S> Deref for FollowersState<S> {
     }
 }
 
-impl<S> DerefMut for FollowersState<S>  {
+impl<S> DerefMut for FollowersState<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.replicas
     }
 }
-
-
 
 impl<S> FollowersState<S> {
     pub fn new() -> Self {
@@ -129,11 +123,9 @@ impl<S> FollowersState<S> {
         Arc::new(Self::new())
     }
 
-    
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {
         self.contains_key(key)
     }
-
 
     /// remove followe replica
     /// if there are no more replicas per leader
@@ -144,12 +136,11 @@ impl<S> FollowersState<S> {
         leader: &SpuId,
         key: &ReplicaKey,
     ) -> Option<FollowerReplicaState<S>> {
-        
         let no_keys = self.replica_keys.remove_replica_keys(leader, key);
-        
+
         let old_replica = self.replicas.remove(key);
 
-        // if no more keys 
+        // if no more keys
         if no_keys {
             debug!(
                 "no more followers for follower controller: {}, terminating it",
@@ -166,7 +157,7 @@ impl<S> FollowersState<S> {
             }
         }
 
-        old_replica.map(|(_,state)| state)
+        old_replica.map(|(_, state)| state)
     }
 
     /// insert new mailbox and return receiver
@@ -202,13 +193,13 @@ where
     pub fn insert_replica(&self, state: FollowerReplicaState<S>) {
         trace!("inserting new follower replica: {:#?}", state);
 
-        self.replica_keys.insert_replica(state.leader,state.replica.clone());
+        self.replica_keys
+            .insert_replica(state.leader, state.replica.clone());
         self.replicas.insert(state.replica.clone(), state);
     }
 }
 
 impl FollowersState<FileReplica> {
-
     /// write records from leader to follower replica
     /// return updated offsets
     pub(crate) async fn send_records(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
@@ -344,7 +335,7 @@ impl FollowerReplicaState<FileReplica> {
 
     #[instrument()]
     pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<(), StorageError> {
-        self.storage.write_recordset(records,false).await
+        self.storage.write_recordset(records, false).await
     }
 
     pub async fn remove(self) -> Result<(), StorageError> {

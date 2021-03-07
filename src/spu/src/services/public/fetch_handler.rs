@@ -48,13 +48,14 @@ where
             };
 
             if let Some(leader) = ctx.leaders_state().get(&rep_id) {
-                leader.read_records(
-                    fetch_offset,
-                    fetch_request.max_bytes as u32,
-                    fetch_request.isolation_level.clone(),
-                    &mut partition_response,
-                )
-                .await;
+                leader
+                    .read_records(
+                        fetch_offset,
+                        fetch_request.max_bytes as u32,
+                        fetch_request.isolation_level.clone(),
+                        &mut partition_response,
+                    )
+                    .await;
             } else {
                 partition_response.error_code = ErrorCode::NotLeaderForPartition;
             }

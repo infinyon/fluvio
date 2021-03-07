@@ -11,11 +11,10 @@ use fluvio_socket::SinkPool;
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
-
 use crate::config::SpuConfig;
 use crate::controllers::follower_replica::FollowersState;
 use crate::controllers::follower_replica::SharedFollowersState;
-use crate::controllers::leader_replica::{SharedReplicaLeadersState,ReplicaLeadersState};
+use crate::controllers::leader_replica::{SharedReplicaLeadersState, ReplicaLeadersState};
 use crate::services::public::StreamPublishers;
 
 use super::spus::SharedSpuLocalStore;
@@ -23,7 +22,6 @@ use super::SharedReplicaLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
-
 
 #[derive(Debug)]
 pub struct GlobalContext<S> {
@@ -87,7 +85,6 @@ where
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
         &self.leaders_state
     }
-
 
     pub fn followers_state(&self) -> &FollowersState<S> {
         &self.followers_state

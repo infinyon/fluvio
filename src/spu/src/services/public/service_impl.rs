@@ -23,7 +23,6 @@ use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
 use super::stream_fetch::StreamFetchHandler;
 
-
 #[derive(Debug)]
 pub struct PublicService {}
 
@@ -54,7 +53,6 @@ where
         let mut s_sink = sink.as_shared();
         let mut api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
 
-    
         let end_event = SimpleEvent::shared();
 
         loop {
@@ -104,8 +102,8 @@ where
                                             s_sink.clone(),
                                             end_event.clone(),
                                         ).await?;
-                                  
-                                    
+
+
                                 },
                                 SpuServerRequest::UpdateOffsetsRequest(request) =>
                                     call_service!(

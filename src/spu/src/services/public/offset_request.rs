@@ -10,7 +10,6 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::ErrorCode;
 
-
 use crate::core::DefaultSharedGlobalContext;
 
 pub async fn handle_offset_request(
@@ -39,7 +38,7 @@ pub async fn handle_offset_request(
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
             if let Some(ref replica) = ctx.leaders_state().get(&rep_id) {
                 trace!("offset fetch request for replica found: {}", rep_id);
-                let (start_offset,hw) = replica.start_offset_info().await;
+                let (start_offset, hw) = replica.start_offset_info().await;
                 partition_response.error_code = ErrorCode::None;
                 partition_response.start_offset = start_offset;
                 partition_response.last_stable_offset = hw;

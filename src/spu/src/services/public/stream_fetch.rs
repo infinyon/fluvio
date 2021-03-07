@@ -5,12 +5,14 @@ use tracing::instrument;
 use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio::select;
 
-
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
 use fluvio_socket::{InnerFlvSink, InnerExclusiveFlvSink, FlvSocketError};
-use dataplane::{ErrorCode, api::{RequestMessage, RequestHeader}};
+use dataplane::{
+    ErrorCode,
+    api::{RequestMessage, RequestHeader},
+};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetchResponse};
@@ -84,7 +86,6 @@ where
 
             spawn(async move { handler.process(current_offset).await });
         } else {
-
             let response = StreamFetchResponse {
                 topic: replica.topic,
                 stream_id: 0,
@@ -92,17 +93,18 @@ where
                     partition_index: replica.partition,
                     error_code: ErrorCode::NotLeaderForPartition,
                     ..Default::default()
-                }
+                },
             };
-        
-        
+
             let response_msg =
                 RequestMessage::<FileStreamFetchRequest>::response_with_header(&header, response);
-        
+
             trace!("sending back file fetch response msg: {:#?}", response_msg);
-        
+
             let mut inner_sink = sink.lock().await;
-            inner_sink.send_response(&response_msg, header.api_version()).await?;
+            inner_sink
+                .send_response(&response_msg, header.api_version())
+                .await?;
             debug!("finish sending not valid");
         }
 
@@ -134,9 +136,7 @@ where
                 return Ok(());
             };
 
-        
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
-       
 
         let mut counter: i32 = 0;
         let mut consumer_offset: Option<Offset> = if last_end_offset == starting_offset {
@@ -200,7 +200,7 @@ where
                 leader_offset_update = leader_offset_receiver.listen() => {
 
                     debug!(leader_offset_update);
-                    
+
                     if let Some(last_consumer_offset) = consumer_offset {
                         // we know what consumer offset is
                         if leader_offset_update > last_consumer_offset {
@@ -227,7 +227,7 @@ where
                         last_end_offset = leader_offset_update;
 
                     }
-                     
+
                 },
             }
         }
@@ -301,9 +301,7 @@ where
 
         Ok(Some(next_offset))
     }
-
 }
-
 
 pub mod publishers {
 

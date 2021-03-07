@@ -6,7 +6,7 @@ use std::{
 use std::fmt;
 
 use tracing::instrument;
-use tracing::{debug,trace,error,warn};
+use tracing::{debug, trace, error, warn};
 use async_rwlock::{RwLock};
 use async_channel::{Sender, SendError};
 
@@ -117,8 +117,6 @@ where
         self.commands.send(command).await
     }
 
-    
-
     /// compute hw based on updates follow
     ///
     /// // case 1:  follower offset has same value as leader
@@ -208,7 +206,7 @@ where
             let mut unique_leos = qualified_leos.clone();
             unique_leos.dedup();
 
-           // debug!("unique_leos: {:#?}", unique_leos);
+            // debug!("unique_leos: {:#?}", unique_leos);
 
             let mut hw_list: Vec<Offset> = unique_leos
                 .iter()
@@ -227,7 +225,7 @@ where
                 })
                 .collect();
 
-            hw_list.sort();
+            hw_list.sort_unstable();
 
             (changed, resync_flag, hw_list.pop())
         }
@@ -285,14 +283,12 @@ where
     }
 
     /// write new record set and update shared offsets
-    #[instrument(
-        skip(self)
-    )]
+    #[instrument(skip(self))]
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         let hw_update = self.spu_config.replication.min_in_sync_replicas == 1;
         let mut writer = self.storage.write().await;
-        let _offset_updates = writer.write_recordset(records,hw_update).await?;
-        
+        let _offset_updates = writer.write_recordset(records, hw_update).await?;
+
         let leo = writer.get_leo();
         debug!(leo);
         self.leo.update(writer.get_leo());
@@ -300,8 +296,7 @@ where
             let hw = writer.get_hw();
             debug!(hw);
             self.hw.update(hw);
-        }    
-         
+        }
 
         Ok(())
     }
@@ -566,12 +561,13 @@ mod test {
             Ok(())
         }
 
-        async fn update_high_watermark(&mut self, _offset: Offset) -> Result<bool, fluvio_storage::StorageError> {
+        async fn update_high_watermark(
+            &mut self,
+            _offset: Offset,
+        ) -> Result<bool, fluvio_storage::StorageError> {
             todo!()
         }
     }
-
-    
 
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test_async]
@@ -625,7 +621,6 @@ mod test {
             (true, Some((2, 2).into()), None)
         );
 
-
         // 1nd spu send different leo, 1 spu need to resync since it's not fully sync with leader
         // status = false, Some(3,2), None
         assert_eq!(
@@ -633,7 +628,6 @@ mod test {
             (true, Some((3, 2).into()), None)
         );
 
-        
         // 2nd spu send leo = 4, hw = 2,  it has caught more than 1 spu but since 2nd sp
         // is still behind new hw = 3
         // status = true, Some(2,2), None
@@ -653,11 +647,9 @@ mod test {
         Ok(())
     }
 
-
     // test hw calculation for 3 spu and 2 in sync rep
     #[test_async]
     async fn test_follower_hw32() -> Result<(), ()> {
-
         let mut spu_config = SpuConfig::default();
         spu_config.replication.min_in_sync_replicas = 2;
         let config = Arc::new(spu_config);
@@ -670,13 +662,13 @@ mod test {
             5000,
             config,
             mock_replica,
-            HashSet::from_iter(vec![5001, 5002,5003]),
+            HashSet::from_iter(vec![5001, 5002, 5003]),
             sender,
         );
 
         // leo(6,7,9) => 7
-        state.update_followers((5001,6,2)).await;
-        state.update_followers((5002,7,2)).await;
+        state.update_followers((5001, 6, 2)).await;
+        state.update_followers((5002, 7, 2)).await;
         assert_eq!(
             state.update_followers((5003, 9, 2)).await,
             (true, Some((9, 2).into()), Some(7))
@@ -694,7 +686,6 @@ mod test {
     // test hw calculation for 3 spu and 3 in sync rep
     #[test_async]
     async fn test_follower_hw33() -> Result<(), ()> {
-
         let mut spu_config = SpuConfig::default();
         spu_config.replication.min_in_sync_replicas = 3;
         let config = Arc::new(spu_config);
@@ -707,29 +698,28 @@ mod test {
             5000,
             config,
             mock_replica,
-            HashSet::from_iter(vec![5001, 5002,5003]),
+            HashSet::from_iter(vec![5001, 5002, 5003]),
             sender,
         );
 
-        // only 2 is satisifed so no HW 
-        state.update_followers((5001,6,2)).await;
+        // only 2 is satisifed so no HW
+        state.update_followers((5001, 6, 2)).await;
         assert_eq!(
             state.update_followers((5002, 7, 2)).await,
             (true, Some((7, 2).into()), None)
         );
 
-    
         assert_eq!(
             state.update_followers((5003, 9, 2)).await,
             (true, Some((9, 2).into()), Some(6))
         );
-        
+
         // leo(9,7,9) => 9
         assert_eq!(
             state.update_followers((5001, 9, 2)).await,
             (true, Some((9, 2).into()), Some(7))
         );
-        
+
         Ok(())
     }
 
@@ -766,15 +756,15 @@ mod test {
         // add follower offsets info
         assert_eq!(
             replica_state.update_followers((5001, 10, 10)).await,
-            (true, Some((10, 10).into()),None)
+            (true, Some((10, 10).into()), None)
         );
         let updates = replica_state.need_follower_updates().await;
         assert_eq!(updates.len(), 1);
         assert_eq!(updates[0], (5001, (10, 10).into()));
 
         assert_eq!(
-            replica_state.update_followers((5001, 20, 20)).await,
-            (true, None,Some(20))
+            replica_state.update_followers((5001, 20, 10)).await,
+            (true, None, Some(20))
         );
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);
 

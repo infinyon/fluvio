@@ -460,17 +460,14 @@ impl ScDispatcher<FileReplica> {
 
         let (sender, receiver) = bounded(10);
 
-        match LeaderReplicaState::create_file_replica(replica,spu_config, sender).await {
+        match LeaderReplicaState::create_file_replica(replica, spu_config, sender).await {
             Ok(leader_replica) => {
                 debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(replica_id, leader_replica, receiver)
                     .await;
             }
             Err(err) => {
-                error!(
-                    "error creating storage leader replica {:#?}",
-                    err
-                );
+                error!("error creating storage leader replica {:#?}", err);
                 // TODO: send status back to SC
             }
         }
@@ -520,35 +517,34 @@ impl ScDispatcher<FileReplica> {
 
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
-        let confirm = if let Some((_, previous_state)) =
-            self.ctx.leaders_state().remove(&replica.id)
-        {
-            if let Err(err) = previous_state
-                .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
-                .await
-            {
-                error!(
+        let confirm =
+            if let Some((_, previous_state)) = self.ctx.leaders_state().remove(&replica.id) {
+                if let Err(err) = previous_state
+                    .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
+                    .await
+                {
+                    error!(
                     "error sending external command to replica controller for replica: {}, {:#?}",
                     replica, err
                 );
-            }
+                }
 
-            if let Err(err) = previous_state.remove().await {
-                error!("error: {} removing replica: {}", err, replica);
+                if let Err(err) = previous_state.remove().await {
+                    error!("error: {} removing replica: {}", err, replica);
+                } else {
+                    debug!(
+                        replica = %replica.id,
+                        "leader remove was removed"
+                    );
+                }
+                true
             } else {
-                debug!(
-                    replica = %replica.id,
-                    "leader remove was removed"
+                error!(
+                    "error sending external command to replica controller for replica: {}",
+                    replica
                 );
-            }
-            true
-        } else {
-            error!(
-                "error sending external command to replica controller for replica: {}",
-                replica
-            );
-            false
-        };
+                false
+            };
 
         let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
         debug!(

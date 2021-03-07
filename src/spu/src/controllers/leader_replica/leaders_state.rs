@@ -1,12 +1,10 @@
-use std::ops::{Deref,DerefMut};
-
+use std::ops::{Deref, DerefMut};
 
 use dashmap::DashMap;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use super::replica_state::SharedLeaderState;
-
 
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
@@ -20,7 +18,6 @@ impl<S> Default for ReplicaLeadersState<S> {
     }
 }
 
-
 impl<S> Deref for ReplicaLeadersState<S> {
     type Target = DashMap<ReplicaKey, SharedLeaderState<S>>;
 
@@ -29,21 +26,17 @@ impl<S> Deref for ReplicaLeadersState<S> {
     }
 }
 
-impl<S> DerefMut for ReplicaLeadersState<S>  {
+impl<S> DerefMut for ReplicaLeadersState<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-
-
 impl<S> ReplicaLeadersState<S> {
     pub fn new_shared() -> SharedReplicaLeadersState<S> {
-       Self::default()
+        Self::default()
     }
-   
 }
-
 
 #[cfg(test)]
 mod test_channel {

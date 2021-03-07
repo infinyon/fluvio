@@ -21,9 +21,9 @@ use dataplane::api::RequestMessage;
 use dataplane::record::DefaultRecord;
 use dataplane::Offset;
 
-use fluvio_socket::{ FlvSocket,FlvSocketError};
+use fluvio_socket::{FlvSocket, FlvSocketError};
 use flv_util::fixture::ensure_clean_dir;
-use fluvio_storage::{ StorageError,ReplicaStorage,FileReplica};
+use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
 use fluvio_storage::config::ConfigOption;
 use fluvio_storage::fixture::BatchProducer;
 
@@ -66,11 +66,11 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
         .await
         .expect("test replica");
     replica
-        .write_recordset(&mut create_records(2),false)
+        .write_recordset(&mut create_records(2), false)
         .await
         .expect("first batch");
     replica
-        .write_recordset(&mut create_records(2),false)
+        .write_recordset(&mut create_records(2), false)
         .await
         .expect("second batch");
 
