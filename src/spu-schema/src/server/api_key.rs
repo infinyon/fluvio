@@ -18,7 +18,6 @@ pub enum SpuServerApiKey {
 
     FetchOffsets = 1002,
     StreamFetch = 1003,
-    //  RegisterSyncReplicaRequest = 1004,
     UpdateOffsets = 1005,
 }
 
