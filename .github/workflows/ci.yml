@@ -376,7 +376,7 @@ jobs:
       - name: Make image
         run: make RELEASE=true minikube_image
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           RUST_LOG=fluvio_cluster=debug make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - name: Clean minikube
@@ -385,7 +385,13 @@ jobs:
           pkill -f "minikube tunnel" || true
       - name: Save logs
         if: failure()
-        run: kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+        run: 
+          kubectl get spu
+          kubectl get pods
+          kubectl get svc
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+          minikube delete
+          pkill -f "minikube tunnel" || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
