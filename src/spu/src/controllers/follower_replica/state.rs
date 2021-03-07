@@ -344,7 +344,7 @@ impl FollowerReplicaState<FileReplica> {
 
     #[instrument()]
     pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<OffsetUpdate, StorageError> {
-        self.storage.write_recordset(records).await
+        self.storage.write_recordset(records,false).await
     }
 
     pub async fn remove(self) -> Result<(), StorageError> {

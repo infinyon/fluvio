@@ -80,9 +80,12 @@ impl ReplicaStorage for FileReplica {
     }
 
     /// write records to this replica
+    /// if update_highwatermark is set, set high watermark is end
+    //  this is used when LSR = 1
     async fn write_recordset(
         &mut self,
         records: &mut RecordSet,
+        update_highwatermark: bool,
     ) -> Result<OffsetUpdate, StorageError> {
         let max_batch_size = self.option.max_batch_size as usize;
         // check if any of the records's batch exceed max length
@@ -96,8 +99,12 @@ impl ReplicaStorage for FileReplica {
             self.write_batch(&mut batch).await?;
         }
 
-        self.update_high_watermark_to_end().await  
-        
+        if update_highwatermark {
+            self.update_high_watermark_to_end().await
+        } else {
+            Ok(OffsetUpdate::Leo(self.get_leo()))
+        }
+       
     }
 }
 
@@ -609,7 +616,7 @@ mod tests {
 
         let mut records = RecordSet::default().add(create_batch());
 
-        replica.write_recordset(&mut records).await?;
+        replica.write_recordset(&mut records,true).await?;
 
         // record contains 2 batch
         assert_eq!(replica.get_hw(), 2);
@@ -724,7 +731,7 @@ mod tests {
         let mut small_batch = BatchProducer::builder().build().expect("batch").records();
         assert!(small_batch.write_size(0) < 100); // ensure we are writing less than 100 bytes
         replica
-            .write_recordset(&mut small_batch)
+            .write_recordset(&mut small_batch,true)
             .await
             .expect("writing records");
 
@@ -736,7 +743,7 @@ mod tests {
         assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
         assert!(matches!(
             replica
-                .write_recordset(&mut larget_batch)
+                .write_recordset(&mut larget_batch,true)
                 .await
                 .unwrap_err(),
             StorageError::BatchTooBig(_)

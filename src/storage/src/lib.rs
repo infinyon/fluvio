@@ -95,6 +95,7 @@ mod inner {
         async fn write_recordset(
             &mut self,
             records: &mut RecordSet,
+            update_highwatermark: bool,
         ) -> Result<OffsetUpdate, StorageError>;
     }
 }
