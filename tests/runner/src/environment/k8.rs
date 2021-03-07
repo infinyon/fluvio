@@ -49,7 +49,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         let installer = ClusterInstaller::from_config(config).unwrap();
         if let Err(err) = installer.install_fluvio().await {
             eprintln!("Error installing Fluviio cluster on k8 {}", err);
-            process::exit(1);
+            std::process::exit(1);
         }
     }
 }
