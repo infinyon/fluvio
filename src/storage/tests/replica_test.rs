@@ -21,11 +21,9 @@ use dataplane::api::RequestMessage;
 use dataplane::record::DefaultRecord;
 use dataplane::Offset;
 
-use fluvio_socket::FlvSocket;
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::{FlvSocket, FlvSocketError};
 use flv_util::fixture::ensure_clean_dir;
-use fluvio_storage::StorageError;
-use fluvio_storage::FileReplica;
+use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
 use fluvio_storage::config::ConfigOption;
 use fluvio_storage::fixture::BatchProducer;
 
@@ -99,10 +97,10 @@ async fn handle_response(socket: &mut FlvSocket, replica: &FileReplica) {
     let mut part_response = FilePartitionResponse::default();
     // log contains 182 bytes total
     replica
-        .read_records(
+        .read_partition_slice(
             fetch_offset,
-            None,
             FileReplica::PREFER_MAX_LEN,
+            dataplane::Isolation::ReadUncommitted,
             &mut part_response,
         )
         .await;

@@ -16,6 +16,7 @@ use super::message::*;
 
 type Offsets = HashMap<String, i64>;
 
+/// total time allotted for consumer test
 fn consume_wait_timeout() -> u64 {
     let var_value = std::env::var("FLV_TEST_CONSUMER_WAIT").unwrap_or_default();
     var_value.parse().unwrap_or(15000) // 15 seconds
@@ -111,6 +112,11 @@ async fn validate_consume_message_api(offsets: Offsets, option: &TestOption) {
                 _ = &mut timer => {
                     debug!("timer expired");
                     panic!("timer expired");
+                },
+
+                // max time for each read
+                _ = sleep(Duration::from_millis(5000)) => {
+                    panic!("no consumer read iter: current {}",iteration);
                 },
 
                 stream_next = stream.next() => {

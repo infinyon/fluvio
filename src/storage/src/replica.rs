@@ -1,13 +1,13 @@
-use std::io::Error as IoError;
 use std::mem;
 
 use fluvio_protocol::Encoder;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
+use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
-use dataplane::{ErrorCode, Offset, Size};
+use dataplane::{ErrorCode, Isolation, Offset, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
 
@@ -37,6 +37,7 @@ pub struct FileReplica {
 
 impl Unpin for FileReplica {}
 
+#[async_trait]
 impl ReplicaStorage for FileReplica {
     fn get_hw(&self) -> Offset {
         *self.commit_checkpoint.get_offset()
@@ -45,6 +46,75 @@ impl ReplicaStorage for FileReplica {
     /// offset mark that beginning of uncommitted
     fn get_leo(&self) -> Offset {
         self.active_segment.get_end_offset()
+    }
+
+    async fn read_partition_slice<P>(
+        &self,
+        offset: Offset,
+        max_len: u32,
+        isolation: Isolation,
+        partition_response: &mut P,
+    ) -> (Offset, Offset)
+    where
+        P: SlicePartitionResponse + Send,
+    {
+        match isolation {
+            Isolation::ReadCommitted => {
+                self.read_records(offset, Some(self.get_hw()), max_len, partition_response)
+                    .await
+            }
+            Isolation::ReadUncommitted => {
+                self.read_records(offset, None, max_len, partition_response)
+                    .await
+            }
+        }
+    }
+
+    /// write records to this replica
+    /// if update_highwatermark is set, set high watermark is end
+    //  this is used when LSR = 1
+    async fn write_recordset(
+        &mut self,
+        records: &mut RecordSet,
+        update_highwatermark: bool,
+    ) -> Result<(), StorageError> {
+        let max_batch_size = self.option.max_batch_size as usize;
+        // check if any of the records's batch exceed max length
+        for batch in &records.batches {
+            if batch.write_size(0) > max_batch_size {
+                return Err(StorageError::BatchTooBig(max_batch_size));
+            }
+        }
+
+        for mut batch in &mut records.batches {
+            self.write_batch(&mut batch).await?;
+        }
+
+        if update_highwatermark {
+            self.update_high_watermark_to_end().await?;
+        }
+        Ok(())
+    }
+
+    /// update committed offset (high watermark)
+    /// if true, hw is updated
+    async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError> {
+        let old_offset = self.get_hw();
+        if old_offset == offset {
+            trace!(
+                "new high watermark: {} is same as existing one, skipping",
+                offset
+            );
+            Ok(false)
+        } else {
+            trace!(
+                "updating to new high watermark: {} old: {}",
+                old_offset,
+                offset
+            );
+            self.commit_checkpoint.write(offset).await?;
+            Ok(true)
+        }
     }
 }
 
@@ -119,27 +189,8 @@ impl FileReplica {
             .map_err(|err| err.into())
     }
 
-    /// update committed offset (high watermark)
-    pub async fn update_high_watermark(&mut self, offset: Offset) -> Result<(), IoError> {
-        let old_offset = self.get_hw();
-        if old_offset == offset {
-            trace!(
-                "new high watermark: {} is same as existing one, skipping",
-                offset
-            );
-            Ok(())
-        } else {
-            trace!(
-                "updating to new high watermark: {} old: {}",
-                old_offset,
-                offset
-            );
-            self.commit_checkpoint.write(offset).await
-        }
-    }
-
     /// update high watermark to end
-    pub async fn update_high_watermark_to_end(&mut self) -> Result<(), IoError> {
+    pub async fn update_high_watermark_to_end(&mut self) -> Result<bool, StorageError> {
         self.update_high_watermark(self.get_leo()).await
     }
 
@@ -169,48 +220,17 @@ impl FileReplica {
         }
     }
 
-    /// write records to this replica, update high watermark if required
-    pub async fn write_recordset(
-        &mut self,
-        records: &mut RecordSet,
-        update_highwatermark: bool,
-    ) -> Result<(), StorageError> {
-        let max_batch_size = self.option.max_batch_size as usize;
-        // check if any of the records's batch exceed max length
-        for batch in &records.batches {
-            if batch.write_size(0) > max_batch_size {
-                return Err(StorageError::BatchTooBig(max_batch_size));
-            }
-        }
-
-        for mut batch in &mut records.batches {
-            self.write_batch(&mut batch).await?;
-        }
-
-        if update_highwatermark {
-            self.update_high_watermark_to_end().await?;
-        }
-
-        Ok(())
-    }
-
     /// read all uncommitted records
-    pub async fn read_uncommitted_records<P>(&self, max_len: u32, response: &mut P)
+    #[allow(unused)]
+    pub async fn read_all_uncommitted_records<P>(
+        &self,
+        max_len: u32,
+        response: &mut P,
+    ) -> (Offset, Offset)
     where
         P: SlicePartitionResponse,
     {
         self.read_records(self.get_hw(), None, max_len, response)
-            .await
-    }
-
-    /// committed records are records up to high watermark
-    pub async fn read_committed_records(
-        &self,
-        start_offset: Offset,
-        max_len: u32,
-        response: &mut impl SlicePartitionResponse,
-    ) {
-        self.read_records(start_offset, Some(self.get_hw()), max_len, response)
             .await
     }
 
@@ -219,23 +239,26 @@ impl FileReplica {
     /// * `max_offset`:  max offset (exclusive)
     /// * `responsive`:  output
     /// * `max_len`:  max length of the slice
-    pub async fn read_records<P>(
+    //  return leo, hw
+    async fn read_records<P>(
         &self,
         start_offset: Offset,
         max_offset: Option<Offset>,
         max_len: u32,
         response: &mut P,
-    ) where
+    ) -> (Offset, Offset)
+    where
         P: SlicePartitionResponse,
     {
-        let high_watermark = self.get_hw();
+        let hw = self.get_hw();
+        let leo = self.get_leo();
         debug!(
             "read records at: {}, max: max: {:#?}, hw: {}",
-            start_offset, max_offset, high_watermark,
+            start_offset, max_offset, hw,
         );
 
-        response.set_hw(high_watermark);
-        response.set_last_stable_offset(high_watermark);
+        response.set_hw(hw);
+        response.set_last_stable_offset(hw);
         response.set_log_start_offset(self.get_log_start_offset());
 
         match self.find_segment(start_offset) {
@@ -245,7 +268,7 @@ impl FileReplica {
                         // optimization
                         if start_offset == self.get_leo() {
                             trace!("start offset is same as end offset, skipping");
-                            return;
+                            return (leo, hw);
                         } else {
                             debug!(
                                 "active segment with base offset: {} found for offset: {}",
@@ -309,6 +332,8 @@ impl FileReplica {
                 debug!("segment not found for offset: {}", start_offset);
             }
         }
+
+        (leo, hw)
     }
 
     async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {
@@ -342,7 +367,7 @@ mod tests {
     use std::io::Cursor;
 
     use fluvio_future::test_async;
-    use dataplane::batch::DefaultBatch;
+    use dataplane::{Isolation, batch::DefaultBatch};
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fetch::FilePartitionResponse;
@@ -450,7 +475,7 @@ mod tests {
         // reading empty replica should return empyt records
         let mut empty_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut empty_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut empty_response)
             .await;
         assert_eq!(empty_response.records.len(), 0);
         assert_eq!(empty_response.error_code, ErrorCode::None);
@@ -467,7 +492,7 @@ mod tests {
         // read records
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), batch_len);
 
@@ -480,7 +505,7 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         debug!("partiton response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
@@ -488,13 +513,13 @@ mod tests {
         replica.write_batch(&mut create_batch()).await?;
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), batch_len * 2);
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_uncommitted_records(50, &mut partition_response)
+            .read_all_uncommitted_records(50, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), 50);
 
@@ -617,7 +642,12 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_partition_slice(
+                0,
+                FileReplica::PREFER_MAX_LEN,
+                Isolation::ReadCommitted,
+                &mut partition_response,
+            )
             .await;
         debug!("partition response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), 0);
@@ -635,7 +665,12 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_partition_slice(
+                0,
+                FileReplica::PREFER_MAX_LEN,
+                Isolation::ReadCommitted,
+                &mut partition_response,
+            )
             .await;
         debug!("partition response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
@@ -654,7 +689,12 @@ mod tests {
 
         let mut partition_response = FilePartitionResponse::default();
         replica
-            .read_committed_records(0, FileReplica::PREFER_MAX_LEN, &mut partition_response)
+            .read_partition_slice(
+                0,
+                FileReplica::PREFER_MAX_LEN,
+                Isolation::ReadCommitted,
+                &mut partition_response,
+            )
             .await;
         debug!("partition response: {:#?}", partition_response);
         // should return same records as 1 batch since we didn't commit 2nd batch
@@ -687,6 +727,7 @@ mod tests {
     async fn test_replica_limit_batch() -> Result<(), StorageError> {
         let mut option = base_option("test_batch_limit");
         option.max_batch_size = 100;
+        option.update_hw = false;
 
         let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
             .await
@@ -695,7 +736,7 @@ mod tests {
         let mut small_batch = BatchProducer::builder().build().expect("batch").records();
         assert!(small_batch.write_size(0) < 100); // ensure we are writing less than 100 bytes
         replica
-            .write_recordset(&mut small_batch, false)
+            .write_recordset(&mut small_batch, true)
             .await
             .expect("writing records");
 
@@ -707,7 +748,7 @@ mod tests {
         assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
         assert!(matches!(
             replica
-                .write_recordset(&mut larget_batch, false)
+                .write_recordset(&mut larget_batch, true)
                 .await
                 .unwrap_err(),
             StorageError::BatchTooBig(_)

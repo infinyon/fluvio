@@ -1,10 +1,5 @@
-use tracing::trace;
-use tracing::error;
-use tracing::debug;
-use tracing::warn;
-use fluvio_socket::FlvSocketError;
-use fluvio_socket::FlvStream;
-use fluvio_socket::FlvSocket;
+use tracing::{trace, error, debug};
+use fluvio_socket::{FlvSocketError, FlvStream, FlvSocket};
 use fluvio_service::api_loop;
 use fluvio_types::SpuId;
 
@@ -80,30 +75,26 @@ async fn route_replica_offset(
     replica: ReplicaOffsetRequest,
 ) {
     let replica_key = replica.replica;
+    debug!(%replica_key,leo=replica.leo,hw=replica.hw);
     let follower_update = FollowerOffsetUpdate {
         follower_id,
         leo: replica.leo,
         hw: replica.hw,
     };
 
-    match ctx
-        .leaders_state()
-        .send_message(
-            &replica_key,
-            LeaderReplicaControllerCommand::FollowerOffsetUpdate(follower_update),
-        )
-        .await
-    {
-        Ok(success_stat) => {
-            if success_stat {
-                trace!("send offset data to: replica leader: {}", replica_key);
-            } else {
-                warn!("replica leader: {} was not found", replica_key); // this could happen when leader controller is not happen
-            }
+    if let Some(leader) = ctx.leaders_state().get(&replica_key) {
+        if let Err(err) = leader
+            .send_message_to_controller(LeaderReplicaControllerCommand::FollowerOffsetUpdate(
+                follower_update,
+            ))
+            .await
+        {
+            error!(
+                "Error sending offset updates to leader: {}, err: {}",
+                replica_key, err
+            )
         }
-        Err(err) => error!(
-            "Error writing message to replica {}, err: {}",
-            replica_key, err
-        ),
+    } else {
+        error!("replica leader: {} was not found", replica_key); // this could happen when leader controller is not happen
     }
 }

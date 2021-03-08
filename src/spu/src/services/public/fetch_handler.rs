@@ -6,7 +6,7 @@ use futures_util::io::AsyncWrite;
 use fluvio_socket::InnerFlvSink;
 use fluvio_socket::InnerExclusiveFlvSink;
 use fluvio_socket::FlvSocketError;
-use dataplane::api::RequestMessage;
+use dataplane::{ErrorCode, api::RequestMessage};
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::zero_copy::ZeroCopyWrite;
@@ -47,15 +47,18 @@ where
                 ..Default::default()
             };
 
-            ctx.leaders_state()
-                .read_records(
-                    &rep_id,
-                    fetch_offset,
-                    fetch_request.max_bytes as u32,
-                    fetch_request.isolation_level.clone(),
-                    &mut partition_response,
-                )
-                .await;
+            if let Some(leader) = ctx.leaders_state().get(&rep_id) {
+                leader
+                    .read_records(
+                        fetch_offset,
+                        fetch_request.max_bytes as u32,
+                        fetch_request.isolation_level.clone(),
+                        &mut partition_response,
+                    )
+                    .await;
+            } else {
+                partition_response.error_code = ErrorCode::NotLeaderForPartition;
+            }
 
             topic_response.partitions.push(partition_response);
         }

@@ -9,7 +9,6 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::ErrorCode;
-use fluvio_storage::ReplicaStorage;
 
 use crate::core::DefaultSharedGlobalContext;
 
@@ -37,12 +36,12 @@ pub async fn handle_offset_request(
                 ..Default::default()
             };
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
-            if let Some(replica) = ctx.leaders_state().get_replica(&rep_id) {
+            if let Some(ref replica) = ctx.leaders_state().get(&rep_id) {
                 trace!("offset fetch request for replica found: {}", rep_id);
-                let storage = replica.storage();
+                let (start_offset, hw) = replica.start_offset_info().await;
                 partition_response.error_code = ErrorCode::None;
-                partition_response.start_offset = storage.get_log_start_offset();
-                partition_response.last_stable_offset = storage.get_hw();
+                partition_response.start_offset = start_offset;
+                partition_response.last_stable_offset = hw;
             } else {
                 trace!("offset fetch request is not found: {}", rep_id);
                 partition_response.error_code = ErrorCode::PartitionNotLeader;

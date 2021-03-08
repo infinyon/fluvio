@@ -20,7 +20,6 @@ use dataplane::fetch::FileFetchRequest;
 use crate::ApiVersionsRequest;
 use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
-use super::register_replica::RegisterSyncReplicaRequest;
 use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
@@ -35,7 +34,6 @@ pub enum SpuServerRequest {
     FileFetchRequest(RequestMessage<FileFetchRequest>),
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
-    RegisterSyncReplicaRequest(RequestMessage<RegisterSyncReplicaRequest>),
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
 }
 
@@ -65,9 +63,6 @@ impl ApiMessage for SpuServerRequest {
             }
             SpuServerApiKey::Fetch => api_decode!(Self, FileFetchRequest, src, header),
             SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
-            SpuServerApiKey::RegisterSyncReplicaRequest => {
-                api_decode!(Self, RegisterSyncReplicaRequest, src, header)
-            }
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
             SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
         }

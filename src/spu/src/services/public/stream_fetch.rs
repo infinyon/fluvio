@@ -1,24 +1,25 @@
 use std::sync::Arc;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 
 use tracing::{debug, trace, error};
 use tracing::instrument;
 use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio::select;
-use tokio::sync::broadcast::RecvError;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
 use fluvio_socket::{InnerFlvSink, InnerExclusiveFlvSink, FlvSocketError};
-use dataplane::api::{RequestMessage, RequestHeader};
+use dataplane::{
+    ErrorCode,
+    api::{RequestMessage, RequestHeader},
+};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{FileStreamFetchRequest, StreamFetchResponse};
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::controllers::leader_replica::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
@@ -30,7 +31,8 @@ pub struct StreamFetchHandler<S> {
     header: RequestHeader,
     sink: InnerExclusiveFlvSink<S>,
     end_event: Arc<SimpleEvent>,
-    offset_listener: OffsetChangeListener,
+    consumer_offset_listener: OffsetChangeListener,
+    leader_state: SharedFileLeaderState,
     stream_id: u32,
 }
 
@@ -40,14 +42,12 @@ where
     InnerFlvSink<S>: ZeroCopyWrite,
 {
     /// handle fluvio continuous fetch request
-    pub fn start(
+    pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: InnerExclusiveFlvSink<S>,
         end_event: Arc<SimpleEvent>,
-        offset_listener: OffsetChangeListener,
-        stream_id: u32,
-    ) {
+    ) -> Result<(), FlvSocketError> {
         // first get receiver to offset update channel to we don't missed events
 
         let (header, msg) = request.get_header_request();
@@ -56,28 +56,59 @@ where
         let isolation = msg.isolation;
         let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
-        debug!(
 
-            sink = sink.id(),
-            %replica,
-            current_offset,
-            max_bytes,
-            "start stream fetch"
-        );
+        if let Some(leader_state) = ctx.leaders_state().get(&replica) {
+            let (stream_id, offset_publisher) =
+                ctx.stream_publishers().create_new_publisher().await;
+            let offset_listener = offset_publisher.change_listner();
 
-        let handler = Self {
-            ctx,
-            isolation,
-            replica,
-            header,
-            max_bytes,
-            sink,
-            end_event,
-            offset_listener,
-            stream_id,
-        };
+            debug!(
 
-        spawn(async move { handler.process(current_offset).await });
+                sink = sink.id(),
+                %replica,
+                current_offset,
+                max_bytes,
+                "start stream fetch"
+            );
+
+            let handler = Self {
+                ctx: ctx.clone(),
+                isolation,
+                replica,
+                header,
+                max_bytes,
+                sink,
+                end_event,
+                consumer_offset_listener: offset_listener,
+                stream_id,
+                leader_state: leader_state.clone(),
+            };
+
+            spawn(async move { handler.process(current_offset).await });
+        } else {
+            let response = StreamFetchResponse {
+                topic: replica.topic,
+                stream_id: 0,
+                partition: FilePartitionResponse {
+                    partition_index: replica.partition,
+                    error_code: ErrorCode::NotLeaderForPartition,
+                    ..Default::default()
+                },
+            };
+
+            let response_msg =
+                RequestMessage::<FileStreamFetchRequest>::response_with_header(&header, response);
+
+            trace!("sending back file fetch response msg: {:#?}", response_msg);
+
+            let mut inner_sink = sink.lock().await;
+            inner_sink
+                .send_response(&response_msg, header.api_version())
+                .await?;
+            debug!("finish sending not valid");
+        }
+
+        Ok(())
     }
 
     #[instrument(
@@ -105,7 +136,7 @@ where
                 return Ok(());
             };
 
-        let mut receiver = self.ctx.offset_channel().receiver();
+        let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
 
         let mut counter: i32 = 0;
         let mut consumer_offset: Option<Offset> = if last_end_offset == starting_offset {
@@ -127,7 +158,7 @@ where
                 },
 
 
-                changed_consumer_offset = self.offset_listener.listen() => {
+                changed_consumer_offset = self.consumer_offset_listener.listen() => {
 
 
                     if changed_consumer_offset != INIT_OFFSET  {
@@ -166,70 +197,37 @@ where
 
                 },
 
-                offset_event_res = receiver.recv() => {
+                leader_offset_update = leader_offset_receiver.listen() => {
 
-                    match offset_event_res {
-                        Ok(offset_event) => {
+                    debug!(leader_offset_update);
 
-                            debug!(leo = offset_event.hw,
-                                hw = offset_event.hw,
-                                "received offset");
-                            if offset_event.replica_id == self.replica {
-                                // depends on isolation, we need to keep track different offset
-                                let update_offset = match self.isolation {
-                                    Isolation::ReadCommitted => offset_event.hw,
-                                    Isolation::ReadUncommitted => offset_event.leo
-                                };
-
-                                debug!(update_offset,"producer");
-                                if let Some(last_consumer_offset) = consumer_offset {
-                                    // we know what consumer offset is
-                                    if update_offset > last_consumer_offset {
-                                        debug!(update_offset,
-                                            consumer_offset = last_consumer_offset,
-                                            "reading offset event");
-                                        if let Some(offset_read) = self.send_back_records(last_consumer_offset).await? {
-                                            debug!(offset_read);
-                                            // actual read should be end offset since it might been changed since during read
-                                            last_end_offset = offset_read;
-                                            consumer_offset = None;
-                                        } else {
-                                            debug!("no more replica records can be read");
-                                            break;
-                                        }
-                                    } else {
-                                        debug!(ignored_update_offset = update_offset);
-                                        last_end_offset = update_offset;
-                                    }
-                                } else {
-
-                                    // we don't know consumer offset, so we delay
-                                    debug!(delay_consumer_offset = update_offset);
-                                    last_end_offset = update_offset;
-
-                                }
+                    if let Some(last_consumer_offset) = consumer_offset {
+                        // we know what consumer offset is
+                        if leader_offset_update > last_consumer_offset {
+                            debug!(leader_offset_update,
+                                consumer_offset = last_consumer_offset,
+                                "reading offset event");
+                            if let Some(offset_read) = self.send_back_records(last_consumer_offset).await? {
+                                debug!(offset_read);
+                                // actual read should be end offset since it might been changed since during read
+                                last_end_offset = offset_read;
+                                consumer_offset = None;
                             } else {
-                                trace!("ignoring event because replica does not match");
+                                debug!("no more replica records can be read");
+                                break;
                             }
-
-
-                        },
-                        Err(err) => {
-                            match err {
-                                RecvError::Closed => {
-                                    error!("lost connection to leader controller");
-                                    return Err(IoError::new(
-                                        ErrorKind::Other,
-                                        format!("lost connection to leader: {}",self.replica)
-                                    ).into())
-                                },
-                                RecvError::Lagged(lagging) => {
-                                    error!(lagging);
-                                }
-                            }
-
+                        } else {
+                            debug!(ignored_update_offset = leader_offset_update);
+                            last_end_offset = leader_offset_update;
                         }
+                    } else {
+
+                        // we don't know consumer offset, so we delay
+                        debug!(delay_consumer_offset = leader_offset_update);
+                        last_end_offset = leader_offset_update;
+
                     }
+
                 },
             }
         }
@@ -256,66 +254,52 @@ where
             ..Default::default()
         };
 
-        if let Some((hw, leo)) = self
-            .ctx
-            .leaders_state()
+        let (hw, leo) = self
+            .leader_state
             .read_records(
-                &self.replica,
                 offset,
                 self.max_bytes,
                 self.isolation.clone(),
                 &mut partition_response,
             )
-            .await
-        {
-            let response = StreamFetchResponse {
-                topic: self.replica.topic.clone(),
-                stream_id: self.stream_id,
-                partition: partition_response,
-            };
+            .await;
 
-            debug!(
-                stream_id = response.stream_id,
-                len = response.partition.records.len(),
-                offset,
-                hw,
-                leo,
-                "start back stream response",
-            );
+        let response = StreamFetchResponse {
+            topic: self.replica.topic.clone(),
+            stream_id: self.stream_id,
+            partition: partition_response,
+        };
 
-            let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
-                &self.header,
-                response,
-            );
+        debug!(
+            stream_id = response.stream_id,
+            len = response.partition.records.len(),
+            offset,
+            hw,
+            leo,
+            "start back stream response",
+        );
 
-            trace!("sending back file fetch response msg: {:#?}", response_msg);
+        let response_msg =
+            RequestMessage::<FileStreamFetchRequest>::response_with_header(&self.header, response);
 
-            let mut inner_sink = self.sink.lock().await;
-            inner_sink
-                .encode_file_slices(&response_msg, self.header.api_version())
-                .await?;
+        trace!("sending back file fetch response msg: {:#?}", response_msg);
 
-            drop(inner_sink);
+        let mut inner_sink = self.sink.lock().await;
+        inner_sink
+            .encode_file_slices(&response_msg, self.header.api_version())
+            .await?;
 
-            debug!("finish sending stream response");
+        drop(inner_sink);
 
-            // get next offset
-            let next_offset = match self.isolation {
-                Isolation::ReadCommitted => hw,
-                Isolation::ReadUncommitted => leo,
-            };
+        debug!("finish sending stream response");
 
-            Ok(Some(next_offset))
-        } else {
-            debug!(
-                "conn: {} unable to retrieve records from replica: {}, from: {}",
-                self.sink.id(),
-                self.replica,
-                offset
-            );
-            // in this case, partition is not founded
-            Ok(None)
-        }
+        // get next offset
+        let next_offset = match self.isolation {
+            Isolation::ReadCommitted => hw,
+            Isolation::ReadUncommitted => leo,
+        };
+
+        Ok(Some(next_offset))
     }
 }
 

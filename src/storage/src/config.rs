@@ -31,6 +31,8 @@ pub struct ConfigOption {
     pub flush_idle_msec: Size,
     #[serde(default = "default_max_batch_size")]
     pub max_batch_size: Size,
+    #[serde(default = "default_update_hw")]
+    pub update_hw: bool, // if true, enable hw update
 }
 
 impl fmt::Display for ConfigOption {
@@ -41,6 +43,10 @@ impl fmt::Display for ConfigOption {
 
 fn default_base_dir() -> PathBuf {
     PathBuf::from(SPU_LOG_BASE_DIR)
+}
+
+const fn default_update_hw() -> bool {
+    true
 }
 
 const fn default_index_max_bytes() -> Size {
@@ -85,6 +91,7 @@ impl ConfigOption {
             flush_write_count,
             flush_idle_msec,
             max_batch_size,
+            update_hw: true,
         }
     }
 
@@ -102,6 +109,12 @@ impl ConfigOption {
         self.segment_max_bytes = bytes;
         self
     }
+
+    /// disable hw update
+    pub fn disable_update_hw(mut self) -> Self {
+        self.update_hw = false;
+        self
+    }
 }
 
 impl Default for ConfigOption {
@@ -114,6 +127,7 @@ impl Default for ConfigOption {
             flush_write_count: default_flush_write_count(),
             flush_idle_msec: default_flush_idle_msec(),
             max_batch_size: default_max_batch_size(),
+            update_hw: true,
         }
     }
 }

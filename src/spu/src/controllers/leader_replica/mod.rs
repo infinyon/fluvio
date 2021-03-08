@@ -8,9 +8,8 @@ mod update_offsets;
 mod actions;
 
 pub use self::leader_controller::ReplicaLeaderController;
-pub use leaders_state::ReplicaLeadersState;
-pub use leaders_state::SharedReplicaLeadersState;
-pub use self::replica_state::LeaderReplicaState;
+pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
+pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};
 pub use self::connection::LeaderConnection;
 pub use self::api_key::LeaderPeerApiEnum;
 pub use self::peer_api::LeaderPeerRequest;

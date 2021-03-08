@@ -11,12 +11,10 @@ use fluvio_socket::SinkPool;
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
-use crate::core::broadcast::Channel;
 use crate::config::SpuConfig;
-use crate::controllers::leader_replica::SharedReplicaLeadersState;
 use crate::controllers::follower_replica::FollowersState;
 use crate::controllers::follower_replica::SharedFollowersState;
-use crate::controllers::leader_replica::ReplicaLeadersState;
+use crate::controllers::leader_replica::{SharedReplicaLeadersState, ReplicaLeadersState};
 use crate::services::public::StreamPublishers;
 
 use super::spus::SharedSpuLocalStore;
@@ -24,7 +22,6 @@ use super::SharedReplicaLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
-use super::OffsetUpdateEvent;
 
 #[derive(Debug)]
 pub struct GlobalContext<S> {
@@ -34,7 +31,6 @@ pub struct GlobalContext<S> {
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     follower_sinks: SharedSinkPool<SpuId>,
-    offset_channel: Channel<OffsetUpdateEvent>,
     stream_publishers: StreamPublishers,
 }
 
@@ -58,7 +54,6 @@ where
             follower_sinks: SinkPool::new_shared(),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
-            offset_channel: Channel::new(100),
             stream_publishers: StreamPublishers::new(),
         }
     }
@@ -91,10 +86,6 @@ where
         &self.leaders_state
     }
 
-    pub fn leader_state_owned(&self) -> SharedReplicaLeadersState<S> {
-        self.leaders_state.clone()
-    }
-
     pub fn followers_state(&self) -> &FollowersState<S> {
         &self.followers_state
     }
@@ -109,10 +100,6 @@ where
 
     pub fn config_owned(&self) -> SharedSpuConfig {
         self.config.clone()
-    }
-
-    pub fn offset_channel(&self) -> &Channel<OffsetUpdateEvent> {
-        &self.offset_channel
     }
 
     pub fn stream_publishers(&self) -> &StreamPublishers {

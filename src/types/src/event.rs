@@ -56,6 +56,7 @@ pub mod offsets {
     const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
     /// publish current offsets to listeners
+    #[derive(Debug)]
     pub struct OffsetPublisher {
         current_value: AtomicI64,
         event: Event,
