@@ -15,30 +15,28 @@ use fluvio_types::SpuId;
 use k8_types::*;
 use k8_types::core::service::*;
 use fluvio_future::task::spawn;
-use k8_client::ClientError;
-use k8_client::meta_client::{MetadataClient, ApplyResult};
 use k8_client::SharedK8Client;
 
 use crate::cli::TlsConfig;
+use crate::stores::{StoreContext};
 use crate::stores::spg::K8SpuGroupSpec;
 use crate::stores::spg::SpuGroupStatus;
 use crate::stores::spg::SpuEndpointTemplate;
-use crate::stores::spu::*;
-use crate::stores::spu::SpuAdminStore;
+use crate::stores::spu::{SpuSpec};
 use crate::core::SharedContext;
 
 use super::conversion::{convert_cluster_to_statefulset, generate_service};
 use super::spg_group::{SpuGroupObj, SpuValidation};
 use super::ScK8Config;
 
-pub struct SpgOperator {
-    client: SharedK8Client,
-    spu_store: Arc<SpuAdminStore>,
+/// reconcile between SPG and Statefulset
+pub struct SpgStatefulSetController {
+    spus: StoreContext<SpuSpec>,
     namespace: String,
     tls: Option<TlsConfig>,
 }
 
-impl SpgOperator {
+impl SpgStatefulSetController {
     pub fn new(
         client: SharedK8Client,
         namespace: String,
