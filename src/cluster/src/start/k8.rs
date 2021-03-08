@@ -52,6 +52,11 @@ static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
     var_value.parse().unwrap_or(30)
 });
 const NETWORK_SLEEP_MS: u64 = 2000;
+/// maximum tiime for VERSION CHECK
+static MAX_SC_VERSION_LOOP: Lazy<u8> = Lazy::new(|| {
+    let var_value = env::var("FLV_CLUSTER_MAX_SC_VERSION_LOOP").unwrap_or_default();
+    var_value.parse().unwrap_or(60)
+});
 
 /// Describes how to install Fluvio onto Kubernetes
 #[derive(Builder, Debug)]
@@ -736,7 +741,10 @@ impl ClusterInstaller {
         }
 
         // When upgrading, wait for platform version to match new version
-        println!("Waiting up to 60 seconds for Fluvio cluster version check...");
+        println!(
+            "Waiting up to {} seconds for Fluvio cluster version check...",
+            *MAX_SC_VERSION_LOOP * 2
+        );
         self.wait_for_fluvio_version(&cluster).await?;
 
         // Wait for the SPU cluster to spin up
@@ -951,8 +959,7 @@ impl ClusterInstaller {
     /// Wait until the platform version of the cluster matches the chart version here
     #[instrument(skip(self))]
     async fn wait_for_fluvio_version(&self, config: &FluvioConfig) -> Result<(), K8InstallError> {
-        const ATTEMPTS: u8 = 60;
-        for attempt in 0..ATTEMPTS {
+        for attempt in 0..*MAX_SC_VERSION_LOOP {
             let fluvio = match fluvio::Fluvio::connect_with_config(config).await {
                 Ok(fluvio) => fluvio,
                 Err(_) => {
@@ -970,7 +977,7 @@ impl ClusterInstaller {
                 chart_version = %self.config.chart_version,
                 "Existing platform version is different than chart version",
             );
-            if attempt >= ATTEMPTS - 1 {
+            if attempt >= *MAX_SC_VERSION_LOOP - 1 {
                 return Err(K8InstallError::FailedPlatformVersion(
                     self.config.chart_version.to_string(),
                 ));

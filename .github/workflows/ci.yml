@@ -346,7 +346,7 @@ jobs:
     env:
       FLUVIO_CMD:  true
       FLV_SOCKET_WAIT:  600
-      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 90
+      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
       FLV_TEST_CONSUMER_WAIT: 300000
     steps:
       - uses: actions/checkout@v2
@@ -378,14 +378,31 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
+          make RUST_LOG=fluvio_cluster=debug RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - name: Clean minikube
         run: |
           minikube delete
           pkill -f "minikube tunnel" || true
       - name: Save logs
         if: failure()
-        run: kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+        run: |
+          echo "minikube profile list"
+          minikube profile list
+          echo "helm list"
+          helm list
+          echo "get statefulset"
+          kubectl get statefulset
+          echo "kubectl get pvc"
+          kubectl get pvc
+          echo "kubectl get pods"
+          kubectl get pods
+          echo "kubectl get svc"
+          kubectl get svc
+          echo "kubectl get spu"
+          kubectl get spu
+          echo "kubectl get spg"
+          kubectl get spg
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
