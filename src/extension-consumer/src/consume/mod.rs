@@ -50,6 +50,10 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
+    /// Print records in key/value format
+    #[structopt(short, long)]
+    pub key_value: bool,
+
     /// Offsets can be positive or negative. (Syntax for negative offset: --offset="-1")
     #[structopt(short, long, value_name = "integer")]
     pub offset: Option<i64>,
@@ -189,11 +193,14 @@ impl ConsumeLogOpt {
         };
 
         match (formatted_key, formatted_value) {
-            (Some(key), Some(value)) => {
+            (Some(key), Some(value)) if self.key_value => {
                 println!("[{}] {}", key, value);
             }
-            (None, Some(value)) => {
+            (None, Some(value)) if self.key_value => {
                 println!("[null] {}", value);
+            }
+            (_, Some(value)) => {
+                println!("{}", value);
             }
             // (Some(_), None) only if JSON cannot be printed, so skip.
             _ => debug!("Skipping record that cannot be formatted"),
