@@ -239,6 +239,7 @@ jobs:
       - name: Install Minikube on Mac
         run: brew install minikube
       - name: Setup Minikube for Mac
+        timeout-minutes: 10
         run: |
           minikube start --driver=virtualbox --kubernetes-version 1.19.6
       - name: Test minikube
