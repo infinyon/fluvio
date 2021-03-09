@@ -7,7 +7,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::convert::TryFrom;
-use tracing::debug;
+use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use futures_lite::StreamExt;
@@ -77,6 +77,10 @@ pub struct ConsumeLogOpt {
 }
 
 impl ConsumeLogOpt {
+    #[instrument(
+        skip(self, fluvio),
+        fields(topic = %self.topic, partition = self.partition),
+    )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
         let consumer = fluvio
             .partition_consumer(&self.topic, self.partition)
@@ -93,9 +97,8 @@ impl ConsumeLogOpt {
         }
     }
 
-    /// Consume records according to the given configuration.
     pub async fn consume_records(&self, consumer: PartitionConsumer) -> Result<(), ConsumerError> {
-        debug!("starting fetch loop: {:#?}", self);
+        trace!(config = ?self, "Starting consumer:");
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
 
@@ -156,12 +159,7 @@ impl ConsumeLogOpt {
             let record = match result {
                 Ok(record) => record,
                 Err(FluvioError::ApiError(ApiError::Code(code, _))) => {
-                    println!(
-                        "topic '{}/{}': {}",
-                        consumer.topic(),
-                        consumer.partition(),
-                        code.to_sentence(),
-                    );
+                    eprintln!("{}", code.to_sentence());
                     continue;
                 }
                 Err(other) => return Err(other.into()),
