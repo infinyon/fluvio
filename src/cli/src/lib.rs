@@ -174,24 +174,10 @@ impl RootCmd {
 #[derive(StructOpt, Debug)]
 pub enum FluvioCmd {
     /// Read messages from a topic/partition
-    ///
-    /// By default, this activates in "follow" mode, where
-    /// the command will hang and continue to wait for new
-    /// messages, printing them as they arrive. You can use
-    /// the `-d` switch to consume all available messages,
-    /// but exit upon reaching the end of the stream.
     #[structopt(name = "consume")]
     Consume(ConsumeLogOpt),
 
     /// Write messages to a topic/partition
-    ///
-    /// By default, this reads a single line from stdin to
-    /// use as the message. If you run this with no file options,
-    /// the command will hang until you type a line in the terminal.
-    /// Alternatively, you can pipe a message into the command
-    /// like this:
-    ///
-    /// $ echo "Hello, world" | fluvio produce greetings
     #[structopt(name = "produce")]
     Produce(ProduceLogOpt),
 

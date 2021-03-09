@@ -2,100 +2,149 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
+use tracing::debug;
 
 use fluvio::{Fluvio, TopicProducer};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
-use crate::Result;
-
-/// Produce log configuration parameters
-#[derive(Debug)]
-pub struct ProduceLogConfig {
-    pub topic: String,
-    pub partition: i32,
-    pub continuous: bool,
-}
-
-#[derive(Debug)]
-pub enum FileRecord {
-    Lines(PathBuf),
-    Files(Vec<PathBuf>),
-}
+use crate::{Result, ConsumerError};
 
 // -----------------------------------
 // CLI Options
 // -----------------------------------
 
+/// Write messages to a topic/partition
+///
+/// When no '--file' is provided, the producer will read from 'stdin'
+/// and send each line of input as one record.
+///
+/// If a file is given with '--file', the file is sent as one entire record.
+///
+/// If '--key-separator' is used, records are sent as key/value pairs, and
+/// the keys are used to determine which partition the records are sent to.
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
     /// The name of the Topic to produce to
     #[structopt(value_name = "topic")]
     pub topic: String,
 
-    /// The ID of the Partition to produce to
-    #[structopt(
-        short = "p",
-        long = "partition",
-        value_name = "integer",
-        default_value = "0"
-    )]
-    pub partition: i32,
+    /// Print progress output when sending records
+    #[structopt(short, long)]
+    pub verbose: bool,
 
-    /// Send messages in an infinite loop
-    #[structopt(short = "C", long = "continuous")]
-    pub continuous: bool,
+    /// Sends key/value records split on the first instance of the separator.
+    #[structopt(long, validator = validate_key_separator)]
+    pub key_separator: Option<String>,
 
-    /// Send each line of the file as its own Record
-    #[structopt(
-        short = "l",
-        long = "record-per-line",
-        value_name = "filename",
-        parse(from_os_str)
-    )]
-    record_per_line: Option<PathBuf>,
+    /// Path to a file to produce to the topic. If absent, producer will read stdin.
+    #[structopt(short, long)]
+    pub file: Option<PathBuf>,
+}
 
-    /// Send an entire file as a single Record
-    #[structopt(
-        short = "r",
-        long = "record-file",
-        value_name = "filename",
-        parse(from_os_str),
-        conflicts_with = "record-per-line"
-    )]
-    record_file: Vec<PathBuf>,
+fn validate_key_separator(separator: String) -> std::result::Result<(), String> {
+    if separator.is_empty() {
+        return Err(
+            "must be non-empty. If using '=', type it as '--key-separator \"=\"'".to_string(),
+        );
+    }
+    Ok(())
 }
 
 impl ProduceLogOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let (cfg, file_records) = self.validate()?;
-        let mut producer = fluvio.topic_producer(&cfg.topic).await?;
+        let mut producer = fluvio.topic_producer(&self.topic).await?;
 
-        if let Some(records) = file_records {
-            produce_from_files(&mut producer, cfg, records).await?;
-        } else {
-            produce_stdin(&mut producer, cfg).await?;
+        match &self.file {
+            Some(path) => {
+                let mut reader = BufReader::new(File::open(path)?);
+                self.produce_lines(&mut producer, &mut reader).await?;
+            }
+            None => {
+                let mut reader = BufReader::new(std::io::stdin());
+                self.produce_lines(&mut producer, &mut reader).await?;
+            }
+        };
+
+        if !self.interactive_mode() {
+            print_cli_ok!();
         }
 
         Ok(())
     }
 
-    /// Validate cli options. Generate target-server and produce log configuration.
-    pub fn validate(self) -> Result<(ProduceLogConfig, Option<FileRecord>)> {
-        let file_records = if let Some(record_per_line) = self.record_per_line {
-            Some(FileRecord::Lines(record_per_line))
-        } else if !self.record_file.is_empty() {
-            Some(FileRecord::Files(self.record_file))
+    async fn produce_lines<B>(&self, producer: &mut TopicProducer, input: &mut B) -> Result<()>
+    where
+        B: BufRead,
+    {
+        let mut lines = input.lines();
+        if self.interactive_mode() {
+            eprint!("> ");
+        }
+        while let Some(Ok(line)) = lines.next() {
+            self.produce_str(producer, &line).await?;
+            if self.interactive_mode() {
+                print_cli_ok!();
+                eprint!("> ");
+            }
+        }
+        Ok(())
+    }
+
+    async fn produce_str(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
+        if self.kv_mode() {
+            self.produce_key_value(producer, string).await?;
         } else {
-            None
-        };
+            producer.send_record(string, 0).await?;
+            if self.verbose {
+                println!("[null] {}", string);
+            }
+        }
+        Ok(())
+    }
 
-        let produce_log_cfg = ProduceLogConfig {
-            topic: self.topic,
-            partition: self.partition,
-            continuous: self.continuous,
-        };
+    fn kv_mode(&self) -> bool {
+        self.key_separator.is_some()
+    }
 
-        Ok((produce_log_cfg, file_records))
+    fn interactive_mode(&self) -> bool {
+        self.file.is_none() && atty::is(atty::Stream::Stdin)
+    }
+
+    async fn produce_key_value(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
+        if let Some(separator) = &self.key_separator {
+            self.produce_key_value_via_separator(producer, string, separator)
+                .await?;
+            return Ok(());
+        }
+
+        Err(ConsumerError::Other(
+            "Failed to send key-value record".to_string(),
+        ))
+    }
+
+    async fn produce_key_value_via_separator(
+        &self,
+        producer: &mut TopicProducer,
+        string: &str,
+        separator: &str,
+    ) -> Result<()> {
+        debug!(?separator, "Producing Key/Value:");
+
+        let pieces: Vec<_> = string.split(separator).collect();
+        if pieces.len() < 2 {
+            return Err(ConsumerError::Other(format!(
+                "Failed to find separator '{}' in record '{}'",
+                separator, string
+            )));
+        }
+
+        let key = pieces[0];
+        let value: String = (&pieces[1..]).join(&*separator);
+        producer.send(key, &value).await?;
+        if self.verbose {
+            println!("[{}] {}", key, value);
+        }
+        Ok(())
     }
 
     pub fn metadata() -> FluvioExtensionMetadata {
@@ -105,45 +154,4 @@ impl ProduceLogOpt {
             version: env!("CARGO_PKG_VERSION").into(),
         }
     }
-}
-
-/// Sends records to a Topic based on the file configuration given
-///
-/// This will either send the lines of a single file as individual records,
-/// or it will send the entirety of a list of files as records, where each
-/// whole file is one record.
-async fn produce_from_files(
-    producer: &mut TopicProducer,
-    cfg: ProduceLogConfig,
-    records: FileRecord,
-) -> Result<()> {
-    match records {
-        FileRecord::Files(paths) => {
-            for path in paths {
-                let bytes = std::fs::read(&path)?;
-                producer.send_record(&bytes, cfg.partition).await?;
-                print_cli_ok!();
-            }
-        }
-        FileRecord::Lines(path) => {
-            let file = File::open(&path)?;
-            let mut lines = BufReader::new(file).lines();
-            while let Some(Ok(line)) = lines.next() {
-                producer.send_record(&line, cfg.partition).await?;
-            }
-            print_cli_ok!();
-        }
-    }
-
-    Ok(())
-}
-
-/// Sends each line of stdin as a record
-async fn produce_stdin(producer: &mut TopicProducer, cfg: ProduceLogConfig) -> Result<()> {
-    let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
-    while let Some(Ok(line)) = stdin_lines.next() {
-        producer.send_record(&line, cfg.partition).await?;
-        print_cli_ok!();
-    }
-    Ok(())
 }
