@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -29,10 +29,6 @@ pub struct ProduceLogOpt {
     #[structopt(value_name = "topic")]
     pub topic: String,
 
-    /// Send each line of input as its own record (using '\n')
-    #[structopt(hidden = true, short, long)]
-    pub lines: bool,
-
     /// Print progress output when sending records
     #[structopt(short, long)]
     pub verbose: bool,
@@ -56,43 +52,43 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
 }
 
 impl ProduceLogOpt {
-    pub async fn process(mut self, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let mut producer = fluvio.topic_producer(&self.topic).await?;
 
-        // --key-separator implies --lines
-        if self.key_separator.is_some() {
-            self.lines = true;
-        }
-
-        if let Some(path) = &self.file {
-            self.produce_file(&mut producer, path).await?;
-        } else {
-            self.produce_stdin(&mut producer).await?;
-        }
-
-        Ok(())
-    }
-
-    async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
-        let mut reader = BufReader::new(std::io::stdin());
-        self.produce_lines(producer, &mut reader).await?;
-        Ok(())
-    }
-
-    async fn produce_file(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
-        if self.lines {
-            let mut reader = BufReader::new(File::open(path)?);
-            self.produce_lines(producer, &mut reader).await?;
-        } else {
-            let buffer = std::fs::read(path)?;
-            self.produce_buffer(producer, &buffer).await?;
-            if self.verbose {
-                println!("[null]");
+        match &self.file {
+            Some(path) => {
+                let mut reader = BufReader::new(File::open(path)?);
+                self.produce_lines(&mut producer, &mut reader).await?;
             }
-        }
-        print_cli_ok!();
+            None => {
+                let mut reader = BufReader::new(std::io::stdin());
+                self.produce_lines(&mut producer, &mut reader).await?;
+            }
+        };
+
         Ok(())
     }
+
+    // async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
+    //     let mut reader = BufReader::new(std::io::stdin());
+    //     self.produce_lines(producer, &mut reader).await?;
+    //     Ok(())
+    // }
+    //
+    // async fn produce_file(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
+    //     if self.lines {
+    //         let mut reader = BufReader::new(File::open(path)?);
+    //         self.produce_lines(producer, &mut reader).await?;
+    //     } else {
+    //         let buffer = std::fs::read(path)?;
+    //         self.produce_buffer(producer, &buffer).await?;
+    //         if self.verbose {
+    //             println!("[null]");
+    //         }
+    //     }
+    //     print_cli_ok!();
+    //     Ok(())
+    // }
 
     async fn produce_lines<B>(&self, producer: &mut TopicProducer, input: &mut B) -> Result<()>
     where
