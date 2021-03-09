@@ -30,8 +30,6 @@ use fluvio_extension_common::output::OutputError;
 /// By default, consume operates in "streaming" mode, where the command will remain
 /// active and wait for new messages, printing them as they arrive. You can use the
 /// '-d' flag to exit after consuming all available messages.
-///
-/// Records are printed in "[key] value" format, where "null" is used for no key.
 #[derive(Debug, StructOpt)]
 pub struct ConsumeLogOpt {
     /// Topic name
@@ -50,7 +48,7 @@ pub struct ConsumeLogOpt {
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
-    /// Print records in key/value format
+    /// Print records in "[key] value" format, with "[null]" for no key
     #[structopt(short, long)]
     pub key_value: bool,
 
