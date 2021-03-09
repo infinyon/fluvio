@@ -60,6 +60,7 @@ mod k8_operator {
             global_ctx.spgs().clone(),
              statefulset_ctx,
              global_ctx.spus().clone(),
+             spg_service_ctx,
              tls
             );
 

@@ -41,6 +41,10 @@ impl SpuGroupObj {
         }
     }
 
+    pub fn service_name(&self) -> &String {
+        &self.svc_name
+    }
+
     pub fn is_already_valid(&self) -> bool {
         self.status().is_already_valid()
     }
@@ -86,11 +90,10 @@ impl SpuGroupObj {
 
     
     pub fn generate_service(
-        &self,
-        service_name: &str
+        &self
     ) -> WSAction<SpgServiceSpec> {
 
-        let k8_service = k8_convert::generate_service(self.spec(),service_name);
+        let k8_service = k8_convert::generate_service(self.spec(),&self.svc_name);
 
         WSAction::UpdateSpec((self.key().to_owned(),k8_service.into()))
 
@@ -269,8 +272,8 @@ mod k8_convert {
 
     /// generate headless service from SPG spec
     /// for now, we forgo port and env variable because it wasn't mapped from K8
-    pub fn generate_service(spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
-        let spu_template = &spg.spu_config;
+    pub fn generate_service(_spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
+        
         let mut public_port = ServicePort {
             port: SPU_PUBLIC_PORT,
             ..Default::default()

@@ -26,6 +26,7 @@ use crate::cli::TlsConfig;
 use super::spg_group::{SpuGroupObj};
 use super::ScK8Config;
 use super::statefulset::StatefulsetSpec;
+use super::spg_service::SpgServiceSpec;
 
 /// reconcile between SPG and Statefulset
 pub struct SpgStatefulSetController {
@@ -34,6 +35,7 @@ pub struct SpgStatefulSetController {
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
     statefulsets: StoreContext<StatefulsetSpec>,
+    spg_services: StoreContext<SpgServiceSpec>,
     tls: Option<TlsConfig>,
 }
 
@@ -44,7 +46,8 @@ impl SpgStatefulSetController {
         groups: StoreContext<SpuGroupSpec>,
         statefulsets: StoreContext<StatefulsetSpec>,
         spus: StoreContext<SpuSpec>,
-        tls: Option<TlsConfig>
+        spg_services: StoreContext<SpgServiceSpec>,
+        tls: Option<TlsConfig>,
     ) {
         let controller = Self {
             spus,
@@ -52,7 +55,8 @@ impl SpgStatefulSetController {
             statefulsets,
             client,
             namespace,
-            tls
+            spg_services,
+            tls,
         };
 
         spawn(controller.dispatch_loop());
@@ -116,7 +120,10 @@ impl SpgStatefulSetController {
         for group_item in updates.into_iter() {
             let spu_group = SpuGroupObj::new(group_item);
 
-            if let Err(err) = self.sync_spg_to_statefulset(spu_group,&spu_k8_config).await {
+            if let Err(err) = self
+                .sync_spg_to_statefulset(spu_group, &spu_k8_config)
+                .await
+            {
                 error!("error applying spg to statefulset {:#?}", err);
             }
         }
@@ -124,9 +131,10 @@ impl SpgStatefulSetController {
         Ok(())
     }
 
-    async fn sync_spg_to_statefulset(&mut self,
-         spu_group: SpuGroupObj,
-         spu_k8_config: &ScK8Config
+    async fn sync_spg_to_statefulset(
+        &mut self,
+        spu_group: SpuGroupObj,
+        spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
         let spg_name = spu_group.key();
         let spg_spec = &spu_group.spec;
@@ -136,17 +144,25 @@ impl SpgStatefulSetController {
             warn!(conflict_id, "spg is in conflict with existing id");
             let status = SpuGroupStatus::invalid(format!("conflict with: {}", conflict_id));
 
-            self.groups.update_status(spg_name.to_owned(), status).await?;
-
+            self.groups
+                .update_status(spg_name.to_owned(), status)
+                .await?;
         } else {
             // if we pass this stage, then we reserved id.
             if !spu_group.is_already_valid() {
                 let status = SpuGroupStatus::reserved();
-                self.groups.update_status(spg_name.to_owned(), status).await?;
-                return Ok(())
+                self.groups
+                    .update_status(spg_name.to_owned(), status)
+                    .await?;
+                return Ok(());
             }
 
-            let stateful_action = spu_group.statefulset_action(&self.namespace,spu_k8_config,self.tls.as_ref());
+            let spg_service_action = spu_group.generate_service();
+
+            self.spg_services.wait_action(spu_group.service_name(), spg_service_action).await?;
+
+            let stateful_action =
+                spu_group.statefulset_action(&self.namespace, spu_k8_config, self.tls.as_ref());
             /*
             // now apply statefulset
             // ensure we have headless service for statefulset
