@@ -159,10 +159,13 @@ impl SpgStatefulSetController {
 
             let spg_service_action = spu_group.generate_service();
 
+            trace!("spg_service_actions: {:#?}",spg_service_action);
             self.spg_services.wait_action(spu_group.service_name(), spg_service_action).await?;
 
+            /* 
             let stateful_action =
                 spu_group.statefulset_action(&self.namespace, spu_k8_config, self.tls.as_ref());
+            */
             /*
             // now apply statefulset
             // ensure we have headless service for statefulset
