@@ -42,10 +42,6 @@ pub struct ProduceLogOpt {
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
-    /// Sends key/value JSON records where the key is selected using this JSON path.
-    #[structopt(long, conflicts_with("key-separator"))]
-    pub json_path: Option<String>,
-
     /// Paths to files to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub files: Vec<PathBuf>,
@@ -129,18 +125,12 @@ impl ProduceLogOpt {
     }
 
     fn kv_mode(&self) -> bool {
-        self.key_separator.is_some() || self.json_path.is_some()
+        self.key_separator.is_some()
     }
 
     async fn produce_key_value(&self, producer: &mut TopicProducer, contents: &[u8]) -> Result<()> {
         if let Some(separator) = &self.key_separator {
             self.produce_key_value_via_separator(producer, contents, separator)
-                .await?;
-            return Ok(());
-        }
-
-        if let Some(jsonpath) = &self.json_path {
-            self.produce_key_value_via_jsonpath(producer, contents, jsonpath)
                 .await?;
             return Ok(());
         }
@@ -174,38 +164,6 @@ impl ProduceLogOpt {
         producer.send(key, &value).await?;
         if self.verbose {
             println!("[{}] {}", key, value);
-        }
-        Ok(())
-    }
-
-    async fn produce_key_value_via_jsonpath(
-        &self,
-        producer: &mut TopicProducer,
-        contents: &[u8],
-        jsonpath: &str,
-    ) -> Result<()> {
-        let string =
-            std::str::from_utf8(contents).map_err(|e| ConsumerError::Other(e.to_string()))?;
-        let json: serde_json::Value =
-            serde_json::from_str(string).map_err(|e| ConsumerError::Other(e.to_string()))?;
-        let selector =
-            jsonpath::Selector::new(jsonpath).map_err(|e| ConsumerError::Other(e.to_string()))?;
-        let key_results: Vec<_> = selector.find(&json).collect();
-        let len = key_results.len();
-        if len != 1 {
-            return Err(ConsumerError::Other(format!(
-                "Jsonpath must select 1 key: found {}",
-                len
-            )));
-        }
-
-        let key = key_results[0];
-        let key_string = key
-            .as_str()
-            .ok_or_else(|| ConsumerError::Other("Selected value must be a string".to_string()))?;
-        producer.send(key_string, contents).await?;
-        if self.verbose {
-            println!("[{}] {}", key_string, string);
         }
         Ok(())
     }
