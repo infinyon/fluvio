@@ -58,9 +58,6 @@ impl Context {
         &self.partitions
     }
 
-    pub fn partitions_owned(&self) -> StoreContext<PartitionSpec> {
-        self.partitions.clone()
-    }
 
     /// reference to topics
     pub fn topics(&self) -> &StoreContext<TopicSpec> {
@@ -70,6 +67,7 @@ impl Context {
     pub fn spgs(&self) -> &StoreContext<SpuGroupSpec> {
         &self.spgs
     }
+
 
     /// spu health channel
     pub fn health(&self) -> &SpuStatusChannel {

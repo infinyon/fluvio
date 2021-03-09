@@ -21,6 +21,7 @@ mod k8_operator {
 
     use super::{ScK8Config};
     use super::spg_operator::SpgStatefulSetController;
+    use super::statefulset::StatefulsetSpec;
 
     pub async fn run_k8_operators(
         namespace: String,
@@ -28,14 +29,23 @@ mod k8_operator {
         global_ctx: SharedContext,
         tls: Option<TlsConfig>,
     ) {
-        SpgStatefulSetController::new(k8_client.clone(), namespace.clone(), global_ctx.clone(), tls).run();
+        let spu_service_ctx: StoreContext<SpuServicespec> = StoreContext::new();
+        let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
 
-        let spu_service_store: StoreContext<SpuServicespec> = StoreContext::new();
+        SpgStatefulSetController::start(
+            k8_client.clone(), 
+            namespace.clone(), 
+            global_ctx.spgs().clone(),
+             statefulset_ctx,
+             global_ctx.spus().clone()
+            );
+
+    
 
         K8ClusterStateDispatcher::<SpuServicespec, _>::start(
             namespace.clone(),
             k8_client.clone(),
-            spu_service_store.clone(),
+            spu_service_ctx.clone(),
         );
 
         let disable_spu = match ScK8Config::load(&k8_client, &namespace).await {
@@ -47,7 +57,7 @@ mod k8_operator {
         };
 
         if !disable_spu {
-            SpuServiceController::start(global_ctx, spu_service_store);
+            SpuServiceController::start(global_ctx, spu_service_ctx);
         }
     }
 }

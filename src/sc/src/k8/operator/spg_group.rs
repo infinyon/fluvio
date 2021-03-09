@@ -267,7 +267,8 @@ mod k8_convert {
         }
     }
 
-    // generate headless service
+    /// generate headless service from SPG spec
+    /// for now, we forgo port and env variable because it wasn't mapped from K8
     pub fn generate_service(spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
         let spu_template = &spg.spu_config;
         let mut public_port = ServicePort {
