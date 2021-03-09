@@ -22,10 +22,11 @@ use crate::stores::spg::{ SpuGroupSpec,SpuGroupStatus};
 use crate::stores::spg::SpuEndpointTemplate;
 use crate::stores::spu::{SpuSpec};
 
-use super::conversion::{convert_cluster_to_statefulset, generate_service};
-use super::spg_group::{SpuGroupObj,SpuValidation};
+
+use super::spg_group::{SpuGroupObj};
 use super::ScK8Config;
 use super::statefulset::StatefulsetSpec;
+
 
 /// reconcile between SPG and Statefulset
 pub struct SpgStatefulSetController {
@@ -110,9 +111,10 @@ impl SpgStatefulSetController {
         // load k8 config, 
         let spu_k8_config = ScK8Config::load(&self.client, &self.namespace).await?;
 
-        for spu_group in updates.into_iter() {
+        for group_item in updates.into_iter() {
+            
+            let spu_group = SpuGroupObj::new(group_item);
             let spg_name = spu_group.key();
-
             let spg_spec = &spu_group.spec;
 
             
@@ -133,6 +135,7 @@ impl SpgStatefulSetController {
                     }
                 }
 
+                /* 
                 // now apply statefulset
                 // ensure we have headless service for statefulset
                 match self
@@ -164,6 +167,7 @@ impl SpgStatefulSetController {
                 {
                     error!("error applying spus: {}", err);
                 }
+                */
             }
             
            
@@ -172,7 +176,7 @@ impl SpgStatefulSetController {
         Ok(())
     }
 
-
+    /* 
     /// Generate and apply a stateful set for this cluster
     #[instrument(
         skip(self, spu_k8_config),
@@ -203,7 +207,9 @@ impl SpgStatefulSetController {
 
         Ok(())
     }
+    */
 
+    /* 
     /// create SPU crd objects from cluster spec
     //#[instrument(skip(self, spg_obj, spg_spec, spg_name))]
     async fn apply_spus(
@@ -233,7 +239,9 @@ impl SpgStatefulSetController {
 
         Ok(())
     }
+    */
 
+    /* 
     /// create SPU crd objects from cluster spec
     #[instrument(
         skip(self, k8_group, group_spec, _replica_index, id),
@@ -406,6 +414,7 @@ impl SpgStatefulSetController {
 
         Ok(svc_name)
     }
+    */
 
     /// compute spu id with min_id as base
     fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> i32 {
