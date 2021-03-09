@@ -14,16 +14,16 @@ use crate::stores::actions::WSAction;
 use crate::cli::TlsConfig;
 
 use super::spu_k8_config::ScK8Config;
-use super::statefulset::{StatefulsetSpec,StatefulsetStatus, K8StatefulSetSpec};
+use super::statefulset::{StatefulsetSpec, StatefulsetStatus, K8StatefulSetSpec};
 use super::spg_service::SpgServiceSpec;
 
 pub struct SpuGroupObj {
-    inner: MetadataStoreObject<SpuGroupSpec,K8MetaItem>,
-    svc_name: String
+    inner: MetadataStoreObject<SpuGroupSpec, K8MetaItem>,
+    svc_name: String,
 }
 
 impl Deref for SpuGroupObj {
-    type Target = MetadataStoreObject<SpuGroupSpec,K8MetaItem>;
+    type Target = MetadataStoreObject<SpuGroupSpec, K8MetaItem>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -31,14 +31,9 @@ impl Deref for SpuGroupObj {
 }
 
 impl SpuGroupObj {
-
-    pub fn new(inner: MetadataStoreObject<SpuGroupSpec,K8MetaItem>) -> Self {
-
+    pub fn new(inner: MetadataStoreObject<SpuGroupSpec, K8MetaItem>) -> Self {
         let svc_name = format!("fluvio-spg-{}", inner.key());
-        Self {
-            inner,
-            svc_name
-        }
+        Self { inner, svc_name }
     }
 
     pub fn service_name(&self) -> &String {
@@ -49,7 +44,10 @@ impl SpuGroupObj {
         self.status().is_already_valid()
     }
 
-    pub async fn is_conflict_with(&self, spu_store: &LocalStore<SpuSpec,K8MetaItem>) -> Option<SpuId> {
+    pub async fn is_conflict_with(
+        &self,
+        spu_store: &LocalStore<SpuSpec, K8MetaItem>,
+    ) -> Option<SpuId> {
         if self.is_already_valid() {
             return None;
         }
@@ -71,8 +69,7 @@ impl SpuGroupObj {
         namespace: &str,
         spu_k8_config: &ScK8Config,
         tls: Option<&TlsConfig>,
-    ) -> WSAction<StatefulsetSpec>
-    {
+    ) -> WSAction<StatefulsetSpec> {
         let statefulset_name = format!("fluvio-spg-{}", self.key());
         let k8_spec = k8_convert::generate_k8_stateful(
             &self.spec,
@@ -83,42 +80,38 @@ impl SpuGroupObj {
             tls,
         );
 
-        WSAction::UpdateSpec((self.key().to_owned(),k8_spec.into()))
-        
+        WSAction::UpdateSpec((self.key().to_owned(), k8_spec.into()))
     }
 
+    pub fn generate_service(&self) -> WSAction<SpgServiceSpec> {
+        let k8_service = k8_convert::generate_service(self.spec(), &self.svc_name);
 
-    
-    pub fn generate_service(
-        &self
-    ) -> WSAction<SpgServiceSpec> {
-
-        let k8_service = k8_convert::generate_service(self.spec(),&self.svc_name);
-
-        WSAction::UpdateSpec((self.key().to_owned(),k8_service.into()))
-
+        WSAction::Apply(
+            MetadataStoreObject::with_spec(self.key().to_owned(), k8_service.into())
+                .with_context(self.ctx().create_child()),
+        )
     }
-
-
-
 }
-
 
 mod k8_convert {
 
     use std::collections::HashMap;
 
     use k8_types::*;
-    use k8_types::core::pod::{ ContainerSpec,ContainerPortSpec,PodSpec,VolumeMount,VolumeSpec,SecretVolumeSpec};
+    use k8_types::core::pod::{
+        ContainerSpec, ContainerPortSpec, PodSpec, VolumeMount, VolumeSpec, SecretVolumeSpec,
+    };
     use k8_types::core::service::*;
     use k8_types::app::stateful::{
         PersistentVolumeClaim, VolumeAccessMode, ResourceRequirements, VolumeRequest,
     };
-    use fluvio_types::defaults::{ SPU_DEFAULT_NAME,SPU_PUBLIC_PORT,SPU_PRIVATE_PORT,SC_PRIVATE_PORT,PRODUCT_NAME};
+    use fluvio_types::defaults::{
+        SPU_DEFAULT_NAME, SPU_PUBLIC_PORT, SPU_PRIVATE_PORT, SC_PRIVATE_PORT, PRODUCT_NAME,
+    };
 
     use crate::stores::spg::SpuGroupSpec;
     use super::super::statefulset::{K8StatefulSetSpec};
-    use super::{ ScK8Config,TlsConfig};
+    use super::{ScK8Config, TlsConfig};
 
     /// convert spu group spec into k8 statefulset spec
     pub fn generate_k8_stateful(
@@ -226,11 +219,12 @@ mod k8_convert {
             env.push(Env::key_value("RUST_LOG", &rust_log));
         }
 
-       // env.append(&mut spu_template.env.clone());
+        // env.append(&mut spu_template.env.clone());
 
         let template = TemplateSpec {
             metadata: Some(
-                TemplateMeta::default().set_labels(vec![("app", SPU_DEFAULT_NAME), ("group", name)]),
+                TemplateMeta::default()
+                    .set_labels(vec![("app", SPU_DEFAULT_NAME), ("group", name)]),
             ),
             spec: PodSpec {
                 termination_grace_period_seconds: Some(10),
@@ -273,7 +267,6 @@ mod k8_convert {
     /// generate headless service from SPG spec
     /// for now, we forgo port and env variable because it wasn't mapped from K8
     pub fn generate_service(_spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
-        
         let mut public_port = ServicePort {
             port: SPU_PUBLIC_PORT,
             ..Default::default()
