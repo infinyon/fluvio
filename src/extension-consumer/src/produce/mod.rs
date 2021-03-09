@@ -20,9 +20,8 @@ use crate::{Result, ConsumerError};
 ///
 /// If a file is given with '--file', the file is sent as one entire record.
 ///
-/// If '--key-separator' or '--json-path' are used, records are sent as
-/// key/value pairs, and the keys are used to determine which partition
-/// the records are sent to.
+/// If '--key-separator' is used, records are sent as key/value pairs, and
+/// the keys are used to determine which partition the records are sent to.
 #[derive(Debug, StructOpt)]
 pub struct ProduceLogOpt {
     /// The name of the Topic to produce to
@@ -37,7 +36,7 @@ pub struct ProduceLogOpt {
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
-    /// Paths to files to produce to the topic. If absent, producer will read stdin.
+    /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub file: Option<PathBuf>,
 }
