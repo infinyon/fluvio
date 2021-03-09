@@ -74,9 +74,6 @@ impl ProduceLogOpt {
     }
 
     async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
-        if atty::is(atty::Stream::Stdin) {
-            eprintln!("Reading one record per line from stdin:");
-        }
         let mut reader = BufReader::new(std::io::stdin());
         self.produce_lines(producer, &mut reader).await?;
         Ok(())
@@ -102,12 +99,18 @@ impl ProduceLogOpt {
         B: BufRead,
     {
         let mut lines = input.lines();
+        if atty::is(atty::Stream::Stdin) {
+            eprint!("> ");
+        }
         while let Some(Ok(line)) = lines.next() {
             self.produce_buffer(producer, line.as_bytes()).await?;
             if self.verbose {
                 println!("[null] {}", line);
             }
             print_cli_ok!();
+            if atty::is(atty::Stream::Stdin) {
+                eprint!("> ");
+            }
         }
         Ok(())
     }
