@@ -65,6 +65,10 @@ impl ProduceLogOpt {
             }
         };
 
+        if !self.interactive_mode() {
+            print_cli_ok!();
+        }
+
         Ok(())
     }
 
@@ -73,13 +77,13 @@ impl ProduceLogOpt {
         B: BufRead,
     {
         let mut lines = input.lines();
-        if atty::is(atty::Stream::Stdin) {
+        if self.interactive_mode() {
             eprint!("> ");
         }
         while let Some(Ok(line)) = lines.next() {
             self.produce_str(producer, &line).await?;
-            print_cli_ok!();
-            if atty::is(atty::Stream::Stdin) {
+            if self.interactive_mode() {
+                print_cli_ok!();
                 eprint!("> ");
             }
         }
@@ -100,6 +104,10 @@ impl ProduceLogOpt {
 
     fn kv_mode(&self) -> bool {
         self.key_separator.is_some()
+    }
+
+    fn interactive_mode(&self) -> bool {
+        self.file.is_none() && atty::is(atty::Stream::Stdin)
     }
 
     async fn produce_key_value(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
