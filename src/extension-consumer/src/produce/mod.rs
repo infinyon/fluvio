@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -15,11 +15,10 @@ use crate::{Result, ConsumerError};
 
 /// Write messages to a topic/partition
 ///
-/// When no '--files' are provided, the producer will read from 'stdin'
+/// When no '--file' is provided, the producer will read from 'stdin'
 /// and send each line of input as one record.
 ///
-/// If one or more files are given with '--files', each file is sent as
-/// one entire record.
+/// If a file is given with '--file', the file is sent as one entire record.
 ///
 /// If '--key-separator' or '--json-path' are used, records are sent as
 /// key/value pairs, and the keys are used to determine which partition
@@ -44,7 +43,7 @@ pub struct ProduceLogOpt {
 
     /// Paths to files to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
-    pub files: Vec<PathBuf>,
+    pub file: Option<PathBuf>,
 }
 
 fn validate_key_separator(separator: String) -> std::result::Result<(), String> {
@@ -65,10 +64,10 @@ impl ProduceLogOpt {
             self.lines = true;
         }
 
-        if self.files.is_empty() {
-            self.produce_stdin(&mut producer).await?;
+        if let Some(path) = &self.file {
+            self.produce_file(&mut producer, path).await?;
         } else {
-            self.produce_files(&mut producer).await?;
+            self.produce_stdin(&mut producer).await?;
         }
 
         Ok(())
@@ -83,17 +82,15 @@ impl ProduceLogOpt {
         Ok(())
     }
 
-    async fn produce_files(&self, producer: &mut TopicProducer) -> Result<()> {
-        for path in &self.files {
-            if self.lines {
-                let mut reader = BufReader::new(File::open(path)?);
-                self.produce_lines(producer, &mut reader).await?;
-            } else {
-                let buffer = std::fs::read(path)?;
-                self.produce_buffer(producer, &buffer).await?;
-                if self.verbose {
-                    println!("[null]");
-                }
+    async fn produce_file(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
+        if self.lines {
+            let mut reader = BufReader::new(File::open(path)?);
+            self.produce_lines(producer, &mut reader).await?;
+        } else {
+            let buffer = std::fs::read(path)?;
+            self.produce_buffer(producer, &buffer).await?;
+            if self.verbose {
+                println!("[null]");
             }
         }
         print_cli_ok!();
