@@ -68,27 +68,6 @@ impl ProduceLogOpt {
         Ok(())
     }
 
-    // async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
-    //     let mut reader = BufReader::new(std::io::stdin());
-    //     self.produce_lines(producer, &mut reader).await?;
-    //     Ok(())
-    // }
-    //
-    // async fn produce_file(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
-    //     if self.lines {
-    //         let mut reader = BufReader::new(File::open(path)?);
-    //         self.produce_lines(producer, &mut reader).await?;
-    //     } else {
-    //         let buffer = std::fs::read(path)?;
-    //         self.produce_buffer(producer, &buffer).await?;
-    //         if self.verbose {
-    //             println!("[null]");
-    //         }
-    //     }
-    //     print_cli_ok!();
-    //     Ok(())
-    // }
-
     async fn produce_lines<B>(&self, producer: &mut TopicProducer, input: &mut B) -> Result<()>
     where
         B: BufRead,
@@ -98,10 +77,7 @@ impl ProduceLogOpt {
             eprint!("> ");
         }
         while let Some(Ok(line)) = lines.next() {
-            self.produce_buffer(producer, line.as_bytes()).await?;
-            if self.verbose {
-                println!("[null] {}", line);
-            }
+            self.produce_str(producer, &line).await?;
             print_cli_ok!();
             if atty::is(atty::Stream::Stdin) {
                 eprint!("> ");
@@ -110,11 +86,14 @@ impl ProduceLogOpt {
         Ok(())
     }
 
-    async fn produce_buffer(&self, producer: &mut TopicProducer, buffer: &[u8]) -> Result<()> {
+    async fn produce_str(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
         if self.kv_mode() {
-            self.produce_key_value(producer, buffer).await?;
+            self.produce_key_value(producer, string).await?;
         } else {
-            producer.send_record(buffer, 0).await?;
+            producer.send_record(string, 0).await?;
+            if self.verbose {
+                println!("[null] {}", string);
+            }
         }
         Ok(())
     }
@@ -123,9 +102,9 @@ impl ProduceLogOpt {
         self.key_separator.is_some()
     }
 
-    async fn produce_key_value(&self, producer: &mut TopicProducer, contents: &[u8]) -> Result<()> {
+    async fn produce_key_value(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
         if let Some(separator) = &self.key_separator {
-            self.produce_key_value_via_separator(producer, contents, separator)
+            self.produce_key_value_via_separator(producer, string, separator)
                 .await?;
             return Ok(());
         }
@@ -138,13 +117,10 @@ impl ProduceLogOpt {
     async fn produce_key_value_via_separator(
         &self,
         producer: &mut TopicProducer,
-        contents: &[u8],
+        string: &str,
         separator: &str,
     ) -> Result<()> {
         debug!(?separator, "Producing Key/Value:");
-        let string = std::str::from_utf8(contents).map_err(|_| {
-            ConsumerError::Other("--key-separator requires records to be UTF-8".to_string())
-        })?;
 
         let pieces: Vec<_> = string.split(separator).collect();
         if pieces.len() < 2 {
