@@ -18,15 +18,14 @@ use k8_client::ClientError;
 
 use crate::stores::{StoreContext};
 use crate::stores::spg::K8SpuGroupSpec;
-use crate::stores::spg::{ SpuGroupSpec,SpuGroupStatus};
+use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
 use crate::stores::spg::SpuEndpointTemplate;
 use crate::stores::spu::{SpuSpec};
-
+use crate::cli::TlsConfig;
 
 use super::spg_group::{SpuGroupObj};
 use super::ScK8Config;
 use super::statefulset::StatefulsetSpec;
-
 
 /// reconcile between SPG and Statefulset
 pub struct SpgStatefulSetController {
@@ -35,6 +34,7 @@ pub struct SpgStatefulSetController {
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
     statefulsets: StoreContext<StatefulsetSpec>,
+    tls: Option<TlsConfig>,
 }
 
 impl SpgStatefulSetController {
@@ -44,6 +44,7 @@ impl SpgStatefulSetController {
         groups: StoreContext<SpuGroupSpec>,
         statefulsets: StoreContext<StatefulsetSpec>,
         spus: StoreContext<SpuSpec>,
+        tls: Option<TlsConfig>
     ) {
         let controller = Self {
             spus,
@@ -51,6 +52,7 @@ impl SpgStatefulSetController {
             statefulsets,
             client,
             namespace,
+            tls
         };
 
         spawn(controller.dispatch_loop());
@@ -71,7 +73,7 @@ impl SpgStatefulSetController {
         let mut spg_listener = self.groups.change_listener();
 
         loop {
-            self.sync_spg_to_statefulset(&mut spg_listener).await?;
+            self.sync_spgs_to_statefulset(&mut spg_listener).await?;
 
             select! {
                 // just in case, we re-sync every 5 minutes
@@ -88,7 +90,7 @@ impl SpgStatefulSetController {
 
     #[instrument(skip(self))]
     /// svc has been changed, update spu
-    async fn sync_spg_to_statefulset(
+    async fn sync_spgs_to_statefulset(
         &mut self,
         listener: &mut K8ChangeListener<SpuGroupSpec>,
     ) -> Result<(), ClientError> {
@@ -108,75 +110,82 @@ impl SpgStatefulSetController {
             epoch,
         );
 
-        // load k8 config, 
+        // load k8 config,
         let spu_k8_config = ScK8Config::load(&self.client, &self.namespace).await?;
 
         for group_item in updates.into_iter() {
-            
             let spu_group = SpuGroupObj::new(group_item);
-            let spg_name = spu_group.key();
-            let spg_spec = &spu_group.spec;
 
-            
-            // ensure we don't have conflict with existing spu group
-            if let Some(conflict_id) = spu_group.is_conflict_with(self.spus.store()).await {
-                warn!(conflict_id, "spg is in conflict with existing id");
-                let status = SpuGroupStatus::invalid(format!("conflict with: {}", conflict_id));
-
-                if let Err(err) = self.groups.update_status(spg_name.to_owned(), status).await {
-                    error!("error: {} updating status: {:#?}", spg_name,err);
-                }
-            } else {
-                // if we pass this stage, then we reserved id.
-                if !spu_group.is_already_valid() {
-                    let status = SpuGroupStatus::reserved();
-                    if let Err(err) =  self.groups.update_status(spg_name.to_owned(), status).await  {
-                        error!("error: {} updating spg status: {:#?}", spg_name,err);
-                    }
-                }
-
-                /* 
-                // now apply statefulset
-                // ensure we have headless service for statefulset
-                match self
-                    .apply_statefulset_service(spu_group,&spu_k8_config)
-                    .await
-                {
-                    Ok(svc_name) => {
-                        if let Err(err) = self
-                            .apply_stateful_set(
-                                &spu_group,
-                                spg_spec,
-                                &spg_name,
-                                svc_name,
-                                &spu_k8_config,
-                            )
-                            .await
-                        {
-                            error!("error applying stateful sets: {}", err);
-                        }
-                    }
-                    Err(err) => {
-                        error!("error applying spg services: {}", err);
-                    }
-                }
-
-                if let Err(err) = self
-                    .apply_spus(&spu_group, spg_spec, &spg_name, &spu_k8_config)
-                    .await
-                {
-                    error!("error applying spus: {}", err);
-                }
-                */
+            if let Err(err) = self.sync_spg_to_statefulset(spu_group,&spu_k8_config).await {
+                error!("error applying spg to statefulset {:#?}", err);
             }
-            
-           
         }
 
         Ok(())
     }
 
-    /* 
+    async fn sync_spg_to_statefulset(&mut self,
+         spu_group: SpuGroupObj,
+         spu_k8_config: &ScK8Config
+    ) -> Result<(), ClientError> {
+        let spg_name = spu_group.key();
+        let spg_spec = &spu_group.spec;
+
+        // ensure we don't have conflict with existing spu group
+        if let Some(conflict_id) = spu_group.is_conflict_with(self.spus.store()).await {
+            warn!(conflict_id, "spg is in conflict with existing id");
+            let status = SpuGroupStatus::invalid(format!("conflict with: {}", conflict_id));
+
+            self.groups.update_status(spg_name.to_owned(), status).await?;
+
+        } else {
+            // if we pass this stage, then we reserved id.
+            if !spu_group.is_already_valid() {
+                let status = SpuGroupStatus::reserved();
+                self.groups.update_status(spg_name.to_owned(), status).await?;
+                return Ok(())
+            }
+
+            let stateful_action = spu_group.statefulset_action(&self.namespace,spu_k8_config,self.tls.as_ref());
+            /*
+            // now apply statefulset
+            // ensure we have headless service for statefulset
+            match self
+                .apply_statefulset_service(spu_group,&spu_k8_config)
+                .await
+            {
+                Ok(svc_name) => {
+                    if let Err(err) = self
+                        .apply_stateful_set(
+                            &spu_group,
+                            spg_spec,
+                            &spg_name,
+                            svc_name,
+                            &spu_k8_config,
+                        )
+                        .await
+                    {
+                        error!("error applying stateful sets: {}", err);
+                    }
+                }
+                Err(err) => {
+                    error!("error applying spg services: {}", err);
+                }
+            }
+
+            if let Err(err) = self
+                .apply_spus(&spu_group, spg_spec, &spg_name, &spu_k8_config)
+                .await
+            {
+                error!("error applying spus: {}", err);
+            }
+            */
+        }
+
+        Ok(())
+    }
+
+    /*
     /// Generate and apply a stateful set for this cluster
     #[instrument(
         skip(self, spu_k8_config),
@@ -186,7 +195,7 @@ impl SpgStatefulSetController {
         spu_group: &SpuGroupObj,
         spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
-        
+
         let input_stateful = convert_cluster_to_statefulset(
             spg_spec,
             &spu_group.metadata,
@@ -209,7 +218,7 @@ impl SpgStatefulSetController {
     }
     */
 
-    /* 
+    /*
     /// create SPU crd objects from cluster spec
     //#[instrument(skip(self, spg_obj, spg_spec, spg_name))]
     async fn apply_spus(
@@ -241,7 +250,7 @@ impl SpgStatefulSetController {
     }
     */
 
-    /* 
+    /*
     /// create SPU crd objects from cluster spec
     #[instrument(
         skip(self, k8_group, group_spec, _replica_index, id),

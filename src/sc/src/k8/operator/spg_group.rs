@@ -62,7 +62,7 @@ impl SpuGroupObj {
     }
 
     /// convert SpuGroup to Statefulset Name and Spec
-    fn statefulset_action(
+    pub fn statefulset_action(
         &self,
         namespace: &str,
         spu_k8_config: &ScK8Config,
@@ -85,7 +85,7 @@ impl SpuGroupObj {
 
 
     
-    fn generate_service(
+    pub fn generate_service(
         &self,
         service_name: &str
     ) -> WSAction<SpgServiceSpec> {

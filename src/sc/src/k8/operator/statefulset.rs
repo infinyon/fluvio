@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -27,6 +29,12 @@ impl From<K8StatefulSetSpec> for StatefulsetSpec {
     }
 }
 
+impl From<StatefulsetSpec> for K8StatefulSetSpec {
+    fn from(spec: StatefulsetSpec) -> Self {
+        spec.0
+    }
+}
+
 /// Statefulset Spec
 #[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
 #[serde(transparent)]
@@ -34,9 +42,22 @@ pub struct StatefulsetStatus(K8StatefulSetStatus);
 
 impl Status for StatefulsetStatus {}
 
+impl fmt::Display for StatefulsetStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#?}", self.0)
+    }
+}
+
 impl From<K8StatefulSetStatus> for StatefulsetStatus {
     fn from(k8: K8StatefulSetStatus) -> Self {
         Self(k8)
+    }
+}
+
+
+impl From<StatefulsetStatus> for K8StatefulSetStatus {
+    fn from(status: StatefulsetStatus) -> Self {
+        status.0
     }
 }
 

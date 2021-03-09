@@ -22,6 +22,7 @@ mod k8_operator {
     use super::{ScK8Config};
     use super::spg_operator::SpgStatefulSetController;
     use super::statefulset::StatefulsetSpec;
+    use super::spg_service::SpgServiceSpec;
 
     pub async fn run_k8_operators(
         namespace: String,
@@ -31,23 +32,38 @@ mod k8_operator {
     ) {
         let spu_service_ctx: StoreContext<SpuServicespec> = StoreContext::new();
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
+        let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
+
+        K8ClusterStateDispatcher::<_, _>::start(
+            namespace.clone(),
+            k8_client.clone(),
+            spu_service_ctx.clone(),
+        );
+
+        K8ClusterStateDispatcher::<_, _>::start(
+            namespace.clone(),
+            k8_client.clone(),
+            statefulset_ctx.clone(),
+        );
+
+        K8ClusterStateDispatcher::<_, _>::start(
+            namespace.clone(),
+            k8_client.clone(),
+            spg_service_ctx.clone(),
+        );
+
+
 
         SpgStatefulSetController::start(
             k8_client.clone(), 
             namespace.clone(), 
             global_ctx.spgs().clone(),
              statefulset_ctx,
-             global_ctx.spus().clone()
+             global_ctx.spus().clone(),
+             tls
             );
 
     
-
-        K8ClusterStateDispatcher::<SpuServicespec, _>::start(
-            namespace.clone(),
-            k8_client.clone(),
-            spu_service_ctx.clone(),
-        );
-
         let disable_spu = match ScK8Config::load(&k8_client, &namespace).await {
             Ok(config) => config.sc_config.disable_spu,
             Err(err) => {

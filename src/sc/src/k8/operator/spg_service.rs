@@ -15,7 +15,7 @@ use crate::dispatcher::core::Status;
 pub struct SpgServiceSpec(K8ServiceSpec);
 
 impl SpgServiceSpec {
-    
+
     pub fn inner(&self) -> &K8ServiceSpec {
         &self.0
     }
@@ -31,6 +31,12 @@ impl Spec for SpgServiceSpec {
 impl From<K8ServiceSpec> for SpgServiceSpec {
     fn from(k8: K8ServiceSpec) -> Self {
         Self(k8)
+    }
+}
+
+impl From<SpgServiceSpec> for K8ServiceSpec {
+    fn from(spec: SpgServiceSpec) -> Self {
+        spec.0
     }
 }
 
@@ -52,7 +58,11 @@ impl From<K8ServiceStatus> for SpgServiceStatus {
     }
 }
 
-
+impl From<SpgServiceStatus> for K8ServiceStatus {
+    fn from(status: SpgServiceStatus) -> Self {
+        status.0
+    }
+}
 
 mod extended {
 
