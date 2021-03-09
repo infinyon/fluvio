@@ -171,7 +171,7 @@ impl ConsumeLogOpt {
         }
 
         debug!("fetch loop exited");
-        println!("Consumer stream has closed");
+        eprintln!("Consumer stream has closed");
         Ok(())
     }
 

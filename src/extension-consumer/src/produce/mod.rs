@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -70,109 +70,60 @@ impl ProduceLogOpt {
         }
 
         if self.files.is_empty() {
-            self.lines = true;
-            if atty::is(atty::Stream::Stdin) {
-                eprintln!("Reading one record per line from stdin:");
-            }
             self.produce_stdin(&mut producer).await?;
         } else {
-            self.produce_from_files(&mut producer).await?;
+            self.produce_files(&mut producer).await?;
         }
 
         Ok(())
     }
 
-    /// Sends records to a Topic based on the file configuration given
-    ///
-    /// This will either send the lines of a single file as individual records,
-    /// or it will send the entirety of a list of files as records, where each
-    /// whole file is one record.
-    async fn produce_from_files(&self, producer: &mut TopicProducer) -> Result<()> {
+    async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
+        if atty::is(atty::Stream::Stdin) {
+            eprintln!("Reading one record per line from stdin:");
+        }
+        let mut reader = BufReader::new(std::io::stdin());
+        self.produce_lines(producer, &mut reader).await?;
+        Ok(())
+    }
+
+    async fn produce_files(&self, producer: &mut TopicProducer) -> Result<()> {
         for path in &self.files {
             if self.lines {
-                self.produce_file_lines(producer, path).await?;
+                let mut reader = BufReader::new(File::open(path)?);
+                self.produce_lines(producer, &mut reader).await?;
             } else {
-                self.produce_file_whole(producer, path).await?;
-            }
-            print_cli_ok!();
-        }
-
-        Ok(())
-    }
-
-    /// Sends each line from a file as a unique record to the producer's topic.
-    async fn produce_file_lines(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
-        let file = File::open(path)?;
-        let mut lines = BufReader::new(file).lines();
-        while let Some(Ok(line)) = lines.next() {
-            if self.kv_mode() {
-                self.produce_key_value(producer, line.as_bytes()).await?;
-            } else {
-                producer.send_record(&line, 0).await?;
+                let buffer = std::fs::read(path)?;
+                self.produce_buffer(producer, &buffer).await?;
                 if self.verbose {
-                    println!("[null] {}", line);
+                    println!("[null]");
                 }
             }
-        }
-        Ok(())
-    }
-
-    /// Sends an entire file as one record to the producer's topic.
-    async fn produce_file_whole(&self, producer: &mut TopicProducer, path: &Path) -> Result<()> {
-        let bytes = std::fs::read(path)?;
-        if self.kv_mode() {
-            self.produce_key_value(producer, &bytes).await?;
-        } else {
-            producer.send_record(&bytes, 0).await?;
-            if self.verbose {
-                println!("[null]");
-            }
-        }
-        Ok(())
-    }
-
-    /// Sends stdin as one ore more records
-    async fn produce_stdin(&self, producer: &mut TopicProducer) -> Result<()> {
-        if self.lines {
-            self.produce_stdin_lines(producer).await?;
-        } else {
-            self.produce_stdin_whole(producer).await?;
         }
         print_cli_ok!();
         Ok(())
     }
 
-    /// Sends each line of stdin as a unique record
-    async fn produce_stdin_lines(&self, producer: &mut TopicProducer) -> Result<()> {
-        let mut stdin_lines = BufReader::new(std::io::stdin()).lines();
-        while let Some(Ok(line)) = stdin_lines.next() {
-            if self.kv_mode() {
-                self.produce_key_value(producer, line.as_bytes()).await?;
-            } else {
-                producer.send_record(&line, 0).await?;
-                if self.verbose {
-                    println!("[null] {}", line);
-                }
+    async fn produce_lines<B>(&self, producer: &mut TopicProducer, input: &mut B) -> Result<()>
+    where
+        B: BufRead,
+    {
+        let mut lines = input.lines();
+        while let Some(Ok(line)) = lines.next() {
+            self.produce_buffer(producer, line.as_bytes()).await?;
+            if self.verbose {
+                println!("[null] {}", line);
             }
-            if atty::is(atty::Stream::Stdin) {
-                print_cli_ok!();
-            }
+            print_cli_ok!();
         }
         Ok(())
     }
 
-    /// Sends the entire contents of stdin as one record
-    async fn produce_stdin_whole(&self, producer: &mut TopicProducer) -> Result<()> {
-        use std::io::Read;
-        let mut buffer = vec![];
-        std::io::stdin().read_to_end(&mut buffer)?;
+    async fn produce_buffer(&self, producer: &mut TopicProducer, buffer: &[u8]) -> Result<()> {
         if self.kv_mode() {
-            self.produce_key_value(producer, &buffer).await?;
+            self.produce_key_value(producer, buffer).await?;
         } else {
-            producer.send_record(&buffer, 0).await?;
-            if self.verbose {
-                println!("[null]");
-            }
+            producer.send_record(buffer, 0).await?;
         }
         Ok(())
     }
