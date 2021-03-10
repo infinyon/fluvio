@@ -70,7 +70,7 @@ impl SpuGroupObj {
         namespace: &str,
         spu_k8_config: &ScK8Config,
         tls: Option<&TlsConfig>,
-    ) -> WSAction<StatefulsetSpec> {
+    ) -> (String, WSAction<StatefulsetSpec>) {
         let statefulset_name = format!("fluvio-spg-{}", self.key());
         let k8_spec = k8_convert::generate_k8_stateful(
             &self.spec,
@@ -81,17 +81,25 @@ impl SpuGroupObj {
             tls,
         );
 
-        WSAction::UpdateSpec((self.key().to_owned(), k8_spec.into()))
+        (
+            statefulset_name.clone(),
+            WSAction::Apply(
+                MetadataStoreObject::with_spec(statefulset_name, k8_spec.into())
+                    .with_context(self.ctx().create_child()),
+            ),
+        )
     }
 
-    pub fn generate_service(&self) -> WSAction<SpgServiceSpec> {
-
+    pub fn generate_service(&self) -> (String, WSAction<SpgServiceSpec>) {
         let svc_name = self.svc_name.to_owned();
         let k8_service = k8_convert::generate_service(self.spec(), &svc_name);
 
-        WSAction::Apply(
-            MetadataStoreObject::with_spec(svc_name, k8_service.into())
-                .with_context(self.ctx().create_child()),
+        (
+            svc_name.clone(),
+            WSAction::Apply(
+                MetadataStoreObject::with_spec(svc_name, k8_service.into())
+                    .with_context(self.ctx().create_child()),
+            ),
         )
     }
 }

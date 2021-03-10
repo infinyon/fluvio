@@ -130,11 +130,11 @@ impl SpgStatefulSetController {
         Ok(())
     }
 
-    #[instrument(skip(self,_spu_k8_config))]
+    #[instrument(skip(self,spu_k8_config))]
     async fn sync_spg_to_statefulset(
         &mut self,
         spu_group: SpuGroupObj,
-        _spu_k8_config: &ScK8Config,
+        spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
         let spg_name = spu_group.key();
         let spg_spec = &spu_group.spec;
@@ -157,15 +157,17 @@ impl SpgStatefulSetController {
                 return Ok(());
             }
 
-            let spg_service_action = spu_group.generate_service();
+            let (spg_service_key,spg_service_action) = spu_group.generate_service();
 
             trace!("spg_service_actions: {:#?}",spg_service_action);
-            self.spg_services.wait_action(spu_group.service_name(), spg_service_action).await?;
+            self.spg_services.wait_action(&spg_service_key, spg_service_action).await?;
 
-            /* 
-            let stateful_action =
+            
+            let (stateful_key,stateful_action) =
                 spu_group.statefulset_action(&self.namespace, spu_k8_config, self.tls.as_ref());
-            */
+
+            self.statefulsets.wait_action(&stateful_key,stateful_action).await?;
+            
             /*
             // now apply statefulset
             // ensure we have headless service for statefulset
