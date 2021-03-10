@@ -17,6 +17,7 @@ use super::spu_k8_config::ScK8Config;
 use super::statefulset::{StatefulsetSpec, StatefulsetStatus, K8StatefulSetSpec};
 use super::spg_service::SpgServiceSpec;
 
+#[derive(Debug)]
 pub struct SpuGroupObj {
     inner: MetadataStoreObject<SpuGroupSpec, K8MetaItem>,
     svc_name: String,
@@ -84,10 +85,12 @@ impl SpuGroupObj {
     }
 
     pub fn generate_service(&self) -> WSAction<SpgServiceSpec> {
-        let k8_service = k8_convert::generate_service(self.spec(), &self.svc_name);
+
+        let svc_name = self.svc_name.to_owned();
+        let k8_service = k8_convert::generate_service(self.spec(), &svc_name);
 
         WSAction::Apply(
-            MetadataStoreObject::with_spec(self.key().to_owned(), k8_service.into())
+            MetadataStoreObject::with_spec(svc_name, k8_service.into())
                 .with_context(self.ctx().create_child()),
         )
     }

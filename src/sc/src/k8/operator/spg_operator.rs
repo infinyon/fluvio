@@ -63,6 +63,7 @@ impl SpgStatefulSetController {
     }
 
     async fn dispatch_loop(mut self) {
+
         loop {
             if let Err(err) = self.inner_loop().await {
                 error!("error with spg loop loop: {:#?}", err);
@@ -72,6 +73,7 @@ impl SpgStatefulSetController {
         }
     }
 
+    #[instrument(skip(self),name="SpgLoop")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
@@ -93,7 +95,7 @@ impl SpgStatefulSetController {
         }
     }
 
-    #[instrument(skip(self))]
+    
     /// svc has been changed, update spu
     async fn sync_spgs_to_statefulset(
         &mut self,
@@ -128,10 +130,11 @@ impl SpgStatefulSetController {
         Ok(())
     }
 
+    #[instrument(skip(self,_spu_k8_config))]
     async fn sync_spg_to_statefulset(
         &mut self,
         spu_group: SpuGroupObj,
-        spu_k8_config: &ScK8Config,
+        _spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
         let spg_name = spu_group.key();
         let spg_spec = &spu_group.spec;
@@ -156,7 +159,7 @@ impl SpgStatefulSetController {
 
             let spg_service_action = spu_group.generate_service();
 
-            trace!("spg_service_actions: {:#?}",spg_service_action);
+            debug!("spg_service_actions: {:#?}",spg_service_action);
             self.spg_services.wait_action(spu_group.service_name(), spg_service_action).await?;
 
             /* 

@@ -44,6 +44,7 @@ impl SpuServiceController {
         spawn(controller.dispatch_loop());
     }
 
+    #[instrument(skip(self),name="SpuSvcLoop")]
     async fn dispatch_loop(mut self) {
         use std::time::Duration;
 
@@ -54,8 +55,8 @@ impl SpuServiceController {
         let mut spu_listener = self.spus.change_listener();
 
         loop {
-            self.sync_service_to_spu(&mut service_listener).await;
-            self.sync_spu_to_service(&mut spu_listener).await;
+            self.sync_spu_service_to_spu(&mut service_listener).await;
+            self.sync_spu_to_spu_service(&mut spu_listener).await;
 
             trace!("waiting events");
 
@@ -74,9 +75,8 @@ impl SpuServiceController {
         }
     }
 
-    #[instrument(skip(self))]
     /// svc has been changed, update spu
-    async fn sync_service_to_spu(&mut self, listener: &mut K8ChangeListener<SpuServicespec>) {
+    async fn sync_spu_service_to_spu(&mut self, listener: &mut K8ChangeListener<SpuServicespec>) {
         if !listener.has_change() {
             trace!("no service change, skipping");
             return;
@@ -136,7 +136,7 @@ impl SpuServiceController {
 
     #[instrument()]
     /// spu has been changed, sync with existing services
-    async fn sync_spu_to_service(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
+    async fn sync_spu_to_spu_service(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
         if !listener.has_change() {
             debug!("no spu changes, skipping");
             return;
