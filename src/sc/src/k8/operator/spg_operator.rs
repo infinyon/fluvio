@@ -65,8 +65,9 @@ impl SpgStatefulSetController {
     async fn dispatch_loop(mut self) {
         loop {
             if let Err(err) = self.inner_loop().await {
-                error!("error with inner loop: {:#?}", err);
-                sleep(Duration::from_secs(300));
+                error!("error with spg loop loop: {:#?}", err);
+                debug!("sleeping 1 miniute to try again");
+                sleep(Duration::from_secs(60)).await;
             }
         }
     }
@@ -82,10 +83,10 @@ impl SpgStatefulSetController {
             select! {
                 // just in case, we re-sync every 5 minutes
                 _ = sleep(Duration::from_secs(60)) => {
-                    trace!("timer expired");
+                    debug!("resync timer expired");
                 },
                 _ = spg_listener.listen() => {
-                    trace!("detected spg changes");
+                    debug!("detected spg changes");
                 },
 
             }
@@ -120,12 +121,8 @@ impl SpgStatefulSetController {
         for group_item in updates.into_iter() {
             let spu_group = SpuGroupObj::new(group_item);
 
-            if let Err(err) = self
-                .sync_spg_to_statefulset(spu_group, &spu_k8_config)
-                .await
-            {
-                error!("error applying spg to statefulset {:#?}", err);
-            }
+            self.sync_spg_to_statefulset(spu_group, &spu_k8_config)
+                .await?
         }
 
         Ok(())

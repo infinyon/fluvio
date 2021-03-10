@@ -65,15 +65,9 @@ mod k8_operator {
             );
 
     
-        let disable_spu = match ScK8Config::load(&k8_client, &namespace).await {
-            Ok(config) => config.sc_config.disable_spu,
-            Err(err) => {
-                error!("error loading config: {:#?}", err);
-                false
-            }
-        };
+        let config =  ScK8Config::load(&k8_client, &namespace).await.expect("error loading config");
 
-        if !disable_spu {
+        if !config.sc_config.disable_spu {
             SpuServiceController::start(global_ctx, spu_service_ctx);
         }
     }

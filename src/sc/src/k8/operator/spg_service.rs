@@ -3,8 +3,7 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_types::core::service::{ServiceSpec as K8ServiceSpec,ServiceStatus as K8ServiceStatus};
-
+use k8_types::core::service::{ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus};
 
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
@@ -15,7 +14,6 @@ use crate::dispatcher::core::Status;
 pub struct SpgServiceSpec(K8ServiceSpec);
 
 impl SpgServiceSpec {
-
     pub fn inner(&self) -> &K8ServiceSpec {
         &self.0
     }
@@ -49,8 +47,7 @@ impl fmt::Display for SpgServiceStatus {
     }
 }
 
-impl Status for SpgServiceStatus{}
-
+impl Status for SpgServiceStatus {}
 
 impl From<K8ServiceStatus> for SpgServiceStatus {
     fn from(k8: K8ServiceStatus) -> Self {
@@ -65,8 +62,6 @@ impl From<SpgServiceStatus> for K8ServiceStatus {
 }
 
 mod extended {
-
- 
 
     use tracing::debug;
     use tracing::trace;
@@ -83,7 +78,6 @@ mod extended {
 
     use super::*;
 
-    
     impl K8ExtendedSpec for SpgServiceSpec {
         type K8Spec = ServiceSpec;
         type K8Status = ServiceStatus;
@@ -91,14 +85,16 @@ mod extended {
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
-  
             if k8_obj.metadata.name.starts_with("fluvio-spg") {
-                debug!("detected spg service: {}", k8_obj.metadata.name);
+                debug!(name = %k8_obj.metadata.name,
+                    "detected spg service");
                 trace!("converting k8 spu service: {:#?}", k8_obj);
 
                 default_convert_from_k8(k8_obj)
             } else {
-                debug!("skipping non spg service {}", k8_obj.metadata.namespace);
+                trace!(
+                    name = %k8_obj.metadata.name,
+                    "skipping non spg service");
                 Err(K8ConvertError::Skip(k8_obj))
             }
         }

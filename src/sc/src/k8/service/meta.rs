@@ -86,7 +86,9 @@ mod extended {
             let labels = &k8_obj.metadata.labels;
 
             if let Some(name) = labels.get("fluvio.io/spu-name") {
-                debug!("detected spu service: {}", name);
+                debug!(spu = %name,
+                    service_name = %k8_obj.metadata.name,
+                    "detected spu service");
                 trace!("converting k8 spu service: {:#?}", k8_obj);
 
                 let ctx_result: Result<K8MetaItem, _> = k8_obj.metadata.clone().try_into();
@@ -108,7 +110,9 @@ mod extended {
                     ))),
                 }
             } else {
-                debug!("skipping non acct fluvio {}", k8_obj.metadata.namespace);
+                trace!(
+                    name = %k8_obj.metadata.name,
+                    "skipping non spu service");
                 Err(K8ConvertError::Skip(k8_obj))
             }
         }
