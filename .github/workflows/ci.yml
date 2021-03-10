@@ -135,6 +135,59 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server
 
+  doc_test_linux:
+    name: Doc Test Linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 300M
+      SCCACHE_DIR: /home/runner/.cache/sccache
+      SCCACHE_IDLE_TIMEOUT: 0
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install sccache
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ~/.cargo/registry/cache
+          key: ${{ runner.os }}-${{ matrix.conf }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.conf }}-cargo-registry-
+      - name: Cache sccache output
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: /home/runner/.cache/sccache
+          key: ${{ runner.os }}-${{ matrix.conf }}-sccache-${{ hashFiles('**/Cargo.*') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.conf }}-sccache-
+      - name: Start sccache server
+        run: sccache --start-server
+      - name: Run doc tests
+        run: make run-all-doc-test
+      - name: Stop sccache server
+        run: sccache --stop-server
+
   unit_test_mac:
     name: Unit Test Mac
     runs-on: ${{ matrix.os }}
@@ -180,6 +233,51 @@ jobs:
       - name: Run unit tests
         timeout-minutes: 5
         run: make run-all-unit-test
+      - name: Stop sccache server
+        run: sccache --stop-server
+
+  doc_test_mac:
+    name: Doc Test Mac
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
+        rust: [stable]
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 300M
+      SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install sccache
+        run: brew install sccache
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ~/.cargo/registry/cache
+          key: test-${{ runner.os }}-${{ matrix.conf }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            test-${{ runner.os }}-${{ matrix.conf }}-cargo-registry-
+      - name: Cache sccache output
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: /Users/runner/Library/Caches/Mozilla.sccache
+          key: test-${{ runner.os }}-${{ matrix.conf }}-sccache-${{ hashFiles('**/Cargo.*') }}
+          restore-keys: |
+            test-${{ runner.os }}-${{ matrix.conf }}-sccache-
+      - name: Start sccache server
+        run: sccache --start-server
+      - name: Run doc tests
+        run: make run-all-doc-test
       - name: Stop sccache server
         run: sccache --stop-server
 
