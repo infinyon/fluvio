@@ -7,6 +7,7 @@ use k8_types::core::service::{ServiceSpec as K8ServiceSpec, ServiceStatus as K8S
 
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
+use crate::stores::spg::SpuGroupSpec;
 
 /// Service associated with SPU
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
@@ -23,7 +24,7 @@ impl Spec for SpgServiceSpec {
     const LABEL: &'static str = "SpgService";
     type IndexKey = String;
     type Status = SpgServiceStatus;
-    type Owner = Self;
+    type Owner = SpuGroupSpec;
 }
 
 impl From<K8ServiceSpec> for SpgServiceSpec {

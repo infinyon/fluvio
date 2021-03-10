@@ -159,7 +159,7 @@ impl SpgStatefulSetController {
 
             let spg_service_action = spu_group.generate_service();
 
-            debug!("spg_service_actions: {:#?}",spg_service_action);
+            trace!("spg_service_actions: {:#?}",spg_service_action);
             self.spg_services.wait_action(spu_group.service_name(), spg_service_action).await?;
 
             /* 
