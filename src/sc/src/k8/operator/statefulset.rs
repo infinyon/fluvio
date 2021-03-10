@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
+use crate::stores::spg::SpuGroupSpec;
 
 pub use k8_types::app::stateful::StatefulSetSpec as K8StatefulSetSpec;
 pub use k8_types::app::stateful::StatefulSetStatus as K8StatefulSetStatus;
@@ -20,7 +21,7 @@ impl Spec for StatefulsetSpec {
     const LABEL: &'static str = "StatefulSet";
     type IndexKey = String;
     type Status = StatefulsetStatus;
-    type Owner = Self;
+    type Owner = SpuGroupSpec;
 }
 
 impl From<K8StatefulSetSpec> for StatefulsetSpec {
