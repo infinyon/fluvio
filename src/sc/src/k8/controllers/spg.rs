@@ -20,12 +20,12 @@ use crate::stores::spg::SpuEndpointTemplate;
 use crate::stores::spu::{SpuSpec};
 use crate::cli::TlsConfig;
 use crate::stores::MetadataStoreObject;
-use crate::k8::service::SpuServicespec;
+use crate::k8::objects::spu_service::SpuServicespec;
 
-use super::spg_group::{SpuGroupObj};
-use super::ScK8Config;
-use super::statefulset::StatefulsetSpec;
-use super::spg_service::SpgServiceSpec;
+use crate::k8::objects::spg_group::{SpuGroupObj};
+use crate::k8::objects::spu_k8_config::ScK8Config;
+use crate::k8::objects::statefulset::StatefulsetSpec;
+use crate::k8::objects::spg_service::SpgServiceSpec;
 
 /// reconcile between SPG and Statefulset
 pub struct SpgStatefulSetController {

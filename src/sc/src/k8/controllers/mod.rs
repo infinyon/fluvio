@@ -1,10 +1,7 @@
-mod spg_operator;
-mod spg_group;
-mod spg_service;
-mod spu_k8_config;
-mod statefulset;
+pub mod spg;
+pub mod spu_service;
 
-pub use spu_k8_config::ScK8Config;
+
 pub use k8_operator::run_k8_operators;
 
 mod k8_operator {
@@ -15,13 +12,12 @@ mod k8_operator {
     use crate::core::SharedContext;
     use crate::stores::StoreContext;
     use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
-    use crate::k8::service::SpuServicespec;
-    use crate::k8::service::SpuServiceController;
-
-    use super::{ScK8Config};
-    use super::spg_operator::SpgStatefulSetController;
-    use super::statefulset::StatefulsetSpec;
-    use super::spg_service::SpgServiceSpec;
+    use crate::k8::objects::spu_service::SpuServicespec;
+    use crate::k8::controllers::spu_service::SpuServiceController;
+    use crate::k8::objects::spu_k8_config::ScK8Config;
+    use crate::k8::controllers::spg::SpgStatefulSetController;
+    use crate::k8::objects::statefulset::StatefulsetSpec;
+    use crate::k8::objects::spg_service::SpgServiceSpec;
 
     pub async fn run_k8_operators(
         namespace: String,

@@ -13,7 +13,7 @@ use crate::stores::{StoreContext, K8ChangeListener};
 use crate::stores::spu::IngressAddr;
 use crate::stores::spu::SpuSpec;
 
-use super::SpuServicespec;
+use crate::k8::objects::spu_service::SpuServicespec;
 
 /// Controleller to sync Spu and Svc
 /// It is used to update SPU's public ip address from external load balancer service.
