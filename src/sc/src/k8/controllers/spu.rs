@@ -70,21 +70,24 @@ impl SpuController {
         }
     }
 
-    #[instrument(skip(self), name = "SpuSvcLoop")]
+    #[instrument(skip(self), name = "SpuLoop")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
         let mut service_listener = self.services.change_listener();
         let mut spg_listener = self.groups.change_listener();
+        let mut spu_listener = self.spus.change_listener();
 
-        self.sync_from_spu_services(&mut service_listener).await?;
-        self.sync_with_spg(&mut spg_listener).await?;
+       self.sync_with_spg(&mut spg_listener).await?;
+       self.sync_from_spu_services(&mut service_listener).await?;
+        self.sync_spus(&mut spu_listener).await?;
 
         loop {
             trace!("waiting events");
 
             select! {
-
+                
+                
                 _ = service_listener.listen() => {
                     debug!("detected spu service changes");
                     self.sync_from_spu_services(&mut service_listener).await?;
@@ -93,11 +96,79 @@ impl SpuController {
                 _ = spg_listener.listen() => {
                     debug!("detected spg changes");
                     self.sync_with_spg(&mut spg_listener).await?;
+                },
+                
+                
+                _ = spu_listener.listen() => {
+                    debug!("detected spu changes");
+                    self.sync_spus(&mut spu_listener).await?;
                 }
+
 
             }
         }
     }
+
+    /// svc has been changed, update spu
+    async fn sync_spus(
+        &mut self,
+        listener: &mut K8ChangeListener<SpuSpec>,
+    ) -> Result<(), ClientError> {
+        if !listener.has_change() {
+            trace!("no spu change, skipping");
+            return Ok(());
+        }
+
+        // only care about spec changes
+        let changes = listener.sync_spec_changes().await;
+        let epoch = changes.epoch;
+        let (updates, deletes) = changes.parts();
+
+        debug!(
+            "received spu changes updates: {},deletes: {},epoch: {}",
+            updates.len(),
+            deletes.len(),
+            epoch,
+        );
+
+        for spu_md in updates.into_iter() {
+            let spu_id = spu_md.key();
+            // check if ingress exists
+            let spu_ingress = &spu_md.spec.public_endpoint.ingress;
+            let object_meta = spu_md.ctx().item().inner();
+            let svc_name = SpuServicespec::service_name(&object_meta.name);
+            if let Some(svc) = self.services.store().value(&svc_name).await {
+                // apply ingress
+                let svc_ingresses = svc.status.ingress();
+                let computed_spu_ingress: Vec<IngressAddr> =
+                    svc_ingresses.iter().map(convert).collect();
+                if &computed_spu_ingress != spu_ingress {
+                    let mut update_spu = spu_md.spec.clone();
+                    debug!(
+                        "updating spu:{} public end point: {:#?} from svc: {}",
+                        spu_id,
+                        computed_spu_ingress,
+                        svc.key()
+                    );
+                    update_spu.public_endpoint.ingress = computed_spu_ingress;
+                    if let Err(err) = self.spus.create_spec(spu_id.to_owned(), update_spu).await {
+                        error!("error applying spec: {}", err);
+                    }
+                } else {
+                    debug!(
+                        "detected no spu: {} ingress changes with svc: {}",
+                        spu_id,
+                        svc.key()
+                    );
+                }
+            } else {
+                debug!("no svc exists for spu {},skipping", spu_id);
+            }
+        }
+
+        Ok(())
+    }
+
 
     /// svc has been changed, update spu
     async fn sync_from_spu_services(
@@ -193,6 +264,7 @@ impl SpuController {
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
                 debug!(%spu_name,"generating spu with name");
 
+                // assume that if spu exists, it will have necessary attribute for now
                 self.apply_spu(&spg_obj, &spu_name, spu_id).await?;
             }
         }

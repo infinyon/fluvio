@@ -5,6 +5,7 @@ mod context {
 
     use std::fmt;
     use std::fmt::Display;
+    use std::collections::HashMap;
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
@@ -24,6 +25,11 @@ mod context {
         /// set string labels
         fn set_labels<T: Into<String>>(self, _labels: Vec<(T, T)>) -> Self {
             self
+        }
+
+        /// get string labels
+        fn get_labels(&self) -> HashMap<String, String> {
+            HashMap::new()
         }
 
     }

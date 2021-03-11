@@ -7,6 +7,7 @@ use std::fmt::Display;
 use std::fmt::Debug;
 use std::ops::Deref;
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 
 use tracing::error;
 
@@ -106,6 +107,11 @@ impl MetadataItem for K8MetaItem {
             revision: self.revision,
             inner: self.inner.set_labels(labels)
         }
+    }
+
+    /// get string labels
+    fn get_labels(&self) -> HashMap<String, String> {
+        self.inner.labels.clone()
     }
 }
 

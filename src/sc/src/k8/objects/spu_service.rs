@@ -26,6 +26,11 @@ impl SpuServicespec {
     pub fn inner(&self) -> &K8ServiceSpec {
         &self.0
     }
+
+    /// unique name given spu name
+    pub fn service_name(spu_name: &str) -> String {
+        format!("fluvio-spu-{}", spu_name)
+    }
 }
 
 impl From<K8ServiceSpec> for SpuServicespec {
@@ -85,6 +90,7 @@ mod extended {
     use crate::stores::k8::K8ExtendedSpec;
     use crate::stores::k8::K8MetaItem;
     use crate::stores::MetadataStoreObject;
+    use crate::stores::k8::default_convert_from_k8;
 
     use super::*;
 
@@ -92,13 +98,11 @@ mod extended {
     impl K8ExtendedSpec for SpuServicespec {
         type K8Spec = ServiceSpec;
         type K8Status = ServiceStatus;
+        
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
-            use std::convert::TryInto;
-            use std::io::Error as IoError;
-            use std::io::ErrorKind;
 
             let labels = &k8_obj.metadata.labels;
 
@@ -108,24 +112,7 @@ mod extended {
                     "detected spu service");
                 trace!("converting k8 spu service: {:#?}", k8_obj);
 
-                let ctx_result: Result<K8MetaItem, _> = k8_obj.metadata.clone().try_into();
-                match ctx_result {
-                    Ok(ctx_item) => {
-                        let mut meta = MetadataStoreObject::new(
-                            name,
-                            SpuServicespec(
-                                k8_obj.spec
-                            ),
-                            SpuServiceStatus(k8_obj.status),
-                        );
-                        meta.set_ctx(ctx_item.into());
-                        Ok(meta)
-                    }
-                    Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("error converting metadata: {:#?}", err),
-                    ))),
-                }
+                default_convert_from_k8(k8_obj)
             } else {
                 trace!(
                     name = %k8_obj.metadata.name,

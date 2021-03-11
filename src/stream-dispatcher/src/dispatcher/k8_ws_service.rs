@@ -13,8 +13,9 @@ use serde::Serialize;
 use k8_metadata_client::{MetadataClient, SharedClient};
 
 use crate::k8_types::{InputK8Obj, K8Obj, Spec as K8Spec, UpdateK8ObjStatus};
-use crate::core::Spec;
+use crate::core::{Spec,MetadataItem};
 use crate::store::k8::{K8ExtendedSpec, K8MetaItem};
+
 
 use crate::store::*;
 
@@ -44,13 +45,14 @@ where
         &self,
         value: MetadataStoreObject<S, K8MetaItem>,
     ) -> Result<(), C::MetadataClientError> {
+        
         debug!("K8 Applying {}:{}", S::LABEL, value.key());
         trace!("adding KV {:#?} to k8 kv", value);
 
         let (key, spec, _status, ctx) = value.parts();
         let k8_spec: S::K8Spec = spec.into();
 
-        if let Some(parent_metadata) = ctx.owner() {
+        let mut input_metadata = if let Some(parent_metadata) = ctx.owner() {
             debug!("owner exists");
             let item_name = key.to_string();
 
@@ -59,6 +61,8 @@ where
                     item_name,
                     
                 );
+            // set labels
+            
 
             if let Some(finalizer) = S::FINALIZER {
                 input_metadata.finalizers = vec![finalizer.to_owned()];
@@ -66,23 +70,21 @@ where
                     o_ref.block_owner_deletion = true;
                 }
             }
-
-            let new_k8 = InputK8Obj::new(k8_spec, input_metadata);
-
-            debug!("input metadata: {:#?}", new_k8);
-
-            self.client.apply(new_k8).await.map(|_| ())
+            input_metadata
         } else {
-            let new_k8 = InputK8Obj::new(k8_spec, ctx.item().inner().clone().into());
+            ctx.item().inner().clone().into()
+        };
 
-            trace!("adding k8 {:#?} ", new_k8);
+        input_metadata.labels = ctx.item().get_labels();
 
-            self.client
-                .apply(new_k8)
-                .await
-                .map(|_| ())
-                .map_err(|err| err)
-        }
+        trace!("converted metadata: {:#?}",input_metadata);
+        let new_k8 = InputK8Obj::new(k8_spec, input_metadata);
+
+        debug!("input {:#?}", new_k8);
+
+        self.client.apply(new_k8).await.map(|_| ())
+
+        
     }
 
     /// only update the status
