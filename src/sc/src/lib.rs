@@ -1,4 +1,4 @@
-#[cfg(any(feature = "k8"))]
+#[cfg(feature = "k8")]
 pub mod k8;
 pub mod cli;
 pub mod core;

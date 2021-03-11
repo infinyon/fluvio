@@ -1,14 +1,12 @@
-use std::{collections::HashMap, time::Duration};
+use std::{time::Duration};
 
-use fluvio_controlplane_metadata::spu::{Endpoint, IngressPort, SpuType};
-use fluvio_stream_dispatcher::{actions::WSAction, store::K8ChangeListener};
+use fluvio_stream_dispatcher::{store::K8ChangeListener};
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
 use tracing::warn;
 use tracing::instrument;
 
-use fluvio_types::SpuId;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use k8_client::SharedK8Client;
@@ -16,11 +14,9 @@ use k8_client::ClientError;
 
 use crate::stores::{StoreContext};
 use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
-use crate::stores::spg::SpuEndpointTemplate;
 use crate::stores::spu::{SpuSpec};
 use crate::cli::TlsConfig;
-use crate::stores::MetadataStoreObject;
-use crate::k8::objects::spu_service::SpuServicespec;
+
 
 use crate::k8::objects::spg_group::{SpuGroupObj};
 use crate::k8::objects::spu_k8_config::ScK8Config;
@@ -35,7 +31,6 @@ pub struct SpgStatefulSetController {
     spus: StoreContext<SpuSpec>,
     statefulsets: StoreContext<StatefulsetSpec>,
     spg_services: StoreContext<SpgServiceSpec>,
-    spu_services: StoreContext<SpuServicespec>,
     tls: Option<TlsConfig>,
 }
 
@@ -47,7 +42,6 @@ impl SpgStatefulSetController {
         statefulsets: StoreContext<StatefulsetSpec>,
         spus: StoreContext<SpuSpec>,
         spg_services: StoreContext<SpgServiceSpec>,
-        spu_services: StoreContext<SpuServicespec>,
         tls: Option<TlsConfig>,
     ) {
         let controller = Self {
@@ -57,7 +51,6 @@ impl SpgStatefulSetController {
             client,
             namespace,
             spg_services,
-            spu_services,
             tls,
         };
 
@@ -169,125 +162,10 @@ impl SpgStatefulSetController {
             self.statefulsets
                 .wait_action(&stateful_key, stateful_action)
                 .await?;
-
-            self.apply_spus(&spu_group, &spu_k8_config).await?;
         }
 
         Ok(())
     }
 
-    /// create SPU crd objects from cluster spec
-    //#[instrument(skip(self, spg_obj, spg_spec, spg_name))]
-    async fn apply_spus(
-        &self,
-        spg_obj: &SpuGroupObj,
-        spu_k8_config: &ScK8Config,
-    ) -> Result<(), ClientError> {
-        let spec = spg_obj.spec();
-        let replicas = spec.replicas;
 
-        for i in 0..replicas {
-            let spu_id = self.compute_spu_id(spec.min_id, i);
-            let spu_name = format!("{}-{}", spg_obj.key(), i);
-            debug!(%spu_name,"generating spu with name");
-
-            self.apply_spu(spg_obj, &spu_name, i, spu_id).await?;
-
-            self.apply_spu_load_balancers(spg_obj, &spu_name, &spu_k8_config)
-                .await?;
-        }
-
-        Ok(())
-    }
-
-    /// create SPU crd objects from cluster spec
-    async fn apply_spu(
-        &self,
-        spg_obj: &SpuGroupObj,
-        spu_name: &String,
-        _replica_index: u16,
-        id: SpuId,
-    ) -> Result<(), ClientError> {
-        let spu_private_ep = SpuEndpointTemplate::default_private();
-        let spu_public_ep = SpuEndpointTemplate::default_public();
-
-        let full_group_name = format!("fluvio-spg-{}", spg_obj.key());
-        let full_spu_name = format!("fluvio-spg-{}", spu_name);
-        let spu_spec = SpuSpec {
-            id,
-            spu_type: SpuType::Managed,
-            public_endpoint: IngressPort {
-                port: spu_public_ep.port,
-                encryption: spu_public_ep.encryption,
-                ingress: vec![],
-            },
-            private_endpoint: Endpoint {
-                host: format!("{}.{}", full_spu_name, full_group_name),
-                port: spu_private_ep.port,
-                encryption: spu_private_ep.encryption,
-            },
-            rack: None,
-        };
-
-        let action = WSAction::Apply(
-            MetadataStoreObject::with_spec(spu_name, spu_spec)
-                .with_context(spg_obj.ctx().create_child()),
-        );
-
-        trace!("spu action: {:#?}", action);
-
-        self.spus.wait_action(spu_name, action).await?;
-
-        Ok(())
-    }
-
-    async fn apply_spu_load_balancers(
-        &self,
-        spg_obj: &SpuGroupObj,
-        spu_name: &str,
-        spu_k8_config: &ScK8Config,
-    ) -> Result<(), ClientError> {
-        use fluvio_types::defaults::{SPU_PUBLIC_PORT};
-        use k8_types::core::service::{ServicePort, ServiceSpec as K8ServiceSpec, TargetPort};
-
-        let mut public_port = ServicePort {
-            port: SPU_PUBLIC_PORT,
-            ..Default::default()
-        };
-        public_port.target_port = Some(TargetPort::Number(public_port.port));
-
-        let mut selector = HashMap::new();
-        let pod_name = format!("fluvio-spg-{}", spu_name);
-        selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), pod_name);
-
-        let mut k8_service_spec = K8ServiceSpec {
-            selector: Some(selector),
-            ports: vec![public_port.clone()],
-            ..Default::default()
-        };
-
-        spu_k8_config.apply_service(&mut k8_service_spec);
-
-        let svc_name = format!("fluvio-spu-{}", spu_name);
-
-        let action = WSAction::Apply(
-            MetadataStoreObject::with_spec(svc_name.clone(), k8_service_spec.into()).with_context(
-                spg_obj
-                    .ctx()
-                    .create_child()
-                    .set_labels(vec![("fluvio.io/spu-name", spu_name)]),
-            ),
-        );
-
-        trace!("spu action: {:#?}", action);
-
-        self.spu_services.wait_action(&svc_name, action).await?;
-
-        Ok(())
-    }
-
-    /// compute spu id with min_id as base
-    fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> i32 {
-        replica_index as i32 + min_id
-    }
 }

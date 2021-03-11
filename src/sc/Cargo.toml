@@ -14,6 +14,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "fluvio-sc-k8"
 path = "src/bin/k8.rs"
+required-features = ["k8"]
 
 [features]
 default = ["k8"]

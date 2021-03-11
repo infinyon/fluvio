@@ -1,23 +1,23 @@
 pub mod spg;
 pub mod spu_service;
-
+pub mod spu;
 
 pub use k8_operator::run_k8_operators;
 
 mod k8_operator {
     use k8_client::SharedK8Client;
 
-  
     use crate::cli::TlsConfig;
     use crate::core::SharedContext;
     use crate::stores::StoreContext;
     use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
     use crate::k8::objects::spu_service::SpuServicespec;
-    use crate::k8::controllers::spu_service::SpuServiceController;
     use crate::k8::objects::spu_k8_config::ScK8Config;
-    use crate::k8::controllers::spg::SpgStatefulSetController;
     use crate::k8::objects::statefulset::StatefulsetSpec;
     use crate::k8::objects::spg_service::SpgServiceSpec;
+    use crate::k8::controllers::spg::SpgStatefulSetController;
+    use crate::k8::controllers::spu_service::SpuServiceController;
+    use crate::k8::controllers::spu::SpuController;
 
     pub async fn run_k8_operators(
         namespace: String,
@@ -47,24 +47,34 @@ mod k8_operator {
             spg_service_ctx.clone(),
         );
 
-
-
         SpgStatefulSetController::start(
-            k8_client.clone(), 
-            namespace.clone(), 
+            k8_client.clone(),
+            namespace.clone(),
             global_ctx.spgs().clone(),
-             statefulset_ctx,
-             global_ctx.spus().clone(),
-             spg_service_ctx,
-             spu_service_ctx.clone(),
-             tls
-            );
+            statefulset_ctx,
+            global_ctx.spus().clone(),
+            spg_service_ctx,
+            tls,
+        );
 
-    
-        let config =  ScK8Config::load(&k8_client, &namespace).await.expect("error loading config");
+        SpuController::start(
+            global_ctx.spus().clone(),
+            spu_service_ctx.clone(),
+            global_ctx.spgs().clone(),
+        );
+
+        let config = ScK8Config::load(&k8_client, &namespace)
+            .await
+            .expect("error loading config");
 
         if !config.sc_config.disable_spu {
-            SpuServiceController::start(global_ctx, spu_service_ctx);
+            SpuServiceController::start(
+                k8_client.clone(),
+                namespace.clone(),
+                global_ctx.spus().clone(),
+                spu_service_ctx.clone(),
+                global_ctx.spgs().clone()
+            );
         }
     }
 }
