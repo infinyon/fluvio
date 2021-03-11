@@ -1,16 +1,13 @@
 use std::{collections::HashMap, time::Duration};
 
-use fluvio_stream_dispatcher::store::K8ChangeListener;
+use fluvio_stream_dispatcher::{actions::WSAction, store::K8ChangeListener};
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
 use tracing::warn;
 use tracing::instrument;
 
-use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use fluvio_types::defaults::SPU_DEFAULT_NAME;
 use fluvio_types::SpuId;
-use k8_types::core::service::*;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use k8_client::SharedK8Client;
@@ -168,144 +165,63 @@ impl SpgStatefulSetController {
 
             self.statefulsets.wait_action(&stateful_key,stateful_action).await?;
             
-            /*
-            // now apply statefulset
-            // ensure we have headless service for statefulset
-            match self
-                .apply_statefulset_service(spu_group,&spu_k8_config)
-                .await
-            {
-                Ok(svc_name) => {
-                    if let Err(err) = self
-                        .apply_stateful_set(
-                            &spu_group,
-                            spg_spec,
-                            &spg_name,
-                            svc_name,
-                            &spu_k8_config,
-                        )
-                        .await
-                    {
-                        error!("error applying stateful sets: {}", err);
-                    }
-                }
-                Err(err) => {
-                    error!("error applying spg services: {}", err);
-                }
-            }
-
-            if let Err(err) = self
-                .apply_spus(&spu_group, spg_spec, &spg_name, &spu_k8_config)
-                .await
-            {
-                error!("error applying spus: {}", err);
-            }
-            */
+            self.apply_spus(&spu_group,&spu_k8_config).await?;
         }
 
         Ok(())
     }
 
-    /*
-    /// Generate and apply a stateful set for this cluster
-    #[instrument(
-        skip(self, spu_k8_config),
-    )]
-    async fn apply_stateful_set(
-        &self,
-        spu_group: &SpuGroupObj,
-        spu_k8_config: &ScK8Config,
-    ) -> Result<(), ClientError> {
-
-        let input_stateful = convert_cluster_to_statefulset(
-            spg_spec,
-            &spu_group.metadata,
-            spg_name,
-            spg_svc_name,
-            &self.namespace,
-            spu_k8_config,
-            self.tls.as_ref(),
-        );
-        debug!(
-            "apply statefulset '{}' changes",
-            input_stateful.metadata.name
-        );
-
-        trace!("statefulset: {:#?}", input_stateful);
-
-        self.client.apply(input_stateful).await?;
-
-        Ok(())
-    }
-    */
-
-    /*
+    
+    
     /// create SPU crd objects from cluster spec
     //#[instrument(skip(self, spg_obj, spg_spec, spg_name))]
     async fn apply_spus(
         &self,
         spg_obj: &SpuGroupObj,
-        spg_spec: &K8SpuGroupSpec,
-        spg_name: &str,
         spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
-        let replicas = spg_spec.replicas;
+
+        let spec = spg_obj.spec();
+        let replicas = spec.replicas;
 
         for i in 0..replicas {
-            let spu_id = self.compute_spu_id(spg_spec.min_id, i);
-            let spu_name = format!("{}-{}", spg_name, i);
-            debug!("generating spu with name: {}", spu_name);
+            let spu_id = self.compute_spu_id(spec.min_id, i);
+            let spu_name = format!("{}-{}", spg_obj.key(), i);
+            debug!(%spu_name,"generating spu with name");
 
-            self.apply_spu(spg_obj, spg_spec, spg_name, &spu_name, i, spu_id)
+            self.apply_spu(spg_obj,&spu_name, i, spu_id)
                 .await;
 
-            if let Err(err) = self
-                .apply_spu_load_balancers(spg_obj, spg_spec, &spu_name, &spu_k8_config)
-                .await
-            {
-                error!("error trying to create load balancer for spu: {}", err);
-            }
+            self.apply_spu_load_balancers(spg_obj,&spu_name, &spu_k8_config)
+                .await?;
         }
 
         Ok(())
     }
-    */
+    
 
-    /*
+    
     /// create SPU crd objects from cluster spec
     #[instrument(
-        skip(self, k8_group, group_spec, _replica_index, id),
+        skip(self, _replica_index, id),
         fields(
-            namespace = k8_group.metadata.namespace(),
             replica_index = _replica_index,
             spu_id = id,
         )
     )]
     async fn apply_spu(
         &self,
-        k8_group: &SpuGroupObj,
-        group_spec: &K8SpuGroupSpec,
-        group_name: &str,
+        spg_obj: &SpuGroupObj,
         spu_name: &str,
         _replica_index: u16,
         id: SpuId,
     ) {
-        let k8_metadata = &k8_group.metadata;
-        let k8_namespace = k8_metadata.namespace();
-        let spu_template = &group_spec.template.spec;
 
-        let spu_private_ep = if let Some(ref ep) = &spu_template.private_endpoint {
-            ep.clone()
-        } else {
-            SpuEndpointTemplate::default_private()
-        };
-        let spu_public_ep = if let Some(ref ep) = &spu_template.public_endpoint {
-            ep.clone()
-        } else {
-            SpuEndpointTemplate::default_public()
-        };
+    
+        let spu_private_ep = SpuEndpointTemplate::default_private();
+        let spu_public_ep = if let Some(ref ep) = SpuEndpointTemplate::default_public();
 
-        let full_group_name = format!("fluvio-spg-{}", group_name);
+        let full_group_name = format!("fluvio-spg-{}", spg_obj.key());
         let full_spu_name = format!("fluvio-spg-{}", spu_name);
         let spu_spec = SpuSpec {
             id,
@@ -323,40 +239,27 @@ impl SpgStatefulSetController {
             rack: None,
         };
 
-        let owner_ref = k8_metadata.make_owner_reference::<K8SpuGroupSpec>();
-        let input_spu: InputK8Obj<SpuSpec> = InputK8Obj {
-            api_version: SpuSpec::api_version(),
-            kind: SpuSpec::kind(),
-            metadata: InputObjectMeta {
-                name: spu_name.to_string(),
-                namespace: k8_namespace.to_owned(),
-                owner_references: vec![owner_ref],
-                ..Default::default()
-            },
-            spec: spu_spec,
-            ..Default::default()
-        };
+        let action = WSAction::Apply(
+            MetadataStoreObject::with_spec(spu_name, spu_spec)
+                .with_context(spg_obj.ctx().create_child()));
 
-        debug!("spu '{}': apply changes", spu_name);
+        trace!("spu action: {:#?}", action);
 
-        if let Err(err) = self.client.apply(input_spu).await {
-            error!("spu '{}': {}", spu_name, err);
-        }
+        self.spus.wait_action(&stateful_key,stateful_action).await?;
     }
 
-    /// Apply external svc for each SPU
-    /// This is owned by group svc
-    #[instrument(skip(self, spg_obj, spg_spec))]
+    
     async fn apply_spu_load_balancers(
         &self,
         spg_obj: &SpuGroupObj,
-        spg_spec: &K8SpuGroupSpec,
         spu_name: &str,
         spu_k8_config: &ScK8Config,
-    ) -> Result<ApplyResult<ServiceSpec>, ClientError> {
+    ) -> Result<(), ClientError> {
+
+        
         let metadata = &spg_obj.metadata;
 
-        let spu_template = &spg_spec.template.spec;
+       
         let mut public_port = ServicePort {
             port: spu_template
                 .public_endpoint
@@ -402,49 +305,7 @@ impl SpgStatefulSetController {
         self.client.apply(input_service).await
     }
 
-    /// Apply service for statefulsets/group
-    /// returns name of the statefulset svc
-    async fn apply_statefulset_service(
-        &self,
-        spg_obj: &SpuGroupObj,
-        spg_spec: &K8SpuGroupSpec,
-        spg_name: &str,
-    ) -> Result<String, ClientError> {
-        let service_name = spg_name.to_owned();
-        let service_spec = generate_service(spg_spec, spg_name);
-        let metadata = &spg_obj.metadata;
-        let owner_ref = metadata.make_owner_reference::<ServiceSpec>();
-
-        let mut labels = HashMap::new();
-        labels.insert("app".to_owned(), SPU_DEFAULT_NAME.to_owned());
-        labels.insert("group".to_owned(), spg_name.to_owned());
-
-        let svc_name = format!("fluvio-spg-{}", spg_name);
-
-        let input_service: InputK8Obj<ServiceSpec> = InputK8Obj {
-            api_version: ServiceSpec::api_version(),
-            kind: ServiceSpec::kind(),
-            metadata: InputObjectMeta {
-                name: svc_name.clone(),
-                namespace: metadata.namespace().to_string(),
-                labels,
-                owner_references: vec![owner_ref],
-                ..Default::default()
-            },
-            spec: service_spec,
-            ..Default::default()
-        };
-
-        debug!(
-            "spg '{}': apply service '{}' changes",
-            spg_name, service_name,
-        );
-
-        self.client.apply(input_service).await?;
-
-        Ok(svc_name)
-    }
-    */
+    
 
     /// compute spu id with min_id as base
     fn compute_spu_id(&self, min_id: i32, replica_index: u16) -> i32 {
