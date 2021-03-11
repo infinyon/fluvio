@@ -95,7 +95,7 @@ impl SpuServiceController {
 
         for svc_md in updates.into_iter() {
             // check if
-            let spu_id = &svc_md.spec.spu_name;
+            let spu_id = svc_md.key();
             // check if ingress exists
             let svc_ingresses = svc_md.status.ingress();
 

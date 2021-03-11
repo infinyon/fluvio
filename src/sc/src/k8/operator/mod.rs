@@ -10,8 +10,7 @@ pub use k8_operator::run_k8_operators;
 mod k8_operator {
     use k8_client::SharedK8Client;
 
-    use tracing::error;
-
+  
     use crate::cli::TlsConfig;
     use crate::core::SharedContext;
     use crate::stores::StoreContext;
@@ -61,6 +60,7 @@ mod k8_operator {
              statefulset_ctx,
              global_ctx.spus().clone(),
              spg_service_ctx,
+             spu_service_ctx.clone(),
              tls
             );
 

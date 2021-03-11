@@ -100,6 +100,13 @@ impl MetadataItem for K8MetaItem {
     fn is_being_deleted(&self) -> bool {
         self.inner.deletion_grace_period_seconds.is_some()
     }
+
+    fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
+        Self {
+            revision: self.revision,
+            inner: self.inner.set_labels(labels)
+        }
+    }
 }
 
 impl TryFrom<ObjectMeta> for K8MetaItem {

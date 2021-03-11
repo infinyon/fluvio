@@ -57,6 +57,7 @@ where
             let mut input_metadata = parent_metadata
                 .make_child_input_metadata::<<<S as Spec>::Owner as K8ExtendedSpec>::K8Spec>(
                     item_name,
+                    
                 );
 
             if let Some(finalizer) = S::FINALIZER {

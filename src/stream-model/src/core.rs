@@ -20,6 +20,12 @@ mod context {
         fn is_being_deleted(&self) -> bool {
             false
         }
+
+        /// set string labels
+        fn set_labels<T: Into<String>>(self, _labels: Vec<(T, T)>) -> Self {
+            self
+        }
+
     }
 
     pub trait MetadataRevExtension: MetadataItem {
@@ -96,6 +102,13 @@ mod context {
             Self {
                 item: C::default(),
                 owner: Some(self.item.clone()),
+            }
+        }
+
+        pub fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
+            Self {
+                item: self.item.set_labels(labels),
+                owner: self.owner
             }
         }
     }

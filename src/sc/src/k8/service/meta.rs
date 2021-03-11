@@ -3,28 +3,45 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_types::core::service::ServiceStatus;
+use k8_types::core::service::{ ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus};
 use k8_types::core::service::LoadBalancerIngress;
 
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
+use crate::stores::spg::SpuGroupSpec;
 
 /// Service associated with SPU
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct SpuServicespec {
-    pub spu_name: String,
-}
+pub struct SpuServicespec(K8ServiceSpec);
 
 impl Spec for SpuServicespec {
     const LABEL: &'static str = "SpuService";
     type IndexKey = String;
     type Status = SpuServiceStatus;
-    type Owner = Self;
+    type Owner = SpuGroupSpec;
+}
+
+impl SpuServicespec {
+    pub fn inner(&self) -> &K8ServiceSpec {
+        &self.0
+    }
+}
+
+impl From<K8ServiceSpec> for SpuServicespec {
+    fn from(k8: K8ServiceSpec) -> Self {
+        Self(k8)
+    }
+}
+
+impl From<SpuServicespec> for K8ServiceSpec {
+    fn from(spec: SpuServicespec) -> Self {
+        spec.0
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
-pub struct SpuServiceStatus(ServiceStatus);
+pub struct SpuServiceStatus(K8ServiceStatus);
 
 impl fmt::Display for SpuServiceStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -37,6 +54,18 @@ impl Status for SpuServiceStatus {}
 impl SpuServiceStatus {
     pub fn ingress(&self) -> &Vec<LoadBalancerIngress> {
         &self.0.load_balancer.ingress
+    }
+}
+
+impl From<K8ServiceStatus> for SpuServiceStatus {
+    fn from(k8: K8ServiceStatus) -> Self {
+        Self(k8)
+    }
+}
+
+impl From<SpuServiceStatus> for K8ServiceStatus {
+    fn from(status: SpuServiceStatus) -> Self {
+        status.0
     }
 }
 
@@ -59,18 +88,6 @@ mod extended {
 
     use super::*;
 
-    // no need to convert back but need to satify bounds
-    impl Into<ServiceSpec> for SpuServicespec {
-        fn into(self) -> ServiceSpec {
-            panic!("no converting to service");
-        }
-    }
-
-    impl Into<ServiceStatus> for SpuServiceStatus {
-        fn into(self) -> ServiceStatus {
-            panic!("use converting to service status");
-        }
-    }
 
     impl K8ExtendedSpec for SpuServicespec {
         type K8Spec = ServiceSpec;
@@ -96,9 +113,9 @@ mod extended {
                     Ok(ctx_item) => {
                         let mut meta = MetadataStoreObject::new(
                             name,
-                            SpuServicespec {
-                                spu_name: name.to_owned(),
-                            },
+                            SpuServicespec(
+                                k8_obj.spec
+                            ),
                             SpuServiceStatus(k8_obj.status),
                         );
                         meta.set_ctx(ctx_item.into());

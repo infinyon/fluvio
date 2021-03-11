@@ -14,7 +14,7 @@ use crate::stores::actions::WSAction;
 use crate::cli::TlsConfig;
 
 use super::spu_k8_config::ScK8Config;
-use super::statefulset::{StatefulsetSpec, StatefulsetStatus, K8StatefulSetSpec};
+use super::statefulset::{StatefulsetSpec};
 use super::spg_service::SpgServiceSpec;
 
 #[derive(Debug)]
@@ -37,9 +37,6 @@ impl SpuGroupObj {
         Self { inner, svc_name }
     }
 
-    pub fn service_name(&self) -> &String {
-        &self.svc_name
-    }
 
     pub fn is_already_valid(&self) -> bool {
         self.status().is_already_valid()
@@ -302,66 +299,5 @@ mod k8_convert {
         }
     }
 
-    fn apply_spu(
-        &self,
-        k8_group: &SpuGroupObj,
-        group_spec: &K8SpuGroupSpec,
-        group_name: &str,
-        spu_name: &str,
-        _replica_index: u16,
-        id: SpuId,
-    ) {
-        let k8_metadata = &k8_group.metadata;
-        let k8_namespace = k8_metadata.namespace();
-        let spu_template = &group_spec.template.spec;
-
-        let spu_private_ep = if let Some(ref ep) = &spu_template.private_endpoint {
-            ep.clone()
-        } else {
-            SpuEndpointTemplate::default_private()
-        };
-        let spu_public_ep = if let Some(ref ep) = &spu_template.public_endpoint {
-            ep.clone()
-        } else {
-            SpuEndpointTemplate::default_public()
-        };
-
-        let full_group_name = format!("fluvio-spg-{}", group_name);
-        let full_spu_name = format!("fluvio-spg-{}", spu_name);
-        let spu_spec = SpuSpec {
-            id,
-            spu_type: SpuType::Managed,
-            public_endpoint: IngressPort {
-                port: spu_public_ep.port,
-                encryption: spu_public_ep.encryption,
-                ingress: vec![],
-            },
-            private_endpoint: Endpoint {
-                host: format!("{}.{}", full_spu_name, full_group_name),
-                port: spu_private_ep.port,
-                encryption: spu_private_ep.encryption,
-            },
-            rack: None,
-        };
-
-        let owner_ref = k8_metadata.make_owner_reference::<K8SpuGroupSpec>();
-        let input_spu: InputK8Obj<SpuSpec> = InputK8Obj {
-            api_version: SpuSpec::api_version(),
-            kind: SpuSpec::kind(),
-            metadata: InputObjectMeta {
-                name: spu_name.to_string(),
-                namespace: k8_namespace.to_owned(),
-                owner_references: vec![owner_ref],
-                ..Default::default()
-            },
-            spec: spu_spec,
-            ..Default::default()
-        };
-
-        debug!("spu '{}': apply changes", spu_name);
-
-        if let Err(err) = self.client.apply(input_spu).await {
-            error!("spu '{}': {}", spu_name, err);
-        }
-
+    
 }
