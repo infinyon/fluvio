@@ -1347,6 +1347,7 @@ dependencies = [
  "eyre",
  "fluvio",
  "fluvio-cluster",
+ "fluvio-command 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-extension-consumer",
@@ -1433,6 +1434,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-command"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b587d6cc4c0901a6766e133c64f727fc976c0a8bfa4518b22dfc7abed676b38"
+dependencies = [
+ "once_cell",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-controlplane"
 version = "0.6.0"
 dependencies = [
@@ -1479,12 +1491,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "fluvio",
  "futures-lite",
  "prettytable-rs",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -1513,6 +1526,7 @@ dependencies = [
  "hostname-validator",
  "jsonpath",
  "prettytable-rs",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "serde_yaml",

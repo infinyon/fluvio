@@ -32,9 +32,9 @@ impl PartitionCmd {
     }
     pub fn metadata() -> FluvioExtensionMetadata {
         FluvioExtensionMetadata {
-            command: "partition".into(),
+            title: "partition".into(),
             description: "Partition Operations".into(),
-            version: env!("CARGO_PKG_VERSION").into(),
+            version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }
     }
 }

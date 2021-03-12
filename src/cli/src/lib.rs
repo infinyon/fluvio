@@ -2,7 +2,6 @@
 //!
 //! CLI configurations at the top of the tree
 
-use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::process::Command;
 use structopt::clap::{AppSettings, Shell, App, SubCommand};
@@ -13,26 +12,28 @@ mod http;
 mod error;
 mod install;
 mod profile;
+mod version;
+mod metadata;
 
 use profile::ProfileCmd;
 use install::update::UpdateOpt;
 use install::plugins::InstallOpt;
+use metadata::{MetadataOpt, subcommand_metadata};
+use version::VersionOpt;
 pub use error::{Result, CliError};
 
 use fluvio::Fluvio;
-use fluvio_extension_common::FluvioExtensionMetadata;
+use fluvio_cluster::cli::ClusterCmd;
 use fluvio_extension_consumer::consume::ConsumeLogOpt;
 use fluvio_extension_consumer::produce::ProduceLogOpt;
 use fluvio_extension_consumer::partition::PartitionCmd;
 use fluvio_extension_consumer::topic::TopicCmd;
-use fluvio_cluster::cli::ClusterCmd;
 
 use fluvio_extension_common as common;
 use common::COMMAND_TEMPLATE;
 use common::target::ClusterTarget;
 use common::output::Terminal;
 use common::PrintTerminal;
-use fluvio::config::ConfigFile;
 
 pub const VERSION: &str = include_str!("VERSION");
 static_assertions::const_assert!(!VERSION.is_empty());
@@ -227,123 +228,20 @@ impl FluvioCmd {
 }
 
 #[derive(Debug, StructOpt)]
-struct VersionOpt {}
-
-impl VersionOpt {
-    pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        println!("Fluvio CLI        : {}", crate::VERSION.trim());
-
-        // Read CLI and compute its sha256
-        let fluvio_bin = std::fs::read(std::env::current_exe()?)?;
-        let mut hasher = Sha256::new();
-        hasher.update(fluvio_bin);
-        let fluvio_bin_sha256 = hasher.finalize();
-        println!("Fluvio CLI SHA256 : {:x}", &fluvio_bin_sha256);
-
-        // Attempt to connect to a Fluvio cluster to get platform version
-        // Even if we fail to connect, we should not fail the other printouts
-        let mut platform_version = String::from("Not available");
-        if let Ok(fluvio_config) = target.load() {
-            if let Ok(fluvio) = Fluvio::connect_with_config(&fluvio_config).await {
-                let version = fluvio.platform_version();
-                platform_version = version.to_string();
-            }
-        }
-
-        let profile_name = ConfigFile::load(None)
-            .ok()
-            .and_then(|it| {
-                it.config()
-                    .current_profile_name()
-                    .map(|name| name.to_string())
-            })
-            .map(|name| format!(" ({})", name))
-            .unwrap_or_else(|| "".to_string());
-        println!("Fluvio Platform   : {}{}", platform_version, profile_name);
-
-        println!("Git Commit        : {}", env!("GIT_HASH"));
-        if let Some(os_info) = os_info() {
-            println!("OS Details        : {}", os_info);
-        }
-
-        Ok(())
-    }
-}
-
-/// Fetch OS information
-fn os_info() -> Option<String> {
-    use sysinfo::SystemExt;
-    let sys = sysinfo::System::new_all();
-
-    let info = format!(
-        "{} {} (kernel {})",
-        sys.get_name()?,
-        sys.get_os_version()?,
-        sys.get_kernel_version()?,
-    );
-
-    Some(info)
-}
-
-#[derive(Debug, StructOpt)]
 pub struct HelpOpt {}
 impl HelpOpt {
     pub fn process(self) -> Result<()> {
-        let external_commands = MetadataOpt::metadata(false)?;
+        let external_commands = subcommand_metadata()?;
 
+        // Add external command definitions to our own clap::App definition
         let mut app: App = Root::clap();
-
         for i in &external_commands {
-            app = app.subcommand(SubCommand::with_name(&i.command).about(&*i.description));
+            app = app.subcommand(SubCommand::with_name(&i.meta.title).about(&*i.meta.description));
         }
 
+        // Use clap's help printer, loaded up with external subcommands
         let _ = app.print_help();
-
         Ok(())
-    }
-}
-
-#[derive(Debug, StructOpt)]
-struct MetadataOpt {}
-impl MetadataOpt {
-    pub fn process(self) -> Result<()> {
-        let metadata = Self::metadata(true)?;
-        if let Ok(out) = serde_json::to_string(&metadata) {
-            println!("{}", out);
-        }
-
-        Ok(())
-    }
-
-    pub fn metadata(include_static: bool) -> Result<Vec<FluvioExtensionMetadata>> {
-        // Scan for extensions, run `fluvio <extension> metadata` on them, add them to metadata
-        // hashmap, run the same on FluvioCmds
-        let mut metadata: Vec<FluvioExtensionMetadata> = if include_static {
-            vec![
-                TopicCmd::metadata(),
-                PartitionCmd::metadata(),
-                ProduceLogOpt::metadata(),
-                ConsumeLogOpt::metadata(),
-            ]
-        } else {
-            Vec::new()
-        };
-
-        for (_subcommand_name, subcommand_path) in crate::install::get_extensions()? {
-            let stdout = match Command::new(subcommand_path.as_path())
-                .args(&["metadata"])
-                .output()
-            {
-                Ok(out) => out.stdout,
-                _ => continue,
-            };
-
-            if let Ok(out) = serde_json::from_slice::<FluvioExtensionMetadata>(&stdout) {
-                metadata.push(out);
-            }
-        }
-
-        Ok(metadata)
     }
 }
 

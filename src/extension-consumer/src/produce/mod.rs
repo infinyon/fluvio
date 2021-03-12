@@ -149,9 +149,9 @@ impl ProduceLogOpt {
 
     pub fn metadata() -> FluvioExtensionMetadata {
         FluvioExtensionMetadata {
-            command: "produce".into(),
+            title: "produce".into(),
             description: "Produce new data in a stream".into(),
-            version: env!("CARGO_PKG_VERSION").into(),
+            version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }
     }
 }

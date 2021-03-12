@@ -91,9 +91,9 @@ impl ConsumeLogOpt {
 
     pub fn metadata() -> FluvioExtensionMetadata {
         FluvioExtensionMetadata {
-            command: "consume".into(),
+            title: "consume".into(),
             description: "Consume new data in a stream".into(),
-            version: env!("CARGO_PKG_VERSION").into(),
+            version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }
     }
 

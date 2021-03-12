@@ -71,9 +71,9 @@ impl TopicCmd {
     }
     pub fn metadata() -> FluvioExtensionMetadata {
         FluvioExtensionMetadata {
-            command: "topic".into(),
+            title: "topic".into(),
             description: "Topic Operations".into(),
-            version: env!("CARGO_PKG_VERSION").into(),
+            version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }
     }
 }
