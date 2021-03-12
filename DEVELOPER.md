@@ -86,7 +86,7 @@ a single Fluvio cluster.
 Following command, will start sc with default port (9003) and rust log level:
 
 ```
-$ RUST_LOG=fluvio=debug flvd run sc 
+$ RUST_LOG=fluvio=debug flvd cluster run sc 
 ```
 
 ## Starting SPU
@@ -103,7 +103,7 @@ $ flvd custom-spu register --id 5001 --public-server 0.0.0.0:9010 --private-serv
 Then you can start SPU 5001
 
 ```
-$ RUST_LOG=fluvio=debug flvd run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 > /tmp/spu_5001.log
+$ RUST_LOG=fluvio=debug flvd cluster run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 > /tmp/spu_5001.log
 ```
 
 The logs can be founded in `/tmp/spu_5001`.log.
@@ -204,6 +204,20 @@ Note that when you uninstall cluster, CLI will remove all related objects such a
 * Tls Secrets
 * Storage
 
+## Running SC in locally
+
+First install fluvio k8 cluster as normally.
+
+Then delete deployment:
+```
+kubectl delete deployment fluvio-sc
+```
+
+Then, can run sc directly
+
+```
+cargo run --bin fluvio-sc-k8
+```
 
 
 ## Troubleshooting

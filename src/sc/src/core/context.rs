@@ -58,10 +58,6 @@ impl Context {
         &self.partitions
     }
 
-    pub fn partitions_owned(&self) -> StoreContext<PartitionSpec> {
-        self.partitions.clone()
-    }
-
     /// reference to topics
     pub fn topics(&self) -> &StoreContext<TopicSpec> {
         &self.topics

@@ -37,7 +37,7 @@ impl SpuOnlineStatus {
     }
 }
 
-/// Keep track of SPU status
+/// Keep track of SPU status.  This only updates SPU status.
 /// if SPU has not send heart beat within a period, it is considered down
 pub struct SpuController {
     spus: StoreContext<SpuSpec>,
@@ -58,7 +58,7 @@ impl SpuController {
         });
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), name = "SpuStatusLoop")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
         use fluvio_future::timer::sleep;

@@ -109,7 +109,7 @@ where
     async fn reconcillation_loop(&mut self) {
         use tokio::select;
 
-        info!("begin new reconcillation loop");
+        debug!("begin new reconcillation loop");
 
         let mut resume_stream: Option<String> = None;
         // retrieve all items from K8 store first

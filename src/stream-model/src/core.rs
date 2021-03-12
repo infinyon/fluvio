@@ -5,6 +5,7 @@ mod context {
 
     use std::fmt;
     use std::fmt::Display;
+    use std::collections::HashMap;
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
@@ -19,6 +20,16 @@ mod context {
         /// if object is process of being deleted
         fn is_being_deleted(&self) -> bool {
             false
+        }
+
+        /// set string labels
+        fn set_labels<T: Into<String>>(self, _labels: Vec<(T, T)>) -> Self {
+            self
+        }
+
+        /// get string labels
+        fn get_labels(&self) -> HashMap<String, String> {
+            HashMap::new()
         }
     }
 
@@ -96,6 +107,13 @@ mod context {
             Self {
                 item: C::default(),
                 owner: Some(self.item.clone()),
+            }
+        }
+
+        pub fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
+            Self {
+                item: self.item.set_labels(labels),
+                owner: self.owner,
             }
         }
     }

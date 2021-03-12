@@ -5,8 +5,8 @@
 //! and receivers.
 //!
 
-mod operator;
-mod service;
+mod controllers;
+mod objects;
 
 use k8_client::new_shared;
 
@@ -21,7 +21,7 @@ pub fn main_k8_loop(opt: ScOpt) {
     use fluvio_future::timer::sleep;
 
     use crate::init::start_main_loop;
-    use operator::run_k8_operators;
+    use controllers::run_k8_operators;
 
     // parse configuration (program exits on error)
     let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();

@@ -183,8 +183,6 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server
 
-
-
   mac_local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
@@ -199,7 +197,7 @@ jobs:
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
       FLUVIO_CMD: true
-      FLV_SOCKET_WAIT:  600
+      FLV_SOCKET_WAIT: 600
       FLV_TEST_CONSUMER_WAIT: 120000
 
     steps:
@@ -241,6 +239,7 @@ jobs:
       - name: Install Minikube on Mac
         run: brew install minikube
       - name: Setup Minikube for Mac
+        timeout-minutes: 10
         run: |
           minikube start --driver=virtualbox --kubernetes-version 1.19.6
       - name: Test minikube
@@ -280,7 +279,6 @@ jobs:
         with:
           name: fluvio-local-spu-logs
           path: /usr/local/var/log/fluvio/spu_log_5001.log
-
 
   local_cluster_test:
     name: Local cluster test
@@ -344,9 +342,10 @@ jobs:
         os: [infinyon-ubuntu-bionic]
         rust: [stable]
     env:
-      FLUVIO_CMD:  true
-      FLV_SOCKET_WAIT:  600
+      FLUVIO_CMD: true
+      FLV_SOCKET_WAIT: 600
       FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
+      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
       FLV_TEST_CONSUMER_WAIT: 300000
     steps:
       - uses: actions/checkout@v2
@@ -378,7 +377,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          make RUST_LOG=fluvio_cluster=debug RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
+          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
       - name: Clean minikube
         run: |
           minikube delete
