@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-stream-dispatcher"
 edition = "2018"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream access"
 repository = "https://github.com/infinyon/fluvio"
@@ -22,15 +22,15 @@ async-trait = "0.1.21"
 async-rwlock = "1.3.0"
 async-channel = "1.1.0"
 event-listener = "2.5.1"
-tokio = { version = "0.2.21", features = ["macros"] }
+tokio = { version = "1.3.0", features = ["macros"] }
 once_cell = "1.5"
 
 # Fluvio dependencies
 fluvio-types = { path = "../types", version = "0.2.0" }
-fluvio-stream-model = { features = ["k8"], version = "0.4.0", path = "../stream-model" }
+fluvio-stream-model = { features = ["k8"], version = "0.5.0", path = "../stream-model" }
 k8-metadata-client = { version = "3.0.0" }
-fluvio-future = { version = "0.1.10" }
+fluvio-future = { version = "0.2.0" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.1.0", features = ["fixture"] }
+fluvio-future = { version = "0.2.0", features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }

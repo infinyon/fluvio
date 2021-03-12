@@ -33,9 +33,9 @@ semver = "0.11.0"
 # Fluvio dependencies
 
 flv-util = { version = "0.5.0" }
-fluvio-future = { version = "0.1.8", features = ["fs", "io"] }
+fluvio-future = { version = "0.2.0", features = ["fs", "io"] }
 fluvio = { version = "0.6.0", path = "../client", default-features = false }
 fluvio-types = { version = "0.2.0" , path = "../types" }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", features = ["target"] }
-fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata", features = ["use_serde"] }
+fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata", features = ["use_serde"] }
 fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema", features = ["use_serde"] }

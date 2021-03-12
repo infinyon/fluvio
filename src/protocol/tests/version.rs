@@ -14,7 +14,7 @@ struct TestRecord {
 
 #[test]
 fn test_encode_version() {
-    flv_util::init_logger();
+    fluvio_future::subscriber::init_logger();
     let record = TestRecord {
         value2: 10,
         value3: 5,

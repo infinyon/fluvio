@@ -23,27 +23,27 @@ futures-util = "0.3.6"
 dirs = "1.0.2"
 toml = "0.5.5"
 async-rwlock = "1.1.0"
-base64 = { version = "0.12.0" }
+base64 = { version = "0.13.0" }
 async-trait = "0.1.30"
 serde = { version = "1.0.110", features = ['derive'] }
 serde_json = "1.0.53"
 async-channel = "1.1.0"
 event-listener = "2.5.1"
 async-mutex = "1.2.0"
-tokio = { version = "0.2.21", features = ["macros"] }
+tokio = { version = "1.3.0", features = ["macros"] }
 thiserror = "1.0.20"
 once_cell = "1.5.2"
 semver = "0.11.0"
 pin-project-lite = "0.2"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.1.15", features = ["task", "native2_tls"] }
+fluvio-future = { version = "0.2.0", features = ["task", "native2_tls"] }
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
 fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema", default-features = false }
-fluvio-spu-schema = { version = "0.4.0", path = "../spu-schema" }
-fluvio-socket = { path = "../socket", version = "0.6.0", features = ["tls"] }
-fluvio-protocol = { path = "../protocol", version = "0.3.0" }
-dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-spu-schema = { version = "0.5.0", path = "../spu-schema" }
+fluvio-socket = { path = "../socket", version = "0.7.0", features = ["tls"] }
+fluvio-protocol = { path = "../protocol", version = "0.4.0" }
+dataplane = { version = "0.4.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [dev-dependencies]
 async-std = { version = "1.6.4", default-features = false}

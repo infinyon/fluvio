@@ -274,7 +274,7 @@ async fn generate_partitions_with_rack_assignment(
     let s_idx = if start_index >= 0 {
         start_index
     } else {
-        thread_rng().gen_range(0, spu_cnt)
+        thread_rng().gen_range(0..spu_cnt)
     };
 
     for p_idx in 0..param.partitions {
@@ -304,7 +304,7 @@ async fn generate_partitions_without_rack(
     let s_idx = if start_index >= 0 {
         start_index
     } else {
-        thread_rng().gen_range(0, spu_cnt)
+        thread_rng().gen_range(0..spu_cnt)
     };
 
     let gap_max = spu_cnt - param.replication_factor + 1;

@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-runner-local"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Engine Runner"
@@ -24,6 +24,6 @@ structopt = { version = "0.3.16", default-features = false }
 thiserror = "1.0.20"
 
 # regardless of TLS, sc and spu always use openssl_tls for now because we need cert API
-fluvio-future = { version = "0.1.12", features = ["subscriber"] }
-fluvio-sc = { version = "0.5.0", path = "../sc" }
+fluvio-future = { version = "0.2.0", features = ["subscriber"] }
+fluvio-sc = { version = "0.6.0", path = "../sc" }
 fluvio-spu = { version = "0.5.0", path = "../spu" }

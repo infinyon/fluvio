@@ -5,7 +5,6 @@ use std::io::ErrorKind;
 use std::io::Read;
 use std::marker::PhantomData;
 
-use bytes::buf::ext::BufExt;
 use bytes::Buf;
 use bytes::BufMut;
 use log::trace;
