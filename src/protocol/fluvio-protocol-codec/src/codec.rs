@@ -2,13 +2,11 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 
 use log::trace;
-use bytes::BufMut;
-use bytes::Bytes;
-use bytes::BytesMut;
 use tokio_util::codec::Decoder;
 use tokio_util::codec::Encoder;
 
 use crate::core::Decoder as FluvioDecoder;
+use crate::core::bytes::{ Bytes,BytesMut,BufMut};
 
 /// Implement Kafka codec as in https://kafka.apache.org/protocol#The_Messages_ListOffsets
 /// First 4 bytes are size of the message.  Then total buffer = 4 + message content

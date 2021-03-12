@@ -10,5 +10,5 @@ categories = ["encoding"]
 
 
 [dependencies]
-bytes = "0.5.6"
+bytes = "1.0.0"
 log = "0.4.8"

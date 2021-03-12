@@ -3,7 +3,7 @@ use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::os::unix::io::AsRawFd;
 
 use log::{debug, trace};
-use x509_parser::{X509Certificate, parse_x509_der};
+use x509_parser::{certificate::X509Certificate, parse_x509_certificate};
 use async_trait::async_trait;
 
 use fluvio_future::{net::TcpStream, openssl::DefaultServerTlsStream};
@@ -94,7 +94,7 @@ impl X509Authenticator {
     }
 
     fn principal_from_raw_certificate(certificate_bytes: &[u8]) -> Result<String, IoError> {
-        parse_x509_der(certificate_bytes)
+        parse_x509_certificate(certificate_bytes)
             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))
             .and_then(|(_, parsed_cert)| Self::common_name_from_parsed_certificate(parsed_cert))
     }
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_principal_from_raw_certificate() {
-        let (_, pem) = x509_parser::pem::pem_to_der(TEST_CERTIFICATE.as_bytes()).unwrap();
+        let (_, pem) = x509_parser::parse_x509_pem(TEST_CERTIFICATE.as_bytes()).unwrap();
         let common_name = X509Authenticator::principal_from_raw_certificate(&pem.contents).unwrap();
         assert_eq!(common_name, "root".to_owned());
     }

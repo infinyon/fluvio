@@ -5,7 +5,6 @@ use std::io::ErrorKind;
 use std::io::Write;
 use std::marker::PhantomData;
 
-use bytes::buf::ext::BufMutExt;
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;

@@ -11,7 +11,7 @@ categories = ["encoding", "api-bindings"]
 
 [dependencies]
 log = "0.4.0"
-bytes = "0.5.3"
+bytes = "1.0.0"
 futures-util = { version = "0.3.4" }
 content_inspector = "0.2.4"
 crc32c = { version = "0.5" }

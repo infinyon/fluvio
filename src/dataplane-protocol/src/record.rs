@@ -11,7 +11,6 @@ use once_cell::sync::Lazy;
 
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;
-use bytes::buf::BufExt;
 
 use crate::core::Decoder;
 use crate::core::DecoderVarInt;
