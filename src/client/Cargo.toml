@@ -37,7 +37,7 @@ semver = "0.11.0"
 pin-project-lite = "0.2"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.1.15", features = ["task", "native2_tls"] }
+fluvio-future = { version = "0.2.0", features = ["task", "native2_tls"] }
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
 fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.4.0", path = "../spu-schema" }

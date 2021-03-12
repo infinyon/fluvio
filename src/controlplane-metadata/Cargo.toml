@@ -22,7 +22,7 @@ serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.1.0" }
+fluvio-future = { version = "0.2.0" }
 flv-util = { version = "0.5.0" }
 fluvio-types = { version = "0.2.0", path = "../types" }
 fluvio-stream-model = { path = "../stream-model", version = "0.4.0" }
@@ -31,4 +31,4 @@ dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluv
 
 
 [dev-dependencies]
-fluvio-future = { version = "0.1.0", features = ["fixture"] }
+fluvio-future = { version = "0.2.0", features = ["fixture"] }

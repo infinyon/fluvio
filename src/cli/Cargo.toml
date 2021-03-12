@@ -44,7 +44,7 @@ sysinfo = "0.16.1"
 
 k8-config = { version = "1.3.0" }
 k8-client = { version = "5.0.0" }
-fluvio-future = { version = "0.1.8", features = ["fs", "io", "subscriber"] }
+fluvio-future = { version = "0.2.0", features = ["fs", "io", "subscriber"] }
 fluvio = { version = "0.6.0", path = "../client", default-features = false }
 fluvio-cluster = { version = "0.7.0", path = "../cluster", default-features = false, features = ["cli"] }
 fluvio-command = { version = "0.2.0" }
@@ -56,4 +56,4 @@ fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema" }
 k8-types = { version = "0.2.0", features = ["core"]}
 
 [dev-dependencies]
-fluvio-future = { version = "0.1.0", features = ["fixture"] }
+fluvio-future = { version = "0.2.0", features = ["fixture"] }

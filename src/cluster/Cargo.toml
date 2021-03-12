@@ -44,7 +44,7 @@ remoteprocess = "0.4.2"
 # Fluvio dependencies
 fluvio = { version = "0.6.0", path = "../client", default-features = false }
 fluvio-helm = "0.4.1"
-fluvio-future = { version = "0.1.13" }
+fluvio-future = { version = "0.2.0" }
 fluvio-command = { version = "0.2.0", path = "../command" }
 fluvio-runner-local = { version = "0.3.0", path = "../extension-runner-local", optional = true }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", optional = true }
@@ -56,4 +56,4 @@ k8-metadata-client = { version = "3.0.0" }
 k8-types = { version = "0.2.0", features = ["app"]}
 
 [dev-dependencies]
-fluvio-future = { version = "0.1.0", features = ["task"] }
+fluvio-future = { version = "0.2.0", features = ["task"] }
