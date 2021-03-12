@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
@@ -26,5 +26,6 @@ serde_yaml = "0.8.8"
 async-trait = "0.1.21"
 futures-lite = { version = "1.7.0" }
 thiserror = "1.0.20"
+semver = { version = "0.11.0", features = ["serde"] }
 
 fluvio = { version = "0.6.0", path = "../client",  optional = true }

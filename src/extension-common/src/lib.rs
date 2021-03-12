@@ -34,9 +34,10 @@ macro_rules! t_print_cli_err {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FluvioExtensionMetadata {
-    pub command: String,
+    #[serde(alias = "command")]
+    pub title: String,
     pub description: String,
-    pub version: String,
+    pub version: semver::Version,
 }
 
 pub struct PrintTerminal {}
