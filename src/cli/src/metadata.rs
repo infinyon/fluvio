@@ -12,7 +12,7 @@ use crate::Result;
 pub struct MetadataOpt {}
 impl MetadataOpt {
     pub fn process(self) -> Result<()> {
-        let metadata = Self::metadata()?;
+        let metadata = Self::metadata();
         if let Ok(out) = serde_json::to_string(&metadata) {
             println!("{}", out);
         }
@@ -20,7 +20,7 @@ impl MetadataOpt {
         Ok(())
     }
 
-    fn metadata() -> Result<Vec<FluvioExtensionMetadata>> {
+    fn metadata() -> Vec<FluvioExtensionMetadata> {
         let mut metadata = vec![
             TopicCmd::metadata(),
             PartitionCmd::metadata(),
@@ -33,7 +33,7 @@ impl MetadataOpt {
             metadata.extend(extension_meta);
         }
 
-        Ok(metadata)
+        metadata
     }
 }
 
