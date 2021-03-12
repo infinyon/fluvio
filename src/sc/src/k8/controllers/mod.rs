@@ -5,6 +5,8 @@ pub mod spu;
 pub use k8_operator::run_k8_operators;
 
 mod k8_operator {
+    use tracing::error;
+
     use k8_client::SharedK8Client;
 
     use crate::cli::TlsConfig;
@@ -57,15 +59,19 @@ mod k8_operator {
             tls,
         );
 
-        let config = ScK8Config::load(&k8_client, &namespace)
-            .await
-            .expect("error loading config");
+        let disable_spu = match ScK8Config::load(&k8_client, &namespace).await {
+            Ok(config) => config.sc_config.disable_spu,
+            Err(err) => {
+                error!("error loading config: {:#?}", err);
+                false
+            }
+        };
 
         SpuController::start(
             global_ctx.spus().clone(),
             spu_service_ctx.clone(),
             global_ctx.spgs().clone(),
-            config.sc_config.disable_spu,
+            disable_spu,
         );
 
         SpuServiceController::start(
