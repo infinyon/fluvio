@@ -1486,6 +1486,7 @@ version = "0.3.0"
 dependencies = [
  "async-trait",
  "fluvio",
+ "fluvio-package-index",
  "futures-lite",
  "prettytable-rs",
  "semver 0.11.0",

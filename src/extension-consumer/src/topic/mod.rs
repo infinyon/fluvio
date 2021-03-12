@@ -69,9 +69,11 @@ impl TopicCmd {
 
         Ok(())
     }
+
     pub fn metadata() -> FluvioExtensionMetadata {
         FluvioExtensionMetadata {
             title: "topic".into(),
+            package: Some("fluvio/fluvio".parse().unwrap()),
             description: "Topic Operations".into(),
             version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }

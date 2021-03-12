@@ -1,5 +1,5 @@
 use std::fmt;
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Serialize, Deserialize, Deserializer, Serializer};
 use url::Url;
 use crate::Error;
 use semver::Version;
@@ -201,6 +201,7 @@ impl<T> PackageId<T> {
         }
     }
 
+    /// A printable representation of this `PackageId`
     pub fn display(&self) -> impl fmt::Display {
         let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
         format!(
@@ -209,6 +210,24 @@ impl<T> PackageId<T> {
             group = self.group.as_str(),
             name = self.name.as_str(),
         )
+    }
+
+    /// A unique representation of this package, excluding version.
+    ///
+    /// This is intended to be used for comparing two PackageId's
+    /// to see whether they refer to the same package entity, regardless
+    /// of version.
+    ///
+    /// # Exmaple
+    ///
+    /// ```
+    /// # use fluvio_index::{PackageId, MaybeVersion, WithVersion};
+    /// let pid1: PackageId<MaybeVersion> = "fluvio/fluvio".parse().unwrap();
+    /// let pid2: PackageId<WithVersion> = "https://packages.fluvio.io/v1/fluvio/fluvio:1.2.3".parse().unwrap();
+    /// assert_eq!(pid1.uid(), pid2.uid());
+    /// ```
+    pub fn uid(&self) -> String {
+        format!("{}{}/{}", self.registry(), self.group, self.name)
     }
 }
 
@@ -401,6 +420,24 @@ impl<'de> Deserialize<'de> for PackageId<MaybeVersion> {
     }
 }
 
+impl Serialize for PackageId<WithVersion> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl Serialize for PackageId<MaybeVersion> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -500,5 +537,26 @@ mod tests {
             "fluvio/fluvio",
             format!("{}", package_id_maybe_without_version)
         );
+    }
+
+    #[test]
+    fn test_serialize_package_id_unversioned() {
+        let package_id_without_version =
+            PackageId::new_unversioned("fluvio".parse().unwrap(), "fluvio".parse().unwrap());
+
+        let json = serde_json::to_string(&package_id_without_version).unwrap();
+        assert_eq!(json, r#""fluvio/fluvio""#);
+    }
+
+    #[test]
+    fn test_serialize_package_id_versioned() {
+        let package_id_with_version = PackageId::new_versioned(
+            "fluvio".parse().unwrap(),
+            "fluvio".parse().unwrap(),
+            Version::parse("1.2.3").unwrap(),
+        );
+
+        let json = serde_json::to_string(&package_id_with_version).unwrap();
+        assert_eq!(json, r#""fluvio/fluvio:1.2.3""#);
     }
 }

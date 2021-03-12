@@ -39,16 +39,17 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
     }
     Ok(path)
 }
-pub(crate) fn get_extensions() -> Result<Vec<(String, PathBuf)>, CliError> {
+
+pub(crate) fn get_extensions() -> Result<Vec<PathBuf>, CliError> {
     use std::fs;
-    let mut extensions: Vec<(String, PathBuf)> = Vec::new();
+    let mut extensions = Vec::new();
     let fluvio_dir = fluvio_extensions_dir()?;
     if let Ok(entries) = fs::read_dir(&fluvio_dir) {
         for entry in entries {
             if let Ok(entry) = entry {
-                let filename = entry.file_name().to_string_lossy().to_string();
-                if filename.starts_with("fluvio-") {
-                    extensions.push((filename, entry.path()));
+                let is_plugin = entry.file_name().to_string_lossy().starts_with("fluvio-");
+                if is_plugin {
+                    extensions.push(entry.path());
                 }
             }
         }
