@@ -1539,7 +1539,7 @@ dependencies = [
  "async-net",
  "async-std",
  "async-trait",
- "fluvio-test-derive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-test-derive",
  "futures-lite",
  "log",
  "native-tls",
@@ -1553,7 +1553,8 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/future-aio#8f1a250fe830605b2cb9b9e69cabd37fc54f71ad"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4b5b2317b98bf0fa3653cdadaca2acb5d0cfbb4712f4396545db39c01e4eed9"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1561,7 +1562,7 @@ dependencies = [
  "async-net",
  "async-std",
  "async-trait",
- "fluvio-test-derive 0.1.0 (git+https://github.com/infinyon/future-aio)",
+ "fluvio-test-derive",
  "futures-lite",
  "log",
  "memmap",
@@ -1894,16 +1895,6 @@ name = "fluvio-test-derive"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc9e4cb09caa5ff039928399ef5aa99206fd1b9a59df208cf6d94e2764fe5ce0"
-dependencies = [
- "proc-macro2",
- "quote 1.0.9",
- "syn 1.0.63",
-]
-
-[[package]]
-name = "fluvio-test-derive"
-version = "0.1.0"
-source = "git+https://github.com/infinyon/future-aio#8f1a250fe830605b2cb9b9e69cabd37fc54f71ad"
 dependencies = [
  "proc-macro2",
  "quote 1.0.9",
@@ -4296,9 +4287,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.16"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ab8966ac3ca27126141f7999361cc97dd6fb4b71da04c02044fa9045d98bb96"
+checksum = "705096c6f83bf68ea5d357a6aa01829ddbdac531b357b45abeca842938085baa"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",

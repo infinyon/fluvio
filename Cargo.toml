@@ -47,7 +47,3 @@ members = [
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
 opt-level = 3
-
-
-[patch.crates-io]
-fluvio-future = { git = 'https://github.com/infinyon/future-aio'  }
