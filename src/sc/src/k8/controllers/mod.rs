@@ -47,8 +47,6 @@ mod k8_operator {
             spg_service_ctx.clone(),
         );
 
-        
-        
         SpgStatefulSetController::start(
             k8_client.clone(),
             namespace.clone(),
@@ -58,30 +56,25 @@ mod k8_operator {
             spg_service_ctx,
             tls,
         );
-        
 
-        
-        SpuController::start(
-            global_ctx.spus().clone(),
-            spu_service_ctx.clone(),
-            global_ctx.spgs().clone(),
-        );
-    
-
-       
         let config = ScK8Config::load(&k8_client, &namespace)
             .await
             .expect("error loading config");
 
-        if !config.sc_config.disable_spu {
-            SpuServiceController::start(
-                k8_client.clone(),
-                namespace.clone(),
-                spu_service_ctx.clone(),
-                global_ctx.spgs().clone()
-            );
-        }
-    
+        SpuController::start(
+            global_ctx.spus().clone(),
+            spu_service_ctx.clone(),
+            global_ctx.spgs().clone(),
+            config.sc_config.disable_spu
+        );
+
         
+
+        SpuServiceController::start(
+            k8_client.clone(),
+            namespace.clone(),
+            spu_service_ctx.clone(),
+            global_ctx.spgs().clone()
+        );
     }
 }

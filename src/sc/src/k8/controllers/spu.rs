@@ -31,6 +31,7 @@ pub struct SpuController {
     services: StoreContext<SpuServicespec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
+    disable_update_service: bool,
 }
 
 impl fmt::Display for SpuController {
@@ -50,11 +51,13 @@ impl SpuController {
         spus: StoreContext<SpuSpec>,
         services: StoreContext<SpuServicespec>,
         groups: StoreContext<SpuGroupSpec>,
+        disable_update_service: bool,
     ) {
         let controller = Self {
             services,
             spus,
             groups,
+            disable_update_service,
         };
 
         spawn(controller.dispatch_loop());
@@ -70,24 +73,33 @@ impl SpuController {
         }
     }
 
-    #[instrument(skip(self), name = "SpuSpecLoop")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
+        if self.disable_update_service {
+            self.inner_loop_spg_only().await?;
+        } else {
+            self.inner_loop_all().await?;
+        }
+        Ok(())
+    }
+
+    #[instrument(skip(self), name = "SpuSpecLoop")]
+    async fn inner_loop_all(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
         let mut service_listener = self.services.change_listener();
         let mut spg_listener = self.groups.change_listener();
         let mut spu_listener = self.spus.change_listener();
 
-       self.sync_with_spg(&mut spg_listener).await?;
-       self.sync_from_spu_services(&mut service_listener).await?;
+        self.sync_with_spg(&mut spg_listener).await?;
+        self.sync_from_spu_services(&mut service_listener).await?;
         self.sync_spus(&mut spu_listener).await?;
 
         loop {
             trace!("waiting events");
 
             select! {
-                
-                
+
+
                 _ = service_listener.listen() => {
                     debug!("detected spu service changes");
                     self.sync_from_spu_services(&mut service_listener).await?;
@@ -97,8 +109,8 @@ impl SpuController {
                     debug!("detected spg changes");
                     self.sync_with_spg(&mut spg_listener).await?;
                 },
-                
-                
+
+
                 _ = spu_listener.listen() => {
                     debug!("detected spu changes");
                     self.sync_spus(&mut spu_listener).await?;
@@ -109,7 +121,29 @@ impl SpuController {
         }
     }
 
-    /// svc has been changed, update spu
+    #[instrument(skip(self), name = "SpuSpecLoop")]
+    async fn inner_loop_spg_only(&mut self) -> Result<(), ClientError> {
+        use tokio::select;
+
+        let mut spg_listener = self.groups.change_listener();
+
+        self.sync_with_spg(&mut spg_listener).await?;
+
+        loop {
+            trace!("waiting events");
+
+            select! {
+                _ = spg_listener.listen() => {
+                    debug!("detected spg changes");
+                    self.sync_with_spg(&mut spg_listener).await?;
+                },
+
+
+            }
+        }
+    }
+
+    /// spu has been changed, update service
     async fn sync_spus(
         &mut self,
         listener: &mut K8ChangeListener<SpuSpec>,
@@ -169,7 +203,6 @@ impl SpuController {
         Ok(())
     }
 
-
     /// svc has been changed, update spu
     async fn sync_from_spu_services(
         &mut self,
@@ -196,7 +229,7 @@ impl SpuController {
             // check if ingress exists
             let svc_ingresses = svc_md.status.ingress();
 
-            if let Some(spu_name)  = SpuServicespec::spu_name(&svc_meta) {
+            if let Some(spu_name) = SpuServicespec::spu_name(&svc_meta) {
                 if let Some(mut spu) = self.spus.store().value(spu_name).await {
                     debug!(
                         "trying sync service: {}, with: spu: {}",
@@ -268,7 +301,7 @@ impl SpuController {
             for i in 0..replicas {
                 let spu_id = compute_spu_id(spec.min_id, i);
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
-            
+
                 // assume that if spu exists, it will have necessary attribute for now
                 self.apply_spu(&spg_obj, &spu_name, spu_id).await?;
             }
@@ -314,7 +347,7 @@ impl SpuController {
         trace!("spu action: {:#?}", action);
         self.spus.wait_action(spu_name, action).await?;
         let spu_count = self.spus.store().count().await;
-        debug!(spu_count,"finished applying spu");
+        debug!(spu_count, "finished applying spu");
 
         Ok(())
     }
