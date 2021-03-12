@@ -70,7 +70,7 @@ impl SpuController {
         }
     }
 
-    #[instrument(skip(self), name = "SpuLoop")]
+    #[instrument(skip(self), name = "SpuSpecLoop")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
@@ -192,42 +192,43 @@ impl SpuController {
         );
 
         for svc_md in updates.into_iter() {
-            // check if
-            let spu_id = svc_md.key();
+            let svc_meta = svc_md.ctx().item().inner();
             // check if ingress exists
             let svc_ingresses = svc_md.status.ingress();
 
-            if let Some(mut spu) = self.spus.store().value(spu_id).await {
-                debug!(
-                    "trying sync service: {}, with: spu: {}",
-                    svc_md.key(),
-                    spu_id
-                );
-                trace!("svc ingress: {:#?}", svc_ingresses);
-                let spu_ingress = svc_ingresses.iter().map(convert).collect();
-                trace!("spu ingress: {:#?}", spu_ingress);
-                if spu_ingress != spu.spec.public_endpoint.ingress {
+            if let Some(spu_name)  = SpuServicespec::spu_name(&svc_meta) {
+                if let Some(mut spu) = self.spus.store().value(spu_name).await {
                     debug!(
-                        "updating spu:{} public end point: {:#?}",
-                        spu_id, spu_ingress
+                        "trying sync service: {}, with: spu: {}",
+                        svc_md.key(),
+                        spu_name
                     );
-                    spu.spec.public_endpoint.ingress = spu_ingress;
-                    if let Err(err) = self
-                        .spus
-                        .create_spec(spu_id.to_owned(), spu.spec.clone())
-                        .await
-                    {
-                        error!("error applying spec: {}", err);
+                    trace!("svc ingress: {:#?}", svc_ingresses);
+                    let spu_ingress = svc_ingresses.iter().map(convert).collect();
+                    trace!("spu ingress: {:#?}", spu_ingress);
+                    if spu_ingress != spu.spec.public_endpoint.ingress {
+                        debug!(
+                            "updating spu:{} public end point: {:#?}",
+                            spu_name, spu_ingress
+                        );
+                        spu.spec.public_endpoint.ingress = spu_ingress;
+                        if let Err(err) = self
+                            .spus
+                            .create_spec(spu_name.to_owned(), spu.spec.clone())
+                            .await
+                        {
+                            error!("error applying spec: {}", err);
+                        }
+                    } else {
+                        debug!("detected no spu: {} ingress changes", spu_name);
                     }
                 } else {
-                    debug!("detected no spu: {} ingress changes", spu_id);
+                    debug!(
+                        svc = %svc_md.key(),
+                        %spu_name,
+                        "spu service update skipped, because spu doesn't exist",
+                    );
                 }
-            } else {
-                debug!(
-                    "no sync service: {}, with: spu: {} because spu doesn't exist",
-                    svc_md.key(),
-                    spu_id
-                );
             }
         }
 
@@ -262,8 +263,7 @@ impl SpuController {
             for i in 0..replicas {
                 let spu_id = compute_spu_id(spec.min_id, i);
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
-                debug!(%spu_name,"generating spu with name");
-
+            
                 // assume that if spu exists, it will have necessary attribute for now
                 self.apply_spu(&spg_obj, &spu_name, spu_id).await?;
             }
@@ -304,9 +304,12 @@ impl SpuController {
                 .with_context(spg_obj.ctx().create_child()),
         );
 
+        let spu_count = self.spus.store().count().await;
+        debug!(%spu_name,spu_count,"applying spu");
         trace!("spu action: {:#?}", action);
-
         self.spus.wait_action(spu_name, action).await?;
+        let spu_count = self.spus.store().count().await;
+        debug!(spu_count,"finished applying spu");
 
         Ok(())
     }

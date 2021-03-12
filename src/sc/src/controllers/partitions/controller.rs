@@ -5,6 +5,7 @@
 use tracing::{debug, trace};
 
 use fluvio_future::task::spawn;
+use tracing::instrument;
 
 use crate::core::SharedContext;
 use crate::stores::{StoreContext};
@@ -39,6 +40,7 @@ impl PartitionController {
         spawn(controller.dispatch_loop());
     }
 
+    #[instrument(skip(self), name = "PartitionLoop")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
 

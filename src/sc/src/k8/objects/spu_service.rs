@@ -3,7 +3,7 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_types::core::service::{ ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus};
+use k8_types::{ObjectMeta, core::service::{ ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus}};
 use k8_types::core::service::LoadBalancerIngress;
 
 use crate::dispatcher::core::Spec;
@@ -30,6 +30,10 @@ impl SpuServicespec {
     /// unique name given spu name
     pub fn service_name(spu_name: &str) -> String {
         format!("fluvio-spu-{}", spu_name)
+    }
+
+    pub fn spu_name(meta: &ObjectMeta) -> Option<&String> {
+        meta.labels.get("fluvio.io/spu-name")
     }
 }
 
@@ -104,9 +108,7 @@ mod extended {
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
 
-            let labels = &k8_obj.metadata.labels;
-
-            if let Some(name) = labels.get("fluvio.io/spu-name") {
+            if let Some(name) = SpuServicespec::spu_name(&k8_obj.metadata) {
                 debug!(spu = %name,
                     service_name = %k8_obj.metadata.name,
                     "detected spu service");

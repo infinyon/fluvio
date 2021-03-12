@@ -58,7 +58,8 @@ impl SpuController {
         });
     }
 
-    #[instrument(skip(self))]
+
+    #[instrument(skip(self), name = "SpuStatusLoop")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
         use fluvio_future::timer::sleep;

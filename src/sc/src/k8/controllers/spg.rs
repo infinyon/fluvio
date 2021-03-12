@@ -17,7 +17,6 @@ use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
 use crate::stores::spu::{SpuSpec};
 use crate::cli::TlsConfig;
 
-
 use crate::k8::objects::spg_group::{SpuGroupObj};
 use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::statefulset::StatefulsetSpec;
@@ -77,10 +76,6 @@ impl SpgStatefulSetController {
             self.sync_spgs_to_statefulset(&mut spg_listener).await?;
 
             select! {
-                // just in case, we re-sync every 5 minutes
-                _ = sleep(Duration::from_secs(60)) => {
-                    debug!("resync timer expired");
-                },
                 _ = spg_listener.listen() => {
                     debug!("detected spg changes");
                 },
@@ -166,6 +161,4 @@ impl SpgStatefulSetController {
 
         Ok(())
     }
-
-
 }
