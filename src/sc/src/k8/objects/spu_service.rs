@@ -3,7 +3,10 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_types::{ObjectMeta, core::service::{ ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus}};
+use k8_types::{
+    ObjectMeta,
+    core::service::{ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus},
+};
 use k8_types::core::service::LoadBalancerIngress;
 
 use crate::dispatcher::core::Spec;
@@ -98,16 +101,13 @@ mod extended {
 
     use super::*;
 
-
     impl K8ExtendedSpec for SpuServicespec {
         type K8Spec = ServiceSpec;
         type K8Status = ServiceStatus;
-        
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
-
             if let Some(name) = SpuServicespec::spu_name(&k8_obj.metadata) {
                 debug!(spu = %name,
                     service_name = %k8_obj.metadata.name,

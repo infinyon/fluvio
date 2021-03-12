@@ -31,7 +31,6 @@ mod context {
         fn get_labels(&self) -> HashMap<String, String> {
             HashMap::new()
         }
-
     }
 
     pub trait MetadataRevExtension: MetadataItem {
@@ -114,7 +113,7 @@ mod context {
         pub fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
             Self {
                 item: self.item.set_labels(labels),
-                owner: self.owner
+                owner: self.owner,
             }
         }
     }

@@ -105,7 +105,7 @@ impl MetadataItem for K8MetaItem {
     fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
         Self {
             revision: self.revision,
-            inner: self.inner.set_labels(labels)
+            inner: self.inner.set_labels(labels),
         }
     }
 

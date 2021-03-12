@@ -310,6 +310,7 @@ impl SpuController {
         Ok(())
     }
 
+    #[allow(clippy::ptr_arg)]
     async fn apply_spu(
         &self,
         spg_obj: &SpuGroupObj,

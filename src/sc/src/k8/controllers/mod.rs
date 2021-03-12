@@ -65,16 +65,14 @@ mod k8_operator {
             global_ctx.spus().clone(),
             spu_service_ctx.clone(),
             global_ctx.spgs().clone(),
-            config.sc_config.disable_spu
+            config.sc_config.disable_spu,
         );
-
-        
 
         SpuServiceController::start(
             k8_client.clone(),
             namespace.clone(),
             spu_service_ctx.clone(),
-            global_ctx.spgs().clone()
+            global_ctx.spgs().clone(),
         );
     }
 }

@@ -58,7 +58,6 @@ impl SpuController {
         });
     }
 
-
     #[instrument(skip(self), name = "SpuStatusLoop")]
     async fn dispatch_loop(mut self) {
         use tokio::select;

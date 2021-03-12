@@ -3,7 +3,6 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
 use crate::stores::spg::SpuGroupSpec;
@@ -15,7 +14,6 @@ pub use k8_types::app::stateful::StatefulSetStatus as K8StatefulSetStatus;
 #[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
 #[serde(transparent)]
 pub struct StatefulsetSpec(K8StatefulSetSpec);
-
 
 impl Spec for StatefulsetSpec {
     const LABEL: &'static str = "StatefulSet";
@@ -55,13 +53,11 @@ impl From<K8StatefulSetStatus> for StatefulsetStatus {
     }
 }
 
-
 impl From<StatefulsetStatus> for K8StatefulSetStatus {
     fn from(status: StatefulsetStatus) -> Self {
         status.0
     }
 }
-
 
 mod extended {
 
@@ -81,8 +77,7 @@ mod extended {
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
-        ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
-        {
+        ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             default_convert_from_k8(k8_obj)
         }
     }

@@ -58,7 +58,6 @@ impl Context {
         &self.partitions
     }
 
-
     /// reference to topics
     pub fn topics(&self) -> &StoreContext<TopicSpec> {
         &self.topics
@@ -67,7 +66,6 @@ impl Context {
     pub fn spgs(&self) -> &StoreContext<SpuGroupSpec> {
         &self.spgs
     }
-
 
     /// spu health channel
     pub fn health(&self) -> &SpuStatusChannel {

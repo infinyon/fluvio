@@ -37,7 +37,6 @@ impl SpuGroupObj {
         Self { inner, svc_name }
     }
 
-
     pub fn is_already_valid(&self) -> bool {
         self.status().is_already_valid()
     }
@@ -298,6 +297,4 @@ mod k8_convert {
             ..Default::default()
         }
     }
-
-    
 }

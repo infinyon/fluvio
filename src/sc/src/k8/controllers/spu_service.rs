@@ -82,12 +82,10 @@ impl SpuServiceController {
                     debug!("detected spg changes");
                     self.sync_with_spg(&mut spg_listener).await?;
                 },
-                
+
             }
         }
     }
-
-    
 
     async fn sync_with_spg(
         &mut self,
@@ -117,12 +115,11 @@ impl SpuServiceController {
             let spec = spg_obj.spec();
             let replicas = spec.replicas;
             for i in 0..replicas {
-                
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
                 debug!(%spu_name,"generating spu with name");
 
                 self.apply_spu_load_balancers(&spg_obj, &spu_name, &spu_k8_config)
-                .await?;
+                    .await?;
             }
         }
 
@@ -158,15 +155,15 @@ impl SpuServiceController {
 
         let svc_name = SpuServicespec::service_name(spu_name);
 
-        let obj = MetadataStoreObject::with_spec(svc_name.clone(), k8_service_spec.into()).with_context(
-            spg_obj
-                .ctx()
-                .create_child()
-                .set_labels(vec![("fluvio.io/spu-name", spu_name)]),
-        );
+        let obj = MetadataStoreObject::with_spec(svc_name.clone(), k8_service_spec.into())
+            .with_context(
+                spg_obj
+                    .ctx()
+                    .create_child()
+                    .set_labels(vec![("fluvio.io/spu-name", spu_name)]),
+            );
         debug!("action: {:#?}", obj);
         let action = WSAction::Apply(obj);
-
 
         self.services.wait_action(&svc_name, action).await?;
 
