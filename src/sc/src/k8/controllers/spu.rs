@@ -229,6 +229,11 @@ impl SpuController {
                         "spu service update skipped, because spu doesn't exist",
                     );
                 }
+            } else {
+                error!(
+                    svc = %svc_md.key(),
+                    "spu service doesnt have spu name",
+                );
             }
         }
 
