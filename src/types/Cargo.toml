@@ -16,4 +16,4 @@ event-listener = { version = "2.5.1", optional = true }
 
 [dev-dependencies]
 fluvio-future = { version = "0.2.0", features = ["fixture", "subscriber"] }
-tokio = { version = "0.2.21", features = ["macros"] }
+tokio = { version = "1.3.0", features = ["macros"] }

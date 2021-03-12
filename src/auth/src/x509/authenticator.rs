@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_principal_from_raw_certificate() {
-        let (_, pem) = x509_parser::parse_x509_pem(TEST_CERTIFICATE.as_bytes()).unwrap();
+        let (_, pem) = x509_parser::prelude::parse_x509_pem(TEST_CERTIFICATE.as_bytes()).unwrap();
         let common_name = X509Authenticator::principal_from_raw_certificate(&pem.contents).unwrap();
         assert_eq!(common_name, "root".to_owned());
     }

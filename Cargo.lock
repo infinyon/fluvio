@@ -388,12 +388,6 @@ checksum = "a4521f3e3d031370679b3b140beb36dfe4801b09ac77e30c61941f97df3ef28b"
 
 [[package]]
 name = "base64"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
-
-[[package]]
-name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
@@ -664,7 +658,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03a5d7b21829bc7b4bf4754a978a241ae54ea55a40f92bb20216e54096f4b951"
 dependencies = [
  "aes-gcm",
- "base64 0.13.0",
+ "base64",
  "hkdf",
  "hmac",
  "percent-encoding",
@@ -1289,7 +1283,7 @@ dependencies = [
  "async-rwlock",
  "async-std",
  "async-trait",
- "base64 0.12.3",
+ "base64",
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
@@ -1306,7 +1300,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "toml",
  "tracing",
  "tracing-futures",
@@ -1389,7 +1383,7 @@ dependencies = [
  "fluvio-future 0.2.0",
  "fluvio-helm",
  "fluvio-runner-local",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-lite",
  "k8-client",
  "k8-config",
@@ -1404,7 +1398,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "thiserror",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "tracing",
  "tracing-futures",
  "url",
@@ -1455,7 +1449,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1463,7 +1457,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
- "flv-util 0.5.2",
+ "flv-util",
  "log",
  "serde",
  "tracing",
@@ -1471,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bytes 1.0.1",
  "content_inspector",
@@ -1479,7 +1473,7 @@ dependencies = [
  "fluvio-future 0.2.0",
  "fluvio-protocol",
  "fluvio-socket",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-util",
  "log",
  "once_cell",
@@ -1518,7 +1512,7 @@ dependencies = [
  "fluvio-future 0.2.0",
  "fluvio-sc-schema",
  "fluvio-types",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-lite",
  "hostname-validator",
  "jsonpath",
@@ -1611,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bytes 1.0.1",
  "fluvio-future 0.2.0",
@@ -1619,28 +1613,28 @@ dependencies = [
  "fluvio-protocol-codec",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
- "flv-util 0.4.0",
+ "flv-util",
  "log",
 ]
 
 [[package]]
 name = "fluvio-protocol-api"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
- "flv-util 0.5.2",
+ "flv-util",
  "log",
 ]
 
 [[package]]
 name = "fluvio-protocol-codec"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bytes 1.0.1",
  "fluvio-future 0.2.0",
  "fluvio-protocol-core",
- "flv-util 0.5.2",
+ "flv-util",
  "futures",
  "log",
  "tokio-util 0.6.4",
@@ -1648,7 +1642,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-core"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "bytes 1.0.1",
  "log",
@@ -1666,7 +1660,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-runner-local"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "fluvio-future 0.2.0",
  "fluvio-sc",
@@ -1677,12 +1671,12 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "async-channel",
  "async-lock",
  "async-trait",
- "base64 0.13.0",
+ "base64",
  "cfg-if 1.0.0",
  "chashmap",
  "event-listener",
@@ -1699,7 +1693,7 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-tls-proxy",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-util",
  "k8-client",
  "k8-metadata-client",
@@ -1734,7 +1728,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "async-trait",
  "event-listener",
@@ -1744,14 +1738,14 @@ dependencies = [
  "futures-util",
  "log",
  "pin-utils",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "tracing",
  "tracing-futures",
 ]
 
 [[package]]
 name = "fluvio-socket"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "async-channel",
  "async-mutex",
@@ -1763,7 +1757,7 @@ dependencies = [
  "event-listener",
  "fluvio-future 0.2.0",
  "fluvio-protocol",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-util",
  "log",
  "once_cell",
@@ -1798,7 +1792,7 @@ dependencies = [
  "fluvio-storage",
  "fluvio-types",
  "flv-tls-proxy",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-util",
  "log",
  "pin-utils",
@@ -1806,7 +1800,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "structopt",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "toml",
  "tracing",
  "tracing-futures",
@@ -1815,7 +1809,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bytes 1.0.1",
  "fluvio-dataplane-protocol",
@@ -1840,7 +1834,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-lite",
  "libc",
  "pin-utils",
@@ -1851,7 +1845,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1860,21 +1854,21 @@ dependencies = [
  "fluvio-future 0.2.0",
  "fluvio-stream-model",
  "fluvio-types",
- "flv-util 0.5.2",
+ "flv-util",
  "futures-lite",
  "k8-metadata-client",
  "log",
  "once_cell",
  "serde",
  "serde_json",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "tracing",
  "tracing-futures",
 ]
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.4.3"
+version = "0.5.0"
 dependencies = [
  "async-rwlock",
  "event-listener",
@@ -1882,7 +1876,7 @@ dependencies = [
  "k8-types",
  "once_cell",
  "serde",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "tracing",
 ]
 
@@ -1922,7 +1916,7 @@ version = "0.2.3"
 dependencies = [
  "event-listener",
  "fluvio-future 0.2.0",
- "tokio 0.2.25",
+ "tokio 1.3.0",
  "tracing",
 ]
 
@@ -1964,16 +1958,6 @@ dependencies = [
  "serde_json",
  "tokio 1.3.0",
  "x509-parser",
-]
-
-[[package]]
-name = "flv-util"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e624a59053c74ff6756238651ec1bdd51180c5c80ba917ec22866b06bae89dd7"
-dependencies = [
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2346,7 +2330,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-std",
- "base64 0.13.0",
+ "base64",
  "cookie",
  "futures-lite",
  "infer",
@@ -2505,7 +2489,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77303fc216ee47ab474366e804b92841377e4325bf16e3c09881840bf724dd64"
 dependencies = [
  "async-trait",
- "base64 0.13.0",
+ "base64",
  "bytes 0.5.6",
  "cfg-if 1.0.0",
  "fluvio-future 0.1.15",
@@ -3511,7 +3495,7 @@ version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b18820d944b33caa75a71378964ac46f58517c92b6ae5f762636247c09e78fb"
 dependencies = [
- "base64 0.13.0",
+ "base64",
  "blake2b_simd",
  "constant_time_eq",
  "crossbeam-utils 0.8.3",
@@ -4590,7 +4574,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b28e400f6a4d5d8e0086b3a2999e03be217a807f3f376dbdac5136a81ec6f79"
 dependencies = [
  "anyhow",
- "base64 0.13.0",
+ "base64",
  "bincode",
  "directories-next",
  "errno 0.2.7",
@@ -4844,7 +4828,7 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db7999ae290e75ec1d4dc8e9ff9870e48e3542a8f2e9c1e2e07d7ca02b459e10"
 dependencies = [
- "base64 0.13.0",
+ "base64",
  "chrono",
  "data-encoding",
  "der-oid-macro",

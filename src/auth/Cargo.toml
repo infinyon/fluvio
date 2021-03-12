@@ -14,14 +14,6 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.41"
-fluvio-controlplane-metadata = { version = "0.6.0", path = "../controlplane-metadata" }
-dataplane = { version = "0.3.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-future = { version = "0.2.0", features = ["net", "openssl_tls"] }
-fluvio-protocol = { path = "../protocol",  version = "0.3.0" }
-fluvio-socket = { path = "../socket", version = "0.6.0" }
-fluvio-types = { version = "0.2.0", path = "../types" }
-flv-tls-proxy = { version = "0.4.0" }
-futures-util = { version = "0.3.5" }
 log = "0.4.11"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.59"
@@ -29,3 +21,12 @@ thiserror = "1.0.21"
 tracing = "0.1.21"
 tracing-futures = "0.2.4"
 x509-parser = "0.9.1"
+
+fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata" }
+dataplane = { version = "0.4.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-future = { version = "0.2.0", features = ["net", "openssl_tls"] }
+fluvio-protocol = { path = "../protocol",  version = "0.4.0" }
+fluvio-socket = { path = "../socket", version = "0.7.0" }
+fluvio-types = { version = "0.2.0", path = "../types" }
+flv-tls-proxy = { version = "0.4.0" }
+futures-util = { version = "0.3.5" }
