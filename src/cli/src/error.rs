@@ -3,6 +3,7 @@ use std::io::Error as IoError;
 use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_consumer::ConsumerError;
+#[cfg(feature = "fluvio-cluster")]
 use fluvio_cluster::cli::ClusterCliError;
 use crate::common::target::TargetError;
 use fluvio_sc_schema::ApiError;
@@ -16,6 +17,8 @@ pub enum CliError {
     IoError(#[from] IoError),
     #[error(transparent)]
     OutputError(#[from] OutputError),
+
+    #[cfg(feature = "fluvio-cluster")]
     #[error("Fluvio cluster error")]
     ClusterCliError(#[from] ClusterCliError),
     #[error("Target Error")]
@@ -61,6 +64,7 @@ impl CliError {
         use color_eyre::Report;
 
         match self {
+            #[cfg(feature = "fluvio-cluster")]
             CliError::ClusterCliError(cluster) => cluster.into_report(),
             _ => Report::from(self),
         }

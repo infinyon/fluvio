@@ -23,6 +23,7 @@ use version::VersionOpt;
 pub use error::{Result, CliError};
 
 use fluvio::Fluvio;
+#[cfg(feature = "fluvio-cluster")]
 use fluvio_cluster::cli::ClusterCmd;
 use fluvio_extension_consumer::consume::ConsumeLogOpt;
 use fluvio_extension_consumer::produce::ProduceLogOpt;
@@ -86,6 +87,7 @@ enum RootCmd {
     #[structopt(name = "profile")]
     Profile(ProfileCmd),
 
+    #[cfg(feature = "fluvio-cluster")]
     /// Install or uninstall Fluvio clusters
     ///
     /// If you are not using Fluvio Cloud, you may wish to install your own Fluvio
@@ -142,6 +144,7 @@ impl RootCmd {
             Self::Profile(profile) => {
                 profile.process(out).await?;
             }
+            #[cfg(feature = "fluvio-cluster")]
             Self::Cluster(cluster) => {
                 cluster.process(out, crate::VERSION, root.target).await?;
             }
