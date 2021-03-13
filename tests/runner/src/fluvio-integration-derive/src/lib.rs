@@ -70,10 +70,15 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     option.topic_name = topic;
                 }
 
+            // Don't create topic if we did not start a new cluster
+            if option.skip_cluster_start {
+                println!("Skipping topic create");
+            } else {
                 // Create topic before starting test
                 test_runner::create_topic(&option)
                     .await
                     .expect("Unable to create default topic");
+            }
 
                 #test_body
             }

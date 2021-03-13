@@ -35,7 +35,8 @@ pub struct TestOption {
     #[structopt(flatten)]
     pub produce: ProductOption,
 
-    /// don't start cluster before test
+    /// don't attempt to delete cluster or start a new cluster before test
+    /// topics creation will be skipped
     #[structopt(long)]
     pub skip_cluster_start: bool,
 
@@ -43,10 +44,12 @@ pub struct TestOption {
     #[structopt(long)]
     pub skip_cluster_delete: bool,
 
+    /// Smoke test specific
     /// don't produce message
     #[structopt(long)]
     pub disable_produce: bool,
 
+    /// Smoke test specific
     /// don't test consumer
     #[structopt(long)]
     pub disable_consume: bool,
@@ -55,14 +58,16 @@ pub struct TestOption {
     /// replication count, number of spu will be same as replication count, unless overridden
     pub replication: Option<u16>,
 
-    /// base topic name used.  if replication > 1, then topic name will be named: topic<replication>
+    /// topic name used
     #[structopt(short("t"), long, default_value = "topic")]
     pub topic_name: String,
 
+    /// Smoke test specific
     /// if this is turn on, consumer waits for producer to finish before starts consumption
     /// if iterations are long then consumer may receive large number of batches
     #[structopt(long)]
     pub consumer_wait: bool,
+
     /// number of spu
     #[structopt(short, long, default_value = "1")]
     pub spu: u16,
@@ -140,6 +145,7 @@ impl TestOption {
         Self::from_args()
     }
 
+    /// Smoke test specific
     pub fn test_consumer(&self) -> bool {
         !self.disable_consume
     }
@@ -149,7 +155,8 @@ impl TestOption {
         !self.skip_cluster_start
     }
 
-    // don't attempt to start test cluster
+    // don't attempt to clean up and start new test cluster
+    // don't create a topic
     pub fn skip_cluster_start(&self) -> bool {
         self.skip_cluster_start
     }
@@ -167,6 +174,7 @@ impl TestOption {
         self.replication.unwrap_or(self.spu)
     }
 
+    /// Smoke test specific
     pub fn produce(&self) -> bool {
         !self.disable_produce
     }
