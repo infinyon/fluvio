@@ -52,7 +52,7 @@ fluvio-package-index = { version = "0.2.0", path = "../package-index" }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", features = ["target"]}
 fluvio-extension-consumer = { version = "0.3.0", path = "../extension-consumer" }
 fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
-fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema" }
+fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema" }
 k8-types = { version = "0.2.0", features = ["core"]}
 
 [dev-dependencies]
