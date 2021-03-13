@@ -39,7 +39,7 @@ pin-project-lite = "0.2"
 # Fluvio dependencies
 fluvio-future = { version = "0.2.0", features = ["task", "native2_tls"] }
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
-fluvio-sc-schema = { version = "0.6.0", path = "../sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema", default-features = false }
 fluvio-spu-schema = { version = "0.5.0", path = "../spu-schema" }
 fluvio-socket = { path = "../socket", version = "0.7.0", features = ["tls"] }
 fluvio-protocol = { path = "../protocol", version = "0.4.0" }
