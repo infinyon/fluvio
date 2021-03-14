@@ -5,7 +5,7 @@ use std::convert::TryInto;
 use std::num::ParseIntError;
 use std::fmt::Display;
 use std::fmt::Debug;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 
@@ -84,6 +84,12 @@ impl Deref for K8MetaItem {
 
     fn deref(&self) -> &Self::Target {
         &self.inner
+    }
+}
+
+impl DerefMut for K8MetaItem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 

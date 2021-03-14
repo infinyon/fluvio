@@ -155,13 +155,14 @@ impl SpuServiceController {
 
         let svc_name = SpuServicespec::service_name(spu_name);
 
+        let mut ctx = spg_obj
+            .ctx()
+            .create_child()
+            .set_labels(vec![("fluvio.io/spu-name", spu_name)]);
+        ctx.item_mut().annotations = spu_k8_config.lb_service_annotations.clone();
+
         let obj = MetadataStoreObject::with_spec(svc_name.clone(), k8_service_spec.into())
-            .with_context(
-                spg_obj
-                    .ctx()
-                    .create_child()
-                    .set_labels(vec![("fluvio.io/spu-name", spu_name)]),
-            );
+            .with_context(ctx);
         debug!("action: {:#?}", obj);
         let action = WSAction::Apply(obj);
 
