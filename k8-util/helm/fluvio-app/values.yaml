@@ -4,8 +4,7 @@
 
 cloud: minikube
 loadBalancer:
-  serviceAnnotations:
-    cloud.fluvio.io/hostname:  test
+  serviceAnnotations: {}
 service:
   type: LoadBalancer
 scLog: info
