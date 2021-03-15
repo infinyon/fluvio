@@ -318,8 +318,8 @@ impl std::str::FromStr for PackageId<WithVersion> {
 
         let maybe_group_segment = segments.pop();
         let group: Option<GroupName> = match maybe_group_segment {
+            None | Some("fluvio") => None,
             Some(group_string) => Some(group_string.parse()?),
-            None => None,
         };
 
         let registry = Registry::try_from_segments(&segments);
@@ -356,8 +356,8 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
 
         let maybe_group_string = segments.pop();
         let group: Option<GroupName> = match maybe_group_string {
+            None | Some("fluvio") => None,
             Some(group_string) => Some(group_string.parse()?),
-            None => None,
         };
         let registry = Registry::try_from_segments(&segments);
 
@@ -581,6 +581,34 @@ mod tests {
             "fluvio/fluvio",
             format!("{}", package_id_maybe_without_version)
         );
+    }
+
+    #[test]
+    fn test_pretty_no_group() {
+        let package_id: PackageId = "fluvio:1.2.3".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_pretty_group() {
+        let package_id: PackageId = "fluvio/fluvio:1.2.3".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_pretty_maybe_id_no_group() {
+        let package_id: PackageId<MaybeVersion> = "fluvio".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_pretty_maybe_id_group() {
+        let package_id: PackageId<MaybeVersion> = "fluvio/fluvio".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
     }
 
     #[test]
