@@ -46,7 +46,7 @@ impl UpdateOpt {
             // Collect updates from the given plugin IDs
             let ext_dir = fluvio_extensions_dir()?;
             for plugin in &self.plugins {
-                let path = ext_dir.join(plugin.name.as_str());
+                let path = ext_dir.join(plugin.name().as_str());
                 updates.push((plugin.clone(), path));
             }
         }
@@ -65,7 +65,7 @@ impl UpdateOpt {
             s = s
         );
         for (id, path) in &updates {
-            println!("   - {} ({})", id.name, path.display());
+            println!("   - {} ({})", id.name(), path.display());
         }
 
         for (id, path) in &updates {
@@ -119,7 +119,7 @@ impl UpdateOpt {
 
         println!(
             "⏳ Downloading plugin {} with version {}",
-            id.shortname(),
+            id.pretty(),
             version
         );
         let id = id.clone().into_versioned(version);

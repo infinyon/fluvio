@@ -29,6 +29,9 @@ lazy_static::lazy_static! {
         let url = url::Url::parse("https://packages.fluvio.io/v1/").unwrap();
         Registry::from(url)
     };
+    static ref DEFAULT_GROUP: GroupName = {
+        "fluvio".parse().unwrap()
+    };
 }
 
 impl fmt::Display for Registry {
@@ -121,10 +124,6 @@ macro_rules! deserialize_no_slash_string {
 #[serde(transparent)]
 pub struct GroupName(String);
 
-impl GroupName {
-    pub const DEFAULT: &'static str = "fluvio";
-}
-
 impl fmt::Display for GroupName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -167,6 +166,8 @@ pub type MaybeVersion = Option<Version>;
 /// <registry>/<group>/<name>:<version>
 /// OR
 /// <group>/<name>:<version>
+/// OR
+/// <name>:<version>
 /// ```
 ///
 /// Note that a `PackageId<WithVersion>` has strong guarantees on its
@@ -174,35 +175,51 @@ pub type MaybeVersion = Option<Version>;
 /// means that a `PackageId<WithVersion>` is _guaranteed_ to have a version
 /// embedded in it, which can be accessed via `.version()`.
 ///
-/// 2) A `PackageId<MaybeVersion>` might or might not contain a version, and
-/// will parse a package string that does OR does not have a version in it.
-/// This is the type you should use if you don't need a version or if you want
-/// to do something different based on whether or not a version is given. An
+/// 2) A `PackageId` (i.e. `PackageId<MaybeVersion>`) might or might not contain a
+/// version, and will parse a package string that does OR does not have a version
+/// in it. This is the type you should use if you don't need a version or if you
+/// want to do something different based on whether or not a version is given. An
 /// example of this might be installing a specific version of a package if a
 /// version is given, or defaulting to the latest version if not given.
 ///
-/// Valid strings that will parse into a `PackageId<MaybeVersion>` include:
+/// Valid forms that will parse into a `PackageId` include:
 ///
 /// ```text
 /// <registry>/<group>/<name>
 /// <group>/<name>
+/// <name>
 /// <registry>/<group>/<name>:<version>
 /// <group>/<name>:<version>
+/// <name>:<version>
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackageId<V = MaybeVersion> {
     registry: Option<Registry>,
-    pub group: GroupName,
-    pub name: PackageName,
+    group: Option<GroupName>,
+    name: PackageName,
     version: V,
 }
 
 impl<T> PackageId<T> {
+    /// Return the registry of the package specified by this identifier
     pub fn registry(&self) -> &Registry {
         match self.registry.as_ref() {
             Some(registry) => registry,
             None => &*DEFAULT_REGISTRY,
         }
+    }
+
+    /// Return the group of the package specified by this identifier
+    pub fn group(&self) -> &GroupName {
+        match self.group.as_ref() {
+            Some(group) => group,
+            None => &*DEFAULT_GROUP,
+        }
+    }
+
+    /// Return the name of the package specified by this identifier
+    pub fn name(&self) -> &PackageName {
+        &self.name
     }
 
     /// A printable representation of this `PackageId`
@@ -211,13 +228,13 @@ impl<T> PackageId<T> {
     /// For example, if the registry and group name are default values, this will display only
     /// the package name. If the group name is non-standard, it will be printed. If the registry
     /// is non-standard, both the registry and the group name will be printed.
-    pub fn shortname(&self) -> impl fmt::Display {
-        let prefix = match self.registry.as_ref() {
-            Some(reg) => format!("{reg}{group}/", reg = reg, group = self.group.as_str()),
-            None if self.group.as_str() == GroupName::DEFAULT => "".to_string(),
-            None => format!("{}/", self.group.as_str()),
+    pub fn pretty(&self) -> impl fmt::Display {
+        let prefix = match (self.registry.as_ref(), self.group.as_ref()) {
+            (Some(reg), _) => format!("{}{}/", reg, self.group()),
+            (None, Some(group)) => format!("{}/", group),
+            (None, None) => "".to_string(),
         };
-        format!("{}{}", prefix, self.name.as_str())
+        format!("{}{}", prefix, self.name)
     }
 
     /// A unique representation of this package, excluding version.
@@ -235,7 +252,7 @@ impl<T> PackageId<T> {
     /// assert_eq!(pid1.uid(), pid2.uid());
     /// ```
     pub fn uid(&self) -> String {
-        format!("{}{}/{}", self.registry(), self.group, self.name)
+        format!("{}{}/{}", self.registry(), self.group(), self.name)
     }
 }
 
@@ -244,7 +261,7 @@ impl PackageId<WithVersion> {
     pub fn new_versioned(name: PackageName, group: GroupName, version: Version) -> Self {
         Self {
             registry: None,
-            group,
+            group: Some(group),
             name,
             version,
         }
@@ -261,7 +278,7 @@ impl PackageId<MaybeVersion> {
     pub fn new_unversioned(name: PackageName, group: GroupName) -> Self {
         PackageId {
             registry: None,
-            group,
+            group: Some(group),
             name,
             version: None,
         }
@@ -300,9 +317,9 @@ impl std::str::FromStr for PackageId<WithVersion> {
         let name: PackageName = name_string.parse()?;
 
         let maybe_group_segment = segments.pop();
-        let group: GroupName = match maybe_group_segment {
-            Some(group_string) => group_string.parse()?,
-            None => GroupName::DEFAULT.parse()?,
+        let group: Option<GroupName> = match maybe_group_segment {
+            Some(group_string) => Some(group_string.parse()?),
+            None => None,
         };
 
         let registry = Registry::try_from_segments(&segments);
@@ -338,9 +355,9 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
         };
 
         let maybe_group_string = segments.pop();
-        let group: GroupName = match maybe_group_string {
-            Some(group_string) => group_string.parse()?,
-            None => GroupName::DEFAULT.parse()?,
+        let group: Option<GroupName> = match maybe_group_string {
+            Some(group_string) => Some(group_string.parse()?),
+            None => None,
         };
         let registry = Registry::try_from_segments(&segments);
 
@@ -362,8 +379,8 @@ impl fmt::Display for PackageId<WithVersion> {
             f,
             "{registry}{group}/{name}:{version}",
             registry = registry,
-            group = self.group.as_str(),
-            name = self.name.as_str(),
+            group = self.group(),
+            name = self.name,
             version = self.version,
         )
     }
@@ -381,7 +398,7 @@ impl fmt::Display for PackageId<MaybeVersion> {
             f,
             "{registry}{group}/{name}{version}",
             registry = registry,
-            group = self.group.as_str(),
+            group = self.group(),
             name = self.name.as_str(),
             version = version,
         )
@@ -484,8 +501,8 @@ mod tests {
     fn test_parse_package_id_default_registry() {
         let package_id: PackageId<WithVersion> = "fluvio.io/fluvio:0.6.0".parse().unwrap();
         assert_eq!(package_id.registry(), &Registry::default());
-        assert_eq!(package_id.group.as_str(), "fluvio.io");
-        assert_eq!(package_id.name.as_str(), "fluvio");
+        assert_eq!(package_id.group().as_str(), "fluvio.io");
+        assert_eq!(package_id.name().as_str(), "fluvio");
         assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
     }
 
@@ -496,8 +513,8 @@ mod tests {
             .parse()
             .unwrap();
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
-        assert_eq!(package_id.group.as_str(), "fluvio.io");
-        assert_eq!(package_id.name.as_str(), "fluvio");
+        assert_eq!(package_id.group().as_str(), "fluvio.io");
+        assert_eq!(package_id.name().as_str(), "fluvio");
         assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
     }
 
@@ -505,8 +522,8 @@ mod tests {
     fn test_parse_package_id_default_group() {
         let package_id: PackageId<WithVersion> = "fluvio-cloud:0.1.4".parse().unwrap();
         assert_eq!(package_id.registry(), &Registry::default());
-        assert_eq!(package_id.group.as_str(), "fluvio");
-        assert_eq!(package_id.name.as_str(), "fluvio-cloud");
+        assert_eq!(package_id.group().as_str(), "fluvio");
+        assert_eq!(package_id.name().as_str(), "fluvio-cloud");
         assert_eq!(package_id.version(), &Version::parse("0.1.4").unwrap());
     }
 
@@ -515,8 +532,8 @@ mod tests {
         let package_id: PackageId = "fluvio-cloud".parse().unwrap();
         let package_id: PackageId<MaybeVersion> = package_id;
         assert_eq!(package_id.registry(), &Registry::default());
-        assert_eq!(package_id.group.as_str(), "fluvio");
-        assert_eq!(package_id.name.as_str(), "fluvio-cloud");
+        assert_eq!(package_id.group().as_str(), "fluvio");
+        assert_eq!(package_id.name().as_str(), "fluvio-cloud");
         assert!(package_id.maybe_version().is_none());
     }
 

@@ -60,7 +60,7 @@ pub(crate) fn get_extensions() -> Result<Vec<PathBuf>, CliError> {
 /// Fetches the latest version of the package with the given ID
 #[instrument(
     skip(agent, target, id),
-    fields(%target, id = %id.shortname())
+    fields(%target, id = %id.pretty())
 )]
 async fn fetch_latest_version<T>(
     agent: &HttpAgent,
