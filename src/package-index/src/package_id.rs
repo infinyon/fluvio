@@ -206,14 +206,18 @@ impl<T> PackageId<T> {
     }
 
     /// A printable representation of this `PackageId`
-    pub fn display(&self) -> impl fmt::Display {
-        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
-        format!(
-            "{registry}{group}/{name}",
-            registry = registry,
-            group = self.group.as_str(),
-            name = self.name.as_str(),
-        )
+    ///
+    /// This displays the most concise representation of this `PackageId` that is still unique.
+    /// For example, if the registry and group name are default values, this will display only
+    /// the package name. If the group name is non-standard, it will be printed. If the registry
+    /// is non-standard, both the registry and the group name will be printed.
+    pub fn shortname(&self) -> impl fmt::Display {
+        let prefix = match self.registry.as_ref() {
+            Some(reg) => format!("{reg}{group}/", reg = reg, group = self.group.as_str()),
+            None if self.group.as_str() == GroupName::DEFAULT => "".to_string(),
+            None => format!("{}/", self.group.as_str()),
+        };
+        format!("{}{}", prefix, self.name.as_str())
     }
 
     /// A unique representation of this package, excluding version.
