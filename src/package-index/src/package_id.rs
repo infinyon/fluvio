@@ -121,6 +121,10 @@ macro_rules! deserialize_no_slash_string {
 #[serde(transparent)]
 pub struct GroupName(String);
 
+impl GroupName {
+    pub const DEFAULT: &'static str = "fluvio";
+}
+
 impl fmt::Display for GroupName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -186,7 +190,7 @@ pub type MaybeVersion = Option<Version>;
 /// <group>/<name>:<version>
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-pub struct PackageId<V> {
+pub struct PackageId<V = MaybeVersion> {
     registry: Option<Registry>,
     pub group: GroupName,
     pub name: PackageName,
@@ -281,10 +285,6 @@ impl std::str::FromStr for PackageId<WithVersion> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 {
-            return Err(Error::TooFewSlashes);
-        }
-
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
         let (name_string, version_string) = match &name_version_segments[..] {
@@ -295,8 +295,12 @@ impl std::str::FromStr for PackageId<WithVersion> {
         let version = Version::parse(version_string)?;
         let name: PackageName = name_string.parse()?;
 
-        let group_string = segments.pop().unwrap();
-        let group: GroupName = group_string.parse()?;
+        let maybe_group_segment = segments.pop();
+        let group: GroupName = match maybe_group_segment {
+            Some(group_string) => group_string.parse()?,
+            None => GroupName::DEFAULT.parse()?,
+        };
+
         let registry = Registry::try_from_segments(&segments);
 
         let package_id = PackageId {
@@ -315,10 +319,6 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 {
-            return Err(Error::TooFewSlashes);
-        }
-
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
         let (name_string, version_string) = match &name_version_segments[..] {
@@ -327,13 +327,17 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
             _ => return Err(Error::InvalidNameVersionSegment),
         };
 
+        let name: PackageName = name_string.parse()?;
         let version = match version_string {
             Some(version_string) => Some(Version::parse(version_string)?),
             None => None,
         };
-        let name: PackageName = name_string.parse()?;
-        let group_string = segments.pop().unwrap();
-        let group: GroupName = group_string.parse()?;
+
+        let maybe_group_string = segments.pop();
+        let group: GroupName = match maybe_group_string {
+            Some(group_string) => group_string.parse()?,
+            None => GroupName::DEFAULT.parse()?,
+        };
         let registry = Registry::try_from_segments(&segments);
 
         let package_id = PackageId {
@@ -491,6 +495,25 @@ mod tests {
         assert_eq!(package_id.group.as_str(), "fluvio.io");
         assert_eq!(package_id.name.as_str(), "fluvio");
         assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
+    }
+
+    #[test]
+    fn test_parse_package_id_default_group() {
+        let package_id: PackageId<WithVersion> = "fluvio-cloud:0.1.4".parse().unwrap();
+        assert_eq!(package_id.registry(), &Registry::default());
+        assert_eq!(package_id.group.as_str(), "fluvio");
+        assert_eq!(package_id.name.as_str(), "fluvio-cloud");
+        assert_eq!(package_id.version(), &Version::parse("0.1.4").unwrap());
+    }
+
+    #[test]
+    fn test_parse_package_id_default_group_maybe_version() {
+        let package_id: PackageId = "fluvio-cloud".parse().unwrap();
+        let package_id: PackageId<MaybeVersion> = package_id;
+        assert_eq!(package_id.registry(), &Registry::default());
+        assert_eq!(package_id.group.as_str(), "fluvio");
+        assert_eq!(package_id.name.as_str(), "fluvio-cloud");
+        assert!(package_id.maybe_version().is_none());
     }
 
     #[test]
