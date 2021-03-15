@@ -36,13 +36,13 @@ pub struct TestOption {
     pub produce: ProductOption,
 
     /// don't attempt to delete cluster or start a new cluster before test
-    /// topics creation will be skipped
-    #[structopt(long)]
-    pub skip_cluster_start: bool,
+    /// topic creation will be skipped
+    #[structopt(short, long)]
+    pub disable_install: bool,
 
     /// don't delete cluster after test
-    #[structopt(long)]
-    pub skip_cluster_delete: bool,
+    #[structopt(short, long)]
+    pub keep_cluster: bool,
 
     /// Smoke test specific
     /// don't produce message
@@ -117,8 +117,8 @@ impl Default for TestOption {
     fn default() -> Self {
         TestOption {
             produce: ProductOption::default(),
-            skip_cluster_start: false,
-            skip_cluster_delete: false,
+            disable_install: false,
+            keep_cluster: false,
             disable_produce: false,
             disable_consume: false,
             replication: None,
@@ -151,19 +151,20 @@ impl TestOption {
     }
 
     /// before we start test run, remove cluster
+    // don't create a topic
     pub fn remove_cluster_before(&self) -> bool {
-        !self.skip_cluster_start
+        !self.disable_install
     }
 
     // don't attempt to clean up and start new test cluster
     // don't create a topic
     pub fn skip_cluster_start(&self) -> bool {
-        self.skip_cluster_start
+        self.disable_install
     }
 
     // don't attempt to delete test cluster
     pub fn skip_cluster_delete(&self) -> bool {
-        self.skip_cluster_delete
+        self.keep_cluster
     }
 
     pub fn tls(&self) -> bool {

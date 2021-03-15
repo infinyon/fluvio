@@ -57,7 +57,7 @@ smoke-test-tls:	test-clean-up build_test
 smoke-test-tls-policy:	test-clean-up build_test
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK} --skip-cluster-delete
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --produce-iteration ${DEFAULT_ITERATION} --tls --local ${TEST_LOG} ${SKIP_CHECK} --keep-cluster
 
 # test rbac with ROOT user
 smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
@@ -96,7 +96,7 @@ smoke-test-k8-tls-policy:	test-clean-up minikube_image
 		${TEST_LOG} \
 		--authorization-config-map authorization \
 		${SKIP_CHECK} \
-		--skip-cluster-delete
+		--keep-cluster
 
 test-permission-k8:	SC_HOST=$(shell kubectl get svc fluvio-sc-public -o json | jq '.status.loadBalancer.ingress[0].ip' | tr -d '"' )
 test-permission-k8:	test-permission-user1

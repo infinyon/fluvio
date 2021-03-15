@@ -99,11 +99,11 @@ $ flv-test smoke --local --produce-iteration 10
 
 ## Run test without re-installing
 
-After initial test using `--skip-cluster-delete`, more iteration can be tested without re-installing cluster using `--skip-cluster-start`
+After initial test using `--keep-cluster`, more iteration can be tested without re-installing cluster using `--disable-install`
 
 ```
-$ flv-test smoke --local --produce-iteration 10 --skip-cluster-delete
-$ flv-test smoke --skip-cluster-start --produce-iteration 200
+$ flv-test smoke --local --produce-iteration 10 --keep-cluster
+$ flv-test smoke --disable-install --produce-iteration 200
 ```
 
 ## No streaming

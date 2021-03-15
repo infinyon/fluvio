@@ -71,7 +71,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 }
 
             // Don't create topic if we did not start a new cluster
-            if option.skip_cluster_start {
+            if option.skip_cluster_start() {
                 println!("Skipping topic create");
             } else {
                 // Create topic before starting test
