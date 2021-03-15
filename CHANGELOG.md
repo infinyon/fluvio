@@ -1,6 +1,13 @@
 # Release Notes
 
-## Platform Version 0.7.0 - 2020-2-24
+## Platform Version 0.7.1 - 2020-03-15
+* Client Key/Value support for producers and consumers
+([#828](https://github.com/infinyon/fluvio/pull/828)).
+* CLI Key/Value interface ([#830](https://github.com/infinyon/fluvio/pull/830))
+* CI Reliability updates ([#842](https://github.com/infinyon/fluvio/pull/842)),
+([#832](https://github.com/infinyon/fluvio/pull/832))
+
+## Platform Version 0.7.0 - 2020-02-24
 * `fluvio cluster upgrade` ([#709](https://github.com/infinyon/fluvio/pull/709))
 * `install.sh` script works with `VERSION=latest` for prereleases([#812](https://github.com/infinyon/fluvio/pull/812))
 * Fix stream fetch ([#769](https://github.com/infinyon/fluvio/pull/769))
