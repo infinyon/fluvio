@@ -14,11 +14,15 @@
 //startServer();
 
 use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::TestCase;
+use fluvio_test_util::test_meta::{TestCase, TestResult};
 use fluvio::Fluvio;
 use std::sync::Arc;
 
-//#[fluvio_test()]
+#[fluvio_test()]
 pub async fn run(_client: Arc<Fluvio>, _opt: TestCase) {
     println!("I'm the many producers test");
+    //let message = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
+    //let mut producer = client.topic_producer(&option.topic_name.clone()).await?;
+
+    // Create 6 producers
 }

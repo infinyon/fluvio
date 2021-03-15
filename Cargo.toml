@@ -49,3 +49,16 @@ members = [
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
 opt-level = 3
+
+# Used to preserve some linker hacks used by `inventory` crate
+[profile.dev.package.flv-test]
+incremental = false
+
+# Make flv-test release package more like dev profile. Specifically for `inventory` crate
+[profile.release.package.flv-test]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+incremental = false 
+codegen-units = 256

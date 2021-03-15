@@ -55,10 +55,40 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     let test_body = &fn_user_test.block;
 
     let out_fn_iden = Ident::new(&test_name.to_string(), Span::call_site());
+    let async_inner_fn_iden = Ident::new(
+        &format!("{}_inner", &test_name.to_string()),
+        Span::call_site(),
+    );
+
+    // Build a Pascal-case func ex: <smoke>TestOption::from_iter
+
+    //let test_opt_fn_iden = Ident::new(
+    //    &format!("{}_inner", &test_name.to_string()),
+    //    Span::call_site(),
+    //);
+
+    //let out_fn_str = test_name.to_string();
 
     let output_fn = quote! {
 
-        pub async fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult{
+        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult{
+            println!("Inside the function");
+            let future = async move {
+                println!("Inside the async wrapper function");
+                #async_inner_fn_iden(client, test_case).await
+            };
+            fluvio_future::task::run_block_on(future)
+        }
+
+        // TODO: Add test name to attributes so we can use it like this
+        //inventory::submit!{
+        //    FluvioTest {
+        //        name: #out_fn_str.to_string(),
+        //        test_fn: #out_fn_iden,
+        //    }
+        //}
+
+        pub async fn #async_inner_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::{TestCase, TestResult};
             use fluvio_test_util::test_meta::environment::{EnvDetail};

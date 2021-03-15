@@ -17,6 +17,7 @@ serde = "1.0"
 serde_json = "1.0"
 quote = "1.0"
 proc-macro2 = "1.0"
+inventory = "0.1"
 
 fluvio = { path = "../../../../src/client" }
 fluvio-future = { version = "0.2.0", features = ["task", "timer", "subscriber", "fixture"] }

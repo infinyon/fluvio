@@ -1,13 +1,21 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
-use crate::test_meta::TestCase;
+use crate::test_meta::{TestCase, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::Fluvio;
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
+use inventory;
 
-pub struct FluvioTest {}
+#[derive(Debug)]
+pub struct FluvioTest {
+    pub name: String,
+    //test_fn: fn(Arc<Fluvio>, TestOption) -> Pin<Box<dyn Future<Output = ()>>>,
+    pub test_fn: fn(Arc<Fluvio>, TestCase) -> TestResult,
+}
+
+inventory::collect!(FluvioTest);
 
 impl FluvioTest {
     pub async fn create_topic(client: Arc<Fluvio>, option: &EnvironmentSetup) -> Result<(), ()> {
