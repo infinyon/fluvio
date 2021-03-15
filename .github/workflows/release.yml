@@ -58,30 +58,30 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-
-  release_fluvio_pi:
-    name: Raspberry Pi Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set Force Release env
-        run: |
-          if [ "${{ github.event.inputs.force }}" = "--force" ]; then
-            echo "GITHUB_RELEASE_FORCE=--replace" >> $GITHUB_ENV
-          else
-            echo "GITHUB_RELEASE_FORCE=''" >> $GITHUB_ENV
-          fi
-          echo "FORCE_RELEASE=${{ github.event.inputs.force }}"
-          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" >> $GITHUB_ENV
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Install cargo-make
-        uses: davidB/rust-cargo-make@v1
-        with:
-          version: '0.32.9'
-      - name: Build and upload pi release to github
-        run: cargo make -l verbose pi-github-release-upload
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+# TODO: Fix the pi build
+#  release_fluvio_pi:
+#    name: Raspberry Pi Release
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Set Force Release env
+#        run: |
+#          if [ "${{ github.event.inputs.force }}" = "--force" ]; then
+#            echo "GITHUB_RELEASE_FORCE=--replace" >> $GITHUB_ENV
+#          else
+#            echo "GITHUB_RELEASE_FORCE=''" >> $GITHUB_ENV
+#          fi
+#          echo "FORCE_RELEASE=${{ github.event.inputs.force }}"
+#          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" >> $GITHUB_ENV
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#      - name: Install cargo-make
+#        uses: davidB/rust-cargo-make@v1
+#        with:
+#          version: '0.32.9'
+#      - name: Build and upload pi release to github
+#        run: cargo make -l verbose pi-github-release-upload
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
   release_docker:
     name: docker release
