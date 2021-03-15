@@ -48,7 +48,7 @@ fluvio-future = { version = "0.2.0", features = ["fs", "io", "subscriber"] }
 fluvio = { version = "0.6.0", path = "../client", default-features = false }
 fluvio-cluster = { version = "0.7.0", path = "../cluster", default-features = false, features = ["cli"] }
 fluvio-command = { version = "0.2.0" }
-fluvio-package-index = { version = "0.2.0", path = "../package-index" }
+fluvio-package-index = { version = "0.3.0", path = "../package-index" }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", features = ["target"]}
 fluvio-extension-consumer = { version = "0.3.0", path = "../extension-consumer" }
 fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
