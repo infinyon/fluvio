@@ -1,16 +1,20 @@
 # Release process
 
-Bump up version `VERSION` file.
+To do a "full release", the core steps are:
+* Publish all updated crates (this may be a little annoying until it's automated).
+* Bump up version `VERSION` file.
+* Kick off release flow with github `release` action.
+* Rebase master into stable
 
-## Release crates
+## Release Checklist
 
-Find all crates that has been changed last release
-```
-cargo workspaces changed 
-```
+There might be only a few steps to release but the release manager should
+verify the following:
 
-publish all crates
-
-## Kick off release
-
-Run Github action `release`
+- [ ] Publish all updated crates.
+- [ ] Bump up version `VERSION` file.
+- [ ] Review/run sample code on Home Page - Rust/Node/Python
+- [ ] Review getting started docs on fluvio.io/docs
+- [ ] Rebase master into stable
+- [ ] Kick off release flow with github `release` action.
+- [ ] Announce the release on Discord and twitter
