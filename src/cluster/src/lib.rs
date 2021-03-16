@@ -45,6 +45,7 @@ pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckRe
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
 pub use sys::{SysConfig, SysConfigBuilder, SysInstaller};
+pub use fluvio::config as fluvio_config;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
