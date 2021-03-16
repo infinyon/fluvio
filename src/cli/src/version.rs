@@ -78,9 +78,13 @@ impl VersionOpt {
     fn format_subcommand_metadata(&self) -> Option<Vec<(String, String)>> {
         let metadata = subcommand_metadata().ok()?;
         let mut formats = Vec::new();
-        for sub_cmd in metadata {
-            let left = format!("{} ({})", sub_cmd.meta.title, sub_cmd.filename);
-            formats.push((left, sub_cmd.meta.version.to_string()));
+        for cmd in metadata {
+            let filename = match cmd.path.file_name() {
+                Some(f) => f.to_string_lossy().to_string(),
+                None => continue,
+            };
+            let left = format!("{} ({})", cmd.meta.title, filename);
+            formats.push((left, cmd.meta.version.to_string()));
         }
 
         Some(formats)

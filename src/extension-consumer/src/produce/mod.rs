@@ -150,6 +150,7 @@ impl ProduceLogOpt {
     pub fn metadata() -> FluvioExtensionMetadata {
         FluvioExtensionMetadata {
             title: "produce".into(),
+            package: Some("fluvio/fluvio".parse().unwrap()),
             description: "Produce new data in a stream".into(),
             version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }

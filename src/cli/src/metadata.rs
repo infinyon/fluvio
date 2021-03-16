@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
 use fluvio_extension_common::FluvioExtensionMetadata;
@@ -37,8 +38,9 @@ impl MetadataOpt {
     }
 }
 
+#[derive(Debug)]
 pub struct SubcommandMetadata {
-    pub filename: String,
+    pub path: PathBuf,
     pub meta: FluvioExtensionMetadata,
 }
 
@@ -46,7 +48,8 @@ pub struct SubcommandMetadata {
 pub fn subcommand_metadata() -> Result<Vec<SubcommandMetadata>> {
     let mut metadata = Vec::new();
 
-    for (filename, path) in crate::install::get_extensions()? {
+    let extensions = crate::install::get_extensions()?;
+    for path in extensions {
         let result = Command::new(&path).arg("metadata").result();
         let output = match result {
             Ok(out) => out.stdout,
@@ -55,7 +58,7 @@ pub fn subcommand_metadata() -> Result<Vec<SubcommandMetadata>> {
 
         let json_result = serde_json::from_slice::<FluvioExtensionMetadata>(&output);
         if let Ok(meta) = json_result {
-            let subcommand = SubcommandMetadata { filename, meta };
+            let subcommand = SubcommandMetadata { path, meta };
             metadata.push(subcommand);
         }
     }

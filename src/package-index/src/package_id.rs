@@ -1,5 +1,5 @@
 use std::fmt;
-use serde::{Serialize, Deserialize, Deserializer};
+use serde::{Serialize, Deserialize, Deserializer, Serializer};
 use url::Url;
 use crate::Error;
 use semver::Version;
@@ -28,6 +28,9 @@ lazy_static::lazy_static! {
     static ref DEFAULT_REGISTRY: Registry = {
         let url = url::Url::parse("https://packages.fluvio.io/v1/").unwrap();
         Registry::from(url)
+    };
+    static ref DEFAULT_GROUP: GroupName = {
+        "fluvio".parse().unwrap()
     };
 }
 
@@ -163,6 +166,8 @@ pub type MaybeVersion = Option<Version>;
 /// <registry>/<group>/<name>:<version>
 /// OR
 /// <group>/<name>:<version>
+/// OR
+/// <name>:<version>
 /// ```
 ///
 /// Note that a `PackageId<WithVersion>` has strong guarantees on its
@@ -170,30 +175,33 @@ pub type MaybeVersion = Option<Version>;
 /// means that a `PackageId<WithVersion>` is _guaranteed_ to have a version
 /// embedded in it, which can be accessed via `.version()`.
 ///
-/// 2) A `PackageId<MaybeVersion>` might or might not contain a version, and
-/// will parse a package string that does OR does not have a version in it.
-/// This is the type you should use if you don't need a version or if you want
-/// to do something different based on whether or not a version is given. An
+/// 2) A `PackageId` (i.e. `PackageId<MaybeVersion>`) might or might not contain a
+/// version, and will parse a package string that does OR does not have a version
+/// in it. This is the type you should use if you don't need a version or if you
+/// want to do something different based on whether or not a version is given. An
 /// example of this might be installing a specific version of a package if a
 /// version is given, or defaulting to the latest version if not given.
 ///
-/// Valid strings that will parse into a `PackageId<MaybeVersion>` include:
+/// Valid forms that will parse into a `PackageId` include:
 ///
 /// ```text
 /// <registry>/<group>/<name>
 /// <group>/<name>
+/// <name>
 /// <registry>/<group>/<name>:<version>
 /// <group>/<name>:<version>
+/// <name>:<version>
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-pub struct PackageId<V> {
+pub struct PackageId<V = MaybeVersion> {
     registry: Option<Registry>,
-    pub group: GroupName,
-    pub name: PackageName,
+    group: Option<GroupName>,
+    name: PackageName,
     version: V,
 }
 
 impl<T> PackageId<T> {
+    /// Return the registry of the package specified by this identifier
     pub fn registry(&self) -> &Registry {
         match self.registry.as_ref() {
             Some(registry) => registry,
@@ -201,14 +209,50 @@ impl<T> PackageId<T> {
         }
     }
 
-    pub fn display(&self) -> impl fmt::Display {
-        let registry = self.registry.as_ref().map(|it| it.0.as_str()).unwrap_or("");
-        format!(
-            "{registry}{group}/{name}",
-            registry = registry,
-            group = self.group.as_str(),
-            name = self.name.as_str(),
-        )
+    /// Return the group of the package specified by this identifier
+    pub fn group(&self) -> &GroupName {
+        match self.group.as_ref() {
+            Some(group) => group,
+            None => &*DEFAULT_GROUP,
+        }
+    }
+
+    /// Return the name of the package specified by this identifier
+    pub fn name(&self) -> &PackageName {
+        &self.name
+    }
+
+    /// A printable representation of this `PackageId`
+    ///
+    /// This displays the most concise representation of this `PackageId` that is still unique.
+    /// For example, if the registry and group name are default values, this will display only
+    /// the package name. If the group name is non-standard, it will be printed. If the registry
+    /// is non-standard, both the registry and the group name will be printed.
+    pub fn pretty(&self) -> impl fmt::Display {
+        let prefix = match (self.registry.as_ref(), self.group.as_ref()) {
+            (Some(reg), _) => format!("{}{}/", reg, self.group()),
+            (None, Some(group)) => format!("{}/", group),
+            (None, None) => "".to_string(),
+        };
+        format!("{}{}", prefix, self.name)
+    }
+
+    /// A unique representation of this package, excluding version.
+    ///
+    /// This is intended to be used for comparing two PackageId's
+    /// to see whether they refer to the same package entity, regardless
+    /// of version.
+    ///
+    /// # Exmaple
+    ///
+    /// ```
+    /// # use fluvio_index::{PackageId, MaybeVersion, WithVersion};
+    /// let pid1: PackageId<MaybeVersion> = "fluvio/fluvio".parse().unwrap();
+    /// let pid2: PackageId<WithVersion> = "https://packages.fluvio.io/v1/fluvio/fluvio:1.2.3".parse().unwrap();
+    /// assert_eq!(pid1.uid(), pid2.uid());
+    /// ```
+    pub fn uid(&self) -> String {
+        format!("{}{}/{}", self.registry(), self.group(), self.name)
     }
 }
 
@@ -217,7 +261,7 @@ impl PackageId<WithVersion> {
     pub fn new_versioned(name: PackageName, group: GroupName, version: Version) -> Self {
         Self {
             registry: None,
-            group,
+            group: Some(group),
             name,
             version,
         }
@@ -234,7 +278,7 @@ impl PackageId<MaybeVersion> {
     pub fn new_unversioned(name: PackageName, group: GroupName) -> Self {
         PackageId {
             registry: None,
-            group,
+            group: Some(group),
             name,
             version: None,
         }
@@ -262,10 +306,6 @@ impl std::str::FromStr for PackageId<WithVersion> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 {
-            return Err(Error::TooFewSlashes);
-        }
-
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
         let (name_string, version_string) = match &name_version_segments[..] {
@@ -276,8 +316,12 @@ impl std::str::FromStr for PackageId<WithVersion> {
         let version = Version::parse(version_string)?;
         let name: PackageName = name_string.parse()?;
 
-        let group_string = segments.pop().unwrap();
-        let group: GroupName = group_string.parse()?;
+        let maybe_group_segment = segments.pop();
+        let group: Option<GroupName> = match maybe_group_segment {
+            None | Some("fluvio") => None,
+            Some(group_string) => Some(group_string.parse()?),
+        };
+
         let registry = Registry::try_from_segments(&segments);
 
         let package_id = PackageId {
@@ -296,10 +340,6 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut segments: Vec<&str> = s.split('/').collect();
-        if segments.len() < 2 {
-            return Err(Error::TooFewSlashes);
-        }
-
         let name_version_segment = segments.pop().unwrap();
         let name_version_segments: Vec<&str> = name_version_segment.split(':').collect();
         let (name_string, version_string) = match &name_version_segments[..] {
@@ -308,13 +348,17 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
             _ => return Err(Error::InvalidNameVersionSegment),
         };
 
+        let name: PackageName = name_string.parse()?;
         let version = match version_string {
             Some(version_string) => Some(Version::parse(version_string)?),
             None => None,
         };
-        let name: PackageName = name_string.parse()?;
-        let group_string = segments.pop().unwrap();
-        let group: GroupName = group_string.parse()?;
+
+        let maybe_group_string = segments.pop();
+        let group: Option<GroupName> = match maybe_group_string {
+            None | Some("fluvio") => None,
+            Some(group_string) => Some(group_string.parse()?),
+        };
         let registry = Registry::try_from_segments(&segments);
 
         let package_id = PackageId {
@@ -335,8 +379,8 @@ impl fmt::Display for PackageId<WithVersion> {
             f,
             "{registry}{group}/{name}:{version}",
             registry = registry,
-            group = self.group.as_str(),
-            name = self.name.as_str(),
+            group = self.group(),
+            name = self.name,
             version = self.version,
         )
     }
@@ -354,7 +398,7 @@ impl fmt::Display for PackageId<MaybeVersion> {
             f,
             "{registry}{group}/{name}{version}",
             registry = registry,
-            group = self.group.as_str(),
+            group = self.group(),
             name = self.name.as_str(),
             version = version,
         )
@@ -401,6 +445,24 @@ impl<'de> Deserialize<'de> for PackageId<MaybeVersion> {
     }
 }
 
+impl Serialize for PackageId<WithVersion> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl Serialize for PackageId<MaybeVersion> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -439,8 +501,8 @@ mod tests {
     fn test_parse_package_id_default_registry() {
         let package_id: PackageId<WithVersion> = "fluvio.io/fluvio:0.6.0".parse().unwrap();
         assert_eq!(package_id.registry(), &Registry::default());
-        assert_eq!(package_id.group.as_str(), "fluvio.io");
-        assert_eq!(package_id.name.as_str(), "fluvio");
+        assert_eq!(package_id.group().as_str(), "fluvio.io");
+        assert_eq!(package_id.name().as_str(), "fluvio");
         assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
     }
 
@@ -451,9 +513,28 @@ mod tests {
             .parse()
             .unwrap();
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
-        assert_eq!(package_id.group.as_str(), "fluvio.io");
-        assert_eq!(package_id.name.as_str(), "fluvio");
+        assert_eq!(package_id.group().as_str(), "fluvio.io");
+        assert_eq!(package_id.name().as_str(), "fluvio");
         assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
+    }
+
+    #[test]
+    fn test_parse_package_id_default_group() {
+        let package_id: PackageId<WithVersion> = "fluvio-cloud:0.1.4".parse().unwrap();
+        assert_eq!(package_id.registry(), &Registry::default());
+        assert_eq!(package_id.group().as_str(), "fluvio");
+        assert_eq!(package_id.name().as_str(), "fluvio-cloud");
+        assert_eq!(package_id.version(), &Version::parse("0.1.4").unwrap());
+    }
+
+    #[test]
+    fn test_parse_package_id_default_group_maybe_version() {
+        let package_id: PackageId = "fluvio-cloud".parse().unwrap();
+        let package_id: PackageId<MaybeVersion> = package_id;
+        assert_eq!(package_id.registry(), &Registry::default());
+        assert_eq!(package_id.group().as_str(), "fluvio");
+        assert_eq!(package_id.name().as_str(), "fluvio-cloud");
+        assert!(package_id.maybe_version().is_none());
     }
 
     #[test]
@@ -500,5 +581,54 @@ mod tests {
             "fluvio/fluvio",
             format!("{}", package_id_maybe_without_version)
         );
+    }
+
+    #[test]
+    fn test_pretty_no_group() {
+        let package_id: PackageId = "fluvio:1.2.3".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_pretty_group() {
+        let package_id: PackageId = "fluvio/fluvio:1.2.3".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_pretty_maybe_id_no_group() {
+        let package_id: PackageId<MaybeVersion> = "fluvio".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_pretty_maybe_id_group() {
+        let package_id: PackageId<MaybeVersion> = "fluvio/fluvio".parse().unwrap();
+        let pretty = format!("{}", package_id.pretty());
+        assert_eq!(pretty, "fluvio");
+    }
+
+    #[test]
+    fn test_serialize_package_id_unversioned() {
+        let package_id_without_version =
+            PackageId::new_unversioned("fluvio".parse().unwrap(), "fluvio".parse().unwrap());
+
+        let json = serde_json::to_string(&package_id_without_version).unwrap();
+        assert_eq!(json, r#""fluvio/fluvio""#);
+    }
+
+    #[test]
+    fn test_serialize_package_id_versioned() {
+        let package_id_with_version = PackageId::new_versioned(
+            "fluvio".parse().unwrap(),
+            "fluvio".parse().unwrap(),
+            Version::parse("1.2.3").unwrap(),
+        );
+
+        let json = serde_json::to_string(&package_id_with_version).unwrap();
+        assert_eq!(json, r#""fluvio/fluvio:1.2.3""#);
     }
 }

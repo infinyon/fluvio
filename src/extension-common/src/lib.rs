@@ -7,6 +7,7 @@ pub mod tls;
 
 pub use common::*;
 pub use crate::output::Terminal;
+use fluvio_index::{PackageId, MaybeVersion};
 
 pub const COMMAND_TEMPLATE: &str = "{about}
 
@@ -32,11 +33,23 @@ macro_rules! t_print_cli_err {
     };
 }
 
+/// Metadata that plugins may provide to Fluvio at runtime.
+///
+/// This allows `fluvio` to include external plugins in the help
+/// menu, version printouts, and automatic updates.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FluvioExtensionMetadata {
+    /// The title is a human-readable pretty name
     #[serde(alias = "command")]
     pub title: String,
+    /// Identifies the plugin on the package index
+    ///
+    /// Example: `fluvio/fluvio-cloud`
+    #[serde(default)]
+    pub package: Option<PackageId<MaybeVersion>>,
+    /// A brief description of what this plugin does
     pub description: String,
+    /// The version of this plugin
     pub version: semver::Version,
 }
 

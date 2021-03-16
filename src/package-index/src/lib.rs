@@ -93,8 +93,8 @@ impl Package {
         let description = desc.into();
         let repository = repo.into();
         Package {
-            name: id.name.clone(),
-            group: id.group.clone(),
+            name: id.name().clone(),
+            group: id.group().clone(),
             kind: PackageKind::Binary,
             author: Some(author),
             description: Some(description),
