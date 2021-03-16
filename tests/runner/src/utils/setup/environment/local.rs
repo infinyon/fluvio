@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::{TestOption, load_tls};
+use crate::{test_meta::TestOption, tls::load_tls};
 
-use super::EnvironmentDriver;
-use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller};
+use super::TestEnvironmentDriver;
+use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller, StartStatus};
 
 /// Local Env driver where we should SPU locally
 pub struct LocalEnvDriver {
@@ -17,16 +17,17 @@ impl LocalEnvDriver {
 }
 
 #[async_trait]
-impl EnvironmentDriver for LocalEnvDriver {
+impl TestEnvironmentDriver for LocalEnvDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
         let uninstaller = ClusterUninstaller::new().build().unwrap();
         uninstaller.uninstall_local().await.unwrap();
     }
 
-    async fn start_cluster(&self) {
+    async fn start_cluster(&self) -> StartStatus {
         let mut builder = LocalConfig::builder(crate::VERSION);
 
+        // FIXME: Validate that this exists and throw a useful error message
         let fluvio_exe = std::env::current_exe()
             .ok()
             .and_then(|it| it.parent().map(|parent| parent.join("fluvio")));
@@ -51,6 +52,9 @@ impl EnvironmentDriver for LocalEnvDriver {
 
         let config = builder.build().expect("should build LocalConfig");
         let installer = LocalInstaller::from_config(config);
-        installer.install().await.unwrap();
+        installer
+            .install()
+            .await
+            .expect("Failed to install local cluster")
     }
 }
