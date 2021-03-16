@@ -37,9 +37,9 @@ impl HttpAgent {
     }
 
     pub fn request_package<T>(&self, id: &PackageId<T>) -> Result<Request> {
-        let url = self
-            .base_url
-            .join(&format!("packages/{}/{}/meta.json", id.group, id.name))?;
+        let url =
+            self.base_url
+                .join(&format!("packages/{}/{}/meta.json", id.group(), id.name()))?;
         Ok(Request::get(url))
     }
 
@@ -55,8 +55,8 @@ impl HttpAgent {
     ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}",
-            group = &id.group,
-            name = &id.name,
+            group = &id.group(),
+            name = &id.name(),
             version = id.version(),
             target = target.as_str(),
         ))?;
@@ -71,8 +71,8 @@ impl HttpAgent {
     ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}.sha256",
-            group = &id.group,
-            name = &id.name,
+            group = &id.group(),
+            name = &id.name(),
             version = id.version(),
             target = target.as_str(),
         ))?;

@@ -1,48 +1,95 @@
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 use tracing::{debug, instrument};
 
 use semver::Version;
-use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+use fluvio_index::{PackageId, HttpAgent};
 use crate::CliError;
-use crate::install::{fetch_latest_version, fetch_package_file, install_bin, install_println};
+use crate::install::{
+    fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
+};
+use crate::metadata::subcommand_metadata;
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
 #[derive(StructOpt, Debug)]
 pub struct UpdateOpt {
-    /// Used for testing. Specifies alternate package location, e.g. "test/"
-    #[structopt(hidden = true, long)]
-    prefix: Option<String>,
     /// Update to the latest prerelease rather than the latest release
     #[structopt(long)]
     develop: bool,
+
+    /// (Optional) the name of one or more plugins to update
+    plugins: Vec<PackageId>,
 }
 
 impl UpdateOpt {
-    pub async fn process(self) -> Result<String, CliError> {
-        let agent = match &self.prefix {
-            Some(prefix) => HttpAgent::with_prefix(prefix)?,
-            None => HttpAgent::default(),
-        };
-        let output = self.update_self(&agent).await?;
-        Ok(output)
+    pub async fn process(self) -> Result<(), CliError> {
+        let agent = HttpAgent::default();
+        let plugin_meta = subcommand_metadata()?;
+
+        // A list of updates to perform. PackageId of the plugin and Path to install
+        let mut updates: Vec<(PackageId, PathBuf)> = Vec::new();
+
+        if self.plugins.is_empty() {
+            // Collect updates from subcommand metadata
+            let plugin_metas: Vec<_> = plugin_meta
+                .into_iter()
+                .filter(|it| it.meta.package.is_some())
+                .collect();
+
+            for plugin in plugin_metas {
+                let id = plugin.meta.package.unwrap();
+                let path = plugin.path;
+                updates.push((id, path));
+            }
+        } else {
+            // Collect updates from the given plugin IDs
+            let ext_dir = fluvio_extensions_dir()?;
+            for plugin in &self.plugins {
+                let path = ext_dir.join(plugin.name().as_str());
+                updates.push((plugin.clone(), path));
+            }
+        }
+
+        self.update_self(&agent).await?;
+
+        if updates.is_empty() {
+            println!("👍 No plugins to update, all done!");
+            return Ok(());
+        }
+
+        let s = (updates.len() != 1).then(|| "s").unwrap_or("");
+        println!(
+            "🔧 Preparing update for {} plugin{s}:",
+            updates.len(),
+            s = s
+        );
+        for (id, path) in &updates {
+            println!("   - {} ({})", id.name(), path.display());
+        }
+
+        for (id, path) in &updates {
+            self.update_plugin(&agent, id, path).await?;
+        }
+
+        Ok(())
     }
 
-    #[instrument(skip(agent))]
-    async fn update_self(&self, agent: &HttpAgent) -> Result<String, CliError> {
+    #[instrument(skip(self, agent))]
+    async fn update_self(&self, agent: &HttpAgent) -> Result<(), CliError> {
         let target = fluvio_index::package_target()?;
-        let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
+        let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
         debug!(%target, %id, "Fluvio CLI updating self:");
 
         // Find the latest version of this package
-        install_println("🎣 Fetching latest version for fluvio/fluvio...");
+        install_println("🎣 Fetching latest version for fluvio...");
         let latest_version = fetch_latest_version(agent, &id, target, self.develop).await?;
         let id = id.into_versioned(latest_version);
 
         // Download the package file from the package registry
         install_println(format!(
             "⏳ Downloading Fluvio CLI with latest version: {}...",
-            &id
+            &id.version()
         ));
         let package_file = fetch_package_file(agent, &id, target).await?;
         install_println("🔑 Downloaded and verified package file");
@@ -55,7 +102,34 @@ impl UpdateOpt {
             &fluvio_path.display(),
         ));
 
-        Ok("".to_string())
+        Ok(())
+    }
+
+    #[instrument(skip(self, agent))]
+    async fn update_plugin(
+        &self,
+        agent: &HttpAgent,
+        id: &PackageId,
+        path: &Path,
+    ) -> Result<(), CliError> {
+        let target = fluvio_index::package_target()?;
+        debug!(%target, %id, "Fluvio CLI updating plugin:");
+
+        let version = fetch_latest_version(agent, id, target, self.develop).await?;
+
+        println!(
+            "⏳ Downloading plugin {} with version {}",
+            id.pretty(),
+            version
+        );
+        let id = id.clone().into_versioned(version);
+        let package_file = fetch_package_file(agent, &id, target).await?;
+        println!("🔑 Downloaded and verified package file");
+
+        println!("✅ Successfully updated {} at ({})", id, path.display());
+        install_bin(path, &package_file)?;
+
+        Ok(())
     }
 }
 
@@ -84,7 +158,7 @@ pub async fn check_update_available(
     prerelease: bool,
 ) -> Result<Option<Version>, CliError> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
     let request = agent.request_package(&id)?;
@@ -110,7 +184,7 @@ pub async fn check_update_available(
 )]
 pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId<MaybeVersion> = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, target, false).await?;
 

@@ -85,7 +85,7 @@ impl InstallOpt {
 
         // Install the package to the ~/.fluvio/bin/ dir
         let fluvio_dir = fluvio_extensions_dir()?;
-        let package_path = fluvio_dir.join(id.name.as_str());
+        let package_path = fluvio_dir.join(id.name().as_str());
         install_bin(&package_path, &package_file)?;
 
         Ok(())
