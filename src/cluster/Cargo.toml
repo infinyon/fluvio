@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-cluster"
-version = "0.7.1"
+version = "0.7.2"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -22,7 +22,7 @@ cli = [
 
 [dependencies]
 colored = "2.0.0"
-semver = "0.10.0"
+semver = "0.11.0"
 url = "2.1.1"
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
