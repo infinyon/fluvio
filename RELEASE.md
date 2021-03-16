@@ -18,3 +18,5 @@ verify the following:
 - [ ] Rebase master into stable
 - [ ] Kick off release flow with github `release` action.
 - [ ] Announce the release on Discord and twitter
+- [ ] Update `VERSION` file to `alpha-0` for the next release
+- [ ] Add Unreleased section to `CHANGELOG.md`.
