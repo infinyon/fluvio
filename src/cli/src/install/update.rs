@@ -58,7 +58,7 @@ impl UpdateOpt {
             return Ok(());
         }
 
-        let s = (updates.len() != 1).then(|| "s").unwrap_or("");
+        let s = if updates.len() != 1 { "s" } else { "" };
         println!(
             "🔧 Preparing update for {} plugin{s}:",
             updates.len(),

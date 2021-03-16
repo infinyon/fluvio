@@ -960,7 +960,7 @@ impl ClusterInstaller {
     #[instrument(skip(self))]
     async fn wait_for_fluvio_version(&self, config: &FluvioConfig) -> Result<(), K8InstallError> {
         for attempt in 0..*MAX_SC_VERSION_LOOP {
-            let fluvio = match fluvio::Fluvio::connect_with_config(config).await {
+            let fluvio = match Fluvio::connect_with_config(config).await {
                 Ok(fluvio) => fluvio,
                 Err(_) => {
                     sleep(Duration::from_millis(2_000)).await;
