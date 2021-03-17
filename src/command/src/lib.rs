@@ -87,14 +87,14 @@ pub trait CommandExt {
     /// // On success, we get the stdout and stderr output
     /// let output: Output = Command::new("true").result().unwrap();
     ///
-    /// let error = Command::new("ls")
-    ///     .arg("does-not-exist")
+    /// let error = Command::new("bash")
+    ///     .args(&["-c", r#"echo "this command failed with this stderr" 1>&2 && false"#])
     ///     .result()
     ///     .unwrap_err();
     /// if let CommandErrorKind::ExitError(1i32, output) = error.source {
     ///     assert_eq!(
     ///         String::from_utf8_lossy(&output.stderr).to_string(),
-    ///         "ls: does-not-exist: No such file or directory\n",
+    ///         "this command failed with this stderr\n",
     ///     );
     /// } else {
     ///     panic!("should fail with stderr output");
