@@ -1,13 +1,16 @@
 mod error;
-mod start;
 mod config;
-mod core;
-mod services;
-mod controllers;
 
-//#[cfg(test)]
-//mod tests;
+cfg_if::cfg_if! {
+    if #[cfg(unix)] {
+        mod core;
+        mod services;
+        mod start;
+        mod controllers;
+
+        pub use start::main_loop;
+    }
+}
 
 use self::error::InternalServerError;
-pub use start::main_loop;
 pub use config::SpuOpt;
