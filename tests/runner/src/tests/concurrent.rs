@@ -4,7 +4,7 @@ use futures_lite::StreamExt;
 use fluvio_future::task::spawn;
 use md5::Digest;
 use std::sync::mpsc::{Receiver, Sender};
-use fluvio_test_util::test_meta::TestOption;
+use fluvio_test_util::test_meta::TestCase;
 
 const PARTITION: i32 = 0;
 
@@ -14,20 +14,20 @@ use fluvio_integration_derive::fluvio_test;
 use std::sync::Arc;
 
 #[fluvio_test(topic = "test-bug")]
-fn run(client: Arc<Fluvio>, option: TestOption) {
+fn run(client: Arc<Fluvio>, option: TestCase) {
     test_concurrent_consume_produce(client, option.clone()).await
 }
 
-pub async fn test_concurrent_consume_produce(client: Arc<Fluvio>, option: TestOption) {
+pub async fn test_concurrent_consume_produce(client: Arc<Fluvio>, option: TestCase) {
     println!("Testing concurrent consumer and producer");
     let (sender, receiver) = std::sync::mpsc::channel();
     spawn(consumer_stream(client.clone(), option.clone(), receiver));
     producer(client, option, sender).await;
 }
 
-async fn consumer_stream(fluvio: Arc<Fluvio>, option: TestOption, digests: Receiver<String>) {
+async fn consumer_stream(fluvio: Arc<Fluvio>, option: TestCase, digests: Receiver<String>) {
     let consumer = fluvio
-        .partition_consumer(option.topic_name.clone(), PARTITION)
+        .partition_consumer(option.environment.topic_name.clone(), PARTITION)
         .await
         .unwrap();
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
@@ -48,9 +48,9 @@ async fn consumer_stream(fluvio: Arc<Fluvio>, option: TestOption, digests: Recei
     }
 }
 
-async fn producer(fluvio: Arc<Fluvio>, option: TestOption, digests: Sender<String>) {
+async fn producer(fluvio: Arc<Fluvio>, option: TestCase, digests: Sender<String>) {
     let producer = fluvio
-        .topic_producer(option.topic_name.clone())
+        .topic_producer(option.environment.topic_name.clone())
         .await
         .unwrap();
 

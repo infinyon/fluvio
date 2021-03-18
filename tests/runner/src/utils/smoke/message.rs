@@ -1,4 +1,4 @@
-use crate::test_meta::TestOption;
+use crate::smoke::SmokeTestCase;
 
 const VALUE: u8 = 65;
 
@@ -11,14 +11,16 @@ fn generate_pre_fix(topic: &str, offset: i64) -> String {
 /// generate test data based on iteration and option
 ///
 #[allow(clippy::all)]
-pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(option.produce.record_size);
+pub fn generate_message(offset: i64, topic: &str, option: &SmokeTestCase) -> Vec<u8> {
+    let producer_record_size = option.vars.producer_record_size as usize;
+
+    let mut bytes = Vec::with_capacity(producer_record_size);
 
     let mut prefix = generate_pre_fix(topic, offset).as_bytes().to_vec();
     bytes.append(&mut prefix);
 
     // then fill int the dummy test data
-    for _ in 0..option.produce.record_size {
+    for _ in 0..producer_record_size {
         bytes.push(VALUE);
     }
 
@@ -27,12 +29,14 @@ pub fn generate_message(offset: i64, topic: &str, option: &TestOption) -> Vec<u8
 
 /// validate the message for given offset
 #[allow(clippy::needless_range_loop)]
-pub fn validate_message(iter: u16, offset: i64, topic: &str, option: &TestOption, data: &[u8]) {
+pub fn validate_message(iter: u16, offset: i64, topic: &str, option: &SmokeTestCase, data: &[u8]) {
     let prefix_string = generate_pre_fix(topic, offset);
     let prefix = prefix_string.as_bytes().to_vec();
     let prefix_len = prefix.len();
 
-    let message_len = option.produce.record_size + prefix_len;
+    let producer_record_size = option.vars.producer_record_size as usize;
+
+    let message_len = producer_record_size + prefix_len;
     assert_eq!(
         data.len(),
         message_len,
@@ -56,7 +60,7 @@ pub fn validate_message(iter: u16, offset: i64, topic: &str, option: &TestOption
     }
 
     // verify payload
-    for i in 0..option.produce.record_size {
+    for i in 0..producer_record_size {
         assert!(
             data[i + prefix_len] == VALUE,
             "data not equal, offset: {}, topic: {}",

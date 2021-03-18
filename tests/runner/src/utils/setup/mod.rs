@@ -5,17 +5,17 @@ use std::time::Duration;
 
 use fluvio_future::timer::sleep;
 
-use crate::{test_meta::TestOption, tls::load_tls};
+use crate::{test_meta::TestCase, tls::load_tls};
 
 use fluvio::{Fluvio, FluvioConfig, FluvioError};
 
 pub struct TestCluster {
-    option: TestOption,
+    option: TestCase,
     env_driver: Box<dyn TestEnvironmentDriver>,
 }
 
 impl TestCluster {
-    pub fn new(option: TestOption) -> Self {
+    pub fn new(option: TestCase) -> Self {
         use environment::create_driver;
 
         // Can we condense the interface to the environment?
@@ -45,8 +45,8 @@ impl TestCluster {
 
         sleep(Duration::from_millis(2000)).await;
 
-        let fluvio_config = if self.option.tls() {
-            let (client, _server) = load_tls(&self.option.tls_user);
+        let fluvio_config = if self.option.environment.tls {
+            let (client, _server) = load_tls(&self.option.environment.tls_user);
             FluvioConfig::new(cluster_status.address()).with_tls(client)
         } else {
             FluvioConfig::new(cluster_status.address())
