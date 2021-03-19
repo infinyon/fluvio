@@ -14,9 +14,18 @@ on:
         description: 'Whether to update the install.sh script'
         required: false
 
+env:
+  # Prod keys
+  # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # Test keys
+  AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
+
 jobs:
-  upload_fluvio_cli:
-    name: cli
+  publish_fluvio_cli:
+    name: Publish Fluvio CLI
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -47,16 +56,24 @@ jobs:
 
       - name: Build and publish using fluvio-packages
         run: cargo make -l verbose --profile production publish-fluvio
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Update fluvio install.sh
         if: ${{ startsWith(matrix.os, 'ubuntu') && github.event.inputs.update_script != '' }}
         run: cargo make -l verbose --profile production s3-upload-installer
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # Bump the latest version of the Fluvio CLI on the package registry
+  # This must be a distinct job than publish_fluvio_cli because this job requires
+  # that all targets are first published successfully before we can bump the version.
+  bump_fluvio_cli:
+    name: Bump Fluvio CLI version
+    needs: publish_fluvio_cli
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bump release version of Fluvio CLI using fluvio-packages
+        run: |
+          export FLUVIO_VERSION="$(cat VERSION)+$(git rev-parse HEAD)"
+          echo "Using Fluvio version ${FLUVIO_VERSION}"
+          cargo make bump-fluvio
 
 # TODO: Fix the pi build
 #  release_fluvio_pi:
