@@ -20,6 +20,7 @@ pub use http::HttpAgent;
 pub use error::{Error, Result};
 pub use target::{Target, package_target};
 pub use package_id::{PackageId, GroupName, PackageName, Registry, WithVersion, MaybeVersion};
+use semver::Version;
 
 pub const INDEX_HOST: &str = "https://packages.fluvio.io/";
 pub const INDEX_LOCATION: &str = "https://packages.fluvio.io/v1/";
@@ -34,7 +35,7 @@ pub struct IndexMetadata {
     ///
     /// This version number corresponds to the crate version of the
     /// `fluvio-package-index` crate.
-    pub minimum_client_version: semver::Version,
+    pub minimum_client_version: Version,
 }
 
 impl IndexMetadata {
@@ -43,7 +44,7 @@ impl IndexMetadata {
     /// This will return `true` if the `minimum_client_version` of the index is
     /// greater than this version of the `fluvio-package-index` crate.
     pub fn update_required(&self) -> bool {
-        let client_version = semver::Version::parse(INDEX_CLIENT_VERSION).unwrap();
+        let client_version = Version::parse(INDEX_CLIENT_VERSION).unwrap();
         let required_version = &self.minimum_client_version;
         *required_version > client_version
     }
@@ -129,14 +130,12 @@ impl Package {
     }
 
     /// Adds a new release to this package. This will reject a release if a release by the same version exists.
-    ///
-    /// Version equality is based strictly on the numeric components of a semantic
-    /// version. Therefore, if a release with version `0.1.0-alpha` exists, you
-    /// cannot add a release with version `0.1.0-beta`, since there is no way to know
-    /// which of those is more recent.
-    pub fn add_release(&mut self, version: semver::Version, target: Target) -> Result<()> {
+    pub fn add_release(&mut self, version: Version, target: Target) -> Result<()> {
         // See if there are any releases with the given version
-        let maybe_release = self.releases.iter_mut().find(|it| it.version == version);
+        let maybe_release = self
+            .releases
+            .iter_mut()
+            .find(|it| version_exactly_eq(&it.version, &version));
 
         match maybe_release {
             // If a release with this version exists, just add the target to it
@@ -151,6 +150,17 @@ impl Package {
 
         Ok(())
     }
+
+    pub fn releases_for_target(&self, target: Target) -> Vec<&Release> {
+        self.releases
+            .iter()
+            .filter(|it| it.targets.contains(&target))
+            .collect()
+    }
+}
+
+fn version_exactly_eq(a: &Version, b: &Version) -> bool {
+    a.eq(b) && a.build.eq(&b.build)
 }
 
 /// Packages have a `PackageKind`, which describes the contents being distributed.
@@ -169,7 +179,7 @@ pub enum PackageKind {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Release {
     /// The version of the package that this release holds
-    pub version: semver::Version,
+    pub version: Version,
     /// If a release is yanked, no client should ever try to download it.
     /// A yanked package may have its permalink taken down.
     pub yanked: bool,
@@ -178,7 +188,7 @@ pub struct Release {
 }
 
 impl Release {
-    pub fn new(version: semver::Version, target: Target) -> Self {
+    pub fn new(version: Version, target: Target) -> Self {
         Self {
             version,
             yanked: false,
@@ -202,7 +212,6 @@ impl Release {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use semver::Version;
 
     fn test_package() -> Package {
         Package {
