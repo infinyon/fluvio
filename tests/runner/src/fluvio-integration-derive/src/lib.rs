@@ -75,7 +75,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
-
             // Move this into TestRunner
             let mut precheck_pass = true;
             if let Some(min_spu) = test_reqs.min_spu {
@@ -105,16 +104,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     test_case.environment.set_timeout(timeout)
                 }
 
-                // Move this into TestRunner
-                // Don't create topic if we did not start a new cluster
-                if test_case.environment.skip_cluster_start() {
-                    println!("Skipping topic create");
-                } else {
-                    // Create topic before starting test
-                    FluvioTest::create_topic(test_case.environment.clone())
-                        .await
-                        .expect("Unable to create default topic");
-                }
+                // Create topic before starting test
+                FluvioTest::create_topic(client.clone(), &test_case.environment)
+                    .await
+                    .expect("Unable to create default topic");
 
                 // start a timeout timer
                 let mut timer = sleep(Duration::from_secs(test_case.environment.timeout().into()));
