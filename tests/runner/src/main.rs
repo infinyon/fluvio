@@ -3,36 +3,46 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{TestCase, CliArgs, TestCli};
+use fluvio_test_util::test_meta::{CliArgs, EnvDetail, EnvironmentSetup, TestCase, TestCli, TestOption};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 
-const TESTS: &[&str] = &["smoke","concurrent","many_producers"];
+const TESTS: &[&str] = &["smoke", "concurrent", "many_producers"];
+
 fn main() {
     run_block_on(async {
-        //let option: TestCase = CliArgs::from_args().into();
         let option = CliArgs::from_args();
-        println!("{:?}", option);
-
-        // Verify if we have a test by name or print help
+        //println!("{:?}", option);
 
         let test_name;
-        let test_opts;
 
-        if let TestCli::CliCmd(cmd) = option.test_cmd {
+        // We want to get a TestOption compatible struct back
+        let test_opt: Box<dyn TestOption> = if let TestCli::CliCmd(cmd) = option.test_cmd {
+            test_name = cmd[0].clone();
             if TESTS.iter().any(|t| &cmd[0].as_str() == t) {
-                println!("Command is: {:?}", cmd[0]);
-                println!("options are: {:?}", &cmd[1..]);
-
-                test_name = cmd[0].clone();
-                test_opts = cmd[1..].to_vec();
+                // here we'll match on the command name
+                match cmd[0].as_str() {
+                    "smoke" => Box::new(fluvio_test_util::smoke::SmokeTestOption::from_iter(cmd)),
+                    "concurrent" => {
+                        Box::new(fluvio_test_util::concurrent::ConcurrentTestOption::from_iter(cmd))
+                    }
+                    //"many_producers" => {}
+                    _ => unreachable!("This shouldn't be reachable"),
+                }
             } else {
                 //CliArgs::clap().print_help().expect("print help");
                 eprintln!("Tests: {:?}", TESTS);
                 println!();
-                return
+                return;
             }
-        }
+        } else {
+            unreachable!("This shouldn't be reachable")
+        };
+
+        //println!("{:?}", test_opt);
+
+        // Create a TestCase object with option.envronment and test_opt
+        let test_case = TestCase::new(option.environment.clone(), test_opt);
 
         // catch panic in the spawn
         std::panic::set_hook(Box::new(|panic_info| {
@@ -43,25 +53,25 @@ fn main() {
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
 
-        //// Deploy a cluster
-        //let fluvio_client = cluster_setup(&option).await;
+        // Deploy a cluster
+        let fluvio_client = cluster_setup(&option.environment).await;
 
-        //// TODO: Build this with Test Runner
-        //match option.name.as_str() {
-        //    "smoke" => flv_test::tests::smoke::run(fluvio_client, option.clone()).await,
-        //    "concurrent" => flv_test::tests::concurrent::run(fluvio_client, option.clone()).await,
-        //    "many_producers" => {
-        //        flv_test::tests::many_producers::run(fluvio_client, option.clone()).await
-        //    }
-        //    _ => panic!("Test not found"),
-        //};
+        // TODO: Build this with Test Runner
+        match test_name.as_str() {
+            "smoke" => flv_test::tests::smoke::run(fluvio_client, test_case).await,
+            "concurrent" => flv_test::tests::concurrent::run(fluvio_client, test_case).await,
+            //"many_producers" => {
+            //    flv_test::tests::many_producers::run(fluvio_client, option.clone()).await
+            //}
+            _ => panic!("Test not found"),
+        };
 
-        //// Cluster cleanup
-        //cluster_cleanup(option).await;
+        // Cluster cleanup
+        cluster_cleanup(option.environment).await;
     });
 }
 
-async fn cluster_cleanup(option: TestCase) {
+async fn cluster_cleanup(option: EnvironmentSetup) {
     if option.skip_cluster_delete() {
         println!("skipping cluster delete");
     } else {
@@ -70,7 +80,7 @@ async fn cluster_cleanup(option: TestCase) {
     }
 }
 
-async fn cluster_setup(option: &TestCase) -> Arc<Fluvio> {
+async fn cluster_setup(option: &EnvironmentSetup) -> Arc<Fluvio> {
     let fluvio_client = if option.skip_cluster_start() {
         println!("skipping cluster start");
         // Connect to cluster in profile
@@ -104,63 +114,77 @@ mod tests {
     // set # spu
 
     use structopt::StructOpt;
-    use fluvio_test_util::test_meta::{CliArgs, TestCase};
-    use std::collections::HashMap;
+    use fluvio_test_util::test_meta::{CliArgs, TestCli};
+    use fluvio_test_util::smoke::SmokeTestOption;
 
     #[test]
     fn valid_test_name() {
         let args = CliArgs::from_iter(vec!["flv-test", "smoke"]);
-        assert_eq!(args.test_name, String::from("smoke"));
+
+        if let TestCli::CliCmd(cmd) = args.test_cmd {
+            assert_eq!(cmd[0], String::from("smoke"));
+        } else {
+            panic!("test command not found")
+        }
     }
 
     // TODO: Add a test selector, so we can make this test more robust
     #[test]
     fn invalid_test_name() {
         let args = CliArgs::from_iter(vec!["flv-test", "testdoesnotexist"]);
-        assert_eq!(args.test_name, String::from("testdoesnotexist"));
+
+        if let TestCli::CliCmd(cmd) = args.test_cmd {
+            assert_eq!(cmd[0], String::from("testdoesnotexist"));
+        } else {
+            panic!("test command not found")
+        }
     }
 
     #[test]
     fn extra_vars() {
         let args = CliArgs::from_iter(vec![
             "flv-test",
+            "--",
             "smoke",
-            "--var",
-            "producer.iteration=9000",
-            "--var",
-            "producer.record_size=1000",
+            "--producer-iteration",
+            "9000",
+            "--producer-record-size",
+            "1000",
         ]);
-        let test_case: TestCase = args.into();
 
-        let mut expected_hashmap = HashMap::new();
-        expected_hashmap.insert("producer.iteration".to_string(), "9000".to_string());
-        expected_hashmap.insert("producer.record_size".to_string(), "1000".to_string());
+        if let TestCli::CliCmd(cmd) = args.test_cmd {
+            let smoke_test_case = SmokeTestOption::from_iter(cmd);
 
-        assert_eq!(test_case.vars, expected_hashmap);
+            let expected = SmokeTestOption {
+                producer_iteration: 9000,
+                producer_record_size: 1000,
+                ..Default::default()
+            };
+
+            assert_eq!(smoke_test_case, expected);
+        } else {
+            panic!("test command not found")
+        }
     }
 
     #[test]
     fn topic() {
         let args = CliArgs::from_iter(vec![
             "flv-test",
-            "smoke",
             "--topic-name",
             "not_the_default_topic_name",
+            "--",
+            "smoke",
         ]);
-        let test_case: TestCase = args.into();
 
-        assert_eq!(
-            test_case.environment.topic_name,
-            "not_the_default_topic_name"
-        );
+        assert_eq!(args.environment.topic_name, "not_the_default_topic_name");
     }
 
     #[test]
     fn spu() {
-        let args = CliArgs::from_iter(vec!["flv-test", "smoke", "--spu", "5"]);
-        let test_case: TestCase = args.into();
+        let args = CliArgs::from_iter(vec!["flv-test", "--spu", "5", "--", "smoke"]);
 
-        assert_eq!(test_case.environment.spu, 5);
+        assert_eq!(args.environment.spu, 5);
     }
 
     //// We validate that the behavior of cluster_setup and cluster_cleanup work as expected

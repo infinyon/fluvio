@@ -59,15 +59,10 @@ Test runner can be a running in two ways:
 ---
 ## Smoke test
 
-The smoke test can be configured by passing the overriding the following test variables:
+The smoke test can be configured with it's own CLI options:
 
-(No spaces between key, the `=`, and value)
+`flv-test [environment vars] -- smoke [smoke test vars]`
 
-(e.g. `-v key1=val1 -v key2=val2`)
-* `use_cli` (default false)
-* `producer.iteration` (default 1)
-* `producer.record_size` (default 100)
-* `consumer.wait` (default false)
 
 ---
 
@@ -76,7 +71,7 @@ This run a simple smoke test by creating new local cluster.
 It creates a simple topic: `topic` and perform produce/consume 
 
 ```
-$ flv-test smoke --local
+$ flv-test --local -- smoke
 
 Start running fluvio test runner
 deleting cluster
@@ -102,7 +97,7 @@ Smoke test can be specified with more than 1 iterations:
 Run a test with sending 10 records:
 
 ```
-$ flv-test smoke --local --var producer.iteration=10
+$ flv-test --local -- smoke --producer-iteration 10
 ```
 
 ### Run test without re-installing
@@ -110,8 +105,8 @@ $ flv-test smoke --local --var producer.iteration=10
 After initial test using `--keep-cluster`, more iteration can be tested without re-installing cluster using `--disable-install`
 
 ```
-$ flv-test smoke --local --var producer.iteration=10 --keep-cluster
-$ flv-test smoke --disable-install --var producer.iteration=200
+$ flv-test --local --keep-cluster -- smoke --producer-iteration 10
+$ flv-test --disable-install -- smoke --producer-iteration 200
 ```
 
 ### No streaming
@@ -119,50 +114,37 @@ $ flv-test smoke --disable-install --var producer.iteration=200
 By default, produce and consumer run in parallel, but you can force consumer to wait for all producer iteration
 
 ```
-$ flv-test smoke --var producer-iteration=400 --var consumer.wait
+$ flv-test -- smoke --producer-iteration=400 --consumer-wait
 ```
 
-## Writing new tests
+## Anatomy of a new test
+
+There are 3 parts to writing new tests.
+1. Implementing `TestOptions` for test specific CLI arguments
+    - Naming convention (in pascal case): <testname>TestOption
+2. Implmenenting `From<TestCase>` for your test case struct to downcast to.
+    - Naming convention (in pascal case): <testname>TestCase
+3. Creating a new test in the `tests` module + annotating with `#[fluvio_test]`
+
+### Passing vars from the CLI to your test
+(See `utils/smoke/mod.rs` or `utils/concurrent/mod.rs` for example boilerplate code)
+
+### Test stub of a new test
 
 Create new tests in the `tests` module of the `flv-test` crate. 
 
 Here's a stub to modify:
 ```rust
+use std::sync::Arc;
+use fluvio::Fluvio;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::TestCase;
-use fluvio::Fluvio;
-use std::sync::Arc;
 
 #[fluvio_test()]
-pub async fn run(client: Arc<Fluvio>, option: TestCase) {
+pub async fn run(client: Arc<Fluvio>, mut option: TestCase) {
     println!("Test stub");
 }
 ```
-
-### Passing vars from the CLI to your test
-
-Custom test vars can be passed in through the CLI using the `--var` or `-v` flags.
-
-You can set multiple variables by passing many `--var`s (e.g. `--var key1=val1 --var key2=val2`)
-
-At the time of this writing, the values are not validated or type checked by the test runner. The test is responsible for checking if these values have been passed in and type checked or whether to fall back to a default value.
-
-example from smoke test:
-Check if `producer.iteration` is set, or fall back to value `&"1".to_string()` 
-
-```rust
-#[fluvio_test()]
-pub async fn run(client: Arc<Fluvio>, option: TestCase) {
-    println!(
-        "producer.iteration: {}",
-        option
-            .vars
-            .get("producer.iteration")
-            .unwrap_or(&"1".to_string())
-    );
-}
-```
-
 ### Using the fluvio test macro
 The `#[fluvio_test]` macro will expand your test to create a topic and check if the `TestCase` meets your test requirements.
 

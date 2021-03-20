@@ -1,11 +1,29 @@
-use std::error::Error;
-use std::collections::HashMap;
+use std::fmt::Debug;
 
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
 use serde::{Serialize, Deserialize};
 use syn::{AttributeArgs, Error as SynError, Lit, Meta, NestedMeta, Path, Result};
 use syn::spanned::Spanned;
+use std::any::Any;
+
+pub trait TestOption {
+    fn as_any(&self) -> &dyn Any;
+}
+
+pub struct TestCase {
+    pub environment: EnvironmentSetup,
+    pub option: Box<dyn TestOption>,
+}
+
+impl TestCase {
+    pub fn new(environment: EnvironmentSetup, option: Box<dyn TestOption>) -> Self {
+        Self {
+            environment,
+            option,
+        }
+    }
+}
 
 #[derive(Debug, Clone, StructOpt, PartialEq)]
 pub enum TestCli {
@@ -30,42 +48,88 @@ pub struct CliArgs {
 
     #[structopt(subcommand)]
     pub test_cmd: TestCli,
-    //#[structopt(flatten)]
-    //pub test_vars: RawTestVars,
 }
 
-#[derive(Debug, Clone)]
-pub struct TestCase {
-    pub environment: EnvironmentSetup,
-    pub name: String,
-    //pub vars: HashMap<String, String>,
+pub trait EnvDetail: Debug + Clone {
+    fn set_topic_name(&mut self, topic: String);
+    fn topic_name(&self) -> String;
+    fn replication(&self) -> u16;
+    fn client_log(&self) -> Option<String>;
+    fn spu(&self) -> u16;
+    fn skip_cluster_start(&self) -> bool;
+    fn remove_cluster_before(&self) -> bool;
+    fn skip_cluster_delete(&self) -> bool;
+    fn develop_mode(&self) -> bool;
+    fn skip_checks(&self) -> bool;
+    fn tls_user(&self) -> String;
+    fn authorization_config_map(&self) -> Option<String>;
+    fn server_log(&self) -> Option<String>;
+    fn log_dir(&self) -> Option<String>;
 }
 
-// Structopt doesn't support parsing into collections, so we'll do this in 2 steps
-//#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-//pub struct RawTestVars {
-//    #[structopt(short="v", long="var", parse(try_from_str = parse_key_val), number_of_values = 1)]
-//    pub test_var: Vec<(String, String)>,
-//}
+impl EnvDetail for EnvironmentSetup {
+    fn set_topic_name(&mut self, topic: String) {
+        self.topic_name = topic;
+    }
 
-//impl RawTestVars {
-//    pub fn into_hashmap(self) -> HashMap<String, String> {
-//        self.test_var.into_iter().collect()
-//    }
-//}
+    fn topic_name(&self) -> String {
+        self.topic_name.clone()
+    }
 
-//impl From<CliArgs> for TestCase {
-//    fn from(args: CliArgs) -> Self {
-//
-//
-//
-//        TestCase {
-//            environment: args.environment,
-//            name: args.test_name,
-//            vars: args.test_vars.into_hashmap(),
-//        }
-//    }
-//}
+    fn replication(&self) -> u16 {
+        self.replication
+    }
+
+    fn client_log(&self) -> Option<String> {
+        self.client_log.clone()
+    }
+
+    fn spu(&self) -> u16 {
+        self.spu
+    }
+
+    // don't attempt to clean up and start new test cluster
+    // don't create a topic
+    fn skip_cluster_start(&self) -> bool {
+        self.disable_install
+    }
+
+    /// before we start test run, remove cluster
+    // don't create a topic
+    fn remove_cluster_before(&self) -> bool {
+        !self.disable_install
+    }
+
+    // don't attempt to delete test cluster
+    fn skip_cluster_delete(&self) -> bool {
+        self.keep_cluster
+    }
+
+    // For k8 cluster. Use development helm chart
+    fn develop_mode(&self) -> bool {
+        self.develop
+    }
+
+    fn skip_checks(&self) -> bool {
+        self.skip_checks
+    }
+
+    fn tls_user(&self) -> String {
+        self.tls_user.clone()
+    }
+
+    fn authorization_config_map(&self) -> Option<String> {
+        self.authorization_config_map.clone()
+    }
+
+    fn server_log(&self) -> Option<String> {
+        self.server_log.clone()
+    }
+
+    fn log_dir(&self) -> Option<String> {
+        self.log_dir.clone()
+    }
+}
 
 /// cli options
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
@@ -127,51 +191,6 @@ pub struct EnvironmentSetup {
     #[structopt(long)]
     pub skip_checks: bool,
 }
-
-///// Parse a single "key=value" pair from structopt
-//#[allow(clippy::unnecessary_wraps)]
-//fn parse_key_val<T, U>(s: &str) -> Result<(T, U)>
-//where
-//    T: std::str::FromStr,
-//    T::Err: Error + 'static,
-//    U: std::str::FromStr,
-//    U::Err: Error + 'static,
-//{
-//    let pos = s
-//        .find('=')
-//        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))
-//        .expect("");
-//    Ok((s[..pos].parse().expect(""), s[pos + 1..].parse().expect("")))
-//}
-
-impl TestCase {
-    /// before we start test run, remove cluster
-    // don't create a topic
-    pub fn remove_cluster_before(&self) -> bool {
-        !self.environment.disable_install
-    }
-
-    // don't attempt to clean up and start new test cluster
-    // don't create a topic
-    pub fn skip_cluster_start(&self) -> bool {
-        self.environment.disable_install
-    }
-
-    // don't attempt to delete test cluster
-    pub fn skip_cluster_delete(&self) -> bool {
-        self.environment.keep_cluster
-    }
-
-    // For k8 cluster. Use development helm chart
-    pub fn develop_mode(&self) -> bool {
-        self.environment.develop
-    }
-
-    pub fn topic_name(&self) -> String {
-        self.environment.topic_name.clone()
-    }
-}
-
 // TODO: Add timeout, cluster-type?
 #[derive(Debug)]
 pub enum TestRequirementAttribute {

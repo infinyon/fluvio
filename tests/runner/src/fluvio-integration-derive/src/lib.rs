@@ -51,31 +51,31 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let output_fn = quote! {
 
-        pub async fn #out_fn_iden(client: Arc<Fluvio>, option: TestCase) {
+        pub async fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) {
             use fluvio::Fluvio;
-            use fluvio_test_util::test_meta::{TestRequirements, TestCase};
+            use fluvio_test_util::test_meta::{TestRequirements, TestCase, EnvDetail};
             use fluvio_test_util::test_runner;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
             if let Some(min_spu) = test_reqs.min_spu {
-                if min_spu > option.environment.spu {
+                if min_spu > test_case.environment.spu() {
                     println!("Test requires {} spu", min_spu);
                     println!("Test skipped...");
                 }
             } else {
-                let mut option = option.clone();
+                //let mut option = option.clone();
                 if let Some(topic) = test_reqs.topic {
-                    option.environment.topic_name = topic;
+                    test_case.environment.set_topic_name(topic);
                 }
 
             // Don't create topic if we did not start a new cluster
-            if option.skip_cluster_start() {
+            if test_case.environment.skip_cluster_start() {
                 println!("Skipping topic create");
             } else {
                 // Create topic before starting test
-                test_runner::create_topic(&option)
+                test_runner::create_topic(test_case.environment.clone())
                     .await
                     .expect("Unable to create default topic");
             }

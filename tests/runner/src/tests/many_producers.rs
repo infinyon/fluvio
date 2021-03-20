@@ -18,7 +18,7 @@ use fluvio_test_util::test_meta::TestCase;
 use fluvio::Fluvio;
 use std::sync::Arc;
 
-#[fluvio_test()]
+//#[fluvio_test()]
 pub async fn run(_client: Arc<Fluvio>, _opt: TestCase) {
     println!("I'm the many producers test");
 }

@@ -10,22 +10,22 @@ use std::sync::Arc;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(client: Arc<Fluvio>, option: &SmokeTestCase) -> Offsets {
+pub async fn produce_message(client: Arc<Fluvio>, test_case: &SmokeTestCase) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
-    let offsets = offsets::find_offsets(&option).await;
+    let offsets = offsets::find_offsets(&test_case).await;
 
-    let use_cli = option.vars.use_cli;
-    let consumer_wait = option.vars.consumer_wait;
+    let use_cli = test_case.option.use_cli;
+    let consumer_wait = test_case.option.consumer_wait;
 
     if use_cli {
-        cli::produce_message_with_cli(option, offsets.clone()).await;
+        cli::produce_message_with_cli(test_case, offsets.clone()).await;
     } else if consumer_wait {
-        produce_message_with_api(client, offsets.clone(), option.clone()).await;
+        produce_message_with_api(client, offsets.clone(), test_case.clone()).await;
     } else {
         spawn(produce_message_with_api(
             client,
             offsets.clone(),
-            option.clone(),
+            test_case.clone(),
         ));
     }
 
@@ -43,10 +43,10 @@ mod offsets {
 
     use super::SmokeTestCase;
 
-    pub async fn find_offsets(option: &SmokeTestCase) -> HashMap<String, i64> {
-        let replication = option.environment.replication;
+    pub async fn find_offsets(test_case: &SmokeTestCase) -> HashMap<String, i64> {
+        let replication = test_case.environment.replication;
 
-        let _consumer_wait = option.vars.consumer_wait;
+        let _consumer_wait = test_case.option.consumer_wait;
 
         let mut offsets = HashMap::new();
 
@@ -54,7 +54,7 @@ mod offsets {
         let mut admin = client.admin().await;
 
         for _i in 0..replication {
-            let topic_name = option.environment.topic_name.clone();
+            let topic_name = test_case.environment.topic_name.clone();
             // find last offset
             let offset = last_leo(&mut admin, &topic_name).await;
             println!("found topic: {} offset: {}", topic_name, offset);
@@ -111,24 +111,24 @@ async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
 pub async fn produce_message_with_api(
     client: Arc<Fluvio>,
     offsets: Offsets,
-    option: SmokeTestCase,
+    test_case: SmokeTestCase,
 ) {
     use std::time::Duration;
     use fluvio_future::timer::sleep;
 
-    let replication = option.environment.replication;
+    let replication = test_case.environment.replication;
 
-    let produce_iteration = option.vars.producer_iteration;
+    let produce_iteration = test_case.option.producer_iteration;
 
     for r in 0..replication {
-        let topic_name = option.environment.topic_name.clone();
+        let topic_name = test_case.environment.topic_name.clone();
 
         let base_offset = *offsets.get(&topic_name).expect("offsets");
         let producer = get_producer(&client, &topic_name).await;
 
         for i in 0..produce_iteration {
             let offset = base_offset + i as i64;
-            let message = generate_message(offset, &topic_name, &option);
+            let message = generate_message(offset, &test_case);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
             producer.send_record(message, 0).await.unwrap_or_else(|_| {
@@ -153,37 +153,28 @@ mod cli {
     use fluvio_future::timer::sleep;
     use std::time::Duration;
 
-    pub async fn produce_message_with_cli(option: &SmokeTestCase, offsets: Offsets) {
+    pub async fn produce_message_with_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         println!("starting produce");
 
-        let producer_iteration = option.vars.producer_iteration;
+        let producer_iteration = test_case.option.producer_iteration;
 
         for i in 0..producer_iteration {
-            produce_message_replication(i, &offsets, option);
+            produce_message_replication(i, &offsets, test_case);
             sleep(Duration::from_millis(10)).await
         }
     }
 
-    fn produce_message_replication(iteration: u16, offsets: &Offsets, option: &SmokeTestCase) {
-        let replication = option.environment.replication;
+    fn produce_message_replication(iteration: u16, offsets: &Offsets, test_case: &SmokeTestCase) {
+        let replication = test_case.environment.replication;
 
         for _i in 0..replication {
-            produce_message_inner(
-                iteration,
-                &option.environment.topic_name.clone(),
-                offsets,
-                option,
-            );
+            produce_message_inner(iteration, offsets, test_case);
         }
     }
 
-    fn produce_message_inner(
-        _iteration: u16,
-        topic_name: &str,
-        offsets: &Offsets,
-        option: &SmokeTestCase,
-    ) {
+    fn produce_message_inner(_iteration: u16, offsets: &Offsets, test_case: &SmokeTestCase) {
         use std::io;
+        let topic_name = test_case.environment.topic_name.as_str();
 
         let base_offset = *offsets.get(topic_name).expect("offsets");
 
@@ -193,7 +184,7 @@ mod cli {
         );
 
         let mut child = get_fluvio().expect("no fluvio");
-        if let Some(log) = &option.environment.client_log {
+        if let Some(log) = &test_case.environment.client_log {
             child.env("RUST_LOG", log);
         }
         child.stdin(Stdio::piped()).arg("produce").arg(topic_name);
@@ -201,7 +192,7 @@ mod cli {
         let mut child = child.spawn().expect("no child");
 
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        let msg = generate_message(base_offset, topic_name, option);
+        let msg = generate_message(base_offset, test_case);
         stdin
             .write_all(msg.as_slice())
             .expect("Failed to write to stdin");

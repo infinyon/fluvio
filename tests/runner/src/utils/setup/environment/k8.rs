@@ -1,15 +1,16 @@
 use async_trait::async_trait;
 
-use crate::{test_meta::TestCase, tls::load_tls};
+use crate::tls::load_tls;
+use crate::test_meta::{EnvironmentSetup, EnvDetail};
 use super::TestEnvironmentDriver;
 use fluvio_cluster::{ClusterConfig, ClusterInstaller, ClusterUninstaller, StartStatus};
 
 pub struct K8EnvironmentDriver {
-    option: TestCase,
+    option: EnvironmentSetup,
 }
 
 impl K8EnvironmentDriver {
-    pub fn new(option: TestCase) -> Self {
+    pub fn new(option: EnvironmentSetup) -> Self {
         Self { option }
     }
 }
@@ -28,20 +29,20 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
             builder.development().expect("should test in develop mode");
         }
         builder
-            .spu_replicas(self.option.environment.spu)
-            .skip_checks(self.option.environment.skip_checks)
+            .spu_replicas(self.option.spu())
+            .skip_checks(self.option.skip_checks())
             .save_profile(true);
 
-        if self.option.environment.tls {
-            let (client, server) = load_tls(&self.option.environment.tls_user);
+        if self.option.tls {
+            let (client, server) = load_tls(&self.option.tls_user());
             builder.tls(client, server);
         }
 
-        if let Some(authorization_config_map) = &self.option.environment.authorization_config_map {
+        if let Some(authorization_config_map) = &self.option.authorization_config_map() {
             builder.authorization_config_map(authorization_config_map);
         }
 
-        if let Some(log) = &self.option.environment.server_log {
+        if let Some(log) = &self.option.server_log {
             builder.rust_log(log);
         }
 

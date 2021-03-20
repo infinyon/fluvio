@@ -26,23 +26,23 @@ fn consume_wait_timeout() -> u64 {
 /// verify consumers
 pub async fn validate_consume_message(
     client: Arc<Fluvio>,
-    option: &SmokeTestCase,
+    test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
-    let use_cli = option.vars.use_cli;
+    let use_cli = test_case.option.use_cli;
 
     if use_cli {
-        validate_consume_message_cli(option, offsets);
+        validate_consume_message_cli(test_case, offsets);
     } else {
-        validate_consume_message_api(client, offsets, option).await;
+        validate_consume_message_api(client, offsets, test_case).await;
     }
 }
 
-fn validate_consume_message_cli(option: &SmokeTestCase, offsets: Offsets) {
-    let replication = option.environment.replication;
+fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
+    let replication = test_case.environment.replication;
 
     for i in 0..replication {
-        let topic_name = option.environment.topic_name.clone();
+        let topic_name = test_case.environment.topic_name.clone();
         let offset = offsets.get(&topic_name).expect("topic offset");
         let mut command = get_fluvio().expect("fluvio not found");
         command
@@ -59,7 +59,7 @@ fn validate_consume_message_cli(option: &SmokeTestCase, offsets: Offsets) {
         io::stderr().write_all(&output.stderr).unwrap();
 
         let msg = output.stdout.as_slice();
-        validate_message(i, *offset, &topic_name, option, &msg[0..msg.len() - 1]);
+        validate_message(i, *offset, test_case, &msg[0..msg.len() - 1]);
 
         println!("topic: {}, consume message validated!", topic_name);
     }
@@ -86,17 +86,17 @@ async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
 async fn validate_consume_message_api(
     client: Arc<Fluvio>,
     offsets: Offsets,
-    option: &SmokeTestCase,
+    test_case: &SmokeTestCase,
 ) {
     use tokio::select;
     use fluvio_future::timer::sleep;
 
-    let replication = option.environment.replication;
+    let replication = test_case.environment.replication;
 
-    let producer_iteration = option.vars.producer_iteration;
+    let producer_iteration = test_case.option.producer_iteration;
 
     for i in 0..replication {
-        let topic_name = option.environment.topic_name.clone();
+        let topic_name = test_case.environment.topic_name.clone();
         let base_offset = offsets.get(&topic_name).expect("offsets");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
@@ -142,7 +142,7 @@ async fn validate_consume_message_api(
                             offset,
                             bytes.len()
                         );
-                        validate_message(producer_iteration, offset, &topic_name, option, &bytes);
+                        validate_message(producer_iteration, offset, test_case, &bytes);
                         info!(
                             " total records: {}, validated offset: {}",
                             total_records, offset

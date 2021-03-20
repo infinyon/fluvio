@@ -5,6 +5,7 @@ use fluvio_future::task::spawn;
 use md5::Digest;
 use std::sync::mpsc::{Receiver, Sender};
 use fluvio_test_util::test_meta::TestCase;
+use fluvio_test_util::concurrent::ConcurrentTestCase;
 
 const PARTITION: i32 = 0;
 
@@ -14,18 +15,22 @@ use fluvio_integration_derive::fluvio_test;
 use std::sync::Arc;
 
 #[fluvio_test(topic = "test-bug")]
-fn run(client: Arc<Fluvio>, option: TestCase) {
-    test_concurrent_consume_produce(client, option.clone()).await
+fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
+    test_concurrent_consume_produce(client, test_case.into()).await
 }
 
-pub async fn test_concurrent_consume_produce(client: Arc<Fluvio>, option: TestCase) {
+pub async fn test_concurrent_consume_produce(client: Arc<Fluvio>, option: ConcurrentTestCase) {
     println!("Testing concurrent consumer and producer");
     let (sender, receiver) = std::sync::mpsc::channel();
     spawn(consumer_stream(client.clone(), option.clone(), receiver));
     producer(client, option, sender).await;
 }
 
-async fn consumer_stream(fluvio: Arc<Fluvio>, option: TestCase, digests: Receiver<String>) {
+async fn consumer_stream(
+    fluvio: Arc<Fluvio>,
+    option: ConcurrentTestCase,
+    digests: Receiver<String>,
+) {
     let consumer = fluvio
         .partition_consumer(option.environment.topic_name.clone(), PARTITION)
         .await
@@ -48,7 +53,7 @@ async fn consumer_stream(fluvio: Arc<Fluvio>, option: TestCase, digests: Receive
     }
 }
 
-async fn producer(fluvio: Arc<Fluvio>, option: TestCase, digests: Sender<String>) {
+async fn producer(fluvio: Arc<Fluvio>, option: ConcurrentTestCase, digests: Sender<String>) {
     let producer = fluvio
         .topic_producer(option.environment.topic_name.clone())
         .await
