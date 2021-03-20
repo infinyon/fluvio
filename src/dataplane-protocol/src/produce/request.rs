@@ -13,7 +13,6 @@ use crate::derive::Decode;
 use crate::derive::FluvioDefault;
 
 use crate::api::Request;
-use crate::record::FileRecordSet;
 use crate::record::RecordSet;
 use crate::store::FileWrite;
 use crate::store::StoreValue;
@@ -23,9 +22,8 @@ use super::ProduceResponse;
 pub type DefaultProduceRequest = ProduceRequest<RecordSet>;
 pub type DefaultPartitionRequest = PartitionProduceData<RecordSet>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet>;
-pub type FileProduceRequest = ProduceRequest<FileRecordSet>;
-pub type FileTopicRequest = TopicProduceData<FileRecordSet>;
-pub type FilePartitionRequest = PartitionProduceData<FileRecordSet>;
+
+
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct ProduceRequest<R>
@@ -62,50 +60,6 @@ where
     type Response = ProduceResponse;
 }
 
-impl FileWrite for FileProduceRequest {
-    fn file_encode(
-        &self,
-        src: &mut BytesMut,
-        data: &mut Vec<StoreValue>,
-        version: Version,
-    ) -> Result<(), IoError> {
-        trace!("file encoding produce request");
-        self.transactional_id.encode(src, version)?;
-        self.acks.encode(src, version)?;
-        self.timeout_ms.encode(src, version)?;
-        self.topics.file_encode(src, data, version)?;
-        Ok(())
-    }
-}
-
-impl FileWrite for FileTopicRequest {
-    fn file_encode(
-        &self,
-        src: &mut BytesMut,
-        data: &mut Vec<StoreValue>,
-        version: Version,
-    ) -> Result<(), IoError> {
-        trace!("file encoding produce topic request");
-        self.name.encode(src, version)?;
-        self.partitions.file_encode(src, data, version)?;
-        Ok(())
-    }
-}
-
-impl FileWrite for FilePartitionRequest {
-    fn file_encode(
-        &self,
-        src: &mut BytesMut,
-        data: &mut Vec<StoreValue>,
-        version: Version,
-    ) -> Result<(), IoError> {
-        trace!("file encoding for partition request");
-        self.partition_index.encode(src, version)?;
-        self.records.file_encode(src, data, version)?;
-        Ok(())
-    }
-}
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct TopicProduceData<R>
 where
@@ -129,4 +83,64 @@ where
 
     /// The record data to be produced.
     pub records: R,
+}
+
+
+#[cfg(feature = "file")]
+pub use file::*;
+
+#[cfg(feature = "file")]
+mod file {
+
+    use crate::record::FileRecordSet;
+
+    use super::*;
+
+    pub type FileProduceRequest = ProduceRequest<FileRecordSet>;
+    pub type FileTopicRequest = TopicProduceData<FileRecordSet>;
+    pub type FilePartitionRequest = PartitionProduceData<FileRecordSet>;
+
+    impl FileWrite for FileProduceRequest {
+        fn file_encode(
+            &self,
+            src: &mut BytesMut,
+            data: &mut Vec<StoreValue>,
+            version: Version,
+        ) -> Result<(), IoError> {
+            trace!("file encoding produce request");
+            self.transactional_id.encode(src, version)?;
+            self.acks.encode(src, version)?;
+            self.timeout_ms.encode(src, version)?;
+            self.topics.file_encode(src, data, version)?;
+            Ok(())
+        }
+    }
+
+    impl FileWrite for FileTopicRequest {
+        fn file_encode(
+            &self,
+            src: &mut BytesMut,
+            data: &mut Vec<StoreValue>,
+            version: Version,
+        ) -> Result<(), IoError> {
+            trace!("file encoding produce topic request");
+            self.name.encode(src, version)?;
+            self.partitions.file_encode(src, data, version)?;
+            Ok(())
+        }
+    }
+
+    impl FileWrite for FilePartitionRequest {
+        fn file_encode(
+            &self,
+            src: &mut BytesMut,
+            data: &mut Vec<StoreValue>,
+            version: Version,
+        ) -> Result<(), IoError> {
+            trace!("file encoding for partition request");
+            self.partition_index.encode(src, version)?;
+            self.records.file_encode(src, data, version)?;
+            Ok(())
+        }
+    }
 }

@@ -1278,7 +1278,7 @@ dependencies = [
  "event-listener",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-sc-schema",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -1304,7 +1304,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-socket",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1424,7 +1424,7 @@ version = "0.6.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-types",
  "log",
  "tracing",
@@ -1437,7 +1437,7 @@ dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1448,13 +1448,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "bytes 1.0.1",
+ "cfg-if 1.0.0",
  "content_inspector",
  "crc32c",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-socket",
  "flv-util",
  "futures-util",
@@ -1554,6 +1555,17 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol"
 version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5748d15d4d86ec252304ab783b391dcff39dc237f16de84fab01158ef5670535"
+dependencies = [
+ "fluvio-protocol-api 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-protocol-core 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-protocol-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "fluvio-protocol"
+version = "0.4.1"
 dependencies = [
  "bytes 1.0.1",
  "fluvio-future",
@@ -1563,17 +1575,6 @@ dependencies = [
  "fluvio-protocol-derive 0.2.0",
  "flv-util",
  "log",
-]
-
-[[package]]
-name = "fluvio-protocol"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5748d15d4d86ec252304ab783b391dcff39dc237f16de84fab01158ef5670535"
-dependencies = [
- "fluvio-protocol-api 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-protocol-core 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-protocol-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1633,7 +1634,7 @@ dependencies = [
 name = "fluvio-protocol-derive"
 version = "0.2.0"
 dependencies = [
- "fluvio-protocol 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-protocol 0.4.0",
  "log",
  "proc-macro2",
  "quote",
@@ -1679,7 +1680,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-sc-schema",
  "fluvio-service",
  "fluvio-socket",
@@ -1711,7 +1712,7 @@ version = "0.7.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-types",
  "log",
  "serde",
@@ -1727,7 +1728,7 @@ dependencies = [
  "async-trait",
  "event-listener",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-socket",
  "futures-util",
  "log",
@@ -1750,7 +1751,7 @@ dependencies = [
  "chashmap",
  "event-listener",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "flv-util",
  "futures-util",
  "log",
@@ -1780,7 +1781,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-service",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -1808,7 +1809,7 @@ version = "0.5.0"
 dependencies = [
  "bytes 1.0.1",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "log",
  "serde",
  "static_assertions",
@@ -1826,7 +1827,7 @@ dependencies = [
  "derive_builder",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.4.0",
+ "fluvio-protocol 0.4.1",
  "fluvio-socket",
  "fluvio-types",
  "flv-util",

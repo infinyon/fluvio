@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-dataplane-protocol"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "data plane protocol"
@@ -8,9 +8,13 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 categories = ["encoding", "api-bindings"]
 
+[features]
+default = ["file"]
+file = []
 
 [dependencies]
 log = "0.4.0"
+cfg-if = "1.0.0"
 bytes = "1.0.0"
 futures-util = { version = "0.3.4" }
 content_inspector = "0.2.4"

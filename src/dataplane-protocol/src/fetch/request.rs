@@ -11,12 +11,11 @@ use crate::derive::Encode;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;
-use crate::record::FileRecordSet;
 
 use super::FetchResponse;
 
 pub type DefaultFetchRequest = FetchRequest<RecordSet>;
-pub type FileFetchRequest = FetchRequest<FileRecordSet>;
+
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchRequest<R>
@@ -105,4 +104,13 @@ pub struct FetchPartition {
     /// The maximum bytes to fetch from this partition.  See KIP-74 for cases where this limit may
     /// not be honored.
     pub max_bytes: i32,
+}
+
+#[cfg(feature = "file")]
+pub use file::*;
+#[cfg(feature = "file")]
+mod file {
+    use super::*;
+    use crate::record::FileRecordSet;
+    pub type FileFetchRequest = FetchRequest<FileRecordSet>;
 }
