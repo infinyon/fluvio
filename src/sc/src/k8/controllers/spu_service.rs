@@ -15,7 +15,7 @@ use crate::stores::spg::{SpuGroupSpec};
 use crate::stores::{StoreContext, K8ChangeListener};
 use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::spg_group::SpuGroupObj;
-use crate::k8::objects::spu_service::SpuServicespec;
+use crate::k8::objects::spu_service::SpuServiceSpec;
 
 /// Manages SpuService
 /// It is used to update SPU's public ip address from external load balancer service.
@@ -23,7 +23,7 @@ use crate::k8::objects::spu_service::SpuServicespec;
 pub struct SpuServiceController {
     client: SharedK8Client,
     namespace: String,
-    services: StoreContext<SpuServicespec>,
+    services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
 }
 
@@ -43,7 +43,7 @@ impl SpuServiceController {
     pub fn start(
         client: SharedK8Client,
         namespace: String,
-        services: StoreContext<SpuServicespec>,
+        services: StoreContext<SpuServiceSpec>,
         groups: StoreContext<SpuGroupSpec>,
     ) {
         let controller = Self {
@@ -153,7 +153,7 @@ impl SpuServiceController {
 
         spu_k8_config.apply_service(&mut k8_service_spec);
 
-        let svc_name = SpuServicespec::service_name(spu_name);
+        let svc_name = SpuServiceSpec::service_name(spu_name);
 
         let mut ctx = spg_obj
             .ctx()

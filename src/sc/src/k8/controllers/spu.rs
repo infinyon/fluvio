@@ -21,14 +21,14 @@ use crate::{
     stores::{StoreContext, K8ChangeListener},
 };
 use crate::stores::spu::{IngressAddr, SpuSpec};
-use crate::k8::objects::spu_service::SpuServicespec;
+use crate::k8::objects::spu_service::SpuServiceSpec;
 use crate::k8::objects::spg_group::SpuGroupObj;
 use crate::stores::spg::{SpuGroupSpec};
 
 /// Maintain Managed SPU
 /// sync from spu services and statefulset
 pub struct SpuController {
-    services: StoreContext<SpuServicespec>,
+    services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
     disable_update_service: bool,
@@ -49,7 +49,7 @@ impl fmt::Debug for SpuController {
 impl SpuController {
     pub fn start(
         spus: StoreContext<SpuSpec>,
-        services: StoreContext<SpuServicespec>,
+        services: StoreContext<SpuServiceSpec>,
         groups: StoreContext<SpuGroupSpec>,
         disable_update_service: bool,
     ) {
@@ -168,7 +168,7 @@ impl SpuController {
         for spu_md in updates.into_iter() {
             let spu_id = spu_md.key();
             let spu_meta = spu_md.ctx().item().inner();
-            let svc_name = SpuServicespec::service_name(&spu_meta.name);
+            let svc_name = SpuServiceSpec::service_name(&spu_meta.name);
             if let Some(svc) = self.services.store().value(&svc_name).await {
                 self.apply_ingress_from_svc(spu_md, svc.inner_owned())
                     .await?;
@@ -183,7 +183,7 @@ impl SpuController {
     /// svc has been changed, update spu
     async fn sync_from_spu_services(
         &mut self,
-        listener: &mut K8ChangeListener<SpuServicespec>,
+        listener: &mut K8ChangeListener<SpuServiceSpec>,
     ) -> Result<(), ClientError> {
         if !listener.has_change() {
             trace!("no service change, skipping");
@@ -204,7 +204,7 @@ impl SpuController {
         for svc_md in updates.into_iter() {
             let svc_id = svc_md.key();
             let svc_meta = svc_md.ctx().item().inner();
-            if let Some(spu_name) = SpuServicespec::spu_name(&svc_meta) {
+            if let Some(spu_name) = SpuServiceSpec::spu_name(&svc_meta) {
                 if let Some(spu) = self.spus.store().value(spu_name).await {
                     self.apply_ingress_from_svc(spu.inner_owned(), svc_md)
                         .await?;
@@ -225,7 +225,7 @@ impl SpuController {
     async fn apply_ingress_from_svc(
         &mut self,
         spu_md: MetadataStoreObject<SpuSpec, K8MetaItem>,
-        svc_md: MetadataStoreObject<SpuServicespec, K8MetaItem>,
+        svc_md: MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
         let spu_id = spu_md.key();
         let svc_id = svc_md.key();

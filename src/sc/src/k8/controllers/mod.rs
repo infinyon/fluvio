@@ -13,7 +13,7 @@ mod k8_operator {
     use crate::core::SharedContext;
     use crate::stores::StoreContext;
     use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
-    use crate::k8::objects::spu_service::SpuServicespec;
+    use crate::k8::objects::spu_service::SpuServiceSpec;
     use crate::k8::objects::spu_k8_config::ScK8Config;
     use crate::k8::objects::statefulset::StatefulsetSpec;
     use crate::k8::objects::spg_service::SpgServiceSpec;
@@ -27,7 +27,7 @@ mod k8_operator {
         global_ctx: SharedContext,
         tls: Option<TlsConfig>,
     ) {
-        let spu_service_ctx: StoreContext<SpuServicespec> = StoreContext::new();
+        let spu_service_ctx: StoreContext<SpuServiceSpec> = StoreContext::new();
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
 
