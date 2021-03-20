@@ -1,9 +1,9 @@
-use std::{fmt, time::Duration};
+use std::{fmt, net::IpAddr, time::Duration};
 
 use fluvio_controlplane_metadata::{
     spg::SpuEndpointTemplate,
     spu::{Endpoint, IngressPort, SpuType},
-    store::MetadataStoreObject,
+    store::{MetadataStoreObject, k8::K8MetaItem},
 };
 use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_types::SpuId;
@@ -159,7 +159,7 @@ impl SpuController {
         let (updates, deletes) = changes.parts();
 
         debug!(
-            "received spu changes updates: {},deletes: {},epoch: {}",
+            "received spu changes updates: {}, deletes: {}, epoch: {}",
             updates.len(),
             deletes.len(),
             epoch,
@@ -167,36 +167,13 @@ impl SpuController {
 
         for spu_md in updates.into_iter() {
             let spu_id = spu_md.key();
-            // check if ingress exists
-            let spu_ingress = &spu_md.spec.public_endpoint.ingress;
-            let object_meta = spu_md.ctx().item().inner();
-            let svc_name = SpuServicespec::service_name(&object_meta.name);
+            let spu_meta = spu_md.ctx().item().inner();
+            let svc_name = SpuServicespec::service_name(&spu_meta.name);
             if let Some(svc) = self.services.store().value(&svc_name).await {
-                // apply ingress
-                let svc_ingresses = svc.status.ingress();
-                let computed_spu_ingress: Vec<IngressAddr> =
-                    svc_ingresses.iter().map(convert).collect();
-                if &computed_spu_ingress != spu_ingress {
-                    let mut update_spu = spu_md.spec.clone();
-                    debug!(
-                        "updating spu:{} public end point: {:#?} from svc: {}",
-                        spu_id,
-                        computed_spu_ingress,
-                        svc.key()
-                    );
-                    update_spu.public_endpoint.ingress = computed_spu_ingress;
-                    if let Err(err) = self.spus.create_spec(spu_id.to_owned(), update_spu).await {
-                        error!("error applying spec: {}", err);
-                    }
-                } else {
-                    debug!(
-                        "detected no spu: {} ingress changes with svc: {}",
-                        spu_id,
-                        svc.key()
-                    );
-                }
+                self.apply_ingress_from_svc(spu_md, svc.inner_owned())
+                    .await?;
             } else {
-                debug!("no svc exists for spu {},skipping", spu_id);
+                debug!("no svc exists for spu {}, skipping", spu_id);
             }
         }
 
@@ -218,57 +195,81 @@ impl SpuController {
         let (updates, deletes) = changes.parts();
 
         debug!(
-            "received spu service changes updates: {},deletes: {},epoch: {}",
+            "received spu service changes updates: {}, deletes: {}, epoch: {}",
             updates.len(),
             deletes.len(),
             epoch,
         );
 
         for svc_md in updates.into_iter() {
+            let svc_id = svc_md.key();
             let svc_meta = svc_md.ctx().item().inner();
-            // check if ingress exists
-            let svc_ingresses = svc_md.status.ingress();
-
             if let Some(spu_name) = SpuServicespec::spu_name(&svc_meta) {
-                if let Some(mut spu) = self.spus.store().value(spu_name).await {
-                    debug!(
-                        "trying sync service: {}, with: spu: {}",
-                        svc_md.key(),
-                        spu_name
-                    );
-                    trace!("svc ingress: {:#?}", svc_ingresses);
-                    let spu_ingress = svc_ingresses.iter().map(convert).collect();
-                    trace!("spu ingress: {:#?}", spu_ingress);
-                    if spu_ingress != spu.spec.public_endpoint.ingress {
-                        debug!(
-                            "updating spu:{} public end point: {:#?}",
-                            spu_name, spu_ingress
-                        );
-                        spu.spec.public_endpoint.ingress = spu_ingress;
-                        if let Err(err) = self
-                            .spus
-                            .create_spec(spu_name.to_owned(), spu.spec.clone())
-                            .await
-                        {
-                            error!("error applying spec: {}", err);
-                        }
-                    } else {
-                        debug!("detected no spu: {} ingress changes", spu_name);
-                    }
+                if let Some(spu) = self.spus.store().value(spu_name).await {
+                    self.apply_ingress_from_svc(spu.inner_owned(), svc_md)
+                        .await?;
                 } else {
-                    debug!(
-                        svc = %svc_md.key(),
-                        %spu_name,
-                        "spu service update skipped, because spu doesn't exist",
-                    );
+                    debug!("no spu exists for svc {}, skipping", svc_id);
                 }
             } else {
                 error!(
-                    svc = %svc_md.key(),
+                    svc = %svc_id,
                     "spu service doesnt have spu name",
                 );
             }
         }
+
+        Ok(())
+    }
+
+    async fn apply_ingress_from_svc(
+        &mut self,
+        spu_md: MetadataStoreObject<SpuSpec, K8MetaItem>,
+        svc_md: MetadataStoreObject<SpuServicespec, K8MetaItem>,
+    ) -> Result<(), ClientError> {
+        let spu_id = spu_md.key();
+        let svc_id = svc_md.key();
+
+        // check if ingress exists
+        let spu_ingress = &spu_md.spec.public_endpoint.ingress;
+
+        let svc_lb_ingresses = svc_md.status.ingress();
+        let mut computed_spu_ingress: Vec<IngressAddr> =
+            svc_lb_ingresses.iter().map(convert).collect();
+
+        if let Some(address) = svc_md
+            .ctx()
+            .item()
+            .annotations
+            .get("fluvio.io/ingressAddress")
+        {
+            if let Ok(ip_addr) = address.parse::<IpAddr>() {
+                computed_spu_ingress.push(IngressAddr {
+                    hostname: None,
+                    ip: Some(ip_addr.to_string()),
+                });
+            } else {
+                computed_spu_ingress.push(IngressAddr {
+                    hostname: Some(address.clone()),
+                    ip: None,
+                });
+            }
+        }
+
+        if &computed_spu_ingress != spu_ingress {
+            let mut update_spu = spu_md.spec.clone();
+            debug!(
+                "updating spu: {} public end point: {:#?} from svc: {}",
+                spu_id, computed_spu_ingress, svc_id
+            );
+            update_spu.public_endpoint.ingress = computed_spu_ingress;
+            self.spus.create_spec(spu_id.to_owned(), update_spu).await?;
+        } else {
+            debug!(
+                "detected no spu: {} ingress changes with svc: {}",
+                spu_id, svc_id
+            );
+        };
 
         Ok(())
     }
