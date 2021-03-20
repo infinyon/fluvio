@@ -16,7 +16,6 @@ use super::FetchResponse;
 
 pub type DefaultFetchRequest = FetchRequest<RecordSet>;
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchRequest<R>
 where

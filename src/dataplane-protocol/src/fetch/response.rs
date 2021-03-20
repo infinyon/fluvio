@@ -14,11 +14,8 @@ use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;
 use crate::ErrorCode;
-use crate::store::FileWrite;
-use crate::store::StoreValue;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
-
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchResponse<R>
@@ -64,8 +61,6 @@ where
     }
 }
 
-
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchableTopicResponse<R>
 where
@@ -78,8 +73,6 @@ where
     pub partitions: Vec<FetchablePartitionResponse<R>>,
     pub data: PhantomData<R>,
 }
-
-
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchablePartitionResponse<R>
@@ -113,7 +106,6 @@ where
     pub records: R,
 }
 
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct AbortedTransaction {
     /// The producer id associated with the aborted transaction.
@@ -146,20 +138,21 @@ where
     }
 }
 
-
 #[cfg(feature = "file")]
 pub use file::*;
-
 
 #[cfg(feature = "file")]
 mod file {
     use super::*;
 
     use crate::record::FileRecordSet;
+    use crate::store::FileWrite;
+    use crate::store::StoreValue;
+
     pub type FileFetchResponse = FetchResponse<FileRecordSet>;
     pub type FileTopicResponse = FetchableTopicResponse<FileRecordSet>;
     pub type FilePartitionResponse = FetchablePartitionResponse<FileRecordSet>;
-    
+
     impl FileWrite for FilePartitionResponse {
         fn file_encode(
             &self,
@@ -212,5 +205,4 @@ mod file {
             Ok(())
         }
     }
-    
 }

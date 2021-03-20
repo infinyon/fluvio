@@ -31,8 +31,6 @@ static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
     var_value.parse().unwrap_or(16384)
 });
 
-
-
 /// slice that can works in Async Context
 pub trait AsyncBuffer {
     fn len(&self) -> usize;

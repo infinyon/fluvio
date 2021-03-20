@@ -14,16 +14,12 @@ use crate::derive::FluvioDefault;
 
 use crate::api::Request;
 use crate::record::RecordSet;
-use crate::store::FileWrite;
-use crate::store::StoreValue;
 
 use super::ProduceResponse;
 
 pub type DefaultProduceRequest = ProduceRequest<RecordSet>;
 pub type DefaultPartitionRequest = PartitionProduceData<RecordSet>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet>;
-
-
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct ProduceRequest<R>
@@ -85,7 +81,6 @@ where
     pub records: R,
 }
 
-
 #[cfg(feature = "file")]
 pub use file::*;
 
@@ -93,6 +88,8 @@ pub use file::*;
 mod file {
 
     use crate::record::FileRecordSet;
+    use crate::store::FileWrite;
+    use crate::store::StoreValue;
 
     use super::*;
 
