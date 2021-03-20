@@ -119,32 +119,77 @@ $ flv-test -- smoke --producer-iteration=400 --consumer-wait
 
 ## Anatomy of a new test
 
-There are 3 parts to writing new tests.
+There are 4 parts to adding new tests.
 1. Implementing `TestOptions` for test specific CLI arguments
-    - Naming convention (in pascal case): <testname>TestOption
+    - Naming convention (in pascal case): `<testname>TestOption`
 2. Implmenenting `From<TestCase>` for your test case struct to downcast to.
-    - Naming convention (in pascal case): <testname>TestCase
+    - Naming convention (in pascal case): `<testname>TestCase`
 3. Creating a new test in the `tests` module + annotating with `#[fluvio_test]`
+4. Manually add support for new test in `main.rs` (Temporary, [#883](https://github.com/infinyon/fluvio/issues/883)) 
 
 ### Passing vars from the CLI to your test
-(See `utils/smoke/mod.rs` or `utils/concurrent/mod.rs` for example boilerplate code)
+
+* Your test needs to create a struct to hold test-specific variables. (This is required, even if it is empty.) The struct should derive `StructOpt` and implement the `TestOptions` trait.
+* The test runner uses this struct in order to parse cli flags for your test with [StructOpt::from_iter()](https://docs.rs/structopt/0.3.21/structopt/trait.StructOpt.html#method.from_iter)
 
 ### Test stub of a new test
 
-Create new tests in the `tests` module of the `flv-test` crate. 
+Write new tests in the `tests` module of the `flv-test` crate. 
 
-Here's a stub to modify:
+Here's a complete stub to modify:
 ```rust
 use std::sync::Arc;
+use std::any::Any;
+use structopt::StructOpt;
+
 use fluvio::Fluvio;
+use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::TestCase;
+use fluvio_test_util::test_meta::{EnvironmentSetup, TestOption, TestCase};
+
+#[derive(Debug, Clone)]
+pub struct ExampleTestCase {
+    pub environment: EnvironmentSetup,
+    pub option: ExampleTestOption,
+}
+
+impl From<TestCase> for ExampleTestCase {
+    fn from(test_case: TestCase) -> Self {
+        let example_option = test_case
+            .option
+            .as_any()
+            .downcast_ref::<ExampleTestOption>()
+            .expect("ExampleTestOption")
+            .to_owned();
+        ExampleTestCase {
+            environment: test_case.environment,
+            option: example_option,
+        }
+    }
+}
+
+// For CLI options
+#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+pub struct ExampleTestOption {}
+
+impl TestOption for ExampleTestOption {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
 
 #[fluvio_test()]
 pub async fn run(client: Arc<Fluvio>, mut option: TestCase) {
-    println!("Test stub");
+    let example_test_case : ExampleTestCase = option.into();
+
+    println!("Ready to run tests: {:?}", example_test_case);
 }
 ```
+
+> `TestCase` has an internal field `option` that is `Box<dyn TestOption>`. You'll want to implement `From<TestCase>` on your own struct so you can downcast and use this struct more flexibly.
+> 
+> See `tests/smoke/mod.rs` or `tests/concurrent/mod.rs` for more example boilerplate code
+
 ### Using the fluvio test macro
 The `#[fluvio_test]` macro will expand your test to create a topic and check if the `TestCase` meets your test requirements.
 
@@ -158,7 +203,7 @@ example: Set both `min_spu` and `topic` on test.
 
 ```rust
 #[fluvio_test(min_spu=2, topic="test_topic")]
-pub async fn example(client: Arc<Fluvio>, option: TestCase) {
+pub async fn run(client: Arc<Fluvio>, mut option: TestCase) {
     println!("Hello world!")
 }
 ```

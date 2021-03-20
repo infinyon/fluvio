@@ -7,6 +7,9 @@ use fluvio_test_util::test_meta::{CliArgs, EnvDetail, EnvironmentSetup, TestCase
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 
+use flv_test::tests::smoke::SmokeTestOption;
+use flv_test::tests::concurrent::ConcurrentTestOption;
+
 const TESTS: &[&str] = &["smoke", "concurrent", "many_producers"];
 
 fn main() {
@@ -22,10 +25,8 @@ fn main() {
             if TESTS.iter().any(|t| &cmd[0].as_str() == t) {
                 // here we'll match on the command name
                 match cmd[0].as_str() {
-                    "smoke" => Box::new(fluvio_test_util::smoke::SmokeTestOption::from_iter(cmd)),
-                    "concurrent" => {
-                        Box::new(fluvio_test_util::concurrent::ConcurrentTestOption::from_iter(cmd))
-                    }
+                    "smoke" => Box::new(SmokeTestOption::from_iter(cmd)),
+                    "concurrent" => Box::new(ConcurrentTestOption::from_iter(cmd)),
                     //"many_producers" => {}
                     _ => unreachable!("This shouldn't be reachable"),
                 }
@@ -41,9 +42,6 @@ fn main() {
 
         //println!("{:?}", test_opt);
 
-        // Create a TestCase object with option.envronment and test_opt
-        let test_case = TestCase::new(option.environment.clone(), test_opt);
-
         // catch panic in the spawn
         std::panic::set_hook(Box::new(|panic_info| {
             eprintln!("panic {}", panic_info);
@@ -55,6 +53,9 @@ fn main() {
 
         // Deploy a cluster
         let fluvio_client = cluster_setup(&option.environment).await;
+
+        // Create a TestCase object with option.envronment and test_opt
+        let test_case = TestCase::new(option.environment.clone(), test_opt);
 
         // TODO: Build this with Test Runner
         match test_name.as_str() {
@@ -115,7 +116,7 @@ mod tests {
 
     use structopt::StructOpt;
     use fluvio_test_util::test_meta::{CliArgs, TestCli};
-    use fluvio_test_util::smoke::SmokeTestOption;
+    use flv_test::tests::smoke::SmokeTestOption;
 
     #[test]
     fn valid_test_name() {

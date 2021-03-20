@@ -12,7 +12,7 @@ use fluvio_system_util::bin::get_fluvio;
 use fluvio::{Fluvio, Offset, PartitionConsumer};
 use fluvio_command::CommandExt;
 
-use crate::smoke::SmokeTestCase;
+use super::SmokeTestCase;
 use super::message::*;
 
 type Offsets = HashMap<String, i64>;

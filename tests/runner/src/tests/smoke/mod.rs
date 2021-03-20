@@ -2,9 +2,13 @@ pub mod consume;
 pub mod produce;
 pub mod message;
 
+use std::sync::Arc;
 use std::any::Any;
-use crate::test_meta::{EnvironmentSetup, TestOption, TestCase};
 use structopt::StructOpt;
+
+use fluvio::Fluvio;
+use fluvio_integration_derive::fluvio_test;
+use fluvio_test_util::test_meta::{EnvironmentSetup, TestOption, TestCase};
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -43,4 +47,12 @@ impl TestOption for SmokeTestOption {
     fn as_any(&self) -> &dyn Any {
         self
     }
+}
+
+#[fluvio_test(topic = "test")]
+pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
+    let smoke_test_case = test_case.into();
+
+    let start_offsets = produce::produce_message(client.clone(), &smoke_test_case).await;
+    consume::validate_consume_message(client, &smoke_test_case, start_offsets).await;
 }

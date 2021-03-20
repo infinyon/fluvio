@@ -1,4 +1,4 @@
-use crate::smoke::SmokeTestCase;
+use super::SmokeTestCase;
 
 const VALUE: u8 = 65;
 

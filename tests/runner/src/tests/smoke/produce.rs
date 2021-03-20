@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use log::info;
 
-use crate::smoke::SmokeTestCase;
+use super::SmokeTestCase;
 use super::message::*;
 use fluvio::{Fluvio, TopicProducer};
 use fluvio_command::CommandExt;
