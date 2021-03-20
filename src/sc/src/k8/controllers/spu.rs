@@ -237,12 +237,7 @@ impl SpuController {
         let mut computed_spu_ingress: Vec<IngressAddr> =
             svc_lb_ingresses.iter().map(convert).collect();
 
-        if let Some(address) = svc_md
-            .ctx()
-            .item()
-            .annotations
-            .get("fluvio.io/ingressAddress")
-        {
+        if let Some(address) = SpuServiceSpec::ingress_annotation(svc_md.ctx().item()) {
             if let Ok(ip_addr) = address.parse::<IpAddr>() {
                 computed_spu_ingress.push(IngressAddr {
                     hostname: None,

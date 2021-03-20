@@ -38,6 +38,10 @@ impl SpuServiceSpec {
     pub fn spu_name(meta: &ObjectMeta) -> Option<&String> {
         meta.labels.get("fluvio.io/spu-name")
     }
+
+    pub fn ingress_annotation(meta: &ObjectMeta) -> Option<&String> {
+        meta.annotations.get("fluvio.io/ingress-address")
+    }
 }
 
 impl From<K8ServiceSpec> for SpuServiceSpec {
