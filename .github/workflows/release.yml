@@ -14,15 +14,6 @@ on:
         description: 'Whether to update the install.sh script'
         required: false
 
-env:
-  # Prod keys
-  # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-  # Test keys
-  AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}
-
 jobs:
   publish_fluvio_cli:
     name: Publish Fluvio CLI
@@ -54,6 +45,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
+      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+      - name: Set test env
+        if: ${{ github.event.inputs.test != '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+      - name: Set prod env
+        if: ${{ github.event.inputs.test == '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
       - name: Build and publish using fluvio-packages
         run: cargo make -l verbose --profile production publish-fluvio
 
@@ -69,6 +72,18 @@ jobs:
     needs: publish_fluvio_cli
     runs-on: ubuntu-latest
     steps:
+      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+      - name: Set test env
+        if: ${{ github.event.inputs.test != '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+      - name: Set prod env
+        if: ${{ github.event.inputs.test == '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
       - name: Bump release version of Fluvio CLI using fluvio-packages
         run: |
           export FLUVIO_VERSION="$(cat VERSION)+$(git rev-parse HEAD)"
