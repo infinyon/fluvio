@@ -15,8 +15,8 @@ on:
         required: false
 
 jobs:
-  upload_fluvio_cli:
-    name: cli
+  publish_fluvio_cli:
+    name: Publish Fluvio CLI
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -45,18 +45,50 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
 
+      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+      - name: Set test env
+        if: ${{ github.event.inputs.test != '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+      - name: Set prod env
+        if: ${{ github.event.inputs.test == '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
       - name: Build and publish using fluvio-packages
         run: cargo make -l verbose --profile production publish-fluvio
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Update fluvio install.sh
         if: ${{ startsWith(matrix.os, 'ubuntu') && github.event.inputs.update_script != '' }}
         run: cargo make -l verbose --profile production s3-upload-installer
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # Bump the latest version of the Fluvio CLI on the package registry
+  # This must be a distinct job than publish_fluvio_cli because this job requires
+  # that all targets are first published successfully before we can bump the version.
+  bump_fluvio_cli:
+    name: Bump Fluvio CLI version
+    needs: publish_fluvio_cli
+    runs-on: ubuntu-latest
+    steps:
+      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+      - name: Set test env
+        if: ${{ github.event.inputs.test != '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+      - name: Set prod env
+        if: ${{ github.event.inputs.test == '' }}
+        run: |
+          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+      - name: Bump release version of Fluvio CLI using fluvio-packages
+        run: |
+          export FLUVIO_VERSION="$(cat VERSION)+$(git rev-parse HEAD)"
+          echo "Using Fluvio version ${FLUVIO_VERSION}"
+          cargo make bump-fluvio
 
 # TODO: Fix the pi build
 #  release_fluvio_pi:
