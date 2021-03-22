@@ -16,16 +16,16 @@ use crate::stores::spg::SpuGroupSpec;
 /// Service associated with SPU
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct SpuServicespec(K8ServiceSpec);
+pub struct SpuServiceSpec(K8ServiceSpec);
 
-impl Spec for SpuServicespec {
+impl Spec for SpuServiceSpec {
     const LABEL: &'static str = "SpuService";
     type IndexKey = String;
     type Status = SpuServiceStatus;
     type Owner = SpuGroupSpec;
 }
 
-impl SpuServicespec {
+impl SpuServiceSpec {
     pub fn inner(&self) -> &K8ServiceSpec {
         &self.0
     }
@@ -38,16 +38,20 @@ impl SpuServicespec {
     pub fn spu_name(meta: &ObjectMeta) -> Option<&String> {
         meta.labels.get("fluvio.io/spu-name")
     }
+
+    pub fn ingress_annotation(meta: &ObjectMeta) -> Option<&String> {
+        meta.annotations.get("fluvio.io/ingress-address")
+    }
 }
 
-impl From<K8ServiceSpec> for SpuServicespec {
+impl From<K8ServiceSpec> for SpuServiceSpec {
     fn from(k8: K8ServiceSpec) -> Self {
         Self(k8)
     }
 }
 
-impl From<SpuServicespec> for K8ServiceSpec {
-    fn from(spec: SpuServicespec) -> Self {
+impl From<SpuServiceSpec> for K8ServiceSpec {
+    fn from(spec: SpuServiceSpec) -> Self {
         spec.0
     }
 }
@@ -101,14 +105,14 @@ mod extended {
 
     use super::*;
 
-    impl K8ExtendedSpec for SpuServicespec {
+    impl K8ExtendedSpec for SpuServiceSpec {
         type K8Spec = ServiceSpec;
         type K8Status = ServiceStatus;
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
-            if let Some(name) = SpuServicespec::spu_name(&k8_obj.metadata) {
+            if let Some(name) = SpuServiceSpec::spu_name(&k8_obj.metadata) {
                 debug!(spu = %name,
                     service_name = %k8_obj.metadata.name,
                     "detected spu service");
