@@ -10,11 +10,19 @@ use tracing::debug;
 
 mod http;
 mod error;
+mod topic;
 mod install;
+mod consume;
+mod produce;
 mod profile;
 mod version;
 mod metadata;
+mod partition;
 
+use topic::TopicCmd;
+use consume::ConsumeLogOpt;
+use produce::ProduceLogOpt;
+use partition::PartitionCmd;
 use profile::ProfileCmd;
 use install::update::UpdateOpt;
 use install::plugins::InstallOpt;
@@ -24,10 +32,6 @@ pub use error::{Result, CliError};
 
 use fluvio::Fluvio;
 use fluvio_cluster::cli::ClusterCmd;
-use fluvio_extension_consumer::consume::ConsumeLogOpt;
-use fluvio_extension_consumer::produce::ProduceLogOpt;
-use fluvio_extension_consumer::partition::PartitionCmd;
-use fluvio_extension_consumer::topic::TopicCmd;
 
 use fluvio_extension_common as common;
 use common::COMMAND_TEMPLATE;

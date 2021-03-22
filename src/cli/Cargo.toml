@@ -7,6 +7,7 @@ description = "Fluvio CLI"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 publish = false
+default-run = "fluvio"
 
 [lib]
 name = "fluvio_cli"
@@ -39,20 +40,24 @@ prettytable-rs = "0.8.0"
 static_assertions = "1.1.0"
 tempdir = "0.3.7"
 sysinfo = "0.16.1"
+atty = "0.2.14"
+ctrlc = "3.1.3"
+hostname-validator = "1.0.0"
+content_inspector = "0.2.4"
 
 # Fluvio dependencies
 
 k8-config = { version = "1.3.0" }
 k8-client = { version = "5.0.0" }
-fluvio-future = { version = "0.2.0", features = ["fs", "io", "subscriber"] }
 fluvio = { version = "0.6.0", path = "../client", default-features = false }
+fluvio-types = { version = "0.2.0" , path = "../types" }
+fluvio-future = { version = "0.2.0", features = ["fs", "io", "subscriber"] }
 fluvio-cluster = { version = "0.7.0", path = "../cluster", default-features = false, features = ["cli"] }
 fluvio-command = { version = "0.2.0" }
 fluvio-package-index = { version = "0.3.0", path = "../package-index" }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", features = ["target"]}
-fluvio-extension-consumer = { version = "0.3.0", path = "../extension-consumer" }
 fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
-fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema" }
+fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema", features = ["use_serde"] }
 k8-types = { version = "0.2.0", features = ["core"]}
 
 [dev-dependencies]

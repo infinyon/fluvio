@@ -13,7 +13,7 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::{Result, ConsumerError};
+use crate::error::ConsumerError;
 
 // -----------------------------------
 // CLI Options
@@ -83,7 +83,7 @@ pub struct CreateTopicOpt {
 }
 
 impl CreateTopicOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
         let dry_run = self.dry_run;
         let (name, topic_spec) = self.validate()?;
 
@@ -96,7 +96,7 @@ impl CreateTopicOpt {
     }
 
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(String, TopicSpec)> {
+    fn validate(self) -> Result<(String, TopicSpec), ConsumerError> {
         use fluvio::metadata::topic::PartitionMaps;
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;

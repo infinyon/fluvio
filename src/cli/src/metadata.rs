@@ -1,13 +1,14 @@
 use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
-use fluvio_extension_common::FluvioExtensionMetadata;
-use fluvio_extension_consumer::topic::TopicCmd;
-use fluvio_extension_consumer::partition::PartitionCmd;
-use fluvio_extension_consumer::produce::ProduceLogOpt;
-use fluvio_extension_consumer::consume::ConsumeLogOpt;
-use fluvio_command::CommandExt;
+
 use crate::Result;
+use crate::TopicCmd;
+use crate::PartitionCmd;
+use crate::ConsumeLogOpt;
+use crate::ProduceLogOpt;
+use fluvio_command::CommandExt;
+use fluvio_extension_common::FluvioExtensionMetadata;
 
 #[derive(Debug, StructOpt)]
 pub struct MetadataOpt {}
