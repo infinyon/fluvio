@@ -1,40 +1,141 @@
+use std::fmt::Debug;
+
 use structopt::StructOpt;
+use structopt::clap::AppSettings;
 use serde::{Serialize, Deserialize};
-use syn::{AttributeArgs, Error, Lit, Meta, NestedMeta, Path, Result};
+use syn::{AttributeArgs, Error as SynError, Lit, Meta, NestedMeta, Path, Result};
 use syn::spanned::Spanned;
+use std::any::Any;
 
-#[derive(Debug, Clone, StructOpt)]
-pub struct ProductOption {
-    /// number of produce iteration for a single producer
-    #[structopt(short, long, default_value = "1")]
-    pub produce_iteration: u16,
-
-    // record size
-    #[structopt(long, default_value = "100")]
-    pub record_size: usize,
-
-    // number of parallel producer
-    #[structopt(long, default_value = "1")]
-    pub producer_count: u16,
+pub trait TestOption: Debug {
+    fn as_any(&self) -> &dyn Any;
 }
 
-impl Default for ProductOption {
-    fn default() -> Self {
-        ProductOption {
-            produce_iteration: 1,
-            record_size: 100,
-            producer_count: 1,
+pub struct TestCase {
+    pub environment: EnvironmentSetup,
+    pub option: Box<dyn TestOption>,
+}
+
+impl TestCase {
+    pub fn new(environment: EnvironmentSetup, option: Box<dyn TestOption>) -> Self {
+        Self {
+            environment,
+            option,
         }
     }
 }
 
-/// cli options
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "fluvio-test-runner", about = "Test fluvio platform")]
-pub struct TestOption {
-    #[structopt(flatten)]
-    pub produce: ProductOption,
+#[derive(Debug, Clone, StructOpt, PartialEq)]
+pub enum TestCli {
+    #[structopt(external_subcommand)]
+    Args(Vec<String>),
+}
 
+impl Default for TestCli {
+    fn default() -> Self {
+        TestCli::Args(Vec::new())
+    }
+}
+
+#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+#[structopt(
+    name = "fluvio-test-runner",
+    about = "Test fluvio platform",
+    global_settings = &[AppSettings::ColoredHelp])]
+pub struct BaseCli {
+    pub test_name: String,
+
+    #[structopt(flatten)]
+    pub environment: EnvironmentSetup,
+
+    #[structopt(subcommand)]
+    pub test_cmd_args: Option<TestCli>,
+}
+
+pub trait EnvDetail: Debug + Clone {
+    fn set_topic_name(&mut self, topic: String);
+    fn topic_name(&self) -> String;
+    fn replication(&self) -> u16;
+    fn client_log(&self) -> Option<String>;
+    fn spu(&self) -> u16;
+    fn skip_cluster_start(&self) -> bool;
+    fn remove_cluster_before(&self) -> bool;
+    fn skip_cluster_delete(&self) -> bool;
+    fn develop_mode(&self) -> bool;
+    fn skip_checks(&self) -> bool;
+    fn tls_user(&self) -> String;
+    fn authorization_config_map(&self) -> Option<String>;
+    fn server_log(&self) -> Option<String>;
+    fn log_dir(&self) -> Option<String>;
+}
+
+impl EnvDetail for EnvironmentSetup {
+    fn set_topic_name(&mut self, topic: String) {
+        self.topic_name = topic;
+    }
+
+    fn topic_name(&self) -> String {
+        self.topic_name.clone()
+    }
+
+    fn replication(&self) -> u16 {
+        self.replication
+    }
+
+    fn client_log(&self) -> Option<String> {
+        self.client_log.clone()
+    }
+
+    fn spu(&self) -> u16 {
+        self.spu
+    }
+
+    // don't attempt to clean up and start new test cluster
+    // don't create a topic
+    fn skip_cluster_start(&self) -> bool {
+        self.disable_install
+    }
+
+    /// before we start test run, remove cluster
+    // don't create a topic
+    fn remove_cluster_before(&self) -> bool {
+        !self.disable_install
+    }
+
+    // don't attempt to delete test cluster
+    fn skip_cluster_delete(&self) -> bool {
+        self.keep_cluster
+    }
+
+    // For k8 cluster. Use development helm chart
+    fn develop_mode(&self) -> bool {
+        self.develop
+    }
+
+    fn skip_checks(&self) -> bool {
+        self.skip_checks
+    }
+
+    fn tls_user(&self) -> String {
+        self.tls_user.clone()
+    }
+
+    fn authorization_config_map(&self) -> Option<String> {
+        self.authorization_config_map.clone()
+    }
+
+    fn server_log(&self) -> Option<String> {
+        self.server_log.clone()
+    }
+
+    fn log_dir(&self) -> Option<String> {
+        self.log_dir.clone()
+    }
+}
+
+/// cli options
+#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+pub struct EnvironmentSetup {
     /// don't attempt to delete cluster or start a new cluster before test
     /// topic creation will be skipped
     #[structopt(short, long)]
@@ -44,33 +145,17 @@ pub struct TestOption {
     #[structopt(short, long)]
     pub keep_cluster: bool,
 
-    /// Smoke test specific
-    /// don't produce message
-    #[structopt(long)]
-    pub disable_produce: bool,
-
-    /// Smoke test specific
-    /// don't test consumer
-    #[structopt(long)]
-    pub disable_consume: bool,
-
-    #[structopt(short, long)]
-    /// replication count, number of spu will be same as replication count, unless overridden
-    pub replication: Option<u16>,
-
     /// topic name used
     #[structopt(short("t"), long, default_value = "topic")]
     pub topic_name: String,
 
-    /// Smoke test specific
-    /// if this is turn on, consumer waits for producer to finish before starts consumption
-    /// if iterations are long then consumer may receive large number of batches
-    #[structopt(long)]
-    pub consumer_wait: bool,
-
     /// number of spu
     #[structopt(short, long, default_value = "1")]
     pub spu: u16,
+
+    /// number of replicas
+    #[structopt(short, long, default_value = "1")]
+    pub replication: u16,
 
     /// enable tls
     #[structopt(long)]
@@ -84,7 +169,7 @@ pub struct TestOption {
     #[structopt(long)]
     pub local: bool,
 
-    /// run develop image, this is for k8
+    /// run develop image, this is for k8. (Run `make minikube_image` first.)
     #[structopt(long)]
     pub develop: bool,
 
@@ -107,96 +192,8 @@ pub struct TestOption {
     /// skip pre-install checks
     #[structopt(long)]
     pub skip_checks: bool,
-
-    // We want to collect the tests and offer them here as choices
-    #[structopt(possible_values = &["smoke", "concurrent", "many_producers"])]
-    pub test_name: Option<String>,
 }
-
-impl Default for TestOption {
-    fn default() -> Self {
-        TestOption {
-            produce: ProductOption::default(),
-            disable_install: false,
-            keep_cluster: false,
-            disable_produce: false,
-            disable_consume: false,
-            replication: None,
-            topic_name: String::from("default"),
-            consumer_wait: false,
-            spu: 1,
-            tls: false,
-            tls_user: String::from("root"),
-            local: false,
-            develop: false,
-            client_log: Some(String::from("warn")),
-            server_log: Some(String::from("fluvio=debug")),
-            log_dir: None,
-            authorization_config_map: None,
-            skip_checks: false,
-            test_name: None,
-        }
-    }
-}
-
-impl TestOption {
-    /// return SC configuration or exist program.
-    pub fn parse_cli_or_exit() -> Self {
-        Self::from_args()
-    }
-
-    /// Smoke test specific
-    pub fn test_consumer(&self) -> bool {
-        !self.disable_consume
-    }
-
-    /// before we start test run, remove cluster
-    // don't create a topic
-    pub fn remove_cluster_before(&self) -> bool {
-        !self.disable_install
-    }
-
-    // don't attempt to clean up and start new test cluster
-    // don't create a topic
-    pub fn skip_cluster_start(&self) -> bool {
-        self.disable_install
-    }
-
-    // don't attempt to delete test cluster
-    pub fn skip_cluster_delete(&self) -> bool {
-        self.keep_cluster
-    }
-
-    pub fn tls(&self) -> bool {
-        self.tls
-    }
-
-    pub fn replication(&self) -> u16 {
-        self.replication.unwrap_or(self.spu)
-    }
-
-    /// Smoke test specific
-    pub fn produce(&self) -> bool {
-        !self.disable_produce
-    }
-
-    pub fn develop_mode(&self) -> bool {
-        self.develop
-    }
-
-    pub fn topic_name(&self) -> String {
-        self.topic_name.clone()
-    }
-
-    pub fn use_cli(&self) -> bool {
-        self.produce.produce_iteration == 1
-    }
-
-    pub fn skip_checks(&self) -> bool {
-        self.skip_checks
-    }
-}
-
+// TODO: Add timeout, cluster-type?
 #[derive(Debug)]
 pub enum TestRequirementAttribute {
     MinSpu(u16),
@@ -215,19 +212,19 @@ impl TestRequirementAttribute {
                             u16::from_str_radix(min_spu.base10_digits(), 10).expect("Parse failed"),
                         ))
                     } else {
-                        Err(Error::new(name_value.span(), "Min spu must be LitInt"))
+                        Err(SynError::new(name_value.span(), "Min spu must be LitInt"))
                     }
                 } else if keys.as_str() == "topic" {
                     if let Lit::Str(str) = name_value.lit {
                         Ok(Self::Topic(str.value()))
                     } else {
-                        Err(Error::new(name_value.span(), "Topic must be a LitStr"))
+                        Err(SynError::new(name_value.span(), "Topic must be a LitStr"))
                     }
                 } else {
-                    Err(Error::new(name_value.span(), "Unsupported key"))
+                    Err(SynError::new(name_value.span(), "Unsupported key"))
                 }
             }
-            _ => Err(Error::new(meta.span(), "Unsupported attribute:")),
+            _ => Err(SynError::new(meta.span(), "Unsupported attribute:")),
         }
     }
 
@@ -258,7 +255,7 @@ impl TestRequirements {
                 NestedMeta::Meta(meta) => {
                     attrs.push(TestRequirementAttribute::from_ast(meta)?);
                 }
-                _ => return Err(Error::new(attr.span(), "invalid syntax")),
+                _ => return Err(SynError::new(attr.span(), "invalid syntax")),
             }
         }
 
@@ -279,18 +276,3 @@ impl TestRequirements {
         test_requirements
     }
 }
-
-//impl ToTokens for TestRequirements {
-//    fn to_tokens(&self, tokens: &mut TokenStream) {
-//
-//        let min_spu = self.min_spu.clone();
-//        let topic = self.topic.clone();
-//
-//        let s = quote! { fluvio_test_util::test_meta::TestRequirements {
-//            min_spu: #min_spu,
-//            topic: #topic,
-//        }};
-//
-//        tokens.append_all(s.into());
-//    }
-//}

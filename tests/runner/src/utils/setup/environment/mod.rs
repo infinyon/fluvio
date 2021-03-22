@@ -25,11 +25,10 @@ mod common {
         Local,
     }
 
-    use crate::setup::environment::k8::K8EnvironmentDriver;
+    use crate::{setup::environment::k8::K8EnvironmentDriver, test_meta::EnvironmentSetup};
     use crate::setup::environment::local::LocalEnvDriver;
-    use crate::test_meta::TestOption;
 
-    pub fn create_driver(option: TestOption) -> Box<dyn TestEnvironmentDriver> {
+    pub fn create_driver(option: EnvironmentSetup) -> Box<dyn TestEnvironmentDriver> {
         if option.local {
             //println!("using local environment driver");
             Box::new(LocalEnvDriver::new(option)) as Box<dyn TestEnvironmentDriver>

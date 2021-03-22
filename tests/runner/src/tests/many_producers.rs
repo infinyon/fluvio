@@ -14,11 +14,11 @@
 //startServer();
 
 use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::TestOption;
+use fluvio_test_util::test_meta::TestCase;
 use fluvio::Fluvio;
 use std::sync::Arc;
 
-#[fluvio_test()]
-pub async fn run(_client: Arc<Fluvio>, _opt: TestOption) {
+//#[fluvio_test()]
+pub async fn run(_client: Arc<Fluvio>, _opt: TestCase) {
     println!("I'm the many producers test");
 }

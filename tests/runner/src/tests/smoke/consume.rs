@@ -12,7 +12,7 @@ use fluvio_system_util::bin::get_fluvio;
 use fluvio::{Fluvio, Offset, PartitionConsumer};
 use fluvio_command::CommandExt;
 
-use crate::test_meta::TestOption;
+use super::SmokeTestCase;
 use super::message::*;
 
 type Offsets = HashMap<String, i64>;
@@ -24,19 +24,25 @@ fn consume_wait_timeout() -> u64 {
 }
 
 /// verify consumers
-pub async fn validate_consume_message(client: Arc<Fluvio>, option: &TestOption, offsets: Offsets) {
-    if option.use_cli() {
-        validate_consume_message_cli(option, offsets);
+pub async fn validate_consume_message(
+    client: Arc<Fluvio>,
+    test_case: &SmokeTestCase,
+    offsets: Offsets,
+) {
+    let use_cli = test_case.option.use_cli;
+
+    if use_cli {
+        validate_consume_message_cli(test_case, offsets);
     } else {
-        validate_consume_message_api(client, offsets, option).await;
+        validate_consume_message_api(client, offsets, test_case).await;
     }
 }
 
-fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
-    let replication = option.replication();
+fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
+    let replication = test_case.environment.replication;
 
     for i in 0..replication {
-        let topic_name = option.topic_name.clone();
+        let topic_name = test_case.environment.topic_name.clone();
         let offset = offsets.get(&topic_name).expect("topic offset");
         let mut command = get_fluvio().expect("fluvio not found");
         command
@@ -53,7 +59,7 @@ fn validate_consume_message_cli(option: &TestOption, offsets: Offsets) {
         io::stderr().write_all(&output.stderr).unwrap();
 
         let msg = output.stdout.as_slice();
-        validate_message(i, *offset, &topic_name, option, &msg[0..msg.len() - 1]);
+        validate_message(i, *offset, test_case, &msg[0..msg.len() - 1]);
 
         println!("topic: {}, consume message validated!", topic_name);
     }
@@ -77,19 +83,24 @@ async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
     panic!("can't get consumer");
 }
 
-async fn validate_consume_message_api(client: Arc<Fluvio>, offsets: Offsets, option: &TestOption) {
+async fn validate_consume_message_api(
+    client: Arc<Fluvio>,
+    offsets: Offsets,
+    test_case: &SmokeTestCase,
+) {
     use tokio::select;
     use fluvio_future::timer::sleep;
 
-    let replication = option.replication();
-    let iteration = option.produce.produce_iteration;
+    let replication = test_case.environment.replication;
+
+    let producer_iteration = test_case.option.producer_iteration;
 
     for i in 0..replication {
-        let topic_name = option.topic_name.clone();
+        let topic_name = test_case.environment.topic_name.clone();
         let base_offset = offsets.get(&topic_name).expect("offsets");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
-            topic_name, base_offset, iteration
+            topic_name, base_offset, producer_iteration
         );
 
         let consumer = get_consumer(&client, &topic_name).await;
@@ -116,7 +127,7 @@ async fn validate_consume_message_api(client: Arc<Fluvio>, offsets: Offsets, opt
 
                 // max time for each read
                 _ = sleep(Duration::from_millis(5000)) => {
-                    panic!("no consumer read iter: current {}",iteration);
+                    panic!("no consumer read iter: current {}",producer_iteration);
                 },
 
                 stream_next = stream.next() => {
@@ -131,13 +142,13 @@ async fn validate_consume_message_api(client: Arc<Fluvio>, offsets: Offsets, opt
                             offset,
                             bytes.len()
                         );
-                        validate_message(iteration, offset, &topic_name, option, &bytes);
+                        validate_message(producer_iteration, offset, test_case, &bytes);
                         info!(
                             " total records: {}, validated offset: {}",
                             total_records, offset
                         );
                         total_records += 1;
-                        if total_records == iteration {
+                        if total_records == producer_iteration {
                             println!("<<consume test done for: {} >>>>", topic_name);
                             println!("consume message validated!, records: {}",total_records);
                             break;
