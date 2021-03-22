@@ -46,18 +46,18 @@ endif
 #
 
 smoke-test:	test-clean-up	build_test
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG} -- smoke --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-stream:	test-clean-up	build_test
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} -- smoke --consumer-wait=true --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} -- --consumer-wait=true --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-tls:	test-clean-up build_test
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} -- smoke --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-tls-policy:	test-clean-up build_test
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} --keep-cluster -- smoke --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} --keep-cluster -- --producer-iteration=${DEFAULT_ITERATION}
 
 # test rbac with ROOT user
 smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
@@ -79,15 +79,16 @@ k8-setup:
 
 
 smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	--spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} -- smoke --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) --spu ${DEFAULT_SPU} --tls --develop ${TEST_LOG} ${SKIP_CHECK} -- smoke --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-k8-tls-policy:	test-clean-up minikube_image
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 	FLV_SPU_DELAY=$(SPU_DELAY) \
 	$(TEST_BIN) \
+		smoke \
 		--spu ${DEFAULT_SPU} \
 		--tls \
 		--develop \
@@ -96,7 +97,6 @@ smoke-test-k8-tls-policy:	test-clean-up minikube_image
 		${SKIP_CHECK} \
 		--keep-cluster \
 		-- \
-		smoke \
 		--producer-iteration=${DEFAULT_ITERATION}
 
 test-permission-k8:	SC_HOST=$(shell kubectl get svc fluvio-sc-public -o json | jq '.status.loadBalancer.ingress[0].ip' | tr -d '"' )
