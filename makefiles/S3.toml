@@ -34,16 +34,32 @@ args = [
 [tasks.publish-fluvio]
 dependencies = [
     "build-release",
+    "install-fluvio-package",
+    "publish-fluvio-env",
 ]
-script = '''
-mkdir -p ~/.fluvio/extensions
-./target/${TARGET}/release/fluvio install fluvio/fluvio-package;
-./target/${TARGET}/release/fluvio package publish ./target/${TARGET}/release/fluvio --version=${FLUVIO_VERSION} ${FORCE_RELEASE};
-./target/${TARGET}/release/fluvio package bump latest;
-'''
+script = "${HOME}/.fluvio/bin/fluvio package --test publish --version=${FLUVIO_VERSION} ${FORCE_RELEASE} ./target/${TARGET}/release/fluvio"
 
-[tasks.publish-fluvio.linux]
+[tasks.publish-fluvio-env.linux]
 env = { TARGET = "x86_64-unknown-linux-musl" }
 
-[tasks.publish-fluvio.mac]
+[tasks.publish-fluvio-env.mac]
 env = { TARGET = "x86_64-apple-darwin" }
+
+[tasks.publish-fluvio-latest]
+extend = "publish-fluvio"
+env = { FLUVIO_VERSION = { script = ["""echo "$(cat VERSION)+$(git rev-parse HEAD)" """] } }
+
+[tasks.install-fluvio]
+script = "curl -fsS https://packages.fluvio.io/v1/install.sh | bash"
+
+[tasks.install-fluvio-package]
+dependencies = ["install-fluvio"]
+script = "${HOME}/.fluvio/bin/fluvio install --develop fluvio/fluvio-package"
+
+[tasks.bump-fluvio]
+dependencies = ["install-fluvio-package", "bump-fluvio-latest"]
+script = """${HOME}/.fluvio/bin/fluvio package --test bump dynamic ${FLUVIO_VERSION} """
+
+[tasks.bump-fluvio-latest]
+dependencies = ["install-fluvio-package"]
+script = """${HOME}/.fluvio/bin/fluvio package --test bump latest "$(cat VERSION)+$(git rev-parse HEAD)" """
