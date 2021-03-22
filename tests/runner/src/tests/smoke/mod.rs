@@ -32,6 +32,7 @@ impl From<TestCase> for SmokeTestCase {
 }
 
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+#[structopt(name = "Fluvio Smoke Test")]
 pub struct SmokeTestOption {
     #[structopt(long)]
     pub use_cli: bool,

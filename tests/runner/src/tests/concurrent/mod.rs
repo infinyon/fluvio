@@ -35,6 +35,7 @@ impl From<TestCase> for ConcurrentTestCase {
 }
 
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+#[structopt(name = "Fluvio Concurrent Test")]
 pub struct ConcurrentTestOption {}
 
 impl TestOption for ConcurrentTestOption {

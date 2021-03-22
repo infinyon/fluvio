@@ -7,7 +7,7 @@ use syn::{AttributeArgs, Error as SynError, Lit, Meta, NestedMeta, Path, Result}
 use syn::spanned::Spanned;
 use std::any::Any;
 
-pub trait TestOption {
+pub trait TestOption: Debug {
     fn as_any(&self) -> &dyn Any;
 }
 
@@ -28,12 +28,12 @@ impl TestCase {
 #[derive(Debug, Clone, StructOpt, PartialEq)]
 pub enum TestCli {
     #[structopt(external_subcommand)]
-    CliCmd(Vec<String>),
+    Args(Vec<String>),
 }
 
 impl Default for TestCli {
     fn default() -> Self {
-        TestCli::CliCmd(Vec::new())
+        TestCli::Args(Vec::new())
     }
 }
 
@@ -42,12 +42,14 @@ impl Default for TestCli {
     name = "fluvio-test-runner",
     about = "Test fluvio platform",
     global_settings = &[AppSettings::ColoredHelp])]
-pub struct CliArgs {
+pub struct BaseCli {
+    pub test_name: String,
+
     #[structopt(flatten)]
     pub environment: EnvironmentSetup,
 
     #[structopt(subcommand)]
-    pub test_cmd: TestCli,
+    pub test_cmd_args: Option<TestCli>,
 }
 
 pub trait EnvDetail: Debug + Clone {

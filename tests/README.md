@@ -46,7 +46,8 @@ alias flv-test=./target/release/flv-test
 # Running Test runner
 
 ```
-flv-test [FLAGS] [OPTIONS] [test-name]
+flv-test <test-name> [FLAGS] [OPTIONS] -- [SUBCOMMAND OPTIONS]
+
 ```
 
 > Test runner testing doesn't work when VERSION set to an unpublished version. Workaround: Run `make minikube_image` and use `--develop` flag with `flv-test` (issue #[859](https://github.com/infinyon/fluvio/issues/859))
@@ -61,7 +62,7 @@ Test runner can be a running in two ways:
 
 The smoke test can be configured with it's own CLI options:
 
-`flv-test [environment vars] -- smoke [smoke test vars]`
+`flv-test smoke [environment vars] -- [smoke test vars]`
 
 
 ---
@@ -71,7 +72,7 @@ This run a simple smoke test by creating new local cluster.
 It creates a simple topic: `topic` and perform produce/consume 
 
 ```
-$ flv-test --local -- smoke
+$ flv-test smoke --local
 
 Start running fluvio test runner
 deleting cluster
@@ -97,7 +98,7 @@ Smoke test can be specified with more than 1 iterations:
 Run a test with sending 10 records:
 
 ```
-$ flv-test --local -- smoke --producer-iteration 10
+$ flv-test smoke --local -- --producer-iteration 10
 ```
 
 ### Run test without re-installing
@@ -105,8 +106,8 @@ $ flv-test --local -- smoke --producer-iteration 10
 After initial test using `--keep-cluster`, more iteration can be tested without re-installing cluster using `--disable-install`
 
 ```
-$ flv-test --local --keep-cluster -- smoke --producer-iteration 10
-$ flv-test --disable-install -- smoke --producer-iteration 200
+$ flv-test smoke --local --keep-cluster -- --producer-iteration 10
+$ flv-test smoke --disable-install -- --producer-iteration 200
 ```
 
 ### No streaming
@@ -114,7 +115,7 @@ $ flv-test --disable-install -- smoke --producer-iteration 200
 By default, produce and consumer run in parallel, but you can force consumer to wait for all producer iteration
 
 ```
-$ flv-test -- smoke --producer-iteration=400 --consumer-wait
+$ flv-test smoke -- --producer-iteration=400 --consumer-wait
 ```
 
 ## Anatomy of a new test
@@ -170,6 +171,7 @@ impl From<TestCase> for ExampleTestCase {
 
 // For CLI options
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+#[structopt(name = "Fluvio Example Test")]
 pub struct ExampleTestOption {}
 
 impl TestOption for ExampleTestOption {

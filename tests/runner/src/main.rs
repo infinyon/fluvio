@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{CliArgs, EnvDetail, EnvironmentSetup, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::{BaseCli, EnvDetail, EnvironmentSetup, TestCase, TestCli, TestOption};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 
@@ -14,32 +14,31 @@ const TESTS: &[&str] = &["smoke", "concurrent", "many_producers"];
 
 fn main() {
     run_block_on(async {
-        let option = CliArgs::from_args();
+        let option = BaseCli::from_args();
         //println!("{:?}", option);
 
-        let test_name;
+        let test_name = option.test_name.clone();
+        let mut subcommand = vec![test_name.clone()];
 
         // We want to get a TestOption compatible struct back
-        let test_opt: Box<dyn TestOption> = if let TestCli::CliCmd(cmd) = option.test_cmd {
-            test_name = cmd[0].clone();
-            if TESTS.iter().any(|t| &cmd[0].as_str() == t) {
-                // here we'll match on the command name
-                match cmd[0].as_str() {
-                    "smoke" => Box::new(SmokeTestOption::from_iter(cmd)),
-                    "concurrent" => Box::new(ConcurrentTestOption::from_iter(cmd)),
-                    //"many_producers" => {}
-                    _ => unreachable!("This shouldn't be reachable"),
-                }
+        let valid_cmd: Result<Box<dyn TestOption>, ()> =
+            if let Some(TestCli::Args(args)) = option.test_cmd_args {
+                // Add the args to the subcommand
+                subcommand.extend(args);
+                validate_subcommand(subcommand)
             } else {
-                //CliArgs::clap().print_help().expect("print help");
-                eprintln!("Tests: {:?}", TESTS);
-                println!();
-                return;
-            }
-        } else {
-            unreachable!("This shouldn't be reachable")
-        };
+                // No args
+                validate_subcommand(subcommand)
+            };
 
+        let test_opt = if let Ok(test_opt) = valid_cmd {
+            test_opt
+        } else {
+            //CliArgs::clap().print_help().expect("print help");
+            eprintln!("Tests: {:?}", TESTS);
+            eprintln!();
+            return;
+        };
         //println!("{:?}", test_opt);
 
         // catch panic in the spawn
@@ -58,7 +57,7 @@ fn main() {
         let test_case = TestCase::new(option.environment.clone(), test_opt);
 
         // TODO: Build this with Test Runner
-        match test_name.as_str() {
+        match option.test_name.as_str() {
             "smoke" => flv_test::tests::smoke::run(fluvio_client, test_case).await,
             "concurrent" => flv_test::tests::concurrent::run(fluvio_client, test_case).await,
             //"many_producers" => {
@@ -70,6 +69,22 @@ fn main() {
         // Cluster cleanup
         cluster_cleanup(option.environment).await;
     });
+}
+
+fn validate_subcommand(subcommand: Vec<String>) -> Result<Box<dyn TestOption>, ()> {
+    let test_name = subcommand[0].clone();
+    if TESTS.iter().any(|t| &test_name.as_str() == t) {
+        // here we'll match on the command name
+
+        match test_name.as_str() {
+            "smoke" => Ok(Box::new(SmokeTestOption::from_iter(subcommand))),
+            "concurrent" => Ok(Box::new(ConcurrentTestOption::from_iter(subcommand))),
+            //"many_producers" => {}
+            _ => unreachable!("This shouldn't be reachable"),
+        }
+    } else {
+        Err(())
+    }
 }
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
@@ -115,46 +130,38 @@ mod tests {
     // set # spu
 
     use structopt::StructOpt;
-    use fluvio_test_util::test_meta::{CliArgs, TestCli};
+    use fluvio_test_util::test_meta::{BaseCli, TestCli};
     use flv_test::tests::smoke::SmokeTestOption;
 
     #[test]
     fn valid_test_name() {
-        let args = CliArgs::from_iter(vec!["flv-test", "smoke"]);
-
-        if let TestCli::CliCmd(cmd) = args.test_cmd {
-            assert_eq!(cmd[0], String::from("smoke"));
-        } else {
-            panic!("test command not found")
-        }
+        let args = BaseCli::from_iter(vec!["flv-test", "smoke"]);
+        assert_eq!(args.test_name, String::from("smoke"));
     }
 
     // TODO: Add a test selector, so we can make this test more robust
     #[test]
     fn invalid_test_name() {
-        let args = CliArgs::from_iter(vec!["flv-test", "testdoesnotexist"]);
-
-        if let TestCli::CliCmd(cmd) = args.test_cmd {
-            assert_eq!(cmd[0], String::from("testdoesnotexist"));
-        } else {
-            panic!("test command not found")
-        }
+        let args = BaseCli::from_iter(vec!["flv-test", "testdoesnotexist"]);
+        assert_eq!(args.test_name, String::from("testdoesnotexist"));
     }
 
     #[test]
     fn extra_vars() {
-        let args = CliArgs::from_iter(vec![
+        let args = BaseCli::from_iter(vec![
             "flv-test",
-            "--",
             "smoke",
-            "--producer-iteration",
-            "9000",
-            "--producer-record-size",
-            "1000",
+            "--",
+            "--producer-iteration=9000",
+            "--producer-record-size=1000",
         ]);
 
-        if let TestCli::CliCmd(cmd) = args.test_cmd {
-            let smoke_test_case = SmokeTestOption::from_iter(cmd);
+        if let Some(TestCli::Args(cmd)) = args.test_cmd_args {
+            // Structopt commands expect an arbitrary binary name before the test args
+            let mut subcommand = vec![args.test_name.clone()];
+            subcommand.extend(cmd);
+
+            let smoke_test_case = SmokeTestOption::from_iter(subcommand);
 
             let expected = SmokeTestOption {
                 producer_iteration: 9000,
@@ -164,18 +171,17 @@ mod tests {
 
             assert_eq!(smoke_test_case, expected);
         } else {
-            panic!("test command not found")
+            panic!("test args not parsed")
         }
     }
 
     #[test]
     fn topic() {
-        let args = CliArgs::from_iter(vec![
+        let args = BaseCli::from_iter(vec![
             "flv-test",
+            "smoke",
             "--topic-name",
             "not_the_default_topic_name",
-            "--",
-            "smoke",
         ]);
 
         assert_eq!(args.environment.topic_name, "not_the_default_topic_name");
@@ -183,7 +189,7 @@ mod tests {
 
     #[test]
     fn spu() {
-        let args = CliArgs::from_iter(vec!["flv-test", "--spu", "5", "--", "smoke"]);
+        let args = BaseCli::from_iter(vec!["flv-test", "smoke", "--spu", "5"]);
 
         assert_eq!(args.environment.spu, 5);
     }
