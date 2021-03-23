@@ -76,6 +76,8 @@ jobs:
     needs: publish_fluvio_cli
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Install cargo-make
         uses: davidB/rust-cargo-make@v1
         with:
