@@ -100,6 +100,8 @@ jobs:
           [ $(cat VERSION | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\-') ] || cargo make bump-fluvio-stable
 
       - name: Set github release to non-prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
         run: |
           # This should probably go in the Github makefile task but it does not like the regex.
           [ $(cat VERSION | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\-') ] || cargo make publish-github-release
