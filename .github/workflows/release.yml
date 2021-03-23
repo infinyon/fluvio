@@ -84,11 +84,10 @@ jobs:
           echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
           echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
 
-      - name: Bump release version of Fluvio CLI using fluvio-packages
+      - name: Bump stable release version of Fluvio CLI using fluvio-packages
         run: |
-          export FLUVIO_VERSION="$(cat VERSION)+$(git rev-parse HEAD)"
-          echo "Using Fluvio version ${FLUVIO_VERSION}"
-          cargo make bump-fluvio
+          # This should probably go in the S3 makefile task but it does not like the regex.
+          [ $(cat VERSION | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\-') ] || cargo make bump-fluvio-stable
 
 # TODO: Fix the pi build
 #  release_fluvio_pi:

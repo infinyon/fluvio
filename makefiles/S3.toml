@@ -63,3 +63,7 @@ script = """${HOME}/.fluvio/bin/fluvio package --test bump dynamic ${FLUVIO_VERS
 [tasks.bump-fluvio-latest]
 dependencies = ["install-fluvio-package"]
 script = """${HOME}/.fluvio/bin/fluvio package --test bump latest "$(cat VERSION)+$(git rev-parse HEAD)" """
+
+[tasks.bump-fluvio-stable]
+dependencies = ["install-fluvio-package"]
+script = """${HOME}/.fluvio/bin/fluvio package --bump stable $(cat VERSION)"""
