@@ -66,4 +66,4 @@ script = """${HOME}/.fluvio/bin/fluvio package --test bump latest "$(cat VERSION
 
 [tasks.bump-fluvio-stable]
 dependencies = ["install-fluvio-package"]
-script = """${HOME}/.fluvio/bin/fluvio package --bump stable $(cat VERSION)"""
+script = """${HOME}/.fluvio/bin/fluvio package bump stable $(cat VERSION)"""
