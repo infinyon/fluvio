@@ -59,3 +59,15 @@ args = [
     "--repo", "fluvio",
     "--tag", "v${FLUVIO_VERSION}",
 ]
+
+[tasks.publish-github-release]
+dependencies = [
+    "install-github-release",
+]
+command = "github-release"
+args = [
+    "edit",
+    "--user", "infinyon",
+    "--repo", "fluvio",
+    "--tag", "v${FLUVIO_VERSION}",
+]
