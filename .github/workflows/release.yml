@@ -76,13 +76,13 @@ jobs:
       - name: Set test env
         if: ${{ github.event.inputs.test != '' }}
         run: |
-          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
-          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Set prod env
         if: ${{ github.event.inputs.test == '' }}
         run: |
-          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
-          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
 
       - name: Bump stable release version of Fluvio CLI using fluvio-packages
         run: |
