@@ -13,6 +13,7 @@ use fluvio_socket::{AllFlvSocket, SharedAllMultiplexerSocket};
 use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::FluvioError;
+use async_mutex::Mutex;
 
 /// Frame with request and response
 #[async_trait]
@@ -37,7 +38,7 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
     }
 
     /// send and receive
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync;
 }
@@ -45,7 +46,7 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: AllFlvSocket,
+    socket: Mutex<AllFlvSocket>,
     config: ClientConfig,
     versions: Versions,
 }
@@ -63,7 +64,7 @@ impl SerialFrame for VersionedSocket {
     }
 
     /// send and wait for reply
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -71,6 +72,8 @@ impl SerialFrame for VersionedSocket {
 
         // send request & save response
         self.socket
+            .lock()
+            .await
             .get_mut_stream()
             .next_response(&req_message)
             .await
@@ -89,9 +92,11 @@ impl VersionedSocket {
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
-        let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
+        let message = socket.send(&req_msg).await?;
+        let response: ApiVersionsResponse = message.response;
         let versions = Versions::new(response);
 
+        let socket = Mutex::new(socket);
         Ok(Self {
             socket,
             config,
@@ -100,11 +105,12 @@ impl VersionedSocket {
     }
 
     pub fn split(self) -> (AllFlvSocket, ClientConfig, Versions) {
-        (self.socket, self.config, self.versions)
+        let socket = self.socket.into_inner();
+        (socket, self.config, self.versions)
     }
 
     /// send request only
-    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, FlvSocketError>
+    pub async fn send_request<R>(&self, request: R) -> Result<RequestMessage<R>, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -116,7 +122,12 @@ impl VersionedSocket {
 
         let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
 
-        self.socket.get_mut_sink().send_request(&req_msg).await?;
+        self.socket
+            .lock()
+            .await
+            .get_mut_sink()
+            .send_request(&req_msg)
+            .await?;
         Ok(req_msg)
     }
 }
@@ -262,7 +273,7 @@ impl SerialFrame for VersionedSerialSocket {
     }
 
     /// send and wait for reply serially
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {

@@ -61,7 +61,7 @@ impl TopicProducer {
             addr = spu_client.config().addr(),
             "Connected to replica leader:"
         );
-        send_record_raw(spu_client, &replica, Some(key), value).await
+        send_record_raw(&spu_client, &replica, Some(key), value).await
     }
 
     /// Sends an event to a specific partition within this producer's topic
@@ -93,13 +93,13 @@ impl TopicProducer {
 
         debug!("connect to replica leader at: {}", spu_client);
 
-        send_record_raw(spu_client, &replica, None, record).await
+        send_record_raw(&spu_client, &replica, None, record).await
     }
 }
 
 /// Sends record to a target server (Kf, SPU, or SC)
 async fn send_record_raw<F: SerialFrame>(
-    mut leader: F,
+    leader: &F,
     replica: &ReplicaKey,
     key: Option<&[u8]>,
     value: &[u8],
