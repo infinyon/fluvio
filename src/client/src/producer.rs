@@ -74,7 +74,7 @@ impl TopicProducer {
     where
         K: AsRef<[u8]>,
         V: AsRef<[u8]>,
-        I: IntoIterator<Item = (K, V)>,
+        I: IntoIterator<Item = (Option<K>, V)>,
     {
         let replica = ReplicaKey::new(&self.topic, 0);
         let spu_client = self.pool.create_serial_socket(&replica).await?;
@@ -85,7 +85,9 @@ impl TopicProducer {
         let records: Vec<_> = records.into_iter().collect();
         let records: Vec<_> = records
             .iter()
-            .map(|(key, value): &(K, V)| (Some(key.as_ref()), value.as_ref()))
+            .map(|(key, value): &(Option<K>, V)| {
+                (key.as_ref().map(|it| it.as_ref()), value.as_ref())
+            })
             .collect();
         send_records_raw(spu_client, &replica, &records).await?;
         Ok(())
