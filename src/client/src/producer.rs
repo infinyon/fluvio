@@ -61,7 +61,34 @@ impl TopicProducer {
             addr = spu_client.config().addr(),
             "Connected to replica leader:"
         );
-        send_record_raw(spu_client, &replica, Some(key), value).await
+        let records = &[(Some(key), value)];
+        send_records_raw(spu_client, &replica, records).await?;
+        Ok(())
+    }
+
+    #[instrument(
+        skip(self, records),
+        fields(topic = %self.topic),
+    )]
+    pub async fn send_all<K, V, I>(&self, records: I) -> Result<(), FluvioError>
+    where
+        K: AsRef<[u8]>,
+        V: AsRef<[u8]>,
+        I: IntoIterator<Item = (K, V)>,
+    {
+        let replica = ReplicaKey::new(&self.topic, 0);
+        let spu_client = self.pool.create_serial_socket(&replica).await?;
+        debug!(
+            addr = spu_client.config().addr(),
+            "Connected to replica leader:"
+        );
+        let records: Vec<_> = records.into_iter().collect();
+        let records: Vec<_> = records
+            .iter()
+            .map(|(key, value): &(K, V)| (Some(key.as_ref()), value.as_ref()))
+            .collect();
+        send_records_raw(spu_client, &replica, &records).await?;
+        Ok(())
     }
 
     /// Sends an event to a specific partition within this producer's topic
@@ -93,16 +120,17 @@ impl TopicProducer {
 
         debug!("connect to replica leader at: {}", spu_client);
 
-        send_record_raw(spu_client, &replica, None, record).await
+        let records = &[(None, record)];
+        send_records_raw(spu_client, &replica, records).await?;
+        Ok(())
     }
 }
 
 /// Sends record to a target server (Kf, SPU, or SC)
-async fn send_record_raw<F: SerialFrame>(
+async fn send_records_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
-    key: Option<&[u8]>,
-    value: &[u8],
+    records: &[(Option<&[u8]>, &[u8])],
 ) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
@@ -116,22 +144,28 @@ async fn send_record_raw<F: SerialFrame>(
     let mut topic_request = DefaultTopicRequest::default();
     let mut partition_request = DefaultPartitionRequest::default();
 
-    debug!(
-        "send record {} bytes to: replica: {}, {}",
-        value.len(),
-        replica,
-        leader
-    );
+    debug!("Putting together batch with {} records", records.len());
 
-    let mut record_msg = DefaultRecord {
-        value: DefaultAsyncBuffer::new(value.to_owned()),
-        ..Default::default()
-    };
-    if let Some(key) = key {
-        record_msg.key = Some(key.into());
-    }
     let mut batch = DefaultBatch::default();
-    batch.add_record(record_msg);
+    for (key, value) in records {
+        debug!(
+            "send record {} bytes to: replica: {}, {}",
+            value.len(),
+            replica,
+            leader
+        );
+
+        let value = Vec::from(*value);
+        let mut record_msg = DefaultRecord {
+            value: DefaultAsyncBuffer::new(value),
+            ..Default::default()
+        };
+        if let Some(key) = key {
+            let key = Vec::from(*key);
+            record_msg.key = Some(key.into());
+        }
+        batch.add_record(record_msg);
+    }
 
     partition_request.partition_index = replica.partition;
     partition_request.records.batches.push(batch);

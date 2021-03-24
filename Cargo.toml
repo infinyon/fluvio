@@ -2,6 +2,7 @@
 members = [
     "examples/00-produce",
     "examples/01-produce-key-value",
+    "examples/01-produce-batch",
     "examples/02-consume",
     "examples/03-echo",
     "src/auth",
