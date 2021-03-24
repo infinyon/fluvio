@@ -37,7 +37,7 @@ dependencies = [
     "install-fluvio-package",
     "publish-fluvio-env",
 ]
-script = "${HOME}/.fluvio/bin/fluvio package --test publish --version=${FLUVIO_VERSION} ${FORCE_RELEASE} ./target/${TARGET}/release/fluvio"
+script = "${HOME}/.fluvio/bin/fluvio package publish --version=${FLUVIO_VERSION} ${FORCE_RELEASE} ./target/${TARGET}/release/fluvio"
 
 [tasks.publish-fluvio-env.linux]
 env = { TARGET = "x86_64-unknown-linux-musl" }
@@ -63,3 +63,7 @@ script = """${HOME}/.fluvio/bin/fluvio package --test bump dynamic ${FLUVIO_VERS
 [tasks.bump-fluvio-latest]
 dependencies = ["install-fluvio-package"]
 script = """${HOME}/.fluvio/bin/fluvio package --test bump latest "$(cat VERSION)+$(git rev-parse HEAD)" """
+
+[tasks.bump-fluvio-stable]
+dependencies = ["install-fluvio-package"]
+script = """${HOME}/.fluvio/bin/fluvio package bump stable $(cat VERSION)"""
