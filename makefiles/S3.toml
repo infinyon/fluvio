@@ -79,7 +79,7 @@ script = """
 ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
     bump dynamic $(cat VERSION)
 
-${HOME}/.fluvio/extension/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
     bump latest $(cat VERSION)
 """
 
