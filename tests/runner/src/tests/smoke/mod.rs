@@ -52,12 +52,17 @@ impl TestOption for SmokeTestOption {
     }
 }
 
-inventory::submit! {
-    FluvioTest {
-        name: "smoke".to_string(),
-        test_fn: smoke,
-    }
-}
+//inventory::submit! {
+//    FluvioTest {
+//        name: "smoke".to_string(),
+//        test_fn: smoke,
+//        validate_fn: validate_subcommand,
+//    }
+//}
+
+//pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
+//    Box::new(SmokeTestOption::from_iter(subcmd))
+//}
 
 #[fluvio_test(topic = "test")]
 pub async fn smoke(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {

@@ -47,30 +47,10 @@ impl TestOption for ConcurrentTestOption {
     }
 }
 
-//pub fn run_hack(client: Arc<Fluvio>, option: TestOption) {
-//    let future = async move {
-//        run(client, option).await;
-//    };
-//    fluvio_future::task::run_block_on(future);
-//}
-//
-
-inventory::submit! {
-    FluvioTest {
-        name: "concurrent".to_string(),
-        test_fn: concurrent,
-    }
-}
-
 #[fluvio_test(topic = "test-bug")]
 pub async fn concurrent(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
     test_concurrent_consume_produce(client, test_case.into()).await
 }
-
-//#[fluvio_test(topic = "test-bug")]
-//pub async fn concurrent(client: Arc<Fluvio>, mut test_case: TestCase) {
-//    test_concurrent_consume_produce(client, test_case.into()).await
-//}
 
 pub async fn test_concurrent_consume_produce(client: Arc<Fluvio>, option: ConcurrentTestCase) {
     println!("Testing concurrent consumer and producer");

@@ -5,44 +5,71 @@ use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
-use fluvio_test_opts_builder::validate_subcommand;
+use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::FluvioTest;
 
-use std::panic::{self, AssertUnwindSafe};
+// This is important for `inventory` crate
+#[allow(unused_imports)]
+use flv_test::tests as _;
 
 fn main() {
-    let option = BaseCli::from_args();
-    //let testrun_option = option.clone();
-    //println!("{:?}", option);
+    run_block_on(async {
+        let option = BaseCli::from_args();
+        //println!("{:?}", option);
 
-    let test_name = option.test_name.clone();
-    let mut subcommand = vec![test_name.clone()];
+        let test_name = option.test_name.clone();
+        let mut subcommand = vec![test_name.clone()];
 
-    // We want to get a TestOption compatible struct back
-    let valid_cmd: Result<Box<dyn TestOption>, ()> =
-        if let Some(TestCli::Args(args)) = option.test_cmd_args.clone() {
-            // Add the args to the subcommand
-            subcommand.extend(args);
-            validate_subcommand(subcommand)
+        // We want to get a TestOption compatible struct back
+        let valid_cmd: Result<Box<dyn TestOption>, ()> =
+            if let Some(TestCli::Args(args)) = option.test_cmd_args {
+                // Add the args to the subcommand
+                subcommand.extend(args);
+
+                // Find test in inventory
+                let t = inventory::iter::<FluvioTest>
+                    .into_iter()
+                    .find(|t| t.name == test_name.as_str())
+                    .expect("Test not found");
+
+                // Parse the subcommand
+                let testopt = (t.validate_fn)(subcommand);
+                Ok(testopt)
+            } else {
+                // No args
+                let t = inventory::iter::<FluvioTest>
+                    .into_iter()
+                    .find(|t| t.name == test_name.as_str())
+                    .expect("Test not found");
+
+                let testopt = (t.validate_fn)(subcommand);
+                Ok(testopt)
+            };
+
+        let test_opt = if let Ok(test_opt) = valid_cmd {
+            test_opt
         } else {
-            // No args
-            validate_subcommand(subcommand)
+            eprintln!(
+                "Tests: {:?}",
+                inventory::iter::<FluvioTest>
+                    .into_iter()
+                    .map(|x| x.name.clone())
+                    .collect::<Vec<String>>()
+            );
+            eprintln!();
+
+            return;
         };
 
-    let test_opt = if let Ok(test_opt) = valid_cmd {
-        test_opt
-    } else {
-        //CliArgs::clap().print_help().expect("print help");
-        eprintln!("Tests: {:?}", test_names());
-        eprintln!();
-        return;
-    };
-    //println!("{:?}", test_opt);
+        // catch panic in the spawn
+        std::panic::set_hook(Box::new(|panic_info| {
+            eprintln!("panic {}", panic_info);
+            std::process::exit(-1);
+        }));
 
-    println!("Start running fluvio test runner");
-    fluvio_future::subscriber::init_logger();
+        println!("Start running fluvio test runner");
+        fluvio_future::subscriber::init_logger();
 
-    run_block_on(async {
         // Deploy a cluster
         let fluvio_client = cluster_setup(&option.environment).await;
 
@@ -50,19 +77,15 @@ fn main() {
         let test_case = TestCase::new(option.environment.clone(), test_opt);
 
         let test_run = panic::catch_unwind(AssertUnwindSafe(move || {
-            for test in inventory::iter::<FluvioTest> {
-                println!("Loop: {:?}", &test.name);
-                if test.name == test_name.as_str() {
-                    println!("I should run {:?}", test.name);
-                    let test_result = (test.test_fn)(fluvio_client.clone(), test_case);
-                    println!("{}", test_result);
-                    break;
-                } else {
-                    continue;
-                }
-            }
-        }));
+            let test = inventory::iter::<FluvioTest>
+                .into_iter()
+                .find(|t| t.name == test_name.as_str())
+                .expect("Test not found");
 
+            // Run the test
+            let test_result = (test.test_fn)(fluvio_client.clone(), test_case);
+            println!("{}", test_result);
+        }));
         // Cluster cleanup
         cluster_cleanup(option.environment).await;
 
@@ -73,24 +96,6 @@ fn main() {
         //}));
     });
 }
-
-validate_subcommand!();
-
-//fn validate_subcommand(subcommand: Vec<String>) -> Result<Box<dyn TestOption>, ()> {
-//    let test_name = subcommand[0].clone();
-//    if TESTS.iter().any(|t| &test_name.as_str() == t) {
-//        // here we'll match on the command name
-//
-//        match test_name.as_str() {
-//            "smoke" => Ok(Box::new(SmokeTestOption::from_iter(subcommand))),
-//            "concurrent" => Ok(Box::new(ConcurrentTestOption::from_iter(subcommand))),
-//            //"many_producers" => {}
-//            _ => unreachable!("This shouldn't be reachable"),
-//        }
-//    } else {
-//        Err(())
-//    }
-//}
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
     if option.skip_cluster_delete() {
@@ -136,19 +141,29 @@ mod tests {
 
     use structopt::StructOpt;
     use fluvio_test_util::test_meta::{BaseCli, TestCli};
-    use fluvio_integration_tests::smoke::SmokeTestOption;
+    use fluvio_test_util::test_runner::FluvioTest;
+    use flv_test::tests::smoke::SmokeTestOption;
 
     #[test]
     fn valid_test_name() {
         let args = BaseCli::from_iter(vec!["flv-test", "smoke"]);
-        assert_eq!(args.test_name, String::from("smoke"));
+
+        let t = inventory::iter::<FluvioTest>
+            .into_iter()
+            .find(|t| t.name == args.test_name.as_str());
+
+        assert!(t.is_some());
     }
 
-    // TODO: Add a test selector, so we can make this test more robust
     #[test]
     fn invalid_test_name() {
         let args = BaseCli::from_iter(vec!["flv-test", "testdoesnotexist"]);
-        assert_eq!(args.test_name, String::from("testdoesnotexist"));
+
+        let t = inventory::iter::<FluvioTest>
+            .into_iter()
+            .find(|t| t.name == args.test_name.as_str());
+
+        assert!(t.is_none());
     }
 
     #[test]

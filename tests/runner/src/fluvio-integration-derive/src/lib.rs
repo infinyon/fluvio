@@ -4,6 +4,7 @@ use proc_macro2::Span;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use syn::{AttributeArgs, Ident, ItemFn, parse_macro_input};
 use quote::quote;
+use inflections::Inflect;
 
 /// This macro will allow a test writer to override
 /// minimum Fluvio cluster requirements for a test
@@ -60,18 +61,20 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
 
-    // Build a Pascal-case func ex: <smoke>TestOption::from_iter
+    let test_opt_ident = Ident::new(
+        &format!("{}TestOption", &test_name).to_pascal_case(),
+        Span::call_site(),
+    );
 
-    //let test_opt_fn_iden = Ident::new(
-    //    &format!("{}_inner", &test_name.to_string()),
-    //    Span::call_site(),
-    //);
-
-    //let out_fn_str = test_name.to_string();
+    let out_fn_str = test_name.to_string();
 
     let output_fn = quote! {
 
-        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult{
+        pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
+            Box::new(#test_opt_ident::from_iter(subcmd))
+        }
+
+        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             println!("Inside the function");
             let future = async move {
                 println!("Inside the async wrapper function");
@@ -80,13 +83,13 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             fluvio_future::task::run_block_on(future)
         }
 
-        // TODO: Add test name to attributes so we can use it like this
-        //inventory::submit!{
-        //    FluvioTest {
-        //        name: #out_fn_str.to_string(),
-        //        test_fn: #out_fn_iden,
-        //    }
-        //}
+        inventory::submit!{
+            FluvioTest {
+                name: #out_fn_str.to_string(),
+                test_fn: #out_fn_iden,
+                validate_fn: validate_subcommand,
+            }
+        }
 
         pub async fn #async_inner_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             use fluvio::Fluvio;

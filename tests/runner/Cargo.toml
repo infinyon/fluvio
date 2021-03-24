@@ -25,8 +25,7 @@ fluvio-system-util = { version = "0.1.0", path = "../../src/utils" }
 # Fluvio test framework Attribute macro
 fluvio-integration-derive = { path = "./src/fluvio-integration-derive" }
 fluvio-test-util = { path = "./src/utils" }
-fluvio-test-opts-builder = { path = "./src/fluvio-test-opts-builder" }
-fluvio-integration-tests = { path = "./src/tests"}
+#fluvio-integration-tests = { path = "./src/tests"}
 
 syn = { version = "1.0", features = ["full"]}
 
