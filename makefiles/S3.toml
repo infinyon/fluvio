@@ -77,10 +77,10 @@ script = "${HOME}/.fluvio/bin/fluvio install --develop fluvio/fluvio-package"
 dependencies = ["install-fluvio-package"]
 script = """
 ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
-    bump dynamic ${FLUVIO_VERSION}
+    bump dynamic $(cat VERSION)
 
 ${HOME}/.fluvio/extension/fluvio-package ${FLUVIO_PUBLISH_TEST} \
-    bump latest ${FLUVIO_VERSION}
+    bump latest $(cat VERSION)
 """
 
 # Bumps the `latest` version tag on packages.fluvio.io
