@@ -74,13 +74,13 @@ script = "${HOME}/.fluvio/bin/fluvio install --develop fluvio/fluvio-package"
 #
 # This will _also_ always bump the `latest` tag to the given version.
 [tasks.bump-fluvio]
-dependencies = ["install-fluvio-package", "bump-fluvio-latest"]
+dependencies = ["install-fluvio-package"]
 script = """
-${HOME}/.fluvio/extensions/fluvio-package \
-    ${FLUVIO_PUBLISH_TEST} \
-    bump \
-    dynamic \
-    ${FLUVIO_VERSION}
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    bump dynamic ${FLUVIO_VERSION}
+
+${HOME}/.fluvio/extension/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    bump latest ${FLUVIO_VERSION}
 """
 
 # Bumps the `latest` version tag on packages.fluvio.io
