@@ -7,10 +7,18 @@ autotests = false
 
 [dependencies]
 log = "0.4.8"
-bytes = "0.5.3"
+bytes = "1.0"
 futures-lite = "1.11.0"
 structopt = "0.3.5"
 async-trait = "0.1.21"
+syn = { version = "1.0", features = ["full"]}
+rand = "0.8"
+md-5 = "0.9"
+serde = "1.0"
+serde_json = "1.0"
+inventory = "0.1"
+tokio = { version = "1.4", features = ["macros"] }
+futures = "0.3"
 
 # Fluvio dependencies
 fluvio = { path = "../../src/client" }
@@ -25,14 +33,3 @@ fluvio-system-util = { version = "0.1.0", path = "../../src/utils" }
 # Fluvio test framework Attribute macro
 fluvio-integration-derive = { path = "./src/fluvio-integration-derive" }
 fluvio-test-util = { path = "./src/utils" }
-#fluvio-integration-tests = { path = "./src/tests"}
-
-syn = { version = "1.0", features = ["full"]}
-
-rand = "^0.8"
-md-5 = "^0.9"
-serde = "1.0"
-serde_json = "1.0"
-tokio = { version = "1.4", features = ["macros"] }
-futures = "0.3"
-inventory = "0.1"

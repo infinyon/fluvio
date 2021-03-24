@@ -18,54 +18,25 @@ fn main() {
         //println!("{:?}", option);
 
         let test_name = option.test_name.clone();
+
+        // Get test from inventory
+        let test =
+            FluvioTest::from_name(&test_name).expect("StructOpt should have caught this error");
+
         let mut subcommand = vec![test_name.clone()];
 
         // We want to get a TestOption compatible struct back
-        let valid_cmd: Result<Box<dyn TestOption>, ()> =
-            if let Some(TestCli::Args(args)) = option.test_cmd_args {
-                // Add the args to the subcommand
-                subcommand.extend(args);
+        let test_opt: Box<dyn TestOption> = if let Some(TestCli::Args(args)) = option.test_cmd_args
+        {
+            // Add the args to the subcommand
+            subcommand.extend(args);
 
-                // Find test in inventory
-                let t = inventory::iter::<FluvioTest>
-                    .into_iter()
-                    .find(|t| t.name == test_name.as_str())
-                    .expect("Test not found");
-
-                // Parse the subcommand
-                let testopt = (t.validate_fn)(subcommand);
-                Ok(testopt)
-            } else {
-                // No args
-                let t = inventory::iter::<FluvioTest>
-                    .into_iter()
-                    .find(|t| t.name == test_name.as_str())
-                    .expect("Test not found");
-
-                let testopt = (t.validate_fn)(subcommand);
-                Ok(testopt)
-            };
-
-        let test_opt = if let Ok(test_opt) = valid_cmd {
-            test_opt
+            // Parse the subcommand
+            (test.validate_fn)(subcommand)
         } else {
-            eprintln!(
-                "Tests: {:?}",
-                inventory::iter::<FluvioTest>
-                    .into_iter()
-                    .map(|x| x.name.clone())
-                    .collect::<Vec<String>>()
-            );
-            eprintln!();
-
-            return;
+            // No args
+            (test.validate_fn)(subcommand)
         };
-
-        // catch panic in the spawn
-        std::panic::set_hook(Box::new(|panic_info| {
-            eprintln!("panic {}", panic_info);
-            std::process::exit(-1);
-        }));
 
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
@@ -86,6 +57,7 @@ fn main() {
             let test_result = (test.test_fn)(fluvio_client.clone(), test_case);
             println!("{}", test_result);
         }));
+
         // Cluster cleanup
         cluster_cleanup(option.environment).await;
 
@@ -93,7 +65,6 @@ fn main() {
             eprintln!("panic reason: {:?}", err);
             std::process::exit(-1);
         }
-        //}));
     });
 }
 
@@ -141,29 +112,20 @@ mod tests {
 
     use structopt::StructOpt;
     use fluvio_test_util::test_meta::{BaseCli, TestCli};
-    use fluvio_test_util::test_runner::FluvioTest;
     use flv_test::tests::smoke::SmokeTestOption;
 
     #[test]
     fn valid_test_name() {
-        let args = BaseCli::from_iter(vec!["flv-test", "smoke"]);
+        let args = BaseCli::from_iter_safe(vec!["flv-test", "smoke"]);
 
-        let t = inventory::iter::<FluvioTest>
-            .into_iter()
-            .find(|t| t.name == args.test_name.as_str());
-
-        assert!(t.is_some());
+        assert!(args.is_ok());
     }
 
     #[test]
     fn invalid_test_name() {
-        let args = BaseCli::from_iter(vec!["flv-test", "testdoesnotexist"]);
+        let args = BaseCli::from_iter_safe(vec!["flv-test", "testdoesnotexist"]);
 
-        let t = inventory::iter::<FluvioTest>
-            .into_iter()
-            .find(|t| t.name == args.test_name.as_str());
-
-        assert!(t.is_none());
+        assert!(args.is_err());
     }
 
     #[test]

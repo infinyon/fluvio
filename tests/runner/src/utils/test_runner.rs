@@ -15,6 +15,21 @@ pub struct FluvioTest {
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
 }
 
+impl FluvioTest {
+    pub fn all_test_names() -> Vec<&'static str> {
+        inventory::iter::<FluvioTest>
+            .into_iter()
+            .map(|x| x.name.as_str())
+            .collect::<Vec<&str>>()
+    }
+
+    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static FluvioTest> {
+        inventory::iter::<FluvioTest>
+            .into_iter()
+            .find(|t| t.name == test_name.as_ref())
+    }
+}
+
 inventory::collect!(FluvioTest);
 
 impl FluvioTest {
