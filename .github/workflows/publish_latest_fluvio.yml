@@ -1,8 +1,8 @@
-name: Release
+name: Publish latest Fluvio
 
 on:
-#  push:
-#    branches: [master]
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       force:
@@ -38,14 +38,17 @@ jobs:
       - name: Set test env
         if: ${{ github.event.inputs.test != '' }}
         run: |
-          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
-          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+          echo "FLUVIO_PUBLISH_TEST=--test" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Set prod env
         if: ${{ github.event.inputs.test == '' }}
         run: |
-          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
-          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Build and publish using fluvio-packages
+        env:
+          RUST_LOG: debug
         run: cargo make -l verbose publish-fluvio-latest
 
   # Bump the latest version of the Fluvio CLI on the package registry
@@ -56,15 +59,24 @@ jobs:
     needs: publish_fluvio_cli
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+        with:
+          version: '0.32.9'
       - name: Set test env
         if: ${{ github.event.inputs.test != '' }}
         run: |
-          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}"
-          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}"
+          echo "FLUVIO_PUBLISH_TEST=--test" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Set prod env
         if: ${{ github.event.inputs.test == '' }}
         run: |
-          echo "::set-env name=AWS_ACCESS_KEY_ID::${{ secrets.AWS_ACCESS_KEY_ID }}"
-          echo "::set-env name=AWS_SECRET_ACCESS_KEY::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Bump latest version of Fluvio CLI on fluvio-packages
+        env:
+          RUST_LOG: debug
         run: cargo make bump-fluvio-latest

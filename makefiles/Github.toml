@@ -24,7 +24,7 @@ category = "Publish"
 dependencies = [
     "release-github-env",
     "install-github-release",
-    "build-release",
+    "build-prod",
     "github-release-create-pre-release",
 ]
 script = '''

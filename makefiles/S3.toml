@@ -31,20 +31,29 @@ args = [
     "--acl", "public-read",
 ]
 
+# Publishes Fluvio with a version from VERSION.
 [tasks.publish-fluvio]
 dependencies = [
-    "build-release",
+    "build-prod",
     "install-fluvio-package",
     "publish-fluvio-env",
 ]
-script = "${HOME}/.fluvio/bin/fluvio package publish --version=${FLUVIO_VERSION} ${FORCE_RELEASE} ./target/${TARGET}/release/fluvio"
+env = { FLUVIO_VERSION = { script = ["cat VERSION"] } }
+script = """
+${HOME}/.fluvio/extensions/fluvio-package \
+    ${FLUVIO_PUBLISH_TEST} \
+    publish \
+    --version=${FLUVIO_VERSION} \
+    ${FORCE_RELEASE} \
+    ./target/${TARGET}/release/fluvio
+"""
 
 [tasks.publish-fluvio-env.linux]
 env = { TARGET = "x86_64-unknown-linux-musl" }
-
 [tasks.publish-fluvio-env.mac]
 env = { TARGET = "x86_64-apple-darwin" }
 
+# Publishes Fluvio with a version from VERSION plus the current git hash.
 [tasks.publish-fluvio-latest]
 extend = "publish-fluvio"
 env = { FLUVIO_VERSION = { script = ["""echo "$(cat VERSION)+$(git rev-parse HEAD)" """] } }
@@ -56,14 +65,33 @@ script = "curl -fsS https://packages.fluvio.io/v1/install.sh | bash"
 dependencies = ["install-fluvio"]
 script = "${HOME}/.fluvio/bin/fluvio install --develop fluvio/fluvio-package"
 
+# Bumps a version tag on packages.fluvio.io
+#
+# This will detect _which_ version tag to bump by looking at the format of the given
+# FLUVIO_VERSION. If it is a full release (x.y.z), it will bump `stable`. If it is a
+# prerelease (x.y.z-alpha.w), it will bump `prerelease`. If it has build info included
+# (x.y.z+abcdef or x.y.z-alpha.w+abcdef), then it will bump `latest`.
+#
+# This will _also_ always bump the `latest` tag to the given version.
 [tasks.bump-fluvio]
-dependencies = ["install-fluvio-package", "bump-fluvio-latest"]
-script = """${HOME}/.fluvio/bin/fluvio package --test bump dynamic ${FLUVIO_VERSION} """
+dependencies = ["install-fluvio-package"]
+script = """
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    bump dynamic $(cat VERSION)
 
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    bump latest $(cat VERSION)
+"""
+
+# Bumps the `latest` version tag on packages.fluvio.io
+#
+# This uses a version made of the VERSION plus the current git hash.
 [tasks.bump-fluvio-latest]
 dependencies = ["install-fluvio-package"]
-script = """${HOME}/.fluvio/bin/fluvio package --test bump latest "$(cat VERSION)+$(git rev-parse HEAD)" """
-
-[tasks.bump-fluvio-stable]
-dependencies = ["install-fluvio-package"]
-script = """${HOME}/.fluvio/bin/fluvio package bump stable $(cat VERSION)"""
+script = """
+${HOME}/.fluvio/extensions/fluvio-package \
+    ${FLUVIO_PUBLISH_TEST} \
+    bump \
+    latest \
+    "$(cat VERSION)+$(git rev-parse HEAD)"
+"""

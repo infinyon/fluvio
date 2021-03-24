@@ -7,26 +7,61 @@ CARGO_PROFILE = "release"
 [tasks.set-image-tag]
 env = { IMAGE_TAG = "${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}-${CARGO_PROFILE}" }
 
-[env]
-FLUVIO_VERSION = { script = ["cat VERSION"] }
+################################################################################
+# Tasks for building targets matching the build host
+#
 
-[tasks.build-release.mac]
+[tasks.build-dev.mac]
+extend = "build-dev-mac"
+[tasks.build-dev.linux]
+extend = "build-dev-musl"
+
+[tasks.build-prod.mac]
+extend = "build-prod-mac"
+[tasks.build-prod.linux]
+extend = "build-prod-musl"
+
+
+################################################################################
+# Building for x86_64-apple-darwin can only be done on Mac
+#
+
+[tasks.build-dev-mac.mac]
+command = "cargo"
+args = ["build", "--bin", "fluvio", "--target", "x86_64-apple-darwin"]
+
+[tasks.build-prod-mac.mac]
+command = "cargo"
+args = ["build", "--bin", "fluvio", "--release", "--target", "x86_64-apple-darwin"]
+
+# Fail apple-darwin build on linux
+[tasks.build-dev-mac.linux]
+script = "echo Cannot build for Mac from Linux && false"
+[tasks.build-prod-mac.linux]
+script = "echo Cannot build for Mac from Linux && false"
+
+
+################################################################################
+# Building linux-musl on Linux requires setting up musl-gcc toolchain
+#
+
+[tasks.build-dev-musl.linux]
+dependencies = ["setup-musl"]
+command = "cargo"
 args = [
     "build",
     "--bin", "fluvio",
-    "--release",
-    "--target=x86_64-apple-darwin",
-    "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )"
+    "--target=x86_64-unknown-linux-musl",
 ]
 
-[tasks.build-release.linux]
+[tasks.build-prod-musl.linux]
 dependencies = ["setup-musl"]
+command = "cargo"
 args = [
     "build",
     "--release",
     "--bin", "fluvio",
     "--target=x86_64-unknown-linux-musl",
-    "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )"
 ]
 
 [tasks.setup-musl.linux]
@@ -35,12 +70,8 @@ which musl-gcc 2> /dev/null > /dev/null || {
     echo "Install musl-tools on your system!";
     exit 1
 }
-rustup target add "$CARGO_MAKE_RELEASE_FLOW_TARGET"
+rustup target add x86_64-unknown-linux-musl
 '''
 
 [tasks.setup-musl.condition]
 platforms = ["linux"]
-profiles = [ "production" ]
-
-[tasks.setup-musl.env]
-CARGO_MAKE_RELEASE_FLOW_TARGET = "x86_64-unknown-linux-musl"

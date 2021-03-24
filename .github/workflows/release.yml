@@ -13,6 +13,10 @@ on:
       update_script:
         description: 'Whether to update the install.sh script'
         required: false
+      test:
+        required: false
+        description: 'Whether to run a test release'
+        default: ''
 
 jobs:
   publish_fluvio_cli:
@@ -86,6 +90,7 @@ jobs:
       - name: Set test env
         if: ${{ github.event.inputs.test != '' }}
         run: |
+          echo "FLUVIO_PUBLISH_TEST=--test" >> $GITHUB_ENV
           echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Set prod env
@@ -95,9 +100,7 @@ jobs:
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
 
       - name: Bump stable release version of Fluvio CLI using fluvio-packages
-        run: |
-          # This should probably go in the S3 makefile task but it does not like the regex.
-          [ $(cat VERSION | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\-') ] || cargo make bump-fluvio-stable
+        run: cargo make bump-fluvio
 
       - name: Set github release to non-prerelease
         env:

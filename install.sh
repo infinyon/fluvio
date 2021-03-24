@@ -8,7 +8,8 @@ set -o pipefail
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_PREFIX="https://packages.fluvio.io/v1"
 readonly FLUVIO_STABLE="${FLUVIO_PREFIX}/stable"
-readonly FLUVIO_PRERELEASE="${FLUVIO_PREFIX}/latest"
+readonly FLUVIO_PRERELEASE="${FLUVIO_PREFIX}/prerelease"
+readonly FLUVIO_LATEST="${FLUVIO_PREFIX}/latest"
 readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 
 # Ensure that this architecture is supported and matches the
@@ -484,13 +485,22 @@ main() {
     # If a VERSION env variable is set:
     if [ -n "${VERSION:-""}" ]; then
 
-        # If VERSION is equal to exactly "latest", use PRERELEASE channel
-        if [ "${VERSION}" == "latest" ]; then
+        # If VERSION is equal to exactly "prerelease", use PRERELEASE channel
+        if [ "${VERSION}" == "prerelease" ]; then
             _version=$(fetch_latest_version_for_architecture "${_target}" "${FLUVIO_PRERELEASE}")
             _status=$?
             if [ $_status -ne 0 ]; then
                 err "❌ Failed to fetch latest version information!"
                 err "    Error downloading from ${FLUVIO_PRERELEASE}"
+                abort_prompt_issue
+            fi
+        # If VERSION is equal to exactly "latest", use LATEST channel
+        elif [ "${VERSION}" == "latest" ]; then
+            _version=$(fetch_latest_version_for_architecture "${_target}" "${FLUVIO_LATEST}")
+            _status=$?
+            if [ $_status -ne 0 ]; then
+                err "❌ Failed to fetch latest version information!"
+                err "    Error downloading from ${FLUVIO_LATEST}"
                 abort_prompt_issue
             fi
         else
