@@ -13,7 +13,7 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::error::ConsumerError;
+use crate::consumer::error::ConsumerError;
 
 // -----------------------------------
 // CLI Options

@@ -18,9 +18,9 @@ use fluvio::{Fluvio, PartitionConsumer, Offset, ConsumerConfig, FluvioError};
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::Record;
 
-use crate::error::ConsumerError;
+use crate::consumer::error::ConsumerError;
 use crate::common::FluvioExtensionMetadata;
-use crate::consume::record_format::{
+use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
 };
 

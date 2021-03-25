@@ -10,19 +10,16 @@ use tracing::debug;
 
 mod http;
 mod error;
-mod topic;
 mod install;
-mod consume;
-mod produce;
+mod consumer;
 mod profile;
 mod version;
 mod metadata;
-mod partition;
 
-use topic::TopicCmd;
-use consume::ConsumeLogOpt;
-use produce::ProduceLogOpt;
-use partition::PartitionCmd;
+use consumer::topic::TopicCmd;
+use consumer::consume::ConsumeLogOpt;
+use consumer::produce::ProduceLogOpt;
+use consumer::partition::PartitionCmd;
 use profile::ProfileCmd;
 use install::update::UpdateOpt;
 use install::plugins::InstallOpt;

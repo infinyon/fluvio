@@ -7,7 +7,7 @@ use tracing::debug;
 use fluvio::{Fluvio, TopicProducer};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
-use crate::error::ConsumerError;
+use crate::consumer::error::ConsumerError;
 
 // -----------------------------------
 // CLI Options
