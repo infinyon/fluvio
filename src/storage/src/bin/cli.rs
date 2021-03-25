@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::io::Error as IoError;
 
 use structopt::StructOpt;
 
@@ -22,13 +21,9 @@ fn main() {
 
     let opt = Main::from_args();
 
-    let res = match opt {
+    match opt {
         Main::Log(opt) => dump_log(opt),
         Main::Index(opt) => dump_index(opt),
-    };
-
-    if let Err(err) = res {
-        println!("error occured: {:#?}", err)
     }
 }
 
@@ -58,7 +53,7 @@ async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
     Ok(())
 }
 
-pub(crate) fn dump_log(opt: LogOpt) -> Result<(), IoError> {
+pub(crate) fn dump_log(opt: LogOpt) {
     let file_path = opt.file_name;
 
     println!("dumping batch: {:#?}", file_path);
@@ -67,7 +62,6 @@ pub(crate) fn dump_log(opt: LogOpt) -> Result<(), IoError> {
     if let Err(err) = result {
         println!("error in async: {:#?}", err)
     };
-    Ok(())
 }
 
 #[derive(Debug, StructOpt)]
@@ -76,7 +70,7 @@ pub(crate) struct IndexOpt {
     file_name: PathBuf,
 }
 
-pub(crate) fn dump_index(opt: IndexOpt) -> Result<(), IoError> {
+pub(crate) fn dump_index(opt: IndexOpt) {
     let file_path = opt.file_name;
 
     println!("dumping index: {:#?}", file_path);
@@ -85,7 +79,6 @@ pub(crate) fn dump_index(opt: IndexOpt) -> Result<(), IoError> {
     if let Err(err) = result {
         println!("error in async: {:#?}", err)
     };
-    Ok(())
 }
 
 const MAX: u32 = 100;
