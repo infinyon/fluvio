@@ -142,8 +142,8 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 check-clippy:	install-clippy
-	cargo +$(RUSTV) clippy --all-targets  -- -D warnings
-	cd src/client; cargo +$(RUSTV) clippy --all-targets  -- -D warnings
+	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
+	cd src/client; cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
 
 
 build-all-test:

@@ -8,10 +8,10 @@ pub enum AuthError {
     IoError(#[from] IoError),
 }
 
-impl Into<IoError> for AuthError {
-    fn into(self) -> IoError {
-        match self {
-            Self::IoError(source) => source,
+impl From<AuthError> for IoError {
+    fn from(e: AuthError) -> Self {
+        match e {
+            AuthError::IoError(source) => source,
         }
     }
 }

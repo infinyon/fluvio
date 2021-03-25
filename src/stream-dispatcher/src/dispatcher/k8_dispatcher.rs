@@ -171,7 +171,7 @@ where
                         },
                         Err(err) => {
                             error!("WS channel error: {}", err);
-                            panic!(-1);
+                            panic!("WS channel error: {}", err);
                         }
                     }
                 }

@@ -178,12 +178,12 @@ where
     }
 }
 
-impl<S, C> Into<(S::IndexKey, S, S::Status)> for MetadataStoreObject<S, C>
+impl<S, C> From<MetadataStoreObject<S, C>> for (S::IndexKey, S, S::Status)
 where
     S: Spec,
     C: MetadataItem,
 {
-    fn into(self) -> (S::IndexKey, S, S::Status) {
-        (self.key, self.spec, self.status)
+    fn from(it: MetadataStoreObject<S, C>) -> Self {
+        (it.key, it.spec, it.status)
     }
 }
