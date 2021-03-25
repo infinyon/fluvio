@@ -46,7 +46,7 @@ jobs:
   #      - name: Check Versions
   #        run: cargo cvm -x
 
-  check_clippy:
+  check_clippy_fmt:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -59,25 +59,10 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: check clippy
-        run: make check-clippy RUSTV=${{ matrix.rust }}
-
-  check_fmt:
-    name: check cargo fmt
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - name: check fmt
+      - name: Check fmt
         run: make check-fmt RUSTV=${{ matrix.rust }}
+      - name: Check clippy
+        run: make check-clippy RUSTV=${{ matrix.rust }}
 
   unit_test_linux:
     name: Unit Test Linux
