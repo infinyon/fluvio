@@ -20,3 +20,6 @@ log = "0.4.8"
 [dependencies.syn]
 version = "1.0.0"
 features = ["full"]
+
+[dev-dependencies]
+fluvio-protocol = { version = "0.4.0", features = ["derive", "api"] }

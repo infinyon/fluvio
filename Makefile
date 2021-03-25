@@ -156,6 +156,9 @@ run-all-unit-test: test_tls_multiplex
 	cargo test --lib --all-features
 	cargo test -p fluvio-storage
 
+run-all-doc-test:
+	cargo test --all-features --doc
+
 install_musl:
 	rustup target add ${TARGET_LINUX}
 

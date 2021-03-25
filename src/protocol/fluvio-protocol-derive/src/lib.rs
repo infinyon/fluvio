@@ -21,10 +21,11 @@ use syn::parse_macro_input;
 /// # Examples
 ///
 /// ```
+/// use std::io::Cursor;
 /// use fluvio_protocol::Decoder;
 /// use fluvio_protocol::derive::Decode;
 ///
-/// #[derive(Decode)]
+/// #[derive(Default, Decode)]
 /// pub struct SimpleRecord {
 ///     val: u8
 /// }
@@ -34,8 +35,7 @@ use syn::parse_macro_input;
 /// ];
 ///
 /// let record = SimpleRecord::decode_from(&mut Cursor::new(&data),0).expect("decode");
-/// assert_eq!(record.val,4);
-///
+/// assert_eq!(record.val, 4);
 /// ```
 ///
 ///
@@ -45,6 +45,8 @@ use syn::parse_macro_input;
 /// So this works
 ///
 /// ```
+/// # use fluvio_protocol::derive::Decode;
+/// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
 /// #[derive(Decode)]
 /// pub enum ThreeChoice {
 ///     First = 1,
@@ -54,7 +56,10 @@ use syn::parse_macro_input;
 /// ```
 ///
 /// Also, enum without integer literal works as well
+///
 /// ```
+/// # use fluvio_protocol::derive::Decode;
+/// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
 /// #[derive(Decode)]
 /// pub enum ThreeChoice {
 ///     First,
@@ -97,23 +102,17 @@ pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
 ///     val: u8
 /// }
 ///
-/// let data = vec![];
+/// let mut data = vec![];
 ///
-/// let record = SimpleRecord { val: 4};
-/// recprd.encode(&mut data,0);
+/// let record = SimpleRecord { val: 4 };
+/// record.encode(&mut data,0);
 ///     
 /// assert_eq!(data[0],4);
-///
 /// ```
 ///
-///
-/// Encode applys to either Struct of Enum.  
-///
+/// Encode applies to either Struct of Enum.  
 ///
 /// Encode respects version attributes.  See Decode derive.
-///
-///
-///
 #[proc_macro_derive(Encode, attributes(varint, fluvio))]
 pub fn fluvio_encode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
@@ -139,21 +138,19 @@ pub fn fluvio_api(tokens: TokenStream) -> TokenStream {
 /// use fluvio_protocol::derive::Decode;
 /// use fluvio_protocol::derive::Encode;
 /// use fluvio_protocol::api::Request;
-/// use fluvio_protocol::derive::RequestApi;
+/// use fluvio_protocol::derive::RequestApi as Request;
 ///
 /// #[fluvio(default,api_min_version = 5, api_max_version = 6, api_key = 10, response = "SimpleResponse")]
-/// #[derive(Request,Encode,Decode,Default)]
+/// #[derive(Debug, Default, Encode, Decode, Request)]
 /// pub struct SimpleRequest {
 ///     val: u8
 /// }
 ///
-///
-/// #[derive(Encode,Decode,Default)]
+/// #[derive(Debug, Default, Encode, Decode)]
 /// #[fluvio(default)]
-/// pub struct TestResponse {
+/// pub struct SimpleResponse {
 ///     pub value: i8,
 /// }
-///
 /// ```
 ///
 /// RequestApi derives respects following attributes in `fluvio`
@@ -173,19 +170,20 @@ pub fn fluvio_request(tokens: TokenStream) -> TokenStream {
 
 /// Custom derive for generating default structure
 ///
-///
 /// Example:
 ///
 /// ```
+/// use fluvio_protocol::derive::FluvioDefault;
+///
 /// #[derive(FluvioDefault)]
 /// #[fluvio(default)]
 /// pub struct SimpleRecord {
-///     #[fluvio(default = "-1" )]
+///     #[fluvio(default = "12")]
 ///     val: u8
 /// }
 ///
-/// let record = SimpleRecord::default;
-/// assert_eq!(record.val,-1);
+/// let record = SimpleRecord::default();
+/// assert_eq!(record.val, 12);
 /// ```
 ///
 /// `default` assignment can be any Rust expression.
