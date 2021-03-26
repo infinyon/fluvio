@@ -21,10 +21,6 @@ jobs:
       - name: Helm Add Repo
         run: helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
       - name: Push Sys Chart
-        run: |
-          helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)" --force chartmuseum
-          helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)+$(git rev-parse HEAD)" --force chartmuseum
+        run: helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)+$(git rev-parse HEAD)" chartmuseum
       - name: Push App Chart
-        run: |
-          helm push k8-util/helm/fluvio-app --version="$(cat VERSION)" --force chartmuseum
-          helm push k8-util/helm/fluvio-app --version="$(cat VERSION)+$(git rev-parse HEAD)" --force chartmuseum
+        run: helm push k8-util/helm/fluvio-app --version="$(cat VERSION)+$(git rev-parse HEAD)" chartmuseum
