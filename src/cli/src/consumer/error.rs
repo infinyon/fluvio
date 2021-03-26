@@ -1,10 +1,6 @@
 use std::io::Error as IoError;
-
 use fluvio::FluvioError;
-
-use crate::common::output::OutputError;
-
-pub type Result<T> = std::result::Result<T, ConsumerError>;
+use fluvio_extension_common::output::OutputError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConsumerError {

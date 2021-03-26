@@ -10,7 +10,7 @@ use std::convert::TryFrom;
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
-use futures_lite::StreamExt;
+use fluvio_future::io::StreamExt;
 
 mod record_format;
 
@@ -18,12 +18,11 @@ use fluvio::{Fluvio, PartitionConsumer, Offset, ConsumerConfig, FluvioError};
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::Record;
 
-use crate::ConsumerError;
+use crate::consumer::error::ConsumerError;
 use crate::common::FluvioExtensionMetadata;
-use crate::consume::record_format::{
+use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
 };
-use fluvio_extension_common::output::OutputError;
 
 /// Read messages from a topic/partition
 ///
@@ -31,7 +30,7 @@ use fluvio_extension_common::output::OutputError;
 /// active and wait for new messages, printing them as they arrive. You can use the
 /// '-d' flag to exit after consuming all available messages.
 #[derive(Debug, StructOpt)]
-pub struct ConsumeLogOpt {
+pub struct ConsumeOpt {
     /// Topic name
     #[structopt(value_name = "topic")]
     pub topic: String,
@@ -76,7 +75,7 @@ pub struct ConsumeLogOpt {
     pub output: ConsumeOutputType,
 }
 
-impl ConsumeLogOpt {
+impl ConsumeOpt {
     #[instrument(
         skip(self, fluvio),
         fields(topic = %self.topic, partition = self.partition),
@@ -140,7 +139,7 @@ impl ConsumeLogOpt {
         for batch in response.records.batches.iter() {
             for record in batch.records().iter() {
                 let key = record.key.as_ref().map(|it| it.as_ref());
-                self.print_record(key, record.value.as_ref())?;
+                self.print_record(key, record.value.as_ref());
             }
         }
         Ok(())
@@ -156,7 +155,7 @@ impl ConsumeLogOpt {
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         while let Some(result) = stream.next().await {
-            let result: Result<Record, _> = result;
+            let result: std::result::Result<Record, _> = result;
             let record = match result {
                 Ok(record) => record,
                 Err(FluvioError::ApiError(ApiError::Code(code, _))) => {
@@ -166,7 +165,7 @@ impl ConsumeLogOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            self.print_record(record.key(), record.value())?;
+            self.print_record(record.key(), record.value());
         }
 
         debug!("fetch loop exited");
@@ -175,7 +174,7 @@ impl ConsumeLogOpt {
     }
 
     /// Process fetch topic response based on output type
-    pub fn print_record(&self, key: Option<&[u8]>, value: &[u8]) -> Result<(), OutputError> {
+    pub fn print_record(&self, key: Option<&[u8]>, value: &[u8]) {
         let formatted_key = key.map(|key| {
             String::from_utf8(key.to_owned())
                 .unwrap_or_else(|_| "<cannot print non-UTF8 key>".to_string())
@@ -202,8 +201,6 @@ impl ConsumeLogOpt {
             // (Some(_), None) only if JSON cannot be printed, so skip.
             _ => debug!("Skipping record that cannot be formatted"),
         }
-
-        Ok(())
     }
 
     /// Initialize Ctrl-C event handler

@@ -1,12 +1,13 @@
 use std::io::Error as IoError;
 
 use fluvio::FluvioError;
-use fluvio_extension_common::output::OutputError;
-use fluvio_extension_consumer::ConsumerError;
 use fluvio_cluster::cli::ClusterCliError;
-use crate::common::target::TargetError;
 use fluvio_sc_schema::ApiError;
 use fluvio_sc_schema::errors::ErrorCode;
+use fluvio_extension_common::output::OutputError;
+
+use crate::common::target::TargetError;
+use crate::consumer::error::ConsumerError;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 

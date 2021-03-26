@@ -1,3 +1,0 @@
-# Fluvio Consumer Extension
-
-

@@ -7,6 +7,7 @@ description = "Fluvio CLI"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 publish = false
+default-run = "fluvio"
 
 [lib]
 name = "fluvio_cli"
@@ -16,6 +17,18 @@ path = "src/lib.rs"
 name = "fluvio"
 path = "src/bin/main.rs"
 doc = false
+
+[features]
+default = ["consumer"]
+consumer = [
+    "atty",
+    "ctrlc",
+    "hostname-validator",
+    "content_inspector",
+    "fluvio-types",
+    "fluvio-future",
+    "fluvio-sc-schema",
+]
 
 [dependencies]
 tracing = "0.1.19"
@@ -39,21 +52,26 @@ prettytable-rs = "0.8.0"
 static_assertions = "1.1.0"
 tempdir = "0.3.7"
 sysinfo = "0.16.1"
+atty = { version = "0.2.14", optional = true }
+ctrlc = { version = "3.1.3", optional = true}
+hostname-validator = { version = "1.0.0", optional = true}
+content_inspector = { version = "0.2.4", optional = true}
 
 # Fluvio dependencies
-
 k8-config = { version = "1.3.0" }
 k8-client = { version = "5.0.0" }
-fluvio-future = { version = "0.2.0", features = ["fs", "io", "subscriber"] }
 fluvio = { version = "0.6.0", path = "../client", default-features = false }
 fluvio-cluster = { version = "0.7.0", path = "../cluster", default-features = false, features = ["cli"] }
 fluvio-command = { version = "0.2.0" }
 fluvio-package-index = { version = "0.3.0", path = "../package-index" }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", features = ["target"]}
-fluvio-extension-consumer = { version = "0.3.0", path = "../extension-consumer" }
 fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
-fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema" }
 k8-types = { version = "0.2.0", features = ["core"]}
+
+# Optional Fluvio dependencies
+fluvio-types = { version = "0.2.0" , path = "../types", optional = true}
+fluvio-future = { version = "0.2.0", features = ["fs", "io", "subscriber"], optional = true }
+fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema", features = ["use_serde"], optional = true }
 
 [dev-dependencies]
 fluvio-future = { version = "0.2.0", features = ["fixture"] }

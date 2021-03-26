@@ -5,7 +5,7 @@ use fluvio::Fluvio;
 use crate::Result;
 use crate::common::output::Terminal;
 use crate::common::FluvioExtensionMetadata;
-use crate::partition::list::ListPartitionOpt;
+use crate::consumer::partition::list::ListPartitionOpt;
 
 mod list;
 

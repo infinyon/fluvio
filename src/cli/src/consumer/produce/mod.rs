@@ -7,7 +7,7 @@ use tracing::debug;
 use fluvio::{Fluvio, TopicProducer};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
-use crate::{Result, ConsumerError};
+use crate::consumer::error::ConsumerError;
 
 // -----------------------------------
 // CLI Options
@@ -23,7 +23,7 @@ use crate::{Result, ConsumerError};
 /// If '--key-separator' is used, records are sent as key/value pairs, and
 /// the keys are used to determine which partition the records are sent to.
 #[derive(Debug, StructOpt)]
-pub struct ProduceLogOpt {
+pub struct ProduceOpt {
     /// The name of the Topic to produce to
     #[structopt(value_name = "topic")]
     pub topic: String,
@@ -50,8 +50,8 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
     Ok(())
 }
 
-impl ProduceLogOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+impl ProduceOpt {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
         let mut producer = fluvio.topic_producer(&self.topic).await?;
 
         match &self.file {
@@ -72,7 +72,11 @@ impl ProduceLogOpt {
         Ok(())
     }
 
-    async fn produce_lines<B>(&self, producer: &mut TopicProducer, input: &mut B) -> Result<()>
+    async fn produce_lines<B>(
+        &self,
+        producer: &mut TopicProducer,
+        input: &mut B,
+    ) -> Result<(), ConsumerError>
     where
         B: BufRead,
     {
@@ -90,7 +94,11 @@ impl ProduceLogOpt {
         Ok(())
     }
 
-    async fn produce_str(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
+    async fn produce_str(
+        &self,
+        producer: &mut TopicProducer,
+        string: &str,
+    ) -> Result<(), ConsumerError> {
         if self.kv_mode() {
             self.produce_key_value(producer, string).await?;
         } else {
@@ -110,7 +118,11 @@ impl ProduceLogOpt {
         self.file.is_none() && atty::is(atty::Stream::Stdin)
     }
 
-    async fn produce_key_value(&self, producer: &mut TopicProducer, string: &str) -> Result<()> {
+    async fn produce_key_value(
+        &self,
+        producer: &mut TopicProducer,
+        string: &str,
+    ) -> Result<(), ConsumerError> {
         if let Some(separator) = &self.key_separator {
             self.produce_key_value_via_separator(producer, string, separator)
                 .await?;
@@ -127,7 +139,7 @@ impl ProduceLogOpt {
         producer: &mut TopicProducer,
         string: &str,
         separator: &str,
-    ) -> Result<()> {
+    ) -> Result<(), ConsumerError> {
         debug!(?separator, "Producing Key/Value:");
 
         let pieces: Vec<_> = string.split(separator).collect();
