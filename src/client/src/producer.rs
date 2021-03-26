@@ -47,22 +47,7 @@ impl TopicProducer {
         K: AsRef<[u8]>,
         V: AsRef<[u8]>,
     {
-        let key = key.as_ref();
-        let value = value.as_ref();
-        debug!(
-            key_size = key.len(),
-            value_size = value.len(),
-            "sending records:"
-        );
-
-        let replica = ReplicaKey::new(&self.topic, 0);
-        let spu_client = self.pool.create_serial_socket(&replica).await?;
-        debug!(
-            addr = spu_client.config().addr(),
-            "Connected to replica leader:"
-        );
-        let records = &[(Some(key), value)];
-        send_records_raw(spu_client, &replica, records).await?;
+        self.send_all(Some((Some(key), value))).await?;
         Ok(())
     }
 
