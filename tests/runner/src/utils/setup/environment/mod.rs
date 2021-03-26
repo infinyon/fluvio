@@ -19,7 +19,7 @@ mod common {
         async fn start_cluster(&self) -> StartStatus;
     }
 
-    #[derive(Clone, Debug, Serialize, Deserialize)]
+    #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
     pub enum EnvironmentType {
         K8,
         Local,

@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize};
 use syn::{AttributeArgs, Error as SynError, Lit, Meta, NestedMeta, Path, Result};
 use syn::spanned::Spanned;
 use std::any::Any;
+use crate::setup::environment::EnvironmentType;
 
 pub trait TestOption: Debug {
     fn as_any(&self) -> &dyn Any;
@@ -67,6 +68,9 @@ pub trait EnvDetail: Debug + Clone {
     fn authorization_config_map(&self) -> Option<String>;
     fn server_log(&self) -> Option<String>;
     fn log_dir(&self) -> Option<String>;
+    fn timeout(&self) -> u16;
+    fn set_timeout(&mut self, timeout: u16);
+    fn cluster_type(&self) -> EnvironmentType;
 }
 
 impl EnvDetail for EnvironmentSetup {
@@ -131,6 +135,22 @@ impl EnvDetail for EnvironmentSetup {
     fn log_dir(&self) -> Option<String> {
         self.log_dir.clone()
     }
+
+    fn timeout(&self) -> u16 {
+        self.timeout
+    }
+
+    fn set_timeout(&mut self, timeout: u16) {
+        self.timeout = timeout;
+    }
+
+    fn cluster_type(&self) -> EnvironmentType {
+        if self.local {
+            EnvironmentType::Local
+        } else {
+            EnvironmentType::K8
+        }
+    }
 }
 
 /// cli options
@@ -192,12 +212,19 @@ pub struct EnvironmentSetup {
     /// skip pre-install checks
     #[structopt(long)]
     pub skip_checks: bool,
+
+    /// In seconds, the maximum time a test will run before considered a fail (default: 1 hour)
+    #[structopt(long, default_value = "3600")]
+    pub timeout: u16,
 }
-// TODO: Add timeout, cluster-type?
+// TODO: Add timeout, cluster-type, test-name?
 #[derive(Debug)]
 pub enum TestRequirementAttribute {
     MinSpu(u16),
     Topic(String),
+    Timeout(u16),
+    ClusterType(EnvironmentType),
+    TestName(String),
 }
 
 impl TestRequirementAttribute {
@@ -219,6 +246,41 @@ impl TestRequirementAttribute {
                         Ok(Self::Topic(str.value()))
                     } else {
                         Err(SynError::new(name_value.span(), "Topic must be a LitStr"))
+                    }
+                } else if keys.as_str() == "timeout" {
+                    if let Lit::Int(timeout) = name_value.lit {
+                        Ok(Self::Timeout(
+                            u16::from_str_radix(timeout.base10_digits(), 10).expect("Parse failed"),
+                        ))
+                    } else {
+                        Err(SynError::new(name_value.span(), "Timeout must be LitInt"))
+                    }
+                } else if keys.as_str() == "cluster_type" {
+                    if let Lit::Str(str) = name_value.lit.clone() {
+                        if str.value().to_lowercase() == "k8" {
+                            Ok(Self::ClusterType(EnvironmentType::K8))
+                        } else if str.value().to_lowercase() == "local" {
+                            Ok(Self::ClusterType(EnvironmentType::Local))
+                        } else {
+                            Err(SynError::new(
+                                name_value.span(),
+                                "ClusterType values must be \"k8\" or \"local\". Don't define cluster_type if both.",
+                            ))
+                        }
+                    } else {
+                        Err(SynError::new(
+                            name_value.span(),
+                            "ClusterType must be a LitStr",
+                        ))
+                    }
+                } else if keys.as_str() == "name" {
+                    if let Lit::Str(str) = name_value.lit {
+                        Ok(Self::TestName(str.value()))
+                    } else {
+                        Err(SynError::new(
+                            name_value.span(),
+                            "TestName must be a LitStr",
+                        ))
                     }
                 } else {
                     Err(SynError::new(name_value.span(), "Unsupported key"))
@@ -244,6 +306,9 @@ impl TestRequirementAttribute {
 pub struct TestRequirements {
     pub min_spu: Option<u16>,
     pub topic: Option<String>,
+    pub timeout: Option<u16>,
+    pub cluster_type: Option<EnvironmentType>,
+    pub test_name: Option<String>,
 }
 
 impl TestRequirements {
@@ -270,6 +335,12 @@ impl TestRequirements {
                 test_requirements.min_spu = Some(min_spu)
             } else if let TestRequirementAttribute::Topic(topic) = attr {
                 test_requirements.topic = Some(topic)
+            } else if let TestRequirementAttribute::Timeout(timeout) = attr {
+                test_requirements.timeout = Some(timeout)
+            } else if let TestRequirementAttribute::ClusterType(cluster_type) = attr {
+                test_requirements.cluster_type = Some(cluster_type)
+            } else if let TestRequirementAttribute::TestName(name) = attr {
+                test_requirements.test_name = Some(name)
             }
         }
 

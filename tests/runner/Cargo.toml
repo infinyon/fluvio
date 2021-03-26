@@ -15,7 +15,7 @@ async-trait = "0.1.21"
 # Fluvio dependencies
 fluvio = { path = "../../src/client" }
 fluvio-types = { version = "0.2.0", path = "../../src/types" }
-fluvio-future = { version = "0.1.0", features = ["task", "timer", "subscriber", "fixture"] }
+fluvio-future = { version = "0.2.0", features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-command = { path = "../../src/command" }
 fluvio-cluster = { path = "../../src/cluster" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../../src/controlplane-metadata" }
@@ -30,6 +30,7 @@ syn = { version = "1.0", features = ["full"]}
 
 rand = "^0.8"
 md-5 = "^0.9"
-serde = "^1.0"
-serde_json = "^1.0"
-tokio = { version = "0.2.21", features = ["macros"] }
+serde = "1.0"
+serde_json = "1.0"
+tokio = { version = "1.4", features = ["macros"] }
+futures = "0.3"

@@ -10,11 +10,14 @@ use fluvio_future::task::run_block_on;
 use flv_test::tests::smoke::SmokeTestOption;
 use flv_test::tests::concurrent::ConcurrentTestOption;
 
+use std::panic::{self, AssertUnwindSafe};
+
 const TESTS: &[&str] = &["smoke", "concurrent", "many_producers"];
 
 fn main() {
     run_block_on(async {
         let option = BaseCli::from_args();
+        let testrun_option = option.clone();
         //println!("{:?}", option);
 
         let test_name = option.test_name.clone();
@@ -41,12 +44,6 @@ fn main() {
         };
         //println!("{:?}", test_opt);
 
-        // catch panic in the spawn
-        std::panic::set_hook(Box::new(|panic_info| {
-            eprintln!("panic {}", panic_info);
-            std::process::exit(-1);
-        }));
-
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
 
@@ -56,18 +53,28 @@ fn main() {
         // Create a TestCase object with option.envronment and test_opt
         let test_case = TestCase::new(option.environment.clone(), test_opt);
 
-        // TODO: Build this with Test Runner
-        match option.test_name.as_str() {
-            "smoke" => flv_test::tests::smoke::run(fluvio_client, test_case).await,
-            "concurrent" => flv_test::tests::concurrent::run(fluvio_client, test_case).await,
-            //"many_producers" => {
-            //    flv_test::tests::many_producers::run(fluvio_client, option.clone()).await
-            //}
-            _ => panic!("Test not found"),
-        };
+        let test_run = panic::catch_unwind(AssertUnwindSafe(move || {
+            run_block_on(async {
+                match testrun_option.test_name.as_str() {
+                    "smoke" => flv_test::tests::smoke::run(fluvio_client, test_case).await,
+                    "concurrent" => {
+                        flv_test::tests::concurrent::run(fluvio_client, test_case).await
+                    }
+                    //"many_producers" => {
+                    //    flv_test::tests::many_producers::run(fluvio_client, option.clone()).await
+                    //}
+                    _ => panic!("Test not found"),
+                };
+            });
+        }));
 
         // Cluster cleanup
         cluster_cleanup(option.environment).await;
+
+        if let Err(err) = test_run {
+            eprintln!("panic reason: {:?}", err);
+            std::process::exit(-1);
+        }
     });
 }
 

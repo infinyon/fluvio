@@ -8,10 +8,15 @@ use quote::quote;
 /// This macro will allow a test writer to override
 /// minimum Fluvio cluster requirements for a test
 ///
-/// Supported keys: `min_spu` (default 1)
+/// Supported keys:
+/// * `min_spu` (default `1`)
+/// * `topic_name` (default: `topic`)
+/// * `timeout` (default: `3600` seconds)
+/// * `cluster_type` (default: no cluster restrictions)
+/// * `name` (default: uses function name)
 ///
 /// #[fluvio_test(min_spu = 2)]
-/// pub async fn run(_client: Fluvio, option: TestCase) {
+/// pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
 ///     println!("Test")
 /// }
 ///
@@ -44,7 +49,13 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // Read the user test
     let fn_user_test = parse_macro_input!(input as ItemFn);
 
-    let test_name = &fn_user_test.sig.ident;
+    // If test name is given, then use that instead of the test's function name
+    let test_name = if let Some(req_test_name) = &fn_test_reqs.test_name {
+        Ident::new(&req_test_name.to_string(), Span::call_site())
+    } else {
+        fn_user_test.sig.ident
+    };
+
     let test_body = &fn_user_test.block;
 
     let out_fn_iden = Ident::new(&test_name.to_string(), Span::call_site());
@@ -54,33 +65,80 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         pub async fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::{TestRequirements, TestCase, EnvDetail};
-            use fluvio_test_util::test_runner;
+            use fluvio_test_util::test_runner::FluvioTest;
+            use fluvio_future::task::run_block_on;
+            use fluvio_future::timer::sleep;
+            use std::{io, time::Duration};
+            use tokio::select;
+            use fluvio_test_util::setup::environment::EnvironmentType;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
+
+            // Move this into TestRunner
+            let mut precheck_pass = true;
             if let Some(min_spu) = test_reqs.min_spu {
                 if min_spu > test_case.environment.spu() {
+                    precheck_pass = false;
                     println!("Test requires {} spu", min_spu);
-                    println!("Test skipped...");
                 }
-            } else {
-                //let mut option = option.clone();
+            }
+
+            // if `cluster_type` undefined, no cluster restrictions
+            // if `cluster_type = local` is defined, then environment must be local or skip
+            // if `cluster_type = k8`, then environment must be k8 or skip
+            if let Some(cluster_type) = test_reqs.cluster_type {
+                if test_case.environment.cluster_type() != cluster_type {
+                    println!("Test requires cluster type {:?} ", cluster_type);
+                    precheck_pass = false;
+                }
+            }
+
+            if precheck_pass {
                 if let Some(topic) = test_reqs.topic {
                     test_case.environment.set_topic_name(topic);
                 }
 
-            // Don't create topic if we did not start a new cluster
-            if test_case.environment.skip_cluster_start() {
-                println!("Skipping topic create");
-            } else {
-                // Create topic before starting test
-                test_runner::create_topic(test_case.environment.clone())
-                    .await
-                    .expect("Unable to create default topic");
-            }
+                // Set timer
+                if let Some(timeout) = test_reqs.timeout {
+                    test_case.environment.set_timeout(timeout)
+                }
 
-                #test_body
+                // Move this into TestRunner
+                // Don't create topic if we did not start a new cluster
+                if test_case.environment.skip_cluster_start() {
+                    println!("Skipping topic create");
+                } else {
+                    // Create topic before starting test
+                    FluvioTest::create_topic(test_case.environment.clone())
+                        .await
+                        .expect("Unable to create default topic");
+                }
+
+                // start a timeout timer
+                let mut timer = sleep(Duration::from_secs(test_case.environment.timeout().into()));
+
+                // TODO Take a timestamp
+
+                let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
+                    #test_body
+                };
+
+                select! {
+                    _ = &mut timer => {
+                        panic!("timer expired");
+                    },
+
+                    _ = test_fn(client, test_case) => {
+                        println!("Test completed");
+                        // TODO Take another timestamp
+                        // TODO Calculate run time
+                    }
+                }
+
+            } else {
+                println!("Test skipped...");
             }
         }
 

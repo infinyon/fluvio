@@ -57,6 +57,16 @@ Test runner can be a running in two ways:
 - Create new cluster (local or k8) and run test
 - Run tests againts existing cluster
 
+
+> Expected behavior of local clusters that flv-test start:
+>
+> If you `ctrl+c`, the local cluster will also be terminated.
+>
+> If you want the cluster to stick around, then you should start the cluster locally, and pass `--disable-install` and `--keep-cluster` flags.
+
+              
+
+
 ---
 ## Smoke test
 
