@@ -1652,8 +1652,8 @@ dependencies = [
  "fluvio-protocol 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "proc-macro2",
- "quote 1.0.9",
- "syn 1.0.64",
+ "quote",
+ "syn",
 ]
 
 [[package]]

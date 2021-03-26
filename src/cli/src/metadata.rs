@@ -5,8 +5,8 @@ use structopt::StructOpt;
 use crate::Result;
 use crate::TopicCmd;
 use crate::PartitionCmd;
-use crate::ConsumeLogOpt;
-use crate::ProduceLogOpt;
+use crate::ConsumeOpt;
+use crate::ProduceOpt;
 use fluvio_command::CommandExt;
 use fluvio_extension_common::FluvioExtensionMetadata;
 
@@ -26,8 +26,8 @@ impl MetadataOpt {
         let mut metadata = vec![
             TopicCmd::metadata(),
             PartitionCmd::metadata(),
-            ProduceLogOpt::metadata(),
-            ConsumeLogOpt::metadata(),
+            ProduceOpt::metadata(),
+            ConsumeOpt::metadata(),
         ];
 
         if let Ok(subcommand_meta) = subcommand_metadata() {

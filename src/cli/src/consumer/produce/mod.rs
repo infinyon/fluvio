@@ -23,7 +23,7 @@ use crate::consumer::error::ConsumerError;
 /// If '--key-separator' is used, records are sent as key/value pairs, and
 /// the keys are used to determine which partition the records are sent to.
 #[derive(Debug, StructOpt)]
-pub struct ProduceLogOpt {
+pub struct ProduceOpt {
     /// The name of the Topic to produce to
     #[structopt(value_name = "topic")]
     pub topic: String,
@@ -50,7 +50,7 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
     Ok(())
 }
 
-impl ProduceLogOpt {
+impl ProduceOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
         let mut producer = fluvio.topic_producer(&self.topic).await?;
 

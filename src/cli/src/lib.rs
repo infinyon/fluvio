@@ -11,14 +11,19 @@ use tracing::debug;
 mod http;
 mod error;
 mod install;
-mod consumer;
 mod profile;
 mod version;
 mod metadata;
 
+#[cfg(feature = "consumer")]
+mod consumer;
+#[cfg(feature = "consumer")]
 use consumer::topic::TopicCmd;
-use consumer::consume::ConsumeLogOpt;
-use consumer::produce::ProduceLogOpt;
+#[cfg(feature = "consumer")]
+use consumer::consume::ConsumeOpt;
+#[cfg(feature = "consumer")]
+use consumer::produce::ProduceOpt;
+#[cfg(feature = "consumer")]
 use consumer::partition::PartitionCmd;
 use profile::ProfileCmd;
 use install::update::UpdateOpt;
@@ -76,6 +81,7 @@ struct RootOpt {
 enum RootCmd {
     /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
     #[structopt(flatten)]
+    #[cfg(feature = "consumer")]
     Fluvio(FluvioCmd),
 
     /// Manage Profiles, which describe linked clusters
@@ -174,14 +180,15 @@ impl RootCmd {
 // Please don't change it unless you want to update the top-level help menu "about".
 /// Fluvio command-line interface
 #[derive(StructOpt, Debug)]
+#[cfg(feature = "consumer")]
 pub enum FluvioCmd {
     /// Read messages from a topic/partition
     #[structopt(name = "consume")]
-    Consume(ConsumeLogOpt),
+    Consume(ConsumeOpt),
 
     /// Write messages to a topic/partition
     #[structopt(name = "produce")]
-    Produce(ProduceLogOpt),
+    Produce(ProduceOpt),
 
     /// Manage and view Topics
     ///

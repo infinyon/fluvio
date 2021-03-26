@@ -30,7 +30,7 @@ use self::record_format::{
 /// active and wait for new messages, printing them as they arrive. You can use the
 /// '-d' flag to exit after consuming all available messages.
 #[derive(Debug, StructOpt)]
-pub struct ConsumeLogOpt {
+pub struct ConsumeOpt {
     /// Topic name
     #[structopt(value_name = "topic")]
     pub topic: String,
@@ -75,7 +75,7 @@ pub struct ConsumeLogOpt {
     pub output: ConsumeOutputType,
 }
 
-impl ConsumeLogOpt {
+impl ConsumeOpt {
     #[instrument(
         skip(self, fluvio),
         fields(topic = %self.topic, partition = self.partition),
