@@ -10,6 +10,9 @@ pub mod fetch;
 pub mod produce;
 pub mod versions;
 
+#[cfg(feature = "fixture")]
+pub mod fixture;
+
 pub use common::*;
 pub use error_code::*;
 

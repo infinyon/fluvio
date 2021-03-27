@@ -15,6 +15,7 @@ required-features = ["cli", "fluvio-future/subscriber"]
 
 [features]
 cli = ["structopt"]
+fixture = ["dataplane/fixture"]
 
 [dependencies]
 tracing = "0.1.19"
@@ -33,7 +34,7 @@ derive_builder = "0.9.0"
 fluvio-types = { version = "0.2.0", path = "../types" }
 fluvio-future = { version = "0.2.0", features = ["fs", "mmap"] }
 fluvio-protocol = { path = "../protocol", version = "0.4.0" }
-dataplane = { version = "0.4.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.4.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol", default-features = false }
 
 
 [dev-dependencies]
