@@ -13,15 +13,9 @@ use crate::derive::Decode;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;
-use crate::record::FileRecordSet;
 use crate::ErrorCode;
-use crate::store::FileWrite;
-use crate::store::StoreValue;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
-pub type FileFetchResponse = FetchResponse<FileRecordSet>;
-pub type FileTopicResponse = FetchableTopicResponse<FileRecordSet>;
-pub type FilePartitionResponse = FetchablePartitionResponse<FileRecordSet>;
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchResponse<R>
@@ -67,26 +61,6 @@ where
     }
 }
 
-impl FileWrite for FileFetchResponse {
-    fn file_encode(
-        &self,
-        src: &mut BytesMut,
-        data: &mut Vec<StoreValue>,
-        version: Version,
-    ) -> Result<(), IoError> {
-        trace!("file encoding FileFetchResponse");
-        trace!("encoding throttle_time_ms {}", self.throttle_time_ms);
-        self.throttle_time_ms.encode(src, version)?;
-        trace!("encoding error code {:#?}", self.error_code);
-        self.error_code.encode(src, version)?;
-        trace!("encoding session code {}", self.session_id);
-        self.session_id.encode(src, version)?;
-        trace!("encoding topics len: {}", self.topics.len());
-        self.topics.file_encode(src, data, version)?;
-        Ok(())
-    }
-}
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct FetchableTopicResponse<R>
 where
@@ -98,20 +72,6 @@ where
     /// The topic partitions.
     pub partitions: Vec<FetchablePartitionResponse<R>>,
     pub data: PhantomData<R>,
-}
-
-impl FileWrite for FileTopicResponse {
-    fn file_encode(
-        &self,
-        src: &mut BytesMut,
-        data: &mut Vec<StoreValue>,
-        version: Version,
-    ) -> Result<(), IoError> {
-        trace!("file encoding fetch topic response");
-        self.name.encode(src, version)?;
-        self.partitions.file_encode(src, data, version)?;
-        Ok(())
-    }
 }
 
 #[derive(Encode, Decode, FluvioDefault, Debug)]
@@ -146,25 +106,6 @@ where
     pub records: R,
 }
 
-impl FileWrite for FilePartitionResponse {
-    fn file_encode(
-        &self,
-        src: &mut BytesMut,
-        data: &mut Vec<StoreValue>,
-        version: Version,
-    ) -> Result<(), IoError> {
-        trace!("file encoding fetch partition response");
-        self.partition_index.encode(src, version)?;
-        self.error_code.encode(src, version)?;
-        self.high_watermark.encode(src, version)?;
-        self.last_stable_offset.encode(src, version)?;
-        self.log_start_offset.encode(src, version)?;
-        self.aborted.encode(src, version)?;
-        self.records.file_encode(src, data, version)?;
-        Ok(())
-    }
-}
-
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct AbortedTransaction {
     /// The producer id associated with the aborted transaction.
@@ -194,5 +135,74 @@ where
             }
         }
         None
+    }
+}
+
+#[cfg(feature = "file")]
+pub use file::*;
+
+#[cfg(feature = "file")]
+mod file {
+    use super::*;
+
+    use crate::record::FileRecordSet;
+    use crate::store::FileWrite;
+    use crate::store::StoreValue;
+
+    pub type FileFetchResponse = FetchResponse<FileRecordSet>;
+    pub type FileTopicResponse = FetchableTopicResponse<FileRecordSet>;
+    pub type FilePartitionResponse = FetchablePartitionResponse<FileRecordSet>;
+
+    impl FileWrite for FilePartitionResponse {
+        fn file_encode(
+            &self,
+            src: &mut BytesMut,
+            data: &mut Vec<StoreValue>,
+            version: Version,
+        ) -> Result<(), IoError> {
+            trace!("file encoding fetch partition response");
+            self.partition_index.encode(src, version)?;
+            self.error_code.encode(src, version)?;
+            self.high_watermark.encode(src, version)?;
+            self.last_stable_offset.encode(src, version)?;
+            self.log_start_offset.encode(src, version)?;
+            self.aborted.encode(src, version)?;
+            self.records.file_encode(src, data, version)?;
+            Ok(())
+        }
+    }
+
+    impl FileWrite for FileFetchResponse {
+        fn file_encode(
+            &self,
+            src: &mut BytesMut,
+            data: &mut Vec<StoreValue>,
+            version: Version,
+        ) -> Result<(), IoError> {
+            trace!("file encoding FileFetchResponse");
+            trace!("encoding throttle_time_ms {}", self.throttle_time_ms);
+            self.throttle_time_ms.encode(src, version)?;
+            trace!("encoding error code {:#?}", self.error_code);
+            self.error_code.encode(src, version)?;
+            trace!("encoding session code {}", self.session_id);
+            self.session_id.encode(src, version)?;
+            trace!("encoding topics len: {}", self.topics.len());
+            self.topics.file_encode(src, data, version)?;
+            Ok(())
+        }
+    }
+
+    impl FileWrite for FileTopicResponse {
+        fn file_encode(
+            &self,
+            src: &mut BytesMut,
+            data: &mut Vec<StoreValue>,
+            version: Version,
+        ) -> Result<(), IoError> {
+            trace!("file encoding fetch topic response");
+            self.name.encode(src, version)?;
+            self.partitions.file_encode(src, data, version)?;
+            Ok(())
+        }
     }
 }

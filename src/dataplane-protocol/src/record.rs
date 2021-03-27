@@ -31,8 +31,6 @@ static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
     var_value.parse().unwrap_or(16384)
 });
 
-pub use file::*;
-
 /// slice that can works in Async Context
 pub trait AsyncBuffer {
     fn len(&self) -> usize;
@@ -605,6 +603,10 @@ mod test {
     }
 }
 
+#[cfg(feature = "file")]
+pub use file::*;
+
+#[cfg(feature = "file")]
 mod file {
 
     use std::fmt;
