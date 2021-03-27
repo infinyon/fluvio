@@ -52,9 +52,9 @@ mod tests {
 
     use fluvio_future::fs::util as file_util;
     use flv_util::fixture::ensure_clean_file;
+    use dataplane::fixture::create_batch;
+    use dataplane::fixture::create_batch_with_producer;
 
-    use crate::fixture::create_batch;
-    use crate::fixture::create_batch_with_producer;
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
     use crate::StorageError;

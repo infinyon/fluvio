@@ -383,11 +383,12 @@ mod tests {
     use dataplane::batch::DefaultBatch;
     use dataplane::Size;
     use dataplane::core::Decoder;
+    use dataplane::fixture::create_batch_with_producer;
+    use dataplane::fixture::create_batch;
+    use dataplane::fixture::read_bytes_from_file;
 
     use super::MutableSegment;
-    use crate::fixture::create_batch_with_producer;
-    use crate::fixture::create_batch;
-    use crate::fixture::read_bytes_from_file;
+
     use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::index::OffsetPosition;

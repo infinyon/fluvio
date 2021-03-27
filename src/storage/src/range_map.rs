@@ -124,15 +124,15 @@ mod tests {
     use std::path::PathBuf;
 
     use fluvio_future::test_async;
-    use dataplane::Offset;
     use flv_util::fixture::ensure_new_dir;
+    use dataplane::fixture::create_batch;
+    use dataplane::Offset;
 
     use super::SegmentList;
     use crate::StorageError;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
     use crate::config::ConfigOption;
-    use crate::fixture::create_batch;
 
     const TEST_SEGMENT_DIR: &str = "segmentlist-test";
 

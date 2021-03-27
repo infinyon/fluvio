@@ -372,10 +372,10 @@ mod tests {
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
+    use dataplane::fixture::{BatchProducer, create_batch};
+    use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
-    use crate::fixture::{BatchProducer, create_batch};
-    use crate::fixture::read_bytes_from_file;
     use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::ReplicaStorage;

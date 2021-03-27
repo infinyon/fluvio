@@ -253,12 +253,12 @@ mod tests {
 
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
+    use dataplane::fixture::create_batch;
+    use dataplane::fixture::create_batch_with_producer;
 
     use crate::config::ConfigOption;
     use crate::StorageError;
     use crate::segment::MutableSegment;
-    use crate::fixture::create_batch;
-    use crate::fixture::create_batch_with_producer;
 
     fn default_option(base_dir: PathBuf) -> ConfigOption {
         ConfigOption {

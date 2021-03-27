@@ -370,15 +370,15 @@ mod tests {
 
     use fluvio_future::test_async;
     use fluvio_future::timer;
-    use dataplane::batch::DefaultBatch;
-    use dataplane::core::Decoder;
-    use dataplane::core::Encoder;
     use flv_util::fixture::ensure_clean_file;
+    use dataplane::batch::DefaultBatch;
+    use dataplane::core::{Decoder, Encoder};
+    use dataplane::fixture::create_batch;
+    use dataplane::fixture::read_bytes_from_file;
 
     use super::MutFileRecords;
     use super::StorageError;
-    use crate::fixture::create_batch;
-    use crate::fixture::read_bytes_from_file;
+
     use crate::config::ConfigOption;
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
