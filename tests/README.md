@@ -156,7 +156,8 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::{EnvironmentSetup, TestOption, TestCase};
+use fluvio_test_util::test_meta::environment::EnvironmentSetup;
+use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
 #[derive(Debug, Clone)]
 pub struct ExampleTestCase {

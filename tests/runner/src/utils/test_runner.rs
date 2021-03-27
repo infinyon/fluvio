@@ -1,6 +1,8 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
-use crate::test_meta::{EnvDetail, EnvironmentSetup};
+use crate::test_meta::TestCase;
+use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
+use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::Fluvio;
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
@@ -18,12 +20,52 @@ impl FluvioTest {
             .create(option.topic_name.clone(), false, topic_spec)
             .await;
 
-        if let Ok(_) = topic_create {
+        if topic_create.is_ok() {
             println!("topic \"{}\" created", option.topic_name);
         } else {
             println!("topic \"{}\" already exists", option.topic_name);
         }
 
         Ok(())
+    }
+
+    pub fn is_env_acceptable(test_reqs: &TestRequirements, test_case: &TestCase) -> bool {
+        // if `min_spu` undefined, min 1
+        if let Some(min_spu) = test_reqs.min_spu {
+            if min_spu > test_case.environment.spu() {
+                println!("Test requires {} spu", min_spu);
+                return false;
+            }
+        }
+
+        // if `cluster_type` undefined, no cluster restrictions
+        // if `cluster_type = local` is defined, then environment must be local or skip
+        // if `cluster_type = k8`, then environment must be k8 or skip
+        if let Some(cluster_type) = &test_reqs.cluster_type {
+            if &test_case.environment.cluster_type() != cluster_type {
+                println!("Test requires cluster type {:?} ", cluster_type);
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {
+        if let Some(topic) = &test_reqs.topic {
+            test_case.environment.set_topic_name(topic.to_string());
+        }
+    }
+
+    pub fn set_timeout(test_reqs: &TestRequirements, test_case: &mut TestCase) {
+        // Set timer
+        if let Some(timeout) = test_reqs.timeout {
+            test_case.environment.set_timeout(timeout)
+        }
+    }
+
+    pub fn customize_test(test_reqs: &TestRequirements, test_case: &mut TestCase) {
+        Self::set_topic(test_reqs, test_case);
+        Self::set_timeout(test_reqs, test_case);
     }
 }

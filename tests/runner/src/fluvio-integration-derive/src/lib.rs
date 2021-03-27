@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 
-use fluvio_test_util::test_meta::TestRequirements;
+use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use syn::{AttributeArgs, Ident, ItemFn, parse_macro_input};
 use quote::quote;
 
@@ -23,17 +23,13 @@ use quote::quote;
 /// Will expand into the following pseudocode
 ///
 /// pub async fn run(client: Fluvio, option: TestCase) {
-///    use fluvio_test_util::test_meta::TestRequirements;
-///    let test_reqs : TestRequirements = [...]
-///    if (test_min_spu #) > (test_runner_spu #) {
-///        println!("Test requires {} spu", (test_min_spu #));
-///        println!("Test skipped..."");
-///    } else {
-///        // Create topic before starting test
-///        {...}
-///
-///        println!("Test")
-///    }
+///     1. Read in TestRequirements from macro attrs
+///     2. Compare TestRequirements with the current TestCase
+///         - Any test that doesn't meet explicit requirements, skip to 6
+///     3. Customize environment per TestRequirements
+///     4. Create a topic
+///     5. Start a timed test with (a default 1 hour timeout)
+///     6. Return a TestResult
 /// }
 #[proc_macro_attribute]
 pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -62,76 +58,69 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let output_fn = quote! {
 
-        pub async fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) {
+        pub async fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult{
             use fluvio::Fluvio;
-            use fluvio_test_util::test_meta::{TestRequirements, TestCase, EnvDetail};
+            use fluvio_test_util::test_meta::{TestCase, TestResult};
+            use fluvio_test_util::test_meta::environment::{EnvDetail};
+            use fluvio_test_util::test_meta::derive_attr::TestRequirements;
+            use fluvio_test_util::test_meta::TestTimer;
             use fluvio_test_util::test_runner::FluvioTest;
+            use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_future::task::run_block_on;
             use fluvio_future::timer::sleep;
             use std::{io, time::Duration};
             use tokio::select;
-            use fluvio_test_util::setup::environment::EnvironmentType;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
-            // Move this into TestRunner
-            let mut precheck_pass = true;
-            if let Some(min_spu) = test_reqs.min_spu {
-                if min_spu > test_case.environment.spu() {
-                    precheck_pass = false;
-                    println!("Test requires {} spu", min_spu);
-                }
-            }
+            // Customize test environment if it meets minimum requirements
+            if FluvioTest::is_env_acceptable(&test_reqs, &test_case) {
 
-            // if `cluster_type` undefined, no cluster restrictions
-            // if `cluster_type = local` is defined, then environment must be local or skip
-            // if `cluster_type = k8`, then environment must be k8 or skip
-            if let Some(cluster_type) = test_reqs.cluster_type {
-                if test_case.environment.cluster_type() != cluster_type {
-                    println!("Test requires cluster type {:?} ", cluster_type);
-                    precheck_pass = false;
-                }
-            }
-
-            if precheck_pass {
-                if let Some(topic) = test_reqs.topic {
-                    test_case.environment.set_topic_name(topic);
-                }
-
-                // Set timer
-                if let Some(timeout) = test_reqs.timeout {
-                    test_case.environment.set_timeout(timeout)
-                }
+                // Test-level environment customizations from macro attrs
+                FluvioTest::customize_test(&test_reqs, &mut test_case);
 
                 // Create topic before starting test
                 FluvioTest::create_topic(client.clone(), &test_case.environment)
                     .await
                     .expect("Unable to create default topic");
 
-                // start a timeout timer
-                let mut timer = sleep(Duration::from_secs(test_case.environment.timeout().into()));
-
-                // TODO Take a timestamp
-
+                // Wrap the user test in a closure
                 let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
                     #test_body
                 };
 
+                // start a timeout timer
+                let mut timeout_timer = sleep(Duration::from_secs(test_case.environment.timeout().into()));
+
+                // TODO Take a timestamp
+                let mut test_timer = TestTimer::start();
+
                 select! {
-                    _ = &mut timer => {
-                        panic!("timer expired");
+                    _ = &mut timeout_timer => {
+                        // TODO: panic_any() and change return a Result<Box<dyn TestResult>, Box<dyn TestResult>>
+                        panic!("Test timeout reached");
                     },
 
                     _ = test_fn(client, test_case) => {
-                        println!("Test completed");
+                        &test_timer.stop();
+                        //println!("Test completed in: {:?}", test_timer.duration());
                         // TODO Take another timestamp
                         // TODO Calculate run time
+                        TestResult {
+                            success: true,
+                            duration: test_timer.duration(),
+                        }
                     }
                 }
 
             } else {
                 println!("Test skipped...");
+
+                TestResult {
+                    success: true,
+                    duration: Duration::new(0, 0),
+                }
             }
         }
 

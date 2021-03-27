@@ -3,7 +3,8 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{BaseCli, EnvDetail, EnvironmentSetup, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 
@@ -55,7 +56,7 @@ fn main() {
 
         let test_run = panic::catch_unwind(AssertUnwindSafe(move || {
             run_block_on(async {
-                match testrun_option.test_name.as_str() {
+                let test_result = match testrun_option.test_name.as_str() {
                     "smoke" => flv_test::tests::smoke::run(fluvio_client, test_case).await,
                     "concurrent" => {
                         flv_test::tests::concurrent::run(fluvio_client, test_case).await
@@ -65,6 +66,8 @@ fn main() {
                     //}
                     _ => panic!("Test not found"),
                 };
+
+                println!("{}", test_result);
             });
         }));
 
