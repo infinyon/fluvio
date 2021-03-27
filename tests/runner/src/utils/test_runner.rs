@@ -1,31 +1,71 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
-use async_trait::async_trait;
-use fluvio_system_util::bin::get_fluvio;
-use crate::test_meta::{EnvironmentSetup, EnvDetail};
+use crate::test_meta::TestCase;
+use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
+use crate::test_meta::derive_attr::TestRequirements;
+use fluvio::Fluvio;
+use std::sync::Arc;
+use fluvio::metadata::topic::TopicSpec;
 
-pub async fn create_topic(option: EnvironmentSetup) -> Result<(), ()> {
-    println!("Creating the topic: {}", &option.topic_name);
-    let mut command = get_fluvio().expect("Fluvio binary not found");
-    command
-        .arg("topic")
-        .arg("create")
-        .arg(&option.topic_name())
-        .arg("--replication")
-        .arg(&option.replication().to_string());
-    if let Some(log) = &option.client_log {
-        command.env("RUST_LOG", log);
+pub struct FluvioTest {}
+
+impl FluvioTest {
+    pub async fn create_topic(client: Arc<Fluvio>, option: &EnvironmentSetup) -> Result<(), ()> {
+        println!("Creating the topic: {}", &option.topic_name);
+
+        let mut admin = client.admin().await;
+        let topic_spec = TopicSpec::new_computed(1, option.replication() as i32, None);
+
+        let topic_create = admin
+            .create(option.topic_name.clone(), false, topic_spec)
+            .await;
+
+        if topic_create.is_ok() {
+            println!("topic \"{}\" created", option.topic_name);
+        } else {
+            println!("topic \"{}\" already exists", option.topic_name);
+        }
+
+        Ok(())
     }
 
-    let _output = command
-        .result()
-        .expect("fluvio topic create should succeed");
+    pub fn is_env_acceptable(test_reqs: &TestRequirements, test_case: &TestCase) -> bool {
+        // if `min_spu` undefined, min 1
+        if let Some(min_spu) = test_reqs.min_spu {
+            if min_spu > test_case.environment.spu() {
+                println!("Test requires {} spu", min_spu);
+                return false;
+            }
+        }
 
-    Ok(())
-}
+        // if `cluster_type` undefined, no cluster restrictions
+        // if `cluster_type = local` is defined, then environment must be local or skip
+        // if `cluster_type = k8`, then environment must be k8 or skip
+        if let Some(cluster_type) = &test_reqs.cluster_type {
+            if &test_case.environment.cluster_type() != cluster_type {
+                println!("Test requires cluster type {:?} ", cluster_type);
+                return false;
+            }
+        }
 
-#[async_trait]
-pub trait TestDriver {
-    /// run tester
-    async fn run(self);
+        true
+    }
+
+    pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {
+        if let Some(topic) = &test_reqs.topic {
+            test_case.environment.set_topic_name(topic.to_string());
+        }
+    }
+
+    pub fn set_timeout(test_reqs: &TestRequirements, test_case: &mut TestCase) {
+        // Set timer
+        if let Some(timeout) = test_reqs.timeout {
+            test_case.environment.set_timeout(timeout)
+        }
+    }
+
+    pub fn customize_test(test_reqs: &TestRequirements, test_case: &mut TestCase) {
+        Self::set_topic(test_reqs, test_case);
+        Self::set_timeout(test_reqs, test_case);
+    }
 }

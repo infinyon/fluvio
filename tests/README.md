@@ -57,6 +57,16 @@ Test runner can be a running in two ways:
 - Create new cluster (local or k8) and run test
 - Run tests againts existing cluster
 
+
+> Expected behavior of local clusters that flv-test start:
+>
+> If you `ctrl+c`, the local cluster will also be terminated.
+>
+> If you want the cluster to stick around, then you should start the cluster locally, and pass `--disable-install` and `--keep-cluster` flags.
+
+              
+
+
 ---
 ## Smoke test
 
@@ -146,7 +156,8 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::{EnvironmentSetup, TestOption, TestCase};
+use fluvio_test_util::test_meta::environment::EnvironmentSetup;
+use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
 #[derive(Debug, Clone)]
 pub struct ExampleTestCase {

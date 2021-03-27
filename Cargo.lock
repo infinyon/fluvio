@@ -320,7 +320,7 @@ dependencies = [
  "memchr",
  "num_cpus",
  "once_cell",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "pin-utils",
  "slab",
  "wasm-bindgen-futures",
@@ -1277,7 +1277,7 @@ dependencies = [
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-sc-schema",
  "fluvio-socket",
@@ -1285,12 +1285,12 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "once_cell",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "semver 0.11.0",
  "serde",
  "serde_json",
  "thiserror",
- "tokio 1.4.0",
+ "tokio",
  "toml",
  "tracing",
  "tracing-futures",
@@ -1303,7 +1303,7 @@ dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-socket",
  "fluvio-types",
@@ -1334,7 +1334,7 @@ dependencies = [
  "fluvio-command 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-package-index",
  "fluvio-sc-schema",
  "fluvio-types",
@@ -1374,7 +1374,7 @@ dependencies = [
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-helm",
  "fluvio-runner-local",
  "flv-util",
@@ -1392,7 +1392,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "thiserror",
- "tokio 1.4.0",
+ "tokio",
  "tracing",
  "tracing-futures",
  "url",
@@ -1436,7 +1436,7 @@ version = "0.7.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1453,7 +1453,7 @@ dependencies = [
  "bytes 1.0.1",
  "content_inspector",
  "crc32c",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-socket",
  "flv-util",
@@ -1480,23 +1480,6 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-futures",
-]
-
-[[package]]
-name = "fluvio-future"
-version = "0.1.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9b245085efed04cb1239532e0328fff08ba0aac05effd143827b1be6e53d3c7"
-dependencies = [
- "async-io",
- "async-std",
- "fluvio-test-derive",
- "futures-lite",
- "log",
- "pin-project",
- "thiserror",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -1544,11 +1527,13 @@ name = "fluvio-integration-derive"
 version = "0.1.0"
 dependencies = [
  "fluvio",
+ "fluvio-future",
  "fluvio-test-util",
  "proc-macro2",
  "quote",
  "serde_json",
  "syn",
+ "tokio",
  "trybuild",
 ]
 
@@ -1571,7 +1556,7 @@ name = "fluvio-protocol"
 version = "0.4.0"
 dependencies = [
  "bytes 1.0.1",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol-api 0.3.0",
  "fluvio-protocol-codec",
  "fluvio-protocol-core 0.3.0",
@@ -1618,7 +1603,7 @@ name = "fluvio-protocol-codec"
 version = "0.3.0"
 dependencies = [
  "bytes 1.0.1",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol-core 0.3.0",
  "flv-util",
  "futures",
@@ -1671,7 +1656,7 @@ dependencies = [
 name = "fluvio-runner-local"
 version = "0.4.0"
 dependencies = [
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
  "structopt",
@@ -1693,7 +1678,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-sc-schema",
  "fluvio-service",
@@ -1715,7 +1700,7 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt",
- "tokio 1.4.0",
+ "tokio",
  "tracing",
  "tracing-futures",
 ]
@@ -1741,13 +1726,13 @@ version = "0.5.0"
 dependencies = [
  "async-trait",
  "event-listener",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-socket",
  "futures-util",
  "log",
  "pin-utils",
- "tokio 1.4.0",
+ "tokio",
  "tracing",
  "tracing-futures",
 ]
@@ -1764,7 +1749,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "chashmap",
  "event-listener",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "flv-util",
  "futures-util",
@@ -1772,7 +1757,7 @@ dependencies = [
  "once_cell",
  "pin-project",
  "thiserror",
- "tokio 1.4.0",
+ "tokio",
  "tokio-util",
  "tracing",
 ]
@@ -1794,7 +1779,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-service",
  "fluvio-socket",
@@ -1810,7 +1795,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "structopt",
- "tokio 1.4.0",
+ "tokio",
  "toml",
  "tracing",
  "tracing-futures",
@@ -1840,7 +1825,7 @@ dependencies = [
  "bytes 1.0.1",
  "derive_builder",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-protocol 0.4.0",
  "fluvio-socket",
  "fluvio-types",
@@ -1861,7 +1846,7 @@ dependencies = [
  "async-rwlock",
  "async-trait",
  "event-listener",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1871,7 +1856,7 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
- "tokio 1.4.0",
+ "tokio",
  "tracing",
  "tracing-futures",
 ]
@@ -1882,11 +1867,11 @@ version = "0.5.1"
 dependencies = [
  "async-rwlock",
  "event-listener",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "k8-types",
  "once_cell",
  "serde",
- "tokio 1.4.0",
+ "tokio",
  "tracing",
 ]
 
@@ -1915,12 +1900,12 @@ name = "fluvio-test-util"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "bytes 0.5.6",
+ "bytes 1.0.1",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
- "fluvio-future 0.1.15",
+ "fluvio-future",
  "fluvio-system-util",
  "futures-lite",
  "log",
@@ -1930,7 +1915,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "syn",
- "tokio 0.2.25",
+ "tokio",
 ]
 
 [[package]]
@@ -1938,8 +1923,8 @@ name = "fluvio-types"
 version = "0.2.3"
 dependencies = [
  "event-listener",
- "fluvio-future 0.2.0",
- "tokio 1.4.0",
+ "fluvio-future",
+ "tokio",
  "tracing",
 ]
 
@@ -1954,11 +1939,12 @@ dependencies = [
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.1.15",
+ "fluvio-future",
  "fluvio-integration-derive",
  "fluvio-system-util",
  "fluvio-test-util",
  "fluvio-types",
+ "futures",
  "futures-lite",
  "log",
  "md-5",
@@ -1967,7 +1953,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "syn",
- "tokio 0.2.25",
+ "tokio",
 ]
 
 [[package]]
@@ -1979,14 +1965,14 @@ dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
  "event-listener",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "futures-lite",
  "futures-util",
  "log",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "serde",
  "serde_json",
- "tokio 1.4.0",
+ "tokio",
  "x509-parser",
 ]
 
@@ -2102,7 +2088,7 @@ dependencies = [
  "futures-io",
  "memchr",
  "parking",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "waker-fn",
 ]
 
@@ -2143,7 +2129,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -2253,7 +2239,7 @@ dependencies = [
  "http",
  "indexmap",
  "slab",
- "tokio 1.4.0",
+ "tokio",
  "tokio-util",
  "tracing",
 ]
@@ -2348,7 +2334,7 @@ checksum = "5dfb77c123b4e2f72a2069aeae0b4b4949cc7e966df277813fc16347e7549737"
 dependencies = [
  "bytes 1.0.1",
  "http",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
 ]
 
 [[package]]
@@ -2364,7 +2350,7 @@ dependencies = [
  "cookie",
  "futures-lite",
  "infer",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -2411,7 +2397,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project",
- "tokio 1.4.0",
+ "tokio",
  "tower-service",
  "tracing",
  "want",
@@ -2509,7 +2495,7 @@ dependencies = [
  "base64",
  "bytes 1.0.1",
  "cfg-if 1.0.0",
- "fluvio-future 0.2.0",
+ "fluvio-future",
  "futures-util",
  "http",
  "hyper",
@@ -2523,7 +2509,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.8.3",
- "tokio 1.4.0",
+ "tokio",
  "tracing",
 ]
 
@@ -3039,12 +3025,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "pin-project-lite"
-version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "257b64915a082f7811703966789728173279bdebb956b143dbcd23f6f970a777"
 
 [[package]]
 name = "pin-project-lite"
@@ -4113,17 +4093,6 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "0.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6703a273949a90131b290be1fe7b039d0fc884aa1935860dfcbe056f28cd8092"
-dependencies = [
- "bytes 0.5.6",
- "pin-project-lite 0.1.12",
- "tokio-macros 0.2.6",
-]
-
-[[package]]
-name = "tokio"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134af885d758d645f0f0505c9a8b3f9bf8a348fd822e112ab5248138348f1722"
@@ -4131,19 +4100,8 @@ dependencies = [
  "autocfg",
  "bytes 1.0.1",
  "memchr",
- "pin-project-lite 0.2.6",
- "tokio-macros 1.1.0",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "pin-project-lite",
+ "tokio-macros",
 ]
 
 [[package]]
@@ -4168,8 +4126,8 @@ dependencies = [
  "futures-io",
  "futures-sink",
  "log",
- "pin-project-lite 0.2.6",
- "tokio 1.4.0",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]
@@ -4194,7 +4152,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01ebdc2bb4498ab1ab5f5b73c5803825e60199229ccba0698170e3be0e7f959f"
 dependencies = [
  "cfg-if 1.0.0",
- "pin-project-lite 0.2.6",
+ "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
 ]

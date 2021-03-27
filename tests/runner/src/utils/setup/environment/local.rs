@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::tls::load_tls;
-use crate::test_meta::{EnvironmentSetup, EnvDetail};
+use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
 
 use super::TestEnvironmentDriver;
 use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller, StartStatus};

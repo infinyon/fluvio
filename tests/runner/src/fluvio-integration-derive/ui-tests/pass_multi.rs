@@ -1,9 +1,13 @@
 use fluvio_integration_derive::fluvio_test;
+#[allow(unused_imports)]
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::TestOption;
+#[allow(unused_imports)]
+use fluvio_test_util::test_meta::TestCase;
+#[allow(unused_imports)]
+use std::sync::Arc;
 
 #[fluvio_test(min_spu = 2, topic = "test")]
-pub async fn run(_client: Fluvio, _option: TestOption) {
+pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
 }
 
 fn main() {

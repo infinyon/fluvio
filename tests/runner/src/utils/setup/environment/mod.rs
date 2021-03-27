@@ -19,13 +19,13 @@ mod common {
         async fn start_cluster(&self) -> StartStatus;
     }
 
-    #[derive(Clone, Debug, Serialize, Deserialize)]
+    #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
     pub enum EnvironmentType {
         K8,
         Local,
     }
 
-    use crate::{setup::environment::k8::K8EnvironmentDriver, test_meta::EnvironmentSetup};
+    use crate::{setup::environment::k8::K8EnvironmentDriver, test_meta::environment::EnvironmentSetup};
     use crate::setup::environment::local::LocalEnvDriver;
 
     pub fn create_driver(option: EnvironmentSetup) -> Box<dyn TestEnvironmentDriver> {

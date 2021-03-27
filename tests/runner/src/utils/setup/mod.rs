@@ -6,7 +6,7 @@ use std::time::Duration;
 use fluvio_future::timer::sleep;
 
 use crate::tls::load_tls;
-use crate::test_meta::{EnvironmentSetup, EnvDetail};
+use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
 
 use fluvio::{Fluvio, FluvioConfig, FluvioError};
 
