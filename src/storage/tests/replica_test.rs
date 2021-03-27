@@ -21,12 +21,12 @@ use dataplane::api::RequestMessage;
 use dataplane::record::DefaultRecord;
 use dataplane::record::DefaultAsyncBuffer;
 use dataplane::Offset;
+use dataplane::fixture::BatchProducer;
 
 use fluvio_socket::{FlvSocket, FlvSocketError};
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
 use fluvio_storage::config::ConfigOption;
-use fluvio_storage::fixture::BatchProducer;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;

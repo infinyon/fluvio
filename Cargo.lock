@@ -1454,6 +1454,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "content_inspector",
  "crc32c",
+ "derive_builder",
  "fluvio-future",
  "fluvio-protocol 0.4.1",
  "fluvio-socket",
@@ -1462,6 +1463,7 @@ dependencies = [
  "log",
  "once_cell",
  "semver 0.11.0",
+ "tracing",
 ]
 
 [[package]]
@@ -1824,11 +1826,11 @@ dependencies = [
  "async-mutex",
  "async-trait",
  "bytes 1.0.1",
- "derive_builder",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol 0.4.1",
  "fluvio-socket",
+ "fluvio-storage",
  "fluvio-types",
  "flv-util",
  "futures-lite",

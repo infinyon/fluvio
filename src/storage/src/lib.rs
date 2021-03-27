@@ -1,5 +1,3 @@
-pub mod fixture;
-
 pub mod batch;
 pub mod batch_header;
 mod checkpoint;
@@ -14,6 +12,9 @@ pub mod segment;
 mod util;
 mod validator;
 pub mod config;
+
+#[cfg(feature = "fixture")]
+pub mod fixture;
 
 pub use crate::error::StorageError;
 pub use crate::records::FileRecordsSlice;
