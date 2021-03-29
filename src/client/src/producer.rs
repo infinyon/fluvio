@@ -110,8 +110,7 @@ impl TopicProducer {
 
         debug!("connect to replica leader at: {}", spu_client);
 
-        let record = Bytes::from(Vec::from(buffer.as_ref()));
-        let records = &[(None, record)];
+        let records = &[(None, Bytes::from(Vec::from(buffer.as_ref())))];
         send_records_raw(spu_client, &replica, records).await?;
         Ok(())
     }
