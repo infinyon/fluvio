@@ -8,6 +8,7 @@ use dataplane::ReplicaKey;
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::client::SerialFrame;
+use bytes::Bytes;
 
 /// An interface for producing events to a particular topic
 ///
@@ -44,8 +45,8 @@ impl TopicProducer {
     )]
     pub async fn send<K, V>(&self, key: K, value: V) -> Result<(), FluvioError>
     where
-        K: AsRef<[u8]>,
-        V: AsRef<[u8]>,
+        K: Into<Vec<u8>>,
+        V: Into<Vec<u8>>,
     {
         self.send_all(Some((Some(key), value))).await?;
         Ok(())
@@ -57,8 +58,8 @@ impl TopicProducer {
     )]
     pub async fn send_all<K, V, I>(&self, records: I) -> Result<(), FluvioError>
     where
-        K: AsRef<[u8]>,
-        V: AsRef<[u8]>,
+        K: Into<Vec<u8>>,
+        V: Into<Vec<u8>>,
         I: IntoIterator<Item = (Option<K>, V)>,
     {
         let replica = ReplicaKey::new(&self.topic, 0);
@@ -69,9 +70,11 @@ impl TopicProducer {
         );
         let records: Vec<_> = records.into_iter().collect();
         let records: Vec<_> = records
-            .iter()
-            .map(|(key, value): &(Option<K>, V)| {
-                (key.as_ref().map(|it| it.as_ref()), value.as_ref())
+            .into_iter()
+            .map(|(key, value): (Option<K>, V)| {
+                let key = key.map(|k| Bytes::from(k.into()));
+                let value = Bytes::from(value.into());
+                (key, value)
             })
             .collect();
         send_records_raw(spu_client, &replica, &records).await?;
@@ -107,6 +110,7 @@ impl TopicProducer {
 
         debug!("connect to replica leader at: {}", spu_client);
 
+        let record = Bytes::from(Vec::from(buffer.as_ref()));
         let records = &[(None, record)];
         send_records_raw(spu_client, &replica, records).await?;
         Ok(())
@@ -117,7 +121,7 @@ impl TopicProducer {
 async fn send_records_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
-    records: &[(Option<&[u8]>, &[u8])],
+    records: &[(Option<Bytes>, Bytes)],
 ) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
@@ -142,14 +146,12 @@ async fn send_records_raw<F: SerialFrame>(
             leader
         );
 
-        let value = Vec::from(*value);
         let mut record_msg = DefaultRecord {
-            value: DefaultAsyncBuffer::new(value),
+            value: DefaultAsyncBuffer::new(value.clone()),
             ..Default::default()
         };
         if let Some(key) = key {
-            let key = Vec::from(*key);
-            record_msg.key = Some(key.into());
+            record_msg.key = Some(DefaultAsyncBuffer::new(key.clone()));
         }
         batch.add_record(record_msg);
     }

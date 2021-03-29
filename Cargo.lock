@@ -1274,6 +1274,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "base64",
+ "bytes 1.0.1",
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",

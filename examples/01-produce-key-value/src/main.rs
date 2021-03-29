@@ -34,7 +34,7 @@ async fn produce_key_value() -> Result<(), fluvio::FluvioError> {
     let key = "Hello";
     let value = "Fluvio";
 
-    producer.send(&key, &value).await?;
+    producer.send(key, value).await?;
     println!("[{}] {}", key, value);
     Ok(())
 }

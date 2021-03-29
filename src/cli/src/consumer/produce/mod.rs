@@ -152,7 +152,7 @@ impl ProduceOpt {
 
         let key = pieces[0];
         let value: String = (&pieces[1..]).join(&*separator);
-        producer.send(key, &value).await?;
+        producer.send(key, &*value).await?;
         if self.verbose {
             println!("[{}] {}", key, value);
         }
