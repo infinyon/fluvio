@@ -68,7 +68,6 @@ impl TopicProducer {
             addr = spu_client.config().addr(),
             "Connected to replica leader:"
         );
-        let records: Vec<_> = records.into_iter().collect();
         let records: Vec<_> = records
             .into_iter()
             .map(|(key, value): (Option<K>, V)| {
@@ -77,7 +76,7 @@ impl TopicProducer {
                 (key, value)
             })
             .collect();
-        send_records_raw(spu_client, &replica, &records).await?;
+        send_records_raw(spu_client, &replica, records).await?;
         Ok(())
     }
 
@@ -110,7 +109,7 @@ impl TopicProducer {
 
         debug!("connect to replica leader at: {}", spu_client);
 
-        let records = &[(None, Bytes::from(Vec::from(buffer.as_ref())))];
+        let records = vec![(None, Bytes::from(Vec::from(buffer.as_ref())))];
         send_records_raw(spu_client, &replica, records).await?;
         Ok(())
     }
@@ -120,7 +119,7 @@ impl TopicProducer {
 async fn send_records_raw<F: SerialFrame>(
     mut leader: F,
     replica: &ReplicaKey,
-    records: &[(Option<Bytes>, Bytes)],
+    records: Vec<(Option<Bytes>, Bytes)>,
 ) -> Result<(), FluvioError> {
     use dataplane::produce::DefaultProduceRequest;
     use dataplane::produce::DefaultPartitionRequest;
@@ -136,25 +135,16 @@ async fn send_records_raw<F: SerialFrame>(
 
     debug!("Putting together batch with {} records", records.len());
 
-    let mut batch = DefaultBatch::default();
-    for (key, value) in records {
-        debug!(
-            "send record {} bytes to: replica: {}, {}",
-            value.len(),
-            replica,
-            leader
-        );
+    let records = records
+        .into_iter()
+        .map(|(key, value)| {
+            let key = key.map(DefaultAsyncBuffer::new);
+            let value = DefaultAsyncBuffer::new(value);
+            DefaultRecord::from((key, value))
+        })
+        .collect();
 
-        let mut record_msg = DefaultRecord {
-            value: DefaultAsyncBuffer::new(value.clone()),
-            ..Default::default()
-        };
-        if let Some(key) = key {
-            record_msg.key = Some(DefaultAsyncBuffer::new(key.clone()));
-        }
-        batch.add_record(record_msg);
-    }
-
+    let batch = DefaultBatch::new(records);
     partition_request.partition_index = replica.partition;
     partition_request.records.batches.push(batch);
     topic_request.name = replica.topic.to_owned();

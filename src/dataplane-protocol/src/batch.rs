@@ -111,7 +111,25 @@ where
     }
 }
 
-impl Batch<DefaultBatchRecords> {
+impl DefaultBatch {
+    // TODO write test
+    pub fn new(records: Vec<DefaultRecord>) -> Self {
+        let mut batch = DefaultBatch::default();
+
+        let records: Vec<_> = records
+            .into_iter()
+            .enumerate()
+            .map(|(i, mut record)| {
+                record.preamble.set_offset_delta(i as Offset);
+                record
+            })
+            .collect();
+
+        batch.records = records;
+        batch.header.last_offset_delta = batch.records.len() as i32;
+        batch
+    }
+
     /// add new record, this will update the offset to correct
     pub fn add_record(&mut self, mut record: DefaultRecord) {
         let last_offset_delta = if self.records.is_empty() {

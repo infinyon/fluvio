@@ -360,6 +360,16 @@ impl DefaultRecord {
     }
 }
 
+impl<B: Default> From<(Option<B>, B)> for Record<B> {
+    fn from((key, value): (Option<B>, B)) -> Self {
+        Record {
+            key,
+            value,
+            ..Default::default()
+        }
+    }
+}
+
 impl<B> From<String> for Record<B>
 where
     B: From<String> + Default,
