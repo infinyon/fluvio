@@ -112,7 +112,7 @@ where
 }
 
 impl DefaultBatch {
-    // TODO write test
+    /// Create a new batch from a Vec of DefaultRecords
     pub fn new(records: Vec<DefaultRecord>) -> Self {
         let mut batch = DefaultBatch::default();
 
@@ -126,7 +126,8 @@ impl DefaultBatch {
             .collect();
 
         batch.records = records;
-        batch.header.last_offset_delta = batch.records.len() as i32;
+        let len = batch.records.len() as i32;
+        batch.header.last_offset_delta = if len > 0 { len - 1 } else { len };
         batch
     }
 
@@ -312,10 +313,16 @@ mod test {
     #[test]
     fn test_records_offset() {
         let mut batch = DefaultBatch::default();
+        assert_eq!(batch.get_last_offset_delta(), 0);
 
         batch.add_record(DefaultRecord::default());
+        assert_eq!(batch.get_last_offset_delta(), 0);
+
         batch.add_record(DefaultRecord::default());
+        assert_eq!(batch.get_last_offset_delta(), 1);
+
         batch.add_record(DefaultRecord::default());
+        assert_eq!(batch.get_last_offset_delta(), 2);
 
         assert_eq!(
             batch
@@ -342,5 +349,37 @@ mod test {
             2
         );
         assert_eq!(batch.get_last_offset_delta(), 2);
+    }
+
+    #[test]
+    fn test_batch_records_offset() {
+        let mut comparison = DefaultBatch::default();
+        comparison.add_record(DefaultRecord::default());
+        comparison.add_record(DefaultRecord::default());
+        comparison.add_record(DefaultRecord::default());
+
+        let batch_created = DefaultBatch::new(vec![
+            DefaultRecord::default(),
+            DefaultRecord::default(),
+            DefaultRecord::default(),
+        ]);
+
+        for i in 0..3 {
+            assert_eq!(
+                batch_created
+                    .records
+                    .get(i)
+                    .expect("get record")
+                    .get_offset_delta(),
+                comparison
+                    .records
+                    .get(i)
+                    .expect("get record")
+                    .get_offset_delta(),
+                "Creating a DefaultBatch from a Vec gave wrong delta",
+            )
+        }
+
+        assert_eq!(batch_created.get_last_offset_delta(), 2);
     }
 }
