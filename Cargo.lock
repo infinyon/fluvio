@@ -1266,7 +1266,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.6.0"
+version = "0.6.1-alpha.1"
 dependencies = [
  "async-channel",
  "async-mutex",
