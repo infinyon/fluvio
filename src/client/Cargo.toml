@@ -20,6 +20,7 @@ admin = ["fluvio-sc-schema/use_serde"]
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
 futures-util = "0.3.6"
+bytes = "1.0.1"
 dirs = "1.0.2"
 toml = "0.5.5"
 async-rwlock = "1.1.0"

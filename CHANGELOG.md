@@ -1,9 +1,13 @@
 # Release Notes
 ## Unreleased
 
+## Platform Version 0.7.3 - 2020-04-02
+* Added batching for producing records with `send_all` API
+
 ## Platform Version 0.7.2 - 2020-03-23
 * `fluvio update` updates plugins as well as CLI ([#865](https://github.com/infinyon/fluvio/issues/865)).
 * SPU controller uses SVC ingress annotation ([#888](https://github.com/infinyon/fluvio/pull/888)).
+
 ## Platform Version 0.7.1 - 2020-03-15
 * Client Key/Value support for producers and consumers
 ([#828](https://github.com/infinyon/fluvio/pull/828)).

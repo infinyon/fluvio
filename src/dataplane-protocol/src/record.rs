@@ -3,12 +3,12 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::io::Error;
 use std::io::ErrorKind;
-use std::sync::Arc;
 
 use content_inspector::{inspect, ContentType};
 use log::{trace, warn};
 use once_cell::sync::Lazy;
 
+use crate::core::bytes::Bytes;
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;
 
@@ -39,12 +39,12 @@ pub trait AsyncBuffer {
 pub trait Records {}
 
 #[derive(Default)]
-pub struct DefaultAsyncBuffer(Arc<Vec<u8>>);
+pub struct DefaultAsyncBuffer(Bytes);
 
 impl DefaultAsyncBuffer {
     pub fn new<T>(val: T) -> Self
     where
-        T: Into<Arc<Vec<u8>>>,
+        T: Into<Bytes>,
     {
         DefaultAsyncBuffer(val.into())
     }
@@ -70,7 +70,7 @@ impl DefaultAsyncBuffer {
 
 impl AsRef<[u8]> for DefaultAsyncBuffer {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        self.0.as_ref()
     }
 }
 
@@ -155,26 +155,24 @@ impl Encoder for DefaultAsyncBuffer {
 }
 
 impl Decoder for DefaultAsyncBuffer {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _: Version) -> Result<(), Error>
     where
         T: Buf,
     {
         trace!("decoding default asyncbuffer");
-        if let Some(ref mut buffer) = Arc::get_mut(&mut self.0) {
-            let mut len: i64 = 0;
-            len.decode_varint(src)?;
-            for _ in 0..len {
-                let mut value = <u8>::default();
-                value.decode(src, version)?;
-                buffer.push(value);
-            }
-            Ok(())
-        } else {
-            Err(Error::new(
-                ErrorKind::Other,
-                "Can't decode buffer while cloning".to_string(),
-            ))
-        }
+
+        let mut len: i64 = 0;
+        len.decode_varint(src)?;
+        let len = len as usize;
+
+        // Take `len` bytes from `src` and put them into a new BytesMut buffer
+        let slice = src.take(len);
+        let mut bytes_mut = bytes::BytesMut::with_capacity(len);
+        bytes_mut.put(slice);
+
+        // Replace the inner Bytes buffer of this DefaultAsyncBuffer
+        self.0 = bytes_mut.freeze();
+        Ok(())
     }
 }
 
@@ -357,6 +355,16 @@ impl DefaultRecord {
         DefaultRecord {
             key: Some(DefaultAsyncBuffer::new(key.into())),
             value: DefaultAsyncBuffer::new(value.into()),
+            ..Default::default()
+        }
+    }
+}
+
+impl<B: Default> From<(Option<B>, B)> for Record<B> {
+    fn from((key, value): (Option<B>, B)) -> Self {
+        Record {
+            key,
+            value,
             ..Default::default()
         }
     }
