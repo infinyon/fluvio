@@ -44,7 +44,7 @@ fluvio-sc-schema = { version = "0.7.0", path = "../sc-schema", default-features 
 fluvio-spu-schema = { version = "0.5.0", path = "../spu-schema" }
 fluvio-socket = { path = "../socket", version = "0.7.0", features = ["tls"] }
 fluvio-protocol = { path = "../protocol", version = "0.4.0" }
-dataplane = { version = "0.4.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.4.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [dev-dependencies]
 async-std = { version = "1.6.4", default-features = false}
