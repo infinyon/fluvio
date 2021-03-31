@@ -33,6 +33,11 @@ jobs:
           echo "FORCE_RELEASE=${{ github.event.inputs.force }}" >> $GITHUB_ENV
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
       - name: Install cargo-make
         uses: davidB/rust-cargo-make@v1
         with:
@@ -82,6 +87,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
       - name: Install cargo-make
         uses: davidB/rust-cargo-make@v1
         with:
