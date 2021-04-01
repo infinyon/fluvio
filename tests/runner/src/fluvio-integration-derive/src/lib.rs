@@ -74,10 +74,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             Box::new(#test_opt_ident::from_iter(subcmd))
         }
 
-        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
-            println!("Inside the function");
+        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+            //println!("Inside the function");
             let future = async move {
-                println!("Inside the async wrapper function");
+                //println!("Inside the async wrapper function");
                 #async_inner_fn_iden(client, test_case).await
             };
             fluvio_future::task::run_block_on(future)
@@ -91,7 +91,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
-        pub async fn #async_inner_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
+        pub async fn #async_inner_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::{TestCase, TestResult};
             use fluvio_test_util::test_meta::environment::{EnvDetail};
@@ -99,10 +99,11 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_test_util::test_meta::TestTimer;
             use fluvio_test_util::test_runner::FluvioTest;
             use fluvio_test_util::setup::environment::EnvironmentType;
-            use fluvio_future::task::run_block_on;
+            use fluvio_future::task::run;
             use fluvio_future::timer::sleep;
             use std::{io, time::Duration};
             use tokio::select;
+            use std::panic::panic_any;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
@@ -120,29 +121,56 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 // Wrap the user test in a closure
                 let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
-                    #test_body
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+                        run(async move {
+                            #test_body
+                        });
+                    }))
                 };
 
                 // start a timeout timer
-                let mut timeout_timer = sleep(Duration::from_secs(test_case.environment.timeout().into()));
+                let timeout_duration = Duration::from_secs(test_case.environment.timeout().into());
+                let mut timeout_timer = sleep(timeout_duration.clone());
 
-                // TODO Take a timestamp
+                // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
+
+                //// We need a panic handler to catch the gross errors
 
                 select! {
                     _ = &mut timeout_timer => {
-                        // TODO: panic_any() and change return a Result<Box<dyn TestResult>, Box<dyn TestResult>>
-                        panic!("Test timeout reached");
+                        &test_timer.stop();
+                        eprintln!("Test timed out ({:?})", timeout_duration.clone());
+                        //let _ = std::panic::take_hook();
+                        Err(TestResult {
+                            success: false,
+                            duration: test_timer.duration(),
+                        })
                     },
 
-                    _ = test_fn(client, test_case) => {
+                    res = test_fn(client, test_case) => {
                         &test_timer.stop();
-                        //println!("Test completed in: {:?}", test_timer.duration());
-                        // TODO Take another timestamp
-                        // TODO Calculate run time
-                        TestResult {
-                            success: true,
-                            duration: test_timer.duration(),
+                        println!("Test completed");
+
+                        //Ok(TestResult {
+                        //    success: true,
+                        //    duration: test_timer.duration(),
+                        //})
+
+                        match res {
+                            Ok(_) => {
+                                Ok(TestResult {
+                                    success: true,
+                                    duration: test_timer.duration(),
+                                })
+                            },
+                            Err(_) => {
+                                Ok(TestResult {
+                                    success: false,
+                                    duration: test_timer.duration(),
+                                })
+
+                            }
                         }
                     }
                 }
@@ -150,10 +178,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             } else {
                 println!("Test skipped...");
 
-                TestResult {
+                Ok(TestResult {
                     success: true,
                     duration: Duration::new(0, 0),
-                }
+                })
             }
         }
 

@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
-use crate::test_meta::{TestCase, TestResult, TestOption};
+use crate::test_meta::{TestCase, TestOption, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::Fluvio;
@@ -11,7 +11,7 @@ use inventory;
 #[derive(Debug)]
 pub struct FluvioTest {
     pub name: String,
-    pub test_fn: fn(Arc<Fluvio>, TestCase) -> TestResult,
+    pub test_fn: fn(Arc<Fluvio>, TestCase) -> Result<TestResult, TestResult>,
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
 }
 

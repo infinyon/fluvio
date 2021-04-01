@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
@@ -47,24 +47,49 @@ fn main() {
         // Create a TestCase object with option.envronment and test_opt
         let test_case = TestCase::new(option.environment.clone(), test_opt);
 
-        let test_run = panic::catch_unwind(AssertUnwindSafe(move || {
+        let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
             let test = inventory::iter::<FluvioTest>
                 .into_iter()
                 .find(|t| t.name == test_name.as_str())
                 .expect("Test not found");
 
             // Run the test
-            let test_result = (test.test_fn)(fluvio_client.clone(), test_case);
-            println!("{}", test_result);
+            (test.test_fn)(fluvio_client.clone(), test_case)
         }));
 
         // Cluster cleanup
         cluster_cleanup(option.environment).await;
 
-        if let Err(err) = test_run {
-            eprintln!("panic reason: {:?}", err);
-            std::process::exit(-1);
+        match test_result {
+            // Pass/Fail results
+            Ok(results) => {
+                // We always return TestResults. This is awkward.
+                match results {
+                    Ok(r) => println!("{}", r),
+                    Err(r) => eprintln!("{}", r),
+                }
+            }
+            // Panic results
+            Err(fail_results) => {
+                let test_result = fail_results
+                    .downcast_ref::<TestResult>()
+                    .expect("Failed to convert error from panic")
+                    .to_owned();
+
+                eprintln!("{}", test_result);
+                std::process::exit(-1);
+            }
         }
+
+        //if let Err(err) = test_result {
+        //    let test_result = err
+        //        .downcast_ref::<Box<BasicTestResult>>()
+        //        .expect("Box<BasicTestResult>")
+        //        .to_owned();
+
+        //    eprintln!("{}", test_result);
+        //    std::process::exit(-1);
+        //}
     });
 }
 

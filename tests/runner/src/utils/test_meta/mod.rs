@@ -1,14 +1,16 @@
 pub mod derive_attr;
 pub mod environment;
 
+use std::any::Any;
+use std::time::{Duration, Instant};
 use std::fmt::{self, Debug, Display, Formatter};
 
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
-use std::any::Any;
-use std::time::{Duration, Instant};
+use prettytable::{table, row, cell};
 
 use environment::EnvironmentSetup;
+use crate::test_runner::FluvioTest;
 
 pub trait TestOption: Debug {
     fn as_any(&self) -> &dyn Any;
@@ -18,6 +20,9 @@ pub struct TestCase {
     pub environment: EnvironmentSetup,
     pub option: Box<dyn TestOption>,
 }
+
+unsafe impl Send for TestCase {}
+unsafe impl Sync for TestCase {}
 
 impl TestCase {
     pub fn new(environment: EnvironmentSetup, option: Box<dyn TestOption>) -> Self {
@@ -46,6 +51,7 @@ impl Default for TestCli {
     about = "Test fluvio platform",
     global_settings = &[AppSettings::ColoredHelp])]
 pub struct BaseCli {
+    #[structopt(possible_values=&FluvioTest::all_test_names())]
     pub test_name: String,
 
     #[structopt(flatten)]
@@ -85,16 +91,23 @@ pub struct TestResult {
     // perf_results?
 }
 
+impl TestResult {
+    pub fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
 impl Display for TestResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let output = vec![
-            format!(""),
-            "Test Results:".to_string(),
-            format!("Pass    : {}", self.success),
-            format!("Duration: {:?}", self.duration),
-            format!(""),
-        ];
+        let success_str = format!("{}", self.success);
+        let duration_str = format!("{:?}", self.duration);
 
-        write!(f, "{}", output.join("\n"))
+        let table = table!(
+            [b->"Test Results"],
+            ["Pass?", b->success_str],
+            ["Duration", duration_str]
+        );
+
+        write!(f, "{}", table)
     }
 }
