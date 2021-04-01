@@ -176,6 +176,8 @@ impl Decoder for DefaultAsyncBuffer {
     }
 }
 
+/// Represents sets of batches in storage
+//  It is written consequently with len as prefix
 #[derive(Default, Debug)]
 pub struct RecordSet {
     pub batches: Vec<DefaultBatch>,
@@ -193,7 +195,7 @@ impl RecordSet {
         self
     }
 
-    /// last offset
+    /// this is next offset to be fetched
     pub fn last_offset(&self) -> Option<Offset> {
         self.batches
             .last()
@@ -294,6 +296,10 @@ impl RecordHeader {
     pub fn set_offset_delta(&mut self, delta: Offset) {
         self.offset_delta = delta;
     }
+
+    pub fn offset_delta(&self) -> Offset {
+        self.offset_delta
+    }
 }
 
 #[derive(Default)]
@@ -313,6 +319,11 @@ where
 {
     pub fn get_offset_delta(&self) -> Offset {
         self.preamble.offset_delta
+    }
+
+    /// add offset delta with new relative base offset
+    pub fn add_base_offset(&mut self, relative_base_offset: Offset) {
+        self.preamble.offset_delta += relative_base_offset;
     }
 
     /// Returns a reference to the inner value
@@ -690,6 +701,7 @@ mod file {
             data: &mut Vec<StoreValue>,
             version: Version,
         ) -> Result<(), IoError> {
+            // write total len
             let len: i32 = self.len() as i32;
             trace!("KfFileRecordSet encoding file slice len: {}", len);
             len.encode(dest, version)?;

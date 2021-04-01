@@ -458,10 +458,8 @@ impl ScDispatcher<FileReplica> {
         let spu_config = self.ctx.config_owned();
         let replica_id = replica.id.clone();
 
-        let (sender, receiver) = bounded(10);
-
-        match LeaderReplicaState::create_file_replica(replica, spu_config, sender).await {
-            Ok(leader_replica) => {
+        match LeaderReplicaState::create_state(replica, spu_config).await {
+            Ok((leader_replica, receiver)) => {
                 debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(replica_id, leader_replica, receiver)
                     .await;
@@ -559,16 +557,15 @@ impl ScDispatcher<FileReplica> {
 
     /// spawn new leader controller
     #[instrument(
-        skip(self,replica_id, leader_state),
+        skip(self,replica_id, shared_state),
         fields(replica = %replica_id)
     )]
     async fn spawn_leader_controller(
         &self,
         replica_id: ReplicaKey,
-        leader_state: LeaderReplicaState<FileReplica>,
+        shared_state: Arc<LeaderReplicaState<FileReplica>>,
         receiver: Receiver<LeaderReplicaControllerCommand>,
     ) {
-        let shared_state = Arc::new(leader_state);
         if let Some(old_replica) = self
             .ctx
             .leaders_state()
@@ -621,7 +618,7 @@ impl ScDispatcher<FileReplica> {
                 sender,
             );
 
-            self.spawn_leader_controller(new_replica.id, leader_state, receiver)
+            self.spawn_leader_controller(new_replica.id, Arc::new(leader_state), receiver)
                 .await;
         }
     }

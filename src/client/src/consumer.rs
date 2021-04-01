@@ -377,6 +377,8 @@ impl PartitionConsumer {
     {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
+        use fluvio_spu_schema::server::stream_fetch::WASM_MODULE_API;
+        use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         debug!(
@@ -385,12 +387,13 @@ impl PartitionConsumer {
         );
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-        debug!("created serial socket {}", serial_socket);
+        trace!("created serial socket {}", serial_socket);
+
         let start_absolute_offset = offset
             .to_absolute(&mut serial_socket, &self.topic, self.partition)
             .await?;
 
-        let stream_request = DefaultStreamFetchRequest {
+        let mut stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),
             partition: self.partition,
             fetch_offset: start_absolute_offset,
@@ -399,7 +402,24 @@ impl PartitionConsumer {
             ..Default::default()
         };
 
-        let mut stream = self.pool.create_stream(&replica, stream_request).await?;
+        // add wasm module if SPU supports it
+        let stream_fetch_version = serial_socket
+            .versions()
+            .lookup_version(DefaultStreamFetchRequest::API_KEY)
+            .unwrap_or((WASM_MODULE_API - 1) as i16);
+
+        if !config.wasm_module.is_empty() {
+            if stream_fetch_version >= WASM_MODULE_API as i16 {
+                stream_request.wasm_module = config.wasm_module;
+            } else {
+                return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
+            }
+        }
+
+        let mut stream = self
+            .pool
+            .create_stream_with_version(&replica, stream_request, stream_fetch_version)
+            .await?;
 
         if let Some(Ok(response)) = stream.next().await {
             let stream_id = response.stream_id;
@@ -407,7 +427,7 @@ impl PartitionConsumer {
             trace!("first stream response: {:#?}", response);
             debug!(
                 stream_id,
-                last_offset = ?response.partition.records.last_offset(),
+                last_offset = ?response.partition.next_offset_for_fetch(),
                 "first stream response"
             );
 
@@ -448,7 +468,7 @@ impl PartitionConsumer {
             });
 
             // send back first offset records exists
-            if let Some(last_offset) = response.partition.records.last_offset() {
+            if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                 debug!(last_offset, "notify new last offset");
                 publisher.update(last_offset);
             }
@@ -456,7 +476,7 @@ impl PartitionConsumer {
             let response_publisher = publisher.clone();
             let update_stream = stream.map(move |item| {
                 item.map(|response| {
-                    if let Some(last_offset) = response.partition.records.last_offset() {
+                    if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                         debug!(last_offset, stream_id, "received last offset from spu");
                         response_publisher.update(last_offset);
                     }
@@ -547,6 +567,7 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
 pub struct ConsumerConfig {
     pub(crate) max_bytes: i32,
     pub(crate) isolation: Isolation,
+    wasm_module: Vec<u8>,
 }
 
 impl Default for ConsumerConfig {
@@ -554,6 +575,7 @@ impl Default for ConsumerConfig {
         Self {
             max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
+            wasm_module: vec![],
         }
     }
 }
@@ -562,6 +584,12 @@ impl ConsumerConfig {
     /// Maximum number of bytes to be fetched at a time.
     pub fn with_max_bytes(mut self, max_bytes: i32) -> Self {
         self.max_bytes = max_bytes;
+        self
+    }
+
+    /// set wasm filter
+    pub fn with_wasm_filter(mut self, bytes: Vec<u8>) -> Self {
+        self.wasm_module = bytes;
         self
     }
 }

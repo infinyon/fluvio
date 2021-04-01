@@ -7,6 +7,8 @@ use dataplane::fetch::DefaultFetchRequest;
 use dataplane::versions::ApiVersionKey;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
+use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
+use fluvio_spu_schema::server::update_offset::UpdateOffsetsRequest;
 use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 
 pub async fn handle_kf_lookup_version_request(
@@ -16,7 +18,6 @@ pub async fn handle_kf_lookup_version_request(
 
     let mut response = ApiVersionsResponse::default();
 
-    // Kafka
     response.api_keys.push(make_version_key(
         SpuServerApiKey::Produce,
         DefaultProduceRequest::MIN_API_VERSION,
@@ -31,6 +32,16 @@ pub async fn handle_kf_lookup_version_request(
         SpuServerApiKey::FetchOffsets,
         FetchOffsetsRequest::DEFAULT_API_VERSION,
         FetchOffsetsRequest::DEFAULT_API_VERSION,
+    ));
+    response.api_keys.push(make_version_key(
+        SpuServerApiKey::StreamFetch,
+        0,
+        DefaultStreamFetchRequest::DEFAULT_API_VERSION,
+    ));
+    response.api_keys.push(make_version_key(
+        SpuServerApiKey::UpdateOffsets,
+        0,
+        UpdateOffsetsRequest::DEFAULT_API_VERSION,
     ));
 
     Ok(request.new_response(response))

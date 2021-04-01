@@ -4,7 +4,7 @@
 //! CLI command for Consume operation
 //!
 
-use std::io::Error as IoError;
+use std::{io::Error as IoError, path::PathBuf};
 use std::io::ErrorKind;
 use std::convert::TryFrom;
 use tracing::{debug, trace, instrument};
@@ -73,6 +73,10 @@ pub struct ConsumeOpt {
         default_value
     )]
     pub output: ConsumeOutputType,
+
+    /// Path to a WASM binary file
+    #[structopt(short, long)]
+    pub filter: Option<PathBuf>,
 }
 
 impl ConsumeOpt {
@@ -102,13 +106,19 @@ impl ConsumeOpt {
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
 
-        let consume_config = {
+        let mut consume_config = {
             let mut config = ConsumerConfig::default();
             if let Some(max_bytes) = self.max_bytes {
                 config = config.with_max_bytes(max_bytes);
             }
             config
         };
+
+        if let Some(filter_path) = &self.filter {
+            let buffer = std::fs::read(filter_path)?;
+            debug!(len = buffer.len(), "read filter bytes");
+            consume_config = consume_config.with_wasm_filter(buffer);
+        }
 
         if self.disable_continuous {
             self.consume_records_batch(&consumer, offset, consume_config)

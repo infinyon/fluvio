@@ -16,9 +16,7 @@ use crate::range_map::SegmentList;
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
 use crate::SegmentSlice;
-use crate::StorageError;
-use crate::SlicePartitionResponse;
-use crate::ReplicaStorage;
+use crate::{StorageError, SlicePartitionResponse, ReplicaStorage};
 
 /// Replica is public abstraction for commit log which are distributed.
 /// Internally it is stored as list of segments.  Each segment contains finite sets of record batches.

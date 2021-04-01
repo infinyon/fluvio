@@ -11,6 +11,7 @@ use fluvio_future::test_async;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
 use dataplane::{
+    ErrorCode,
     fetch::{
         FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
         FilePartitionResponse, FileTopicResponse,
@@ -30,6 +31,7 @@ use fluvio_storage::config::ConfigOption;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;
+const TOPIC_NAME: &str = "testsimple";
 
 fn default_option() -> ConfigOption {
     ConfigOption {
@@ -65,7 +67,7 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 
     ensure_clean_dir(&option.base_dir);
 
-    let mut replica = FileReplica::create("testsimple", 0, START_OFFSET, &option)
+    let mut replica = FileReplica::create(TOPIC_NAME, 0, START_OFFSET, &option)
         .await
         .expect("test replica");
     replica
@@ -107,6 +109,11 @@ async fn handle_response(socket: &mut FlvSocket, replica: &FileReplica) {
             &mut part_response,
         )
         .await;
+    debug!("response: {:#?}", part_response);
+    assert_eq!(part_response.partition_index, 0);
+    assert_eq!(part_response.error_code, ErrorCode::None);
+
+    // assert_eq!(part)
     topic_response.partitions.push(part_response);
     response.topics.push(topic_response);
 
@@ -147,7 +154,7 @@ async fn test_fetch(addr: &str, iteration: i16, offset: i64, expected_batch_len:
     debug!("testing fetch: {}", iteration);
     let mut request = DefaultFetchRequest::default();
     let mut topic_request = FetchableTopic {
-        name: "testsimple".to_owned(),
+        name: TOPIC_NAME.to_owned(),
         ..Default::default()
     };
     let part_request = FetchPartition {
@@ -165,11 +172,11 @@ async fn test_fetch(addr: &str, iteration: i16, offset: i64, expected_batch_len:
 
     let res_msg = socket.send(&req_msg).await.expect("send");
 
-    debug!("output: {:#?}", res_msg);
     let topic_responses = res_msg.response.topics;
     assert_eq!(topic_responses.len(), 1);
     let part_responses = &topic_responses[0].partitions;
     assert_eq!(part_responses.len(), 1);
+
     let batches = &part_responses[0].records.batches;
     assert_eq!(batches.len(), expected_batch_len);
     let records = &batches[0].records();

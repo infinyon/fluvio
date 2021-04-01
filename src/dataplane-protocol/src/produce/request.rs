@@ -1,13 +1,9 @@
-use std::io::Error as IoError;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use log::trace;
-use bytes::BytesMut;
-
 use crate::core::Encoder;
 use crate::core::Decoder;
-use crate::core::Version;
+
 use crate::derive::Encode;
 use crate::derive::Decode;
 use crate::derive::FluvioDefault;
@@ -86,7 +82,12 @@ pub use file::*;
 
 #[cfg(feature = "file")]
 mod file {
+    use std::io::Error as IoError;
 
+    use log::trace;
+    use bytes::BytesMut;
+
+    use crate::core::Version;
     use crate::record::FileRecordSet;
     use crate::store::FileWrite;
     use crate::store::StoreValue;

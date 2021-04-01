@@ -22,7 +22,6 @@ pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub use crate::segment::SegmentSlice;
-
 pub use inner::*;
 mod inner {
     use async_trait::async_trait;
@@ -52,6 +51,7 @@ mod inner {
             self.high_watermark = offset;
         }
 
+        #[allow(deprecated)]
         fn set_last_stable_offset(&mut self, offset: i64) {
             self.last_stable_offset = offset;
         }

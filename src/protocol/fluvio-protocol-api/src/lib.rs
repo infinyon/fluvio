@@ -14,12 +14,6 @@ pub use self::api::*;
 pub use self::response::*;
 pub use self::request::*;
 
-//pub use self::group_protocol_metadata::ProtocolMetadata;
-//pub use self::group_protocol_metadata::Metadata;
-//pub use self::group_assigment::GroupAssignment;
-//pub use self::group_assigment::Assignment;
-// pub use self::common::*;
-
 pub const MAX_BYTES: i32 = 52428800;
 
 #[macro_export]

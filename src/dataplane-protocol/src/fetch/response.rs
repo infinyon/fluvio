@@ -1,19 +1,15 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::io::Error as IoError;
-
-use log::trace;
-use bytes::BytesMut;
 
 use crate::core::Decoder;
 use crate::core::Encoder;
-use crate::core::Version;
 use crate::derive::Encode;
 use crate::derive::Decode;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;
 use crate::ErrorCode;
+use crate::Offset;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
 
@@ -24,14 +20,8 @@ where
 {
     /// The duration in milliseconds for which the request was throttled due to a quota violation,
     /// or zero if the request did not violate any quota.
-    #[fluvio(min_version = 1, ignorable)]
     pub throttle_time_ms: i32,
-
-    #[fluvio(min_version = 7)]
     pub error_code: ErrorCode,
-
-    /// The fetch session ID, or 0 if this is not part of a fetch session.
-    #[fluvio(min_version = 7)]
     pub session_id: i32,
 
     /// The response topics.
@@ -88,32 +78,41 @@ where
     /// The current high water mark.
     pub high_watermark: i64,
 
-    /// The last stable offset (or LSO) of the partition. This is the last offset such that the
-    /// state of all transactional records prior to this offset have been decided (ABORTED or
-    /// COMMITTED)
-    #[fluvio(min_version = 4, ignorable)]
+    /// The last stable offset (or LSO) of the partition which is inherited from Kafka semamntics
+    #[deprecated(since = "0.4.0", note = "Please use high_watermark")]
     pub last_stable_offset: i64,
 
+    /// next offset to fetch in case of filter
+    /// consumer should return that back to SPU, othewise SPU will re-turn same filter records
+    #[fluvio(min_version = 11, ignorable)]
+    pub next_filter_offset: i64,
+
     /// The current log start offset.
-    #[fluvio(min_version = 5, ignorable)]
     pub log_start_offset: i64,
 
     /// The aborted transactions.
-    #[fluvio(min_version = 4)]
     pub aborted: Option<Vec<AbortedTransaction>>,
 
     /// The record data.
     pub records: R,
 }
 
+impl FetchablePartitionResponse<RecordSet> {
+    /// offset that will be use for fetching rest of offsets
+    /// this will be 1 greater than last offset of previous query
+    /// If all records have been read then it will be either HW or LEO
+    pub fn next_offset_for_fetch(&self) -> Option<Offset> {
+        if self.next_filter_offset > 0 {
+            Some(self.next_filter_offset)
+        } else {
+            self.records.last_offset()
+        }
+    }
+}
+
 #[derive(Encode, Decode, FluvioDefault, Debug)]
 pub struct AbortedTransaction {
-    /// The producer id associated with the aborted transaction.
-    #[fluvio(min_version = 4)]
     pub producer_id: i64,
-
-    /// The first offset in the aborted transaction.
-    #[fluvio(min_version = 4)]
     pub first_offset: i64,
 }
 
@@ -143,17 +142,25 @@ pub use file::*;
 
 #[cfg(feature = "file")]
 mod file {
-    use super::*;
+
+    use std::io::Error as IoError;
+
+    use log::trace;
+    use bytes::BytesMut;
 
     use crate::record::FileRecordSet;
     use crate::store::FileWrite;
     use crate::store::StoreValue;
+    use crate::core::Version;
+
+    use super::*;
 
     pub type FileFetchResponse = FetchResponse<FileRecordSet>;
     pub type FileTopicResponse = FetchableTopicResponse<FileRecordSet>;
     pub type FilePartitionResponse = FetchablePartitionResponse<FileRecordSet>;
 
     impl FileWrite for FilePartitionResponse {
+        #[allow(deprecated)]
         fn file_encode(
             &self,
             src: &mut BytesMut,
@@ -165,6 +172,11 @@ mod file {
             self.error_code.encode(src, version)?;
             self.high_watermark.encode(src, version)?;
             self.last_stable_offset.encode(src, version)?;
+            if version >= 11 {
+                self.next_filter_offset.encode(src, version)?;
+            } else {
+                log::trace!("v: {} is less than last fetched version 11", version);
+            }
             self.log_start_offset.encode(src, version)?;
             self.aborted.encode(src, version)?;
             self.records.file_encode(src, data, version)?;

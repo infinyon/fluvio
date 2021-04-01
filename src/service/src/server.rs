@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use std::os::unix::io::AsRawFd;
 
-use event_listener::Event;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 use futures_util::StreamExt;
@@ -19,16 +18,13 @@ use tracing::info;
 use tracing::instrument;
 use tracing::trace;
 
-use fluvio_future::net::TcpListener;
-use fluvio_future::net::TcpStream;
+use fluvio_types::event::SimpleEvent;
+use fluvio_future::net::{TcpListener, TcpStream};
 use fluvio_future::task::spawn;
 use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use fluvio_socket::FlvSocket;
-use fluvio_socket::FlvSocketError;
-use fluvio_socket::InnerFlvSink;
-use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::{FlvSocket, FlvSocketError, InnerFlvSink, InnerFlvSocket};
 
 #[async_trait]
 pub trait SocketBuilder: Clone {
@@ -127,15 +123,14 @@ where
     T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
     InnerFlvSink<T::Stream>: ZeroCopyWrite,
 {
-    pub fn run(self) -> Arc<Event> {
-        let event = Arc::new(Event::new());
-
+    pub fn run(self) -> Arc<SimpleEvent> {
+        let event = SimpleEvent::shared();
         spawn(self.run_shutdown(event.clone()));
 
         event
     }
 
-    async fn run_shutdown(self, shutdown_signal: Arc<Event>) {
+    async fn run_shutdown(self, shutdown_signal: Arc<SimpleEvent>) {
         match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
                 info!("starting event loop");
@@ -149,7 +144,7 @@ where
     }
 
     #[instrument(skip(self, listener, shutdown), fields(address = &*self.addr))]
-    async fn event_loop(self, listener: TcpListener, shutdown: Arc<Event>) {
+    async fn event_loop(self, listener: TcpListener, shutdown: Arc<SimpleEvent>) {
         use tokio::select;
 
         let mut incoming = listener.incoming();
@@ -256,7 +251,7 @@ mod test {
         FlvSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: String, shutdown: Arc<Event>) {
+    async fn test_client(addr: String, shutdown: Arc<SimpleEvent>) {
         let mut socket = create_client(addr).await.expect("client");
 
         let request = EchoRequest::new("hello".to_owned());
@@ -272,7 +267,7 @@ mod test {
         trace!("received 2nd reply from server: {:#?}", reply2);
         assert_eq!(reply2.response.msg, "hello2");
 
-        shutdown.notify(1);
+        shutdown.notify();
     }
 
     #[test_async]

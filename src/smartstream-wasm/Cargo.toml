@@ -1,0 +1,17 @@
+[package]
+name = "fluvio-smartstream-wasm"
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+categories = ["WebAssembly"]
+keywords = ["streaming", "stream", "wasm"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio SmartStream WASM library"
+
+[lib]
+crate-type = ['lib']
+
+
+[dependencies]
+fluvio-dataplane-protocol = { version = "0.4.1", path = "../dataplane-protocol", default-features = false }

@@ -33,6 +33,8 @@ impl BatchRecords for DefaultBatchRecords {}
 pub const BATCH_PREAMBLE_SIZE: usize = size_of::<Offset>()     // Offset
         + size_of::<i32>(); // i32
 
+pub const BATCH_FILE_HEADER_SIZE: usize = BATCH_PREAMBLE_SIZE + BATCH_HEADER_SIZE;
+
 #[derive(Default, Debug)]
 pub struct Batch<R>
 where
@@ -82,6 +84,10 @@ where
     pub fn base_offset(mut self, offset: Offset) -> Self {
         self.base_offset = offset;
         self
+    }
+
+    pub fn add_to_offset_delta(&mut self, delta: i32) {
+        self.header.last_offset_delta += delta;
     }
 
     pub fn set_offset_delta(&mut self, delta: i32) {
@@ -235,7 +241,6 @@ impl Default for BatchHeader {
     }
 }
 
-#[allow(dead_code)]
 pub const BATCH_HEADER_SIZE: usize = size_of::<i32>()     // partition leader epoch
         + size_of::<u8>()       // magic
         + size_of::<i32>()      //crc

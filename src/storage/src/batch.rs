@@ -13,13 +13,12 @@ use futures_lite::io::AsyncSeekExt;
 use fluvio_future::fs::File;
 use dataplane::batch::{
     Batch, BatchRecords, DefaultBatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE,
+    BATCH_FILE_HEADER_SIZE,
 };
 use dataplane::Size;
 use dataplane::Offset;
 
 use crate::StorageError;
-
-const BATCH_FILE_HEADER_SIZE: usize = BATCH_PREAMBLE_SIZE + BATCH_HEADER_SIZE;
 
 pub type DefaultFileBatchStream = FileBatchStream<DefaultBatchRecords>;
 
