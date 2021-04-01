@@ -7,6 +7,7 @@ use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_meta::TestTimer;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -47,6 +48,8 @@ fn main() {
         // Create a TestCase object with option.envronment and test_opt
         let test_case = TestCase::new(option.environment.clone(), test_opt);
 
+        let panic_timer = TestTimer::start();
+
         let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
             let test = inventory::iter::<FluvioTest>
                 .into_iter()
@@ -55,6 +58,20 @@ fn main() {
 
             // Run the test
             (test.test_fn)(fluvio_client.clone(), test_case)
+        }));
+
+        // Handle panics from user tests
+        std::panic::set_hook(Box::new(move |_panic_info| {
+            let mut inside_timer = panic_timer.clone();
+            inside_timer.stop();
+
+            let test_result = TestResult {
+                success: false,
+                duration: inside_timer.duration(),
+            };
+            //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
+            eprintln!("Test panicked:\n");
+            eprintln!("{}", test_result);
         }));
 
         // Cluster cleanup
@@ -80,22 +97,12 @@ fn main() {
                 std::process::exit(-1);
             }
         }
-
-        //if let Err(err) = test_result {
-        //    let test_result = err
-        //        .downcast_ref::<Box<BasicTestResult>>()
-        //        .expect("Box<BasicTestResult>")
-        //        .to_owned();
-
-        //    eprintln!("{}", test_result);
-        //    std::process::exit(-1);
-        //}
     });
 }
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
     if option.skip_cluster_delete() {
-        println!("skipping cluster delete");
+        println!("skipping cluster delete\n");
     } else {
         let mut setup = TestCluster::new(option.clone());
         setup.remove_cluster().await;

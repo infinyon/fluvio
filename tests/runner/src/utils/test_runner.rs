@@ -6,7 +6,6 @@ use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::Fluvio;
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
-use inventory;
 
 #[derive(Debug)]
 pub struct FluvioTest {

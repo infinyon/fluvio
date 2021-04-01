@@ -121,11 +121,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 // Wrap the user test in a closure
                 let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
-                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
-                        run(async move {
-                            #test_body
-                        });
-                    }))
+                    #test_body
                 };
 
                 // start a timeout timer
@@ -135,12 +131,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
 
-                //// We need a panic handler to catch the gross errors
-
                 select! {
                     _ = &mut timeout_timer => {
-                        &test_timer.stop();
-                        eprintln!("Test timed out ({:?})", timeout_duration.clone());
+                        test_timer.stop();
+                        eprintln!("\nTest timed out ({:?})", timeout_duration.clone());
                         //let _ = std::panic::take_hook();
                         Err(TestResult {
                             success: false,
@@ -148,30 +142,14 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         })
                     },
 
-                    res = test_fn(client, test_case) => {
-                        &test_timer.stop();
+                    _ = test_fn(client, test_case) => {
+                        test_timer.stop();
                         println!("Test completed");
 
-                        //Ok(TestResult {
-                        //    success: true,
-                        //    duration: test_timer.duration(),
-                        //})
-
-                        match res {
-                            Ok(_) => {
-                                Ok(TestResult {
-                                    success: true,
-                                    duration: test_timer.duration(),
-                                })
-                            },
-                            Err(_) => {
-                                Ok(TestResult {
-                                    success: false,
-                                    duration: test_timer.duration(),
-                                })
-
-                            }
-                        }
+                        Ok(TestResult {
+                            success: true,
+                            duration: test_timer.duration(),
+                        })
                     }
                 }
 
