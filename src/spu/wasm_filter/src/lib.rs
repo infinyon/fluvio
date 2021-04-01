@@ -1,2 +1,2 @@
-#[cfg(any(linux, target_arch = "wasm32"))]
+#[cfg(not(target_os = "macos"))]
 mod filter;
