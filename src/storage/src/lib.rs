@@ -22,7 +22,6 @@ pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
 pub use crate::segment::SegmentSlice;
-pub use batch_stream::*;
 pub use inner::*;
 mod inner {
     use async_trait::async_trait;
@@ -33,7 +32,6 @@ mod inner {
     use fluvio_future::file_slice::AsyncFileSlice;
 
     use crate::StorageError;
-    use crate::BatchStream;
 
     /// output from storage is represented as slice
     pub trait SlicePartitionResponse {
@@ -100,26 +98,5 @@ mod inner {
 
         async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError>;
 
-        /// return stream that can return batches
-        async fn batch_stream() -> Result<BatchStream, StorageError> {
-            Ok(BatchStream {})
-        }
-    }
-}
-mod batch_stream {
-
-    use core::task::{Context, Poll};
-    use core::pin::Pin;
-
-    use futures_lite::Stream;
-
-    pub struct BatchStream {}
-
-    impl Stream for BatchStream {
-        type Item = bool;
-
-        fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-            Poll::Ready(None)
-        }
     }
 }
