@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "fluvio-service"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP service wrapper over fluvio protocol"
 repository = "https://github.com/infinyon/fluvio-socket"
@@ -18,7 +18,6 @@ tracing = "0.1.18"
 tracing-futures = "0.2.4"
 async-trait = "0.1.21"
 pin-utils = "0.1.0-alpha.4"
-event-listener = "2.2.0"
 tokio = { version = "1.3.0", features = ["macros"] }
 
 # Fluvio dependencies
@@ -26,7 +25,7 @@ futures-util = { version = "0.3.5" }
 fluvio-future = { version = "0.2.0" }
 fluvio-socket = { version = "0.7.0", path = "../socket" }
 fluvio-protocol = { path = "../protocol", version = "0.4.0", features = ["derive", "api", "codec"] }
-
+fluvio-types = { version = "0.2.3", features = ["events"], path = "../types" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.2.0", features = ["fixture"] }

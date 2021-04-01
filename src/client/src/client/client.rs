@@ -92,6 +92,8 @@ impl VersionedSocket {
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
         let versions = Versions::new(response);
 
+        trace!("versions: {:#?}", versions);
+
         Ok(Self {
             socket,
             config,
@@ -195,7 +197,7 @@ impl ClientConfig {
 }
 
 /// wrap around versions
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Versions {
     api_versions: ApiVersions,
     platform_version: semver::Version,
@@ -252,6 +254,10 @@ impl VersionedSerialSocket {
             config,
             versions,
         }
+    }
+
+    pub fn versions(&self) -> &Versions {
+        &self.versions
     }
 }
 

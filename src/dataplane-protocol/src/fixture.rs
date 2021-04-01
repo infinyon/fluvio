@@ -60,6 +60,8 @@ pub fn create_batch() -> DefaultBatch {
     create_batch_with_producer(12, 2)
 }
 
+pub const TEST_RECORD: &[u8] = &[10, 20];
+
 /// create batches with produce and records count
 pub fn create_batch_with_producer(producer: i64, records: u16) -> DefaultBatch {
     let mut batches = DefaultBatch::default();
@@ -70,7 +72,7 @@ pub fn create_batch_with_producer(producer: i64, records: u16) -> DefaultBatch {
 
     for _ in 0..records {
         let mut record = DefaultRecord::default();
-        let bytes: Vec<u8> = vec![10, 20];
+        let bytes: Vec<u8> = TEST_RECORD.to_owned();
         record.value = bytes.into();
         batches.add_record(record);
     }

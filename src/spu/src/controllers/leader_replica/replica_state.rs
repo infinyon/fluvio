@@ -3,12 +3,13 @@ use std::{
     collections::{BTreeMap, HashSet},
     sync::Arc,
 };
+use std::time::{Instant};
 use std::fmt;
 
 use tracing::instrument;
 use tracing::{debug, trace, error, warn};
 use async_rwlock::{RwLock};
-use async_channel::{Sender, SendError};
+use async_channel::{Sender, Receiver, SendError};
 
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
@@ -20,7 +21,7 @@ use fluvio_storage::{FileReplica, StorageError, SlicePartitionResponse, ReplicaS
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{config::SpuConfig, controllers::sc::SharedSinkMessageChannel};
+use crate::{config::SpuConfig, controllers::sc::SharedSinkMessageChannel, core::SharedSpuConfig};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
@@ -286,6 +287,7 @@ where
     #[instrument(skip(self))]
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         let hw_update = self.spu_config.replication.min_in_sync_replicas == 1;
+        let now = Instant::now();
         let mut writer = self.storage.write().await;
         let _offset_updates = writer.write_recordset(records, hw_update).await?;
 
@@ -297,6 +299,8 @@ where
             debug!(hw);
             self.hw.update(hw);
         }
+
+        debug!(write_time_ms = %now.elapsed().as_millis());
 
         Ok(())
     }
@@ -327,8 +331,29 @@ where
 }
 
 impl LeaderReplicaState<FileReplica> {
+    /// create new complete state that can be used for spawning controller
+    pub async fn create_state(
+        replica: Replica,
+        spu_config: SharedSpuConfig,
+    ) -> Result<
+        (
+            Arc<LeaderReplicaState<FileReplica>>,
+            Receiver<LeaderReplicaControllerCommand>,
+        ),
+        StorageError,
+    > {
+        use async_channel::bounded;
+
+        let (sender, receiver) = bounded(10);
+
+        let file_replica =
+            Arc::new(LeaderReplicaState::create_file_replica(replica, spu_config, sender).await?);
+
+        Ok((file_replica, receiver))
+    }
+
     /// create new replica state using file replica
-    pub async fn create_file_replica(
+    async fn create_file_replica(
         leader: Replica,
         config: Arc<SpuConfig>,
         commands: Sender<LeaderReplicaControllerCommand>,

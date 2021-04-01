@@ -32,11 +32,13 @@ impl SpuSocket {
         )
     }
 
-    async fn create_stream<R: Request>(
+    async fn create_stream_with_version<R: Request>(
         &mut self,
         request: R,
+        version: i16,
     ) -> Result<AsyncResponse<R>, FluvioError> {
-        let req_msg = RequestMessage::new_request(request);
+        let mut req_msg = RequestMessage::new_request(request);
+        req_msg.header.set_api_version(version);
         self.socket
             .create_stream(req_msg, DEFAULT_STREAM_QUEUE_SIZE)
             .await
@@ -126,11 +128,12 @@ impl SpuPool {
         Ok(serial_socket)
     }
 
-    // create stream to replica
-    pub async fn create_stream<R: Request>(
+    /// create stream to leader replica
+    pub async fn create_stream_with_version<R: Request>(
         &self,
         replica: &ReplicaKey,
         request: R,
+        version: i16,
     ) -> Result<AsyncResponse<R>, FluvioError> {
         let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
 
@@ -149,11 +152,15 @@ impl SpuPool {
         let mut client_lock = self.spu_clients.lock().await;
 
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
-            return spu_socket.create_stream(request).await;
+            return spu_socket
+                .create_stream_with_version(request, version)
+                .await;
         }
 
         let mut spu_socket = self.connect_to_leader(leader_id).await?;
-        let stream = spu_socket.create_stream(request).await?;
+        let stream = spu_socket
+            .create_stream_with_version(request, version)
+            .await?;
         client_lock.insert(leader_id, spu_socket);
 
         Ok(stream)
