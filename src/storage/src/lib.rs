@@ -97,6 +97,5 @@ mod inner {
         ) -> Result<(), StorageError>;
 
         async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError>;
-
     }
 }

@@ -30,7 +30,7 @@ pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 use super::SpuServerApiKey;
 
 // version for WASM_MODULE
-pub const WASM_MODULE_API: u16 = 11;
+pub const WASM_MODULE_API: i16 = 11;
 
 /// Fetch records continuously
 /// Output will be send back as stream
@@ -44,7 +44,7 @@ where
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,
-    #[fluvio(min_version = WASM_MODULE_API)]
+    #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
     pub data: PhantomData<R>,
 }
@@ -54,7 +54,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = 11;
+    const DEFAULT_API_VERSION: i16 = WASM_MODULE_API;
     type Response = StreamFetchResponse<R>;
 }
 
