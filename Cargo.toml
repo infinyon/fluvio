@@ -37,7 +37,7 @@ members = [
 # profile to make image sizer smaller
 # comment out for now
 [profile.release]
-#lto = true
+lto = true
 #codegen-units = 1
 #incremental = false
 

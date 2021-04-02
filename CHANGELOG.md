@@ -3,7 +3,7 @@
 
 ## Platform Version 0.7.3 - 2020-04-02
 * Added batching for producing records with `send_all` API
-
+# WASM based Smart Stream Filter MVP ([#901](https://github.com/infinyon/fluvio/pull/901)).
 ## Platform Version 0.7.2 - 2020-03-23
 * `fluvio update` updates plugins as well as CLI ([#865](https://github.com/infinyon/fluvio/issues/865)).
 * SPU controller uses SVC ingress annotation ([#888](https://github.com/infinyon/fluvio/pull/888)).

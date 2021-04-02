@@ -1,13 +1,11 @@
 use std::mem;
 
 use fluvio_protocol::Encoder;
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
+use tracing::{debug, trace, error, warn};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
-use dataplane::{ErrorCode, Isolation, Offset, Size};
+use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
 
@@ -185,6 +183,18 @@ impl FileReplica {
         remove_dir_all(&self.option.base_dir)
             .await
             .map_err(|err| err.into())
+    }
+
+    /// clear the any holding directory for replica
+    pub async fn clear(replica: &ReplicaKey, option: &ConfigOption) {
+        let replica_dir = option
+            .base_dir
+            .join(replica_dir_name(&replica.topic, replica.partition as u32));
+
+        debug!("removing dir: {}", replica_dir.display());
+        if let Err(err) = remove_dir_all(&replica_dir).await {
+            warn!("error trying to remove: {:#?}, err: {}", replica_dir, err);
+        }
     }
 
     /// update high watermark to end
