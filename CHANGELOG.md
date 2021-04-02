@@ -2,7 +2,7 @@
 ## Unreleased
 
 ## Platform Version 0.7.3 - 2020-04-02
-* Added batching for producing records with `send_all` API.
+* Added batching for producing records with `send_all` API ([#896](https://github.com/infinyon/fluvio/pull/896)).
 * WASM based Smart Stream Filter MVP ([#901](https://github.com/infinyon/fluvio/pull/901)).
 * Fix topic not being deleted when SPU goes offline ([#914](https://github.com/infinyon/fluvio/pull/914))
   
