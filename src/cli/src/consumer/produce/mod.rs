@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use tracing::debug;
+use tracing::{error, debug};
 
 use fluvio::{Fluvio, TopicProducer, RecordKey};
 use fluvio_types::print_cli_ok;
@@ -36,6 +36,10 @@ pub struct ProduceOpt {
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
+    /// Specifies the number of records to send in a batch. Only used for files.
+    #[structopt(long, default_value = "50")]
+    pub batch_size: usize,
+
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub file: Option<PathBuf>,
@@ -56,12 +60,19 @@ impl ProduceOpt {
 
         match &self.file {
             Some(path) => {
-                let mut reader = BufReader::new(File::open(path)?);
-                self.produce_lines(&mut producer, &mut reader).await?;
+                let reader = BufReader::new(File::open(path)?);
+                let lines: Vec<_> = reader.lines().filter_map(|it| it.ok()).collect();
+                let batches: Vec<_> = lines.chunks(self.batch_size).collect();
+                for batch in batches {
+                    let batch: Vec<_> = batch.iter().map(|it| &**it).collect();
+                    self.produce_lines(&mut producer, &batch).await?;
+                }
             }
             None => {
-                let mut reader = BufReader::new(std::io::stdin());
-                self.produce_lines(&mut producer, &mut reader).await?;
+                let mut lines = BufReader::new(std::io::stdin()).lines();
+                while let Some(Ok(line)) = lines.next() {
+                    self.produce_lines(&mut producer, &[&line]).await?;
+                }
             }
         };
 
@@ -72,39 +83,37 @@ impl ProduceOpt {
         Ok(())
     }
 
-    async fn produce_lines<B>(
+    async fn produce_lines(
         &self,
         producer: &mut TopicProducer,
-        input: &mut B,
-    ) -> Result<(), ConsumerError>
-    where
-        B: BufRead,
-    {
-        let mut lines = input.lines();
+        lines: &[&str],
+    ) -> Result<(), ConsumerError> {
         if self.interactive_mode() {
             eprint!("> ");
         }
-        while let Some(Ok(line)) = lines.next() {
-            self.produce_str(producer, &line).await?;
-            if self.interactive_mode() {
-                print_cli_ok!();
-                eprint!("> ");
-            }
+
+        self.produce_strs(producer, lines).await?;
+        if self.interactive_mode() {
+            print_cli_ok!();
+            eprint!("> ");
         }
         Ok(())
     }
 
-    async fn produce_str(
+    async fn produce_strs(
         &self,
         producer: &mut TopicProducer,
-        string: &str,
+        strings: &[&str],
     ) -> Result<(), ConsumerError> {
         if self.kv_mode() {
-            self.produce_key_value(producer, string).await?;
+            self.produce_key_values(producer, strings).await?;
         } else {
-            producer.send(RecordKey::NULL, string).await?;
+            let batch = strings.iter().map(|&s| (RecordKey::NULL, s));
+            producer.send_all(batch).await?;
             if self.verbose {
-                println!("[null] {}", string);
+                for string in strings {
+                    println!("[null] {}", string);
+                }
             }
         }
         Ok(())
@@ -118,13 +127,13 @@ impl ProduceOpt {
         self.file.is_none() && atty::is(atty::Stream::Stdin)
     }
 
-    async fn produce_key_value(
+    async fn produce_key_values(
         &self,
         producer: &mut TopicProducer,
-        string: &str,
+        strings: &[&str],
     ) -> Result<(), ConsumerError> {
         if let Some(separator) = &self.key_separator {
-            self.produce_key_value_via_separator(producer, string, separator)
+            self.produce_key_value_via_separator(producer, strings, separator)
                 .await?;
             return Ok(());
         }
@@ -137,25 +146,30 @@ impl ProduceOpt {
     async fn produce_key_value_via_separator(
         &self,
         producer: &mut TopicProducer,
-        string: &str,
+        strings: &[&str],
         separator: &str,
     ) -> Result<(), ConsumerError> {
         debug!(?separator, "Producing Key/Value:");
 
-        let pieces: Vec<_> = string.split(separator).collect();
-        if pieces.len() < 2 {
-            return Err(ConsumerError::Other(format!(
-                "Failed to find separator '{}' in record '{}'",
-                separator, string
-            )));
-        }
+        let pairs: Vec<_> = strings
+            .iter()
+            .filter_map(|s| {
+                let pieces: Vec<_> = s.split(separator).collect();
+                if pieces.len() < 2 {
+                    error!("Failed to find separator '{}' in record '{}'", separator, s);
+                    return None;
+                }
 
-        let key = pieces[0];
-        let value: String = (&pieces[1..]).join(&*separator);
-        producer.send(key, &*value).await?;
-        if self.verbose {
-            println!("[{}] {}", key, value);
-        }
+                let key: &str = pieces[0];
+                let value: String = (&pieces[1..]).join(&*separator);
+                if self.verbose {
+                    println!("[{}] {}", key, value);
+                }
+                Some((key, value))
+            })
+            .collect();
+
+        producer.send_all(pairs).await?;
         Ok(())
     }
 
