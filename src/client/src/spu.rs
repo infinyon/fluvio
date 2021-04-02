@@ -1,5 +1,5 @@
-use std::{collections::HashMap};
 use std::sync::Arc;
+use std::collections::HashMap;
 
 use tracing::{debug, trace};
 use async_mutex::Mutex;
@@ -10,10 +10,10 @@ use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket, FlvSocketError, AsyncResponse};
 use crate::FluvioError;
-use crate::client::ClientConfig;
+use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
-use crate::client::VersionedSerialSocket;
-use crate::client::Versions;
+use crate::sockets::VersionedSerialSocket;
+use crate::sockets::Versions;
 
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 

@@ -10,7 +10,7 @@ use fluvio_socket::FlvSocketError;
 use fluvio_socket::AllMultiplexerSocket;
 use fluvio_future::native_tls::AllDomainConnector;
 
-use crate::client::{ClientConfig, VersionedSerialSocket, SerialFrame};
+use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
 use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};
 use crate::config::ConfigFile;

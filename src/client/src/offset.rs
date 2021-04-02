@@ -7,7 +7,7 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 
 use crate::FluvioError;
-use crate::client::SerialFrame;
+use crate::sockets::SerialFrame;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum OffsetInner {
