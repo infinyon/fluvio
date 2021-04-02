@@ -21,7 +21,11 @@ use fluvio_storage::{FileReplica, StorageError, SlicePartitionResponse, ReplicaS
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{config::SpuConfig, controllers::sc::SharedSinkMessageChannel, core::SharedSpuConfig};
+use crate::{
+    config::SpuConfig,
+    controllers::sc::SharedSinkMessageChannel,
+    core::{SharedSpuConfig, storage::clear_replica_storage},
+};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
@@ -374,6 +378,12 @@ impl LeaderReplicaState<FileReplica> {
             replica_ids,
             commands,
         ))
+    }
+
+    /// clear file replica if exists
+    pub async fn clear_file_replica(leader: &Replica, config: &SpuConfig) {
+        let storage_config = config.storage().new_config();
+        clear_replica_storage(leader.leader, &leader.id, &storage_config).await;
     }
 
     /// get start offset and hw

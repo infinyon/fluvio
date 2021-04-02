@@ -392,7 +392,13 @@ impl ScDispatcher<FileReplica> {
             match replica_action {
                 SpecChange::Add(new_replica) => {
                     if new_replica.leader == local_id {
-                        self.add_leader_replica(new_replica).await;
+                        if new_replica.is_being_deleted {
+                            self.remove_leader_replica(new_replica, sc_sink).await?;
+                        } else {
+                            self.add_leader_replica(new_replica).await;
+                        }
+                    } else if new_replica.is_being_deleted {
+                        self.remove_follower_replica(new_replica).await;
                     } else {
                         self.add_follower_replica(new_replica).await;
                     }
@@ -537,11 +543,12 @@ impl ScDispatcher<FileReplica> {
                 }
                 true
             } else {
-                error!(
-                    "error sending external command to replica controller for replica: {}",
-                    replica
-                );
-                false
+                // if we don't find existing replica, just warning
+                warn!("no existing replica found {}", replica);
+
+                LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config_owned()).await;
+
+                true
             };
 
         let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
