@@ -63,8 +63,19 @@ Test runner can be a running in two ways:
 >
 > If you want the cluster to stick around, then you should start the cluster locally, and pass `--disable-install` and `--keep-cluster` flags.
 
-              
+## Benchmark testing
+(The feature is experimental.)
 
+* Tests must opt-in to be run in benchmark mode. To opt-in add `#[fluvio_test(benchmark = true)]` to test
+* To run a test in benchmark mode, run test with the `--benchmark` flag.
+
+An error message will appear when attempting to benchmark tests without `benchmark = true`.
+
+Benchmarks are performed with the [bencher](https://crates.io/crates/bencher) crate using the [auto_bench](https://docs.rs/bencher/0.1.5/bencher/struct.Bencher.html#method.auto_bench) method.
+
+The number of iterations are not user-controllable because it is the easiest way to use the crate to build a statistical summary.
+
+Total iterations run depend on the runtime of a single test. The longer the test, the fewer the runs.
 
 ---
 ## Smoke test

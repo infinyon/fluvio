@@ -40,6 +40,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             Err(_err) => panic!("Parse failed"),
         };
 
+    // Serializing to string to pass into quote! block
     let fn_test_reqs_str =
         serde_json::to_string(&fn_test_reqs).expect("Could not serialize test reqs");
 
@@ -47,31 +48,34 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     let fn_user_test = parse_macro_input!(input as ItemFn);
 
     // If test name is given, then use that instead of the test's function name
-    let test_name = if let Some(req_test_name) = &fn_test_reqs.test_name {
+    let out_fn_iden = if let Some(req_test_name) = &fn_test_reqs.test_name {
         Ident::new(&req_test_name.to_string(), Span::call_site())
     } else {
         fn_user_test.sig.ident
     };
 
-    let test_body = &fn_user_test.block;
+    let test_name = out_fn_iden.to_string();
 
-    let out_fn_iden = Ident::new(&test_name.to_string(), Span::call_site());
-    let async_inner_fn_iden = Ident::new(
-        &format!("{}_inner", &test_name.to_string()),
-        Span::call_site(),
-    );
+    // We're going to wrap the the async test into a sync to store fn pointer w/ `inventory` crate
+    let async_inner_fn_iden = Ident::new(&format!("{}_inner", &test_name), Span::call_site());
 
+    // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
         &format!("{}TestOption", &test_name).to_pascal_case(),
         Span::call_site(),
     );
 
-    let out_fn_str = test_name.to_string();
+    // Finally, the test body
+    let test_body = &fn_user_test.block;
 
     let output_fn = quote! {
 
         pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
             Box::new(#test_opt_ident::from_iter(subcmd))
+        }
+
+        pub fn requirements() -> TestRequirements {
+            serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
         pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
@@ -85,9 +89,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
         inventory::submit!{
             FluvioTest {
-                name: #out_fn_str.to_string(),
+                name: #test_name.to_string(),
                 test_fn: #out_fn_iden,
                 validate_fn: validate_subcommand,
+                requirements: requirements,
             }
         }
 
@@ -104,6 +109,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use std::{io, time::Duration};
             use tokio::select;
             use std::panic::panic_any;
+            use bencher::bench;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
@@ -120,12 +126,13 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     .expect("Unable to create default topic");
 
                 // Wrap the user test in a closure
+                // If the test is a benchmark, we want to build this in a specific way
                 let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
                     #test_body
                 };
 
                 // start a timeout timer
-                let timeout_duration = Duration::from_secs(test_case.environment.timeout().into());
+                let timeout_duration = test_case.environment.timeout();
                 let mut timeout_timer = sleep(timeout_duration.clone());
 
                 // Start a test timer for the user's test now that setup is done
@@ -134,7 +141,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 select! {
                     _ = &mut timeout_timer => {
                         test_timer.stop();
-                        eprintln!("\nTest timed out ({:?})", timeout_duration.clone());
+                        eprintln!("\nTest timed out ({:?})", timeout_duration);
                         //let _ = std::panic::take_hook();
                         Err(TestResult {
                             success: false,
@@ -144,7 +151,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                     _ = test_fn(client, test_case) => {
                         test_timer.stop();
-                        println!("Test completed");
 
                         Ok(TestResult {
                             success: true,

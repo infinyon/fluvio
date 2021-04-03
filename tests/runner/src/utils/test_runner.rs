@@ -12,7 +12,10 @@ pub struct FluvioTest {
     pub name: String,
     pub test_fn: fn(Arc<Fluvio>, TestCase) -> Result<TestResult, TestResult>,
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
+    pub requirements: fn() -> TestRequirements,
 }
+
+inventory::collect!(FluvioTest);
 
 impl FluvioTest {
     pub fn all_test_names() -> Vec<&'static str> {
@@ -27,13 +30,11 @@ impl FluvioTest {
             .into_iter()
             .find(|t| t.name == test_name.as_ref())
     }
-}
 
-inventory::collect!(FluvioTest);
-
-impl FluvioTest {
     pub async fn create_topic(client: Arc<Fluvio>, option: &EnvironmentSetup) -> Result<(), ()> {
-        println!("Creating the topic: {}", &option.topic_name);
+        if !option.is_benchmark() {
+            println!("Creating the topic: {}", &option.topic_name);
+        }
 
         let mut admin = client.admin().await;
         let topic_spec = TopicSpec::new_computed(1, option.replication() as i32, None);
@@ -43,8 +44,10 @@ impl FluvioTest {
             .await;
 
         if topic_create.is_ok() {
-            println!("topic \"{}\" created", option.topic_name);
-        } else {
+            if !option.is_benchmark() {
+                println!("topic \"{}\" created", option.topic_name);
+            }
+        } else if !option.is_benchmark() {
             println!("topic \"{}\" already exists", option.topic_name);
         }
 
@@ -66,6 +69,24 @@ impl FluvioTest {
         if let Some(cluster_type) = &test_reqs.cluster_type {
             if &test_case.environment.cluster_type() != cluster_type {
                 println!("Test requires cluster type {:?} ", cluster_type);
+                return false;
+            }
+        }
+
+        // Benchmark support is experimental!
+        // Tests must opt-in to be run with the benchmark flag
+        if test_case.environment.is_benchmark() {
+            if let Some(opt_in) = test_reqs.benchmark {
+                if !opt_in {
+                    // Explicit opt-out
+                    println!("Test `{}` opted out of benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name);
+                    return false;
+                }
+            } else {
+                // Test is not opted into benchmark with attribute
+                println!(
+                    "Test `{}` must opt into benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name
+                );
                 return false;
             }
         }
