@@ -27,5 +27,5 @@ futures-lite = { version = "1.7.0" }
 thiserror = "1.0.20"
 semver = { version = "0.11.0", features = ["serde"] }
 
-fluvio = { version = "0.6.1-alpha.1", path = "../client",  optional = true }
+fluvio = { version = "0.6.0", path = "../client",  optional = true }
 fluvio-package-index = { version = "0.3.0", path = "../package-index" }
