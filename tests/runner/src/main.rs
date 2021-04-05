@@ -1,49 +1,43 @@
-#![allow(irrefutable_let_patterns)]
-
 use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
-
-use flv_test::tests::smoke::SmokeTestOption;
-use flv_test::tests::concurrent::ConcurrentTestOption;
-
 use std::panic::{self, AssertUnwindSafe};
+use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_meta::TestTimer;
 
-const TESTS: &[&str] = &["smoke", "concurrent", "many_producers"];
+// This is important for `inventory` crate
+#[allow(unused_imports)]
+use flv_test::tests as _;
 
 fn main() {
     run_block_on(async {
         let option = BaseCli::from_args();
-        let testrun_option = option.clone();
         //println!("{:?}", option);
 
         let test_name = option.test_name.clone();
+
+        // Get test from inventory
+        let test =
+            FluvioTest::from_name(&test_name).expect("StructOpt should have caught this error");
+
         let mut subcommand = vec![test_name.clone()];
 
         // We want to get a TestOption compatible struct back
-        let valid_cmd: Result<Box<dyn TestOption>, ()> =
-            if let Some(TestCli::Args(args)) = option.test_cmd_args {
-                // Add the args to the subcommand
-                subcommand.extend(args);
-                validate_subcommand(subcommand)
-            } else {
-                // No args
-                validate_subcommand(subcommand)
-            };
+        let test_opt: Box<dyn TestOption> = if let Some(TestCli::Args(args)) = option.test_cmd_args
+        {
+            // Add the args to the subcommand
+            subcommand.extend(args);
 
-        let test_opt = if let Ok(test_opt) = valid_cmd {
-            test_opt
+            // Parse the subcommand
+            (test.validate_fn)(subcommand)
         } else {
-            //CliArgs::clap().print_help().expect("print help");
-            eprintln!("Tests: {:?}", TESTS);
-            eprintln!();
-            return;
+            // No args
+            (test.validate_fn)(subcommand)
         };
-        //println!("{:?}", test_opt);
 
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
@@ -54,52 +48,61 @@ fn main() {
         // Create a TestCase object with option.envronment and test_opt
         let test_case = TestCase::new(option.environment.clone(), test_opt);
 
-        let test_run = panic::catch_unwind(AssertUnwindSafe(move || {
-            run_block_on(async {
-                let test_result = match testrun_option.test_name.as_str() {
-                    "smoke" => flv_test::tests::smoke::run(fluvio_client, test_case).await,
-                    "concurrent" => {
-                        flv_test::tests::concurrent::run(fluvio_client, test_case).await
-                    }
-                    //"many_producers" => {
-                    //    flv_test::tests::many_producers::run(fluvio_client, option.clone()).await
-                    //}
-                    _ => panic!("Test not found"),
-                };
+        let panic_timer = TestTimer::start();
 
-                println!("{}", test_result);
-            });
+        let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
+            let test = inventory::iter::<FluvioTest>
+                .into_iter()
+                .find(|t| t.name == test_name.as_str())
+                .expect("Test not found");
+
+            // Run the test
+            (test.test_fn)(fluvio_client.clone(), test_case)
+        }));
+
+        // Handle panics from user tests
+        std::panic::set_hook(Box::new(move |_panic_info| {
+            let mut inside_timer = panic_timer.clone();
+            inside_timer.stop();
+
+            let test_result = TestResult {
+                success: false,
+                duration: inside_timer.duration(),
+            };
+            //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
+            eprintln!("Test panicked:\n");
+            eprintln!("{}", test_result);
         }));
 
         // Cluster cleanup
         cluster_cleanup(option.environment).await;
 
-        if let Err(err) = test_run {
-            eprintln!("panic reason: {:?}", err);
-            std::process::exit(-1);
+        match test_result {
+            // Pass/Fail results
+            Ok(results) => {
+                // We always return TestResults. This is awkward.
+                match results {
+                    Ok(r) => println!("{}", r),
+                    Err(r) => eprintln!("{}", r),
+                }
+            }
+            // Panic results
+            Err(fail_results) => {
+                let test_result = fail_results
+                    .downcast_ref::<TestResult>()
+                    .expect("Failed to convert error from panic")
+                    .to_owned();
+
+                eprintln!("{}", test_result);
+                std::process::exit(-1);
+            }
         }
     });
 }
 
-fn validate_subcommand(subcommand: Vec<String>) -> Result<Box<dyn TestOption>, ()> {
-    let test_name = subcommand[0].clone();
-    if TESTS.iter().any(|t| &test_name.as_str() == t) {
-        // here we'll match on the command name
-
-        match test_name.as_str() {
-            "smoke" => Ok(Box::new(SmokeTestOption::from_iter(subcommand))),
-            "concurrent" => Ok(Box::new(ConcurrentTestOption::from_iter(subcommand))),
-            //"many_producers" => {}
-            _ => unreachable!("This shouldn't be reachable"),
-        }
-    } else {
-        Err(())
-    }
-}
-
 async fn cluster_cleanup(option: EnvironmentSetup) {
     if option.skip_cluster_delete() {
-        println!("skipping cluster delete");
+        println!("skipping cluster delete\n");
     } else {
         let mut setup = TestCluster::new(option.clone());
         setup.remove_cluster().await;
@@ -145,15 +148,16 @@ mod tests {
 
     #[test]
     fn valid_test_name() {
-        let args = BaseCli::from_iter(vec!["flv-test", "smoke"]);
-        assert_eq!(args.test_name, String::from("smoke"));
+        let args = BaseCli::from_iter_safe(vec!["flv-test", "smoke"]);
+
+        assert!(args.is_ok());
     }
 
-    // TODO: Add a test selector, so we can make this test more robust
     #[test]
     fn invalid_test_name() {
-        let args = BaseCli::from_iter(vec!["flv-test", "testdoesnotexist"]);
-        assert_eq!(args.test_name, String::from("testdoesnotexist"));
+        let args = BaseCli::from_iter_safe(vec!["flv-test", "testdoesnotexist"]);
+
+        assert!(args.is_err());
     }
 
     #[test]

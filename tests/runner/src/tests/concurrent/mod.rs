@@ -12,6 +12,8 @@ use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
+use fluvio_test_util::test_runner::FluvioTest;
+
 const PARTITION: i32 = 0;
 
 #[derive(Debug, Clone)]
@@ -46,7 +48,7 @@ impl TestOption for ConcurrentTestOption {
 }
 
 #[fluvio_test(topic = "test-bug")]
-pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
+pub async fn concurrent(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
     test_concurrent_consume_produce(client, test_case.into()).await
 }
 

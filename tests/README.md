@@ -47,7 +47,6 @@ alias flv-test=./target/release/flv-test
 
 ```
 flv-test <test-name> [FLAGS] [OPTIONS] -- [SUBCOMMAND OPTIONS]
-
 ```
 
 > Test runner testing doesn't work when VERSION set to an unpublished version. Workaround: Run `make minikube_image` and use `--develop` flag with `flv-test` (issue #[859](https://github.com/infinyon/fluvio/issues/859))
@@ -136,7 +135,6 @@ There are 4 parts to adding new tests.
 2. Implmenenting `From<TestCase>` for your test case struct to downcast to.
     - Naming convention (in pascal case): `<testname>TestCase`
 3. Creating a new test in the `tests` module + annotating with `#[fluvio_test]`
-4. Manually add support for new test in `main.rs` (Temporary, [#883](https://github.com/infinyon/fluvio/issues/883)) 
 
 ### Passing vars from the CLI to your test
 

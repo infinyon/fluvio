@@ -11,6 +11,8 @@ use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
+use fluvio_test_util::test_runner::FluvioTest;
+
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
     pub environment: EnvironmentSetup,
@@ -51,8 +53,20 @@ impl TestOption for SmokeTestOption {
     }
 }
 
+//inventory::submit! {
+//    FluvioTest {
+//        name: "smoke".to_string(),
+//        test_fn: smoke,
+//        validate_fn: validate_subcommand,
+//    }
+//}
+
+//pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
+//    Box::new(SmokeTestOption::from_iter(subcmd))
+//}
+
 #[fluvio_test(topic = "test")]
-pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
+pub async fn smoke(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
     let smoke_test_case = test_case.into();
 
     let start_offsets = produce::produce_message(client.clone(), &smoke_test_case).await;
