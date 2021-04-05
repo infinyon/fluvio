@@ -16,7 +16,6 @@ cli = [
     "structopt",
     "color-eyre",
     "prettytable-rs",
-    "fluvio-runner-local/platform",
     "fluvio-extension-common/target",
 ]
 
@@ -46,7 +45,6 @@ fluvio = { version = "0.6.0", path = "../client", default-features = false }
 fluvio-helm = "0.4.1"
 fluvio-future = { version = "0.2.0" }
 fluvio-command = { version = "0.2.0", path = "../command" }
-fluvio-runner-local = { version = "0.4.0", path = "../extension-runner-local", optional = true }
 fluvio-extension-common = { version = "0.3.0", path = "../extension-common", optional = true }
 fluvio-controlplane-metadata = { version = "0.7.0", path = "../controlplane-metadata", features = ["k8"] }
 flv-util = "0.5.2"

@@ -1329,7 +1329,6 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
- "fluvio-runner-local",
  "flv-util",
  "futures-lite",
  "k8-client",
@@ -1610,12 +1609,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-runner-local"
+name = "fluvio-runner"
 version = "0.4.0"
 dependencies = [
+ "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
+ "semver 0.11.0",
+ "serde_json",
  "structopt",
  "thiserror",
 ]
