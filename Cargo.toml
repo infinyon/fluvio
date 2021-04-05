@@ -29,8 +29,7 @@ members = [
     "src/extension-common",
     "src/extension-runner-local",
     "src/smartstream-wasm",
-    "tests/runner",
-    "filter/string"
+    "tests/runner"
 ]
 
 

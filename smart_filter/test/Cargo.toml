@@ -1,5 +1,5 @@
 [package]
-name = "fluvio-filter-simple"
+name = "fluvio-filter-test"
 version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]

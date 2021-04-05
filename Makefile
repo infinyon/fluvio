@@ -152,7 +152,7 @@ test_tls_multiplex:
 
 build_filter_wasm:
 	rustup target add wasm32-unknown-unknown 
-	cargo build --release --target wasm32-unknown-unknown --package fluvio-filter-test
+	make -C smart_filter build_test
 
 run-all-unit-test: test_tls_multiplex build_filter_wasm
 	cargo test --lib --all-features
