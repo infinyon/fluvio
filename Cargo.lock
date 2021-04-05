@@ -1323,6 +1323,7 @@ dependencies = [
  "color-eyre",
  "colored",
  "derive_builder",
+ "directories-next",
  "fluvio",
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
@@ -1348,6 +1349,7 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "url",
+ "which",
 ]
 
 [[package]]

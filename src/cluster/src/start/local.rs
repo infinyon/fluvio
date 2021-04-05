@@ -7,6 +7,7 @@ use fluvio::{FluvioConfig};
 
 use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
+use once_cell::sync::Lazy;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio_future::timer::sleep;
 use fluvio::metadata::spu::{SpuSpec, SpuType};
@@ -23,6 +24,7 @@ use crate::{
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
+use directories_next::UserDirs;
 
 const DEFAULT_LOG_DIR: &str = "/tmp";
 const DEFAULT_DATA_DIR: &str = "/tmp/fluvio";
@@ -31,6 +33,13 @@ const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const LOCAL_SC_PORT: u16 = 9003;
+
+const DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
+    let ext_dir = UserDirs::new().map(|it| it.home_dir().join(".fluvio/extensions"));
+    which::which_in("fluvio-run", ext_dir, ".")
+        .or_else(|_| which::which("fluvio-run"))
+        .ok()
+});
 
 /// Describes how to install Fluvio locally
 #[derive(Builder, Debug)]
@@ -72,7 +81,7 @@ pub struct LocalConfig {
     /// binary other than the Fluvio CLI, it needs to know how to invoke
     /// the cluster components. This is currently used for testing.
     #[doc(hidden)]
-    #[builder(setter(into), default)]
+    #[builder(setter(into), default = "(*DEFAULT_RUNNER_PATH).clone()")]
     launcher: Option<PathBuf>,
     /// Sets the [`RUST_LOG`] environment variable for the installation.
     ///
@@ -205,13 +214,8 @@ impl LocalConfig {
         builder
     }
 
-    fn launcher_path(&self) -> std::io::Result<PathBuf> {
-        let path = self
-            .launcher
-            .clone()
-            .ok_or(())
-            .or_else(|_| std::env::current_exe())?;
-        Ok(path)
+    fn launcher_path(&self) -> Option<&Path> {
+        self.launcher.as_deref()
     }
 }
 
@@ -444,7 +448,10 @@ impl LocalInstaller {
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
         let mut binary = {
-            let base = self.config.launcher_path()?;
+            let base = self
+                .config
+                .launcher_path()
+                .ok_or(LocalInstallError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
             cmd.arg("cluster").arg("run").arg("sc");
             cmd
@@ -599,7 +606,10 @@ impl LocalInstaller {
         let errors = outputs.try_clone()?;
 
         let mut binary = {
-            let base = self.config.launcher_path()?;
+            let base = self
+                .config
+                .launcher_path()
+                .ok_or(LocalInstallError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
             cmd.arg("cluster").arg("run").arg("spu");
             cmd
