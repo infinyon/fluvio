@@ -7,7 +7,7 @@ use dataplane::ReplicaKey;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::client::SerialFrame;
+use crate::sockets::SerialFrame;
 use bytes::Bytes;
 
 /// An interface for producing events to a particular topic

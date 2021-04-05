@@ -7,6 +7,7 @@ use once_cell::sync::OnceCell;
 use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
 use fluvio_future::task::run_block_on;
 use fluvio_future::native_tls::AllDomainConnector;
+use semver::Version;
 
 use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
@@ -15,9 +16,7 @@ use crate::PartitionConsumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::spu::SpuPool;
-
-use super::*;
-use semver::Version;
+use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket};
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {

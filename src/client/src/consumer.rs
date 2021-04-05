@@ -21,7 +21,7 @@ use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
 use crate::offset::Offset;
-use crate::client::SerialFrame;
+use crate::sockets::SerialFrame;
 use crate::spu::SpuPool;
 
 /// An interface for consuming events from a particular partition

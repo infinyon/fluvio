@@ -82,8 +82,9 @@
 )]
 
 mod error;
-mod client;
+mod sockets;
 mod admin;
+mod fluvio;
 pub mod consumer;
 mod producer;
 mod offset;
@@ -99,7 +100,7 @@ pub use consumer::{PartitionConsumer, ConsumerConfig};
 pub use offset::Offset;
 
 pub use crate::admin::FluvioAdmin;
-pub use crate::client::Fluvio;
+pub use crate::fluvio::Fluvio;
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.7.1-alpha.0";
