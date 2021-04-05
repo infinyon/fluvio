@@ -676,10 +676,25 @@ mod test {
         std::fs::read(filter_path).expect("Unable to read file")
     }
 
+    fn load_wasm_module(module_name: &str) -> Vec<u8> {
+        let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
+        let mut wasm_path = PathBuf::from(spu_dir)
+            .parent()
+            .expect("p")
+            .parent()
+            .expect("p")
+            .to_owned();
+        wasm_path.push("smart_filter");
+        wasm_path.push("target");
+        wasm_path.push("wasm32-unknown-unknown");
+        wasm_path.push("release");
+        wasm_path.push(format!("{}.wasm", module_name));
+        debug!(?wasm_path);
+        read_filter_from_path(wasm_path)
+    }
+
     #[test_async]
     async fn test_stream_filter_fetch() -> Result<(), ()> {
-        let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
-
         let test_path = "/tmp/filter_stream_fetch";
         ensure_clean_dir(test_path);
 
@@ -707,19 +722,7 @@ mod test {
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());
 
-        // filter out anything with a
-        let mut wasm_path = PathBuf::from(spu_dir)
-            .parent()
-            .expect("p")
-            .parent()
-            .expect("p")
-            .to_owned();
-        wasm_path.push("target");
-        wasm_path.push("wasm32-unknown-unknown");
-        wasm_path.push("release");
-        wasm_path.push("fluvio_filter_test.wasm");
-        debug!(?wasm_path);
-        let wasm_module = read_filter_from_path(wasm_path);
+        let wasm_module = load_wasm_module("fluvio_filter_test");
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.to_owned(),
@@ -847,8 +850,6 @@ mod test {
     /// test filter with max bytes
     #[test_async]
     async fn test_stream_filter_max() -> Result<(), ()> {
-        let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
-
         let test_path = "/tmp/filter_stream_max";
         ensure_clean_dir(test_path);
 
@@ -892,19 +893,7 @@ mod test {
             .expect("write"); // 3000 bytes total
                               // now total of 300 filter records bytes (min), but last filter record is greater than max
 
-        // filter out anything with a
-        let mut wasm_path = PathBuf::from(spu_dir)
-            .parent()
-            .expect("p")
-            .parent()
-            .expect("p")
-            .to_owned();
-        wasm_path.push("target");
-        wasm_path.push("wasm32-unknown-unknown");
-        wasm_path.push("release");
-        wasm_path.push("fluvio_filter_test.wasm");
-        debug!(?wasm_path);
-        let wasm_module = read_filter_from_path(wasm_path);
+        let wasm_module = load_wasm_module("fluvio_filter_test");
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.to_owned(),

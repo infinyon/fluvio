@@ -1478,20 +1478,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-filter-simple"
-version = "0.1.0"
-dependencies = [
- "fluvio-smartstream-wasm",
-]
-
-[[package]]
-name = "fluvio-filter-test"
-version = "0.1.0"
-dependencies = [
- "fluvio-smartstream-wasm",
-]
-
-[[package]]
 name = "fluvio-future"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1796,7 +1782,6 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-filter-test",
  "fluvio-future",
  "fluvio-protocol 0.4.1",
  "fluvio-service",
