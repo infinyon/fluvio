@@ -7,3 +7,4 @@ target-docker
 .idea/
 VERSION
 .scripts
+.env
