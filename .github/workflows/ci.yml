@@ -131,63 +131,148 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-  local_cluster_test:
-    name: Local cluster test
+  cluster_test:
+    name: Cluster test (${{ matrix.os }}, ${{ matrix.test }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [infinyon-ubuntu-bionic]
+        os: [infinyon-ubuntu-bionic, macos-latest]
         rust: [stable]
+        kubernetes-version: [1.19.6]
+        test: [local, k8]
+        include:
+          - os: infinyon-ubuntu-bionic
+            minikube-driver: docker
+            logs-dir: /tmp
+            target: x86_64-unknown-linux-musl
+            release: true
+          - os: infinyon-ubuntu-bionic
+            k8: true
+          - os: macos-latest
+            minikube-driver: virtualbox
+            logs-dir: /usr/local/var/log/fluvio
+            target: x86_64-apple-darwin
+        exclude:
+          - os: macos-latest
+            test: k8
     env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 2G
       FLUVIO_CMD: true
       FLV_SOCKET_WAIT: 600
+      FLV_TEST_CONSUMER_WAIT: 120000
+      TARGET: ${{ matrix.target }}
+      RELEASE: ${{ matrix.release }}
     steps:
       - uses: actions/checkout@v2
-      - run: helm version
+      - name: Install sccache (macos-latest)
+        if: matrix.os == 'macos-latest'
+        run: brew install sccache
+      - name: Install helm (macos-latest)
+        if: matrix.os == 'macos-latest'
+        run: actions/ci-replace-helm.sh
+        env:
+          HELM_VERSION: v3.3.4
+          OS: ${{ matrix.os }}
+      - name: Check helm version
+        run: helm version
       - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Setup Minikube for Linux
+      - name: Install Minikube (macos-latest)
+        if: matrix.os == 'macos-latest'
+        run: brew install minikube
+      - name: Setup Minikube
         run: |
-          minikube delete
-          minikube start --driver=docker --kubernetes-version 1.19.6
-          sleep 30
+          pkill -f "minikube tunnel" || true
+          minikube delete || true
+          minikube start --driver=${{ matrix.minikube-driver }} --kubernetes-version=${{ matrix.kubernetes-version }}
+          nohup minikube tunnel --alsologtostderr >/tmp/tunnel.out 2>/tmp/tunnel.out &
       - name: Test minikube
         run: |
           minikube profile list
           minikube status
       - name: Build Test
-        run: |
-          make RELEASE=release build_test
-      - name: Setup installation pre-requisites
-        run: |
-          ./target/release/fluvio cluster start --setup --local --develop
+        run: make RELEASE=release build_test
       - name: Print Fluvio version
-        run: |
-          ./target/release/fluvio version
-      - name: Run smoke-test
+        run: ./target/release/fluvio version
+
+        # Flow for local cluster test
+      - name: Setup installation pre-requisites (local)
+        if: ${{ !matrix.k8 }}
+        run: ./target/release/fluvio cluster start --setup --local --develop
+      - name: Run smoke-test (local)
+        if: ${{ !matrix.k8 }}
         timeout-minutes: 1
-        run: |
-          make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+        run: make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
+
+        # Flow for Kubernetes cluster test
+      - name: Setup installation pre-requisites (k8)
+        if: ${{ matrix.k8 }}
+        run: ./target/release/fluvio cluster start --setup --develop
+      - name: Make Fluvio image (k8)
+        if: ${{ matrix.k8 }}
+        run: make minikube_image
+      - name: Run smoke-test (k8)
+        if: ${{ matrix.k8 }}
+        timeout-minutes: 5
+        run: make UNINSTALL=noclean smoke-test-k8-tls-root
+
       - name: Build examples
         run: examples/tests/build.sh --release
       - name: Test examples
         timeout-minutes: 1
         run: examples/tests/run.sh --release
-      - run: minikube delete
-      - name: Upload SC log
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+      - name: Delete minikube
+        run: minikube delete
+
+        # Upload logs if any previous step failed
+      - name: Save SC logs (k8)
+        if: ${{ failure() && matrix.k8 }}
+        run: |
+          echo "minikube profile list"
+          minikube profile list
+          echo "helm list"
+          helm list
+          echo "get statefulset"
+          kubectl get statefulset
+          echo "kubectl get pvc"
+          kubectl get pvc
+          echo "kubectl get pods"
+          kubectl get pods
+          echo "kubectl get svc"
+          kubectl get svc
+          echo "kubectl get spu"
+          kubectl get spu
+          echo "kubectl get spg"
+          kubectl get spg
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+
+      - name: Upload SC logs
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: failure()
         with:
           name: fluvio-sc-logs
-          path: /tmp/flv_sc.log
+          path: ${{ matrix.logs-dir }}/flv_sc.log
+
+      - name: Upload SPU logs
+        if: failure()
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        with:
+          name: fluvio-spu-logs
+          path: ${{ matrix.logs-dir }}/spu_log_5001.log
 
   k8_cluster_test:
     name: Kubernetes cluster test
+    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
