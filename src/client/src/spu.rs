@@ -49,7 +49,7 @@ impl SpuSocket {
 /// connection pool to spu
 pub struct SpuPool {
     config: ClientConfig,
-    metadata: MetadataStores,
+    pub(crate) metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
 

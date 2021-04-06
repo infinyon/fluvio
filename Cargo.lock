@@ -1253,6 +1253,7 @@ dependencies = [
  "semver 0.11.0",
  "serde",
  "serde_json",
+ "siphasher",
  "thiserror",
  "tokio",
  "toml",
@@ -3760,6 +3761,12 @@ checksum = "38aabbeafa6f6dead8cebf246fe9fae1f9215c8d29b3a69f93bd62a9e4a3dcd6"
 dependencies = [
  "event-listener",
 ]
+
+[[package]]
+name = "siphasher"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbce6d4507c7e4a3962091436e56e95290cb71fa302d0d270e32130b75fbff27"
 
 [[package]]
 name = "slab"

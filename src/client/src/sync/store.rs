@@ -5,6 +5,7 @@ use tracing::debug;
 use fluvio_socket::SharedAllMultiplexerSocket;
 use fluvio_socket::FlvSocketError;
 
+use crate::metadata::topic::TopicSpec;
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;
 
@@ -17,6 +18,7 @@ pub struct MetadataStores {
     shutdown: Arc<SimpleEvent>,
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,
+    topics: StoreContext<TopicSpec>,
     socket: SharedAllMultiplexerSocket,
 }
 
@@ -27,11 +29,13 @@ impl MetadataStores {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
             partitions: StoreContext::new(),
+            topics: StoreContext::new(),
             socket: socket.clone(),
         };
 
         store.start_watch_for_spu().await?;
         store.start_watch_for_partition().await?;
+        store.start_watch_for_topic().await?;
 
         Ok(store)
     }
@@ -42,6 +46,10 @@ impl MetadataStores {
 
     pub fn partitions(&self) -> &StoreContext<PartitionSpec> {
         &self.partitions
+    }
+
+    pub fn topics(&self) -> &StoreContext<TopicSpec> {
+        &self.topics
     }
 
     pub fn shutdown(&mut self) {
@@ -78,6 +86,24 @@ impl MetadataStores {
 
         MetadataSyncController::<PartitionSpec>::start(
             self.partitions.clone(),
+            async_response,
+            self.shutdown.clone(),
+        );
+
+        Ok(())
+    }
+
+    pub async fn start_watch_for_topic(&self) -> Result<(), FlvSocketError> {
+        use dataplane::api::RequestMessage;
+        use fluvio_sc_schema::objects::WatchRequest;
+
+        debug!("start watch for topic");
+
+        let req_msg = RequestMessage::new_request(WatchRequest::Topic(0));
+        let async_response = self.socket.create_stream(req_msg, 10).await?;
+
+        MetadataSyncController::<TopicSpec>::start(
+            self.topics.clone(),
             async_response,
             self.shutdown.clone(),
         );

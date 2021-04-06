@@ -131,7 +131,7 @@ pub async fn produce_message_with_api(
             let message = generate_message(offset, &test_case);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
-            producer.send_record(message, 0).await.unwrap_or_else(|_| {
+            producer.send_keyless(message).await.unwrap_or_else(|_| {
                 panic!("send record failed for replication: {} iteration: {}", r, i)
             });
 

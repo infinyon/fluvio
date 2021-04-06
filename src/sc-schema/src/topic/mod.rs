@@ -42,4 +42,21 @@ mod convert {
             }
         }
     }
+
+    impl From<MetadataUpdate<TopicSpec>> for WatchResponse {
+        fn from(update: MetadataUpdate<TopicSpec>) -> Self {
+            Self::Topic(update)
+        }
+    }
+
+    impl TryInto<MetadataUpdate<TopicSpec>> for WatchResponse {
+        type Error = Error;
+
+        fn try_into(self) -> Result<MetadataUpdate<TopicSpec>, Self::Error> {
+            match self {
+                WatchResponse::Topic(m) => Ok(m),
+                _ => Err(Error::new(ErrorKind::Other, "not topic")),
+            }
+        }
+    }
 }

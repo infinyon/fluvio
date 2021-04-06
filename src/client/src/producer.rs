@@ -1,14 +1,19 @@
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::sync::Arc;
+use std::collections::HashMap;
+use tracing::instrument;
+use siphasher::sip::SipHasher;
 
-use tracing::{debug, trace, instrument};
 use dataplane::ReplicaKey;
+use dataplane::produce::DefaultProduceRequest;
+use dataplane::produce::DefaultPartitionRequest;
+use dataplane::produce::DefaultTopicRequest;
+use dataplane::batch::DefaultBatch;
+use dataplane::record::DefaultRecord;
+use dataplane::record::DefaultAsyncBuffer;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::sockets::SerialFrame;
-use bytes::Bytes;
 
 /// An interface for producing events to a particular topic
 ///
@@ -48,7 +53,19 @@ impl TopicProducer {
         K: Into<Vec<u8>>,
         V: Into<Vec<u8>>,
     {
-        self.send_all(Some((Some(key), value))).await?;
+        self.send_all(Some((Some(key.into()), value))).await?;
+        Ok(())
+    }
+
+    #[instrument(
+        skip(self, value),
+        fields(topic = %self.topic),
+    )]
+    pub async fn send_keyless<V>(&self, value: V) -> Result<(), FluvioError>
+    where
+        V: Into<Vec<u8>>,
+    {
+        self.send_all(Some((None::<Vec<u8>>, value))).await?;
         Ok(())
     }
 
@@ -62,21 +79,65 @@ impl TopicProducer {
         V: Into<Vec<u8>>,
         I: IntoIterator<Item = (Option<K>, V)>,
     {
-        let replica = ReplicaKey::new(&self.topic, 0);
-        let spu_client = self.pool.create_serial_socket(&replica).await?;
-        debug!(
-            addr = spu_client.config().addr(),
-            "Connected to replica leader:"
-        );
-        let records: Vec<_> = records
+        let topics = self.pool.metadata.topics();
+        let topic_spec = topics.lookup_by_key(&self.topic).await?.unwrap().spec; // TODO fix unwrap and stuff
+        let partition_count = topic_spec.partitions();
+
+        let records: Vec<(Option<Vec<u8>>, Vec<u8>)> = records
             .into_iter()
-            .map(|(key, value): (Option<K>, V)| {
-                let key = key.map(|k| Bytes::from(k.into()));
-                let value = Bytes::from(value.into());
-                (key, value)
-            })
+            .map(|(k, v)| (k.map(|it| it.into()), v.into()))
             .collect();
-        send_records_raw(spu_client, &replica, records).await?;
+
+        let mut round_robin = 0i32;
+        let mut records_by_partition: HashMap<i32, Vec<_>> = HashMap::new();
+        for (key, value) in records.into_iter() {
+            let partition = match &key {
+                Some(key) => partition_siphash(key, partition_count),
+                None => {
+                    let partition = round_robin;
+                    round_robin = (round_robin + 1) % partition_count;
+                    partition
+                }
+            };
+
+            let key = key.map(|it| DefaultAsyncBuffer::new(it));
+            let record = DefaultAsyncBuffer::new(value);
+            let record = DefaultRecord::from((key, record));
+
+            records_by_partition
+                .entry(partition)
+                .or_insert_with(Vec::new)
+                .push(record);
+        }
+
+        // Create one request per partition
+        // TODO collapse this into one request per leader (e.g. multiple partitions per leader)
+        let mut requests = vec![];
+        for (partition, records) in records_by_partition.into_iter() {
+            let mut request = DefaultProduceRequest::default();
+            let mut topic_request = DefaultTopicRequest::default();
+            let mut partition_request = DefaultPartitionRequest::default();
+
+            partition_request.partition_index = partition;
+            partition_request
+                .records
+                .batches
+                .push(DefaultBatch::new(records));
+            topic_request.name = self.topic.clone();
+            topic_request.partitions.push(partition_request);
+            request.acks = 1;
+            request.timeout_ms = 1500;
+            request.topics.push(topic_request);
+
+            requests.push((partition, request));
+        }
+
+        for (partition, request) in requests {
+            let replica = ReplicaKey::new(&self.topic, partition);
+            let mut spu_client = self.pool.create_serial_socket(&replica).await?;
+            spu_client.send_receive(request).await?;
+        }
+
         Ok(())
     }
 
@@ -96,82 +157,36 @@ impl TopicProducer {
         skip(self, buffer),
         fields(topic = %self.topic),
     )]
+    #[deprecated(since = "0.6.2", note = "Please use 'send_keyless' instead")]
     pub async fn send_record<B: AsRef<[u8]>>(
         &self,
         buffer: B,
-        partition: i32,
+        _partition: i32,
     ) -> Result<(), FluvioError> {
-        let record = buffer.as_ref();
-        let replica = ReplicaKey::new(&self.topic, partition);
-        debug!("sending records: {} bytes to: {}", record.len(), &replica);
-
-        let spu_client = self.pool.create_serial_socket(&replica).await?;
-
-        debug!("connect to replica leader at: {}", spu_client);
-
-        let records = vec![(None, Bytes::from(Vec::from(buffer.as_ref())))];
-        send_records_raw(spu_client, &replica, records).await?;
+        let buffer: Vec<u8> = Vec::from(buffer.as_ref());
+        self.send_keyless(buffer).await?;
         Ok(())
     }
 }
 
-/// Sends record to a target server (Kf, SPU, or SC)
-async fn send_records_raw<F: SerialFrame>(
-    mut leader: F,
-    replica: &ReplicaKey,
-    records: Vec<(Option<Bytes>, Bytes)>,
-) -> Result<(), FluvioError> {
-    use dataplane::produce::DefaultProduceRequest;
-    use dataplane::produce::DefaultPartitionRequest;
-    use dataplane::produce::DefaultTopicRequest;
-    use dataplane::batch::DefaultBatch;
-    use dataplane::record::DefaultRecord;
-    use dataplane::record::DefaultAsyncBuffer;
+fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
+    use std::hash::{Hash, Hasher};
+    use std::convert::TryFrom;
+    let mut hasher = SipHasher::new();
+    key.hash(&mut hasher);
+    let hashed = hasher.finish();
 
-    // build produce log request message
-    let mut request = DefaultProduceRequest::default();
-    let mut topic_request = DefaultTopicRequest::default();
-    let mut partition_request = DefaultPartitionRequest::default();
+    // TODO sanity check that this makes sense
+    i32::try_from(hashed % partition_count as u64).unwrap()
+}
 
-    debug!("Putting together batch with {} records", records.len());
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let records = records
-        .into_iter()
-        .map(|(key, value)| {
-            let key = key.map(DefaultAsyncBuffer::new);
-            let value = DefaultAsyncBuffer::new(value);
-            DefaultRecord::from((key, value))
-        })
-        .collect();
-
-    let batch = DefaultBatch::new(records);
-    partition_request.partition_index = replica.partition;
-    partition_request.records.batches.push(batch);
-    topic_request.name = replica.topic.to_owned();
-    topic_request.partitions.push(partition_request);
-
-    request.acks = 1;
-    request.timeout_ms = 1500;
-    request.topics.push(topic_request);
-
-    trace!("produce request: {:#?}", request);
-
-    let response = leader.send_receive(request).await?;
-
-    trace!("received response: {:?}", response);
-
-    // process response
-    match response.find_partition_response(&replica.topic, replica.partition) {
-        Some(partition_response) => {
-            if partition_response.error_code.is_error() {
-                return Err(IoError::new(
-                    ErrorKind::Other,
-                    partition_response.error_code.to_sentence(),
-                )
-                .into());
-            }
-            Ok(())
-        }
-        None => Err(IoError::new(ErrorKind::Other, "unknown error").into()),
+    #[test]
+    fn test_u64_mod_i32() {
+        assert_eq!(i32::MAX as u64, 2147483647_u64);
+        let some_u64 = 2u64 ^ 63;
     }
 }

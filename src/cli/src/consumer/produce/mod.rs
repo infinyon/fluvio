@@ -102,7 +102,7 @@ impl ProduceOpt {
         if self.kv_mode() {
             self.produce_key_value(producer, string).await?;
         } else {
-            producer.send_record(string, 0).await?;
+            producer.send_keyless(string).await?;
             if self.verbose {
                 println!("[null] {}", string);
             }
