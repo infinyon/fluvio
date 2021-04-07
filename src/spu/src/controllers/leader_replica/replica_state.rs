@@ -288,7 +288,6 @@ where
         sc_sink.send(lrs).await
     }
 
-
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         debug!(
             replica = %self.replica_id,
@@ -399,7 +398,7 @@ impl LeaderReplicaState<FileReplica> {
     }
 
     /// sync specific follower
-    #[instrument(skip(self,sinks,follower_info))]
+    #[instrument(skip(self, sinks, follower_info))]
     pub async fn sync_follower(
         &self,
         sinks: &SinkPool<SpuId>,
@@ -408,9 +407,7 @@ impl LeaderReplicaState<FileReplica> {
         max_bytes: u32,
     ) {
         if let Some(mut sink) = sinks.get_sink(&follower_id) {
-            trace!(
-                "ready to build sync records"
-            );
+            trace!("ready to build sync records");
             let mut sync_request = FileSyncRequest::default();
             let mut topic_response = PeerFileTopicResponse {
                 name: self.replica_id.topic.to_owned(),
@@ -420,14 +417,15 @@ impl LeaderReplicaState<FileReplica> {
                 partition: self.replica_id.partition,
                 ..Default::default()
             };
-            let (hw,leo) = self.read_records(
-                follower_info.leo,
-                max_bytes,
-                Isolation::ReadUncommitted,
-                &mut partition_response,
-            )
-            .await;
-            // ensure leo and hw are set correctly. storage might have update last stable offset 
+            let (hw, leo) = self
+                .read_records(
+                    follower_info.leo,
+                    max_bytes,
+                    Isolation::ReadUncommitted,
+                    &mut partition_response,
+                )
+                .await;
+            // ensure leo and hw are set correctly. storage might have update last stable offset
             partition_response.leo = leo;
             partition_response.hw = hw;
             topic_response.partitions.push(partition_response);

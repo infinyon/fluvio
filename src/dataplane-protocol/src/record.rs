@@ -209,6 +209,14 @@ impl RecordSet {
             .map(|batches| batches.records().len())
             .sum()
     }
+
+    /// return base offset
+    pub fn base_offset(&self) -> Offset {
+        self.batches
+            .first()
+            .map(|batches| batches.base_offset)
+            .unwrap_or_else(|| -1)
+    }
 }
 
 impl Decoder for RecordSet {

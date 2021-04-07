@@ -71,7 +71,6 @@ impl ReplicaFollowerController<FileReplica> {
         self.config.id()
     }
 
-    
     async fn dispatch_loop(mut self) {
         loop {
             if let Some(socket) = self.create_socket_to_leader().await {
@@ -180,6 +179,7 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     async fn write_to_follower_replica(&self, sink: &mut FlvSink, req: DefaultSyncRequest) {
+        debug!("received sync req");
         let offsets = self.followers_state.write_topics(req).await;
         self.sync_offsets_to_leader(sink, offsets).await;
     }
@@ -292,9 +292,7 @@ impl ReplicaFollowerController<FileReplica> {
 
     /// send follower offset to leader
     async fn sync_offsets_to_leader(&self, sink: &mut FlvSink, offsets: UpdateOffsetRequest) {
-        debug!(
-            ?offsets,
-            "sending offsets to leader");
+        debug!(?offsets, "sending offsets to leader");
         let req_msg = RequestMessage::new_request(offsets)
             .set_client_id(format!("follower_id: {}", self.config.id()));
 

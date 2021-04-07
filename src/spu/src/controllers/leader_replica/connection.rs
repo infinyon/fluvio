@@ -1,4 +1,4 @@
-use tracing::{trace, error, debug};
+use tracing::{trace, error};
 use tracing::instrument;
 use fluvio_socket::{FlvSocketError, FlvStream, FlvSocket};
 use fluvio_service::api_loop;
@@ -85,7 +85,7 @@ impl LeaderConnection {
     )]
     async fn update_follower_offset(&self, replica: ReplicaOffsetRequest) {
         let replica_key = replica.replica;
-    
+
         let follower_update = FollowerOffsetUpdate {
             follower_id: self.follower_id,
             leo: replica.leo,
