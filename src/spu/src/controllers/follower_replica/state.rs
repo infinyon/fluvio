@@ -13,6 +13,7 @@ use dashmap::DashMap;
 use flv_util::SimpleConcurrentBTreeMap;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::record::RecordSet;
+use dataplane::core::Encoder;
 use fluvio_storage::{FileReplica, config::ConfigOption, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 
@@ -200,16 +201,16 @@ where
 }
 
 impl FollowersState<FileReplica> {
+
     /// write records from leader to follower replica
     /// return updated offsets
-    pub(crate) async fn send_records(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
+    pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
         let mut offsets = UpdateOffsetRequest::default();
         for topic_request in &mut req.topics {
             let topic = &topic_request.name;
             for partition_request in &mut topic_request.partitions {
-                let rep_id = partition_request.partition_index;
+                let rep_id = partition_request.partition;
                 let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                trace!("sync request for replica: {}", replica_key);
                 if let Some(mut replica) = self.get_mut(&replica_key) {
                     match replica
                         .write_recordsets(&mut partition_request.records)
@@ -220,19 +221,22 @@ impl FollowersState<FileReplica> {
                                 "successfully written send to follower replica: {}",
                                 replica_key
                             );
-                            let end_offset = replica.storage().get_leo();
-                            let high_watermark = partition_request.high_watermark;
-                            if end_offset == high_watermark {
-                                trace!("follower replica: {} end offset is same as leader highwater, updating ",end_offset);
+                            let follow_leo = replica.storage().get_leo();
+                            let leader_hw = partition_request.hw;
+                            debug!(
+                                follow_leo,
+                                leader_hw,
+                                "finish writing"
+                            );
+                            if follow_leo == leader_hw {
+                                debug!("follow leo and leader hw is same, updating hw");
                                 if let Err(err) = replica
                                     .mut_storage()
-                                    .update_high_watermark(high_watermark)
+                                    .update_high_watermark(leader_hw)
                                     .await
                                 {
                                     error!("error writing replica high watermark: {}", err);
                                 }
-                            } else {
-                                trace!("replica: {} high watermark is not same as leader high watermark: {}",replica_key,end_offset);
                             }
                             drop(replica);
                             self.add_replica_offset_to(&replica_key, &mut offsets);
@@ -333,8 +337,14 @@ impl FollowerReplicaState<FileReplica> {
         })
     }
 
-    #[instrument()]
+
     pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<(), StorageError> {
+        debug!(
+            replica = %self.replica,
+            records = records.total_records(),
+            size = records.write_size(0),
+            "writing records"
+        );
         self.storage.write_recordset(records, false).await
     }
 

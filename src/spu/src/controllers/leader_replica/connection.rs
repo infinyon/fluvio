@@ -69,15 +69,23 @@ impl LeaderConnection {
     /// route offset update request from follower to replica leader controller
     async fn route_offset_request(&self, request: UpdateOffsetRequest) {
         for replica in request.replicas {
-            self.route_replica_offset(replica).await
+            self.update_follower_offset(replica).await
         }
     }
 
     /// send route replica offsets to leader replica controller
     /// it spawn request
-    async fn route_replica_offset(&self, replica: ReplicaOffsetRequest) {
+    #[instrument(
+        skip(self,replica),
+        fields(
+            replica = %replica.replica,
+            leo=replica.leo,
+            hw=replica.hw
+        )
+    )]
+    async fn update_follower_offset(&self, replica: ReplicaOffsetRequest) {
         let replica_key = replica.replica;
-        debug!(%replica_key,leo=replica.leo,hw=replica.hw);
+    
         let follower_update = FollowerOffsetUpdate {
             follower_id: self.follower_id,
             leo: replica.leo,

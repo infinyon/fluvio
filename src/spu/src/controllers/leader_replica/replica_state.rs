@@ -7,6 +7,7 @@ use std::time::{Instant};
 use std::fmt;
 
 use tracing::{debug, trace, error, warn};
+use tracing::instrument;
 use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
 
@@ -287,6 +288,7 @@ where
         sc_sink.send(lrs).await
     }
 
+
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         debug!(
             replica = %self.replica_id,
@@ -397,6 +399,7 @@ impl LeaderReplicaState<FileReplica> {
     }
 
     /// sync specific follower
+    #[instrument(skip(self,sinks,follower_info))]
     pub async fn sync_follower(
         &self,
         sinks: &SinkPool<SpuId>,
@@ -406,8 +409,7 @@ impl LeaderReplicaState<FileReplica> {
     ) {
         if let Some(mut sink) = sinks.get_sink(&follower_id) {
             trace!(
-                "sink is found for follower: {}, ready to build sync records",
-                follower_id
+                "ready to build sync records"
             );
             let mut sync_request = FileSyncRequest::default();
             let mut topic_response = PeerFileTopicResponse {
@@ -415,18 +417,19 @@ impl LeaderReplicaState<FileReplica> {
                 ..Default::default()
             };
             let mut partition_response = PeerFilePartitionResponse {
-                partition_index: self.replica_id.partition,
+                partition: self.replica_id.partition,
                 ..Default::default()
             };
-            self.read_records(
+            let (hw,leo) = self.read_records(
                 follower_info.leo,
                 max_bytes,
                 Isolation::ReadUncommitted,
                 &mut partition_response,
             )
             .await;
-            partition_response.last_stable_offset = self.leo();
-            partition_response.high_watermark = self.hw();
+            // ensure leo and hw are set correctly. storage might have update last stable offset 
+            partition_response.leo = leo;
+            partition_response.hw = hw;
             topic_response.partitions.push(partition_response);
             sync_request.topics.push(topic_response);
 
@@ -435,7 +438,7 @@ impl LeaderReplicaState<FileReplica> {
                 self.leader_id, self.replica_id
             ));
             debug!(
-                "sending records follower: {}, response: {}",
+                "sending records to follower: {}, response: {}",
                 follower_id, request
             );
             if let Err(err) = sink
@@ -455,7 +458,6 @@ impl LeaderReplicaState<FileReplica> {
         write.remove().await
     }
 
-    /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
         let follower_sync = self.need_follower_updates().await;
 

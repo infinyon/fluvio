@@ -106,10 +106,10 @@ pub struct PeerFetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
 {
-    pub partition_index: i32,
-    pub error_code: ErrorCode,
-    pub high_watermark: i64,
-    pub last_stable_offset: i64,
+    pub partition: i32,
+    pub error: ErrorCode,
+    pub hw: i64,
+    pub leo: i64,
     pub records: R,
 }
 
@@ -120,8 +120,8 @@ where
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "p: {}, hw: {} {}",
-            self.partition_index, self.high_watermark, self.records
+            "partition: {}, hw: {} {}",
+            self.partition, self.hw, self.records
         )
     }
 }
@@ -148,10 +148,10 @@ impl FileWrite for PeerFilePartitionResponse {
         version: Version,
     ) -> Result<(), IoError> {
         trace!("file encoding fetch partition response");
-        self.partition_index.encode(src, version)?;
-        self.error_code.encode(src, version)?;
-        self.high_watermark.encode(src, version)?;
-        self.last_stable_offset.encode(src, version)?;
+        self.partition.encode(src, version)?;
+        self.error.encode(src, version)?;
+        self.hw.encode(src, version)?;
+        self.leo.encode(src, version)?;
         self.records.file_encode(src, data, version)?;
         Ok(())
     }
@@ -159,7 +159,7 @@ impl FileWrite for PeerFilePartitionResponse {
 
 impl SlicePartitionResponse for PeerFilePartitionResponse {
     fn set_hw(&mut self, offset: i64) {
-        self.high_watermark = offset;
+        self.hw = offset;
     }
 
     fn set_slice(&mut self, slice: AsyncFileSlice) {
@@ -167,12 +167,11 @@ impl SlicePartitionResponse for PeerFilePartitionResponse {
     }
 
     fn set_error_code(&mut self, error: ErrorCode) {
-        self.error_code = error;
+        self.error = error;
     }
 
-    fn set_last_stable_offset(&mut self, offset: i64) {
-        self.last_stable_offset = offset;
-    }
+    /// ignore last stable offset
+    fn set_last_stable_offset(&mut self, _offset: i64) {}
 
     fn set_log_start_offset(&mut self, _offset: i64) {}
 }
