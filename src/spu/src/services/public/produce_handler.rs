@@ -2,6 +2,7 @@ use std::io::Error;
 
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
+use tracing::instrument;
 
 use dataplane::ErrorCode;
 use dataplane::produce::{
@@ -13,6 +14,13 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
 
+#[instrument(
+    skip(request,ctx),
+    fields(
+        id = request.header.correlation_id(),
+        client = %request.header.client_id()
+    )
+)]
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
     ctx: DefaultSharedGlobalContext,

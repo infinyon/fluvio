@@ -159,7 +159,7 @@ impl MutFileRecords {
         let mut f_sink = mf_sink.lock().await;
 
         if f_sink.can_be_appended(buffer.len() as u64) {
-            debug!("writing {} bytes at: {}", buffer.len(), self.path.display());
+            debug!(buffer_len = buffer.len(), "writing bytes");
 
             f_sink.write_all(&buffer).await?;
             self.cached_len = f_sink.get_current_len();
@@ -169,8 +169,12 @@ impl MutFileRecords {
                 FlushAction::NoFlush => {}
 
                 FlushAction::Now => {
-                    debug!("  flushing {:?}", self.flush_policy);
                     self.flush().await?;
+                    debug!(
+                        flush_count = self.flush_count(),
+                        write_count = self.write_count,
+                        "Flushing Now"
+                    );
                 }
 
                 FlushAction::Delay(delay_millis) => {
@@ -193,7 +197,6 @@ impl MutFileRecords {
         f_sink.flush().await
     }
 
-    #[allow(unused)]
     pub fn flush_count(&self) -> u32 {
         self.flush_count.load(Ordering::Relaxed)
     }

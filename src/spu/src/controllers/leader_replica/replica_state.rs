@@ -6,7 +6,6 @@ use std::{
 use std::time::{Instant};
 use std::fmt;
 
-use tracing::instrument;
 use tracing::{debug, trace, error, warn};
 use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
@@ -14,6 +13,7 @@ use async_channel::{Sender, Receiver, SendError};
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
+use dataplane::core::Encoder;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
@@ -287,24 +287,28 @@ where
         sc_sink.send(lrs).await
     }
 
-    /// write new record set and update shared offsets
-    #[instrument(skip(self))]
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
+        debug!(
+            replica = %self.replica_id,
+            leo = self.leo(),
+            hw = self.hw(),
+            records = records.total_records(),
+            size = records.write_size(0)
+        );
         let hw_update = self.spu_config.replication.min_in_sync_replicas == 1;
         let now = Instant::now();
         let mut writer = self.storage.write().await;
         let _offset_updates = writer.write_recordset(records, hw_update).await?;
+        debug!(write_time_ms = %now.elapsed().as_millis());
 
         let leo = writer.get_leo();
-        debug!(leo);
+        debug!(leo, "updated leo");
         self.leo.update(writer.get_leo());
         if hw_update {
             let hw = writer.get_hw();
-            debug!(hw);
+            debug!(hw, "updated hw");
             self.hw.update(hw);
         }
-
-        debug!(write_time_ms = %now.elapsed().as_millis());
 
         Ok(())
     }

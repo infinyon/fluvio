@@ -201,6 +201,14 @@ impl RecordSet {
             .last()
             .map(|batch| batch.computed_last_offset())
     }
+
+    /// total records
+    pub fn total_records(&self) -> usize {
+        self.batches
+            .iter()
+            .map(|batches| batches.records().len())
+            .sum()
+    }
 }
 
 impl Decoder for RecordSet {
