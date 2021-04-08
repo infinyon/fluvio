@@ -34,7 +34,7 @@ const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const LOCAL_SC_PORT: u16 = 9003;
 
-const DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
+static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
     let ext_dir = UserDirs::new().map(|it| it.home_dir().join(".fluvio/extensions"));
     which::which_in("fluvio-run", ext_dir, ".")
         .or_else(|_| which::which("fluvio-run"))
