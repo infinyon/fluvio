@@ -3,12 +3,13 @@ use std::process::Command;
 use std::fs::remove_dir_all;
 
 use tracing::{info, warn, debug, instrument};
-use fluvio_future::timer::sleep;
 use k8_client::ClientError as K8ClientError;
 use k8_client::{load_and_share, SharedK8Client};
 use k8_client::http::status::StatusCode;
 use k8_types::Spec;
 use k8_types::core::pod::PodSpec;
+use fluvio_future::timer::sleep;
+use fluvio_command::CommandExt;
 
 use crate::helm::HelmClient;
 use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
@@ -141,7 +142,7 @@ impl ClusterUninstaller {
         let client = load_and_share().map_err(UninstallError::K8ClientError)?;
 
         self.wait_for_delete::<PodSpec>(client, "fluvio-sc").await?;
-        self.cleanup().await?;
+        self.cleanup().await;
 
         Ok(())
     }
@@ -169,7 +170,7 @@ impl ClusterUninstaller {
             )
             .map_err(UninstallError::HelmError)?;
         debug!("fluvio sys chart has been uninstalled");
-        self.cleanup().await?;
+        self.cleanup().await;
 
         Ok(())
     }
@@ -197,32 +198,32 @@ impl ClusterUninstaller {
         if let Err(err) = remove_dir_all("/tmp/fluvio") {
             warn!("fluvio dir can't be removed: {}", err);
         }
-        self.cleanup().await?;
+        self.cleanup().await;
         Ok(())
     }
 
     /// Clean up objects and secrets created during the installation process
-    async fn cleanup(&self) -> Result<(), UninstallError> {
+    ///
+    /// Ignore any errors, cleanup should be idempotent
+    async fn cleanup(&self) {
         let ns = &self.config.namespace;
 
         // delete objects
-        self.remove_objects("spugroups", ns, None)?;
-        self.remove_objects("spus", ns, None)?;
-        self.remove_objects("topics", ns, None)?;
-        self.remove_objects("persistentvolumeclaims", ns, Some("app=spu"))?;
+        let _ = self.remove_custom_objects("spugroups", ns, None);
+        let _ = self.remove_custom_objects("spus", ns, None);
+        let _ = self.remove_custom_objects("topics", ns, None);
+        let _ = self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"));
 
         // delete secrets
-        self.remove_secrets("fluvio-ca")?;
-        self.remove_secrets("fluvio-tls")?;
+        let _ = self.remove_secrets("fluvio-ca");
+        let _ = self.remove_secrets("fluvio-tls");
 
-        self.remove_partitions(ns).await?;
-        self.remove_objects("partitions", ns, None)?;
-
-        Ok(())
+        let _ = self.remove_partitions(ns).await;
+        let _ = self.remove_custom_objects("partitions", ns, None);
     }
 
     /// Remove objects of specified type, namespace
-    fn remove_objects(
+    fn remove_custom_objects(
         &self,
         object_type: &str,
         namespace: &str,
@@ -243,12 +244,13 @@ impl ClusterUninstaller {
             info!("deleting all {} in: {}", object_type, namespace);
             cmd.arg("--all");
         }
-        cmd.output()?;
+        cmd.result()?;
 
         Ok(())
     }
 
     /// in order to remove partitions, finalizers need to be cleared
+    #[instrument(skip(self))]
     async fn remove_partitions(&self, namespace: &str) -> Result<(), UninstallError> {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;

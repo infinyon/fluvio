@@ -365,14 +365,11 @@ impl FlushPolicy {
 mod tests {
 
     // use std::time::{Duration, Instant};
-    use std::time::Duration;
     use std::env::temp_dir;
     use std::io::Cursor;
-
     use tracing::debug;
 
     use fluvio_future::test_async;
-    use fluvio_future::timer;
     use flv_util::fixture::ensure_clean_file;
     use dataplane::batch::DefaultBatch;
     use dataplane::core::{Decoder, Encoder};
@@ -381,12 +378,10 @@ mod tests {
 
     use super::MutFileRecords;
     use super::StorageError;
-
     use crate::config::ConfigOption;
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
     const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
-    const TEST_FILE_NAMEI: &str = "00000000000000000300.log"; // for offset 300
 
     #[allow(clippy::unnecessary_mut_passed)]
     #[test_async]
@@ -528,6 +523,10 @@ mod tests {
     #[allow(clippy::unnecessary_mut_passed)]
     #[test_async]
     async fn test_write_records_idle_delay() -> Result<(), StorageError> {
+        use std::time::Duration;
+        use fluvio_future::timer;
+        const TEST_FILE_NAMEI: &str = "00000000000000000300.log"; // for offset 300
+
         let test_file = temp_dir().join(TEST_FILE_NAMEI);
         ensure_clean_file(&test_file);
 

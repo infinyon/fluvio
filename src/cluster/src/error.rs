@@ -153,6 +153,9 @@ pub enum UninstallError {
     /// An error occurred with the Fluvio client.
     #[error("Fluvio client error")]
     FluvioError(#[from] FluvioError),
+    /// Failed to execute a command
+    #[error(transparent)]
+    CommandError(#[from] CommandError),
     /// An error occurred with the Kubernetes config.
     #[error("Kubernetes config error")]
     K8ConfigError(#[from] K8ConfigError),
