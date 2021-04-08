@@ -1,4 +1,4 @@
-use std::sync::RwLock;
+use std::sync::{RwLock,RwLockReadGuard,RwLockWriteGuard};
 use std::sync::Arc;
 use std::fmt::Debug;
 use std::collections::HashMap;
@@ -26,6 +26,7 @@ use super::DefaultSyncRequest;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 
+/* 
 /// maintain mapping of replicas for each SPU
 #[derive(Debug)]
 pub struct ReplicaKeys(RwLock<HashMap<SpuId, HashSet<ReplicaKey>>>);
@@ -84,14 +85,20 @@ impl DerefMut for ReplicaKeys {
     }
 }
 
+*/
+
+
 /// Maintains state for followers
 /// Each follower controller maintains by SPU
 #[derive(Debug)]
-pub struct FollowersState<S> {
-    replicas: DashMap<ReplicaKey, FollowerReplicaState<S>>,
-    replica_keys: ReplicaKeys, // list of replica key mapping for each spu
-    mailboxes: SimpleConcurrentBTreeMap<SpuId, Sender<FollowerReplicaControllerCommand>>,
+pub struct FollowersState<S>(DashMap<SpuId, SharedFollowersBySpu<S>>);
+
+impl<S> Default for FollowersState<S> {
+    fn default() -> Self {
+        FollowersState(DashMap::new())
+    }
 }
+
 
 /*
     mailboxes: SimpleConcurrentBTreeMap<SpuId, Sender<FollowerReplicaControllerCommand>>,
@@ -100,35 +107,30 @@ pub struct FollowersState<S> {
 */
 
 impl<S> Deref for FollowersState<S> {
-    type Target = DashMap<ReplicaKey, FollowerReplicaState<S>>;
+    type Target = DashMap<SpuId, SharedFollowersBySpu<S>>;
 
     fn deref(&self) -> &Self::Target {
-        &self.replicas
+        &self.0
     }
 }
 
 impl<S> DerefMut for FollowersState<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.replicas
+        &mut self.0
     }
 }
 
 impl<S> FollowersState<S> {
-    pub fn new() -> Self {
-        Self {
-            replicas: DashMap::new(),
-            replica_keys: ReplicaKeys::new(),
-            mailboxes: SimpleConcurrentBTreeMap::new(),
-        }
+    pub fn new_shared() -> Self {
+        Self::default()
     }
 
-    pub fn new_shared() -> SharedFollowersState<S> {
-        Arc::new(Self::new())
-    }
 
+    /* 
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {
         self.contains_key(key)
     }
+    */
 
     /// remove followe replica
     /// if there are no more replicas per leader
@@ -139,28 +141,17 @@ impl<S> FollowersState<S> {
         leader: &SpuId,
         key: &ReplicaKey,
     ) -> Option<FollowerReplicaState<S>> {
-        let no_keys = self.replica_keys.remove_replica_keys(leader, key);
 
-        let old_replica = self.replicas.remove(key);
 
-        // if no more keys
-        if no_keys {
-            debug!(
-                "no more followers for follower controller: {}, terminating it",
-                leader
-            );
-            if let Some(old_mailbox) = self.mailboxes.write().remove(leader) {
-                debug!(
-                    "removed mailbox for follower controller and closing it {}",
-                    leader
-                );
-                old_mailbox.close();
-            } else {
-                error!("there was no mailbox to close controller: {}", leader);
-            }
+        if let Some(followers) = self.0.get(leader) {
+            let write = followers.write();
+            let replica =  write.remove(key);
+            
+        } else {
+            None
         }
 
-        old_replica.map(|(_, state)| state)
+        
     }
 
     /// insert new mailbox and return receiver
@@ -322,6 +313,26 @@ impl FollowersState<FileReplica> {
                 replica_id,
             );
         }
+    }
+}
+
+pub type SharedFollowersBySpu<S> = FollowersBySpu<S>;
+
+/// list of followers by SPU
+#[derive(Debug)]
+pub struct FollowersBySpu<S> {
+    replicas: RwLock<HashMap<ReplicaKey,FollowerReplicaState<S>>>,
+    commands: Sender<FollowerReplicaControllerCommand>
+}
+
+impl <S> FollowersBySpu<S> {
+
+    fn write<'a>(&'_ self) -> RwLockReadGuard<'_,HashMap<ReplicaKey,FollowerReplicaState<S>>> {
+        self.replicas.write()
+    }
+
+    fn close(&self)  {
+        self.commands.close()
     }
 }
 
