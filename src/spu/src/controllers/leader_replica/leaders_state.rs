@@ -1,10 +1,22 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
 
+use tracing::{debug, error};
+use tracing::instrument;
 use dashmap::DashMap;
+use async_channel::Receiver;
 
-use fluvio_controlplane_metadata::partition::ReplicaKey;
+use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
+use fluvio_storage::{FileReplica, StorageError};
 
-use super::replica_state::SharedLeaderState;
+use crate::{controllers::sc::SharedSinkMessageChannel, core::SharedGlobalContext};
+
+use super::{
+    LeaderReplicaControllerCommand, LeaderReplicaState, ReplicaLeaderController,
+    replica_state::SharedLeaderState,
+};
 
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
@@ -35,6 +47,72 @@ impl<S> DerefMut for ReplicaLeadersState<S> {
 impl<S> ReplicaLeadersState<S> {
     pub fn new_shared() -> SharedReplicaLeadersState<S> {
         Self::default()
+    }
+}
+
+impl ReplicaLeadersState<FileReplica> {
+    #[instrument(
+        skip(self, ctx,replica,sink_channel),
+        fields(replica = %replica.id)
+    )]
+    pub async fn add_leader_replica(
+        &self,
+        ctx: SharedGlobalContext<FileReplica>,
+        replica: Replica,
+        max_bytes: u32,
+        sink_channel: SharedSinkMessageChannel,
+    ) -> Result<Arc<LeaderReplicaState<FileReplica>>, StorageError> {
+        let spu_config = ctx.config_owned();
+        let replica_id = replica.id.clone();
+
+        match LeaderReplicaState::create_state(replica, spu_config).await {
+            Ok((leader_replica, receiver)) => {
+                debug!("file replica created and spawing leader controller");
+                self.spawn_leader_controller(
+                    ctx.clone(),
+                    replica_id,
+                    leader_replica.clone(),
+                    receiver,
+                    max_bytes,
+                    sink_channel,
+                )
+                .await;
+
+                Ok(leader_replica)
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    #[instrument(
+        skip(self,ctx, replica_id, leader_state,sink_channel),
+        fields(replica = %replica_id)
+    )]
+    pub async fn spawn_leader_controller(
+        &self,
+        ctx: SharedGlobalContext<FileReplica>,
+        replica_id: ReplicaKey,
+        leader_state: Arc<LeaderReplicaState<FileReplica>>,
+        receiver: Receiver<LeaderReplicaControllerCommand>,
+        max_bytes: u32,
+        sink_channel: SharedSinkMessageChannel,
+    ) {
+        if let Some(old_replica) = self.insert(replica_id.clone(), leader_state.clone()) {
+            error!(
+                "there was existing replica when creating new leader replica: {}",
+                old_replica.replica_id()
+            );
+        }
+
+        let leader_controller = ReplicaLeaderController::new(
+            replica_id,
+            receiver,
+            leader_state,
+            ctx.followers_sink_owned(),
+            sink_channel,
+            max_bytes,
+        );
+        leader_controller.run();
     }
 }
 

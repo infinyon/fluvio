@@ -5,19 +5,22 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 
-use tracing::{debug, trace, error};
+use tracing::{debug, trace, error, warn};
 use tracing::instrument;
 use async_channel::{Sender, Receiver, bounded as channel};
 use dashmap::DashMap;
 
 use flv_util::SimpleConcurrentBTreeMap;
-use fluvio_controlplane_metadata::partition::ReplicaKey;
+use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
+use dataplane::core::Encoder;
 use fluvio_storage::{FileReplica, config::ConfigOption, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
+use fluvio_types::log_on_err;
 
-use crate::core::storage::create_replica_storage;
+use crate::core::{SharedGlobalContext, storage::create_replica_storage};
 use crate::controllers::leader_replica::{UpdateOffsetRequest, ReplicaOffsetRequest};
+use crate::controllers::follower_replica::ReplicaFollowerController;
 use super::FollowerReplicaControllerCommand;
 use super::DefaultSyncRequest;
 
@@ -200,42 +203,78 @@ where
 }
 
 impl FollowersState<FileReplica> {
+    /// add new follower controller and it's mailbox
+    pub async fn add_follower_replica(
+        &self,
+        ctx: SharedGlobalContext<FileReplica>,
+        replica: Replica,
+    ) {
+        let leader = &replica.leader;
+        debug!(%replica,"trying to adding follower replica");
+
+        if let Some(sender) = self.mailbox(leader) {
+            debug!(
+                %replica,
+                "existing follower controller exists, sending request",
+            );
+            log_on_err!(
+                sender
+                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
+                    .await
+            )
+        } else {
+            // we need to spin new follower controller
+            debug!(
+                "no existing follower controller exists for {},need to spin up",
+                replica
+            );
+            let (sender, receiver) = self.insert_mailbox(*leader);
+            let follower_controller = ReplicaFollowerController::new(
+                *leader,
+                receiver,
+                ctx.spu_localstore_owned(),
+                ctx.followers_state_owned(),
+                ctx.config_owned(),
+            );
+            follower_controller.run();
+            log_on_err!(
+                sender
+                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
+                    .await
+            );
+        }
+    }
+
     /// write records from leader to follower replica
     /// return updated offsets
-    pub(crate) async fn send_records(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
+    pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
         let mut offsets = UpdateOffsetRequest::default();
         for topic_request in &mut req.topics {
             let topic = &topic_request.name;
             for partition_request in &mut topic_request.partitions {
-                let rep_id = partition_request.partition_index;
+                let rep_id = partition_request.partition;
                 let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                trace!("sync request for replica: {}", replica_key);
                 if let Some(mut replica) = self.get_mut(&replica_key) {
                     match replica
                         .write_recordsets(&mut partition_request.records)
                         .await
                     {
-                        Ok(_) => {
-                            trace!(
-                                "successfully written send to follower replica: {}",
-                                replica_key
-                            );
-                            let end_offset = replica.storage().get_leo();
-                            let high_watermark = partition_request.high_watermark;
-                            if end_offset == high_watermark {
-                                trace!("follower replica: {} end offset is same as leader highwater, updating ",end_offset);
-                                if let Err(err) = replica
-                                    .mut_storage()
-                                    .update_high_watermark(high_watermark)
-                                    .await
-                                {
-                                    error!("error writing replica high watermark: {}", err);
+                        Ok(valid_record) => {
+                            if valid_record {
+                                let follow_leo = replica.storage().get_leo();
+                                let leader_hw = partition_request.hw;
+                                debug!(follow_leo, leader_hw, "finish writing");
+                                if follow_leo == leader_hw {
+                                    debug!("follow leo and leader hw is same, updating hw");
+                                    if let Err(err) =
+                                        replica.mut_storage().update_high_watermark(leader_hw).await
+                                    {
+                                        error!("error writing replica high watermark: {}", err);
+                                    }
                                 }
-                            } else {
-                                trace!("replica: {} high watermark is not same as leader high watermark: {}",replica_key,end_offset);
+                                drop(replica);
+                                self.add_replica_offset_to(&replica_key, &mut offsets);
                             }
-                            drop(replica);
-                            self.add_replica_offset_to(&replica_key, &mut offsets);
                         }
                         Err(err) => error!(
                             "problem writing replica: {}, error: {:#?}",
@@ -333,9 +372,32 @@ impl FollowerReplicaState<FileReplica> {
         })
     }
 
-    #[instrument()]
-    pub async fn write_recordsets(&mut self, records: &mut RecordSet) -> Result<(), StorageError> {
-        self.storage.write_recordset(records, false).await
+    /// write records
+    /// if true, records's base offset matches,
+    ///    false,invalid record sets has been sent
+    pub async fn write_recordsets(
+        &mut self,
+        records: &mut RecordSet,
+    ) -> Result<bool, StorageError> {
+        debug!(
+            replica = %self.replica,
+            records = records.total_records(),
+            size = records.write_size(0),
+            base_offset = records.base_offset(),
+            "writing records"
+        );
+
+        // check to ensure base offset should be same as leo
+        if records.base_offset() != self.storage.get_leo() {
+            warn!(
+                storage_leo = self.storage.get_leo(),
+                "storage leo is not same as base offset"
+            );
+            Ok(false)
+        } else {
+            self.storage.write_recordset(records, false).await?;
+            Ok(true)
+        }
     }
 
     pub async fn remove(self) -> Result<(), StorageError> {

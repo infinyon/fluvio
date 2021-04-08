@@ -142,7 +142,7 @@ where
     }
 
     pub(crate) async fn write(&mut self, pos: T) -> Result<(), IoError> {
-        debug!("Update checkpoint: {} at: {}", pos, self.path.display());
+        debug!(%pos,"Update checkpoint");
         self.file.seek(SeekFrom::Start(0)).await?;
         let mut contents = Vec::new();
         self.offset = pos;

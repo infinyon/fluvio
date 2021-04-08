@@ -1,4 +1,5 @@
-use tracing::{trace, error, debug};
+use tracing::{trace, error};
+use tracing::instrument;
 use fluvio_socket::{FlvSocketError, FlvStream, FlvSocket};
 use fluvio_service::api_loop;
 use fluvio_types::SpuId;
@@ -39,6 +40,13 @@ impl LeaderConnection {
         Ok(())
     }
 
+    #[instrument(
+        name = "LeaderConnection",
+        skip(self,stream),
+        fields(
+            follow_id = %self.follower_id
+        )
+    )]
     async fn main_loop(&self, mut stream: FlvStream) -> Result<(), FlvSocketError> {
         trace!(
             "starting connection handling from follower: {} for leader: {}",
@@ -60,41 +68,44 @@ impl LeaderConnection {
 
     /// route offset update request from follower to replica leader controller
     async fn route_offset_request(&self, request: UpdateOffsetRequest) {
-        debug!("receive offset request from follower: {}", self.follower_id);
         for replica in request.replicas {
-            route_replica_offset(self.ctx.clone(), self.follower_id, replica).await
+            self.update_follower_offset(replica).await
         }
     }
-}
 
-/// send route replica offsets to leader replica controller
-/// it spawn request
-async fn route_replica_offset(
-    ctx: DefaultSharedGlobalContext,
-    follower_id: SpuId,
-    replica: ReplicaOffsetRequest,
-) {
-    let replica_key = replica.replica;
-    debug!(%replica_key,leo=replica.leo,hw=replica.hw);
-    let follower_update = FollowerOffsetUpdate {
-        follower_id,
-        leo: replica.leo,
-        hw: replica.hw,
-    };
+    /// send route replica offsets to leader replica controller
+    /// it spawn request
+    #[instrument(
+        skip(self,replica),
+        fields(
+            replica = %replica.replica,
+            leo=replica.leo,
+            hw=replica.hw
+        )
+    )]
+    async fn update_follower_offset(&self, replica: ReplicaOffsetRequest) {
+        let replica_key = replica.replica;
 
-    if let Some(leader) = ctx.leaders_state().get(&replica_key) {
-        if let Err(err) = leader
-            .send_message_to_controller(LeaderReplicaControllerCommand::FollowerOffsetUpdate(
-                follower_update,
-            ))
-            .await
-        {
-            error!(
-                "Error sending offset updates to leader: {}, err: {}",
-                replica_key, err
-            )
+        let follower_update = FollowerOffsetUpdate {
+            follower_id: self.follower_id,
+            leo: replica.leo,
+            hw: replica.hw,
+        };
+
+        if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
+            if let Err(err) = leader
+                .send_message_to_controller(LeaderReplicaControllerCommand::FollowerOffsetUpdate(
+                    follower_update,
+                ))
+                .await
+            {
+                error!(
+                    "Error sending offset updates to leader: {}, err: {}",
+                    replica_key, err
+                )
+            }
+        } else {
+            error!("replica leader: {} was not found", replica_key); // this could happen when leader controller is not happen
         }
-    } else {
-        error!("replica leader: {} was not found", replica_key); // this could happen when leader controller is not happen
     }
 }

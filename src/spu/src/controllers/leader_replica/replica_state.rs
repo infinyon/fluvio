@@ -6,14 +6,15 @@ use std::{
 use std::time::{Instant};
 use std::fmt;
 
-use tracing::instrument;
 use tracing::{debug, trace, error, warn};
+use tracing::instrument;
 use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
 
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
+use dataplane::core::Encoder;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
@@ -287,24 +288,28 @@ where
         sc_sink.send(lrs).await
     }
 
-    /// write new record set and update shared offsets
-    #[instrument(skip(self))]
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
+        debug!(
+            replica = %self.replica_id,
+            leo = self.leo(),
+            hw = self.hw(),
+            records = records.total_records(),
+            size = records.write_size(0)
+        );
         let hw_update = self.spu_config.replication.min_in_sync_replicas == 1;
         let now = Instant::now();
         let mut writer = self.storage.write().await;
         let _offset_updates = writer.write_recordset(records, hw_update).await?;
+        debug!(write_time_ms = %now.elapsed().as_millis());
 
         let leo = writer.get_leo();
-        debug!(leo);
+        debug!(leo, "updated leo");
         self.leo.update(writer.get_leo());
         if hw_update {
             let hw = writer.get_hw();
-            debug!(hw);
+            debug!(hw, "updated hw");
             self.hw.update(hw);
         }
-
-        debug!(write_time_ms = %now.elapsed().as_millis());
 
         Ok(())
     }
@@ -393,6 +398,7 @@ impl LeaderReplicaState<FileReplica> {
     }
 
     /// sync specific follower
+    #[instrument(skip(self, sinks, follower_info))]
     pub async fn sync_follower(
         &self,
         sinks: &SinkPool<SpuId>,
@@ -401,28 +407,27 @@ impl LeaderReplicaState<FileReplica> {
         max_bytes: u32,
     ) {
         if let Some(mut sink) = sinks.get_sink(&follower_id) {
-            trace!(
-                "sink is found for follower: {}, ready to build sync records",
-                follower_id
-            );
+            trace!("ready to build sync records");
             let mut sync_request = FileSyncRequest::default();
             let mut topic_response = PeerFileTopicResponse {
                 name: self.replica_id.topic.to_owned(),
                 ..Default::default()
             };
             let mut partition_response = PeerFilePartitionResponse {
-                partition_index: self.replica_id.partition,
+                partition: self.replica_id.partition,
                 ..Default::default()
             };
-            self.read_records(
-                follower_info.leo,
-                max_bytes,
-                Isolation::ReadUncommitted,
-                &mut partition_response,
-            )
-            .await;
-            partition_response.last_stable_offset = self.leo();
-            partition_response.high_watermark = self.hw();
+            let (hw, leo) = self
+                .read_records(
+                    follower_info.leo,
+                    max_bytes,
+                    Isolation::ReadUncommitted,
+                    &mut partition_response,
+                )
+                .await;
+            // ensure leo and hw are set correctly. storage might have update last stable offset
+            partition_response.leo = leo;
+            partition_response.hw = hw;
             topic_response.partitions.push(partition_response);
             sync_request.topics.push(topic_response);
 
@@ -431,7 +436,7 @@ impl LeaderReplicaState<FileReplica> {
                 self.leader_id, self.replica_id
             ));
             debug!(
-                "sending records follower: {}, response: {}",
+                "sending records to follower: {}, response: {}",
                 follower_id, request
             );
             if let Err(err) = sink
@@ -451,7 +456,6 @@ impl LeaderReplicaState<FileReplica> {
         write.remove().await
     }
 
-    /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
         let follower_sync = self.need_follower_updates().await;
 

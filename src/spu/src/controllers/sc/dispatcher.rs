@@ -27,15 +27,12 @@ use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
 use fluvio_storage::FileReplica;
-use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::log_on_err;
 use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;
-use crate::controllers::follower_replica::ReplicaFollowerController;
 use crate::controllers::follower_replica::FollowerReplicaControllerCommand;
-use crate::controllers::leader_replica::ReplicaLeaderController;
 use crate::controllers::leader_replica::{LeaderReplicaState, LeaderReplicaControllerCommand};
 use crate::InternalServerError;
 
@@ -394,13 +391,26 @@ impl ScDispatcher<FileReplica> {
                     if new_replica.leader == local_id {
                         if new_replica.is_being_deleted {
                             self.remove_leader_replica(new_replica, sc_sink).await?;
-                        } else {
-                            self.add_leader_replica(new_replica).await;
+                        } else if let Err(err) = self
+                            .ctx
+                            .leaders_state()
+                            .add_leader_replica(
+                                self.ctx.clone(),
+                                new_replica,
+                                self.max_bytes,
+                                self.sink_channel.clone(),
+                            )
+                            .await
+                        {
+                            error!("error creating leader replica: {}", err);
                         }
                     } else if new_replica.is_being_deleted {
                         self.remove_follower_replica(new_replica).await;
                     } else {
-                        self.add_follower_replica(new_replica).await;
+                        self.ctx
+                            .followers_state()
+                            .add_follower_replica(self.ctx.clone(), new_replica)
+                            .await;
                     }
                 }
                 SpecChange::Delete(deleted_replica) => {
@@ -452,29 +462,6 @@ impl ScDispatcher<FileReplica> {
         }
 
         Ok(())
-    }
-
-    #[instrument(
-        skip(self, replica),
-        fields(replica = %replica.id)
-    )]
-    async fn add_leader_replica(&self, replica: Replica) {
-        debug!("adding new leader replica");
-
-        let spu_config = self.ctx.config_owned();
-        let replica_id = replica.id.clone();
-
-        match LeaderReplicaState::create_state(replica, spu_config).await {
-            Ok((leader_replica, receiver)) => {
-                debug!("file replica created and spawing leader controller");
-                self.spawn_leader_controller(replica_id, leader_replica, receiver)
-                    .await;
-            }
-            Err(err) => {
-                error!("error creating storage leader replica {:#?}", err);
-                // TODO: send status back to SC
-            }
-        }
     }
 
     #[instrument(skip(self, replica),
@@ -562,39 +549,6 @@ impl ScDispatcher<FileReplica> {
         sc_sink.send_request(&message).await
     }
 
-    /// spawn new leader controller
-    #[instrument(
-        skip(self,replica_id, shared_state),
-        fields(replica = %replica_id)
-    )]
-    async fn spawn_leader_controller(
-        &self,
-        replica_id: ReplicaKey,
-        shared_state: Arc<LeaderReplicaState<FileReplica>>,
-        receiver: Receiver<LeaderReplicaControllerCommand>,
-    ) {
-        if let Some(old_replica) = self
-            .ctx
-            .leaders_state()
-            .insert(replica_id.clone(), shared_state.clone())
-        {
-            error!(
-                "there was existing replica when creating new leader replica: {}",
-                old_replica.replica_id()
-            );
-        }
-
-        let leader_controller = ReplicaLeaderController::new(
-            replica_id,
-            receiver,
-            shared_state,
-            self.ctx.followers_sink_owned(),
-            self.sink_channel.clone(),
-            self.max_bytes,
-        );
-        leader_controller.run();
-    }
-
     /// Promote follower replica as leader,
     /// This is done in 3 steps
     /// // 1: Remove follower replica from followers state
@@ -625,7 +579,16 @@ impl ScDispatcher<FileReplica> {
                 sender,
             );
 
-            self.spawn_leader_controller(new_replica.id, Arc::new(leader_state), receiver)
+            self.ctx
+                .leaders_state()
+                .spawn_leader_controller(
+                    self.ctx.clone(),
+                    new_replica.id,
+                    Arc::new(leader_state),
+                    receiver,
+                    self.max_bytes,
+                    self.sink_channel.clone(),
+                )
                 .await;
         }
     }
@@ -637,48 +600,12 @@ impl ScDispatcher<FileReplica> {
 
         if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id) {
             drop(leader_replica_state);
-            // for now, we re-scan file replica
-            self.add_follower_replica(replica).await;
+            self.ctx
+                .followers_state()
+                .add_follower_replica(self.ctx.clone(), replica)
+                .await;
         } else {
             error!("leader controller was not found: {}", replica.id)
-        }
-    }
-
-    /// add new follower controller and it's mailbox
-    async fn add_follower_replica(&self, replica: Replica) {
-        let leader = &replica.leader;
-        debug!("trying to adding follower replica: {}", replica);
-
-        if let Some(sender) = self.ctx.followers_state().mailbox(leader) {
-            debug!(
-                "existing follower controller exists: {}, send request to controller",
-                replica
-            );
-            log_on_err!(
-                sender
-                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
-                    .await
-            )
-        } else {
-            // we need to spin new follower controller
-            debug!(
-                "no existing follower controller exists for {},need to spin up",
-                replica
-            );
-            let (sender, receiver) = self.ctx.followers_state().insert_mailbox(*leader);
-            let follower_controller = ReplicaFollowerController::new(
-                *leader,
-                receiver,
-                self.ctx.spu_localstore_owned(),
-                self.ctx.followers_state_owned(),
-                self.ctx.config_owned(),
-            );
-            follower_controller.run();
-            log_on_err!(
-                sender
-                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
-                    .await
-            );
         }
     }
 
@@ -728,6 +655,9 @@ impl ScDispatcher<FileReplica> {
         {
             error!("there was no follower replica: {} to switch", new);
         }
-        self.add_follower_replica(new).await;
+        self.ctx
+            .followers_state()
+            .add_follower_replica(self.ctx.clone(), new)
+            .await;
     }
 }

@@ -332,10 +332,10 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
         let batch_offset_delta = (current_offset - base_offset) as i32;
         debug!(
-            "start writing batch base_off: {}, pos: {}, batch record: {}",
             base_offset,
-            pos,
-            compute_batch_record_size(&item)
+            file_offset = pos,
+            batch_len = compute_batch_record_size(&item),
+            "start writing batch"
         );
 
         if self.msg_log.write_batch(item).await? {
