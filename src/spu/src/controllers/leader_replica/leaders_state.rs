@@ -9,7 +9,7 @@ use dashmap::DashMap;
 use async_channel::Receiver;
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
-use fluvio_storage::FileReplica;
+use fluvio_storage::{FileReplica, StorageError};
 
 use crate::{controllers::sc::SharedSinkMessageChannel, core::SharedGlobalContext};
 
@@ -61,7 +61,7 @@ impl ReplicaLeadersState<FileReplica> {
         replica: Replica,
         max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,
-    ) {
+    ) -> Result<Arc<LeaderReplicaState<FileReplica>>, StorageError> {
         let spu_config = ctx.config_owned();
         let replica_id = replica.id.clone();
 
@@ -71,17 +71,16 @@ impl ReplicaLeadersState<FileReplica> {
                 self.spawn_leader_controller(
                     ctx.clone(),
                     replica_id,
-                    leader_replica,
+                    leader_replica.clone(),
                     receiver,
                     max_bytes,
                     sink_channel,
                 )
                 .await;
+
+                Ok(leader_replica)
             }
-            Err(err) => {
-                error!("error creating storage leader replica {:#?}", err);
-                // TODO: send status back to SC
-            }
+            Err(err) => Err(err),
         }
     }
 
