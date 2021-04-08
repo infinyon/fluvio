@@ -1,0 +1,13 @@
+status = [
+    "Rustfmt (ubuntu-latest)",
+    "Clippy (ubuntu-latest)",
+    "Unit tests (ubuntu-latest)",
+    "Doc tests (ubuntu-latest)",
+    "Unit tests (macos-latest)",
+    "Doc tests (macos-latest)",
+    "Local cluster test (infinyon-ubuntu-bionic, stable)",
+    "Kubernetes cluster test (infinyon-ubuntu-bionic, stable)",
+]
+use_squash_merge = true
+delete_merged_branches = true
+timeout_sec = 1800 # 30 mins
