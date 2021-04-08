@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use fluvio_future::task::run_block_on;
-use fluvio_runner_local::{RunCmd, RunnerError};
+use fluvio_runner_local::{SpuLivenessCheckCmd, RunCmd, RunnerError};
 
 fn main() {
     fluvio_future::subscriber::init_tracer(None);
@@ -14,14 +14,20 @@ fn main() {
 #[derive(Debug, StructOpt)]
 pub enum RunnerCmd {
     /// Run a Streaming Controller (SC) or SPU
-    #[structopt(name = "run")]
+    #[structopt()]
     Run(RunCmd),
+    /// Run a new Streaming Processing Unit (SPU)
+    #[structopt()]
+    CheckSpuLiveness(SpuLivenessCheckCmd),
 }
 
 impl RunnerCmd {
     pub async fn process(self) -> Result<(), RunnerError> {
         match self {
             Self::Run(opt) => {
+                opt.process().await?;
+            }
+            Self::CheckSpuLiveness(opt) => {
                 opt.process().await?;
             }
         }

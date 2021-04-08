@@ -8,8 +8,10 @@ cfg_if::cfg_if! {
         mod start;
         mod controllers;
         mod smart_stream;
+        mod liveness_check;
 
         pub use start::main_loop;
+        pub use liveness_check::probe;
     }
 }
 

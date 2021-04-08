@@ -30,3 +30,17 @@ impl RunCmd {
         Ok(())
     }
 }
+
+#[derive(Debug, StructOpt)]
+pub struct SpuLivenessCheckCmd {
+    #[structopt()]
+    endpoint: std::net::SocketAddr,
+}
+
+impl SpuLivenessCheckCmd {
+    pub async fn process(self) -> Result<()> {
+        fluvio_future::subscriber::init_tracer(None);
+        fluvio_spu::probe(self.endpoint)?;
+        Ok(())
+    }
+}

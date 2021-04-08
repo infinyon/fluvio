@@ -62,3 +62,6 @@ debug-assertions = true
 overflow-checks = true
 incremental = false 
 codegen-units = 256
+
+[patch.crates-io]
+k8-types = { git = "https://github.com/nacardin/k8-api.git", rev = "7b0721a66864d5016738ecf1d6ff6b3c45f70cc9" }

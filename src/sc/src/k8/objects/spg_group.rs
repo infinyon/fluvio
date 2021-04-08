@@ -107,6 +107,7 @@ mod k8_convert {
     use k8_types::*;
     use k8_types::core::pod::{
         ContainerSpec, ContainerPortSpec, PodSpec, VolumeMount, VolumeSpec, SecretVolumeSpec,
+        Probe, ExecAction,
     };
     use k8_types::core::service::*;
     use k8_types::app::stateful::{
@@ -174,6 +175,8 @@ mod k8_convert {
             size.clone(),
         ];
 
+        let mut spu_non_tls_public = SPU_PUBLIC_PORT;
+
         if let Some(tls) = tls_config {
             args.push("--tls".to_owned());
             if tls.enable_client_cert {
@@ -217,8 +220,10 @@ mod k8_convert {
                 ..Default::default()
             });
 
+            spu_non_tls_public = 9007;
+
             args.push("--bind-non-tls-public".to_owned());
-            args.push("0.0.0.0:9007".to_owned());
+            args.push(format!("0.0.0.0:{}", spu_non_tls_public));
         }
 
         // add RUST LOG, if passed
@@ -226,7 +231,18 @@ mod k8_convert {
             env.push(Env::key_value("RUST_LOG", &rust_log));
         }
 
-        // env.append(&mut spu_template.env.clone());
+        let liveness_probe = Probe {
+            exec: Some(ExecAction {
+                command: vec![
+                    "/fluvio".to_owned(),
+                    "check-spu-liveness".to_owned(),
+                    format!("127.0.0.1:{}", spu_non_tls_public),
+                ],
+            }),
+            initial_delay_seconds: Some(30),
+            timeout_seconds: Some(5),
+            ..Default::default()
+        };
 
         let template = TemplateSpec {
             metadata: Some(
@@ -240,6 +256,7 @@ mod k8_convert {
                     image: Some(spu_k8_config.image.clone()),
                     resources: spu_k8_config.resources.clone(),
                     ports: vec![public_port, private_port],
+                    liveness_probe: Some(liveness_probe),
                     volume_mounts,
                     env,
                     args,
