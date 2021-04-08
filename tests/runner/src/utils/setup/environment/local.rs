@@ -28,15 +28,13 @@ impl TestEnvironmentDriver for LocalEnvDriver {
     async fn start_cluster(&self) -> StartStatus {
         let mut builder = LocalConfig::builder(crate::VERSION);
 
-        // FIXME: Validate that this exists and throw a useful error message
-        let fluvio_exe = std::env::current_exe()
-            .ok()
-            .and_then(|it| it.parent().map(|parent| parent.join("fluvio")));
+        // // FIXME: Validate that this exists and throw a useful error message
+        // let fluvio_exe = std::env::current_exe()
+        //     .ok()
+        //     .and_then(|it| it.parent().map(|parent| parent.join("fluvio")));
 
-        builder
-            .spu_replicas(self.option.spu())
-            .render_checks(true)
-            .launcher(fluvio_exe);
+        builder.spu_replicas(self.option.spu()).render_checks(true);
+        // .launcher(fluvio_exe);
 
         if let Some(rust_log) = &self.option.server_log() {
             builder.rust_log(rust_log);
