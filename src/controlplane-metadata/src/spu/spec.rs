@@ -83,6 +83,30 @@ impl SpuSpec {
         }
     }
 
+    pub fn new_public_addr(id: SpuId, port: u16, host: String) -> Self {
+        Self {
+            id,
+            public_endpoint: IngressPort {
+                port,
+                ingress: vec![IngressAddr::from_host(host)],
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    pub fn new_private_addr(id: SpuId, port: u16, host: String) -> Self {
+        Self {
+            id,
+            private_endpoint: Endpoint {
+                port,
+                host,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
     pub fn set_custom(mut self) -> Self {
         self.spu_type = SpuType::Custom;
         self
