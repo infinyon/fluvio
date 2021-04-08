@@ -19,7 +19,6 @@ mod replica_test {
     use crate::config::SpuConfig;
     use super::sc::{ScSinkMessageChannel};
 
-
     const LEADER: SpuId = 5001;
     const FOLLOWER: SpuId = 5002;
     const TOPIC: &str = "test";

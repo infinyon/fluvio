@@ -391,21 +391,19 @@ impl ScDispatcher<FileReplica> {
                     if new_replica.leader == local_id {
                         if new_replica.is_being_deleted {
                             self.remove_leader_replica(new_replica, sc_sink).await?;
-                        } else if 
-                            let Err(err) = self
-                                .ctx
-                                .leaders_state()
-                                .add_leader_replica(
-                                    self.ctx.clone(),
-                                    new_replica,
-                                    self.max_bytes,
-                                    self.sink_channel.clone(),
-                                )
-                                .await
-                            {
-                                error!("error creating leader replica: {}", err);
-                            }
-                        
+                        } else if let Err(err) = self
+                            .ctx
+                            .leaders_state()
+                            .add_leader_replica(
+                                self.ctx.clone(),
+                                new_replica,
+                                self.max_bytes,
+                                self.sink_channel.clone(),
+                            )
+                            .await
+                        {
+                            error!("error creating leader replica: {}", err);
+                        }
                     } else if new_replica.is_being_deleted {
                         self.remove_follower_replica(new_replica).await;
                     } else {
