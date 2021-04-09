@@ -1,5 +1,5 @@
 [package]
-name = "fluvio-runner"
+name = "fluvio-run"
 version = "0.1.0-alpha.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -9,7 +9,7 @@ license = "Apache-2.0"
 publish = false
 
 [lib]
-name = "fluvio_runner"
+name = "fluvio_run"
 path = "src/lib.rs"
 
 [[bin]]

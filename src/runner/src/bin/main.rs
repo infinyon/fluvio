@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use fluvio_future::task::run_block_on;
-use fluvio_runner::RunCmd;
+use fluvio_run::RunCmd;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     fluvio_future::subscriber::init_tracer(None);
