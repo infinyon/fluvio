@@ -546,6 +546,8 @@ main() {
     # Let fluvio know it is invoked from installer
     say "☁️ Installing Fluvio Cloud..."
     FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio/fluvio-cloud
+    say "☁️ Installing Fluvio Runner..."
+    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio/fluvio-run
 
     say "🎉 Install complete!"
     remind_path
