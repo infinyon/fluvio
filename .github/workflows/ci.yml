@@ -247,10 +247,6 @@ jobs:
           kubectl get pods
           echo "kubectl get svc"
           kubectl get svc
-          echo "kubectl get spu"
-          kubectl get spu
-          echo "kubectl get spg"
-          kubectl get spg
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
 
       - name: Upload SC logs
@@ -269,76 +265,76 @@ jobs:
           name: fluvio-spu-logs
           path: ${{ matrix.logs-dir }}/spu_log_5001.log
 
-  k8_cluster_test:
-    name: Kubernetes cluster test
-    if: false
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [infinyon-ubuntu-bionic]
-        rust: [stable]
-    env:
-      FLUVIO_CMD: true
-      FLV_SOCKET_WAIT: 600
-      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
-      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
-      FLV_TEST_CONSUMER_WAIT: 300000
-    steps:
-      - uses: actions/checkout@v2
-      - run: helm version
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - name: Setup Minikube for Linux
-        if: startsWith(matrix.os, 'infinyon-ubuntu')
-        run: |
-          pkill -f "minikube tunnel" || true
-          minikube delete
-          minikube start --driver=docker --kubernetes-version 1.19.6
-          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
-      - name: Test minikube
-        run: |
-          minikube profile list
-          minikube status
-      - name: Build
-        run: |
-          make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
-      - name: Setup installation pre-requisites
-        run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl  k8-setup
-      - name: Make image
-        run: make RELEASE=true minikube_image
-      - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
-        run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
-      - name: Clean minikube
-        run: |
-          minikube delete
-          pkill -f "minikube tunnel" || true
-      - name: Save logs
-        if: failure()
-        run: |
-          echo "minikube profile list"
-          minikube profile list
-          echo "helm list"
-          helm list
-          echo "get statefulset"
-          kubectl get statefulset
-          echo "kubectl get pvc"
-          kubectl get pvc
-          echo "kubectl get pods"
-          kubectl get pods
-          echo "kubectl get svc"
-          kubectl get svc
-          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
-      - name: Upload logs
-        timeout-minutes: 5
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-k8-logs
-          path: /tmp/flv_sc.log
+#  k8_cluster_test:
+#    name: Kubernetes cluster test
+#    if: false
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [infinyon-ubuntu-bionic]
+#        rust: [stable]
+#    env:
+#      FLUVIO_CMD: true
+#      FLV_SOCKET_WAIT: 600
+#      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
+#      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
+#      FLV_TEST_CONSUMER_WAIT: 300000
+#    steps:
+#      - uses: actions/checkout@v2
+#      - run: helm version
+#      - name: Install ${{ matrix.rust }}
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: ${{ matrix.rust }}
+#          profile: minimal
+#          override: true
+#      - name: Setup Minikube for Linux
+#        if: startsWith(matrix.os, 'infinyon-ubuntu')
+#        run: |
+#          pkill -f "minikube tunnel" || true
+#          minikube delete
+#          minikube start --driver=docker --kubernetes-version 1.19.6
+#          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+#      - name: Test minikube
+#        run: |
+#          minikube profile list
+#          minikube status
+#      - name: Build
+#        run: |
+#          make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
+#      - name: Setup installation pre-requisites
+#        run: |
+#          make RELEASE=true TARGET=x86_64-unknown-linux-musl  k8-setup
+#      - name: Make image
+#        run: make RELEASE=true minikube_image
+#      - name: Run smoke-test-k8-tls-root
+#        timeout-minutes: 5
+#        run: |
+#          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
+#      - name: Clean minikube
+#        run: |
+#          minikube delete
+#          pkill -f "minikube tunnel" || true
+#      - name: Save logs
+#        if: failure()
+#        run: |
+#          echo "minikube profile list"
+#          minikube profile list
+#          echo "helm list"
+#          helm list
+#          echo "get statefulset"
+#          kubectl get statefulset
+#          echo "kubectl get pvc"
+#          kubectl get pvc
+#          echo "kubectl get pods"
+#          kubectl get pods
+#          echo "kubectl get svc"
+#          kubectl get svc
+#          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+#      - name: Upload logs
+#        timeout-minutes: 5
+#        if: failure()
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: fluvio-k8-logs
+#          path: /tmp/flv_sc.log
