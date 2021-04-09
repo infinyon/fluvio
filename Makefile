@@ -1,5 +1,5 @@
 VERSION := $(shell cat VERSION)
-RUSTV=stable
+RUSTV?=stable
 DOCKER_TAG=$(VERSION)
 GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
@@ -32,8 +32,8 @@ install_tools_mac:
 build_test:	TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
 build_test:	TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
 build_test:	install_test_target
-	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio
-	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio $(VERBOSE)
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test $(VERBOSE)
 
 install_test_target:
 ifdef TARGET
@@ -141,11 +141,16 @@ check_version:
 install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
-check-clippy:	install-clippy
+# Use check first to leverage sccache, the clippy piggybacks
+check-clippy: install-clippy
+	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE)
 	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
 
 build-all-test:
-	cargo build --lib --tests --all-features
+	cargo build --lib --tests --all-features $(VERBOSE)
+
+check-all-test:
+	cargo check --lib --tests --all-features $(VERBOSE)
 
 test_tls_multiplex:
 	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
@@ -159,7 +164,7 @@ run-all-unit-test: test_tls_multiplex build_filter_wasm
 	cargo test -p fluvio-storage
 
 run-all-doc-test:
-	cargo test --all-features --doc
+	cargo test --all-features --doc $(VERBOSE)
 
 install_musl:
 	rustup target add ${TARGET_LINUX}
