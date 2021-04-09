@@ -7,10 +7,10 @@ use std::ops::{Deref, DerefMut};
 use tracing::{debug, trace, error, warn};
 use tracing::instrument;
 use async_channel::{Sender, Receiver, bounded as channel};
-use async_rwlock::{RwLock,RwLockReadGuard,RwLockWriteGuard};
+use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use dashmap::DashMap;
 
-use flv_util::SimpleConcurrentBTreeMap;
+
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
 use dataplane::core::Encoder;
@@ -22,11 +22,11 @@ use crate::core::{SharedGlobalContext, storage::create_replica_storage};
 use crate::controllers::leader_replica::{UpdateOffsetRequest, ReplicaOffsetRequest};
 use crate::controllers::follower_replica::ReplicaFollowerController;
 use super::FollowerReplicaControllerCommand;
-use super::DefaultSyncRequest;
+use super::sync::DefaultSyncRequest;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 
-/* 
+/*
 /// maintain mapping of replicas for each SPU
 #[derive(Debug)]
 pub struct ReplicaKeys(RwLock<HashMap<SpuId, HashSet<ReplicaKey>>>);
@@ -87,18 +87,16 @@ impl DerefMut for ReplicaKeys {
 
 */
 
-
 /// Maintains state for followers
 /// Each follower controller maintains by SPU
 #[derive(Debug)]
-pub struct FollowersState<S>(DashMap<SpuId, SharedFollowersBySpu<S>>);
+pub struct FollowersState<S>(DashMap<SpuId, SharedFollowersState<S>>);
 
 impl<S> Default for FollowersState<S> {
     fn default() -> Self {
         FollowersState(DashMap::new())
     }
 }
-
 
 /*
     mailboxes: SimpleConcurrentBTreeMap<SpuId, Sender<FollowerReplicaControllerCommand>>,
@@ -121,39 +119,18 @@ impl<S> DerefMut for FollowersState<S> {
 }
 
 impl<S> FollowersState<S> {
-    pub fn new_shared() -> Self {
-        Self::default()
+    pub fn new_shared() -> Arc<Self> {
+        Arc::new(Self::default())
     }
 
-
-    /* 
+    /*
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {
         self.contains_key(key)
     }
     */
 
-    /// remove followe replica
-    /// if there are no more replicas per leader
-    /// then we shutdown controller
-    #[instrument(skip(self))]
-    pub fn remove_replica(
-        &self,
-        leader: &SpuId,
-        key: &ReplicaKey,
-    ) -> Option<FollowerReplicaState<S>> {
-
-
-        if let Some(followers) = self.0.get(leader) {
-            let write = followers.write();
-            let replica =  write.remove(key);
-            
-        } else {
-            None
-        }
-
-        
-    }
-
+    
+    /* 
     /// insert new mailbox and return receiver
     /// this is called by sc dispatcher
     pub(crate) fn insert_mailbox(
@@ -176,26 +153,19 @@ impl<S> FollowersState<S> {
     pub(crate) fn mailbox(&self, spu: &SpuId) -> Option<Sender<FollowerReplicaControllerCommand>> {
         self.mailboxes.read().get(spu).cloned()
     }
+    */
 }
 
 impl<S> FollowersState<S>
 where
     S: Debug,
 {
-    /// insert new replica, once replica has been insert, need to update the leader
-    /// this is called by follower controller
-    pub fn insert_replica(&self, state: FollowerReplicaState<S>) {
-        trace!("inserting new follower replica: {:#?}", state);
-
-        self.replica_keys
-            .insert_replica(state.leader, state.replica.clone());
-        self.replicas.insert(state.replica.clone(), state);
-    }
+    
 }
 
 impl FollowersState<FileReplica> {
-    /// add new follower controller and it's mailbox
-    pub async fn add_follower_replica(
+    /// add replica, this creates FollowersSpu structure as necessary and starts up controller
+    pub async fn add_replica(
         &self,
         ctx: SharedGlobalContext<FileReplica>,
         replica: Replica,
@@ -203,57 +173,29 @@ impl FollowersState<FileReplica> {
         let leader = &replica.leader;
         debug!(%replica,"trying to adding follower replica");
 
-        if let Some(sender) = self.mailbox(leader) {
-            debug!(
-                %replica,
-                "existing follower controller exists, sending request",
-            );
-            log_on_err!(
-                sender
-                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
-                    .await
-            )
-        } else {
-            // we need to spin new follower controller
+        let followers_spu = self.0.get(leader).unwrap_or_else(||{
             debug!(
                 "no existing follower controller exists for {},need to spin up",
                 replica
             );
-            let (sender, receiver) = self.insert_mailbox(*leader);
+
+            let (followers_spu,receiver) = FollowersBySpu::new(leader);
+          
             let follower_controller = ReplicaFollowerController::new(
                 *leader,
                 receiver,
                 ctx.spu_localstore_owned(),
-                ctx.followers_state_owned(),
+                followers_spu.clone(),
                 ctx.config_owned(),
             );
             follower_controller.run();
-            log_on_err!(
-                sender
-                    .send(FollowerReplicaControllerCommand::AddReplica(replica))
-                    .await
-            );
-        }
+            followers_spu
+        });
+
+        followers_spu.add_replica(replica.id);
+        
     }
 
-    
-
-    /// offsets for all replicas
-    pub(crate) fn replica_offsets(&self, leader: &SpuId) -> UpdateOffsetRequest {
-        let replica_indexes = self.replica_keys.read().unwrap();
-
-        let mut offsets = UpdateOffsetRequest::default();
-
-        if let Some(keys) = replica_indexes.get(leader) {
-            for replica_id in keys {
-                self.add_replica_offset_to(replica_id, &mut offsets);
-            }
-        }
-        offsets
-    }
-
-    
-    
 }
 
 pub type SharedFollowersBySpu<S> = FollowersBySpu<S>;
@@ -261,39 +203,62 @@ pub type SharedFollowersBySpu<S> = FollowersBySpu<S>;
 /// list of followers by SPU
 #[derive(Debug)]
 pub struct FollowersBySpu<S> {
-    replicas: RwLock<HashMap<ReplicaKey,FollowerReplicaState<S>>>,
-    commands: Sender<FollowerReplicaControllerCommand>
+    spu: SpuId,
+    replicas: RwLock<HashMap<ReplicaKey, FollowerReplicaState<S>>>,
+    sender: Sender<FollowerReplicaControllerCommand>,
 }
 
-impl <S> FollowersBySpu<S> {
+impl<S> FollowersBySpu<S> {
 
-    async fn read(&self) -> RwLockReadGuard<'_,HashMap<ReplicaKey,FollowerReplicaState<S>>> {
+    pub fn shared(spu: SpuId) -> (Arc<Self>,Receiver<FollowerReplicaControllerCommand>) {
+        let (sender, receiver) = channel(10);
+        (Arc::new(Self {
+            spu,
+            replicas: RwLock::new(HashMap::new()),
+            sender
+        }),
+        receiver)
+    }
+
+    pub fn sender(&self) -> &Sender<FollowerReplicaControllerCommand> {
+        &self.sender
+    }
+
+    async fn read(&self) -> RwLockReadGuard<'_, HashMap<ReplicaKey, FollowerReplicaState<S>>> {
         self.replicas.read().await
     }
 
-    async fn write(&self) -> RwLockWriteGuard<'_,HashMap<ReplicaKey,FollowerReplicaState<S>>> {
+    async fn write(&self) -> RwLockWriteGuard<'_, HashMap<ReplicaKey, FollowerReplicaState<S>>> {
         self.replicas.write().await
     }
 
-    /// offsets for all replicas
-    pub(crate) fn replica_offsets(&self, leader: &SpuId) -> UpdateOffsetRequest {
-        let read = self.read();
-        let replica_indexes = self.replica_keys.read().unwrap();
-
-        let mut offsets = UpdateOffsetRequest::default();
-
-        if let Some(keys) = replica_indexes.get(leader) {
-            for replica_id in keys {
-                self.add_replica_offset_to(replica_id, &mut offsets);
-            }
-        }
-        offsets
+    /// insert new replica
+    pub async fn insert_replica(&self, state: FollowerReplicaState<S>) {
+        let mut write = self.write().await;
+        write.insert(state.replica.clone(), state);
     }
+
+    /// remove followe replica
+    /// if there are no more replicas per leader
+    /// then we shutdown controller
+    #[instrument(skip(self))]
+    pub fn remove_replica(
+        &self,
+        leader: &SpuId,
+        key: &ReplicaKey,
+    ) -> Option<FollowerReplicaState<S>> {
+        if let Some(followers) = self.0.get(leader) {
+            let write = followers.write();
+            let replica = write.remove(key);
+        } else {
+            None
+        }
+    }
+
+    
 }
 
 impl FollowersBySpu<FileReplica> {
-
-   
     /// write records from leader to follower replica
     /// return updated offsets
     pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
@@ -323,8 +288,7 @@ impl FollowersBySpu<FileReplica> {
                                     }
                                 }
 
-                                replica.add_replica_offset_to(&mut offsets);
-                                
+                                offsets.replicas.push(replica.as_offset_request());
                             }
                         }
                         Err(err) => error!(
@@ -343,7 +307,19 @@ impl FollowersBySpu<FileReplica> {
         offsets
     }
 
-    
+    /// offsets for all replicas
+    pub(crate) async fn replica_offsets(&self, leader: &SpuId) -> UpdateOffsetRequest {
+        let read = self.read().await;
+
+        //let mut = UpdateOffsetRequest::default();
+
+        let replicas = read
+            .values()
+            .map(|replica| replica.as_offset_request())
+            .collect();
+
+        UpdateOffsetRequest { replicas }
+    }
 }
 
 /// State for Follower Replica Controller.
@@ -367,7 +343,6 @@ impl<S> FollowerReplicaState<S> {
     pub fn storage_owned(self) -> S {
         self.storage
     }
-
 }
 
 impl FollowerReplicaState<FileReplica> {
@@ -427,15 +402,13 @@ impl FollowerReplicaState<FileReplica> {
     }
 
     /// add replica offsets to request
-    fn add_replica_offset_to(&self, offsets: &mut UpdateOffsetRequest) {
+    fn as_offset_request(&self) -> ReplicaOffsetRequest {
         let storage = self.storage();
-
-        let replica_request = ReplicaOffsetRequest {
+        ReplicaOffsetRequest {
             replica: self.replica.clone(),
             leo: storage.get_leo(),
             hw: storage.get_hw(),
-        };
-        offsets.replicas.push(replica_request);
+        }
     }
 }
 

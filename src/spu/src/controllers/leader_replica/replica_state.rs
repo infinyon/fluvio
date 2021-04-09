@@ -28,7 +28,7 @@ use crate::{
     core::{SharedSpuConfig, storage::clear_replica_storage},
 };
 use crate::core::storage::{create_replica_storage};
-use crate::controllers::follower_replica::{
+use crate::controllers::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
 

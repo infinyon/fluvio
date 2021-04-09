@@ -19,7 +19,7 @@ use dataplane::store::FileWrite;
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_future::file_slice::AsyncFileSlice;
 
-use super::FollowerPeerApiEnum;
+use super::api_key::FollowerPeerApiEnum;
 
 pub type FileSyncRequest = SyncRequest<FileRecordSet>;
 pub type DefaultSyncRequest = SyncRequest<RecordSet>;

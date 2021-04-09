@@ -25,11 +25,9 @@ use crate::core::spus::SharedSpuLocalStore;
 use crate::core::SharedSpuConfig;
 
 use super::FollowerReplicaControllerCommand;
-use super::FollowerReplicaState;
-use super::FollowerPeerApiEnum;
-use super::DefaultSyncRequest;
-use super::FollowerPeerRequest;
-use super::SharedFollowersState;
+use super::state::{SharedFollowersBySpu,FollowerReplicaState};
+use super::api_key::{FollowerPeerApiEnum};
+use super::peer_api::{DefaultSyncRequest,FollowerPeerRequest};
 
 /// time to resync follower offsets to leader
 const LEADER_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 1 min
@@ -39,7 +37,7 @@ const LEADER_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 1 min
 pub struct ReplicaFollowerController<S> {
     leader_id: SpuId,
     spu_localstore: SharedSpuLocalStore,
-    followers_state: SharedFollowersState<S>,
+    followers_state: SharedFollowersBySpu<S>,
     receiver: Receiver<FollowerReplicaControllerCommand>,
     config: SharedSpuConfig,
 }
@@ -49,7 +47,7 @@ impl<S> ReplicaFollowerController<S> {
         leader_id: SpuId,
         receiver: Receiver<FollowerReplicaControllerCommand>,
         spu_localstore: SharedSpuLocalStore,
-        followers_state: SharedFollowersState<S>,
+        followers_state: SharedFollowersBySpu<S>,
         config: SharedSpuConfig,
     ) -> Self {
         Self {
