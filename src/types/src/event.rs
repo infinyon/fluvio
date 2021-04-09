@@ -178,6 +178,14 @@ mod test {
 
     const ITER: u16 = 10;
 
+    cfg_if::cfg_if! {
+        if #[cfg(target_os = "macos")] {
+            const CONTROLLER_WAIT: u64 = 2000;
+        } else {
+            const CONTROLLER_WAIT: u64 = 500;
+        }
+    }
+
     struct TestController {
         listener: OffsetChangeListener,
         status: Arc<AtomicBool>,
@@ -239,7 +247,7 @@ mod test {
         }
 
         // wait for test controller to finish
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(CONTROLLER_WAIT)).await;
         debug!("test finished");
         assert!(status.load(Ordering::SeqCst), "status should be set");
 
@@ -264,7 +272,7 @@ mod test {
         }
 
         // wait for test controller to finish
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(CONTROLLER_WAIT)).await;
         debug!("test finished");
         assert!(status.load(Ordering::SeqCst), "status should be set");
 
