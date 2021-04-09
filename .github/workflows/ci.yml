@@ -334,10 +334,6 @@ jobs:
           kubectl get pods
           echo "kubectl get svc"
           kubectl get svc
-          echo "kubectl get spu"
-          kubectl get spu
-          echo "kubectl get spg"
-          kubectl get spg
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
         timeout-minutes: 5
