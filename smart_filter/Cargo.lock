@@ -29,7 +29,7 @@ checksum = "f6419af41d57055d753ec718ab9318e08d35378f0094b3ae4779ae15857951aa"
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "bytes",
  "cfg-if",
