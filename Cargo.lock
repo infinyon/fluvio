@@ -2564,14 +2564,13 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b594f3e94958cfcba4742e20f024dc4bdafb56af3e1aa3198fc80a14fe6656f"
+checksum = "bf4398c021446513c306633ae67ae6dfd7166e3d733f0ff19fe20c358446e71a"
 dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.8.3",
- "tracing",
 ]
 
 [[package]]
@@ -3899,9 +3898,9 @@ checksum = "1e81da0851ada1f3e9d4312c704aa4f8806f0f9d69faaf8df2f3464b4a9437c2"
 
 [[package]]
 name = "syn"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ce15dd3ed8aa2f8eeac4716d6ef5ab58b6b9256db41d7e1a0224c2788e8fd87"
+checksum = "48fe99c6bd8b1cc636890bcc071842de909d902c81ac7dab53ba33c421ab8ffb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4655,9 +4654,9 @@ dependencies = [
 
 [[package]]
 name = "wast"
-version = "35.0.1"
+version = "35.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a5800e9f86a1eae935e38bea11e60fd253f6d514d153fb39b3e5535a7b37b56"
+checksum = "2ef140f1b49946586078353a453a1d28ba90adfc54dde75710bc1931de204d68"
 dependencies = [
  "leb128",
 ]

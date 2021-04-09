@@ -26,12 +26,14 @@ scPod:
       memory: 512Mi
     limits:
       memory: 512Mi
+  nodeSelector: {}
 spuPod:
   resources:
     requests:
       memory: 256Mi
     limits:
       memory: 1Gi
+  nodeSelector: {}
 rbac:
   create: true
 serviceAccount:

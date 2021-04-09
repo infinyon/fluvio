@@ -247,6 +247,7 @@ mod k8_convert {
                 }],
                 volumes,
                 security_context: spu_k8_config.pod_security_context.clone(),
+                node_selector: Some(spu_k8_config.node_selector.clone()),
                 ..Default::default()
             },
         };

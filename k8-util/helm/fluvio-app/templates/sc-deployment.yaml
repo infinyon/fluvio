@@ -15,6 +15,8 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      nodeSelector:
+        {{- toYaml .Values.scPod.nodeSelector | nindent 8 }}
       containers:
         - name: fluvio-sc
           image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
