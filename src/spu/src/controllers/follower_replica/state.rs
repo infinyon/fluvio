@@ -1,4 +1,3 @@
-use std::sync::{RwLock,RwLockReadGuard,RwLockWriteGuard};
 use std::sync::Arc;
 use std::fmt::Debug;
 use std::collections::HashMap;
@@ -8,6 +7,7 @@ use std::ops::{Deref, DerefMut};
 use tracing::{debug, trace, error, warn};
 use tracing::instrument;
 use async_channel::{Sender, Receiver, bounded as channel};
+use async_rwlock::{RwLock,RwLockReadGuard,RwLockWriteGuard};
 use dashmap::DashMap;
 
 use flv_util::SimpleConcurrentBTreeMap;
@@ -236,16 +236,75 @@ impl FollowersState<FileReplica> {
         }
     }
 
+    
+
+    /// offsets for all replicas
+    pub(crate) fn replica_offsets(&self, leader: &SpuId) -> UpdateOffsetRequest {
+        let replica_indexes = self.replica_keys.read().unwrap();
+
+        let mut offsets = UpdateOffsetRequest::default();
+
+        if let Some(keys) = replica_indexes.get(leader) {
+            for replica_id in keys {
+                self.add_replica_offset_to(replica_id, &mut offsets);
+            }
+        }
+        offsets
+    }
+
+    
+    
+}
+
+pub type SharedFollowersBySpu<S> = FollowersBySpu<S>;
+
+/// list of followers by SPU
+#[derive(Debug)]
+pub struct FollowersBySpu<S> {
+    replicas: RwLock<HashMap<ReplicaKey,FollowerReplicaState<S>>>,
+    commands: Sender<FollowerReplicaControllerCommand>
+}
+
+impl <S> FollowersBySpu<S> {
+
+    async fn read(&self) -> RwLockReadGuard<'_,HashMap<ReplicaKey,FollowerReplicaState<S>>> {
+        self.replicas.read().await
+    }
+
+    async fn write(&self) -> RwLockWriteGuard<'_,HashMap<ReplicaKey,FollowerReplicaState<S>>> {
+        self.replicas.write().await
+    }
+
+    /// offsets for all replicas
+    pub(crate) fn replica_offsets(&self, leader: &SpuId) -> UpdateOffsetRequest {
+        let read = self.read();
+        let replica_indexes = self.replica_keys.read().unwrap();
+
+        let mut offsets = UpdateOffsetRequest::default();
+
+        if let Some(keys) = replica_indexes.get(leader) {
+            for replica_id in keys {
+                self.add_replica_offset_to(replica_id, &mut offsets);
+            }
+        }
+        offsets
+    }
+}
+
+impl FollowersBySpu<FileReplica> {
+
+   
     /// write records from leader to follower replica
     /// return updated offsets
     pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
         let mut offsets = UpdateOffsetRequest::default();
+        let mut writer = self.write().await;
         for topic_request in &mut req.topics {
             let topic = &topic_request.name;
             for partition_request in &mut topic_request.partitions {
                 let rep_id = partition_request.partition;
                 let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                if let Some(mut replica) = self.get_mut(&replica_key) {
+                if let Some(replica) = writer.get_mut(&replica_key) {
                     match replica
                         .write_recordsets(&mut partition_request.records)
                         .await
@@ -263,8 +322,9 @@ impl FollowersState<FileReplica> {
                                         error!("error writing replica high watermark: {}", err);
                                     }
                                 }
-                                drop(replica);
-                                self.add_replica_offset_to(&replica_key, &mut offsets);
+
+                                replica.add_replica_offset_to(&mut offsets);
+                                
                             }
                         }
                         Err(err) => error!(
@@ -283,57 +343,7 @@ impl FollowersState<FileReplica> {
         offsets
     }
 
-    /// offsets for all replicas
-    pub(crate) fn replica_offsets(&self, leader: &SpuId) -> UpdateOffsetRequest {
-        let replica_indexes = self.replica_keys.read().unwrap();
-
-        let mut offsets = UpdateOffsetRequest::default();
-
-        if let Some(keys) = replica_indexes.get(leader) {
-            for replica_id in keys {
-                self.add_replica_offset_to(replica_id, &mut offsets);
-            }
-        }
-        offsets
-    }
-
-    fn add_replica_offset_to(&self, replica_id: &ReplicaKey, offsets: &mut UpdateOffsetRequest) {
-        if let Some(replica) = self.get(replica_id) {
-            let storage = replica.storage();
-
-            let replica_request = ReplicaOffsetRequest {
-                replica: replica_id.clone(),
-                leo: storage.get_leo(),
-                hw: storage.get_hw(),
-            };
-            offsets.replicas.push(replica_request)
-        } else {
-            error!(
-                "no follow replica found: {}, should not be possible",
-                replica_id,
-            );
-        }
-    }
-}
-
-pub type SharedFollowersBySpu<S> = FollowersBySpu<S>;
-
-/// list of followers by SPU
-#[derive(Debug)]
-pub struct FollowersBySpu<S> {
-    replicas: RwLock<HashMap<ReplicaKey,FollowerReplicaState<S>>>,
-    commands: Sender<FollowerReplicaControllerCommand>
-}
-
-impl <S> FollowersBySpu<S> {
-
-    fn write<'a>(&'_ self) -> RwLockReadGuard<'_,HashMap<ReplicaKey,FollowerReplicaState<S>>> {
-        self.replicas.write()
-    }
-
-    fn close(&self)  {
-        self.commands.close()
-    }
+    
 }
 
 /// State for Follower Replica Controller.
@@ -357,6 +367,7 @@ impl<S> FollowerReplicaState<S> {
     pub fn storage_owned(self) -> S {
         self.storage
     }
+
 }
 
 impl FollowerReplicaState<FileReplica> {
@@ -413,6 +424,18 @@ impl FollowerReplicaState<FileReplica> {
 
     pub async fn remove(self) -> Result<(), StorageError> {
         self.storage.remove().await
+    }
+
+    /// add replica offsets to request
+    fn add_replica_offset_to(&self, offsets: &mut UpdateOffsetRequest) {
+        let storage = self.storage();
+
+        let replica_request = ReplicaOffsetRequest {
+            replica: self.replica.clone(),
+            leo: storage.get_leo(),
+            hw: storage.get_hw(),
+        };
+        offsets.replicas.push(replica_request);
     }
 }
 
