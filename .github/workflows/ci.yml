@@ -13,7 +13,8 @@ on:
         default: ''
 
 env:
-  VERBOSE: ${{ github.events.input.verbose }}
+#  VERBOSE: ${{ github.events.input.verbose }}
+  VERBOSE: --verbose
 
 jobs:
   cancel_previous_runs:
@@ -198,8 +199,6 @@ jobs:
           minikube status
       - name: Build Test
         run: make RELEASE=release build_test
-      - name: Print Fluvio version
-        run: ./target/release/fluvio version
 
         # Flow for local cluster test
       - name: Setup installation pre-requisites (local)
