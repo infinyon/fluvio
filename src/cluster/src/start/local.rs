@@ -469,6 +469,7 @@ impl LocalInstaller {
         Ok((LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT))
     }
 
+    #[instrument(skip(self, cmd, tls, port))]
     fn set_server_tls(
         &self,
         cmd: &mut Command,
@@ -505,6 +506,7 @@ impl LocalInstaller {
     }
 
     /// set local profile
+    #[instrument(skip(self))]
     fn set_profile(&self) -> Result<String, LocalInstallError> {
         let local_addr = LOCAL_SC_ADDRESS.to_owned();
         let mut config_file = ConfigFile::load_default_or_new()?;
@@ -542,6 +544,7 @@ impl LocalInstaller {
         Ok(format!("local context is set to: {}", local_addr))
     }
 
+    #[instrument(skip(self))]
     async fn launch_spu_group(&self) -> Result<(), LocalInstallError> {
         use k8_client::load_and_share;
         let client = load_and_share()?;
@@ -639,6 +642,7 @@ impl LocalInstaller {
     }
 
     /// Check to ensure SPUs are all running
+    #[instrument(skip(self))]
     async fn confirm_spu(&self, spu: u16) -> Result<(), LocalInstallError> {
         use fluvio::Fluvio;
 
