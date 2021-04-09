@@ -35,9 +35,9 @@ const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const LOCAL_SC_PORT: u16 = 9003;
 
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
-    let ext_dir = UserDirs::new().map(|it| it.home_dir().join(".fluvio/extensions"));
-    which::which_in("fluvio-run", ext_dir, ".")
-        .or_else(|_| which::which("fluvio-run"))
+    let ext_dir = UserDirs::new().map(|it| it.home_dir().join(".fluvio/bin"));
+    which::which_in("fluvio", ext_dir, ".")
+        .or_else(|_| which::which("fluvio"))
         .ok()
 });
 
@@ -453,7 +453,7 @@ impl LocalInstaller {
                 .launcher_path()
                 .ok_or(LocalInstallError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
-            cmd.arg("sc");
+            cmd.arg("run").arg("sc");
             cmd
         };
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
@@ -611,7 +611,7 @@ impl LocalInstaller {
                 .launcher_path()
                 .ok_or(LocalInstallError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
-            cmd.arg("spu");
+            cmd.arg("run").arg("spu");
             cmd
         };
 

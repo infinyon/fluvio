@@ -191,6 +191,7 @@ impl ClusterUninstaller {
         Command::new("pkill")
             .arg("-f")
             .arg("fluvio cluster run")
+            .arg("fluvio-run")
             .output()
             .map_err(UninstallError::IoError)?;
         // delete fluvio file
