@@ -13,6 +13,5 @@ mod common {
     use ::fluvio_controlplane_metadata::topic::TopicSpec;
     use crate::stores::actions::WSAction;
 
-    #[allow(clippy::upper_case_acronyms)]
     pub type TopicWSAction = WSAction<TopicSpec>;
 }

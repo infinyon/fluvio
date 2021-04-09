@@ -11,7 +11,6 @@ use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::fetch_stream_request::FetchStreamRequest;
 
-#[allow(clippy::upper_case_acronyms)]
 #[fluvio(encode_discriminant)]
 #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]

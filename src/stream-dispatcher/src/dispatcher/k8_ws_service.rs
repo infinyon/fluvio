@@ -18,7 +18,6 @@ use crate::store::k8::{K8ExtendedSpec, K8MetaItem};
 
 use crate::store::*;
 
-#[allow(clippy::upper_case_acronyms)]
 pub struct K8WSUpdateService<C, S> {
     client: SharedClient<C>,
     data: PhantomData<S>,

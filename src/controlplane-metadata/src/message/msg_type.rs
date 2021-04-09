@@ -16,7 +16,6 @@ use crate::store::actions::*;
 use crate::core::*;
 use crate::store::*;
 
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Decode, Encode, Debug, PartialEq, Clone)]
 pub enum MsgType {
     UPDATE,

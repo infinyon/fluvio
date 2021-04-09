@@ -7,7 +7,6 @@ use crate::store::*;
 
 /// changes that will be applied to store
 /// add/update has same effect
-#[allow(clippy::upper_case_acronyms)]
 pub enum LSUpdate<S, C>
 where
     S: Spec,
@@ -19,7 +18,6 @@ where
 }
 
 /// changes that happen in the store
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Clone)]
 pub enum LSChange<S, C>
 where
