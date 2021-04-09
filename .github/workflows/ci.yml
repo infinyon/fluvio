@@ -92,6 +92,7 @@ jobs:
       SCCACHE_CACHE_SIZE: 300M
       SCCACHE_DIR: /home/runner/.cache/sccache
       SCCACHE_IDLE_TIMEOUT: 0
+      FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
       - name: Install sccache
