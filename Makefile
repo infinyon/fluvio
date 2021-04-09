@@ -29,10 +29,13 @@ install_tools_mac:
 	brew install yq
 	brew install helm
 
-build_test:	TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
-build_test:	TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
+build_test: TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
+build_test: TEST_RELEASE_PATH=$(if $(RELEASE),target/release,target/debug)
+build_test: TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
 build_test:	install_test_target
+	export PATH="${TEST_RELEASE_PATH}:${PATH}"
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio $(VERBOSE)
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio-run $(VERBOSE)
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test $(VERBOSE)
 
 install_test_target:
