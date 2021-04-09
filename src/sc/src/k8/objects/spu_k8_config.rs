@@ -46,12 +46,11 @@ impl ScK8Config {
                 None
             };
 
-        let node_selector =
-            if let Some(node_selector_string) = data.remove("nodeSelector") {
-                serde_json::from_str(&node_selector_string)?
-            } else {
-                HashMap::new()
-            };
+        let node_selector = if let Some(node_selector_string) = data.remove("nodeSelector") {
+            serde_json::from_str(&node_selector_string)?
+        } else {
+            HashMap::new()
+        };
 
         let lb_service_annotations =
             if let Some(lb_service_annotations) = data.remove("lbServiceAnnotations") {
