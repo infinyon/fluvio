@@ -228,7 +228,7 @@ fluvio_image: fluvio_bin_linux
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
 	cargo build $(RELEASE_FLAG)   \
-		--bin fluvio_runner_local_cli --target $(TARGET_LINUX)
+		--bin fluvio-run --target $(TARGET_LINUX)
 
 make publish_fluvio_image:
 	curl \
