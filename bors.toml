@@ -11,3 +11,4 @@ status = [
 use_squash_merge = true
 delete_merged_branches = true
 timeout_sec = 1800 # 30 mins
+required_approvals = 1
