@@ -5,6 +5,7 @@ use crate::core::*;
 use crate::store::*;
 use crate::store::k8::K8MetaItem;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(PartialEq, Clone)]
 pub enum WSAction<S>
 where

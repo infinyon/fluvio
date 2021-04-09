@@ -328,6 +328,7 @@ impl Endpoint {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Decode, Encode, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EncryptionEnum {

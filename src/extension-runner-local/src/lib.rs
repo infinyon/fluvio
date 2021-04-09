@@ -10,9 +10,11 @@ use fluvio_sc::cli::ScOpt;
 #[derive(Debug, StructOpt)]
 pub enum RunCmd {
     /// Run a new Streaming Processing Unit (SPU)
+    #[allow(clippy::upper_case_acronyms)]
     #[structopt(name = "spu")]
     SPU(SpuOpt),
     /// Run a new Streaming Controller (SC)
+    #[allow(clippy::upper_case_acronyms)]
     #[structopt(name = "sc")]
     SC(ScOpt),
 }

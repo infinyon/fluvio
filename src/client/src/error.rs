@@ -7,12 +7,14 @@ use crate::config::ConfigError;
 use semver::Version;
 
 /// Possible errors that may arise when using Fluvio
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Error, Debug)]
 pub enum FluvioError {
     #[error("Topic not found: {0}")]
     TopicNotFound(String),
     #[error("Partition not found: {0}-{1}")]
     PartitionNotFound(String, i32),
+    #[allow(clippy::upper_case_acronyms)]
     #[error("Spu not found: {0}")]
     SPUNotFound(i32),
     #[error(transparent)]

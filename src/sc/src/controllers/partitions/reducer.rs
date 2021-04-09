@@ -17,6 +17,7 @@ use crate::stores::partition::{
 use crate::stores::spu::{SpuAdminStore, SpuAdminMd, SpuLocalStorePolicy};
 use crate::stores::actions::WSAction;
 
+#[allow(clippy::upper_case_acronyms)]
 type PartitionWSAction = WSAction<PartitionSpec>;
 
 /// Given This is a generated partition from TopicController, It will try to allocate assign replicas
