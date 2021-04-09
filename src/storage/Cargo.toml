@@ -6,6 +6,7 @@ authors = ["fluvio.io"]
 description = "Storage for Fluvio platform"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
+publish = false
 
 [[bin]]
 name = "storage-cli"
