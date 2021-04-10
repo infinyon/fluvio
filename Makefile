@@ -23,6 +23,9 @@ SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 SKIP_CHECK=--skip-checks
 EXTRA_ARG=
 
+TEST_RELEASE_PATH=$(if $(RELEASE),target/release,target/debug)
+export PATH := $(shell pwd)/${TEST_RELEASE_PATH}:${PATH}
+
 
 # install all tools required
 install_tools_mac:
@@ -30,10 +33,8 @@ install_tools_mac:
 	brew install helm
 
 build_test: TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
-build_test: TEST_RELEASE_PATH=$(if $(RELEASE),target/release,target/debug)
 build_test: TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
 build_test:	install_test_target
-	export PATH="$(shell pwd)/${TEST_RELEASE_PATH}:${PATH}"
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio $(VERBOSE)
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio-run $(VERBOSE)
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test $(VERBOSE)
