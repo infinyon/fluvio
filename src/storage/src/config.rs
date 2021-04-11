@@ -7,8 +7,9 @@ use serde::Deserialize;
 use fluvio_types::defaults::{SPU_LOG_INDEX_MAX_BYTES, SPU_LOG_BASE_DIR};
 use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
-
 use dataplane::Size;
+
+use crate::ReplicaStorageConfig; 
 
 pub const DEFAULT_FLUSH_WRITE_COUNT: u32 = 1;
 pub const DEFAULT_FLUSH_IDLE_MSEC: u32 = 0;
@@ -39,6 +40,10 @@ impl fmt::Display for ConfigOption {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "storage config at: {:#?}", self.base_dir)
     }
+}
+
+impl ReplicaStorageConfig for ConfigOption {
+
 }
 
 fn default_base_dir() -> PathBuf {

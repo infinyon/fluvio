@@ -1,6 +1,5 @@
 mod global_context;
 mod store;
-pub(crate) mod storage;
 
 pub mod spus;
 pub mod replica;

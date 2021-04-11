@@ -21,7 +21,7 @@ mod replica_test {
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
     use crate::services::create_internal_server;
-    use crate::sc::{ScSinkMessageChannel};
+    use crate::control_plane::{ScSinkMessageChannel};
 
     const LEADER: SpuId = 5001;
     const FOLLOWER: SpuId = 5002;

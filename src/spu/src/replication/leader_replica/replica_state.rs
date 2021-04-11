@@ -14,23 +14,23 @@ use async_channel::{Sender, Receiver, SendError};
 use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
-use dataplane::core::Encoder;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, StorageError, SlicePartitionResponse, ReplicaStorage};
-use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
+use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
+use fluvio_types::{SpuId};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::{
     config::{Log, SpuConfig},
-    sc::SharedSinkMessageChannel,
-    core::{SharedSpuConfig, storage::clear_replica_storage},
+    control_plane::SharedSinkMessageChannel,
+    core::{SharedSpuConfig},
 };
-use crate::core::storage::{create_replica_storage};
+
 use crate::replication::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
+use crate::storage::SharableReplicaStorage;
 
 pub type SharedLeaderState<S> = Arc<LeaderReplicaState<S>>;
 pub type SharedFileLeaderState = Arc<LeaderReplicaState<FileReplica>>;
@@ -41,11 +41,8 @@ use super::LeaderReplicaControllerCommand;
 pub struct LeaderReplicaState<S> {
     replica_id: ReplicaKey,
     spu_config: Arc<SpuConfig>,
-    leader_id: SpuId,
-    storage: RwLock<S>,
+    storage: SharableReplicaStorage<S>,
     followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
-    leo: Arc<OffsetPublisher>,
-    hw: Arc<OffsetPublisher>,
     commands: Sender<LeaderReplicaControllerCommand>,
 }
 
@@ -85,27 +82,7 @@ where
         }
     }
 
-    pub fn replica_id(&self) -> &ReplicaKey {
-        &self.replica_id
-    }
-
-    /// log end offset
-    pub fn leo(&self) -> Offset {
-        self.leo.current_value()
-    }
-
-    /// high watermark
-    pub fn hw(&self) -> Offset {
-        self.hw.current_value()
-    }
-
-    /// listen to offset based on isolation
-    pub fn offset_listener(&self, isolation: &Isolation) -> OffsetChangeListener {
-        match isolation {
-            Isolation::ReadCommitted => self.hw.change_listner(),
-            Isolation::ReadUncommitted => self.leo.change_listner(),
-        }
-    }
+    
 
     // probably only used in the test
     /*
@@ -289,54 +266,13 @@ where
     }
 
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
-        debug!(
-            replica = %self.replica_id,
-            leo = self.leo(),
-            hw = self.hw(),
-            records = records.total_records(),
-            size = records.write_size(0)
-        );
-        let hw_update = self.spu_config.replication.min_in_sync_replicas == 1;
-        let now = Instant::now();
-        let mut writer = self.storage.write().await;
-        let _offset_updates = writer.write_recordset(records, hw_update).await?;
-        debug!(write_time_ms = %now.elapsed().as_millis());
-
-        let leo = writer.get_leo();
-        debug!(leo, "updated leo");
-        self.leo.update(leo);
-        if hw_update {
-            let hw = writer.get_hw();
-            debug!(hw, "updated hw");
-            self.hw.update(hw);
-        }
-
-        Ok(())
+        
+        self.storage.write_record_set(records, self.spu_config.replication.min_in_sync_replicas == 1).await
+        
     }
 
-    pub async fn update_hw(&self, hw: Offset) -> Result<bool, StorageError> {
-        let mut writer = self.storage.write().await;
-        writer.update_high_watermark(hw).await
-    }
 
-    /// read records into partition response
-    /// return hw and leo
-    pub async fn read_records<P>(
-        &self,
-        offset: Offset,
-        max_len: u32,
-        isolation: Isolation,
-        partition_response: &mut P,
-    ) -> (Offset, Offset)
-    where
-        P: SlicePartitionResponse + Send,
-    {
-        let read_storage = self.storage.read().await;
-
-        read_storage
-            .read_partition_slice(offset, max_len, isolation, partition_response)
-            .await
-    }
+    
 }
 
 impl LeaderReplicaState<FileReplica> {

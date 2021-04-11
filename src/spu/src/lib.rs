@@ -8,8 +8,8 @@ cfg_if::cfg_if! {
         mod start;
         mod replication;
         mod smart_stream;
+        mod control_plane;
         mod storage;
-        mod sc;
         pub use start::main_loop;
     }
 }

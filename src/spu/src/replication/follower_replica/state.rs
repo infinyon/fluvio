@@ -17,13 +17,13 @@ use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::{
-    config::SpuConfig,
-    core::{storage::create_replica_storage},
+    config::SpuConfig
 };
 use crate::replication::leader_replica::ReplicaOffsetRequest;
 use crate::replication::follower_replica::ReplicaFollowerController;
 use crate::config::Log;
 use crate::core::DefaultSharedGlobalContext;
+use crate::storage::SharableReplicaStorage;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 pub type SharedFollowerReplicaState<S> = Arc<FollowerReplicaState<S>>;
@@ -298,113 +298,39 @@ impl FollowersBySpu {
 /// State for Follower Replica Controller
 /// This can be cloned
 #[derive(Debug,Clone)]
-pub struct FollowerReplicaState<S> {
-    leader: SpuId,
-    replica: ReplicaKey,
-    storage: Arc<RwLock<S>>,
-    leo: Arc<OffsetPublisher>,
-    hw: Arc<OffsetPublisher>,
-}
+pub struct FollowerReplicaState<S>(SharableReplicaStorage<S>);
 
-impl<S> FollowerReplicaState<S> {
-    pub fn leader(&self) -> &SpuId {
-        &self.leader
-    }
+impl<S> Deref for FollowerReplicaState<S> {
+    type Target = SharableReplicaStorage<S>;
 
-    /// readable ref to storage
-    async fn storage(&self) -> RwLockReadGuard<'_, S> {
-        self.storage.read().await
-    }
-
-    /// writable ref to storage
-    async fn mut_storage(&self) -> RwLockWriteGuard<'_, S> {
-        self.storage.write().await
-    }
-
-    pub fn storage_owned(self) -> RwLock<S> {
-        self.storage
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl FollowerReplicaState<FileReplica> {
-    pub async fn new(
-        local_spu: SpuId,
-        leader: SpuId,
-        replica: ReplicaKey,
-        config: &Log,
-    ) -> Result<Self, StorageError> {
-        debug!(
-            "creating follower replica: local_spu: {}, replica: {}, leader: {}, base_dir: {}",
-            local_spu,
-            replica,
-            leader,
-            config.base_dir.display()
-        );
-
-        let storage = create_replica_storage(local_spu, &replica, config).await?;
-        let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
-        let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
-
-        Ok(Self {
-            leader,
-            replica,
-            storage: RwLock::new(storage),
-            leo,
-            hw,
-        })
+impl<S> DerefMut for FollowerReplicaState<S>  {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
+}
 
-    pub fn leo(&self) -> Offset {
-        self.leo.current_value()
-    }
-
-    pub fn hw(&self) -> Offset {
-        self.hw.current_value()
-    }
-
+impl <S> FollowerReplicaState<S>  where S: ReplicaStorage {
+    
+    
     /// write records
     /// if true, records's base offset matches,
     ///    false,invalid record sets has been sent
     pub async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
-        debug!(
-            replica = %self.replica,
-            records = records.total_records(),
-            size = records.write_size(0),
-            base_offset = records.base_offset(),
-            "writing records"
-        );
 
-        let mut writable = self.mut_storage().await;
-
-        // check to ensure base offset should be same as leo
-        let storage_leo = writable.get_leo();
-        if records.base_offset() != storage_leo {
-            warn!(storage_leo, "storage leo is not same as base offset");
-            Ok(false)
-        } else {
-            writable.write_recordset(records, false).await?;
-            // update our leo
-            let leo = writable.get_leo();
-            debug!(leo, "updated leo");
-            self.leo.update(leo);
-            Ok(true)
-        }
+        self.0.write_record_set(records, false)
+        
     }
 
-    pub async fn update_high_watermark(&self, hw: Offset) -> Result<bool, StorageError> {
-        let mut writable = self.mut_storage().await;
-        writable.update_high_watermark(hw).await
-    }
-
-    /// remove storage
-    pub async fn remove(&self) -> Result<(), StorageError> {
-        self.mut_storage().await.remove().await
-    }
 
     /// convert to offset request
     pub fn as_offset_request(&self) -> ReplicaOffsetRequest {
         ReplicaOffsetRequest {
-            replica: self.replica.clone(),
+            replica: self.0.id().to_owned(),
             leo: self.leo(),
             hw: self.hw(),
         }

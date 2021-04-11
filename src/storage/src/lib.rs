@@ -26,10 +26,11 @@ pub use inner::*;
 mod inner {
     use async_trait::async_trait;
 
-    use dataplane::{ErrorCode, Offset, Isolation};
+    use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey};
     use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
+    use fluvio_types::SpuId;
 
     use crate::StorageError;
 
@@ -69,8 +70,21 @@ mod inner {
         }
     }
 
+    /// some storage configuration
+    pub trait ReplicaStorageConfig {
+
+    }
+
     #[async_trait]
-    pub trait ReplicaStorage {
+    pub trait ReplicaStorage: Sized {
+
+        type Config: ReplicaStorageConfig;
+
+        /// create new storage area,
+        /// if there exists replica state, this should restore state
+        async fn create(replica: &ReplicaKey,spu: SpuId,config: &Self::Config) -> Result<Self,StorageError>;
+
+
         /// high water mark offset (records that has been replicated)
         fn get_hw(&self) -> Offset;
 
@@ -97,5 +111,8 @@ mod inner {
         ) -> Result<(), StorageError>;
 
         async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError>;
+
+        /// permanently remove
+        async fn remove(self) -> Result<(), StorageError>;
     }
 }
