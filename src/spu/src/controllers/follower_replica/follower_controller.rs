@@ -6,7 +6,6 @@ use tracing::instrument;
 use tokio::select;
 use futures_util::StreamExt;
 
-
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use fluvio_socket::FlvSocket;
@@ -21,9 +20,8 @@ use crate::{controllers::leader_replica::UpdateOffsetRequest, core::SharedSpuCon
 use crate::services::internal::FetchStreamRequest;
 use crate::core::spus::SharedSpuLocalStore;
 
-
 use super::{FollowersState, state::FollowersBySpu};
-use super::state::{FollowerReplicaState,SharedFollowersState};
+use super::state::{SharedFollowersState, SharedFollowerReplicaState};
 use super::api_key::{FollowerPeerApiEnum};
 use super::sync::{DefaultSyncRequest};
 use super::peer_api::FollowerPeerRequest;
@@ -38,9 +36,8 @@ pub struct ReplicaFollowerController<S> {
     spus: SharedSpuLocalStore,
     states: SharedFollowersState<S>,
     config: SharedSpuConfig,
-    spu_ctx: Arc<FollowersBySpu>
+    spu_ctx: Arc<FollowersBySpu>,
 }
-
 
 impl ReplicaFollowerController<FileReplica> {
     pub fn run(
@@ -48,19 +45,17 @@ impl ReplicaFollowerController<FileReplica> {
         spus: SharedSpuLocalStore,
         states: SharedFollowersState<FileReplica>,
         spu_ctx: Arc<FollowersBySpu>,
-        config: SharedSpuConfig
+        config: SharedSpuConfig,
     ) {
-
-        let controller= Self {
+        let controller = Self {
             leader,
             spus,
             states,
             spu_ctx,
-            config
+            config,
         };
         spawn(controller.dispatch_loop());
     }
-
 
     fn local_spu_id(&self) -> SpuId {
         self.config.id()
@@ -70,16 +65,14 @@ impl ReplicaFollowerController<FileReplica> {
         name = "FollowerController",
         skip(self),
         fields (
-            leader = self.leader_id
+            leader = self.leader
         )
     )]
     async fn dispatch_loop(mut self) {
-
         loop {
-            
             let socket = self.create_socket_to_leader().await;
-               
-            match self.sync_batches_to_leader(socket).await {
+
+            match self.sync_with_leader(socket).await {
                 Ok(terminate_flag) => {
                     if terminate_flag {
                         debug!("end command has received, terminating connection to leader");
@@ -90,24 +83,14 @@ impl ReplicaFollowerController<FileReplica> {
             }
 
             debug!("lost connection to leader, sleeping 5 seconds and will retry it");
-                // 5 seconds is heuristic value, may change in the future or could be dynamic
-                // depends on back off algorithm
-             sleep(Duration::from_secs(5)).await;
-            
+            // 5 seconds is heuristic value, may change in the future or could be dynamic
+            // depends on back off algorithm
+            sleep(Duration::from_secs(5)).await;
         }
         debug!("shutting down");
     }
 
-    #[instrument(
-        name = "FollowerController",
-        skip(self),
-        fields (
-            leader = self.leader_id,
-            socket = socket.id()
-        )
-    )]
-    async fn sync_batches_to_leader(&mut self, mut socket: FlvSocket) -> Result<bool, FlvSocketError> {
-
+    async fn sync_with_leader(&mut self, mut socket: FlvSocket) -> Result<bool, FlvSocketError> {
         let mut replicas = ReplicasBySpu::default();
 
         self.send_fetch_stream_request(&mut socket).await?;
@@ -115,8 +98,7 @@ impl ReplicaFollowerController<FileReplica> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<FollowerPeerRequest, FollowerPeerApiEnum>();
 
-        let event_listener = self.sync.change_listner();
-       
+        let mut event_listener = self.spu_ctx.events.change_listner();
 
         loop {
             debug!("waiting request from leader");
@@ -124,24 +106,24 @@ impl ReplicaFollowerController<FileReplica> {
             select! {
                 _ = (sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC))) => {
                     debug!("timer fired - kickoff sync offsets to leader");
-                    self.send_offsets_to_leader(&mut sink,self.states.local_spu_id()).await?;
+                    self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
                 },
 
                 _ = event_listener.listen() => {
                     // if out sync counter changes, then we need to re-compute replicas and send offsets again
                     replicas = ReplicasBySpu::filter_from(&self.states,self.leader);
-                    self.send_offsets_to_leader(&mut sink,self.states.local_spu_id()).await?;
+                    self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
                 }
 
-                
+
                 api_msg = api_stream.next() => {
                     if let Some(req_msg_res) = api_msg {
                         let req_msg = req_msg_res?;
-                        
+
                         match req_msg {
-                            FollowerPeerRequest::SyncRecords(sync_request) => self.write_to_follower_replica(&mut sink,sync_request.request).await,
+                            FollowerPeerRequest::SyncRecords(sync_request) => self.write_to_follower_replica(&mut sink,sync_request.request).await?,
                         }
-                        
+
                     } else {
                         debug!("leader socket has terminated");
                         return Ok(false);
@@ -165,10 +147,14 @@ impl ReplicaFollowerController<FileReplica> {
         }
     }
 
-    async fn write_to_follower_replica(&self, sink: &mut FlvSink, req: DefaultSyncRequest) {
+    async fn write_to_follower_replica(
+        &self,
+        sink: &mut FlvSink,
+        req: DefaultSyncRequest,
+    ) -> Result<(), FlvSocketError> {
         debug!("received sync req");
-        let offsets = self.followers_state.write_topics(req).await;
-        self.sync_offsets_to_leader(sink, offsets).await;
+        let offsets = self.write_topics(req).await;
+        self.send_offsets_to_leader(sink, offsets).await
     }
 
     /// connect to leader, if can't connect try until we succeed
@@ -177,30 +163,27 @@ impl ReplicaFollowerController<FileReplica> {
         let leader_spu = self.get_spu().await;
         let leader_endpoint = leader_spu.private_endpoint.to_string();
 
-        let counter = 0;
+        let mut counter = 0;
         loop {
             debug!(
                 %leader_endpoint,
                 counter,
                 "trying to create socket to leader",
             );
-             
+
             match FlvSocket::connect(&leader_endpoint).await {
                 Ok(socket) => {
-                    debug!(
-                        "connected to leader");
-                    return socket
+                    debug!("connected to leader");
+                    return socket;
                 }
 
-                Err(err) =>  {
-                    error!("error connecting err: {}, sleeping ",err);
+                Err(err) => {
+                    error!("error connecting err: {}, sleeping ", err);
                     debug!("sleeping 1 seconds to connect to leader");
                     sleep(Duration::from_secs(5)).await;
                     counter += 1;
                 }
-
             }
-
         }
     }
 
@@ -226,7 +209,7 @@ impl ReplicaFollowerController<FileReplica> {
         Ok(())
     }
 
-    /* 
+    /*
     /// create new replica if doesn't exist yet
     async fn update_replica(&self, replica_msg: Replica) {
         debug!(?replica_msg, "received update replica",);
@@ -265,26 +248,25 @@ impl ReplicaFollowerController<FileReplica> {
     /// return updated offsets
     pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
         let mut offsets = UpdateOffsetRequest::default();
-        let mut writer = self.write().await;
+
         for topic_request in &mut req.topics {
             let topic = &topic_request.name;
             for partition_request in &mut topic_request.partitions {
                 let rep_id = partition_request.partition;
                 let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                if let Some(replica) = writer.get_mut(&replica_key) {
+                if let Some(replica) = self.states.get(&replica_key) {
                     match replica
                         .write_recordsets(&mut partition_request.records)
                         .await
                     {
                         Ok(valid_record) => {
                             if valid_record {
-                                let follow_leo = replica.storage().get_leo();
+                                let follow_leo = replica.leo();
                                 let leader_hw = partition_request.hw;
                                 debug!(follow_leo, leader_hw, "finish writing");
                                 if follow_leo == leader_hw {
                                     debug!("follow leo and leader hw is same, updating hw");
-                                    if let Err(err) =
-                                        replica.mut_storage().update_high_watermark(leader_hw).await
+                                    if let Err(err) = replica.update_high_watermark(leader_hw).await
                                     {
                                         error!("error writing replica high watermark: {}", err);
                                     }
@@ -309,38 +291,56 @@ impl ReplicaFollowerController<FileReplica> {
         offsets
     }
 
+    async fn sync_all_offsets_to_leader(
+        &self,
+        sink: &mut FlvSink,
+        spu_replicas: &ReplicasBySpu,
+    ) -> Result<(), FlvSocketError> {
+        self.send_offsets_to_leader(sink, spu_replicas.replica_offsets())
+            .await
+    }
 
+    /// send offset to leader
+    async fn send_offsets_to_leader(
+        &self,
+        sink: &mut FlvSink,
+        offsets: UpdateOffsetRequest,
+    ) -> Result<(), FlvSocketError> {
+        let follower_id = self.config.id();
+
+        let req_msg = RequestMessage::new_request(offsets)
+            .set_client_id(format!("follower: {}", follower_id));
+
+        trace!(?req_msg, "sending offsets leader");
+
+        sink.send_request(&req_msg).await
+    }
 }
-
 
 /// replicas by spu which is used by follows controller
 #[derive(Default)]
-struct ReplicasBySpu(HashMap<ReplicaKey,FollowerReplicaState<FileReplica>>);
+struct ReplicasBySpu(HashMap<ReplicaKey, SharedFollowerReplicaState<FileReplica>>);
 
 impl ReplicasBySpu {
-
     /// filter followers from followers state
-    fn filter_from(states: &FollowersState<FileReplica>,leader: SpuId,) {
-
+    fn filter_from(states: &FollowersState<FileReplica>, leader: SpuId) -> Self {
         let replicas = HashMap::new();
-        
+
         for rep_ref in states.iter() {
-            if rep_ref.value.spu == leader {
-                replicas.insert(rep_ref.key.clone(),rep_ref.value.clone());
+            if rep_ref.value().leader() == leader {
+                replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
             }
         }
 
-        debug!( replica_count = replicas.len(),
-            "compute replicas");
+        debug!(replica_count = replicas.len(), "compute replicas");
 
         Self(replicas)
     }
 
-
     // generate offset requests
     fn replica_offsets(&self) -> UpdateOffsetRequest {
-       
         let replicas = self
+            .0
             .values()
             .map(|replica| replica.as_offset_request())
             .collect();
@@ -349,12 +349,15 @@ impl ReplicasBySpu {
     }
 
     /// send offset to leader
-    async fn send_offsets_to_leader(&self, follower: SpuId,sink: &mut FlvSink) -> Result<(),FlvSocketError> {
+    async fn send_offsets_to_leader(
+        &self,
+        follower: SpuId,
+        sink: &mut FlvSink,
+    ) -> Result<(), FlvSocketError> {
+        let request = self.replica_offsets();
 
-        let request= self.replica_offsets();
-        
-        let req_msg = RequestMessage::new_request(request)
-            .set_client_id(format!("follower: {}", follower));
+        let req_msg =
+            RequestMessage::new_request(request).set_client_id(format!("follower: {}", follower));
 
         trace!(?req_msg, "sending offsets leader");
 

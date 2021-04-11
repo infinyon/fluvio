@@ -22,7 +22,11 @@ use fluvio_storage::{FileReplica, StorageError, SlicePartitionResponse, ReplicaS
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{config::{Log, SpuConfig}, controllers::sc::SharedSinkMessageChannel, core::{SharedSpuConfig, storage::clear_replica_storage}};
+use crate::{
+    config::{Log, SpuConfig},
+    controllers::sc::SharedSinkMessageChannel,
+    core::{SharedSpuConfig, storage::clear_replica_storage},
+};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
