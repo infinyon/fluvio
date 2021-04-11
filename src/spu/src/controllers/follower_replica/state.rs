@@ -1,9 +1,10 @@
 use std::sync::Arc;
 use std::fmt::Debug;
+use std::collections::HashMap;
 
 use std::ops::{Deref, DerefMut};
 
-use tracing::{debug, warn};
+use tracing::{debug, warn,error};
 use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use dashmap::DashMap;
 
@@ -94,7 +95,7 @@ impl DerefMut for ReplicaKeys {
 #[derive(Debug)]
 pub struct FollowersState<S> {
     states: DashMap<ReplicaKey, SharedFollowerReplicaState<S>>,
-    leaders: DashMap<SpuId, FollowersBySpu>,
+    leaders: RwLock<HashMap<SpuId, Arc<FollowersBySpu>>>,
 }
 
 impl<S> Deref for FollowersState<S> {
@@ -115,9 +116,10 @@ impl<S> FollowersState<S> {
     pub fn new_shared() -> Arc<Self> {
         Arc::new(Self {
             states: DashMap::new(),
-            leaders: DashMap::new(),
+            leaders: RwLock::new(HashMap::new()),
         })
     }
+    
 
     /*
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {
@@ -168,8 +170,8 @@ impl FollowersState<FileReplica> {
     /// otherwise check if there is existing state, if exists return none otherwise create new
     pub async fn add_replica(
         self: Arc<Self>,
-        replica: Replica,
         ctx: DefaultSharedGlobalContext,
+        replica: Replica
     ) -> Result<Option<SharedFollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
         let config = ctx.config_owned();
@@ -189,12 +191,14 @@ impl FollowersState<FileReplica> {
                 .await?;
             self.states.insert(replica.id, replica_state.clone());
 
+            let mut leaders = self.leaders.write().await;
             // check if we have controllers
-            if let Some(leaders) = self.leaders.get(&leader) {
+            if let Some(leaders) = leaders.get(&leader) {
                 leaders.sync();
             } else {
                 // don't have leader, so we need to create
                 let followers_spu = FollowersBySpu::shared(leader);
+                leaders.insert(leader,followers_spu.clone());
                 ReplicaFollowerController::run(
                     leader,
                     ctx.spu_localstore_owned(),
@@ -208,7 +212,56 @@ impl FollowersState<FileReplica> {
         }
     }
 
-    pub async fn remove_replica(&self, replica_id: &ReplicaKey) {}
+    /// remove replica
+    /// if there are no more replicas per leader
+    /// then we shutdown controller
+    pub async fn remove_replica(
+        &self,
+        leader: &SpuId,
+        key: &ReplicaKey,
+    ) -> Option<SharedFollowerReplicaState<FileReplica>> {
+        
+        if let Some((key,replica)) = self.remove(key) {
+
+            let mut leaders = self.leaders.write().await;
+
+            let replica_count = self.states
+                    .iter()
+                    .filter(| rep_ref| rep_ref.value().leader() == leader)
+                    .count();
+            
+            debug!(replica_count,leader,"new replica count");
+
+            if replica_count == 0 {
+                if let Some(old_leader) = leaders.remove(&leader) {
+                    debug!(leader,"more more replicas, shutting down");
+                    old_leader.shutdown();
+                } else {
+                    error!(leader,"was not founded");
+                }
+            } else {
+                if let Some(old_leader) = leaders.get(&leader) {
+                    debug!(leader,"resync");
+                    old_leader.sync();
+                } else {
+                    error!(leader,"was not founded");
+                }
+            }
+            Some(replica)
+
+        } else {
+            None
+        }
+        
+    }
+
+    pub async fn update_replica(
+        &self,
+        replica: Replica
+    )  {
+
+    }
+
 }
 
 /// list of followers by SPU
@@ -231,10 +284,14 @@ impl FollowersBySpu {
         self.events.clone()
     }
 
-    /// notify controller to indicate need to re-sync
+    /// update count by 1 to force controller to re-compute replicas in it's holding
     pub fn sync(&self) {
         let last_value = self.events.current_value();
         self.events.update(last_value + 1);
+    }
+
+    pub fn shutdown(&self) {
+        self.events.update(-1);
     }
 }
 
@@ -250,8 +307,8 @@ pub struct FollowerReplicaState<S> {
 }
 
 impl<S> FollowerReplicaState<S> {
-    pub fn leader(&self) -> SpuId {
-        self.leader
+    pub fn leader(&self) -> &SpuId {
+        &self.leader
     }
 
     /// readable ref to storage
@@ -336,7 +393,7 @@ impl FollowerReplicaState<FileReplica> {
     }
 
     /// remove storage
-    pub async fn remove(self) -> Result<(), StorageError> {
+    pub async fn remove(&self) -> Result<(), StorageError> {
         self.mut_storage().await.remove().await
     }
 

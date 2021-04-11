@@ -327,7 +327,7 @@ impl ReplicasBySpu {
         let replicas = HashMap::new();
 
         for rep_ref in states.iter() {
-            if rep_ref.value().leader() == leader {
+            if rep_ref.value().leader() == &leader {
                 replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
             }
         }
