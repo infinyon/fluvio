@@ -1,6 +1,6 @@
 pub(crate) mod follower_replica;
 pub(crate) mod leader_replica;
-pub(crate) mod sc;
+
 
 #[cfg(test)]
 mod replica_test {
@@ -21,7 +21,7 @@ mod replica_test {
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
     use crate::services::create_internal_server;
-    use super::sc::{ScSinkMessageChannel};
+    use crate::sc::{ScSinkMessageChannel};
 
     const LEADER: SpuId = 5001;
     const FOLLOWER: SpuId = 5002;

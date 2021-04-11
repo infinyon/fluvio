@@ -11,7 +11,7 @@ use async_channel::Receiver;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
-use crate::{controllers::sc::SharedSinkMessageChannel, core::SharedGlobalContext};
+use crate::{sc::SharedSinkMessageChannel, core::SharedGlobalContext};
 
 use super::{
     LeaderReplicaControllerCommand, LeaderReplicaState, ReplicaLeaderController,

@@ -20,8 +20,8 @@ use crate::{
     config::SpuConfig,
     core::{storage::create_replica_storage},
 };
-use crate::controllers::leader_replica::ReplicaOffsetRequest;
-use crate::controllers::follower_replica::ReplicaFollowerController;
+use crate::replication::leader_replica::ReplicaOffsetRequest;
+use crate::replication::follower_replica::ReplicaFollowerController;
 use crate::config::Log;
 use crate::core::DefaultSharedGlobalContext;
 
@@ -295,13 +295,13 @@ impl FollowersBySpu {
     }
 }
 
-/// State for Follower Replica Controller.
-///
-#[derive(Debug)]
+/// State for Follower Replica Controller
+/// This can be cloned
+#[derive(Debug,Clone)]
 pub struct FollowerReplicaState<S> {
     leader: SpuId,
     replica: ReplicaKey,
-    storage: RwLock<S>,
+    storage: Arc<RwLock<S>>,
     leo: Arc<OffsetPublisher>,
     hw: Arc<OffsetPublisher>,
 }
@@ -319,6 +319,10 @@ impl<S> FollowerReplicaState<S> {
     /// writable ref to storage
     async fn mut_storage(&self) -> RwLockWriteGuard<'_, S> {
         self.storage.write().await
+    }
+
+    pub fn storage_owned(self) -> RwLock<S> {
+        self.storage
     }
 }
 

@@ -1,3 +1,5 @@
+/// Responsible for communication with SC
+
 mod dispatcher;
 mod action;
 mod message_sink;

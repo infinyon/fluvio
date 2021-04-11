@@ -24,11 +24,11 @@ use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::{
     config::{Log, SpuConfig},
-    controllers::sc::SharedSinkMessageChannel,
+    sc::SharedSinkMessageChannel,
     core::{SharedSpuConfig, storage::clear_replica_storage},
 };
 use crate::core::storage::{create_replica_storage};
-use crate::controllers::follower_replica::sync::{
+use crate::replication::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
 
@@ -63,7 +63,7 @@ where
         replica_id: R,
         leader_id: SpuId,
         spu_config: Arc<SpuConfig>,
-        storage: S,
+        storage: RwLock<S>,
         follower_ids: HashSet<SpuId>,
         commands: Sender<LeaderReplicaControllerCommand>,
     ) -> Self
@@ -78,7 +78,7 @@ where
             leader_id,
             spu_config,
             followers: RwLock::new(followers),
-            storage: RwLock::new(storage),
+            storage,
             leo,
             hw,
             commands,
@@ -378,7 +378,7 @@ impl LeaderReplicaState<FileReplica> {
             leader.id,
             leader.leader,
             config,
-            storage,
+            RwLock::new(storage),
             replica_ids,
             commands,
         ))

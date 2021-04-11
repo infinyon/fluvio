@@ -6,9 +6,10 @@ cfg_if::cfg_if! {
         mod core;
         mod services;
         mod start;
-        mod controllers;
+        mod replication;
         mod smart_stream;
-
+        mod storage;
+        mod sc;
         pub use start::main_loop;
     }
 }
