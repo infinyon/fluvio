@@ -5,7 +5,7 @@ use tracing::instrument;
 
 use tokio::select;
 use futures_util::StreamExt;
-use async_channel::Receiver;
+
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
@@ -13,7 +13,7 @@ use fluvio_socket::FlvSocket;
 use fluvio_socket::FlvSink;
 use fluvio_socket::FlvSocketError;
 use dataplane::{ReplicaKey, api::RequestMessage};
-use fluvio_types::{SpuId, event::offsets::OffsetPublisher};
+use fluvio_types::{SpuId};
 use fluvio_storage::FileReplica;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
@@ -22,8 +22,8 @@ use crate::services::internal::FetchStreamRequest;
 use crate::core::spus::SharedSpuLocalStore;
 
 
-use super::{FollowerReplicaControllerCommand, FollowersState};
-use super::state::{SharedFollowersBySpu,FollowerReplicaState};
+use super::{FollowersState, state::FollowersBySpu};
+use super::state::{FollowerReplicaState,SharedFollowersState};
 use super::api_key::{FollowerPeerApiEnum};
 use super::sync::{DefaultSyncRequest};
 use super::peer_api::FollowerPeerRequest;
@@ -36,9 +36,9 @@ const LEADER_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 1 min
 pub struct ReplicaFollowerController<S> {
     leader: SpuId,
     spus: SharedSpuLocalStore,
-    states: FollowersState<S>,
-    sync: Arc<OffsetPublisher>,
-    config: SharedSpuConfig
+    states: SharedFollowersState<S>,
+    config: SharedSpuConfig,
+    spu_ctx: Arc<FollowersBySpu>
 }
 
 
@@ -46,8 +46,8 @@ impl ReplicaFollowerController<FileReplica> {
     pub fn run(
         leader: SpuId,
         spus: SharedSpuLocalStore,
-        states: FollowersState<FileReplica>,
-        sync: Arc<OffsetPublisher>,
+        states: SharedFollowersState<FileReplica>,
+        spu_ctx: Arc<FollowersBySpu>,
         config: SharedSpuConfig
     ) {
 
@@ -55,7 +55,7 @@ impl ReplicaFollowerController<FileReplica> {
             leader,
             spus,
             states,
-            sync,
+            spu_ctx,
             config
         };
         spawn(controller.dispatch_loop());
