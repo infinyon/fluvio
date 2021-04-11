@@ -74,24 +74,17 @@ impl Default for Log {
     }
 }
 
-impl Log {
-    /// create new storage config
-    pub fn as_storage_config(&self) -> ConfigOption {
-        ConfigOption::new(
-            self.base_dir.clone(),
-            self.index_max_bytes,
-            self.index_max_interval_bytes,
-            self.segment_max_bytes,
-            self.flush_write_count,
-            self.flush_idle_msec,
-            self.max_batch_size,
-        )
-    }
-}
-
 impl From<&Log> for ConfigOption {
     fn from(log: &Log) -> ConfigOption {
-        todo!()
+        ConfigOption::new(
+            log.base_dir.clone(),
+            log.index_max_bytes,
+            log.index_max_interval_bytes,
+            log.segment_max_bytes,
+            log.flush_write_count,
+            log.flush_idle_msec,
+            log.max_batch_size,
+        )
     }
 }
 

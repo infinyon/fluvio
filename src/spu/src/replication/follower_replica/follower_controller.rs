@@ -323,11 +323,11 @@ struct ReplicasBySpu(HashMap<ReplicaKey, FollowerReplicaState<FileReplica>>);
 impl ReplicasBySpu {
     /// filter followers from followers state
     fn filter_from(states: &FollowersState<FileReplica>, leader: SpuId) -> Self {
-        let replicas = HashMap::new();
+        let mut replicas = HashMap::new();
 
         for rep_ref in states.iter() {
             if rep_ref.value().leader() == &leader {
-                replicas.insert(rep_ref.key().clone(), *rep_ref.value().clone());
+                replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
             }
         }
 
@@ -348,6 +348,7 @@ impl ReplicasBySpu {
     }
 
     /// send offset to leader
+    #[allow(unused)]
     async fn send_offsets_to_leader(
         &self,
         follower: SpuId,

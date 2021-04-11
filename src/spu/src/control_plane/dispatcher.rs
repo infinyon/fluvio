@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{time::Duration};
 use std::io::Error as IoError;
 
 use tracing::info;
@@ -404,10 +404,14 @@ impl ScDispatcher<FileReplica> {
                     } else if new_replica.is_being_deleted {
                         self.remove_follower_replica(new_replica).await;
                     } else {
-                        self.ctx
+                        if let Err(err) = self
+                            .ctx
                             .followers_state_owned()
                             .add_replica(self.ctx.clone(), new_replica)
-                            .await;
+                            .await
+                        {
+                            error!("adding replica failed: {}", err);
+                        }
                     }
                 }
                 SpecChange::Delete(deleted_replica) => {
@@ -580,7 +584,7 @@ impl ScDispatcher<FileReplica> {
                 .spawn_leader_controller(
                     self.ctx.clone(),
                     new_replica.id,
-                    Arc::new(leader_state),
+                    leader_state,
                     receiver,
                     self.max_bytes,
                     self.sink_channel.clone(),
@@ -596,10 +600,14 @@ impl ScDispatcher<FileReplica> {
 
         if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id) {
             drop(leader_replica_state);
-            self.ctx
+            if let Err(err) = self
+                .ctx
                 .followers_state_owned()
                 .add_replica(self.ctx.clone(), replica)
-                .await;
+                .await
+            {
+                error!("demotion failed: {}", err);
+            }
         } else {
             error!("leader controller was not found: {}", replica.id)
         }
@@ -607,8 +615,7 @@ impl ScDispatcher<FileReplica> {
 
     /// update follower replida
     async fn update_follower_replica(&self, replica: Replica) {
-        let leader = &replica.leader;
-        debug!("trying to adding follower replica: {}", replica);
+        debug!("trying to adding follower replica: {}", &replica.leader);
 
         self.ctx.followers_state().update_replica(replica).await;
     }
@@ -641,9 +648,13 @@ impl ScDispatcher<FileReplica> {
         {
             error!("there was no follower replica: {} to switch", new);
         }
-        self.ctx
+        if let Err(err) = self
+            .ctx
             .followers_state_owned()
             .add_replica(self.ctx.clone(), new)
-            .await;
+            .await
+        {
+            error!("leader switch failed: {}", err);
+        }
     }
 }

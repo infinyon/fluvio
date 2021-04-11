@@ -9,13 +9,12 @@ use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
 use dataplane::{Offset};
-use fluvio_storage::{FileReplica, ReplicaStorage, SlicePartitionResponse, StorageError};
+use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError};
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::config::Log;
 
-pub type SharableFileReplica = SharableReplicaStorage<FileReplica>;
 /// Thread safe storage for replicas
 #[derive(Debug)]
 pub struct SharableReplicaStorage<S> {

@@ -15,7 +15,6 @@ mod replica_test {
     use fluvio_controlplane_metadata::spu::{SpuSpec};
     use dataplane::record::RecordSet;
     use dataplane::fixture::{create_batch};
-    use fluvio_storage::ReplicaStorage;
 
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
@@ -77,8 +76,8 @@ mod replica_test {
         let follower_gctx = GlobalContext::new_shared_context(follower_config);
         follower_gctx.spu_localstore().sync_all(spu_specs());
         follower_gctx
-            .followers_state()
-            .add_follower_replica(follower_gctx.clone(), replica.clone())
+            .followers_state_owned()
+            .add_replica(follower_gctx.clone(), replica.clone())
             .await;
 
         //let follower = follower_gctx

@@ -32,8 +32,8 @@ use crate::replication::follower_replica::sync::{
 use super::super::follower_replica::FollowerReplicaState;
 use crate::storage::SharableReplicaStorage;
 
-pub type SharedLeaderState<S> = Arc<LeaderReplicaState<S>>;
-pub type SharedFileLeaderState = Arc<LeaderReplicaState<FileReplica>>;
+pub type SharedLeaderState<S> = LeaderReplicaState<S>;
+pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
 use super::LeaderReplicaControllerCommand;
 
@@ -41,8 +41,19 @@ use super::LeaderReplicaControllerCommand;
 pub struct LeaderReplicaState<S> {
     inner: SharableReplicaStorage<S>,
     spu_config: Arc<SpuConfig>,
-    followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
+    followers: Arc<RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>>,
     sender: Sender<LeaderReplicaControllerCommand>,
+}
+
+impl<S> Clone for LeaderReplicaState<S> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            spu_config: self.spu_config.clone(),
+            followers: self.followers.clone(),
+            sender: self.sender.clone(),
+        }
+    }
 }
 
 impl<S> fmt::Display for LeaderReplicaState<S>
@@ -73,16 +84,17 @@ where
     S: ReplicaStorage,
 {
     pub fn new(
+        replica: Replica,
         spu_config: Arc<SpuConfig>,
         inner: SharableReplicaStorage<S>,
-        follower_ids: HashSet<SpuId>,
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
+        let follower_ids = HashSet::from_iter(replica.replicas);
         let followers = FollowerReplicaInfo::ids_to_map(*inner.leader(), follower_ids);
         Self {
             inner,
             spu_config,
-            followers: RwLock::new(followers),
+            followers: Arc::new(RwLock::new(followers)),
             sender,
         }
     }
@@ -95,12 +107,7 @@ where
     ) -> Self {
         let mut replica_storage = follower.inner_owned();
         replica_storage.set_leader(replica.leader);
-        Self::new(
-            config,
-            replica_storage,
-            HashSet::from_iter(replica.replicas),
-            sender,
-        )
+        Self::new(replica, config, replica_storage, sender)
     }
 
     // probably only used in the test
@@ -296,13 +303,13 @@ where
 }
 
 impl LeaderReplicaState<FileReplica> {
-    /// create new complete state that can be used for spawning controller
-    pub async fn create_state(
+    /// create new complete state and spawn controller
+    pub async fn create(
         replica: Replica,
         spu_config: SharedSpuConfig,
     ) -> Result<
         (
-            Arc<LeaderReplicaState<FileReplica>>,
+            LeaderReplicaState<FileReplica>,
             Receiver<LeaderReplicaControllerCommand>,
         ),
         StorageError,
@@ -312,11 +319,11 @@ impl LeaderReplicaState<FileReplica> {
         let (sender, receiver) = bounded(10);
 
         let inner =
-            SharableReplicaStorage::create(replica.leader, replica.id, &spu_config.log).await?;
-        let replica_ids: HashSet<SpuId> = replica.replicas.into_iter().collect();
+            SharableReplicaStorage::create(replica.leader, replica.id.clone(), &spu_config.log)
+                .await?;
 
-        let storage_replica = Arc::new(Self::new(spu_config, inner, replica_ids, sender));
-        Ok((storage_replica, receiver))
+        let leader_replica = Self::new(replica, spu_config, inner, sender);
+        Ok((leader_replica, receiver))
     }
 
     /// sync specific follower

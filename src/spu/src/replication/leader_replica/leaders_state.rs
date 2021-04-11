@@ -1,6 +1,5 @@
 use std::{
     ops::{Deref, DerefMut},
-    sync::Arc,
 };
 
 use tracing::{debug, error};
@@ -61,11 +60,11 @@ impl ReplicaLeadersState<FileReplica> {
         replica: Replica,
         max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,
-    ) -> Result<Arc<LeaderReplicaState<FileReplica>>, StorageError> {
+    ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let spu_config = ctx.config_owned();
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create_state(replica, spu_config).await {
+        match LeaderReplicaState::create(replica, spu_config).await {
             Ok((leader_replica, receiver)) => {
                 debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(
@@ -92,7 +91,7 @@ impl ReplicaLeadersState<FileReplica> {
         &self,
         ctx: SharedGlobalContext<FileReplica>,
         replica_id: ReplicaKey,
-        leader_state: Arc<LeaderReplicaState<FileReplica>>,
+        leader_state: LeaderReplicaState<FileReplica>,
         receiver: Receiver<LeaderReplicaControllerCommand>,
         max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,

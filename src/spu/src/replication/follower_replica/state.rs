@@ -22,68 +22,6 @@ use crate::storage::SharableReplicaStorage;
 use crate::config::Log;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
-pub type SharedFollowersBySpu = Arc<FollowersBySpu>;
-
-/*
-/// maintain mapping of replicas for each SPU
-#[derive(Debug)]
-pub struct ReplicaKeys(RwLock<HashMap<SpuId, HashSet<ReplicaKey>>>);
-
-impl ReplicaKeys {
-    fn new() -> Self {
-        Self(RwLock::new(HashMap::new()))
-    }
-
-    #[allow(dead_code)]
-    pub fn followers_count(&self, leader: &SpuId) -> usize {
-        let keys_lock = self.read().unwrap();
-        keys_lock
-            .get(leader)
-            .map(|keys| keys.len())
-            .unwrap_or_default()
-    }
-
-    /// remove keys by SPU, tru if empty
-    fn remove_replica_keys(&self, leader: &SpuId, key: &ReplicaKey) -> bool {
-        let mut keys_lock = self.write().unwrap();
-        if let Some(keys_by_spu) = keys_lock.get_mut(leader) {
-            keys_by_spu.remove(key);
-            keys_by_spu.is_empty()
-        } else {
-            true
-        }
-    }
-
-    /// insert new replica, once replica has been insert, need to update the leader
-    /// this is called by follower controller
-    pub fn insert_replica(&self, leader: SpuId, replica: ReplicaKey) {
-        debug!( leader, %replica, "inserting new follower replica");
-        let mut keys_lock = self.write().unwrap();
-        if let Some(keys_by_pus) = keys_lock.get_mut(&leader) {
-            keys_by_pus.insert(replica);
-        } else {
-            let mut keys = HashSet::new();
-            keys.insert(replica);
-            keys_lock.insert(leader, keys);
-        }
-    }
-}
-
-impl Deref for ReplicaKeys {
-    type Target = RwLock<HashMap<SpuId, HashSet<ReplicaKey>>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ReplicaKeys {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-*/
 
 /// Maintains state for followers
 /// Each follower controller maintains by SPU
@@ -114,37 +52,6 @@ impl<S> FollowersState<S> {
             leaders: RwLock::new(HashMap::new()),
         })
     }
-
-    /*
-    pub fn has_replica(&self, key: &ReplicaKey) -> bool {
-        self.contains_key(key)
-    }
-    */
-
-    /*
-    /// insert new mailbox and return receiver
-    /// this is called by sc dispatcher
-    pub(crate) fn insert_mailbox(
-        &self,
-        spu: SpuId,
-    ) -> (
-        Sender<FollowerReplicaControllerCommand>,
-        Receiver<FollowerReplicaControllerCommand>,
-    ) {
-        let (sender, receiver) = channel(10);
-        let mut write_mailbox = self.mailboxes.write();
-        debug!("inserting mailbox for follower controller: {}", spu);
-        if let Some(old_mailbox) = write_mailbox.insert(spu, sender.clone()) {
-            debug!("there was old mailbox: {}, terminating it", spu);
-            old_mailbox.close();
-        }
-        (sender, receiver)
-    }
-
-    pub(crate) fn mailbox(&self, spu: &SpuId) -> Option<Sender<FollowerReplicaControllerCommand>> {
-        self.mailboxes.read().get(spu).cloned()
-    }
-    */
 }
 
 impl FollowersState<FileReplica> {
@@ -154,7 +61,7 @@ impl FollowersState<FileReplica> {
         id: ReplicaKey,
         config: &SpuConfig,
     ) -> Result<FollowerReplicaState<FileReplica>, StorageError> {
-        FollowerReplicaState::new(config.id(), leader, id, &config.log).await
+        FollowerReplicaState::create(config.id(), leader, id, &config.log).await
     }
 
     /// try to add new replica
@@ -168,7 +75,7 @@ impl FollowersState<FileReplica> {
         let leader = replica.leader;
         let config = ctx.config_owned();
 
-        if let Some(followers) = self.states.get(&replica.id) {
+        if self.states.contains_key(&replica.id) {
             // follower exists, nothing to do
             warn!(%replica,"replica already exists");
             Ok(None)
@@ -212,7 +119,7 @@ impl FollowersState<FileReplica> {
         leader: &SpuId,
         key: &ReplicaKey,
     ) -> Option<FollowerReplicaState<FileReplica>> {
-        if let Some((key, replica)) = self.remove(key) {
+        if let Some((_key, replica)) = self.remove(key) {
             let mut leaders = self.leaders.write().await;
 
             let replica_count = self
@@ -244,7 +151,7 @@ impl FollowersState<FileReplica> {
         }
     }
 
-    pub async fn update_replica(&self, replica: Replica) {}
+    pub async fn update_replica(&self, _replica: Replica) {}
 }
 
 /// list of followers by SPU
@@ -262,11 +169,6 @@ impl FollowersBySpu {
         })
     }
 
-    /// create clone of sync events
-    fn clone_sync_events(&self) -> Arc<OffsetPublisher> {
-        self.events.clone()
-    }
-
     /// update count by 1 to force controller to re-compute replicas in it's holding
     pub fn sync(&self) {
         let last_value = self.events.current_value();
@@ -280,8 +182,14 @@ impl FollowersBySpu {
 
 /// State for Follower Replica Controller
 /// This can be cloned
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct FollowerReplicaState<S>(SharableReplicaStorage<S>);
+
+impl<S> Clone for FollowerReplicaState<S> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 impl<S> Deref for FollowerReplicaState<S> {
     type Target = SharableReplicaStorage<S>;
@@ -301,7 +209,7 @@ impl<S> FollowerReplicaState<S>
 where
     S: ReplicaStorage,
 {
-    pub async fn new<'a>(
+    pub async fn create<'a>(
         local_spu: SpuId,
         leader: SpuId,
         replica_key: ReplicaKey,
