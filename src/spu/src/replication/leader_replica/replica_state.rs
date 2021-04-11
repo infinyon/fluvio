@@ -1,9 +1,10 @@
 use std::{
     cmp::min,
     collections::{BTreeMap, HashSet},
+    ops::{Deref, DerefMut},
     sync::Arc,
 };
-use std::time::{Instant};
+
 use std::fmt;
 
 use tracing::{debug, trace, error, warn};
@@ -19,14 +20,12 @@ use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::{SpuId};
-use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::{
     config::{Log, SpuConfig},
     control_plane::SharedSinkMessageChannel,
     core::{SharedSpuConfig},
 };
-
 use crate::replication::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
@@ -39,16 +38,32 @@ use super::LeaderReplicaControllerCommand;
 
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
-    replica_id: ReplicaKey,
+    inner: SharableReplicaStorage<S>,
     spu_config: Arc<SpuConfig>,
-    storage: SharableReplicaStorage<S>,
     followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
     commands: Sender<LeaderReplicaControllerCommand>,
 }
 
-impl<S> fmt::Display for LeaderReplicaState<S> {
+impl<S> fmt::Display for LeaderReplicaState<S>
+where
+    S: ReplicaStorage,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Leader {}", self.replica_id)
+        write!(f, "Leader {}", self.leader())
+    }
+}
+
+impl<S> Deref for LeaderReplicaState<S> {
+    type Target = SharableReplicaStorage<S>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<S> DerefMut for LeaderReplicaState<S> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
@@ -57,32 +72,22 @@ where
     S: ReplicaStorage,
 {
     pub fn new<R>(
-        replica_id: R,
-        leader_id: SpuId,
         spu_config: Arc<SpuConfig>,
-        storage: RwLock<S>,
+        inner: SharableReplicaStorage<S>,
         follower_ids: HashSet<SpuId>,
         commands: Sender<LeaderReplicaControllerCommand>,
     ) -> Self
     where
         R: Into<ReplicaKey>,
     {
-        let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
-        let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
-        let followers = FollowerReplicaInfo::ids_to_map(leader_id, follower_ids);
+        let followers = FollowerReplicaInfo::ids_to_map(*inner.leader(), follower_ids);
         Self {
-            replica_id: replica_id.into(),
-            leader_id,
+            inner,
             spu_config,
             followers: RwLock::new(followers),
-            storage,
-            leo,
-            hw,
             commands,
         }
     }
-
-    
 
     // probably only used in the test
     /*
@@ -220,7 +225,7 @@ where
         let leo = self.leo();
         let hw = self.hw();
 
-        trace!("computing follower offset for leader: {}, replica: {}, end offset: {}, high watermarkK {}",self.leader_id,self.replica_id,leo,hw);
+        trace!("computing follower offset for leader: {}, replica: {}, end offset: {}, high watermarkK {}",self.leader(),self.id(),leo,hw);
 
         let reader = self.followers.read().await;
         reader
@@ -231,7 +236,8 @@ where
             .map(|(follower_id, follower_info)| {
                 debug!(
                     "replica: {}, follower: {} needs to be updated",
-                    self.replica_id, follower_id
+                    self.id(),
+                    follower_id
                 );
                 trace!(
                     "follow: {} has different hw: {:#?}",
@@ -245,7 +251,7 @@ where
 
     /// convert myself as
     async fn as_lrs_request(&self) -> LrsRequest {
-        let leader = (self.leader_id, self.hw(), self.leo()).into();
+        let leader = (self.leader().to_owned(), self.hw(), self.leo()).into();
         let replicas = self
             .followers
             .read()
@@ -256,7 +262,7 @@ where
             })
             .collect();
 
-        LrsRequest::new(self.replica_id.clone(), leader, replicas)
+        LrsRequest::new(self.id().to_owned(), leader, replicas)
     }
 
     pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
@@ -266,13 +272,13 @@ where
     }
 
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
-        
-        self.storage.write_record_set(records, self.spu_config.replication.min_in_sync_replicas == 1).await
-        
+        self.inner
+            .write_record_set(
+                records,
+                self.spu_config.replication.min_in_sync_replicas == 1,
+            )
+            .await
     }
-
-
-    
 }
 
 impl LeaderReplicaState<FileReplica> {
@@ -295,40 +301,6 @@ impl LeaderReplicaState<FileReplica> {
             Arc::new(LeaderReplicaState::create_file_replica(replica, spu_config, sender).await?);
 
         Ok((file_replica, receiver))
-    }
-
-    /// create new replica state using file replica
-    async fn create_file_replica(
-        leader: Replica,
-        config: Arc<SpuConfig>,
-        commands: Sender<LeaderReplicaControllerCommand>,
-    ) -> Result<Self, StorageError> {
-        trace!(
-            "creating new leader replica state: {:#?} using file replica",
-            leader
-        );
-
-        let storage = create_replica_storage(leader.leader, &leader.id, &config.log).await?;
-        let replica_ids: HashSet<SpuId> = leader.replicas.into_iter().collect();
-        Ok(Self::new(
-            leader.id,
-            leader.leader,
-            config,
-            RwLock::new(storage),
-            replica_ids,
-            commands,
-        ))
-    }
-
-    /// clear file replica if exists
-    pub async fn clear_file_replica(leader: &Replica, log_config: &Log) {
-        clear_replica_storage(leader.leader, &leader.id, log_config).await;
-    }
-
-    /// get start offset and hw
-    pub async fn start_offset_info(&self) -> (Offset, Offset) {
-        let reader = self.storage.read().await;
-        (reader.get_log_start_offset(), reader.get_hw())
     }
 
     /// sync specific follower
@@ -402,11 +374,6 @@ impl LeaderReplicaState<FileReplica> {
     #[allow(dead_code)]
     pub async fn live_replicas(&self) -> Vec<SpuId> {
         self.followers.read().await.keys().cloned().collect()
-    }
-
-    #[allow(dead_code)]
-    pub fn leader_id(&self) -> SpuId {
-        self.leader_id
     }
 }
 

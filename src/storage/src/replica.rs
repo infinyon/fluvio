@@ -10,7 +10,7 @@ use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
 
-use crate::{ReplicaStorageConfig, checkpoint::CheckPoint};
+use crate::{checkpoint::CheckPoint};
 use crate::range_map::SegmentList;
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
@@ -42,21 +42,16 @@ fn default_config(spu_id: SpuId, config: &ConfigOption) -> ConfigOption {
 
 #[async_trait]
 impl ReplicaStorage for FileReplica {
-
     type Config = ConfigOption;
 
-    async fn create(replica: &ReplicaKey,spu: SpuId, base_config: &Self::Config) -> Result<Self,StorageError> {
-
+    async fn create(
+        replica: &ReplicaKey,
+        spu: SpuId,
+        base_config: Self::Config,
+    ) -> Result<Self, StorageError> {
         let config = default_config(spu, &base_config);
-        Self::create(
-            replica.topic.clone(),
-            replica.partition as u32,
-            0,
-            &config,
-        )
-        .await
+        Self::create(replica.topic.clone(), replica.partition as u32, 0, &config).await
     }
-
 
     fn get_hw(&self) -> Offset {
         *self.commit_checkpoint.get_offset()
@@ -65,6 +60,16 @@ impl ReplicaStorage for FileReplica {
     /// offset mark that beginning of uncommitted
     fn get_leo(&self) -> Offset {
         self.active_segment.get_end_offset()
+    }
+
+    /// earliest offset
+    fn get_log_start_offset(&self) -> Offset {
+        let min_base_offset = self.prev_segments.min_offset();
+        if min_base_offset < 0 {
+            self.active_segment.get_base_offset()
+        } else {
+            min_base_offset
+        }
     }
 
     async fn read_partition_slice<P>(
@@ -136,13 +141,11 @@ impl ReplicaStorage for FileReplica {
         }
     }
 
-    async fn remove(self) -> Result<(), StorageError> {
+    async fn remove(&self) -> Result<(), StorageError> {
         remove_dir_all(&self.option.base_dir)
             .await
             .map_err(|err| err.into())
     }
-
-    
 }
 
 impl FileReplica {
@@ -210,8 +213,6 @@ impl FileReplica {
         })
     }
 
-    
-
     /// clear the any holding directory for replica
     pub async fn clear(replica: &ReplicaKey, option: &ConfigOption) {
         let replica_dir = option
@@ -227,16 +228,6 @@ impl FileReplica {
     /// update high watermark to end
     pub async fn update_high_watermark_to_end(&mut self) -> Result<bool, StorageError> {
         self.update_high_watermark(self.get_leo()).await
-    }
-
-    /// earliest offset
-    pub fn get_log_start_offset(&self) -> Offset {
-        let min_base_offset = self.prev_segments.min_offset();
-        if min_base_offset < 0 {
-            self.active_segment.get_base_offset()
-        } else {
-            min_base_offset
-        }
     }
 
     /// find the segment that contains offsets

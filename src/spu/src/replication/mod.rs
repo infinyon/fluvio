@@ -1,7 +1,6 @@
 pub(crate) mod follower_replica;
 pub(crate) mod leader_replica;
 
-
 #[cfg(test)]
 mod replica_test {
 

@@ -1,15 +1,11 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 use std::time::Instant;
-use std::collections::HashMap;
 
-use std::ops::{Deref, DerefMut};
-
-use tracing::{debug, warn, error};
+use tracing::{debug};
 use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use dashmap::DashMap;
 
-use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
+use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
 use dataplane::{Offset};
@@ -21,7 +17,7 @@ use crate::config::Log;
 
 pub type SharableFileReplica = SharableReplicaStorage<FileReplica>;
 /// Thread safe storage for replicas
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SharableReplicaStorage<S> {
     leader: SpuId,
     id: ReplicaKey,
@@ -35,15 +31,16 @@ where
     S: ReplicaStorage,
 {
     /// create new storage replica or restore from durable storage
-    pub async fn create(
+    pub async fn create<'a>(
         leader: SpuId,
         id: ReplicaKey,
-        config: &Log
-    ) -> Result<Self,StorageError> 
+        config: &'a Log,
+    ) -> Result<Self, StorageError>
+    where
+        S::Config: From<&'a Log>,
     {
-
         let storage_config = config.into();
-        let storage = S::create(&id, leader,storage_config).await?;
+        let storage = S::create(&id, leader, storage_config).await?;
 
         let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
         let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
@@ -64,7 +61,6 @@ where
         &self.id
     }
 
-
     /// log end offset
     pub fn leo(&self) -> Offset {
         self.leo.current_value()
@@ -83,7 +79,6 @@ where
         }
     }
 
-
     /// readable ref to storage
     async fn read(&self) -> RwLockReadGuard<'_, S> {
         self.inner.read().await
@@ -92,6 +87,12 @@ where
     /// writable ref to storage
     async fn write(&self) -> RwLockWriteGuard<'_, S> {
         self.inner.write().await
+    }
+
+    /// get start offset and hw
+    pub async fn start_offset_info(&self) -> (Offset, Offset) {
+        let reader = self.read().await;
+        (reader.get_log_start_offset(), reader.get_hw())
     }
 
     /// read records into partition response
@@ -124,7 +125,7 @@ where
         hw_update: bool,
     ) -> Result<(), StorageError> {
         debug!(
-            replica = %self.replica_id,
+            replica = %self.id,
             leo = self.leo(),
             hw = self.hw(),
             hw_update,
@@ -151,6 +152,7 @@ where
 
     /// perform permanent remove
     pub async fn remove(&self) -> Result<(), StorageError> {
-        self.write().await.remove().await
+        let mut writer = self.write().await;
+        writer.remove().await
     }
 }

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use std::ops::{Deref, DerefMut};
 
-use tracing::{debug, warn,error};
+use tracing::{debug, warn, error};
 use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use dashmap::DashMap;
 
@@ -16,9 +16,7 @@ use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{
-    config::SpuConfig
-};
+use crate::{config::SpuConfig};
 use crate::replication::leader_replica::ReplicaOffsetRequest;
 use crate::replication::follower_replica::ReplicaFollowerController;
 use crate::config::Log;
@@ -119,7 +117,6 @@ impl<S> FollowersState<S> {
             leaders: RwLock::new(HashMap::new()),
         })
     }
-    
 
     /*
     pub fn has_replica(&self, key: &ReplicaKey) -> bool {
@@ -171,7 +168,7 @@ impl FollowersState<FileReplica> {
     pub async fn add_replica(
         self: Arc<Self>,
         ctx: DefaultSharedGlobalContext,
-        replica: Replica
+        replica: Replica,
     ) -> Result<Option<SharedFollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
         let config = ctx.config_owned();
@@ -198,7 +195,7 @@ impl FollowersState<FileReplica> {
             } else {
                 // don't have leader, so we need to create
                 let followers_spu = FollowersBySpu::shared(leader);
-                leaders.insert(leader,followers_spu.clone());
+                leaders.insert(leader, followers_spu.clone());
                 ReplicaFollowerController::run(
                     leader,
                     ctx.spu_localstore_owned(),
@@ -220,48 +217,39 @@ impl FollowersState<FileReplica> {
         leader: &SpuId,
         key: &ReplicaKey,
     ) -> Option<SharedFollowerReplicaState<FileReplica>> {
-        
-        if let Some((key,replica)) = self.remove(key) {
-
+        if let Some((key, replica)) = self.remove(key) {
             let mut leaders = self.leaders.write().await;
 
-            let replica_count = self.states
-                    .iter()
-                    .filter(| rep_ref| rep_ref.value().leader() == leader)
-                    .count();
-            
-            debug!(replica_count,leader,"new replica count");
+            let replica_count = self
+                .states
+                .iter()
+                .filter(|rep_ref| rep_ref.value().leader() == leader)
+                .count();
+
+            debug!(replica_count, leader, "new replica count");
 
             if replica_count == 0 {
                 if let Some(old_leader) = leaders.remove(&leader) {
-                    debug!(leader,"more more replicas, shutting down");
+                    debug!(leader, "more more replicas, shutting down");
                     old_leader.shutdown();
                 } else {
-                    error!(leader,"was not founded");
+                    error!(leader, "was not founded");
                 }
             } else {
                 if let Some(old_leader) = leaders.get(&leader) {
-                    debug!(leader,"resync");
+                    debug!(leader, "resync");
                     old_leader.sync();
                 } else {
-                    error!(leader,"was not founded");
+                    error!(leader, "was not founded");
                 }
             }
             Some(replica)
-
         } else {
             None
         }
-        
     }
 
-    pub async fn update_replica(
-        &self,
-        replica: Replica
-    )  {
-
-    }
-
+    pub async fn update_replica(&self, replica: Replica) {}
 }
 
 /// list of followers by SPU
@@ -297,7 +285,7 @@ impl FollowersBySpu {
 
 /// State for Follower Replica Controller
 /// This can be cloned
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct FollowerReplicaState<S>(SharableReplicaStorage<S>);
 
 impl<S> Deref for FollowerReplicaState<S> {
@@ -308,24 +296,22 @@ impl<S> Deref for FollowerReplicaState<S> {
     }
 }
 
-impl<S> DerefMut for FollowerReplicaState<S>  {
+impl<S> DerefMut for FollowerReplicaState<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl <S> FollowerReplicaState<S>  where S: ReplicaStorage {
-    
-    
+impl<S> FollowerReplicaState<S>
+where
+    S: ReplicaStorage,
+{
     /// write records
     /// if true, records's base offset matches,
     ///    false,invalid record sets has been sent
     pub async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
-
         self.0.write_record_set(records, false)
-        
     }
-
 
     /// convert to offset request
     pub fn as_offset_request(&self) -> ReplicaOffsetRequest {

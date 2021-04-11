@@ -71,25 +71,27 @@ mod inner {
     }
 
     /// some storage configuration
-    pub trait ReplicaStorageConfig {
-
-    }
+    pub trait ReplicaStorageConfig {}
 
     #[async_trait]
     pub trait ReplicaStorage: Sized {
-
         type Config: ReplicaStorageConfig;
 
         /// create new storage area,
         /// if there exists replica state, this should restore state
-        async fn create(replica: &ReplicaKey,spu: SpuId,config: &Self::Config) -> Result<Self,StorageError>;
-
+        async fn create(
+            replica: &ReplicaKey,
+            spu: SpuId,
+            config: Self::Config,
+        ) -> Result<Self, StorageError>;
 
         /// high water mark offset (records that has been replicated)
         fn get_hw(&self) -> Offset;
 
         /// log end offset ( records that has been stored)
         fn get_leo(&self) -> Offset;
+
+        fn get_log_start_offset(&self) -> Offset;
 
         /// read partition slice
         /// return hw and leo
@@ -113,6 +115,6 @@ mod inner {
         async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError>;
 
         /// permanently remove
-        async fn remove(self) -> Result<(), StorageError>;
+        async fn remove(&self) -> Result<(), StorageError>;
     }
 }
