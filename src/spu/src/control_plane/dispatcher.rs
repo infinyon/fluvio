@@ -1,6 +1,5 @@
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 use std::io::Error as IoError;
-use std::iter::FromIterator;
 
 use tracing::info;
 use tracing::trace;
@@ -569,12 +568,10 @@ impl ScDispatcher<FileReplica> {
             let (sender, receiver) = bounded(10);
 
             let spu_config = self.ctx.config_owned();
-            let leader_state = LeaderReplicaState::new(
-                new_replica.id.clone(),
-                new_replica.leader,
+            let leader_state = LeaderReplicaState::promoted_from(
+                follower_replica,
+                new_replica,
                 spu_config,
-                follower_replica.storage_owned(),
-                HashSet::from_iter(new_replica.replicas),
                 sender,
             );
 

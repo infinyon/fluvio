@@ -4,7 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
 };
-
+use std::iter::FromIterator;
 use std::fmt;
 
 use tracing::{debug, trace, error, warn};
@@ -29,6 +29,7 @@ use crate::{
 use crate::replication::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
+use super::super::follower_replica::FollowerReplicaState;
 use crate::storage::SharableReplicaStorage;
 
 pub type SharedLeaderState<S> = Arc<LeaderReplicaState<S>>;
@@ -41,7 +42,7 @@ pub struct LeaderReplicaState<S> {
     inner: SharableReplicaStorage<S>,
     spu_config: Arc<SpuConfig>,
     followers: RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>,
-    commands: Sender<LeaderReplicaControllerCommand>,
+    sender: Sender<LeaderReplicaControllerCommand>,
 }
 
 impl<S> fmt::Display for LeaderReplicaState<S>
@@ -75,15 +76,31 @@ where
         spu_config: Arc<SpuConfig>,
         inner: SharableReplicaStorage<S>,
         follower_ids: HashSet<SpuId>,
-        commands: Sender<LeaderReplicaControllerCommand>,
+        sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
         let followers = FollowerReplicaInfo::ids_to_map(*inner.leader(), follower_ids);
         Self {
             inner,
             spu_config,
             followers: RwLock::new(followers),
-            commands,
+            sender,
         }
+    }
+
+    pub fn promoted_from(
+        follower: FollowerReplicaState<S>,
+        replica: Replica,
+        config: SharedSpuConfig,
+        sender: Sender<LeaderReplicaControllerCommand>,
+    ) -> Self {
+        let mut replica_storage = follower.inner_owned();
+        replica_storage.set_leader(replica.leader);
+        Self::new(
+            config,
+            replica_storage,
+            HashSet::from_iter(replica.replicas),
+            sender,
+        )
     }
 
     // probably only used in the test
@@ -99,7 +116,7 @@ where
         &self,
         command: LeaderReplicaControllerCommand,
     ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
-        self.commands.send(command).await
+        self.sender.send(command).await
     }
 
     /// compute hw based on updates follow
@@ -439,7 +456,7 @@ mod test {
     use async_trait::async_trait;
 
     use fluvio_future::test_async;
-    use fluvio_storage::{ReplicaStorage};
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig};
     use dataplane::Offset;
     use dataplane::record::RecordSet;
 
@@ -461,6 +478,10 @@ mod test {
             }
         }
     }
+
+    struct MockConfig {}
+
+    impl ReplicaStorageConfig for MockConfig {}
 
     #[async_trait]
     impl ReplicaStorage for MockReplica {
@@ -499,6 +520,24 @@ mod test {
             &mut self,
             _offset: Offset,
         ) -> Result<bool, fluvio_storage::StorageError> {
+            todo!()
+        }
+
+        type Config = MockConfig;
+
+        async fn create(
+            replica: &dataplane::ReplicaKey,
+            spu: fluvio_types::SpuId,
+            config: Self::Config,
+        ) -> Result<Self, fluvio_storage::StorageError> {
+            todo!()
+        }
+
+        fn get_log_start_offset(&self) -> Offset {
+            todo!()
+        }
+
+        async fn remove(&self) -> Result<(), fluvio_storage::StorageError> {
             todo!()
         }
     }

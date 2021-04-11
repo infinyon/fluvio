@@ -57,6 +57,10 @@ where
         &self.leader
     }
 
+    pub fn set_leader(&mut self, spu: SpuId) {
+        self.leader = spu;
+    }
+
     pub fn id(&self) -> &ReplicaKey {
         &self.id
     }

@@ -5,5 +5,4 @@ mod peer_api;
 pub mod sync;
 
 pub(crate) use self::follower_controller::ReplicaFollowerController;
-pub use self::state::FollowersState;
-pub use self::state::SharedFollowersState;
+pub use self::state::{FollowersState, SharedFollowersState, FollowerReplicaState};

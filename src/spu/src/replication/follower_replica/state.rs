@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::fmt::Debug;
-use std::collections::HashMap;
+use std::collections::{HashMap};
 
 use std::ops::{Deref, DerefMut};
 
@@ -22,7 +22,7 @@ use crate::storage::SharableReplicaStorage;
 use crate::config::Log;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
-pub type SharedFollowerReplicaState<S> = Arc<FollowerReplicaState<S>>;
+pub type SharedFollowerReplicaState<S> = FollowerReplicaState<S>;
 pub type SharedFollowersBySpu = Arc<FollowersBySpu>;
 
 /*
@@ -154,10 +154,8 @@ impl FollowersState<FileReplica> {
         leader: SpuId,
         id: ReplicaKey,
         config: &SpuConfig,
-    ) -> Result<Arc<FollowerReplicaState<FileReplica>>, StorageError> {
-        Ok(Arc::new(
-            FollowerReplicaState::new(config.id(), leader, id, &config.log).await?,
-        ))
+    ) -> Result<FollowerReplicaState<FileReplica>, StorageError> {
+        FollowerReplicaState::new(config.id(), leader, id, &config.log).await
     }
 
     /// try to add new replica
@@ -347,5 +345,9 @@ where
             leo: self.leo(),
             hw: self.hw(),
         }
+    }
+
+    pub fn inner_owned(self) -> SharableReplicaStorage<S> {
+        self.0
     }
 }
