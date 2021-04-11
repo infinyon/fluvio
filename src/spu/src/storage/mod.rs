@@ -17,13 +17,25 @@ use crate::config::Log;
 
 pub type SharableFileReplica = SharableReplicaStorage<FileReplica>;
 /// Thread safe storage for replicas
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct SharableReplicaStorage<S> {
     leader: SpuId,
     id: ReplicaKey,
     inner: Arc<RwLock<S>>,
     leo: Arc<OffsetPublisher>,
     hw: Arc<OffsetPublisher>,
+}
+
+impl<S> Clone for SharableReplicaStorage<S> {
+    fn clone(&self) -> Self {
+        Self {
+            leader: self.leader,
+            id: self.id.clone(),
+            inner: self.inner.clone(),
+            leo: self.leo.clone(),
+            hw: self.hw.clone(),
+        }
+    }
 }
 
 impl<S> SharableReplicaStorage<S>

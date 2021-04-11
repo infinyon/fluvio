@@ -21,7 +21,7 @@ use crate::services::internal::FetchStreamRequest;
 use crate::core::spus::SharedSpuLocalStore;
 
 use super::{FollowersState, state::FollowersBySpu};
-use super::state::{SharedFollowersState, SharedFollowerReplicaState};
+use super::state::{SharedFollowersState, FollowerReplicaState};
 use super::api_key::{FollowerPeerApiEnum};
 use super::sync::{DefaultSyncRequest};
 use super::peer_api::FollowerPeerRequest;
@@ -318,7 +318,7 @@ impl ReplicaFollowerController<FileReplica> {
 
 /// replicas by spu which is used by follows controller
 #[derive(Default)]
-struct ReplicasBySpu(HashMap<ReplicaKey, SharedFollowerReplicaState<FileReplica>>);
+struct ReplicasBySpu(HashMap<ReplicaKey, FollowerReplicaState<FileReplica>>);
 
 impl ReplicasBySpu {
     /// filter followers from followers state
@@ -327,7 +327,7 @@ impl ReplicasBySpu {
 
         for rep_ref in states.iter() {
             if rep_ref.value().leader() == &leader {
-                replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
+                replicas.insert(rep_ref.key().clone(), *rep_ref.value().clone());
             }
         }
 

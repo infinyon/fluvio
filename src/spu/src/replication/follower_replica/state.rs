@@ -22,7 +22,6 @@ use crate::storage::SharableReplicaStorage;
 use crate::config::Log;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
-pub type SharedFollowerReplicaState<S> = FollowerReplicaState<S>;
 pub type SharedFollowersBySpu = Arc<FollowersBySpu>;
 
 /*
@@ -90,12 +89,12 @@ impl DerefMut for ReplicaKeys {
 /// Each follower controller maintains by SPU
 #[derive(Debug)]
 pub struct FollowersState<S> {
-    states: DashMap<ReplicaKey, SharedFollowerReplicaState<S>>,
+    states: DashMap<ReplicaKey, FollowerReplicaState<S>>,
     leaders: RwLock<HashMap<SpuId, Arc<FollowersBySpu>>>,
 }
 
 impl<S> Deref for FollowersState<S> {
-    type Target = DashMap<ReplicaKey, SharedFollowerReplicaState<S>>;
+    type Target = DashMap<ReplicaKey, FollowerReplicaState<S>>;
 
     fn deref(&self) -> &Self::Target {
         &self.states
@@ -165,7 +164,7 @@ impl FollowersState<FileReplica> {
         self: Arc<Self>,
         ctx: DefaultSharedGlobalContext,
         replica: Replica,
-    ) -> Result<Option<SharedFollowerReplicaState<FileReplica>>, StorageError> {
+    ) -> Result<Option<FollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
         let config = ctx.config_owned();
 
@@ -212,7 +211,7 @@ impl FollowersState<FileReplica> {
         &self,
         leader: &SpuId,
         key: &ReplicaKey,
-    ) -> Option<SharedFollowerReplicaState<FileReplica>> {
+    ) -> Option<FollowerReplicaState<FileReplica>> {
         if let Some((key, replica)) = self.remove(key) {
             let mut leaders = self.leaders.write().await;
 

@@ -570,7 +570,7 @@ impl ScDispatcher<FileReplica> {
             let spu_config = self.ctx.config_owned();
             let leader_state = LeaderReplicaState::promoted_from(
                 follower_replica,
-                new_replica,
+                new_replica.clone(),
                 spu_config,
                 sender,
             );
@@ -598,7 +598,7 @@ impl ScDispatcher<FileReplica> {
             drop(leader_replica_state);
             self.ctx
                 .followers_state_owned()
-                .add_follower_replica(self.ctx.clone(), replica)
+                .add_replica(self.ctx.clone(), replica)
                 .await;
         } else {
             error!("leader controller was not found: {}", replica.id)
