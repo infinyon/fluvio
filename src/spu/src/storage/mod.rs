@@ -152,7 +152,7 @@ where
 
     /// perform permanent remove
     pub async fn remove(&self) -> Result<(), StorageError> {
-        let mut writer = self.write().await;
+        let writer = self.write().await;
         writer.remove().await
     }
 }

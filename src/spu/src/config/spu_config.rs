@@ -89,6 +89,12 @@ impl Log {
     }
 }
 
+impl From<&Log> for ConfigOption {
+    fn from(log: &Log) -> ConfigOption {
+        todo!()
+    }
+}
+
 /// streaming processing unit configuration file
 #[derive(Debug, PartialEq, Clone)]
 pub struct SpuConfig {

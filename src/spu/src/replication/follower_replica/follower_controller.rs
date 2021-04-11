@@ -266,8 +266,7 @@ impl ReplicaFollowerController<FileReplica> {
                                 debug!(follow_leo, leader_hw, "finish writing");
                                 if follow_leo == leader_hw {
                                     debug!("follow leo and leader hw is same, updating hw");
-                                    if let Err(err) = replica.update_high_watermark(leader_hw).await
-                                    {
+                                    if let Err(err) = replica.update_hw(leader_hw).await {
                                         error!("error writing replica high watermark: {}", err);
                                     }
                                 }

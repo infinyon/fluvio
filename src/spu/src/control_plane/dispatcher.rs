@@ -531,7 +531,7 @@ impl ScDispatcher<FileReplica> {
                 // if we don't find existing replica, just warning
                 warn!("no existing replica found {}", replica);
 
-                LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config().log).await;
+                //LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config().log).await;
 
                 true
             };

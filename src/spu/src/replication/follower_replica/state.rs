@@ -5,13 +5,11 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 use tracing::{debug, warn, error};
-use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use async_rwlock::{RwLock};
 use dashmap::DashMap;
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
-use dataplane::core::Encoder;
-use dataplane::{Offset};
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
@@ -19,9 +17,9 @@ use fluvio_types::event::offsets::OffsetPublisher;
 use crate::{config::SpuConfig};
 use crate::replication::leader_replica::ReplicaOffsetRequest;
 use crate::replication::follower_replica::ReplicaFollowerController;
-use crate::config::Log;
 use crate::core::DefaultSharedGlobalContext;
 use crate::storage::SharableReplicaStorage;
+use crate::config::Log;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 pub type SharedFollowerReplicaState<S> = Arc<FollowerReplicaState<S>>;
@@ -306,11 +304,40 @@ impl<S> FollowerReplicaState<S>
 where
     S: ReplicaStorage,
 {
+    pub async fn new<'a>(
+        local_spu: SpuId,
+        leader: SpuId,
+        replica_key: ReplicaKey,
+        config: &'a Log,
+    ) -> Result<Self, StorageError>
+    where
+        S::Config: From<&'a Log>,
+    {
+        debug!(
+            "created follower replica: local_spu: {}, replica: {}, leader: {}, base_dir: {}",
+            local_spu,
+            replica_key,
+            leader,
+            config.base_dir.display()
+        );
+
+        let replica_storage = SharableReplicaStorage::create(leader, replica_key, config).await?;
+
+        Ok(Self(replica_storage))
+    }
+
     /// write records
     /// if true, records's base offset matches,
     ///    false,invalid record sets has been sent
     pub async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
-        self.0.write_record_set(records, false)
+        let storage_leo = self.leo();
+        if records.base_offset() != storage_leo {
+            warn!(storage_leo, "storage leo is not same as base offset");
+            Ok(false)
+        } else {
+            self.write_record_set(records, false).await?;
+            Ok(true)
+        }
     }
 
     /// convert to offset request
@@ -320,50 +347,5 @@ where
             leo: self.leo(),
             hw: self.hw(),
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::FollowerReplicaState;
-    use super::FollowersState;
-
-    #[derive(Debug)]
-    struct FakeStorage {}
-
-    #[test]
-    fn test_insert_and_remove_state() {
-        let f1 = FollowerReplicaState {
-            leader: 10,
-            replica: ("topic", 0).into(),
-            storage: FakeStorage {},
-        };
-
-        let k1 = f1.replica.clone();
-
-        let f2 = FollowerReplicaState {
-            leader: 20,
-            replica: ("topic2", 0).into(),
-            storage: FakeStorage {},
-        };
-
-        let f3 = FollowerReplicaState {
-            leader: 10,
-            replica: ("topic", 1).into(),
-            storage: FakeStorage {},
-        };
-
-        let states = FollowersState::new();
-        states.insert_replica(f1);
-        states.insert_replica(f2);
-        states.insert_replica(f3);
-
-        assert_eq!(states.replica_keys.followers_count(&10), 2);
-        assert_eq!(states.replica_keys.followers_count(&20), 1);
-        assert_eq!(states.replica_keys.followers_count(&30), 0);
-
-        let old_state = states.remove_replica(&10, &k1).expect("old state exists");
-        assert_eq!(old_state.leader, 10);
     }
 }

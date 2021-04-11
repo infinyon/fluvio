@@ -100,7 +100,7 @@ impl ReplicaLeadersState<FileReplica> {
         if let Some(old_replica) = self.insert(replica_id.clone(), leader_state.clone()) {
             error!(
                 "there was existing replica when creating new leader replica: {}",
-                old_replica.replica_id()
+                old_replica.id()
             );
         }
 

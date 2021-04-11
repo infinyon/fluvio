@@ -16,13 +16,13 @@ use fluvio_socket::SinkPool;
 use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
-use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
+use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::{SpuId};
 
 use crate::{
-    config::{Log, SpuConfig},
+    config::{SpuConfig},
     control_plane::SharedSinkMessageChannel,
     core::{SharedSpuConfig},
 };
@@ -71,15 +71,12 @@ impl<S> LeaderReplicaState<S>
 where
     S: ReplicaStorage,
 {
-    pub fn new<R>(
+    pub fn new(
         spu_config: Arc<SpuConfig>,
         inner: SharableReplicaStorage<S>,
         follower_ids: HashSet<SpuId>,
         commands: Sender<LeaderReplicaControllerCommand>,
-    ) -> Self
-    where
-        R: Into<ReplicaKey>,
-    {
+    ) -> Self {
         let followers = FollowerReplicaInfo::ids_to_map(*inner.leader(), follower_ids);
         Self {
             inner,
@@ -297,10 +294,12 @@ impl LeaderReplicaState<FileReplica> {
 
         let (sender, receiver) = bounded(10);
 
-        let file_replica =
-            Arc::new(LeaderReplicaState::create_file_replica(replica, spu_config, sender).await?);
+        let inner =
+            SharableReplicaStorage::create(replica.leader, replica.id, &spu_config.log).await?;
+        let replica_ids: HashSet<SpuId> = replica.replicas.into_iter().collect();
 
-        Ok((file_replica, receiver))
+        let storage_replica = Arc::new(Self::new(spu_config, inner, replica_ids, sender));
+        Ok((storage_replica, receiver))
     }
 
     /// sync specific follower
@@ -316,11 +315,11 @@ impl LeaderReplicaState<FileReplica> {
             trace!("ready to build sync records");
             let mut sync_request = FileSyncRequest::default();
             let mut topic_response = PeerFileTopicResponse {
-                name: self.replica_id.topic.to_owned(),
+                name: self.id().topic.to_owned(),
                 ..Default::default()
             };
             let mut partition_response = PeerFilePartitionResponse {
-                partition: self.replica_id.partition,
+                partition: self.id().partition,
                 ..Default::default()
             };
             let (hw, leo) = self
@@ -339,7 +338,8 @@ impl LeaderReplicaState<FileReplica> {
 
             let request = RequestMessage::new_request(sync_request).set_client_id(format!(
                 "leader: {}, replica: {}",
-                self.leader_id, self.replica_id
+                self.leader(),
+                self.id()
             ));
             debug!(
                 "sending records to follower: {}, response: {}",
@@ -354,12 +354,6 @@ impl LeaderReplicaState<FileReplica> {
         } else {
             warn!("no sink exits for follower: {}, skipping ", follower_id);
         }
-    }
-
-    /// delete storage
-    pub async fn remove(&self) -> Result<(), StorageError> {
-        let write = self.storage.write().await;
-        write.remove().await
     }
 
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
