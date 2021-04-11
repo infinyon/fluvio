@@ -76,7 +76,7 @@ impl Default for Log {
 
 impl Log {
     /// create new storage config
-    pub fn new_config(&self) -> ConfigOption {
+    pub fn as_storage_config(&self) -> ConfigOption {
         ConfigOption::new(
             self.base_dir.clone(),
             self.index_max_bytes,

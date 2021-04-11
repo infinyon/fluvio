@@ -22,4 +22,4 @@ use crate::config::SpuConfig;
 pub type SharedGlobalContext<S> = Arc<GlobalContext<S>>;
 pub type DefaultSharedGlobalContext = SharedGlobalContext<FileReplica>;
 pub type SharedSpuSinks = Arc<SinkPool<SpuId>>;
-pub type SharedSpuConfig = Arc<SpuConfig>;
+pub type SpuSharedSpuConfig = Arc<SpuConfig>;

@@ -22,11 +22,7 @@ use fluvio_storage::{FileReplica, StorageError, SlicePartitionResponse, ReplicaS
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::{
-    config::SpuConfig,
-    controllers::sc::SharedSinkMessageChannel,
-    core::{SharedSpuConfig, storage::clear_replica_storage},
-};
+use crate::{config::{Log, SpuConfig}, controllers::sc::SharedSinkMessageChannel, core::{SharedSpuConfig, storage::clear_replica_storage}};
 use crate::core::storage::{create_replica_storage};
 use crate::controllers::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
@@ -304,7 +300,7 @@ where
 
         let leo = writer.get_leo();
         debug!(leo, "updated leo");
-        self.leo.update(writer.get_leo());
+        self.leo.update(leo);
         if hw_update {
             let hw = writer.get_hw();
             debug!(hw, "updated hw");
@@ -372,8 +368,7 @@ impl LeaderReplicaState<FileReplica> {
             leader
         );
 
-        let storage_config = config.storage().new_config();
-        let storage = create_replica_storage(leader.leader, &leader.id, &storage_config).await?;
+        let storage = create_replica_storage(leader.leader, &leader.id, &config.log).await?;
         let replica_ids: HashSet<SpuId> = leader.replicas.into_iter().collect();
         Ok(Self::new(
             leader.id,
@@ -386,9 +381,8 @@ impl LeaderReplicaState<FileReplica> {
     }
 
     /// clear file replica if exists
-    pub async fn clear_file_replica(leader: &Replica, config: &SpuConfig) {
-        let storage_config = config.storage().new_config();
-        clear_replica_storage(leader.leader, &leader.id, &storage_config).await;
+    pub async fn clear_file_replica(leader: &Replica, log_config: &Log) {
+        clear_replica_storage(leader.leader, &leader.id, log_config).await;
     }
 
     /// get start offset and hw
