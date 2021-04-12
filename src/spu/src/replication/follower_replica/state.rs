@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 use std::fmt::Debug;
 use std::collections::{HashMap};
 
@@ -19,7 +19,6 @@ use crate::replication::leader_replica::ReplicaOffsetRequest;
 use crate::replication::follower_replica::ReplicaFollowerController;
 use crate::core::DefaultSharedGlobalContext;
 use crate::storage::SharableReplicaStorage;
-use crate::config::Log;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 
@@ -61,7 +60,7 @@ impl FollowersState<FileReplica> {
         id: ReplicaKey,
         config: &SpuConfig,
     ) -> Result<FollowerReplicaState<FileReplica>, StorageError> {
-        FollowerReplicaState::create(config.id(), leader, id, &config.log).await
+        FollowerReplicaState::create(config.id(), leader, id, (&config.log).into()).await
     }
 
     /// try to add new replica
@@ -209,21 +208,21 @@ impl<S> FollowerReplicaState<S>
 where
     S: ReplicaStorage,
 {
-    pub async fn create<'a>(
+    pub async fn create(
         local_spu: SpuId,
         leader: SpuId,
         replica_key: ReplicaKey,
-        config: &'a Log,
+        config: S::Config,
     ) -> Result<Self, StorageError>
     where
-        S::Config: From<&'a Log>,
+        S::Config: Display,
     {
         debug!(
-            "created follower replica: local_spu: {}, replica: {}, leader: {}, base_dir: {}",
             local_spu,
-            replica_key,
+            %replica_key,
             leader,
-            config.base_dir.display()
+            %config,
+            "created follower replica"
         );
 
         let replica_storage = SharableReplicaStorage::create(leader, replica_key, config).await?;

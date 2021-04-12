@@ -13,8 +13,6 @@ use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError};
 use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-use crate::config::Log;
-
 /// Thread safe storage for replicas
 #[derive(Debug)]
 pub struct SharableReplicaStorage<S> {
@@ -41,17 +39,13 @@ impl<S> SharableReplicaStorage<S>
 where
     S: ReplicaStorage,
 {
-    /// create new storage replica or restore from durable storage
-    pub async fn create<'a>(
+    /// create new storage replica or restore from durable storage based on configuration
+    pub async fn create(
         leader: SpuId,
         id: ReplicaKey,
-        config: &'a Log,
-    ) -> Result<Self, StorageError>
-    where
-        S::Config: From<&'a Log>,
-    {
-        let storage_config = config.into();
-        let storage = S::create(&id, leader, storage_config).await?;
+        config: S::Config,
+    ) -> Result<Self, StorageError> {
+        let storage = S::create(&id, leader, config).await?;
 
         let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
         let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
