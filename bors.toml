@@ -3,8 +3,6 @@ status = [
     "Clippy (ubuntu-latest)",
     "Unit tests (ubuntu-latest)",
     "Doc tests (ubuntu-latest)",
-    "Unit tests (macos-latest)",
-    "Doc tests (macos-latest)",
     "Local cluster test (infinyon-ubuntu-bionic, stable)",
     "Kubernetes cluster test (infinyon-ubuntu-bionic, stable)",
 ]
