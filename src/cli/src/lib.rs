@@ -240,6 +240,7 @@ fn process_external_subcommand(mut args: Vec<String>) -> Result<()> {
     // Check for a matching external command in the environment
     let subcommand = format!("fluvio-{}", cmd);
     println!("Finding plugin {}", &subcommand);
+    println!("GOT PATH: {:?}", std::env::var("PATH"));
     let subcommand_path = match find_plugin(&subcommand) {
         Some(path) => path,
         None => {
