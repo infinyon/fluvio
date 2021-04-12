@@ -80,6 +80,19 @@ pub trait CommandExt {
     ///     .spawn();
     /// ```
     fn log(&mut self) -> &mut Self;
+    /// Print a stringified version of the Command to stdout.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::process::Command;
+    /// use fluvio_command::CommandExt;
+    /// let _ = Command::new("echo")
+    ///     .arg("How are you Fluvio")
+    ///     .print()
+    ///     .spawn();
+    /// ```
+    fn print(&mut self) -> &mut Self;
     /// Return a stringified version of the Command.
     ///
     /// # Example
@@ -132,6 +145,11 @@ impl CommandExt for Command {
 
     fn log(&mut self) -> &mut Self {
         debug!("Command> {:?}", self.display());
+        self
+    }
+
+    fn print(&mut self) -> &mut Self {
+        println!("Command> {:?}", self.display());
         self
     }
 

@@ -29,6 +29,15 @@ impl TestEnvironmentDriver for LocalEnvDriver {
         let mut builder = LocalConfig::builder(crate::VERSION);
         builder.spu_replicas(self.option.spu()).render_checks(true);
 
+        // Make sure to use the test build of 'fluvio' for cluster components
+        let test_exe = std::env::current_exe();
+        let build_dir = test_exe
+            .ok()
+            .and_then(|it| it.parent().map(|it| it.join("fluvio")));
+        if let Some(path) = build_dir {
+            builder.launcher(path);
+        }
+
         if let Some(rust_log) = &self.option.server_log() {
             builder.rust_log(rust_log);
         }
