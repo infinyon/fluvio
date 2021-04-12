@@ -48,6 +48,22 @@ ${HOME}/.fluvio/extensions/fluvio-package \
     ./target/${TARGET}/release/fluvio
 """
 
+[tasks.publish-fluvio-runner]
+dependencies = [
+    "build-prod",
+    "install-fluvio-package",
+    "publish-fluvio-env",
+]
+env = { FLUVIO_VERSION = { script = ["cat VERSION"] } }
+script = """
+${HOME}/.fluvio/extensions/fluvio-package \
+    ${FLUVIO_PUBLISH_TEST} \
+    publish \
+    --version=${FLUVIO_VERSION} \
+    ${FORCE_RELEASE} \
+    ./target/${TARGET}/release/fluvio-run
+"""
+
 [tasks.publish-fluvio-env.linux]
 env = { TARGET = "x86_64-unknown-linux-musl" }
 [tasks.publish-fluvio-env.mac]
@@ -56,6 +72,10 @@ env = { TARGET = "x86_64-apple-darwin" }
 # Publishes Fluvio with a version from VERSION plus the current git hash.
 [tasks.publish-fluvio-latest]
 extend = "publish-fluvio"
+env = { FLUVIO_VERSION = { script = ["""echo "$(cat VERSION)+$(git rev-parse HEAD)" """] } }
+
+[tasks.publish-fluvio-runner-latest]
+extend = "publish-fluvio-runner"
 env = { FLUVIO_VERSION = { script = ["""echo "$(cat VERSION)+$(git rev-parse HEAD)" """] } }
 
 [tasks.install-fluvio]
