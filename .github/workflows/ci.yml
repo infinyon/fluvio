@@ -99,7 +99,9 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install sccache (macos-latest)
         if: matrix.os == 'macos-latest'
-        run: brew install sccache
+        run: |
+          brew update
+          brew install sccache
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
