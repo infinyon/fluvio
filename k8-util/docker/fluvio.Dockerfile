@@ -1,2 +1,2 @@
 FROM alpine:3.12
-COPY fluvio fluvio
+COPY fluvio-run fluvio-run
