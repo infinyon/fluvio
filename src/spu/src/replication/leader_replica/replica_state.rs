@@ -456,20 +456,24 @@ impl LeaderReplicaState<FileReplica> {}
 #[cfg(test)]
 mod test {
 
-    use std::{collections::HashSet, sync::Arc};
-    use std::iter::FromIterator;
+    use std::{sync::Arc};
 
     use async_channel::bounded;
     use async_trait::async_trait;
 
     use fluvio_future::test_async;
-    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig};
+    use fluvio_controlplane_metadata::partition::{ReplicaKey};
+    use fluvio_controlplane_metadata::partition::Replica;
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError};
     use dataplane::Offset;
-    use dataplane::record::RecordSet;
 
-    use crate::config::SpuConfig;
+    use crate::{
+        config::{SpuConfig, Log},
+        storage::SharableReplicaStorage,
+    };
     use super::LeaderReplicaState;
 
+    #[derive(Default)]
     struct MockReplica {
         hw: Offset,
         leo: Offset,
@@ -477,18 +481,30 @@ mod test {
     }
 
     impl MockReplica {
-        fn new(leo: Offset, hw: Offset) -> Self {
-            MockReplica {
+        async fn create(
+            leo: Offset,
+            hw: Offset,
+            id: ReplicaKey,
+            config: &SpuConfig,
+        ) -> Result<SharableReplicaStorage<Self>, StorageError> {
+            let _inner = MockReplica {
                 hw,
                 leo,
                 hw_update: None,
-            }
+            };
+            SharableReplicaStorage::create(0, id, &config.log).await
         }
     }
 
     struct MockConfig {}
 
     impl ReplicaStorageConfig for MockConfig {}
+
+    impl From<&Log> for MockConfig {
+        fn from(_log: &Log) -> MockConfig {
+            MockConfig {}
+        }
+    }
 
     #[async_trait]
     impl ReplicaStorage for MockReplica {
@@ -533,11 +549,11 @@ mod test {
         type Config = MockConfig;
 
         async fn create(
-            replica: &dataplane::ReplicaKey,
-            spu: fluvio_types::SpuId,
-            config: Self::Config,
+            _replica: &dataplane::ReplicaKey,
+            _spu: fluvio_types::SpuId,
+            _config: Self::Config,
         ) -> Result<Self, fluvio_storage::StorageError> {
-            todo!()
+            Ok(MockReplica::default())
         }
 
         fn get_log_start_offset(&self) -> Offset {
@@ -552,19 +568,21 @@ mod test {
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test_async]
     async fn test_follower_hw22() -> Result<(), ()> {
+        let leader = 5000;
         let mut spu_config = SpuConfig::default();
         spu_config.replication.min_in_sync_replicas = 2;
-        let config = Arc::new(spu_config);
-        let mock_replica = MockReplica::new(10, 2); // leo, hw
+        let config = Arc::new(spu_config.clone());
+        let replica: ReplicaKey = ("test", 1).into();
+        let mock_replica = MockReplica::create(10, 2, replica.clone(), &spu_config)
+            .await
+            .expect("replica"); // leo, hw
         let (sender, _) = bounded(10);
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state = LeaderReplicaState::new(
-            ("test", 1),
-            5000,
+            Replica::new(replica, leader, vec![5001, 5002]),
             config,
             mock_replica,
-            HashSet::from_iter(vec![5001, 5002]),
             sender,
         );
 
@@ -632,17 +650,18 @@ mod test {
     async fn test_follower_hw32() -> Result<(), ()> {
         let mut spu_config = SpuConfig::default();
         spu_config.replication.min_in_sync_replicas = 2;
-        let config = Arc::new(spu_config);
-        let mock_replica = MockReplica::new(10, 2); // leo, hw
+        let config = Arc::new(spu_config.clone());
+        let replica: ReplicaKey = ("test", 1).into();
+        let mock_replica = MockReplica::create(10, 2, replica.clone(), &spu_config)
+            .await
+            .expect("create");
         let (sender, _) = bounded(10);
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state = LeaderReplicaState::new(
-            ("test", 1),
-            5000,
+            Replica::new(replica, 5001, vec![5002, 5003]),
             config,
             mock_replica,
-            HashSet::from_iter(vec![5001, 5002, 5003]),
             sender,
         );
 
@@ -668,17 +687,18 @@ mod test {
     async fn test_follower_hw33() -> Result<(), ()> {
         let mut spu_config = SpuConfig::default();
         spu_config.replication.min_in_sync_replicas = 3;
-        let config = Arc::new(spu_config);
-        let mock_replica = MockReplica::new(10, 2); // leo, hw
+        let config = Arc::new(spu_config.clone());
+        let replica: ReplicaKey = ("test", 1).into();
+        let mock_replica = MockReplica::create(10, 2, replica.clone(), &spu_config)
+            .await
+            .expect("replica"); // leo, hw
         let (sender, _) = bounded(10);
 
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state = LeaderReplicaState::new(
-            ("test", 1),
-            5000,
+            Replica::new(replica, 5000, vec![5001, 5002, 5003]),
             config,
             mock_replica,
-            HashSet::from_iter(vec![5001, 5002, 5003]),
             sender,
         );
 
@@ -705,23 +725,25 @@ mod test {
 
     #[test_async]
     async fn test_leader_update() -> Result<(), ()> {
-        let mock_replica = MockReplica::new(20, 10); // leo, hw
-        let spu_config = Arc::new(SpuConfig::default());
-
+        /*
+        let replica: ReplicaKey = ("test", 1).into();
+        let mut spu_config = SpuConfig::default();
+        let config = Arc::new(spu_config.clone());
+        let mock_replica = MockReplica::create(20,10,replica.clone(),&spu_config).await.expect("replica"); //
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let (sender, _) = bounded(10);
         let replica_state = LeaderReplicaState::new(
-            ("test", 1),
-            5000,
-            spu_config,
+            Replica::new(replica,5000,vec![5001]),
+            config,
             mock_replica,
-            HashSet::from_iter(vec![5001]),
             sender,
         );
+
+
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);
 
         // update high watermark of our replica to same as endoffset
-        let mut storage = replica_state.storage.write().await;
+        let mut storage = replica_state.write().await;
         storage.hw_update = Some(20);
         drop(storage);
 
@@ -747,6 +769,7 @@ mod test {
             (true, None, Some(20))
         );
         assert_eq!(replica_state.need_follower_updates().await.len(), 0);
+        */
 
         Ok(())
     }

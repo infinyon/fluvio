@@ -45,7 +45,7 @@ mod replica_test {
         let test_path = "/tmp/replication_test";
         ensure_clean_dir(test_path);
 
-        let replica = Replica::new((TOPIC, 0).into(), LEADER, vec![FOLLOWER]);
+        let replica = Replica::new((TOPIC, 0), LEADER, vec![FOLLOWER]);
 
         let mut leader_config = SpuConfig::default();
         leader_config.log.base_dir = PathBuf::from(test_path);
@@ -78,7 +78,8 @@ mod replica_test {
         follower_gctx
             .followers_state_owned()
             .add_replica(follower_gctx.clone(), replica.clone())
-            .await;
+            .await
+            .expect("create");
 
         //let follower = follower_gctx
         //   .followers_state().get(&replica.id).expect("follower");
