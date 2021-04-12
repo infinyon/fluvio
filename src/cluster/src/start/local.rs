@@ -464,6 +464,7 @@ impl LocalInstaller {
         binary
             .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
+            .inherit()
             .log()
             .spawn()?;
 
@@ -637,6 +638,7 @@ impl LocalInstaller {
         info!("SPU log generated at {}", log_spu);
         cmd.stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
+            .inherit()
             .log()
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
