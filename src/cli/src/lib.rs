@@ -228,8 +228,8 @@ impl CompletionCmd {
 
 fn find_plugin(name: &str) -> Option<PathBuf> {
     let ext_dir = fluvio_extensions_dir().ok();
-    which::which_in(name, ext_dir, ".")
-        .or_else(|_| which::which(name))
+    which::which(name)
+        .or_else(|_| which::which_in(name, ext_dir, "."))
         .ok()
 }
 
@@ -239,8 +239,6 @@ fn process_external_subcommand(mut args: Vec<String>) -> Result<()> {
 
     // Check for a matching external command in the environment
     let subcommand = format!("fluvio-{}", cmd);
-    println!("Finding plugin {}", &subcommand);
-    println!("GOT PATH: {:?}", std::env::var("PATH"));
     let subcommand_path = match find_plugin(&subcommand) {
         Some(path) => path,
         None => {

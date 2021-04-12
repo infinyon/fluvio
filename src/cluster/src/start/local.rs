@@ -36,8 +36,8 @@ const LOCAL_SC_PORT: u16 = 9003;
 
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
     let ext_dir = UserDirs::new().map(|it| it.home_dir().join(".fluvio/bin"));
-    which::which_in("fluvio", ext_dir, ".")
-        .or_else(|_| which::which("fluvio"))
+    which::which("fluvio")
+        .or_else(|_| which::which_in("fluvio", ext_dir, "."))
         .ok()
 });
 
@@ -464,7 +464,6 @@ impl LocalInstaller {
         binary
             .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
-            .print()
             .spawn()?;
 
         Ok((LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT))
@@ -637,7 +636,6 @@ impl LocalInstaller {
         info!("SPU log generated at {}", log_spu);
         cmd.stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
-            .print()
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
         Ok(())
