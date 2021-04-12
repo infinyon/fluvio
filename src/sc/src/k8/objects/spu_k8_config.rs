@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use tracing::debug;
-use serde::{Deserialize};
 
 use k8_client::{ClientError, SharedK8Client};
 use k8_metadata_client::MetadataClient;
@@ -12,20 +11,14 @@ use k8_types::core::service::ServiceSpec;
 
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
-#[derive(Deserialize, Default, Debug)]
-pub struct ScConfig {
-    #[serde(rename = "disableSPU")]
-    pub disable_spu: bool,
-}
-
 #[derive(Debug)]
 pub struct ScK8Config {
     pub image: String,
     pub resources: Option<ResourceRequirements>,
     pub pod_security_context: Option<PodSecurityContext>,
+    pub node_selector: HashMap<String, String>,
     pub lb_service_annotations: HashMap<String, String>,
     pub service: Option<ServiceSpec>,
-    pub sc_config: ScConfig,
 }
 
 impl ScK8Config {
@@ -53,6 +46,12 @@ impl ScK8Config {
                 None
             };
 
+        let node_selector = if let Some(node_selector_string) = data.remove("nodeSelector") {
+            serde_json::from_str(&node_selector_string)?
+        } else {
+            HashMap::new()
+        };
+
         let lb_service_annotations =
             if let Some(lb_service_annotations) = data.remove("lbServiceAnnotations") {
                 serde_json::from_str(&lb_service_annotations)?
@@ -66,19 +65,13 @@ impl ScK8Config {
             None
         };
 
-        let sc_config = if let Some(service_data) = data.remove("sc") {
-            serde_json::from_str(&service_data)?
-        } else {
-            ScConfig::default()
-        };
-
         Ok(Self {
             image,
             resources,
             pod_security_context,
+            node_selector,
             lb_service_annotations,
             service,
-            sc_config,
         })
     }
 

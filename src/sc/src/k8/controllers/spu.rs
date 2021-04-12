@@ -31,7 +31,6 @@ pub struct SpuController {
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
-    disable_update_service: bool,
 }
 
 impl fmt::Display for SpuController {
@@ -51,13 +50,11 @@ impl SpuController {
         spus: StoreContext<SpuSpec>,
         services: StoreContext<SpuServiceSpec>,
         groups: StoreContext<SpuGroupSpec>,
-        disable_update_service: bool,
     ) {
         let controller = Self {
             services,
             spus,
             groups,
-            disable_update_service,
         };
 
         spawn(controller.dispatch_loop());
@@ -73,17 +70,8 @@ impl SpuController {
         }
     }
 
-    async fn inner_loop(&mut self) -> Result<(), ClientError> {
-        if self.disable_update_service {
-            self.inner_loop_spg_only().await?;
-        } else {
-            self.inner_loop_all().await?;
-        }
-        Ok(())
-    }
-
     #[instrument(skip(self), name = "SpuSpecLoop")]
-    async fn inner_loop_all(&mut self) -> Result<(), ClientError> {
+    async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
         let mut service_listener = self.services.change_listener();
@@ -115,28 +103,6 @@ impl SpuController {
                     debug!("detected spu changes");
                     self.sync_spus(&mut spu_listener).await?;
                 }
-
-
-            }
-        }
-    }
-
-    #[instrument(skip(self), name = "SpuSpecLoop")]
-    async fn inner_loop_spg_only(&mut self) -> Result<(), ClientError> {
-        use tokio::select;
-
-        let mut spg_listener = self.groups.change_listener();
-
-        self.sync_with_spg(&mut spg_listener).await?;
-
-        loop {
-            trace!("waiting events");
-
-            select! {
-                _ = spg_listener.listen() => {
-                    debug!("detected spg changes");
-                    self.sync_with_spg(&mut spg_listener).await?;
-                },
 
 
             }
