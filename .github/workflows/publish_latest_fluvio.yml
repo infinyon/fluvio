@@ -21,21 +21,45 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
+        include:
+          - os: ubuntu-latest
+            sccache-path: /home/runner/.cache/sccache
+          - os: macos-latest
+            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install sccache (macos-latest)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install sccache
       - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
           override: true
       - name: Install cargo-make
         uses: davidB/rust-cargo-make@v1
         with:
           version: '0.32.9'
-      - name: install musl-tools
+      - name: Install musl-tools
         if: startsWith(matrix.os, 'ubuntu')
         run: sudo apt-get update && sudo apt-get install -y musl-tools build-essential
+
       - name: Set general env
         run: |
           echo "FORCE_RELEASE=${{ github.event.inputs.force }}"
@@ -51,9 +75,24 @@ jobs:
         run: |
           echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+
+      - name: Save sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
       - name: Build and publish using fluvio-packages
         env:
           RUST_LOG: debug
+          RUST_BACKTRACE: full
+          RUSTC_WRAPPER: sccache
+          RUSTV: ${{ matrix.rust }}
+          SCCACHE_CACHE_SIZE: 2G
+          SCCACHE_DIR: ${{ matrix.sccache-path }}
+#          SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
         run: |
           cargo make -l verbose publish-fluvio-latest
           cargo make -l verbose publish-fluvio-runner-latest
