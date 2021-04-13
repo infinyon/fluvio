@@ -13,8 +13,8 @@ use dataplane::record::RecordSet;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
-use crate::replication::leader_replica::ReplicaOffsetRequest;
-use crate::replication::follower_replica::ReplicaFollowerController;
+use crate::replication::leader::ReplicaOffsetRequest;
+use crate::replication::follower::ReplicaFollowerController;
 use crate::core::DefaultSharedGlobalContext;
 use crate::storage::SharableReplicaStorage;
 

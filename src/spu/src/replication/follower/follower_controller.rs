@@ -16,7 +16,7 @@ use fluvio_types::{SpuId};
 use fluvio_storage::FileReplica;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
-use crate::{replication::leader_replica::UpdateOffsetRequest, core::SharedSpuConfig};
+use crate::{replication::leader::UpdateOffsetRequest, core::SharedSpuConfig};
 use crate::services::internal::FetchStreamRequest;
 use crate::core::spus::SharedSpuLocalStore;
 

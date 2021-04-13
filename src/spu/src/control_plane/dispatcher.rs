@@ -30,7 +30,7 @@ use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;
-use crate::replication::leader_replica::{LeaderReplicaState, LeaderReplicaControllerCommand};
+use crate::replication::leader::{LeaderReplicaState, LeaderReplicaControllerCommand};
 use crate::InternalServerError;
 
 use super::SupervisorCommand;

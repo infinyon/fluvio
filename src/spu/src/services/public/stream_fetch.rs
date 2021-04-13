@@ -26,7 +26,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::replication::leader_replica::SharedFileLeaderState;
+use crate::replication::leader::SharedFileLeaderState;
 use crate::smart_stream::filter::{SmartStreamModule, SmartStreamEngine};
 use publishers::INIT_OFFSET;
 
@@ -522,7 +522,7 @@ mod test {
 
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
-    use crate::replication::leader_replica::LeaderReplicaState;
+    use crate::replication::leader::LeaderReplicaState;
     use crate::services::create_public_server;
     use super::*;
 

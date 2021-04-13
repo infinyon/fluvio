@@ -25,10 +25,10 @@ use crate::{
     config::{ReplicationConfig},
     control_plane::SharedSinkMessageChannel,
 };
-use crate::replication::follower_replica::sync::{
+use crate::replication::follower::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
-use super::super::follower_replica::FollowerReplicaState;
+use super::super::follower::FollowerReplicaState;
 use crate::storage::SharableReplicaStorage;
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;

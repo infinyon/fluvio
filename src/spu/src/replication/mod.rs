@@ -1,5 +1,5 @@
-pub(crate) mod follower_replica;
-pub(crate) mod leader_replica;
+pub(crate) mod follower;
+pub(crate) mod leader;
 
 #[cfg(test)]
 mod replica_test {
