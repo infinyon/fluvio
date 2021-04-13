@@ -22,9 +22,8 @@ use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::{SpuId};
 
 use crate::{
-    config::{SpuConfig},
+    config::{ReplicationConfig},
     control_plane::SharedSinkMessageChannel,
-    core::{SharedSpuConfig},
 };
 use crate::replication::follower_replica::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
@@ -40,7 +39,7 @@ use super::LeaderReplicaControllerCommand;
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     inner: SharableReplicaStorage<S>,
-    spu_config: Arc<SpuConfig>,
+    config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>>,
     sender: Sender<LeaderReplicaControllerCommand>,
 }
@@ -49,7 +48,7 @@ impl<S> Clone for LeaderReplicaState<S> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            spu_config: self.spu_config.clone(),
+            config: self.config.clone(),
             followers: self.followers.clone(),
             sender: self.sender.clone(),
         }
@@ -83,9 +82,10 @@ impl<S> LeaderReplicaState<S>
 where
     S: ReplicaStorage,
 {
+    /// create ne state from existing storage
     pub fn new(
         replica: Replica,
-        spu_config: Arc<SpuConfig>,
+        config: ReplicationConfig,
         inner: SharableReplicaStorage<S>,
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
@@ -93,16 +93,43 @@ where
         let followers = FollowerReplicaInfo::ids_to_map(*inner.leader(), follower_ids);
         Self {
             inner,
-            spu_config,
+            config,
             followers: Arc::new(RwLock::new(followers)),
             sender,
         }
     }
 
+    /// create new complete state and spawn controller
+    pub async fn create<'a, C>(
+        replica: Replica,
+        config: &'a C,
+    ) -> Result<
+        (
+            LeaderReplicaState<S>,
+            Receiver<LeaderReplicaControllerCommand>,
+        ),
+        StorageError,
+    >
+    where
+        ReplicationConfig: From<&'a C>,
+        S::Config: From<&'a C>,
+    {
+        use async_channel::bounded;
+
+        let (sender, receiver) = bounded(10);
+
+        let inner =
+            SharableReplicaStorage::create(replica.leader, replica.id.clone(), config.into())
+                .await?;
+
+        let leader_replica = Self::new(replica, config.into(), inner, sender);
+        Ok((leader_replica, receiver))
+    }
+
     pub fn promoted_from(
         follower: FollowerReplicaState<S>,
         replica: Replica,
-        config: SharedSpuConfig,
+        config: ReplicationConfig,
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
         let mut replica_storage = follower.inner_owned();
@@ -194,10 +221,7 @@ where
         if leader_leo == leader_hw {
             (changed, resync_flag, None)
         } else {
-            let min_lsr = min(
-                self.spu_config.replication.min_in_sync_replicas,
-                followers.len() as u16,
-            );
+            let min_lsr = min(self.config.min_in_sync_replicas, followers.len() as u16);
             // compute unique offsets that is greater than min leader's HW
             let qualified_leos: Vec<Offset> = followers
                 .values()
@@ -294,39 +318,22 @@ where
 
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         self.inner
-            .write_record_set(
-                records,
-                self.spu_config.replication.min_in_sync_replicas == 1,
-            )
+            .write_record_set(records, self.config.min_in_sync_replicas == 1)
             .await
     }
-}
 
-impl LeaderReplicaState<FileReplica> {
-    /// create new complete state and spawn controller
-    pub async fn create(
-        replica: Replica,
-        spu_config: SharedSpuConfig,
-    ) -> Result<
-        (
-            LeaderReplicaState<FileReplica>,
-            Receiver<LeaderReplicaControllerCommand>,
-        ),
-        StorageError,
-    > {
-        use async_channel::bounded;
+    #[allow(dead_code)]
+    pub async fn live_replicas(&self) -> Vec<SpuId> {
+        self.followers.read().await.keys().cloned().collect()
+    }
 
-        let (sender, receiver) = bounded(10);
+    pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
+        let follower_sync = self.need_follower_updates().await;
 
-        let inner = SharableReplicaStorage::create(
-            replica.leader,
-            replica.id.clone(),
-            (&spu_config.log).into(),
-        )
-        .await?;
-
-        let leader_replica = Self::new(replica, spu_config, inner, sender);
-        Ok((leader_replica, receiver))
+        for (follower_id, follower_info) in follower_sync {
+            self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
+                .await;
+        }
     }
 
     /// sync specific follower
@@ -381,20 +388,6 @@ impl LeaderReplicaState<FileReplica> {
         } else {
             warn!("no sink exits for follower: {}, skipping ", follower_id);
         }
-    }
-
-    pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
-        let follower_sync = self.need_follower_updates().await;
-
-        for (follower_id, follower_info) in follower_sync {
-            self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
-                .await;
-        }
-    }
-
-    #[allow(dead_code)]
-    pub async fn live_replicas(&self) -> Vec<SpuId> {
-        self.followers.read().await.keys().cloned().collect()
     }
 }
 
@@ -459,8 +452,6 @@ impl LeaderReplicaState<FileReplica> {}
 #[cfg(test)]
 mod test {
 
-    use std::{sync::Arc};
-
     use async_channel::bounded;
     use async_trait::async_trait;
 
@@ -471,7 +462,7 @@ mod test {
     use dataplane::Offset;
 
     use crate::{
-        config::{SpuConfig, Log},
+        config::{ReplicationConfig, Log},
         storage::SharableReplicaStorage,
     };
     use super::LeaderReplicaState;
@@ -574,9 +565,6 @@ mod test {
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test_async]
     async fn test_follower_hw22() -> Result<(), ()> {
-        let mut spu_config = SpuConfig::default();
-        spu_config.replication.min_in_sync_replicas = 2;
-        let config = Arc::new(spu_config.clone());
         let replica: ReplicaKey = ("test", 1).into();
         let mock_replica = MockReplica::create(10, 2, replica.clone())
             .await
@@ -586,15 +574,15 @@ mod test {
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state = LeaderReplicaState::new(
             Replica::new(replica, 5000, vec![5001, 5002]),
-            config,
+            ReplicationConfig {
+                min_in_sync_replicas: 2,
+            },
             mock_replica,
             sender,
         );
 
         assert_eq!(state.leo(), 10);
         assert_eq!(state.hw(), 2);
-
-        /*
 
         // ensure all followers initialized to -1
         let followers = state.followers.read().await;
@@ -651,7 +639,6 @@ mod test {
             state.update_followers((5001, 4, 2)).await,
             (true, Some((4, 2).into()), Some(4))
         );
-        */
 
         Ok(())
     }
@@ -659,9 +646,6 @@ mod test {
     // test hw calculation for 3 spu and 2 in sync rep
     #[test_async]
     async fn test_follower_hw32() -> Result<(), ()> {
-        let mut spu_config = SpuConfig::default();
-        spu_config.replication.min_in_sync_replicas = 2;
-        let config = Arc::new(spu_config.clone());
         let replica: ReplicaKey = ("test", 1).into();
         let mock_replica = MockReplica::create(10, 2, replica.clone())
             .await
@@ -671,7 +655,9 @@ mod test {
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state = LeaderReplicaState::new(
             Replica::new(replica, 5001, vec![5002, 5003]),
-            config,
+            ReplicationConfig {
+                min_in_sync_replicas: 2,
+            },
             mock_replica,
             sender,
         );
@@ -696,9 +682,6 @@ mod test {
     // test hw calculation for 3 spu and 3 in sync rep
     #[test_async]
     async fn test_follower_hw33() -> Result<(), ()> {
-        let mut spu_config = SpuConfig::default();
-        spu_config.replication.min_in_sync_replicas = 3;
-        let config = Arc::new(spu_config.clone());
         let replica: ReplicaKey = ("test", 1).into();
         let mock_replica = MockReplica::create(10, 2, replica.clone())
             .await
@@ -708,7 +691,9 @@ mod test {
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state = LeaderReplicaState::new(
             Replica::new(replica, 5000, vec![5001, 5002, 5003]),
-            config,
+            ReplicationConfig {
+                min_in_sync_replicas: 3,
+            },
             mock_replica,
             sender,
         );

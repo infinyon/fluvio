@@ -61,10 +61,9 @@ impl ReplicaLeadersState<FileReplica> {
         max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,
     ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
-        let spu_config = ctx.config_owned();
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create(replica, spu_config).await {
+        match LeaderReplicaState::create(replica, ctx.config()).await {
             Ok((leader_replica, receiver)) => {
                 debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(

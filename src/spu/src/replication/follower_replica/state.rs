@@ -13,8 +13,6 @@ use dataplane::record::RecordSet;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
-
-use crate::{config::SpuConfig};
 use crate::replication::leader_replica::ReplicaOffsetRequest;
 use crate::replication::follower_replica::ReplicaFollowerController;
 use crate::core::DefaultSharedGlobalContext;
@@ -54,15 +52,6 @@ impl<S> FollowersState<S> {
 }
 
 impl FollowersState<FileReplica> {
-    async fn new_replica(
-        &self,
-        leader: SpuId,
-        id: ReplicaKey,
-        config: &SpuConfig,
-    ) -> Result<FollowerReplicaState<FileReplica>, StorageError> {
-        FollowerReplicaState::create(config.id(), leader, id, (&config.log).into()).await
-    }
-
     /// try to add new replica
     /// if there isn't existing spu group, create new one and return new replica
     /// otherwise check if there is existing state, if exists return none otherwise create new
@@ -72,7 +61,7 @@ impl FollowersState<FileReplica> {
         replica: Replica,
     ) -> Result<Option<FollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
-        let config = ctx.config_owned();
+        let config = ctx.config();
 
         if self.states.contains_key(&replica.id) {
             // follower exists, nothing to do
@@ -84,9 +73,13 @@ impl FollowersState<FileReplica> {
                 replica
             );
 
-            let replica_state = self
-                .new_replica(leader, replica.id.clone(), &config)
-                .await?;
+            let replica_state = FollowerReplicaState::create(
+                config.id(),
+                leader,
+                replica.id.clone(),
+                ctx.config().into(),
+            )
+            .await?;
             self.states.insert(replica.id, replica_state.clone());
 
             let mut leaders = self.leaders.write().await;
@@ -102,7 +95,7 @@ impl FollowersState<FileReplica> {
                     ctx.spu_localstore_owned(),
                     self.clone(),
                     followers_spu.clone(),
-                    config,
+                    ctx.config_owned(),
                 );
             }
 

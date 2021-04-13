@@ -3,5 +3,4 @@ mod spu_config;
 
 pub use self::cli::SpuOpt;
 
-pub use self::spu_config::SpuConfig;
-pub use self::spu_config::Log;
+pub use self::spu_config::{SpuConfig, Log, ReplicationConfig};

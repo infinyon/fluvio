@@ -571,11 +571,10 @@ impl ScDispatcher<FileReplica> {
 
             let (sender, receiver) = bounded(10);
 
-            let spu_config = self.ctx.config_owned();
             let leader_state = LeaderReplicaState::promoted_from(
                 follower_replica,
                 new_replica.clone(),
-                spu_config,
+                self.ctx.config().into(),
                 sender,
             );
 
