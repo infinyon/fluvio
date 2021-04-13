@@ -67,7 +67,35 @@ pub trait CommandExt {
     ///     .status();
     /// ```
     fn inherit(&mut self) -> &mut Self;
+    /// Print a stringified version of the Command to the debug log.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::process::Command;
+    /// use fluvio_command::CommandExt;
+    /// let _ = Command::new("echo")
+    ///     .arg("How are you Fluvio")
+    ///     .log()
+    ///     .spawn();
+    /// ```
+    fn log(&mut self) -> &mut Self;
+    /// Print a stringified version of the Command to stdout.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::process::Command;
+    /// use fluvio_command::CommandExt;
+    /// let _ = Command::new("echo")
+    ///     .arg("How are you Fluvio")
+    ///     .print()
+    ///     .spawn();
+    /// ```
+    fn print(&mut self) -> &mut Self;
     /// Return a stringified version of the Command.
+    ///
+    /// # Example
     ///
     /// ```
     /// use std::process::Command;
@@ -77,8 +105,10 @@ pub trait CommandExt {
     /// let command_string: String = command.display();
     /// assert_eq!(command_string, "echo one two three");
     /// ```
-    fn display(&mut self) -> String;
+    fn display(&self) -> String;
     /// Returns a result signaling the outcome of executing this command.
+    ///
+    /// # Example
     ///
     /// ```
     /// use std::process::{Command, Output};
@@ -113,7 +143,17 @@ impl CommandExt for Command {
         self.stdout(Stdio::inherit()).stderr(Stdio::inherit())
     }
 
-    fn display(&mut self) -> String {
+    fn log(&mut self) -> &mut Self {
+        debug!("Command> {:?}", self.display());
+        self
+    }
+
+    fn print(&mut self) -> &mut Self {
+        println!("Command> {:?}", self.display());
+        self
+    }
+
+    fn display(&self) -> String {
         format!("{:?}", self).replace("\"", "")
     }
 

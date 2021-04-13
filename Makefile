@@ -23,16 +23,20 @@ SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 SKIP_CHECK=--skip-checks
 EXTRA_ARG=
 
+TEST_RELEASE_PATH=$(if $(RELEASE),target/release,target/debug)
+export PATH := $(shell pwd)/${TEST_RELEASE_PATH}:${PATH}
+
 
 # install all tools required
 install_tools_mac:
 	brew install yq
 	brew install helm
 
-build_test:	TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
-build_test:	TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
+build_test: TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
+build_test: TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
 build_test:	install_test_target
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio $(VERBOSE)
+	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio-run $(VERBOSE)
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test $(VERBOSE)
 
 install_test_target:
@@ -225,7 +229,7 @@ fluvio_image: fluvio_bin_linux
 fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
 	cargo build $(RELEASE_FLAG)   \
-		--bin fluvio_runner_local_cli --target $(TARGET_LINUX)
+		--bin fluvio-run --target $(TARGET_LINUX)
 
 make publish_fluvio_image:
 	curl \

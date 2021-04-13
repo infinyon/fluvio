@@ -20,7 +20,6 @@ use spu::SpuCmd;
 
 pub use self::error::ClusterCliError;
 
-use fluvio_runner_local::RunCmd;
 use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
@@ -62,10 +61,6 @@ pub enum ClusterCmd {
     /// SPGs are groups of SPUs in a cluster which are managed together.
     #[structopt(name = "spg")]
     SPUGroup(SpuGroupCmd),
-
-    /// Run a Streaming Controller (SC) or SPU
-    #[structopt(name = "run")]
-    Run(RunCmd),
 }
 
 impl ClusterCmd {
@@ -99,9 +94,6 @@ impl ClusterCmd {
             Self::SPUGroup(group) => {
                 let fluvio = target.connect().await?;
                 group.process(out, &fluvio).await?;
-            }
-            Self::Run(run) => {
-                run.process().await?;
             }
         }
 

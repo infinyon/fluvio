@@ -28,7 +28,7 @@ spec:
           env:
             - name: RUST_LOG
               value: {{ .Values.scLog }}
-          command: ["/fluvio", "run", "sc"]
+          command: ["/fluvio-run", "sc"]
       {{ if .Values.tls }}
           args:
             - --tls

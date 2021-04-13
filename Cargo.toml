@@ -27,7 +27,7 @@ members = [
     "src/types",
     "src/utils",
     "src/extension-common",
-    "src/extension-runner-local",
+    "src/runner",
     "src/smartstream-wasm",
     "tests/runner"
 ]

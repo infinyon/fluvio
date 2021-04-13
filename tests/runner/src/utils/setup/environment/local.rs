@@ -27,16 +27,16 @@ impl TestEnvironmentDriver for LocalEnvDriver {
 
     async fn start_cluster(&self) -> StartStatus {
         let mut builder = LocalConfig::builder(crate::VERSION);
+        builder.spu_replicas(self.option.spu()).render_checks(true);
 
-        // FIXME: Validate that this exists and throw a useful error message
-        let fluvio_exe = std::env::current_exe()
+        // Make sure to use the test build of 'fluvio' for cluster components
+        let test_exe = std::env::current_exe();
+        let build_dir = test_exe
             .ok()
-            .and_then(|it| it.parent().map(|parent| parent.join("fluvio")));
-
-        builder
-            .spu_replicas(self.option.spu())
-            .render_checks(true)
-            .launcher(fluvio_exe);
+            .and_then(|it| it.parent().map(|it| it.join("fluvio")));
+        if let Some(path) = build_dir {
+            builder.launcher(path);
+        }
 
         if let Some(rust_log) = &self.option.server_log() {
             builder.rust_log(rust_log);

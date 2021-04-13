@@ -54,7 +54,9 @@ jobs:
       - name: Build and publish using fluvio-packages
         env:
           RUST_LOG: debug
-        run: cargo make -l verbose publish-fluvio-latest
+        run: |
+          cargo make -l verbose publish-fluvio-latest
+          cargo make -l verbose publish-fluvio-runner-latest
 
   # Bump the latest version of the Fluvio CLI on the package registry
   # This must be a distinct job than publish_fluvio_cli because this job requires

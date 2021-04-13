@@ -193,6 +193,16 @@ impl ClusterUninstaller {
             .arg("fluvio cluster run")
             .output()
             .map_err(UninstallError::IoError)?;
+        Command::new("pkill")
+            .arg("-f")
+            .arg("fluvio run")
+            .output()
+            .map_err(UninstallError::IoError)?;
+        Command::new("pkill")
+            .arg("-f")
+            .arg("fluvio-run")
+            .output()
+            .map_err(UninstallError::IoError)?;
         // delete fluvio file
         debug!("remove fluvio directory");
         if let Err(err) = remove_dir_all("/tmp/fluvio") {

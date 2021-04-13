@@ -1,19 +1,25 @@
 # Developing Fluvio
 
-Thank you for joining Fluvio community.  The goal of this document is to provide everything you need to get started with developing Fluvio.
+Thank you for joining Fluvio community. The goal of this document is to provide everything you need to get started with developing Fluvio.
 
 ## Assumptions
 
 Familiarity with
+
 - [Rust](https://www.rust-lang.org)
 - [Kubernetes](https://kubernetes.io)
 
-Developer guide and examples should work with the following platforms:
-- macOS X
+This Developer's guide and examples should work with the following platforms:
+
+- MacOS X
 - Linux  
+
 Other platforms such as Windows can be made to work, but we haven't tried them yet.
 
-To test and run services,  you need to get access to development Kubernetes cluster.  Our guide uses Minikube as examples because it is easy to it get it started, but you can use other Kubernetes cluster as well.  Please see  [Kubernetes](https://kubernetes.io) for setting up a development cluster.
+To test and run services, you need to get access to development Kubernetes cluster.
+Our guide uses Minikube as examples because it is easy to it get it started,
+but you can use another Kubernetes cluster as well.
+Please see [Kubernetes](https://kubernetes.io) for setting up a development cluster.
 
 Please read [doc](www.fluvio.io) for technical arch and operation guide.
 
@@ -23,11 +29,9 @@ Please read [doc](www.fluvio.io) for technical arch and operation guide.
 
 Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
 
-
 ## Install minikube
 
 Please follow [minikube](https://minikube.sigs.k8s.io/docs/start/) to install minikube.
-
 
 ## Install Helm
 
@@ -80,38 +84,38 @@ In this case, we run `sc` and `spu` individually, allowing development testing.
 
 ## Starting SC
 
-The Streaming Controller (SC) is controller for fluvio cluster.  You only start a single SC for
-a single Fluvio cluster.
+The Streaming Controller (SC) is the controller for Fluvio cluster.
+You only start a single SC for a single Fluvio cluster.
 
-Following command, will start sc with default port (9003) and rust log level:
+To run the SC, you'll need to build and run the `fluvio-run` executable:
 
 ```
-$ RUST_LOG=fluvio=debug flvd cluster run sc 
+$ RUST_LOG=fluvio=debug cargo run --bin fluvio-run -- sc
 ```
 
 ## Starting SPU
 
-After SC is started, you can start adding unmanaged (custom SPU).
+After SC is started, you can start adding unmanaged (custom) SPUs.
 
-For each SPU, register spu.  For example, following registere spu with 5001 with public and private ports. 
-Normally, you only need to register SPU once.
+For each SPU, first register the SPU. For example, the following registers a SPU with ID 5001 with public and private ports. 
+Normally, you only need to register a SPU once.
 
 ```
-$ flvd custom-spu register --id 5001 --public-server 0.0.0.0:9010 --private-server  0.0.0.0:9011
+$ flvd cluster spu register --id 5001 --public-server 0.0.0.0:9010 --private-server  0.0.0.0:9011
 ```
 
 Then you can start SPU 5001
 
 ```
-$ RUST_LOG=fluvio=debug flvd cluster run spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 > /tmp/spu_5001.log
+$ cargo run --bin fluvio-run -- spu -i 5001 -p 0.0.0.0:9010 -v 0.0.0.0:9011 > /tmp/spu_5001.log
 ```
 
-The logs can be founded in `/tmp/spu_5001`.log.
+The logs can be found in `/tmp/spu_5001.log`.
 
 Now, you should see SPU being active:
 
 ```
-$ flvd spu list
+$ flvd cluster spu list
  ID    NAME             STATUS  TYPE      RACK  PUBLIC        PRIVATE 
  5001  custom-spu-5001  Online  "custom"   -    0.0.0.0:9010  0.0.0.0:9011 
 ```
@@ -130,17 +134,15 @@ Ok!
 
 $ flvd consume topic -B -d
 hello world
-
 ```
 
 You can launch additional SPU as needed, just ensure that ports doesn't conflict with each other.
 For example, to add 2nd:
 
 ```
-$ flvd custom-spu register --id 5001 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
-$ flvd run spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
+$ flvd cluster spu register --id 5001 --public-server 0.0.0.0:9020 --private-server  0.0.0.0:9021
+$ cargo run --bin fluvio-run -- spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 ```
-
 
 
 # Compiling for K8
@@ -167,33 +169,38 @@ export TARGET_CC=x86_64-linux-musl-gcc
 For Linux, please see [musl wiki](https://wiki.musl-libc.org) for the installation of musl-gcc.
 
 For ubuntu:
+
 ```
 sudo apt install -y musl-tools
 export TARGET_CC=musl-gcc
 sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
 ```
+
 ## To build docker image
 
 Run following command to build image
+
 ```
 $ make minikube_image
 ```
 
 Make sure you uninstall previous clusters for local and k8:
+
 ```
 $ flvd cluster delete --local
 $ flvd cluster delete
 ```
 
 Run command below now to run install with image just built
+
 ```
 $ fluvio cluster start --develop
 ```
 
 Topic creation, product and consumer can now be tested as with `local` cluster.
 
-
 You can remove fluvio cluster by
+
 ```
 fluvio cluster delete
 ```
@@ -209,6 +216,7 @@ Note that when you uninstall cluster, CLI will remove all related objects such a
 First install fluvio k8 cluster as normally.
 
 Then delete deployment:
+
 ```
 kubectl delete deployment fluvio-sc
 ```
@@ -219,8 +227,8 @@ Then, can run sc directly
 cargo run --bin fluvio-sc-k8
 ```
 
-
 ## Troubleshooting
+
 This guide helps users to solve issues they might face during the setup process. 
 
 ###### Cross-compilation errors
@@ -235,6 +243,7 @@ error: linker `x86_64-linux-musl-gcc` not found
 error: aborting due to previous error
 error: could not compile `fluvio-spu`.
 ```
+
 This is indicative that you need to add standard library for the target platform:
 
 ```
@@ -300,7 +309,7 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the sys chart installation throws an error. Make sure the storage class is deleted.
 
 ```
- kubectl delete storageclass fluvio-spu
+kubectl delete storageclass fluvio-spu
  ```
 
 #### Deleting partition

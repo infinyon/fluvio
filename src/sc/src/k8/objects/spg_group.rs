@@ -160,8 +160,7 @@ mod k8_convert {
         let mut volumes = vec![];
 
         let mut args = vec![
-            "/fluvio".to_owned(),
-            "run".to_owned(),
+            "/fluvio-run".to_owned(),
             "spu".to_owned(),
             "--sc-addr".to_owned(),
             format!(

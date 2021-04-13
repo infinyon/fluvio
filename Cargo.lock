@@ -1284,7 +1284,7 @@ dependencies = [
  "eyre",
  "fluvio",
  "fluvio-cluster",
- "fluvio-command 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
@@ -1323,13 +1323,13 @@ dependencies = [
  "color-eyre",
  "colored",
  "derive_builder",
+ "directories-next",
  "fluvio",
- "fluvio-command 0.2.0",
+ "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
- "fluvio-runner-local",
  "flv-util",
  "futures-lite",
  "k8-client",
@@ -1349,11 +1349,14 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "url",
+ "which",
 ]
 
 [[package]]
 name = "fluvio-command"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b587d6cc4c0901a6766e133c64f727fc976c0a8bfa4518b22dfc7abed676b38"
 dependencies = [
  "once_cell",
  "thiserror",
@@ -1362,9 +1365,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-command"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b587d6cc4c0901a6766e133c64f727fc976c0a8bfa4518b22dfc7abed676b38"
+version = "0.2.1"
 dependencies = [
  "once_cell",
  "thiserror",
@@ -1471,7 +1472,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b05916eebbf6759f6d28c4be42b9b637563b7dba178ad66251f28ab02502a07"
 dependencies = [
- "fluvio-command 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-command 0.2.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -1610,12 +1611,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-runner-local"
-version = "0.4.0"
+name = "fluvio-run"
+version = "0.1.0"
 dependencies = [
+ "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
+ "semver 0.11.0",
+ "serde_json",
  "structopt",
  "thiserror",
 ]
@@ -1869,7 +1873,7 @@ dependencies = [
  "bytes",
  "fluvio",
  "fluvio-cluster",
- "fluvio-command 0.2.0",
+ "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-future",
  "futures-lite",
@@ -1904,7 +1908,7 @@ dependencies = [
  "bytes",
  "fluvio",
  "fluvio-cluster",
- "fluvio-command 0.2.0",
+ "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",

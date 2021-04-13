@@ -3,7 +3,6 @@ use std::io::Error as IoError;
 use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
-use fluvio_runner_local::RunnerError;
 use crate::{ClusterError, LocalInstallError};
 
 /// Cluster Command Error
@@ -24,9 +23,6 @@ pub enum ClusterCliError {
     /// An error occurred while communicating with Fluvio
     #[error("Fluvio client error")]
     ClientError(#[from] FluvioError),
-    /// An error occurred while executing Fluvio
-    #[error("Runner error")]
-    RunnerError(#[from] RunnerError),
     /// Another type of error
     #[error("Unknown error: {0}")]
     Other(String),

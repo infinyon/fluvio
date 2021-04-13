@@ -20,7 +20,6 @@ required-features = ["k8"]
 [features]
 default = ["k8"]
 k8 = ["k8-client"]
-platform = []
 
 [dependencies]
 rand = "0.8.3"
