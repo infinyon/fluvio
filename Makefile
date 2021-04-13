@@ -61,7 +61,7 @@ smoke-test-tls:	test-clean-up build_test
 smoke-test-tls-policy:	test-clean-up build_test
 	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
 	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} --keep-cluster -- --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
 
 # test rbac with ROOT user
 smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
