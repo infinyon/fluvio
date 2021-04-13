@@ -12,9 +12,9 @@ use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
 use crate::config::SpuConfig;
-use crate::controllers::follower_replica::FollowersState;
-use crate::controllers::follower_replica::SharedFollowersState;
-use crate::controllers::leader_replica::{SharedReplicaLeadersState, ReplicaLeadersState};
+use crate::replication::follower::FollowersState;
+use crate::replication::follower::SharedFollowersState;
+use crate::replication::leader::{SharedReplicaLeadersState, ReplicaLeadersState};
 use crate::services::public::StreamPublishers;
 
 use super::spus::SharedSpuLocalStore;

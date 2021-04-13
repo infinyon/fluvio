@@ -9,8 +9,8 @@ use dataplane::derive::Encode;
 
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
-use super::FollowerPeerApiEnum;
-use super::DefaultSyncRequest;
+use super::api_key::FollowerPeerApiEnum;
+use super::sync::DefaultSyncRequest;
 
 #[derive(Debug, Encode)]
 pub enum FollowerPeerRequest {

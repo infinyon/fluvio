@@ -5,7 +5,7 @@ use fluvio_socket::FlvSocket;
 use fluvio_socket::FlvSocketError;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::controllers::leader_replica::LeaderConnection;
+use crate::replication::leader::LeaderConnection;
 use super::FetchStreamRequest;
 use super::FetchStreamResponse;
 

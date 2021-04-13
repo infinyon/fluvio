@@ -1,6 +1,5 @@
 use std::{
     ops::{Deref, DerefMut},
-    sync::Arc,
 };
 
 use tracing::{debug, error};
@@ -11,7 +10,7 @@ use async_channel::Receiver;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
-use crate::{controllers::sc::SharedSinkMessageChannel, core::SharedGlobalContext};
+use crate::{control_plane::SharedSinkMessageChannel, core::SharedGlobalContext};
 
 use super::{
     LeaderReplicaControllerCommand, LeaderReplicaState, ReplicaLeaderController,
@@ -61,11 +60,10 @@ impl ReplicaLeadersState<FileReplica> {
         replica: Replica,
         max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,
-    ) -> Result<Arc<LeaderReplicaState<FileReplica>>, StorageError> {
-        let spu_config = ctx.config_owned();
+    ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create_state(replica, spu_config).await {
+        match LeaderReplicaState::create(replica, ctx.config()).await {
             Ok((leader_replica, receiver)) => {
                 debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(
@@ -92,7 +90,7 @@ impl ReplicaLeadersState<FileReplica> {
         &self,
         ctx: SharedGlobalContext<FileReplica>,
         replica_id: ReplicaKey,
-        leader_state: Arc<LeaderReplicaState<FileReplica>>,
+        leader_state: LeaderReplicaState<FileReplica>,
         receiver: Receiver<LeaderReplicaControllerCommand>,
         max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,
@@ -100,7 +98,7 @@ impl ReplicaLeadersState<FileReplica> {
         if let Some(old_replica) = self.insert(replica_id.clone(), leader_state.clone()) {
             error!(
                 "there was existing replica when creating new leader replica: {}",
-                old_replica.replica_id()
+                old_replica.id()
             );
         }
 

@@ -10,7 +10,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 
 use crate::core::SharedSpuSinks;
-use crate::controllers::sc::SharedSinkMessageChannel;
+use crate::control_plane::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
 use super::FollowerOffsetUpdate;

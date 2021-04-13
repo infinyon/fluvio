@@ -7,7 +7,7 @@ use crate::services::internal::InternalApiServer;
 use crate::services::public::PublicApiServer;
 use crate::core::DefaultSharedGlobalContext;
 use crate::core::GlobalContext;
-use crate::controllers::sc::ScDispatcher;
+use crate::control_plane::ScDispatcher;
 
 type FileReplicaContext = GlobalContext<FileReplica>;
 

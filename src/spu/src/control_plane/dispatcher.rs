@@ -1,6 +1,5 @@
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::{time::Duration};
 use std::io::Error as IoError;
-use std::iter::FromIterator;
 
 use tracing::info;
 use tracing::trace;
@@ -27,13 +26,11 @@ use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
 use fluvio_storage::FileReplica;
-use fluvio_types::log_on_err;
 use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;
-use crate::controllers::follower_replica::FollowerReplicaControllerCommand;
-use crate::controllers::leader_replica::{LeaderReplicaState, LeaderReplicaControllerCommand};
+use crate::replication::leader::{LeaderReplicaState, LeaderReplicaControllerCommand};
 use crate::InternalServerError;
 
 use super::SupervisorCommand;
@@ -407,10 +404,14 @@ impl ScDispatcher<FileReplica> {
                     } else if new_replica.is_being_deleted {
                         self.remove_follower_replica(new_replica).await;
                     } else {
-                        self.ctx
-                            .followers_state()
-                            .add_follower_replica(self.ctx.clone(), new_replica)
-                            .await;
+                        if let Err(err) = self
+                            .ctx
+                            .followers_state_owned()
+                            .add_replica(self.ctx.clone(), new_replica)
+                            .await
+                        {
+                            error!("adding replica failed: {}", err);
+                        }
                     }
                 }
                 SpecChange::Delete(deleted_replica) => {
@@ -533,7 +534,7 @@ impl ScDispatcher<FileReplica> {
                 // if we don't find existing replica, just warning
                 warn!("no existing replica found {}", replica);
 
-                LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config_owned()).await;
+                //LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config().log).await;
 
                 true
             };
@@ -561,6 +562,7 @@ impl ScDispatcher<FileReplica> {
             .ctx
             .followers_state()
             .remove_replica(&old_replica.leader, &old_replica.id)
+            .await
         {
             debug!(
                 "old follower replica exists, converting to leader: {}",
@@ -569,13 +571,10 @@ impl ScDispatcher<FileReplica> {
 
             let (sender, receiver) = bounded(10);
 
-            let spu_config = self.ctx.config_owned();
-            let leader_state = LeaderReplicaState::new(
-                new_replica.id.clone(),
-                new_replica.leader,
-                spu_config,
-                follower_replica.storage_owned(),
-                HashSet::from_iter(new_replica.replicas),
+            let leader_state = LeaderReplicaState::promoted_from(
+                follower_replica,
+                new_replica.clone(),
+                self.ctx.config().into(),
                 sender,
             );
 
@@ -584,7 +583,7 @@ impl ScDispatcher<FileReplica> {
                 .spawn_leader_controller(
                     self.ctx.clone(),
                     new_replica.id,
-                    Arc::new(leader_state),
+                    leader_state,
                     receiver,
                     self.max_bytes,
                     self.sink_channel.clone(),
@@ -600,10 +599,14 @@ impl ScDispatcher<FileReplica> {
 
         if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id) {
             drop(leader_replica_state);
-            self.ctx
-                .followers_state()
-                .add_follower_replica(self.ctx.clone(), replica)
-                .await;
+            if let Err(err) = self
+                .ctx
+                .followers_state_owned()
+                .add_replica(self.ctx.clone(), replica)
+                .await
+            {
+                error!("demotion failed: {}", err);
+            }
         } else {
             error!("leader controller was not found: {}", replica.id)
         }
@@ -611,22 +614,9 @@ impl ScDispatcher<FileReplica> {
 
     /// update follower replida
     async fn update_follower_replica(&self, replica: Replica) {
-        let leader = &replica.leader;
-        debug!("trying to adding follower replica: {}", replica);
+        debug!("trying to adding follower replica: {}", &replica.leader);
 
-        if let Some(sender) = self.ctx.followers_state().mailbox(leader) {
-            debug!(
-                "existing follower controller exists: {}, send update request to controller",
-                replica
-            );
-            log_on_err!(
-                sender
-                    .send(FollowerReplicaControllerCommand::UpdateReplica(replica))
-                    .await
-            )
-        } else {
-            error!("no follower controller found: {}", replica);
-        }
+        self.ctx.followers_state().update_replica(replica).await;
     }
 
     async fn remove_follower_replica(&self, replica: Replica) {
@@ -635,6 +625,7 @@ impl ScDispatcher<FileReplica> {
             .ctx
             .followers_state()
             .remove_replica(&replica.leader, &replica.id)
+            .await
         {
             if let Err(err) = replica_state.remove().await {
                 error!("error {}, removing replica: {}", err, replica);
@@ -651,13 +642,18 @@ impl ScDispatcher<FileReplica> {
             .ctx
             .followers_state()
             .remove_replica(&old.leader, &old.id)
+            .await
             .is_none()
         {
             error!("there was no follower replica: {} to switch", new);
         }
-        self.ctx
-            .followers_state()
-            .add_follower_replica(self.ctx.clone(), new)
-            .await;
+        if let Err(err) = self
+            .ctx
+            .followers_state_owned()
+            .add_replica(self.ctx.clone(), new)
+            .await
+        {
+            error!("leader switch failed: {}", err);
+        }
     }
 }

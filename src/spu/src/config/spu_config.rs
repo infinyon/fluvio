@@ -33,11 +33,11 @@ use fluvio_storage::config::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Replication {
+pub struct ReplicationConfig {
     pub min_in_sync_replicas: u16,
 }
 
-impl Default for Replication {
+impl Default for ReplicationConfig {
     fn default() -> Self {
         Self {
             min_in_sync_replicas: SPU_MIN_IN_SYNC_REPLICAS,
@@ -74,21 +74,6 @@ impl Default for Log {
     }
 }
 
-impl Log {
-    /// create new storage config
-    pub fn new_config(&self) -> ConfigOption {
-        ConfigOption::new(
-            self.base_dir.clone(),
-            self.index_max_bytes,
-            self.index_max_interval_bytes,
-            self.segment_max_bytes,
-            self.flush_write_count,
-            self.flush_idle_msec,
-            self.max_batch_size,
-        )
-    }
-}
-
 /// streaming processing unit configuration file
 #[derive(Debug, PartialEq, Clone)]
 pub struct SpuConfig {
@@ -105,7 +90,7 @@ pub struct SpuConfig {
     pub sc_retry_ms: u16,
 
     // parameters
-    pub replication: Replication,
+    pub replication: ReplicationConfig,
     pub log: Log,
 
     pub peer_max_bytes: u32,
@@ -119,7 +104,7 @@ impl Default for SpuConfig {
             public_endpoint: format!("0.0.0.0:{}", SPU_PUBLIC_PORT),
             private_endpoint: format!("0.0.0.0:{}", SPU_PRIVATE_PORT),
             sc_endpoint: format!("localhost:{}", SC_PRIVATE_PORT),
-            replication: Replication::default(),
+            replication: ReplicationConfig::default(),
             sc_retry_ms: SPU_RETRY_SC_TIMEOUT_MS,
             log: Log::default(),
             peer_max_bytes: fluvio_storage::FileReplica::PREFER_MAX_LEN,
@@ -157,5 +142,26 @@ impl SpuConfig {
 
     pub fn storage(&self) -> &Log {
         &self.log
+    }
+}
+
+impl From<&SpuConfig> for ConfigOption {
+    fn from(config: &SpuConfig) -> ConfigOption {
+        let log = &config.log;
+        ConfigOption::new(
+            log.base_dir.clone(),
+            log.index_max_bytes,
+            log.index_max_interval_bytes,
+            log.segment_max_bytes,
+            log.flush_write_count,
+            log.flush_idle_msec,
+            log.max_batch_size,
+        )
+    }
+}
+
+impl From<&SpuConfig> for ReplicationConfig {
+    fn from(config: &SpuConfig) -> ReplicationConfig {
+        config.replication.clone()
     }
 }

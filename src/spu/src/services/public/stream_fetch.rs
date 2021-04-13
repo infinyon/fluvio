@@ -26,7 +26,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::controllers::leader_replica::SharedFileLeaderState;
+use crate::replication::leader::SharedFileLeaderState;
 use crate::smart_stream::filter::{SmartStreamModule, SmartStreamEngine};
 use publishers::INIT_OFFSET;
 
@@ -522,7 +522,7 @@ mod test {
 
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
-    use crate::controllers::leader_replica::LeaderReplicaState;
+    use crate::replication::leader::LeaderReplicaState;
     use crate::services::create_public_server;
     use super::*;
 
@@ -547,9 +547,9 @@ mod test {
         // perform for two versions
         for version in 10..11 {
             let topic = format!("test{}", version);
-            let test = Replica::new((topic.clone(), 0).into(), 5001, vec![]);
+            let test = Replica::new((topic.clone(), 0), 5001, vec![]);
             let test_id = test.id.clone();
-            let (replica, _) = LeaderReplicaState::create_state(test, ctx.config_owned())
+            let (replica, _) = LeaderReplicaState::create(test, ctx.config())
                 .await
                 .expect("replica");
             ctx.leaders_state().insert(test_id, replica.clone());
@@ -715,9 +715,9 @@ mod test {
 
         let topic = "testfilter";
 
-        let test = Replica::new((topic.to_owned(), 0).into(), 5001, vec![]);
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![]);
         let test_id = test.id.clone();
-        let (replica, _) = LeaderReplicaState::create_state(test, ctx.config_owned())
+        let (replica, _) = LeaderReplicaState::create(test, ctx.config())
             .await
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());
@@ -870,9 +870,9 @@ mod test {
 
         let topic = "testfilter";
 
-        let test = Replica::new((topic.to_owned(), 0).into(), 5001, vec![]);
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![]);
         let test_id = test.id.clone();
-        let (replica, _) = LeaderReplicaState::create_state(test, ctx.config_owned())
+        let (replica, _) = LeaderReplicaState::create(test, ctx.config())
             .await
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());

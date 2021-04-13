@@ -19,8 +19,8 @@ pub struct Replica {
 }
 
 impl Replica {
-    pub fn new(id: ReplicaKey, leader: SpuId, replicas: Vec<SpuId>) -> Self {
-        Self::new_with_delete(id, leader, replicas, false)
+    pub fn new(id: impl Into<ReplicaKey>, leader: SpuId, replicas: Vec<SpuId>) -> Self {
+        Self::new_with_delete(id.into(), leader, replicas, false)
     }
 
     pub fn new_with_delete(
