@@ -1,4 +1,4 @@
-name: Publish Helm Chart
+name: Publish Latest Helm Chart
 
 on:
 #  push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish_helm:
-    name: Publish Helm Chart
+  publish_helm_latest:
+    name: Publish Latest Helm Chart
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
