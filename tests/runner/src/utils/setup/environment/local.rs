@@ -26,7 +26,7 @@ impl TestEnvironmentDriver for LocalEnvDriver {
     }
 
     async fn start_cluster(&self) -> StartStatus {
-        let mut builder = LocalConfig::builder(crate::VERSION);
+        let mut builder = LocalConfig::builder(&*crate::VERSION);
         builder.spu_replicas(self.option.spu()).render_checks(true);
 
         // Make sure to use the test build of 'fluvio' for cluster components

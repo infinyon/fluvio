@@ -23,4 +23,5 @@ jobs:
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Publish latest development Fluvio Image
         run: |
+          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" >> $GITHUB_ENV
           make latest_image

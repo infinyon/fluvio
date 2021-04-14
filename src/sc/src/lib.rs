@@ -10,8 +10,15 @@ mod services;
 mod controllers;
 
 pub use init::start_main_loop;
+use once_cell::sync::Lazy;
 
-const VERSION: &str = include_str!("../../../VERSION");
+static VERSION: Lazy<String> = Lazy::new(|| {
+    let version = include_str!("../../../VERSION");
+    match option_env!("FLUVIO_VERSION_SUFFIX") {
+        Some(suffix) => format!("{}-{}", version, suffix),
+        None => version.to_string(),
+    }
+});
 
 pub mod dispatcher {
     pub use fluvio_stream_dispatcher::*;

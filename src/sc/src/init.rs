@@ -31,7 +31,7 @@ where
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
-    info!("SC Platform Version: {}", crate::VERSION);
+    info!("SC Platform Version: {}", &*crate::VERSION);
 
     let (sc_config, auth_policy) = sc_config_policy;
 
