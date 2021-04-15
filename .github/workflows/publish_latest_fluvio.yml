@@ -84,6 +84,9 @@ jobs:
           key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-sccache-
+      - name: Set version suffix
+        run: |
+          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee $GITHUB_ENV
       - name: Build and publish using fluvio-packages
         env:
           RUST_LOG: debug
