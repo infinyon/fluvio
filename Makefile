@@ -203,7 +203,9 @@ release_image:	fluvio_image
 latest_image:	RELEASE=true
 latest_image:	fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
+	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(VERSION)-$(GIT_COMMIT)
 	docker push $(DOCKER_IMAGE):latest
+	docker push $(DOCKER_IMAGE):$(VERSION)-$(GIT_COMMIT)
 
 
 nightly_image:	RELEASE=true

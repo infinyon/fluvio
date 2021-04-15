@@ -3,6 +3,7 @@
 //! CLI configurations at the top of the tree
 
 use std::sync::Arc;
+use std::path::PathBuf;
 use std::process::Command;
 use structopt::clap::{AppSettings, Shell, App, SubCommand};
 use structopt::StructOpt;
@@ -33,10 +34,15 @@ use common::COMMAND_TEMPLATE;
 use common::target::ClusterTarget;
 use common::PrintTerminal;
 use crate::install::fluvio_extensions_dir;
-use std::path::PathBuf;
+use once_cell::sync::Lazy;
 
-pub const VERSION: &str = include_str!("VERSION");
-static_assertions::const_assert!(!VERSION.is_empty());
+static VERSION: Lazy<String> = Lazy::new(|| {
+    let version = include_str!("VERSION");
+    match option_env!("FLUVIO_VERSION_SUFFIX") {
+        Some(suffix) => format!("{}-{}", version, suffix),
+        None => version.to_string(),
+    }
+});
 
 /// Fluvio Command Line Interface
 #[derive(StructOpt, Debug)]
@@ -144,7 +150,7 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                cluster.process(out, crate::VERSION, root.target).await?;
+                cluster.process(out, &*crate::VERSION, root.target).await?;
             }
             Self::Install(install) => {
                 install.process().await?;

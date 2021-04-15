@@ -21,6 +21,10 @@ jobs:
           export TARGET_CC=musl-gcc
       - name: Login to Docker Hub
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+      - name: Setup version suffix
+        run: |
+          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee $GITHUB_ENV
       - name: Publish latest development Fluvio Image
         run: |
+          echo "FLUVIO_VERSION_SUFFIX=${FLUVIO_VERSION_SUFFIX}"
           make latest_image

@@ -1,4 +1,4 @@
-name: Publish Helm Chart
+name: Publish Latest Helm Chart
 
 on:
 #  push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish_helm:
-    name: Publish Helm Chart
+  publish_helm_latest:
+    name: Publish Latest Helm Chart
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -21,6 +21,6 @@ jobs:
       - name: Helm Add Repo
         run: helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
       - name: Push Sys Chart
-        run: helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)+$(git rev-parse HEAD)" chartmuseum
+        run: helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
       - name: Push App Chart
-        run: helm push k8-util/helm/fluvio-app --version="$(cat VERSION)+$(git rev-parse HEAD)" chartmuseum
+        run: helm push k8-util/helm/fluvio-app --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
