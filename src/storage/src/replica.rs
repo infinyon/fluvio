@@ -1,7 +1,6 @@
 use std::mem;
 
 use fluvio_protocol::Encoder;
-use fluvio_types::SpuId;
 use tracing::{debug, trace, error, warn};
 use async_trait::async_trait;
 
@@ -34,23 +33,12 @@ pub struct FileReplica {
 
 impl Unpin for FileReplica {}
 
-fn default_config(spu_id: SpuId, config: &ConfigOption) -> ConfigOption {
-    let base_dir = config.base_dir.join(format!("spu-logs-{}", spu_id));
-    let new_config = config.clone();
-    new_config.base_dir(base_dir)
-}
-
 #[async_trait]
 impl ReplicaStorage for FileReplica {
     type Config = ConfigOption;
 
-    async fn create(
-        replica: &ReplicaKey,
-        spu: SpuId,
-        base_config: Self::Config,
-    ) -> Result<Self, StorageError> {
-        let config = default_config(spu, &base_config);
-        Self::create(replica.topic.clone(), replica.partition as u32, 0, &config).await
+    async fn create(replica: &ReplicaKey, config: Self::Config) -> Result<Self, StorageError> {
+        Self::create(replica.topic.clone(), replica.partition as u32, 0, config).await
     }
 
     fn get_hw(&self) -> Offset {
@@ -168,7 +156,7 @@ impl FileReplica {
         topic: S,
         partition: Size,
         base_offset: Offset,
-        option: &ConfigOption,
+        option: ConfigOption,
     ) -> Result<FileReplica, StorageError>
     where
         S: AsRef<str> + Send + 'static,
@@ -442,7 +430,7 @@ mod tests {
     #[test_async]
     async fn test_replica_simple() -> Result<(), StorageError> {
         let option = base_option("test_simple");
-        let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
+        let mut replica = FileReplica::create("test", 0, START_OFFSET, option.clone())
             .await
             .expect("test replica");
 
@@ -491,7 +479,7 @@ mod tests {
     async fn test_uncommitted_fetch() -> Result<(), StorageError> {
         let option = base_option(TEST_UNCOMMIT_DIR);
 
-        let mut replica = FileReplica::create("test", 0, 0, &option)
+        let mut replica = FileReplica::create("test", 0, 0, option)
             .await
             .expect("test replica");
 
@@ -558,7 +546,7 @@ mod tests {
     async fn test_replica_end_offset() -> Result<(), StorageError> {
         let option = base_option(TEST_OFFSET_DIR);
 
-        let mut rep_sink = FileReplica::create("test", 0, START_OFFSET, &option)
+        let mut rep_sink = FileReplica::create("test", 0, START_OFFSET, option.clone())
             .await
             .expect("test replica");
         rep_sink.write_batch(&mut create_batch()).await?;
@@ -566,7 +554,7 @@ mod tests {
         drop(rep_sink);
 
         // open replica
-        let replica2 = FileReplica::create("test", 0, START_OFFSET, &option)
+        let replica2 = FileReplica::create("test", 0, START_OFFSET, option)
             .await
             .expect("test replica");
         assert_eq!(replica2.get_leo(), START_OFFSET + 4);
@@ -582,7 +570,7 @@ mod tests {
     async fn test_rep_log_roll_over() -> Result<(), StorageError> {
         let option = rollover_option(TEST_REPLICA_DIR);
 
-        let mut replica = FileReplica::create("test", 1, START_OFFSET, &option)
+        let mut replica = FileReplica::create("test", 1, START_OFFSET, option.clone())
             .await
             .expect("create rep");
 
@@ -626,7 +614,7 @@ mod tests {
     #[test_async]
     async fn test_replica_commit() -> Result<(), StorageError> {
         let option = base_option(TEST_COMMIT_DIR);
-        let mut replica = FileReplica::create("test", 0, 0, &option)
+        let mut replica = FileReplica::create("test", 0, 0, option.clone())
             .await
             .expect("test replica");
 
@@ -640,7 +628,7 @@ mod tests {
         drop(replica);
 
         // restore replica
-        let replica = FileReplica::create("test", 0, 0, &option)
+        let replica = FileReplica::create("test", 0, 0, option)
             .await
             .expect("test replica");
         assert_eq!(replica.get_hw(), 2);
@@ -655,7 +643,7 @@ mod tests {
     async fn test_committed_fetch() -> Result<(), StorageError> {
         let option = base_option(TEST_COMMIT_FETCH_DIR);
 
-        let mut replica = FileReplica::create("test", 0, 0, &option)
+        let mut replica = FileReplica::create("test", 0, 0, option)
             .await
             .expect("test replica");
 
@@ -734,7 +722,7 @@ mod tests {
         let mut option = base_option("test_delete");
         option.max_batch_size = 50; // enforce 50 length
 
-        let replica = FileReplica::create("testr", 0, START_OFFSET, &option)
+        let replica = FileReplica::create("testr", 0, START_OFFSET, option.clone())
             .await
             .expect("test replica");
 
@@ -755,7 +743,7 @@ mod tests {
         option.max_batch_size = 100;
         option.update_hw = false;
 
-        let mut replica = FileReplica::create("test", 0, START_OFFSET, &option)
+        let mut replica = FileReplica::create("test", 0, START_OFFSET, option)
             .await
             .expect("test replica");
 

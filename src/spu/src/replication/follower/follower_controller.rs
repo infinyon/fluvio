@@ -100,6 +100,10 @@ impl ReplicaFollowerController<FileReplica> {
 
         let mut event_listener = self.spu_ctx.events.change_listner();
 
+        // starts initial sync
+        self.sync_all_offsets_to_leader(&mut sink, &replicas)
+            .await?;
+
         loop {
             debug!("waiting request from leader");
 
@@ -326,7 +330,7 @@ impl ReplicasBySpu {
         let mut replicas = HashMap::new();
 
         for rep_ref in states.iter() {
-            if rep_ref.value().leader() == &leader {
+            if rep_ref.value().leader() == leader {
                 replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
             }
         }

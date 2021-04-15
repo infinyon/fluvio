@@ -61,7 +61,6 @@ impl FollowersState<FileReplica> {
         replica: Replica,
     ) -> Result<Option<FollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
-        let config = ctx.config();
 
         if self.states.contains_key(&replica.id) {
             // follower exists, nothing to do
@@ -73,13 +72,9 @@ impl FollowersState<FileReplica> {
                 replica
             );
 
-            let replica_state = FollowerReplicaState::create(
-                config.id(),
-                leader,
-                replica.id.clone(),
-                ctx.config().into(),
-            )
-            .await?;
+            let replica_state =
+                FollowerReplicaState::create(leader, replica.id.clone(), ctx.config().into())
+                    .await?;
             self.states.insert(replica.id, replica_state.clone());
 
             let mut leaders = self.leaders.write().await;
@@ -90,6 +85,7 @@ impl FollowersState<FileReplica> {
                 // don't have leader, so we need to create
                 let followers_spu = FollowersBySpu::shared(leader);
                 leaders.insert(leader, followers_spu.clone());
+
                 ReplicaFollowerController::run(
                     leader,
                     ctx.spu_localstore_owned(),
@@ -108,7 +104,7 @@ impl FollowersState<FileReplica> {
     /// then we shutdown controller
     pub async fn remove_replica(
         &self,
-        leader: &SpuId,
+        leader: SpuId,
         key: &ReplicaKey,
     ) -> Option<FollowerReplicaState<FileReplica>> {
         if let Some((_key, replica)) = self.remove(key) {
@@ -175,11 +171,17 @@ impl FollowersBySpu {
 /// State for Follower Replica Controller
 /// This can be cloned
 #[derive(Debug)]
-pub struct FollowerReplicaState<S>(SharableReplicaStorage<S>);
+pub struct FollowerReplicaState<S> {
+    leader: SpuId,
+    inner: SharableReplicaStorage<S>,
+}
 
 impl<S> Clone for FollowerReplicaState<S> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self {
+            leader: self.leader,
+            inner: self.inner.clone(),
+        }
     }
 }
 
@@ -187,13 +189,13 @@ impl<S> Deref for FollowerReplicaState<S> {
     type Target = SharableReplicaStorage<S>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
 impl<S> DerefMut for FollowerReplicaState<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.inner
     }
 }
 
@@ -202,7 +204,6 @@ where
     S: ReplicaStorage,
 {
     pub async fn create(
-        local_spu: SpuId,
         leader: SpuId,
         replica_key: ReplicaKey,
         config: S::Config,
@@ -211,16 +212,22 @@ where
         S::Config: Display,
     {
         debug!(
-            local_spu,
             %replica_key,
             leader,
             %config,
             "created follower replica"
         );
 
-        let replica_storage = SharableReplicaStorage::create(leader, replica_key, config).await?;
+        let replica_storage = SharableReplicaStorage::create(replica_key, config).await?;
 
-        Ok(Self(replica_storage))
+        Ok(Self {
+            leader,
+            inner: replica_storage,
+        })
+    }
+
+    pub fn leader(&self) -> SpuId {
+        self.leader
     }
 
     /// write records
@@ -240,13 +247,53 @@ where
     /// convert to offset request
     pub fn as_offset_request(&self) -> ReplicaOffsetRequest {
         ReplicaOffsetRequest {
-            replica: self.0.id().to_owned(),
+            replica: self.inner.id().to_owned(),
             leo: self.leo(),
             hw: self.hw(),
         }
     }
 
     pub fn inner_owned(self) -> SharableReplicaStorage<S> {
-        self.0
+        self.inner
+    }
+}
+
+#[cfg(test)]
+mod follower_tests {
+
+    use std::path::PathBuf;
+
+    use fluvio_future::{test_async};
+    use flv_util::fixture::ensure_clean_dir;
+    use fluvio_types::SpuId;
+    use fluvio_storage::config::ConfigOption;
+
+    use super::*;
+
+    const LEADER: SpuId = 5001;
+    const TOPIC: &str = "test";
+    const TEST_REPLICA: (&str, i32) = (TOPIC, 0);
+
+    #[test_async]
+    async fn test_follower_creation() -> Result<(), ()> {
+        let test_path = "/tmp/follower_init";
+        ensure_clean_dir(test_path);
+
+        let config = ConfigOption {
+            base_dir: PathBuf::from(test_path).join("spu-5002"),
+            ..Default::default()
+        };
+
+        let follower_replica: FollowerReplicaState<FileReplica> =
+            FollowerReplicaState::create(LEADER, TEST_REPLICA.into(), config)
+                .await
+                .expect("create");
+
+        // at this point, follower replica should be empty since we don't have time to sync up with leader
+        assert_eq!(follower_replica.leo(), 0);
+        assert_eq!(follower_replica.hw(), 0);
+        assert!(PathBuf::from(test_path).join("spu-5002").exists());
+
+        Ok(())
     }
 }

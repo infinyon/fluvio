@@ -10,13 +10,12 @@ use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
 use dataplane::{Offset};
 use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError};
-use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
+use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 /// Thread safe storage for replicas
 #[derive(Debug)]
 pub struct SharableReplicaStorage<S> {
-    leader: SpuId,
     id: ReplicaKey,
     inner: Arc<RwLock<S>>,
     leo: Arc<OffsetPublisher>,
@@ -26,7 +25,6 @@ pub struct SharableReplicaStorage<S> {
 impl<S> Clone for SharableReplicaStorage<S> {
     fn clone(&self) -> Self {
         Self {
-            leader: self.leader,
             id: self.id.clone(),
             inner: self.inner.clone(),
             leo: self.leo.clone(),
@@ -40,30 +38,17 @@ where
     S: ReplicaStorage,
 {
     /// create new storage replica or restore from durable storage based on configuration
-    pub async fn create(
-        leader: SpuId,
-        id: ReplicaKey,
-        config: S::Config,
-    ) -> Result<Self, StorageError> {
-        let storage = S::create(&id, leader, config).await?;
+    pub async fn create(id: ReplicaKey, config: S::Config) -> Result<Self, StorageError> {
+        let storage = S::create(&id, config).await?;
 
         let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
         let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
         Ok(Self {
-            leader,
             id,
             inner: Arc::new(RwLock::new(storage)),
             leo,
             hw,
         })
-    }
-
-    pub fn leader(&self) -> &SpuId {
-        &self.leader
-    }
-
-    pub fn set_leader(&mut self, spu: SpuId) {
-        self.leader = spu;
     }
 
     pub fn id(&self) -> &ReplicaKey {

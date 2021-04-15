@@ -30,7 +30,6 @@ mod inner {
     use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
-    use fluvio_types::SpuId;
 
     use crate::StorageError;
 
@@ -79,11 +78,7 @@ mod inner {
 
         /// create new storage area,
         /// if there exists replica state, this should restore state
-        async fn create(
-            replica: &ReplicaKey,
-            spu: SpuId,
-            config: Self::Config,
-        ) -> Result<Self, StorageError>;
+        async fn create(replica: &ReplicaKey, config: Self::Config) -> Result<Self, StorageError>;
 
         /// high water mark offset (records that has been replicated)
         fn get_hw(&self) -> Offset;

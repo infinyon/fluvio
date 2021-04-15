@@ -9,6 +9,8 @@ mod replica_test {
     use std::time::Duration;
     use std::env::temp_dir;
 
+    use tracing::debug;
+
     use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
     use flv_util::fixture::ensure_clean_dir;
@@ -41,7 +43,19 @@ mod replica_test {
         ]
     }
 
-    /// test a single leader and follower
+    /// Scenario: Follower sync with Leader
+    ///    
+    /// Pre-condition:
+    ///     Writes to batches Leader
+    ///     LEO is updated but now HW because replication didn't happen yet
+    ///
+    /// Actions:   
+    ///     Starts Leader Controller
+    ///     Starts Follower Controller
+    ///
+    /// Expectation:
+    ///     Follower replica contains same batch
+    //      both HW is replicated across leader and follower
     #[test_async]
     async fn test_initial_replication() -> Result<(), ()> {
         let test_path = temp_dir().join("replication_test");
@@ -51,7 +65,9 @@ mod replica_test {
 
         let mut leader_config = SpuConfig::default();
         leader_config.log.base_dir = test_path.clone();
+        leader_config.replication.min_in_sync_replicas = 2;
         leader_config.id = LEADER;
+
         leader_config.private_endpoint = leader_addr();
         let leader_gctx = GlobalContext::new_shared_context(leader_config);
         leader_gctx.spu_localstore().sync_all(spu_specs());
@@ -67,13 +83,23 @@ mod replica_test {
             .await
             .expect("leader");
 
+        // write records
+        let mut records = RecordSet::default().add(create_batch());
+        leader_replica
+            .write_record_set(&mut records)
+            .await
+            .expect("write");
+
+        assert_eq!(leader_replica.leo(), 2);
+        assert_eq!(leader_replica.hw(), 0);
+
         let spu_server = create_internal_server(leader_addr(), leader_gctx.clone()).run();
 
         // sleep little bit until we spin up follower
         sleep(Duration::from_millis(100)).await;
 
         let mut follower_config = SpuConfig::default();
-        follower_config.log.base_dir = PathBuf::from(test_path);
+        follower_config.log.base_dir = test_path;
         follower_config.id = FOLLOWER;
         let follower_gctx = GlobalContext::new_shared_context(follower_config);
         follower_gctx.spu_localstore().sync_all(spu_specs());
@@ -83,23 +109,23 @@ mod replica_test {
             .await
             .expect("create");
 
-        //let follower = follower_gctx
-        //   .followers_state().get(&replica.id).expect("follower");
+        let follower_replica = follower_gctx
+            .followers_state()
+            .get(&replica.id)
+            .expect("follower");
 
-        // assert_eq!(follower.storage().get_leo(),0);
+        // at this point, follower replica should be empty since we don't have time to sync up with leader
+        assert_eq!(follower_replica.leo(), 0);
+        assert_eq!(follower_replica.hw(), 0);
 
-        let mut records = RecordSet::default().add(create_batch());
-        leader_replica
-            .write_record_set(&mut records)
-            .await
-            .expect("write");
-
-        // wait
+        // wait until follower sync up with leader
         sleep(Duration::from_millis(1000)).await;
 
-        // check
+        debug!("done waiting. checking result");
 
-        // assert_eq!(follower.storage().get_leo(),1);
+        assert_eq!(follower_replica.leo(), 2);
+        assert_eq!(follower_replica.hw(), 2);
+        assert_eq!(leader_replica.hw(), 0); // leader should have update it's hw since follower has replicated it
 
         spu_server.notify();
 

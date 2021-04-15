@@ -38,6 +38,7 @@ use super::LeaderReplicaControllerCommand;
 
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
+    leader: SpuId,
     inner: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>>,
@@ -47,6 +48,7 @@ pub struct LeaderReplicaState<S> {
 impl<S> Clone for LeaderReplicaState<S> {
     fn clone(&self) -> Self {
         Self {
+            leader: self.leader.clone(),
             inner: self.inner.clone(),
             config: self.config.clone(),
             followers: self.followers.clone(),
@@ -60,7 +62,7 @@ where
     S: ReplicaStorage,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Leader {}", self.leader())
+        write!(f, "Leader for {}", self.id())
     }
 }
 
@@ -90,8 +92,9 @@ where
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
         let follower_ids = HashSet::from_iter(replica.replicas);
-        let followers = FollowerReplicaInfo::ids_to_map(*inner.leader(), follower_ids);
+        let followers = FollowerReplicaInfo::ids_to_map(replica.leader, follower_ids);
         Self {
+            leader: replica.leader,
             inner,
             config,
             followers: Arc::new(RwLock::new(followers)),
@@ -118,9 +121,7 @@ where
 
         let (sender, receiver) = bounded(10);
 
-        let inner =
-            SharableReplicaStorage::create(replica.leader, replica.id.clone(), config.into())
-                .await?;
+        let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
         let leader_replica = Self::new(replica, config.into(), inner, sender);
         Ok((leader_replica, receiver))
@@ -132,8 +133,7 @@ where
         config: ReplicationConfig,
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
-        let mut replica_storage = follower.inner_owned();
-        replica_storage.set_leader(replica.leader);
+        let replica_storage = follower.inner_owned();
         Self::new(replica, config, replica_storage, sender)
     }
 
@@ -270,7 +270,12 @@ where
         let leo = self.leo();
         let hw = self.hw();
 
-        trace!("computing follower offset for leader: {}, replica: {}, end offset: {}, high watermarkK {}",self.leader(),self.id(),leo,hw);
+        trace!(
+            "computing follower offset for leader: {}, end offset: {}, high watermarkK {}",
+            self.id(),
+            leo,
+            hw
+        );
 
         let reader = self.followers.read().await;
         reader
@@ -296,7 +301,7 @@ where
 
     /// convert myself as
     async fn as_lrs_request(&self) -> LrsRequest {
-        let leader = (self.leader().to_owned(), self.hw(), self.leo()).into();
+        let leader = (self.leader.to_owned(), self.hw(), self.leo()).into();
         let replicas = self
             .followers
             .read()
@@ -372,7 +377,7 @@ where
 
             let request = RequestMessage::new_request(sync_request).set_client_id(format!(
                 "leader: {}, replica: {}",
-                self.leader(),
+                self.leader,
                 self.id()
             ));
             debug!(
@@ -489,7 +494,7 @@ mod test {
             id: ReplicaKey,
         ) -> Result<SharableReplicaStorage<Self>, StorageError> {
             let config = MockConfig { hw, leo };
-            SharableReplicaStorage::create(0, id, config).await
+            SharableReplicaStorage::create(id, config).await
         }
     }
 
@@ -543,7 +548,6 @@ mod test {
 
         async fn create(
             _replica: &dataplane::ReplicaKey,
-            _spu: fluvio_types::SpuId,
             config: Self::Config,
         ) -> Result<Self, fluvio_storage::StorageError> {
             Ok(MockReplica {

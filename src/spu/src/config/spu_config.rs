@@ -149,7 +149,7 @@ impl From<&SpuConfig> for ConfigOption {
     fn from(config: &SpuConfig) -> ConfigOption {
         let log = &config.log;
         ConfigOption::new(
-            log.base_dir.clone(),
+            log.base_dir.join(format!("spu-logs-{}", config.id)),
             log.index_max_bytes,
             log.index_max_interval_bytes,
             log.segment_max_bytes,

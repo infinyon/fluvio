@@ -561,7 +561,7 @@ impl ScDispatcher<FileReplica> {
         if let Some(follower_replica) = self
             .ctx
             .followers_state()
-            .remove_replica(&old_replica.leader, &old_replica.id)
+            .remove_replica(old_replica.leader, &old_replica.id)
             .await
         {
             debug!(
@@ -624,7 +624,7 @@ impl ScDispatcher<FileReplica> {
         if let Some(replica_state) = self
             .ctx
             .followers_state()
-            .remove_replica(&replica.leader, &replica.id)
+            .remove_replica(replica.leader, &replica.id)
             .await
         {
             if let Err(err) = replica_state.remove().await {
@@ -641,7 +641,7 @@ impl ScDispatcher<FileReplica> {
         if self
             .ctx
             .followers_state()
-            .remove_replica(&old.leader, &old.id)
+            .remove_replica(old.leader, &old.id)
             .await
             .is_none()
         {
