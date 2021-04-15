@@ -50,6 +50,10 @@ members = [
 [profile.dev.package.backtrace]
 opt-level = 3
 
+# Always optimize sha256, prevents slow `fluvio version`
+[profile.dev.package.sha2]
+opt-level = 3
+
 # Used to preserve some linker hacks used by `inventory` crate
 [profile.dev.package.flv-test]
 incremental = false
