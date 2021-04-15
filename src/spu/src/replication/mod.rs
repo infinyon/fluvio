@@ -114,7 +114,7 @@ mod replica_test {
             .get(&replica.id)
             .expect("follower");
 
-        // at this point, follower replica should be empty since we don't have time to sync up with leader
+        // at this point, follower replica should be empty since we didn't have time to sync up with leader
         assert_eq!(follower_replica.leo(), 0);
         assert_eq!(follower_replica.hw(), 0);
 

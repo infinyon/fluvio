@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -34,10 +35,15 @@ pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
 
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
 
-#[derive(Debug)]
 pub struct InnerFlvSink<S> {
     inner: SplitFrame<S>,
     fd: RawFd,
+}
+
+impl<S> fmt::Debug for InnerFlvSink<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "fd({})", self.id())
+    }
 }
 
 impl<S> InnerFlvSink<S> {

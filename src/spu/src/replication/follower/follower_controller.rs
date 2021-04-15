@@ -64,7 +64,7 @@ impl ReplicaFollowerController<FileReplica> {
     #[instrument(
         name = "FollowerController",
         skip(self),
-        fields (
+        fields(
             leader = self.leader
         )
     )]
@@ -91,8 +91,6 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     async fn sync_with_leader(&mut self, mut socket: FlvSocket) -> Result<bool, FlvSocketError> {
-        let mut replicas = ReplicasBySpu::default();
-
         self.send_fetch_stream_request(&mut socket).await?;
 
         let (mut sink, mut stream) = socket.split();
@@ -101,6 +99,7 @@ impl ReplicaFollowerController<FileReplica> {
         let mut event_listener = self.spu_ctx.events.change_listner();
 
         // starts initial sync
+        let mut replicas = ReplicasBySpu::filter_from(&self.states, self.leader);
         self.sync_all_offsets_to_leader(&mut sink, &replicas)
             .await?;
 
@@ -192,6 +191,7 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     /// establish stream to leader SPU
+    #[instrument(skip(self))]
     async fn send_fetch_stream_request(
         &self,
         socket: &mut FlvSocket,
@@ -304,17 +304,16 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     /// send offset to leader
+    #[instrument(skip(self))]
     async fn send_offsets_to_leader(
         &self,
         sink: &mut FlvSink,
         offsets: UpdateOffsetRequest,
     ) -> Result<(), FlvSocketError> {
-        let follower_id = self.config.id();
-
+        let local_spu = self.config.id();
+        debug!(local_spu, "sending offsets to leader");
         let req_msg = RequestMessage::new_request(offsets)
-            .set_client_id(format!("follower: {}", follower_id));
-
-        trace!(?req_msg, "sending offsets leader");
+            .set_client_id(format!("follower spu: {}", local_spu));
 
         sink.send_request(&req_msg).await
     }
@@ -351,6 +350,7 @@ impl ReplicasBySpu {
         UpdateOffsetRequest { replicas }
     }
 
+    /*
     /// send offset to leader
     #[allow(unused)]
     async fn send_offsets_to_leader(
@@ -367,4 +367,5 @@ impl ReplicasBySpu {
 
         sink.send_request(&req_msg).await
     }
+    */
 }
