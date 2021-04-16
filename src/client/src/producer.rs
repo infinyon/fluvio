@@ -276,35 +276,45 @@ mod tests {
     #[test]
     fn test_round_robin_individual() {
         let partitioner = SiphashRoundRobinPartitioner::new();
-        let partition_count = 10;
+        let partition_count = 3;
 
-        let mut prev_partition = -1;
-        for _ in 0..100 {
-            let p = partitioner.partition(&[None], partition_count)[0];
-            println!("Partition: {}", p);
-            assert_ne!(p, prev_partition);
-            prev_partition = p;
-        }
+        let key1_partition = partitioner.partition(&[None], partition_count)[0];
+        assert_eq!(key1_partition, 0);
+        let key2_partition = partitioner.partition(&[None], partition_count)[0];
+        assert_eq!(key2_partition, 1);
+        let key3_partition = partitioner.partition(&[None], partition_count)[0];
+        assert_eq!(key3_partition, 2);
+        let key4_partition = partitioner.partition(&[None], partition_count)[0];
+        assert_eq!(key4_partition, 0);
+        let key5_partition = partitioner.partition(&[None], partition_count)[0];
+        assert_eq!(key5_partition, 1);
+        let key6_partition = partitioner.partition(&[None], partition_count)[0];
+        assert_eq!(key6_partition, 2);
     }
 
     /// Ensure that feeding keyless records in batches does not always start with the same partition
     #[test]
     fn test_round_robin_batch() {
         let partitioner = SiphashRoundRobinPartitioner::new();
-        let partition_count = 11;
+        let partition_count = 4;
 
-        // A batch of 10 records with no keys
-        let batch: Vec<Option<&[u8]>> = (0..10).map(|_| None).collect();
+        // A batch of 5 records with no keys
+        let batch: Vec<Option<&[u8]>> = (0..5).map(|_| None).collect();
 
-        let mut prev_partition = -1;
-        for _ in 0..10 {
-            let ps = partitioner.partition(&batch, partition_count);
+        // The partitions of the first batch of five
+        let ps1 = partitioner.partition(&batch, partition_count);
+        assert_eq!(ps1[0], 0);
+        assert_eq!(ps1[1], 1);
+        assert_eq!(ps1[2], 2);
+        assert_eq!(ps1[3], 3);
+        assert_eq!(ps1[4], 0);
 
-            for p in ps {
-                println!("Partition: {}", p);
-                assert_ne!(p, prev_partition);
-                prev_partition = p;
-            }
-        }
+        // The partitions of the second batch of five
+        let ps2 = partitioner.partition(&batch, partition_count);
+        assert_eq!(ps2[0], 1); // resumes at 1
+        assert_eq!(ps2[1], 2);
+        assert_eq!(ps2[2], 3);
+        assert_eq!(ps2[3], 0);
+        assert_eq!(ps2[4], 1);
     }
 }
