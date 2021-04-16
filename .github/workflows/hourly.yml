@@ -16,7 +16,9 @@ jobs:
         cluster_type: [local, k8]
         test:
           - name: smoke 
-            cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install -- --producer-iteration 100 --producer-record-size 1000 
+            cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install -- --producer-iteration ${SMOKE_PRODUCER_ITERATION} --producer-record-size ${SMOKE_PRODUCER_RECORD_SIZE} 
+            producer_iteration: [100]
+            producer_record_size: [1000]
           - name: producer stress (benchmark mode)
             cmd: cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5 
         include:
@@ -102,6 +104,14 @@ jobs:
 
       # Run test
       - name: ${{ matrix.test.name }}
+        if: matrix.test.name != 'smoke'
+        run: ${{ matrix.test.cmd }}
+
+      - name: ${{ matrix.test.name }}
+        if: matrix.test.name == 'smoke'
+        env:
+          SMOKE_PRODUCER_ITERATION: ${{ matrix.test.producer_iteration }}
+          SMOKE_PRODUCER_RECORD_SIZE: ${{ matrix.test.producer_record_size }}
         run: ${{ matrix.test.cmd }}
 
       - name: Print sccache stats
