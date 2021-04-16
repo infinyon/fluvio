@@ -371,10 +371,11 @@ where
                 )
                 .await;
             debug!(
-                offset.hw,
-                offset.leo,
+                follower_id,
+                hw = offset.hw,
+                leo = offset.leo,
                 len = partition_response.records.len(),
-                "read records"
+                "sending records"
             );
             // ensure leo and hw are set correctly. storage might have update last stable offset
             partition_response.leo = offset.leo;

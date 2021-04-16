@@ -124,7 +124,7 @@ impl ReplicaFollowerController<FileReplica> {
                         let req_msg = req_msg_res?;
 
                         match req_msg {
-                            FollowerPeerRequest::SyncRecords(sync_request) => self.write_to_follower_replica(&mut sink,sync_request.request).await?,
+                            FollowerPeerRequest::SyncRecords(sync_request) => self.sync_from_leader(&mut sink,sync_request.request).await?,
                         }
 
                     } else {
@@ -150,13 +150,56 @@ impl ReplicaFollowerController<FileReplica> {
         }
     }
 
-    async fn write_to_follower_replica(
+    #[instrument(skip(self, req))]
+    async fn sync_from_leader(
         &self,
         sink: &mut FlvSink,
-        req: DefaultSyncRequest,
+        mut req: DefaultSyncRequest,
     ) -> Result<(), FlvSocketError> {
-        debug!("received sync req");
-        let offsets = self.write_topics(req).await;
+        let mut offsets = UpdateOffsetRequest::default();
+
+        for topic_request in &mut req.topics {
+            let topic = &topic_request.name;
+            for p in &mut topic_request.partitions {
+                let rep_id = p.partition;
+                let replica_key = ReplicaKey::new(topic.clone(), rep_id);
+                debug!(
+                    replica = %replica_key,
+                    hw=p.hw,
+                    leo=p.leo,
+                    records = p.records.total_records(),
+                    base_offset = p.records.base_offset(),
+                    "update from leader");
+                if let Some(replica) = self.states.get(&replica_key) {
+                    match replica.write_recordsets(&mut p.records).await {
+                        Ok(valid_record) => {
+                            if valid_record {
+                                let follow_leo = replica.leo();
+                                let leader_hw = p.hw;
+                                debug!(follow_leo, leader_hw, "finish writing");
+                                if follow_leo == leader_hw {
+                                    debug!("follow leo and leader hw is same, updating hw");
+                                    if let Err(err) = replica.update_hw(leader_hw).await {
+                                        error!("error writing replica high watermark: {}", err);
+                                    }
+                                }
+
+                                offsets.replicas.push(replica.as_offset_request());
+                            }
+                        }
+                        Err(err) => error!(
+                            "problem writing replica: {}, error: {:#?}",
+                            replica_key, err
+                        ),
+                    }
+                } else {
+                    error!(
+                        "unable to find follower replica for writing: {}",
+                        replica_key
+                    );
+                }
+            }
+        }
         self.send_offsets_to_leader(sink, offsets).await
     }
 
@@ -247,52 +290,6 @@ impl ReplicaFollowerController<FileReplica> {
         }
     }
     */
-
-    /// write records from leader to follower replica
-    /// return updated offsets
-    pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
-        let mut offsets = UpdateOffsetRequest::default();
-
-        for topic_request in &mut req.topics {
-            let topic = &topic_request.name;
-            for partition_request in &mut topic_request.partitions {
-                let rep_id = partition_request.partition;
-                let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                if let Some(replica) = self.states.get(&replica_key) {
-                    match replica
-                        .write_recordsets(&mut partition_request.records)
-                        .await
-                    {
-                        Ok(valid_record) => {
-                            if valid_record {
-                                let follow_leo = replica.leo();
-                                let leader_hw = partition_request.hw;
-                                debug!(follow_leo, leader_hw, "finish writing");
-                                if follow_leo == leader_hw {
-                                    debug!("follow leo and leader hw is same, updating hw");
-                                    if let Err(err) = replica.update_hw(leader_hw).await {
-                                        error!("error writing replica high watermark: {}", err);
-                                    }
-                                }
-
-                                offsets.replicas.push(replica.as_offset_request());
-                            }
-                        }
-                        Err(err) => error!(
-                            "problem writing replica: {}, error: {:#?}",
-                            replica_key, err
-                        ),
-                    }
-                } else {
-                    error!(
-                        "unable to find follower replica for writing: {}",
-                        replica_key
-                    );
-                }
-            }
-        }
-        offsets
-    }
 
     async fn sync_all_offsets_to_leader(
         &self,

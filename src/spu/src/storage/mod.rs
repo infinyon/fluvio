@@ -110,7 +110,12 @@ where
 
     pub async fn update_hw(&self, hw: Offset) -> Result<bool, StorageError> {
         let mut writer = self.write().await;
-        writer.update_high_watermark(hw).await
+        if writer.update_high_watermark(hw).await? {
+            self.hw.update(hw);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     pub async fn write_record_set(

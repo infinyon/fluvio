@@ -236,7 +236,11 @@ where
     pub async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
         let storage_leo = self.leo();
         if records.base_offset() != storage_leo {
-            warn!(storage_leo, "storage leo is not same as base offset");
+            warn!(
+                storage_leo,
+                incoming_base_offset = records.base_offset(),
+                "storage leo is not same as base offset"
+            );
             Ok(false)
         } else {
             self.write_record_set(records, false).await?;
