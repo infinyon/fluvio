@@ -257,6 +257,8 @@ fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn test_u64_mod_i32() {
         assert_eq!(i32::MAX as u64, 2147483647_u64);
@@ -268,5 +270,41 @@ mod tests {
             "u64: {}, u64_mod: {}, i32: {}",
             some_u64, some_u64_mod_i32, some_i32
         );
+    }
+
+    /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
+    #[test]
+    fn test_round_robin_individual() {
+        let partitioner = SiphashRoundRobinPartitioner::new();
+        let partition_count = 10;
+
+        let mut prev_partition = -1;
+        for _ in 0..100 {
+            let p = partitioner.partition(&[None], partition_count)[0];
+            println!("Partition: {}", p);
+            assert_ne!(p, prev_partition);
+            prev_partition = p;
+        }
+    }
+
+    /// Ensure that feeding keyless records in batches does not always start with the same partition
+    #[test]
+    fn test_round_robin_batch() {
+        let partitioner = SiphashRoundRobinPartitioner::new();
+        let partition_count = 11;
+
+        // A batch of 10 records with no keys
+        let batch: Vec<Option<&[u8]>> = (0..10).map(|_| None).collect();
+
+        let mut prev_partition = -1;
+        for _ in 0..10 {
+            let ps = partitioner.partition(&batch, partition_count);
+
+            for p in ps {
+                println!("Partition: {}", p);
+                assert_ne!(p, prev_partition);
+                prev_partition = p;
+            }
+        }
     }
 }
