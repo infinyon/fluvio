@@ -18,7 +18,7 @@ use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
+use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
 use fluvio_types::{SpuId};
 
 use crate::{
@@ -41,7 +41,7 @@ pub struct LeaderReplicaState<S> {
     leader: SpuId,
     inner: SharableReplicaStorage<S>,
     config: ReplicationConfig,
-    followers: Arc<RwLock<BTreeMap<SpuId, FollowerReplicaInfo>>>,
+    followers: Arc<RwLock<BTreeMap<SpuId, FollowerState>>>,
     sender: Sender<LeaderReplicaControllerCommand>,
 }
 
@@ -92,7 +92,7 @@ where
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
         let follower_ids = HashSet::from_iter(replica.replicas);
-        let followers = FollowerReplicaInfo::ids_to_map(replica.leader, follower_ids);
+        let followers = FollowState::ids_to_map(replica.leader, follower_ids);
         Self {
             leader: replica.leader,
             inner,
@@ -180,14 +180,14 @@ where
     pub async fn update_followers<F>(
         &self,
         offset: F,
-    ) -> (bool, Option<FollowerReplicaInfo>, Option<Offset>)
+    ) -> (bool, Option<FollowerState>, Option<Offset>)
     where
         F: Into<FollowerOffsetUpdate>,
     {
         let follower_offset = offset.into();
 
         let follower_id = follower_offset.follower_id;
-        let mut follower_info = FollowerReplicaInfo::new(follower_offset.leo, follower_offset.hw);
+        let mut follower_info = FollowerState::new(follower_offset.leo, follower_offset.hw);
 
         let leader_leo = self.leo();
         let leader_hw = self.hw();
@@ -266,7 +266,7 @@ where
 
     /// compute list of followers that need to be sync
     /// this is done by checking diff of end offset and high watermark
-    async fn need_follower_updates(&self) -> Vec<(SpuId, FollowerReplicaInfo)> {
+    async fn need_follower_updates(&self) -> Vec<(SpuId, FollowState)> {
         let leo = self.leo();
         let hw = self.hw();
 
@@ -333,6 +333,7 @@ where
         self.followers.read().await.keys().cloned().collect()
     }
 
+    /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
         let follower_sync = self.need_follower_updates().await;
 
@@ -348,7 +349,7 @@ where
         &self,
         sinks: &SinkPool<SpuId>,
         follower_id: SpuId,
-        follower_info: &FollowerReplicaInfo,
+        follower_info: &FollowerState,
         max_bytes: u32,
     ) {
         if let Some(mut sink) = sinks.get_sink(&follower_id) {
@@ -403,19 +404,18 @@ where
 
 use super::FollowerOffsetUpdate;
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct FollowerReplicaInfo {
-    hw: Offset,
-    leo: Offset,
+/// Maintain state information about follower replica
+/// their is info received from follower
+/// received are offset that we received from follower
+/// send are offset that we sent, we can use to not to re-send
+#[derive(Debug, Clone, Default)]
+pub struct FollowerState {
+    pub received: OffsetInfo,
+    pub send: OffsetInfo,
+    
 }
 
-impl Default for FollowerReplicaInfo {
-    fn default() -> Self {
-        Self { hw: -1, leo: -1 }
-    }
-}
-
-impl FollowerReplicaInfo {
+impl FollowerState {
     /// convert follower ids into BtreeMap of this
     fn ids_to_map(leader_id: SpuId, follower_ids: HashSet<SpuId>) -> BTreeMap<SpuId, Self> {
         let mut followers = BTreeMap::new();
@@ -425,11 +425,14 @@ impl FollowerReplicaInfo {
         followers
     }
 
+    /* 
     pub fn new(leo: Offset, hw: Offset) -> Self {
         assert!(leo >= hw, "end offset >= high watermark");
         Self { leo, hw }
     }
+    */
 
+    /* 
     pub fn hw(&self) -> Offset {
         self.hw
     }
@@ -446,14 +449,10 @@ impl FollowerReplicaInfo {
     pub fn is_valid(&self) -> bool {
         self.hw != -1 && self.leo != -1
     }
+    */
 }
 
-/// convert tuple of (leo,hw)
-impl From<(Offset, Offset)> for FollowerReplicaInfo {
-    fn from(value: (Offset, Offset)) -> Self {
-        Self::new(value.0, value.1)
-    }
-}
+
 
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
 

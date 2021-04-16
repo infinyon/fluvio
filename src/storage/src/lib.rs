@@ -31,12 +31,33 @@ mod inner {
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
 
+    #[derive(Debug,Clone,PartialEq)]
     pub struct OffsetInfo {
         pub hw: Offset,
         pub leo: Offset,
     }
 
+
+    impl Default for OffsetInfo {
+        fn default() -> Self {
+            Self { hw: -1, leo: -1 }
+        }
+        
+    }
+
+    impl From<(Offset, Offset)> for OffsetInfo {
+        fn from(value: (Offset, Offset)) -> Self {
+            Self::new(value.0, value.1)
+        }
+    }
+
     impl OffsetInfo {
+
+        pub fn new(leo: Offset, hw: Offset) -> Self {
+            assert!(leo >= hw, "end offset >= high watermark");
+            Self { leo, hw }
+        }
+        
         /// get isolation offset
         pub fn isolation(&self, isolation: &Isolation) -> Offset {
             match isolation {
@@ -44,6 +65,13 @@ mod inner {
                 Isolation::ReadUncommitted => self.leo,
             }
         }
+
+        /// check if offset contains value
+        pub fn is_valid(&self) -> bool {
+            self.hw != -1 && self.leo != -1
+        }
+        
+
     }
 
     use crate::StorageError;

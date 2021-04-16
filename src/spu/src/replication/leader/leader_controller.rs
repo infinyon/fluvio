@@ -77,12 +77,12 @@ impl ReplicaLeaderController<FileReplica> {
 
                 offset = hw_listener.listen() => {
                     debug!(hw_update = offset);
-                    join(self.send_status_to_sc(),self.sync_followers()).await;
+                    self.send_status_to_sc().await;
                 },
 
                 offset = leo_listener.listen() => {
                     debug!(leo_update = offset);
-                    join(self.send_status_to_sc(),self.sync_followers()).await;
+                    self.send_status_to_sc().await;
                 },
 
                 controller_req = self.controller_receiver.next() => {

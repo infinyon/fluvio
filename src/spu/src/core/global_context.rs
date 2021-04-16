@@ -1,13 +1,11 @@
 //!
 //! # Global Context
 //!
-//! Global Context stores entities that persist through system operation.
-//!
+//! Global Context maintains states need to be shared across in the SPU
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use fluvio_socket::SharedSinkPool;
-use fluvio_socket::SinkPool;
+
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
@@ -30,7 +28,6 @@ pub struct GlobalContext<S> {
     replica_localstore: SharedReplicaLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
-    follower_sinks: SharedSinkPool<SpuId>,
     stream_publishers: StreamPublishers,
 }
 
@@ -51,7 +48,6 @@ where
             spu_localstore: SpuLocalStore::new_shared(),
             replica_localstore: ReplicaStore::new_shared(),
             config: Arc::new(spu_config),
-            follower_sinks: SinkPool::new_shared(),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
             stream_publishers: StreamPublishers::new(),
@@ -73,13 +69,6 @@ where
 
     pub fn replica_localstore(&self) -> &ReplicaStore {
         &self.replica_localstore
-    }
-    pub fn follower_sinks(&self) -> &SinkPool<SpuId> {
-        &self.follower_sinks
-    }
-
-    pub fn followers_sink_owned(&self) -> SharedSinkPool<SpuId> {
-        self.follower_sinks.clone()
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
