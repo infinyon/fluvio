@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 use tracing::instrument;
 use siphasher::sip::SipHasher;
@@ -24,11 +24,17 @@ use crate::sockets::SerialFrame;
 pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
+    partitioner: Box<dyn Partitioner + Send + Sync>,
 }
 
 impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
-        Self { topic, pool }
+        let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
+        Self {
+            topic,
+            pool,
+            partitioner,
+        }
     }
 
     /// Sends a key/value record to this producer's Topic.
@@ -93,27 +99,30 @@ impl TopicProducer {
         I: IntoIterator<Item = (Option<K>, V)>,
     {
         let topics = self.pool.metadata.topics();
-        let topic_spec = topics.lookup_by_key(&self.topic).await?.unwrap().spec; // TODO fix unwrap and stuff
+        let topic_spec = topics
+            .lookup_by_key(&self.topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?
+            .spec;
         let partition_count = topic_spec.partitions();
 
-        let records: Vec<(Option<Vec<u8>>, Vec<u8>)> = records
+        // Split keys into a vec to feed to the partitioner
+        let (keys, values): (Vec<Option<Vec<u8>>>, Vec<Vec<u8>>) = records
             .into_iter()
             .map(|(k, v)| (k.map(|it| it.into()), v.into()))
+            .unzip();
+        let key_slices: Vec<_> = keys.iter().map(|it| it.as_deref()).collect();
+        let partitions = self.partitioner.partition(&key_slices, partition_count);
+
+        // Zip up the partition assignments with their keys and values
+        let iter: Vec<_> = partitions
+            .into_iter()
+            .zip(keys.into_iter().zip(values.into_iter()))
             .collect();
 
-        let mut round_robin = 0i32;
+        // Convert key/values into records and sort them by partition
         let mut records_by_partition: HashMap<i32, Vec<_>> = HashMap::new();
-        for (key, value) in records.into_iter() {
-            let partition = match &key {
-                Some(key) => partition_siphash(key, partition_count),
-                None => {
-                    let partition = round_robin;
-                    round_robin = (round_robin + 1) % partition_count;
-                    partition
-                }
-            };
-            println!("Assigned partition: {}", partition);
-
+        for (partition, (key, value)) in iter {
             let key = key.map(|it| DefaultAsyncBuffer::new(it));
             let record = DefaultAsyncBuffer::new(value);
             let record = DefaultRecord::from((key, record));
@@ -183,6 +192,57 @@ impl TopicProducer {
     }
 }
 
+/// A trait for defining a partitioning strategy for key/value records.
+///
+/// A Partitioner is given a slice of potential keys, and the number of
+/// partitions in the current Topic. It must map each key from the input
+/// slice into a partition stored at the same index in the output Vec.
+///
+/// It is up to the implementor to decide how the keys get mapped to
+/// partitions. This includes deciding what partition to assign to records
+/// with no keys (represented by `None` values in the keys slice).
+///
+/// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
+trait Partitioner {
+    fn partition(&self, keys: &[Option<&[u8]>], partition_count: i32) -> Vec<i32>;
+}
+
+/// A [`Partitioner`] which combines hashing and round-robin partition assignment
+///
+/// - Records with keys get their keys hashed with siphash
+/// - Records without keys get assigned to partitions using round-robin
+struct SiphashRoundRobinPartitioner {
+    index: Arc<RwLock<i32>>,
+}
+
+impl SiphashRoundRobinPartitioner {
+    pub fn new() -> Self {
+        Self {
+            index: Arc::new(RwLock::new(0)),
+        }
+    }
+}
+
+impl Partitioner for SiphashRoundRobinPartitioner {
+    fn partition(&self, keys: &[Option<&[u8]>], partition_count: i32) -> Vec<i32> {
+        let mut partitions = Vec::with_capacity(keys.len());
+        let mut rr_index = *self.index.read().expect("poisoned");
+        for maybe_key in keys {
+            let partition = match maybe_key {
+                Some(key) => partition_siphash(key, partition_count),
+                None => {
+                    let partition = rr_index;
+                    rr_index = (rr_index + 1) % partition_count;
+                    partition
+                }
+            };
+            partitions.push(partition);
+        }
+        *self.index.write().expect("poisoned") = rr_index;
+        partitions
+    }
+}
+
 fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
     use std::hash::{Hash, Hasher};
     use std::convert::TryFrom;
@@ -192,7 +252,6 @@ fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
     key.hash(&mut hasher);
     let hashed = hasher.finish();
 
-    // TODO sanity check that this makes sense
     i32::try_from(hashed % partition_count as u64).unwrap()
 }
 
