@@ -9,3 +9,4 @@ data:
   nodeSelector: {{ .Values.spuPod.nodeSelector | toJson | quote }}
   lbServiceAnnotations: {{ .Values.loadBalancer.serviceAnnotations | toJson | quote }}
   service: {{ .Values.service | toJson | quote }}
+  storageClass: {{ .Values.spuStorageClass }}

@@ -252,7 +252,7 @@ mod k8_convert {
         };
         let claim = PersistentVolumeClaim {
             access_modes: vec![VolumeAccessMode::ReadWriteOnce],
-            storage_class_name: format!("{}-{}", PRODUCT_NAME, SPU_DEFAULT_NAME),
+            storage_class_name: spu_k8_config.storage_class.clone(),
             resources: ResourceRequirements {
                 requests: VolumeRequest { storage: size },
             },
