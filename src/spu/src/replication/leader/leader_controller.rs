@@ -90,7 +90,7 @@ impl ReplicaLeaderController<FileReplica> {
                         match command {
 
                             LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
-                                self.update_follower_offsets(offsets).await;
+                                self.update_from_follower(offsets).await;
                             },
 
                             LeaderReplicaControllerCommand::UpdateReplicaFromSc(_) => {
@@ -115,9 +115,12 @@ impl ReplicaLeaderController<FileReplica> {
     }
 
     /// update the follower offsets
-    async fn update_follower_offsets(&mut self, offsets: FollowerOffsetUpdate) {
+    #[instrument(skip(self, offsets))]
+    async fn update_from_follower(&mut self, offsets: FollowerOffsetUpdate) {
+        debug!(?offsets);
         let follower_id = offsets.follower_id;
         let (update_status, sync_follower, hw_update) = self.state.update_followers(offsets).await;
+        debug!(update_status, ?sync_follower, ?hw_update, "follow updates");
         join3(
             async {
                 if update_status {

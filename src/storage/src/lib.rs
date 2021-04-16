@@ -31,6 +31,21 @@ mod inner {
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
 
+    pub struct OffsetInfo {
+        pub hw: Offset,
+        pub leo: Offset,
+    }
+
+    impl OffsetInfo {
+        /// get isolation offset
+        pub fn isolation(&self, isolation: &Isolation) -> Offset {
+            match isolation {
+                Isolation::ReadCommitted => self.hw,
+                Isolation::ReadUncommitted => self.leo,
+            }
+        }
+    }
+
     use crate::StorageError;
 
     /// output from storage is represented as slice
@@ -96,7 +111,7 @@ mod inner {
             max_len: u32,
             isolation: Isolation,
             partition_response: &mut P,
-        ) -> (Offset, Offset)
+        ) -> OffsetInfo
         where
             P: SlicePartitionResponse + Send;
 

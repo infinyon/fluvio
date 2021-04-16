@@ -9,7 +9,7 @@ use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
 use dataplane::{Offset};
-use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError};
+use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError, OffsetInfo};
 use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -90,14 +90,14 @@ where
     }
 
     /// read records into partition response
-    /// return hw and leo
+    /// return leo and hw
     pub async fn read_records<P>(
         &self,
         offset: Offset,
         max_len: u32,
         isolation: Isolation,
         partition_response: &mut P,
-    ) -> (Offset, Offset)
+    ) -> OffsetInfo
     where
         P: SlicePartitionResponse + Send,
     {

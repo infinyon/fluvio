@@ -9,11 +9,11 @@ use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size};
 use dataplane::batch::DefaultBatch;
 use dataplane::record::RecordSet;
 
-use crate::{checkpoint::CheckPoint};
+use crate::{OffsetInfo, checkpoint::CheckPoint};
 use crate::range_map::SegmentList;
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
-use crate::SegmentSlice;
+use crate::{SegmentSlice};
 use crate::{StorageError, SlicePartitionResponse, ReplicaStorage};
 
 /// Replica is public abstraction for commit log which are distributed.
@@ -60,13 +60,15 @@ impl ReplicaStorage for FileReplica {
         }
     }
 
+    /// read partition slice
+    /// return leo, hw
     async fn read_partition_slice<P>(
         &self,
         offset: Offset,
         max_len: u32,
         isolation: Isolation,
         partition_response: &mut P,
-    ) -> (Offset, Offset)
+    ) -> OffsetInfo
     where
         P: SlicePartitionResponse + Send,
     {
@@ -240,7 +242,7 @@ impl FileReplica {
         &self,
         max_len: u32,
         response: &mut P,
-    ) -> (Offset, Offset)
+    ) -> OffsetInfo
     where
         P: SlicePartitionResponse,
     {
@@ -260,7 +262,7 @@ impl FileReplica {
         max_offset: Option<Offset>,
         max_len: u32,
         response: &mut P,
-    ) -> (Offset, Offset)
+    ) -> OffsetInfo
     where
         P: SlicePartitionResponse,
     {
@@ -282,7 +284,7 @@ impl FileReplica {
                         // optimization
                         if start_offset == self.get_leo() {
                             trace!("start offset is same as end offset, skipping");
-                            return (leo, hw);
+                            return OffsetInfo { leo, hw };
                         } else {
                             debug!(
                                 "active segment with base offset: {} found for offset: {}",
@@ -347,7 +349,7 @@ impl FileReplica {
             }
         }
 
-        (leo, hw)
+        OffsetInfo { leo, hw }
     }
 
     async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {

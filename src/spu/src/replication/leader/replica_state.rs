@@ -285,9 +285,9 @@ where
             })
             .map(|(follower_id, follower_info)| {
                 debug!(
-                    "replica: {}, follower: {} needs to be updated",
-                    self.id(),
-                    follower_id
+                    replica = %self.id(),
+                    follower_id,
+                    "needs to be updated"
                 );
                 trace!(
                     "follow: {} has different hw: {:#?}",
@@ -315,6 +315,7 @@ where
         LrsRequest::new(self.id().to_owned(), leader, replicas)
     }
 
+    #[instrument(skip(self, sc_sink))]
     pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
         let lrs = self.as_lrs_request().await;
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
@@ -361,7 +362,7 @@ where
                 partition: self.id().partition,
                 ..Default::default()
             };
-            let (hw, leo) = self
+            let offset = self
                 .read_records(
                     follower_info.leo,
                     max_bytes,
@@ -369,9 +370,15 @@ where
                     &mut partition_response,
                 )
                 .await;
+            debug!(
+                offset.hw,
+                offset.leo,
+                len = partition_response.records.len(),
+                "read records"
+            );
             // ensure leo and hw are set correctly. storage might have update last stable offset
-            partition_response.leo = leo;
-            partition_response.hw = hw;
+            partition_response.leo = offset.leo;
+            partition_response.hw = offset.hw;
             topic_response.partitions.push(partition_response);
             sync_request.topics.push(topic_response);
 
@@ -380,10 +387,7 @@ where
                 self.leader,
                 self.id()
             ));
-            debug!(
-                "sending records to follower: {}, response: {}",
-                follower_id, request
-            );
+
             if let Err(err) = sink
                 .encode_file_slices(&request, request.header.api_version())
                 .await
@@ -463,7 +467,7 @@ mod test {
     use fluvio_future::test_async;
     use fluvio_controlplane_metadata::partition::{ReplicaKey};
     use fluvio_controlplane_metadata::partition::Replica;
-    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError};
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError, OffsetInfo};
     use dataplane::Offset;
 
     use crate::{
@@ -520,7 +524,7 @@ mod test {
             _max_len: u32,
             _isolation: dataplane::Isolation,
             _partition_response: &mut P,
-        ) -> (Offset, Offset)
+        ) -> OffsetInfo
         where
             P: fluvio_storage::SlicePartitionResponse + Send,
         {

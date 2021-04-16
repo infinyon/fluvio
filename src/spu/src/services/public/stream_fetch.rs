@@ -298,7 +298,7 @@ where
             ..Default::default()
         };
 
-        let (hw, leo) = self
+        let offset = self
             .leader_state
             .read_records(
                 offset,
@@ -309,17 +309,14 @@ where
             .await;
 
         debug!(
-            hw = hw,
-            leo = leo,
+            hw = offset.hw,
+            leo = offset.leo,
             slice_start = file_partition_response.records.position(),
             slice_end = file_partition_response.records.len(),
             read_records_ms = %now.elapsed().as_millis()
         );
 
-        let mut next_offset = match self.isolation {
-            Isolation::ReadCommitted => hw,
-            Isolation::ReadUncommitted => leo,
-        };
+        let mut next_offset = offset.isolation(&self.isolation);
 
         if file_partition_response.records.len() > 0 {
             if let Some(module) = module_option {
@@ -412,22 +409,12 @@ where
 
                 debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
 
-                let next_offset = match self.isolation {
-                    Isolation::ReadCommitted => hw,
-                    Isolation::ReadUncommitted => leo,
-                };
-
-                Ok((next_offset, true))
+                Ok((offset.isolation(&self.isolation), true))
             }
         } else {
             debug!("empty records, skipping");
 
-            let next_offset = match self.isolation {
-                Isolation::ReadCommitted => hw,
-                Isolation::ReadUncommitted => leo,
-            };
-
-            Ok((next_offset, false))
+            Ok((offset.isolation(&self.isolation), false))
         }
     }
 }
