@@ -47,12 +47,29 @@ $ cd fluvio
 $ cargo build
 ```
 
-Setup alias for development CLI.
-```
-$ alias flvd=./target/debug/fluvio
-``` 
+The next step is very important, as it will help you to prevent subtle development
+bugs. Fluvio is built in two separate pieces, `fluvio` (the CLI), and `fluvio-run`
+(the server). When testing changes to these components, you need to make sure to
+rebuild _both_ components before running. In other Rust projects, it is typical to
+just use `cargo run`:
 
-This avoid collision with released version of Fluvio.
+```
+$ cargo run -- my CLI args here
+```
+
+However, this will only rebuild `fluvio`, it will not also rebuild `fluvio-run`,
+which may make you think that the code changes you made did not have any effect.
+In order to automate the rebuilding of both of these components, we STRONGLY
+RECOMMEND adding the following alias to your `~/.bashrc` or `~/.zshrc` file:
+
+```
+alias flvd='cargo build --manifest-path="/Users/nick/infinyon/fluvio/Cargo.toml" --bin fluvio-run && \
+    cargo run --manifest-path="/Users/nick/infinyon/fluvio/Cargo.toml" --bin fluvio --'
+```
+
+Make sure to replace `/Users/nick/infinyon/fluvio` with the path where you cloned `fluvio`
+on your own system. Then, the `flvd` command (short for "fluvio develop") will recompile
+both `fluvio-run` and `fluvio`, then execute `fluvio` and pass the arguments to it.
 
 ## Download a published version of Fluvio
 
@@ -74,17 +91,15 @@ Install Fluvio `sys` chart from source.
 $ flvd cluster start --sys --develop
 ```
 
-
 # Running Fluvio with local cluster
 
-It is recommened to use `local` cluster for development.
+We highly recommend using the `flvd cluster start --local --develop` command for most development.
 
-In this case, we run `sc` and `spu` individually, allowing development testing.
-
+However, in the following cases, we run `sc` and `spu` individually, allowing individual testing.
 
 ## Starting SC
 
-The Streaming Controller (SC) is the controller for Fluvio cluster.
+The Streaming Controller (SC) is the controller for a Fluvio cluster.
 You only start a single SC for a single Fluvio cluster.
 
 To run the SC, you'll need to build and run the `fluvio-run` executable:
@@ -194,7 +209,7 @@ $ flvd cluster delete
 Run command below now to run install with image just built
 
 ```
-$ fluvio cluster start --develop
+$ flvd cluster start --develop
 ```
 
 Topic creation, product and consumer can now be tested as with `local` cluster.
@@ -202,14 +217,15 @@ Topic creation, product and consumer can now be tested as with `local` cluster.
 You can remove fluvio cluster by
 
 ```
-fluvio cluster delete
+$ flvd cluster delete
 ```
 
 Note that when you uninstall cluster, CLI will remove all related objects such as
-* Topics
-* Partitions
-* Tls Secrets
-* Storage
+
+- Topics
+- Partitions
+- Tls Secrets
+- Storage
 
 ## Running SC in locally
 
@@ -296,7 +312,7 @@ sh k8-util/minikube/reset-minikube.sh
 If you face issues while installing sys chart
 
 ```
-$ fluvio cluster start --sys
+$ flvd cluster start --sys
 "fluvio" has been added to your repositories
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "fluvio" chart repository
@@ -310,7 +326,7 @@ Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the
 
 ```
 kubectl delete storageclass fluvio-spu
- ```
+```
 
 #### Deleting partition
 
@@ -318,5 +334,3 @@ In certain cases, partition may not be deleted correctly.  In this case, you can
 ```
 kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
 ```
-
-
