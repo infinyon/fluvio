@@ -69,6 +69,12 @@ Test runner can be a running in two ways:
 * Tests must opt-in to be run in benchmark mode. To opt-in add `#[fluvio_test(benchmark = true)]` to test
 * To run a test in benchmark mode, run test with the `--benchmark` flag.
 
+```
+cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5
+```
+
+> The `--benchmark` flag is specified as an option of `flv-test` (Before the `--`.)
+
 An error message will appear when attempting to benchmark tests without `benchmark = true`.
 
 Benchmarks are performed with the [bencher](https://crates.io/crates/bencher) crate using the [auto_bench](https://docs.rs/bencher/0.1.5/bencher/struct.Bencher.html#method.auto_bench) method.
