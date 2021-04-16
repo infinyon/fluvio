@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        cluster_type: [k8]
+        cluster_type: [local, k8]
         test:
           - name: smoke 
             cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install -- --producer-iteration 100 --producer-record-size 1000 
@@ -50,11 +50,19 @@ jobs:
           HELM_VERSION: v3.3.4
           OS: ${{ matrix.os }}
       #- Install and start Fluvio
-      - name: Install and start Fluvio cluster
-      #  - Matrix: local, k8
+
+      - name: Install and start Fluvio cluster (${{ matrix.cluster_type }})
+        if: matrix.cluster_type == 'local'
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ~/.fluvio/bin/fluvio cluster start --local
+
+      - name: Install and start Fluvio cluster (${{ matrix.cluster_type }})
+        if: matrix.cluster_type == 'k8'
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ~/.fluvio/bin/fluvio cluster start
+
       - name: Install sccache (ubuntu-latest)
         if: matrix.os == 'ubuntu-latest'
         env:
@@ -68,7 +76,9 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install sccache (macos-latest)
         if: matrix.os == 'macos-latest'
-        run: brew install sccache
+        run: |
+          brew update
+          brew install sccache
       - name: Cache cargo registry
         uses: actions/cache@v2
         continue-on-error: false
