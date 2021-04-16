@@ -259,19 +259,6 @@ fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_u64_mod_i32() {
-        assert_eq!(i32::MAX as u64, 2147483647_u64);
-        let some_u64 = 2u64.pow(63);
-        let some_u64_mod_i32 = some_u64 % (i32::MAX as u64);
-        assert!(some_u64_mod_i32 < i32::MAX as u64);
-        let some_i32 = some_u64_mod_i32 as i32;
-        println!(
-            "u64: {}, u64_mod: {}, i32: {}",
-            some_u64, some_u64_mod_i32, some_i32
-        );
-    }
-
     /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
     #[test]
     fn test_round_robin_individual() {
