@@ -10,19 +10,20 @@ use structopt::clap::AppSettings;
 use prettytable::{table, row, cell};
 
 use environment::EnvironmentSetup;
-use crate::test_runner::FluvioTest;
 
-pub trait TestOption: Debug {
+use dyn_clone::DynClone;
+
+pub trait TestOption: Debug + DynClone {
     fn as_any(&self) -> &dyn Any;
 }
 
+dyn_clone::clone_trait_object!(TestOption);
+
+#[derive(Debug, Clone)]
 pub struct TestCase {
     pub environment: EnvironmentSetup,
     pub option: Box<dyn TestOption>,
 }
-
-unsafe impl Send for TestCase {}
-unsafe impl Sync for TestCase {}
 
 impl TestCase {
     pub fn new(environment: EnvironmentSetup, option: Box<dyn TestOption>) -> Self {
@@ -51,9 +52,6 @@ impl Default for TestCli {
     about = "Test fluvio platform",
     global_settings = &[AppSettings::ColoredHelp])]
 pub struct BaseCli {
-    #[structopt(possible_values=&FluvioTest::all_test_names())]
-    pub test_name: String,
-
     #[structopt(flatten)]
     pub environment: EnvironmentSetup,
 
@@ -88,7 +86,6 @@ impl TestTimer {
 pub struct TestResult {
     pub success: bool,
     pub duration: Duration,
-    // perf_results?
 }
 
 impl TestResult {

@@ -4,6 +4,7 @@ use structopt::StructOpt;
 
 use fluvio::{Fluvio, TopicProducer};
 use fluvio_integration_derive::fluvio_test;
+use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 use fluvio_test_util::test_runner::FluvioTest;
@@ -51,19 +52,22 @@ async fn get_producer(client: Arc<Fluvio>, topic_name: String) -> TopicProducer 
         .expect("Couldn't get producer")
 }
 
-#[fluvio_test(name = "producer_stress", topic = "test")]
+#[fluvio_test(name = "producer_stress", topic = "test", benchmark = true)]
 pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
-    println!("\nStarting single-process producer stress");
     let test_case: ProducerStressTestCase = test_case.into();
 
-    println!(
-        "Producers              : {}",
-        test_case.option.producers.clone()
-    );
-    println!(
-        "# messages per producer: {}",
-        test_case.option.iteration.clone()
-    );
+    if !test_case.environment.is_benchmark() {
+        println!("\nStarting single-process producer stress");
+
+        println!(
+            "Producers              : {}",
+            test_case.option.producers.clone()
+        );
+        println!(
+            "# messages per producer: {}",
+            test_case.option.iteration.clone()
+        );
+    }
 
     let long_str = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
     let topic_name = test_case.environment.topic_name;

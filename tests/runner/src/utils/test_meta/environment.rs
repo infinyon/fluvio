@@ -1,6 +1,9 @@
 use crate::setup::environment::{EnvironmentType};
+use crate::test_runner::FluvioTest;
 use structopt::StructOpt;
 use std::fmt::Debug;
+use std::num::ParseIntError;
+use std::time::Duration;
 
 pub trait EnvDetail: Debug + Clone {
     fn set_topic_name(&mut self, topic: String);
@@ -17,9 +20,10 @@ pub trait EnvDetail: Debug + Clone {
     fn authorization_config_map(&self) -> Option<String>;
     fn server_log(&self) -> Option<String>;
     fn log_dir(&self) -> Option<String>;
-    fn timeout(&self) -> u16;
-    fn set_timeout(&mut self, timeout: u16);
+    fn timeout(&self) -> Duration;
+    fn set_timeout(&mut self, timeout: Duration);
     fn cluster_type(&self) -> EnvironmentType;
+    fn is_benchmark(&self) -> bool;
 }
 
 impl EnvDetail for EnvironmentSetup {
@@ -85,11 +89,11 @@ impl EnvDetail for EnvironmentSetup {
         self.log_dir.clone()
     }
 
-    fn timeout(&self) -> u16 {
+    fn timeout(&self) -> Duration {
         self.timeout
     }
 
-    fn set_timeout(&mut self, timeout: u16) {
+    fn set_timeout(&mut self, timeout: Duration) {
         self.timeout = timeout;
     }
 
@@ -100,11 +104,23 @@ impl EnvDetail for EnvironmentSetup {
             EnvironmentType::K8
         }
     }
+
+    fn is_benchmark(&self) -> bool {
+        self.benchmark
+    }
 }
 
 /// cli options
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 pub struct EnvironmentSetup {
+    /// Name of the test
+    #[structopt(possible_values=&FluvioTest::all_test_names())]
+    pub test_name: String,
+
+    /// (Experimental) Run the test in benchmark mode. Tests must opt-in.
+    #[structopt(long)]
+    pub benchmark: bool,
+
     /// don't attempt to delete cluster or start a new cluster before test
     /// topic creation will be skipped
     #[structopt(short, long)]
@@ -163,6 +179,12 @@ pub struct EnvironmentSetup {
     pub skip_checks: bool,
 
     /// In seconds, the maximum time a test will run before considered a fail (default: 1 hour)
-    #[structopt(long, default_value = "3600")]
-    pub timeout: u16,
+    #[structopt(long, parse(try_from_str = parse_timeout_seconds), default_value = "3600")]
+    pub timeout: Duration,
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_timeout_seconds(timeout_str: &str) -> Result<Duration, ParseIntError> {
+    let parsed = timeout_str.parse::<u64>().expect("Parsing seconds failed");
+    Ok(Duration::from_secs(parsed))
 }

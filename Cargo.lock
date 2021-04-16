@@ -393,6 +393,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "bencher"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
+
+[[package]]
 name = "benfred-read-process-memory"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1107,6 +1113,12 @@ name = "dtoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
+
+[[package]]
+name = "dyn-clone"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee2626afccd7561a06cf1367e2950c4718ea04565e20fb5029b6c7d8ad09abcf"
 
 [[package]]
 name = "echo"
@@ -1872,6 +1884,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "dyn-clone",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command 0.2.1",
@@ -1907,6 +1920,7 @@ name = "flv-test"
 version = "1.0.1"
 dependencies = [
  "async-trait",
+ "bencher",
  "bytes",
  "fluvio",
  "fluvio-cluster",
@@ -1922,6 +1936,7 @@ dependencies = [
  "inventory",
  "log",
  "md-5",
+ "prettytable-rs",
  "rand 0.8.3",
  "serde",
  "serde_json",
