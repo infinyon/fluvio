@@ -1,7 +1,8 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::collections::HashMap;
 use tracing::instrument;
 use siphasher::sip::SipHasher;
+use async_mutex::Mutex;
 
 use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
@@ -24,12 +25,13 @@ use crate::sockets::SerialFrame;
 pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
-    partitioner: Box<dyn Partitioner + Send + Sync>,
+    partitioner: Arc<Mutex<dyn Partitioner + Send + Sync>>,
 }
 
 impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
-        let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
+        let config = PartitionerConfig { partition_count: 1 };
+        let partitioner = Arc::new(Mutex::new(SiphashRoundRobinPartitioner::new(config)));
         Self {
             topic,
             pool,
@@ -105,6 +107,7 @@ impl TopicProducer {
             .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?
             .spec;
         let partition_count = topic_spec.partitions();
+        let partition_config = PartitionerConfig { partition_count };
 
         // Split keys into a vec to feed to the partitioner
         let (keys, values): (Vec<Option<Vec<u8>>>, Vec<Vec<u8>>) = records
@@ -112,7 +115,13 @@ impl TopicProducer {
             .map(|(k, v)| (k.map(|it| it.into()), v.into()))
             .unzip();
         let key_slices: Vec<_> = keys.iter().map(|it| it.as_deref()).collect();
-        let partitions = self.partitioner.partition(&key_slices, partition_count);
+
+        let partitions = {
+            // Ensure we drop partitioner (and its mutex guard) after we're done partitioning
+            let mut partitioner = self.partitioner.lock().await;
+            partitioner.update_config(partition_config);
+            partitioner.partition(&key_slices)
+        };
 
         // Zip up the partition assignments with their keys and values
         let iter: Vec<_> = partitions
@@ -204,7 +213,12 @@ impl TopicProducer {
 ///
 /// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
 trait Partitioner {
-    fn partition(&self, keys: &[Option<&[u8]>], partition_count: i32) -> Vec<i32>;
+    fn partition(&mut self, keys: &[Option<&[u8]>]) -> Vec<i32>;
+    fn update_config(&mut self, config: PartitionerConfig);
+}
+
+struct PartitionerConfig {
+    partition_count: i32,
 }
 
 /// A [`Partitioner`] which combines hashing and round-robin partition assignment
@@ -212,34 +226,35 @@ trait Partitioner {
 /// - Records with keys get their keys hashed with siphash
 /// - Records without keys get assigned to partitions using round-robin
 struct SiphashRoundRobinPartitioner {
-    index: Arc<RwLock<i32>>,
+    index: i32,
+    config: PartitionerConfig,
 }
 
 impl SiphashRoundRobinPartitioner {
-    pub fn new() -> Self {
-        Self {
-            index: Arc::new(RwLock::new(0)),
-        }
+    pub fn new(config: PartitionerConfig) -> Self {
+        Self { index: 0, config }
     }
 }
 
 impl Partitioner for SiphashRoundRobinPartitioner {
-    fn partition(&self, keys: &[Option<&[u8]>], partition_count: i32) -> Vec<i32> {
+    fn partition(&mut self, keys: &[Option<&[u8]>]) -> Vec<i32> {
         let mut partitions = Vec::with_capacity(keys.len());
-        let mut rr_index = *self.index.read().expect("poisoned");
         for maybe_key in keys {
             let partition = match maybe_key {
-                Some(key) => partition_siphash(key, partition_count),
+                Some(key) => partition_siphash(key, self.config.partition_count),
                 None => {
-                    let partition = rr_index;
-                    rr_index = (rr_index + 1) % partition_count;
+                    let partition = self.index;
+                    self.index = (self.index + 1) % self.config.partition_count;
                     partition
                 }
             };
             partitions.push(partition);
         }
-        *self.index.write().expect("poisoned") = rr_index;
         partitions
+    }
+
+    fn update_config(&mut self, config: PartitionerConfig) {
+        self.config = config;
     }
 }
 
@@ -262,34 +277,34 @@ mod tests {
     /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
     #[test]
     fn test_round_robin_individual() {
-        let partitioner = SiphashRoundRobinPartitioner::new();
-        let partition_count = 3;
+        let config = PartitionerConfig { partition_count: 3 };
+        let mut partitioner = SiphashRoundRobinPartitioner::new(config);
 
-        let key1_partition = partitioner.partition(&[None], partition_count)[0];
+        let key1_partition = partitioner.partition(&[None])[0];
         assert_eq!(key1_partition, 0);
-        let key2_partition = partitioner.partition(&[None], partition_count)[0];
+        let key2_partition = partitioner.partition(&[None])[0];
         assert_eq!(key2_partition, 1);
-        let key3_partition = partitioner.partition(&[None], partition_count)[0];
+        let key3_partition = partitioner.partition(&[None])[0];
         assert_eq!(key3_partition, 2);
-        let key4_partition = partitioner.partition(&[None], partition_count)[0];
+        let key4_partition = partitioner.partition(&[None])[0];
         assert_eq!(key4_partition, 0);
-        let key5_partition = partitioner.partition(&[None], partition_count)[0];
+        let key5_partition = partitioner.partition(&[None])[0];
         assert_eq!(key5_partition, 1);
-        let key6_partition = partitioner.partition(&[None], partition_count)[0];
+        let key6_partition = partitioner.partition(&[None])[0];
         assert_eq!(key6_partition, 2);
     }
 
     /// Ensure that feeding keyless records in batches does not always start with the same partition
     #[test]
     fn test_round_robin_batch() {
-        let partitioner = SiphashRoundRobinPartitioner::new();
-        let partition_count = 4;
+        let config = PartitionerConfig { partition_count: 4 };
+        let mut partitioner = SiphashRoundRobinPartitioner::new(config);
 
         // A batch of 5 records with no keys
         let batch: Vec<Option<&[u8]>> = (0..5).map(|_| None).collect();
 
         // The partitions of the first batch of five
-        let ps1 = partitioner.partition(&batch, partition_count);
+        let ps1 = partitioner.partition(&batch);
         assert_eq!(ps1[0], 0);
         assert_eq!(ps1[1], 1);
         assert_eq!(ps1[2], 2);
@@ -297,7 +312,7 @@ mod tests {
         assert_eq!(ps1[4], 0);
 
         // The partitions of the second batch of five
-        let ps2 = partitioner.partition(&batch, partition_count);
+        let ps2 = partitioner.partition(&batch);
         assert_eq!(ps2[0], 1); // resumes at 1
         assert_eq!(ps2[1], 2);
         assert_eq!(ps2[2], 3);
