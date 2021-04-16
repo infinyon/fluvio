@@ -30,7 +30,7 @@ impl MetadataStores {
             spus: StoreContext::new(),
             partitions: StoreContext::new(),
             topics: StoreContext::new(),
-            socket: socket.clone(),
+            socket,
         };
 
         store.start_watch_for_spu().await?;

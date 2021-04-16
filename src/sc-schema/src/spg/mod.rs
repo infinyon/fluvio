@@ -42,4 +42,21 @@ mod convert {
             }
         }
     }
+
+    impl From<MetadataUpdate<SpuGroupSpec>> for WatchResponse {
+        fn from(update: MetadataUpdate<SpuGroupSpec>) -> Self {
+            Self::SpuGroup(update)
+        }
+    }
+
+    impl TryInto<MetadataUpdate<SpuGroupSpec>> for WatchResponse {
+        type Error = Error;
+
+        fn try_into(self) -> Result<MetadataUpdate<SpuGroupSpec>, Self::Error> {
+            match self {
+                WatchResponse::SpuGroup(m) => Ok(m),
+                _ => Err(Error::new(ErrorKind::Other, "not spg")),
+            }
+        }
+    }
 }

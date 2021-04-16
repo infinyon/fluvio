@@ -10,3 +10,4 @@ publish = false
 [dependencies]
 fluvio = { path = "../../src/client" }
 async-std = { version = "1.8.0", default-features = false, features = ["attributes"] }
+tracing-subscriber = "0.2.17"

@@ -57,6 +57,19 @@ impl TopicProducer {
         Ok(())
     }
 
+    /// Sends a plain record with no key to this producer's Topic.
+    ///
+    /// The partition that the record will be sent to will be chosen in a round-robin fashion.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::{TopicProducer, FluvioError};
+    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// producer.send("Key", "Value").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[instrument(
         skip(self, value),
         fields(topic = %self.topic),
@@ -99,6 +112,7 @@ impl TopicProducer {
                     partition
                 }
             };
+            println!("Assigned partition: {}", partition);
 
             let key = key.map(|it| DefaultAsyncBuffer::new(it));
             let record = DefaultAsyncBuffer::new(value);
@@ -172,6 +186,8 @@ impl TopicProducer {
 fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
     use std::hash::{Hash, Hasher};
     use std::convert::TryFrom;
+
+    assert!(partition_count >= 0, "Partition must not be less than zero");
     let mut hasher = SipHasher::new();
     key.hash(&mut hasher);
     let hashed = hasher.finish();
@@ -182,11 +198,16 @@ fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_u64_mod_i32() {
         assert_eq!(i32::MAX as u64, 2147483647_u64);
-        let some_u64 = 2u64 ^ 63;
+        let some_u64 = 2u64.pow(63);
+        let some_u64_mod_i32 = some_u64 % (i32::MAX as u64);
+        assert!(some_u64_mod_i32 < i32::MAX as u64);
+        let some_i32 = some_u64_mod_i32 as i32;
+        println!(
+            "u64: {}, u64_mod: {}, i32: {}",
+            some_u64, some_u64_mod_i32, some_i32
+        );
     }
 }

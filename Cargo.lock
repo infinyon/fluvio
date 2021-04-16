@@ -3187,6 +3187,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "fluvio",
+ "tracing-subscriber",
 ]
 
 [[package]]
