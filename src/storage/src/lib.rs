@@ -65,8 +65,7 @@ mod inner {
 
         /// check if offset contains value
         pub fn is_valid(&self) -> bool {
-            self.hw != -1 && self.leo != -1 &&
-                self.leo >= self.hw
+            self.hw != -1 && self.leo != -1 && self.leo >= self.hw
         }
 
         /// update hw, leo
@@ -190,60 +189,23 @@ mod inner {
         fn test_offset_validation() {
             assert!(!OffsetInfo::default().is_valid());
 
-            assert!(!OffsetInfo {
-                hw: 2,
-                leo: 1
-            }.is_valid());
+            assert!(!OffsetInfo { hw: 2, leo: 1 }.is_valid());
 
-            assert!(OffsetInfo {
-                hw: 2,
-                leo: 3
-            }.is_valid());
+            assert!(OffsetInfo { hw: 2, leo: 3 }.is_valid());
         }
-
 
         #[test]
         fn test_offset_newer() {
-           
+            assert!(!OffsetInfo { hw: 1, leo: 2 }.newer(&OffsetInfo { hw: 2, leo: 2 }));
 
-            assert!(!OffsetInfo {
-                hw: 1,
-                leo: 2
-            }.newer(&OffsetInfo {
-                hw: 2,
-                leo: 2
-            }));
-
-            assert!(OffsetInfo {
-                hw: 2,
-                leo: 10
-            }.newer(&OffsetInfo {
-                hw: 0,
-                leo: 0
-            }));
+            assert!(OffsetInfo { hw: 2, leo: 10 }.newer(&OffsetInfo { hw: 0, leo: 0 }));
         }
 
         #[test]
         fn test_offset_update() {
-           
+            assert!(!OffsetInfo { hw: 1, leo: 2 }.update(&OffsetInfo { hw: 0, leo: 0 }));
 
-            assert!(!OffsetInfo {
-                hw: 1,
-                leo: 2
-            }.update(&OffsetInfo {
-                hw: 0,
-                leo: 0
-            }));
-
-            assert!(OffsetInfo {
-                hw: 1,
-                leo: 2
-            }.update(&OffsetInfo {
-                hw: 1,
-                leo: 3
-            }));
-
-           
+            assert!(OffsetInfo { hw: 1, leo: 2 }.update(&OffsetInfo { hw: 1, leo: 3 }));
         }
     }
 }
