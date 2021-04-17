@@ -8,8 +8,6 @@ loadBalancer:
 service:
   type: LoadBalancer
 scLog: info
-sc:
-  disableSPU: false
 tls: false
 imagePullSecrets: []
 image:
@@ -39,3 +37,4 @@ rbac:
 serviceAccount:
   name: fluvio
 podSecurityContext: {}
+spuStorageClass: fluvio-spu
