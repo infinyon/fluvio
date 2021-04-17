@@ -31,18 +31,16 @@ mod inner {
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
 
-    #[derive(Debug,Clone,PartialEq)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct OffsetInfo {
         pub hw: Offset,
         pub leo: Offset,
     }
 
-
     impl Default for OffsetInfo {
         fn default() -> Self {
             Self { hw: -1, leo: -1 }
         }
-        
     }
 
     impl From<(Offset, Offset)> for OffsetInfo {
@@ -52,12 +50,11 @@ mod inner {
     }
 
     impl OffsetInfo {
-
         pub fn new(leo: Offset, hw: Offset) -> Self {
             assert!(leo >= hw, "end offset >= high watermark");
             Self { leo, hw }
         }
-        
+
         /// get isolation offset
         pub fn isolation(&self, isolation: &Isolation) -> Offset {
             match isolation {
@@ -70,8 +67,36 @@ mod inner {
         pub fn is_valid(&self) -> bool {
             self.hw != -1 && self.leo != -1
         }
-        
 
+        /// update hw, leo
+        /// return true if there was change
+        /// otherwise false
+        pub fn update(&mut self, other: &Self) -> bool {
+            let mut change = false;
+            if other.hw > self.hw {
+                self.hw = other.hw;
+                change = true;
+            }
+            if other.leo > self.leo {
+                self.leo = other.leo;
+                change = true;
+            }
+            change
+        }
+
+        /// check if we are newer than other
+        pub fn newer(&self, other: &Self) -> bool {
+            self.leo > other.leo || self.hw > other.hw
+        }
+
+        pub fn is_same(&self, other: &Self) -> bool {
+            self.hw == other.hw && self.leo == other.leo
+        }
+
+        /// is hw fully caught with leo
+        pub fn is_committed(&self) -> bool {
+            self.leo == self.hw
+        }
     }
 
     use crate::StorageError;

@@ -1,3 +1,4 @@
+use fluvio_storage::OffsetInfo;
 use tracing::{trace, error};
 use tracing::instrument;
 use fluvio_socket::{FlvSocketError, FlvStream, FlvSocket};
@@ -29,7 +30,7 @@ impl FollowerHandler {
         socket: FlvSocket,
     ) -> Result<(), FlvSocketError> {
         let (sink, stream) = socket.split();
-        
+
         let connection = Self {
             ctx: ctx.clone(),
             follower_id,
@@ -66,34 +67,25 @@ impl FollowerHandler {
         Ok(())
     }
 
-    /// route offset update request from follower to replica leader controller
+    /// update each leader
     async fn handle_offset_request(&self, request: UpdateOffsetRequest) {
-        for replica in request.replicas {
-            let replica_key = replica.replica;
-
-            let follower_update = FollowerOffsetUpdate {
-                follower_id: self.follower_id,
-                leo: replica.leo,
-                hw: replica.hw,
-            };
+        for update in request.replicas {
+            let replica_key = update.replica;
 
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
-                if let Err(err) = leader
-                    .send_message_to_controller(LeaderReplicaControllerCommand::FollowerOffsetUpdate(
-                        follower_update,
-                    ))
-                    .await
-                {
-                    error!(
-                        "Error sending offset updates to leader: {}, err: {}",
-                        replica_key, err
+                leader
+                    .value()
+                    .update_hw_from_followers(
+                        self.follower_id,
+                        OffsetInfo {
+                            hw: update.hw,
+                            leo: update.leo,
+                        },
                     )
-                }
+                    .await;
             } else {
-                error!("replica leader: {} was not found", replica_key); // this could happen when leader controller is not happen
+                error!(%replica_key,"no such replica");
             }
         }
     }
-
-    
 }

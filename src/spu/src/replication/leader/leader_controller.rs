@@ -117,6 +117,7 @@ impl ReplicaLeaderController<FileReplica> {
     /// update the follower offsets
     #[instrument(skip(self, offsets))]
     async fn update_from_follower(&mut self, offsets: FollowerOffsetUpdate) {
+        /*
         debug!(?offsets);
         let follower_id = offsets.follower_id;
         let (update_status, sync_follower, hw_update) = self.state.update_followers(offsets).await;
@@ -150,6 +151,7 @@ impl ReplicaLeaderController<FileReplica> {
             },
         )
         .await;
+        */
     }
 
     /// go thru each of follower and sync replicas

@@ -5,7 +5,6 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 

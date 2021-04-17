@@ -102,6 +102,7 @@ impl ReplicaLeadersState<FileReplica> {
             );
         }
 
+        /*
         let leader_controller = ReplicaLeaderController::new(
             replica_id,
             receiver,
@@ -111,6 +112,7 @@ impl ReplicaLeadersState<FileReplica> {
             max_bytes,
         );
         leader_controller.run();
+        */
     }
 }
 

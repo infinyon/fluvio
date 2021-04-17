@@ -13,7 +13,7 @@ use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
 
 use fluvio_socket::SinkPool;
-use dataplane::record::RecordSet;
+use dataplane::{ReplicaKey, record::RecordSet};
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{Replica};
@@ -39,9 +39,9 @@ use super::LeaderReplicaControllerCommand;
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     leader: SpuId,
-    inner: SharableReplicaStorage<S>,
+    storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
-    followers: Arc<RwLock<BTreeMap<SpuId, FollowerState>>>,
+    followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
     sender: Sender<LeaderReplicaControllerCommand>,
 }
 
@@ -49,7 +49,7 @@ impl<S> Clone for LeaderReplicaState<S> {
     fn clone(&self) -> Self {
         Self {
             leader: self.leader.clone(),
-            inner: self.inner.clone(),
+            storage: self.storage.clone(),
             config: self.config.clone(),
             followers: self.followers.clone(),
             sender: self.sender.clone(),
@@ -70,14 +70,23 @@ impl<S> Deref for LeaderReplicaState<S> {
     type Target = SharableReplicaStorage<S>;
 
     fn deref(&self) -> &Self::Target {
-        &self.inner
+        &self.storage
     }
 }
 
 impl<S> DerefMut for LeaderReplicaState<S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
+        &mut self.storage
     }
+}
+
+/// convert follower ids into BtreeMap of this
+fn ids_to_map(leader_id: SpuId, follower_ids: HashSet<SpuId>) -> BTreeMap<SpuId, OffsetInfo> {
+    let mut followers = BTreeMap::new();
+    for id in follower_ids.into_iter().filter(|id| *id != leader_id) {
+        followers.insert(id, OffsetInfo::default());
+    }
+    followers
 }
 
 impl<S> LeaderReplicaState<S>
@@ -92,10 +101,10 @@ where
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
         let follower_ids = HashSet::from_iter(replica.replicas);
-        let followers = FollowState::ids_to_map(replica.leader, follower_ids);
+        let followers = ids_to_map(replica.leader, follower_ids);
         Self {
             leader: replica.leader,
-            inner,
+            storage: inner,
             config,
             followers: Arc::new(RwLock::new(followers)),
             sender,
@@ -153,7 +162,18 @@ where
         self.sender.send(command).await
     }
 
-    /// compute hw based on updates follow
+    pub fn replica(&self) -> &ReplicaKey {
+        self.storage.id()
+    }
+
+    pub fn as_offset(&self) -> OffsetInfo {
+        OffsetInfo {
+            hw: self.hw(),
+            leo: self.leo(),
+        }
+    }
+
+    /// update hw based on offset change
     ///
     /// // case 1:  follower offset has same value as leader
     /// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2
@@ -176,112 +196,57 @@ where
     ///         follower: leo(3,4)  =>   hw = 3  that is smallest leo that satisfy
     ///         follower: leo(4,4)  =>   hw = 4
     ///         follower: leo(6,7,9) =>  hw = 7,
+    #[instrument(skip(self))]
+    pub async fn update_hw_from_followers(&self, follower_id: SpuId, follower_pos: OffsetInfo) {
+        let leader_pos = self.as_offset();
 
-    pub async fn update_followers<F>(
-        &self,
-        offset: F,
-    ) -> (bool, Option<FollowerState>, Option<Offset>)
-    where
-        F: Into<FollowerOffsetUpdate>,
-    {
-        let follower_offset = offset.into();
+        // follower must be always behind leader
 
-        let follower_id = follower_offset.follower_id;
-        let mut follower_info = FollowerState::new(follower_offset.leo, follower_offset.hw);
-
-        let leader_leo = self.leo();
-        let leader_hw = self.hw();
-
-        // if update offset is greater than leader than something is wrong, in this case
-        // we truncate the the follower offset
-
-        if follower_info.leo > leader_leo {
-            warn!(
-                "offset leo: {} is greater than leader leo{} ",
-                follower_info.leo, leader_leo
-            );
-            follower_info.leo = leader_leo;
+        if follower_pos.newer(&leader_pos) {
+            error!("follower pos must not be newer",);
+            return;
         }
 
+        // get follower info
         let mut followers = self.followers.write().await;
-
-        let changed = if let Some(old_info) = followers.insert(follower_id, follower_info.clone()) {
-            old_info != follower_info
-        } else {
-            false
-        };
-
-        let resync_flag = if leader_leo != follower_info.leo || leader_hw != follower_info.hw {
-            Some(follower_info)
-        } else {
-            None
-        };
-
-        // if our leo and hw is same there is no need to recompute hw
-        if leader_leo == leader_hw {
-            (changed, resync_flag, None)
-        } else {
-            let min_lsr = min(self.config.min_in_sync_replicas, followers.len() as u16);
-            // compute unique offsets that is greater than min leader's HW
-            let qualified_leos: Vec<Offset> = followers
-                .values()
-                .filter_map(|follower_info| {
-                    if follower_info.leo > leader_hw {
-                        Some(follower_info.leo)
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            //debug!("qualified: {:#?}", qualified_leos);
-
-            let mut unique_leos = qualified_leos.clone();
-            unique_leos.dedup();
-
-            // debug!("unique_leos: {:#?}", unique_leos);
-
-            let mut hw_list: Vec<Offset> = unique_leos
-                .iter()
-                .filter_map(|unique_offset| {
-                    // leo must have at least must have replicated min_lsr
-                    if (qualified_leos
-                        .iter()
-                        .filter(|leo| unique_offset <= leo)
-                        .count() as u16)
-                        >= min_lsr
+        if let Some(current_follow_info) = followers.get_mut(&follower_id) {
+            if current_follow_info.update(&follower_pos) {
+                // if our leo and hw is same there is no need to recompute hw
+                if !leader_pos.is_committed() {
+                    if let Some(hw) =
+                        compute_hw(leader_pos.hw, self.config.min_in_sync_replicas, &followers)
                     {
-                        Some(*unique_offset)
+                        debug!(hw, "updating hw");
+                        if let Err(err) = self.update_hw(hw).await {
+                            error!("error updating hw: {}", err);
+                        };
                     } else {
-                        None
+                        debug!("no change");
                     }
-                })
-                .collect();
-
-            hw_list.sort_unstable();
-
-            (changed, resync_flag, hw_list.pop())
+                } else {
+                    debug!("leader is committed");
+                }
+            }
+        } else {
+            error!(follower_id, "invalid follower");
         }
     }
 
     /// compute list of followers that need to be sync
     /// this is done by checking diff of end offset and high watermark
-    async fn need_follower_updates(&self) -> Vec<(SpuId, FollowState)> {
-        let leo = self.leo();
-        let hw = self.hw();
-
+    async fn need_follower_updates(&self) -> Vec<(SpuId, OffsetInfo)> {
+        let offset = self.as_offset();
         trace!(
-            "computing follower offset for leader: {}, end offset: {}, high watermarkK {}",
+            "computing follower offset for leader: {}, {:#?}",
             self.id(),
-            leo,
-            hw
+            offset
         );
 
         let reader = self.followers.read().await;
         reader
             .iter()
             .filter(|(_, follower_info)| {
-                follower_info.is_valid() && !follower_info.is_same(hw, leo)
+                follower_info.is_valid() && !follower_info.is_same(&offset)
             })
             .map(|(follower_id, follower_info)| {
                 debug!(
@@ -308,7 +273,7 @@ where
             .await
             .iter()
             .map(|(follower_id, follower_info)| {
-                (*follower_id, follower_info.hw(), follower_info.leo()).into()
+                (*follower_id, follower_info.hw, follower_info.leo).into()
             })
             .collect();
 
@@ -323,7 +288,7 @@ where
     }
 
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
-        self.inner
+        self.storage
             .write_record_set(records, self.config.min_in_sync_replicas == 1)
             .await
     }
@@ -349,7 +314,7 @@ where
         &self,
         sinks: &SinkPool<SpuId>,
         follower_id: SpuId,
-        follower_info: &FollowerState,
+        follower_info: &OffsetInfo,
         max_bytes: u32,
     ) {
         if let Some(mut sink) = sinks.get_sink(&follower_id) {
@@ -402,7 +367,52 @@ where
     }
 }
 
-use super::FollowerOffsetUpdate;
+fn compute_hw(
+    leader_hw: Offset,
+    min_replica: u16,
+    followers: &BTreeMap<SpuId, OffsetInfo>,
+) -> Option<Offset> {
+    let min_lsr = min(min_replica, followers.len() as u16);
+    // compute unique offsets that is greater than min leader's HW
+    let qualified_leos: Vec<Offset> = followers
+        .values()
+        .filter_map(|follower_info| {
+            let leo = follower_info.leo;
+            if leo > leader_hw {
+                Some(leo)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    //debug!("qualified: {:#?}", qualified_leos);
+
+    let mut unique_leos = qualified_leos.clone();
+    unique_leos.dedup();
+
+    // debug!("unique_leos: {:#?}", unique_leos);
+
+    let mut hw_list: Vec<Offset> = unique_leos
+        .iter()
+        .filter_map(|unique_offset| {
+            // leo must have at least must have replicated min_lsr
+            if (qualified_leos
+                .iter()
+                .filter(|leo| unique_offset <= leo)
+                .count() as u16)
+                >= min_lsr
+            {
+                Some(*unique_offset)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    hw_list.sort_unstable();
+    hw_list.pop()
+}
 
 /// Maintain state information about follower replica
 /// their is info received from follower
@@ -412,7 +422,6 @@ use super::FollowerOffsetUpdate;
 pub struct FollowerState {
     pub received: OffsetInfo,
     pub send: OffsetInfo,
-    
 }
 
 impl FollowerState {
@@ -425,14 +434,14 @@ impl FollowerState {
         followers
     }
 
-    /* 
+    /*
     pub fn new(leo: Offset, hw: Offset) -> Self {
         assert!(leo >= hw, "end offset >= high watermark");
         Self { leo, hw }
     }
     */
 
-    /* 
+    /*
     pub fn hw(&self) -> Offset {
         self.hw
     }
@@ -451,8 +460,6 @@ impl FollowerState {
     }
     */
 }
-
-
 
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
 
@@ -608,7 +615,7 @@ mod test {
         // follower sends leo=4,hw = 2
         // status = true, Some(4,2), None
         assert_eq!(
-            state.update_followers((5001, 4, 2)).await,
+            state.recompute_hw((5001, 4, 2)).await,
             (true, Some((4, 2).into()), None)
         );
 
@@ -621,14 +628,14 @@ mod test {
         // 2nd spu send leo = 2, hw = 2,
         // status = true, Some(2,2), None
         assert_eq!(
-            state.update_followers((5002, 2, 2)).await,
+            state.recompute_hw((5002, 2, 2)).await,
             (true, Some((2, 2).into()), None)
         );
 
         // 1nd spu send different leo, 1 spu need to resync since it's not fully sync with leader
         // status = false, Some(3,2), None
         assert_eq!(
-            state.update_followers((5001, 3, 2)).await,
+            state.recompute_hw((5001, 3, 2)).await,
             (true, Some((3, 2).into()), None)
         );
 
@@ -636,7 +643,7 @@ mod test {
         // is still behind new hw = 3
         // status = true, Some(2,2), None
         assert_eq!(
-            state.update_followers((5002, 4, 2)).await,
+            state.recompute_hw((5002, 4, 2)).await,
             (true, Some((4, 2).into()), Some(3))
         );
 
@@ -644,7 +651,7 @@ mod test {
         // both followers have caught up
         // status = true, Some(2,2), None
         assert_eq!(
-            state.update_followers((5001, 4, 2)).await,
+            state.recompute_hw((5001, 4, 2)).await,
             (true, Some((4, 2).into()), Some(4))
         );
 
@@ -671,16 +678,16 @@ mod test {
         );
 
         // leo(6,7,9) => 7
-        state.update_followers((5001, 6, 2)).await;
-        state.update_followers((5002, 7, 2)).await;
+        state.recompute_hw((5001, 6, 2)).await;
+        state.recompute_hw((5002, 7, 2)).await;
         assert_eq!(
-            state.update_followers((5003, 9, 2)).await,
+            state.recompute_hw((5003, 9, 2)).await,
             (true, Some((9, 2).into()), Some(7))
         );
 
         // leo(9,7,9) => 9
         assert_eq!(
-            state.update_followers((5001, 9, 2)).await,
+            state.recompute_hw((5001, 9, 2)).await,
             (true, Some((9, 2).into()), Some(9))
         );
 
@@ -707,20 +714,20 @@ mod test {
         );
 
         // only 2 is satisifed so no HW
-        state.update_followers((5001, 6, 2)).await;
+        state.recompute_hw((5001, 6, 2)).await;
         assert_eq!(
-            state.update_followers((5002, 7, 2)).await,
+            state.recompute_hw((5002, 7, 2)).await,
             (true, Some((7, 2).into()), None)
         );
 
         assert_eq!(
-            state.update_followers((5003, 9, 2)).await,
+            state.recompute_hw((5003, 9, 2)).await,
             (true, Some((9, 2).into()), Some(6))
         );
 
         // leo(9,7,9) => 9
         assert_eq!(
-            state.update_followers((5001, 9, 2)).await,
+            state.recompute_hw((5001, 9, 2)).await,
             (true, Some((9, 2).into()), Some(7))
         );
 
