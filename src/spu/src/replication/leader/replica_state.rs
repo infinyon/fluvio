@@ -369,12 +369,17 @@ where
 
 /// compute leader's updated hw based on follower offset
 /// this is done after follower's leo updated
+/// min_replica must be at least 1 and must be less than followers.len(0)
 fn compute_hw(
     leader: &OffsetInfo,
     min_replica: u16,
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
-    let min_lsr = min(min_replica, followers.len() as u16);
+    assert!(min_replica > 0);
+    assert!((min_replica - 1) <= followers.len() as u16);
+    let min_lsr = min(min_replica - 1, followers.len() as u16);
+    //println!("min lsr: {}", min_lsr);
+
     // compute unique offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
         .values()
@@ -388,7 +393,11 @@ fn compute_hw(
         })
         .collect();
 
-    //debug!("qualified: {:#?}", qualified_leos);
+    if qualified_leos.is_empty() {
+        return None;
+    }
+
+    //println!("qualified: {:#?}", qualified_leos);
 
     let mut unique_leos = qualified_leos.clone();
     unique_leos.dedup();
@@ -416,26 +425,25 @@ fn compute_hw(
     hw_list.pop()
 }
 
-
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
 
 impl LeaderReplicaState<FileReplica> {}
 
+/*
 #[cfg(test)]
-mod test {
+mod mock_replica {
 
-    use async_channel::bounded;
     use async_trait::async_trait;
 
-    use fluvio_future::test_async;
+    //use fluvio_future::test_async;
     use fluvio_controlplane_metadata::partition::{ReplicaKey};
-    use fluvio_controlplane_metadata::partition::Replica;
-    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError, OffsetInfo};
+    //use fluvio_controlplane_metadata::partition::Replica;
+    use fluvio_storage::{OffsetInfo};
     use dataplane::Offset;
 
 
     use crate::{
-        config::{ReplicationConfig, Log},
+        config::{Log},
         storage::SharableReplicaStorage,
     };
     use super::*;
@@ -534,30 +542,59 @@ mod test {
         }
     }
 
-    fn offsets_maps(offsets: Vec<(SpuId,OffsetInfo)>) -> BTreeMap<SpuId,OffsetInfo> {
+}
+*/
+
+#[cfg(test)]
+mod test_hw_updates {
+
+    use super::*;
+
+    fn offsets_maps(offsets: Vec<(SpuId, OffsetInfo)>) -> BTreeMap<SpuId, OffsetInfo> {
         offsets.into_iter().collect()
+    }
+
+    /// test min lsr check
+    #[test]
+    #[should_panic]
+    fn test_hw_min_lsr_invalid_hw() {
+        compute_hw(&OffsetInfo { hw: 0, leo: 10 }, 0, &offsets_maps(vec![]));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_hw_min_lsr_too_much() {
+        compute_hw(
+            &OffsetInfo { hw: 0, leo: 10 },
+            3,
+            &offsets_maps(vec![(5001, OffsetInfo::default())]),
+        );
     }
 
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test]
-    fn test_follower_hw22() {
-        
+    fn test_hw22() {
         // starts with leader leo=10,hw = 0
 
-        // initially, we don't have no information about follower, 
+        // initially, we don't have no information about follower,
         // our hw doesn't need to be updated
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 0, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo::default())])),
+            compute_hw(
+                &OffsetInfo { hw: 0, leo: 10 },
+                2,
+                &offsets_maps(vec![(5001, OffsetInfo::default())])
+            ),
             None
         );
 
-        
         // followers send back leo = 4, hw = 0
         // This cause hw = 4 since this is min that is replicated across 2 SPU
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 0, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo{leo: 4, hw: 0})])),
+            compute_hw(
+                &OffsetInfo { hw: 0, leo: 10 },
+                2,
+                &offsets_maps(vec![(5001, OffsetInfo { leo: 4, hw: 0 })])
+            ),
             Some(4)
         );
 
@@ -565,176 +602,180 @@ mod test {
         //  followers send back leo = 6, hw = 4
         //  This should update hw = 6
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 4, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo{leo: 6, hw: 4})])),
+            compute_hw(
+                &OffsetInfo { hw: 4, leo: 10 },
+                2,
+                &offsets_maps(vec![(5001, OffsetInfo { leo: 6, hw: 4 })])
+            ),
             Some(6)
         );
 
         //  follower send back same info, since min LEO didn't update, no hw update
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 6, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo{leo: 6, hw: 6})])),
+            compute_hw(
+                &OffsetInfo { hw: 6, leo: 10 },
+                2,
+                &offsets_maps(vec![(5001, OffsetInfo { leo: 6, hw: 6 })])
+            ),
             None
         );
-
 
         //  follower now fully caught up, leo = 10, hw = 6
         //  hw should be now 10
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 6, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo{leo: 10, hw: 6})])),
+            compute_hw(
+                &OffsetInfo { hw: 6, leo: 10 },
+                2,
+                &offsets_maps(vec![(5001, OffsetInfo { leo: 10, hw: 6 })])
+            ),
             Some(10)
         );
 
         // followers send back same, no hw update
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 10, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo{leo: 10, hw: 10})])),
+            compute_hw(
+                &OffsetInfo { hw: 10, leo: 10 },
+                2,
+                &offsets_maps(vec![(5001, OffsetInfo { leo: 10, hw: 10 })])
+            ),
             None
         );
     }
 
     // test hw calculation for 3 spu with 2 in replica
     #[test]
-    fn test_follower_hw32() {
-
+    fn test_hw32() {
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 0, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo::default()),(5002,OffsetInfo::default())])),
+            compute_hw(
+                &OffsetInfo { hw: 0, leo: 10 },
+                2,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo::default()),
+                    (5002, OffsetInfo::default())
+                ])
+            ),
             None
         );
 
-        // hw updated only when 1 SPU replicated leo
+        // hw updated when at least 1 SPU replicated offsets
         assert_eq!(
-            compute_hw(&OffsetInfo{ hw: 0, leo: 10},2,
-                &offsets_maps(vec![(5001,OffsetInfo{leo: 4, hw: 0}),(5002,OffsetInfo::default())])),
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 0 },
+                2,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 4, hw: 0 }),
+                    (5002, OffsetInfo::default())
+                ])
+            ),
             Some(4)
         );
 
-
-        /* 
-        let replica: ReplicaKey = ("test", 1).into();
-        let mock_replica = MockReplica::create(10, 2, replica.clone())
-            .await
-            .expect("create");
-        let (sender, _) = bounded(10);
-
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let state = LeaderReplicaState::new(
-            Replica::new(replica, 5001, vec![5002, 5003]),
-            ReplicationConfig {
-                min_in_sync_replicas: 2,
-            },
-            mock_replica,
-            sender,
-        );
-
-        // leo(6,7,9) => 7
-        state.recompute_hw((5001, 6, 2)).await;
-        state.recompute_hw((5002, 7, 2)).await;
+        // we take maximum leo since min lsr = 2
         assert_eq!(
-            state.recompute_hw((5003, 9, 2)).await,
-            (true, Some((9, 2).into()), Some(7))
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 0 },
+                2,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 4, hw: 0 }),
+                    (5002, OffsetInfo { leo: 6, hw: 0 })
+                ])
+            ),
+            Some(6)
         );
 
-        // leo(9,7,9) => 9
+        // test with 3 followers
         assert_eq!(
-            state.recompute_hw((5001, 9, 2)).await,
-            (true, Some((9, 2).into()), Some(9))
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 0 },
+                2,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 4, hw: 0 }),
+                    (5002, OffsetInfo { leo: 6, hw: 0 }),
+                    (5003, OffsetInfo { leo: 9, hw: 0 })
+                ])
+            ),
+            Some(9)
         );
 
-        Ok(())
+        // none of the follower has catch up
+        assert_eq!(
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 7 },
+                2,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 4, hw: 0 }),
+                    (5002, OffsetInfo { leo: 6, hw: 0 })
+                ])
+            ),
+            None
+        );
     }
 
     // test hw calculation for 3 spu and 3 in sync rep
-    #[test_async]
-    async fn test_follower_hw33() -> Result<(), ()> {
-        let replica: ReplicaKey = ("test", 1).into();
-        let mock_replica = MockReplica::create(10, 2, replica.clone())
-            .await
-            .expect("replica"); // leo, hw
-        let (sender, _) = bounded(10);
-
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let state = LeaderReplicaState::new(
-            Replica::new(replica, 5000, vec![5001, 5002, 5003]),
-            ReplicationConfig {
-                min_in_sync_replicas: 3,
-            },
-            mock_replica,
-            sender,
-        );
-
-        // only 2 is satisifed so no HW
-        state.recompute_hw((5001, 6, 2)).await;
+    #[test]
+    fn test_hw33() {
         assert_eq!(
-            state.recompute_hw((5002, 7, 2)).await,
-            (true, Some((7, 2).into()), None)
+            compute_hw(
+                &OffsetInfo { hw: 0, leo: 10 },
+                3,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo::default()),
+                    (5002, OffsetInfo::default()),
+                ])
+            ),
+            None
         );
 
+        // need at least 2 replicas
         assert_eq!(
-            state.recompute_hw((5003, 9, 2)).await,
-            (true, Some((9, 2).into()), Some(6))
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 0 },
+                3,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 4, hw: 0 }),
+                    (5002, OffsetInfo::default())
+                ])
+            ),
+            None
         );
 
-        // leo(9,7,9) => 9
+        // 4 is min offset
         assert_eq!(
-            state.recompute_hw((5001, 9, 2)).await,
-            (true, Some((9, 2).into()), Some(7))
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 0 },
+                3,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 4, hw: 0 }),
+                    (5002, OffsetInfo { leo: 7, hw: 0 }),
+                ])
+            ),
+            Some(4)
         );
 
-        Ok(())
-        */
-    }
-
-    #[test_async]
-    async fn test_leader_update() -> Result<(), ()> {
-        /*
-        let replica: ReplicaKey = ("test", 1).into();
-        let mut spu_config = SpuConfig::default();
-        let config = Arc::new(spu_config.clone());
-        let mock_replica = MockReplica::create(20,10,replica.clone(),&spu_config).await.expect("replica"); //
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let (sender, _) = bounded(10);
-        let replica_state = LeaderReplicaState::new(
-            Replica::new(replica,5000,vec![5001]),
-            config,
-            mock_replica,
-            sender,
-        );
-
-
-        assert_eq!(replica_state.need_follower_updates().await.len(), 0);
-
-        // update high watermark of our replica to same as endoffset
-        let mut storage = replica_state.write().await;
-        storage.hw_update = Some(20);
-        drop(storage);
-
-        replica_state
-            .write_record_set(&mut RecordSet::default())
-            .await
-            .expect("write");
-
-        // since we don't have followers, no updates need
-        assert_eq!(replica_state.need_follower_updates().await.len(), 0);
-
-        // add follower offsets info
+        // no hw update since nothing with 2 followers has replicated
         assert_eq!(
-            replica_state.update_followers((5001, 10, 10)).await,
-            (true, Some((10, 10).into()), None)
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 7 },
+                3,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 7, hw: 6 }),
+                    (5002, OffsetInfo { leo: 8, hw: 6 }),
+                ])
+            ),
+            None
         );
-        let updates = replica_state.need_follower_updates().await;
-        assert_eq!(updates.len(), 1);
-        assert_eq!(updates[0], (5001, (10, 10).into()));
 
+        // leader can progress to 8
         assert_eq!(
-            replica_state.update_followers((5001, 20, 10)).await,
-            (true, None, Some(20))
+            compute_hw(
+                &OffsetInfo { leo: 10, hw: 7 },
+                3,
+                &offsets_maps(vec![
+                    (5001, OffsetInfo { leo: 9, hw: 6 }),
+                    (5002, OffsetInfo { leo: 8, hw: 6 }),
+                ])
+            ),
+            Some(8)
         );
-        assert_eq!(replica_state.need_follower_updates().await.len(), 0);
-        */
-
-        Ok(())
     }
 }
