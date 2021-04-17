@@ -235,6 +235,14 @@ mod inner {
                 leo: 0
             }));
 
+            assert!(OffsetInfo {
+                hw: 1,
+                leo: 2
+            }.update(&OffsetInfo {
+                hw: 1,
+                leo: 3
+            }));
+
            
         }
     }
