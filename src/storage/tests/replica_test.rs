@@ -67,7 +67,7 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 
     ensure_clean_dir(&option.base_dir);
 
-    let mut replica = FileReplica::create(TOPIC_NAME, 0, START_OFFSET, &option)
+    let mut replica = FileReplica::create(TOPIC_NAME, 0, START_OFFSET, option)
         .await
         .expect("test replica");
     replica

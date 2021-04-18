@@ -5,7 +5,7 @@ use fluvio_socket::FlvSocket;
 use fluvio_socket::FlvSocketError;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::replication::leader::LeaderConnection;
+use crate::replication::leader::FollowerHandler;
 use super::FetchStreamRequest;
 use super::FetchStreamResponse;
 
@@ -28,7 +28,7 @@ pub(crate) async fn handle_fetch_stream_request(
         .send_response(&res_msg, req_msg.header.api_version())
         .await?;
 
-    LeaderConnection::handle(ctx, follower_id, socket).await?;
+    FollowerHandler::start(ctx, follower_id, socket).await?;
 
     Ok(()) as Result<(), FlvSocketError>
 }

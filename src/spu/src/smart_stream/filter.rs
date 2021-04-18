@@ -440,6 +440,7 @@ impl Iterator for FileBatchIterator {
 #[cfg(test)]
 mod test {
     use std::{fs::File, io::Write};
+    use std::env::temp_dir;
     use std::os::unix::io::AsRawFd;
 
     use fluvio_storage::config::DEFAULT_MAX_BATCH_SIZE;
@@ -448,12 +449,13 @@ mod test {
 
     #[test]
     fn test_file() {
-        let mut file = File::create("/tmp/pread.txt").expect("create");
+        let path = temp_dir().join("pread.txt");
+        let mut file = File::create(&path).expect("create");
         file.write_all(b"Hello, world!").expect("write");
         file.sync_all().expect("flush");
         drop(file);
 
-        let read_only = File::open("/tmp/pread.txt").expect("open");
+        let read_only = File::open(path).expect("open");
         let fd = read_only.as_raw_fd();
         let mut buf = vec![0; DEFAULT_MAX_BATCH_SIZE as usize];
         // let mut buf = BytesMut::with_capacity(64);

@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -39,5 +39,5 @@ fluvio-protocol = { path = "../protocol", version = "0.4.0", features = ["derive
 
 
 [dev-dependencies]
-fluvio-future = { version = "0.2.0", features = ["fixture","fs","native2_tls"] }
+fluvio-future = { version = "0.2.0", features = ["fixture", "fs", "native2_tls"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }

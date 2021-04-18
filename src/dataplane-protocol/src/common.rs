@@ -21,10 +21,16 @@ impl Default for Isolation {
     }
 }
 
-#[derive(Hash, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
+#[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
 pub struct ReplicaKey {
     pub topic: String,
     pub partition: i32,
+}
+
+impl fmt::Debug for ReplicaKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({},{})", self.topic, self.partition)
+    }
 }
 
 unsafe impl Send for ReplicaKey {}

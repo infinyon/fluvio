@@ -14,11 +14,8 @@ pub use self::replica::SharedReplicaLocalStore;
 
 use std::sync::Arc;
 use ::fluvio_storage::FileReplica;
-use fluvio_socket::SinkPool;
-use fluvio_types::SpuId;
 use crate::config::SpuConfig;
 
 pub type SharedGlobalContext<S> = Arc<GlobalContext<S>>;
 pub type DefaultSharedGlobalContext = SharedGlobalContext<FileReplica>;
-pub type SharedSpuSinks = Arc<SinkPool<SpuId>>;
 pub type SharedSpuConfig = Arc<SpuConfig>;

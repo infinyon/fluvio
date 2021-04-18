@@ -64,7 +64,7 @@ impl ReplicaFollowerController<FileReplica> {
     #[instrument(
         name = "FollowerController",
         skip(self),
-        fields (
+        fields(
             leader = self.leader
         )
     )]
@@ -91,8 +91,6 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     async fn sync_with_leader(&mut self, mut socket: FlvSocket) -> Result<bool, FlvSocketError> {
-        let mut replicas = ReplicasBySpu::default();
-
         self.send_fetch_stream_request(&mut socket).await?;
 
         let (mut sink, mut stream) = socket.split();
@@ -100,8 +98,15 @@ impl ReplicaFollowerController<FileReplica> {
 
         let mut event_listener = self.spu_ctx.events.change_listner();
 
+        let mut counter = 0;
+
+        // starts initial sync
+        let mut replicas = ReplicasBySpu::filter_from(&self.states, self.leader);
+        self.sync_all_offsets_to_leader(&mut sink, &replicas)
+            .await?;
+
         loop {
-            debug!("waiting request from leader");
+            debug!(counter, "waiting request from leader");
 
             select! {
                 _ = (sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC))) => {
@@ -121,7 +126,7 @@ impl ReplicaFollowerController<FileReplica> {
                         let req_msg = req_msg_res?;
 
                         match req_msg {
-                            FollowerPeerRequest::SyncRecords(sync_request) => self.write_to_follower_replica(&mut sink,sync_request.request).await?,
+                            FollowerPeerRequest::SyncRecords(sync_request) => self.sync_from_leader(&mut sink,sync_request.request).await?,
                         }
 
                     } else {
@@ -130,6 +135,8 @@ impl ReplicaFollowerController<FileReplica> {
                     }
                 }
             }
+
+            counter += 1;
         }
     }
 
@@ -147,14 +154,52 @@ impl ReplicaFollowerController<FileReplica> {
         }
     }
 
-    async fn write_to_follower_replica(
+    #[instrument(skip(self, req))]
+    async fn sync_from_leader(
         &self,
         sink: &mut FlvSink,
-        req: DefaultSyncRequest,
+        mut req: DefaultSyncRequest,
     ) -> Result<(), FlvSocketError> {
-        debug!("received sync req");
-        let offsets = self.write_topics(req).await;
-        self.send_offsets_to_leader(sink, offsets).await
+        let mut offsets = UpdateOffsetRequest::default();
+
+        for topic_request in &mut req.topics {
+            let topic = &topic_request.name;
+            for p in &mut topic_request.partitions {
+                let rep_id = p.partition;
+                let replica_key = ReplicaKey::new(topic.clone(), rep_id);
+                debug!(
+                    replica = %replica_key,
+                    hw=p.hw,
+                    leo=p.leo,
+                    records = p.records.total_records(),
+                    base_offset = p.records.base_offset(),
+                    "update from leader");
+                if let Some(replica) = self.states.get(&replica_key) {
+                    match replica.update_from_leader(&mut p.records, p.hw).await {
+                        Ok(changes) => {
+                            if changes {
+                                debug!("changes occur, need to send back offset");
+                                offsets.replicas.push(replica.as_offset_request());
+                            } else {
+                                debug!("no changes");
+                            }
+                        }
+                        Err(err) => error!("problem updating {}, error: {:#?}", replica_key, err),
+                    }
+                } else {
+                    error!(
+                        "unable to find follower replica for writing: {}",
+                        replica_key
+                    );
+                }
+            }
+        }
+
+        if !offsets.replicas.is_empty() {
+            self.send_offsets_to_leader(sink, offsets).await
+        } else {
+            Ok(())
+        }
     }
 
     /// connect to leader, if can't connect try until we succeed
@@ -188,6 +233,7 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     /// establish stream to leader SPU
+    #[instrument(skip(self))]
     async fn send_fetch_stream_request(
         &self,
         socket: &mut FlvSocket,
@@ -244,52 +290,6 @@ impl ReplicaFollowerController<FileReplica> {
     }
     */
 
-    /// write records from leader to follower replica
-    /// return updated offsets
-    pub(crate) async fn write_topics(&self, mut req: DefaultSyncRequest) -> UpdateOffsetRequest {
-        let mut offsets = UpdateOffsetRequest::default();
-
-        for topic_request in &mut req.topics {
-            let topic = &topic_request.name;
-            for partition_request in &mut topic_request.partitions {
-                let rep_id = partition_request.partition;
-                let replica_key = ReplicaKey::new(topic.clone(), rep_id);
-                if let Some(replica) = self.states.get(&replica_key) {
-                    match replica
-                        .write_recordsets(&mut partition_request.records)
-                        .await
-                    {
-                        Ok(valid_record) => {
-                            if valid_record {
-                                let follow_leo = replica.leo();
-                                let leader_hw = partition_request.hw;
-                                debug!(follow_leo, leader_hw, "finish writing");
-                                if follow_leo == leader_hw {
-                                    debug!("follow leo and leader hw is same, updating hw");
-                                    if let Err(err) = replica.update_hw(leader_hw).await {
-                                        error!("error writing replica high watermark: {}", err);
-                                    }
-                                }
-
-                                offsets.replicas.push(replica.as_offset_request());
-                            }
-                        }
-                        Err(err) => error!(
-                            "problem writing replica: {}, error: {:#?}",
-                            replica_key, err
-                        ),
-                    }
-                } else {
-                    error!(
-                        "unable to find follower replica for writing: {}",
-                        replica_key
-                    );
-                }
-            }
-        }
-        offsets
-    }
-
     async fn sync_all_offsets_to_leader(
         &self,
         sink: &mut FlvSink,
@@ -300,17 +300,16 @@ impl ReplicaFollowerController<FileReplica> {
     }
 
     /// send offset to leader
+    #[instrument(skip(self))]
     async fn send_offsets_to_leader(
         &self,
         sink: &mut FlvSink,
         offsets: UpdateOffsetRequest,
     ) -> Result<(), FlvSocketError> {
-        let follower_id = self.config.id();
-
+        let local_spu = self.config.id();
+        debug!(local_spu, "sending offsets to leader");
         let req_msg = RequestMessage::new_request(offsets)
-            .set_client_id(format!("follower: {}", follower_id));
-
-        trace!(?req_msg, "sending offsets leader");
+            .set_client_id(format!("follower spu: {}", local_spu));
 
         sink.send_request(&req_msg).await
     }
@@ -326,7 +325,7 @@ impl ReplicasBySpu {
         let mut replicas = HashMap::new();
 
         for rep_ref in states.iter() {
-            if rep_ref.value().leader() == &leader {
+            if rep_ref.value().leader() == leader {
                 replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
             }
         }
@@ -347,6 +346,7 @@ impl ReplicasBySpu {
         UpdateOffsetRequest { replicas }
     }
 
+    /*
     /// send offset to leader
     #[allow(unused)]
     async fn send_offsets_to_leader(
@@ -363,4 +363,5 @@ impl ReplicasBySpu {
 
         sink.send_request(&req_msg).await
     }
+    */
 }

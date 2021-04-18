@@ -10,7 +10,7 @@ mod actions;
 pub use self::leader_controller::ReplicaLeaderController;
 pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
 pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};
-pub use self::connection::LeaderConnection;
+pub use self::connection::FollowerHandler;
 pub use self::api_key::LeaderPeerApiEnum;
 pub use self::peer_api::LeaderPeerRequest;
 pub use self::update_offsets::UpdateOffsetRequest;

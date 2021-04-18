@@ -9,14 +9,13 @@ use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
 use dataplane::{Offset};
-use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError};
-use fluvio_types::{SpuId, event::offsets::OffsetChangeListener};
+use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError, OffsetInfo};
+use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 /// Thread safe storage for replicas
 #[derive(Debug)]
 pub struct SharableReplicaStorage<S> {
-    leader: SpuId,
     id: ReplicaKey,
     inner: Arc<RwLock<S>>,
     leo: Arc<OffsetPublisher>,
@@ -26,7 +25,6 @@ pub struct SharableReplicaStorage<S> {
 impl<S> Clone for SharableReplicaStorage<S> {
     fn clone(&self) -> Self {
         Self {
-            leader: self.leader,
             id: self.id.clone(),
             inner: self.inner.clone(),
             leo: self.leo.clone(),
@@ -40,30 +38,17 @@ where
     S: ReplicaStorage,
 {
     /// create new storage replica or restore from durable storage based on configuration
-    pub async fn create(
-        leader: SpuId,
-        id: ReplicaKey,
-        config: S::Config,
-    ) -> Result<Self, StorageError> {
-        let storage = S::create(&id, leader, config).await?;
+    pub async fn create(id: ReplicaKey, config: S::Config) -> Result<Self, StorageError> {
+        let storage = S::create(&id, config).await?;
 
         let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
         let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));
         Ok(Self {
-            leader,
             id,
             inner: Arc::new(RwLock::new(storage)),
             leo,
             hw,
         })
-    }
-
-    pub fn leader(&self) -> &SpuId {
-        &self.leader
-    }
-
-    pub fn set_leader(&mut self, spu: SpuId) {
-        self.leader = spu;
     }
 
     pub fn id(&self) -> &ReplicaKey {
@@ -80,6 +65,13 @@ where
         self.hw.current_value()
     }
 
+    pub fn as_offset(&self) -> OffsetInfo {
+        OffsetInfo {
+            hw: self.hw(),
+            leo: self.leo(),
+        }
+    }
+
     /// listen to offset based on isolation
     pub fn offset_listener(&self, isolation: &Isolation) -> OffsetChangeListener {
         match isolation {
@@ -89,12 +81,12 @@ where
     }
 
     /// readable ref to storage
-    async fn read(&self) -> RwLockReadGuard<'_, S> {
+    pub async fn read(&self) -> RwLockReadGuard<'_, S> {
         self.inner.read().await
     }
 
     /// writable ref to storage
-    async fn write(&self) -> RwLockWriteGuard<'_, S> {
+    pub async fn write(&self) -> RwLockWriteGuard<'_, S> {
         self.inner.write().await
     }
 
@@ -105,14 +97,14 @@ where
     }
 
     /// read records into partition response
-    /// return hw and leo
+    /// return leo and hw
     pub async fn read_records<P>(
         &self,
         offset: Offset,
         max_len: u32,
         isolation: Isolation,
         partition_response: &mut P,
-    ) -> (Offset, Offset)
+    ) -> OffsetInfo
     where
         P: SlicePartitionResponse + Send,
     {
@@ -125,7 +117,12 @@ where
 
     pub async fn update_hw(&self, hw: Offset) -> Result<bool, StorageError> {
         let mut writer = self.write().await;
-        writer.update_high_watermark(hw).await
+        if writer.update_high_watermark(hw).await? {
+            self.hw.update(hw);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     pub async fn write_record_set(

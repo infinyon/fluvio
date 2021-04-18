@@ -215,6 +215,7 @@ where
         actions
     }
 
+    #[allow(unused)]
     pub fn spec(&self, key: &S::Key) -> Option<S> {
         match self.0.read().get(key) {
             Some(spu) => Some(spu.clone()),

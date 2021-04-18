@@ -298,7 +298,7 @@ where
             ..Default::default()
         };
 
-        let (hw, leo) = self
+        let offset = self
             .leader_state
             .read_records(
                 offset,
@@ -309,17 +309,14 @@ where
             .await;
 
         debug!(
-            hw = hw,
-            leo = leo,
+            hw = offset.hw,
+            leo = offset.leo,
             slice_start = file_partition_response.records.position(),
             slice_end = file_partition_response.records.len(),
             read_records_ms = %now.elapsed().as_millis()
         );
 
-        let mut next_offset = match self.isolation {
-            Isolation::ReadCommitted => hw,
-            Isolation::ReadUncommitted => leo,
-        };
+        let mut next_offset = offset.isolation(&self.isolation);
 
         if file_partition_response.records.len() > 0 {
             if let Some(module) = module_option {
@@ -412,22 +409,12 @@ where
 
                 debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
 
-                let next_offset = match self.isolation {
-                    Isolation::ReadCommitted => hw,
-                    Isolation::ReadUncommitted => leo,
-                };
-
-                Ok((next_offset, true))
+                Ok((offset.isolation(&self.isolation), true))
             }
         } else {
             debug!("empty records, skipping");
 
-            let next_offset = match self.isolation {
-                Isolation::ReadCommitted => hw,
-                Isolation::ReadUncommitted => leo,
-            };
-
-            Ok((next_offset, false))
+            Ok((offset.isolation(&self.isolation), false))
         }
     }
 }
@@ -498,11 +485,13 @@ pub mod publishers {
 }
 
 #[cfg(test)]
+#[cfg(target_os = "linux")]
 mod test {
 
     use std::{
         path::{Path, PathBuf},
         time::Duration,
+        env::temp_dir,
     };
 
     use fluvio_controlplane_metadata::partition::Replica;
@@ -528,12 +517,12 @@ mod test {
 
     #[test_async]
     async fn test_stream_fetch() -> Result<(), ()> {
-        let test_path = "/tmp/stream_test";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("stream_test");
+        ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12000";
         let mut spu_config = SpuConfig::default();
-        spu_config.log.base_dir = PathBuf::from(test_path);
+        spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
         let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
@@ -695,12 +684,12 @@ mod test {
 
     #[test_async]
     async fn test_stream_filter_fetch() -> Result<(), ()> {
-        let test_path = "/tmp/filter_stream_fetch";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("filter_stream_fetch");
+        ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12001";
         let mut spu_config = SpuConfig::default();
-        spu_config.log.base_dir = PathBuf::from(test_path);
+        spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
         let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
@@ -850,12 +839,12 @@ mod test {
     /// test filter with max bytes
     #[test_async]
     async fn test_stream_filter_max() -> Result<(), ()> {
-        let test_path = "/tmp/filter_stream_max";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("filter_stream_max");
+        ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12002";
         let mut spu_config = SpuConfig::default();
-        spu_config.log.base_dir = PathBuf::from(test_path);
+        spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
         let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();

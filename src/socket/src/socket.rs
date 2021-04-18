@@ -4,6 +4,7 @@ cfg_if::cfg_if! {
         use std::os::unix::io::RawFd;
     }
 }
+use std::fmt;
 
 use futures_util::io::{AsyncRead, AsyncWrite};
 use futures_util::StreamExt;
@@ -30,11 +31,16 @@ pub type FlvSocket = InnerFlvSocket<TcpStream>;
 pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
 
 /// Socket abstract that can send and receive fluvio objects
-#[derive(Debug)]
 pub struct InnerFlvSocket<S> {
     sink: InnerFlvSink<S>,
     stream: InnerFlvStream<S>,
     stale: bool,
+}
+
+impl<S> fmt::Debug for InnerFlvSocket<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "fd({})", self.id())
+    }
 }
 
 unsafe impl<S> Sync for InnerFlvSocket<S> {}

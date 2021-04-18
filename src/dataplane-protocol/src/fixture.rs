@@ -60,6 +60,11 @@ pub fn create_batch() -> DefaultBatch {
     create_batch_with_producer(12, 2)
 }
 
+pub fn create_recordset(num_records: u16) -> RecordSet {
+    let records = RecordSet::default();
+    records.add(create_batch_with_producer(12, num_records))
+}
+
 pub const TEST_RECORD: &[u8] = &[10, 20];
 
 /// create batches with produce and records count
