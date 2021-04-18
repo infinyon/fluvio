@@ -175,15 +175,21 @@ where
 
     /// update leader's state from follower's offset states
     /// if follower's state has been updated may result in leader's hw update
+    /// return true if update has been updated, in this case, updates can be computed to followers
+    /// return false if no change in state leader
     #[instrument(skip(self))]
-    pub async fn update_states_from_followers(&self, follower_id: SpuId, follower_pos: OffsetInfo) {
+    pub async fn update_states_from_followers(
+        &self,
+        follower_id: SpuId,
+        follower_pos: OffsetInfo,
+    ) -> bool {
         let leader_pos = self.as_offset();
 
         // follower must be always behind leader
 
         if follower_pos.newer(&leader_pos) {
-            error!("follower pos must not be newer",);
-            return;
+            warn!("follower pos must not be newer",);
+            return false;
         }
 
         // get follower info
@@ -205,9 +211,13 @@ where
                 } else {
                     debug!("leader is committed");
                 }
+                true
+            } else {
+                false
             }
         } else {
             error!(follower_id, "invalid follower");
+            false
         }
     }
 
@@ -866,10 +876,36 @@ mod test_leader {
             .await
             .expect("write");
         state.update_hw(2).await.expect("hw");
+        // check leader leo = 10 and hw = 2
+        assert_eq!(state.leo(), 10);
+        assert_eq!(state.hw(), 2);
 
-        state
-            .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 })
-            .await;
+        // handle invalidate offset update from follower
+        assert_eq!(
+            state
+                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 11 })
+                .await,
+            false
+        );
+        assert_eq!(state.hw(), 2);
+
+        // update from invalid follower
+        assert_eq!(
+            state
+                .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 })
+                .await,
+            false
+        );
+        assert_eq!(state.hw(), 2);
+
+        // 5001 advance leo = 6 which is enough to make leader's hw to change
+        assert_eq!(
+            state
+                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 })
+                .await,
+            true
+        );
+        assert_eq!(state.hw(), 6);
         Ok(())
     }
 }
