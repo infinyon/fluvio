@@ -75,7 +75,7 @@ impl FollowerHandler {
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
                 leader
                     .value()
-                    .update_hw_from_followers(
+                    .update_states_from_followers(
                         self.follower_id,
                         OffsetInfo {
                             hw: update.hw,

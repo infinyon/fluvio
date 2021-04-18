@@ -173,31 +173,10 @@ where
         }
     }
 
-    /// update hw based on offset change
-    ///
-    /// // case 1:  follower offset has same value as leader
-    /// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2
-    /// //          Input: leo 2, hw: 2,  this happens during follower resync.
-    /// //          Expect:  no changes,
-    ///
-    /// // case 2:  follower offset is same as previous
-    /// //          leader: leo: 2, hw: 2,  follower: leo: 1, hw: 1
-    /// //          Input:  leo: 1, hw:1,  
-    /// //          Expect, no status but follower sync
-    /// //
-    /// // case 3:  different follower offset
-    /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
-    /// //          Input:  leo: 2, hw: 2,
-    /// //          Expect, status change, follower sync  
-    ///
-    ///  Simple HW mark calculation (assume LSR = 2) which is find minimum offset values that satisfy
-    ///     Assume: Leader leo = 10, hw = 2,
-    ///         follower: leo(2,4)  =>   no change, since it doesn't satisfy minim LSR
-    ///         follower: leo(3,4)  =>   hw = 3  that is smallest leo that satisfy
-    ///         follower: leo(4,4)  =>   hw = 4
-    ///         follower: leo(6,7,9) =>  hw = 7,
+    /// update leader's state from follower's offset states
+    /// if follower's state has been updated may result in leader's hw update
     #[instrument(skip(self))]
-    pub async fn update_hw_from_followers(&self, follower_id: SpuId, follower_pos: OffsetInfo) {
+    pub async fn update_states_from_followers(&self, follower_id: SpuId, follower_pos: OffsetInfo) {
         let leader_pos = self.as_offset();
 
         // follower must be always behind leader
@@ -232,9 +211,9 @@ where
         }
     }
 
-    /// compute list of followers that need to be sync
-    /// this is done by checking diff of end offset and high watermark
-    async fn need_follower_updates(&self) -> Vec<(SpuId, OffsetInfo)> {
+    /// compute follower that needs to be updated
+    /// based on leader's state
+    async fn follower_updates(&self) -> Vec<(SpuId, OffsetInfo)> {
         let offset = self.as_offset();
         trace!(
             "computing follower offset for leader: {}, {:#?}",
@@ -300,7 +279,7 @@ where
 
     /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
-        let follower_sync = self.need_follower_updates().await;
+        let follower_sync = self.follower_updates().await;
 
         for (follower_id, follower_info) in follower_sync {
             self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
@@ -370,6 +349,29 @@ where
 /// compute leader's updated hw based on follower offset
 /// this is done after follower's leo updated
 /// min_replica must be at least 1 and must be less than followers.len(0)
+/// update hw based on offset change
+///
+/// // case 1:  follower offset has same value as leader
+/// //          leader: leo: 2, hw: 2,  follower: leo: 2, hw: 2
+/// //          Input: leo 2, hw: 2,  this happens during follower resync.
+/// //          Expect:  no changes,
+///
+/// // case 2:  follower offset is same as previous
+/// //          leader: leo: 2, hw: 2,  follower: leo: 1, hw: 1
+/// //          Input:  leo: 1, hw:1,  
+/// //          Expect, no status but follower sync
+/// //
+/// // case 3:  different follower offset
+/// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
+/// //          Input:  leo: 2, hw: 2,
+/// //          Expect, status change, follower sync  
+///
+///  Simple HW mark calculation (assume LSR = 2) which is find minimum offset values that satisfy
+///     Assume: Leader leo = 10, hw = 2,
+///         follower: leo(2,4)  =>   no change, since it doesn't satisfy minim LSR
+///         follower: leo(3,4)  =>   hw = 3  that is smallest leo that satisfy
+///         follower: leo(4,4)  =>   hw = 4
+///         follower: leo(6,7,9) =>  hw = 7,
 fn compute_hw(
     leader: &OffsetInfo,
     min_replica: u16,
@@ -428,122 +430,6 @@ fn compute_hw(
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
 
 impl LeaderReplicaState<FileReplica> {}
-
-/*
-#[cfg(test)]
-mod mock_replica {
-
-    use async_trait::async_trait;
-
-    //use fluvio_future::test_async;
-    use fluvio_controlplane_metadata::partition::{ReplicaKey};
-    //use fluvio_controlplane_metadata::partition::Replica;
-    use fluvio_storage::{OffsetInfo};
-    use dataplane::Offset;
-
-
-    use crate::{
-        config::{Log},
-        storage::SharableReplicaStorage,
-    };
-    use super::*;
-
-    #[derive(Default)]
-    struct MockConfig {
-        hw: Offset,
-        leo: Offset,
-    }
-
-    impl ReplicaStorageConfig for MockConfig {}
-
-    #[derive(Default)]
-    struct MockReplica {
-        hw: Offset,
-        leo: Offset,
-        hw_update: Option<Offset>,
-    }
-
-    impl MockReplica {
-        async fn create(
-            leo: Offset,
-            hw: Offset,
-            id: ReplicaKey,
-        ) -> Result<SharableReplicaStorage<Self>, StorageError> {
-            let config = MockConfig { hw, leo };
-            SharableReplicaStorage::create(id, config).await
-        }
-    }
-
-    impl From<&Log> for MockConfig {
-        fn from(_log: &Log) -> MockConfig {
-            MockConfig::default()
-        }
-    }
-
-    #[async_trait]
-    impl ReplicaStorage for MockReplica {
-        fn get_hw(&self) -> Offset {
-            self.hw
-        }
-
-        fn get_leo(&self) -> Offset {
-            self.leo
-        }
-
-        async fn read_partition_slice<P>(
-            &self,
-            _offset: Offset,
-            _max_len: u32,
-            _isolation: dataplane::Isolation,
-            _partition_response: &mut P,
-        ) -> OffsetInfo
-        where
-            P: fluvio_storage::SlicePartitionResponse + Send,
-        {
-            todo!()
-        }
-
-        // do dummy implementations of write
-        async fn write_recordset(
-            &mut self,
-            _records: &mut dataplane::record::RecordSet,
-            _update_highwatermark: bool,
-        ) -> Result<(), fluvio_storage::StorageError> {
-            let _ = self.hw_update.take();
-            Ok(())
-        }
-
-        async fn update_high_watermark(
-            &mut self,
-            _offset: Offset,
-        ) -> Result<bool, fluvio_storage::StorageError> {
-            todo!()
-        }
-
-        type Config = MockConfig;
-
-        async fn create(
-            _replica: &dataplane::ReplicaKey,
-            config: Self::Config,
-        ) -> Result<Self, fluvio_storage::StorageError> {
-            Ok(MockReplica {
-                hw: config.hw,
-                leo: config.leo,
-                ..Default::default()
-            })
-        }
-
-        fn get_log_start_offset(&self) -> Offset {
-            todo!()
-        }
-
-        async fn remove(&self) -> Result<(), fluvio_storage::StorageError> {
-            todo!()
-        }
-    }
-
-}
-*/
 
 #[cfg(test)]
 mod test_hw_updates {
@@ -777,5 +663,179 @@ mod test_hw_updates {
             ),
             Some(8)
         );
+    }
+}
+
+#[cfg(test)]
+mod test_leader {
+
+    use async_trait::async_trait;
+    use async_channel::bounded;
+
+    use fluvio_future::test_async;
+    use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError, OffsetInfo};
+    use dataplane::Offset;
+
+    use crate::{
+        config::{Log},
+        storage::SharableReplicaStorage,
+    };
+    use super::*;
+
+    #[derive(Default)]
+    struct MockConfig {
+        hw: Offset,
+        leo: Offset,
+    }
+
+    impl ReplicaStorageConfig for MockConfig {}
+
+    #[derive(Default)]
+    struct MockReplica {
+        hw: Offset,
+        leo: Offset,
+        hw_update: Option<Offset>,
+    }
+
+    impl MockReplica {
+        async fn create(
+            leo: Offset,
+            hw: Offset,
+            id: ReplicaKey,
+        ) -> Result<SharableReplicaStorage<Self>, StorageError> {
+            let config = MockConfig { hw, leo };
+            SharableReplicaStorage::create(id, config).await
+        }
+    }
+
+    impl From<&Log> for MockConfig {
+        fn from(_log: &Log) -> MockConfig {
+            MockConfig::default()
+        }
+    }
+
+    #[async_trait]
+    impl ReplicaStorage for MockReplica {
+        fn get_hw(&self) -> Offset {
+            self.hw
+        }
+
+        fn get_leo(&self) -> Offset {
+            self.leo
+        }
+
+        async fn read_partition_slice<P>(
+            &self,
+            _offset: Offset,
+            _max_len: u32,
+            _isolation: dataplane::Isolation,
+            _partition_response: &mut P,
+        ) -> OffsetInfo
+        where
+            P: fluvio_storage::SlicePartitionResponse + Send,
+        {
+            todo!()
+        }
+
+        // do dummy implementations of write
+        async fn write_recordset(
+            &mut self,
+            _records: &mut dataplane::record::RecordSet,
+            _update_highwatermark: bool,
+        ) -> Result<(), fluvio_storage::StorageError> {
+            let _ = self.hw_update.take();
+            Ok(())
+        }
+
+        async fn update_high_watermark(
+            &mut self,
+            _offset: Offset,
+        ) -> Result<bool, fluvio_storage::StorageError> {
+            todo!()
+        }
+
+        type Config = MockConfig;
+
+        async fn create(
+            _replica: &dataplane::ReplicaKey,
+            config: Self::Config,
+        ) -> Result<Self, fluvio_storage::StorageError> {
+            Ok(MockReplica {
+                hw: config.hw,
+                leo: config.leo,
+                ..Default::default()
+            })
+        }
+
+        fn get_log_start_offset(&self) -> Offset {
+            todo!()
+        }
+
+        async fn remove(&self) -> Result<(), fluvio_storage::StorageError> {
+            todo!()
+        }
+    }
+
+    #[test_async]
+    async fn test_follower_update() -> Result<(), ()> {
+        let replica: ReplicaKey = ("test", 1).into();
+        let mock_replica = MockReplica::create(10, 2, replica.clone())
+            .await
+            .expect("replica"); // leo, hw
+        let (sender, _) = bounded(10);
+
+        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        let state = LeaderReplicaState::new(
+            Replica::new(replica, 5000, vec![5001, 5002]),
+            ReplicationConfig {
+                min_in_sync_replicas: 2,
+            },
+            mock_replica,
+            sender,
+        );
+
+        assert_eq!(state.follower_updates().await.len(), 0);
+
+        // got updated from 5001 which just been initialized
+        let mut followers = state.followers.write().await;
+        followers
+            .get_mut(&5001)
+            .expect("map")
+            .update(&OffsetInfo { leo: 0, hw: 0 });
+        drop(followers);
+        assert_eq!(
+            state.follower_updates().await,
+            vec![(5001, OffsetInfo { leo: 0, hw: 0 })]
+        );
+
+        // updated from 5002
+        let mut followers = state.followers.write().await;
+        followers
+            .get_mut(&5002)
+            .expect("map")
+            .update(&OffsetInfo { leo: 0, hw: 0 });
+        drop(followers);
+        assert_eq!(
+            state.follower_updates().await,
+            vec![
+                (5001, OffsetInfo { leo: 0, hw: 0 }),
+                (5002, OffsetInfo { leo: 0, hw: 0 }),
+            ]
+        );
+
+        // 5002 has been fully caught up
+        let mut followers = state.followers.write().await;
+        followers
+            .get_mut(&5002)
+            .expect("map")
+            .update(&OffsetInfo { leo: 10, hw: 2 });
+        drop(followers);
+        assert_eq!(
+            state.follower_updates().await,
+            vec![(5001, OffsetInfo { leo: 0, hw: 0 }),]
+        );
+
+        Ok(())
     }
 }

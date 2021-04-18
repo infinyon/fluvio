@@ -63,9 +63,11 @@ mod inner {
             }
         }
 
-        /// check if offset contains value
+        /// check if offset contains valid value
+        ///  invalid if either hw or leo is -1
+        ///  or if hw > leo
         pub fn is_valid(&self) -> bool {
-            self.hw != -1 && self.leo != -1 && self.leo >= self.hw
+            !(self.hw == -1 || self.leo == -1) && self.leo >= self.hw
         }
 
         /// update hw, leo
@@ -192,6 +194,12 @@ mod inner {
             assert!(!OffsetInfo { hw: 2, leo: 1 }.is_valid());
 
             assert!(OffsetInfo { hw: 2, leo: 3 }.is_valid());
+
+            assert!(OffsetInfo { hw: 0, leo: 0 }.is_valid());
+
+            assert!(OffsetInfo { hw: 4, leo: 4 }.is_valid());
+
+            assert!(!OffsetInfo { hw: -1, leo: 3 }.is_valid());
         }
 
         #[test]
