@@ -498,11 +498,13 @@ pub mod publishers {
 }
 
 #[cfg(test)]
+#[cfg(target_os = "linux")]
 mod test {
 
     use std::{
         path::{Path, PathBuf},
         time::Duration,
+        env::temp_dir
     };
 
     use fluvio_controlplane_metadata::partition::Replica;
@@ -528,12 +530,12 @@ mod test {
 
     #[test_async]
     async fn test_stream_fetch() -> Result<(), ()> {
-        let test_path = "/tmp/stream_test";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("stream_test");
+        ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12000";
         let mut spu_config = SpuConfig::default();
-        spu_config.log.base_dir = PathBuf::from(test_path);
+        spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
         let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
@@ -695,12 +697,12 @@ mod test {
 
     #[test_async]
     async fn test_stream_filter_fetch() -> Result<(), ()> {
-        let test_path = "/tmp/filter_stream_fetch";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("filter_stream_fetch");
+        ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12001";
         let mut spu_config = SpuConfig::default();
-        spu_config.log.base_dir = PathBuf::from(test_path);
+        spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
         let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
@@ -850,12 +852,12 @@ mod test {
     /// test filter with max bytes
     #[test_async]
     async fn test_stream_filter_max() -> Result<(), ()> {
-        let test_path = "/tmp/filter_stream_max";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("filter_stream_max");
+        ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12002";
         let mut spu_config = SpuConfig::default();
-        spu_config.log.base_dir = PathBuf::from(test_path);
+        spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
         let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();

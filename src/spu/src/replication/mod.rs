@@ -2,10 +2,12 @@ pub(crate) mod follower;
 pub(crate) mod leader;
 
 #[cfg(test)]
+#[cfg(target_os = "linux")]
 mod replica_test {
 
     use std::path::PathBuf;
     use std::time::Duration;
+    use std::env::temp_dir;
 
     use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
@@ -42,13 +44,13 @@ mod replica_test {
     /// test a single leader and follower
     #[test_async]
     async fn test_initial_replication() -> Result<(), ()> {
-        let test_path = "/tmp/replication_test";
-        ensure_clean_dir(test_path);
+        let test_path = temp_dir().join("replication_test");
+        ensure_clean_dir(&test_path);
 
         let replica = Replica::new((TOPIC, 0), LEADER, vec![FOLLOWER]);
 
         let mut leader_config = SpuConfig::default();
-        leader_config.log.base_dir = PathBuf::from(test_path);
+        leader_config.log.base_dir = test_path.clone();
         leader_config.id = LEADER;
         leader_config.private_endpoint = leader_addr();
         let leader_gctx = GlobalContext::new_shared_context(leader_config);
