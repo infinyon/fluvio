@@ -676,53 +676,59 @@ mod test_leader {
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError, OffsetInfo};
     use dataplane::Offset;
+    use dataplane::fixture::{create_recordset};
 
     use crate::{
-        config::{Log},
+        config::{SpuConfig},
         storage::SharableReplicaStorage,
     };
+
     use super::*;
 
     #[derive(Default)]
-    struct MockConfig {
-        hw: Offset,
-        leo: Offset,
-    }
+    struct MockConfig {}
 
     impl ReplicaStorageConfig for MockConfig {}
 
     #[derive(Default)]
-    struct MockReplica {
-        hw: Offset,
-        leo: Offset,
-        hw_update: Option<Offset>,
+    struct MockStorage {
+        pos: OffsetInfo,
     }
 
-    impl MockReplica {
-        async fn create(
-            leo: Offset,
-            hw: Offset,
-            id: ReplicaKey,
-        ) -> Result<SharableReplicaStorage<Self>, StorageError> {
-            let config = MockConfig { hw, leo };
+    impl MockStorage {
+        async fn create(id: ReplicaKey) -> Result<SharableReplicaStorage<Self>, StorageError> {
+            let config = MockConfig {};
             SharableReplicaStorage::create(id, config).await
+        }
+
+        fn update_leo(&mut self, leo: Offset) {
+            self.pos.leo = leo;
         }
     }
 
-    impl From<&Log> for MockConfig {
-        fn from(_log: &Log) -> MockConfig {
+    impl From<&SpuConfig> for MockConfig {
+        fn from(_log: &SpuConfig) -> MockConfig {
             MockConfig::default()
         }
     }
 
     #[async_trait]
-    impl ReplicaStorage for MockReplica {
+    impl ReplicaStorage for MockStorage {
+        async fn create(
+            _replica: &dataplane::ReplicaKey,
+            _config: Self::Config,
+        ) -> Result<Self, fluvio_storage::StorageError> {
+            Ok(MockStorage {
+                pos: OffsetInfo { leo: 0, hw: 0 },
+            })
+        }
+
         fn get_hw(&self) -> Offset {
-            self.hw
+            self.pos.hw
         }
 
         fn get_leo(&self) -> Offset {
-            self.leo
+            self.pos.leo
         }
 
         async fn read_partition_slice<P>(
@@ -741,32 +747,25 @@ mod test_leader {
         // do dummy implementations of write
         async fn write_recordset(
             &mut self,
-            _records: &mut dataplane::record::RecordSet,
-            _update_highwatermark: bool,
+            records: &mut dataplane::record::RecordSet,
+            update_highwatermark: bool,
         ) -> Result<(), fluvio_storage::StorageError> {
-            let _ = self.hw_update.take();
+            self.pos.leo = records.last_offset().unwrap();
+            if update_highwatermark {
+                self.pos.hw = self.pos.leo;
+            }
             Ok(())
         }
 
         async fn update_high_watermark(
             &mut self,
-            _offset: Offset,
+            offset: Offset,
         ) -> Result<bool, fluvio_storage::StorageError> {
-            todo!()
+            self.pos.hw = offset;
+            Ok(true)
         }
 
         type Config = MockConfig;
-
-        async fn create(
-            _replica: &dataplane::ReplicaKey,
-            config: Self::Config,
-        ) -> Result<Self, fluvio_storage::StorageError> {
-            Ok(MockReplica {
-                hw: config.hw,
-                leo: config.leo,
-                ..Default::default()
-            })
-        }
 
         fn get_log_start_offset(&self) -> Offset {
             todo!()
@@ -779,21 +778,28 @@ mod test_leader {
 
     #[test_async]
     async fn test_follower_update() -> Result<(), ()> {
-        let replica: ReplicaKey = ("test", 1).into();
-        let mock_replica = MockReplica::create(10, 2, replica.clone())
-            .await
-            .expect("replica"); // leo, hw
-        let (sender, _) = bounded(10);
+        let mut leader_config = SpuConfig::default();
+        leader_config.replication.min_in_sync_replicas = 2;
+        leader_config.id = 5000;
 
+        let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let state = LeaderReplicaState::new(
+        let (state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
-            ReplicationConfig {
-                min_in_sync_replicas: 2,
-            },
-            mock_replica,
-            sender,
-        );
+            &leader_config,
+        )
+        .await
+        .expect("state");
+
+        // write fake recordset to ensure leo = 10
+        state
+            .write_record_set(&mut create_recordset(10))
+            .await
+            .expect("write");
+        state.update_hw(2).await.expect("hw");
+
+        assert_eq!(state.leo(), 10);
+        assert_eq!(state.hw(), 2);
 
         assert_eq!(state.follower_updates().await.len(), 0);
 
@@ -836,6 +842,34 @@ mod test_leader {
             vec![(5001, OffsetInfo { leo: 0, hw: 0 }),]
         );
 
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_update_leader_from_followers() -> Result<(), ()> {
+        let mut leader_config = SpuConfig::default();
+        leader_config.replication.min_in_sync_replicas = 2;
+        leader_config.id = 5000;
+
+        let replica: ReplicaKey = ("test", 1).into();
+        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        let (state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
+            Replica::new(replica, 5000, vec![5001, 5002]),
+            &leader_config,
+        )
+        .await
+        .expect("state");
+
+        // write fake recordset to ensure leo = 10
+        state
+            .write_record_set(&mut create_recordset(10))
+            .await
+            .expect("write");
+        state.update_hw(2).await.expect("hw");
+
+        state
+            .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 })
+            .await;
         Ok(())
     }
 }

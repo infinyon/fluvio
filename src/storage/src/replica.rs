@@ -193,7 +193,7 @@ impl FileReplica {
         let commit_checkpoint: CheckPoint<Offset> =
             CheckPoint::create(&rep_option, "replication.chk", last_base_offset).await?;
 
-        Ok(FileReplica {
+        Ok(Self {
             option: rep_option,
             last_base_offset,
             partition,

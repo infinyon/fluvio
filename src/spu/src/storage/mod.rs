@@ -74,12 +74,12 @@ where
     }
 
     /// readable ref to storage
-    async fn read(&self) -> RwLockReadGuard<'_, S> {
+    pub async fn read(&self) -> RwLockReadGuard<'_, S> {
         self.inner.read().await
     }
 
     /// writable ref to storage
-    async fn write(&self) -> RwLockWriteGuard<'_, S> {
+    pub async fn write(&self) -> RwLockWriteGuard<'_, S> {
         self.inner.write().await
     }
 

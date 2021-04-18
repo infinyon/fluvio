@@ -18,7 +18,7 @@ mod replica_test {
     use fluvio_controlplane_metadata::partition::{Replica};
     use fluvio_controlplane_metadata::spu::{SpuSpec};
     use dataplane::record::RecordSet;
-    use dataplane::fixture::{create_batch};
+    use dataplane::fixture::{create_recordset};
 
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
@@ -84,9 +84,8 @@ mod replica_test {
             .expect("leader");
 
         // write records
-        let mut records = RecordSet::default().add(create_batch());
         leader_replica
-            .write_record_set(&mut records)
+            .write_record_set(&mut create_recordset(2))
             .await
             .expect("write");
 
