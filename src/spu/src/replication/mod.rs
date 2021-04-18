@@ -53,7 +53,7 @@ mod replica_test {
             ]
         }
 
-        let test_path = temp_dir().join("replication_test");
+        let test_path = temp_dir().join("init_replication_test");
         ensure_clean_dir(&test_path);
 
         let replica = Replica::new((TOPIC, 0), LEADER, vec![FOLLOWER]);
@@ -148,7 +148,7 @@ mod replica_test {
             ]
         }
 
-        let test_path = "/tmp/replication_test";
+        let test_path = "/tmp/new_replication_test";
         ensure_clean_dir(test_path);
 
         let replica = Replica::new((TOPIC, 0), LEADER, vec![FOLLOWER]);
