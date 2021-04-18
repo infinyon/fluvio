@@ -31,6 +31,8 @@ mod replica_test {
     const HOST: &str = "127.0.0.1";
 
     const MAX_BYTES: u32 = 100000;
+    const MAX_WAIT_REPLICATION: u64 = 5000;
+    const MAX_WAIT_LEADER: u64 = 1000;
 
     /// Test 2 replica
     /// Replicating with existing records
@@ -87,8 +89,8 @@ mod replica_test {
 
         let spu_server = create_internal_server(leader_addr(), leader_gctx.clone()).run();
 
-        // sleep little bit until we spin up follower
-        sleep(Duration::from_millis(100)).await;
+        // give leader controller time to startup
+        sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
         let mut follower_config = SpuConfig::default();
         follower_config.log.base_dir = test_path;
@@ -111,7 +113,7 @@ mod replica_test {
         assert_eq!(follower_replica.hw(), 0);
 
         // wait until follower sync up with leader
-        sleep(Duration::from_millis(1000)).await;
+        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting. checking result");
 
@@ -173,8 +175,8 @@ mod replica_test {
 
         let spu_server = create_internal_server(leader_addr(), leader_gctx.clone()).run();
 
-        // sleep little bit until we spin up follower
-        sleep(Duration::from_millis(100)).await;
+        // give leader controller time to startup
+        sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
         let mut follower_config = SpuConfig::default();
         follower_config.log.base_dir = PathBuf::from(test_path);
@@ -206,7 +208,7 @@ mod replica_test {
         assert_eq!(leader_replica.hw(), 0);
 
         // wait until follower sync up with leader
-        sleep(Duration::from_millis(1000)).await;
+        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting. checking result");
 
