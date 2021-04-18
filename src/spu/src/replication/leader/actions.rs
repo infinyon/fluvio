@@ -7,7 +7,6 @@ use fluvio_types::SpuId;
 #[derive(Debug)]
 pub enum LeaderReplicaControllerCommand {
     UpdateReplicaFromSc(Replica),
-    FollowerOffsetUpdate(FollowerOffsetUpdate),
     RemoveReplicaFromSc,
 }
 

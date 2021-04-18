@@ -12,7 +12,7 @@ use tracing::instrument;
 use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
 
-use fluvio_socket::SinkPool;
+use fluvio_socket::{FlvSink, FlvSocketError, SinkPool};
 use dataplane::{ReplicaKey, record::RecordSet};
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
@@ -204,7 +204,7 @@ where
                         debug!(hw, "updating hw");
                         if let Err(err) = self.update_hw(hw).await {
                             error!("error updating hw: {}", err);
-                        };
+                        }
                     } else {
                         debug!("no change");
                     }
@@ -223,7 +223,7 @@ where
 
     /// compute follower that needs to be updated
     /// based on leader's state
-    async fn follower_updates(&self) -> Vec<(SpuId, OffsetInfo)> {
+    pub async fn follower_updates(&self) -> Vec<(SpuId, OffsetInfo)> {
         let offset = self.as_offset();
         trace!(
             "computing follower offset for leader: {}, {:#?}",
@@ -287,72 +287,66 @@ where
         self.followers.read().await.keys().cloned().collect()
     }
 
+    /*
     /// synchronize
     pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
         let follower_sync = self.follower_updates().await;
 
         for (follower_id, follower_info) in follower_sync {
-            self.sync_follower(sinks, follower_id, &follower_info, max_bytes)
+            self.send_update_to_follower(sinks, follower_id, &follower_info, max_bytes)
                 .await;
         }
     }
+    */
 
-    /// sync specific follower
-    #[instrument(skip(self, sinks, follower_info))]
-    pub async fn sync_follower(
+    /// send back update to follower
+    #[instrument(skip(self))]
+    pub async fn send_update_to_follower(
         &self,
-        sinks: &SinkPool<SpuId>,
+        sink: &mut FlvSink,
         follower_id: SpuId,
         follower_info: &OffsetInfo,
         max_bytes: u32,
-    ) {
-        if let Some(mut sink) = sinks.get_sink(&follower_id) {
-            trace!("ready to build sync records");
-            let mut sync_request = FileSyncRequest::default();
-            let mut topic_response = PeerFileTopicResponse {
-                name: self.id().topic.to_owned(),
-                ..Default::default()
-            };
-            let mut partition_response = PeerFilePartitionResponse {
-                partition: self.id().partition,
-                ..Default::default()
-            };
-            let offset = self
-                .read_records(
-                    follower_info.leo,
-                    max_bytes,
-                    Isolation::ReadUncommitted,
-                    &mut partition_response,
-                )
-                .await;
-            debug!(
-                follower_id,
-                hw = offset.hw,
-                leo = offset.leo,
-                len = partition_response.records.len(),
-                "sending records"
-            );
-            // ensure leo and hw are set correctly. storage might have update last stable offset
-            partition_response.leo = offset.leo;
-            partition_response.hw = offset.hw;
-            topic_response.partitions.push(partition_response);
-            sync_request.topics.push(topic_response);
+    ) -> Result<(), FlvSocketError> {
+        trace!("ready to build sync records");
+        let mut sync_request = FileSyncRequest::default();
+        let mut topic_response = PeerFileTopicResponse {
+            name: self.id().topic.to_owned(),
+            ..Default::default()
+        };
+        let mut partition_response = PeerFilePartitionResponse {
+            partition: self.id().partition,
+            ..Default::default()
+        };
+        let offset = self
+            .read_records(
+                follower_info.leo,
+                max_bytes,
+                Isolation::ReadUncommitted,
+                &mut partition_response,
+            )
+            .await;
+        debug!(
+            follower_id,
+            hw = offset.hw,
+            leo = offset.leo,
+            len = partition_response.records.len(),
+            "sending records"
+        );
+        // ensure leo and hw are set correctly. storage might have update last stable offset
+        partition_response.leo = offset.leo;
+        partition_response.hw = offset.hw;
+        topic_response.partitions.push(partition_response);
+        sync_request.topics.push(topic_response);
 
-            let request = RequestMessage::new_request(sync_request).set_client_id(format!(
-                "leader: {}, replica: {}",
-                self.leader,
-                self.id()
-            ));
+        let request = RequestMessage::new_request(sync_request).set_client_id(format!(
+            "leader: {}, replica: {}",
+            self.leader,
+            self.id()
+        ));
 
-            if let Err(err) = sink
-                .encode_file_slices(&request, request.header.api_version())
-                .await
-            {
-                error!("error sending file slice: {:#?}", err);
-            }
-        } else {
-            warn!("no sink exits for follower: {}, skipping ", follower_id);
-        }
+        sink.encode_file_slices(&request, request.header.api_version())
+            .await
     }
 }
 
@@ -810,6 +804,10 @@ mod test_leader {
 
         assert_eq!(state.leo(), 10);
         assert_eq!(state.hw(), 2);
+
+        let follower_info = state.followers.read().await;
+        assert!(!follower_info.get(&5001).unwrap().is_valid()); // follower should be invalid sate;
+        drop(follower_info);
 
         assert_eq!(state.follower_updates().await.len(), 0);
 

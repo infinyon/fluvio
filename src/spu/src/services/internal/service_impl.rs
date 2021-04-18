@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tracing::{debug, error};
 
-use fluvio_service::api_loop;
-use fluvio_service::FlvService;
-use fluvio_socket::FlvSocket;
-use fluvio_socket::FlvSocketError;
+use fluvio_service::{api_loop, FlvService};
+use fluvio_socket::{FlvSocket, FlvSocketError};
 use fluvio_future::net::TcpStream;
 
 use super::SpuPeerRequest;
@@ -43,12 +42,15 @@ impl FlvService<TcpStream> for InternalService {
 
                 drop(api_stream);
                 let orig_socket: FlvSocket  = (sink,stream).into();
-                handle_fetch_stream_request(request, context, orig_socket).await?;
+                if let Err(err) = handle_fetch_stream_request(request, context, orig_socket).await {
+                    error!("fetch stream request: {:#?}",err);
+                }
                 break;
 
             }
         );
 
+        debug!("finishing SPU peer loop");
         Ok(())
     }
 }

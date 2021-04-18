@@ -69,7 +69,6 @@ impl ReplicaLeaderController<FileReplica> {
         let mut hw_listener = self.state.offset_listener(&Isolation::ReadCommitted);
         let mut leo_listener = self.state.offset_listener(&Isolation::ReadUncommitted);
         loop {
-            self.sync_followers().await;
             debug!("waiting for next command");
 
             select! {
@@ -88,10 +87,6 @@ impl ReplicaLeaderController<FileReplica> {
                 controller_req = self.controller_receiver.next() => {
                     if let Some(command) = controller_req {
                         match command {
-
-                            LeaderReplicaControllerCommand::FollowerOffsetUpdate(offsets) => {
-                                self.update_from_follower(offsets).await;
-                            },
 
                             LeaderReplicaControllerCommand::UpdateReplicaFromSc(_) => {
                                 debug!("update replica from sc");
@@ -112,54 +107,6 @@ impl ReplicaLeaderController<FileReplica> {
         }
 
         debug!("terminated");
-    }
-
-    /// update the follower offsets
-    #[instrument(skip(self, offsets))]
-    async fn update_from_follower(&mut self, offsets: FollowerOffsetUpdate) {
-        /*
-        debug!(?offsets);
-        let follower_id = offsets.follower_id;
-        let (update_status, sync_follower, hw_update) = self.state.update_followers(offsets).await;
-        debug!(update_status, ?sync_follower, ?hw_update, "follow updates");
-
-        // if there is hw update, update it
-        if let Some(hw) = hw_update {
-            debug!(hw, "updating hw");
-            if let Err(err) = self.state.update_hw(hw).await {
-                error!("error updating hw: {}", err);
-            };
-        }
-
-        join(
-            async {
-                if update_status {
-                    self.state.send_status_to_sc(&self.sc_channel).await;
-                }
-            },
-            async {
-                if let Some(follower_info) = sync_follower {
-                    self.state
-                        .sync_follower(
-                            &self.follower_sinks,
-                            follower_id,
-                            &follower_info,
-                            self.max_bytes,
-                        )
-                        .await;
-                }
-            },
-        )
-        .await;
-        */
-    }
-
-    /// go thru each of follower and sync replicas
-    #[instrument(skip(self))]
-    async fn sync_followers(&self) {
-        self.state
-            .sync_followers(&self.follower_sinks, self.max_bytes)
-            .await;
     }
 
     /// send status back to sc
