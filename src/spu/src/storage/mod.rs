@@ -65,6 +65,13 @@ where
         self.hw.current_value()
     }
 
+    pub fn as_offset(&self) -> OffsetInfo {
+        OffsetInfo {
+            hw: self.hw(),
+            leo: self.leo(),
+        }
+    }
+
     /// listen to offset based on isolation
     pub fn offset_listener(&self, isolation: &Isolation) -> OffsetChangeListener {
         match isolation {

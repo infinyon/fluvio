@@ -1,23 +1,17 @@
 use dataplane::Isolation;
-use tracing::{debug, error};
+use tracing::{debug};
 use tracing::instrument;
 use async_channel::Receiver;
-use futures_util::future::{join};
 use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 
-use crate::core::SharedSpuSinks;
 use crate::control_plane::SharedSinkMessageChannel;
 
 use super::LeaderReplicaControllerCommand;
-use super::FollowerOffsetUpdate;
 use super::replica_state::{SharedLeaderState};
-
-/// time for complete re-sync with followers
-//pub const FOLLOWER_RECONCILIATION_INTERVAL_SEC: u64 = 300; // 5 min
 
 /// Controller for managing leader replica.
 /// Each leader replica controller is spawned and managed by master controller to ensure max parallism.
@@ -25,9 +19,7 @@ pub struct ReplicaLeaderController<S> {
     id: ReplicaKey,
     controller_receiver: Receiver<LeaderReplicaControllerCommand>,
     state: SharedLeaderState<S>,
-    follower_sinks: SharedSpuSinks,
     sc_channel: SharedSinkMessageChannel,
-    max_bytes: u32,
 }
 
 impl<S> ReplicaLeaderController<S> {
@@ -36,17 +28,13 @@ impl<S> ReplicaLeaderController<S> {
         id: ReplicaKey,
         controller_receiver: Receiver<LeaderReplicaControllerCommand>,
         state: SharedLeaderState<S>,
-        follower_sinks: SharedSpuSinks,
         sc_channel: SharedSinkMessageChannel,
-        max_bytes: u32,
     ) -> Self {
         Self {
             id,
             controller_receiver,
             state,
-            follower_sinks,
             sc_channel,
-            max_bytes,
         }
     }
 }

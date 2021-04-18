@@ -12,8 +12,8 @@ use tracing::instrument;
 use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
 
-use fluvio_socket::{FlvSink, FlvSocketError, SinkPool};
-use dataplane::{ReplicaKey, record::RecordSet};
+use fluvio_socket::{FlvSink, FlvSocketError};
+use dataplane::{record::RecordSet};
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::partition::{Replica};
@@ -146,31 +146,12 @@ where
         Self::new(replica, config, replica_storage, sender)
     }
 
-    // probably only used in the test
-    /*
-    #[allow(dead_code)]
-    pub(crate) fn followers(&self, spu: &SpuId) -> Option<FollowerReplicaInfo> {
-        self.followers.read().await.get(spu).cloned()
-    }
-    */
-
     /// send message to leader controller
     pub async fn send_message_to_controller(
         &self,
         command: LeaderReplicaControllerCommand,
     ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
         self.sender.send(command).await
-    }
-
-    pub fn replica(&self) -> &ReplicaKey {
-        self.storage.id()
-    }
-
-    pub fn as_offset(&self) -> OffsetInfo {
-        OffsetInfo {
-            hw: self.hw(),
-            leo: self.leo(),
-        }
     }
 
     /// update leader's state from follower's offset states
@@ -327,7 +308,6 @@ where
             )
             .await;
         debug!(
-            follower_id,
             hw = offset.hw,
             leo = offset.leo,
             len = partition_response.records.len(),
@@ -674,17 +654,15 @@ mod test_hw_updates {
 mod test_leader {
 
     use async_trait::async_trait;
-    use async_channel::bounded;
 
     use fluvio_future::test_async;
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
-    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, StorageError, OffsetInfo};
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo};
     use dataplane::Offset;
     use dataplane::fixture::{create_recordset};
 
     use crate::{
         config::{SpuConfig},
-        storage::SharableReplicaStorage,
     };
 
     use super::*;
@@ -697,17 +675,6 @@ mod test_leader {
     #[derive(Default)]
     struct MockStorage {
         pos: OffsetInfo,
-    }
-
-    impl MockStorage {
-        async fn create(id: ReplicaKey) -> Result<SharableReplicaStorage<Self>, StorageError> {
-            let config = MockConfig {};
-            SharableReplicaStorage::create(id, config).await
-        }
-
-        fn update_leo(&mut self, leo: Offset) {
-            self.pos.leo = leo;
-        }
     }
 
     impl From<&SpuConfig> for MockConfig {

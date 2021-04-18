@@ -1,18 +1,15 @@
 use fluvio_storage::OffsetInfo;
-use tracing::{trace, debug, error};
+use tracing::{debug, error};
 use tracing::instrument;
-use fluvio_socket::{FlvSocketError, FlvStream, FlvSocket, FlvSink};
+use fluvio_socket::{FlvSocketError, FlvSocket, FlvSink};
 use fluvio_service::api_loop;
 use fluvio_types::SpuId;
 
 use crate::core::DefaultSharedGlobalContext;
 
-use super::LeaderReplicaControllerCommand;
-use super::FollowerOffsetUpdate;
 use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;
 use super::UpdateOffsetRequest;
-use super::ReplicaOffsetRequest;
 
 /// Handle connection request from follower
 /// This follows similar arch as Consumer Stream Fetch Handler
@@ -83,6 +80,7 @@ impl FollowerHandler {
                     )
                     .await
                 {
+                    debug!("leader state change occur, need to send back to followers");
                     // if success we need to compute updates
                     let updates = leader.follower_updates().await;
                     if updates.is_empty() {

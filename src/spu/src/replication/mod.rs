@@ -17,7 +17,6 @@ mod replica_test {
     use fluvio_types::SpuId;
     use fluvio_controlplane_metadata::partition::{Replica};
     use fluvio_controlplane_metadata::spu::{SpuSpec};
-    use dataplane::record::RecordSet;
     use dataplane::fixture::{create_recordset};
 
     use crate::core::GlobalContext;

@@ -581,11 +581,9 @@ impl ScDispatcher<FileReplica> {
             self.ctx
                 .leaders_state()
                 .spawn_leader_controller(
-                    self.ctx.clone(),
                     new_replica.id,
                     leader_state,
                     receiver,
-                    self.max_bytes,
                     self.sink_channel.clone(),
                 )
                 .await;

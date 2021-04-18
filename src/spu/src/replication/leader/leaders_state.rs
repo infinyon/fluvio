@@ -67,11 +67,9 @@ impl ReplicaLeadersState<FileReplica> {
             Ok((leader_replica, receiver)) => {
                 debug!("file replica created and spawing leader controller");
                 self.spawn_leader_controller(
-                    ctx.clone(),
                     replica_id,
                     leader_replica.clone(),
                     receiver,
-                    max_bytes,
                     sink_channel,
                 )
                 .await;
@@ -83,16 +81,14 @@ impl ReplicaLeadersState<FileReplica> {
     }
 
     #[instrument(
-        skip(self,ctx, replica_id, leader_state,sink_channel),
+        skip(self,replica_id, leader_state,sink_channel),
         fields(replica = %replica_id)
     )]
     pub async fn spawn_leader_controller(
         &self,
-        ctx: SharedGlobalContext<FileReplica>,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
         receiver: Receiver<LeaderReplicaControllerCommand>,
-        max_bytes: u32,
         sink_channel: SharedSinkMessageChannel,
     ) {
         if let Some(old_replica) = self.insert(replica_id.clone(), leader_state.clone()) {
@@ -102,17 +98,9 @@ impl ReplicaLeadersState<FileReplica> {
             );
         }
 
-        /*
-        let leader_controller = ReplicaLeaderController::new(
-            replica_id,
-            receiver,
-            leader_state,
-            ctx.followers_sink_owned(),
-            sink_channel,
-            max_bytes,
-        );
+        let leader_controller =
+            ReplicaLeaderController::new(replica_id, receiver, leader_state, sink_channel);
         leader_controller.run();
-        */
     }
 }
 

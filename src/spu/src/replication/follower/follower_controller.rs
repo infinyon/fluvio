@@ -171,26 +171,16 @@ impl ReplicaFollowerController<FileReplica> {
                     base_offset = p.records.base_offset(),
                     "update from leader");
                 if let Some(replica) = self.states.get(&replica_key) {
-                    match replica.write_recordsets(&mut p.records).await {
-                        Ok(valid_record) => {
-                            if valid_record {
-                                let follow_leo = replica.leo();
-                                let leader_hw = p.hw;
-                                debug!(follow_leo, leader_hw, "finish writing");
-                                if follow_leo == leader_hw {
-                                    debug!("follow leo and leader hw is same, updating hw");
-                                    if let Err(err) = replica.update_hw(leader_hw).await {
-                                        error!("error writing replica high watermark: {}", err);
-                                    }
-                                }
-
+                    match replica.update_from_leader(&mut p.records, p.leo).await {
+                        Ok(changes) => {
+                            if changes {
+                                debug!("changes occur, need to send back offset");
                                 offsets.replicas.push(replica.as_offset_request());
+                            } else {
+                                debug!("no changes");
                             }
                         }
-                        Err(err) => error!(
-                            "problem writing replica: {}, error: {:#?}",
-                            replica_key, err
-                        ),
+                        Err(err) => error!("problem updating {}, error: {:#?}", replica_key, err),
                     }
                 } else {
                     error!(
@@ -200,7 +190,12 @@ impl ReplicaFollowerController<FileReplica> {
                 }
             }
         }
-        self.send_offsets_to_leader(sink, offsets).await
+
+        if !offsets.replicas.is_empty() {
+            self.send_offsets_to_leader(sink, offsets).await
+        } else {
+            Ok(())
+        }
     }
 
     /// connect to leader, if can't connect try until we succeed

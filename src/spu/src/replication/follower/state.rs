@@ -10,6 +10,7 @@ use dashmap::DashMap;
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
+use dataplane::Offset;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
@@ -230,10 +231,50 @@ where
         self.leader
     }
 
-    /// write records
-    /// if true, records's base offset matches,
-    ///    false,invalid record sets has been sent
-    pub async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
+    /// update from leader with new record set
+    pub async fn update_from_leader(
+        &self,
+        records: &mut RecordSet,
+        leader_hw: Offset,
+    ) -> Result<bool, StorageError> {
+        let mut changes = false;
+        let f_offset = self.as_offset();
+
+        if records.total_records() > 0 {
+            self.write_recordsets(records).await?;
+            changes = true;
+        } else {
+            debug!("no records");
+        }
+
+        // update hw assume it's valid
+        if f_offset.hw != leader_hw {
+            if f_offset.hw > leader_hw {
+                warn!(
+                    follower_hw = f_offset.hw,
+                    leader_hw, "leader hw is less than hw"
+                );
+            } else {
+                if leader_hw > f_offset.leo {
+                    warn!(
+                        leader_hw,
+                        follower_leo = f_offset.leo,
+                        "leade hw is greater than follower leo"
+                    )
+                } else {
+                    debug!(f_offset.hw, leader_hw, "updating hw");
+                    self.update_hw(leader_hw).await?;
+                    changes = true;
+                }
+            }
+        }
+
+        Ok(changes)
+    }
+
+    /// try to write records
+    /// ensure records has correct baseoffset
+    async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
         let storage_leo = self.leo();
         if records.base_offset() != storage_leo {
             warn!(
