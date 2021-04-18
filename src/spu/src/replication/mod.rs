@@ -26,27 +26,31 @@ mod replica_test {
 
     const LEADER: SpuId = 5001;
     const FOLLOWER: SpuId = 5002;
-    const LEADER_PORT: u16 = 13000;
-    const FOLLOWER_PORT: u16 = 13001;
+
     const TOPIC: &str = "test";
     const HOST: &str = "127.0.0.1";
-    fn leader_addr() -> String {
-        format!("{}:{}", HOST, LEADER_PORT)
-    }
 
     const MAX_BYTES: u32 = 100000;
-    fn spu_specs() -> Vec<SpuSpec> {
-        vec![
-            SpuSpec::new_private_addr(LEADER, LEADER_PORT, HOST.to_owned()),
-            SpuSpec::new_private_addr(FOLLOWER, FOLLOWER_PORT, HOST.to_owned()),
-        ]
-    }
 
     /// Test 2 replica
     /// Replicating with existing records
     ///    
     #[test_async]
     async fn test_initial_replication() -> Result<(), ()> {
+        const LEADER_PORT: u16 = 13000;
+        const FOLLOWER_PORT: u16 = 13001;
+
+        fn leader_addr() -> String {
+            format!("{}:{}", HOST, LEADER_PORT)
+        }
+
+        fn spu_specs() -> Vec<SpuSpec> {
+            vec![
+                SpuSpec::new_private_addr(LEADER, LEADER_PORT, HOST.to_owned()),
+                SpuSpec::new_private_addr(FOLLOWER, FOLLOWER_PORT, HOST.to_owned()),
+            ]
+        }
+
         let test_path = temp_dir().join("replication_test");
         ensure_clean_dir(&test_path);
 
@@ -128,6 +132,20 @@ mod replica_test {
     ///    
     #[test_async]
     async fn test_replication2_new_records() -> Result<(), ()> {
+        const LEADER_PORT: u16 = 13010;
+        const FOLLOWER_PORT: u16 = 13011;
+
+        fn leader_addr() -> String {
+            format!("{}:{}", HOST, LEADER_PORT)
+        }
+
+        fn spu_specs() -> Vec<SpuSpec> {
+            vec![
+                SpuSpec::new_private_addr(LEADER, LEADER_PORT, HOST.to_owned()),
+                SpuSpec::new_private_addr(FOLLOWER, FOLLOWER_PORT, HOST.to_owned()),
+            ]
+        }
+
         let test_path = "/tmp/replication_test";
         ensure_clean_dir(test_path);
 

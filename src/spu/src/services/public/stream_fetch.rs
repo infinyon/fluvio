@@ -491,7 +491,7 @@ mod test {
     use std::{
         path::{Path, PathBuf},
         time::Duration,
-        env::temp_dir
+        env::temp_dir,
     };
 
     use fluvio_controlplane_metadata::partition::Replica;
