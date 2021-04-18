@@ -238,7 +238,6 @@ where
         leader_hw: Offset,
     ) -> Result<bool, StorageError> {
         let mut changes = false;
-        let f_offset = self.as_offset();
 
         if records.total_records() > 0 {
             self.write_recordsets(records).await?;
@@ -247,6 +246,7 @@ where
             debug!("no records");
         }
 
+        let f_offset = self.as_offset();
         // update hw assume it's valid
         if f_offset.hw != leader_hw {
             if f_offset.hw > leader_hw {

@@ -121,11 +121,13 @@ mod replica_test {
 
         debug!("done waiting. checking result");
 
+        // all records has been fully replicated
         assert_eq!(follower_replica.leo(), 2);
+
+        // hw has been replicated
         assert_eq!(follower_replica.hw(), 2);
-        /*
-        assert_eq!(leader_replica.hw(), 0); // leader should have update it's hw since follower has replicated it
-        */
+        assert_eq!(leader_replica.hw(), 2);
+
         spu_server.notify();
 
         Ok(())

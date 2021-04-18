@@ -169,7 +169,7 @@ where
         // follower must be always behind leader
 
         if follower_pos.newer(&leader_pos) {
-            warn!("follower pos must not be newer",);
+            warn!(?follower_pos, ?leader_pos, "follower pos must not be newer");
             return false;
         }
 

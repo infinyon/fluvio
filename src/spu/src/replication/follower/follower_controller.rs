@@ -98,13 +98,15 @@ impl ReplicaFollowerController<FileReplica> {
 
         let mut event_listener = self.spu_ctx.events.change_listner();
 
+        let mut counter = 0;
+
         // starts initial sync
         let mut replicas = ReplicasBySpu::filter_from(&self.states, self.leader);
         self.sync_all_offsets_to_leader(&mut sink, &replicas)
             .await?;
 
         loop {
-            debug!("waiting request from leader");
+            debug!(counter, "waiting request from leader");
 
             select! {
                 _ = (sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC))) => {
@@ -133,6 +135,8 @@ impl ReplicaFollowerController<FileReplica> {
                     }
                 }
             }
+
+            counter += 1;
         }
     }
 
@@ -171,7 +175,7 @@ impl ReplicaFollowerController<FileReplica> {
                     base_offset = p.records.base_offset(),
                     "update from leader");
                 if let Some(replica) = self.states.get(&replica_key) {
-                    match replica.update_from_leader(&mut p.records, p.leo).await {
+                    match replica.update_from_leader(&mut p.records, p.hw).await {
                         Ok(changes) => {
                             if changes {
                                 debug!("changes occur, need to send back offset");
