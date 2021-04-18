@@ -42,8 +42,6 @@ mod replica_test {
         ]
     }
 
-    
-    
     /// Test 2 replica
     /// Replicating with existing records
     ///    
@@ -125,7 +123,6 @@ mod replica_test {
         Ok(())
     }
 
-
     /// Test 2 replica
     /// Replicating new records
     ///    
@@ -155,8 +152,6 @@ mod replica_test {
             )
             .await
             .expect("leader");
-
-        
 
         let spu_server = create_internal_server(leader_addr(), leader_gctx.clone()).run();
 
