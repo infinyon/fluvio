@@ -15,6 +15,7 @@ use dataplane::record::DefaultAsyncBuffer;
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::sockets::SerialFrame;
+use fluvio_types::SpuId;
 
 /// An interface for producing events to a particular topic
 ///
@@ -127,44 +128,56 @@ impl TopicProducer {
             iter
         };
 
-        // Convert key/values into records and sort them by partition
-        let mut records_by_partition: HashMap<i32, Vec<_>> = HashMap::new();
+        // Group all of the records by the partitions they belong to, then
+        // group all of the partitions by the SpuId that leads that partition
+        let mut map: HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>> = HashMap::new();
         for (partition, (key, value)) in iter {
+            let replica_key = ReplicaKey::new(&self.topic, partition);
+            let partition_spec = self
+                .pool
+                .metadata
+                .partitions()
+                .lookup_by_key(&replica_key)
+                .await?
+                .ok_or_else(|| FluvioError::PartitionNotFound(self.topic.clone(), partition))?
+                .spec;
+            let leader = partition_spec.leader;
             let key = key.map(|it| DefaultAsyncBuffer::new(it));
             let record = DefaultAsyncBuffer::new(value);
             let record = DefaultRecord::from((key, record));
-
-            records_by_partition
+            map.entry(leader)
+                .or_insert_with(HashMap::new)
                 .entry(partition)
                 .or_insert_with(Vec::new)
                 .push(record);
         }
 
-        // Create one request per partition
-        // TODO collapse this into one request per leader (e.g. multiple partitions per leader)
-        let mut requests = vec![];
-        for (partition, records) in records_by_partition.into_iter() {
+        // Create one request per SPU leader
+        let mut requests: Vec<(SpuId, DefaultProduceRequest)> = Vec::with_capacity(map.len());
+        for (leader, partitions) in map {
             let mut request = DefaultProduceRequest::default();
-            let mut topic_request = DefaultTopicRequest::default();
-            let mut partition_request = DefaultPartitionRequest::default();
 
-            partition_request.partition_index = partition;
-            partition_request
-                .records
-                .batches
-                .push(DefaultBatch::new(records));
+            let mut topic_request = DefaultTopicRequest::default();
             topic_request.name = self.topic.clone();
-            topic_request.partitions.push(partition_request);
+
+            for (partition, records) in partitions {
+                let mut partition_request = DefaultPartitionRequest::default();
+                partition_request.partition_index = partition;
+                partition_request
+                    .records
+                    .batches
+                    .push(DefaultBatch::new(records));
+                topic_request.partitions.push(partition_request);
+            }
+
             request.acks = 1;
             request.timeout_ms = 1500;
             request.topics.push(topic_request);
-
-            requests.push((partition, request));
+            requests.push((leader, request));
         }
 
-        for (partition, request) in requests {
-            let replica = ReplicaKey::new(&self.topic, partition);
-            let mut spu_client = self.pool.create_serial_socket(&replica).await?;
+        for (leader, request) in requests {
+            let mut spu_client = self.pool.create_serial_socket_from_leader(leader).await?;
             spu_client.send_receive(request).await?;
         }
 
