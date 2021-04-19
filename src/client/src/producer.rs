@@ -130,7 +130,8 @@ impl TopicProducer {
 
             for record in entries {
                 let key = record.key.as_ref().map(|k| k.as_ref());
-                let partition = partitioner.partition(key);
+                let value = record.value.as_ref();
+                let partition = partitioner.partition(key, value);
                 iter.push((partition, record));
             }
             iter
@@ -297,6 +298,7 @@ fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::metadata::store::MetadataStoreObject;
 
     /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
     #[test]
@@ -304,17 +306,108 @@ mod tests {
         let config = PartitionerConfig { partition_count: 3 };
         let mut partitioner = SiphashRoundRobinPartitioner::new(config);
 
-        let key1_partition = partitioner.partition(None);
+        let key1_partition = partitioner.partition(None, &[]);
         assert_eq!(key1_partition, 0);
-        let key2_partition = partitioner.partition(None);
+        let key2_partition = partitioner.partition(None, &[]);
         assert_eq!(key2_partition, 1);
-        let key3_partition = partitioner.partition(None);
+        let key3_partition = partitioner.partition(None, &[]);
         assert_eq!(key3_partition, 2);
-        let key4_partition = partitioner.partition(None);
+        let key4_partition = partitioner.partition(None, &[]);
         assert_eq!(key4_partition, 0);
-        let key5_partition = partitioner.partition(None);
+        let key5_partition = partitioner.partition(None, &[]);
         assert_eq!(key5_partition, 1);
-        let key6_partition = partitioner.partition(None);
+        let key6_partition = partitioner.partition(None, &[]);
         assert_eq!(key6_partition, 2);
+    }
+
+    #[fluvio_future::test_async]
+    async fn test_group_by_spu() -> Result<(), ()> {
+        let partitions = StoreContext::new();
+        let partition_specs: Vec<_> = vec![
+            (ReplicaKey::new("TOPIC", 0), PartitionSpec::new(0, vec![])), // Partition 0
+            (ReplicaKey::new("TOPIC", 1), PartitionSpec::new(0, vec![])), // Partition 1
+            (ReplicaKey::new("TOPIC", 2), PartitionSpec::new(1, vec![])), // Partition 2
+        ]
+        .into_iter()
+        .map(|(key, spec)| MetadataStoreObject::with_spec(key, spec))
+        .collect();
+        partitions.store().sync_all(partition_specs).await;
+        let records_by_partition = vec![
+            (0, DefaultRecord::new("A")),
+            (1, DefaultRecord::new("B")),
+            (2, DefaultRecord::new("C")),
+            (0, DefaultRecord::new("D")),
+            (1, DefaultRecord::new("E")),
+            (2, DefaultRecord::new("F")),
+        ];
+
+        let grouped = group_by_spu("TOPIC", &partitions, records_by_partition)
+            .await
+            .unwrap();
+
+        // SPU 0 should have partitions 0 and 1, but not 2
+        let spu_0 = grouped.get(&0).unwrap();
+        let partition_0 = spu_0.get(&0).unwrap();
+
+        assert!(
+            partition_0
+                .iter()
+                .any(|record| record.value.as_ref() == b"A"),
+            "SPU 0/Partition 0 should contain record A",
+        );
+        assert!(
+            partition_0
+                .iter()
+                .any(|record| record.value.as_ref() == b"D"),
+            "SPU 0/Partition 0 should contain record D",
+        );
+
+        let partition_1 = spu_0.get(&1).unwrap();
+        assert!(
+            partition_1
+                .iter()
+                .any(|record| record.value.as_ref() == b"B"),
+            "SPU 0/Partition 1 should contain record B",
+        );
+        assert!(
+            partition_1
+                .iter()
+                .any(|record| record.value.as_ref() == b"E"),
+            "SPU 0/Partition 1 should contain record E",
+        );
+
+        assert!(
+            spu_0.get(&2).is_none(),
+            "SPU 0 should not contain Partition 2",
+        );
+
+        let spu_1 = grouped.get(&1).unwrap();
+        let partition_2 = spu_1.get(&2).unwrap();
+
+        assert!(
+            spu_1.get(&0).is_none(),
+            "SPU 1 should not contain Partition 0",
+        );
+
+        assert!(
+            spu_1.get(&1).is_none(),
+            "SPU 1 should not contain Partition 1",
+        );
+
+        assert!(
+            partition_2
+                .iter()
+                .any(|record| record.value.as_ref() == b"C"),
+            "SPU 1/Partition 2 should contain record C",
+        );
+
+        assert!(
+            partition_2
+                .iter()
+                .any(|record| record.value.as_ref() == b"F"),
+            "SPU 1/Partition 2 should contain record F",
+        );
+
+        Ok(())
     }
 }
