@@ -22,19 +22,19 @@ pub(crate) async fn handle_fetch_stream_request(
     );
 
     // check if follower_id is valid
-    if !ctx.follower_updates().spu_is_valid(&follower_id) {
+    if let Some(follower_update) = ctx.clone().follower_updates().get(&follower_id) {
+        let response = FetchStreamResponse::new(follower_id);
+        let res_msg = req_msg.new_response(response);
+        socket
+            .get_mut_sink()
+            .send_response(&res_msg, req_msg.header.api_version())
+            .await?;
+
+        FollowerHandler::start(ctx, follower_id, socket,follower_update.value().clone()).await?;
+
+        Ok(())
+    } else {
         warn!(follower_id, "unknown spu, dropping connection");
-        return Ok(());
+        Ok(())
     }
-
-    let response = FetchStreamResponse::new(follower_id);
-    let res_msg = req_msg.new_response(response);
-    socket
-        .get_mut_sink()
-        .send_response(&res_msg, req_msg.header.api_version())
-        .await?;
-
-    FollowerHandler::start(ctx, follower_id, socket).await?;
-
-    Ok(()) as Result<(), FlvSocketError>
 }

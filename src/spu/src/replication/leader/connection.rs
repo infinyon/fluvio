@@ -1,6 +1,8 @@
-use fluvio_storage::OffsetInfo;
 use tracing::{debug, error};
+use futures_util::stream::StreamExt;
 use tracing::instrument;
+
+use fluvio_storage::OffsetInfo;
 use fluvio_socket::{FlvSocketError, FlvSocket, FlvSink};
 use fluvio_service::api_loop;
 use fluvio_types::SpuId;
@@ -10,6 +12,7 @@ use crate::core::DefaultSharedGlobalContext;
 use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;
 use super::UpdateOffsetRequest;
+use super::spu::SharedSpuPendingUpdate;
 
 /// Handle connection request from follower
 /// This follows similar arch as Consumer Stream Fetch Handler
@@ -18,6 +21,7 @@ pub struct FollowerHandler {
     ctx: DefaultSharedGlobalContext,
     follower_id: SpuId,
     max_bytes: u32,
+    spu_update: SharedSpuPendingUpdate,
 }
 
 impl FollowerHandler {
@@ -26,11 +30,13 @@ impl FollowerHandler {
         ctx: DefaultSharedGlobalContext,
         follower_id: SpuId,
         socket: FlvSocket,
+        spu_update: SharedSpuPendingUpdate,
     ) -> Result<(), FlvSocketError> {
-        let connection = Self {
+        let mut connection = Self {
             ctx: ctx.clone(),
             max_bytes: ctx.config().peer_max_bytes,
             follower_id,
+            spu_update,
         };
 
         connection.main_loop(socket).await?;
@@ -45,18 +51,66 @@ impl FollowerHandler {
             follow_id = %self.follower_id
         )
     )]
-    async fn main_loop(&self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+    async fn main_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+        use tokio::select;
+
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<LeaderPeerRequest, LeaderPeerApiEnum>();
 
-        api_loop!(
-            api_stream,
-            LeaderPeerRequest::UpdateOffsets(request) => {
-                self.handle_offset_request(request.request,&mut sink).await?;
+        let mut listener = self.spu_update.listener();
+
+        loop {
+            debug!("waiting for next event");
+
+            select! {
+
+                _ = listener.listen() => {
+                    debug!("end event has been received from stream fetch, terminating");
+                    self.handle_spu_change().await;
+                },
+
+
+                // 
+                // same as this
+                //  api_loop!(
+                //   api_stream,
+                //     LeaderPeerRequest::UpdateOffsets(request) => {
+                //     self.handle_offset_request(request.request,&mut sink).await?;
+                //  )  
+                //  expanded to used in the select
+                api_msg = api_stream.next() => {
+
+                    if let Some(msg) = api_msg {
+                        if let Ok(req_message) = msg {
+                            match req_message {
+
+                                LeaderPeerRequest::UpdateOffsets(request) => {
+                                    self.handle_offset_request(request.request,&mut sink).await?;
+                                }
+                            }
+                        } else {
+                            debug!("error decoding req, terminating");
+                            break;
+                        }
+
+                    } else {
+                        debug!("no more msg, end");
+                        break;
+                    }
+
+                }
+
             }
-        );
+        }
+
+        
 
         Ok(())
+    }
+
+    // updates form other SPU trigger this
+    async fn handle_spu_change(&mut self) {
+
     }
 
     /// update each leader
@@ -87,7 +141,7 @@ impl FollowerHandler {
                         debug!(%replica_key,"no updates, do nothing");
                     } else {
                         for (spu, offset_update) in updates {
-                            // this is for us we can sed
+                            // our changes
                             if spu == self.follower_id {
                                 leader
                                     .value()
@@ -98,6 +152,9 @@ impl FollowerHandler {
                                         self.max_bytes,
                                     )
                                     .await?;
+                            } else {
+                                // other SPU
+                                
                             }
                         }
                     }

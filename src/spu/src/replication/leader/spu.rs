@@ -1,26 +1,38 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, ops::{Deref, DerefMut}, sync::Arc};
 
+use event_listener::EventListener;
 use tracing::debug;
 use async_rwlock::RwLock;
 use dashmap::DashMap;
 
 use dataplane::ReplicaKey;
-use fluvio_types::{SpuId, event::offsets::OffsetPublisher};
+use fluvio_types::{SpuId, event::offsets::{OffsetChangeListener, OffsetPublisher}};
 
 use crate::core::SpuLocalStore;
 
 pub type SharedSpuUpdates = Arc<SpuUpdates>;
+pub type SharedSpuPendingUpdate = Arc<FollowerSpuPendingUpdates>;
 #[derive(Debug)]
 pub struct SpuUpdates(DashMap<SpuId, Arc<FollowerSpuPendingUpdates>>);
+
+impl Deref for SpuUpdates {
+    type Target = DashMap<SpuId, SharedSpuPendingUpdate>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for SpuUpdates {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 
 impl SpuUpdates {
     pub fn shared() -> Arc<Self> {
         Arc::new(Self(DashMap::new()))
-    }
-
-    // check if spu is valid
-    pub fn spu_is_valid(&self, spu: &SpuId) -> bool {
-        self.0.contains_key(spu)
     }
 
     /// update our self from current spu
@@ -38,18 +50,30 @@ impl SpuUpdates {
             if !self.0.contains_key(&spu) {
                 debug!(spu, "spu pending doesn't exists, creating");
                 let pending = FollowerSpuPendingUpdates {
-                    event: OffsetPublisher::new(0),
+                    event: Arc::new(OffsetPublisher::new(0)),
                     replicas: Arc::new(RwLock::new(HashSet::new())),
                 };
                 self.0.insert(spu, Arc::new(pending));
             }
         }
     }
+
+    
+    pub fn update_spu(&self,spu: SpuId) {
+
+    }
 }
 
 /// Sets of follower updates
 #[derive(Debug)]
 pub struct FollowerSpuPendingUpdates {
-    event: OffsetPublisher,
+    event: Arc<OffsetPublisher>,
     replicas: Arc<RwLock<HashSet<ReplicaKey>>>,
+}
+
+impl FollowerSpuPendingUpdates {
+
+    pub fn listener(&self) -> OffsetChangeListener {
+        self.event.change_listner()
+    }
 }
