@@ -39,7 +39,7 @@ build_cluster: install_test_target
 
 build_test: TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
 build_test: TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
-build_test:	build_cluster
+build_test:	build_cluster build_cli
 	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test $(VERBOSE)
 
 install_test_target:
