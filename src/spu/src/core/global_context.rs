@@ -11,7 +11,9 @@ use fluvio_storage::ReplicaStorage;
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
 use crate::replication::follower::SharedFollowersState;
-use crate::replication::leader::{SharedReplicaLeadersState, ReplicaLeadersState};
+use crate::replication::leader::{
+    SharedReplicaLeadersState, ReplicaLeadersState, SpuUpdates, SharedSpuUpdates,
+};
 use crate::services::public::StreamPublishers;
 
 use super::spus::SharedSpuLocalStore;
@@ -28,6 +30,7 @@ pub struct GlobalContext<S> {
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     stream_publishers: StreamPublishers,
+    spu_followers: SharedSpuUpdates,
 }
 
 // -----------------------------------
@@ -50,6 +53,7 @@ where
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
             stream_publishers: StreamPublishers::new(),
+            spu_followers: SpuUpdates::shared(),
         }
     }
 
@@ -92,5 +96,9 @@ where
 
     pub fn stream_publishers(&self) -> &StreamPublishers {
         &self.stream_publishers
+    }
+
+    pub fn follower_updates(&self) -> &SpuUpdates {
+        &self.spu_followers
     }
 }
