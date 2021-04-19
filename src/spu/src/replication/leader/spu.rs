@@ -1,12 +1,19 @@
-use std::{collections::HashSet, ops::{Deref, DerefMut}, sync::Arc};
+use std::{
+    collections::HashSet,
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
 
 use event_listener::EventListener;
-use tracing::{warn,debug};
+use tracing::{warn, debug};
 use async_rwlock::RwLock;
 use dashmap::DashMap;
 
 use dataplane::ReplicaKey;
-use fluvio_types::{SpuId, event::offsets::{OffsetChangeListener, OffsetPublisher}};
+use fluvio_types::{
+    SpuId,
+    event::offsets::{OffsetChangeListener, OffsetPublisher},
+};
 
 use crate::core::SpuLocalStore;
 
@@ -28,7 +35,6 @@ impl DerefMut for SpuUpdates {
         &mut self.0
     }
 }
-
 
 impl SpuUpdates {
     pub fn shared() -> Arc<Self> {
@@ -59,15 +65,13 @@ impl SpuUpdates {
     }
 
     /// replica's hw need be propogated to
-    pub async fn update_hw(&self,spu: &SpuId,replica: ReplicaKey) {
+    pub async fn update_hw(&self, spu: &SpuId, replica: ReplicaKey) {
         if let Some(spu_ref) = self.get(spu) {
             spu_ref.value().update_hw(replica).await;
         } else {
-            warn!(spu,"invalid spu");
+            warn!(spu, "invalid spu");
         }
     }
-
-    
 }
 
 /// Sets of follower updates
@@ -78,13 +82,12 @@ pub struct FollowerSpuPendingUpdates {
 }
 
 impl FollowerSpuPendingUpdates {
-
     pub fn listener(&self) -> OffsetChangeListener {
         self.event.change_listner()
     }
 
     /// replica's hw need be propogated to
-    pub async fn update_hw(&self,replica: ReplicaKey) {
+    pub async fn update_hw(&self, replica: ReplicaKey) {
         let mut write = self.replicas.write().await;
         write.insert(replica);
     }

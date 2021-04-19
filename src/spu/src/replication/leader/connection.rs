@@ -1,4 +1,4 @@
-use tracing::{debug, error,warn};
+use tracing::{debug, error, warn};
 use futures_util::stream::StreamExt;
 use tracing::instrument;
 
@@ -135,8 +135,8 @@ impl FollowerHandler {
                 };
                 let offset = leader.as_offset();
                 debug!(
-                    hw = offset.hw, 
-                    leo = offset.leo, 
+                    hw = offset.hw,
+                    leo = offset.leo,
                     %replica,
                     "sending hw to follower");
                 // ensure leo and hw are set correctly. storage might have update last stable offset

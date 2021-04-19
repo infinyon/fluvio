@@ -30,7 +30,7 @@ pub(crate) async fn handle_fetch_stream_request(
             .send_response(&res_msg, req_msg.header.api_version())
             .await?;
 
-        FollowerHandler::start(ctx, follower_id, socket,follower_update.value().clone()).await?;
+        FollowerHandler::start(ctx, follower_id, socket, follower_update.value().clone()).await?;
 
         Ok(())
     } else {

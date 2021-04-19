@@ -1755,6 +1755,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "chrono",
  "dashmap",
+ "derive_builder",
  "event-listener",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",

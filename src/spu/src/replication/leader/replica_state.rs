@@ -328,9 +328,6 @@ where
         sink.encode_file_slices(&request, request.header.api_version())
             .await
     }
-
-
-    
 }
 
 /// compute leader's updated hw based on follower offset

@@ -62,3 +62,4 @@ fluvio-future = { version = "0.2.0", features = ["subscriber", "openssl_tls"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-future = { version = "0.2.0", features = ["fixture", "subscriber"] }
 dataplane = { version = "0.4.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["fixture"] }
+derive_builder = { version = "0.9.0" }
