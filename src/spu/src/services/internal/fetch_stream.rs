@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::{debug, warn};
 
 use dataplane::api::RequestMessage;
 use fluvio_socket::FlvSocket;
@@ -20,6 +20,12 @@ pub(crate) async fn handle_fetch_stream_request(
         "internal service: respond to fetch stream request, follower: {}",
         follower_id
     );
+
+    // check if follower_id is valid
+    if !ctx.follower_updates().spu_is_valid(&follower_id) {
+        warn!(follower_id, "unknown spu, dropping connection");
+        return Ok(());
+    }
 
     let response = FetchStreamResponse::new(follower_id);
     let res_msg = req_msg.new_response(response);

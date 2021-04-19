@@ -18,6 +18,11 @@ impl SpuUpdates {
         Arc::new(Self(DashMap::new()))
     }
 
+    // check if spu is valid
+    pub fn spu_is_valid(&self, spu: &SpuId) -> bool {
+        self.0.contains_key(spu)
+    }
+
     /// update our self from current spu
     pub fn sync_from_spus(&self, spus: &SpuLocalStore) {
         // remove non existent spu

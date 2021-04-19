@@ -66,6 +66,7 @@ mod replica_test {
         leader_config.private_endpoint = leader_addr();
         let leader_gctx = GlobalContext::new_shared_context(leader_config);
         leader_gctx.spu_localstore().sync_all(spu_specs());
+        leader_gctx.sync_follower_update();
 
         let leader_replica = leader_gctx
             .leaders_state()
@@ -161,6 +162,7 @@ mod replica_test {
         leader_config.private_endpoint = leader_addr();
         let leader_gctx = GlobalContext::new_shared_context(leader_config);
         leader_gctx.spu_localstore().sync_all(spu_specs());
+        leader_gctx.sync_follower_update();
 
         let leader_replica = leader_gctx
             .leaders_state()
