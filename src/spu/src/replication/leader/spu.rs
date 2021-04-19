@@ -4,7 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use event_listener::EventListener;
 use tracing::{warn, debug};
 use async_rwlock::RwLock;
 use dashmap::DashMap;

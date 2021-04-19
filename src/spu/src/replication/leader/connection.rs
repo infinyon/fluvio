@@ -199,7 +199,10 @@ impl FollowerHandler {
                                     .await?;
                             } else {
                                 // notify followers that replica's hw need to be propogated
-                                // self.ctx.follower_updates().update_hw(&spu, replica_key.clone()).await;
+                                self.ctx
+                                    .follower_updates()
+                                    .update_hw(&spu, replica_key.clone())
+                                    .await;
                             }
                         }
                     }

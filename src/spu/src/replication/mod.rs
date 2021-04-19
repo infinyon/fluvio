@@ -5,7 +5,7 @@ pub(crate) mod leader;
 #[cfg(target_os = "linux")]
 mod replica_test {
 
-    use std::path::{Path, PathBuf};
+    use std::path::{PathBuf};
     use std::time::Duration;
     use std::env::temp_dir;
 
@@ -21,16 +21,12 @@ mod replica_test {
     use fluvio_controlplane_metadata::spu::{SpuSpec};
     use dataplane::fixture::{create_recordset};
 
-    use crate::core::{DefaultSharedGlobalContext, GlobalContext, SharedGlobalContext};
+    use crate::core::{DefaultSharedGlobalContext, GlobalContext};
     use crate::config::SpuConfig;
     use crate::services::create_internal_server;
     use crate::control_plane::{ScSinkMessageChannel};
 
     use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
-
-    const LEADER: SpuId = 5001;
-    const FOLLOWER: SpuId = 5002;
-    const FOLLOWER2: SpuId = 5003;
 
     const TOPIC: &str = "test";
     const HOST: &str = "127.0.0.1";
@@ -113,7 +109,7 @@ mod replica_test {
             for i in 0..self.followers {
                 followers.push(self.follower_id(i));
             }
-            Replica::new((TOPIC, 0), LEADER, followers)
+            Replica::new((TOPIC, 0), self.base_id, followers)
         }
 
         pub fn leader_addr(&self) -> String {
@@ -238,66 +234,20 @@ mod replica_test {
     ///    
     #[test_async]
     async fn test_replication2_new_records() -> Result<(), ()> {
-        const LEADER_PORT: u16 = 13010;
-        const FOLLOWER_PORT: u16 = 13011;
+        let builder = TestConfig::builder()
+            .in_sync_replica(2 as u16)
+            .followers(2 as u16)
+            .base_port(13010 as u16)
+            .generate("replication2_new");
 
-        fn leader_addr() -> String {
-            format!("{}:{}", HOST, LEADER_PORT)
-        }
+        let (leader_gctx, leader_replica) = builder.leader_replica().await;
 
-        fn spu_specs() -> Vec<SpuSpec> {
-            vec![
-                SpuSpec::new_private_addr(LEADER, LEADER_PORT, HOST.to_owned()),
-                SpuSpec::new_private_addr(FOLLOWER, FOLLOWER_PORT, HOST.to_owned()),
-            ]
-        }
-
-        let test_path = "/tmp/new_replication2_test";
-        ensure_clean_dir(test_path);
-
-        let replica = Replica::new((TOPIC, 0), LEADER, vec![FOLLOWER]);
-
-        let mut leader_config = SpuConfig::default();
-        leader_config.log.base_dir = PathBuf::from(test_path);
-        leader_config.replication.min_in_sync_replicas = 2;
-        leader_config.id = LEADER;
-
-        leader_config.private_endpoint = leader_addr();
-        let leader_gctx = GlobalContext::new_shared_context(leader_config);
-        leader_gctx.spu_localstore().sync_all(spu_specs());
-        leader_gctx.sync_follower_update();
-
-        let leader_replica = leader_gctx
-            .leaders_state()
-            .add_leader_replica(
-                leader_gctx.clone(),
-                replica.clone(),
-                MAX_BYTES,
-                ScSinkMessageChannel::shared(),
-            )
-            .await
-            .expect("leader");
-
-        let spu_server = create_internal_server(leader_addr(), leader_gctx.clone()).run();
+        let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
 
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-        let mut follower_config = SpuConfig::default();
-        follower_config.log.base_dir = PathBuf::from(test_path);
-        follower_config.id = FOLLOWER;
-        let follower_gctx = GlobalContext::new_shared_context(follower_config);
-        follower_gctx.spu_localstore().sync_all(spu_specs());
-        follower_gctx
-            .followers_state_owned()
-            .add_replica(follower_gctx.clone(), replica.clone())
-            .await
-            .expect("create");
-
-        let follower_replica = follower_gctx
-            .followers_state()
-            .get(&replica.id)
-            .expect("follower");
+        let (_, follower_replica) = builder.follower_replica(0).await;
 
         // at this point, follower replica should be empty since we didn't have time to sync up with leader
         assert_eq!(follower_replica.leo(), 0);
@@ -332,47 +282,13 @@ mod replica_test {
     /// test with 3 SPU
     #[test_async]
     async fn test_replication3_existing() -> Result<(), ()> {
-        const LEADER_PORT: u16 = 14000;
-        const FOLLOWER_PORT: u16 = 14001;
-        const FOLLOWER2_PORT: u16 = 14002;
+        let builder = TestConfig::builder()
+            .in_sync_replica(3 as u16)
+            .followers(3 as u16)
+            .base_port(13020 as u16)
+            .generate("replication3_existing");
 
-        fn leader_addr() -> String {
-            format!("{}:{}", HOST, LEADER_PORT)
-        }
-
-        fn spu_specs() -> Vec<SpuSpec> {
-            vec![
-                SpuSpec::new_private_addr(LEADER, LEADER_PORT, HOST.to_owned()),
-                SpuSpec::new_private_addr(FOLLOWER, FOLLOWER_PORT, HOST.to_owned()),
-                SpuSpec::new_private_addr(FOLLOWER2, FOLLOWER2_PORT, HOST.to_owned()),
-            ]
-        }
-
-        let test_path = temp_dir().join("init_replication2.test");
-        ensure_clean_dir(&test_path);
-
-        let replica = Replica::new((TOPIC, 0), LEADER, vec![FOLLOWER, FOLLOWER2]);
-
-        let mut leader_config = SpuConfig::default();
-        leader_config.log.base_dir = test_path.clone();
-        leader_config.replication.min_in_sync_replicas = 2;
-        leader_config.id = LEADER;
-
-        leader_config.private_endpoint = leader_addr();
-        let leader_gctx = GlobalContext::new_shared_context(leader_config);
-        leader_gctx.spu_localstore().sync_all(spu_specs());
-        leader_gctx.sync_follower_update();
-
-        let leader_replica = leader_gctx
-            .leaders_state()
-            .add_leader_replica(
-                leader_gctx.clone(),
-                replica.clone(),
-                MAX_BYTES,
-                ScSinkMessageChannel::shared(),
-            )
-            .await
-            .expect("leader");
+        let (leader_gctx, leader_replica) = builder.leader_replica().await;
 
         // write records
         leader_replica
@@ -383,26 +299,12 @@ mod replica_test {
         assert_eq!(leader_replica.leo(), 2);
         assert_eq!(leader_replica.hw(), 0);
 
-        let spu_server = create_internal_server(leader_addr(), leader_gctx.clone()).run();
+        let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
 
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-        let mut follower_config = SpuConfig::default();
-        follower_config.log.base_dir = test_path;
-        follower_config.id = FOLLOWER;
-        let follower_gctx = GlobalContext::new_shared_context(follower_config);
-        follower_gctx.spu_localstore().sync_all(spu_specs());
-        follower_gctx
-            .followers_state_owned()
-            .add_replica(follower_gctx.clone(), replica.clone())
-            .await
-            .expect("create");
-
-        let follower_replica = follower_gctx
-            .followers_state()
-            .get(&replica.id)
-            .expect("follower");
+        let (_, follower_replica) = builder.follower_replica(0).await;
 
         // at this point, follower replica should be empty since we didn't have time to sync up with leader
         assert_eq!(follower_replica.leo(), 0);
@@ -411,12 +313,25 @@ mod replica_test {
         // wait until follower sync up with leader
         sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
-        debug!("done waiting. checking result");
+        debug!("done waiting for first checking result");
 
         // all records has been fully replicated
         assert_eq!(follower_replica.leo(), 2);
 
-        // hw has been replicated
+        // leader's hw is still 0
+        // assert_eq!(follower_replica.hw(), 2);
+        assert_eq!(leader_replica.hw(), 0);
+
+        let (_, follower_replica2) = builder.follower_replica(1).await;
+        assert_eq!(follower_replica2.leo(), 0);
+        assert_eq!(follower_replica2.hw(), 0);
+
+        // wait until follower sync up with leader
+        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+
+        debug!("done waiting. checking result");
+        // all records has been fully replicated
+        assert_eq!(follower_replica2.leo(), 2);
         assert_eq!(follower_replica.hw(), 2);
         assert_eq!(leader_replica.hw(), 2);
 
