@@ -1335,7 +1335,6 @@ dependencies = [
  "color-eyre",
  "colored",
  "derive_builder",
- "directories-next",
  "fluvio",
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",

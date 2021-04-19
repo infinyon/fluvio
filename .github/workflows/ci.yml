@@ -168,10 +168,10 @@ jobs:
           make RELEASE=release build_test
       - name: Setup installation pre-requisites
         run: |
-          ./target/release/fluvio cluster start --setup --local --develop
+          cargo run --release --bin fluvio -- cluster start --setup --local --develop
       - name: Print Fluvio version
         run: |
-          ./target/release/fluvio version
+          cargo run --release --bin fluvio -- version
       - name: Run smoke-test
         timeout-minutes: 1
         run: |

@@ -24,7 +24,6 @@ use crate::{
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
-use directories_next::UserDirs;
 
 const DEFAULT_LOG_DIR: &str = "/tmp";
 const DEFAULT_DATA_DIR: &str = "/tmp/fluvio";
@@ -34,12 +33,7 @@ const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
 const LOCAL_SC_PORT: u16 = 9003;
 
-static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| {
-    let ext_dir = UserDirs::new().map(|it| it.home_dir().join(".fluvio/bin"));
-    which::which("fluvio")
-        .or_else(|_| which::which_in("fluvio", ext_dir, "."))
-        .ok()
-});
+static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::current_exe().ok());
 
 /// Describes how to install Fluvio locally
 #[derive(Builder, Debug)]
