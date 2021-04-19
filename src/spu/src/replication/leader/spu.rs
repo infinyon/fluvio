@@ -1,7 +1,7 @@
 use std::{collections::HashSet, ops::{Deref, DerefMut}, sync::Arc};
 
 use event_listener::EventListener;
-use tracing::debug;
+use tracing::{warn,debug};
 use async_rwlock::RwLock;
 use dashmap::DashMap;
 
@@ -58,10 +58,16 @@ impl SpuUpdates {
         }
     }
 
-    
-    pub fn update_spu(&self,spu: SpuId) {
-
+    /// replica's hw need be propogated to
+    pub async fn update_hw(&self,spu: &SpuId,replica: ReplicaKey) {
+        if let Some(spu_ref) = self.get(spu) {
+            spu_ref.value().update_hw(replica).await;
+        } else {
+            warn!(spu,"invalid spu");
+        }
     }
+
+    
 }
 
 /// Sets of follower updates
@@ -75,5 +81,17 @@ impl FollowerSpuPendingUpdates {
 
     pub fn listener(&self) -> OffsetChangeListener {
         self.event.change_listner()
+    }
+
+    /// replica's hw need be propogated to
+    pub async fn update_hw(&self,replica: ReplicaKey) {
+        let mut write = self.replicas.write().await;
+        write.insert(replica);
+    }
+
+    /// drain all replicas
+    pub async fn dain_replicas(&self) -> HashSet<ReplicaKey> {
+        let mut write = self.replicas.write().await;
+        write.drain().collect()
     }
 }

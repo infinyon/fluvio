@@ -1,13 +1,18 @@
-use tracing::{debug, error};
+use tracing::{debug, error,warn};
 use futures_util::stream::StreamExt;
 use tracing::instrument;
 
 use fluvio_storage::OffsetInfo;
 use fluvio_socket::{FlvSocketError, FlvSocket, FlvSink};
-use fluvio_service::api_loop;
+use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::{
+    core::DefaultSharedGlobalContext,
+    replication::follower::sync::{
+        FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
+    },
+};
 
 use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;
@@ -66,17 +71,17 @@ impl FollowerHandler {
 
                 _ = listener.listen() => {
                     debug!("end event has been received from stream fetch, terminating");
-                    self.handle_spu_change().await;
+                    self.update_hw(&mut sink).await?;
                 },
 
 
-                // 
+                //
                 // same as this
                 //  api_loop!(
                 //   api_stream,
                 //     LeaderPeerRequest::UpdateOffsets(request) => {
                 //     self.handle_offset_request(request.request,&mut sink).await?;
-                //  )  
+                //  )
                 //  expanded to used in the select
                 api_msg = api_stream.next() => {
 
@@ -103,14 +108,54 @@ impl FollowerHandler {
             }
         }
 
-        
-
         Ok(())
     }
 
     // updates form other SPU trigger this
-    async fn handle_spu_change(&mut self) {
+    async fn update_hw(&mut self, sink: &mut FlvSink) -> Result<(), FlvSocketError> {
+        let replicas = self.spu_update.dain_replicas().await;
 
+        if replicas.is_empty() {
+            debug!("no replicas. skipping");
+            return Ok(());
+        }
+
+        let mut sync_request = FileSyncRequest::default();
+
+        for replica in replicas {
+            if let Some(leader) = self.ctx.leaders_state().get(&replica) {
+                let mut topic_response = PeerFileTopicResponse {
+                    name: replica.topic.to_owned(),
+                    ..Default::default()
+                };
+
+                let mut partition_response = PeerFilePartitionResponse {
+                    partition: replica.partition,
+                    ..Default::default()
+                };
+                let offset = leader.as_offset();
+                debug!(
+                    hw = offset.hw, 
+                    leo = offset.leo, 
+                    %replica,
+                    "sending hw to follower");
+                // ensure leo and hw are set correctly. storage might have update last stable offset
+                partition_response.leo = offset.leo;
+                partition_response.hw = offset.hw;
+                topic_response.partitions.push(partition_response);
+                sync_request.topics.push(topic_response);
+            } else {
+                warn!(
+                    %replica,
+                    "no existent leader replica"
+                )
+            }
+        }
+
+        let request =
+            RequestMessage::new_request(sync_request).set_client_id(format!("leader hw update"));
+
+        sink.send_request(&request).await
     }
 
     /// update each leader
@@ -153,8 +198,8 @@ impl FollowerHandler {
                                     )
                                     .await?;
                             } else {
-                                // other SPU
-                                
+                                // notify followers that replica's hw need to be propogated
+                                // self.ctx.follower_updates().update_hw(&spu, replica_key.clone()).await;
                             }
                         }
                     }
