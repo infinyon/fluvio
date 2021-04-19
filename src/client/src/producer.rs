@@ -16,6 +16,8 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::sockets::SerialFrame;
 use fluvio_types::SpuId;
+use crate::sync::StoreContext;
+use crate::metadata::partition::PartitionSpec;
 
 /// An interface for producing events to a particular topic
 ///
@@ -112,49 +114,41 @@ impl TopicProducer {
 
         let entries = records
             .into_iter()
-            .map::<(Option<Vec<u8>>, Vec<u8>), _>(|(k, v)| (k.map(|it| it.into()), v.into()));
+            .map::<(Option<Vec<u8>>, Vec<u8>), _>(|(k, v)| (k.map(|it| it.into()), v.into()))
+            .map(|(key, value)| {
+                let key = key.map(|it| DefaultAsyncBuffer::new(it));
+                let value = DefaultAsyncBuffer::new(value);
+                DefaultRecord::from((key, value))
+            });
 
         // Calculate the partition for each entry
         // Use a block scope to ensure we drop the partitioner lock
-        let iter = {
+        let records_by_partition = {
             let mut iter = Vec::new();
             let mut partitioner = self.partitioner.lock().await;
             partitioner.update_config(partition_config);
 
-            for (k, v) in entries {
-                let partition = partitioner.partition(k.as_deref());
-                iter.push((partition, (k, v)));
+            for record in entries {
+                let key = record.key.as_ref().map(|k| k.as_ref());
+                let partition = partitioner.partition(key);
+                iter.push((partition, record));
             }
             iter
         };
 
         // Group all of the records by the partitions they belong to, then
         // group all of the partitions by the SpuId that leads that partition
-        let mut map: HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>> = HashMap::new();
-        for (partition, (key, value)) in iter {
-            let replica_key = ReplicaKey::new(&self.topic, partition);
-            let partition_spec = self
-                .pool
-                .metadata
-                .partitions()
-                .lookup_by_key(&replica_key)
-                .await?
-                .ok_or_else(|| FluvioError::PartitionNotFound(self.topic.clone(), partition))?
-                .spec;
-            let leader = partition_spec.leader;
-            let key = key.map(|it| DefaultAsyncBuffer::new(it));
-            let record = DefaultAsyncBuffer::new(value);
-            let record = DefaultRecord::from((key, record));
-            map.entry(leader)
-                .or_insert_with(HashMap::new)
-                .entry(partition)
-                .or_insert_with(Vec::new)
-                .push(record);
-        }
+        let partitions_by_spu = group_by_spu(
+            &self.topic,
+            self.pool.metadata.partitions(),
+            records_by_partition,
+        )
+        .await?;
 
         // Create one request per SPU leader
-        let mut requests: Vec<(SpuId, DefaultProduceRequest)> = Vec::with_capacity(map.len());
-        for (leader, partitions) in map {
+        let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
+            Vec::with_capacity(partitions_by_spu.len());
+        for (leader, partitions) in partitions_by_spu {
             let mut request = DefaultProduceRequest::default();
 
             let mut topic_request = DefaultTopicRequest::default();
@@ -210,6 +204,30 @@ impl TopicProducer {
         self.send_keyless(buffer).await?;
         Ok(())
     }
+}
+
+async fn group_by_spu(
+    topic: &str,
+    partitions: &StoreContext<PartitionSpec>,
+    records_by_partition: Vec<(i32, DefaultRecord)>,
+) -> Result<HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>>, FluvioError> {
+    let mut map: HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>> = HashMap::new();
+    for (partition, record) in records_by_partition {
+        let replica_key = ReplicaKey::new(topic, partition);
+        let partition_spec = partitions
+            .lookup_by_key(&replica_key)
+            .await?
+            .ok_or_else(|| FluvioError::PartitionNotFound(topic.to_string(), partition))?
+            .spec;
+        let leader = partition_spec.leader;
+        map.entry(leader)
+            .or_insert_with(HashMap::new)
+            .entry(partition)
+            .or_insert_with(Vec::new)
+            .push(record);
+    }
+
+    Ok(map)
 }
 
 /// A trait for defining a partitioning strategy for key/value records.
