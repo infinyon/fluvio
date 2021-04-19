@@ -1379,7 +1379,6 @@ dependencies = [
 name = "fluvio-command"
 version = "0.2.1"
 dependencies = [
- "once_cell",
  "thiserror",
  "tracing",
 ]

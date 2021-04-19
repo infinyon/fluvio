@@ -13,8 +13,7 @@ FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/fluvio,./target/$(TES
 CLIENT_LOG=warn
 SERVER_LOG=fluvio=debug
 TEST_LOG=warn
-TEST_BIN_INNER=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/flv-test,./target/$(TEST_BUILD)/flv-test)
-TEST_BIN=FLUVIO_CMD=true $(TEST_BIN_INNER)
+TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/flv-test,./target/$(TEST_BUILD)/flv-test)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
 DEFAULT_ITERATION=1000

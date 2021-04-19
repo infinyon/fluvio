@@ -4,17 +4,6 @@
 
 use std::process::{Command, Output};
 use tracing::debug;
-use once_cell::sync::Lazy;
-
-/// Whether to debug-log command strings before they are run
-///
-/// This is true if the `FLUVIO_CMD` environment variable is
-/// set to `true` (case insensitive).
-static SHOULD_LOG: Lazy<bool> = Lazy::new(|| {
-    std::env::var("FLUVIO_CMD")
-        .map(|it| it.eq_ignore_ascii_case("true"))
-        .unwrap_or(false)
-});
 
 /// `Ok(Output)` when a child process successfully runs and returns exit code `0`.
 ///
@@ -158,9 +147,7 @@ impl CommandExt for Command {
     }
 
     fn result(&mut self) -> CommandResult {
-        if *SHOULD_LOG {
-            debug!("Executing> {}", self.display());
-        }
+        debug!("Executing> {}", self.display());
 
         self.output()
             .map_err(|e| CommandError {
