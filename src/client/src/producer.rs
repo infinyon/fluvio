@@ -109,25 +109,23 @@ impl TopicProducer {
         let partition_count = topic_spec.partitions();
         let partition_config = PartitionerConfig { partition_count };
 
-        // Split keys into a vec to feed to the partitioner
-        let (keys, values): (Vec<Option<Vec<u8>>>, Vec<Vec<u8>>) = records
+        let entries = records
             .into_iter()
-            .map(|(k, v)| (k.map(|it| it.into()), v.into()))
-            .unzip();
-        let key_slices: Vec<_> = keys.iter().map(|it| it.as_deref()).collect();
+            .map::<(Option<Vec<u8>>, Vec<u8>), _>(|(k, v)| (k.map(|it| it.into()), v.into()));
 
-        let partitions = {
-            // Ensure we drop partitioner (and its mutex guard) after we're done partitioning
+        // Calculate the partition for each entry
+        // Use a block scope to ensure we drop the partitioner lock
+        let iter = {
+            let mut iter = Vec::new();
             let mut partitioner = self.partitioner.lock().await;
             partitioner.update_config(partition_config);
-            partitioner.partition(&key_slices)
-        };
 
-        // Zip up the partition assignments with their keys and values
-        let iter: Vec<_> = partitions
-            .into_iter()
-            .zip(keys.into_iter().zip(values.into_iter()))
-            .collect();
+            for (k, v) in entries {
+                let partition = partitioner.partition(k.as_deref());
+                iter.push((partition, (k, v)));
+            }
+            iter
+        };
 
         // Convert key/values into records and sort them by partition
         let mut records_by_partition: HashMap<i32, Vec<_>> = HashMap::new();
@@ -213,7 +211,7 @@ impl TopicProducer {
 ///
 /// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
 trait Partitioner {
-    fn partition(&mut self, keys: &[Option<&[u8]>]) -> Vec<i32>;
+    fn partition(&mut self, key: Option<&[u8]>) -> i32;
     fn update_config(&mut self, config: PartitionerConfig);
 }
 
@@ -237,20 +235,15 @@ impl SiphashRoundRobinPartitioner {
 }
 
 impl Partitioner for SiphashRoundRobinPartitioner {
-    fn partition(&mut self, keys: &[Option<&[u8]>]) -> Vec<i32> {
-        let mut partitions = Vec::with_capacity(keys.len());
-        for maybe_key in keys {
-            let partition = match maybe_key {
-                Some(key) => partition_siphash(key, self.config.partition_count),
-                None => {
-                    let partition = self.index;
-                    self.index = (self.index + 1) % self.config.partition_count;
-                    partition
-                }
-            };
-            partitions.push(partition);
+    fn partition(&mut self, maybe_key: Option<&[u8]>) -> i32 {
+        match maybe_key {
+            Some(key) => partition_siphash(key, self.config.partition_count),
+            None => {
+                let partition = self.index;
+                self.index = (self.index + 1) % self.config.partition_count;
+                partition
+            }
         }
-        partitions
     }
 
     fn update_config(&mut self, config: PartitionerConfig) {
@@ -280,43 +273,17 @@ mod tests {
         let config = PartitionerConfig { partition_count: 3 };
         let mut partitioner = SiphashRoundRobinPartitioner::new(config);
 
-        let key1_partition = partitioner.partition(&[None])[0];
+        let key1_partition = partitioner.partition(None);
         assert_eq!(key1_partition, 0);
-        let key2_partition = partitioner.partition(&[None])[0];
+        let key2_partition = partitioner.partition(None);
         assert_eq!(key2_partition, 1);
-        let key3_partition = partitioner.partition(&[None])[0];
+        let key3_partition = partitioner.partition(None);
         assert_eq!(key3_partition, 2);
-        let key4_partition = partitioner.partition(&[None])[0];
+        let key4_partition = partitioner.partition(None);
         assert_eq!(key4_partition, 0);
-        let key5_partition = partitioner.partition(&[None])[0];
+        let key5_partition = partitioner.partition(None);
         assert_eq!(key5_partition, 1);
-        let key6_partition = partitioner.partition(&[None])[0];
+        let key6_partition = partitioner.partition(None);
         assert_eq!(key6_partition, 2);
-    }
-
-    /// Ensure that feeding keyless records in batches does not always start with the same partition
-    #[test]
-    fn test_round_robin_batch() {
-        let config = PartitionerConfig { partition_count: 4 };
-        let mut partitioner = SiphashRoundRobinPartitioner::new(config);
-
-        // A batch of 5 records with no keys
-        let batch: Vec<Option<&[u8]>> = (0..5).map(|_| None).collect();
-
-        // The partitions of the first batch of five
-        let ps1 = partitioner.partition(&batch);
-        assert_eq!(ps1[0], 0);
-        assert_eq!(ps1[1], 1);
-        assert_eq!(ps1[2], 2);
-        assert_eq!(ps1[3], 3);
-        assert_eq!(ps1[4], 0);
-
-        // The partitions of the second batch of five
-        let ps2 = partitioner.partition(&batch);
-        assert_eq!(ps2[0], 1); // resumes at 1
-        assert_eq!(ps2[1], 2);
-        assert_eq!(ps2[2], 3);
-        assert_eq!(ps2[3], 0);
-        assert_eq!(ps2[4], 1);
     }
 }
