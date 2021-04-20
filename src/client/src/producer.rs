@@ -435,8 +435,11 @@ mod tests {
             assert_eq!(topic_request.name, "TOPIC");
             assert_eq!(topic_request.partitions.len(), 2);
 
-            let partition_0_request = topic_request.partitions.get(0).unwrap();
-            assert_eq!(partition_0_request.partition_index, 0);
+            let partition_0_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 0)
+                .unwrap();
             assert_eq!(partition_0_request.records.batches.len(), 1);
             let batch = partition_0_request.records.batches.get(0).unwrap();
             assert_eq!(batch.records().len(), 2);
@@ -445,8 +448,11 @@ mod tests {
             let record_0_1 = batch.records().get(1).unwrap();
             assert_eq!(record_0_1.value.as_ref(), b"B");
 
-            let partition_1_request = topic_request.partitions.get(1).unwrap();
-            assert_eq!(partition_1_request.partition_index, 1);
+            let partition_1_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 1)
+                .unwrap();
             assert_eq!(partition_1_request.records.batches.len(), 1);
             let batch = partition_1_request.records.batches.get(0).unwrap();
             assert_eq!(batch.records().len(), 2);
@@ -465,8 +471,11 @@ mod tests {
             assert_eq!(topic_request.name, "TOPIC");
             assert_eq!(topic_request.partitions.len(), 2);
 
-            let partition_0_request = topic_request.partitions.get(0).unwrap();
-            assert_eq!(partition_0_request.partition_index, 2);
+            let partition_0_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 2)
+                .unwrap();
             assert_eq!(partition_0_request.records.batches.len(), 1);
             let batch = partition_0_request.records.batches.get(0).unwrap();
             assert_eq!(batch.records().len(), 2);
@@ -475,8 +484,11 @@ mod tests {
             let record_0_1 = batch.records().get(1).unwrap();
             assert_eq!(record_0_1.value.as_ref(), b"F");
 
-            let partition_1_request = topic_request.partitions.get(1).unwrap();
-            assert_eq!(partition_1_request.partition_index, 3);
+            let partition_1_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 3)
+                .unwrap();
             assert_eq!(partition_1_request.records.batches.len(), 1);
             let batch = partition_1_request.records.batches.get(0).unwrap();
             assert_eq!(batch.records().len(), 2);
