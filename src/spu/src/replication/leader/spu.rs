@@ -89,6 +89,7 @@ impl FollowerSpuPendingUpdates {
     pub async fn update_hw(&self, replica: ReplicaKey) {
         let mut write = self.replicas.write().await;
         write.insert(replica);
+        self.event.update_increment();
     }
 
     /// drain all replicas

@@ -65,7 +65,8 @@ impl ReplicaFollowerController<FileReplica> {
         name = "FollowerController",
         skip(self),
         fields(
-            leader = self.leader
+            leader = self.leader,
+            local = self.config.id()
         )
     )]
     async fn dispatch_loop(mut self) {

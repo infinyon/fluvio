@@ -32,7 +32,7 @@ mod replica_test {
     const HOST: &str = "127.0.0.1";
 
     const MAX_BYTES: u32 = 100000;
-    const MAX_WAIT_REPLICATION: u64 = 5000;
+    const MAX_WAIT_REPLICATION: u64 = 1000;
     const MAX_WAIT_LEADER: u64 = 1000;
 
     #[derive(Builder, Debug)]
@@ -41,7 +41,7 @@ mod replica_test {
         base_id: SpuId,
         #[builder(setter(into), default = "1")]
         in_sync_replica: u16,
-        #[builder(setter(into), default = "2")]
+        #[builder(setter(into), default = "1")]
         followers: u16,
         #[builder(setter(into), default = "temp_dir()")]
         base_dir: PathBuf,
@@ -148,7 +148,7 @@ mod replica_test {
             FollowerReplicaState<FileReplica>,
         ) {
             let follower_config = self.follower_config(follower_index);
-            debug!(?follower_config);
+            //debug!(?follower_config);
 
             let replica = self.replica();
             let gctx = GlobalContext::new_shared_context(follower_config);
@@ -186,7 +186,7 @@ mod replica_test {
     async fn test_replication2_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .in_sync_replica(2 as u16)
-            .followers(2 as u16)
+            .followers(1 as u16)
             .base_port(13000 as u16)
             .generate("replication2_existing");
 
@@ -236,7 +236,7 @@ mod replica_test {
     async fn test_replication2_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .in_sync_replica(2 as u16)
-            .followers(2 as u16)
+            .followers(1 as u16)
             .base_port(13010 as u16)
             .generate("replication2_new");
 
@@ -284,7 +284,7 @@ mod replica_test {
     async fn test_replication3_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .in_sync_replica(3 as u16)
-            .followers(3 as u16)
+            .followers(2 as u16)
             .base_port(13020 as u16)
             .generate("replication3_existing");
 
@@ -329,11 +329,17 @@ mod replica_test {
         // wait until follower sync up with leader
         sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
-        debug!("done waiting. checking result");
-        // all records has been fully replicated
+        debug!("done waiting for 2nd follower: checking final");
+
+        // ensure all follower replica has fully replicaged
         assert_eq!(follower_replica2.leo(), 2);
-        assert_eq!(follower_replica.hw(), 2);
+        assert_eq!(follower_replica.leo(), 2);
+
+        // leader has updated hw
         assert_eq!(leader_replica.hw(), 2);
+        // then followers, first check 2nd follower, since it was last updated, it shoud have been updated first
+        assert_eq!(follower_replica2.hw(), 2);
+        assert_eq!(follower_replica.hw(), 2);
 
         spu_server.notify();
 

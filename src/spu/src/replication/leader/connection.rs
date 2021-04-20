@@ -70,8 +70,8 @@ impl FollowerHandler {
             select! {
 
                 _ = listener.listen() => {
-                    debug!("end event has been received from stream fetch, terminating");
-                    self.update_hw(&mut sink).await?;
+                    debug!("hw has been updated");
+                    self.update_hw_from_other(&mut sink).await?;
                 },
 
 
@@ -112,7 +112,8 @@ impl FollowerHandler {
     }
 
     // updates form other SPU trigger this
-    async fn update_hw(&mut self, sink: &mut FlvSink) -> Result<(), FlvSocketError> {
+    #[instrument(skip(self, sink))]
+    async fn update_hw_from_other(&mut self, sink: &mut FlvSink) -> Result<(), FlvSocketError> {
         let replicas = self.spu_update.dain_replicas().await;
 
         if replicas.is_empty() {
@@ -185,9 +186,9 @@ impl FollowerHandler {
                     if updates.is_empty() {
                         debug!(%replica_key,"no updates, do nothing");
                     } else {
-                        for (spu, offset_update) in updates {
+                        for (follower, offset_update) in updates {
                             // our changes
-                            if spu == self.follower_id {
+                            if follower == self.follower_id {
                                 leader
                                     .value()
                                     .send_update_to_follower(
@@ -198,10 +199,14 @@ impl FollowerHandler {
                                     )
                                     .await?;
                             } else {
+                                debug!(
+                                    follower,
+                                    %replica_key,
+                                    "notifying other follower");
                                 // notify followers that replica's hw need to be propogated
                                 self.ctx
                                     .follower_updates()
-                                    .update_hw(&spu, replica_key.clone())
+                                    .update_hw(&follower, replica_key.clone())
                                     .await;
                             }
                         }

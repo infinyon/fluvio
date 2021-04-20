@@ -89,6 +89,11 @@ pub mod offsets {
             self.event.notify(usize::MAX);
         }
 
+        /// increase value by 1 and notify
+        pub fn update_increment(&self) {
+            self.update(self.current_value() + 1);
+        }
+
         pub fn change_listner(self: &Arc<Self>) -> OffsetChangeListener {
             OffsetChangeListener::new(self.clone())
         }
