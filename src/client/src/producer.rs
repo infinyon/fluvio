@@ -122,29 +122,7 @@ impl TopicProducer {
         .await?;
 
         // Create one request per SPU leader
-        let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
-            Vec::with_capacity(partitions_by_spu.len());
-        for (leader, partitions) in partitions_by_spu {
-            let mut request = DefaultProduceRequest::default();
-
-            let mut topic_request = DefaultTopicRequest::default();
-            topic_request.name = self.topic.clone();
-
-            for (partition, records) in partitions {
-                let mut partition_request = DefaultPartitionRequest::default();
-                partition_request.partition_index = partition;
-                partition_request
-                    .records
-                    .batches
-                    .push(DefaultBatch::new(records));
-                topic_request.partitions.push(partition_request);
-            }
-
-            request.acks = 1;
-            request.timeout_ms = 1500;
-            request.topics.push(topic_request);
-            requests.push((leader, request));
-        }
+        let requests = assemble_requests(&self.topic, partitions_by_spu);
 
         for (leader, request) in requests {
             let mut spu_client = self.pool.create_serial_socket_from_leader(leader).await?;
@@ -204,6 +182,38 @@ async fn group_by_spu(
     }
 
     Ok(map)
+}
+
+fn assemble_requests(
+    topic: &str,
+    partitions_by_spu: HashMap<i32, HashMap<i32, Vec<DefaultRecord>>>,
+) -> Vec<(SpuId, DefaultProduceRequest)> {
+    let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
+        Vec::with_capacity(partitions_by_spu.len());
+
+    for (leader, partitions) in partitions_by_spu {
+        let mut request = DefaultProduceRequest::default();
+
+        let mut topic_request = DefaultTopicRequest::default();
+        topic_request.name = topic.to_string();
+
+        for (partition, records) in partitions {
+            let mut partition_request = DefaultPartitionRequest::default();
+            partition_request.partition_index = partition;
+            partition_request
+                .records
+                .batches
+                .push(DefaultBatch::new(records));
+            topic_request.partitions.push(partition_request);
+        }
+
+        request.acks = 1;
+        request.timeout_ms = 1500;
+        request.topics.push(topic_request);
+        requests.push((leader, request));
+    }
+
+    requests
 }
 
 /// A trait for defining a partitioning strategy for key/value records.
@@ -384,5 +394,96 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_assemble_requests() {
+        let partitions_by_spu = {
+            let mut pbs = HashMap::new();
+
+            let spu_0 = {
+                let mut s0_partitions = HashMap::new();
+                let partition_0_records = vec![DefaultRecord::new("A"), DefaultRecord::new("B")];
+                let partition_1_records = vec![DefaultRecord::new("C"), DefaultRecord::new("D")];
+                s0_partitions.insert(0, partition_0_records);
+                s0_partitions.insert(1, partition_1_records);
+                s0_partitions
+            };
+
+            let spu_1 = {
+                let mut s1_partitions = HashMap::new();
+                let partition_2_records = vec![DefaultRecord::new("E"), DefaultRecord::new("F")];
+                let partition_3_records = vec![DefaultRecord::new("G"), DefaultRecord::new("H")];
+                s1_partitions.insert(2, partition_2_records);
+                s1_partitions.insert(3, partition_3_records);
+                s1_partitions
+            };
+            pbs.insert(0, spu_0);
+            pbs.insert(1, spu_1);
+            pbs
+        };
+
+        let requests = assemble_requests("TOPIC", partitions_by_spu);
+        assert_eq!(requests.len(), 2);
+
+        // SPU 0
+        {
+            let (spu0, request) = requests.iter().find(|(spu, _)| *spu == 0).unwrap();
+            assert_eq!(*spu0, 0);
+            assert_eq!(request.topics.len(), 1);
+            let topic_request = request.topics.get(0).unwrap();
+            assert_eq!(topic_request.name, "TOPIC");
+            assert_eq!(topic_request.partitions.len(), 2);
+
+            let partition_0_request = topic_request.partitions.get(0).unwrap();
+            assert_eq!(partition_0_request.partition_index, 0);
+            assert_eq!(partition_0_request.records.batches.len(), 1);
+            let batch = partition_0_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_0_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_0_0.value.as_ref(), b"A");
+            let record_0_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_0_1.value.as_ref(), b"B");
+
+            let partition_1_request = topic_request.partitions.get(1).unwrap();
+            assert_eq!(partition_1_request.partition_index, 1);
+            assert_eq!(partition_1_request.records.batches.len(), 1);
+            let batch = partition_1_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_1_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_1_0.value.as_ref(), b"C");
+            let record_1_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_1_1.value.as_ref(), b"D");
+        }
+
+        // SPU 1
+        {
+            let (spu1, request) = requests.iter().find(|(spu, _)| *spu == 1).unwrap();
+            assert_eq!(*spu1, 1);
+            assert_eq!(request.topics.len(), 1);
+            let topic_request = request.topics.get(0).unwrap();
+            assert_eq!(topic_request.name, "TOPIC");
+            assert_eq!(topic_request.partitions.len(), 2);
+
+            let partition_0_request = topic_request.partitions.get(0).unwrap();
+            assert_eq!(partition_0_request.partition_index, 2);
+            assert_eq!(partition_0_request.records.batches.len(), 1);
+            let batch = partition_0_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_0_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_0_0.value.as_ref(), b"E");
+            let record_0_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_0_1.value.as_ref(), b"F");
+
+            let partition_1_request = topic_request.partitions.get(1).unwrap();
+            assert_eq!(partition_1_request.partition_index, 3);
+            assert_eq!(partition_1_request.records.batches.len(), 1);
+            let batch = partition_1_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_1_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_1_0.value.as_ref(), b"G");
+            let record_1_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_1_1.value.as_ref(), b"H");
+        }
     }
 }
