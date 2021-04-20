@@ -32,8 +32,8 @@ mod replica_test {
     const HOST: &str = "127.0.0.1";
 
     const MAX_BYTES: u32 = 100000;
-    const MAX_WAIT_REPLICATION: u64 = 1000;
-    const MAX_WAIT_LEADER: u64 = 1000;
+    const MAX_WAIT_REPLICATION: u64 = 2000;
+    const MAX_WAIT_LEADER: u64 = 2000;
 
     #[derive(Builder, Debug)]
     struct TestConfig {

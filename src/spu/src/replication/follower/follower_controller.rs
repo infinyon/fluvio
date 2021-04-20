@@ -256,41 +256,6 @@ impl ReplicaFollowerController<FileReplica> {
         Ok(())
     }
 
-    /*
-    /// create new replica if doesn't exist yet
-    async fn update_replica(&self, replica_msg: Replica) {
-        debug!(?replica_msg, "received update replica",);
-
-        let replica_key = replica_msg.id.clone();
-        if self.followers_state.has_replica(&replica_key) {
-            debug!(
-                %replica_key,
-                "has already follower replica, ignoring",
-            );
-        } else {
-            let log = &self.config.storage().new_config();
-            match FollowerReplicaState::new(
-                self.config.id(),
-                replica_msg.leader,
-                &replica_key,
-                &log,
-            )
-            .await
-            {
-                Ok(replica_state) => {
-                    self.followers_state.insert_replica(replica_state);
-                }
-                Err(err) => error!(
-                    "follower: {}, error creating follower replica: {}, error: {:#?}",
-                    self.local_spu_id(),
-                    replica_key,
-                    err
-                ),
-            }
-        }
-    }
-    */
-
     async fn sync_all_offsets_to_leader(
         &self,
         sink: &mut FlvSink,
@@ -346,23 +311,4 @@ impl ReplicasBySpu {
 
         UpdateOffsetRequest { replicas }
     }
-
-    /*
-    /// send offset to leader
-    #[allow(unused)]
-    async fn send_offsets_to_leader(
-        &self,
-        follower: SpuId,
-        sink: &mut FlvSink,
-    ) -> Result<(), FlvSocketError> {
-        let request = self.replica_offsets();
-
-        let req_msg =
-            RequestMessage::new_request(request).set_client_id(format!("follower: {}", follower));
-
-        trace!(?req_msg, "sending offsets leader");
-
-        sink.send_request(&req_msg).await
-    }
-    */
 }
