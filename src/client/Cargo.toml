@@ -36,6 +36,7 @@ thiserror = "1.0.20"
 once_cell = "1.5.2"
 semver = "0.11.0"
 pin-project-lite = "0.2"
+siphasher = "0.3.5"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.2.0", features = ["task", "native2_tls"] }
@@ -47,4 +48,5 @@ fluvio-protocol = { path = "../protocol", version = "0.4.0" }
 dataplane = { version = "0.4.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [dev-dependencies]
-async-std = { version = "1.6.4", default-features = false}
+async-std = { version = "1.6.4", default-features = false }
+fluvio-future = { version = "0.2.0", features = ["fixture"] }

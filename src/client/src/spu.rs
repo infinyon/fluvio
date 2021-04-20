@@ -49,7 +49,7 @@ impl SpuSocket {
 /// connection pool to spu
 pub struct SpuPool {
     config: ClientConfig,
-    metadata: MetadataStores,
+    pub(crate) metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
 
@@ -113,7 +113,14 @@ impl SpuPool {
         };
 
         let leader_id = partition.spec.leader;
+        let socket = self.create_serial_socket_from_leader(leader_id).await?;
+        Ok(socket)
+    }
 
+    pub async fn create_serial_socket_from_leader(
+        &self,
+        leader_id: SpuId,
+    ) -> Result<VersionedSerialSocket, FluvioError> {
         // check if already have existing connection to same SPU
         let mut client_lock = self.spu_clients.lock().await;
 

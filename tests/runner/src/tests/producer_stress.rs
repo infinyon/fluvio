@@ -82,7 +82,7 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
         for (i, p) in producers.iter().enumerate() {
             let message = format!("producer-{} line-{} {}", i, n, long_str.clone());
 
-            p.send_record(message.clone(), 0)
+            p.send_record(message, 0)
                 .await
                 .unwrap_or_else(|_| panic!("send record failed for iteration: {}", n));
         }

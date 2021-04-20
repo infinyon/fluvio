@@ -17,9 +17,11 @@ use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
+use fluvio_controlplane_metadata::topic::TopicSpec;
 
 use crate::services::auth::AuthServiceContext;
 use crate::stores::{StoreContext, K8ChangeListener};
+use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 /// handle watch request by spawning watch controller for each store
 pub fn handle_watch_request<T, AC>(
@@ -34,14 +36,24 @@ pub fn handle_watch_request<T, AC>(
     let (header, req) = request.get_header_request();
 
     match req {
-        WatchRequest::Topic(_) => unimplemented!(),
+        WatchRequest::Topic(_) => WatchController::<T, TopicSpec>::update(
+            sink,
+            end_event,
+            auth_ctx.global_ctx.topics().clone(),
+            header,
+        ),
         WatchRequest::Spu(_) => WatchController::<T, SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
         ),
-        WatchRequest::SpuGroup(_) => unimplemented!(),
+        WatchRequest::SpuGroup(_) => WatchController::<T, SpuGroupSpec>::update(
+            sink,
+            end_event,
+            auth_ctx.global_ctx.spgs().clone(),
+            header,
+        ),
         WatchRequest::Partition(_) => WatchController::<T, PartitionSpec>::update(
             sink,
             end_event,

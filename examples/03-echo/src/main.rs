@@ -138,7 +138,7 @@ async fn main() {
 async fn produce() -> Result<(), FluvioError> {
     let producer = fluvio::producer(TOPIC).await?;
 
-    for i in 0..10 {
+    for i in 0..10u32 {
         println!("Sending record {}", i);
         producer
             .send(format!("Key {}", i), format!("Value {}", i))

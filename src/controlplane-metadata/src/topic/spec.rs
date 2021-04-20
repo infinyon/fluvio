@@ -71,9 +71,9 @@ impl TopicSpec {
         }
     }
 
-    pub fn partitions(&self) -> Option<PartitionCount> {
+    pub fn partitions(&self) -> PartitionCount {
         match self {
-            TopicSpec::Computed(param) => Some(param.partitions),
+            TopicSpec::Computed(param) => param.partitions,
             TopicSpec::Assigned(partition_map) => partition_map.partition_count(),
         }
     }
@@ -350,14 +350,8 @@ impl PartitionMaps {
         self.maps
     }
 
-    fn partition_count(&self) -> Option<PartitionCount> {
-        // compute partitions form replica map
-        let partitions = self.maps.len() as PartitionCount;
-        if partitions > 0 {
-            Some(partitions)
-        } else {
-            None
-        }
+    fn partition_count(&self) -> PartitionCount {
+        self.maps.len() as PartitionCount
     }
 
     fn replication_factor(&self) -> Option<ReplicationFactor> {

@@ -172,10 +172,7 @@ async fn process_topic_request<AC: AuthContext>(
         }
     };
 
-    let partition_count = topic_instance
-        .spec
-        .partitions()
-        .expect("partition count should never be 0");
+    let partition_count = topic_instance.spec.partitions();
     debug!(
         "waiting for {} partitions to be provisioned",
         partition_count

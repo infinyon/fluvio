@@ -111,21 +111,20 @@ where
                             match update_result {
                                 Ok(update) => {
                                     if let Err(err) = self.process_updates(update).await {
-                                        error!("processing updates: {}", err);
+                                        error!("Processing updates: {}", err);
                                     }
-
                                 },
                                 Err(err) => {
-                                    error!("Error decoding metadata {} update response: {}",S::LABEL,err);
+                                    error!("Decoding metadata update response, skipping: {}", err);
                                 }
                             }
                         },
                         Some(Err(err)) => {
-                            error!("{} error receiving, end, {}", S::LABEL, err);
+                            error!("Receiving response, ending: {}", err);
                             break;
                         },
                         None => {
-                            debug!("{} No more items to receive from stream!",S::LABEL);
+                            debug!("No more items to receive from stream!");
                             break;
                         }
                     }
@@ -137,55 +136,33 @@ where
     }
 
     // process updates from sc
+    #[instrument(
+        skip(self, updates),
+        fields(epoch = updates.epoch)
+    )]
     async fn process_updates(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
-        //use fluvio_sc_schema::message::MsgType;
-        //use crate::metadata::store::actions::LSUpdate;
+        if updates.all.is_empty() {
+            debug!("Received no updates: skipping");
+            return Ok(());
+        }
 
-        if !updates.all.is_empty() {
-            debug!(
-                "processing {}, sync all items: {}",
-                S::LABEL,
-                updates.all.len()
-            );
-            let mut objects: Vec<CacheMetadataStoreObject<S>> = vec![];
-            for meta in updates.all.into_iter() {
-                let store_obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
-                match store_obj {
-                    Ok(obj) => {
-                        objects.push(obj);
-                    }
-                    Err(err) => {
-                        return Err(IoError::new(
-                            ErrorKind::InvalidData,
-                            format!("problem converting: {}", err),
-                        ));
-                    }
+        debug!(count = updates.all.len(), "Syncing updates:");
+        let mut objects: Vec<CacheMetadataStoreObject<S>> = vec![];
+        for meta in updates.all.into_iter() {
+            let store_obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
+            match store_obj {
+                Ok(obj) => {
+                    objects.push(obj);
+                }
+                Err(err) => {
+                    return Err(IoError::new(
+                        ErrorKind::InvalidData,
+                        format!("problem converting: {}", err),
+                    ));
                 }
             }
-            self.store.store().sync_all(objects).await;
         }
-
-        /*
-        TODO: Need to fix this, Need conversion from Metadata to LSUpdate
-        if !updates.changes.is_empty() {
-            debug!(
-                "processing {}, sync change items: {}",
-                S::LABEL,
-                updates.changes.len()
-            );
-
-            let changes = updates.changes.into_iter()
-                .map(|change| {
-
-                    match change.header {
-
-                        MsgType::UPDATE => LSUpdate::Mod(change.content),
-                        MsgType::DELETE => LSUpdate::Delete(change.content.key_owned()),
-
-                    }
-                }).collect();
-        }
-        */
+        self.store.store().sync_all(objects).await;
 
         Ok(())
     }

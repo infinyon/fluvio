@@ -23,6 +23,10 @@
 
 #[async_std::main]
 async fn main() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .try_init();
+
     if let Err(e) = produce_key_value().await {
         println!("Produce error: {:?}", e);
     }
@@ -34,6 +38,7 @@ async fn produce_key_value() -> Result<(), fluvio::FluvioError> {
     let key = "Hello";
     let value = "Fluvio";
 
+    println!("About to send");
     producer.send(key, value).await?;
     println!("[{}] {}", key, value);
     Ok(())

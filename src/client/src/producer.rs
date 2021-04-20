@@ -1,14 +1,23 @@
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::sync::Arc;
+use std::collections::HashMap;
+use tracing::instrument;
+use siphasher::sip::SipHasher;
+use async_mutex::Mutex;
 
-use tracing::{debug, trace, instrument};
 use dataplane::ReplicaKey;
+use dataplane::produce::DefaultProduceRequest;
+use dataplane::produce::DefaultPartitionRequest;
+use dataplane::produce::DefaultTopicRequest;
+use dataplane::batch::DefaultBatch;
+use dataplane::record::DefaultRecord;
+use dataplane::record::DefaultAsyncBuffer;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::sockets::SerialFrame;
-use bytes::Bytes;
+use fluvio_types::{SpuId, PartitionId};
+use crate::sync::StoreContext;
+use crate::metadata::partition::PartitionSpec;
 
 /// An interface for producing events to a particular topic
 ///
@@ -19,11 +28,18 @@ use bytes::Bytes;
 pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
+    partitioner: Arc<Mutex<dyn Partitioner + Send + Sync>>,
 }
 
 impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
-        Self { topic, pool }
+        let config = PartitionerConfig { partition_count: 1 };
+        let partitioner = Arc::new(Mutex::new(SiphashRoundRobinPartitioner::new(config)));
+        Self {
+            topic,
+            pool,
+            partitioner,
+        }
     }
 
     /// Sends a key/value record to this producer's Topic.
@@ -48,7 +64,7 @@ impl TopicProducer {
         K: Into<Vec<u8>>,
         V: Into<Vec<u8>>,
     {
-        self.send_all(Some((Some(key), value))).await?;
+        self.send_all(Some((Some(key.into()), value))).await?;
         Ok(())
     }
 
@@ -62,21 +78,57 @@ impl TopicProducer {
         V: Into<Vec<u8>>,
         I: IntoIterator<Item = (Option<K>, V)>,
     {
-        let replica = ReplicaKey::new(&self.topic, 0);
-        let spu_client = self.pool.create_serial_socket(&replica).await?;
-        debug!(
-            addr = spu_client.config().addr(),
-            "Connected to replica leader:"
-        );
-        let records: Vec<_> = records
+        let topics = self.pool.metadata.topics();
+        let topic_spec = topics
+            .lookup_by_key(&self.topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(self.topic.to_string()))?
+            .spec;
+        let partition_count = topic_spec.partitions();
+        let partition_config = PartitionerConfig { partition_count };
+
+        let entries = records
             .into_iter()
-            .map(|(key, value): (Option<K>, V)| {
-                let key = key.map(|k| Bytes::from(k.into()));
-                let value = Bytes::from(value.into());
-                (key, value)
-            })
-            .collect();
-        send_records_raw(spu_client, &replica, records).await?;
+            .map::<(Option<Vec<u8>>, Vec<u8>), _>(|(k, v)| (k.map(|it| it.into()), v.into()))
+            .map(|(key, value)| {
+                let key = key.map(|it| DefaultAsyncBuffer::new(it));
+                let value = DefaultAsyncBuffer::new(value);
+                DefaultRecord::from((key, value))
+            });
+
+        // Calculate the partition for each entry
+        // Use a block scope to ensure we drop the partitioner lock
+        let records_by_partition = {
+            let mut iter = Vec::new();
+            let mut partitioner = self.partitioner.lock().await;
+            partitioner.update_config(partition_config);
+
+            for record in entries {
+                let key = record.key.as_ref().map(|k| k.as_ref());
+                let value = record.value.as_ref();
+                let partition = partitioner.partition(key, value);
+                iter.push((partition, record));
+            }
+            iter
+        };
+
+        // Group all of the records by the partitions they belong to, then
+        // group all of the partitions by the SpuId that leads that partition
+        let partitions_by_spu = group_by_spu(
+            &self.topic,
+            self.pool.metadata.partitions(),
+            records_by_partition,
+        )
+        .await?;
+
+        // Create one request per SPU leader
+        let requests = assemble_requests(&self.topic, partitions_by_spu);
+
+        for (leader, request) in requests {
+            let mut spu_client = self.pool.create_serial_socket_from_leader(leader).await?;
+            spu_client.send_receive(request).await?;
+        }
+
         Ok(())
     }
 
@@ -96,82 +148,354 @@ impl TopicProducer {
         skip(self, buffer),
         fields(topic = %self.topic),
     )]
+    #[deprecated(since = "0.6.2")]
     pub async fn send_record<B: AsRef<[u8]>>(
         &self,
         buffer: B,
-        partition: i32,
+        _partition: i32,
     ) -> Result<(), FluvioError> {
-        let record = buffer.as_ref();
-        let replica = ReplicaKey::new(&self.topic, partition);
-        debug!("sending records: {} bytes to: {}", record.len(), &replica);
-
-        let spu_client = self.pool.create_serial_socket(&replica).await?;
-
-        debug!("connect to replica leader at: {}", spu_client);
-
-        let records = vec![(None, Bytes::from(Vec::from(buffer.as_ref())))];
-        send_records_raw(spu_client, &replica, records).await?;
+        let buffer: Vec<u8> = Vec::from(buffer.as_ref());
+        self.send_all(Some((None::<Vec<u8>>, buffer))).await?;
         Ok(())
     }
 }
 
-/// Sends record to a target server (Kf, SPU, or SC)
-async fn send_records_raw<F: SerialFrame>(
-    mut leader: F,
-    replica: &ReplicaKey,
-    records: Vec<(Option<Bytes>, Bytes)>,
-) -> Result<(), FluvioError> {
-    use dataplane::produce::DefaultProduceRequest;
-    use dataplane::produce::DefaultPartitionRequest;
-    use dataplane::produce::DefaultTopicRequest;
-    use dataplane::batch::DefaultBatch;
-    use dataplane::record::DefaultRecord;
-    use dataplane::record::DefaultAsyncBuffer;
+async fn group_by_spu(
+    topic: &str,
+    partitions: &StoreContext<PartitionSpec>,
+    records_by_partition: Vec<(PartitionId, DefaultRecord)>,
+) -> Result<HashMap<SpuId, HashMap<PartitionId, Vec<DefaultRecord>>>, FluvioError> {
+    let mut map: HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>> = HashMap::new();
+    for (partition, record) in records_by_partition {
+        let replica_key = ReplicaKey::new(topic, partition);
+        let partition_spec = partitions
+            .lookup_by_key(&replica_key)
+            .await?
+            .ok_or_else(|| FluvioError::PartitionNotFound(topic.to_string(), partition))?
+            .spec;
+        let leader = partition_spec.leader;
+        map.entry(leader)
+            .or_insert_with(HashMap::new)
+            .entry(partition)
+            .or_insert_with(Vec::new)
+            .push(record);
+    }
 
-    // build produce log request message
-    let mut request = DefaultProduceRequest::default();
-    let mut topic_request = DefaultTopicRequest::default();
-    let mut partition_request = DefaultPartitionRequest::default();
+    Ok(map)
+}
 
-    debug!("Putting together batch with {} records", records.len());
+fn assemble_requests(
+    topic: &str,
+    partitions_by_spu: HashMap<SpuId, HashMap<PartitionId, Vec<DefaultRecord>>>,
+) -> Vec<(SpuId, DefaultProduceRequest)> {
+    let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
+        Vec::with_capacity(partitions_by_spu.len());
 
-    let records = records
-        .into_iter()
-        .map(|(key, value)| {
-            let key = key.map(DefaultAsyncBuffer::new);
-            let value = DefaultAsyncBuffer::new(value);
-            DefaultRecord::from((key, value))
-        })
-        .collect();
+    for (leader, partitions) in partitions_by_spu {
+        let mut request = DefaultProduceRequest::default();
 
-    let batch = DefaultBatch::new(records);
-    partition_request.partition_index = replica.partition;
-    partition_request.records.batches.push(batch);
-    topic_request.name = replica.topic.to_owned();
-    topic_request.partitions.push(partition_request);
+        let mut topic_request = DefaultTopicRequest::default();
+        topic_request.name = topic.to_string();
 
-    request.acks = 1;
-    request.timeout_ms = 1500;
-    request.topics.push(topic_request);
-
-    trace!("produce request: {:#?}", request);
-
-    let response = leader.send_receive(request).await?;
-
-    trace!("received response: {:?}", response);
-
-    // process response
-    match response.find_partition_response(&replica.topic, replica.partition) {
-        Some(partition_response) => {
-            if partition_response.error_code.is_error() {
-                return Err(IoError::new(
-                    ErrorKind::Other,
-                    partition_response.error_code.to_sentence(),
-                )
-                .into());
-            }
-            Ok(())
+        for (partition, records) in partitions {
+            let mut partition_request = DefaultPartitionRequest::default();
+            partition_request.partition_index = partition;
+            partition_request
+                .records
+                .batches
+                .push(DefaultBatch::new(records));
+            topic_request.partitions.push(partition_request);
         }
-        None => Err(IoError::new(ErrorKind::Other, "unknown error").into()),
+
+        request.acks = 1;
+        request.timeout_ms = 1500;
+        request.topics.push(topic_request);
+        requests.push((leader, request));
+    }
+
+    requests
+}
+
+/// A trait for defining a partitioning strategy for key/value records.
+///
+/// A Partitioner is given a slice of potential keys, and the number of
+/// partitions in the current Topic. It must map each key from the input
+/// slice into a partition stored at the same index in the output Vec.
+///
+/// It is up to the implementor to decide how the keys get mapped to
+/// partitions. This includes deciding what partition to assign to records
+/// with no keys (represented by `None` values in the keys slice).
+///
+/// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
+trait Partitioner {
+    fn partition(&mut self, key: Option<&[u8]>, value: &[u8]) -> PartitionId;
+    fn update_config(&mut self, config: PartitionerConfig);
+}
+
+struct PartitionerConfig {
+    partition_count: i32,
+}
+
+/// A [`Partitioner`] which combines hashing and round-robin partition assignment
+///
+/// - Records with keys get their keys hashed with siphash
+/// - Records without keys get assigned to partitions using round-robin
+struct SiphashRoundRobinPartitioner {
+    index: PartitionId,
+    config: PartitionerConfig,
+}
+
+impl SiphashRoundRobinPartitioner {
+    pub fn new(config: PartitionerConfig) -> Self {
+        Self { index: 0, config }
+    }
+}
+
+impl Partitioner for SiphashRoundRobinPartitioner {
+    fn partition(&mut self, maybe_key: Option<&[u8]>, _value: &[u8]) -> i32 {
+        match maybe_key {
+            Some(key) => partition_siphash(key, self.config.partition_count),
+            None => {
+                let partition = self.index;
+                self.index = (self.index + 1) % self.config.partition_count;
+                partition
+            }
+        }
+    }
+
+    fn update_config(&mut self, config: PartitionerConfig) {
+        self.config = config;
+    }
+}
+
+fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
+    use std::hash::{Hash, Hasher};
+    use std::convert::TryFrom;
+
+    assert!(partition_count >= 0, "Partition must not be less than zero");
+    let mut hasher = SipHasher::new();
+    key.hash(&mut hasher);
+    let hashed = hasher.finish();
+
+    i32::try_from(hashed % partition_count as u64).unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::metadata::store::MetadataStoreObject;
+
+    /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
+    #[test]
+    fn test_round_robin_individual() {
+        let config = PartitionerConfig { partition_count: 3 };
+        let mut partitioner = SiphashRoundRobinPartitioner::new(config);
+
+        let key1_partition = partitioner.partition(None, &[]);
+        assert_eq!(key1_partition, 0);
+        let key2_partition = partitioner.partition(None, &[]);
+        assert_eq!(key2_partition, 1);
+        let key3_partition = partitioner.partition(None, &[]);
+        assert_eq!(key3_partition, 2);
+        let key4_partition = partitioner.partition(None, &[]);
+        assert_eq!(key4_partition, 0);
+        let key5_partition = partitioner.partition(None, &[]);
+        assert_eq!(key5_partition, 1);
+        let key6_partition = partitioner.partition(None, &[]);
+        assert_eq!(key6_partition, 2);
+    }
+
+    #[fluvio_future::test_async]
+    async fn test_group_by_spu() -> Result<(), ()> {
+        let partitions = StoreContext::new();
+        let partition_specs: Vec<_> = vec![
+            (ReplicaKey::new("TOPIC", 0), PartitionSpec::new(0, vec![])), // Partition 0
+            (ReplicaKey::new("TOPIC", 1), PartitionSpec::new(0, vec![])), // Partition 1
+            (ReplicaKey::new("TOPIC", 2), PartitionSpec::new(1, vec![])), // Partition 2
+        ]
+        .into_iter()
+        .map(|(key, spec)| MetadataStoreObject::with_spec(key, spec))
+        .collect();
+        partitions.store().sync_all(partition_specs).await;
+        let records_by_partition = vec![
+            (0, DefaultRecord::new("A")),
+            (1, DefaultRecord::new("B")),
+            (2, DefaultRecord::new("C")),
+            (0, DefaultRecord::new("D")),
+            (1, DefaultRecord::new("E")),
+            (2, DefaultRecord::new("F")),
+        ];
+
+        let grouped = group_by_spu("TOPIC", &partitions, records_by_partition)
+            .await
+            .unwrap();
+
+        // SPU 0 should have partitions 0 and 1, but not 2
+        let spu_0 = grouped.get(&0).unwrap();
+        let partition_0 = spu_0.get(&0).unwrap();
+
+        assert!(
+            partition_0
+                .iter()
+                .any(|record| record.value.as_ref() == b"A"),
+            "SPU 0/Partition 0 should contain record A",
+        );
+        assert!(
+            partition_0
+                .iter()
+                .any(|record| record.value.as_ref() == b"D"),
+            "SPU 0/Partition 0 should contain record D",
+        );
+
+        let partition_1 = spu_0.get(&1).unwrap();
+        assert!(
+            partition_1
+                .iter()
+                .any(|record| record.value.as_ref() == b"B"),
+            "SPU 0/Partition 1 should contain record B",
+        );
+        assert!(
+            partition_1
+                .iter()
+                .any(|record| record.value.as_ref() == b"E"),
+            "SPU 0/Partition 1 should contain record E",
+        );
+
+        assert!(
+            spu_0.get(&2).is_none(),
+            "SPU 0 should not contain Partition 2",
+        );
+
+        let spu_1 = grouped.get(&1).unwrap();
+        let partition_2 = spu_1.get(&2).unwrap();
+
+        assert!(
+            spu_1.get(&0).is_none(),
+            "SPU 1 should not contain Partition 0",
+        );
+
+        assert!(
+            spu_1.get(&1).is_none(),
+            "SPU 1 should not contain Partition 1",
+        );
+
+        assert!(
+            partition_2
+                .iter()
+                .any(|record| record.value.as_ref() == b"C"),
+            "SPU 1/Partition 2 should contain record C",
+        );
+
+        assert!(
+            partition_2
+                .iter()
+                .any(|record| record.value.as_ref() == b"F"),
+            "SPU 1/Partition 2 should contain record F",
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_assemble_requests() {
+        let partitions_by_spu = {
+            let mut pbs = HashMap::new();
+
+            let spu_0 = {
+                let mut s0_partitions = HashMap::new();
+                let partition_0_records = vec![DefaultRecord::new("A"), DefaultRecord::new("B")];
+                let partition_1_records = vec![DefaultRecord::new("C"), DefaultRecord::new("D")];
+                s0_partitions.insert(0, partition_0_records);
+                s0_partitions.insert(1, partition_1_records);
+                s0_partitions
+            };
+
+            let spu_1 = {
+                let mut s1_partitions = HashMap::new();
+                let partition_2_records = vec![DefaultRecord::new("E"), DefaultRecord::new("F")];
+                let partition_3_records = vec![DefaultRecord::new("G"), DefaultRecord::new("H")];
+                s1_partitions.insert(2, partition_2_records);
+                s1_partitions.insert(3, partition_3_records);
+                s1_partitions
+            };
+            pbs.insert(0, spu_0);
+            pbs.insert(1, spu_1);
+            pbs
+        };
+
+        let requests = assemble_requests("TOPIC", partitions_by_spu);
+        assert_eq!(requests.len(), 2);
+
+        // SPU 0
+        {
+            let (spu0, request) = requests.iter().find(|(spu, _)| *spu == 0).unwrap();
+            assert_eq!(*spu0, 0);
+            assert_eq!(request.topics.len(), 1);
+            let topic_request = request.topics.get(0).unwrap();
+            assert_eq!(topic_request.name, "TOPIC");
+            assert_eq!(topic_request.partitions.len(), 2);
+
+            let partition_0_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 0)
+                .unwrap();
+            assert_eq!(partition_0_request.records.batches.len(), 1);
+            let batch = partition_0_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_0_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_0_0.value.as_ref(), b"A");
+            let record_0_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_0_1.value.as_ref(), b"B");
+
+            let partition_1_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 1)
+                .unwrap();
+            assert_eq!(partition_1_request.records.batches.len(), 1);
+            let batch = partition_1_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_1_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_1_0.value.as_ref(), b"C");
+            let record_1_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_1_1.value.as_ref(), b"D");
+        }
+
+        // SPU 1
+        {
+            let (spu1, request) = requests.iter().find(|(spu, _)| *spu == 1).unwrap();
+            assert_eq!(*spu1, 1);
+            assert_eq!(request.topics.len(), 1);
+            let topic_request = request.topics.get(0).unwrap();
+            assert_eq!(topic_request.name, "TOPIC");
+            assert_eq!(topic_request.partitions.len(), 2);
+
+            let partition_0_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 2)
+                .unwrap();
+            assert_eq!(partition_0_request.records.batches.len(), 1);
+            let batch = partition_0_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_0_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_0_0.value.as_ref(), b"E");
+            let record_0_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_0_1.value.as_ref(), b"F");
+
+            let partition_1_request = topic_request
+                .partitions
+                .iter()
+                .find(|p| p.partition_index == 3)
+                .unwrap();
+            assert_eq!(partition_1_request.records.batches.len(), 1);
+            let batch = partition_1_request.records.batches.get(0).unwrap();
+            assert_eq!(batch.records().len(), 2);
+            let record_1_0 = batch.records().get(0).unwrap();
+            assert_eq!(record_1_0.value.as_ref(), b"G");
+            let record_1_1 = batch.records().get(1).unwrap();
+            assert_eq!(record_1_1.value.as_ref(), b"H");
+        }
     }
 }
