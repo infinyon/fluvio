@@ -311,12 +311,12 @@ mod replica_test {
         assert_eq!(follower_replica.hw(), 0);
 
         // wait until follower sync up with leader
-       // sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+        // sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting for first checking result");
 
         // all records has been fully replicated
-      //  assert_eq!(follower_replica.leo(), 2);
+        //  assert_eq!(follower_replica.leo(), 2);
 
         // leader's hw is still 0
         // assert_eq!(follower_replica.hw(), 2);
@@ -339,7 +339,7 @@ mod replica_test {
         assert_eq!(leader_replica.hw(), 2);
         // then followers, first check 2nd follower, since it was last updated, it shoud have been updated first
         assert_eq!(follower_replica2.hw(), 2);
-        // assert_eq!(follower_replica.hw(), 2);
+        assert_eq!(follower_replica.hw(), 2);
 
         spu_server.notify();
 

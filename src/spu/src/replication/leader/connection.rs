@@ -36,27 +36,31 @@ impl FollowerHandler {
         follower_id: SpuId,
         socket: FlvSocket,
         spu_update: SharedSpuPendingUpdate,
-    ) -> Result<(), FlvSocketError> {
-        let mut connection = Self {
+    ) {
+        let connection = Self {
             ctx: ctx.clone(),
             max_bytes: ctx.config().peer_max_bytes,
             follower_id,
             spu_update,
         };
 
-        connection.main_loop(socket).await?;
-
-        Ok(())
+        connection.dispatch(socket).await;
     }
 
     #[instrument(
         name = "LeaderConnection",
         skip(self,socket),
         fields(
-            follow_id = %self.follower_id
+            follower = %self.follower_id
         )
     )]
-    async fn main_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+    async fn dispatch(mut self, socket: FlvSocket) {
+        if let Err(err) = self.inner_loop(socket).await {
+            error!("processing follower: {:#?}, terminating", err);
+        }
+    }
+
+    async fn inner_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
         use tokio::select;
 
         let (mut sink, mut stream) = socket.split();
@@ -71,6 +75,7 @@ impl FollowerHandler {
 
                 _ = listener.listen() => {
                     debug!("hw has been updated");
+
                     self.update_hw_from_other(&mut sink).await?;
                 },
 
@@ -107,6 +112,8 @@ impl FollowerHandler {
 
             }
         }
+
+        debug!("closing");
 
         Ok(())
     }

@@ -99,12 +99,12 @@ impl ReplicaFollowerController<FileReplica> {
 
         let mut event_listener = self.spu_ctx.events.change_listner();
 
-        let mut counter = 0;
-
         // starts initial sync
         let mut replicas = ReplicasBySpu::filter_from(&self.states, self.leader);
         self.sync_all_offsets_to_leader(&mut sink, &replicas)
             .await?;
+
+        let mut counter = 0;
 
         loop {
             debug!(counter, "waiting request from leader");
