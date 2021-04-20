@@ -15,7 +15,7 @@ use dataplane::record::DefaultAsyncBuffer;
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::sockets::SerialFrame;
-use fluvio_types::SpuId;
+use fluvio_types::{SpuId, PartitionId};
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 
@@ -163,8 +163,8 @@ impl TopicProducer {
 async fn group_by_spu(
     topic: &str,
     partitions: &StoreContext<PartitionSpec>,
-    records_by_partition: Vec<(i32, DefaultRecord)>,
-) -> Result<HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>>, FluvioError> {
+    records_by_partition: Vec<(PartitionId, DefaultRecord)>,
+) -> Result<HashMap<SpuId, HashMap<PartitionId, Vec<DefaultRecord>>>, FluvioError> {
     let mut map: HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>> = HashMap::new();
     for (partition, record) in records_by_partition {
         let replica_key = ReplicaKey::new(topic, partition);
@@ -186,7 +186,7 @@ async fn group_by_spu(
 
 fn assemble_requests(
     topic: &str,
-    partitions_by_spu: HashMap<i32, HashMap<i32, Vec<DefaultRecord>>>,
+    partitions_by_spu: HashMap<SpuId, HashMap<PartitionId, Vec<DefaultRecord>>>,
 ) -> Vec<(SpuId, DefaultProduceRequest)> {
     let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
         Vec::with_capacity(partitions_by_spu.len());
@@ -228,7 +228,7 @@ fn assemble_requests(
 ///
 /// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
 trait Partitioner {
-    fn partition(&mut self, key: Option<&[u8]>, value: &[u8]) -> i32;
+    fn partition(&mut self, key: Option<&[u8]>, value: &[u8]) -> PartitionId;
     fn update_config(&mut self, config: PartitionerConfig);
 }
 
@@ -241,7 +241,7 @@ struct PartitionerConfig {
 /// - Records with keys get their keys hashed with siphash
 /// - Records without keys get assigned to partitions using round-robin
 struct SiphashRoundRobinPartitioner {
-    index: i32,
+    index: PartitionId,
     config: PartitionerConfig,
 }
 
