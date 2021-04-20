@@ -242,7 +242,7 @@ async fn group_by_spu(
 ///
 /// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
 trait Partitioner {
-    fn partition(&mut self, key: Option<&[u8]>) -> i32;
+    fn partition(&mut self, key: Option<&[u8]>, value: &[u8]) -> i32;
     fn update_config(&mut self, config: PartitionerConfig);
 }
 
@@ -266,7 +266,7 @@ impl SiphashRoundRobinPartitioner {
 }
 
 impl Partitioner for SiphashRoundRobinPartitioner {
-    fn partition(&mut self, maybe_key: Option<&[u8]>) -> i32 {
+    fn partition(&mut self, maybe_key: Option<&[u8]>, _value: &[u8]) -> i32 {
         match maybe_key {
             Some(key) => partition_siphash(key, self.config.partition_count),
             None => {
