@@ -144,7 +144,7 @@ async fn produce() -> Result<(), FluvioError> {
             .send(format!("Key {}", i), format!("Value {}", i))
             .await?;
     }
-    producer.send_keyless("Done!").await?;
+    producer.send_record("Done!", 0).await?;
 
     Ok(())
 }

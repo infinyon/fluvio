@@ -68,31 +68,6 @@ impl TopicProducer {
         Ok(())
     }
 
-    /// Sends a plain record with no key to this producer's Topic.
-    ///
-    /// The partition that the record will be sent to will be chosen in a round-robin fashion.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
-    /// producer.send("Key", "Value").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[instrument(
-        skip(self, value),
-        fields(topic = %self.topic),
-    )]
-    pub async fn send_keyless<V>(&self, value: V) -> Result<(), FluvioError>
-    where
-        V: Into<Vec<u8>>,
-    {
-        self.send_all(Some((None::<Vec<u8>>, value))).await?;
-        Ok(())
-    }
-
     #[instrument(
         skip(self, records),
         fields(topic = %self.topic),
@@ -195,14 +170,14 @@ impl TopicProducer {
         skip(self, buffer),
         fields(topic = %self.topic),
     )]
-    #[deprecated(since = "0.6.2", note = "Please use 'send_keyless' instead")]
+    #[deprecated(since = "0.6.2")]
     pub async fn send_record<B: AsRef<[u8]>>(
         &self,
         buffer: B,
         _partition: i32,
     ) -> Result<(), FluvioError> {
         let buffer: Vec<u8> = Vec::from(buffer.as_ref());
-        self.send_keyless(buffer).await?;
+        self.send_all(Some((None::<Vec<u8>>, buffer))).await?;
         Ok(())
     }
 }

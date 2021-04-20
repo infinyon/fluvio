@@ -33,7 +33,7 @@ async fn produce() -> Result<(), fluvio::FluvioError> {
     let producer = fluvio::producer("simple").await?;
 
     let value = "Hello, Fluvio!";
-    producer.send_keyless(value).await?;
+    producer.send_record(value, 0).await?;
     println!("{}", value);
 
     Ok(())
