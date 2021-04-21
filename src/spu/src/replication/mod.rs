@@ -309,16 +309,16 @@ mod replica_test {
         assert_eq!(follower_replica.leo(), 0);
         assert_eq!(follower_replica.hw(), 0);
 
-        // wait until follower sync up with leader
-        // sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+        //wait until follower sync up with leader
+        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting for first checking result");
 
         // all records has been fully replicated
-        //  assert_eq!(follower_replica.leo(), 2);
+        assert_eq!(follower_replica.leo(), 2);
 
         // leader's hw is still 0
-        // assert_eq!(follower_replica.hw(), 2);
+        assert_eq!(follower_replica.hw(), 0);
         assert_eq!(leader_replica.hw(), 0);
 
         let (_, follower_replica2) = builder.follower_replica(1).await;
@@ -326,7 +326,7 @@ mod replica_test {
         assert_eq!(follower_replica2.hw(), 0);
 
         // wait until follower sync up with leader
-        sleep(Duration::from_millis(10000)).await;
+        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting for 2nd follower: checking final");
 

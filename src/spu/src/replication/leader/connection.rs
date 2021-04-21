@@ -173,8 +173,11 @@ impl FollowerHandler {
             let request = RequestMessage::new_request(sync_request)
                 .set_client_id(format!("leader hw update"));
             debug!("sending hw requests");
-            sink.send_request(&request).await?;
-            debug!("all hw send completed");
+            if let Err(err) = sink.send_request(&request).await {
+                error!("sending hw: {:#?}", err);
+            } else {
+                debug!("all hw send completed");
+            }
         }
         Ok(())
     }
