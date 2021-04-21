@@ -190,7 +190,6 @@ impl FollowerHandler {
 
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
                 if leader
-                    .value()
                     .update_states_from_followers(
                         self.follower_id,
                         OffsetInfo {
@@ -210,7 +209,6 @@ impl FollowerHandler {
                             // our changes
                             if follower == self.follower_id {
                                 leader
-                                    .value()
                                     .send_update_to_follower(
                                         sink,
                                         self.follower_id,

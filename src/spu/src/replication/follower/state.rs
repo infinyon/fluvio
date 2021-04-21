@@ -1,12 +1,12 @@
 use std::{fmt::Display, sync::Arc};
 use std::fmt::Debug;
 use std::collections::{HashMap};
-
 use std::ops::{Deref, DerefMut};
+
 
 use tracing::{debug, warn, error};
 use async_rwlock::{RwLock};
-use dashmap::DashMap;
+
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
@@ -25,30 +25,52 @@ pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 /// Each follower controller maintains by SPU
 #[derive(Debug)]
 pub struct FollowersState<S> {
-    states: DashMap<ReplicaKey, FollowerReplicaState<S>>,
+    states: RwLock<HashMap<ReplicaKey, FollowerReplicaState<S>>>,
     leaders: RwLock<HashMap<SpuId, Arc<FollowersBySpu>>>,
 }
 
 impl<S> Deref for FollowersState<S> {
-    type Target = DashMap<ReplicaKey, FollowerReplicaState<S>>;
+    type Target = RwLock<HashMap<ReplicaKey, FollowerReplicaState<S>>>;
 
     fn deref(&self) -> &Self::Target {
         &self.states
     }
 }
 
-impl<S> DerefMut for FollowersState<S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.states
-    }
-}
 
-impl<S> FollowersState<S> {
+impl<S> FollowersState<S> where S: ReplicaStorage{
     pub fn new_shared() -> Arc<Self> {
         Arc::new(Self {
-            states: DashMap::new(),
+            states: RwLock::new(HashMap::new()),
             leaders: RwLock::new(HashMap::new()),
         })
+    }
+
+    pub async fn get(&self, replica: &ReplicaKey) -> Option<FollowerReplicaState<S>> {
+        let read = self.read().await;
+        read.get(replica).map(|value| value.clone())
+    }
+
+    pub async fn remove(&self,replica: &ReplicaKey) -> Option<FollowerReplicaState<S>> {
+        let mut writer = self.write().await;
+        writer.remove(replica)
+    }
+
+    pub async fn insert(&self,replica: ReplicaKey,state: FollowerReplicaState<S>) -> Option<FollowerReplicaState<S>>{
+        let mut writer = self.write().await;
+        writer.insert(replica,state)
+    }
+
+    pub async fn followers_by_spu(&self,spu: SpuId) -> HashMap<ReplicaKey,FollowerReplicaState<S>> {
+
+        let mut replicas = HashMap::new();
+        let read = self.read().await;
+        for (key,state) in read.iter() {
+            if state.leader() == spu {
+                replicas.insert(key.clone(), state.clone());
+            }
+        }
+        replicas
     }
 }
 
@@ -63,7 +85,8 @@ impl FollowersState<FileReplica> {
     ) -> Result<Option<FollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
 
-        if self.states.contains_key(&replica.id) {
+        let mut writer = self.write().await;
+        if writer.contains_key(&replica.id) {
             // follower exists, nothing to do
             warn!(%replica,"replica already exists");
             Ok(None)
@@ -76,7 +99,7 @@ impl FollowersState<FileReplica> {
             let replica_state =
                 FollowerReplicaState::create(leader, replica.id.clone(), ctx.config().into())
                     .await?;
-            self.states.insert(replica.id, replica_state.clone());
+            writer.insert(replica.id, replica_state.clone());
 
             let mut leaders = self.leaders.write().await;
             // check if we have controllers
@@ -108,13 +131,13 @@ impl FollowersState<FileReplica> {
         leader: SpuId,
         key: &ReplicaKey,
     ) -> Option<FollowerReplicaState<FileReplica>> {
-        if let Some((_key, replica)) = self.remove(key) {
+        let mut writer = self.write().await;
+        if let Some(replica) = writer.remove(key) {
             let mut leaders = self.leaders.write().await;
 
-            let replica_count = self
-                .states
-                .iter()
-                .filter(|rep_ref| rep_ref.value().leader() == leader)
+            let replica_count = writer
+                .values()
+                .filter(|rep_ref| rep_ref.leader() == leader)
                 .count();
 
             debug!(replica_count, leader, "new replica count");

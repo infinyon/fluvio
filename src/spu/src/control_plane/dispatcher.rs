@@ -512,7 +512,7 @@ impl ScDispatcher<FileReplica> {
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
         let confirm =
-            if let Some((_, previous_state)) = self.ctx.leaders_state().remove(&replica.id) {
+            if let Some(previous_state) = self.ctx.leaders_state().remove(&replica.id) {
                 if let Err(err) = previous_state
                     .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
                     .await

@@ -1,6 +1,8 @@
 pub(crate) mod follower;
 pub(crate) mod leader;
 
+
+
 #[cfg(test)]
 #[cfg(target_os = "linux")]
 mod replica_test {
@@ -161,9 +163,8 @@ mod replica_test {
             let follower_replica = gctx
                 .followers_state()
                 .get(&replica.id)
-                .expect("follower")
-                .value()
-                .clone();
+                .await
+                .expect("value");
 
             (gctx, follower_replica)
         }
