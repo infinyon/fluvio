@@ -8,7 +8,12 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket, FlvSocketError, AsyncResponse};
+#[cfg(not(target_arch = "wasm32"))]
+use fluvio_socket::{
+    AllMultiplexerSocket as AllMultiplexerSocket,
+    SharedAllMultiplexerSocket as SharedAllMultiplexerSocket,
+    AsyncResponse as AsyncResponse
+};
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
@@ -65,7 +70,7 @@ impl SpuPool {
     pub async fn start(
         config: ClientConfig,
         sc_socket: SharedAllMultiplexerSocket,
-    ) -> Result<Self, FlvSocketError> {
+    ) -> Result<Self, FluvioError> {
         let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");
         Ok(Self {

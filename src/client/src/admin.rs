@@ -7,9 +7,10 @@ use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
 
-use fluvio_socket::FlvSocketError;
-use fluvio_socket::AllMultiplexerSocket;
-use fluvio_future::native_tls::AllDomainConnector;
+#[cfg(not(target_arch = "wasm32"))]
+use fluvio_socket::AllMultiplexerSocket as AllMultiplexerSocket;
+#[cfg(not(target_arch = "wasm32"))]
+use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
@@ -102,7 +103,7 @@ impl FluvioAdmin {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        let connector = AllDomainConnector::try_from(config.tls.clone())?;
+        let connector = FluvioConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
@@ -114,7 +115,7 @@ impl FluvioAdmin {
         Ok(Self(versioned_socket))
     }
 
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FluvioError>
     where
         R: AdminRequest + Send + Sync,
     {

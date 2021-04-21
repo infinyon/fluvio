@@ -32,7 +32,6 @@ use dataplane::Isolation;
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
 #[cfg(not(target_arch = "wasm32"))]
 pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
-#[cfg(not(target_arch = "wasm32"))]
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 
 use super::SpuServerApiKey;

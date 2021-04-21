@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use tracing::debug;
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_socket::SharedAllMultiplexerSocket;
-use fluvio_socket::FlvSocketError;
 
 use crate::metadata::topic::TopicSpec;
+use crate::FluvioError;
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;
 
@@ -24,7 +25,7 @@ pub struct MetadataStores {
 
 impl MetadataStores {
     /// start synchronization
-    pub async fn start(socket: SharedAllMultiplexerSocket) -> Result<Self, FlvSocketError> {
+    pub async fn start(socket: SharedAllMultiplexerSocket) -> Result<Self, FluvioError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
@@ -57,7 +58,7 @@ impl MetadataStores {
     }
 
     /// start watch for spu
-    pub async fn start_watch_for_spu(&self) -> Result<(), FlvSocketError> {
+    pub async fn start_watch_for_spu(&self) -> Result<(), FluvioError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
@@ -75,7 +76,7 @@ impl MetadataStores {
         Ok(())
     }
 
-    pub async fn start_watch_for_partition(&self) -> Result<(), FlvSocketError> {
+    pub async fn start_watch_for_partition(&self) -> Result<(), FluvioError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 

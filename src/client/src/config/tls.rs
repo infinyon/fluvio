@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::{
     AllDomainConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
     PrivateKeyBuilder, CertBuilder,
@@ -193,6 +194,7 @@ pub struct TlsPaths {
     pub ca_cert: PathBuf,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl TryFrom<TlsPolicy> for AllDomainConnector {
     type Error = IoError;
 

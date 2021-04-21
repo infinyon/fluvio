@@ -2,7 +2,9 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::os::unix::io::AsRawFd;
+#[cfg(not(target_arch = "wasm32"))]
 use std::os::unix::io::RawFd;
 
 use async_mutex::Mutex;
@@ -55,6 +57,7 @@ impl<S> InnerFlvSink<S> {
         &mut self.inner
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn id(&self) -> RawFd {
         self.fd
     }

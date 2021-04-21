@@ -1,6 +1,7 @@
 use std::io::Error as IoError;
 use thiserror::Error;
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_socket::FlvSocketError;
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
@@ -17,8 +18,11 @@ pub enum FluvioError {
     SPUNotFound(i32),
     #[error(transparent)]
     IoError(#[from] IoError),
+
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Fluvio socket error")]
     FlvSocketError(#[from] FlvSocketError),
+
     #[error("Fluvio SC schema error")]
     ApiError(#[from] ApiError),
     #[error("Fluvio config error")]

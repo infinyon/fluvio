@@ -5,9 +5,13 @@ use tracing::debug;
 use once_cell::sync::OnceCell;
 
 #[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
+use fluvio_socket::{
+    AllMultiplexerSocket as AllMultiplexerSocket,
+    SharedAllMultiplexerSocket as SharedAllMultiplexerSocket
+};
+
 #[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::native_tls::AllDomainConnector;
+use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 
 use semver::Version;
 use crate::config::ConfigFile;
@@ -64,7 +68,7 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        let connector = AllDomainConnector::try_from(config.tls.clone())?;
+        let connector = FluvioConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
