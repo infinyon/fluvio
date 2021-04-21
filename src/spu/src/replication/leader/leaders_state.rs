@@ -51,14 +51,18 @@ impl<S> ReplicaLeadersState<S> {
         read.get(replica).map(|value| value.clone())
     }
 
-    pub fn remove(&self,replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+    pub fn remove(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
         let mut writer = self.write().unwrap();
         writer.remove(replica)
     }
 
-    pub fn insert(&self,replica: ReplicaKey,state: SharedLeaderState<S>) -> Option<SharedLeaderState<S>>{
+    pub fn insert(
+        &self,
+        replica: ReplicaKey,
+        state: SharedLeaderState<S>,
+    ) -> Option<SharedLeaderState<S>> {
         let mut writer = self.write().unwrap();
-        writer.insert(replica,state)
+        writer.insert(replica, state)
     }
 }
 

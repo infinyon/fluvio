@@ -48,13 +48,13 @@ impl FlvService<TcpStream> for InternalService {
                     "received fetch stream"
                 );
                 // check if follower_id is valid
-                if let Some(spu_update) = ctx.follower_updates().get(&follower_id) {
+                if let Some(spu_update) = ctx.follower_updates().get(&follower_id).await {
                     let response = FetchStreamResponse::new(follower_id);
                     let res_msg = req_msg.new_response(response);
                     sink
                         .send_response(&res_msg, req_msg.header.api_version())
                         .await?;
-                    (follower_id,spu_update.value().clone())
+                    (follower_id,spu_update)
                 } else {
                     warn!(follower_id, "unknown spu, dropping connection");
                     return Ok(())

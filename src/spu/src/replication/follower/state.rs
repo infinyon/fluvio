@@ -3,10 +3,8 @@ use std::fmt::Debug;
 use std::collections::{HashMap};
 use std::ops::{Deref, DerefMut};
 
-
 use tracing::{debug, warn, error};
 use async_rwlock::{RwLock};
-
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
@@ -37,8 +35,10 @@ impl<S> Deref for FollowersState<S> {
     }
 }
 
-
-impl<S> FollowersState<S> where S: ReplicaStorage{
+impl<S> FollowersState<S>
+where
+    S: ReplicaStorage,
+{
     pub fn new_shared() -> Arc<Self> {
         Arc::new(Self {
             states: RwLock::new(HashMap::new()),
@@ -51,21 +51,27 @@ impl<S> FollowersState<S> where S: ReplicaStorage{
         read.get(replica).map(|value| value.clone())
     }
 
-    pub async fn remove(&self,replica: &ReplicaKey) -> Option<FollowerReplicaState<S>> {
+    pub async fn remove(&self, replica: &ReplicaKey) -> Option<FollowerReplicaState<S>> {
         let mut writer = self.write().await;
         writer.remove(replica)
     }
 
-    pub async fn insert(&self,replica: ReplicaKey,state: FollowerReplicaState<S>) -> Option<FollowerReplicaState<S>>{
+    pub async fn insert(
+        &self,
+        replica: ReplicaKey,
+        state: FollowerReplicaState<S>,
+    ) -> Option<FollowerReplicaState<S>> {
         let mut writer = self.write().await;
-        writer.insert(replica,state)
+        writer.insert(replica, state)
     }
 
-    pub async fn followers_by_spu(&self,spu: SpuId) -> HashMap<ReplicaKey,FollowerReplicaState<S>> {
-
+    pub async fn followers_by_spu(
+        &self,
+        spu: SpuId,
+    ) -> HashMap<ReplicaKey, FollowerReplicaState<S>> {
         let mut replicas = HashMap::new();
         let read = self.read().await;
-        for (key,state) in read.iter() {
+        for (key, state) in read.iter() {
             if state.leader() == spu {
                 replicas.insert(key.clone(), state.clone());
             }
