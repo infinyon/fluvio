@@ -646,6 +646,7 @@ mod file {
 
     use std::fmt;
     use std::io::Error as IoError;
+    use std::io::ErrorKind;
 
     use log::trace;
     use bytes::BufMut;
@@ -693,11 +694,20 @@ mod file {
             self.len() + 4 // include header
         }
 
-        fn encode<T>(&self, _src: &mut T, _version: Version) -> Result<(), IoError>
+        fn encode<T>(&self, src: &mut T, version: Version) -> Result<(), IoError>
         where
             T: BufMut,
         {
-            unimplemented!("file slice cannot be encoded in the ButMut")
+            // can only encode zero length
+            if self.len() == 0 {
+                let len: u32 = 0;
+                len.encode(src, version)
+            } else {
+                Err(IoError::new(
+                    ErrorKind::InvalidInput,
+                    format!("len {} is not zeo", self.len()),
+                ))
+            }
         }
     }
 

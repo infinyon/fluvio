@@ -65,7 +65,8 @@ impl ReplicaFollowerController<FileReplica> {
         name = "FollowerController",
         skip(self),
         fields(
-            leader = self.leader
+            leader = self.leader,
+            local = self.config.id()
         )
     )]
     async fn dispatch_loop(mut self) {
@@ -98,12 +99,12 @@ impl ReplicaFollowerController<FileReplica> {
 
         let mut event_listener = self.spu_ctx.events.change_listner();
 
-        let mut counter = 0;
-
         // starts initial sync
-        let mut replicas = ReplicasBySpu::filter_from(&self.states, self.leader);
+        let mut replicas = ReplicasBySpu::filter_from(&self.states, self.leader).await;
         self.sync_all_offsets_to_leader(&mut sink, &replicas)
             .await?;
+
+        let mut counter: i32 = 0;
 
         loop {
             debug!(counter, "waiting request from leader");
@@ -115,8 +116,8 @@ impl ReplicaFollowerController<FileReplica> {
                 },
 
                 _ = event_listener.listen() => {
-                    // if out sync counter changes, then we need to re-compute replicas and send offsets again
-                    replicas = ReplicasBySpu::filter_from(&self.states,self.leader);
+                    // if sync counter changes, then we need to re-compute replicas and send offsets again
+                    replicas = ReplicasBySpu::filter_from(&self.states,self.leader).await;
                     self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
                 }
 
@@ -174,7 +175,7 @@ impl ReplicaFollowerController<FileReplica> {
                     records = p.records.total_records(),
                     base_offset = p.records.base_offset(),
                     "update from leader");
-                if let Some(replica) = self.states.get(&replica_key) {
+                if let Some(replica) = self.states.get(&replica_key).await {
                     match replica.update_from_leader(&mut p.records, p.hw).await {
                         Ok(changes) => {
                             if changes {
@@ -255,41 +256,6 @@ impl ReplicaFollowerController<FileReplica> {
         Ok(())
     }
 
-    /*
-    /// create new replica if doesn't exist yet
-    async fn update_replica(&self, replica_msg: Replica) {
-        debug!(?replica_msg, "received update replica",);
-
-        let replica_key = replica_msg.id.clone();
-        if self.followers_state.has_replica(&replica_key) {
-            debug!(
-                %replica_key,
-                "has already follower replica, ignoring",
-            );
-        } else {
-            let log = &self.config.storage().new_config();
-            match FollowerReplicaState::new(
-                self.config.id(),
-                replica_msg.leader,
-                &replica_key,
-                &log,
-            )
-            .await
-            {
-                Ok(replica_state) => {
-                    self.followers_state.insert_replica(replica_state);
-                }
-                Err(err) => error!(
-                    "follower: {}, error creating follower replica: {}, error: {:#?}",
-                    self.local_spu_id(),
-                    replica_key,
-                    err
-                ),
-            }
-        }
-    }
-    */
-
     async fn sync_all_offsets_to_leader(
         &self,
         sink: &mut FlvSink,
@@ -321,15 +287,8 @@ struct ReplicasBySpu(HashMap<ReplicaKey, FollowerReplicaState<FileReplica>>);
 
 impl ReplicasBySpu {
     /// filter followers from followers state
-    fn filter_from(states: &FollowersState<FileReplica>, leader: SpuId) -> Self {
-        let mut replicas = HashMap::new();
-
-        for rep_ref in states.iter() {
-            if rep_ref.value().leader() == leader {
-                replicas.insert(rep_ref.key().clone(), rep_ref.value().clone());
-            }
-        }
-
+    async fn filter_from(states: &FollowersState<FileReplica>, leader: SpuId) -> Self {
+        let replicas = states.followers_by_spu(leader).await;
         debug!(replica_count = replicas.len(), "compute replicas");
 
         Self(replicas)
@@ -345,23 +304,4 @@ impl ReplicasBySpu {
 
         UpdateOffsetRequest { replicas }
     }
-
-    /*
-    /// send offset to leader
-    #[allow(unused)]
-    async fn send_offsets_to_leader(
-        &self,
-        follower: SpuId,
-        sink: &mut FlvSink,
-    ) -> Result<(), FlvSocketError> {
-        let request = self.replica_offsets();
-
-        let req_msg =
-            RequestMessage::new_request(request).set_client_id(format!("follower: {}", follower));
-
-        trace!(?req_msg, "sending offsets leader");
-
-        sink.send_request(&req_msg).await
-    }
-    */
 }

@@ -1,5 +1,4 @@
 mod api;
-mod fetch_stream;
 mod service_impl;
 mod fetch_stream_request;
 

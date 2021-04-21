@@ -1,10 +1,11 @@
 use std::{
-    ops::{Deref, DerefMut},
+    ops::{Deref},
 };
+use std::sync::RwLock;
+use std::collections::HashMap;
 
 use tracing::{debug, error};
 use tracing::instrument;
-use dashmap::DashMap;
 use async_channel::Receiver;
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
@@ -21,31 +22,48 @@ pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
 /// Collection of replicas
 #[derive(Debug)]
-pub struct ReplicaLeadersState<S>(DashMap<ReplicaKey, SharedLeaderState<S>>);
+pub struct ReplicaLeadersState<S>(RwLock<HashMap<ReplicaKey, SharedLeaderState<S>>>);
 
 impl<S> Default for ReplicaLeadersState<S> {
     fn default() -> Self {
-        ReplicaLeadersState(DashMap::new())
+        ReplicaLeadersState(RwLock::new(HashMap::new()))
     }
 }
 
 impl<S> Deref for ReplicaLeadersState<S> {
-    type Target = DashMap<ReplicaKey, SharedLeaderState<S>>;
+    type Target = RwLock<HashMap<ReplicaKey, SharedLeaderState<S>>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<S> DerefMut for ReplicaLeadersState<S> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+impl<S> ReplicaLeadersState<S> {
+    pub fn new_shared() -> SharedReplicaLeadersState<S> {
+        Self::default()
     }
 }
 
 impl<S> ReplicaLeadersState<S> {
-    pub fn new_shared() -> SharedReplicaLeadersState<S> {
-        Self::default()
+    /// get clone of state
+    pub fn get(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+        let read = self.read().unwrap();
+        read.get(replica).map(|value| value.clone())
+    }
+
+    pub fn remove(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+        let mut writer = self.write().unwrap();
+        writer.remove(replica)
+    }
+
+    #[allow(unused)]
+    pub fn insert(
+        &self,
+        replica: ReplicaKey,
+        state: SharedLeaderState<S>,
+    ) -> Option<SharedLeaderState<S>> {
+        let mut writer = self.write().unwrap();
+        writer.insert(replica, state)
     }
 }
 
@@ -91,12 +109,15 @@ impl ReplicaLeadersState<FileReplica> {
         receiver: Receiver<LeaderReplicaControllerCommand>,
         sink_channel: SharedSinkMessageChannel,
     ) {
-        if let Some(old_replica) = self.insert(replica_id.clone(), leader_state.clone()) {
+        let mut writer = self.write().unwrap();
+        if let Some(old_replica) = writer.insert(replica_id.clone(), leader_state.clone()) {
             error!(
                 "there was existing replica when creating new leader replica: {}",
                 old_replica.id()
             );
         }
+
+        drop(writer);
 
         let leader_controller =
             ReplicaLeaderController::new(replica_id, receiver, leader_state, sink_channel);

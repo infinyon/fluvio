@@ -360,6 +360,8 @@ impl ScDispatcher<FileReplica> {
             self.ctx.spu_localstore().apply_changes(request.changes)
         };
 
+        self.ctx.sync_follower_update().await;
+
         Ok(())
     }
 
@@ -509,35 +511,34 @@ impl ScDispatcher<FileReplica> {
 
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
-        let confirm =
-            if let Some((_, previous_state)) = self.ctx.leaders_state().remove(&replica.id) {
-                if let Err(err) = previous_state
-                    .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
-                    .await
-                {
-                    error!(
+        let confirm = if let Some(previous_state) = self.ctx.leaders_state().remove(&replica.id) {
+            if let Err(err) = previous_state
+                .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
+                .await
+            {
+                error!(
                     "error sending external command to replica controller for replica: {}, {:#?}",
                     replica, err
                 );
-                }
+            }
 
-                if let Err(err) = previous_state.remove().await {
-                    error!("error: {} removing replica: {}", err, replica);
-                } else {
-                    debug!(
-                        replica = %replica.id,
-                        "leader remove was removed"
-                    );
-                }
-                true
+            if let Err(err) = previous_state.remove().await {
+                error!("error: {} removing replica: {}", err, replica);
             } else {
-                // if we don't find existing replica, just warning
-                warn!("no existing replica found {}", replica);
+                debug!(
+                    replica = %replica.id,
+                    "leader remove was removed"
+                );
+            }
+            true
+        } else {
+            // if we don't find existing replica, just warning
+            warn!("no existing replica found {}", replica);
 
-                //LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config().log).await;
+            //LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config().log).await;
 
-                true
-            };
+            true
+        };
 
         let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
         debug!(

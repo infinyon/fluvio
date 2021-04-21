@@ -6,6 +6,7 @@ mod api_key;
 mod peer_api;
 mod update_offsets;
 mod actions;
+mod spu;
 
 pub use self::leader_controller::ReplicaLeaderController;
 pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
@@ -17,3 +18,4 @@ pub use self::update_offsets::UpdateOffsetRequest;
 pub use self::update_offsets::ReplicaOffsetRequest;
 pub use self::actions::FollowerOffsetUpdate;
 pub use self::actions::LeaderReplicaControllerCommand;
+pub use self::spu::*;
