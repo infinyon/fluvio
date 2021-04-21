@@ -87,13 +87,16 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
                     p.send_record(message.clone(), 0).await.unwrap_or_else(|_| {
-                        eprintln!("[CI MODE] send record failed for iteration: {}", n);
+                        eprintln!(
+                            "[CI MODE] send record failed for iteration: {} message: {}",
+                            n, i
+                        );
                     });
                 }
             } else {
-                p.send_record(message.clone(), 0)
-                    .await
-                    .unwrap_or_else(|_| panic!("send record failed for iteration: {}", n));
+                p.send_record(message.clone(), 0).await.unwrap_or_else(|_| {
+                    panic!("send record failed for iteration: {} message: {}", n, i)
+                });
             }
         }
     }

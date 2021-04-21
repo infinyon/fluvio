@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 jobs:
   hourly:
+    timeout-minutes: 20
     name: ${{ matrix.test.name }} (${{ matrix.cluster_type }} ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -18,9 +19,9 @@ jobs:
         smoke_producer_record_size: [1000]
         test:
           - name: smoke 
-            cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install -- --producer-iteration $SMOKE_PRODUCER_ITERATION --producer-record-size $SMOKE_PRODUCER_RECORD_SIZE 
+            cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install --timeout 600 -- --producer-iteration $SMOKE_PRODUCER_ITERATION --producer-record-size $SMOKE_PRODUCER_RECORD_SIZE 
           - name: producer stress (benchmark mode)
-            cmd: cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5 
+            cmd: cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark ---timeout 600 -- --iteration 5 --producers 5 
     env:
       FLUVIO_CMD: true
       FLV_SOCKET_WAIT: 600
@@ -67,6 +68,7 @@ jobs:
       - name: ${{ matrix.test.name }}
         if: ${{ matrix.test.name != 'smoke' }}
         run: ${{ matrix.test.cmd }}
+        timeout-minutes: 15
 
       - name: Smoke test
         if: ${{ matrix.test.name == 'smoke' }}
@@ -74,6 +76,7 @@ jobs:
           SMOKE_PRODUCER_ITERATION: ${{ matrix.smoke_producer_iteration }}
           SMOKE_PRODUCER_RECORD_SIZE: ${{ matrix.smoke_producer_record_size }}
         run: ${{ matrix.test.cmd }}
+        timeout-minutes: 15
         
       - name: Clean minikube
         run: |
