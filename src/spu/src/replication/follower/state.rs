@@ -51,16 +51,6 @@ where
         read.get(replica).map(|value| value.clone())
     }
 
-
-    pub async fn insert(
-        &self,
-        replica: ReplicaKey,
-        state: FollowerReplicaState<S>,
-    ) -> Option<FollowerReplicaState<S>> {
-        let mut writer = self.write().await;
-        writer.insert(replica, state)
-    }
-
     pub async fn followers_by_spu(
         &self,
         spu: SpuId,

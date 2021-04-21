@@ -56,6 +56,7 @@ impl<S> ReplicaLeadersState<S> {
         writer.remove(replica)
     }
 
+    #[allow(unused)]
     pub fn insert(
         &self,
         replica: ReplicaKey,
