@@ -56,7 +56,7 @@ impl FollowerHandler {
         connection.dispatch(sink, stream).await;
     }
 
-    #[instrument(name = "LeaderConnection")]
+    #[instrument(name = "LeaderConnection",skip(stream))]
     async fn dispatch(mut self, sink: FlvSink, stream: FlvStream) {
         if let Err(err) = self.inner_loop(sink, stream).await {
             error!("processing follower: {:#?}, terminating", err);
