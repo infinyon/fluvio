@@ -22,4 +22,5 @@ pub use fluvio_protocol::bytes;
 pub use fluvio_protocol::derive;
 
 #[cfg(feature = "file")]
+#[cfg(not(target_arch = "wasm32"))]
 pub use fluvio_protocol::store;

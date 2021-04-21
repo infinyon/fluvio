@@ -64,5 +64,8 @@ opt-level = 0
 debug = true
 debug-assertions = true
 overflow-checks = true
-incremental = false 
+incremental = false
 codegen-units = 256
+
+[patch.crates-io]
+fluvio-future = { path = "../future-aio" }

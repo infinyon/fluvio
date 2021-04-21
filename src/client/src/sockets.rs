@@ -8,8 +8,12 @@ use async_trait::async_trait;
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
-use fluvio_socket::FlvSocketError;
+
+#[cfg(not(target_arch = "wasm32"))]
+use fluvio_socket::FlvSocketError as FlvSocketError;
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_socket::{AllFlvSocket, SharedAllMultiplexerSocket};
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::FluvioError;

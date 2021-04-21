@@ -15,9 +15,17 @@ use std::fs::create_dir_all;
 use thiserror::Error;
 
 use tracing::debug;
-use dirs::home_dir;
+
 use serde::Deserialize;
 use serde::Serialize;
+
+#[cfg(not(target_arch = "wasm32"))]
+use dirs::home_dir;
+
+#[cfg(target_arch = "wasm32")]
+fn home_dir() -> Option<PathBuf> {
+    unimplemented!()
+}
 
 use fluvio_types::defaults::{CLI_CONFIG_PATH};
 use crate::{FluvioConfig, FluvioError};

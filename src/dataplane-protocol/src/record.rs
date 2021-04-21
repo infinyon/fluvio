@@ -639,9 +639,11 @@ mod test {
 }
 
 #[cfg(feature = "file")]
+#[cfg(not(target_arch = "wasm32"))]
 pub use file::*;
 
 #[cfg(feature = "file")]
+#[cfg(not(target_arch = "wasm32"))]
 mod file {
 
     use std::fmt;

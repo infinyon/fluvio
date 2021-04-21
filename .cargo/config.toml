@@ -1,2 +1,4 @@
 [profile.dev]
 debug = 1
+[target.wasm32-unknown-unknown]
+runner = 'wasm-bindgen-test-runner'

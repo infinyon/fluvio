@@ -16,15 +16,23 @@ use dataplane::core::Decoder;
 use dataplane::api::Request;
 use dataplane::derive::Decode;
 use dataplane::derive::Encode;
+
+#[cfg(not(target_arch = "wasm32"))]
 use dataplane::store::StoreValue;
+#[cfg(not(target_arch = "wasm32"))]
 use dataplane::record::FileRecordSet;
+
+#[cfg(not(target_arch = "wasm32"))]
 use dataplane::store::FileWrite;
+
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
 
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
+#[cfg(not(target_arch = "wasm32"))]
 pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
+#[cfg(not(target_arch = "wasm32"))]
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 
 use super::SpuServerApiKey;
@@ -68,6 +76,7 @@ where
     pub partition: FetchablePartitionResponse<R>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl FileWrite for StreamFetchResponse<FileRecordSet> {
     fn file_encode(
         &self,

@@ -15,11 +15,13 @@ use dataplane::api::RequestMessage;
 
 use dataplane::produce::DefaultProduceRequest;
 
+#[cfg(not(target_arch = "wasm32"))]
 use dataplane::fetch::FileFetchRequest;
 
 use crate::ApiVersionsRequest;
 use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
+#[cfg(not(target_arch = "wasm32"))]
 use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
@@ -31,8 +33,10 @@ pub enum SpuServerRequest {
 
     // Kafka compatible requests
     ProduceRequest(RequestMessage<DefaultProduceRequest>),
+    #[cfg(not(target_arch = "wasm32"))]
     FileFetchRequest(RequestMessage<FileFetchRequest>),
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
+    #[cfg(not(target_arch = "wasm32"))]
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
 }
@@ -61,10 +65,19 @@ impl ApiMessage for SpuServerRequest {
                 let request = DefaultProduceRequest::decode_from(src, header.api_version())?;
                 Ok(Self::ProduceRequest(RequestMessage::new(header, request)))
             }
+            #[cfg(not(target_arch = "wasm32"))]
             SpuServerApiKey::Fetch => api_decode!(Self, FileFetchRequest, src, header),
+
             SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
+
+            #[cfg(not(target_arch = "wasm32"))]
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
+
             SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
+
+            #[cfg(target_arch = "wasm32")]
+            SpuServerApiKey::StreamFetch | SpuServerApiKey::Fetch => unreachable!("These cases don't apply to wasm32")
+
         }
     }
 }

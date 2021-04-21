@@ -4,11 +4,12 @@ use std::sync::Arc;
 use tracing::debug;
 use once_cell::sync::OnceCell;
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket};
-use fluvio_future::task::run_block_on;
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector;
-use semver::Version;
 
+use semver::Version;
 use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
 use crate::TopicProducer;
@@ -82,13 +83,23 @@ impl Fluvio {
     }
 
     /// lazy get spu pool
-    fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
+    async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
+        // TODO: Clean this up, maybe use https://github.com/Yoeori/async-oncecell
+        if let Some(pool) = self.spu_pool.get() {
+            Ok(pool.clone())
+        } else {
+            let pool = Arc::new(SpuPool::start(self.config.clone(), self.socket.clone()).await?);
+            let _ = self.spu_pool.set(pool);
+            Ok(self.spu_pool.get().unwrap().clone())
+        }
+        /*
         self.spu_pool
-            .get_or_try_init(|| -> Result<Arc<SpuPool>, FluvioError> {
-                let pool = run_block_on(SpuPool::start(self.config.clone(), self.socket.clone()));
+            .get_or_try_init(async || -> Result<Arc<SpuPool>, FluvioError> {
+                //let pool = run_block_on(SpuPool::start(self.config.clone(), self.socket.clone()));
                 Ok(Arc::new(pool?))
             })
             .map(|pool| pool.clone())
+        */
     }
 
     /// Creates a new `TopicProducer` for the given topic name
@@ -113,7 +124,7 @@ impl Fluvio {
     ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
-        Ok(TopicProducer::new(topic, self.spu_pool()?))
+        Ok(TopicProducer::new(topic, self.spu_pool().await?))
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
@@ -144,7 +155,7 @@ impl Fluvio {
     ) -> Result<PartitionConsumer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
-        Ok(PartitionConsumer::new(topic, partition, self.spu_pool()?))
+        Ok(PartitionConsumer::new(topic, partition, self.spu_pool().await?))
     }
 
     /// Provides an interface for managing a Fluvio cluster
