@@ -51,10 +51,6 @@ where
         read.get(replica).map(|value| value.clone())
     }
 
-    pub async fn remove(&self, replica: &ReplicaKey) -> Option<FollowerReplicaState<S>> {
-        let mut writer = self.write().await;
-        writer.remove(replica)
-    }
 
     pub async fn insert(
         &self,
