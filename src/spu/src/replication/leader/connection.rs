@@ -1,9 +1,11 @@
+use std::fmt;
+
 use tracing::{debug, error, warn};
 use futures_util::stream::StreamExt;
 use tracing::instrument;
 
 use fluvio_storage::OffsetInfo;
-use fluvio_socket::{FlvSocketError, FlvSocket, FlvSink};
+use fluvio_socket::{FlvSink, FlvSocketError, FlvStream};
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
@@ -29,13 +31,20 @@ pub struct FollowerHandler {
     spu_update: SharedSpuPendingUpdate,
 }
 
+impl fmt::Debug for FollowerHandler {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.follower_id)
+    }
+}
+
 impl FollowerHandler {
     /// manage connection from follower
     pub async fn start(
         ctx: DefaultSharedGlobalContext,
         follower_id: SpuId,
-        socket: FlvSocket,
         spu_update: SharedSpuPendingUpdate,
+        sink: FlvSink,
+        stream: FlvStream,
     ) {
         let connection = Self {
             ctx: ctx.clone(),
@@ -44,26 +53,23 @@ impl FollowerHandler {
             spu_update,
         };
 
-        connection.dispatch(socket).await;
+        connection.dispatch(sink, stream).await;
     }
 
-    #[instrument(
-        name = "LeaderConnection",
-        skip(self,socket),
-        fields(
-            follower = %self.follower_id
-        )
-    )]
-    async fn dispatch(mut self, socket: FlvSocket) {
-        if let Err(err) = self.inner_loop(socket).await {
+    #[instrument(name = "LeaderConnection")]
+    async fn dispatch(mut self, sink: FlvSink, stream: FlvStream) {
+        if let Err(err) = self.inner_loop(sink, stream).await {
             error!("processing follower: {:#?}, terminating", err);
         }
     }
 
-    async fn inner_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+    async fn inner_loop(
+        &mut self,
+        mut sink: FlvSink,
+        mut stream: FlvStream,
+    ) -> Result<(), FlvSocketError> {
         use tokio::select;
 
-        let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<LeaderPeerRequest, LeaderPeerApiEnum>();
 
         let mut listener = self.spu_update.listener();
@@ -119,7 +125,7 @@ impl FollowerHandler {
     }
 
     // updates form other SPU trigger this
-    #[instrument(skip(self, sink))]
+    #[instrument(skip(self))]
     async fn update_hw_from_other(&mut self, sink: &mut FlvSink) -> Result<(), FlvSocketError> {
         let replicas = self.spu_update.dain_replicas().await;
 
@@ -129,9 +135,10 @@ impl FollowerHandler {
         }
 
         let mut sync_request = FileSyncRequest::default();
+        let leaders = self.ctx.leaders_state();
 
         for replica in replicas {
-            if let Some(leader) = self.ctx.leaders_state().get(&replica) {
+            if let Some(leader) = leaders.get(&replica) {
                 let mut topic_response = PeerFileTopicResponse {
                     name: replica.topic.to_owned(),
                     ..Default::default()
@@ -146,7 +153,7 @@ impl FollowerHandler {
                     hw = offset.hw,
                     leo = offset.leo,
                     %replica,
-                    "sending hw to follower");
+                    "will sending hw to follower");
                 // ensure leo and hw are set correctly. storage might have update last stable offset
                 partition_response.leo = offset.leo;
                 partition_response.hw = offset.hw;
@@ -160,10 +167,16 @@ impl FollowerHandler {
             }
         }
 
-        let request =
-            RequestMessage::new_request(sync_request).set_client_id(format!("leader hw update"));
-
-        sink.send_request(&request).await
+        if sync_request.topics.is_empty() {
+            debug!("no topics found, skipping");
+        } else {
+            let request = RequestMessage::new_request(sync_request)
+                .set_client_id(format!("leader hw update"));
+            debug!("sending hw requests");
+            sink.send_request(&request).await?;
+            debug!("all hw send completed");
+        }
+        Ok(())
     }
 
     /// update each leader

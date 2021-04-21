@@ -116,7 +116,7 @@ impl ReplicaFollowerController<FileReplica> {
                 },
 
                 _ = event_listener.listen() => {
-                    // if out sync counter changes, then we need to re-compute replicas and send offsets again
+                    // if sync counter changes, then we need to re-compute replicas and send offsets again
                     replicas = ReplicasBySpu::filter_from(&self.states,self.leader);
                     self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
                 }
