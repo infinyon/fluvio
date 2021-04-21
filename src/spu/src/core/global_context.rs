@@ -103,7 +103,9 @@ where
     }
 
     // sync follower pending updates with
-    pub fn sync_follower_update(&self) {
-        self.spu_followers.sync_from_spus(self.spu_localstore());
+    pub async fn sync_follower_update(&self) {
+        self.spu_followers
+            .sync_from_spus(self.spu_localstore())
+            .await;
     }
 }

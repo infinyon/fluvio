@@ -360,7 +360,7 @@ impl ScDispatcher<FileReplica> {
             self.ctx.spu_localstore().apply_changes(request.changes)
         };
 
-        self.ctx.sync_follower_update();
+        self.ctx.sync_follower_update().await;
 
         Ok(())
     }

@@ -124,7 +124,7 @@ mod replica_test {
 
             let gctx = GlobalContext::new_shared_context(leader_config);
             gctx.spu_localstore().sync_all(self.spu_specs());
-            gctx.sync_follower_update();
+            gctx.sync_follower_update().await;
 
             let leader_replica = gctx
                 .leaders_state()
