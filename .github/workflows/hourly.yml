@@ -11,110 +11,99 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [infinyon-ubuntu-bionic]
         rust: [stable]
         cluster_type: [local, k8]
+        smoke_producer_iteration: [100]
+        smoke_producer_record_size: [1000]
         test:
           - name: smoke 
-            cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install -- --producer-iteration ${SMOKE_PRODUCER_ITERATION} --producer-record-size ${SMOKE_PRODUCER_RECORD_SIZE} 
-            producer_iteration: [100]
-            producer_record_size: [1000]
+            cmd: cargo run --release --bin flv-test -- smoke --develop --disable-install -- --producer-iteration $SMOKE_PRODUCER_ITERATION --producer-record-size $SMOKE_PRODUCER_RECORD_SIZE 
           - name: producer stress (benchmark mode)
             cmd: cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5 
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
     env:
-      RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
-      RUSTV: ${{ matrix.rust }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+      FLUVIO_CMD: true
+      FLV_SOCKET_WAIT: 600
+      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
+      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
+      FLV_TEST_CONSUMER_WAIT: 300000
     steps:
       - uses: actions/checkout@v2
-      #- Install rust
+      - run: helm version
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
+          profile: minimal
           override: true
-      #- Install minikube
-      - name: Setup Minikube
-        uses: manusa/actions-setup-minikube@v2.3.1
-        with:
-          minikube version: 'v1.16.0'
-          kubernetes version: 'v1.19.2'
-      #- Install helm
-      - name: Install Helm
-        run: actions/ci-replace-helm.sh
-        env:
-          HELM_VERSION: v3.3.4
-          OS: ${{ matrix.os }}
-      #- Install and start Fluvio
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
+        run: |
+          pkill -f "minikube tunnel" || true
+          minikube delete
+          minikube start --driver=docker --kubernetes-version 1.19.6
+          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
 
+      #- Install and start Fluvio
       - name: Install and start Fluvio cluster (${{ matrix.cluster_type }})
         if: matrix.cluster_type == 'local'
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ~/.fluvio/bin/fluvio cluster start --local
+          ~/.fluvio/bin/fluvio version
 
       - name: Install and start Fluvio cluster (${{ matrix.cluster_type }})
         if: matrix.cluster_type == 'k8'
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ~/.fluvio/bin/fluvio cluster start
-
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
-      - name: Cache cargo registry
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      - name: Save sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-sccache-
-      - name: Start sccache server
-        run: sccache --start-server
+          ~/.fluvio/bin/fluvio version
 
       # Run test
       - name: ${{ matrix.test.name }}
-        if: matrix.test.name != 'smoke'
+        if: ${{ matrix.test.name != 'smoke' }}
         run: ${{ matrix.test.cmd }}
 
-      - name: ${{ matrix.test.name }}
-        if: matrix.test.name == 'smoke'
+      - name: Smoke test
+        if: ${{ matrix.test.name == 'smoke' }}
         env:
-          SMOKE_PRODUCER_ITERATION: ${{ matrix.test.producer_iteration }}
-          SMOKE_PRODUCER_RECORD_SIZE: ${{ matrix.test.producer_record_size }}
+          SMOKE_PRODUCER_ITERATION: ${{ matrix.smoke_producer_iteration }}
+          SMOKE_PRODUCER_RECORD_SIZE: ${{ matrix.smoke_producer_record_size }}
         run: ${{ matrix.test.cmd }}
+        
+      - name: Clean minikube
+        run: |
+          minikube delete
+          pkill -f "minikube tunnel" || true
+      - name: Save logs
+        if: failure()
+        run: |
+          echo "minikube profile list"
+          minikube profile list
+          echo "helm list"
+          helm list
+          echo "get statefulset"
+          kubectl get statefulset
+          echo "kubectl get pvc"
+          kubectl get pvc
+          echo "kubectl get pods"
+          kubectl get pods
+          echo "kubectl get svc"
+          kubectl get svc
+          echo "kubectl get spu"
+          kubectl get spu
+          echo "kubectl get spg"
+          kubectl get spg
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-k8-logs
+          path: /tmp/flv_sc.log
 
-      - name: Print sccache stats
-        run: sccache --show-stats
-      - name: Stop sccache server
-        run: sccache --stop-server || true 
