@@ -1897,9 +1897,9 @@ dependencies = [
 name = "fluvio-types"
 version = "0.2.3"
 dependencies = [
- "cfg-if 1.0.0",
  "event-listener",
  "fluvio-future",
+ "once_cell",
  "tokio",
  "tracing",
 ]
