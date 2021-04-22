@@ -16,11 +16,8 @@ use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_sc_schema::objects::MetadataUpdate;
 use fluvio_sc_schema::objects::Metadata;
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::AsyncResponse;
 
-#[cfg(target_arch = "wasm32")]
-use crate::websocket::AsyncResponse;
+use fluvio_socket::AsyncResponse;
 
 use crate::metadata::core::Spec;
 

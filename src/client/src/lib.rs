@@ -94,8 +94,6 @@ mod producer;
 mod offset;
 mod sync;
 mod spu;
-#[cfg(target_arch = "wasm32")]
-mod websocket;
 
 pub mod config;
 

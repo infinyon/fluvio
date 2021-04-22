@@ -1239,7 +1239,6 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes",
- "console_log",
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
@@ -1250,10 +1249,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
- "js-sys",
- "log",
  "once_cell",
- "pin-project",
  "pin-project-lite",
  "semver 0.11.0",
  "serde",
@@ -1264,8 +1260,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -1733,11 +1727,13 @@ dependencies = [
  "bytes",
  "cfg-if 1.0.0",
  "chashmap",
+ "console_log",
  "event-listener",
  "fluvio-future",
  "fluvio-protocol 0.4.1",
  "flv-util",
  "futures-util",
+ "js-sys",
  "log",
  "once_cell",
  "pin-project",
@@ -1745,6 +1741,8 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

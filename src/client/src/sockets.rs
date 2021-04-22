@@ -10,18 +10,13 @@ use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::{AllFlvSocket as FluvioSocket, AllMultiplexerSocket as FluvioMultiplexerSocket};
+use fluvio_socket::{AllFlvSocket, AllMultiplexerSocket};
 
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 
 #[cfg(target_arch = "wasm32")]
-use crate::websocket::{
-    WebSocketConnector as FluvioConnector,
-    FluvioWebSocket as FluvioSocket,
-    MultiplexerWebsocket as FluvioMultiplexerSocket,
-};
+use fluvio_socket:: WebSocketConnector as FluvioConnector;
 
 use crate::FluvioError;
 
@@ -56,7 +51,7 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: FluvioSocket,
+    socket: AllFlvSocket,
     config: ClientConfig,
     versions: Versions,
 }
@@ -92,7 +87,7 @@ impl SerialFrame for VersionedSocket {
 impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
-        mut socket: FluvioSocket,
+        mut socket: AllFlvSocket,
         config: ClientConfig,
     ) -> Result<Self, FluvioError> {
         // now get versions
@@ -112,7 +107,7 @@ impl VersionedSocket {
         })
     }
 
-    pub fn split(self) -> (FluvioSocket, ClientConfig, Versions) {
+    pub fn split(self) -> (AllFlvSocket, ClientConfig, Versions) {
         (self.socket, self.config, self.versions)
     }
 
@@ -186,7 +181,7 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = FluvioSocket::connect_with_connector(&self.addr, &self.connector).await?;
+        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
         VersionedSocket::connect(socket, self).await
     }
 
@@ -244,7 +239,7 @@ impl Versions {
 
 /// Connection that perform request/response
 pub struct VersionedSerialSocket {
-    socket: Arc<FluvioMultiplexerSocket>,
+    socket: Arc<AllMultiplexerSocket>,
     config: ClientConfig,
     versions: Versions,
 }
@@ -257,7 +252,7 @@ impl fmt::Display for VersionedSerialSocket {
 
 impl VersionedSerialSocket {
     pub fn new(
-        socket: Arc<FluvioMultiplexerSocket>,
+        socket: Arc<AllMultiplexerSocket>,
         config: ClientConfig,
         versions: Versions,
     ) -> Self {

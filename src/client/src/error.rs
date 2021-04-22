@@ -1,17 +1,12 @@
 use std::io::Error as IoError;
 use thiserror::Error;
 
-#[cfg(not(target_arch = "wasm32"))]
 use fluvio_socket::FlvSocketError;
 
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
 use semver::Version;
 
-/*
-#[cfg(target_arch = "wasm32")]
-use crate::websocket::JsError;
-*/
 
 /// Possible errors that may arise when using Fluvio
 #[derive(Error, Debug)]
@@ -25,13 +20,8 @@ pub enum FluvioError {
     #[error(transparent)]
     IoError(#[from] IoError),
 
-    #[cfg(not(target_arch = "wasm32"))]
     #[error("Fluvio socket error")]
     FlvSocketError(#[from] FlvSocketError),
-
-    #[cfg(target_arch = "wasm32")]
-    #[error("Javascript error: {0}")]
-    JsError(String), // TODO: Make this a JsErrorinside
 
     #[error("Fluvio SC schema error")]
     ApiError(#[from] ApiError),

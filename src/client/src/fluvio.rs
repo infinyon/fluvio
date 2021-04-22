@@ -4,17 +4,13 @@ use std::sync::Arc;
 use tracing::debug;
 use once_cell::sync::OnceCell;
 
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::AllMultiplexerSocket as FluvioMultiplexerSocket;
+use fluvio_socket::AllMultiplexerSocket;
 
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 
 #[cfg(target_arch = "wasm32")]
-use crate::websocket::{
-    WebSocketConnector as FluvioConnector,
-    MultiplexerWebsocket as FluvioMultiplexerSocket,
-};
+use fluvio_socket::WebSocketConnector as FluvioConnector;
 
 use semver::Version;
 use crate::config::ConfigFile;
@@ -28,7 +24,7 @@ use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket}
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
-    socket: Arc<FluvioMultiplexerSocket>,
+    socket: Arc<AllMultiplexerSocket>,
     config: ClientConfig,
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuPool>>,
@@ -78,7 +74,7 @@ impl Fluvio {
 
         let (socket, config, versions) = inner_client.split();
         check_platform_compatible(versions.platform_version())?;
-        let socket = FluvioMultiplexerSocket::shared(socket);
+        let socket = AllMultiplexerSocket::shared(socket);
 
         let spu_pool = OnceCell::new();
         Ok(Self {

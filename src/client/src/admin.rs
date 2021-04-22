@@ -7,17 +7,13 @@ use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
 
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::AllMultiplexerSocket as FluvioMultiplexerSocket;
+use fluvio_socket::AllMultiplexerSocket;
 
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 
 #[cfg(target_arch = "wasm32")]
-use crate::websocket::{
-    WebSocketConnector as FluvioConnector,
-    MultiplexerWebsocket as FluvioMultiplexerSocket,
-};
+use fluvio_socket::WebSocketConnector as FluvioConnector;
 
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
@@ -117,7 +113,7 @@ impl FluvioAdmin {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
-        let socket = FluvioMultiplexerSocket::shared(socket);
+        let socket = AllMultiplexerSocket::shared(socket);
 
         let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
         Ok(Self(versioned_socket))

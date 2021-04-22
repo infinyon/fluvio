@@ -12,16 +12,8 @@ use fluvio_protocol::Encoder;
 
 use web_sys::WebSocket;
 
-use crate::config::TlsPolicy;
-use crate::FluvioError;
+use crate::error::FlvSocketError;
 use log::*;
-/*
-#[derive(Error, Debug)]
-pub enum JsError {
-    #[error(transparent)]
-    Empty
-}
-*/
 
 #[derive(Clone)]
 pub enum WebSocketConnector {
@@ -33,16 +25,6 @@ impl Default for WebSocketConnector {
         Self::Simple
     }
 }
-
-
-impl TryFrom<TlsPolicy> for WebSocketConnector {
-    type Error = IoError;
-
-    fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
-        Ok(Self::default())
-    }
-}
-
 
 
 pub struct FluvioWebSocket {
@@ -58,13 +40,13 @@ impl FluvioWebSocket {
     pub async fn connect_with_connector(
         addr: &str,
         connector: &WebSocketConnector,
-    ) -> Result<Self, FluvioError> {
+    ) -> Result<Self, FlvSocketError> {
         unimplemented!();
     }
     pub async fn send_and_receive<R>(
         &self,
         mut req_msg: RequestMessage<R>,
-    ) -> Result<R::Response, FluvioError>
+    ) -> Result<R::Response, FlvSocketError>
     where
         R: Request,
     {
@@ -74,7 +56,7 @@ impl FluvioWebSocket {
     pub async fn send<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, FluvioError>
+    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
         R: Request,
     {
@@ -97,7 +79,7 @@ impl InnerWebsocketSink {
     pub async fn send_request<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<(), FluvioError>
+    ) -> Result<(), FlvSocketError>
     where
         RequestMessage<R>: Encoder + Default + Debug,
     {
@@ -109,7 +91,7 @@ impl InnerWebsocketStream {
     pub async fn next_response<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, FluvioError>
+    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
         R: Request,
     {
@@ -131,7 +113,7 @@ impl MultiplexerWebsocket {
     pub async fn send_and_receive<R>(
         &self,
         mut req_msg: RequestMessage<R>,
-    ) -> Result<R::Response, FluvioError>
+    ) -> Result<R::Response, FlvSocketError>
     where
         R: Request,
     {
@@ -141,7 +123,7 @@ impl MultiplexerWebsocket {
         &self,
         mut req_msg: RequestMessage<R>,
         queue_len: usize,
-    ) -> Result<AsyncResponse<R>, FluvioError>
+    ) -> Result<AsyncResponse<R>, FlvSocketError>
     where
         R: Request,
     {
@@ -177,7 +159,7 @@ impl<R> PinnedDrop for AsyncResponse<R> {
 }
 
 impl<R: Request> Stream for AsyncResponse<R> {
-    type Item = Result<R::Response, FluvioError>;
+    type Item = Result<R::Response, FlvSocketError>;
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let next: Option<Option<_>> = match this.receiver.poll_next(cx) {
@@ -197,7 +179,7 @@ impl<R: Request> Stream for AsyncResponse<R> {
         let bytes = if let Some(bytes) = bytes {
             bytes
         } else {
-            return Poll::Ready(Some(Err(FluvioError::Other("Socket Closed".into()))));
+            return Poll::Ready(Some(Err(FlvSocketError::SocketClosed)));
         };
 
         let mut cursor = Cursor::new(&bytes);

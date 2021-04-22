@@ -11,6 +11,9 @@ use fluvio_future::native_tls::{
     PrivateKeyBuilder, CertBuilder,
 };
 
+#[cfg(target_arch = "wasm32")]
+use fluvio_socket::WebSocketConnector as FluvioConnector;
+
 /// Describes whether or not to use TLS and how
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tls_policy")]
@@ -255,5 +258,14 @@ impl TryFrom<TlsPolicy> for FluvioConnector {
                 )))
             }
         }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl TryFrom<TlsPolicy> for FluvioConnector {
+    type Error = IoError;
+
+    fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
+        Ok(Self::default())
     }
 }
