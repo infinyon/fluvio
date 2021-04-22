@@ -7,7 +7,7 @@ use tracing::info;
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::{
-    AllDomainConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
+    AllDomainConnector as FluvioConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
     PrivateKeyBuilder, CertBuilder,
 };
 
@@ -195,15 +195,15 @@ pub struct TlsPaths {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl TryFrom<TlsPolicy> for AllDomainConnector {
+impl TryFrom<TlsPolicy> for FluvioConnector {
     type Error = IoError;
 
     fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
         match config {
-            TlsPolicy::Disabled => Ok(AllDomainConnector::default_tcp()),
+            TlsPolicy::Disabled => Ok(FluvioConnector::default_tcp()),
             TlsPolicy::Anonymous => {
                 info!("Using anonymous TLS");
-                Ok(AllDomainConnector::TlsAnonymous(
+                Ok(FluvioConnector::TlsAnonymous(
                     ConnectorBuilder::anonymous().build().into(),
                 ))
             }
@@ -225,7 +225,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                 } else {
                     builder
                 };
-                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                Ok(FluvioConnector::TlsDomain(TlsDomainConnector::new(
                     builder.build(),
                     tls.domain,
                 )))
@@ -249,7 +249,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                     builder
                 };
 
-                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                Ok(FluvioConnector::TlsDomain(TlsDomainConnector::new(
                     builder.build(),
                     tls.domain,
                 )))

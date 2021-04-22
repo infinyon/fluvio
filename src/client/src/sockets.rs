@@ -1,6 +1,7 @@
 use std::default::Default;
 use std::fmt;
 use std::fmt::Display;
+use std::sync::Arc;
 
 use tracing::{debug, trace};
 use async_trait::async_trait;
@@ -10,9 +11,17 @@ use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 
 #[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::{AllFlvSocket as AllFlvSocket, SharedAllMultiplexerSocket as SharedAllMultiplexerSocket};
+use fluvio_socket::{AllFlvSocket as FluvioSocket, AllMultiplexerSocket as FluvioMultiplexerSocket};
+
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
+
+#[cfg(target_arch = "wasm32")]
+use crate::websocket::{
+    WebSocketConnector as FluvioConnector,
+    FluvioWebSocket as FluvioSocket,
+    MultiplexerWebsocket as FluvioMultiplexerSocket,
+};
 
 use crate::FluvioError;
 
@@ -47,7 +56,7 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: AllFlvSocket,
+    socket: FluvioSocket,
     config: ClientConfig,
     versions: Versions,
 }
@@ -83,7 +92,7 @@ impl SerialFrame for VersionedSocket {
 impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
-        mut socket: AllFlvSocket,
+        mut socket: FluvioSocket,
         config: ClientConfig,
     ) -> Result<Self, FluvioError> {
         // now get versions
@@ -103,7 +112,7 @@ impl VersionedSocket {
         })
     }
 
-    pub fn split(self) -> (AllFlvSocket, ClientConfig, Versions) {
+    pub fn split(self) -> (FluvioSocket, ClientConfig, Versions) {
         (self.socket, self.config, self.versions)
     }
 
@@ -177,13 +186,14 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
+        let socket = FluvioSocket::connect_with_connector(&self.addr, &self.connector).await?;
         VersionedSocket::connect(socket, self).await
     }
 
     /// create new config with prefix add to domain, this is useful for SNI
     pub fn with_prefix_sni_domain(&self, prefix: &str) -> Self {
         let mut connector = self.connector.clone();
+        #[cfg(not(target_arch = "wasm32"))]
         if let FluvioConnector::TlsDomain(domain_connector) = &mut connector {
             let new_domain = format!("{}.{}", prefix, domain_connector.domain());
             debug!(sni_domain = %new_domain);
@@ -234,7 +244,7 @@ impl Versions {
 
 /// Connection that perform request/response
 pub struct VersionedSerialSocket {
-    socket: SharedAllMultiplexerSocket,
+    socket: Arc<FluvioMultiplexerSocket>,
     config: ClientConfig,
     versions: Versions,
 }
@@ -247,7 +257,7 @@ impl fmt::Display for VersionedSerialSocket {
 
 impl VersionedSerialSocket {
     pub fn new(
-        socket: SharedAllMultiplexerSocket,
+        socket: Arc<FluvioMultiplexerSocket>,
         config: ClientConfig,
         versions: Versions,
     ) -> Self {

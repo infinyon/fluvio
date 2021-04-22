@@ -546,7 +546,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff41a3c2c1e39921b9003de14bf0439c7b63a9039637c291e1a64925d8ddfa45"
 dependencies = [
  "owning_ref",
- "parking_lot",
+ "parking_lot 0.4.8",
 ]
 
 [[package]]
@@ -618,6 +618,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30ed07550be01594c6026cff2a1d7fe9c8f683caa798e12b68694ac9e88286a3"
 dependencies = [
  "cache-padded",
+]
+
+[[package]]
+name = "console_log"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "501a375961cef1a0d44767200e66e4a559283097e91d0730b1d75dfb2f8a1494"
+dependencies = [
+ "log",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -1228,6 +1239,7 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes",
+ "console_log",
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
@@ -1238,7 +1250,10 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
+ "js-sys",
+ "log",
  "once_cell",
+ "pin-project",
  "pin-project-lite",
  "semver 0.11.0",
  "serde",
@@ -1249,6 +1264,8 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -1442,6 +1459,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.2.0"
+source = "git+https://github.com/simlay/future-aio?branch=wasm32-support#e64d538cc32d363275bf9edf2b0c67144de3445e"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1462,6 +1480,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
+ "wasm-timer",
 ]
 
 [[package]]
@@ -1856,6 +1875,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.0"
+source = "git+https://github.com/simlay/future-aio?branch=wasm32-support#e64d538cc32d363275bf9edf2b0c67144de3445e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2644,6 +2664,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
 
 [[package]]
+name = "lock_api"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a3c91c24eae6777794bb1997ad98bbb87daf92890acab859f7eaa4320333176"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2957,7 +2986,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "149d8f5b97f3c1133e3cfcd8886449959e856b557ff281e292b733d7c69e005e"
 dependencies = [
  "owning_ref",
- "parking_lot_core",
+ "parking_lot_core 0.2.14",
+]
+
+[[package]]
+name = "parking_lot"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d7744ac029df22dca6284efe4e898991d28e3085c706c972bcd7da4a27a15eb"
+dependencies = [
+ "instant",
+ "lock_api",
+ "parking_lot_core 0.8.3",
 ]
 
 [[package]]
@@ -2969,6 +3009,20 @@ dependencies = [
  "libc",
  "rand 0.4.6",
  "smallvec 0.6.14",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa7a782938e745763fe6907fc6ba86946d72f49fe7e21de074e08128a99fb018"
+dependencies = [
+ "cfg-if 1.0.0",
+ "instant",
+ "libc",
+ "redox_syscall 0.2.6",
+ "smallvec 1.6.1",
  "winapi 0.3.9",
 ]
 
@@ -4436,6 +4490,21 @@ name = "wasm-bindgen-shared"
 version = "0.2.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9a543ae66aa233d14bb765ed9af4a33e81b8b58d1584cf1b47ff8cd0b9e4489"
+
+[[package]]
+name = "wasm-timer"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
+dependencies = [
+ "futures",
+ "js-sys",
+ "parking_lot 0.11.1",
+ "pin-utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
 
 [[package]]
 name = "wasmparser"

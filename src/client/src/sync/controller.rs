@@ -19,6 +19,9 @@ use fluvio_sc_schema::objects::Metadata;
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_socket::AsyncResponse;
 
+#[cfg(target_arch = "wasm32")]
+use crate::websocket::AsyncResponse;
+
 use crate::metadata::core::Spec;
 
 use super::StoreContext;

@@ -81,6 +81,10 @@
     doc(include = "../../../website/kubernetes/INSTALL.md")
 )]
 
+//#[cfg(target_arch = "wasm32")]
+//#[macro_use] extern crate log;
+
+
 mod error;
 mod sockets;
 mod admin;
@@ -90,6 +94,8 @@ mod producer;
 mod offset;
 mod sync;
 mod spu;
+#[cfg(target_arch = "wasm32")]
+mod websocket;
 
 pub mod config;
 

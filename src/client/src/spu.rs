@@ -8,12 +8,16 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
+
 #[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::{
-    AllMultiplexerSocket as AllMultiplexerSocket,
-    SharedAllMultiplexerSocket as SharedAllMultiplexerSocket,
-    AsyncResponse as AsyncResponse
+use fluvio_socket::{AllMultiplexerSocket as FluvioMultiplexerSocket, AsyncResponse as AsyncResponse};
+
+#[cfg(target_arch = "wasm32")]
+use crate::websocket::{
+    MultiplexerWebsocket as FluvioMultiplexerSocket,
+    AsyncResponse,
 };
+
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
@@ -24,7 +28,7 @@ const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 struct SpuSocket {
     config: ClientConfig,
-    socket: SharedAllMultiplexerSocket,
+    socket: Arc<FluvioMultiplexerSocket>,
     versions: Versions,
 }
 
@@ -69,7 +73,7 @@ impl SpuPool {
     /// start synchronize based on pool
     pub async fn start(
         config: ClientConfig,
-        sc_socket: SharedAllMultiplexerSocket,
+        sc_socket: Arc<FluvioMultiplexerSocket>,
     ) -> Result<Self, FluvioError> {
         let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");
@@ -92,7 +96,7 @@ impl SpuPool {
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
         Ok(SpuSocket {
-            socket: AllMultiplexerSocket::shared(socket),
+            socket: FluvioMultiplexerSocket::shared(socket),
             config,
             versions,
         })

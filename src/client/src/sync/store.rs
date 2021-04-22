@@ -3,7 +3,10 @@ use std::sync::Arc;
 use tracing::debug;
 
 #[cfg(not(target_arch = "wasm32"))]
-use fluvio_socket::SharedAllMultiplexerSocket;
+use fluvio_socket::AllMultiplexerSocket as FluvioMultiplexerSocket;
+
+#[cfg(target_arch = "wasm32")]
+use crate::websocket::MultiplexerWebsocket as FluvioMultiplexerSocket;
 
 use crate::metadata::topic::TopicSpec;
 use crate::FluvioError;
@@ -20,12 +23,12 @@ pub struct MetadataStores {
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,
     topics: StoreContext<TopicSpec>,
-    socket: SharedAllMultiplexerSocket,
+    socket: Arc<FluvioMultiplexerSocket>,
 }
 
 impl MetadataStores {
     /// start synchronization
-    pub async fn start(socket: SharedAllMultiplexerSocket) -> Result<Self, FluvioError> {
+    pub async fn start(socket: Arc<FluvioMultiplexerSocket>) -> Result<Self, FluvioError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
