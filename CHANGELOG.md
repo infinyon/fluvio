@@ -2,9 +2,9 @@
 ## Unreleased
 
 ## Platform Version 0.7.4 - 2020-04-22
-* Added Partitioner trait for assigning partitions based on record keys (#965)
-* Deprecated the `TopicProducer::send_record` method (#965)
-* Decoupled Fluvio CLI from Fluvio server components (#928)
+* Added Partitioner trait for assigning partitions based on record keys ([#965](https://github.com/infinyon/fluvio/pull/965))
+* Deprecated the `TopicProducer::send_record` method ([#965](https://github.com/infinyon/fluvio/pull/965))
+* Decoupled Fluvio CLI from Fluvio server components ([#928](https://github.com/infinyon/fluvio/pull/928))
 
 ## Platform Version 0.7.3 - 2020-04-02
 * Added batching for producing records with `send_all` API ([#896](https://github.com/infinyon/fluvio/pull/896)).
