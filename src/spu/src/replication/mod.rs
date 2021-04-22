@@ -12,6 +12,7 @@ mod replica_test {
     use fluvio_storage::FileReplica;
     use tracing::debug;
     use derive_builder::Builder;
+    use once_cell::sync::Lazy;
 
     use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
@@ -32,8 +33,16 @@ mod replica_test {
     const HOST: &str = "127.0.0.1";
 
     const MAX_BYTES: u32 = 100000;
-    const MAX_WAIT_REPLICATION: u64 = 2000;
-    const MAX_WAIT_LEADER: u64 = 2000;
+    const MAX_WAIT_LEADER: u64 = 500;
+
+    static MAX_WAIT_REPLICATION: Lazy<u64> = Lazy::new(|| {
+        use std::env;
+        if env::var("CI").is_ok() {
+            5000
+        } else {
+            1000
+        }
+    });
 
     #[derive(Builder, Debug)]
     struct TestConfig {
@@ -212,7 +221,7 @@ mod replica_test {
         assert_eq!(follower_replica.hw(), 0);
 
         // wait until follower sync up with leader
-        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+        sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting. checking result");
 
@@ -262,7 +271,7 @@ mod replica_test {
         assert_eq!(leader_replica.hw(), 0);
 
         // wait until follower sync up with leader
-        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+        sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting. checking result");
 
@@ -310,7 +319,7 @@ mod replica_test {
         assert_eq!(follower_replica.hw(), 0);
 
         //wait until follower sync up with leader
-        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+        sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting for first checking result");
 
@@ -326,7 +335,7 @@ mod replica_test {
         assert_eq!(follower_replica2.hw(), 0);
 
         // wait until follower sync up with leader
-        sleep(Duration::from_millis(MAX_WAIT_REPLICATION)).await;
+        sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
         debug!("done waiting for 2nd follower: checking final");
 

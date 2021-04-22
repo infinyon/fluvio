@@ -1761,6 +1761,7 @@ dependencies = [
  "futures-util",
  "log",
  "nix 0.20.0",
+ "once_cell",
  "pin-utils",
  "regex",
  "serde",
