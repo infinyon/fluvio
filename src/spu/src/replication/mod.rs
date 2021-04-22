@@ -244,7 +244,7 @@ mod replica_test {
     #[allow(unused)]
     async fn test_replication2_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
-            .in_sync_replica(2 as u16)
+            .in_sync_replica(1 as u16)
             .followers(1 as u16)
             .base_port(13010 as u16)
             .generate("replication2_new");

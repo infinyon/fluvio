@@ -39,6 +39,7 @@ use super::LeaderReplicaControllerCommand;
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     leader: SpuId,
+    in_sync_replica: u16,
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
@@ -154,6 +155,8 @@ where
         self.sender.send(command).await
     }
 
+    
+
     /// update leader's state from follower's offset states
     /// if follower's state has been updated may result in leader's hw update
     /// return true if update has been updated, in this case, updates can be computed to followers
@@ -180,7 +183,7 @@ where
                 // if our leo and hw is same there is no need to recompute hw
                 if !leader_pos.is_committed() {
                     if let Some(hw) =
-                        compute_hw(&leader_pos, self.config.min_in_sync_replicas, &followers)
+                        compute_hw(&leader_pos, self.min_in_sync_replicas(), &followers)
                     {
                         debug!(hw, "updating hw");
                         if let Err(err) = self.update_hw(hw).await {
