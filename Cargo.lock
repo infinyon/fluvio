@@ -1761,6 +1761,7 @@ dependencies = [
  "futures-util",
  "log",
  "nix 0.20.0",
+ "once_cell",
  "pin-utils",
  "regex",
  "serde",
@@ -1896,7 +1897,6 @@ dependencies = [
 name = "fluvio-types"
 version = "0.2.3"
 dependencies = [
- "cfg-if 1.0.0",
  "event-listener",
  "fluvio-future",
  "tokio",
