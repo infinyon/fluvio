@@ -56,7 +56,7 @@ jobs:
         run: make check-fmt
 
   tests:
-    name: ${{ matrix.make.name }} (${{ matrix.os }})
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -137,7 +137,7 @@ jobs:
 
       - name: If running on 'staging', build in release mode
         run: |
-          ([[ "${GITHUB_REF#refs/heads/}" == "staging" ]] && echo "RELEASE=true" | tee $GITHUB_ENV) || true
+          ([[ "${GITHUB_REF#refs/heads/}" == "staging" ]] && echo "RELEASE=true" | tee $GITHUB_ENV) || echo "Debug mode"
 
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.run }}
