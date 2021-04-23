@@ -1,6 +1,9 @@
 name: Publish Latest Development Image
 
-on: 
+permissions:
+  contents: read
+
+on:
   push:
     branches: [master]
   workflow_dispatch:

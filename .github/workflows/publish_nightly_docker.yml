@@ -1,6 +1,9 @@
 name: Publish Nightly Development Image
 
-on: 
+permissions:
+  contents: read
+
+on:
   schedule:
     - cron: '0 5 * * *' # run at 5AM UTC
   workflow_dispatch:

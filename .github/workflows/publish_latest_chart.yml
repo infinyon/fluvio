@@ -1,5 +1,8 @@
 name: Publish Latest Helm Chart
 
+permissions:
+  contents: read
+
 on:
 #  push:
 #    branches: [master]

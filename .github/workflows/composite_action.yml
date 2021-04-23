@@ -1,5 +1,8 @@
 name: Composite Action Test Workflow
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [master]
