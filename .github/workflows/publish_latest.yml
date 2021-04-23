@@ -1,8 +1,8 @@
 name: Publish Latest
 
 on:
-#  push:
-#    branches: [master]
+  push:
+    branches: [rewrite-release-publish]
   workflow_dispatch:
     inputs:
       force:
