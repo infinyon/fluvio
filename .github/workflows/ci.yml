@@ -143,7 +143,7 @@ jobs:
         run: ${{ matrix.task.run }}
 
       - name: Build release artifacts
-        if: ${{ env.RELEASE == "true" }}
+        if: ${{ env.RELEASE == 'true' }}
         run: make build_cli build_cluster
 
       - name: Stop sccache server
