@@ -142,6 +142,10 @@ jobs:
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.run }}
 
+      - name: Build release artifacts
+        if: ${{ env.RELEASE == "true" }}
+        run: make build_cli build_cluster
+
       - name: Stop sccache server
         run: sccache --stop-server || true
 
@@ -150,12 +154,14 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ runner.os }}-fluvio
+          path: target/release/fluvio
 
       - name: Publish fluvio-run artifact
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ runner.os }}-fluvio-run
+          path: target/release/fluvio-run
 
   local_cluster_test:
     name: Local cluster test
