@@ -28,12 +28,14 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
     steps:
-      - name: Set Force Release env
-        run: |
-          echo "FORCE_RELEASE=${{ github.event.inputs.force }}"
-          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" >> $GITHUB_ENV
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Set dynamic env
+        run: |
+          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" | tee $GITHUB_ENV
+          echo "FLUVIO_VERSION=$(cat VERSION)" | tee $GITHUB_ENV
+
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -51,9 +53,9 @@ jobs:
           sudo apt-get install -y musl-tools build-essential;
 
       - name: Build and upload release to github
-        run: cargo make -l verbose --profile production github-release-upload
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
+        run: cargo make -l verbose --profile production github-release-upload
 
       # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
       - name: Set test env

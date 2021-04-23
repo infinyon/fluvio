@@ -22,6 +22,7 @@ github-release --help 2> /dev/null || {
 description = "Upload release binaries to Github"
 category = "Publish"
 dependencies = [
+    "github-release-ensure-env",
     "release-github-env",
     "install-github-release",
     "build-prod",
@@ -35,10 +36,20 @@ else
 fi
 '''
 
+[tasks.github-release-ensure-env]
+dependencies = ["github-release-check-env"]
+condition = { env_not_set = ["FLUVIO_VERSION_EXISTS"] }
+script = "echo \"ENV variables FLUVIO_VERSION and TARGET must be defined\" 1>&2; exit 1"
+
+[tasks.github-release-check-env]
+condition = { env_set = ["FLUVIO_VERSION", "TARGET"] }
+env = { FLUVIO_VERSION_EXISTS = true }
+
 [tasks.github-release-create-pre-release]
 description = "Create Pre-release on Github"
 category = "Publish"
 dependencies = [
+    "github-release-ensure-env",
     "install-github-release",
 ]
 script = '''
@@ -52,6 +63,9 @@ env = { TARGET = "x86_64-unknown-linux-musl" }
 env = { TARGET = "x86_64-apple-darwin" }
 
 [tasks.delete-github-release]
+dependencies = [
+    "github-release-ensure-env",
+]
 command = "github-release"
 args = [
     "delete",
