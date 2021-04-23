@@ -164,15 +164,15 @@ jobs:
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-${{ env.TARGET }}
-          path: target/${{ env.TARGET }}/release/fluvio
+          name: fluvio-${{ matrix.target }}-${{ github.sha }}
+          path: target/${{ matrix.target }}/release/fluvio
 
       - name: Publish fluvio-run artifact
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-run-${{ env.TARGET }}
-          path: target/${{ env.TARGET }}/release/fluvio-run
+          name: fluvio-run-${{ matrix.target }}-${{ github.sha }}
+          path: target/${{ matrix.target }}/release/fluvio-run
 
   local_cluster_test:
     name: Local cluster test

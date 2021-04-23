@@ -19,8 +19,47 @@ env:
   FORCE_RELEASE: ${{ github.events.inputs.force }}
 
 jobs:
+  github_release:
+    name: Publish artifact to GitHub Releases (${{ matrix.artifact }}-${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact: [fluvio, fluvio-run]
+        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+    steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.artifact }}-${{ matrix.target }}-${{ github.sha }}
+      - name: Rename artifact
+        run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
+      - name: Publish artifact
+        run: gh release upload -R infinyon/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
+
+  docker:
+    name: Publish Latest Image
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-x86_64-unknown-linux-${{ github.sha }}
+
+      - name: Login to Docker Hub
+        run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Publish latest development Fluvio Image
+        run: k8-util/docker/build.sh "$(cat VERSION)-${{ github.sha }}" "./fluvio-run-x86_64-unknown-linux-${{ github.sha }}"
+
   helm:
     name: Publish Latest Helm Chart
+    needs: docker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -38,154 +77,34 @@ jobs:
       - name: Push App Chart
         run: helm push k8-util/helm/fluvio-app --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
 
-  docker:
-    name: Publish Latest Image
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-    env:
-      RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
-      RUSTV: ${{ matrix.rust }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-
-      - name: Cache cargo registry
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      - name: Cache sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-sccache-
-
-      - name: Install Musl Tools (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          export TARGET_CC=musl-gcc
-      - name: Install Musl Tools (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install filosottile/musl-cross/musl-cross
-
-      - name: Login to Docker Hub
-        run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-      - name: Publish latest development Fluvio Image
-        run: make latest_image
-
-      - name: Stop sccache server
-        run: sccache --stop-server || true
-
   fluvio:
     name: Publish Fluvio CLI
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        rust: [stable]
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
-          - os: macos-latest
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
-      - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
       - name: Install cargo-make
         uses: davidB/rust-cargo-make@v1
         with:
           version: '0.32.9'
-      - name: Install musl-tools
-        if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install -y musl-tools build-essential
-
-      - name: Set prod env
-        if: ${{ github.event.inputs.test == '' }}
+      - name: Install fluvio-package
         run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-
-      - name: Cache sccache
-        uses: actions/cache@v2
-        continue-on-error: false
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ${HOME}/.fluvio/bin/fluvio install fluvio-package
+      - name: Download artifact (x86_64-unknown-linux-musl)
+        uses: actions/download-artifact@v2
         with:
-          path: ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-sccache-
-      - name: Build and publish using fluvio-packages
-        env:
-          RUST_LOG: debug
-          RUST_BACKTRACE: full
-          RUSTC_WRAPPER: sccache
-          RUSTV: ${{ matrix.rust }}
-          SCCACHE_CACHE_SIZE: 2G
-          SCCACHE_DIR: ${{ matrix.sccache-path }}
-#          SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
-        run: cargo make -l verbose publish-fluvio-latest
+          name: fluvio-x86_64-unknown-linux-musl-${{ github.sha }}
+          path: target/x86_64-unknown-linux-musl/release/fluvio
+      - name: Download artifact (x86_64-apple-darwin)
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-apple-darwin-${{ github.sha }}
+          path: target/x86_64-apple-darwin/release/fluvio
+      - name: Publish to Fluvio Packages
+        run: |
+          ${HOME}/.fluvio/bin/fluvio package publish \
+            --version="$(cat VERSION)+$(git rev-parse HEAD)" \
+            target/x86_64-unknown-linux-musl/release/fluvio \
+            target/x86_64-apple-darwin/release/fluvio
 
   # Bump the latest version of the Fluvio CLI on the package registry
   # This must be a distinct job than publish_fluvio_cli because this job requires

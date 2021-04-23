@@ -1,8 +1,8 @@
 VERSION := $(shell cat VERSION)
 RUSTV?=stable
-DOCKER_TAG=$(VERSION)
 GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
+DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 DOCKER_REGISTRY=infinyon
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_LINUX=x86_64-unknown-linux-musl
@@ -159,7 +159,7 @@ check-all-test:
 	cargo check --lib --tests --all-features $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 test_tls_multiplex:
-	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls $(TARGET_FLAG)
+	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
 
 build_filter_wasm:
 	rustup target add wasm32-unknown-unknown 
@@ -190,42 +190,31 @@ update_version:
 #
 # Docker actions
 #
-release_image:	RELEASE=true
-release_image:	fluvio_image
+release_image: RELEASE=true
+release_image: fluvio_image
 	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(VERSION)
 	docker push $(DOCKER_IMAGE):$(VERSION)
 
-
-latest_image:	RELEASE=true
-latest_image:	fluvio_image
-	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
-	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(VERSION)-$(GIT_COMMIT)
+# Build latest image and push to Docker registry
+latest_image: RELEASE=true
+latest_image: fluvio_image
+	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
+	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 	docker push $(DOCKER_IMAGE):latest
-	docker push $(DOCKER_IMAGE):$(VERSION)-$(GIT_COMMIT)
 
+# Build docker image in minikube environment
+minikube_image: MINIKUBE_FLAG=minikube
+minikube_image: fluvio_image
 
-nightly_image:	RELEASE=true
-nightly_image:	fluvio_image
-	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):nightly
-	docker push $(DOCKER_IMAGE):nightly
-
-# publish docker image to minikube environment
-minikube_image:	MINIKUBE_DOCKER_ENV=true
-minikube_image:	fluvio_image
-
-# build docker image for fluvio using release mode
-# this will tag with current git tag
-fluvio_image: CARGO_PROFILE=$(if $(RELEASE),release,debug)
+# Build docker image for Fluvio. This will tag with current VERSION and git hash
 fluvio_image: fluvio_bin_linux
-	echo "Building Fluvio musl image with version: $(VERSION)"
-	export CARGO_PROFILE=$(if $(RELEASE),release,debug); \
-	export MINIKUBE_DOCKER_ENV=$(MINIKUBE_DOCKER_ENV); \
-	export DOCKER_TAG=$(GIT_COMMIT); \
-	k8-util/docker/build.sh
-
+	echo "Building Fluvio musl image with tag: $(DOCKER_TAG)"
+	k8-util/docker/build.sh $(DOCKER_TAG) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
 
 fluvio_bin_linux: install_musl
-	cargo build --bin fluvio-run --target $(RELEASE_FLAG) $(TARGET_LINUX)
+	export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc && \
+	export TARGET_CC=x86_64-linux-musl-gcc && \
+	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_LINUX)
 
 make publish_fluvio_image:
 	curl \
