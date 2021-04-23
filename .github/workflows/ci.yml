@@ -137,7 +137,8 @@ jobs:
 
       - name: If running on 'staging', build in release mode
         run: |
-          ([[ "${GITHUB_REF#refs/heads/}" == "staging" ]] && echo "RELEASE=true" | tee $GITHUB_ENV) || echo "Debug mode"
+          echo "RELEASE=true" | tee $GITHUB_ENV
+#          ([[ "${GITHUB_REF#refs/heads/}" == "staging" ]] && echo "RELEASE=true" | tee $GITHUB_ENV) || echo "Debug mode"
 
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.run }}
