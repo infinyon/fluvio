@@ -1,8 +1,8 @@
 name: Publish Latest Helm Chart
 
 on:
-#  push:
-#    branches: [master]
+  push:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
