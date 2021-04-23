@@ -22,6 +22,63 @@ on:
         default: ''
 
 jobs:
+  publish:
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        task:
+          - name: Github Release
+            run: cargo make -l verbose --profile production github-release-upload
+          - name: Publish to Fluvio Packages
+            run: cargo make -l verbose --profile production publish-fluvio
+        include:
+          - os: ubuntu-latest
+            task:
+            - name: Publish install.sh
+              run: cargo make -l verbose --profile production s3-upload-installer
+    steps:
+      - name: Set Force Release env
+        run: |
+          echo "FORCE_RELEASE=${{ github.event.inputs.force }}"
+          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+        with:
+          version: '0.32.9'
+
+      - name: Install musl-tools
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update;
+          sudo apt-get install -y musl-tools build-essential;
+
+      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+      - name: Set test env
+        if: ${{ github.event.inputs.test != '' }}
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+
+      - name: Set prod env
+        if: ${{ github.event.inputs.test == '' }}
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+
+      - name: ${{ matrix.task.name }}
+        run: ${{ matrix.task.run }}
+
   publish_fluvio_cli:
     name: Publish Fluvio CLI
     runs-on: ${{ matrix.os }}

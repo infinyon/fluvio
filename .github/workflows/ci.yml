@@ -63,13 +63,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
-        make:
+        task:
           - name: Clippy
-            task: "check-clippy"
+            run: make check-clippy
           - name: Unit tests
-            task: "build-all-test run-all-unit-test"
+            run: make build-all-test run-all-unit-test
           - name: Doc tests
-            task: "run-all-doc-test"
+            run: make run-all-doc-test
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
@@ -78,7 +78,7 @@ jobs:
         exclude:
           - os: macos-latest
             rust: stable
-            make:
+            task:
               name: Clippy
     env:
       RUST_BACKTRACE: full
@@ -131,10 +131,10 @@ jobs:
             ${{ runner.os }}-sccache-
       - name: Start sccache server
         run: sccache --start-server
-      - name: ${{ matrix.make.name }}
-        run: make ${{ matrix.make.task }}
-      - name: Print sccache stats
-        run: sccache --show-stats
+
+      - name: ${{ matrix.task.name }}
+        run: ${{ matrix.task.run }}
+
       - name: Stop sccache server
         run: sccache --stop-server || true
 
