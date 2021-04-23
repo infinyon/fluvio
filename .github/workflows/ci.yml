@@ -66,10 +66,13 @@ jobs:
         task:
           - name: Clippy
             run: make check-clippy
-          - name: Unit tests
-            run: make build-all-test run-all-unit-test
+            publish: false
           - name: Doc tests
             run: make run-all-doc-test
+            publish: false
+          - name: Unit tests
+            run: make build-all-test run-all-unit-test
+            publish: true
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
@@ -132,11 +135,27 @@ jobs:
       - name: Start sccache server
         run: sccache --start-server
 
+      - name: If running on 'staging', build in release mode
+        run: |
+          ([[ "${GITHUB_REF#refs/heads/}" == "staging" ]] && echo "RELEASE=true" | tee $GITHUB_ENV) || true
+
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.run }}
 
       - name: Stop sccache server
         run: sccache --stop-server || true
+
+      - name: Publish fluvio artifact
+        if: ${{ matrix.task.publish }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ runner.os }}-fluvio
+
+      - name: Publish fluvio-run artifact
+        if: ${{ matrix.task.publish }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ runner.os }}-fluvio-run
 
   local_cluster_test:
     name: Local cluster test

@@ -8,12 +8,14 @@ DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
 CLI_BUILD=fluvio_cli
-TEST_BUILD=$(if $(RELEASE),release,debug)
-FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/fluvio,./target/$(TEST_BUILD)/fluvio)
+BUILD_PROFILE=$(if $(RELEASE),release,debug)
+FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
+RELEASE_FLAG=$(if $(RELEASE),--release,)
+TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
+VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 CLIENT_LOG=warn
 SERVER_LOG=fluvio=debug
-TEST_LOG=warn
-TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(TEST_BUILD)/flv-test,./target/$(TEST_BUILD)/flv-test)
+TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/flv-test,./target/$(BUILD_PROFILE)/flv-test)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
 DEFAULT_ITERATION=1000
@@ -22,8 +24,7 @@ SC_AUTH_CONFIG=./src/sc/test-data/auth_config
 SKIP_CHECK=--skip-checks
 EXTRA_ARG=
 
-TEST_RELEASE_PATH=$(if $(RELEASE),target/release,target/debug)
-export PATH := $(shell pwd)/${TEST_RELEASE_PATH}:${PATH}
+export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
 
 
 # install all tools required
@@ -32,15 +33,13 @@ install_tools_mac:
 	brew install helm
 
 build_cli:
-	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio $(VERBOSE)
+	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build_cluster: install_test_target
-	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin fluvio-run $(VERBOSE)
+	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build_test: TEST_RELEASE_FLAG=$(if $(RELEASE),--release,)
-build_test: TEST_TARGET=$(if $(TARGET),--target $(TARGET),)
 build_test:	build_cluster build_cli
-	cargo build $(TEST_RELEASE_FLAG) $(TEST_TARGET) --bin flv-test $(VERBOSE)
+	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_test_target:
 ifdef TARGET
@@ -150,14 +149,14 @@ install-clippy:
 
 # Use check first to leverage sccache, the clippy piggybacks
 check-clippy: install-clippy
-	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE)
+	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE_FLAG)
 	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
 
 build-all-test:
-	cargo build --lib --tests --all-features $(VERBOSE)
+	cargo build --lib --tests --all-features $(RELEASE_FLAG) $(VERBOSE_FLAG)
 
 check-all-test:
-	cargo check --lib --tests --all-features $(VERBOSE)
+	cargo check --lib --tests --all-features $(VERBOSE_FLAG)
 
 test_tls_multiplex:
 	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
@@ -167,11 +166,11 @@ build_filter_wasm:
 	make -C smart_filter build_test
 
 run-all-unit-test: test_tls_multiplex build_filter_wasm
-	cargo test --lib --all-features
-	cargo test -p fluvio-storage
+	cargo test --lib --all-features $(RELEASE_FLAG)
+	cargo test -p fluvio-storage $(RELEASE_FLAG)
 
 run-all-doc-test:
-	cargo test --all-features --doc $(VERBOSE)
+	cargo test --all-features --doc $(RELEASE_FLAG) $(VERBOSE_FLAG)
 
 install_musl:
 	rustup target add ${TARGET_LINUX}
@@ -186,12 +185,6 @@ release:	update_version release_image helm_publish_app publish_cli
 # This needed to be run every time we increment VERSION
 update_version:
 	cp VERSION	src/cli/src
-
-
-# need to bump up version
-publish_cli:
-	cd src/cli;cargo publish
-
 
 
 #
@@ -231,10 +224,8 @@ fluvio_image: fluvio_bin_linux
 	k8-util/docker/build.sh
 
 
-fluvio_bin_linux: RELEASE_FLAG=$(if $(RELEASE),--release,)
 fluvio_bin_linux: install_musl
-	cargo build $(RELEASE_FLAG)   \
-		--bin fluvio-run --target $(TARGET_LINUX)
+	cargo build --bin fluvio-run --target $(TARGET_LINUX) $(RELEASE_FLAG)
 
 make publish_fluvio_image:
 	curl \
