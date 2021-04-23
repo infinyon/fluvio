@@ -54,6 +54,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             config: self.config.clone(),
             followers: self.followers.clone(),
             sender: self.sender.clone(),
+            in_sync_replica: self.in_sync_replica.clone(),
         }
     }
 }
@@ -94,13 +95,15 @@ impl<S> LeaderReplicaState<S>
 where
     S: ReplicaStorage,
 {
-    /// create ne state from existing storage
+    /// create new state from existing storage
+    /// calculate default in_sync_replica from followers
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
         inner: SharableReplicaStorage<S>,
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
+        let in_sync_replica = replica.replicas.len() as u16 + 1;
         let follower_ids = HashSet::from_iter(replica.replicas);
         let followers = ids_to_map(replica.leader, follower_ids);
         Self {
@@ -109,6 +112,7 @@ where
             config,
             followers: Arc::new(RwLock::new(followers)),
             sender,
+            in_sync_replica,
         }
     }
 
@@ -155,7 +159,11 @@ where
         self.sender.send(command).await
     }
 
-    
+    /// override in sync replica
+    #[allow(unused)]
+    fn set_in_sync_replica(&mut self, replica_count: u16) {
+        self.in_sync_replica = replica_count;
+    }
 
     /// update leader's state from follower's offset states
     /// if follower's state has been updated may result in leader's hw update
@@ -182,9 +190,7 @@ where
             if current_follow_info.update(&follower_pos) {
                 // if our leo and hw is same there is no need to recompute hw
                 if !leader_pos.is_committed() {
-                    if let Some(hw) =
-                        compute_hw(&leader_pos, self.min_in_sync_replicas(), &followers)
-                    {
+                    if let Some(hw) = compute_hw(&leader_pos, self.in_sync_replica, &followers) {
                         debug!(hw, "updating hw");
                         if let Err(err) = self.update_hw(hw).await {
                             error!("error updating hw: {}", err);
@@ -262,7 +268,7 @@ where
 
     pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
         self.storage
-            .write_record_set(records, self.config.min_in_sync_replicas == 1)
+            .write_record_set(records, self.in_sync_replica == 1)
             .await
     }
 
@@ -826,17 +832,18 @@ mod test_leader {
     #[test_async]
     async fn test_update_leader_from_followers() -> Result<(), ()> {
         let mut leader_config = SpuConfig::default();
-        leader_config.replication.min_in_sync_replicas = 2;
         leader_config.id = 5000;
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let (state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
+        let (mut state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
         )
         .await
         .expect("state");
+
+        state.set_in_sync_replica(2);
 
         // write fake recordset to ensure leo = 10
         state

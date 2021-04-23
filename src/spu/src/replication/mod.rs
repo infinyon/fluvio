@@ -67,7 +67,6 @@ mod replica_test {
         pub fn leader_config(&self) -> SpuConfig {
             let mut config = SpuConfig::default();
             config.log.base_dir = self.base_dir.clone();
-            config.replication.min_in_sync_replicas = self.in_sync_replica;
             config.id = self.base_id;
             config.private_endpoint = format!("{}:{}", HOST, self.base_port);
             config
@@ -193,7 +192,6 @@ mod replica_test {
     #[test_async]
     async fn test_replication2_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
-            .in_sync_replica(2 as u16)
             .followers(1 as u16)
             .base_port(13000 as u16)
             .generate("replication2_existing");
@@ -244,7 +242,6 @@ mod replica_test {
     #[allow(unused)]
     async fn test_replication2_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
-            .in_sync_replica(1 as u16)
             .followers(1 as u16)
             .base_port(13010 as u16)
             .generate("replication2_new");
@@ -292,7 +289,6 @@ mod replica_test {
     #[test_async]
     async fn test_replication3_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
-            .in_sync_replica(3 as u16)
             .followers(2 as u16)
             .base_port(13020 as u16)
             .generate("replication3_existing");
