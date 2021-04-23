@@ -1,4 +1,7 @@
-name: Hourly tests 
+name: Hourly tests
+
+permissions:
+  contents: read
 
 on:
   #schedule:
