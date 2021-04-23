@@ -76,8 +76,10 @@ jobs:
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+            target: x86_64-apple-darwin
         exclude:
           - os: macos-latest
             rust: stable
@@ -87,6 +89,7 @@ jobs:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
       SCCACHE_CACHE_SIZE: 2G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
@@ -154,15 +157,15 @@ jobs:
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ runner.os }}-fluvio
-          path: target/release/fluvio
+          name: fluvio-${{ env.TARGET }}
+          path: target/${{ env.TARGET }}/release/fluvio
 
       - name: Publish fluvio-run artifact
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ runner.os }}-fluvio-run
-          path: target/release/fluvio-run
+          name: fluvio-run-${{ env.TARGET }}
+          path: target/${{ env.TARGET }}/release/fluvio-run
 
   local_cluster_test:
     name: Local cluster test

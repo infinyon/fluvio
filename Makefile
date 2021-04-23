@@ -153,24 +153,24 @@ check-clippy: install-clippy
 	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
 
 build-all-test:
-	cargo build --lib --tests --all-features $(RELEASE_FLAG) $(VERBOSE_FLAG)
+	cargo build --lib --tests --all-features $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 check-all-test:
-	cargo check --lib --tests --all-features $(VERBOSE_FLAG)
+	cargo check --lib --tests --all-features $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 test_tls_multiplex:
-	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
+	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls $(TARGET_FLAG)
 
 build_filter_wasm:
 	rustup target add wasm32-unknown-unknown 
 	make -C smart_filter build_test
 
 run-all-unit-test: test_tls_multiplex build_filter_wasm
-	cargo test --lib --all-features $(RELEASE_FLAG)
-	cargo test -p fluvio-storage $(RELEASE_FLAG)
+	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
+	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 
 run-all-doc-test:
-	cargo test --all-features --doc $(RELEASE_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_musl:
 	rustup target add ${TARGET_LINUX}
@@ -225,7 +225,7 @@ fluvio_image: fluvio_bin_linux
 
 
 fluvio_bin_linux: install_musl
-	cargo build --bin fluvio-run --target $(TARGET_LINUX) $(RELEASE_FLAG)
+	cargo build --bin fluvio-run --target $(RELEASE_FLAG) $(TARGET_LINUX)
 
 make publish_fluvio_image:
 	curl \
