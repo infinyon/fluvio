@@ -2,7 +2,7 @@ name: Publish Latest
 
 on:
   push:
-    branches: [rewrite-release-publish]
+    branches: [master]
   workflow_dispatch:
     inputs:
       force:
