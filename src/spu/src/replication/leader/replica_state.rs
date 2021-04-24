@@ -13,8 +13,7 @@ use async_rwlock::{RwLock};
 
 use fluvio_socket::{FluvioSink, FlvSocketError};
 use dataplane::{record::RecordSet};
-use dataplane::{Offset, Isolation};
-use dataplane::api::RequestMessage;
+use dataplane::{Offset, Isolation, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
@@ -27,7 +26,7 @@ use crate::{
 use crate::replication::follower::sync::{
     FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
 };
-use super::super::follower::FollowerReplicaState;
+use super::{super::follower::FollowerReplicaState, FollowerNotifier};
 use crate::storage::SharableReplicaStorage;
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
@@ -35,7 +34,7 @@ pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
-    leader: SpuId,
+    replica: Replica,
     in_sync_replica: u16,
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
@@ -45,7 +44,7 @@ pub struct LeaderReplicaState<S> {
 impl<S> Clone for LeaderReplicaState<S> {
     fn clone(&self) -> Self {
         Self {
-            leader: self.leader.clone(),
+            replica: self.replica.clone(),
             storage: self.storage.clone(),
             config: self.config.clone(),
             followers: self.followers.clone(),
@@ -109,7 +108,7 @@ where
         );
 
         Self {
-            leader: replica.leader,
+            replica,
             storage: inner,
             config,
             followers: Arc::new(RwLock::new(followers)),
@@ -139,6 +138,16 @@ where
     ) -> Self {
         let replica_storage = follower.inner_owned();
         Self::new(replica, config, replica_storage)
+    }
+
+    /// replica id
+    pub fn id(&self) -> &ReplicaKey {
+        &self.replica.id
+    }
+
+    /// leader SPU. This should be same as our local SPU
+    pub fn leader(&self) -> SpuId {
+        self.replica.leader
     }
 
     /// override in sync replica
@@ -227,7 +236,7 @@ where
 
     /// convert myself as
     async fn as_lrs_request(&self) -> LrsRequest {
-        let leader = (self.leader.to_owned(), self.hw(), self.leo()).into();
+        let leader = (self.leader(), self.hw(), self.leo()).into();
         let replicas = self
             .followers
             .read()
@@ -248,10 +257,33 @@ where
         sc_sink.send(lrs).await
     }
 
-    pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
+    /// write records to storage
+    /// then update our follower's leo
+    pub async fn write_record_set(
+        &self,
+        records: &mut RecordSet,
+        notifiers: &FollowerNotifier,
+    ) -> Result<(), StorageError> {
         self.storage
             .write_record_set(records, self.in_sync_replica == 1)
-            .await
+            .await?;
+
+        if self.replica.replicas.len() > 0 {
+            self.notify_followers(notifiers).await;
+        }
+
+        Ok(())
+    }
+
+    /// notify that followers need to be updated
+    async fn notify_followers(&self, notifiers: &FollowerNotifier) {
+        for follower in &self.replica.replicas {
+            if let Some(spu_ref) = notifiers.get(follower).await {
+                spu_ref.add(self.id().to_owned()).await;
+            } else {
+                warn!(follower, "Follower update doesnt' exist");
+            }
+        }
     }
 
     #[allow(dead_code)]
@@ -259,27 +291,20 @@ where
         self.followers.read().await.keys().cloned().collect()
     }
 
-    /*
-    /// synchronize
-    pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
-        let follower_sync = self.follower_updates().await;
-
-        for (follower_id, follower_info) in follower_sync {
-            self.send_update_to_follower(sinks, follower_id, &follower_info, max_bytes)
-                .await;
-        }
+    // get copy of followers_info for debugging
+    #[allow(unused)]
+    pub async fn followers_info(&self) -> BTreeMap<SpuId, OffsetInfo> {
+        self.followers.read().await.clone()
     }
-    */
 
     /// send back update to follower
     #[instrument(skip(self))]
     pub async fn send_update_to_follower(
         &self,
-        sink: &mut FluvioSink,
         follower_id: SpuId,
         follower_info: &OffsetInfo,
         max_bytes: u32,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<FileSyncRequest, FlvSocketError> {
         trace!("ready to build sync records");
         let mut sync_request = FileSyncRequest::default();
         let mut topic_response = PeerFileTopicResponse {
@@ -310,14 +335,7 @@ where
         topic_response.partitions.push(partition_response);
         sync_request.topics.push(topic_response);
 
-        let request = RequestMessage::new_request(sync_request).set_client_id(format!(
-            "leader: {}, replica: {}",
-            self.leader,
-            self.id()
-        ));
-
-        sink.encode_file_slices(&request, request.header.api_version())
-            .await
+        Ok(sync_request)
     }
 }
 
@@ -744,6 +762,8 @@ mod test_leader {
         leader_config.replication.min_in_sync_replicas = 2;
         leader_config.id = 5000;
 
+        let notifier = FollowerNotifier::shared();
+
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
@@ -755,7 +775,7 @@ mod test_leader {
 
         // write fake recordset to ensure leo = 10
         state
-            .write_record_set(&mut create_recordset(10))
+            .write_record_set(&mut create_recordset(10), &notifier)
             .await
             .expect("write");
         state.update_hw(2).await.expect("hw");
@@ -815,6 +835,7 @@ mod test_leader {
     async fn test_update_leader_from_followers() -> Result<(), ()> {
         let mut leader_config = SpuConfig::default();
         leader_config.id = 5000;
+        let notifier = FollowerNotifier::shared();
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
@@ -829,7 +850,7 @@ mod test_leader {
 
         // write fake recordset to ensure leo = 10
         state
-            .write_record_set(&mut create_recordset(10))
+            .write_record_set(&mut create_recordset(10), &notifier)
             .await
             .expect("write");
         state.update_hw(2).await.expect("hw");

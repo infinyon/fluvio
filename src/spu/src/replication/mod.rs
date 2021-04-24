@@ -33,7 +33,8 @@ mod replica_test {
     const HOST: &str = "127.0.0.1";
 
     const MAX_BYTES: u32 = 100000;
-    const MAX_WAIT_LEADER: u64 = 500;
+    const MAX_WAIT_LEADER: u64 = 100;
+    const MAX_WAIT_FOLLOWER: u64 = 100;
 
     static MAX_WAIT_REPLICATION: Lazy<u64> = Lazy::new(|| {
         use std::env;
@@ -200,7 +201,7 @@ mod replica_test {
 
         // write records
         leader_replica
-            .write_record_set(&mut create_recordset(2))
+            .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
             .await
             .expect("write");
 
@@ -247,6 +248,11 @@ mod replica_test {
             .generate("replication2_new");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
+        assert_eq!(leader_replica.leo(), 0);
+        assert_eq!(leader_replica.hw(), 0);
+
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&5002).unwrap().leo, -1);
 
         let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
 
@@ -259,9 +265,14 @@ mod replica_test {
         assert_eq!(follower_replica.leo(), 0);
         assert_eq!(follower_replica.hw(), 0);
 
+        sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
+        // leader should have actual follower info not just init
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&5002).unwrap().leo, 0);
+
         // write records
         leader_replica
-            .write_record_set(&mut create_recordset(2))
+            .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
             .await
             .expect("write");
 
@@ -297,7 +308,7 @@ mod replica_test {
 
         // write records
         leader_replica
-            .write_record_set(&mut create_recordset(2))
+            .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
             .await
             .expect("write");
 

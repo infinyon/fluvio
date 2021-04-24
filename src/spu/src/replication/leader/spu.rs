@@ -15,12 +15,12 @@ use fluvio_types::{
 
 use crate::core::SpuLocalStore;
 
-pub type SharedSpuUpdates = Arc<SpuUpdates>;
+pub type SharedSpuUpdates = Arc<FollowerNotifier>;
 pub type SharedSpuPendingUpdate = Arc<FollowerSpuPendingUpdates>;
 #[derive(Debug)]
-pub struct SpuUpdates(RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>);
+pub struct FollowerNotifier(RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>);
 
-impl Deref for SpuUpdates {
+impl Deref for FollowerNotifier {
     type Target = RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>;
 
     fn deref(&self) -> &Self::Target {
@@ -28,7 +28,7 @@ impl Deref for SpuUpdates {
     }
 }
 
-impl SpuUpdates {
+impl FollowerNotifier {
     pub fn shared() -> Arc<Self> {
         Arc::new(Self(RwLock::new(HashMap::new())))
     }
@@ -66,7 +66,7 @@ impl SpuUpdates {
     /// replica's hw need be propogated to
     pub async fn update_hw(&self, spu: &SpuId, replica: ReplicaKey) {
         if let Some(spu_ref) = self.get(spu).await {
-            spu_ref.update_hw(replica).await;
+            spu_ref.add(replica).await;
         } else {
             warn!(spu, "invalid spu");
         }
@@ -85,8 +85,8 @@ impl FollowerSpuPendingUpdates {
         self.event.change_listner()
     }
 
-    /// replica's hw need be propogated to
-    pub async fn update_hw(&self, replica: ReplicaKey) {
+    ///  add replica to be updated
+    pub async fn add(&self, replica: ReplicaKey) {
         let mut write = self.replicas.write().await;
         write.insert(replica);
         self.event.update_increment();

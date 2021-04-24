@@ -553,7 +553,10 @@ mod test {
 
             let mut records = RecordSet::default().add(create_batch());
             // write records, base offset = 0 since we are starting from 0
-            replica.write_record_set(&mut records).await.expect("write");
+            replica
+                .write_record_set(&mut records, ctx.follower_notifier())
+                .await
+                .expect("write");
 
             let response = stream.next().await.expect("first").expect("response");
             debug!("response: {:#?}", response);
@@ -625,7 +628,10 @@ mod test {
 
             debug!("writing 2nd batch");
             // base offset should be 2
-            replica.write_record_set(&mut records).await.expect("write");
+            replica
+                .write_record_set(&mut records, ctx.follower_notifier())
+                .await
+                .expect("write");
             assert_eq!(replica.hw(), 4);
 
             let response = stream.next().await.expect("first").expect("response");
@@ -720,7 +726,10 @@ mod test {
         // 1 out of 2 are filtered
         let mut records = create_filter_records(2);
         //debug!("records: {:#?}", records);
-        replica.write_record_set(&mut records).await.expect("write");
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
 
         let mut stream = client_socket
             .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -755,15 +764,24 @@ mod test {
 
         // firt write 2 non filterable records
         let mut records = RecordSet::default().add(create_batch());
-        replica.write_record_set(&mut records).await.expect("write");
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
 
         // another 1 of 3, here base offset should be = 4
         let mut records = create_filter_records(3);
-        replica.write_record_set(&mut records).await.expect("write");
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
 
         // create another 4, base should be 4 + 3 = 7 and total 10 records
         let mut records = create_filter_records(3);
-        replica.write_record_set(&mut records).await.expect("write");
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
         assert_eq!(replica.hw(), 10);
 
         debug!("2nd filter batch, hw=10");
@@ -863,15 +881,15 @@ mod test {
         // write 2 batches each with 10 records
         //debug!("records: {:#?}", records);
         replica
-            .write_record_set(&mut create_filter_records(10))
+            .write_record_set(&mut create_filter_records(10), ctx.follower_notifier())
             .await
             .expect("write"); // 1000 bytes
         replica
-            .write_record_set(&mut create_filter_records(10))
+            .write_record_set(&mut create_filter_records(10), ctx.follower_notifier())
             .await
             .expect("write"); // 2000 bytes totals
         replica
-            .write_record_set(&mut create_filter_records(10))
+            .write_record_set(&mut create_filter_records(10), ctx.follower_notifier())
             .await
             .expect("write"); // 3000 bytes total
                               // now total of 300 filter records bytes (min), but last filter record is greater than max

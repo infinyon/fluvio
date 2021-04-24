@@ -12,7 +12,7 @@ use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
 use crate::replication::follower::SharedFollowersState;
 use crate::replication::leader::{
-    SharedReplicaLeadersState, ReplicaLeadersState, SpuUpdates, SharedSpuUpdates,
+    SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
 };
 use crate::services::public::StreamPublishers;
 
@@ -39,7 +39,7 @@ pub struct GlobalContext<S> {
 
 impl<S> GlobalContext<S>
 where
-    S: ReplicaStorage + Debug,
+    S: ReplicaStorage,
 {
     pub fn new_shared_context(spu_config: SpuConfig) -> Arc<Self> {
         Arc::new(GlobalContext::new(spu_config))
@@ -53,7 +53,7 @@ where
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
             stream_publishers: StreamPublishers::new(),
-            spu_followers: SpuUpdates::shared(),
+            spu_followers: FollowerNotifier::shared(),
         }
     }
 
@@ -98,7 +98,7 @@ where
         &self.stream_publishers
     }
 
-    pub fn follower_updates(&self) -> &SpuUpdates {
+    pub fn follower_notifier(&self) -> &FollowerNotifier {
         &self.spu_followers
     }
 

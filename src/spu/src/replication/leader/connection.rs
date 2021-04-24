@@ -211,13 +211,20 @@ impl FollowerHandler {
                         for (follower, offset_update) in updates {
                             // our changes
                             if follower == self.follower_id {
-                                leader
+                                let sync_request = leader
                                     .send_update_to_follower(
-                                        sink,
                                         self.follower_id,
                                         &offset_update,
                                         self.max_bytes,
                                     )
+                                    .await?;
+                                let request = RequestMessage::new_request(sync_request)
+                                    .set_client_id(format!(
+                                        "leader: {}, replica: {}",
+                                        leader.id(),
+                                        replica_key
+                                    ));
+                                sink.encode_file_slices(&request, request.header.api_version())
                                     .await?;
                             } else {
                                 debug!(
@@ -226,7 +233,7 @@ impl FollowerHandler {
                                     "notifying other follower");
                                 // notify followers that replica's hw need to be propogated
                                 self.ctx
-                                    .follower_updates()
+                                    .follower_notifier()
                                     .update_hw(&follower, replica_key.clone())
                                     .await;
                             }
