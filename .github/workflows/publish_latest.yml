@@ -50,7 +50,7 @@ jobs:
       - name: Rename artifact
         run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
       - name: Publish artifact
-        run: gh release upload -R infinyon/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
+        run: gh release upload -R nicholastmosher/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
 
   docker:
     name: Publish Latest Image
