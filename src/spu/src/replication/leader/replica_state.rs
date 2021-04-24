@@ -104,8 +104,16 @@ where
         sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
         let in_sync_replica = replica.replicas.len() as u16 + 1;
-        let follower_ids = HashSet::from_iter(replica.replicas);
+        let follower_ids = HashSet::from_iter(replica.replicas.clone());
         let followers = ids_to_map(replica.leader, follower_ids);
+
+        debug!(
+            in_sync_replica,
+            replica = %replica.id,
+            follower = ?replica.replicas,
+            "creating leader"
+        );
+
         Self {
             leader: replica.leader,
             storage: inner,
@@ -151,13 +159,6 @@ where
         Self::new(replica, config, replica_storage, sender)
     }
 
-    /// send message to leader controller
-    pub async fn send_message_to_controller(
-        &self,
-        command: LeaderReplicaControllerCommand,
-    ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
-        self.sender.send(command).await
-    }
 
     /// override in sync replica
     #[allow(unused)]

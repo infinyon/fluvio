@@ -120,7 +120,7 @@ impl ReplicaLeadersState<FileReplica> {
         drop(writer);
 
         let leader_controller =
-            ReplicaLeaderController::new(replica_id, receiver, leader_state, sink_channel);
+            ReplicaLeaderController::new(replica_id,leader_state, sink_channel);
         leader_controller.run();
     }
 }

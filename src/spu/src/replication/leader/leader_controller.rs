@@ -1,23 +1,21 @@
 use dataplane::Isolation;
 use tracing::{debug};
 use tracing::instrument;
-use async_channel::Receiver;
-use futures_util::stream::StreamExt;
+
 
 use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 
 use crate::control_plane::SharedSinkMessageChannel;
+use crate::storage::REMOVAL_START;
 
-use super::LeaderReplicaControllerCommand;
 use super::replica_state::{SharedLeaderState};
 
 /// Controller for managing leader replica.
 /// Each leader replica controller is spawned and managed by master controller to ensure max parallism.
 pub struct ReplicaLeaderController<S> {
     id: ReplicaKey,
-    controller_receiver: Receiver<LeaderReplicaControllerCommand>,
     state: SharedLeaderState<S>,
     sc_channel: SharedSinkMessageChannel,
 }
@@ -26,13 +24,11 @@ impl<S> ReplicaLeaderController<S> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: ReplicaKey,
-        controller_receiver: Receiver<LeaderReplicaControllerCommand>,
         state: SharedLeaderState<S>,
         sc_channel: SharedSinkMessageChannel,
     ) -> Self {
         Self {
             id,
-            controller_receiver,
             state,
             sc_channel,
         }
@@ -49,7 +45,7 @@ impl ReplicaLeaderController<FileReplica> {
         fields(replica_id = %self.id),
         name = "LeaderController",
     )]
-    async fn dispatch_loop(mut self) {
+    async fn dispatch_loop(self) {
         use tokio::select;
 
         self.send_status_to_sc().await;
@@ -61,7 +57,6 @@ impl ReplicaLeaderController<FileReplica> {
 
             select! {
 
-
                 offset = hw_listener.listen() => {
                     debug!(hw_update = offset);
                     self.send_status_to_sc().await;
@@ -69,27 +64,11 @@ impl ReplicaLeaderController<FileReplica> {
 
                 offset = leo_listener.listen() => {
                     debug!(leo_update = offset);
-                    self.send_status_to_sc().await;
-                },
-
-                controller_req = self.controller_receiver.next() => {
-                    if let Some(command) = controller_req {
-                        match command {
-
-                            LeaderReplicaControllerCommand::UpdateReplicaFromSc(_) => {
-                                debug!("update replica from sc");
-                            },
-                            LeaderReplicaControllerCommand::RemoveReplicaFromSc => {
-                                debug!("RemoveReplica command, exiting");
-                                break;
-                            }
-                        }
-                    } else {
-                        debug!(
-                            "mailbox has terminated, terminating loop"
-                        );
+                    if offset == REMOVAL_START {
+                        debug!("replica is removed, shutting down");
                         break;
                     }
+                    self.send_status_to_sc().await;
                 }
             }
         }
