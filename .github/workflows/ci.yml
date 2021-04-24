@@ -122,7 +122,7 @@ jobs:
         run: |
           sudo apt install -y musl-tools
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          echo "TARGET_CC=musl-gcc" | tee $GITHUB_ENV
+          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
           rustup target add x86_64-unknown-linux-musl
       - name: Cache cargo registry
         uses: actions/cache@v2
@@ -153,8 +153,8 @@ jobs:
       - name: Set RELEASE and FLUVIO_VERSION_SUFFIX
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
-          echo "RELEASE=true" | tee $GITHUB_ENV
-          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee $GITHUB_ENV
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee -a $GITHUB_ENV
 
       - name: Start sccache server
         run: sccache --start-server
