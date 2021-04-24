@@ -278,11 +278,7 @@ where
     /// notify that followers need to be updated
     async fn notify_followers(&self, notifiers: &FollowerNotifier) {
         for follower in &self.replica.replicas {
-            if let Some(spu_ref) = notifiers.get(follower).await {
-                spu_ref.add(self.id().to_owned()).await;
-            } else {
-                warn!(follower, "Follower update doesnt' exist");
-            }
+            notifiers.notify(follower, self.id().to_owned()).await;
         }
     }
 

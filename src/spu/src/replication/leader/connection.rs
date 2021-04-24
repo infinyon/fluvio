@@ -234,7 +234,7 @@ impl FollowerHandler {
                                 // notify followers that replica's hw need to be propogated
                                 self.ctx
                                     .follower_notifier()
-                                    .update_hw(&follower, replica_key.clone())
+                                    .notify(&follower, replica_key.clone())
                                     .await;
                             }
                         }

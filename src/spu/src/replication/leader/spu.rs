@@ -64,7 +64,7 @@ impl FollowerNotifier {
     }
 
     /// replica's hw need be propogated to
-    pub async fn update_hw(&self, spu: &SpuId, replica: ReplicaKey) {
+    pub async fn notify(&self, spu: &SpuId, replica: ReplicaKey) {
         if let Some(spu_ref) = self.get(spu).await {
             spu_ref.add(replica).await;
         } else {
