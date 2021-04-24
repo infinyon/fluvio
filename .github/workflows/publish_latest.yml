@@ -49,6 +49,8 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
     steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 #      - name: Download artifact
 #        uses: actions/download-artifact@v2
 #        with:
@@ -86,6 +88,8 @@ jobs:
     name: Publish Fluvio CLI
     runs-on: ubuntu-latest
     steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Install cargo-make
         uses: davidB/rust-cargo-make@v1
         with:

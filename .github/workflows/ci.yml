@@ -163,11 +163,19 @@ jobs:
         run: ${{ matrix.task.run }}
 
       - name: Build release artifacts
-        if: ${{ env.RELEASE == 'true' }}
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: make build_cli build_cluster
 
       - name: Stop sccache server
         run: sccache --stop-server || true
+
+      - name: Print target directory
+        run: |
+          ls -la target/ || true
+          ls -la target/x86_64-unknown-linux-musl/ || true
+          ls -la target/x86_64-unknown-linux-musl/release/ || true
+          ls -la target/x86_64-apple-darwin/ || true
+          ls -la target/x86_64-apple-darwin/release/ || true
 
       - name: Publish fluvio artifact
         if: ${{ matrix.task.publish }}
