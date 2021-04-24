@@ -12,15 +12,14 @@ use crate::storage::REMOVAL_START;
 
 use super::replica_state::{SharedLeaderState};
 
-/// Controller for managing leader replica.
-/// Each leader replica controller is spawned and managed by master controller to ensure max parallism.
-pub struct ReplicaLeaderController<S> {
+/// Send Update to SC
+pub struct StatusUpdateController<S> {
     id: ReplicaKey,
     state: SharedLeaderState<S>,
     sc_channel: SharedSinkMessageChannel,
 }
 
-impl<S> ReplicaLeaderController<S> {
+impl<S> StatusUpdateController<S> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: ReplicaKey,
@@ -35,7 +34,7 @@ impl<S> ReplicaLeaderController<S> {
     }
 }
 
-impl ReplicaLeaderController<FileReplica> {
+impl StatusUpdateController<FileReplica> {
     pub fn run(self) {
         spawn(self.dispatch_loop());
     }

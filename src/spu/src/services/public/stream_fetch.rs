@@ -532,7 +532,7 @@ mod test {
             let topic = format!("test{}", version);
             let test = Replica::new((topic.clone(), 0), 5001, vec![]);
             let test_id = test.id.clone();
-            let (replica, _) = LeaderReplicaState::create(test, ctx.config())
+            let replica = LeaderReplicaState::create(test, ctx.config())
                 .await
                 .expect("replica");
             ctx.leaders_state().insert(test_id, replica.clone());
@@ -700,7 +700,7 @@ mod test {
 
         let test = Replica::new((topic.to_owned(), 0), 5001, vec![]);
         let test_id = test.id.clone();
-        let (replica, _) = LeaderReplicaState::create(test, ctx.config())
+        let replica = LeaderReplicaState::create(test, ctx.config())
             .await
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());
@@ -855,7 +855,7 @@ mod test {
 
         let test = Replica::new((topic.to_owned(), 0), 5001, vec![]);
         let test_id = test.id.clone();
-        let (replica, _) = LeaderReplicaState::create(test, ctx.config())
+        let replica = LeaderReplicaState::create(test, ctx.config())
             .await
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());

@@ -10,7 +10,6 @@ use std::fmt;
 use tracing::{debug, trace, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
-use async_channel::{Sender, Receiver, SendError};
 
 use fluvio_socket::{FluvioSink, FlvSocketError};
 use dataplane::{record::RecordSet};
@@ -34,7 +33,6 @@ use crate::storage::SharableReplicaStorage;
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
-use super::LeaderReplicaControllerCommand;
 
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
@@ -43,7 +41,6 @@ pub struct LeaderReplicaState<S> {
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
-    sender: Sender<LeaderReplicaControllerCommand>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -53,7 +50,6 @@ impl<S> Clone for LeaderReplicaState<S> {
             storage: self.storage.clone(),
             config: self.config.clone(),
             followers: self.followers.clone(),
-            sender: self.sender.clone(),
             in_sync_replica: self.in_sync_replica.clone(),
         }
     }
@@ -100,8 +96,7 @@ where
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
-        inner: SharableReplicaStorage<S>,
-        sender: Sender<LeaderReplicaControllerCommand>,
+        inner: SharableReplicaStorage<S>
     ) -> Self {
         let in_sync_replica = replica.replicas.len() as u16 + 1;
         let follower_ids = HashSet::from_iter(replica.replicas.clone());
@@ -119,7 +114,6 @@ where
             storage: inner,
             config,
             followers: Arc::new(RwLock::new(followers)),
-            sender,
             in_sync_replica,
         }
     }
@@ -129,34 +123,27 @@ where
         replica: Replica,
         config: &'a C,
     ) -> Result<
-        (
-            LeaderReplicaState<S>,
-            Receiver<LeaderReplicaControllerCommand>,
-        ),
+        LeaderReplicaState<S>,
         StorageError,
     >
     where
         ReplicationConfig: From<&'a C>,
         S::Config: From<&'a C>,
     {
-        use async_channel::bounded;
-
-        let (sender, receiver) = bounded(10);
 
         let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
-        let leader_replica = Self::new(replica, config.into(), inner, sender);
-        Ok((leader_replica, receiver))
+        let leader_replica = Self::new(replica, config.into(), inner);
+        Ok(leader_replica)
     }
 
     pub fn promoted_from(
         follower: FollowerReplicaState<S>,
         replica: Replica,
-        config: ReplicationConfig,
-        sender: Sender<LeaderReplicaControllerCommand>,
+        config: ReplicationConfig
     ) -> Self {
         let replica_storage = follower.inner_owned();
-        Self::new(replica, config, replica_storage, sender)
+        Self::new(replica, config, replica_storage)
     }
 
 
@@ -765,7 +752,7 @@ mod test_leader {
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let (state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
+        let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
         )
@@ -837,7 +824,7 @@ mod test_leader {
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let (mut state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
+        let mut state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
         )

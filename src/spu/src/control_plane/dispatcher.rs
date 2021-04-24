@@ -30,7 +30,7 @@ use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;
-use crate::replication::leader::{LeaderReplicaState, LeaderReplicaControllerCommand};
+use crate::replication::leader::{LeaderReplicaState};
 use crate::InternalServerError;
 
 use super::SupervisorCommand;
@@ -473,23 +473,12 @@ impl ScDispatcher<FileReplica> {
     async fn update_leader_replica(&self, replica: Replica) {
         debug!("updating leader controller");
 
-        if let Some(leader_state) = self.ctx.leaders_state().get(&replica.id) {
+        if let Some(_) = self.ctx.leaders_state().get(&replica.id) {
             debug!(
-                "leader replica was found, sending replica info: {}",
-                replica
+                %replica,
+                "leader replica was found"
             );
 
-            if let Err(err) = leader_state
-                .send_message_to_controller(LeaderReplicaControllerCommand::UpdateReplicaFromSc(
-                    replica.clone(),
-                ))
-                .await
-            {
-                error!(
-                    "error sending external command to replica controller: {:#?}",
-                    err
-                );
-            }
         } else {
             error!("leader controller was not found: {}", replica.id);
         }
@@ -512,16 +501,7 @@ impl ScDispatcher<FileReplica> {
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
         let confirm = if let Some(previous_state) = self.ctx.leaders_state().remove(&replica.id) {
-            if let Err(err) = previous_state
-                .send_message_to_controller(LeaderReplicaControllerCommand::RemoveReplicaFromSc)
-                .await
-            {
-                error!(
-                    "error sending external command to replica controller for replica: {}, {:#?}",
-                    replica, err
-                );
-            }
-
+            
             if let Err(err) = previous_state.remove().await {
                 error!("error: {} removing replica: {}", err, replica);
             } else {
@@ -570,13 +550,10 @@ impl ScDispatcher<FileReplica> {
                 old_replica.id
             );
 
-            let (sender, receiver) = bounded(10);
-
             let leader_state = LeaderReplicaState::promoted_from(
                 follower_replica,
                 new_replica.clone(),
-                self.ctx.config().into(),
-                sender,
+                self.ctx.config().into()
             );
 
             self.ctx
@@ -584,7 +561,6 @@ impl ScDispatcher<FileReplica> {
                 .spawn_leader_controller(
                     new_replica.id,
                     leader_state,
-                    receiver,
                     self.sink_channel.clone(),
                 )
                 .await;
