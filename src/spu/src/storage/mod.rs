@@ -13,8 +13,8 @@ use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError, Offse
 use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
-pub const REMOVAL_START: Offset = -1000;      // indicate that storage about to be removed
-pub const REMOVAL_END: Offset = -1001;        // indicate the storage has been removed
+pub const REMOVAL_START: Offset = -1000; // indicate that storage about to be removed
+pub const REMOVAL_END: Offset = -1001; // indicate the storage has been removed
 
 /// Thread safe storage for replicas
 #[derive(Debug)]

@@ -17,5 +17,4 @@ pub use self::peer_api::LeaderPeerRequest;
 pub use self::update_offsets::UpdateOffsetRequest;
 pub use self::update_offsets::ReplicaOffsetRequest;
 pub use self::actions::FollowerOffsetUpdate;
-pub use self::actions::LeaderReplicaControllerCommand;
 pub use self::spu::*;

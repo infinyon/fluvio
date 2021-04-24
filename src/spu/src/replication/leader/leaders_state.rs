@@ -7,16 +7,12 @@ use std::collections::HashMap;
 use tracing::{debug, error};
 use tracing::instrument;
 
-
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
 use crate::{control_plane::SharedSinkMessageChannel, core::SharedGlobalContext};
 
-use super::{
-    LeaderReplicaState, StatusUpdateController,
-    replica_state::SharedLeaderState,
-};
+use super::{LeaderReplicaState, StatusUpdateController, replica_state::SharedLeaderState};
 
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
@@ -84,12 +80,8 @@ impl ReplicaLeadersState<FileReplica> {
         match LeaderReplicaState::create(replica, ctx.config()).await {
             Ok(leader_replica) => {
                 debug!("file replica created and spawing leader controller");
-                self.spawn_leader_controller(
-                    replica_id,
-                    leader_replica.clone(),
-                    sink_channel,
-                )
-                .await;
+                self.spawn_leader_controller(replica_id, leader_replica.clone(), sink_channel)
+                    .await;
 
                 Ok(leader_replica)
             }
@@ -117,8 +109,7 @@ impl ReplicaLeadersState<FileReplica> {
 
         drop(writer);
 
-        let leader_controller =
-            StatusUpdateController::new(replica_id,leader_state, sink_channel);
+        let leader_controller = StatusUpdateController::new(replica_id, leader_state, sink_channel);
         leader_controller.run();
     }
 }

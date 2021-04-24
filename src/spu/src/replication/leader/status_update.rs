@@ -2,7 +2,6 @@ use dataplane::Isolation;
 use tracing::{debug};
 use tracing::instrument;
 
-
 use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;

@@ -478,7 +478,6 @@ impl ScDispatcher<FileReplica> {
                 %replica,
                 "leader replica was found"
             );
-
         } else {
             error!("leader controller was not found: {}", replica.id);
         }
@@ -501,7 +500,6 @@ impl ScDispatcher<FileReplica> {
         // try to send message to leader controller if still exists
         debug!("sending terminate message to leader controller");
         let confirm = if let Some(previous_state) = self.ctx.leaders_state().remove(&replica.id) {
-            
             if let Err(err) = previous_state.remove().await {
                 error!("error: {} removing replica: {}", err, replica);
             } else {
@@ -553,16 +551,12 @@ impl ScDispatcher<FileReplica> {
             let leader_state = LeaderReplicaState::promoted_from(
                 follower_replica,
                 new_replica.clone(),
-                self.ctx.config().into()
+                self.ctx.config().into(),
             );
 
             self.ctx
                 .leaders_state()
-                .spawn_leader_controller(
-                    new_replica.id,
-                    leader_state,
-                    self.sink_channel.clone(),
-                )
+                .spawn_leader_controller(new_replica.id, leader_state, self.sink_channel.clone())
                 .await;
         }
     }

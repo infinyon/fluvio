@@ -33,7 +33,6 @@ use crate::storage::SharableReplicaStorage;
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
-
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     leader: SpuId,
@@ -96,9 +95,9 @@ where
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
-        inner: SharableReplicaStorage<S>
+        inner: SharableReplicaStorage<S>,
     ) -> Self {
-        let in_sync_replica = replica.replicas.len() as u16 + 1;
+        let in_sync_replica = replica.replicas.len() as u16;
         let follower_ids = HashSet::from_iter(replica.replicas.clone());
         let followers = ids_to_map(replica.leader, follower_ids);
 
@@ -122,15 +121,11 @@ where
     pub async fn create<'a, C>(
         replica: Replica,
         config: &'a C,
-    ) -> Result<
-        LeaderReplicaState<S>,
-        StorageError,
-    >
+    ) -> Result<LeaderReplicaState<S>, StorageError>
     where
         ReplicationConfig: From<&'a C>,
         S::Config: From<&'a C>,
     {
-
         let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
         let leader_replica = Self::new(replica, config.into(), inner);
@@ -140,12 +135,11 @@ where
     pub fn promoted_from(
         follower: FollowerReplicaState<S>,
         replica: Replica,
-        config: ReplicationConfig
+        config: ReplicationConfig,
     ) -> Self {
         let replica_storage = follower.inner_owned();
         Self::new(replica, config, replica_storage)
     }
-
 
     /// override in sync replica
     #[allow(unused)]
