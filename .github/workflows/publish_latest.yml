@@ -32,7 +32,7 @@ jobs:
 
   github_release:
     name: Publish to GitHub Releases (${{ matrix.artifact }}-${{ matrix.target }})
-    needs: create_github_release
+    needs: bump_github_release
     runs-on: ubuntu-latest
     strategy:
       matrix:
