@@ -15,7 +15,8 @@ on:
         default: ''
 
 env:
-  VERBOSE: ${{ github.events.input.verbose }}
+#  VERBOSE: ${{ github.events.input.verbose }}
+  VERBOSE: true
   FORCE_RELEASE: ${{ github.events.inputs.force }}
 
 jobs:

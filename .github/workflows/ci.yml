@@ -142,13 +142,17 @@ jobs:
           key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-sccache-
-      - name: Start sccache server
-        run: sccache --start-server
 
-      - name: If running on 'staging', build in release mode
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode and set the version suffix
+      - name: Set RELEASE and FLUVIO_VERSION_SUFFIX
+        if: github.event_name == 'push' && github.ref == 'refs/head/staging'
         run: |
           echo "RELEASE=true" | tee $GITHUB_ENV
-#          ([[ "${GITHUB_REF#refs/heads/}" == "staging" ]] && echo "RELEASE=true" | tee $GITHUB_ENV) || echo "Debug mode"
+          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee $GITHUB_ENV
+
+      - name: Start sccache server
+        run: sccache --start-server
 
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.run }}
