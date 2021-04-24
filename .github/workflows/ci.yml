@@ -151,7 +151,7 @@ jobs:
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode and set the version suffix
       - name: Set RELEASE and FLUVIO_VERSION_SUFFIX
-        if: github.event_name == 'push' && github.ref == 'refs/head/staging'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
           echo "RELEASE=true" | tee $GITHUB_ENV
           echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee $GITHUB_ENV
