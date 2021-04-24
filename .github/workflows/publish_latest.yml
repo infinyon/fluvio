@@ -20,8 +20,19 @@ env:
   FORCE_RELEASE: ${{ github.events.inputs.force }}
 
 jobs:
+  bump_github_release:
+    name: Bump dev tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Bump dev tag
+        run: |
+          git tag -f dev
+          git push -f origin dev
+
   github_release:
     name: Publish to GitHub Releases (${{ matrix.artifact }}-${{ matrix.target }})
+    needs: create_github_release
     runs-on: ubuntu-latest
     strategy:
       matrix:
