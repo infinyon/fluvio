@@ -21,7 +21,7 @@ env:
 
 jobs:
   github_release:
-    name: Publish artifact to GitHub Releases (${{ matrix.artifact }}-${{ matrix.target }})
+    name: Publish to GitHub Releases (${{ matrix.artifact }}-${{ matrix.target }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,10 +30,12 @@ jobs:
     steps:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+#      - name: Download artifact
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: ${{ matrix.artifact }}-${{ matrix.target }}-${{ github.sha }}
       - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.artifact }}-${{ matrix.target }}-${{ github.sha }}
+        run: gh run download -R nicholastmosher/fluvio -n "${{ matrix.artifact }}-${{ matrix.target }}-${{ github.sha }}"
       - name: Rename artifact
         run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
       - name: Publish artifact
@@ -47,10 +49,12 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
     steps:
+#      - name: Download artifact
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: fluvio-run-x86_64-unknown-linux-musl-${{ github.sha }}
       - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: fluvio-run-x86_64-unknown-linux-${{ github.sha }}
+        run: gh run download -R nicholastmosher/fluvio -n "fluvio-run-x86_64-unknown-linux-musl-${{ github.sha }}"
 
       - name: Login to Docker Hub
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
@@ -90,16 +94,28 @@ jobs:
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
-      - name: Download artifact (x86_64-unknown-linux-musl)
-        uses: actions/download-artifact@v2
-        with:
-          name: fluvio-x86_64-unknown-linux-musl-${{ github.sha }}
-          path: target/x86_64-unknown-linux-musl/release/fluvio
-      - name: Download artifact (x86_64-apple-darwin)
-        uses: actions/download-artifact@v2
-        with:
-          name: fluvio-x86_64-apple-darwin-${{ github.sha }}
-          path: target/x86_64-apple-darwin/release/fluvio
+#      - name: Download artifact (x86_64-unknown-linux-musl)
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: fluvio-x86_64-unknown-linux-musl-${{ github.sha }}
+#          path: target/x86_64-unknown-linux-musl/release/fluvio
+#      - name: Download artifact (x86_64-apple-darwin)
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: fluvio-x86_64-apple-darwin-${{ github.sha }}
+#          path: target/x86_64-apple-darwin/release/fluvio
+
+      - name: Download artifacts
+        run: |
+          gh run download -R nicholastmosher/fluvio \
+            -n "fluvio-x86_64-unknown-linux-musl-${{ github.sha }}" \
+            -n "fluvio-x86_64-apple-darwin-${{ github.sha }}"
+
+      - name: Move artifacts
+        run: |
+          mv "fluvio-x86_64-unknown-linux-musl-${{ github.sha }}" target/x86_64-unknown-linux-musl/release/fluvio
+          mv "fluvio-run-x86_64-unknown-linux-musl-${{ github.sha }}" target/x86_64-unknown-linux-musl/release/fluvio-run
+
       - name: Publish to Fluvio Packages
         run: |
           ${HOME}/.fluvio/bin/fluvio package publish \
@@ -108,11 +124,12 @@ jobs:
             target/x86_64-apple-darwin/release/fluvio
 
   # Bump the latest version of the Fluvio CLI on the package registry
-  # This must be a distinct job than publish_fluvio_cli because this job requires
-  # that all targets are first published successfully before we can bump the version.
+  # This serves as the final step in the publishing process, and therefore
+  # depends on all other jobs to have completed successfully.
+  # If the 'latest' tag gets bumped, you can be sure the whole publish flow succeeded.
   bump_fluvio_cli:
     name: Bump Fluvio CLI version
-    needs: fluvio
+    needs: [github_release, docker, helm, fluvio]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
