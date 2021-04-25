@@ -56,34 +56,40 @@ jobs:
         run: make check-fmt
 
   tests:
-    name: ${{ matrix.make.name }} (${{ matrix.os }})
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
-        make:
+        task:
           - name: Clippy
-            task: "check-clippy"
-          - name: Unit tests
-            task: "build-all-test run-all-unit-test"
+            run: make check-clippy
+            publish: false
           - name: Doc tests
-            task: "run-all-doc-test"
+            run: make run-all-doc-test
+            publish: false
+          - name: Unit tests
+            run: make build-all-test run-all-unit-test
+            publish: true
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+            target: x86_64-apple-darwin
         exclude:
           - os: macos-latest
             rust: stable
-            make:
+            task:
               name: Clippy
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
       SCCACHE_CACHE_SIZE: 2G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
@@ -111,6 +117,13 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+      - name: Install Musl Tools
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
+          rustup target add x86_64-unknown-linux-musl
       - name: Cache cargo registry
         uses: actions/cache@v2
         continue-on-error: false
@@ -129,14 +142,41 @@ jobs:
           key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-sccache-
+
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode and set the version suffix
+      - name: Set RELEASE and FLUVIO_VERSION_SUFFIX
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee -a $GITHUB_ENV
+
       - name: Start sccache server
         run: sccache --start-server
-      - name: ${{ matrix.make.name }}
-        run: make ${{ matrix.make.task }}
-      - name: Print sccache stats
-        run: sccache --show-stats
+
+      - name: ${{ matrix.task.name }}
+        run: ${{ matrix.task.run }}
+
+      - name: Build release artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        run: make build_cli build_cluster
+
       - name: Stop sccache server
         run: sccache --stop-server || true
+
+      - name: Publish fluvio artifact
+        if: ${{ matrix.task.publish }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-${{ matrix.target }}-${{ github.sha }}
+          path: target/${{ matrix.target }}/release/fluvio
+
+      - name: Publish fluvio-run artifact
+        if: ${{ matrix.task.publish }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.target }}-${{ github.sha }}
+          path: target/${{ matrix.target }}/release/fluvio-run
 
   local_cluster_test:
     name: Local cluster test
