@@ -198,7 +198,8 @@ release_image: fluvio_image
 # Build latest image and push to Docker registry
 latest_image: RELEASE=true
 latest_image: fluvio_image
-	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
+	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(DOCKER_TAG)
+	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
 	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 	docker push $(DOCKER_IMAGE):latest
 
@@ -206,10 +207,12 @@ latest_image: fluvio_image
 minikube_image: MINIKUBE_FLAG=minikube
 minikube_image: fluvio_image
 
-# Build docker image for Fluvio. This will tag with current VERSION and git hash
+# Build docker image for Fluvio.
+# In development, we tag the image with just the git commit.
+# In further releases, we re-tag the image as needed.
 fluvio_image: fluvio_bin_linux
-	echo "Building Fluvio musl image with tag: $(DOCKER_TAG)"
-	k8-util/docker/build.sh $(DOCKER_TAG) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
+	echo "Building Fluvio musl image with tag: $(GIT_COMMIT)"
+	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
 
 fluvio_bin_linux: install_musl
 	export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc && \
