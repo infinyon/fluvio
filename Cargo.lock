@@ -1300,7 +1300,6 @@ dependencies = [
  "k8-client",
  "k8-config",
  "k8-types",
- "once_cell",
  "prettytable-rs",
  "semver 0.11.0",
  "serde",

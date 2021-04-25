@@ -34,15 +34,8 @@ use common::COMMAND_TEMPLATE;
 use common::target::ClusterTarget;
 use common::PrintTerminal;
 use crate::install::fluvio_extensions_dir;
-use once_cell::sync::Lazy;
 
-static VERSION: Lazy<String> = Lazy::new(|| {
-    let version = include_str!("VERSION");
-    match option_env!("FLUVIO_VERSION_SUFFIX") {
-        Some(suffix) => format!("{}-{}", version, suffix),
-        None => version.to_string(),
-    }
-});
+const VERSION: &str = include_str!("VERSION");
 
 /// Fluvio Command Line Interface
 #[derive(StructOpt, Debug)]

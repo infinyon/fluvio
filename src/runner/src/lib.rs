@@ -8,7 +8,10 @@ use fluvio_spu::SpuOpt;
 use fluvio_sc::cli::ScOpt;
 use fluvio_extension_common::FluvioExtensionMetadata;
 
+const VERSION: &str = include_str!("../../../VERSION");
+
 #[derive(Debug, StructOpt)]
+#[structopt(version = crate::VERSION)]
 pub enum RunCmd {
     /// Run a new Streaming Processing Unit (SPU)
     #[structopt(name = "spu")]

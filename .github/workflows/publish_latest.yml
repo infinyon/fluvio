@@ -1,0 +1,162 @@
+name: Publish Latest
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      force:
+        required: false
+        description: 'Set --force to force push this release'
+        default: ''
+      verbose:
+        description: "Set --verbose to get verbose build output"
+        required: false
+        default: ''
+
+env:
+  VERBOSE: ${{ github.events.input.verbose }}
+  FORCE_RELEASE: ${{ github.events.inputs.force }}
+
+jobs:
+  # Bump the `dev` tag to this commit in order to overwrite the `dev` GH prerelease
+  bump_github_release:
+    name: Bump dev tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Bump dev tag
+        run: |
+          git tag -f dev
+          git push -f origin dev
+
+  # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
+  github_release:
+    name: Publish to GitHub Releases (${{ matrix.artifact }}-${{ matrix.target }})
+    needs: bump_github_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact: [fluvio, fluvio-run]
+        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+    steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifact
+        run: gh run download -R infinyon/fluvio -n "${{ matrix.artifact }}-${{ matrix.target }}-${{ github.sha }}"
+      - name: Rename artifact
+        run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
+      - name: Publish artifact
+        run: gh release upload -R infinyon/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
+
+  # Build a docker image using the latest `fluvio-run` build for linux-musl
+  docker:
+    name: Publish Docker Image
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifact
+        run: gh run download -R infinyon/fluvio -n "fluvio-run-x86_64-unknown-linux-musl-${{ github.sha }}"
+
+      - name: Login to Docker Hub
+        run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish latest development Fluvio Image
+        run: |
+          export TAG="$(cat VERSION)-${{ github.sha }}"
+          k8-util/docker/build.sh "${TAG}" "./fluvio-run"
+          docker tag "infinyon/fluvio:${TAG}" "infinyon/fluvio:latest"
+          docker push "infinyon/fluvio:${TAG}"
+          docker push "infinyon/fluvio:latest"
+
+
+  # Publish the latest Helm chart, tagged with the version and the git commit.
+  # Example tag: 0.7.4-alpha.0-abcdef, where abcdef is the git commit.
+  # This job requires the docker image step to have completed successfully.
+  helm:
+    name: Publish Latest Helm Chart
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Helm
+        run: actions/ci-replace-helm.sh
+        env:
+          HELM_VERSION: v3.3.4
+          OS: ${{ matrix.os }}
+      - name: Install Helm Push plugin
+        run: helm plugin install https://github.com/chartmuseum/helm-push.git
+      - name: Helm Add Repo
+        run: helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
+      - name: Push Sys Chart
+        run: helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
+      - name: Push App Chart
+        run: helm push k8-util/helm/fluvio-app --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
+
+  # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
+  fluvio:
+    name: Publish Fluvio CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+        with:
+          version: '0.32.9'
+      - name: Install fluvio-package
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ${HOME}/.fluvio/bin/fluvio install fluvio-package
+
+      - name: Download fluvio x86_64-unknown-linux-musl
+        run: |
+          mkdir -p target/x86_64-unknown-linux-musl/release/
+          gh run download -R infinyon/fluvio \
+            -n "fluvio-x86_64-unknown-linux-musl-${{ github.sha }}" \
+            -D target/x86_64-unknown-linux-musl/release/
+
+      - name: Download fluvio x86_64-apple-darwin
+        run: |
+          mkdir -p target/x86_64-apple-darwin/release/
+          gh run download -R infinyon/fluvio \
+            -n "fluvio-x86_64-apple-darwin-${{ github.sha }}" \
+            -D target/x86_64-apple-darwin/release/
+
+      - name: Publish to Fluvio Packages
+        run: |
+          ${HOME}/.fluvio/bin/fluvio package publish \
+            --version="$(cat VERSION)+$(git rev-parse HEAD)" \
+            target/x86_64-unknown-linux-musl/release/fluvio \
+            target/x86_64-apple-darwin/release/fluvio
+
+  # Bump the latest version of the Fluvio CLI on the package registry
+  # This serves as the final step in the publishing process, and therefore
+  # depends on all other jobs to have completed successfully.
+  # If the 'latest' tag gets bumped, you can be sure the whole publish flow succeeded.
+  bump_fluvio_cli:
+    name: Bump Fluvio CLI version
+    needs: [github_release, docker, helm, fluvio]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install cargo-make
+        uses: davidB/rust-cargo-make@v1
+        with:
+          version: '0.32.9'
+      - name: Set prod env
+        if: ${{ github.event.inputs.test == '' }}
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+      - name: Bump latest version of Fluvio CLI on fluvio-packages
+        env:
+          RUST_LOG: debug
+        run: cargo make bump-fluvio-latest
