@@ -96,7 +96,7 @@ where
         config: ReplicationConfig,
         inner: SharableReplicaStorage<S>,
     ) -> Self {
-        let in_sync_replica = replica.replicas.len() as u16;
+        let in_sync_replica = replica.replicas.len() as u16 + 1;
         let follower_ids = HashSet::from_iter(replica.replicas.clone());
         let followers = ids_to_map(replica.leader, follower_ids);
 
@@ -753,9 +753,25 @@ mod test_leader {
     }
 
     #[test_async]
+    async fn test_leader_in_sync_replica() -> Result<(), ()> {
+        let mut leader_config = SpuConfig::default();
+        leader_config.id = 5000;
+
+        let replica: ReplicaKey = ("test", 1).into();
+        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        let state: LeaderReplicaState<MockStorage> =
+            LeaderReplicaState::create(Replica::new(replica, 5000, vec![]), &leader_config)
+                .await
+                .expect("state");
+
+        assert_eq!(state.in_sync_replica, 1);
+
+        Ok(())
+    }
+
+    #[test_async]
     async fn test_follower_update() -> Result<(), ()> {
         let mut leader_config = SpuConfig::default();
-        leader_config.replication.min_in_sync_replicas = 2;
         leader_config.id = 5000;
 
         let notifier = FollowerNotifier::shared();

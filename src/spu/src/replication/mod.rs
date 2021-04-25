@@ -191,10 +191,33 @@ mod replica_test {
     /// Replicating with existing records
     ///    
     #[test_async]
+    async fn test_just_leader() -> Result<(), ()> {
+        let builder = TestConfig::builder()
+            .base_port(13000 as u16)
+            .generate("replication2_existing");
+
+        let (leader_gctx, leader_replica) = builder.leader_replica().await;
+
+        // write records
+        leader_replica
+            .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+            .await
+            .expect("write");
+
+        assert_eq!(leader_replica.leo(), 2);
+        assert_eq!(leader_replica.hw(), 2);
+
+        Ok(())
+    }
+
+    /// Test 2 replica
+    /// Replicating with existing records
+    ///    
+    #[test_async]
     async fn test_replication2_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(1 as u16)
-            .base_port(13000 as u16)
+            .base_port(13010 as u16)
             .generate("replication2_existing");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -244,7 +267,7 @@ mod replica_test {
     async fn test_replication2_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(1 as u16)
-            .base_port(13010 as u16)
+            .base_port(13020 as u16)
             .generate("replication2_new");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -301,7 +324,7 @@ mod replica_test {
     async fn test_replication3_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(2 as u16)
-            .base_port(13020 as u16)
+            .base_port(13030 as u16)
             .generate("replication3_existing");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
