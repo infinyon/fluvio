@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use tracing::{warn, debug};
+use tracing::{warn, debug, instrument};
 use async_rwlock::RwLock;
 
 use dataplane::ReplicaKey;
@@ -64,6 +64,7 @@ impl FollowerNotifier {
     }
 
     /// replica's hw need be propogated to
+    #[instrument(skip(self))]
     pub async fn notify(&self, spu: &SpuId, replica: ReplicaKey) {
         if let Some(spu_ref) = self.get(spu).await {
             spu_ref.add(replica).await;

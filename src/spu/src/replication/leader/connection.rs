@@ -11,9 +11,7 @@ use fluvio_types::SpuId;
 
 use crate::{
     core::DefaultSharedGlobalContext,
-    replication::follower::sync::{
-        FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
-    },
+    replication::follower::sync::{FileSyncRequest},
 };
 
 use super::LeaderPeerApiEnum;
@@ -82,7 +80,7 @@ impl FollowerHandler {
                 _ = listener.listen() => {
                     debug!("hw has been updated");
 
-                    self.update_hw_from_other(&mut sink).await?;
+                    self.update_from_leaders(&mut sink).await?;
                 },
 
 
@@ -101,7 +99,7 @@ impl FollowerHandler {
                             match req_message {
 
                                 LeaderPeerRequest::UpdateOffsets(request) => {
-                                    self.handle_offset_request(request.request,&mut sink).await?;
+                                    self.process_offset_update_from_follower(request.request,&mut sink).await?;
                                 }
                             }
                         } else {
@@ -126,7 +124,7 @@ impl FollowerHandler {
 
     // updates form other SPU trigger this
     #[instrument(skip(self))]
-    async fn update_hw_from_other(&mut self, sink: &mut FluvioSink) -> Result<(), FlvSocketError> {
+    async fn update_from_leaders(&mut self, sink: &mut FluvioSink) -> Result<(), FlvSocketError> {
         let replicas = self.spu_update.dain_replicas().await;
 
         if replicas.is_empty() {
@@ -139,26 +137,12 @@ impl FollowerHandler {
 
         for replica in replicas {
             if let Some(leader) = leaders.get(&replica) {
-                let mut topic_response = PeerFileTopicResponse {
-                    name: replica.topic.to_owned(),
-                    ..Default::default()
-                };
-
-                let mut partition_response = PeerFilePartitionResponse {
-                    partition: replica.partition,
-                    ..Default::default()
-                };
-                let offset = leader.as_offset();
-                debug!(
-                    hw = offset.hw,
-                    leo = offset.leo,
-                    %replica,
-                    "will sending hw to follower");
-                // ensure leo and hw are set correctly. storage might have update last stable offset
-                partition_response.leo = offset.leo;
-                partition_response.hw = offset.hw;
-                topic_response.partitions.push(partition_response);
-                sync_request.topics.push(topic_response);
+                if let Some(topic_response) = leader
+                    .follower_updates(&self.follower_id, self.max_bytes)
+                    .await
+                {
+                    sync_request.topics.push(topic_response);
+                }
             } else {
                 warn!(
                     %replica,
@@ -171,19 +155,15 @@ impl FollowerHandler {
             debug!("no topics found, skipping");
         } else {
             let request = RequestMessage::new_request(sync_request)
-                .set_client_id(format!("leader hw update"));
-            debug!("sending hw requests");
-            if let Err(err) = sink.send_request(&request).await {
-                error!("sending hw: {:#?}", err);
-            } else {
-                debug!("all hw send completed");
-            }
+                .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
+            sink.encode_file_slices(&request, request.header.api_version())
+                .await?;
         }
         Ok(())
     }
 
-    /// update each leader
-    async fn handle_offset_request(
+    #[instrument(skip(self))]
+    async fn process_offset_update_from_follower(
         &self,
         request: UpdateOffsetRequest,
         sink: &mut FluvioSink,
@@ -192,54 +172,17 @@ impl FollowerHandler {
             let replica_key = update.replica;
 
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
-                if leader
+                let status = leader
                     .update_states_from_followers(
                         self.follower_id,
                         OffsetInfo {
                             hw: update.hw,
                             leo: update.leo,
                         },
+                        self.ctx.follower_notifier(),
                     )
-                    .await
-                {
-                    debug!("leader state change occur, need to send back to followers");
-                    // if success we need to compute updates
-                    let updates = leader.follower_updates().await;
-                    if updates.is_empty() {
-                        debug!(%replica_key,"no updates, do nothing");
-                    } else {
-                        for (follower, offset_update) in updates {
-                            // our changes
-                            if follower == self.follower_id {
-                                let sync_request = leader
-                                    .send_update_to_follower(
-                                        self.follower_id,
-                                        &offset_update,
-                                        self.max_bytes,
-                                    )
-                                    .await?;
-                                let request = RequestMessage::new_request(sync_request)
-                                    .set_client_id(format!(
-                                        "leader: {}, replica: {}",
-                                        leader.id(),
-                                        replica_key
-                                    ));
-                                sink.encode_file_slices(&request, request.header.api_version())
-                                    .await?;
-                            } else {
-                                debug!(
-                                    follower,
-                                    %replica_key,
-                                    "notifying other follower");
-                                // notify followers that replica's hw need to be propogated
-                                self.ctx
-                                    .follower_notifier()
-                                    .notify(&follower, replica_key.clone())
-                                    .await;
-                            }
-                        }
-                    }
-                }
+                    .await;
+                debug!(status, replica = %leader.id(), "leader updated");
             } else {
                 error!(%replica_key,"no such replica");
             }
