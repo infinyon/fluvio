@@ -51,7 +51,7 @@ mod replica_test {
         base_id: SpuId,
         #[builder(setter(into), default = "1")]
         in_sync_replica: u16,
-        #[builder(setter(into), default = "1")]
+        #[builder(setter(into), default = "0")]
         followers: u16,
         #[builder(setter(into), default = "temp_dir()")]
         base_dir: PathBuf,
@@ -194,7 +194,7 @@ mod replica_test {
     async fn test_just_leader() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .base_port(13000 as u16)
-            .generate("replication2_existing");
+            .generate("just_leader");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
 
