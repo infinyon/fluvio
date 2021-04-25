@@ -143,11 +143,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-sccache-
 
-      - name: Check GH event name and ref
-        run: |
-          echo "GitHub event name: ${{ github.event_name }}"
-          echo "GitHub ref: ${{ github.ref }}"
-
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode and set the version suffix
       - name: Set RELEASE and FLUVIO_VERSION_SUFFIX
