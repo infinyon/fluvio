@@ -703,7 +703,7 @@ mod test_leader {
 
         async fn read_partition_slice<P>(
             &self,
-            _offset: Offset,
+            offset: Offset,
             _max_len: u32,
             _isolation: dataplane::Isolation,
             _partition_response: &mut P,
@@ -711,7 +711,7 @@ mod test_leader {
         where
             P: fluvio_storage::SlicePartitionResponse + Send,
         {
-            todo!()
+            OffsetInfo { leo: offset, hw: 0 }
         }
 
         // do dummy implementations of write
@@ -794,8 +794,8 @@ mod test_leader {
         drop(follower_info);
 
         assert!(state.follower_updates(&5003, MAX_BYTES).await.is_none()); // don't have 5003
-
         assert!(state.follower_updates(&5001, MAX_BYTES).await.is_none()); // 5001 is still invalid
+        assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
 
         // got updated from 5001 which just been initialized
         let mut followers = state.followers.write().await;
@@ -805,16 +805,15 @@ mod test_leader {
             .update(&OffsetInfo { leo: 0, hw: 0 });
         drop(followers);
 
+        assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
         let updates = state
             .follower_updates(&5001, MAX_BYTES)
             .await
             .expect("some");
-        //assert_eq!(
-        //    state.follower_updates(&5001,MAX_BYTES).await,
-        //    vec![(5001, OffsetInfo { leo: 0, hw: 0 })]
-        //);
+        assert_eq!(updates.name, "test");
+        assert_eq!(updates.partitions[0].leo, 10);
+        assert_eq!(updates.partitions[0].hw, 2);
 
-        /*
         // updated from 5002
         let mut followers = state.followers.write().await;
         followers
@@ -822,13 +821,13 @@ mod test_leader {
             .expect("map")
             .update(&OffsetInfo { leo: 0, hw: 0 });
         drop(followers);
-        assert_eq!(
-            state.follower_updates().await,
-            vec![
-                (5001, OffsetInfo { leo: 0, hw: 0 }),
-                (5002, OffsetInfo { leo: 0, hw: 0 }),
-            ]
-        );
+        let updates = state
+            .follower_updates(&5002, MAX_BYTES)
+            .await
+            .expect("some");
+        assert_eq!(updates.name, "test");
+        assert_eq!(updates.partitions[0].leo, 10);
+        assert_eq!(updates.partitions[0].hw, 2);
 
         // 5002 has been fully caught up
         let mut followers = state.followers.write().await;
@@ -837,11 +836,8 @@ mod test_leader {
             .expect("map")
             .update(&OffsetInfo { leo: 10, hw: 2 });
         drop(followers);
-        assert_eq!(
-            state.follower_updates().await,
-            vec![(5001, OffsetInfo { leo: 0, hw: 0 }),]
-        );
-        */
+        assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
+        assert!(state.follower_updates(&5001, MAX_BYTES).await.is_some()); // 5001 is still need to besync
 
         Ok(())
     }
