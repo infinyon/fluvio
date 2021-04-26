@@ -381,7 +381,7 @@ fn compute_hw(
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
     assert!(min_replica > 0);
-    //   assert!((min_replica - 1) <= followers.len() as u16);
+    assert!((min_replica - 1) <= followers.len() as u16);
     let min_lsr = min(min_replica - 1, followers.len() as u16);
     //println!("min lsr: {}", min_lsr);
 
