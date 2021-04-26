@@ -184,6 +184,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs: [build, local_cluster_test, k8_cluster_test]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v2
       - name: Bump dev tag
@@ -201,6 +203,7 @@ jobs:
       matrix:
         artifact: [fluvio, fluvio-run]
         target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+    permissions: write-all
     steps:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
@@ -208,10 +211,21 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: ${{ matrix.artifact }}-${{ matrix.target }}
-      - name: Rename artifact
-        run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
       - name: Publish artifact
-        run: gh release upload -R infinyon/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
+        run: |
+          ls -la "${{ matrix.artifact }}-${{ matrix.target }}"
+          gh release upload -R infinyon/fluvio --clobber dev "./${{ matrix.artifact }}-${{ matrix.target }}/${{ matrix.artifact }}"
+
+  # Job that follows the success of all required jobs in this workflow.
+  # Used by Bors to detect that all required jobs have completed successfully
+  done:
+    name: Done
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: github_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: echo "Done!"
 
   local_cluster_test:
     name: Local cluster test

@@ -7,6 +7,7 @@ status = [
     "Doc tests (macos-latest)",
     "Local cluster test (infinyon-ubuntu-bionic, stable)",
     "Kubernetes cluster test (infinyon-ubuntu-bionic, stable)",
+    "Done",
 ]
 use_squash_merge = true
 delete_merged_branches = true
