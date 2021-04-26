@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use tracing::{warn, debug, instrument};
+use tracing::{warn, debug};
 use async_rwlock::RwLock;
 
 use dataplane::ReplicaKey;
@@ -40,7 +40,7 @@ impl FollowerNotifier {
     }
 
     /// update our self from current spu
-    pub async fn sync_from_spus(&self, spus: &SpuLocalStore,local_spu: SpuId) {
+    pub async fn sync_from_spus(&self, spus: &SpuLocalStore, local_spu: SpuId) {
         let mut writer = self.write().await;
         // remove non existent spu
         let keys: Vec<SpuId> = writer.keys().map(|k| *k).collect();
@@ -64,9 +64,13 @@ impl FollowerNotifier {
     }
 
     /// notify followers that it's state need to be updated
-    #[instrument(skip(self))]
     pub async fn notify_follower(&self, spu: &SpuId, replica: ReplicaKey) {
-        if let Some(spu_ref) = self.get(spu).await {
+        let reader = self.read().await;
+        if let Some(spu_ref) = reader.get(spu) {
+            debug!(
+                spu,
+                %replica,
+                "add notifer");
             spu_ref.add(replica).await;
         } else {
             warn!(spu, "invalid spu");
@@ -100,7 +104,7 @@ impl FollowerSpuPendingUpdates {
     }
 
     #[allow(unused)]
-    pub async fn has_replica(&self,replica: &ReplicaKey) -> bool {
+    pub async fn has_replica(&self, replica: &ReplicaKey) -> bool {
         let read = self.replicas.read().await;
         read.contains(replica)
     }

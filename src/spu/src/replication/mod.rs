@@ -36,6 +36,9 @@ mod replica_test {
     const MAX_WAIT_LEADER: u64 = 100;
     const MAX_WAIT_FOLLOWER: u64 = 100;
 
+    const FOLLOWER1: SpuId = 5002;
+    const FOLLOWER2: SpuId = 5003;
+
     static MAX_WAIT_REPLICATION: Lazy<u64> = Lazy::new(|| {
         use std::env;
         if env::var("CI").is_ok() {
@@ -232,7 +235,7 @@ mod replica_test {
         assert_eq!(leader_replica.hw(), 0);
 
         let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
-        
+
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
@@ -343,11 +346,17 @@ mod replica_test {
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-        let (_, follower_replica) = builder.follower_replica(0).await;
+        let (_, follower_replica1) = builder.follower_replica(0).await;
 
         // at this point, follower replica should be empty since we didn't have time to sync up with leader
-        assert_eq!(follower_replica.leo(), 0);
-        assert_eq!(follower_replica.hw(), 0);
+        assert_eq!(follower_replica1.leo(), 0);
+        assert_eq!(follower_replica1.hw(), 0);
+
+        let (_, follower_replica2) = builder.follower_replica(1).await;
+
+        // at this point, follower replica should be empty since we didn't have time to sync up with leader
+        assert_eq!(follower_replica2.leo(), 0);
+        assert_eq!(follower_replica2.hw(), 0);
 
         //wait until follower sync up with leader
         sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
@@ -355,30 +364,83 @@ mod replica_test {
         debug!("done waiting for first checking result");
 
         // all records has been fully replicated
-        assert_eq!(follower_replica.leo(), 2);
-
+        assert_eq!(follower_replica1.leo(), 2);
         // leader's hw is still 0
-        assert_eq!(follower_replica.hw(), 0);
-        assert_eq!(leader_replica.hw(), 0);
+        assert_eq!(follower_replica1.hw(), 2);
+        assert_eq!(leader_replica.hw(), 2);
 
         let (_, follower_replica2) = builder.follower_replica(1).await;
+        assert_eq!(follower_replica2.leo(), 2);
+        assert_eq!(follower_replica2.hw(), 2);
+
+        spu_server.notify();
+
+        Ok(())
+    }
+
+    /// Test 2 replica
+    /// Replicating new records
+    ///    
+    #[test_async]
+    async fn test_replication3_new_records() -> Result<(), ()> {
+        let builder = TestConfig::builder()
+            .followers(2 as u16)
+            .base_port(13040 as u16)
+            .generate("replication3_new");
+
+        let (leader_gctx, leader_replica) = builder.leader_replica().await;
+        assert_eq!(leader_replica.leo(), 0);
+        assert_eq!(leader_replica.hw(), 0);
+
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&FOLLOWER1).unwrap().leo, -1);
+        assert_eq!(follower_info.get(&FOLLOWER2).unwrap().leo, -1);
+
+        let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+
+        // give leader controller time to startup
+        sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
+
+        let (_, follower_replica1) = builder.follower_replica(0).await;
+
+        // at this point, follower replica should be empty since we didn't have time to sync up with leader
+        assert_eq!(follower_replica1.leo(), 0);
+        assert_eq!(follower_replica1.hw(), 0);
+
+        let (_, follower_replica2) = builder.follower_replica(1).await;
+
+        // at this point, follower replica should be empty since we didn't have time to sync up with leader
         assert_eq!(follower_replica2.leo(), 0);
         assert_eq!(follower_replica2.hw(), 0);
+
+        // wait for followers to sync with leader
+        sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
+
+        // leader should now states from follower
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&FOLLOWER1).unwrap().leo, 0);
+        assert_eq!(follower_info.get(&FOLLOWER2).unwrap().leo, 0);
+
+        // write records
+        leader_replica
+            .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+            .await
+            .expect("write");
+
+        assert_eq!(leader_replica.leo(), 2);
+        assert_eq!(leader_replica.hw(), 0);
 
         // wait until follower sync up with leader
         sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
-        debug!("done waiting for 2nd follower: checking final");
+        debug!("done waiting. checking result");
 
-        // ensure all follower replica has fully replicaged
-        assert_eq!(follower_replica2.leo(), 2);
-        assert_eq!(follower_replica.leo(), 2);
-
-        // leader has updated hw
+        // all records has been fully replicated
+        assert_eq!(follower_replica1.leo(), 2);
+        assert_eq!(follower_replica1.hw(), 2);
         assert_eq!(leader_replica.hw(), 2);
-        // then followers, first check 2nd follower, since it was last updated, it shoud have been updated first
+        assert_eq!(follower_replica2.leo(), 2);
         assert_eq!(follower_replica2.hw(), 2);
-        assert_eq!(follower_replica.hw(), 2);
 
         spu_server.notify();
 

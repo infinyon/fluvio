@@ -164,14 +164,12 @@ impl FollowerHandler {
         Ok(())
     }
 
-    
     async fn process_offset_update_from_follower(
         &self,
         request: UpdateOffsetRequest,
     ) -> Result<(), FlvSocketError> {
-        
         for update in request.replicas {
-            debug!(?update,"request");
+            debug!(?update, "request");
             let replica_key = update.replica;
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
                 let status = leader
