@@ -203,8 +203,7 @@ jobs:
       matrix:
         artifact: [fluvio, fluvio-run]
         target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
-    permissions:
-      packages: write
+    permissions: write-all
     steps:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
