@@ -1,4 +1,4 @@
-name: Publish Latest
+name: Publish
 
 on:
   push:
@@ -143,7 +143,7 @@ jobs:
   # This serves as the final step in the publishing process, and therefore
   # depends on all other jobs to have completed successfully.
   # If the 'latest' tag gets bumped, you can be sure the whole publish flow succeeded.
-  bump_fluvio_cli:
+  bump_fluvio:
     name: Bump Fluvio CLI version
     needs: [github_release, docker, helm, fluvio]
     runs-on: ubuntu-latest
