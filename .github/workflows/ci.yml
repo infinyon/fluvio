@@ -184,14 +184,19 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs: [build, local_cluster_test, k8_cluster_test]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    permissions: write-all
     steps:
       - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Delete old release
+        run: gh release delete -R infinyon/fluvio dev -y || true
       - name: Bump dev tag
         run: |
           git tag -f dev
           git push -f origin dev
+      - name: Create new release
+        run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
 
   # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
   github_release:
