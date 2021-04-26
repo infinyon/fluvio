@@ -15,7 +15,7 @@ jobs:
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Tag and push release image
         run: |
-          export VERSION="$(curl https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           export LATEST_TAG="infinyon/fluvio:${VERSION}-${{ github.sha }}"
           export RELEASE_TAG="infinyon/fluvio:${VERSION}"
           docker pull "${LATEST_TAG}"
@@ -37,7 +37,7 @@ jobs:
           OS: ubuntu-latest
       - name: Publish helm charts
         run: |
-          export VERSION="$(curl https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           helm plugin install https://github.com/chartmuseum/helm-push.git
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
           helm push k8-util/helm/fluvio-sys --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
@@ -94,7 +94,7 @@ jobs:
 
       - name: Bump Fluvio CLI
         run: |
-          export VERSION="$(curl https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           ${HOME}/.fluvio/bin/fluvio package bump dynamic "${VERSION}"
 
       - name: Bump stable branch
