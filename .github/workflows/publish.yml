@@ -1,4 +1,4 @@
-name: Publish Latest
+name: Publish
 
 on:
   push:
@@ -102,6 +102,9 @@ jobs:
   fluvio:
     name: Publish Fluvio CLI
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v2
       - name: Login GH CLI
@@ -140,10 +143,13 @@ jobs:
   # This serves as the final step in the publishing process, and therefore
   # depends on all other jobs to have completed successfully.
   # If the 'latest' tag gets bumped, you can be sure the whole publish flow succeeded.
-  bump_fluvio_cli:
+  bump_fluvio:
     name: Bump Fluvio CLI version
     needs: [github_release, docker, helm, fluvio]
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -151,11 +157,6 @@ jobs:
         uses: davidB/rust-cargo-make@v1
         with:
           version: '0.32.9'
-      - name: Set prod env
-        if: ${{ github.event.inputs.test == '' }}
-        run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
       - name: Bump latest version of Fluvio CLI on fluvio-packages
         env:
           RUST_LOG: debug
