@@ -50,6 +50,7 @@ impl StatusUpdateController<FileReplica> {
 
         let mut hw_listener = self.state.offset_listener(&Isolation::ReadCommitted);
         let mut leo_listener = self.state.offset_listener(&Isolation::ReadUncommitted);
+        let mut follower_listener = self.state.follower_listener();
         loop {
             debug!("waiting for next command");
 
@@ -66,6 +67,10 @@ impl StatusUpdateController<FileReplica> {
                         debug!("replica is removed, shutting down");
                         break;
                     }
+                    self.send_status_to_sc().await;
+                },
+                _ = follower_listener.listen() => {
+                    debug!("follower changed");
                     self.send_status_to_sc().await;
                 }
             }

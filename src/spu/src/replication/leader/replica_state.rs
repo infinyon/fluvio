@@ -7,7 +7,7 @@ use std::{
 use std::iter::FromIterator;
 use std::fmt;
 
-use tracing::{debug, error, warn, trace};
+use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
 
@@ -16,7 +16,10 @@ use dataplane::{Offset, Isolation, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
-use fluvio_types::{SpuId};
+use fluvio_types::{
+    SpuId,
+    event::offsets::{OffsetChangeListener, OffsetPublisher},
+};
 
 use crate::{
     config::{ReplicationConfig},
@@ -36,6 +39,7 @@ pub struct LeaderReplicaState<S> {
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
+    follower_update: Arc<OffsetPublisher>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -46,6 +50,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             config: self.config.clone(),
             followers: self.followers.clone(),
             in_sync_replica: self.in_sync_replica.clone(),
+            follower_update: self.follower_update.clone(),
         }
     }
 }
@@ -110,6 +115,7 @@ where
             config,
             followers: Arc::new(RwLock::new(followers)),
             in_sync_replica,
+            follower_update: Arc::new(OffsetPublisher::new(0)),
         }
     }
 
@@ -145,6 +151,10 @@ where
     /// leader SPU. This should be same as our local SPU
     pub fn leader(&self) -> SpuId {
         self.replica.leader
+    }
+
+    pub fn follower_listener(&self) -> OffsetChangeListener {
+        self.follower_update.change_listner()
     }
 
     /// override in sync replica
@@ -191,6 +201,7 @@ where
                     debug!("leader is committed");
                 }
                 debug!("follower changed");
+                self.follower_update.update_increment();
                 true
             } else {
                 false
@@ -312,15 +323,15 @@ where
     async fn notify_followers(&self, notifier: &FollowerNotifier) {
         let leader_offset = self.as_offset();
         let followers = self.followers.read().await;
-        trace!(?leader_offset);
+        debug!(?leader_offset);
         for follower in &self.replica.replicas {
             if let Some(follower_info) = followers.get(&follower) {
                 debug!(follower, ?follower_info);
                 if follower_info.is_valid() && !follower_info.is_same(&leader_offset) {
-                    trace!(follower, "notify");
+                    debug!(follower, "notify");
                     notifier.notify_follower(follower, self.id().clone()).await;
                 } else {
-                    trace!(follower, "no update");
+                    debug!(follower, "no update");
                 }
             }
         }
@@ -370,7 +381,7 @@ fn compute_hw(
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
     assert!(min_replica > 0);
-    assert!((min_replica - 1) <= followers.len() as u16);
+    //   assert!((min_replica - 1) <= followers.len() as u16);
     let min_lsr = min(min_replica - 1, followers.len() as u16);
     //println!("min lsr: {}", min_lsr);
 
