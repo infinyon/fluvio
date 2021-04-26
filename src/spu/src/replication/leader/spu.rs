@@ -40,7 +40,7 @@ impl FollowerNotifier {
     }
 
     /// update our self from current spu
-    pub async fn sync_from_spus(&self, spus: &SpuLocalStore) {
+    pub async fn sync_from_spus(&self, spus: &SpuLocalStore,local_spu: SpuId) {
         let mut writer = self.write().await;
         // remove non existent spu
         let keys: Vec<SpuId> = writer.keys().map(|k| *k).collect();
@@ -52,7 +52,7 @@ impl FollowerNotifier {
         }
         // add new spu that doesn't exists
         for spu in spus.all_keys() {
-            if !writer.contains_key(&spu) {
+            if spu != local_spu && !writer.contains_key(&spu) {
                 debug!(spu, "spu pending doesn't exists, creating");
                 let pending = FollowerSpuPendingUpdates {
                     event: Arc::new(OffsetPublisher::new(0)),
@@ -63,9 +63,9 @@ impl FollowerNotifier {
         }
     }
 
-    /// replica's hw need be propogated to
+    /// notify followers that it's state need to be updated
     #[instrument(skip(self))]
-    pub async fn notify(&self, spu: &SpuId, replica: ReplicaKey) {
+    pub async fn notify_follower(&self, spu: &SpuId, replica: ReplicaKey) {
         if let Some(spu_ref) = self.get(spu).await {
             spu_ref.add(replica).await;
         } else {
@@ -94,8 +94,14 @@ impl FollowerSpuPendingUpdates {
     }
 
     /// drain all replicas
-    pub async fn dain_replicas(&self) -> HashSet<ReplicaKey> {
+    pub async fn drain_replicas(&self) -> HashSet<ReplicaKey> {
         let mut write = self.replicas.write().await;
         write.drain().collect()
+    }
+
+    #[allow(unused)]
+    pub async fn has_replica(&self,replica: &ReplicaKey) -> bool {
+        let read = self.replicas.read().await;
+        read.contains(replica)
     }
 }

@@ -157,7 +157,7 @@ where
     /// if follower's state has been updated may result in leader's hw update
     /// return true if update has been updated, in this case, updates can be computed to followers
     /// return false if no change in state leader
-    #[instrument(skip(self))]
+    #[instrument(skip(self,notifiers))]
     pub async fn update_states_from_followers(
         &self,
         follower_id: SpuId,
@@ -175,25 +175,22 @@ where
 
         // get follower info
         let mut followers = self.followers.write().await;
-        if let Some(current_follow_info) = followers.get_mut(&follower_id) {
+        let update = if let Some(current_follow_info) = followers.get_mut(&follower_id) {
             if current_follow_info.update(&follower_pos) {
                 // if our leo and hw is same there is no need to recompute hw
                 if !leader_pos.is_committed() {
                     if let Some(hw) = compute_hw(&leader_pos, self.in_sync_replica, &followers) {
                         debug!(hw, "updating hw");
                         if let Err(err) = self.update_hw(hw).await {
-                            // if hw is updated then we need to notify other all other followers
-                            for follower in &self.replica.replicas {
-                                notifiers.notify(follower, self.id().clone()).await;
-                            }
                             error!("error updating hw: {}", err);
                         }
                     } else {
-                        debug!("no change");
+                        debug!("no hw change");
                     }
                 } else {
                     debug!("leader is committed");
                 }
+                debug!("follower changed");
                 true
             } else {
                 false
@@ -201,7 +198,24 @@ where
         } else {
             error!(follower_id, "invalid follower");
             false
+        };
+
+        if update {
+            let leader_offset = self.as_offset();
+               // safe to unwrap since we already look up
+            for follower in &self.replica.replicas {
+                if let Some(follower_info) = followers.get(&follower) {
+                    debug!(
+                        follower,
+                        ?follower_info);
+                    if follower_info.is_valid() && !follower_info.is_same(&leader_offset) {
+                        notifiers.notify_follower(follower, self.id().clone()).await;
+                    }
+                }
+            }
+
         }
+        update
     }
 
     /// compute follower that needs to be updated
@@ -311,7 +325,7 @@ where
     /// notify that followers need to be updated
     async fn notify_followers(&self, notifiers: &FollowerNotifier) {
         for follower in &self.replica.replicas {
-            notifiers.notify(follower, self.id().to_owned()).await;
+            notifiers.notify_follower(follower, self.id().to_owned()).await;
         }
     }
 
@@ -844,57 +858,158 @@ mod test_leader {
 
     #[test_async]
     async fn test_update_leader_from_followers() -> Result<(), ()> {
+        use crate::core::{GlobalContext};
+        use fluvio_controlplane_metadata::spu::{SpuSpec};
+
         let mut leader_config = SpuConfig::default();
         leader_config.id = 5000;
-        let notifier = FollowerNotifier::shared();
+        let specs = vec![
+            SpuSpec::new_private_addr(
+                5000,
+                9000,
+                "localhost".to_owned()),
+            SpuSpec::new_private_addr(
+                5001,
+                9001,
+                "localhost".to_owned()),
+            SpuSpec::new_private_addr(
+                5002,
+                9002,
+                "localhost".to_owned())
+        ];
+        let gctx: Arc<GlobalContext<MockStorage>> = GlobalContext::new_shared_context(leader_config);
+            gctx.spu_localstore().sync_all(specs);
+        gctx.sync_follower_update().await;
+
+        let notifier = gctx.follower_notifier();
+        assert!(notifier.get(&5001).await.is_some());
+        assert!(notifier.get(&5002).await.is_some());
+        assert!(notifier.get(&5000).await.is_none());
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let mut state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
-            Replica::new(replica, 5000, vec![5001, 5002]),
-            &leader_config,
+        let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
+            Replica::new(replica.clone(), 5000, vec![5001, 5002]),
+            gctx.config()
         )
         .await
         .expect("state");
 
-        state.set_in_sync_replica(2);
 
+        // follower's offset should be init
+        let follower_info = leader.followers_info().await;
+        assert_eq!(follower_info.get(&5001).unwrap().leo, -1);
+        assert_eq!(follower_info.get(&5001).unwrap().hw, -1);
+        
         // write fake recordset to ensure leo = 10
-        state
+        leader
             .write_record_set(&mut create_recordset(10), &notifier)
             .await
             .expect("write");
-        state.update_hw(2).await.expect("hw");
+
+        let f1 = notifier.get(&5001).await.expect("5001");
+        let f2 = notifier.get(&5001).await.expect("5002");
+        
+        assert!(f1.has_replica(&replica).await);
         // check leader leo = 10 and hw = 2
-        assert_eq!(state.leo(), 10);
-        assert_eq!(state.hw(), 2);
+        assert_eq!(leader.leo(), 10);
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.contains(&replica));
+        assert!(!f1.has_replica(&replica).await);
 
         // handle invalidate offset update from follower
         assert_eq!(
-            state
-                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 11 }, &notifier)
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 5, hw: 20 }, &notifier)
                 .await,
             false
         );
-        assert_eq!(state.hw(), 2);
+        assert_eq!(leader.hw(), 0);
+        assert!(!f1.has_replica(&replica).await);   // no update to follower required
 
         // update from invalid follower
         assert_eq!(
-            state
+            leader
                 .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 }, &notifier)
                 .await,
             false
         );
-        assert_eq!(state.hw(), 2);
+        assert_eq!(leader.hw(), 0);
 
-        // 5001 advance leo = 6 which is enough to make leader's hw to change
+        // handle newer leo
         assert_eq!(
-            state
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 20, hw: 0 }, &notifier)
+                .await,
+            false
+        );
+        assert_eq!(leader.hw(), 0);
+        assert!(!f1.has_replica(&replica).await);   // no update to follower required
+
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=0,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 0, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 0); // no change on hw since we just updated the update true follower's state
+        assert!(f1.drain_replicas().await.contains(&replica));
+        assert!(f2.drain_replicas().await.is_empty());  // f2 is still invalid
+        
+        // 5001 partial update, follower still need to sync up with leader
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=6,hw=0");
+        assert_eq!(
+            leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 }, &notifier)
                 .await,
             true
         );
-        assert_eq!(state.hw(), 6);
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.contains(&replica));
+
+
+        // 5001 has fully caught up with leader, nothing to update followers until 5002 has update
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.is_empty());
+        assert!(f2.drain_replicas().await.is_empty());
+        let follower_info = leader.followers_info().await;
+        assert_eq!(follower_info.get(&5001).unwrap().leo,10);
+        assert_eq!(follower_info.get(&5001).unwrap().hw, 0);
+        
+        // init 5002
+        debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=0,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5002, OffsetInfo { leo: 0, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 0);
+        let follower_info = leader.followers_info().await;
+        debug!(?follower_info);
+        assert!(f1.drain_replicas().await.is_empty());
+        assert!(f2.drain_replicas().await.contains(&replica));
+
+        // partial update of 5002, this lead hw to 6, both followers will be updated
+        debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=6,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5002, OffsetInfo { leo: 6, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 6);
+        assert!(f1.drain_replicas().await.contains(&replica));
+        assert!(f2.drain_replicas().await.contains(&replica));
+        
         Ok(())
     }
 }

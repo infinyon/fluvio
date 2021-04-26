@@ -78,7 +78,7 @@ impl FollowerHandler {
             select! {
 
                 _ = listener.listen() => {
-                    debug!("hw has been updated");
+                    debug!("this follower needs to be updated");
 
                     self.update_from_leaders(&mut sink).await?;
                 },
@@ -99,7 +99,7 @@ impl FollowerHandler {
                             match req_message {
 
                                 LeaderPeerRequest::UpdateOffsets(request) => {
-                                    self.process_offset_update_from_follower(request.request,&mut sink).await?;
+                                    self.process_offset_update_from_follower(request.request).await?;
                                 }
                             }
                         } else {
@@ -125,12 +125,14 @@ impl FollowerHandler {
     // updates form other SPU trigger this
     #[instrument(skip(self))]
     async fn update_from_leaders(&mut self, sink: &mut FluvioSink) -> Result<(), FlvSocketError> {
-        let replicas = self.spu_update.dain_replicas().await;
+        let replicas = self.spu_update.drain_replicas().await;
 
         if replicas.is_empty() {
             debug!("no replicas. skipping");
             return Ok(());
         }
+
+        debug!(?replicas);
 
         let mut sync_request = FileSyncRequest::default();
         let leaders = self.ctx.leaders_state();
@@ -162,15 +164,15 @@ impl FollowerHandler {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    
     async fn process_offset_update_from_follower(
         &self,
         request: UpdateOffsetRequest,
-        sink: &mut FluvioSink,
     ) -> Result<(), FlvSocketError> {
+        
         for update in request.replicas {
+            debug!(?update,"request");
             let replica_key = update.replica;
-
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
                 let status = leader
                     .update_states_from_followers(

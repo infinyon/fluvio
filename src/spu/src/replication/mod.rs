@@ -232,7 +232,7 @@ mod replica_test {
         assert_eq!(leader_replica.hw(), 0);
 
         let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
-
+        
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
