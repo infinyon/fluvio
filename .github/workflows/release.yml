@@ -30,11 +30,12 @@ jobs:
     needs: release_docker
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Install Helm
-        run: actions/ci-replace-helm.sh
         env:
           HELM_VERSION: v3.3.4
           OS: ubuntu-latest
+        run: actions/ci-replace-helm.sh
       - name: Publish helm charts
         run: |
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
@@ -56,15 +57,15 @@ jobs:
       - name: Download fluvio x86_64-unknown-linux-musl
         run: |
           mkdir -p target/x86_64-unknown-linux-musl/release/
-          gh run download -R infinyon/fluvio \
-            -n "fluvio-x86_64-unknown-linux-musl-${{ github.sha }}" \
+          gh release download dev -R infinyon/fluvio \
+            -n "fluvio-x86_64-unknown-linux-musl" \
             -D target/x86_64-unknown-linux-musl/release/
 
       - name: Download fluvio x86_64-apple-darwin
         run: |
           mkdir -p target/x86_64-apple-darwin/release/
-          gh run download -R infinyon/fluvio \
-            -n "fluvio-x86_64-apple-darwin-${{ github.sha }}" \
+          gh release download dev -R infinyon/fluvio \
+            -n "fluvio-x86_64-apple-darwin" \
             -D target/x86_64-apple-darwin/release/
 
       - name: Install fluvio-package
@@ -76,7 +77,7 @@ jobs:
         run: |
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           ${HOME}/.fluvio/bin/fluvio package publish \
-            --force
+            --force \
             --version="${VERSION}" \
             target/x86_64-unknown-linux-musl/release/fluvio \
             target/x86_64-apple-darwin/release/fluvio
@@ -99,9 +100,9 @@ jobs:
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           ${HOME}/.fluvio/bin/fluvio package bump dynamic "${VERSION}"
 
-      - name: Bump stable branch
-        if: false
-        run: |
-          git checkout stable
-          git rebase origin/master
-          git push origin stable
+      # Enable this when we are confident in the workflow
+#      - name: Bump stable branch
+#        run: |
+#          git checkout stable
+#          git rebase origin/master
+#          git push origin stable
