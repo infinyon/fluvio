@@ -74,8 +74,10 @@ jobs:
 
       - name: Publish to Fluvio Packages
         run: |
+          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           ${HOME}/.fluvio/bin/fluvio package publish \
-            --version="$(cat VERSION)" \
+            --force
+            --version="${VERSION}" \
             target/x86_64-unknown-linux-musl/release/fluvio \
             target/x86_64-apple-darwin/release/fluvio
 
