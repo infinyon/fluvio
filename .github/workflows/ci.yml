@@ -55,7 +55,7 @@ jobs:
       - name: Check rustfmt
         run: make check-fmt
 
-  tests:
+  build:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -164,19 +164,54 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-      - name: Publish fluvio artifact
+      - name: Upload fluvio artifact
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-${{ matrix.target }}-${{ github.sha }}
+          name: fluvio-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/fluvio
 
-      - name: Publish fluvio-run artifact
+      - name: Upload fluvio-run artifact
         if: ${{ matrix.task.publish }}
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-run-${{ matrix.target }}-${{ github.sha }}
+          name: fluvio-run-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/fluvio-run
+
+  # When all required jobs pass, bump the `dev` GH prerelease to this commit
+  bump_github_release:
+    name: Bump dev tag
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: [build, local_cluster_test, k8_cluster_test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Bump dev tag
+        run: |
+          git tag -f dev
+          git push -f origin dev
+
+  # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
+  github_release:
+    name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.target }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: bump_github_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact: [fluvio, fluvio-run]
+        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+    steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: ${{ matrix.artifact }}-${{ matrix.target }}
+      - name: Rename artifact
+        run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
+      - name: Publish artifact
+        run: gh release upload -R infinyon/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
 
   local_cluster_test:
     name: Local cluster test
