@@ -3,7 +3,7 @@ use std::any::Any;
 use std::env;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, TopicProducer};
+use fluvio::{Fluvio, TopicProducer, RecordKey};
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -86,17 +86,21 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    p.send_record(message.clone(), 0).await.unwrap_or_else(|_| {
-                        eprintln!(
-                            "[CI MODE] send record failed for iteration: {} message: {}",
-                            n, i
-                        );
-                    });
+                    p.send(RecordKey::Null, message.clone())
+                        .await
+                        .unwrap_or_else(|_| {
+                            eprintln!(
+                                "[CI MODE] send record failed for iteration: {} message: {}",
+                                n, i
+                            );
+                        });
                 }
             } else {
-                p.send_record(message.clone(), 0).await.unwrap_or_else(|_| {
-                    panic!("send record failed for iteration: {} message: {}", n, i)
-                });
+                p.send(RecordKey::Null, message.clone())
+                    .await
+                    .unwrap_or_else(|_| {
+                        panic!("send record failed for iteration: {} message: {}", n, i)
+                    });
             }
         }
     }

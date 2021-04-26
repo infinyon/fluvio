@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use fluvio::Fluvio;
+use fluvio::{Fluvio, RecordKey};
 
 use super::ConcurrentTestCase;
 use super::util::*;
@@ -18,6 +18,6 @@ pub async fn producer(fluvio: Arc<Fluvio>, option: ConcurrentTestCase, digests: 
         let record = rand_record();
         let record_digest = hash_record(&record);
         digests.send(record_digest).unwrap();
-        producer.send_record(record, 0).await.unwrap();
+        producer.send(RecordKey::Null, record).await.unwrap();
     }
 }

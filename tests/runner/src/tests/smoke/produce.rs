@@ -4,7 +4,7 @@ use log::info;
 
 use super::SmokeTestCase;
 use super::message::*;
-use fluvio::{Fluvio, TopicProducer};
+use fluvio::{Fluvio, TopicProducer, RecordKey};
 use fluvio_command::CommandExt;
 use std::sync::Arc;
 
@@ -131,9 +131,12 @@ pub async fn produce_message_with_api(
             let message = generate_message(offset, &test_case);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
-            producer.send_record(message, 0).await.unwrap_or_else(|_| {
-                panic!("send record failed for replication: {} iteration: {}", r, i)
-            });
+            producer
+                .send(RecordKey::Null, message)
+                .await
+                .unwrap_or_else(|_| {
+                    panic!("send record failed for replication: {} iteration: {}", r, i)
+                });
 
             info!(
                 "completed send iter: {}, offset: {},len: {}",

@@ -61,10 +61,19 @@ impl TopicProducer {
     )]
     pub async fn send<K, V>(&self, key: K, value: V) -> Result<(), FluvioError>
     where
-        K: Into<Vec<u8>>,
-        V: Into<Vec<u8>>,
+        K: Into<RecordKey>,
+        V: Into<RecordValue>,
     {
-        self.send_all(Some((Some(key.into()), value))).await?;
+        let record_key = key.into();
+        let record_value = value.into();
+
+        let maybe_key = match record_key {
+            RecordKey::Null => None,
+            RecordKey::Key(key) => Some(key),
+        };
+        let value = record_value.0;
+
+        self.send_all(Some((maybe_key, value))).await?;
         Ok(())
     }
 
@@ -214,6 +223,44 @@ fn assemble_requests(
     }
 
     requests
+}
+
+/// A key for determining which partition a record should be sent to.
+///
+/// This type is used to support conversions from any other type that
+/// may be converted to a `Vec<u8>`, while still allowing the ability
+/// to explicitly state that a record may have no key (`RecordKey::Null`).
+///
+/// # Examples
+///
+/// ```
+/// # use fluvio::{TopicProducer, FluvioError, RecordKey};
+/// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+/// producer.send("Hello", String::from("World!")).await?;
+/// producer.send(RecordKey::Null, "World!").await?;
+/// # Ok(())
+/// # }
+/// ```
+pub enum RecordKey {
+    Null,
+    Key(Vec<u8>),
+}
+
+impl<K: Into<Vec<u8>>> From<K> for RecordKey {
+    fn from(k: K) -> Self {
+        let key: Vec<u8> = k.into();
+        Self::Key(key)
+    }
+}
+
+/// A type to hold the contents of a record's value.
+pub struct RecordValue(Vec<u8>);
+
+impl<V: Into<Vec<u8>>> From<V> for RecordValue {
+    fn from(v: V) -> Self {
+        let value: Vec<u8> = v.into();
+        Self(value)
+    }
 }
 
 /// A trait for defining a partitioning strategy for key/value records.

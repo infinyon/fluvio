@@ -44,7 +44,7 @@
 //! #     pub use futures_util::stream::StreamExt;
 //! # }
 //! use std::time::Duration;
-//! use fluvio::{Offset, FluvioError};
+//! use fluvio::{Offset, FluvioError, RecordKey};
 //! use futures::StreamExt;
 //!
 //! async_std::task::spawn(produce_records());
@@ -55,7 +55,7 @@
 //! async fn produce_records() -> Result<(), FluvioError> {
 //!     let producer = fluvio::producer("echo").await?;
 //!     for i in 0..10u8 {
-//!         producer.send_record(format!("Hello, Fluvio {}!", i), 0).await?;
+//!         producer.send(RecordKey::Null, format!("Hello, Fluvio {}!", i)).await?;
 //!         async_std::task::sleep(Duration::from_secs(1)).await;
 //!     }
 //!     Ok(())
@@ -95,7 +95,7 @@ pub mod config;
 
 pub use error::FluvioError;
 pub use config::FluvioConfig;
-pub use producer::TopicProducer;
+pub use producer::{TopicProducer, RecordKey};
 pub use consumer::{PartitionConsumer, ConsumerConfig};
 pub use offset::Offset;
 
@@ -118,10 +118,10 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.8.0";
 /// a string:
 ///
 /// ```no_run
-/// # use fluvio::FluvioError;
+/// # use fluvio::{FluvioError, RecordKey};
 /// # async fn do_produce() -> Result<(), FluvioError> {
 /// let producer = fluvio::producer("my-topic").await?;
-/// producer.send_record("Hello, world!", 0).await?;
+/// producer.send(RecordKey::Null, "Hello, world!").await?;
 /// # Ok(())
 /// # }
 /// ```

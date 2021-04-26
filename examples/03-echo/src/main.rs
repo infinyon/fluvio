@@ -89,7 +89,7 @@
 //! ```
 
 use std::time::Duration;
-use fluvio::{FluvioError, Offset};
+use fluvio::{FluvioError, Offset, RecordKey};
 use futures::future::join;
 use async_std::task::spawn;
 use async_std::future::timeout;
@@ -144,7 +144,7 @@ async fn produce() -> Result<(), FluvioError> {
             .send(format!("Key {}", i), format!("Value {}", i))
             .await?;
     }
-    producer.send_record("Done!", 0).await?;
+    producer.send(RecordKey::Null, "Done!").await?;
 
     Ok(())
 }
