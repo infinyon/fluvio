@@ -212,8 +212,6 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: ${{ matrix.artifact }}-${{ matrix.target }}
-      - name: Rename artifact
-        run: mv ${{ matrix.artifact }} ${{ matrix.artifact }}-${{ matrix.target }}
       - name: Publish artifact
         run: gh release upload -R infinyon/fluvio --clobber dev ./${{ matrix.artifact }}-${{ matrix.target }}
 
