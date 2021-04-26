@@ -31,7 +31,7 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Download artifact
-        run: gh release download dev -R infinyon/fluvio -n "fluvio-run-x86_64-unknown-linux-musl"
+        run: gh release download dev -R infinyon/fluvio -p "fluvio-run-x86_64-unknown-linux-musl"
 
       - name: Login to Docker Hub
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
@@ -84,14 +84,14 @@ jobs:
         run: |
           mkdir -p target/x86_64-unknown-linux-musl/release/
           gh release download dev -R infinyon/fluvio \
-            -n "fluvio-x86_64-unknown-linux-musl" \
+            -p "fluvio-x86_64-unknown-linux-musl" \
             -D target/x86_64-unknown-linux-musl/release/
 
       - name: Download fluvio x86_64-apple-darwin
         run: |
           mkdir -p target/x86_64-apple-darwin/release/
           gh release download dev -R infinyon/fluvio \
-            -n "fluvio-x86_64-apple-darwin" \
+            -p "fluvio-x86_64-apple-darwin" \
             -D target/x86_64-apple-darwin/release/
 
       - name: Publish to Fluvio Packages
