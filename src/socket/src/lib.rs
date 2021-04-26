@@ -38,6 +38,7 @@ pub use self::error::FlvSocketError;
 
 #[cfg(target_arch = "wasm32")]
 mod websocket;
+
 #[cfg(target_arch = "wasm32")]
 pub use self::websocket::{
     FluvioWebSocket as AllFlvSocket,
