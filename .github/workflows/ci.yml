@@ -184,14 +184,19 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs: [build, local_cluster_test, k8_cluster_test]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    permissions: write-all
     steps:
       - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Delete old release
+        run: gh release delete -R infinyon/fluvio dev -y || true
       - name: Bump dev tag
         run: |
           git tag -f dev
           git push -f origin dev
+      - name: Create new release
+        run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
 
   # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
   github_release:
@@ -208,13 +213,14 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Download artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2
         with:
           name: ${{ matrix.artifact }}-${{ matrix.target }}
       - name: Publish artifact
         run: |
-          ls -la "${{ matrix.artifact }}-${{ matrix.target }}"
-          gh release upload -R infinyon/fluvio --clobber dev "./${{ matrix.artifact }}-${{ matrix.target }}/${{ matrix.artifact }}"
+          ls -la
+          mv "${{ matrix.artifact }}" "${{ matrix.artifact }}-${{ matrix.target }}"
+          gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.target }}"
 
   # Job that follows the success of all required jobs in this workflow.
   # Used by Bors to detect that all required jobs have completed successfully
