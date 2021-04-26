@@ -4,171 +4,102 @@ permissions:
   contents: read
 
 on:
-#  push:
-#    # Sequence of patterns matched against refs/tags
-#    tags:
-#      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
-    inputs:
-      force:
-        required: false
-        description: 'Force push this release'
-      update_script:
-        description: 'Whether to update the install.sh script'
-        required: false
-      test:
-        required: false
-        description: 'Whether to run a test release'
-        default: ''
 
 jobs:
-  publish_fluvio_cli:
-    name: Publish Fluvio CLI
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        rust: [stable]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set dynamic env
-        run: |
-          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" | tee $GITHUB_ENV
-          echo "FLUVIO_VERSION=$(cat VERSION)" | tee $GITHUB_ENV
-
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Install cargo-make
-        uses: davidB/rust-cargo-make@v1
-        with:
-          version: '0.32.9'
-
-      - name: install musl-tools
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          sudo apt-get update;
-          sudo apt-get install -y musl-tools build-essential;
-
-      - name: Build and upload release to github
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-        run: cargo make -l verbose --profile production github-release-upload
-
-      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-      - name: Set test env
-        if: ${{ github.event.inputs.test != '' }}
-        run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-
-      - name: Set prod env
-        if: ${{ github.event.inputs.test == '' }}
-        run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-
-      - name: Build and publish using fluvio-packages
-        env: # This shouldn't be needed.
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: cargo make -l verbose --profile production publish-fluvio
-
-      - name: Update fluvio install.sh
-        if: ${{ startsWith(matrix.os, 'ubuntu') && github.event.inputs.update_script != '' }}
-        run: cargo make -l verbose --profile production s3-upload-installer
-
-  # Bump the latest version of the Fluvio CLI on the package registry
-  # This must be a distinct job than publish_fluvio_cli because this job requires
-  # that all targets are first published successfully before we can bump the version.
-  bump_fluvio_cli:
-    name: Bump Fluvio CLI version and Set github publish
-    needs: publish_fluvio_cli
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Install Rust stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Install cargo-make
-        uses: davidB/rust-cargo-make@v1
-        with:
-          version: '0.32.9'
-      # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-      - name: Set test env
-        if: ${{ github.event.inputs.test != '' }}
-        run: |
-          echo "FLUVIO_PUBLISH_TEST=--test" >> $GITHUB_ENV
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.PACKAGE_TEST_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PACKAGE_TEST_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-      - name: Set prod env
-        if: ${{ github.event.inputs.test == '' }}
-        run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-
-      - name: Bump stable release version of Fluvio CLI using fluvio-packages
-        run: cargo make bump-fluvio
-
-      - name: Set github release to non-prerelease
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-        run: |
-          # This should probably go in the Github makefile task but it does not like the regex.
-          [ $(cat VERSION | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\-') ] || cargo make publish-github-release
-
-# TODO: Fix the pi build
-#  release_fluvio_pi:
-#    name: Raspberry Pi Release
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Set Force Release env
-#        run: |
-#          if [ "${{ github.event.inputs.force }}" = "--force" ]; then
-#            echo "GITHUB_RELEASE_FORCE=--replace" >> $GITHUB_ENV
-#          else
-#            echo "GITHUB_RELEASE_FORCE=''" >> $GITHUB_ENV
-#          fi
-#          echo "FORCE_RELEASE=${{ github.event.inputs.force }}"
-#          echo "FORCE_RELEASE=${{ github.event.inputs.force }}" >> $GITHUB_ENV
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Install cargo-make
-#        uses: davidB/rust-cargo-make@v1
-#        with:
-#          version: '0.32.9'
-#      - name: Build and upload pi release to github
-#        run: cargo make -l verbose pi-github-release-upload
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.ACTION_RELEASE }}
-
   release_docker:
-    name: docker release
+    name: Release Docker Image
     runs-on: ubuntu-latest
     steps:
-      - name: install musl-tools
+      - name: Login to Docker
+        run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+      - name: Tag and push release image
         run: |
-          sudo apt-get update;
-          sudo apt-get install -y musl-tools build-essential;
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Release docker
-        run: |
-          export TARGET_CC=musl-gcc
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-          make release_image
+          export VERSION="$(curl https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+          export LATEST_TAG="infinyon/fluvio:${VERSION}-${{ github.sha }}"
+          export RELEASE_TAG="infinyon/fluvio:${VERSION}"
+          docker pull "${LATEST_TAG}"
+          docker tag "${LATEST_TAG}" "${RELEASE_TAG}"
+          docker push "${RELEASE_TAG}"
 
-      - name: Release helm chart
+  # Publish the release Helm chart, tagged with the release VERSION.
+  # Example tag: 0.7.4
+  # This job requires the docker image step to have completed successfully.
+  release_helm:
+    name: Publish Release Helm Chart
+    needs: release_docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Helm
+        run: actions/ci-replace-helm.sh
+        env:
+          HELM_VERSION: v3.3.4
+          OS: ubuntu-latest
+      - name: Publish helm charts
         run: |
-          make helm-install-plugin
-          helm repo add fluvio https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          make helm-publish-sys
-          make helm-publish-app
+          export VERSION="$(curl https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+          helm plugin install https://github.com/chartmuseum/helm-push.git
+          helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
+          helm push k8-util/helm/fluvio-sys --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
+          helm push k8-util/helm/fluvio-app --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
+
+  release_fluvio:
+    name: Publish Fluvio CLI
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+
+      - name: Download fluvio x86_64-unknown-linux-musl
+        run: |
+          mkdir -p target/x86_64-unknown-linux-musl/release/
+          gh run download -R infinyon/fluvio \
+            -n "fluvio-x86_64-unknown-linux-musl-${{ github.sha }}" \
+            -D target/x86_64-unknown-linux-musl/release/
+
+      - name: Download fluvio x86_64-apple-darwin
+        run: |
+          mkdir -p target/x86_64-apple-darwin/release/
+          gh run download -R infinyon/fluvio \
+            -n "fluvio-x86_64-apple-darwin-${{ github.sha }}" \
+            -D target/x86_64-apple-darwin/release/
+
+      - name: Install fluvio-package
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ${HOME}/.fluvio/bin/fluvio install fluvio-package
+
+      - name: Publish to Fluvio Packages
+        run: |
+          ${HOME}/.fluvio/bin/fluvio package publish \
+            --version="$(cat VERSION)" \
+            target/x86_64-unknown-linux-musl/release/fluvio \
+            target/x86_64-apple-darwin/release/fluvio
+
+  bump_stable_fluvio:
+    name: Bump stable Fluvio
+    needs: [release_docker, release_helm, release_fluvio]
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Install fluvio-package
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ${HOME}/.fluvio/bin/fluvio install fluvio-package
+
+      - name: Bump Fluvio CLI
+        run: |
+          export VERSION="$(curl https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+          ${HOME}/.fluvio/bin/fluvio package bump dynamic "${VERSION}"
+
+      - name: Bump stable branch
+        if: false
+        run: |
+          git checkout stable
+          git rebase origin/master
+          git push origin stable
