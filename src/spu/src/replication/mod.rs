@@ -25,7 +25,7 @@ mod replica_test {
     use crate::core::{DefaultSharedGlobalContext, GlobalContext};
     use crate::config::SpuConfig;
     use crate::services::create_internal_server;
-    use crate::control_plane::{ScSinkMessageChannel};
+    use crate::control_plane::{StatusMessageSink};
 
     use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
 
@@ -144,7 +144,7 @@ mod replica_test {
                     gctx.clone(),
                     replica.clone(),
                     MAX_BYTES,
-                    ScSinkMessageChannel::shared(),
+                    StatusMessageSink::shared(),
                 )
                 .await
                 .expect("leader");
@@ -239,6 +239,7 @@ mod replica_test {
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
+        debug!("starting follower replica controller");
         let (_, follower_replica) = builder.follower_replica(0).await;
 
         // at this point, follower replica should be empty since we didn't have time to sync up with leader

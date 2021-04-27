@@ -15,6 +15,7 @@ use crate::replication::leader::{
     SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
 };
 use crate::services::public::StreamPublishers;
+use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
 
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -31,6 +32,7 @@ pub struct GlobalContext<S> {
     followers_state: SharedFollowersState<S>,
     stream_publishers: StreamPublishers,
     spu_followers: SharedSpuUpdates,
+    status_update: SharedStatusUpdate,
 }
 
 // -----------------------------------
@@ -54,6 +56,7 @@ where
             followers_state: FollowersState::new_shared(),
             stream_publishers: StreamPublishers::new(),
             spu_followers: FollowerNotifier::shared(),
+            status_update: StatusMessageSink::shared(),
         }
     }
 
@@ -100,6 +103,10 @@ where
 
     pub fn follower_notifier(&self) -> &FollowerNotifier {
         &self.spu_followers
+    }
+
+    pub fn status_update_owned(&self) -> SharedStatusUpdate {
+        self.status_update.clone()
     }
 
     // sync follower pending updates with

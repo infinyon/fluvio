@@ -99,7 +99,7 @@ impl FollowerHandler {
                             match req_message {
 
                                 LeaderPeerRequest::UpdateOffsets(request) => {
-                                    self.process_offset_update_from_follower(request.request).await?;
+                                    self.update_from_follower(request.request).await?;
                                 }
                             }
                         } else {
@@ -164,7 +164,8 @@ impl FollowerHandler {
         Ok(())
     }
 
-    async fn process_offset_update_from_follower(
+    #[instrument(skip(self, request))]
+    async fn update_from_follower(
         &self,
         request: UpdateOffsetRequest,
     ) -> Result<(), FlvSocketError> {

@@ -1,4 +1,3 @@
-mod status_update;
 mod leaders_state;
 mod replica_state;
 mod connection;
@@ -8,7 +7,6 @@ mod update_offsets;
 mod actions;
 mod spu;
 
-pub use self::status_update::StatusUpdateController;
 pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
 pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};
 pub use self::connection::FollowerHandler;

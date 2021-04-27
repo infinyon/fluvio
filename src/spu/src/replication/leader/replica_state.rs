@@ -16,18 +16,16 @@ use dataplane::{Offset, Isolation, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
-use fluvio_types::{
-    SpuId,
-    event::offsets::{OffsetChangeListener, OffsetPublisher},
-};
+use fluvio_types::{SpuId};
 
 use crate::{
     config::{ReplicationConfig},
-    control_plane::SharedSinkMessageChannel,
+    control_plane::SharedStatusUpdate,
 };
 use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
-use super::{super::follower::FollowerReplicaState, FollowerNotifier};
 use crate::storage::SharableReplicaStorage;
+
+use super::{super::follower::FollowerReplicaState, FollowerNotifier};
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
@@ -39,7 +37,7 @@ pub struct LeaderReplicaState<S> {
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
-    follower_update: Arc<OffsetPublisher>,
+    status_update: SharedStatusUpdate,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -50,7 +48,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             config: self.config.clone(),
             followers: self.followers.clone(),
             in_sync_replica: self.in_sync_replica.clone(),
-            follower_update: self.follower_update.clone(),
+            status_update: self.status_update.clone(),
         }
     }
 }
@@ -96,6 +94,7 @@ where
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
+        status_update: SharedStatusUpdate,
         inner: SharableReplicaStorage<S>,
     ) -> Self {
         let in_sync_replica = replica.replicas.len() as u16 + 1;
@@ -115,7 +114,7 @@ where
             config,
             followers: Arc::new(RwLock::new(followers)),
             in_sync_replica,
-            follower_update: Arc::new(OffsetPublisher::new(0)),
+            status_update,
         }
     }
 
@@ -123,6 +122,7 @@ where
     pub async fn create<'a, C>(
         replica: Replica,
         config: &'a C,
+        status_update: SharedStatusUpdate,
     ) -> Result<LeaderReplicaState<S>, StorageError>
     where
         ReplicationConfig: From<&'a C>,
@@ -130,7 +130,7 @@ where
     {
         let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
-        let leader_replica = Self::new(replica, config.into(), inner);
+        let leader_replica = Self::new(replica, config.into(), status_update, inner);
         Ok(leader_replica)
     }
 
@@ -138,9 +138,10 @@ where
         follower: FollowerReplicaState<S>,
         replica: Replica,
         config: ReplicationConfig,
+        status_update: SharedStatusUpdate,
     ) -> Self {
         let replica_storage = follower.inner_owned();
-        Self::new(replica, config, replica_storage)
+        Self::new(replica, config, status_update, replica_storage)
     }
 
     /// replica id
@@ -151,10 +152,6 @@ where
     /// leader SPU. This should be same as our local SPU
     pub fn leader(&self) -> SpuId {
         self.replica.leader
-    }
-
-    pub fn follower_listener(&self) -> OffsetChangeListener {
-        self.follower_update.change_listner()
     }
 
     /// override in sync replica
@@ -201,7 +198,6 @@ where
                     debug!("leader is committed");
                 }
                 debug!("follower changed");
-                self.follower_update.update_increment();
                 true
             } else {
                 false
@@ -214,6 +210,9 @@ where
         drop(followers);
 
         self.notify_followers(notifier).await;
+        if update {
+            self.send_status_to_sc().await;
+        }
 
         update
     }
@@ -297,11 +296,11 @@ where
         LrsRequest::new(self.id().to_owned(), leader, replicas)
     }
 
-    #[instrument(skip(self, sc_sink))]
-    pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
+    #[instrument(skip(self))]
+    pub async fn send_status_to_sc(&self) {
         let lrs = self.as_lrs_request().await;
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
-        sc_sink.send(lrs).await
+        self.status_update.send(lrs).await
     }
 
     /// write records to storage
@@ -316,6 +315,7 @@ where
             .await?;
 
         self.notify_followers(notifiers).await;
+        self.send_status_to_sc().await;
 
         Ok(())
     }
@@ -683,6 +683,7 @@ mod test_leader {
     use crate::{
         config::{SpuConfig},
     };
+    use crate::control_plane::StatusMessageSink;
 
     use super::*;
 
@@ -775,10 +776,13 @@ mod test_leader {
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let state: LeaderReplicaState<MockStorage> =
-            LeaderReplicaState::create(Replica::new(replica, 5000, vec![]), &leader_config)
-                .await
-                .expect("state");
+        let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
+            Replica::new(replica, 5000, vec![]),
+            &leader_config,
+            StatusMessageSink::shared(),
+        )
+        .await
+        .expect("state");
 
         assert_eq!(state.in_sync_replica, 1);
 
@@ -797,6 +801,7 @@ mod test_leader {
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
+            StatusMessageSink::shared(),
         )
         .await
         .expect("state");
@@ -891,6 +896,7 @@ mod test_leader {
         let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica.clone(), 5000, vec![5001, 5002]),
             gctx.config(),
+            StatusMessageSink::shared(),
         )
         .await
         .expect("state");

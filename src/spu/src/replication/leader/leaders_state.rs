@@ -4,15 +4,14 @@ use std::{
 use std::sync::RwLock;
 use std::collections::HashMap;
 
-use tracing::{debug, error};
-use tracing::instrument;
+use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
-use crate::{control_plane::SharedSinkMessageChannel, core::SharedGlobalContext};
+use crate::{control_plane::SharedStatusUpdate, core::SharedGlobalContext};
 
-use super::{LeaderReplicaState, StatusUpdateController, replica_state::SharedLeaderState};
+use super::{LeaderReplicaState, replica_state::SharedLeaderState};
 
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
@@ -65,7 +64,7 @@ impl<S> ReplicaLeadersState<S> {
 
 impl ReplicaLeadersState<FileReplica> {
     #[instrument(
-        skip(self, ctx,replica,sink_channel),
+        skip(self, ctx,replica,status_update),
         fields(replica = %replica.id)
     )]
     pub async fn add_leader_replica(
@@ -73,15 +72,14 @@ impl ReplicaLeadersState<FileReplica> {
         ctx: SharedGlobalContext<FileReplica>,
         replica: Replica,
         max_bytes: u32,
-        sink_channel: SharedSinkMessageChannel,
+        status_update: SharedStatusUpdate,
     ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create(replica, ctx.config()).await {
+        match LeaderReplicaState::create(replica, ctx.config(), status_update).await {
             Ok(leader_replica) => {
                 debug!("file replica created and spawing leader controller");
-                self.spawn_leader_controller(replica_id, leader_replica.clone(), sink_channel)
-                    .await;
+                self.insert_leader(replica_id, leader_replica.clone()).await;
 
                 Ok(leader_replica)
             }
@@ -90,14 +88,13 @@ impl ReplicaLeadersState<FileReplica> {
     }
 
     #[instrument(
-        skip(self,replica_id, leader_state,sink_channel),
+        skip(self,replica_id, leader_state),
         fields(replica = %replica_id)
     )]
-    pub async fn spawn_leader_controller(
+    async fn insert_leader(
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
-        sink_channel: SharedSinkMessageChannel,
     ) {
         let mut writer = self.write().unwrap();
         if let Some(old_replica) = writer.insert(replica_id.clone(), leader_state.clone()) {
@@ -106,11 +103,6 @@ impl ReplicaLeadersState<FileReplica> {
                 old_replica.id()
             );
         }
-
-        drop(writer);
-
-        let leader_controller = StatusUpdateController::new(replica_id, leader_state, sink_channel);
-        leader_controller.run();
     }
 }
 
