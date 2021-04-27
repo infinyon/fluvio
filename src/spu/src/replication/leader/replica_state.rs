@@ -382,11 +382,10 @@ fn compute_hw(
     min_replica: u16,
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
-   
     assert!(min_replica > 0);
     assert!((min_replica - 1) <= followers.len() as u16);
     let min_lsr = min(min_replica - 1, followers.len() as u16);
-  
+
     // compute unique offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
         .values()
