@@ -530,7 +530,7 @@ mod test {
         // perform for two versions
         for version in 10..11 {
             let topic = format!("test{}", version);
-            let test = Replica::new((topic.clone(), 0), 5001, vec![]);
+            let test = Replica::new((topic.clone(), 0), 5001, vec![5001]);
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
@@ -704,7 +704,7 @@ mod test {
 
         let topic = "testfilter";
 
-        let test = Replica::new((topic.to_owned(), 0), 5001, vec![]);
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
         let test_id = test.id.clone();
         let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
             .await
@@ -871,7 +871,7 @@ mod test {
 
         let topic = "testfilter";
 
-        let test = Replica::new((topic.to_owned(), 0), 5001, vec![]);
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
         let test_id = test.id.clone();
         let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
             .await

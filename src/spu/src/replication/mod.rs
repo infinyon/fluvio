@@ -117,7 +117,7 @@ mod replica_test {
         }
 
         fn replica(&self) -> Replica {
-            let mut followers = vec![];
+            let mut followers = vec![LEADER];
             for i in 0..self.followers {
                 followers.push(self.follower_id(i));
             }

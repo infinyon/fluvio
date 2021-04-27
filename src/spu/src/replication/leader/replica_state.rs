@@ -97,9 +97,11 @@ where
         status_update: SharedStatusUpdate,
         inner: SharableReplicaStorage<S>,
     ) -> Self {
-        let in_sync_replica = replica.replicas.len() as u16 + 1;
+        debug!(?replica, "replica storage");
+        let in_sync_replica = replica.replicas.len() as u16;
         let follower_ids = HashSet::from_iter(replica.replicas.clone());
         let followers = ids_to_map(replica.leader, follower_ids);
+        debug!(?followers, "leader followers");
 
         debug!(
             in_sync_replica,
@@ -380,11 +382,11 @@ fn compute_hw(
     min_replica: u16,
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
+   
     assert!(min_replica > 0);
     assert!((min_replica - 1) <= followers.len() as u16);
     let min_lsr = min(min_replica - 1, followers.len() as u16);
-    //println!("min lsr: {}", min_lsr);
-
+  
     // compute unique offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
         .values()
@@ -777,7 +779,7 @@ mod test_leader {
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
-            Replica::new(replica, 5000, vec![]),
+            Replica::new(replica, 5000, vec![5000]),
             &leader_config,
             StatusMessageSink::shared(),
         )
@@ -894,7 +896,7 @@ mod test_leader {
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
         let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
-            Replica::new(replica.clone(), 5000, vec![5001, 5002]),
+            Replica::new(replica.clone(), 5000, vec![5000, 5001, 5002]),
             gctx.config(),
             StatusMessageSink::shared(),
         )
