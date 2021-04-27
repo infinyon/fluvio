@@ -41,8 +41,8 @@ jobs:
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           helm plugin install https://github.com/chartmuseum/helm-push.git
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          helm push k8-util/helm/fluvio-sys --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
-          helm push k8-util/helm/fluvio-app --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
+          helm push k8-util/helm/fluvio-sys --force --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
+          helm push k8-util/helm/fluvio-app --force --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
 
   release_fluvio:
     name: Release Fluvio CLI
@@ -57,16 +57,14 @@ jobs:
       - name: Download fluvio x86_64-unknown-linux-musl
         run: |
           mkdir -p target/x86_64-unknown-linux-musl/release/
-          gh release download dev -R infinyon/fluvio \
-            -n "fluvio-x86_64-unknown-linux-musl" \
-            -D target/x86_64-unknown-linux-musl/release/
+          gh release download dev -R infinyon/fluvio -p fluvio-x86_64-unknown-linux-musl
+          mv fluvio-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio
 
       - name: Download fluvio x86_64-apple-darwin
         run: |
           mkdir -p target/x86_64-apple-darwin/release/
-          gh release download dev -R infinyon/fluvio \
-            -n "fluvio-x86_64-apple-darwin" \
-            -D target/x86_64-apple-darwin/release/
+          gh release download dev -R infinyon/fluvio -p fluvio-x86_64-apple-darwin
+          mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
 
       - name: Install fluvio-package
         run: |
