@@ -24,6 +24,7 @@ main() {
   fi
 
   cp "${FLUVIO_RUN}" "${tmp_dir}/fluvio-run"
+  chmod +x "${tmp_dir}/fluvio-run"
   cp "${PROGDIR}/fluvio.Dockerfile" "${tmp_dir}/Dockerfile"
 
   pushd "${tmp_dir}"

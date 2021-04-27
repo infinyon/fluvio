@@ -19,30 +19,19 @@ env:
   FORCE_RELEASE: ${{ github.events.inputs.force }}
 
 jobs:
-  # Build a docker image using the latest `fluvio-run` build for linux-musl
+  # Re-tag the docker image for this commit as 'latest'
   docker:
     name: Publish Docker Image
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
-      - name: Download artifact
-        run: gh release download dev -R infinyon/fluvio -p "fluvio-run-x86_64-unknown-linux-musl"
-
       - name: Login to Docker Hub
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Publish latest development Fluvio Image
         run: |
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           export TAG="${VERSION}-${{ github.sha }}"
-          k8-util/docker/build.sh "${TAG}" "./fluvio-run-x86_64-unknown-linux-musl"
+          docker pull "infinyon/fluvio:${TAG}"
           docker tag "infinyon/fluvio:${TAG}" "infinyon/fluvio:latest"
-          docker push "infinyon/fluvio:${TAG}"
           docker push "infinyon/fluvio:latest"
 
   # Publish the latest Helm chart, tagged with the version and the git commit.
