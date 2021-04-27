@@ -10,6 +10,7 @@ jobs:
   release_github:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       - uses: actions/checkout@v2
       - name: Login GH CLI
