@@ -7,6 +7,24 @@ on:
   workflow_dispatch:
 
 jobs:
+  release_github:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifacts from dev
+        run: gh release download -R infinyon/fluvio dev
+      - name: Create GH Release
+        run: |
+          export VERSION="$(cat VERSION)"
+          gh release create -R infinyon/fluvio --title="v${VERSION}" -F ./CHANGELOG.md "v${VERSION}" \
+            fluvio-x86_64-unknown-linux-musl \
+            fluvio-x86_64-apple-darwin \
+            fluvio-run-x86_64-unknown-linux-musl \
+            fluvio-run-x86_64-apple-darwin
+
   release_docker:
     name: Release Docker Image
     runs-on: ubuntu-latest
@@ -82,7 +100,7 @@ jobs:
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
-    needs: [release_docker, release_helm, release_fluvio]
+    needs: [release_github, release_docker, release_helm, release_fluvio]
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
