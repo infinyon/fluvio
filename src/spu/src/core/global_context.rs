@@ -105,6 +105,11 @@ where
         &self.spu_followers
     }
 
+    #[allow(unused)]
+    pub fn status_update(&self) -> &StatusMessageSink {
+        &self.status_update
+    }
+
     pub fn status_update_owned(&self) -> SharedStatusUpdate {
         self.status_update.clone()
     }

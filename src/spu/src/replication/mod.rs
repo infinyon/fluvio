@@ -25,7 +25,6 @@ mod replica_test {
     use crate::core::{DefaultSharedGlobalContext, GlobalContext};
     use crate::config::SpuConfig;
     use crate::services::create_internal_server;
-    use crate::control_plane::{StatusMessageSink};
 
     use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
 
@@ -36,6 +35,7 @@ mod replica_test {
     const MAX_WAIT_LEADER: u64 = 100;
     const MAX_WAIT_FOLLOWER: u64 = 100;
 
+    const LEADER: SpuId = 5001;
     const FOLLOWER1: SpuId = 5002;
     const FOLLOWER2: SpuId = 5003;
 
@@ -144,7 +144,7 @@ mod replica_test {
                     gctx.clone(),
                     replica.clone(),
                     MAX_BYTES,
-                    StatusMessageSink::shared(),
+                    gctx.status_update_owned(),
                 )
                 .await
                 .expect("leader");
@@ -233,6 +233,7 @@ mod replica_test {
 
         assert_eq!(leader_replica.leo(), 2);
         assert_eq!(leader_replica.hw(), 0);
+        assert!(!leader_gctx.status_update().remove_all().await.is_empty());
 
         let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
 
@@ -257,6 +258,19 @@ mod replica_test {
         // hw has been replicated
         assert_eq!(follower_replica.hw(), 2);
         assert_eq!(leader_replica.hw(), 2);
+
+        let status = leader_gctx.status_update().remove_all().await;
+        debug!(?status);
+        assert!(!status.is_empty());
+        let lrs = &status[0];
+        assert_eq!(lrs.id, (TOPIC, 0).into());
+        assert_eq!(lrs.leader.spu, LEADER);
+        assert_eq!(lrs.leader.hw, 2);
+        assert_eq!(lrs.leader.leo, 2);
+        let f_status = &lrs.replicas[0];
+        assert_eq!(f_status.spu, FOLLOWER1);
+        assert_eq!(f_status.hw, 2);
+        assert_eq!(f_status.leo, 2);
 
         spu_server.notify();
 
@@ -317,6 +331,19 @@ mod replica_test {
         // hw has been replicated
         assert_eq!(follower_replica.hw(), 2);
         assert_eq!(leader_replica.hw(), 2);
+
+        let status = leader_gctx.status_update().remove_all().await;
+        debug!(?status);
+        assert!(!status.is_empty());
+        let lrs = &status[0];
+        assert_eq!(lrs.id, (TOPIC, 0).into());
+        assert_eq!(lrs.leader.spu, LEADER);
+        assert_eq!(lrs.leader.hw, 2);
+        assert_eq!(lrs.leader.leo, 2);
+        let f_status = &lrs.replicas[0];
+        assert_eq!(f_status.spu, FOLLOWER1);
+        assert_eq!(f_status.hw, 2);
+        assert_eq!(f_status.leo, 2);
 
         spu_server.notify();
 
