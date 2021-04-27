@@ -178,7 +178,21 @@ impl HelpOpt {
         // Add external command definitions to our own clap::App definition
         let mut app: App = Root::clap();
         for i in &external_commands {
-            app = app.subcommand(SubCommand::with_name(&i.meta.title).about(&*i.meta.description));
+            match i.path.file_name() {
+                Some(file_name) => {
+                    app = app.subcommand(
+                        SubCommand::with_name(
+                            file_name.to_string_lossy().strip_prefix("fluvio-").unwrap(),
+                        )
+                        .about(&*i.meta.description),
+                    );
+                }
+                None => {
+                    app = app.subcommand(
+                        SubCommand::with_name(&*i.meta.title).about(&*i.meta.description),
+                    );
+                }
+            }
         }
 
         // Use clap's help printer, loaded up with external subcommands
