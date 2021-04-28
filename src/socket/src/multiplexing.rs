@@ -20,6 +20,7 @@ use pin_project::{pin_project, pinned_drop};
 use tokio::select;
 use tracing::{debug, error, instrument, trace};
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
@@ -33,11 +34,15 @@ use crate::InnerFlvSocket;
 use crate::InnerFlvStream;
 
 #[allow(unused)]
+#[cfg(not(target_arch = "wasm32"))]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
 #[cfg(feature = "tls")]
+#[cfg(not(target_arch = "wasm32"))]
 pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
+
 #[cfg(feature = "tls")]
+#[cfg(not(target_arch = "wasm32"))]
 pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
@@ -439,6 +444,7 @@ impl MultiPlexingResponseDispatcher {
 }
 
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
 
     use std::time::Duration;

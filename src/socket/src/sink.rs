@@ -18,39 +18,61 @@ use futures_util::SinkExt;
 use tokio_util::compat::Compat;
 
 use bytes::BytesMut;
+
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::zero_copy::ZeroCopyWrite;
+
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
+
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_protocol::store::FileWrite;
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_protocol::store::StoreValue;
+
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
+
 use tokio_util::codec::Framed;
 
 use crate::FlvSocketError;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub type FlvSink = InnerFlvSink<TcpStream>;
+#[cfg(not(target_arch = "wasm32"))]
 pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
 
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
 
 pub struct InnerFlvSink<S> {
     inner: SplitFrame<S>,
+    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
 impl<S> fmt::Debug for InnerFlvSink<S> {
+    #[cfg(not(target_arch = "wasm32"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "websocket")
     }
 }
 
 impl<S> InnerFlvSink<S> {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
         InnerFlvSink { fd, inner }
+    }
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(inner: SplitFrame<S>) -> Self {
+        InnerFlvSink { inner }
     }
 
     pub fn get_mut_tcp_sink(&mut self) -> &mut SplitFrame<S> {
@@ -107,6 +129,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl<S> InnerFlvSink<S>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,
@@ -161,6 +184,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl<S> AsRawFd for InnerFlvSink<S> {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
@@ -170,14 +194,17 @@ impl<S> AsRawFd for InnerFlvSink<S> {
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct InnerExclusiveFlvSink<S> {
     inner: Arc<Mutex<InnerFlvSink<S>>>,
+    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
 impl<S> InnerExclusiveFlvSink<S> {
     pub fn new(sink: InnerFlvSink<S>) -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
         let fd = sink.id();
         InnerExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
+            #[cfg(not(target_arch = "wasm32"))]
             fd,
         }
     }
@@ -212,6 +239,7 @@ where
         inner_sink.send_response(resp_msg, version).await
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn id(&self) -> RawFd {
         self.fd
     }
@@ -221,12 +249,14 @@ impl<S> Clone for InnerExclusiveFlvSink<S> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
+            #[cfg(not(target_arch = "wasm32"))]
             fd: self.fd,
         }
     }
 }
 
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
 
     use std::io::Cursor;

@@ -5,6 +5,7 @@ use std::io::ErrorKind;
 
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
+
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;

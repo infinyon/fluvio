@@ -17,17 +17,23 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
 
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::DefaultTcpDomainConnector;
+
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpDomainConnector;
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
 
 use super::FlvSocketError;
 use crate::InnerFlvSink;
 use crate::InnerFlvStream;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub type FlvSocket = InnerFlvSocket<TcpStream>;
 
 #[cfg(feature = "tls")]
+#[cfg(not(target_arch = "wasm32"))]
 pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
 
 /// Socket abstract that can send and receive fluvio objects
@@ -38,8 +44,13 @@ pub struct InnerFlvSocket<S> {
 }
 
 impl<S> fmt::Debug for InnerFlvSocket<S> {
+    #[cfg(not(target_arch = "wasm32"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "websocket")
     }
 }
 
@@ -75,6 +86,7 @@ impl<S> InnerFlvSocket<S> {
         &mut self.stream
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn id(&self) -> RawFd {
         self.sink.id()
     }
@@ -85,6 +97,7 @@ where
     S: AsyncRead + AsyncWrite + Unpin + Send,
 {
     /// connect to target address with connector
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn connect_with_connector<C>(
         addr: &str,
         connector: &C,
@@ -97,6 +110,7 @@ where
         Ok(Self::from_stream(tcp_stream, fd))
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn from_stream(tcp_stream: S, raw_fd: RawFd) -> Self {
         let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
         let (sink, stream) = framed.split();
@@ -124,6 +138,7 @@ impl<S> From<(InnerFlvSink<S>, InnerFlvStream<S>)> for InnerFlvSocket<S> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl FlvSocket {
     pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
         Self::connect_with_connector(addr, &DefaultTcpDomainConnector {}).await

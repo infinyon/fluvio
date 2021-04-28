@@ -1,15 +1,13 @@
 mod error;
-#[cfg(not(target_arch = "wasm32"))]
 mod multiplexing;
 #[cfg(not(target_arch = "wasm32"))]
 mod pooling;
-#[cfg(not(target_arch = "wasm32"))]
-mod sink;
+//#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 mod sink_pool;
-#[cfg(not(target_arch = "wasm32"))]
+
+mod sink;
 mod socket;
-#[cfg(not(target_arch = "wasm32"))]
 mod stream;
 
 #[cfg(test)]
@@ -19,13 +17,14 @@ pub mod test_request;
 mod not_wasm {
     use super::*;
     pub use self::socket::FlvSocket;
-    pub use multiplexing::*;
     pub use pooling::*;
-    pub use sink::*;
     pub use sink_pool::*;
-    pub use socket::*;
-    pub use stream::*;
 }
+
+pub use sink::*;
+pub use stream::*;
+pub use socket::*;
+pub use multiplexing::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use not_wasm::*;
@@ -42,7 +41,7 @@ mod websocket;
 #[cfg(target_arch = "wasm32")]
 pub use self::websocket::{
     FluvioWebSocket as AllFlvSocket,
-    AsyncResponse,
+    FluvioWebSocket as FlvSocket,
     WebSocketConnector,
     MultiplexerWebsocket as AllMultiplexerSocket,
 };
