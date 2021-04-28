@@ -103,7 +103,7 @@ impl Fluvio {
     /// # use fluvio::{Fluvio, FluvioError, RecordKey};
     /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
     /// let producer = fluvio.topic_producer("my-topic").await?;
-    /// producer.send(RecordKey::Null, "Hello, Fluvio!").await?;
+    /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
     /// # Ok(())
     /// # }
     /// ```

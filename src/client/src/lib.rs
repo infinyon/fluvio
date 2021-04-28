@@ -55,7 +55,7 @@
 //! async fn produce_records() -> Result<(), FluvioError> {
 //!     let producer = fluvio::producer("echo").await?;
 //!     for i in 0..10u8 {
-//!         producer.send(RecordKey::Null, format!("Hello, Fluvio {}!", i)).await?;
+//!         producer.send(RecordKey::NULL, format!("Hello, Fluvio {}!", i)).await?;
 //!         async_std::task::sleep(Duration::from_secs(1)).await;
 //!     }
 //!     Ok(())
@@ -121,7 +121,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.8.0";
 /// # use fluvio::{FluvioError, RecordKey};
 /// # async fn do_produce() -> Result<(), FluvioError> {
 /// let producer = fluvio::producer("my-topic").await?;
-/// producer.send(RecordKey::Null, "Hello, world!").await?;
+/// producer.send(RecordKey::NULL, "Hello, world!").await?;
 /// # Ok(())
 /// # }
 /// ```
