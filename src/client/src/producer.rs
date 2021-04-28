@@ -62,7 +62,7 @@ impl TopicProducer {
     pub async fn send<K, V>(&self, key: K, value: V) -> Result<(), FluvioError>
     where
         K: Into<RecordKey>,
-        V: Into<RecordValue>,
+        V: Into<RecordData>,
     {
         let record_key = key.into();
         let record_value = value.into();
@@ -77,7 +77,7 @@ impl TopicProducer {
     pub async fn send_all<K, V, I>(&self, records: I) -> Result<(), FluvioError>
     where
         K: Into<RecordKey>,
-        V: Into<RecordValue>,
+        V: Into<RecordData>,
         I: IntoIterator<Item = (K, V)>,
     {
         let topics = self.pool.metadata.topics();
@@ -91,11 +91,11 @@ impl TopicProducer {
 
         let entries = records
             .into_iter()
-            .map::<(RecordKey, RecordValue), _>(|(k, v)| (k.into(), v.into()))
+            .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
             .map(|(key, value)| {
                 let key = match key.0 {
                     RecordKeyInner::Null => None,
-                    RecordKeyInner::Key(key) => Some(DefaultAsyncBuffer::new(key)),
+                    RecordKeyInner::Key(key) => Some(DefaultAsyncBuffer::new(key.0)),
                 };
                 let value = DefaultAsyncBuffer::new(value.0);
                 DefaultRecord::from((key, value))
@@ -245,20 +245,19 @@ impl RecordKey {
 
 enum RecordKeyInner {
     Null,
-    Key(bytes::Bytes),
+    Key(RecordData),
 }
 
 impl<K: Into<Vec<u8>>> From<K> for RecordKey {
     fn from(k: K) -> Self {
-        let key: Vec<u8> = k.into();
-        Self(RecordKeyInner::Key(key.into()))
+        Self(RecordKeyInner::Key(RecordData::from(k)))
     }
 }
 
 /// A type to hold the contents of a record's value.
-pub struct RecordValue(bytes::Bytes);
+pub struct RecordData(bytes::Bytes);
 
-impl<V: Into<Vec<u8>>> From<V> for RecordValue {
+impl<V: Into<Vec<u8>>> From<V> for RecordData {
     fn from(v: V) -> Self {
         let value: Vec<u8> = v.into();
         Self(value.into())
