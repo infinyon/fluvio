@@ -66,14 +66,7 @@ impl TopicProducer {
     {
         let record_key = key.into();
         let record_value = value.into();
-
-        let maybe_key = match record_key {
-            RecordKey::Null => None,
-            RecordKey::Key(key) => Some(key),
-        };
-        let value = record_value.0;
-
-        self.send_all(Some((maybe_key, value))).await?;
+        self.send_all(Some((record_key, record_value))).await?;
         Ok(())
     }
 
@@ -83,9 +76,9 @@ impl TopicProducer {
     )]
     pub async fn send_all<K, V, I>(&self, records: I) -> Result<(), FluvioError>
     where
-        K: Into<Vec<u8>>,
-        V: Into<Vec<u8>>,
-        I: IntoIterator<Item = (Option<K>, V)>,
+        K: Into<RecordKey>,
+        V: Into<RecordValue>,
+        I: IntoIterator<Item = (K, V)>,
     {
         let topics = self.pool.metadata.topics();
         let topic_spec = topics
@@ -98,10 +91,13 @@ impl TopicProducer {
 
         let entries = records
             .into_iter()
-            .map::<(Option<Vec<u8>>, Vec<u8>), _>(|(k, v)| (k.map(|it| it.into()), v.into()))
+            .map::<(RecordKey, RecordValue), _>(|(k, v)| (k.into(), v.into()))
             .map(|(key, value)| {
-                let key = key.map(|it| DefaultAsyncBuffer::new(it));
-                let value = DefaultAsyncBuffer::new(value);
+                let key = match key {
+                    RecordKey::Null => None,
+                    RecordKey::Key(key) => Some(DefaultAsyncBuffer::new(key)),
+                };
+                let value = DefaultAsyncBuffer::new(value.0);
                 DefaultRecord::from((key, value))
             });
 
@@ -157,14 +153,14 @@ impl TopicProducer {
         skip(self, buffer),
         fields(topic = %self.topic),
     )]
-    #[deprecated(since = "0.6.2")]
+    #[deprecated(since = "0.6.2", note = "Use 'send' instead")]
     pub async fn send_record<B: AsRef<[u8]>>(
         &self,
         buffer: B,
         _partition: i32,
     ) -> Result<(), FluvioError> {
         let buffer: Vec<u8> = Vec::from(buffer.as_ref());
-        self.send_all(Some((None::<Vec<u8>>, buffer))).await?;
+        self.send_all(Some((RecordKey::Null, buffer))).await?;
         Ok(())
     }
 }
@@ -241,25 +237,26 @@ fn assemble_requests(
 /// # Ok(())
 /// # }
 /// ```
+#[non_exhaustive]
 pub enum RecordKey {
     Null,
-    Key(Vec<u8>),
+    Key(bytes::Bytes),
 }
 
 impl<K: Into<Vec<u8>>> From<K> for RecordKey {
     fn from(k: K) -> Self {
         let key: Vec<u8> = k.into();
-        Self::Key(key)
+        Self::Key(key.into())
     }
 }
 
 /// A type to hold the contents of a record's value.
-pub struct RecordValue(Vec<u8>);
+pub struct RecordValue(bytes::Bytes);
 
 impl<V: Into<Vec<u8>>> From<V> for RecordValue {
     fn from(v: V) -> Self {
         let value: Vec<u8> = v.into();
-        Self(value)
+        Self(value.into())
     }
 }
 
