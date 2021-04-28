@@ -86,7 +86,7 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    p.send(RecordKey::Null, message.clone())
+                    p.send(RecordKey::NULL, message.clone())
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -96,7 +96,7 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
                         });
                 }
             } else {
-                p.send(RecordKey::Null, message.clone())
+                p.send(RecordKey::NULL, message.clone())
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)

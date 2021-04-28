@@ -18,6 +18,6 @@ pub async fn producer(fluvio: Arc<Fluvio>, option: ConcurrentTestCase, digests: 
         let record = rand_record();
         let record_digest = hash_record(&record);
         digests.send(record_digest).unwrap();
-        producer.send(RecordKey::Null, record).await.unwrap();
+        producer.send(RecordKey::NULL, record).await.unwrap();
     }
 }

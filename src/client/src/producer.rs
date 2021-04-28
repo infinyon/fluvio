@@ -93,9 +93,9 @@ impl TopicProducer {
             .into_iter()
             .map::<(RecordKey, RecordValue), _>(|(k, v)| (k.into(), v.into()))
             .map(|(key, value)| {
-                let key = match key {
-                    RecordKey::Null => None,
-                    RecordKey::Key(key) => Some(DefaultAsyncBuffer::new(key)),
+                let key = match key.0 {
+                    RecordKeyInner::Null => None,
+                    RecordKeyInner::Key(key) => Some(DefaultAsyncBuffer::new(key)),
                 };
                 let value = DefaultAsyncBuffer::new(value.0);
                 DefaultRecord::from((key, value))
@@ -160,7 +160,7 @@ impl TopicProducer {
         _partition: i32,
     ) -> Result<(), FluvioError> {
         let buffer: Vec<u8> = Vec::from(buffer.as_ref());
-        self.send_all(Some((RecordKey::Null, buffer))).await?;
+        self.send_all(Some((RecordKey::NULL, buffer))).await?;
         Ok(())
     }
 }
@@ -225,7 +225,7 @@ fn assemble_requests(
 ///
 /// This type is used to support conversions from any other type that
 /// may be converted to a `Vec<u8>`, while still allowing the ability
-/// to explicitly state that a record may have no key (`RecordKey::Null`).
+/// to explicitly state that a record may have no key (`RecordKey::NULL`).
 ///
 /// # Examples
 ///
@@ -233,12 +233,17 @@ fn assemble_requests(
 /// # use fluvio::{TopicProducer, FluvioError, RecordKey};
 /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
 /// producer.send("Hello", String::from("World!")).await?;
-/// producer.send(RecordKey::Null, "World!").await?;
+/// producer.send(RecordKey::NULL, "World!").await?;
 /// # Ok(())
 /// # }
 /// ```
-#[non_exhaustive]
-pub enum RecordKey {
+pub struct RecordKey(RecordKeyInner);
+
+impl RecordKey {
+    pub const NULL: Self = Self(RecordKeyInner::Null);
+}
+
+enum RecordKeyInner {
     Null,
     Key(bytes::Bytes),
 }
@@ -246,7 +251,7 @@ pub enum RecordKey {
 impl<K: Into<Vec<u8>>> From<K> for RecordKey {
     fn from(k: K) -> Self {
         let key: Vec<u8> = k.into();
-        Self::Key(key.into())
+        Self(RecordKeyInner::Key(key.into()))
     }
 }
 

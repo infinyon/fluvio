@@ -132,7 +132,7 @@ pub async fn produce_message_with_api(
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
             producer
-                .send(RecordKey::Null, message)
+                .send(RecordKey::NULL, message)
                 .await
                 .unwrap_or_else(|_| {
                     panic!("send record failed for replication: {} iteration: {}", r, i)
