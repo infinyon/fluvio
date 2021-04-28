@@ -383,15 +383,11 @@ async fn send_replica_spec_changes(
         UpdateReplicaRequest::with_changes(epoch, changes)
     };
 
+    debug!(?request, "sending replica to spu");
+
     let mut message = RequestMessage::new_request(request);
     message.get_mut_header().set_client_id("sc");
 
-    debug!(
-        "sending to spu: {}, replica updates all: {}, changes: {}",
-        spu_id,
-        message.request.all.len(),
-        message.request.changes.len()
-    );
     sink.send_request(&message).await?;
     Ok(())
 }

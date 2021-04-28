@@ -76,15 +76,10 @@ impl ReplicaLeadersState<FileReplica> {
     ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create(replica, ctx.config(), status_update).await {
-            Ok(leader_replica) => {
-                debug!("file replica created and spawing leader controller");
-                self.insert_leader(replica_id, leader_replica.clone()).await;
-
-                Ok(leader_replica)
-            }
-            Err(err) => Err(err),
-        }
+        let leader_replica =
+            LeaderReplicaState::create(replica, ctx.config(), status_update).await?;
+        self.insert_leader(replica_id, leader_replica.clone()).await;
+        Ok(leader_replica)
     }
 
     #[instrument(
