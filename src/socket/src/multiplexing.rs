@@ -446,8 +446,8 @@ mod tests {
     use super::MultiplexerSocket;
     use crate::test_request::*;
     use crate::FlvSocketError;
-    use crate::InnerExclusiveFlvSink;
-    use crate::InnerFlvSocket;
+    use crate::ExclusiveFlvSink;
+    use crate::FlvSocket;
 
     #[allow(unused)]
     const CA_PATH: &str = "certs/certs/ca.crt";
@@ -463,7 +463,7 @@ mod tests {
     #[async_trait]
     trait AcceptorHandler {
         type Stream: AsyncRead + AsyncWrite + Unpin + Send;
-        async fn accept(&mut self, stream: TcpStream) -> InnerFlvSocket<Self::Stream>;
+        async fn accept(&mut self, stream: TcpStream) -> FlvSocket;
     }
 
     #[derive(Clone)]
@@ -473,7 +473,7 @@ mod tests {
     impl AcceptorHandler for TcpStreamHandler {
         type Stream = TcpStream;
 
-        async fn accept(&mut self, stream: TcpStream) -> InnerFlvSocket<Self::Stream> {
+        async fn accept(&mut self, stream: TcpStream) -> FlvSocket {
             stream.into()
         }
     }
@@ -485,11 +485,11 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let socket: InnerFlvSocket<A::Stream> = handler.accept(incoming_stream).await;
+        let socket: FlvSocket = handler.accept(incoming_stream).await;
 
         let (sink, mut stream) = socket.split();
 
-        let shared_sink = InnerExclusiveFlvSink::new(sink);
+        let shared_sink = ExclusiveFlvSink::new(sink);
 
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 
@@ -561,14 +561,14 @@ mod tests {
     #[async_trait]
     trait ConnectorHandler {
         type Stream: AsyncRead + AsyncWrite + Unpin + Send + Sync;
-        async fn connect(&mut self, stream: TcpStream) -> InnerFlvSocket<Self::Stream>;
+        async fn connect(&mut self, stream: TcpStream) -> FlvSocket;
     }
 
     #[async_trait]
     impl ConnectorHandler for TcpStreamHandler {
         type Stream = TcpStream;
 
-        async fn connect(&mut self, stream: TcpStream) -> InnerFlvSocket<Self::Stream> {
+        async fn connect(&mut self, stream: TcpStream) -> FlvSocket {
             stream.into()
         }
     }

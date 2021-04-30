@@ -127,21 +127,15 @@ async fn handle_echo_request(
 }
 
 #[async_trait]
-impl<S> FlvService<S> for TestService
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
-{
+impl FlvService for TestService {
     type Context = SharedTestContext;
     type Request = TestApiRequest;
 
     async fn respond(
         self: Arc<Self>,
         _context: Self::Context,
-        socket: InnerFlvSocket<S>,
-    ) -> Result<(), FlvSocketError>
-    where
-        InnerFlvSink<S>: ZeroCopyWrite,
-    {
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 

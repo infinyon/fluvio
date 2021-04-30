@@ -494,7 +494,7 @@ mod test {
 
     use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
-    use fluvio_socket::{FlvSocket, DefaultMultiplexerSocket};
+    use fluvio_socket::{FlvSocket, MultiplexerSocket};
     use dataplane::{
         Isolation,
         fixture::BatchProducer,
@@ -525,7 +525,7 @@ mod test {
         sleep(Duration::from_millis(100)).await;
 
         let client_socket =
-            DefaultMultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
+            MultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
         for version in 10..11 {
@@ -692,7 +692,7 @@ mod test {
         sleep(Duration::from_millis(100)).await;
 
         let client_socket =
-            DefaultMultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
+            MultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
 
@@ -847,7 +847,7 @@ mod test {
         sleep(Duration::from_millis(100)).await;
 
         let client_socket =
-            DefaultMultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
+            MultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
 
