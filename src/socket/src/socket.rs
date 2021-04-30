@@ -1,52 +1,40 @@
-cfg_if::cfg_if! {
-    if #[cfg(unix)] {
-        use std::os::unix::io::AsRawFd;
-        use std::os::unix::io::RawFd;
-    }
-}
+use std::os::unix::io::AsRawFd;
+use std::os::unix::io::RawFd;
+
 use std::fmt;
 
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::StreamExt;
-use tokio_util::codec::Framed;
-use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tracing::debug;
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
-use fluvio_protocol::codec::FluvioCodec;
 
-use fluvio_future::net::DefaultTcpDomainConnector;
-use fluvio_future::net::TcpDomainConnector;
-use fluvio_future::net::TcpStream;
+use fluvio_future::net::{BoxConnection, DefaultTcpDomainConnector, TcpDomainConnector, TcpStream};
 
 use super::FlvSocketError;
-use crate::InnerFlvSink;
-use crate::InnerFlvStream;
+use crate::FlvSink;
+use crate::FlvStream;
 
-pub type FlvSocket = InnerFlvSocket<TcpStream>;
+//pub type FlvSocket = InnerFlvSocket<TcpStream>;
 
-#[cfg(feature = "tls")]
-pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
+//#[cfg(feature = "tls")]
+//pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
 
 /// Socket abstract that can send and receive fluvio objects
-pub struct InnerFlvSocket<S> {
-    sink: InnerFlvSink<S>,
-    stream: InnerFlvStream<S>,
+pub struct FlvSocket {
+    sink: FlvSink,
+    stream: FlvStream,
     stale: bool,
 }
 
-impl<S> fmt::Debug for InnerFlvSocket<S> {
+impl fmt::Debug for FlvSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
 }
 
-unsafe impl<S> Sync for InnerFlvSocket<S> {}
-
-impl<S> InnerFlvSocket<S> {
-    pub fn new(sink: InnerFlvSink<S>, stream: InnerFlvStream<S>) -> Self {
+impl FlvSocket {
+    pub fn new(sink: FlvSink, stream: FlvStream) -> Self {
         Self {
             sink,
             stream,
@@ -54,7 +42,7 @@ impl<S> InnerFlvSocket<S> {
         }
     }
 
-    pub fn split(self) -> (InnerFlvSink<S>, InnerFlvStream<S>) {
+    pub fn split(self) -> (FlvSink, FlvStream) {
         (self.sink, self.stream)
     }
 
@@ -67,40 +55,16 @@ impl<S> InnerFlvSocket<S> {
         self.stale
     }
 
-    pub fn get_mut_sink(&mut self) -> &mut InnerFlvSink<S> {
+    pub fn get_mut_sink(&mut self) -> &mut FlvSink {
         &mut self.sink
     }
 
-    pub fn get_mut_stream(&mut self) -> &mut InnerFlvStream<S> {
+    pub fn get_mut_stream(&mut self) -> &mut FlvStream {
         &mut self.stream
     }
 
     pub fn id(&self) -> RawFd {
         self.sink.id()
-    }
-}
-
-impl<S> InnerFlvSocket<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-{
-    /// connect to target address with connector
-    pub async fn connect_with_connector<C>(
-        addr: &str,
-        connector: &C,
-    ) -> Result<Self, FlvSocketError>
-    where
-        C: TcpDomainConnector<WrapperStream = S>,
-    {
-        debug!("trying to connect to addr at: {}", addr);
-        let (tcp_stream, fd) = connector.connect(addr).await?;
-        Ok(Self::from_stream(tcp_stream, fd))
-    }
-
-    pub fn from_stream(tcp_stream: S, raw_fd: RawFd) -> Self {
-        let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
-        let (sink, stream) = framed.split();
-        Self::new(InnerFlvSink::new(sink, raw_fd), stream.into())
     }
 
     /// as client, send request and wait for reply from server
@@ -117,8 +81,24 @@ where
     }
 }
 
-impl<S> From<(InnerFlvSink<S>, InnerFlvStream<S>)> for InnerFlvSocket<S> {
-    fn from(pair: (InnerFlvSink<S>, InnerFlvStream<S>)) -> Self {
+impl FlvSocket {
+    pub fn from_stream(stream: BoxConnection, raw_fd: RawFd) -> Self {
+        Self::new(FlvSink::new(stream.clone(), raw_fd), FlvStream::new(stream))
+    }
+
+    /// connect to target address with connector
+    pub async fn connect_with_connector(
+        addr: &str,
+        connector: &dyn TcpDomainConnector,
+    ) -> Result<Self, FlvSocketError> {
+        debug!("trying to connect to addr at: {}", addr);
+        let (tcp_stream, fd) = connector.connect(addr).await?;
+        Ok(Self::from_stream(tcp_stream, fd))
+    }
+}
+
+impl From<(FlvSink, FlvStream)> for FlvSocket {
+    fn from(pair: (FlvSink, FlvStream)) -> Self {
         let (sink, stream) = pair;
         Self::new(sink, stream)
     }
@@ -126,7 +106,8 @@ impl<S> From<(InnerFlvSink<S>, InnerFlvStream<S>)> for InnerFlvSocket<S> {
 
 impl FlvSocket {
     pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
-        Self::connect_with_connector(addr, &DefaultTcpDomainConnector {}).await
+        let connector = DefaultTcpDomainConnector::new();
+        Self::connect_with_connector(addr, &connector).await
     }
 }
 
@@ -135,7 +116,7 @@ cfg_if::cfg_if! {
         impl From<TcpStream> for FlvSocket {
             fn from(tcp_stream: TcpStream) -> Self {
                 let fd = tcp_stream.as_raw_fd();
-                Self::from_stream(tcp_stream, fd)
+                Self::from_stream(Box::new(tcp_stream), fd)
             }
         }
     }
