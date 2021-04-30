@@ -38,3 +38,4 @@ serviceAccount:
   name: fluvio
 podSecurityContext: {}
 spuStorageClass: fluvio-spu
+useNodePorts: false

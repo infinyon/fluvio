@@ -5,7 +5,11 @@ metadata:
   annotations:
     {{- toYaml .Values.loadBalancer.serviceAnnotations | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  {{ if .Values.useNodePorts }}
+  type: NodePort
+  {{ else }}
+  type: LoadBalancer
+  {{ end }}
   selector:
     app: fluvio-sc
 {{ if .Values.service.externalTrafficPolicy }}

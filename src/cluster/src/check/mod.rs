@@ -606,7 +606,7 @@ impl ClusterChecker {
             Box::new(CreateServicePermission),
             Box::new(CreateCrdPermission),
             Box::new(CreateServiceAccountPermission),
-            Box::new(LoadBalancer),
+            // Box::new(LoadBalancer),
         ];
         self.checks.extend(checks);
         self
@@ -624,7 +624,7 @@ impl ClusterChecker {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(LoadableConfig),
             Box::new(HelmVersion),
-            Box::new(LoadBalancer),
+            // Box::new(LoadBalancer),
         ];
         self.checks.extend(checks);
         self

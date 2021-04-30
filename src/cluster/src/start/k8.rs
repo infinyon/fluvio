@@ -784,6 +784,7 @@ impl ClusterInstaller {
             ("image.registry", Cow::Borrowed(&self.config.image_registry)),
             ("image.tag", Cow::Borrowed(&fluvio_tag)),
             ("cloud", Cow::Borrowed(&self.config.cloud)),
+            ("useNodePorts", Cow::Borrowed("true")),
         ];
 
         // If TLS is enabled, set it as a helm variable
@@ -803,8 +804,9 @@ impl ClusterInstaller {
             ));
         }
 
-        use fluvio_helm::InstallArg;
+        install_settings.push(("useNodePorts", Cow::Borrowed("true")));
 
+        use fluvio_helm::InstallArg;
         let install_settings: Vec<(String, String)> = install_settings
             .into_iter()
             .map(|(k, v)| (k.to_owned(), v.to_string()))
@@ -889,8 +891,57 @@ impl ClusterInstaller {
         let mut service_stream = self
             .kube_client
             .watch_stream_now::<ServiceSpec>(ns.to_string());
-
         let mut timer = sleep(Duration::from_secs(*MAX_SC_SERVICE_WAIT));
+
+        let find_sc = |watch: K8Watch<ServiceSpec>| -> Option<(String, u16)> {
+            let service = match watch {
+                K8Watch::ADDED(svc) => svc,
+                K8Watch::MODIFIED(svc) => svc,
+                K8Watch::DELETED(_) => return None,
+            };
+
+            if service.metadata.name != FLUVIO_SC_SERVICE {
+                return None;
+            }
+            debug!(?service, "Found SC service:");
+
+            let target_port = service
+                .spec
+                .ports
+                .iter()
+                .filter_map(|port| match port.target_port {
+                    Some(TargetPort::Number(n)) => Some(n),
+                    _ => None,
+                })
+                .next()
+                .unwrap();
+            debug!(?target_port, "Found target port:");
+
+            if self.config.use_cluster_ip {
+                return Some((
+                    format!("{}:{}", service.spec.cluster_ip, target_port),
+                    target_port,
+                ));
+            };
+
+            let ingress_addr = service
+                .status
+                .load_balancer
+                .ingress
+                .iter()
+                .find(|_| true)
+                .and_then(|ingress| ingress.host_or_ip().to_owned());
+
+            debug!(?ingress_addr, "Found ingress address:");
+
+            if let Some(sock_addr) = ingress_addr.map(|addr| format!("{}:{}", addr, target_port)) {
+                debug!(%sock_addr,"found lb address");
+                return Some((sock_addr, target_port));
+            }
+
+            None
+        };
+
         loop {
             select! {
                 _ = &mut timer => {
@@ -898,59 +949,22 @@ impl ClusterInstaller {
                     return Ok(None)
                 },
                 service_next = service_stream.next() => {
-                    if let Some(service_watches) = service_next {
-
-                        for service_watch in service_watches? {
-                            let service_value = match service_watch? {
-                                K8Watch::ADDED(svc) => Some(svc),
-                                K8Watch::MODIFIED(svc) => Some(svc),
-                                K8Watch::DELETED(_) => None
-                            };
-
-                            if let Some(service) = service_value {
-
-                                if service.metadata.name == FLUVIO_SC_SERVICE {
-                                    debug!(service = ?service,"found sc service");
-
-                                    let target_port =  service.spec
-                                        .ports
-                                        .iter()
-                                        .filter_map(|port| {
-                                            match port.target_port {
-                                                Some(TargetPort::Number(value)) => Some(value),
-                                                Some(TargetPort::Name(_)) => None,
-                                                None => None
-                                            }
-                                        })
-                                        .next()
-                                        .expect("target port should be there");
-
-                                    if self.config.use_cluster_ip  {
-                                        return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
-                                    };
-
-                                    let ingress_addr = service
-                                        .status
-                                        .load_balancer
-                                        .ingress
-                                        .iter()
-                                        .find(|_| true)
-                                        .and_then(|ingress| ingress.host_or_ip().to_owned());
-
-                                    if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
-
-
-                                            debug!(%sock_addr,"found lb address");
-                                            return Ok(Some((sock_addr,target_port)))
-                                    }
-
-                                }
-                            }
+                    let watch_results: Vec<Result<K8Watch<_>, _>> = match service_next {
+                        None => {
+                            debug!("service stream ended");
+                            return Ok(None);
                         }
-                    } else {
-                        debug!("service stream ended");
-                        return Ok(None)
-                    }
+                        Some(watches) => watches?,
+                    };
+
+                    let sc_address: Option<(String, u16)> = watch_results
+                        .into_iter()
+                        .collect::<Result<Vec<_>, _>>()? // Bubble out Result
+                        .into_iter()
+                        .filter_map(find_sc)
+                        .next();
+
+                    return Ok(sc_address);
                 }
             }
         }

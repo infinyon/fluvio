@@ -37,6 +37,7 @@ pub async fn process_k8(
         .chart_values(opt.k8_config.chart_values)
         .render_checks(true)
         .upgrade(upgrade)
+        .use_cluster_ip(true)
         .with_if(skip_sys, |b| b.install_sys(false))
         .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
