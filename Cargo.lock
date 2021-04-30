@@ -344,6 +344,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_io_stream"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d5ad740b7193a31e80950ab7fece57c38d426fcd23a729d9d7f4cf15bb63f94"
+dependencies = [
+ "futures 0.3.14",
+ "pharos",
+ "rustc_version 0.3.3",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1463,6 +1474,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.2.0"
+source = "git+https://github.com/simlay/future-aio?branch=wasm32-support#04a375feef47a65354d8562e3ebe0482d4b6f0cc"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1751,8 +1763,10 @@ dependencies = [
  "tokio-util",
  "tracing",
  "wasm-bindgen",
+ "wasm-bindgen-futures 0.4.23",
  "wasm-bindgen-test",
  "web-sys",
+ "ws_stream_wasm",
 ]
 
 [[package]]
@@ -1883,6 +1897,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.0"
+source = "git+https://github.com/simlay/future-aio?branch=wasm32-support#04a375feef47a65354d8562e3ebe0482d4b6f0cc"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
@@ -3061,6 +3076,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pharos"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32e5f09cc3d3cb227536487dfe7fb8c246eccc6c8a32d03daa30ba4cf3212917"
+dependencies = [
+ "futures 0.3.14",
+ "rustc_version 0.2.3",
+]
+
+[[package]]
 name = "pin-project"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3586,6 +3611,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_version"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0dfe2087c51c460008730de8b57e6a320782fbfb312e1f4d520e6c6fae155ee"
+dependencies = [
+ "semver 0.11.0",
+]
+
+[[package]]
 name = "rusticata-macros"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3704,6 +3738,12 @@ checksum = "00b0bef5b7f9e0df16536d3961cfb6e84331c065b4066afb39768d0e319411f7"
 dependencies = [
  "pest",
 ]
+
+[[package]]
+name = "send_wrapper"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "930c0acf610d3fdb5e2ab6213019aaa04e227ebe9547b0649ba599b16d788bd7"
 
 [[package]]
 name = "serde"
@@ -3904,7 +3944,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d022496b16281348b52d0e30ae99e01a73d737b2f45d38fed4edf79f9325a1d5"
 dependencies = [
  "discard",
- "rustc_version",
+ "rustc_version 0.2.3",
  "stdweb-derive",
  "stdweb-internal-macros",
  "stdweb-internal-runtime",
@@ -4895,6 +4935,24 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "ws_stream_wasm"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9528a8ec27f348ae922b166e86670ef8be9f0427642d1f8725289f07e5207cd7"
+dependencies = [
+ "async_io_stream",
+ "futures 0.3.14",
+ "js-sys",
+ "pharos",
+ "rustc_version 0.3.3",
+ "send_wrapper",
+ "thiserror",
+ "wasm-bindgen",
+ "wasm-bindgen-futures 0.4.23",
+ "web-sys",
+]
 
 [[package]]
 name = "wyz"

@@ -13,7 +13,7 @@ use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 
-use web_sys::{ErrorEvent, MessageEvent, WebSocket};
+use web_sys::{ErrorEvent, MessageEvent};
 use wasm_bindgen::{
     JsCast,
     JsValue,
@@ -24,8 +24,10 @@ use crate::error::FlvSocketError;
 use crate::multiplexing::AsyncResponse;
 use log::*;
 use fluvio_future::timer::sleep;
+use futures_util::StreamExt;
 use std::time::Duration;
 
+use std::io::Cursor;
 
 #[derive(Clone)]
 pub enum WebSocketConnector {
@@ -38,9 +40,15 @@ impl Default for WebSocketConnector {
     }
 }
 
+use ws_stream_wasm::{
+    WsMeta,
+    WsStream,
+    WsMessage,
+};
+use wasm_bindgen::UnwrapThrowExt;
 
 pub struct FluvioWebSocket {
-    inner: WebSocket,
+    inner: WsMeta,
     sink: InnerWebsocketSink,
     stream: InnerWebsocketStream,
 }
@@ -53,81 +61,12 @@ impl FluvioWebSocket {
         addr: &str,
         connector: &WebSocketConnector,
     ) -> Result<Self, FlvSocketError> {
-        let ws = WebSocket::new(addr)?;
-        ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
-        let cloned_ws = ws.clone();
+        let (mut ws, wsio) = WsMeta::connect(addr, None).await.expect_throw("Could not create websocket");
 
-        let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
-            // Handle difference Text/Binary,...
-            if let Ok(abuf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
-                debug!("message event, received arraybuffer: {:?}", abuf);
-                let array = js_sys::Uint8Array::new(&abuf);
-                let len = array.byte_length() as usize;
-                debug!("Arraybuffer received {}bytes: {:?}", len, array.to_vec());
-                // here you can for example use Serde Deserialize decode the message
-                // for demo purposes we switch back to Blob-type and send off another binary message
-                /*
-                cloned_ws.set_binary_type(web_sys::BinaryType::Blob);
-                match cloned_ws.send_with_u8_array(&vec![5, 6, 7, 8]) {
-                    Ok(_) => debug!("binary message successfully sent"),
-                    Err(err) => debug!("error sending message: {:?}", err),
-                }
-                */
-            } else if let Ok(blob) = e.data().dyn_into::<web_sys::Blob>() {
-                debug!("message event, received blob: {:?}", blob);
-                // better alternative to juggling with FileReader is to use https://crates.io/crates/gloo-file
-                let fr = web_sys::FileReader::new().unwrap();
-                let fr_c = fr.clone();
-                // create onLoadEnd callback
-                let onloadend_cb = Closure::wrap(Box::new(move |_e: web_sys::ProgressEvent| {
-                    let array = js_sys::Uint8Array::new(&fr_c.result().unwrap());
-                    let len = array.byte_length() as usize;
-                    debug!("Blob received {}bytes: {:?}", len, array.to_vec());
-                    // here you can for example use the received image/png data
-                })as Box<dyn FnMut(web_sys::ProgressEvent)>);
-                fr.set_onloadend(Some(onloadend_cb.as_ref().unchecked_ref()));
-                fr.read_as_array_buffer(&blob).expect("blob not readable");
-                onloadend_cb.forget();
-            } else if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
-                debug!("message event, received Text: {:?}", txt);
-            } else {
-                debug!("message event, received Unknown: {:?}", e.data());
-            }
-        }) as Box<dyn FnMut(MessageEvent)>);
-
-        // set message event handler on WebSocket
-        ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
-
-        // forget the callback to keep it alive
-        onmessage_callback.forget();
-
-        let onerror_callback = Closure::wrap(Box::new(move |e: ErrorEvent| {
-            debug!("error event: {:?}", e);
-        }) as Box<dyn FnMut(ErrorEvent)>);
-        ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
-        onerror_callback.forget();
-
-        let cloned_ws = ws.clone();
-        let onopen_callback = Closure::wrap(Box::new(move |_| {
-            debug!("socket opened");
-            /*
-            match cloned_ws.send_with_str("ping") {
-                Ok(_) => debug!("message successfully sent"),
-                Err(err) => debug!("error sending message: {:?}", err),
-            }
-            // send off binary message
-            match cloned_ws.send_with_u8_array(&vec![0, 1, 2, 3]) {
-                Ok(_) => debug!("binary message successfully sent"),
-                Err(err) => debug!("error sending message: {:?}", err),
-            }
-            */
-        }) as Box<dyn FnMut(JsValue)>);
-        ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
-        onopen_callback.forget();
         Ok(Self {
             inner: ws,
             sink: InnerWebsocketSink,
-            stream: InnerWebsocketStream,
+            stream: InnerWebsocketStream::new(wsio),
         })
     }
     pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
@@ -138,7 +77,7 @@ impl FluvioWebSocket {
         mut req_msg: RequestMessage<R>,
     ) -> Result<R::Response, FlvSocketError>
     where
-        R: Request,
+        R: Request + Send + Sync,
     {
         unimplemented!();
     }
@@ -148,11 +87,11 @@ impl FluvioWebSocket {
         req_msg: &RequestMessage<R>,
     ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
-        R: Request,
+        R: Request + Send + Sync,
     {
         let bytes = req_msg.as_bytes(0)?;
-        self.inner.send_with_u8_array(&bytes)?;
-        unimplemented!();
+        self.inner.wrapped().send_with_u8_array(&bytes)?;
+        self.stream.next_response(req_msg).await
     }
 
     pub fn get_mut_sink(&mut self) -> &mut InnerWebsocketSink {
@@ -161,7 +100,7 @@ impl FluvioWebSocket {
     }
 
     pub fn get_mut_stream(&mut self) -> &mut InnerWebsocketStream {
-        unimplemented!();
+        &mut self.stream
         //&mut self.stream
     }
 }
@@ -180,36 +119,53 @@ impl InnerWebsocketSink {
 }
 use tokio_util::codec::Framed;
 use tokio_util::compat::Compat;
-use futures_util::stream::SplitStream;
+use futures_util::stream::{
+    SplitStream,
+    Stream,
+};
 use fluvio_protocol::codec::FluvioCodec;
+use std::io::ErrorKind;
 
 use futures_util::io::{AsyncRead, AsyncWrite};
-type FrameStream<S> = SplitStream<Framed<Compat<S>, FluvioCodec>>;
 
-#[derive(Debug)]
-pub struct InnerFlvStream<S>(FrameStream<S>);
-impl<S> InnerFlvStream<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
+pub struct InnerWebsocketStream {
+    ws: WsStream,
 }
+unsafe impl Send for InnerWebsocketStream {}
+unsafe impl Sync for InnerWebsocketStream {}
 
-pub struct InnerWebsocketStream;
 impl InnerWebsocketStream {
+    pub fn new(ws: WsStream) -> Self {
+        Self {
+            ws,
+        }
+    }
     pub async fn next_response<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
     ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
     where
-        R: Request,
+        R: Request + Send + Sync,
     {
-        unimplemented!();
+        /*
+        */
+        match self.ws.next().await {
+            Some(WsMessage::Binary(data)) => {
+                let response = req_msg.decode_response(
+                    &mut Cursor::new(&data),
+                    req_msg.header.api_version(),
+                )?;
+                trace!("received {} bytes: {:#?}", data.len(), &response);
+                Ok(response)
+            }
+            None => Err(
+                IoError::new(
+                    ErrorKind::UnexpectedEof, "server has terminated connection"
+                ).into()),
+            _ => unreachable!()
+        }
+        //unimplemented!();
     }
-    /*
-    pub fn get_mut_tcp_stream(&mut self) -> &mut FrameStream<S> {
-        unimplemented!();
-    }
-    */
 }
 
 pub struct MultiplexerWebsocket {

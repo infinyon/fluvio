@@ -2,7 +2,6 @@ mod error;
 mod multiplexing;
 #[cfg(not(target_arch = "wasm32"))]
 mod pooling;
-//#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 mod sink_pool;
 

@@ -33,3 +33,10 @@ impl From<JsValue> for FlvSocketError {
         )
     }
 }
+#[cfg(target_arch = "wasm32")]
+impl From<async_channel::RecvError>for FlvSocketError {
+    fn from(_: async_channel::RecvError) -> Self {
+        unimplemented!()
+    }
+
+}

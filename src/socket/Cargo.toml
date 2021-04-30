@@ -44,6 +44,8 @@ js-sys = "0.3"
 console_log = { version = "0.2.0", features = ["color"] }
 log = "0.4"
 pin-project = "1.0.1"
+wasm-bindgen-futures = "0.4.23"
+ws_stream_wasm = "0.7"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3.22"
