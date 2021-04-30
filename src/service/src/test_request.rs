@@ -5,8 +5,6 @@ use std::io::Error as IoError;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
 
 use fluvio_protocol::api::{
     api_decode, ApiMessage, Request, RequestHeader, RequestMessage, ResponseMessage,
@@ -16,7 +14,6 @@ use fluvio_protocol::derive::Decode;
 use fluvio_protocol::derive::Encode;
 
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::FlvSink;
 use fluvio_socket::FlvSocket;
 
 use crate::api_loop;

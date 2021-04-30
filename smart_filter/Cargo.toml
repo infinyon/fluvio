@@ -5,3 +5,6 @@ members = ["test"]
 # lto is need to reduce wasm binary size
 [profile.release]
 lto = true
+
+[patch.crates-io]
+fluvio-future = { path = '../../future-aio', version = "0.3.0" }

@@ -15,6 +15,6 @@ tokio-util = { version = "0.6.4", features = ["codec","compat"]}
 fluvio-protocol = { version = "0.3.0", path = "../fluvio-protocol-core", package = "fluvio-protocol-core" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.2.0", features = ["fixture","timer","net"] }
+fluvio-future = { version = "0.3.0", features = ["fixture","timer","net"] }
 futures = { version = "0.3.1" }
 flv-util = { version = "0.5.0"}
