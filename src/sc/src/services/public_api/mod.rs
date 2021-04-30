@@ -17,7 +17,6 @@ mod server {
 
     use tracing::info;
 
-    use fluvio_future::net::TcpStream;
     use fluvio_service::FlvApiServer;
     use fluvio_auth::Authorization;
 
@@ -27,7 +26,7 @@ mod server {
     /// create public server
     pub fn start_public_server<A>(ctx: AuthGlobalContext<A>)
     where
-        A: Authorization<Stream = TcpStream> + Sync + Send + Debug + 'static,
+        A: Authorization + Sync + Send + Debug + 'static,
         AuthGlobalContext<A>: Clone + Debug,
         <A as Authorization>::Context: Send + Sync,
     {

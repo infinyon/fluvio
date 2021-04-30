@@ -3,7 +3,6 @@ use std::sync::Arc;
 use async_trait::async_trait;
 pub use policy::BasicRbacPolicy;
 
-use fluvio_future::net::TcpStream;
 use fluvio_auth::{AuthContext, Authorization, TypeAction, InstanceAction, AuthError};
 use fluvio_controlplane_metadata::extended::ObjectType;
 use fluvio_auth::x509::X509Identity;
@@ -23,14 +22,13 @@ impl BasicAuthorization {
 
 #[async_trait]
 impl Authorization for BasicAuthorization {
-    type Stream = TcpStream;
     type Context = BasicAuthContext;
 
     async fn create_auth_context(
         &self,
-        socket: &mut fluvio_socket::InnerFlvSocket<Self::Stream>,
+        socket: &mut fluvio_socket::FlvSocket,
     ) -> Result<Self::Context, AuthError> {
-        let identity = X509Identity::create_from_connection::<Self::Stream>(socket).await?;
+        let identity = X509Identity::create_from_connection(socket).await?;
         Ok(BasicAuthContext {
             identity,
             policy: self.policy.clone(),

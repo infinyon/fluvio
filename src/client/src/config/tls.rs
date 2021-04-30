@@ -5,9 +5,10 @@ use std::path::PathBuf;
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
+use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
 use fluvio_future::native_tls::{
-    AllDomainConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
-    PrivateKeyBuilder, CertBuilder,
+    TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder, PrivateKeyBuilder,
+    CertBuilder, TlsAnonymousConnector,
 };
 
 /// Describes whether or not to use TLS and how
@@ -193,17 +194,16 @@ pub struct TlsPaths {
     pub ca_cert: PathBuf,
 }
 
-impl TryFrom<TlsPolicy> for AllDomainConnector {
+impl TryFrom<TlsPolicy> for DomainConnector {
     type Error = IoError;
 
     fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
         match config {
-            TlsPolicy::Disabled => Ok(AllDomainConnector::default_tcp()),
+            TlsPolicy::Disabled => Ok(Box::new(DefaultTcpDomainConnector::new())),
             TlsPolicy::Anonymous => {
                 info!("Using anonymous TLS");
-                Ok(AllDomainConnector::TlsAnonymous(
-                    ConnectorBuilder::anonymous().build().into(),
-                ))
+                let connector: TlsAnonymousConnector = ConnectorBuilder::anonymous().build().into();
+                Ok(Box::new(connector))
             }
             TlsPolicy::Verified(TlsConfig::Files(tls)) => {
                 info!(
@@ -223,7 +223,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                 } else {
                     builder
                 };
-                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                Ok(Box::new(TlsDomainConnector::new(
                     builder.build(),
                     tls.domain,
                 )))
@@ -247,7 +247,7 @@ impl TryFrom<TlsPolicy> for AllDomainConnector {
                     builder
                 };
 
-                Ok(AllDomainConnector::TlsDomain(TlsDomainConnector::new(
+                Ok(Box::new(TlsDomainConnector::new(
                     builder.build(),
                     tls.domain,
                 )))

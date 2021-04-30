@@ -8,7 +8,6 @@ use async_trait::async_trait;
 use futures_util::io::AsyncRead;
 use futures_util::io::AsyncWrite;
 
-use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_protocol::api::{
     api_decode, ApiMessage, Request, RequestHeader, RequestMessage, ResponseMessage,
 };
@@ -17,8 +16,8 @@ use fluvio_protocol::derive::Decode;
 use fluvio_protocol::derive::Encode;
 
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::InnerFlvSink;
-use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::FlvSink;
+use fluvio_socket::FlvSocket;
 
 use crate::api_loop;
 use crate::call_service;

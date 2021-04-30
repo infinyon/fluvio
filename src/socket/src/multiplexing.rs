@@ -14,13 +14,11 @@ use async_channel::Sender;
 use async_mutex::Mutex;
 use bytes::BytesMut;
 use event_listener::Event;
-use futures_util::io::{AsyncRead, AsyncWrite};
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
 use tracing::{debug, error, instrument, trace};
 
-use fluvio_future::net::TcpStream;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
@@ -28,17 +26,17 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::Decoder;
 
 use crate::FlvSocketError;
-use crate::InnerExclusiveFlvSink;
-use crate::InnerFlvSocket;
-use crate::InnerFlvStream;
+use crate::ExclusiveFlvSink;
+use crate::FlvSocket;
+use crate::FlvStream;
 
 #[allow(unused)]
-pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
+//pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
-#[cfg(feature = "tls")]
-pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
-#[cfg(feature = "tls")]
-pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
+//#[cfg(feature = "tls")]
+//pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
+//#[cfg(feature = "tls")]
+pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
 
@@ -60,40 +58,35 @@ async fn correlation_id(counter: Arc<Mutex<i32>>) -> i32 {
     current_value
 }
 
-pub type SharedMultiplexerSocket<S> = Arc<MultiplexerSocket<S>>;
-
 /// Socket that can multiplex connections
-pub struct MultiplexerSocket<S> {
+pub struct MultiplexerSocket {
     correlation_id_counter: Arc<Mutex<i32>>,
     senders: Senders,
-    sink: InnerExclusiveFlvSink<S>,
+    sink: ExclusiveFlvSink,
     terminate: Arc<Event>,
 }
 
-impl<S> Drop for MultiplexerSocket<S> {
+impl Drop for MultiplexerSocket {
     fn drop(&mut self) {
         // notify dispatcher
         self.terminate.notify(usize::MAX);
     }
 }
 
-impl<S> MultiplexerSocket<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
-{
-    pub fn shared(socket: InnerFlvSocket<S>) -> Arc<Self> {
+impl MultiplexerSocket {
+    pub fn shared(socket: FlvSocket) -> Arc<Self> {
         Arc::new(Self::new(socket))
     }
 
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
-    pub fn new(socket: InnerFlvSocket<S>) -> Self {
+    pub fn new(socket: FlvSocket) -> Self {
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
             correlation_id_counter: Arc::new(Mutex::new(1)),
             senders: Arc::new(Mutex::new(HashMap::new())),
-            sink: InnerExclusiveFlvSink::new(sink),
+            sink: ExclusiveFlvSink::new(sink),
             terminate: Arc::new(Event::new()),
         };
 
@@ -310,10 +303,7 @@ struct MultiPlexingResponseDispatcher {
 }
 
 impl MultiPlexingResponseDispatcher {
-    pub fn run<S>(stream: InnerFlvStream<S>, senders: Senders, terminate: Arc<Event>)
-    where
-        S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
-    {
+    pub fn run(stream: FlvStream, senders: Senders, terminate: Arc<Event>) {
         use fluvio_future::task::spawn;
 
         let dispatcher = Self { senders, terminate };
@@ -322,10 +312,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    async fn dispatcher_loop<S>(mut self, mut stream: InnerFlvStream<S>)
-    where
-        S: AsyncRead + AsyncWrite + Unpin + 'static + Send + Sync,
-    {
+    async fn dispatcher_loop(mut self, mut stream: FlvStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {

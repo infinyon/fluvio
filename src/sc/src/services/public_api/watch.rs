@@ -5,15 +5,12 @@ use tracing::{debug, trace};
 use tracing::error;
 use tracing::instrument;
 
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
-
 use fluvio_types::event::SimpleEvent;
-use fluvio_socket::InnerExclusiveFlvSink;
+use fluvio_socket::ExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
-use fluvio_future::zero_copy::ZeroCopyWrite;
+
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
@@ -24,37 +21,35 @@ use crate::stores::{StoreContext, K8ChangeListener};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 /// handle watch request by spawning watch controller for each store
-pub fn handle_watch_request<T, AC>(
+pub fn handle_watch_request<AC>(
     request: RequestMessage<WatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
-    sink: InnerExclusiveFlvSink<T>,
+    sink: ExclusiveFlvSink,
     end_event: Arc<SimpleEvent>,
-) where
-    T: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
-{
+) {
     debug!("handling watch request");
     let (header, req) = request.get_header_request();
 
     match req {
-        WatchRequest::Topic(_) => WatchController::<T, TopicSpec>::update(
+        WatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.topics().clone(),
             header,
         ),
-        WatchRequest::Spu(_) => WatchController::<T, SpuSpec>::update(
+        WatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
         ),
-        WatchRequest::SpuGroup(_) => WatchController::<T, SpuGroupSpec>::update(
+        WatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spgs().clone(),
             header,
         ),
-        WatchRequest::Partition(_) => WatchController::<T, PartitionSpec>::update(
+        WatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
@@ -63,19 +58,18 @@ pub fn handle_watch_request<T, AC>(
     }
 }
 
-struct WatchController<T, S>
+struct WatchController<S>
 where
     S: Spec,
 {
-    response_sink: InnerExclusiveFlvSink<T>,
+    response_sink: ExclusiveFlvSink,
     store: StoreContext<S>,
     header: RequestHeader,
     end_event: Arc<SimpleEvent>,
 }
 
-impl<T, S> WatchController<T, S>
+impl<S> WatchController<S>
 where
-    T: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
     S: Spec + Debug + 'static + Send + Sync + Encoder + Decoder,
     S::IndexKey: ToString,
     <S as Spec>::Status: Sync + Send + Encoder + Decoder,
@@ -84,7 +78,7 @@ where
 {
     /// start watch controller
     fn update(
-        response_sink: InnerExclusiveFlvSink<T>,
+        response_sink: ExclusiveFlvSink,
         end_event: Arc<SimpleEvent>,
         store: StoreContext<S>,
         header: RequestHeader,

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::debug;
 
-use fluvio_socket::SharedAllMultiplexerSocket;
+use fluvio_socket::SharedMultiplexerSocket;
 use fluvio_socket::FlvSocketError;
 
 use crate::metadata::topic::TopicSpec;
@@ -19,12 +19,12 @@ pub struct MetadataStores {
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,
     topics: StoreContext<TopicSpec>,
-    socket: SharedAllMultiplexerSocket,
+    socket: SharedMultiplexerSocket,
 }
 
 impl MetadataStores {
     /// start synchronization
-    pub async fn start(socket: SharedAllMultiplexerSocket) -> Result<Self, FlvSocketError> {
+    pub async fn start(socket: SharedMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),

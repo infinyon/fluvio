@@ -7,16 +7,14 @@ use std::os::unix::io::RawFd;
 
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
-use bytes::Bytes;
 use tracing::trace;
-
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::SplitSink;
+use tokio_util::compat::FuturesAsyncWriteCompatExt;
 use futures_util::SinkExt;
-use tokio_util::compat::Compat;
 
+use tokio_util::compat::Compat;
 use bytes::BytesMut;
-use fluvio_future::zero_copy::ZeroCopyWrite;
+
+use fluvio_future::zero_copy::ZeroCopy;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
@@ -24,34 +22,27 @@ use fluvio_protocol::store::FileWrite;
 use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
+use fluvio_future::net::BoxConnection;
 
-use fluvio_future::net::TcpStream;
-use tokio_util::codec::Framed;
+use tokio_util::codec::{FramedWrite};
 
 use crate::FlvSocketError;
 
-pub type FlvSink = InnerFlvSink<TcpStream>;
-pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
+type SinkFrame = FramedWrite<Compat<BoxConnection>, FluvioCodec>;
 
-type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
-
-pub struct InnerFlvSink<S> {
-    inner: SplitFrame<S>,
+pub struct FlvSink {
+    inner: SinkFrame,
     fd: RawFd,
 }
 
-impl<S> fmt::Debug for InnerFlvSink<S> {
+impl fmt::Debug for FlvSink {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
 }
 
-impl<S> InnerFlvSink<S> {
-    pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
-        InnerFlvSink { fd, inner }
-    }
-
-    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitFrame<S> {
+impl FlvSink {
+    pub fn get_mut_tcp_sink(&mut self) -> &mut SinkFrame {
         &mut self.inner
     }
 
@@ -61,15 +52,17 @@ impl<S> InnerFlvSink<S> {
 
     /// convert to shared sink
     #[allow(clippy::wrong_self_convention)]
-    pub fn as_shared(self) -> InnerExclusiveFlvSink<S> {
-        InnerExclusiveFlvSink::new(self)
+    pub fn as_shared(self) -> ExclusiveFlvSink {
+        ExclusiveFlvSink::new(self)
     }
-}
 
-impl<S> InnerFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
+    pub fn new(stream: BoxConnection, fd: RawFd) -> Self {
+        Self {
+            fd,
+            inner: SinkFrame::new(stream.compat_write(), FluvioCodec::new()),
+        }
+    }
+
     /// as client, send request to server
     pub async fn send_request<R>(
         &mut self,
@@ -104,11 +97,7 @@ where
     }
 }
 
-impl<S> InnerFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-    Self: ZeroCopyWrite,
-{
+impl FlvSink {
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -147,7 +136,8 @@ where
                             f_slice.position(),
                             f_slice.len()
                         );
-                        self.zero_copy_write(&f_slice).await?;
+                        let writer = ZeroCopy::raw(self.fd);
+                        writer.copy_slice(&f_slice).await?;
                         trace!("finish writing file slice");
                     }
                 }
@@ -158,33 +148,30 @@ where
     }
 }
 
-impl<S> AsRawFd for InnerFlvSink<S> {
+impl AsRawFd for FlvSink {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
 }
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-pub struct InnerExclusiveFlvSink<S> {
-    inner: Arc<Mutex<InnerFlvSink<S>>>,
+pub struct ExclusiveFlvSink {
+    inner: Arc<Mutex<FlvSink>>,
     fd: RawFd,
 }
 
-impl<S> InnerExclusiveFlvSink<S> {
-    pub fn new(sink: InnerFlvSink<S>) -> Self {
+impl ExclusiveFlvSink {
+    pub fn new(sink: FlvSink) -> Self {
         let fd = sink.id();
-        InnerExclusiveFlvSink {
+        ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
             fd,
         }
     }
 }
 
-impl<S> InnerExclusiveFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
-    pub async fn lock(&self) -> MutexGuard<'_, InnerFlvSink<S>> {
+impl ExclusiveFlvSink {
+    pub async fn lock(&self) -> MutexGuard<'_, FlvSink> {
         self.inner.lock().await
     }
 
@@ -214,7 +201,7 @@ where
     }
 }
 
-impl<S> Clone for InnerExclusiveFlvSink<S> {
+impl Clone for ExclusiveFlvSink {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),

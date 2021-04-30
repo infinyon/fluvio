@@ -5,7 +5,6 @@ use tracing::{debug, warn};
 
 use fluvio_service::{wait_for_request, FlvService};
 use fluvio_socket::{FlvSocket, FlvSocketError};
-use fluvio_future::net::TcpStream;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::FollowerHandler;
@@ -23,7 +22,7 @@ impl InternalService {
 }
 
 #[async_trait]
-impl FlvService<TcpStream> for InternalService {
+impl FlvService for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
 

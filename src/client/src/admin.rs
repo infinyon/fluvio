@@ -1,14 +1,15 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
+use fluvio_future::net::DomainConnector;
 use tracing::debug;
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::AllMultiplexerSocket;
-use fluvio_future::native_tls::AllDomainConnector;
+use fluvio_socket::MultiplexerSocket;
+//use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
@@ -101,13 +102,13 @@ impl FluvioAdmin {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        let connector = AllDomainConnector::try_from(config.tls.clone())?;
+        let connector = DomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
-        let socket = AllMultiplexerSocket::shared(socket);
+        let socket = MultiplexerSocket::shared(socket);
 
         let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
         Ok(Self(versioned_socket))

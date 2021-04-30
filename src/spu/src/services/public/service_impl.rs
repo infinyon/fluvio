@@ -3,14 +3,11 @@ use std::{sync::Arc};
 use tracing::debug;
 use tracing::trace;
 use async_trait::async_trait;
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
 use futures_util::stream::StreamExt;
 use tokio::select;
 
 use fluvio_types::event::SimpleEvent;
-use fluvio_socket::{InnerFlvSocket, InnerFlvSink};
-use fluvio_future::zero_copy::ZeroCopyWrite;
+use fluvio_socket::{FlvSocket};
 use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
@@ -33,21 +30,15 @@ impl PublicService {
 }
 
 #[async_trait]
-impl<S> FlvService<S> for PublicService
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
-{
+impl FlvService for PublicService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuServerRequest;
 
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        socket: InnerFlvSocket<S>,
-    ) -> Result<(), FlvSocketError>
-    where
-        InnerFlvSink<S>: ZeroCopyWrite,
-    {
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError> {
         let (sink, mut stream) = socket.split();
 
         let mut s_sink = sink.as_shared();

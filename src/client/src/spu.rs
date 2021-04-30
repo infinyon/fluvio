@@ -8,7 +8,7 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket::{AllMultiplexerSocket, SharedAllMultiplexerSocket, FlvSocketError, AsyncResponse};
+use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, FlvSocketError, AsyncResponse};
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
@@ -18,8 +18,8 @@ use crate::sockets::Versions;
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 struct SpuSocket {
-    config: ClientConfig,
-    socket: SharedAllMultiplexerSocket,
+    config: Arc<ClientConfig>,
+    socket: SharedMultiplexerSocket,
     versions: Versions,
 }
 
@@ -48,7 +48,7 @@ impl SpuSocket {
 
 /// connection pool to spu
 pub struct SpuPool {
-    config: ClientConfig,
+    config: Arc<ClientConfig>,
     pub(crate) metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
@@ -63,8 +63,8 @@ impl Drop for SpuPool {
 impl SpuPool {
     /// start synchronize based on pool
     pub async fn start(
-        config: ClientConfig,
-        sc_socket: SharedAllMultiplexerSocket,
+        config: Arc<ClientConfig>,
+        sc_socket: SharedMultiplexerSocket,
     ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");
@@ -87,7 +87,7 @@ impl SpuPool {
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
         Ok(SpuSocket {
-            socket: AllMultiplexerSocket::shared(socket),
+            socket: MultiplexerSocket::shared(socket),
             config,
             versions,
         })

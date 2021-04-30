@@ -3,35 +3,35 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use fluvio_future::net::TcpStream;
+use fluvio_future::net::{BoxConnection};
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::{SplitStream, Stream, StreamExt};
-use tokio_util::codec::Framed;
+use futures_util::stream::{Stream, StreamExt};
+use tokio_util::codec::{FramedRead};
+use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tokio_util::compat::Compat;
 use tracing::error;
 use tracing::trace;
 
 use crate::FlvSocketError;
 
-pub type FlvStream = InnerFlvStream<TcpStream>;
+//pub type FlvStream = InnerFlvStream<TcpStream>;
 
 #[cfg(feature = "tls")]
 pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
 
-type FrameStream<S> = SplitStream<Framed<Compat<S>, FluvioCodec>>;
+type FrameStream = FramedRead<Compat<BoxConnection>, FluvioCodec>;
 
 /// inner flv stream which is generic over stream
-#[derive(Debug)]
-pub struct InnerFlvStream<S>(FrameStream<S>);
+pub struct FlvStream(FrameStream);
 
-impl<S> InnerFlvStream<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
-    pub fn get_mut_tcp_stream(&mut self) -> &mut FrameStream<S> {
+impl FlvStream {
+    pub fn new(stream: BoxConnection) -> Self {
+        Self(FramedRead::new(stream.compat(), FluvioCodec::new()))
+    }
+
+    pub fn get_mut_tcp_stream(&mut self) -> &mut FrameStream {
         &mut self.0
     }
 
@@ -148,8 +148,8 @@ where
     }
 }
 
-impl<S> From<FrameStream<S>> for InnerFlvStream<S> {
-    fn from(stream: FrameStream<S>) -> Self {
-        InnerFlvStream(stream)
+impl From<FrameStream> for FlvStream {
+    fn from(stream: FrameStream) -> Self {
+        FlvStream(stream)
     }
 }
