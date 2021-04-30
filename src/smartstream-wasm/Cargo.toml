@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartstream-wasm"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -14,4 +14,4 @@ crate-type = ['lib']
 
 
 [dependencies]
-fluvio-dataplane-protocol = { version = "0.4.1", path = "../dataplane-protocol", default-features = false }
+fluvio-dataplane-protocol = { version = "0.5.0", path = "../dataplane-protocol", default-features = false }

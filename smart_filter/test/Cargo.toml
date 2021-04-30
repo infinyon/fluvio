@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-filter-test"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Simple Fluivo Smart Stream Filter"
@@ -12,4 +12,4 @@ license = "Apache-2.0"
 crate-type = ['cdylib']
 
 [dependencies]
-fluvio-smartstream-wasm = { version = "0.1.0", path = "../../src/smartstream-wasm" }
+fluvio-smartstream-wasm = { version = "0.2.0", path = "../../src/smartstream-wasm" }

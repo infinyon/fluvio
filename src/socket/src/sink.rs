@@ -230,7 +230,7 @@ mod tests {
     use fluvio_future::fs::AsyncFileExtension;
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
-    use fluvio_future::zero_copy::ZeroCopyWrite;
+    use fluvio_future::zero_copy::ZeroCopy;
     use fluvio_protocol::{Decoder, Encoder};
 
     async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
@@ -257,11 +257,9 @@ mod tests {
         debug!("sending out file contents");
         let data_file = util::open("tests/test.txt").await.expect("open file");
         let fslice = data_file.as_slice(0, None).await.expect("slice");
-        socket
-            .get_mut_sink()
-            .zero_copy_write(&fslice)
-            .await
-            .expect("zero copy");
+
+        let zerocopy = ZeroCopy::raw(socket.get_mut_sink().fd);
+        zerocopy.copy_slice(&fslice).await.expect("zero copy");
 
         // just in case if we need to keep it on
         sleep(Duration::from_millis(200)).await;
