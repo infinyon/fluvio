@@ -30,6 +30,7 @@ tokio-util = { version = "0.6.4", features = ["codec", "compat"] }
 async-trait = "0.1.21"
 pin-project = "1.0.1"
 thiserror = "1.0.20"
+dyn-clone = { version = "1.0.4"}
 
 # Fluvio dependencies
 fluvio-future = { version = "0.3.0", features = ["net", "zero_copy"] }
