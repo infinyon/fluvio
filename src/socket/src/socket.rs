@@ -82,8 +82,9 @@ impl FlvSocket {
 }
 
 impl FlvSocket {
-    pub fn from_stream(stream: BoxConnection, raw_fd: RawFd) -> Self {
-        Self::new(FlvSink::new(stream.clone(), raw_fd), FlvStream::new(stream))
+    pub fn from_stream(write: BoxConnection, raw_fd: RawFd) -> Self {
+        let read = dyn_clone::clone_box(&*write);
+        Self::new(FlvSink::new(write, raw_fd), FlvStream::new(read))
     }
 
     /// connect to target address with connector
