@@ -32,6 +32,8 @@ members = [
     "tests/runner"
 ]
 
+[patch.crates-io]
+k8-types = { path = "../k8-api/src/k8-types" }
 
 # profile to make image sizer smaller
 # comment out for now

@@ -199,6 +199,10 @@ impl SpuController {
         // check if ingress exists
         let spu_ingress = &spu_md.spec.public_endpoint.ingress;
 
+        // If using node port
+        // {}
+
+        // If not using node port
         let svc_lb_ingresses = svc_md.status.ingress();
         let mut computed_spu_ingress: Vec<IngressAddr> =
             svc_lb_ingresses.iter().map(convert).collect();

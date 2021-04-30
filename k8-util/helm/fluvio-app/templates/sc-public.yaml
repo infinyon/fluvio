@@ -22,3 +22,6 @@ spec:
   - protocol: TCP
     port: 9003
     targetPort: 9003
+    {{ if .Values.useNodePorts }}
+    nodePort: 9003
+    {{ end }}

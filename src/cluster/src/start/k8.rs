@@ -10,6 +10,8 @@ use std::env;
 use derive_builder::Builder;
 use tracing::{info, warn, debug, error, instrument};
 use once_cell::sync::Lazy;
+use tokio::select;
+use futures_lite::StreamExt;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
@@ -19,8 +21,10 @@ use fluvio_future::timer::sleep;
 use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
-use k8_client::meta_client::MetadataClient;
+use k8_client::meta_client::{MetadataClient, NameSpace};
 use k8_types::core::service::{ServiceSpec, TargetPort};
+use k8_types::core::pod::PodSpec;
+use k8_types::K8Watch;
 
 use crate::helm::{HelmClient, Chart};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
@@ -331,6 +335,9 @@ pub struct ClusterConfig {
     /// This is is useful inside k8 cluster
     #[builder(default = "false")]
     use_cluster_ip: bool,
+    /// The strategy used to communicate with the Fluvio cluster
+    #[builder(default = "IpMode::NodePort")]
+    ip_mode: IpMode,
     /// If set, skip spu liveness check
     #[builder(default = "false")]
     skip_spu_liveness_check: bool,
@@ -351,6 +358,14 @@ pub struct ClusterConfig {
     /// ```
     #[builder(default = "false")]
     render_checks: bool,
+}
+
+/// The strategy by which we will communicate with the Fluvio cluster
+#[derive(Debug, Clone)]
+pub enum IpMode {
+    NodePort,
+    ClusterIp,
+    LoadBalancer,
 }
 
 impl ClusterConfig {
@@ -882,12 +897,6 @@ impl ClusterInstaller {
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
     async fn discover_sc_address(&self, ns: &str) -> Result<Option<(String, u16)>, K8InstallError> {
-        use tokio::select;
-        use futures_lite::stream::StreamExt;
-
-        use fluvio_future::timer::sleep;
-        use k8_types::K8Watch;
-
         let mut service_stream = self
             .kube_client
             .watch_stream_now::<ServiceSpec>(ns.to_string());
@@ -917,26 +926,31 @@ impl ClusterInstaller {
                 .unwrap();
             debug!(?target_port, "Found target port:");
 
-            if self.config.use_cluster_ip {
-                return Some((
-                    format!("{}:{}", service.spec.cluster_ip, target_port),
-                    target_port,
-                ));
-            };
+            match &self.config.ip_mode {
+                IpMode::NodePort => {}
+                IpMode::ClusterIp => {
+                    return Some((
+                        format!("{}:{}", service.spec.cluster_ip, target_port),
+                        target_port,
+                    ));
+                }
+                IpMode::LoadBalancer => {
+                    let ingress_addr = service
+                        .status
+                        .load_balancer
+                        .ingress
+                        .iter()
+                        .find(|_| true)
+                        .and_then(|ingress| ingress.host_or_ip().to_owned());
+                    debug!(?ingress_addr, "Found ingress address:");
 
-            let ingress_addr = service
-                .status
-                .load_balancer
-                .ingress
-                .iter()
-                .find(|_| true)
-                .and_then(|ingress| ingress.host_or_ip().to_owned());
-
-            debug!(?ingress_addr, "Found ingress address:");
-
-            if let Some(sock_addr) = ingress_addr.map(|addr| format!("{}:{}", addr, target_port)) {
-                debug!(%sock_addr,"found lb address");
-                return Some((sock_addr, target_port));
+                    if let Some(sock_addr) =
+                        ingress_addr.map(|addr| format!("{}:{}", addr, target_port))
+                    {
+                        debug!(%sock_addr,"found lb address");
+                        return Some((sock_addr, target_port));
+                    }
+                }
             }
 
             None
@@ -966,6 +980,47 @@ impl ClusterInstaller {
 
                     return Ok(sc_address);
                 }
+            }
+        }
+    }
+
+    #[instrument(skip(self, ns))]
+    async fn discover_host_ip(&self, ns: &str) -> Result<Option<String>, K8InstallError> {
+        let mut pod_stream = self.kube_client.watch_stream_now::<PodSpec>(ns.to_string());
+
+        let mut timer = fluvio_future::timer::sleep(Duration::from_secs(*MAX_SC_SERVICE_WAIT));
+
+        let find_host_ip = |watch: K8Watch<PodSpec>| -> Option<String> {
+            let pod = match watch {
+                K8Watch::ADDED(pod) => pod,
+                K8Watch::MODIFIED(pod) => pod,
+                K8Watch::DELETED(_) => return None,
+            };
+
+            pod.status.host_ip
+        };
+
+        tokio::select! {
+            _ = &mut timer => {
+                return Ok(None)
+            }
+            next = pod_stream.next() => {
+                let watch_results: Vec<Result<K8Watch<_>, _>> = match next {
+                    None => {
+                        debug!("Pod stream ended");
+                        return Ok(None);
+                    }
+                    Some(watches) => watches?,
+                };
+
+                let host_ip = watch_results
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .filter_map(find_host_ip)
+                    .next();
+
+                return Ok(host_ip);
             }
         }
     }
