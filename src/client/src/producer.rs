@@ -61,10 +61,12 @@ impl TopicProducer {
     )]
     pub async fn send<K, V>(&self, key: K, value: V) -> Result<(), FluvioError>
     where
-        K: Into<Vec<u8>>,
-        V: Into<Vec<u8>>,
+        K: Into<RecordKey>,
+        V: Into<RecordData>,
     {
-        self.send_all(Some((Some(key.into()), value))).await?;
+        let record_key = key.into();
+        let record_value = value.into();
+        self.send_all(Some((record_key, record_value))).await?;
         Ok(())
     }
 
@@ -74,9 +76,9 @@ impl TopicProducer {
     )]
     pub async fn send_all<K, V, I>(&self, records: I) -> Result<(), FluvioError>
     where
-        K: Into<Vec<u8>>,
-        V: Into<Vec<u8>>,
-        I: IntoIterator<Item = (Option<K>, V)>,
+        K: Into<RecordKey>,
+        V: Into<RecordData>,
+        I: IntoIterator<Item = (K, V)>,
     {
         let topics = self.pool.metadata.topics();
         let topic_spec = topics
@@ -89,10 +91,13 @@ impl TopicProducer {
 
         let entries = records
             .into_iter()
-            .map::<(Option<Vec<u8>>, Vec<u8>), _>(|(k, v)| (k.map(|it| it.into()), v.into()))
+            .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
             .map(|(key, value)| {
-                let key = key.map(|it| DefaultAsyncBuffer::new(it));
-                let value = DefaultAsyncBuffer::new(value);
+                let key = match key.0 {
+                    RecordKeyInner::Null => None,
+                    RecordKeyInner::Key(key) => Some(DefaultAsyncBuffer::new(key.0)),
+                };
+                let value = DefaultAsyncBuffer::new(value.0);
                 DefaultRecord::from((key, value))
             });
 
@@ -148,14 +153,14 @@ impl TopicProducer {
         skip(self, buffer),
         fields(topic = %self.topic),
     )]
-    #[deprecated(since = "0.6.2")]
+    #[deprecated(since = "0.6.2", note = "Use 'send' instead")]
     pub async fn send_record<B: AsRef<[u8]>>(
         &self,
         buffer: B,
         _partition: i32,
     ) -> Result<(), FluvioError> {
         let buffer: Vec<u8> = Vec::from(buffer.as_ref());
-        self.send_all(Some((None::<Vec<u8>>, buffer))).await?;
+        self.send_all(Some((RecordKey::NULL, buffer))).await?;
         Ok(())
     }
 }
@@ -214,6 +219,49 @@ fn assemble_requests(
     }
 
     requests
+}
+
+/// A key for determining which partition a record should be sent to.
+///
+/// This type is used to support conversions from any other type that
+/// may be converted to a `Vec<u8>`, while still allowing the ability
+/// to explicitly state that a record may have no key (`RecordKey::NULL`).
+///
+/// # Examples
+///
+/// ```
+/// # use fluvio::{TopicProducer, FluvioError, RecordKey};
+/// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+/// producer.send("Hello", String::from("World!")).await?;
+/// producer.send(RecordKey::NULL, "World!").await?;
+/// # Ok(())
+/// # }
+/// ```
+pub struct RecordKey(RecordKeyInner);
+
+impl RecordKey {
+    pub const NULL: Self = Self(RecordKeyInner::Null);
+}
+
+enum RecordKeyInner {
+    Null,
+    Key(RecordData),
+}
+
+impl<K: Into<Vec<u8>>> From<K> for RecordKey {
+    fn from(k: K) -> Self {
+        Self(RecordKeyInner::Key(RecordData::from(k)))
+    }
+}
+
+/// A type to hold the contents of a record's value.
+pub struct RecordData(bytes::Bytes);
+
+impl<V: Into<Vec<u8>>> From<V> for RecordData {
+    fn from(v: V) -> Self {
+        let value: Vec<u8> = v.into();
+        Self(value.into())
+    }
 }
 
 /// A trait for defining a partitioning strategy for key/value records.
