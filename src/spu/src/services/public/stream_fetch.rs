@@ -510,6 +510,7 @@ mod test {
     use super::*;
 
     // #[test_async] Disable because flaky
+    #[allow(unused)]
     async fn test_stream_fetch() -> Result<(), ()> {
         let test_path = temp_dir().join("stream_test");
         ensure_clean_dir(&test_path);

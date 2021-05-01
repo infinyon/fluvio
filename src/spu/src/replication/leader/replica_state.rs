@@ -133,6 +133,7 @@ where
         let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
         let leader_replica = Self::new(replica, config.into(), status_update, inner);
+        leader_replica.update_status().await;
         Ok(leader_replica)
     }
 
@@ -213,7 +214,7 @@ where
 
         self.notify_followers(notifier).await;
         if update {
-            self.send_status_to_sc().await;
+            self.update_status().await;
         }
 
         update
@@ -299,7 +300,7 @@ where
     }
 
     #[instrument(skip(self))]
-    pub async fn send_status_to_sc(&self) {
+    pub async fn update_status(&self) {
         let lrs = self.as_lrs_request().await;
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
         self.status_update.send(lrs).await
@@ -317,7 +318,7 @@ where
             .await?;
 
         self.notify_followers(notifiers).await;
-        self.send_status_to_sc().await;
+        self.update_status().await;
 
         Ok(())
     }

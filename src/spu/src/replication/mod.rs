@@ -201,6 +201,17 @@ mod replica_test {
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
 
+        assert_eq!(leader_replica.leo(), 0);
+        assert_eq!(leader_replica.hw(), 0);
+
+        let status = leader_gctx.status_update().remove_all().await;
+        assert!(!status.is_empty());
+        let lrs = &status[0];
+        assert_eq!(lrs.id, (TOPIC, 0).into());
+        assert_eq!(lrs.leader.spu, LEADER);
+        assert_eq!(lrs.leader.hw, 0);
+        assert_eq!(lrs.leader.leo, 0);
+
         // write records
         leader_replica
             .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
@@ -209,6 +220,14 @@ mod replica_test {
 
         assert_eq!(leader_replica.leo(), 2);
         assert_eq!(leader_replica.hw(), 2);
+
+        let status = leader_gctx.status_update().remove_all().await;
+        assert!(!status.is_empty());
+        let lrs = &status[0];
+        assert_eq!(lrs.id, (TOPIC, 0).into());
+        assert_eq!(lrs.leader.spu, LEADER);
+        assert_eq!(lrs.leader.hw, 2);
+        assert_eq!(lrs.leader.leo, 2);
 
         Ok(())
     }
