@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use futures_util::stream::StreamExt;
 
 use fluvio_protocol::api::{ResponseMessage};
-use fluvio_socket::FlvSocket;
+use fluvio_socket::FluvioSocket;
 
 use super::request::{AuthorizationScopes, AuthorizationApiRequest, AuthResponse};
 
@@ -23,7 +23,7 @@ impl X509Identity {
     }
 
     /// extract x509 identity from TCP Socket
-    pub async fn create_from_connection<S>(socket: &mut FlvSocket) -> Result<Self, std::io::Error> {
+    pub async fn create_from_connection(socket: &mut FluvioSocket) -> Result<Self, std::io::Error> {
         let identity = {
             let stream = &mut socket.get_mut_stream();
 

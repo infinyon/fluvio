@@ -4,8 +4,7 @@ use async_trait::async_trait;
 use tracing::{debug, warn};
 
 use fluvio_service::{wait_for_request, FlvService};
-use fluvio_socket::{FlvSocket, FlvSocketError};
-use fluvio_future::net::TcpStream;
+use fluvio_socket::{FluvioSocket, FlvSocketError};
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::FollowerHandler;
@@ -23,14 +22,14 @@ impl InternalService {
 }
 
 #[async_trait]
-impl FlvService<TcpStream> for InternalService {
+impl FlvService for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
 
     async fn respond(
         self: Arc<Self>,
         ctx: DefaultSharedGlobalContext,
-        socket: FlvSocket,
+        socket: FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();

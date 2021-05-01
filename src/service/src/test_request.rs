@@ -5,10 +5,7 @@ use std::io::Error as IoError;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
 
-use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_protocol::api::{
     api_decode, ApiMessage, Request, RequestHeader, RequestMessage, ResponseMessage,
 };
@@ -17,8 +14,7 @@ use fluvio_protocol::derive::Decode;
 use fluvio_protocol::derive::Encode;
 
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::InnerFlvSink;
-use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::FluvioSocket;
 
 use crate::api_loop;
 use crate::call_service;
@@ -128,21 +124,15 @@ async fn handle_echo_request(
 }
 
 #[async_trait]
-impl<S> FlvService<S> for TestService
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
-{
+impl FlvService for TestService {
     type Context = SharedTestContext;
     type Request = TestApiRequest;
 
     async fn respond(
         self: Arc<Self>,
         _context: Self::Context,
-        socket: InnerFlvSocket<S>,
-    ) -> Result<(), FlvSocketError>
-    where
-        InnerFlvSink<S>: ZeroCopyWrite,
-    {
+        socket: FluvioSocket,
+    ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 

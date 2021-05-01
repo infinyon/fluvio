@@ -23,7 +23,7 @@ use fluvio_dataplane_protocol::fetch::{
 use fluvio_socket::FlvSocketError;
 
 use flv_util::fixture::ensure_clean_file;
-use fluvio_socket::FlvSocket;
+use fluvio_socket::FluvioSocket;
 
 /// create sample batches with message
 fn create_batches(records: u16) -> DefaultBatch {
@@ -64,7 +64,7 @@ async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
     let incoming_stream = incoming.next().await;
     debug!("server: got connection");
     let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-    let mut socket: FlvSocket = incoming_stream.into();
+    let mut socket: FluvioSocket = incoming_stream.into();
 
     let fetch_request: Result<RequestMessage<FileFetchRequest>, FlvSocketError> = socket
         .get_mut_stream()
@@ -105,7 +105,7 @@ async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
 async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
     sleep(Duration::from_millis(50)).await;
     debug!("client: trying to connect");
-    let mut socket = FlvSocket::connect(addr).await?;
+    let mut socket = FluvioSocket::connect(addr).await?;
     debug!("client: connect to test server and waiting...");
 
     let req_msg: RequestMessage<DefaultFetchRequest> = RequestMessage::default();

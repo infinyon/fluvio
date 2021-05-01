@@ -24,7 +24,7 @@ use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
 use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
-use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
+use fluvio_socket::{FluvioSocket, FlvSocketError, FluvioSink};
 use fluvio_storage::FileReplica;
 use flv_util::actions::Actions;
 
@@ -145,7 +145,7 @@ impl ScDispatcher<FileReplica> {
             socket = socket.id()
         )
     )]
-    async fn request_loop(&mut self, socket: FlvSocket) -> Result<(), FlvSocketError> {
+    async fn request_loop(&mut self, socket: FluvioSocket) -> Result<(), FlvSocketError> {
         use async_io::Timer;
 
         /// Interval between each send to SC
@@ -205,7 +205,7 @@ impl ScDispatcher<FileReplica> {
     }
 
     /// send status back to sc, if there is error return false
-    async fn send_status_back_to_sc(&mut self, sc_sink: &mut FlvSink) -> bool {
+    async fn send_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> bool {
         let requests = self.sink_channel.remove_all().await;
         if !requests.is_empty() {
             trace!(requests = ?requests, "sending status back to sc");
@@ -231,7 +231,7 @@ impl ScDispatcher<FileReplica> {
     )]
     async fn send_spu_registeration(
         &self,
-        socket: &mut FlvSocket,
+        socket: &mut FluvioSocket,
     ) -> Result<bool, InternalServerError> {
         let local_spu_id = self.ctx.local_spu_id();
 
@@ -265,7 +265,7 @@ impl ScDispatcher<FileReplica> {
 
     /// connect to sc if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_sc(&mut self) -> Option<FlvSocket> {
+    async fn create_socket_to_sc(&mut self) -> Option<FluvioSocket> {
         let spu_id = self.ctx.local_spu_id();
         let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
@@ -278,7 +278,7 @@ impl ScDispatcher<FileReplica> {
                 sc_endpoint,
                 spu_id
             );
-            let connect_future = FlvSocket::connect(&sc_endpoint);
+            let connect_future = FluvioSocket::connect(&sc_endpoint);
 
             select! {
                 socket_res = connect_future => {
@@ -313,7 +313,7 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
-        sc_sink: &mut FlvSink,
+        sc_sink: &mut FluvioSink,
     ) -> Result<(), FlvSocketError> {
         let (_, request) = req_msg.get_header_request();
 
@@ -369,7 +369,7 @@ impl ScDispatcher<FileReplica> {
     async fn apply_replica_actions(
         &self,
         actions: Actions<SpecChange<Replica>>,
-        sc_sink: &mut FlvSink,
+        sc_sink: &mut FluvioSink,
     ) -> Result<(), FlvSocketError> {
         trace!( actions = ?actions,"replica actions");
 
@@ -505,7 +505,7 @@ impl ScDispatcher<FileReplica> {
     async fn remove_leader_replica(
         &self,
         replica: Replica,
-        sc_sink: &mut FlvSink,
+        sc_sink: &mut FluvioSink,
     ) -> Result<(), FlvSocketError> {
         use fluvio_controlplane::ReplicaRemovedRequest;
 

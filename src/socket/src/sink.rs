@@ -7,16 +7,14 @@ use std::os::unix::io::RawFd;
 
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
-use bytes::Bytes;
 use tracing::trace;
-
-use futures_util::io::{AsyncRead, AsyncWrite};
-use futures_util::stream::SplitSink;
+use tokio_util::compat::FuturesAsyncWriteCompatExt;
 use futures_util::SinkExt;
-use tokio_util::compat::Compat;
 
+use tokio_util::compat::Compat;
 use bytes::BytesMut;
-use fluvio_future::zero_copy::ZeroCopyWrite;
+
+use fluvio_future::zero_copy::ZeroCopy;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
@@ -24,34 +22,27 @@ use fluvio_protocol::store::FileWrite;
 use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
+use fluvio_future::net::BoxWriteConnection;
 
-use fluvio_future::net::TcpStream;
-use tokio_util::codec::Framed;
+use tokio_util::codec::{FramedWrite};
 
 use crate::FlvSocketError;
 
-pub type FlvSink = InnerFlvSink<TcpStream>;
-pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
+type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
-type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
-
-pub struct InnerFlvSink<S> {
-    inner: SplitFrame<S>,
+pub struct FluvioSink {
+    inner: SinkFrame,
     fd: RawFd,
 }
 
-impl<S> fmt::Debug for InnerFlvSink<S> {
+impl fmt::Debug for FluvioSink {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
 }
 
-impl<S> InnerFlvSink<S> {
-    pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
-        InnerFlvSink { fd, inner }
-    }
-
-    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitFrame<S> {
+impl FluvioSink {
+    pub fn get_mut_tcp_sink(&mut self) -> &mut SinkFrame {
         &mut self.inner
     }
 
@@ -61,15 +52,17 @@ impl<S> InnerFlvSink<S> {
 
     /// convert to shared sink
     #[allow(clippy::wrong_self_convention)]
-    pub fn as_shared(self) -> InnerExclusiveFlvSink<S> {
-        InnerExclusiveFlvSink::new(self)
+    pub fn as_shared(self) -> ExclusiveFlvSink {
+        ExclusiveFlvSink::new(self)
     }
-}
 
-impl<S> InnerFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
+    pub fn new(sink: BoxWriteConnection, fd: RawFd) -> Self {
+        Self {
+            fd,
+            inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
+        }
+    }
+
     /// as client, send request to server
     pub async fn send_request<R>(
         &mut self,
@@ -104,11 +97,7 @@ where
     }
 }
 
-impl<S> InnerFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-    Self: ZeroCopyWrite,
-{
+impl FluvioSink {
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -147,7 +136,8 @@ where
                             f_slice.position(),
                             f_slice.len()
                         );
-                        self.zero_copy_write(&f_slice).await?;
+                        let writer = ZeroCopy::raw(self.fd);
+                        writer.copy_slice(&f_slice).await?;
                         trace!("finish writing file slice");
                     }
                 }
@@ -158,33 +148,30 @@ where
     }
 }
 
-impl<S> AsRawFd for InnerFlvSink<S> {
+impl AsRawFd for FluvioSink {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
 }
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-pub struct InnerExclusiveFlvSink<S> {
-    inner: Arc<Mutex<InnerFlvSink<S>>>,
+pub struct ExclusiveFlvSink {
+    inner: Arc<Mutex<FluvioSink>>,
     fd: RawFd,
 }
 
-impl<S> InnerExclusiveFlvSink<S> {
-    pub fn new(sink: InnerFlvSink<S>) -> Self {
+impl ExclusiveFlvSink {
+    pub fn new(sink: FluvioSink) -> Self {
         let fd = sink.id();
-        InnerExclusiveFlvSink {
+        ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
             fd,
         }
     }
 }
 
-impl<S> InnerExclusiveFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
-    pub async fn lock(&self) -> MutexGuard<'_, InnerFlvSink<S>> {
+impl ExclusiveFlvSink {
+    pub async fn lock(&self) -> MutexGuard<'_, FluvioSink> {
         self.inner.lock().await
     }
 
@@ -214,7 +201,7 @@ where
     }
 }
 
-impl<S> Clone for InnerExclusiveFlvSink<S> {
+impl Clone for ExclusiveFlvSink {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -237,13 +224,13 @@ mod tests {
     use tracing::debug;
     use tracing::info;
 
-    use crate::FlvSocket;
+    use crate::FluvioSocket;
     use crate::FlvSocketError;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
-    use fluvio_future::zero_copy::ZeroCopyWrite;
+    use fluvio_future::zero_copy::ZeroCopy;
     use fluvio_protocol::{Decoder, Encoder};
 
     async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
@@ -253,7 +240,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let mut socket: FlvSocket = incoming_stream.into();
+        let mut socket: FluvioSocket = incoming_stream.into();
         let raw_tcp_sink = socket.get_mut_sink().get_mut_tcp_sink();
 
         const TEXT_LEN: u16 = 5;
@@ -270,11 +257,9 @@ mod tests {
         debug!("sending out file contents");
         let data_file = util::open("tests/test.txt").await.expect("open file");
         let fslice = data_file.as_slice(0, None).await.expect("slice");
-        socket
-            .get_mut_sink()
-            .zero_copy_write(&fslice)
-            .await
-            .expect("zero copy");
+
+        let zerocopy = ZeroCopy::raw(socket.get_mut_sink().fd);
+        zerocopy.copy_slice(&fslice).await.expect("zero copy");
 
         // just in case if we need to keep it on
         sleep(Duration::from_millis(200)).await;
@@ -285,7 +270,7 @@ mod tests {
     async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
         sleep(Duration::from_millis(50)).await;
         debug!("client: trying to connect");
-        let mut socket = FlvSocket::connect(&addr).await.expect("connect");
+        let mut socket = FluvioSocket::connect(&addr).await.expect("connect");
         info!("client: connect to test server and waiting...");
         let stream = socket.get_mut_stream();
         let next_value = stream.get_mut_tcp_stream().next().await;

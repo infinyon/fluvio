@@ -51,8 +51,11 @@ impl X509Authenticator {
         tcp_stream: &TcpStream,
         authorization_request: AuthRequest,
     ) -> Result<bool, IoError> {
-        let mut socket =
-            fluvio_socket::FlvSocket::from_stream(tcp_stream.clone(), tcp_stream.as_raw_fd());
+        let mut socket = fluvio_socket::FluvioSocket::from_stream(
+            Box::new(tcp_stream.clone()),
+            Box::new(tcp_stream.clone()),
+            tcp_stream.as_raw_fd(),
+        );
 
         let request_message = RequestMessage::new_request(authorization_request);
 

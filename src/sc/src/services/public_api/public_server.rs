@@ -12,20 +12,17 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 
 use async_trait::async_trait;
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
 
 use fluvio_types::event::SimpleEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
-use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::FluvioSocket;
 use fluvio_socket::FlvSocketError;
 use fluvio_service::FlvService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
-use fluvio_future::zero_copy::ZeroCopyWrite;
 
 use crate::services::auth::{AuthGlobalContext, AuthServiceContext};
 
@@ -41,10 +38,9 @@ impl<A> PublicService<A> {
 }
 
 #[async_trait]
-impl<A, S> FlvService<S> for PublicService<A>
+impl<A> FlvService for PublicService<A>
 where
-    S: AsyncWrite + AsyncRead + Unpin + Send + ZeroCopyWrite + 'static,
-    A: Authorization<Stream = S> + Sync + Send,
+    A: Authorization + Sync + Send,
     <A as Authorization>::Context: Send + Sync,
 {
     type Context = AuthGlobalContext<A>;
@@ -53,7 +49,7 @@ where
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
-        mut socket: InnerFlvSocket<S>,
+        mut socket: FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let auth_context = ctx
             .auth

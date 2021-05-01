@@ -5,13 +5,11 @@ use std::io::Error as IoError;
 
 use tracing::{debug, trace, error};
 use tracing::instrument;
-use futures_util::io::{AsyncRead, AsyncWrite};
 use tokio::select;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
-use fluvio_future::zero_copy::ZeroCopyWrite;
 use fluvio_future::task::spawn;
-use fluvio_socket::{InnerFlvSink, InnerExclusiveFlvSink, FlvSocketError};
+use fluvio_socket::{ExclusiveFlvSink, FlvSocketError};
 use dataplane::{
     ErrorCode,
     api::{RequestMessage, RequestHeader},
@@ -31,14 +29,14 @@ use crate::smart_stream::filter::{SmartStreamModule, SmartStreamEngine};
 use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
-pub struct StreamFetchHandler<S> {
+pub struct StreamFetchHandler {
     ctx: DefaultSharedGlobalContext,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
     max_fetch_bytes: u32,
     header: RequestHeader,
-    sink: InnerExclusiveFlvSink<S>,
+    sink: ExclusiveFlvSink,
     end_event: Arc<SimpleEvent>,
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
@@ -47,16 +45,12 @@ pub struct StreamFetchHandler<S> {
     sm_bytes: Vec<u8>,
 }
 
-impl<S> StreamFetchHandler<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
-    InnerFlvSink<S>: ZeroCopyWrite,
-{
+impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
-        sink: InnerExclusiveFlvSink<S>,
+        sink: ExclusiveFlvSink,
         end_event: Arc<SimpleEvent>,
     ) -> Result<(), FlvSocketError> {
         // first get receiver to offset update channel to we don't missed events
@@ -500,7 +494,7 @@ mod test {
 
     use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
-    use fluvio_socket::{FlvSocket, DefaultMultiplexerSocket};
+    use fluvio_socket::{FluvioSocket, MultiplexerSocket};
     use dataplane::{
         Isolation,
         fixture::BatchProducer,
@@ -531,7 +525,7 @@ mod test {
         sleep(Duration::from_millis(100)).await;
 
         let client_socket =
-            DefaultMultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
         for version in 10..11 {
@@ -698,7 +692,7 @@ mod test {
         sleep(Duration::from_millis(100)).await;
 
         let client_socket =
-            DefaultMultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
 
@@ -853,7 +847,7 @@ mod test {
         sleep(Duration::from_millis(100)).await;
 
         let client_socket =
-            DefaultMultiplexerSocket::new(FlvSocket::connect(addr).await.expect("connect"));
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
 

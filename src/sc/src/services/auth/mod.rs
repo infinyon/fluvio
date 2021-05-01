@@ -9,9 +9,8 @@ mod common {
 
     use async_trait::async_trait;
 
-    use fluvio_future::net::TcpStream;
     use fluvio_auth::{AuthContext, Authorization, TypeAction, InstanceAction, AuthError};
-    use fluvio_socket::InnerFlvSocket;
+    use fluvio_socket::FluvioSocket;
     use fluvio_controlplane_metadata::extended::ObjectType;
 
     use crate::core::SharedContext;
@@ -37,12 +36,11 @@ mod common {
 
     #[async_trait]
     impl Authorization for RootAuthorization {
-        type Stream = TcpStream;
         type Context = RootAuthContext;
 
         async fn create_auth_context(
             &self,
-            _socket: &mut InnerFlvSocket<Self::Stream>,
+            _socket: &mut FluvioSocket,
         ) -> Result<Self::Context, AuthError> {
             Ok(RootAuthContext {})
         }

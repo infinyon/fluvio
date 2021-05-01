@@ -19,4 +19,4 @@ inflections = "1.1"
 trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }
 fluvio = { path = "../../../../src/client" }
 tokio = { version = "1.4", features = ["macros"] }
-fluvio-future = { version = "0.2.0", features = ["task", "timer", "subscriber", "fixture"] }
+fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }

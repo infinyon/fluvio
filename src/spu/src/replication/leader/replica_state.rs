@@ -12,7 +12,7 @@ use tracing::instrument;
 use async_rwlock::{RwLock};
 use async_channel::{Sender, Receiver, SendError};
 
-use fluvio_socket::{FlvSink, FlvSocketError};
+use fluvio_socket::{FluvioSink, FlvSocketError};
 use dataplane::{record::RecordSet};
 use dataplane::{Offset, Isolation};
 use dataplane::api::RequestMessage;
@@ -284,7 +284,7 @@ where
     #[instrument(skip(self))]
     pub async fn send_update_to_follower(
         &self,
-        sink: &mut FlvSink,
+        sink: &mut FluvioSink,
         follower_id: SpuId,
         follower_info: &OffsetInfo,
         max_bytes: u32,

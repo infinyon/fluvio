@@ -13,11 +13,10 @@ use async_channel::Sender;
 use futures_util::stream::Stream;
 
 use fluvio_types::SpuId;
-use fluvio_future::net::TcpStream;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_service::{FlvService, wait_for_request};
-use fluvio_socket::{FlvSocket, FlvSocketError, FlvSink};
+use fluvio_socket::{FluvioSocket, FlvSocketError, FluvioSink};
 use fluvio_controlplane::{
     InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
     UpdateSpuRequest, ReplicaRemovedRequest,
@@ -43,14 +42,14 @@ impl ScInternalService {
 }
 
 #[async_trait]
-impl FlvService<TcpStream> for ScInternalService {
+impl FlvService for ScInternalService {
     type Context = SharedContext;
     type Request = InternalScRequest;
 
     async fn respond(
         self: Arc<Self>,
         context: SharedContext,
-        socket: FlvSocket,
+        socket: FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
@@ -122,7 +121,7 @@ async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,
     mut api_stream: impl Stream<Item = Result<InternalScRequest, FlvSocketError>> + Unpin,
-    mut sink: FlvSink,
+    mut sink: FluvioSink,
     health_sender: Sender<SpuAction>,
 ) -> Result<(), FlvSocketError> {
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
@@ -277,7 +276,7 @@ async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequ
 #[instrument(skip(sink))]
 async fn send_spu_spec_changes(
     listener: &mut K8ChangeListener<SpuSpec>,
-    sink: &mut FlvSink,
+    sink: &mut FluvioSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
     if !listener.has_change() {
@@ -325,7 +324,7 @@ async fn send_spu_spec_changes(
 #[instrument(skip(sink))]
 async fn send_replica_spec_changes(
     listener: &mut K8ChangeListener<PartitionSpec>,
-    sink: &mut FlvSink,
+    sink: &mut FluvioSink,
     spu_id: SpuId,
 ) -> Result<(), FlvSocketError> {
     use crate::stores::ChangeFlag;

@@ -1,3 +1,4 @@
+#[cfg(unix)]
 mod server;
 
 #[cfg(test)]
