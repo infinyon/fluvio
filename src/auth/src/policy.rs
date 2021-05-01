@@ -41,6 +41,8 @@ pub trait Authorization {
     type Context: AuthContext;
 
     /// create auth context
-    async fn create_auth_context(&self, socket: &mut FluvioSocket)
-        -> Result<Self::Context, AuthError>;
+    async fn create_auth_context(
+        &self,
+        socket: &mut FluvioSocket,
+    ) -> Result<Self::Context, AuthError>;
 }

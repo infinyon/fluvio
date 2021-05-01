@@ -17,7 +17,6 @@ use super::FlvSocketError;
 use crate::FluvioSink;
 use crate::FluvioStream;
 
-
 /// Socket abstract that can send and receive fluvio objects
 pub struct FluvioSocket {
     sink: FluvioSink,
