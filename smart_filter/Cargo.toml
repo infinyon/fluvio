@@ -7,4 +7,4 @@ members = ["test"]
 lto = true
 
 [patch.crates-io]
-fluvio-future = { path = '../../future-aio', version = "0.3.0" }
+fluvio-future = { git = "https://github.com/infinyon/future-aio", version = "0.3.0" }
