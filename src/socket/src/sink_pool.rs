@@ -6,7 +6,7 @@ use chashmap::CHashMap;
 use chashmap::WriteGuard;
 use tracing::trace;
 
-use crate::FlvSink;
+use crate::FluvioSink;
 
 pub type SharedSinkPool<T> = Arc<SinkPool<T>>;
 
@@ -14,12 +14,12 @@ pub type SharedSinkPool<T> = Arc<SinkPool<T>>;
 /// where you only need to keep track of sink
 /// no attemp to keep id indexes
 #[derive(Debug)]
-pub struct SinkPool<T>(CHashMap<T, FlvSink>);
+pub struct SinkPool<T>(CHashMap<T, FluvioSink>);
 
 impl<T> SinkPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone,
-    FlvSink: Sync,
+    FluvioSink: Sync,
 {
     pub fn new_shared() -> SharedSinkPool<T> {
         Arc::new(Self::new())
@@ -28,7 +28,7 @@ where
         Self(CHashMap::new())
     }
 
-    pub fn insert_sink(&self, id: T, socket: FlvSink) {
+    pub fn insert_sink(&self, id: T, socket: FluvioSink) {
         trace!("inserting sink at: {:#?}", id);
         self.0.insert(id, socket);
     }
@@ -38,7 +38,7 @@ where
     }
 
     /// get sink
-    pub fn get_sink<'a>(&'a self, id: &T) -> Option<WriteGuard<'a, T, FlvSink>> {
+    pub fn get_sink<'a>(&'a self, id: &T) -> Option<WriteGuard<'a, T, FluvioSink>> {
         self.0.get_mut(id)
     }
 }
@@ -72,7 +72,7 @@ mod tests {
     use crate::test_request::EchoResponse;
     use crate::test_request::TestApiRequest;
     use crate::test_request::TestKafkaApiEnum;
-    use crate::FlvSocket;
+    use crate::FluvioSocket;
     use crate::FlvSocketError;
 
     async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
@@ -84,7 +84,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let socket: FlvSocket = incoming_stream.into();
+        let socket: FluvioSocket = incoming_stream.into();
 
         let (sink, mut stream) = socket.split();
         let id: u16 = 0;
@@ -123,7 +123,7 @@ mod tests {
     async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
         sleep(Duration::from_millis(20)).await;
         debug!("client: trying to connect");
-        let mut socket = FlvSocket::connect(&addr).await?;
+        let mut socket = FluvioSocket::connect(&addr).await?;
         info!("client: connect to test server and waiting...");
 
         let request = RequestMessage::new_request(EchoRequest::new("hello".to_owned()));

@@ -8,8 +8,8 @@ use futures_util::StreamExt;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use fluvio_socket::FlvSocket;
-use fluvio_socket::FlvSink;
+use fluvio_socket::FluvioSocket;
+use fluvio_socket::FluvioSink;
 use fluvio_socket::FlvSocketError;
 use dataplane::{ReplicaKey, api::RequestMessage};
 use fluvio_types::{SpuId};
@@ -91,7 +91,7 @@ impl ReplicaFollowerController<FileReplica> {
         debug!("shutting down");
     }
 
-    async fn sync_with_leader(&mut self, mut socket: FlvSocket) -> Result<bool, FlvSocketError> {
+    async fn sync_with_leader(&mut self, mut socket: FluvioSocket) -> Result<bool, FlvSocketError> {
         self.send_fetch_stream_request(&mut socket).await?;
 
         let (mut sink, mut stream) = socket.split();
@@ -158,7 +158,7 @@ impl ReplicaFollowerController<FileReplica> {
     #[instrument(skip(self, req))]
     async fn sync_from_leader(
         &self,
-        sink: &mut FlvSink,
+        sink: &mut FluvioSink,
         mut req: DefaultSyncRequest,
     ) -> Result<(), FlvSocketError> {
         let mut offsets = UpdateOffsetRequest::default();
@@ -205,7 +205,7 @@ impl ReplicaFollowerController<FileReplica> {
 
     /// connect to leader, if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_leader(&mut self) -> FlvSocket {
+    async fn create_socket_to_leader(&mut self) -> FluvioSocket {
         let leader_spu = self.get_spu().await;
         let leader_endpoint = leader_spu.private_endpoint.to_string();
 
@@ -217,7 +217,7 @@ impl ReplicaFollowerController<FileReplica> {
                 "trying to create socket to leader",
             );
 
-            match FlvSocket::connect(&leader_endpoint).await {
+            match FluvioSocket::connect(&leader_endpoint).await {
                 Ok(socket) => {
                     debug!("connected to leader");
                     return socket;
@@ -237,7 +237,7 @@ impl ReplicaFollowerController<FileReplica> {
     #[instrument(skip(self))]
     async fn send_fetch_stream_request(
         &self,
-        socket: &mut FlvSocket,
+        socket: &mut FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let local_spu_id = self.local_spu_id();
         debug!("sending fetch stream for leader",);
@@ -258,7 +258,7 @@ impl ReplicaFollowerController<FileReplica> {
 
     async fn sync_all_offsets_to_leader(
         &self,
-        sink: &mut FlvSink,
+        sink: &mut FluvioSink,
         spu_replicas: &ReplicasBySpu,
     ) -> Result<(), FlvSocketError> {
         self.send_offsets_to_leader(sink, spu_replicas.replica_offsets())
@@ -269,7 +269,7 @@ impl ReplicaFollowerController<FileReplica> {
     #[instrument(skip(self))]
     async fn send_offsets_to_leader(
         &self,
-        sink: &mut FlvSink,
+        sink: &mut FluvioSink,
         offsets: UpdateOffsetRequest,
     ) -> Result<(), FlvSocketError> {
         let local_spu = self.config.id();

@@ -24,9 +24,9 @@ pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
 type FrameStream = FramedRead<Compat<BoxReadConnection>, FluvioCodec>;
 
 /// inner flv stream which is generic over stream
-pub struct FlvStream(FrameStream);
+pub struct FluvioStream(FrameStream);
 
-impl FlvStream {
+impl FluvioStream {
     pub fn new(stream: BoxReadConnection) -> Self {
         Self(FramedRead::new(stream.compat(), FluvioCodec::new()))
     }
@@ -148,8 +148,8 @@ impl FlvStream {
     }
 }
 
-impl From<FrameStream> for FlvStream {
+impl From<FrameStream> for FluvioStream {
     fn from(stream: FrameStream) -> Self {
-        FlvStream(stream)
+        FluvioStream(stream)
     }
 }

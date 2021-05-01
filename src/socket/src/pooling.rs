@@ -8,7 +8,7 @@ use chashmap::CHashMap;
 use chashmap::WriteGuard;
 use tracing::trace;
 
-use crate::FlvSocket;
+use crate::FluvioSocket;
 use crate::FlvSocketError;
 
 /// pooling of sockets
@@ -17,14 +17,14 @@ pub struct SocketPool<T>
 where
     T: Eq + Hash,
 {
-    clients: CHashMap<T, FlvSocket>,
+    clients: CHashMap<T, FluvioSocket>,
     ids: RwLock<HashMap<T, bool>>,
 }
 
 impl<T> SocketPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone,
-    FlvSocket: Sync,
+    FluvioSocket: Sync,
 {
     #[allow(dead_code)]
     pub fn new() -> Self {
@@ -34,7 +34,7 @@ where
         }
     }
 
-    pub fn insert_socket(&self, id: T, socket: FlvSocket) {
+    pub fn insert_socket(&self, id: T, socket: FluvioSocket) {
         trace!("inserting connection: {:#?}, returning", id);
         let mut ids = self.ids.write().expect("id lock must always lock");
         ids.insert(id.clone(), true);
@@ -42,7 +42,7 @@ where
     }
 
     /// get valid client.  return only client which is not stale
-    pub fn get_socket(&self, id: &T) -> Option<WriteGuard<'_, T, FlvSocket>> {
+    pub fn get_socket(&self, id: &T) -> Option<WriteGuard<'_, T, FluvioSocket>> {
         if let Some(client) = self.clients.get_mut(id) {
             trace!("got existing connection: {:#?}, returning", id);
             if client.is_stale() {
@@ -70,7 +70,7 @@ where
 impl<T> SocketPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone + ToString,
-    FlvSocket: Sync,
+    FluvioSocket: Sync,
 {
     /// make connection where id can be used as address
     pub async fn make_connection(&self, id: T) -> Result<(), FlvSocketError> {
@@ -82,12 +82,12 @@ where
 impl<T> SocketPool<T>
 where
     T: Eq + PartialEq + Hash + Debug + Clone,
-    FlvSocket: Sync,
+    FluvioSocket: Sync,
 {
     /// make connection with addres as separate parameter
     pub async fn make_connection_with_addr(&self, id: T, addr: &str) -> Result<(), FlvSocketError> {
         trace!("creating new connection: {:#?}", addr);
-        let client = FlvSocket::connect(addr).await?;
+        let client = FluvioSocket::connect(addr).await?;
         trace!("got connection to server: {:#?}", &id);
         self.insert_socket(id.clone(), client);
         trace!("finish connection to server: {:#?}", &id);
@@ -99,7 +99,7 @@ where
         &'a self,
         id: T,
         addr: &'a str,
-    ) -> Result<Option<WriteGuard<'a, T, FlvSocket>>, FlvSocketError> {
+    ) -> Result<Option<WriteGuard<'a, T, FluvioSocket>>, FlvSocketError> {
         if let Some(socket) = self.get_socket(&id) {
             return Ok(Some(socket));
         }
@@ -125,7 +125,7 @@ pub(crate) mod test {
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
-    use super::FlvSocket;
+    use super::FluvioSocket;
     use super::FlvSocketError;
     use super::SocketPool;
     use crate::test_request::EchoRequest;
@@ -151,7 +151,7 @@ pub(crate) mod test {
             );
 
             let stream = stream?;
-            let mut socket: FlvSocket = stream.into();
+            let mut socket: FluvioSocket = stream.into();
 
             let msg: RequestMessage<EchoRequest> = RequestMessage::new_request(EchoRequest {
                 msg: "Hello".to_owned(),

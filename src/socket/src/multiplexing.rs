@@ -27,8 +27,8 @@ use fluvio_protocol::Decoder;
 
 use crate::FlvSocketError;
 use crate::ExclusiveFlvSink;
-use crate::FlvSocket;
-use crate::FlvStream;
+use crate::FluvioSocket;
+use crate::FluvioStream;
 
 #[allow(unused)]
 //pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
@@ -74,13 +74,13 @@ impl Drop for MultiplexerSocket {
 }
 
 impl MultiplexerSocket {
-    pub fn shared(socket: FlvSocket) -> Arc<Self> {
+    pub fn shared(socket: FluvioSocket) -> Arc<Self> {
         Arc::new(Self::new(socket))
     }
 
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
-    pub fn new(socket: FlvSocket) -> Self {
+    pub fn new(socket: FluvioSocket) -> Self {
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
@@ -303,7 +303,7 @@ struct MultiPlexingResponseDispatcher {
 }
 
 impl MultiPlexingResponseDispatcher {
-    pub fn run(stream: FlvStream, senders: Senders, terminate: Arc<Event>) {
+    pub fn run(stream: FluvioStream, senders: Senders, terminate: Arc<Event>) {
         use fluvio_future::task::spawn;
 
         let dispatcher = Self { senders, terminate };
@@ -312,7 +312,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    async fn dispatcher_loop(mut self, mut stream: FlvStream) {
+    async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
@@ -447,7 +447,7 @@ mod tests {
     use crate::test_request::*;
     use crate::FlvSocketError;
     use crate::ExclusiveFlvSink;
-    use crate::FlvSocket;
+    use crate::FluvioSocket;
 
     #[allow(unused)]
     const CA_PATH: &str = "certs/certs/ca.crt";
@@ -463,7 +463,7 @@ mod tests {
     #[async_trait]
     trait AcceptorHandler {
         type Stream: AsyncRead + AsyncWrite + Unpin + Send;
-        async fn accept(&mut self, stream: TcpStream) -> FlvSocket;
+        async fn accept(&mut self, stream: TcpStream) -> FluvioSocket;
     }
 
     #[derive(Clone)]
@@ -473,7 +473,7 @@ mod tests {
     impl AcceptorHandler for TcpStreamHandler {
         type Stream = TcpStream;
 
-        async fn accept(&mut self, stream: TcpStream) -> FlvSocket {
+        async fn accept(&mut self, stream: TcpStream) -> FluvioSocket {
             stream.into()
         }
     }
@@ -485,7 +485,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let socket: FlvSocket = handler.accept(incoming_stream).await;
+        let socket: FluvioSocket = handler.accept(incoming_stream).await;
 
         let (sink, mut stream) = socket.split();
 
@@ -561,14 +561,14 @@ mod tests {
     #[async_trait]
     trait ConnectorHandler {
         type Stream: AsyncRead + AsyncWrite + Unpin + Send + Sync;
-        async fn connect(&mut self, stream: TcpStream) -> FlvSocket;
+        async fn connect(&mut self, stream: TcpStream) -> FluvioSocket;
     }
 
     #[async_trait]
     impl ConnectorHandler for TcpStreamHandler {
         type Stream = TcpStream;
 
-        async fn connect(&mut self, stream: TcpStream) -> FlvSocket {
+        async fn connect(&mut self, stream: TcpStream) -> FluvioSocket {
             stream.into()
         }
     }

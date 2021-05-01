@@ -13,7 +13,7 @@ cfg_if::cfg_if! {
 
         pub use fluvio_future::net::{BoxConnection,Connection};
         pub use self::error::FlvSocketError;
-        pub use self::socket::FlvSocket;
+        pub use self::socket::FluvioSocket;
         pub use multiplexing::*;
         pub use pooling::*;
         pub use sink::*;
@@ -33,7 +33,7 @@ cfg_if::cfg_if! {
         where
             R: Request,
         {
-            let mut client = FlvSocket::connect(addr).await?;
+            let mut client = FluvioSocket::connect(addr).await?;
 
             let msgs: ResponseMessage<R::Response> = client.send(&request).await?;
 

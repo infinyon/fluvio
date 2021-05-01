@@ -26,7 +26,7 @@ impl Authorization for BasicAuthorization {
 
     async fn create_auth_context(
         &self,
-        socket: &mut fluvio_socket::FlvSocket,
+        socket: &mut fluvio_socket::FluvioSocket,
     ) -> Result<Self::Context, AuthError> {
         let identity = X509Identity::create_from_connection(socket).await?;
         Ok(BasicAuthContext {

@@ -10,7 +10,7 @@ use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::{FlvSocket, SharedMultiplexerSocket};
+use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
 
 use crate::FluvioError;
@@ -46,7 +46,7 @@ pub(crate) trait SerialFrame: Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: FlvSocket,
+    socket: FluvioSocket,
     config: Arc<ClientConfig>,
     versions: Versions,
 }
@@ -82,7 +82,7 @@ impl SerialFrame for VersionedSocket {
 impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
-        mut socket: FlvSocket,
+        mut socket: FluvioSocket,
         config: Arc<ClientConfig>,
     ) -> Result<Self, FluvioError> {
         // now get versions
@@ -102,7 +102,7 @@ impl VersionedSocket {
         })
     }
 
-    pub fn split(self) -> (FlvSocket, Arc<ClientConfig>, Versions) {
+    pub fn split(self) -> (FluvioSocket, Arc<ClientConfig>, Versions) {
         (self.socket, self.config, self.versions)
     }
 
@@ -175,7 +175,7 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = FlvSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+        let socket = FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 

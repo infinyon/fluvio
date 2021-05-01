@@ -5,7 +5,7 @@ use futures_util::stream::StreamExt;
 use tracing::instrument;
 
 use fluvio_storage::OffsetInfo;
-use fluvio_socket::{FlvSink, FlvSocketError, FlvStream};
+use fluvio_socket::{FluvioSink, FlvSocketError, FluvioStream};
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
@@ -43,8 +43,8 @@ impl FollowerHandler {
         ctx: DefaultSharedGlobalContext,
         follower_id: SpuId,
         spu_update: SharedSpuPendingUpdate,
-        sink: FlvSink,
-        stream: FlvStream,
+        sink: FluvioSink,
+        stream: FluvioStream,
     ) {
         let connection = Self {
             ctx: ctx.clone(),
@@ -57,7 +57,7 @@ impl FollowerHandler {
     }
 
     #[instrument(name = "LeaderConnection", skip(stream))]
-    async fn dispatch(mut self, sink: FlvSink, stream: FlvStream) {
+    async fn dispatch(mut self, sink: FluvioSink, stream: FluvioStream) {
         if let Err(err) = self.inner_loop(sink, stream).await {
             error!("processing follower: {:#?}, terminating", err);
         }
@@ -65,8 +65,8 @@ impl FollowerHandler {
 
     async fn inner_loop(
         &mut self,
-        mut sink: FlvSink,
-        mut stream: FlvStream,
+        mut sink: FluvioSink,
+        mut stream: FluvioStream,
     ) -> Result<(), FlvSocketError> {
         use tokio::select;
 
@@ -126,7 +126,7 @@ impl FollowerHandler {
 
     // updates form other SPU trigger this
     #[instrument(skip(self))]
-    async fn update_hw_from_other(&mut self, sink: &mut FlvSink) -> Result<(), FlvSocketError> {
+    async fn update_hw_from_other(&mut self, sink: &mut FluvioSink) -> Result<(), FlvSocketError> {
         let replicas = self.spu_update.dain_replicas().await;
 
         if replicas.is_empty() {
@@ -186,7 +186,7 @@ impl FollowerHandler {
     async fn handle_offset_request(
         &self,
         request: UpdateOffsetRequest,
-        sink: &mut FlvSink,
+        sink: &mut FluvioSink,
     ) -> Result<(), FlvSocketError> {
         for update in request.replicas {
             let replica_key = update.replica;

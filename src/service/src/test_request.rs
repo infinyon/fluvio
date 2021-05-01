@@ -14,7 +14,7 @@ use fluvio_protocol::derive::Decode;
 use fluvio_protocol::derive::Encode;
 
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::FlvSocket;
+use fluvio_socket::FluvioSocket;
 
 use crate::api_loop;
 use crate::call_service;
@@ -131,7 +131,7 @@ impl FlvService for TestService {
     async fn respond(
         self: Arc<Self>,
         _context: Self::Context,
-        socket: FlvSocket,
+        socket: FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();

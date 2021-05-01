@@ -30,18 +30,18 @@ use crate::FlvSocketError;
 
 type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
-pub struct FlvSink {
+pub struct FluvioSink {
     inner: SinkFrame,
     fd: RawFd,
 }
 
-impl fmt::Debug for FlvSink {
+impl fmt::Debug for FluvioSink {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
 }
 
-impl FlvSink {
+impl FluvioSink {
     pub fn get_mut_tcp_sink(&mut self) -> &mut SinkFrame {
         &mut self.inner
     }
@@ -97,7 +97,7 @@ impl FlvSink {
     }
 }
 
-impl FlvSink {
+impl FluvioSink {
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -148,7 +148,7 @@ impl FlvSink {
     }
 }
 
-impl AsRawFd for FlvSink {
+impl AsRawFd for FluvioSink {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
@@ -156,12 +156,12 @@ impl AsRawFd for FlvSink {
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct ExclusiveFlvSink {
-    inner: Arc<Mutex<FlvSink>>,
+    inner: Arc<Mutex<FluvioSink>>,
     fd: RawFd,
 }
 
 impl ExclusiveFlvSink {
-    pub fn new(sink: FlvSink) -> Self {
+    pub fn new(sink: FluvioSink) -> Self {
         let fd = sink.id();
         ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
@@ -171,7 +171,7 @@ impl ExclusiveFlvSink {
 }
 
 impl ExclusiveFlvSink {
-    pub async fn lock(&self) -> MutexGuard<'_, FlvSink> {
+    pub async fn lock(&self) -> MutexGuard<'_, FluvioSink> {
         self.inner.lock().await
     }
 
@@ -224,7 +224,7 @@ mod tests {
     use tracing::debug;
     use tracing::info;
 
-    use crate::FlvSocket;
+    use crate::FluvioSocket;
     use crate::FlvSocketError;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
@@ -240,7 +240,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let mut socket: FlvSocket = incoming_stream.into();
+        let mut socket: FluvioSocket = incoming_stream.into();
         let raw_tcp_sink = socket.get_mut_sink().get_mut_tcp_sink();
 
         const TEXT_LEN: u16 = 5;
@@ -270,7 +270,7 @@ mod tests {
     async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
         sleep(Duration::from_millis(50)).await;
         debug!("client: trying to connect");
-        let mut socket = FlvSocket::connect(&addr).await.expect("connect");
+        let mut socket = FluvioSocket::connect(&addr).await.expect("connect");
         info!("client: connect to test server and waiting...");
         let stream = socket.get_mut_stream();
         let next_value = stream.get_mut_tcp_stream().next().await;
