@@ -1474,6 +1474,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.0"
+source = "git+https://github.com/infinyon/future-aio#8d07228889a6654cf4b5d509a0ff00ff5c38ad16"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1890,6 +1891,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.0"
+source = "git+https://github.com/infinyon/future-aio#8d07228889a6654cf4b5d509a0ff00ff5c38ad16"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1965,6 +1967,7 @@ dependencies = [
 [[package]]
 name = "flv-tls-proxy"
 version = "0.5.0"
+source = "git+https://github.com/infinyon/flv-tls-proxy#672bc2b5a5813fd38fcde93c4f0e60ea10d81ffa"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
