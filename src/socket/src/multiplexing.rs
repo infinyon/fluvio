@@ -19,11 +19,8 @@ use pin_project::{pin_project, pinned_drop};
 use tokio::select;
 use tracing::{debug, error, instrument, trace};
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
-=======
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
@@ -36,7 +33,6 @@ use crate::FlvSocket;
 use crate::FlvStream;
 
 #[allow(unused)]
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
@@ -47,14 +43,12 @@ pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::All
 #[cfg(feature = "tls")]
 #[cfg(not(target_arch = "wasm32"))]
 pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
-=======
 //pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
 
 //#[cfg(feature = "tls")]
 //pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
 //#[cfg(feature = "tls")]
 pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
 

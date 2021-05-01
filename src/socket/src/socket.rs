@@ -9,7 +9,6 @@ use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::DefaultTcpDomainConnector;
 
@@ -17,27 +16,16 @@ use fluvio_future::net::DefaultTcpDomainConnector;
 use fluvio_future::net::TcpDomainConnector;
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
-=======
 use fluvio_future::net::{BoxConnection, DefaultTcpDomainConnector, TcpDomainConnector, TcpStream};
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 
 use super::FlvSocketError;
 use crate::FlvSink;
 use crate::FlvStream;
 
-<<<<<<< HEAD
-#[cfg(not(target_arch = "wasm32"))]
-pub type FlvSocket = InnerFlvSocket<TcpStream>;
-
-#[cfg(feature = "tls")]
-#[cfg(not(target_arch = "wasm32"))]
-pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
-=======
 //pub type FlvSocket = InnerFlvSocket<TcpStream>;
 
 //#[cfg(feature = "tls")]
 //pub type AllFlvSocket = InnerFlvSocket<fluvio_future::native_tls::AllTcpStream>;
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 
 /// Socket abstract that can send and receive fluvio objects
 pub struct FlvSocket {
@@ -46,12 +34,8 @@ pub struct FlvSocket {
     stale: bool,
 }
 
-<<<<<<< HEAD
-impl<S> fmt::Debug for InnerFlvSocket<S> {
-    #[cfg(not(target_arch = "wasm32"))]
-=======
 impl fmt::Debug for FlvSocket {
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
+    #[cfg(not(target_arch = "wasm32"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
@@ -95,35 +79,6 @@ impl FlvSocket {
     pub fn id(&self) -> RawFd {
         self.sink.id()
     }
-<<<<<<< HEAD
-}
-
-impl<S> InnerFlvSocket<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-{
-    /// connect to target address with connector
-    #[cfg(not(target_arch = "wasm32"))]
-    pub async fn connect_with_connector<C>(
-        addr: &str,
-        connector: &C,
-    ) -> Result<Self, FlvSocketError>
-    where
-        C: TcpDomainConnector<WrapperStream = S>,
-    {
-        debug!("trying to connect to addr at: {}", addr);
-        let (tcp_stream, fd) = connector.connect(addr).await?;
-        Ok(Self::from_stream(tcp_stream, fd))
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn from_stream(tcp_stream: S, raw_fd: RawFd) -> Self {
-        let framed = Framed::new(tcp_stream.compat(), FluvioCodec {});
-        let (sink, stream) = framed.split();
-        Self::new(InnerFlvSink::new(sink, raw_fd), stream.into())
-    }
-=======
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 
     /// as client, send request and wait for reply from server
     pub async fn send<R>(

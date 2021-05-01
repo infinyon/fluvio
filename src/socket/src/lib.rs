@@ -1,25 +1,26 @@
+mod error;
+
+pub use self::error::FlvSocketError;
+mod stream;
+pub use stream::*;
+mod sink;
+pub use sink::*;
+mod multiplexing;
+pub use multiplexing::*;
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
-        mod error;
-        mod multiplexing;
         mod pooling;
-        mod sink;
         mod sink_pool;
         mod socket;
-        mod stream;
 
         #[cfg(test)]
         pub mod test_request;
 
         pub use fluvio_future::net::{BoxConnection,Connection};
-        pub use self::error::FlvSocketError;
         pub use self::socket::FlvSocket;
-        pub use multiplexing::*;
         pub use pooling::*;
-        pub use sink::*;
         pub use sink_pool::*;
         pub use socket::*;
-        pub use stream::*;
 
         use fluvio_protocol::api::Request;
         use fluvio_protocol::api::RequestMessage;

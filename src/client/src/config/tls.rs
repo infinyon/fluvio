@@ -5,17 +5,11 @@ use std::path::PathBuf;
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
-<<<<<<< HEAD
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::native_tls::{
-    AllDomainConnector as FluvioConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
-    PrivateKeyBuilder, CertBuilder,
-=======
 use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::{
     TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder, PrivateKeyBuilder,
     CertBuilder, TlsAnonymousConnector,
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 };
 
 #[cfg(target_arch = "wasm32")]

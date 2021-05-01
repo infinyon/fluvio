@@ -3,13 +3,11 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
 
-=======
 use fluvio_future::net::{BoxConnection};
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
+
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
@@ -22,12 +20,8 @@ use tracing::trace;
 
 use crate::FlvSocketError;
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 pub type FlvStream = InnerFlvStream<TcpStream>;
-=======
-//pub type FlvStream = InnerFlvStream<TcpStream>;
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 
 #[cfg(feature = "tls")]
 #[cfg(not(target_arch = "wasm32"))]

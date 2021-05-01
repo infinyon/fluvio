@@ -16,13 +16,12 @@ use futures_util::SinkExt;
 use tokio_util::compat::Compat;
 use bytes::BytesMut;
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::zero_copy::ZeroCopyWrite;
 
-=======
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::zero_copy::ZeroCopy;
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
+
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
@@ -36,7 +35,6 @@ use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
 use fluvio_future::net::BoxConnection;
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::TcpStream;
 
@@ -44,11 +42,15 @@ use tokio_util::codec::Framed;
 
 use crate::FlvSocketError;
 
+/*
 #[cfg(not(target_arch = "wasm32"))]
 pub type FlvSink = InnerFlvSink<TcpStream>;
+*/
+
 #[cfg(not(target_arch = "wasm32"))]
 pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
 
+/*
 type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
 
 pub struct InnerFlvSink<S> {
@@ -56,10 +58,8 @@ pub struct InnerFlvSink<S> {
     #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
+*/
 
-impl<S> fmt::Debug for InnerFlvSink<S> {
-    #[cfg(not(target_arch = "wasm32"))]
-=======
 use tokio_util::codec::{FramedWrite};
 
 use crate::FlvSocketError;
@@ -68,11 +68,12 @@ type SinkFrame = FramedWrite<Compat<BoxConnection>, FluvioCodec>;
 
 pub struct FlvSink {
     inner: SinkFrame,
+    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
 impl fmt::Debug for FlvSink {
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
+    #[cfg(not(target_arch = "wasm32"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
@@ -82,22 +83,8 @@ impl fmt::Debug for FlvSink {
     }
 }
 
-<<<<<<< HEAD
-impl<S> InnerFlvSink<S> {
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn new(inner: SplitFrame<S>, fd: RawFd) -> Self {
-        InnerFlvSink { fd, inner }
-    }
-    #[cfg(target_arch = "wasm32")]
-    pub fn new(inner: SplitFrame<S>) -> Self {
-        InnerFlvSink { inner }
-    }
-
-    pub fn get_mut_tcp_sink(&mut self) -> &mut SplitFrame<S> {
-=======
 impl FlvSink {
     pub fn get_mut_tcp_sink(&mut self) -> &mut SinkFrame {
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
         &mut self.inner
     }
 
@@ -112,9 +99,16 @@ impl FlvSink {
         ExclusiveFlvSink::new(self)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(stream: BoxConnection, fd: RawFd) -> Self {
         Self {
             fd,
+            inner: SinkFrame::new(stream.compat_write(), FluvioCodec::new()),
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(stream: BoxConnection) -> Self {
+        Self {
             inner: SinkFrame::new(stream.compat_write(), FluvioCodec::new()),
         }
     }
@@ -153,16 +147,8 @@ impl FlvSink {
     }
 }
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
-impl<S> InnerFlvSink<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-    Self: ZeroCopyWrite,
-{
-=======
 impl FlvSink {
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -213,37 +199,23 @@ impl FlvSink {
     }
 }
 
-<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
-impl<S> AsRawFd for InnerFlvSink<S> {
-=======
 impl AsRawFd for FlvSink {
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
 }
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
-<<<<<<< HEAD
-pub struct InnerExclusiveFlvSink<S> {
-    inner: Arc<Mutex<InnerFlvSink<S>>>,
-    #[cfg(not(target_arch = "wasm32"))]
-    fd: RawFd,
-}
-
-impl<S> InnerExclusiveFlvSink<S> {
-    pub fn new(sink: InnerFlvSink<S>) -> Self {
-        #[cfg(not(target_arch = "wasm32"))]
-=======
 pub struct ExclusiveFlvSink {
     inner: Arc<Mutex<FlvSink>>,
+    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
 impl ExclusiveFlvSink {
     pub fn new(sink: FlvSink) -> Self {
->>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
+        #[cfg(not(target_arch = "wasm32"))]
         let fd = sink.id();
         ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
