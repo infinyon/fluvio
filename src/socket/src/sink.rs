@@ -22,13 +22,13 @@ use fluvio_protocol::store::FileWrite;
 use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
-use fluvio_future::net::BoxConnection;
+use fluvio_future::net::BoxWriteConnection;
 
 use tokio_util::codec::{FramedWrite};
 
 use crate::FlvSocketError;
 
-type SinkFrame = FramedWrite<Compat<BoxConnection>, FluvioCodec>;
+type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
 pub struct FlvSink {
     inner: SinkFrame,
@@ -56,10 +56,10 @@ impl FlvSink {
         ExclusiveFlvSink::new(self)
     }
 
-    pub fn new(stream: BoxConnection, fd: RawFd) -> Self {
+    pub fn new(sink: BoxWriteConnection, fd: RawFd) -> Self {
         Self {
             fd,
-            inner: SinkFrame::new(stream.compat_write(), FluvioCodec::new()),
+            inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
         }
     }
 

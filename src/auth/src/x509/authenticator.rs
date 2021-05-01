@@ -53,6 +53,7 @@ impl X509Authenticator {
     ) -> Result<bool, IoError> {
         let mut socket = fluvio_socket::FlvSocket::from_stream(
             Box::new(tcp_stream.clone()),
+            Box::new(tcp_stream.clone()),
             tcp_stream.as_raw_fd(),
         );
 

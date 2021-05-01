@@ -36,7 +36,11 @@ pub struct DefaultSocketBuilder {}
 impl SocketBuilder for DefaultSocketBuilder {
     async fn to_socket(&self, raw_stream: TcpStream) -> Result<FlvSocket, IoError> {
         let fd = raw_stream.as_raw_fd();
-        Ok(FlvSocket::from_stream(Box::new(raw_stream), fd))
+        Ok(FlvSocket::from_stream(
+            Box::new(raw_stream.clone()),
+            Box::new(raw_stream),
+            fd,
+        ))
     }
 }
 

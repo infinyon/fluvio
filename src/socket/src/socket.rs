@@ -9,7 +9,9 @@ use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 
-use fluvio_future::net::{BoxConnection, DefaultTcpDomainConnector, TcpDomainConnector, TcpStream};
+use fluvio_future::net::{
+    BoxWriteConnection, BoxReadConnection, DefaultTcpDomainConnector, TcpDomainConnector, TcpStream,
+};
 
 use super::FlvSocketError;
 use crate::FlvSink;
@@ -82,8 +84,7 @@ impl FlvSocket {
 }
 
 impl FlvSocket {
-    pub fn from_stream(write: BoxConnection, raw_fd: RawFd) -> Self {
-        let read = dyn_clone::clone_box(&*write);
+    pub fn from_stream(write: BoxWriteConnection, read: BoxReadConnection, raw_fd: RawFd) -> Self {
         Self::new(FlvSink::new(write, raw_fd), FlvStream::new(read))
     }
 
@@ -93,8 +94,8 @@ impl FlvSocket {
         connector: &dyn TcpDomainConnector,
     ) -> Result<Self, FlvSocketError> {
         debug!("trying to connect to addr at: {}", addr);
-        let (tcp_stream, fd) = connector.connect(addr).await?;
-        Ok(Self::from_stream(tcp_stream, fd))
+        let (write, read, fd) = connector.connect(addr).await?;
+        Ok(Self::from_stream(write, read, fd))
     }
 }
 
@@ -117,7 +118,7 @@ cfg_if::cfg_if! {
         impl From<TcpStream> for FlvSocket {
             fn from(tcp_stream: TcpStream) -> Self {
                 let fd = tcp_stream.as_raw_fd();
-                Self::from_stream(Box::new(tcp_stream), fd)
+                Self::from_stream(Box::new(tcp_stream.clone()),Box::new(tcp_stream), fd)
             }
         }
     }

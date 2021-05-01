@@ -3,7 +3,7 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use fluvio_future::net::{BoxConnection};
+use fluvio_future::net::{BoxReadConnection};
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
@@ -21,13 +21,13 @@ use crate::FlvSocketError;
 #[cfg(feature = "tls")]
 pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
 
-type FrameStream = FramedRead<Compat<BoxConnection>, FluvioCodec>;
+type FrameStream = FramedRead<Compat<BoxReadConnection>, FluvioCodec>;
 
 /// inner flv stream which is generic over stream
 pub struct FlvStream(FrameStream);
 
 impl FlvStream {
-    pub fn new(stream: BoxConnection) -> Self {
+    pub fn new(stream: BoxReadConnection) -> Self {
         Self(FramedRead::new(stream.compat(), FluvioCodec::new()))
     }
 
