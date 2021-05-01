@@ -91,6 +91,8 @@ async fn validate_consume_message_api(
     use tokio::select;
     use fluvio_future::timer::sleep;
 
+    use fluvio_controlplane_metadata::partition::PartitionSpec;
+
     let replication = test_case.environment.replication;
 
     let producer_iteration = test_case.option.producer_iteration;
@@ -162,4 +164,17 @@ async fn validate_consume_message_api(
             }
         }
     }
+
+    // wait 500m second and ensure partition list
+    sleep(Duration::from_millis(500)).await;
+
+    let mut admin = client.admin().await;
+    let partitions = admin
+        .list::<PartitionSpec, _>(vec![])
+        .await
+        .expect("partitions");
+    assert_eq!(partitions.len(), 1);
+    let test_topic = &partitions[0];
+    let leader = &test_topic.status.leader;
+    assert_eq!(leader.leo, producer_iteration as i64);
 }

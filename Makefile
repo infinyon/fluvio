@@ -84,6 +84,7 @@ k8-setup:
 	$(FLUVIO_BIN) cluster start --setup --develop
 #	$(FLUVIO_BIN) cluster check --pre-install
 
+# Kubernetes Tests
 
 smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
@@ -130,7 +131,10 @@ else
 	kubectl delete configmap authorization --ignore-not-found
 endif
 
-
+# Test multiplexor
+# this should generate error in multiplexor
+test-multiplexor:
+	make smoke-test DEFAULT_ITERATION=4  EXTRA_ARG=--keep-cluster
 
 #
 #  Various Lint tools
