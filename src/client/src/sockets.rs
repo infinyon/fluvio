@@ -17,12 +17,15 @@ use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 
 #[cfg(target_arch = "wasm32")]
 use fluvio_socket:: WebSocketConnector as FluvioConnector;
+use fluvio_socket::FlvSocketError;
+use fluvio_socket::{FlvSocket, SharedMultiplexerSocket};
+use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
 
 use crate::FluvioError;
 
 /// Frame with request and response
 #[async_trait]
-pub(crate) trait SerialFrame: Sync + Send + Display {
+pub(crate) trait SerialFrame: Display {
     /// client config
     fn config(&self) -> &ClientConfig;
 
@@ -51,8 +54,8 @@ pub(crate) trait SerialFrame: Sync + Send + Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: AllFlvSocket,
-    config: ClientConfig,
+    socket: FlvSocket,
+    config: Arc<ClientConfig>,
     versions: Versions,
 }
 
@@ -87,8 +90,8 @@ impl SerialFrame for VersionedSocket {
 impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
-        mut socket: AllFlvSocket,
-        config: ClientConfig,
+        mut socket: FlvSocket,
+        config: Arc<ClientConfig>,
     ) -> Result<Self, FluvioError> {
         // now get versions
         // Query for API versions
@@ -107,7 +110,7 @@ impl VersionedSocket {
         })
     }
 
-    pub fn split(self) -> (AllFlvSocket, ClientConfig, Versions) {
+    pub fn split(self) -> (FlvSocket, Arc<ClientConfig>, Versions) {
         (self.socket, self.config, self.versions)
     }
 
@@ -130,11 +133,10 @@ impl VersionedSocket {
 }
 
 /// Connection Config to any client
-#[derive(Clone)]
 pub struct ClientConfig {
     addr: String,
     client_id: String,
-    connector: FluvioConnector,
+    connector: DomainConnector,
 }
 
 impl fmt::Display for ClientConfig {
@@ -150,7 +152,7 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(addr: S, connector: FluvioConnector) -> Self {
+    pub fn new<S: Into<String>>(addr: S, connector: DomainConnector) -> Self {
         Self {
             addr: addr.into(),
             client_id: "fluvio".to_owned(),
@@ -159,7 +161,7 @@ impl ClientConfig {
     }
 
     pub fn with_addr(addr: String) -> Self {
-        Self::new(addr, FluvioConnector::default())
+        Self::new(addr, Box::new(DefaultTcpDomainConnector::default()))
     }
 
     pub fn addr(&self) -> &str {
@@ -181,12 +183,13 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = AllFlvSocket::connect_with_connector(&self.addr, &self.connector).await?;
-        VersionedSocket::connect(socket, self).await
+        let socket = FlvSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+        VersionedSocket::connect(socket, Arc::new(self)).await
     }
 
     /// create new config with prefix add to domain, this is useful for SNI
     pub fn with_prefix_sni_domain(&self, prefix: &str) -> Self {
+        /*
         let mut connector = self.connector.clone();
         #[cfg(not(target_arch = "wasm32"))]
         if let FluvioConnector::TlsDomain(domain_connector) = &mut connector {
@@ -194,6 +197,10 @@ impl ClientConfig {
             debug!(sni_domain = %new_domain);
             domain_connector.set_domain(new_domain);
         };
+        */
+        let new_domain = format!("{}.{}", prefix, self.connector.domain());
+        debug!(sni_domain = %new_domain);
+        let connector = self.connector.new_domain(new_domain);
 
         Self {
             addr: self.addr.clone(),
@@ -239,8 +246,9 @@ impl Versions {
 
 /// Connection that perform request/response
 pub struct VersionedSerialSocket {
-    socket: Arc<AllMultiplexerSocket>,
-    config: ClientConfig,
+    //socket: Arc<AllMultiplexerSocket>,
+    socket: SharedMultiplexerSocket,
+    config: Arc<ClientConfig>,
     versions: Versions,
 }
 
@@ -253,7 +261,7 @@ impl fmt::Display for VersionedSerialSocket {
 impl VersionedSerialSocket {
     pub fn new(
         socket: Arc<AllMultiplexerSocket>,
-        config: ClientConfig,
+        config: Arc<ClientConfig>,
         versions: Versions,
     ) -> Self {
         Self {

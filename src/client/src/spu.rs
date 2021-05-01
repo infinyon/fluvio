@@ -12,6 +12,7 @@ use fluvio_types::SpuId;
 use fluvio_socket::{AllMultiplexerSocket, AsyncResponse};
 
 
+use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, FlvSocketError, AsyncResponse};
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
@@ -21,7 +22,7 @@ use crate::sockets::Versions;
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 struct SpuSocket {
-    config: ClientConfig,
+    config: Arc<ClientConfig>,
     socket: Arc<AllMultiplexerSocket>,
     versions: Versions,
 }
@@ -51,7 +52,7 @@ impl SpuSocket {
 
 /// connection pool to spu
 pub struct SpuPool {
-    config: ClientConfig,
+    config: Arc<ClientConfig>,
     pub(crate) metadata: MetadataStores,
     spu_clients: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
 }
@@ -66,9 +67,9 @@ impl Drop for SpuPool {
 impl SpuPool {
     /// start synchronize based on pool
     pub async fn start(
-        config: ClientConfig,
+        config: Arc<ClientConfig>,
         sc_socket: Arc<AllMultiplexerSocket>,
-    ) -> Result<Self, FluvioError> {
+    ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");
         Ok(Self {
@@ -90,7 +91,7 @@ impl SpuPool {
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();
         Ok(SpuSocket {
-            socket: AllMultiplexerSocket::shared(socket),
+            socket: MultiplexerSocket::shared(socket),
             config,
             versions,
         })

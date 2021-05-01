@@ -7,8 +7,6 @@ use std::sync::Arc;
 
 use std::os::unix::io::AsRawFd;
 
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
 use futures_util::StreamExt;
 
 use async_trait::async_trait;
@@ -21,21 +19,14 @@ use tracing::trace;
 use fluvio_types::event::SimpleEvent;
 use fluvio_future::net::{TcpListener, TcpStream};
 use fluvio_future::task::spawn;
-use fluvio_future::zero_copy::ZeroCopyWrite;
+
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use fluvio_socket::{FlvSocket, FlvSocketError, InnerFlvSink, InnerFlvSocket};
+use fluvio_socket::{FlvSocket, FlvSocketError};
 
 #[async_trait]
 pub trait SocketBuilder: Clone {
-    type Stream: AsyncRead + AsyncWrite + Unpin + Send;
-
-    async fn to_socket(
-        &self,
-        raw_stream: TcpStream,
-    ) -> Result<InnerFlvSocket<Self::Stream>, IoError>
-    where
-        InnerFlvSink<Self::Stream>: ZeroCopyWrite;
+    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FlvSocket, IoError>;
 }
 
 #[derive(Debug, Clone)]
@@ -43,14 +34,9 @@ pub struct DefaultSocketBuilder {}
 
 #[async_trait]
 impl SocketBuilder for DefaultSocketBuilder {
-    type Stream = TcpStream;
-
-    async fn to_socket(
-        &self,
-        raw_stream: TcpStream,
-    ) -> Result<InnerFlvSocket<Self::Stream>, IoError> {
+    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FlvSocket, IoError> {
         let fd = raw_stream.as_raw_fd();
-        Ok(FlvSocket::from_stream(raw_stream, fd))
+        Ok(FlvSocket::from_stream(Box::new(raw_stream), fd))
     }
 }
 
@@ -58,10 +44,7 @@ impl SocketBuilder for DefaultSocketBuilder {
 /// Request -> Response is type specific
 /// Each response is responsible for sending back to socket
 #[async_trait]
-pub trait FlvService<S>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-{
+pub trait FlvService {
     type Request;
     type Context;
 
@@ -69,10 +52,8 @@ where
     async fn respond(
         self: Arc<Self>,
         context: Self::Context,
-        socket: InnerFlvSocket<S>,
-    ) -> Result<(), FlvSocketError>
-    where
-        InnerFlvSink<S>: ZeroCopyWrite;
+        socket: FlvSocket,
+    ) -> Result<(), FlvSocketError>;
 }
 
 /// Transform Service into Futures 01
@@ -118,10 +99,8 @@ where
     R: ApiMessage<ApiKey = A> + Send + Debug + 'static,
     C: Clone + Sync + Send + Debug + 'static,
     A: Send + FluvioDecoder + Debug + 'static,
-    S: FlvService<T::Stream, Request = R, Context = C> + Send + Sync + Debug + 'static,
+    S: FlvService<Request = R, Context = C> + Send + Sync + Debug + 'static,
     T: SocketBuilder + Send + Debug + 'static,
-    T::Stream: AsyncRead + AsyncWrite + Unpin + Send,
-    InnerFlvSink<T::Stream>: ZeroCopyWrite,
 {
     pub fn run(self) -> Arc<SimpleEvent> {
         let event = SimpleEvent::shared();

@@ -3,6 +3,8 @@ use std::sync::Arc;
 use tracing::debug;
 
 use fluvio_socket::AllMultiplexerSocket;
+use fluvio_socket::SharedMultiplexerSocket;
+use fluvio_socket::FlvSocketError;
 
 use crate::metadata::topic::TopicSpec;
 use crate::FluvioError;

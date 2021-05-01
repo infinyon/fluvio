@@ -1,11 +1,10 @@
 use std::fmt::Debug;
 
-use futures_util::io::{AsyncRead, AsyncWrite};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use fluvio_controlplane_metadata::extended::ObjectType;
-use fluvio_socket::InnerFlvSocket;
+use fluvio_socket::FlvSocket;
 
 use super::AuthError;
 
@@ -39,12 +38,9 @@ pub trait AuthContext {
 
 #[async_trait]
 pub trait Authorization {
-    type Stream: AsyncRead + AsyncWrite + Unpin + Send;
     type Context: AuthContext;
 
     /// create auth context
-    async fn create_auth_context(
-        &self,
-        socket: &mut InnerFlvSocket<Self::Stream>,
-    ) -> Result<Self::Context, AuthError>;
+    async fn create_auth_context(&self, socket: &mut FlvSocket)
+        -> Result<Self::Context, AuthError>;
 }

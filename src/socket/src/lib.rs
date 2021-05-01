@@ -1,62 +1,53 @@
-mod error;
-mod multiplexing;
-#[cfg(not(target_arch = "wasm32"))]
-mod pooling;
-#[cfg(not(target_arch = "wasm32"))]
-mod sink_pool;
+cfg_if::cfg_if! {
+    if #[cfg(unix)] {
+        mod error;
+        mod multiplexing;
+        mod pooling;
+        mod sink;
+        mod sink_pool;
+        mod socket;
+        mod stream;
 
-mod sink;
-mod socket;
-mod stream;
+        #[cfg(test)]
+        pub mod test_request;
 
-#[cfg(test)]
-pub mod test_request;
+        pub use fluvio_future::net::{BoxConnection,Connection};
+        pub use self::error::FlvSocketError;
+        pub use self::socket::FlvSocket;
+        pub use multiplexing::*;
+        pub use pooling::*;
+        pub use sink::*;
+        pub use sink_pool::*;
+        pub use socket::*;
+        pub use stream::*;
 
-#[cfg(not(target_arch = "wasm32"))]
-mod not_wasm {
-    use super::*;
-    pub use self::socket::FlvSocket;
-    pub use pooling::*;
-    pub use sink_pool::*;
-}
+        use fluvio_protocol::api::Request;
+        use fluvio_protocol::api::RequestMessage;
+        use fluvio_protocol::api::ResponseMessage;
 
-pub use sink::*;
-pub use stream::*;
-pub use socket::*;
-pub use multiplexing::*;
+        /// send request and return response from calling server at socket addr
+        pub async fn send_and_receive<R>(
+            addr: &str,
+            request: &RequestMessage<R>,
+        ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
+        where
+            R: Request,
+        {
+            let mut client = FlvSocket::connect(addr).await?;
 
-#[cfg(not(target_arch = "wasm32"))]
-pub use not_wasm::*;
+            let msgs: ResponseMessage<R::Response> = client.send(&request).await?;
 
-use fluvio_protocol::api::Request;
-use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::api::ResponseMessage;
+            Ok(msgs)
+        }
 
-pub use self::error::FlvSocketError;
+    } else if #[cfg(target_arch = "wasm32")] {
+        mod websocket;
 
-#[cfg(target_arch = "wasm32")]
-mod websocket;
-
-#[cfg(target_arch = "wasm32")]
-pub use self::websocket::{
-    FluvioWebSocket as AllFlvSocket,
-    FluvioWebSocket as FlvSocket,
-    WebSocketConnector,
-    MultiplexerWebsocket as AllMultiplexerSocket,
-};
-
-/// send request and return response from calling server at socket addr
-#[cfg(not(target_arch = "wasm32"))]
-pub async fn send_and_receive<R>(
-    addr: &str,
-    request: &RequestMessage<R>,
-) -> Result<ResponseMessage<R::Response>, FlvSocketError>
-where
-    R: Request,
-{
-    let mut client = FlvSocket::connect(addr).await?;
-
-    let msgs: ResponseMessage<R::Response> = client.send(&request).await?;
-
-    Ok(msgs)
+        pub use self::websocket::{
+            FluvioWebSocket as AllFlvSocket,
+            FluvioWebSocket as FlvSocket,
+            WebSocketConnector,
+            MultiplexerWebsocket as AllMultiplexerSocket,
+        };
+    }
 }

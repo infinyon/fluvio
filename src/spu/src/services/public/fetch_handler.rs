@@ -1,28 +1,20 @@
 use tracing::trace;
 use tracing::debug;
-use futures_util::io::AsyncRead;
-use futures_util::io::AsyncWrite;
 
-use fluvio_socket::InnerFlvSink;
-use fluvio_socket::InnerExclusiveFlvSink;
+use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::FlvSocketError;
 use dataplane::{ErrorCode, api::RequestMessage};
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_future::zero_copy::ZeroCopyWrite;
 
 use crate::core::DefaultSharedGlobalContext;
 
 /// perform log fetch request using zero copy write
-pub async fn handle_fetch_request<S>(
+pub async fn handle_fetch_request(
     request: RequestMessage<FileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
-    sink: InnerExclusiveFlvSink<S>,
-) -> Result<(), FlvSocketError>
-where
-    S: AsyncRead + AsyncWrite + Unpin + Send,
-    InnerFlvSink<S>: ZeroCopyWrite,
-{
+    sink: ExclusiveFlvSink,
+) -> Result<(), FlvSocketError> {
     let (header, fetch_request) = request.get_header_request();
     let mut fetch_response = FileFetchResponse::default();
 

@@ -8,6 +8,11 @@ use fluvio_socket::AllMultiplexerSocket;
 
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
+use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
+use fluvio_future::task::run_block_on;
+use fluvio_future::net::DomainConnector;
+//use fluvio_future::native_tls::AllDomainConnector;
+use semver::Version;
 
 #[cfg(target_arch = "wasm32")]
 use fluvio_socket::WebSocketConnector as FluvioConnector;
@@ -24,8 +29,10 @@ use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket}
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
-    socket: Arc<AllMultiplexerSocket>,
-    config: ClientConfig,
+    //socket: Arc<AllMultiplexerSocket>,
+    //config: ClientConfig,
+    socket: SharedMultiplexerSocket,
+    config: Arc<ClientConfig>,
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuPool>>,
 }
@@ -67,14 +74,14 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        let connector = FluvioConnector::try_from(config.tls.clone())?;
+        let connector = DomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector);
         let inner_client = config.connect().await?;
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
         check_platform_compatible(versions.platform_version())?;
-        let socket = AllMultiplexerSocket::shared(socket);
+        let socket = MultiplexerSocket::shared(socket);
 
         let spu_pool = OnceCell::new();
         Ok(Self {

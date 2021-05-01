@@ -159,7 +159,7 @@ check-all-test:
 	cargo check --lib --tests --all-features $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 test_tls_multiplex:
-	cd src/socket; cargo test --no-default-features --features tls test_multiplexing_native_tls
+	cd src/socket; cargo test test_multiplexing_native_tls
 
 build_filter_wasm:
 	rustup target add wasm32-unknown-unknown 

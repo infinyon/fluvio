@@ -5,10 +5,17 @@ use std::path::PathBuf;
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
+<<<<<<< HEAD
 #[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::{
     AllDomainConnector as FluvioConnector, TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
     PrivateKeyBuilder, CertBuilder,
+=======
+use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
+use fluvio_future::native_tls::{
+    TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder, PrivateKeyBuilder,
+    CertBuilder, TlsAnonymousConnector,
+>>>>>>> 68d7011120da166d44f252bc9c3491dee036921e
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -199,16 +206,16 @@ pub struct TlsPaths {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl TryFrom<TlsPolicy> for FluvioConnector {
+impl TryFrom<TlsPolicy> for DomainConnector {
     type Error = IoError;
 
     fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
         match config {
-            TlsPolicy::Disabled => Ok(FluvioConnector::default_tcp()),
+            TlsPolicy::Disabled => Ok(Box::new(DefaultTcpDomainConnector::new())),
             TlsPolicy::Anonymous => {
                 info!("Using anonymous TLS");
-                Ok(FluvioConnector::TlsAnonymous(
-                    ConnectorBuilder::anonymous().build().into(),
-                ))
+                let connector: TlsAnonymousConnector = ConnectorBuilder::anonymous().build().into();
+                Ok(Box::new(connector))
             }
             TlsPolicy::Verified(TlsConfig::Files(tls)) => {
                 info!(
@@ -228,7 +235,7 @@ impl TryFrom<TlsPolicy> for FluvioConnector {
                 } else {
                     builder
                 };
-                Ok(FluvioConnector::TlsDomain(TlsDomainConnector::new(
+                Ok(Box::new(TlsDomainConnector::new(
                     builder.build(),
                     tls.domain,
                 )))
@@ -252,7 +259,7 @@ impl TryFrom<TlsPolicy> for FluvioConnector {
                     builder
                 };
 
-                Ok(FluvioConnector::TlsDomain(TlsDomainConnector::new(
+                Ok(Box::new(TlsDomainConnector::new(
                     builder.build(),
                     tls.domain,
                 )))
