@@ -44,7 +44,7 @@ mod offsets {
     use super::SmokeTestCase;
 
     pub async fn find_offsets(test_case: &SmokeTestCase) -> HashMap<String, i64> {
-        let replication = test_case.environment.replication;
+        let partition = test_case.environment.partition;
 
         let _consumer_wait = test_case.option.consumer_wait;
 
@@ -53,7 +53,7 @@ mod offsets {
         let client = Fluvio::connect().await.expect("should connect");
         let mut admin = client.admin().await;
 
-        for _i in 0..replication {
+        for _i in 0..partition {
             let topic_name = test_case.environment.topic_name.clone();
             // find last offset
             let offset = last_leo(&mut admin, &topic_name).await;

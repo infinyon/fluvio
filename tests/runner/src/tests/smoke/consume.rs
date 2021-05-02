@@ -93,80 +93,80 @@ async fn validate_consume_message_api(
 
     use fluvio_controlplane_metadata::partition::PartitionSpec;
 
-  
     let producer_iteration = test_case.option.producer_iteration;
-
-    
+    let partition = test_case.environment.partition;
     let topic_name = test_case.environment.topic_name.clone();
-    let base_offset = offsets.get(&topic_name).expect("offsets");
-    println!(
-        "starting fetch stream for: {} base offset: {}, expected new records: {}",
-        topic_name, base_offset, producer_iteration
-    );
 
-    let consumer = get_consumer(&client, &topic_name).await;
+    for i in 0..partition {
+        let base_offset = offsets.get(&topic_name).expect("offsets");
+        println!(
+            "starting fetch stream for: {} base offset: {}, expected new records: {}",
+            topic_name, base_offset, producer_iteration
+        );
 
-    let mut stream = consumer
-        .stream(
-            Offset::absolute(*base_offset)
-                .unwrap_or_else(|_| panic!("creating stream for iteration: {}", 0)),
-        )
-        .await
-        .expect("stream");
+        let consumer = get_consumer(&client, &topic_name).await;
 
-    let mut total_records: u16 = 0;
+        let mut stream = consumer
+            .stream(
+                Offset::absolute(*base_offset)
+                    .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
+            )
+            .await
+            .expect("stream");
 
-    // add 30 seconds per 1000
-    let cycle = producer_iteration / 1000 + 1;
-    let timer_wait = cycle as u64 * consume_wait_timeout();
-    info!("total cycle: {}, timer wait: {}",cycle, timer_wait);
-    let mut timer = sleep(Duration::from_millis(timer_wait));
+        let mut total_records: u16 = 0;
 
-    loop {
-        select! {
+        // add 30 seconds per 1000
+        let cycle = producer_iteration / 1000 + 1;
+        let timer_wait = cycle as u64 * consume_wait_timeout();
+        info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
+        let mut timer = sleep(Duration::from_millis(timer_wait));
 
-            _ = &mut timer => {
-                debug!("timer expired");
-                panic!("timer expired");
-            },
+        loop {
+            select! {
 
-            // max time for each read
-            _ = sleep(Duration::from_millis(5000)) => {
-                panic!("no consumer read iter: current {}",producer_iteration);
-            },
+                _ = &mut timer => {
+                    debug!("timer expired");
+                    panic!("timer expired");
+                },
 
-            stream_next = stream.next() => {
+                // max time for each read
+                _ = sleep(Duration::from_millis(5000)) => {
+                    panic!("no consumer read iter: current {}",producer_iteration);
+                },
 
-                if let Some(Ok(record)) = stream_next {
+                stream_next = stream.next() => {
 
-                    let offset = record.offset();
-                    let bytes = record.value();
-                    info!(
-                        "* consumer iter: {}, received offset: {}, bytes: {}",
-                        total_records,
-                        offset,
-                        bytes.len()
-                    );
-                    validate_message(producer_iteration, offset, test_case, &bytes);
-                    info!(
-                        " total records: {}, validated offset: {}",
-                        total_records, offset
-                    );
-                    total_records += 1;
-                    if total_records == producer_iteration {
-                        println!("<<consume test done for: {} >>>>", topic_name);
-                        println!("consume message validated!, records: {}",total_records);
-                        break;
+                    if let Some(Ok(record)) = stream_next {
+
+                        let offset = record.offset();
+                        let bytes = record.value();
+                        info!(
+                            "* consumer iter: {}, received offset: {}, bytes: {}",
+                            total_records,
+                            offset,
+                            bytes.len()
+                        );
+                        validate_message(producer_iteration, offset, test_case, &bytes);
+                        info!(
+                            " total records: {}, validated offset: {}",
+                            total_records, offset
+                        );
+                        total_records += 1;
+                        if total_records == producer_iteration {
+                            println!("<<consume test done for: {} >>>>", topic_name);
+                            println!("consume message validated!, records: {}",total_records);
+                            break;
+                        }
+
+                    } else {
+                        panic!("no more stream");
                     }
-
-                } else {
-                    panic!("no more stream");
                 }
-            }
 
+            }
         }
     }
-    
 
     // wait 500m second and ensure partition list
     sleep(Duration::from_millis(500)).await;

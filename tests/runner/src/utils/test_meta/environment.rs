@@ -142,6 +142,10 @@ pub struct EnvironmentSetup {
     #[structopt(short, long, default_value = "1")]
     pub replication: u16,
 
+    /// number of partitions
+    #[structopt(short, long, default_value = "1")]
+    pub partition: u16,
+
     /// enable tls
     #[structopt(long)]
     pub tls: bool,
