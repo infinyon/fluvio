@@ -116,13 +116,13 @@ pub async fn produce_message_with_api(
     use std::time::Duration;
     use fluvio_future::timer::sleep;
 
-    let replication = test_case.environment.replication;
+    let partition = test_case.environment.partition;
 
     let produce_iteration = test_case.option.producer_iteration;
 
-    for r in 0..replication {
-        let topic_name = test_case.environment.topic_name.clone();
+    let topic_name = test_case.environment.topic_name.clone();
 
+    for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
         let producer = get_producer(&client, &topic_name).await;
 
