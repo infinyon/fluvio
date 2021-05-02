@@ -58,7 +58,7 @@ where
     S: ReplicaStorage,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Leader for {}", self.id())
+        write!(f, "Leader state for {}", self.id())
     }
 }
 
