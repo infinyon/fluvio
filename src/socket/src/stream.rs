@@ -3,11 +3,7 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::net::TcpStream;
-
-use fluvio_future::net::{BoxConnection};
-
+use fluvio_future::net::{BoxReadConnection};
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
@@ -20,20 +16,13 @@ use tracing::trace;
 
 use crate::FlvSocketError;
 
-#[cfg(not(target_arch = "wasm32"))]
-pub type FlvStream = InnerFlvStream<TcpStream>;
-
-#[cfg(feature = "tls")]
-#[cfg(not(target_arch = "wasm32"))]
-pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
-
-type FrameStream = FramedRead<Compat<BoxConnection>, FluvioCodec>;
+type FrameStream = FramedRead<Compat<BoxReadConnection>, FluvioCodec>;
 
 /// inner flv stream which is generic over stream
-pub struct FlvStream(FrameStream);
+pub struct FluvioStream(FrameStream);
 
-impl FlvStream {
-    pub fn new(stream: BoxConnection) -> Self {
+impl FluvioStream {
+    pub fn new(stream: BoxReadConnection) -> Self {
         Self(FramedRead::new(stream.compat(), FluvioCodec::new()))
     }
 
@@ -154,8 +143,8 @@ impl FlvStream {
     }
 }
 
-impl From<FrameStream> for FlvStream {
+impl From<FrameStream> for FluvioStream {
     fn from(stream: FrameStream) -> Self {
-        FlvStream(stream)
+        FluvioStream(stream)
     }
 }

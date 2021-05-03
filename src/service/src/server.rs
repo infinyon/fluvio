@@ -22,11 +22,11 @@ use fluvio_future::task::spawn;
 
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use fluvio_socket::{FlvSocket, FlvSocketError};
+use fluvio_socket::{FluvioSocket, FlvSocketError};
 
 #[async_trait]
 pub trait SocketBuilder: Clone {
-    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FlvSocket, IoError>;
+    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FluvioSocket, IoError>;
 }
 
 #[derive(Debug, Clone)]
@@ -34,9 +34,13 @@ pub struct DefaultSocketBuilder {}
 
 #[async_trait]
 impl SocketBuilder for DefaultSocketBuilder {
-    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FlvSocket, IoError> {
+    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FluvioSocket, IoError> {
         let fd = raw_stream.as_raw_fd();
-        Ok(FlvSocket::from_stream(Box::new(raw_stream), fd))
+        Ok(FluvioSocket::from_stream(
+            Box::new(raw_stream.clone()),
+            Box::new(raw_stream),
+            fd,
+        ))
     }
 }
 
@@ -52,7 +56,7 @@ pub trait FlvService {
     async fn respond(
         self: Arc<Self>,
         context: Self::Context,
-        socket: FlvSocket,
+        socket: FluvioSocket,
     ) -> Result<(), FlvSocketError>;
 }
 
@@ -202,7 +206,7 @@ mod test {
     use fluvio_future::timer::sleep;
 
     use fluvio_protocol::api::RequestMessage;
-    use fluvio_socket::FlvSocket;
+    use fluvio_socket::FluvioSocket;
     use fluvio_socket::FlvSocketError;
 
     use crate::test_request::EchoRequest;
@@ -224,10 +228,10 @@ mod test {
         server
     }
 
-    async fn create_client(addr: String) -> Result<FlvSocket, FlvSocketError> {
+    async fn create_client(addr: String) -> Result<FluvioSocket, FlvSocketError> {
         debug!("client wait for 1 second for 2nd server to come up");
         sleep(Duration::from_millis(100)).await;
-        FlvSocket::connect(&addr).await
+        FluvioSocket::connect(&addr).await
     }
 
     async fn test_client(addr: String, shutdown: Arc<SimpleEvent>) {

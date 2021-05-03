@@ -1,6 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
 use dataplane::derive::{Decode, Encode};
+use fluvio_types::defaults::{SPU_LOG_BASE_DIR, SPU_LOG_SIZE};
 
 #[derive(Encode, Decode, Default, Debug, PartialEq, Clone)]
 #[cfg_attr(
@@ -72,8 +73,8 @@ impl StorageConfig {
             log_dir: self
                 .log_dir
                 .clone()
-                .unwrap_or_else(|| "/tmp/fluvio".to_owned()),
-            size: self.size.clone().unwrap_or_else(|| "1Gi".to_owned()),
+                .unwrap_or_else(|| SPU_LOG_BASE_DIR.to_owned()),
+            size: self.size.clone().unwrap_or_else(|| SPU_LOG_SIZE.to_owned()),
         }
     }
 }

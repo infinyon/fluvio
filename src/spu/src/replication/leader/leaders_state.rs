@@ -4,19 +4,14 @@ use std::{
 use std::sync::RwLock;
 use std::collections::HashMap;
 
-use tracing::{debug, error};
-use tracing::instrument;
-use async_channel::Receiver;
+use tracing::{error, instrument};
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
-use crate::{control_plane::SharedSinkMessageChannel, core::SharedGlobalContext};
+use crate::{control_plane::SharedStatusUpdate, core::SharedGlobalContext};
 
-use super::{
-    LeaderReplicaControllerCommand, LeaderReplicaState, ReplicaLeaderController,
-    replica_state::SharedLeaderState,
-};
+use super::{LeaderReplicaState, replica_state::SharedLeaderState};
 
 pub type SharedReplicaLeadersState<S> = ReplicaLeadersState<S>;
 
@@ -69,7 +64,7 @@ impl<S> ReplicaLeadersState<S> {
 
 impl ReplicaLeadersState<FileReplica> {
     #[instrument(
-        skip(self, ctx,replica,sink_channel),
+        skip(self, ctx,replica,status_update),
         fields(replica = %replica.id)
     )]
     pub async fn add_leader_replica(
@@ -77,37 +72,24 @@ impl ReplicaLeadersState<FileReplica> {
         ctx: SharedGlobalContext<FileReplica>,
         replica: Replica,
         max_bytes: u32,
-        sink_channel: SharedSinkMessageChannel,
+        status_update: SharedStatusUpdate,
     ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let replica_id = replica.id.clone();
 
-        match LeaderReplicaState::create(replica, ctx.config()).await {
-            Ok((leader_replica, receiver)) => {
-                debug!("file replica created and spawing leader controller");
-                self.spawn_leader_controller(
-                    replica_id,
-                    leader_replica.clone(),
-                    receiver,
-                    sink_channel,
-                )
-                .await;
-
-                Ok(leader_replica)
-            }
-            Err(err) => Err(err),
-        }
+        let leader_replica =
+            LeaderReplicaState::create(replica, ctx.config(), status_update).await?;
+        self.insert_leader(replica_id, leader_replica.clone()).await;
+        Ok(leader_replica)
     }
 
     #[instrument(
-        skip(self,replica_id, leader_state,sink_channel),
+        skip(self,replica_id, leader_state),
         fields(replica = %replica_id)
     )]
-    pub async fn spawn_leader_controller(
+    async fn insert_leader(
         &self,
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
-        receiver: Receiver<LeaderReplicaControllerCommand>,
-        sink_channel: SharedSinkMessageChannel,
     ) {
         let mut writer = self.write().unwrap();
         if let Some(old_replica) = writer.insert(replica_id.clone(), leader_state.clone()) {
@@ -116,59 +98,5 @@ impl ReplicaLeadersState<FileReplica> {
                 old_replica.id()
             );
         }
-
-        drop(writer);
-
-        let leader_controller =
-            ReplicaLeaderController::new(replica_id, receiver, leader_state, sink_channel);
-        leader_controller.run();
-    }
-}
-
-#[cfg(test)]
-mod test_channel {
-
-    use std::time::Duration;
-
-    use async_channel::Sender;
-    use async_channel::Receiver;
-    use async_channel::bounded as channel;
-    use futures_util::future::join;
-    use futures_util::StreamExt;
-
-    use fluvio_future::timer::sleep;
-    use fluvio_future::test_async;
-
-    async fn receiver_tst(mut receiver: Receiver<u16>) {
-        // sleep to let sender send messages
-        assert!(receiver.next().await.is_some());
-        // wait until sender send all 3 and terminate sender
-        sleep(Duration::from_millis(10)).await;
-        assert!(receiver.next().await.is_some());
-        assert!(receiver.next().await.is_some());
-        assert!(receiver.next().await.is_none());
-    }
-
-    async fn sender_test(orig_mailbox: Sender<u16>) {
-        let mailbox = orig_mailbox.clone();
-        assert!(!mailbox.is_closed());
-        sleep(Duration::from_millis(1)).await;
-        mailbox.send(10).await.expect("send");
-        mailbox.send(11).await.expect("send");
-        mailbox.send(12).await.expect("send");
-        mailbox.close();
-        assert!(mailbox.is_closed());
-        // wait 30 millisecond to allow test of receiver
-        sleep(Duration::from_millis(30)).await;
-    }
-
-    // test send and disconnect
-    #[test_async]
-    async fn test_event_shutdown() -> Result<(), ()> {
-        let (sender, receiver) = channel::<u16>(10);
-
-        join(sender_test(sender), receiver_tst(receiver)).await;
-
-        Ok(())
     }
 }

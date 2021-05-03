@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use tracing::{debug, warn};
 
 use fluvio_service::{wait_for_request, FlvService};
-use fluvio_socket::{FlvSocket, FlvSocketError};
+use fluvio_socket::{FluvioSocket, FlvSocketError};
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::FollowerHandler;
@@ -29,7 +29,7 @@ impl FlvService for InternalService {
     async fn respond(
         self: Arc<Self>,
         ctx: DefaultSharedGlobalContext,
-        socket: FlvSocket,
+        socket: FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();
@@ -47,7 +47,7 @@ impl FlvService for InternalService {
                     "received fetch stream"
                 );
                 // check if follower_id is valid
-                if let Some(spu_update) = ctx.follower_updates().get(&follower_id).await {
+                if let Some(spu_update) = ctx.follower_notifier().get(&follower_id).await {
                     let response = FetchStreamResponse::new(follower_id);
                     let res_msg = req_msg.new_response(response);
                     sink

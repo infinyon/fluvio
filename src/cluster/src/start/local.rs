@@ -9,11 +9,12 @@ use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
-use fluvio_future::timer::sleep;
 use fluvio::metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
 use fluvio::metadata::spu::Endpoint;
 use fluvio::metadata::spu::IngressAddr;
+use fluvio_future::timer::sleep;
+use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
@@ -23,10 +24,11 @@ use crate::{
 };
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
-use fluvio_command::CommandExt;
+
+pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
+    Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
 
 const DEFAULT_LOG_DIR: &str = "/tmp";
-const DEFAULT_DATA_DIR: &str = "/tmp/fluvio";
 const DEFAULT_RUST_LOG: &str = "info";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
@@ -67,7 +69,7 @@ pub struct LocalConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(setter(into), default = "PathBuf::from(DEFAULT_DATA_DIR)")]
+    #[builder(setter(into))]
     data_dir: PathBuf,
     /// Internal API: Path to the executable for running `cluster run`
     ///
@@ -205,6 +207,9 @@ impl LocalConfig {
     pub fn builder<S: Into<String>>(chart_version: S) -> LocalConfigBuilder {
         let mut builder = LocalConfigBuilder::default();
         builder.chart_version(chart_version);
+        if let Some(data_dir) = &*DEFAULT_DATA_DIR {
+            builder.data_dir(data_dir);
+        }
         builder
     }
 

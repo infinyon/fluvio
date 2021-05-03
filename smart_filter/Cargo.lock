@@ -67,6 +67,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.0"
+source = "git+https://github.com/infinyon/future-aio#8d07228889a6654cf4b5d509a0ff00ff5c38ad16"
 dependencies = [
  "log",
  "thiserror",

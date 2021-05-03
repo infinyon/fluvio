@@ -53,7 +53,7 @@ pub async fn handle_produce_request(
 
             if let Some(leader_state) = ctx.leaders_state().get(&rep_id) {
                 match leader_state
-                    .write_record_set(&mut partition_request.records)
+                    .write_record_set(&mut partition_request.records, ctx.follower_notifier())
                     .await
                 {
                     Ok(_) => {

@@ -9,16 +9,8 @@ use async_trait::async_trait;
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
-
-use fluvio_socket::{AllFlvSocket, AllMultiplexerSocket};
-
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
-
-#[cfg(target_arch = "wasm32")]
-use fluvio_socket:: WebSocketConnector as FluvioConnector;
 use fluvio_socket::FlvSocketError;
-use fluvio_socket::{FlvSocket, SharedMultiplexerSocket};
+use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
 
 use crate::FluvioError;
@@ -46,7 +38,7 @@ pub(crate) trait SerialFrame: Display {
     }
 
     /// send and receive
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FluvioError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync;
 }
@@ -54,7 +46,7 @@ pub(crate) trait SerialFrame: Display {
 /// This sockets knows about support versions
 /// Version information are automatically  insert into request
 pub struct VersionedSocket {
-    socket: FlvSocket,
+    socket: FluvioSocket,
     config: Arc<ClientConfig>,
     versions: Versions,
 }
@@ -72,25 +64,25 @@ impl SerialFrame for VersionedSocket {
     }
 
     /// send and wait for reply
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FluvioError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
         let req_message = self.send_request(request).await?;
 
         // send request & save response
-        Ok(self.socket
+        self.socket
             .get_mut_stream()
             .next_response(&req_message)
             .await
-            .map(|res_msg| res_msg.response)?)
+            .map(|res_msg| res_msg.response)
     }
 }
 
 impl VersionedSocket {
     /// connect to end point and retrieve versions
     pub async fn connect(
-        mut socket: FlvSocket,
+        mut socket: FluvioSocket,
         config: Arc<ClientConfig>,
     ) -> Result<Self, FluvioError> {
         // now get versions
@@ -110,12 +102,12 @@ impl VersionedSocket {
         })
     }
 
-    pub fn split(self) -> (FlvSocket, Arc<ClientConfig>, Versions) {
+    pub fn split(self) -> (FluvioSocket, Arc<ClientConfig>, Versions) {
         (self.socket, self.config, self.versions)
     }
 
     /// send request only
-    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, FluvioError>
+    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -183,21 +175,13 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket = FlvSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+        let socket =
+            FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 
     /// create new config with prefix add to domain, this is useful for SNI
     pub fn with_prefix_sni_domain(&self, prefix: &str) -> Self {
-        /*
-        let mut connector = self.connector.clone();
-        #[cfg(not(target_arch = "wasm32"))]
-        if let FluvioConnector::TlsDomain(domain_connector) = &mut connector {
-            let new_domain = format!("{}.{}", prefix, domain_connector.domain());
-            debug!(sni_domain = %new_domain);
-            domain_connector.set_domain(new_domain);
-        };
-        */
         let new_domain = format!("{}.{}", prefix, self.connector.domain());
         debug!(sni_domain = %new_domain);
         let connector = self.connector.new_domain(new_domain);
@@ -246,7 +230,6 @@ impl Versions {
 
 /// Connection that perform request/response
 pub struct VersionedSerialSocket {
-    //socket: Arc<AllMultiplexerSocket>,
     socket: SharedMultiplexerSocket,
     config: Arc<ClientConfig>,
     versions: Versions,
@@ -260,7 +243,7 @@ impl fmt::Display for VersionedSerialSocket {
 
 impl VersionedSerialSocket {
     pub fn new(
-        socket: Arc<AllMultiplexerSocket>,
+        socket: SharedMultiplexerSocket,
         config: Arc<ClientConfig>,
         versions: Versions,
     ) -> Self {
@@ -283,13 +266,13 @@ impl SerialFrame for VersionedSerialSocket {
     }
 
     /// send and wait for reply serially
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FluvioError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
         let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
 
         // send request & save response
-        Ok(self.socket.send_and_receive(req_msg).await?)
+        self.socket.send_and_receive(req_msg).await
     }
 }

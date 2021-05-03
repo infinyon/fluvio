@@ -6,14 +6,10 @@ use std::path::PathBuf;
 use tracing::info;
 use serde::{Deserialize, Serialize};
 use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
-#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::native_tls::{
     TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder, PrivateKeyBuilder,
     CertBuilder, TlsAnonymousConnector,
 };
-
-#[cfg(target_arch = "wasm32")]
-use fluvio_socket::WebSocketConnector as FluvioConnector;
 
 /// Describes whether or not to use TLS and how
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -198,8 +194,6 @@ pub struct TlsPaths {
     pub ca_cert: PathBuf,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-impl TryFrom<TlsPolicy> for FluvioConnector {
 impl TryFrom<TlsPolicy> for DomainConnector {
     type Error = IoError;
 
@@ -259,14 +253,5 @@ impl TryFrom<TlsPolicy> for DomainConnector {
                 )))
             }
         }
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-impl TryFrom<TlsPolicy> for FluvioConnector {
-    type Error = IoError;
-
-    fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
-        Ok(Self::default())
     }
 }

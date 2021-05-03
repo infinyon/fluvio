@@ -19,8 +19,6 @@ use pin_project::{pin_project, pinned_drop};
 use tokio::select;
 use tracing::{debug, error, instrument, trace};
 
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::net::TcpStream;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
@@ -29,25 +27,9 @@ use fluvio_protocol::Decoder;
 
 use crate::FlvSocketError;
 use crate::ExclusiveFlvSink;
-use crate::FlvSocket;
-use crate::FlvStream;
+use crate::FluvioSocket;
+use crate::FluvioStream;
 
-#[allow(unused)]
-#[cfg(not(target_arch = "wasm32"))]
-pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
-
-#[cfg(feature = "tls")]
-#[cfg(not(target_arch = "wasm32"))]
-pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
-
-#[cfg(feature = "tls")]
-#[cfg(not(target_arch = "wasm32"))]
-pub type SharedAllMultiplexerSocket = Arc<AllMultiplexerSocket>;
-//pub type DefaultMultiplexerSocket = MultiplexerSocket<TcpStream>;
-
-//#[cfg(feature = "tls")]
-//pub type AllMultiplexerSocket = MultiplexerSocket<fluvio_future::native_tls::AllTcpStream>;
-//#[cfg(feature = "tls")]
 pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;
 
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
@@ -86,13 +68,13 @@ impl Drop for MultiplexerSocket {
 }
 
 impl MultiplexerSocket {
-    pub fn shared(socket: FlvSocket) -> Arc<Self> {
+    pub fn shared(socket: FluvioSocket) -> Arc<Self> {
         Arc::new(Self::new(socket))
     }
 
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
-    pub fn new(socket: FlvSocket) -> Self {
+    pub fn new(socket: FluvioSocket) -> Self {
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
@@ -315,7 +297,7 @@ struct MultiPlexingResponseDispatcher {
 }
 
 impl MultiPlexingResponseDispatcher {
-    pub fn run(stream: FlvStream, senders: Senders, terminate: Arc<Event>) {
+    pub fn run(stream: FluvioStream, senders: Senders, terminate: Arc<Event>) {
         use fluvio_future::task::spawn;
 
         let dispatcher = Self { senders, terminate };
@@ -324,7 +306,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    async fn dispatcher_loop(mut self, mut stream: FlvStream) {
+    async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
@@ -438,7 +420,6 @@ impl MultiPlexingResponseDispatcher {
 }
 
 #[cfg(test)]
-#[cfg(not(target_arch = "wasm32"))]
 mod tests {
 
     use std::time::Duration;
@@ -460,7 +441,7 @@ mod tests {
     use crate::test_request::*;
     use crate::FlvSocketError;
     use crate::ExclusiveFlvSink;
-    use crate::FlvSocket;
+    use crate::FluvioSocket;
 
     #[allow(unused)]
     const CA_PATH: &str = "certs/certs/ca.crt";
@@ -476,7 +457,7 @@ mod tests {
     #[async_trait]
     trait AcceptorHandler {
         type Stream: AsyncRead + AsyncWrite + Unpin + Send;
-        async fn accept(&mut self, stream: TcpStream) -> FlvSocket;
+        async fn accept(&mut self, stream: TcpStream) -> FluvioSocket;
     }
 
     #[derive(Clone)]
@@ -486,7 +467,7 @@ mod tests {
     impl AcceptorHandler for TcpStreamHandler {
         type Stream = TcpStream;
 
-        async fn accept(&mut self, stream: TcpStream) -> FlvSocket {
+        async fn accept(&mut self, stream: TcpStream) -> FluvioSocket {
             stream.into()
         }
     }
@@ -498,7 +479,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let socket: FlvSocket = handler.accept(incoming_stream).await;
+        let socket: FluvioSocket = handler.accept(incoming_stream).await;
 
         let (sink, mut stream) = socket.split();
 
@@ -574,14 +555,14 @@ mod tests {
     #[async_trait]
     trait ConnectorHandler {
         type Stream: AsyncRead + AsyncWrite + Unpin + Send + Sync;
-        async fn connect(&mut self, stream: TcpStream) -> FlvSocket;
+        async fn connect(&mut self, stream: TcpStream) -> FluvioSocket;
     }
 
     #[async_trait]
     impl ConnectorHandler for TcpStreamHandler {
         type Stream = TcpStream;
 
-        async fn connect(&mut self, stream: TcpStream) -> FlvSocket {
+        async fn connect(&mut self, stream: TcpStream) -> FluvioSocket {
             stream.into()
         }
     }
@@ -669,14 +650,17 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(all(unix, feature = "tls"))]
+    #[cfg(unix)]
     mod tls_test {
         use std::os::unix::io::AsRawFd;
 
-        use fluvio_future::native_tls::{
-            AcceptorBuilder, CertBuilder, ConnectorBuilder, DefaultClientTlsStream,
-            DefaultServerTlsStream, IdentityBuilder, PrivateKeyBuilder, TlsAcceptor, TlsConnector,
-            X509PemBuilder,
+        use fluvio_future::{
+            native_tls::{
+                AcceptorBuilder, CertBuilder, ConnectorBuilder, DefaultClientTlsStream,
+                DefaultServerTlsStream, IdentityBuilder, PrivateKeyBuilder, TlsAcceptor,
+                TlsConnector, X509PemBuilder,
+            },
+            net::SplitConnection,
         };
 
         use super::*;
@@ -703,11 +687,12 @@ mod tests {
         impl AcceptorHandler for TlsAcceptorHandler {
             type Stream = DefaultServerTlsStream;
 
-            async fn accept(&mut self, stream: TcpStream) -> InnerFlvSocket<Self::Stream> {
+            async fn accept(&mut self, stream: TcpStream) -> FluvioSocket {
                 let fd = stream.as_raw_fd();
                 let handshake = self.0.accept(stream);
                 let tls_stream = handshake.await.expect("hand shake failed");
-                InnerFlvSocket::from_stream(tls_stream, fd)
+                let (write, read) = tls_stream.split_connection();
+                FluvioSocket::from_stream(write, read, fd)
             }
         }
 
@@ -734,15 +719,16 @@ mod tests {
         impl ConnectorHandler for TlsConnectorHandler {
             type Stream = DefaultClientTlsStream;
 
-            async fn connect(&mut self, stream: TcpStream) -> InnerFlvSocket<Self::Stream> {
+            async fn connect(&mut self, stream: TcpStream) -> FluvioSocket {
                 let fd = stream.as_raw_fd();
-                InnerFlvSocket::from_stream(
-                    self.0
-                        .connect("localhost", stream)
-                        .await
-                        .expect("hand shakefailed"),
-                    fd,
-                )
+                let (write, read) = self
+                    .0
+                    .connect("localhost", stream)
+                    .await
+                    .expect("hand shakefailed")
+                    .split_connection();
+
+                FluvioSocket::from_stream(write, read, fd)
             }
         }
 

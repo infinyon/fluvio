@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use fluvio_controlplane_metadata::extended::ObjectType;
-use fluvio_socket::FlvSocket;
+use fluvio_socket::FluvioSocket;
 
 use super::AuthError;
 
@@ -41,6 +41,8 @@ pub trait Authorization {
     type Context: AuthContext;
 
     /// create auth context
-    async fn create_auth_context(&self, socket: &mut FlvSocket)
-        -> Result<Self::Context, AuthError>;
+    async fn create_auth_context(
+        &self,
+        socket: &mut FluvioSocket,
+    ) -> Result<Self::Context, AuthError>;
 }

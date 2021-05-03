@@ -8,10 +8,6 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-
-use fluvio_socket::{AllMultiplexerSocket, AsyncResponse};
-
-
 use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, FlvSocketError, AsyncResponse};
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
@@ -23,7 +19,7 @@ const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 struct SpuSocket {
     config: Arc<ClientConfig>,
-    socket: Arc<AllMultiplexerSocket>,
+    socket: SharedMultiplexerSocket,
     versions: Versions,
 }
 
@@ -68,7 +64,7 @@ impl SpuPool {
     /// start synchronize based on pool
     pub async fn start(
         config: Arc<ClientConfig>,
-        sc_socket: Arc<AllMultiplexerSocket>,
+        sc_socket: SharedMultiplexerSocket,
     ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");

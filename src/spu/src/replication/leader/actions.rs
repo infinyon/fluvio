@@ -1,14 +1,7 @@
 use std::fmt;
 
-use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::Offset;
 use fluvio_types::SpuId;
-
-#[derive(Debug)]
-pub enum LeaderReplicaControllerCommand {
-    UpdateReplicaFromSc(Replica),
-    RemoveReplicaFromSc,
-}
 
 #[derive(Debug)]
 pub struct FollowerOffsetUpdate {

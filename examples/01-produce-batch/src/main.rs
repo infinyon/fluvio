@@ -32,7 +32,7 @@ async fn produce_batch() -> Result<(), fluvio::FluvioError> {
     let producer = fluvio::producer("batch").await?;
 
     let batch: Vec<_> = (0..10)
-        .map(|i| (Some(i.to_string()), format!("This is record {}", i)))
+        .map(|i| (i.to_string(), format!("This is record {}", i)))
         .collect();
 
     producer.send_all(batch).await?;

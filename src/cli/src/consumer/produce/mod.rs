@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;
 
-use fluvio::{Fluvio, TopicProducer};
+use fluvio::{Fluvio, TopicProducer, RecordKey};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::consumer::error::ConsumerError;
@@ -102,7 +102,7 @@ impl ProduceOpt {
         if self.kv_mode() {
             self.produce_key_value(producer, string).await?;
         } else {
-            producer.send_record(string, 0).await?;
+            producer.send(RecordKey::NULL, string).await?;
             if self.verbose {
                 println!("[null] {}", string);
             }

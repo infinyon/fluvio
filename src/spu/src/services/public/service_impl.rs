@@ -7,7 +7,7 @@ use futures_util::stream::StreamExt;
 use tokio::select;
 
 use fluvio_types::event::SimpleEvent;
-use fluvio_socket::{FlvSocket};
+use fluvio_socket::{FluvioSocket};
 use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
@@ -37,7 +37,7 @@ impl FlvService for PublicService {
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
-        socket: FlvSocket,
+        socket: FluvioSocket,
     ) -> Result<(), FlvSocketError> {
         let (sink, mut stream) = socket.split();
 

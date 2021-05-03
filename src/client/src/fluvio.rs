@@ -4,20 +4,12 @@ use std::sync::Arc;
 use tracing::debug;
 use once_cell::sync::OnceCell;
 
-use fluvio_socket::AllMultiplexerSocket;
-
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
 use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
 use fluvio_future::task::run_block_on;
 use fluvio_future::net::DomainConnector;
 //use fluvio_future::native_tls::AllDomainConnector;
 use semver::Version;
 
-#[cfg(target_arch = "wasm32")]
-use fluvio_socket::WebSocketConnector as FluvioConnector;
-
-use semver::Version;
 use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
 use crate::TopicProducer;
@@ -29,8 +21,6 @@ use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket}
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
-    //socket: Arc<AllMultiplexerSocket>,
-    //config: ClientConfig,
     socket: SharedMultiplexerSocket,
     config: Arc<ClientConfig>,
     versions: Versions,
@@ -93,23 +83,13 @@ impl Fluvio {
     }
 
     /// lazy get spu pool
-    async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
-        // TODO: Clean this up, maybe use https://github.com/Yoeori/async-oncecell
-        if let Some(pool) = self.spu_pool.get() {
-            Ok(pool.clone())
-        } else {
-            let pool = Arc::new(SpuPool::start(self.config.clone(), self.socket.clone()).await?);
-            let _ = self.spu_pool.set(pool);
-            Ok(self.spu_pool.get().unwrap().clone())
-        }
-        /*
+    fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
         self.spu_pool
-            .get_or_try_init(async || -> Result<Arc<SpuPool>, FluvioError> {
-                //let pool = run_block_on(SpuPool::start(self.config.clone(), self.socket.clone()));
+            .get_or_try_init(|| -> Result<Arc<SpuPool>, FluvioError> {
+                let pool = run_block_on(SpuPool::start(self.config.clone(), self.socket.clone()));
                 Ok(Arc::new(pool?))
             })
             .map(|pool| pool.clone())
-        */
     }
 
     /// Creates a new `TopicProducer` for the given topic name
@@ -121,10 +101,10 @@ impl Fluvio {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{Fluvio, FluvioError};
+    /// # use fluvio::{Fluvio, FluvioError, RecordKey};
     /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
     /// let producer = fluvio.topic_producer("my-topic").await?;
-    /// producer.send_record("Hello, Fluvio!", 0).await?;
+    /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -134,7 +114,7 @@ impl Fluvio {
     ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
-        Ok(TopicProducer::new(topic, self.spu_pool().await?))
+        Ok(TopicProducer::new(topic, self.spu_pool()?))
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
@@ -165,7 +145,7 @@ impl Fluvio {
     ) -> Result<PartitionConsumer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
-        Ok(PartitionConsumer::new(topic, partition, self.spu_pool().await?))
+        Ok(PartitionConsumer::new(topic, partition, self.spu_pool()?))
     }
 
     /// Provides an interface for managing a Fluvio cluster

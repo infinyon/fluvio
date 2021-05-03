@@ -7,15 +7,6 @@ use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
-
-use fluvio_socket::AllMultiplexerSocket;
-
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::native_tls::AllDomainConnector as FluvioConnector;
-
-#[cfg(target_arch = "wasm32")]
-use fluvio_socket::WebSocketConnector as FluvioConnector;
-
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::MultiplexerSocket;
 //use fluvio_future::native_tls::AllDomainConnector;
@@ -123,7 +114,7 @@ impl FluvioAdmin {
         Ok(Self(versioned_socket))
     }
 
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FluvioError>
+    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: AdminRequest + Send + Sync,
     {

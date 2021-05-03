@@ -2,9 +2,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[cfg(not(target_arch = "wasm32"))]
 use std::os::unix::io::AsRawFd;
-#[cfg(not(target_arch = "wasm32"))]
 use std::os::unix::io::RawFd;
 
 use async_mutex::Mutex;
@@ -16,79 +14,38 @@ use futures_util::SinkExt;
 use tokio_util::compat::Compat;
 use bytes::BytesMut;
 
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::zero_copy::ZeroCopyWrite;
-
-#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::zero_copy::ZeroCopy;
-
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
-
-#[cfg(not(target_arch = "wasm32"))]
 use fluvio_protocol::store::FileWrite;
-#[cfg(not(target_arch = "wasm32"))]
 use fluvio_protocol::store::StoreValue;
-
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
-use fluvio_future::net::BoxConnection;
-
-#[cfg(not(target_arch = "wasm32"))]
-use fluvio_future::net::TcpStream;
-
-use tokio_util::codec::Framed;
-
-use crate::FlvSocketError;
-
-/*
-#[cfg(not(target_arch = "wasm32"))]
-pub type FlvSink = InnerFlvSink<TcpStream>;
-*/
-
-#[cfg(not(target_arch = "wasm32"))]
-pub type ExclusiveFlvSink = InnerExclusiveFlvSink<TcpStream>;
-
-/*
-type SplitFrame<S> = SplitSink<Framed<Compat<S>, FluvioCodec>, Bytes>;
-
-pub struct InnerFlvSink<S> {
-    inner: SplitFrame<S>,
-    #[cfg(not(target_arch = "wasm32"))]
-    fd: RawFd,
-}
-*/
+use fluvio_future::net::BoxWriteConnection;
 
 use tokio_util::codec::{FramedWrite};
 
 use crate::FlvSocketError;
 
-type SinkFrame = FramedWrite<Compat<BoxConnection>, FluvioCodec>;
+type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
-pub struct FlvSink {
+pub struct FluvioSink {
     inner: SinkFrame,
-    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
-impl fmt::Debug for FlvSink {
-    #[cfg(not(target_arch = "wasm32"))]
+impl fmt::Debug for FluvioSink {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
     }
-    #[cfg(target_arch = "wasm32")]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "websocket")
-    }
 }
 
-impl FlvSink {
+impl FluvioSink {
     pub fn get_mut_tcp_sink(&mut self) -> &mut SinkFrame {
         &mut self.inner
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn id(&self) -> RawFd {
         self.fd
     }
@@ -99,17 +56,10 @@ impl FlvSink {
         ExclusiveFlvSink::new(self)
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn new(stream: BoxConnection, fd: RawFd) -> Self {
+    pub fn new(sink: BoxWriteConnection, fd: RawFd) -> Self {
         Self {
             fd,
-            inner: SinkFrame::new(stream.compat_write(), FluvioCodec::new()),
-        }
-    }
-    #[cfg(target_arch = "wasm32")]
-    pub fn new(stream: BoxConnection) -> Self {
-        Self {
-            inner: SinkFrame::new(stream.compat_write(), FluvioCodec::new()),
+            inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
         }
     }
 
@@ -147,8 +97,7 @@ impl FlvSink {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-impl FlvSink {
+impl FluvioSink {
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -199,8 +148,7 @@ impl FlvSink {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-impl AsRawFd for FlvSink {
+impl AsRawFd for FluvioSink {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
     }
@@ -208,25 +156,22 @@ impl AsRawFd for FlvSink {
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct ExclusiveFlvSink {
-    inner: Arc<Mutex<FlvSink>>,
-    #[cfg(not(target_arch = "wasm32"))]
+    inner: Arc<Mutex<FluvioSink>>,
     fd: RawFd,
 }
 
 impl ExclusiveFlvSink {
-    pub fn new(sink: FlvSink) -> Self {
-        #[cfg(not(target_arch = "wasm32"))]
+    pub fn new(sink: FluvioSink) -> Self {
         let fd = sink.id();
         ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
-            #[cfg(not(target_arch = "wasm32"))]
             fd,
         }
     }
 }
 
 impl ExclusiveFlvSink {
-    pub async fn lock(&self) -> MutexGuard<'_, FlvSink> {
+    pub async fn lock(&self) -> MutexGuard<'_, FluvioSink> {
         self.inner.lock().await
     }
 
@@ -251,7 +196,6 @@ impl ExclusiveFlvSink {
         inner_sink.send_response(resp_msg, version).await
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn id(&self) -> RawFd {
         self.fd
     }
@@ -261,14 +205,12 @@ impl Clone for ExclusiveFlvSink {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            #[cfg(not(target_arch = "wasm32"))]
             fd: self.fd,
         }
     }
 }
 
 #[cfg(test)]
-#[cfg(not(target_arch = "wasm32"))]
 mod tests {
 
     use std::io::Cursor;
@@ -282,7 +224,7 @@ mod tests {
     use tracing::debug;
     use tracing::info;
 
-    use crate::FlvSocket;
+    use crate::FluvioSocket;
     use crate::FlvSocketError;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
@@ -298,7 +240,7 @@ mod tests {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let mut socket: FlvSocket = incoming_stream.into();
+        let mut socket: FluvioSocket = incoming_stream.into();
         let raw_tcp_sink = socket.get_mut_sink().get_mut_tcp_sink();
 
         const TEXT_LEN: u16 = 5;
@@ -328,7 +270,7 @@ mod tests {
     async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
         sleep(Duration::from_millis(50)).await;
         debug!("client: trying to connect");
-        let mut socket = FlvSocket::connect(&addr).await.expect("connect");
+        let mut socket = FluvioSocket::connect(&addr).await.expect("connect");
         info!("client: connect to test server and waiting...");
         let stream = socket.get_mut_stream();
         let next_value = stream.get_mut_tcp_stream().next().await;

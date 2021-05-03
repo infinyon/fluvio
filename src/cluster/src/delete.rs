@@ -15,6 +15,7 @@ use crate::helm::HelmClient;
 use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
 use crate::error::UninstallError;
 use crate::ClusterError;
+use crate::start::local::DEFAULT_DATA_DIR;
 
 /// Uninstalls different flavors of fluvio
 #[derive(Debug)]
@@ -116,6 +117,7 @@ impl ClusterUninstaller {
             retry_count: 10,
         }
     }
+
     /// Uninstall fluvio
     ///
     /// # Example
@@ -203,10 +205,21 @@ impl ClusterUninstaller {
             .arg("fluvio-run")
             .output()
             .map_err(UninstallError::IoError)?;
+
         // delete fluvio file
-        debug!("remove fluvio directory");
-        if let Err(err) = remove_dir_all("/tmp/fluvio") {
-            warn!("fluvio dir can't be removed: {}", err);
+        debug!("Removing fluvio directory");
+        match &*DEFAULT_DATA_DIR {
+            Some(data_dir) => match remove_dir_all(data_dir) {
+                Ok(_) => {
+                    debug!("Removed data dir: {}", data_dir.display());
+                }
+                Err(err) => {
+                    warn!("fluvio dir can't be removed: {}", err);
+                }
+            },
+            None => {
+                warn!("Unable to find data dir, cannot remove");
+            }
         }
         self.cleanup().await;
         Ok(())

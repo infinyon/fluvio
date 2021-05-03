@@ -7,15 +7,12 @@ use std::{
 use std::iter::FromIterator;
 use std::fmt;
 
-use tracing::{debug, trace, error, warn};
+use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
-use async_channel::{Sender, Receiver, SendError};
 
-use fluvio_socket::{FlvSink, FlvSocketError};
 use dataplane::{record::RecordSet};
-use dataplane::{Offset, Isolation};
-use dataplane::api::RequestMessage;
+use dataplane::{Offset, Isolation, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
@@ -23,36 +20,35 @@ use fluvio_types::{SpuId};
 
 use crate::{
     config::{ReplicationConfig},
-    control_plane::SharedSinkMessageChannel,
+    control_plane::SharedStatusUpdate,
 };
-use crate::replication::follower::sync::{
-    FileSyncRequest, PeerFileTopicResponse, PeerFilePartitionResponse,
-};
-use super::super::follower::FollowerReplicaState;
+use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
 use crate::storage::SharableReplicaStorage;
+
+use super::{super::follower::FollowerReplicaState, FollowerNotifier};
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
-use super::LeaderReplicaControllerCommand;
-
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
-    leader: SpuId,
+    replica: Replica,
+    in_sync_replica: u16,
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
-    sender: Sender<LeaderReplicaControllerCommand>,
+    status_update: SharedStatusUpdate,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
     fn clone(&self) -> Self {
         Self {
-            leader: self.leader.clone(),
+            replica: self.replica.clone(),
             storage: self.storage.clone(),
             config: self.config.clone(),
             followers: self.followers.clone(),
-            sender: self.sender.clone(),
+            in_sync_replica: self.in_sync_replica.clone(),
+            status_update: self.status_update.clone(),
         }
     }
 }
@@ -62,7 +58,7 @@ where
     S: ReplicaStorage,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Leader for {}", self.id())
+        write!(f, "Leader state for {}", self.id())
     }
 }
 
@@ -93,21 +89,34 @@ impl<S> LeaderReplicaState<S>
 where
     S: ReplicaStorage,
 {
-    /// create ne state from existing storage
+    /// create new state from existing storage
+    /// calculate default in_sync_replica from followers
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
+        status_update: SharedStatusUpdate,
         inner: SharableReplicaStorage<S>,
-        sender: Sender<LeaderReplicaControllerCommand>,
     ) -> Self {
-        let follower_ids = HashSet::from_iter(replica.replicas);
+        debug!(?replica, "replica storage");
+        let in_sync_replica = replica.replicas.len() as u16;
+        let follower_ids = HashSet::from_iter(replica.replicas.clone());
         let followers = ids_to_map(replica.leader, follower_ids);
+        debug!(?followers, "leader followers");
+
+        debug!(
+            in_sync_replica,
+            replica = %replica.id,
+            follower = ?replica.replicas,
+            "creating leader"
+        );
+
         Self {
-            leader: replica.leader,
+            replica,
             storage: inner,
             config,
             followers: Arc::new(RwLock::new(followers)),
-            sender,
+            in_sync_replica,
+            status_update,
         }
     }
 
@@ -115,54 +124,55 @@ where
     pub async fn create<'a, C>(
         replica: Replica,
         config: &'a C,
-    ) -> Result<
-        (
-            LeaderReplicaState<S>,
-            Receiver<LeaderReplicaControllerCommand>,
-        ),
-        StorageError,
-    >
+        status_update: SharedStatusUpdate,
+    ) -> Result<LeaderReplicaState<S>, StorageError>
     where
         ReplicationConfig: From<&'a C>,
         S::Config: From<&'a C>,
     {
-        use async_channel::bounded;
-
-        let (sender, receiver) = bounded(10);
-
         let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
-        let leader_replica = Self::new(replica, config.into(), inner, sender);
-        Ok((leader_replica, receiver))
+        let leader_replica = Self::new(replica, config.into(), status_update, inner);
+        leader_replica.update_status().await;
+        Ok(leader_replica)
     }
 
     pub fn promoted_from(
         follower: FollowerReplicaState<S>,
         replica: Replica,
         config: ReplicationConfig,
-        sender: Sender<LeaderReplicaControllerCommand>,
+        status_update: SharedStatusUpdate,
     ) -> Self {
         let replica_storage = follower.inner_owned();
-        Self::new(replica, config, replica_storage, sender)
+        Self::new(replica, config, status_update, replica_storage)
     }
 
-    /// send message to leader controller
-    pub async fn send_message_to_controller(
-        &self,
-        command: LeaderReplicaControllerCommand,
-    ) -> Result<(), SendError<LeaderReplicaControllerCommand>> {
-        self.sender.send(command).await
+    /// replica id
+    pub fn id(&self) -> &ReplicaKey {
+        &self.replica.id
+    }
+
+    /// leader SPU. This should be same as our local SPU
+    pub fn leader(&self) -> SpuId {
+        self.replica.leader
+    }
+
+    /// override in sync replica
+    #[allow(unused)]
+    fn set_in_sync_replica(&mut self, replica_count: u16) {
+        self.in_sync_replica = replica_count;
     }
 
     /// update leader's state from follower's offset states
     /// if follower's state has been updated may result in leader's hw update
     /// return true if update has been updated, in this case, updates can be computed to followers
     /// return false if no change in state leader
-    #[instrument(skip(self))]
+    #[instrument(skip(self, notifier))]
     pub async fn update_states_from_followers(
         &self,
         follower_id: SpuId,
         follower_pos: OffsetInfo,
+        notifier: &FollowerNotifier,
     ) -> bool {
         let leader_pos = self.as_offset();
 
@@ -175,23 +185,22 @@ where
 
         // get follower info
         let mut followers = self.followers.write().await;
-        if let Some(current_follow_info) = followers.get_mut(&follower_id) {
+        let update = if let Some(current_follow_info) = followers.get_mut(&follower_id) {
             if current_follow_info.update(&follower_pos) {
                 // if our leo and hw is same there is no need to recompute hw
                 if !leader_pos.is_committed() {
-                    if let Some(hw) =
-                        compute_hw(&leader_pos, self.config.min_in_sync_replicas, &followers)
-                    {
+                    if let Some(hw) = compute_hw(&leader_pos, self.in_sync_replica, &followers) {
                         debug!(hw, "updating hw");
                         if let Err(err) = self.update_hw(hw).await {
                             error!("error updating hw: {}", err);
                         }
                     } else {
-                        debug!("no change");
+                        debug!("no hw change");
                     }
                 } else {
                     debug!("leader is committed");
                 }
+                debug!("follower changed");
                 true
             } else {
                 false
@@ -199,44 +208,84 @@ where
         } else {
             error!(follower_id, "invalid follower");
             false
+        };
+
+        drop(followers);
+
+        self.notify_followers(notifier).await;
+        if update {
+            self.update_status().await;
         }
+
+        update
     }
 
     /// compute follower that needs to be updated
     /// based on leader's state
-    pub async fn follower_updates(&self) -> Vec<(SpuId, OffsetInfo)> {
-        let offset = self.as_offset();
-        trace!(
-            "computing follower offset for leader: {}, {:#?}",
-            self.id(),
-            offset
-        );
+    pub async fn follower_updates(
+        &self,
+        follower_id: &SpuId,
+        max_bytes: u32,
+    ) -> Option<PeerFileTopicResponse> {
+        let leader_offset = self.as_offset();
 
         let reader = self.followers.read().await;
-        reader
-            .iter()
-            .filter(|(_, follower_info)| {
-                follower_info.is_valid() && !follower_info.is_same(&offset)
-            })
-            .map(|(follower_id, follower_info)| {
-                debug!(
-                    replica = %self.id(),
-                    follower_id,
-                    "needs to be updated"
-                );
-                trace!(
-                    "follow: {} has different hw: {:#?}",
-                    follower_id,
-                    follower_info
-                );
-                (*follower_id, follower_info.clone())
-            })
-            .collect()
+        if let Some(follower_info) = reader.get(follower_id) {
+            if follower_info.is_valid() && !follower_info.is_same(&leader_offset) {
+                let mut topic_response = PeerFileTopicResponse {
+                    name: self.id().topic.to_owned(),
+                    ..Default::default()
+                };
+                let mut partition_response = PeerFilePartitionResponse {
+                    partition: self.id().partition,
+                    ..Default::default()
+                };
+
+                // if this follower's leo is less than leader's leo then send diff
+                if follower_info.leo < leader_offset.leo {
+                    let offset = self
+                        .read_records(
+                            follower_info.leo,
+                            max_bytes,
+                            Isolation::ReadUncommitted,
+                            &mut partition_response,
+                        )
+                        .await;
+                    debug!(
+                        hw = offset.hw,
+                        leo = offset.leo,
+                        replica = %self.id(),
+                        len = partition_response.records.len(),
+                        "read records"
+                    );
+
+                    // ensure leo and hw are set correctly. storage might have update last stable offset
+                    partition_response.leo = leader_offset.leo;
+                    partition_response.hw = leader_offset.hw;
+                } else {
+                    // only hw need to be updated
+                    debug!(
+                        hw = leader_offset.hw,
+                        leo = leader_offset.leo,
+                        replica = %self.id(),
+                        "sending hw only");
+                    // ensure leo and hw are set correctly. storage might have update last stable offset
+                    partition_response.leo = leader_offset.leo;
+                    partition_response.hw = leader_offset.hw;
+                }
+                topic_response.partitions.push(partition_response);
+                Some(topic_response)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     /// convert myself as
     async fn as_lrs_request(&self) -> LrsRequest {
-        let leader = (self.leader.to_owned(), self.hw(), self.leo()).into();
+        let leader = (self.leader(), self.hw(), self.leo()).into();
         let replicas = self
             .followers
             .read()
@@ -250,17 +299,45 @@ where
         LrsRequest::new(self.id().to_owned(), leader, replicas)
     }
 
-    #[instrument(skip(self, sc_sink))]
-    pub async fn send_status_to_sc(&self, sc_sink: &SharedSinkMessageChannel) {
+    #[instrument(skip(self))]
+    pub async fn update_status(&self) {
         let lrs = self.as_lrs_request().await;
         debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
-        sc_sink.send(lrs).await
+        self.status_update.send(lrs).await
     }
 
-    pub async fn write_record_set(&self, records: &mut RecordSet) -> Result<(), StorageError> {
+    /// write records to storage
+    /// then update our follower's leo
+    pub async fn write_record_set(
+        &self,
+        records: &mut RecordSet,
+        notifiers: &FollowerNotifier,
+    ) -> Result<(), StorageError> {
         self.storage
-            .write_record_set(records, self.config.min_in_sync_replicas == 1)
-            .await
+            .write_record_set(records, self.in_sync_replica == 1)
+            .await?;
+
+        self.notify_followers(notifiers).await;
+        self.update_status().await;
+
+        Ok(())
+    }
+
+    async fn notify_followers(&self, notifier: &FollowerNotifier) {
+        let leader_offset = self.as_offset();
+        let followers = self.followers.read().await;
+        debug!(?leader_offset);
+        for follower in &self.replica.replicas {
+            if let Some(follower_info) = followers.get(&follower) {
+                debug!(follower, ?follower_info);
+                if follower_info.is_valid() && !follower_info.is_same(&leader_offset) {
+                    debug!(follower, "notify");
+                    notifier.notify_follower(follower, self.id().clone()).await;
+                } else {
+                    debug!(follower, "no update");
+                }
+            }
+        }
     }
 
     #[allow(dead_code)]
@@ -268,65 +345,10 @@ where
         self.followers.read().await.keys().cloned().collect()
     }
 
-    /*
-    /// synchronize
-    pub async fn sync_followers(&self, sinks: &SinkPool<SpuId>, max_bytes: u32) {
-        let follower_sync = self.follower_updates().await;
-
-        for (follower_id, follower_info) in follower_sync {
-            self.send_update_to_follower(sinks, follower_id, &follower_info, max_bytes)
-                .await;
-        }
-    }
-    */
-
-    /// send back update to follower
-    #[instrument(skip(self))]
-    pub async fn send_update_to_follower(
-        &self,
-        sink: &mut FlvSink,
-        follower_id: SpuId,
-        follower_info: &OffsetInfo,
-        max_bytes: u32,
-    ) -> Result<(), FlvSocketError> {
-        trace!("ready to build sync records");
-        let mut sync_request = FileSyncRequest::default();
-        let mut topic_response = PeerFileTopicResponse {
-            name: self.id().topic.to_owned(),
-            ..Default::default()
-        };
-        let mut partition_response = PeerFilePartitionResponse {
-            partition: self.id().partition,
-            ..Default::default()
-        };
-        let offset = self
-            .read_records(
-                follower_info.leo,
-                max_bytes,
-                Isolation::ReadUncommitted,
-                &mut partition_response,
-            )
-            .await;
-        debug!(
-            hw = offset.hw,
-            leo = offset.leo,
-            len = partition_response.records.len(),
-            "sending records"
-        );
-        // ensure leo and hw are set correctly. storage might have update last stable offset
-        partition_response.leo = offset.leo;
-        partition_response.hw = offset.hw;
-        topic_response.partitions.push(partition_response);
-        sync_request.topics.push(topic_response);
-
-        let request = RequestMessage::new_request(sync_request).set_client_id(format!(
-            "leader: {}, replica: {}",
-            self.leader,
-            self.id()
-        ));
-
-        sink.encode_file_slices(&request, request.header.api_version())
-            .await
+    // get copy of followers_info for debugging
+    #[allow(unused)]
+    pub async fn followers_info(&self) -> BTreeMap<SpuId, OffsetInfo> {
+        self.followers.read().await.clone()
     }
 }
 
@@ -361,10 +383,9 @@ fn compute_hw(
     min_replica: u16,
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
-    assert!(min_replica > 0);
-    assert!((min_replica - 1) <= followers.len() as u16);
+    // assert!(min_replica > 0);
+    //  assert!((min_replica - 1) <= followers.len() as u16);
     let min_lsr = min(min_replica - 1, followers.len() as u16);
-    //println!("min lsr: {}", min_lsr);
 
     // compute unique offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
@@ -425,12 +446,16 @@ mod test_hw_updates {
     }
 
     /// test min lsr check
+    /*
     #[test]
     #[should_panic]
     fn test_hw_min_lsr_invalid_hw() {
         compute_hw(&OffsetInfo { hw: 0, leo: 10 }, 0, &offsets_maps(vec![]));
     }
+    */
 
+    /*
+    TODO: Revisit check of min lsr
     #[test]
     #[should_panic]
     fn test_hw_min_lsr_too_much() {
@@ -440,7 +465,7 @@ mod test_hw_updates {
             &offsets_maps(vec![(5001, OffsetInfo::default())]),
         );
     }
-
+    */
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test]
     fn test_hw22() {
@@ -664,8 +689,11 @@ mod test_leader {
     use crate::{
         config::{SpuConfig},
     };
+    use crate::control_plane::StatusMessageSink;
 
     use super::*;
+
+    const MAX_BYTES: u32 = 1000;
 
     #[derive(Default)]
     struct MockConfig {}
@@ -704,7 +732,7 @@ mod test_leader {
 
         async fn read_partition_slice<P>(
             &self,
-            _offset: Offset,
+            offset: Offset,
             _max_len: u32,
             _isolation: dataplane::Isolation,
             _partition_response: &mut P,
@@ -712,7 +740,7 @@ mod test_leader {
         where
             P: fluvio_storage::SlicePartitionResponse + Send,
         {
-            todo!()
+            OffsetInfo { leo: offset, hw: 0 }
         }
 
         // do dummy implementations of write
@@ -748,23 +776,45 @@ mod test_leader {
     }
 
     #[test_async]
-    async fn test_follower_update() -> Result<(), ()> {
+    async fn test_leader_in_sync_replica() -> Result<(), ()> {
         let mut leader_config = SpuConfig::default();
-        leader_config.replication.min_in_sync_replicas = 2;
         leader_config.id = 5000;
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let (state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
+        let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
+            Replica::new(replica, 5000, vec![5000]),
+            &leader_config,
+            StatusMessageSink::shared(),
+        )
+        .await
+        .expect("state");
+
+        assert_eq!(state.in_sync_replica, 1);
+
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_follower_update() -> Result<(), ()> {
+        let mut leader_config = SpuConfig::default();
+        leader_config.id = 5000;
+
+        let notifier = FollowerNotifier::shared();
+
+        let replica: ReplicaKey = ("test", 1).into();
+        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
+            StatusMessageSink::shared(),
         )
         .await
         .expect("state");
 
         // write fake recordset to ensure leo = 10
         state
-            .write_record_set(&mut create_recordset(10))
+            .write_record_set(&mut create_recordset(10), &notifier)
             .await
             .expect("write");
         state.update_hw(2).await.expect("hw");
@@ -776,7 +826,9 @@ mod test_leader {
         assert!(!follower_info.get(&5001).unwrap().is_valid()); // follower should be invalid sate;
         drop(follower_info);
 
-        assert_eq!(state.follower_updates().await.len(), 0);
+        assert!(state.follower_updates(&5003, MAX_BYTES).await.is_none()); // don't have 5003
+        assert!(state.follower_updates(&5001, MAX_BYTES).await.is_none()); // 5001 is still invalid
+        assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
 
         // got updated from 5001 which just been initialized
         let mut followers = state.followers.write().await;
@@ -785,10 +837,15 @@ mod test_leader {
             .expect("map")
             .update(&OffsetInfo { leo: 0, hw: 0 });
         drop(followers);
-        assert_eq!(
-            state.follower_updates().await,
-            vec![(5001, OffsetInfo { leo: 0, hw: 0 })]
-        );
+
+        assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
+        let updates = state
+            .follower_updates(&5001, MAX_BYTES)
+            .await
+            .expect("some");
+        assert_eq!(updates.name, "test");
+        assert_eq!(updates.partitions[0].leo, 10);
+        assert_eq!(updates.partitions[0].hw, 2);
 
         // updated from 5002
         let mut followers = state.followers.write().await;
@@ -797,13 +854,13 @@ mod test_leader {
             .expect("map")
             .update(&OffsetInfo { leo: 0, hw: 0 });
         drop(followers);
-        assert_eq!(
-            state.follower_updates().await,
-            vec![
-                (5001, OffsetInfo { leo: 0, hw: 0 }),
-                (5002, OffsetInfo { leo: 0, hw: 0 }),
-            ]
-        );
+        let updates = state
+            .follower_updates(&5002, MAX_BYTES)
+            .await
+            .expect("some");
+        assert_eq!(updates.name, "test");
+        assert_eq!(updates.partitions[0].leo, 10);
+        assert_eq!(updates.partitions[0].hw, 2);
 
         // 5002 has been fully caught up
         let mut followers = state.followers.write().await;
@@ -812,65 +869,190 @@ mod test_leader {
             .expect("map")
             .update(&OffsetInfo { leo: 10, hw: 2 });
         drop(followers);
-        assert_eq!(
-            state.follower_updates().await,
-            vec![(5001, OffsetInfo { leo: 0, hw: 0 }),]
-        );
+        assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
+        assert!(state.follower_updates(&5001, MAX_BYTES).await.is_some()); // 5001 is still need to besync
 
         Ok(())
     }
 
     #[test_async]
     async fn test_update_leader_from_followers() -> Result<(), ()> {
+        use crate::core::{GlobalContext};
+        use fluvio_controlplane_metadata::spu::{SpuSpec};
+
         let mut leader_config = SpuConfig::default();
-        leader_config.replication.min_in_sync_replicas = 2;
         leader_config.id = 5000;
+        let specs = vec![
+            SpuSpec::new_private_addr(5000, 9000, "localhost".to_owned()),
+            SpuSpec::new_private_addr(5001, 9001, "localhost".to_owned()),
+            SpuSpec::new_private_addr(5002, 9002, "localhost".to_owned()),
+        ];
+        let gctx: Arc<GlobalContext<MockStorage>> =
+            GlobalContext::new_shared_context(leader_config);
+        gctx.spu_localstore().sync_all(specs);
+        gctx.sync_follower_update().await;
+
+        let notifier = gctx.follower_notifier();
+        assert!(notifier.get(&5001).await.is_some());
+        assert!(notifier.get(&5002).await.is_some());
+        assert!(notifier.get(&5000).await.is_none());
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
-        let (state, _): (LeaderReplicaState<MockStorage>, _) = LeaderReplicaState::create(
-            Replica::new(replica, 5000, vec![5001, 5002]),
-            &leader_config,
+        let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
+            Replica::new(replica.clone(), 5000, vec![5000, 5001, 5002]),
+            gctx.config(),
+            StatusMessageSink::shared(),
         )
         .await
         .expect("state");
 
+        // follower's offset should be init
+        let follower_info = leader.followers_info().await;
+        assert_eq!(follower_info.get(&5001).unwrap().leo, -1);
+        assert_eq!(follower_info.get(&5001).unwrap().hw, -1);
+
+        let f1 = notifier.get(&5001).await.expect("5001");
+        let f2 = notifier.get(&5002).await.expect("5002");
+
         // write fake recordset to ensure leo = 10
-        state
-            .write_record_set(&mut create_recordset(10))
+        leader
+            .write_record_set(&mut create_recordset(10), &notifier)
             .await
             .expect("write");
-        state.update_hw(2).await.expect("hw");
+
         // check leader leo = 10 and hw = 2
-        assert_eq!(state.leo(), 10);
-        assert_eq!(state.hw(), 2);
+        assert_eq!(leader.leo(), 10);
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.is_empty());
+        assert!(f2.drain_replicas().await.is_empty());
 
         // handle invalidate offset update from follower
         assert_eq!(
-            state
-                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 11 })
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 5, hw: 20 }, &notifier)
                 .await,
             false
         );
-        assert_eq!(state.hw(), 2);
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.is_empty());
 
         // update from invalid follower
         assert_eq!(
-            state
-                .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 })
+            leader
+                .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 }, &notifier)
                 .await,
             false
         );
-        assert_eq!(state.hw(), 2);
+        assert_eq!(leader.hw(), 0);
 
-        // 5001 advance leo = 6 which is enough to make leader's hw to change
+        // handle newer leo
         assert_eq!(
-            state
-                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 })
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 20, hw: 0 }, &notifier)
+                .await,
+            false
+        );
+        assert_eq!(leader.hw(), 0);
+        assert!(!f1.has_replica(&replica).await); // no update to follower required
+
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=0,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 0, hw: 0 }, &notifier)
                 .await,
             true
         );
-        assert_eq!(state.hw(), 6);
+        assert_eq!(leader.hw(), 0); // no change on hw since we just updated the update true follower's state
+        assert!(f1.drain_replicas().await.contains(&replica));
+        //  debug!(f2 = ?f2.drain_replicas().await);
+        assert!(f2.drain_replicas().await.is_empty()); // f2 is still invalid
+
+        // 5001 partial update, follower still need to sync up with leader
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=6,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.contains(&replica));
+
+        // 5001 has fully caught up with leader, nothing to update followers until 5002 has update
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 0);
+        assert!(f1.drain_replicas().await.is_empty());
+        assert!(f2.drain_replicas().await.is_empty());
+        let follower_info = leader.followers_info().await;
+        assert_eq!(follower_info.get(&5001).unwrap().leo, 10);
+        assert_eq!(follower_info.get(&5001).unwrap().hw, 0);
+
+        // init 5002
+        debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=0,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5002, OffsetInfo { leo: 0, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 0);
+        assert!(f2.drain_replicas().await.contains(&replica));
+
+        // partial update of 5002, this lead hw to 6, both followers will be updated
+        debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=6,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5002, OffsetInfo { leo: 6, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 6);
+        assert!(f1.drain_replicas().await.contains(&replica));
+        assert!(f2.drain_replicas().await.contains(&replica));
+
+        // 5002 full update, both followers will be updated
+        debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=10,hw=0");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 0 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 10);
+        assert!(f1.drain_replicas().await.contains(&replica));
+        assert!(f2.drain_replicas().await.contains(&replica));
+
+        // 5002 same update, 5001 still need update
+        debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=10,hw=10");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 10 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 10);
+        assert!(f1.drain_replicas().await.contains(&replica));
+        assert!(f2.drain_replicas().await.is_empty());
+
+        // 5001 is now same as both leader and 5002
+        debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=10");
+        assert_eq!(
+            leader
+                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 10 }, &notifier)
+                .await,
+            true
+        );
+        assert_eq!(leader.hw(), 10);
+        assert!(f1.drain_replicas().await.is_empty());
+        assert!(f2.drain_replicas().await.is_empty());
+
         Ok(())
     }
 }

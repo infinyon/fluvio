@@ -2,12 +2,10 @@ use std::sync::Arc;
 
 use tracing::debug;
 
-use fluvio_socket::AllMultiplexerSocket;
 use fluvio_socket::SharedMultiplexerSocket;
 use fluvio_socket::FlvSocketError;
 
 use crate::metadata::topic::TopicSpec;
-use crate::FluvioError;
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;
 
@@ -21,12 +19,12 @@ pub struct MetadataStores {
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,
     topics: StoreContext<TopicSpec>,
-    socket: Arc<AllMultiplexerSocket>,
+    socket: SharedMultiplexerSocket,
 }
 
 impl MetadataStores {
     /// start synchronization
-    pub async fn start(socket: Arc<AllMultiplexerSocket>) -> Result<Self, FluvioError> {
+    pub async fn start(socket: SharedMultiplexerSocket) -> Result<Self, FlvSocketError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
@@ -59,7 +57,7 @@ impl MetadataStores {
     }
 
     /// start watch for spu
-    pub async fn start_watch_for_spu(&self) -> Result<(), FluvioError> {
+    pub async fn start_watch_for_spu(&self) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
@@ -77,7 +75,7 @@ impl MetadataStores {
         Ok(())
     }
 
-    pub async fn start_watch_for_partition(&self) -> Result<(), FluvioError> {
+    pub async fn start_watch_for_partition(&self) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
@@ -95,7 +93,7 @@ impl MetadataStores {
         Ok(())
     }
 
-    pub async fn start_watch_for_topic(&self) -> Result<(), FluvioError> {
+    pub async fn start_watch_for_topic(&self) -> Result<(), FlvSocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 

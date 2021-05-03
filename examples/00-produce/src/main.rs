@@ -22,6 +22,8 @@
 //! Hello, Fluvio!
 //! ```
 
+use fluvio::RecordKey;
+
 #[async_std::main]
 async fn main() {
     if let Err(e) = produce().await {
@@ -33,7 +35,7 @@ async fn produce() -> Result<(), fluvio::FluvioError> {
     let producer = fluvio::producer("simple").await?;
 
     let value = "Hello, Fluvio!";
-    producer.send_record(value, 0).await?;
+    producer.send(RecordKey::NULL, value).await?;
     println!("{}", value);
 
     Ok(())

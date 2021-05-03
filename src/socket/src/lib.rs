@@ -1,26 +1,21 @@
-mod error;
-
-pub use self::error::FlvSocketError;
-mod stream;
-pub use stream::*;
-mod sink;
-pub use sink::*;
-mod multiplexing;
-pub use multiplexing::*;
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
-        mod pooling;
-        mod sink_pool;
+        mod error;
+        mod multiplexing;
+        mod sink;
         mod socket;
+        mod stream;
 
         #[cfg(test)]
         pub mod test_request;
 
         pub use fluvio_future::net::{BoxConnection,Connection};
-        pub use self::socket::FlvSocket;
-        pub use pooling::*;
-        pub use sink_pool::*;
+        pub use self::error::FlvSocketError;
+        pub use self::socket::FluvioSocket;
+        pub use multiplexing::*;
+        pub use sink::*;
         pub use socket::*;
+        pub use stream::*;
 
         use fluvio_protocol::api::Request;
         use fluvio_protocol::api::RequestMessage;
@@ -34,21 +29,12 @@ cfg_if::cfg_if! {
         where
             R: Request,
         {
-            let mut client = FlvSocket::connect(addr).await?;
+            let mut client = FluvioSocket::connect(addr).await?;
 
             let msgs: ResponseMessage<R::Response> = client.send(&request).await?;
 
             Ok(msgs)
         }
 
-    } else if #[cfg(target_arch = "wasm32")] {
-        mod websocket;
-
-        pub use self::websocket::{
-            FluvioWebSocket as AllFlvSocket,
-            FluvioWebSocket as FlvSocket,
-            WebSocketConnector,
-            MultiplexerWebsocket as AllMultiplexerSocket,
-        };
     }
 }

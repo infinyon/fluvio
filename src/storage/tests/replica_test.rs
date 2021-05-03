@@ -24,7 +24,7 @@ use dataplane::record::DefaultAsyncBuffer;
 use dataplane::Offset;
 use dataplane::fixture::BatchProducer;
 
-use fluvio_socket::{FlvSocket, FlvSocketError};
+use fluvio_socket::{FluvioSocket, FlvSocketError};
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
 use fluvio_storage::config::ConfigOption;
@@ -82,7 +82,7 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
     Ok(replica)
 }
 
-async fn handle_response(socket: &mut FlvSocket, replica: &FileReplica) {
+async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
     let request: Result<RequestMessage<FileFetchRequest>, FlvSocketError> = socket
         .get_mut_stream()
         .next_request_item()
@@ -141,13 +141,13 @@ async fn test_server(addr: &str) {
         let incoming_stream = incoming.next().await;
         debug!("server: got connection from client");
         let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
-        let mut socket: FlvSocket = incoming_stream.into();
+        let mut socket: FluvioSocket = incoming_stream.into();
         handle_response(&mut socket, &replica).await;
     }
 }
 
 async fn test_fetch(addr: &str, iteration: i16, offset: i64, expected_batch_len: usize) {
-    let mut socket = FlvSocket::connect(addr)
+    let mut socket = FluvioSocket::connect(addr)
         .await
         .expect("should connect to server");
 
