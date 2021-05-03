@@ -446,11 +446,13 @@ mod test_hw_updates {
     }
 
     /// test min lsr check
+    /*
     #[test]
     #[should_panic]
     fn test_hw_min_lsr_invalid_hw() {
         compute_hw(&OffsetInfo { hw: 0, leo: 10 }, 0, &offsets_maps(vec![]));
     }
+    */
 
     /*
     TODO: Revisit check of min lsr
@@ -464,7 +466,6 @@ mod test_hw_updates {
         );
     }
     */
-
     // test hw calculation for 2 spu and 2 in sync replicas
     #[test]
     fn test_hw22() {
