@@ -91,12 +91,13 @@ async fn validate_consume_message_api(
     use tokio::select;
     use fluvio_future::timer::sleep;
 
-    let replication = test_case.environment.replication;
+    use fluvio_controlplane_metadata::partition::PartitionSpec;
 
     let producer_iteration = test_case.option.producer_iteration;
+    let partition = test_case.environment.partition;
+    let topic_name = test_case.environment.topic_name.clone();
 
-    for i in 0..replication {
-        let topic_name = test_case.environment.topic_name.clone();
+    for i in 0..partition {
         let base_offset = offsets.get(&topic_name).expect("offsets");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
@@ -115,7 +116,11 @@ async fn validate_consume_message_api(
 
         let mut total_records: u16 = 0;
 
-        let mut timer = sleep(Duration::from_millis(consume_wait_timeout()));
+        // add 30 seconds per 1000
+        let cycle = producer_iteration / 1000 + 1;
+        let timer_wait = cycle as u64 * consume_wait_timeout();
+        info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
+        let mut timer = sleep(Duration::from_millis(timer_wait));
 
         loop {
             select! {
@@ -162,4 +167,17 @@ async fn validate_consume_message_api(
             }
         }
     }
+
+    // wait 500m second and ensure partition list
+    sleep(Duration::from_millis(500)).await;
+
+    let mut admin = client.admin().await;
+    let partitions = admin
+        .list::<PartitionSpec, _>(vec![])
+        .await
+        .expect("partitions");
+    assert_eq!(partitions.len(), 1);
+    let test_topic = &partitions[0];
+    let leader = &test_topic.status.leader;
+    assert_eq!(leader.leo, producer_iteration as i64);
 }

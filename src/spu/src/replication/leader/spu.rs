@@ -15,12 +15,12 @@ use fluvio_types::{
 
 use crate::core::SpuLocalStore;
 
-pub type SharedSpuUpdates = Arc<SpuUpdates>;
+pub type SharedSpuUpdates = Arc<FollowerNotifier>;
 pub type SharedSpuPendingUpdate = Arc<FollowerSpuPendingUpdates>;
 #[derive(Debug)]
-pub struct SpuUpdates(RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>);
+pub struct FollowerNotifier(RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>);
 
-impl Deref for SpuUpdates {
+impl Deref for FollowerNotifier {
     type Target = RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>;
 
     fn deref(&self) -> &Self::Target {
@@ -28,7 +28,7 @@ impl Deref for SpuUpdates {
     }
 }
 
-impl SpuUpdates {
+impl FollowerNotifier {
     pub fn shared() -> Arc<Self> {
         Arc::new(Self(RwLock::new(HashMap::new())))
     }
@@ -40,7 +40,7 @@ impl SpuUpdates {
     }
 
     /// update our self from current spu
-    pub async fn sync_from_spus(&self, spus: &SpuLocalStore) {
+    pub async fn sync_from_spus(&self, spus: &SpuLocalStore, local_spu: SpuId) {
         let mut writer = self.write().await;
         // remove non existent spu
         let keys: Vec<SpuId> = writer.keys().map(|k| *k).collect();
@@ -52,7 +52,7 @@ impl SpuUpdates {
         }
         // add new spu that doesn't exists
         for spu in spus.all_keys() {
-            if !writer.contains_key(&spu) {
+            if spu != local_spu && !writer.contains_key(&spu) {
                 debug!(spu, "spu pending doesn't exists, creating");
                 let pending = FollowerSpuPendingUpdates {
                     event: Arc::new(OffsetPublisher::new(0)),
@@ -63,10 +63,15 @@ impl SpuUpdates {
         }
     }
 
-    /// replica's hw need be propogated to
-    pub async fn update_hw(&self, spu: &SpuId, replica: ReplicaKey) {
-        if let Some(spu_ref) = self.get(spu).await {
-            spu_ref.update_hw(replica).await;
+    /// notify followers that it's state need to be updated
+    pub async fn notify_follower(&self, spu: &SpuId, replica: ReplicaKey) {
+        let reader = self.read().await;
+        if let Some(spu_ref) = reader.get(spu) {
+            debug!(
+                spu,
+                %replica,
+                "add notifer");
+            spu_ref.add(replica).await;
         } else {
             warn!(spu, "invalid spu");
         }
@@ -85,16 +90,22 @@ impl FollowerSpuPendingUpdates {
         self.event.change_listner()
     }
 
-    /// replica's hw need be propogated to
-    pub async fn update_hw(&self, replica: ReplicaKey) {
+    ///  add replica to be updated
+    pub async fn add(&self, replica: ReplicaKey) {
         let mut write = self.replicas.write().await;
         write.insert(replica);
         self.event.update_increment();
     }
 
     /// drain all replicas
-    pub async fn dain_replicas(&self) -> HashSet<ReplicaKey> {
+    pub async fn drain_replicas(&self) -> HashSet<ReplicaKey> {
         let mut write = self.replicas.write().await;
         write.drain().collect()
+    }
+
+    #[allow(unused)]
+    pub async fn has_replica(&self, replica: &ReplicaKey) -> bool {
+        let read = self.replicas.read().await;
+        read.contains(replica)
     }
 }

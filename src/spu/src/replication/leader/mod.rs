@@ -1,4 +1,3 @@
-mod leader_controller;
 mod leaders_state;
 mod replica_state;
 mod connection;
@@ -8,7 +7,6 @@ mod update_offsets;
 mod actions;
 mod spu;
 
-pub use self::leader_controller::ReplicaLeaderController;
 pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
 pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};
 pub use self::connection::FollowerHandler;
@@ -17,5 +15,4 @@ pub use self::peer_api::LeaderPeerRequest;
 pub use self::update_offsets::UpdateOffsetRequest;
 pub use self::update_offsets::ReplicaOffsetRequest;
 pub use self::actions::FollowerOffsetUpdate;
-pub use self::actions::LeaderReplicaControllerCommand;
 pub use self::spu::*;

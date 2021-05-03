@@ -18,6 +18,7 @@ SERVER_LOG=fluvio=debug
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/flv-test,./target/$(BUILD_PROFILE)/flv-test)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=1
+REPL=1
 DEFAULT_ITERATION=1000
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
@@ -52,7 +53,7 @@ endif
 #
 
 smoke-test:	test-clean-up	build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} -r ${REPL} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-stream:	test-clean-up	build_test
 	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} -- --consumer-wait=true --producer-iteration=${DEFAULT_ITERATION}
@@ -83,6 +84,7 @@ k8-setup:
 	$(FLUVIO_BIN) cluster start --setup --develop
 #	$(FLUVIO_BIN) cluster check --pre-install
 
+# Kubernetes Tests
 
 smoke-test-k8:	test-clean-up minikube_image
 	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
@@ -129,7 +131,10 @@ else
 	kubectl delete configmap authorization --ignore-not-found
 endif
 
-
+# Test multiplexor
+# this should generate error in multiplexor
+test-multiplexor:
+	make smoke-test DEFAULT_ITERATION=4  EXTRA_ARG=--keep-cluster
 
 #
 #  Various Lint tools

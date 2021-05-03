@@ -47,7 +47,7 @@ impl FlvService for InternalService {
                     "received fetch stream"
                 );
                 // check if follower_id is valid
-                if let Some(spu_update) = ctx.follower_updates().get(&follower_id).await {
+                if let Some(spu_update) = ctx.follower_notifier().get(&follower_id).await {
                     let response = FetchStreamResponse::new(follower_id);
                     let res_msg = req_msg.new_response(response);
                     sink

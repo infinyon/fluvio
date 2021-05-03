@@ -10,6 +10,7 @@ use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
 use super::store::*;
 
+/// Metadata about Replica send from SC
 #[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
 pub struct Replica {
     pub id: ReplicaKey,

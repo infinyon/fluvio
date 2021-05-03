@@ -5,12 +5,13 @@ use async_mutex::Mutex;
 
 use fluvio_controlplane::{LrsRequest};
 
-pub type SharedSinkMessageChannel = Arc<ScSinkMessageChannel>;
+pub type SharedStatusUpdate = Arc<StatusMessageSink>;
 
 /// channel used to send message to sc
-pub struct ScSinkMessageChannel(Mutex<HashSet<LrsRequest>>);
+#[derive(Debug)]
+pub struct StatusMessageSink(Mutex<HashSet<LrsRequest>>);
 
-impl ScSinkMessageChannel {
+impl StatusMessageSink {
     pub fn shared() -> Arc<Self> {
         Arc::new(Self(Mutex::new(HashSet::new())))
     }
