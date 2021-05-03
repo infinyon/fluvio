@@ -34,6 +34,7 @@ mod replica_test {
     const MAX_BYTES: u32 = 100000;
     const MAX_WAIT_LEADER: u64 = 100;
     const MAX_WAIT_FOLLOWER: u64 = 100;
+    const WAIT_TERMINATE: u64 = 1000;
 
     const LEADER: SpuId = 5001;
     const FOLLOWER1: SpuId = 5002;
@@ -291,6 +292,8 @@ mod replica_test {
         assert_eq!(f_status.hw, 2);
         assert_eq!(f_status.leo, 2);
 
+        sleep(Duration::from_millis(WAIT_TERMINATE)).await;
+
         spu_server.notify();
 
         Ok(())
@@ -319,7 +322,7 @@ mod replica_test {
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-        let (_, follower_replica) = builder.follower_replica(0).await;
+        let (follower_ctx, follower_replica) = builder.follower_replica(0).await;
 
         // at this point, follower replica should be empty since we didn't have time to sync up with leader
         assert_eq!(follower_replica.leo(), 0);
@@ -363,6 +366,8 @@ mod replica_test {
         assert_eq!(f_status.spu, FOLLOWER1);
         assert_eq!(f_status.hw, 2);
         assert_eq!(f_status.leo, 2);
+
+        sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
 
@@ -419,6 +424,8 @@ mod replica_test {
         let (_, follower_replica2) = builder.follower_replica(1).await;
         assert_eq!(follower_replica2.leo(), 2);
         assert_eq!(follower_replica2.hw(), 2);
+
+        sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
 
@@ -488,6 +495,9 @@ mod replica_test {
         assert_eq!(leader_replica.hw(), 2);
         assert_eq!(follower_replica2.leo(), 2);
         assert_eq!(follower_replica2.hw(), 2);
+
+        // await while controllers terminate
+        sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
 

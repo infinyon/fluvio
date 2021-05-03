@@ -17,8 +17,8 @@ CLIENT_LOG=warn
 SERVER_LOG=fluvio=debug
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/flv-test,./target/$(BUILD_PROFILE)/flv-test)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
-DEFAULT_SPU=2
-REPL=2
+DEFAULT_SPU=1
+REPL=1
 DEFAULT_ITERATION=1000
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
