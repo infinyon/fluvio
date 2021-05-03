@@ -375,7 +375,8 @@ mod replica_test {
     }
 
     /// test with 3 SPU
-    #[test_async]
+    //#[test_async]
+    #[allow(unused)]
     async fn test_replication3_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(2 as u16)
@@ -435,7 +436,8 @@ mod replica_test {
     /// Test 2 replica
     /// Replicating new records
     ///    
-    #[test_async]
+    //#[test_async]
+    #[allow(unused)]
     async fn test_replication3_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(2 as u16)

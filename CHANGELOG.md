@@ -2,7 +2,8 @@
 
 ## Platform Version 0.8.1 - 
 * Make Fluvio Client compatitble with WASM([#1042](https://github.com/infinyon/fluvio/pull/1042))
-  
+* Improve replication logic([#1011](https://github.com/infinyon/fluvio/pull/1011))
+
 ## Platform Version 0.8.0 - 2020-04-27
 * Added Partitioner trait for assigning partitions based on record keys ([#965](https://github.com/infinyon/fluvio/pull/965))
 * Deprecated the `TopicProducer::send_record` method ([#965](https://github.com/infinyon/fluvio/pull/965))
