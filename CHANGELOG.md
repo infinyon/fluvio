@@ -1,9 +1,16 @@
 # Release Notes
-
-## Platform Version 0.8.1 - 
-* Make Fluvio Client compatitble with WASM([#1042](https://github.com/infinyon/fluvio/pull/1042))
-* Improve replication logic([#1011](https://github.com/infinyon/fluvio/pull/1011))
-
+## Platform Version 0.8.1 - 2020-05-03
+* Add GH Release step to release, update changelog ([#1024](https://github.com/infinyon/fluvio/pull/1024))
+* Fix Docker image publish flow ([#1025](https://github.com/infinyon/fluvio/pull/1025))
+* Use file name for the external commands (fixes #889) ([#1008](https://github.com/infinyon/fluvio/pull/1008))
+* Disable test that is flaky on CI ([#1018](https://github.com/infinyon/fluvio/pull/1018))
+* Fix Fluvio log directory on K8 ([#1043](https://github.com/infinyon/fluvio/pull/1043))
+* Add RecordKey API for sending records without keys ([#985](https://github.com/infinyon/fluvio/pull/985))
+* Make Fluvio Client compatitble with WASM ([#1042](https://github.com/infinyon/fluvio/pull/1042))
+* Update Replication logic for SPU ([#1011](https://github.com/infinyon/fluvio/pull/1011))
+* Remove obsolete api from fluvio socket ([#1045](https://github.com/infinyon/fluvio/pull/1045))
+* Remove cargo patch ([#1046](https://github.com/infinyon/fluvio/pull/1046))
+* Bump up fluvio-protocol ([#1049](https://github.com/infinyon/fluvio/pull/1049))
 ## Platform Version 0.8.0 - 2020-04-27
 * Added Partitioner trait for assigning partitions based on record keys ([#965](https://github.com/infinyon/fluvio/pull/965))
 * Deprecated the `TopicProducer::send_record` method ([#965](https://github.com/infinyon/fluvio/pull/965))
