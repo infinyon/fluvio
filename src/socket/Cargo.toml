@@ -33,7 +33,7 @@ thiserror = "1.0.20"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.3.0", features = ["net", "zero_copy"] }
-fluvio-protocol = { path = "../protocol", version = "0.4.0", features = ["derive", "api", "codec", "store"] }
+fluvio-protocol = { path = "../protocol", version = "0.5.0", features = ["derive", "api", "codec", "store"] }
 
 
 [dev-dependencies]
