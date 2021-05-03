@@ -16,11 +16,6 @@ use tracing::trace;
 
 use crate::FlvSocketError;
 
-//pub type FlvStream = InnerFlvStream<TcpStream>;
-
-#[cfg(feature = "tls")]
-pub type AllFlvStream = InnerFlvStream<fluvio_future::native_tls::AllTcpStream>;
-
 type FrameStream = FramedRead<Compat<BoxReadConnection>, FluvioCodec>;
 
 /// inner flv stream which is generic over stream

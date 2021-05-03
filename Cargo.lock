@@ -1748,7 +1748,6 @@ dependencies = [
  "async-trait",
  "bytes",
  "cfg-if 1.0.0",
- "chashmap",
  "event-listener",
  "fluvio-future 0.3.0",
  "fluvio-protocol 0.4.1",
