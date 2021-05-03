@@ -19,5 +19,5 @@ serde = { version = "1.0.103", features = ['derive'] }
 static_assertions = "1.1.0"
 
 # Fluvio dependencies
-fluvio-protocol = { path = "../protocol", version = "0.4.0" }
+fluvio-protocol = { path = "../protocol", version = "0.5.0" }
 dataplane = { version = "0.5.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
