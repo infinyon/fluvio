@@ -2,9 +2,7 @@ cfg_if::cfg_if! {
     if #[cfg(unix)] {
         mod error;
         mod multiplexing;
-        mod pooling;
         mod sink;
-        mod sink_pool;
         mod socket;
         mod stream;
 
@@ -15,9 +13,7 @@ cfg_if::cfg_if! {
         pub use self::error::FlvSocketError;
         pub use self::socket::FluvioSocket;
         pub use multiplexing::*;
-        pub use pooling::*;
         pub use sink::*;
-        pub use sink_pool::*;
         pub use socket::*;
         pub use stream::*;
 
