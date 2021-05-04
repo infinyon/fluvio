@@ -509,7 +509,8 @@ mod replica_test {
     /// Test 2 replica
     /// Replicating new records
     ///    
-    #[test_async]
+    //#[test_async]
+    #[allow(unused)]
     async fn test_replication2_promote() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(1 as u16)
