@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::collections::{HashMap};
 use std::ops::{Deref, DerefMut};
 
-use tracing::{debug, warn, error, instrument};
+use tracing::{debug, warn, instrument};
 use async_rwlock::{RwLock};
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};

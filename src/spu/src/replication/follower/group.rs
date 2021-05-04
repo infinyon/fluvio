@@ -1,7 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
-use std::ops::{Deref, DerefMut};
 
-use tracing::{debug, warn, error, trace, instrument};
+use tracing::{debug, error, trace, instrument};
 use async_rwlock::{RwLock};
 
 use fluvio_types::SpuId;
@@ -73,31 +72,6 @@ impl FollowerGroups {
     }
 }
 
-/// Used to communicate changes to Group Controller
-#[derive(Debug)]
-struct GroupNotification {
-    spu: SpuId,
-    pub events: Arc<OffsetPublisher>,
-}
-
-impl GroupNotification {
-    pub fn shared(spu: SpuId) -> Arc<Self> {
-        Arc::new(Self {
-            spu,
-            events: Arc::new(OffsetPublisher::new(0)),
-        })
-    }
-
-    /// update count by 1 to force controller to re-compute replicas in it's holding
-    pub fn sync(&self) {
-        let last_value = self.events.current_value();
-        self.events.update(last_value + 1);
-    }
-
-    pub fn shutdown(&self) {
-        self.events.update(-1);
-    }
-}
 
 use controller::*;
 mod controller {
@@ -161,6 +135,12 @@ mod controller {
     )]
         async fn dispatch_loop(mut self) {
             loop {
+
+                if self.group.is_end() {
+                    debug!("end");
+                    break;
+                }
+
                 let socket = self.create_socket_to_leader().await;
 
                 match self.sync_with_leader(socket).await {
@@ -174,6 +154,11 @@ mod controller {
                 }
 
                 debug!("lost connection to leader, sleeping 5 seconds and will retry it");
+
+                if self.group.is_end() {
+                    debug!("end");
+                    break;
+                }
 
                 // 5 seconds is heuristic value, may change in the future or could be dynamic
                 // depends on back off algorithm
@@ -403,6 +388,37 @@ mod controller {
                 .collect();
 
             UpdateOffsetRequest { replicas }
+        }
+    }
+
+
+    /// Used to communicate changes to Group Controller
+    #[derive(Debug)]
+    pub struct GroupNotification {
+        spu: SpuId,
+        pub events: Arc<OffsetPublisher>,
+    }
+
+    impl GroupNotification {
+        pub fn shared(spu: SpuId) -> Arc<Self> {
+            Arc::new(Self {
+                spu,
+                events: Arc::new(OffsetPublisher::new(0)),
+            })
+        }
+
+        /// update count by 1 to force controller to re-compute replicas in it's holding
+        pub fn sync(&self) {
+            let last_value = self.events.current_value();
+            self.events.update(last_value + 1);
+        }
+
+        pub fn shutdown(&self) {
+            self.events.update(-1);
+        }
+
+        fn is_end(&self) -> bool {
+            self.events.current_value() == -1
         }
     }
 }
