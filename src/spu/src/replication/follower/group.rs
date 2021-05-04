@@ -72,7 +72,6 @@ impl FollowerGroups {
     }
 }
 
-
 use controller::*;
 mod controller {
 
@@ -135,7 +134,6 @@ mod controller {
     )]
         async fn dispatch_loop(mut self) {
             loop {
-
                 if self.group.is_end() {
                     debug!("end");
                     break;
@@ -390,7 +388,6 @@ mod controller {
             UpdateOffsetRequest { replicas }
         }
     }
-
 
     /// Used to communicate changes to Group Controller
     #[derive(Debug)]
