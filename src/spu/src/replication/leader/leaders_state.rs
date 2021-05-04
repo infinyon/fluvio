@@ -10,6 +10,7 @@ use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
 use crate::{control_plane::SharedStatusUpdate, core::SharedGlobalContext};
+use crate::replication::follower::FollowerReplicaState;
 
 use super::{LeaderReplicaState, replica_state::SharedLeaderState};
 
@@ -98,5 +99,25 @@ impl ReplicaLeadersState<FileReplica> {
                 old_replica.id()
             );
         }
+    }
+
+    /// promote follower
+    #[instrument(
+        skip(self, ctx,follower,replica,status_update),
+        fields(replica = %replica.id)
+    )]
+    pub async fn promote(
+        &self,
+        ctx: SharedGlobalContext<FileReplica>,
+        follower: FollowerReplicaState<FileReplica>,
+        replica: Replica,
+        status_update: SharedStatusUpdate,
+    ) -> LeaderReplicaState<FileReplica> {
+        let replica_id = replica.id.clone();
+        let replica_storage = follower.inner_owned();
+        let leader =
+            LeaderReplicaState::new(replica, ctx.config().into(), status_update, replica_storage);
+        self.insert_leader(replica_id, leader.clone()).await;
+        leader
     }
 }

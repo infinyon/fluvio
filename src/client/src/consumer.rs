@@ -369,13 +369,7 @@ impl PartitionConsumer {
     /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely
     /// on the internal structure of the fetch response. New clients should use the
     /// `stream` and `stream_with_config` methods.
-    #[instrument(
-        skip(self,config),
-        fields(
-            topic = %self.topic,
-            partition = self.partition
-        )
-    )]
+    #[instrument(skip(self, config))]
     async fn request_stream(
         &self,
         offset: Offset,
@@ -390,7 +384,7 @@ impl PartitionConsumer {
         let replica = ReplicaKey::new(&self.topic, self.partition);
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-     
+
         let start_absolute_offset = offset
             .to_absolute(&mut serial_socket, &self.topic, self.partition)
             .await?;

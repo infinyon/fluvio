@@ -30,7 +30,6 @@ use flv_util::actions::Actions;
 
 use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;
-use crate::replication::leader::{LeaderReplicaState};
 use crate::InternalServerError;
 
 use super::SupervisorCommand;
@@ -302,11 +301,6 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
-    #[instrument(
-        skip(self, sc_sink, req_msg),
-        name = "update_replica_request",
-        fields(replica_changes = self.counter.replica_changes))
-    ]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
@@ -438,7 +432,7 @@ impl ScDispatcher<FileReplica> {
                         if new_replica.leader != old_replica.leader {
                             if new_replica.leader == local_id {
                                 // we become leader
-                                self.promote_replica(new_replica, old_replica).await;
+                                self.promote(new_replica, old_replica).await;
                             } else {
                                 // we are follower
                                 // if we were leader before, we demote out self
@@ -530,10 +524,15 @@ impl ScDispatcher<FileReplica> {
     /// This is done in 3 steps
     /// // 1: Remove follower replica from followers state
     /// // 2: Terminate followers controller if need to be (if there are no more follower replicas for that controller)
-    /// // 3: Start leader controller
-    pub async fn promote_replica(&self, new_replica: Replica, old_replica: Replica) {
-        debug!("promoting replica: {} from: {}", new_replica, old_replica);
-
+    /// // 3: add to leaders state
+    #[instrument(
+        skip(self,new_replica,old_replica),
+        fields(
+            replica = %new_replica.id,
+            old_leader = old_replica.leader
+        )
+    )]
+    pub async fn promote(&self, new_replica: Replica, old_replica: Replica) {
         if let Some(follower_replica) = self
             .ctx
             .followers_state()
@@ -545,12 +544,14 @@ impl ScDispatcher<FileReplica> {
                 old_replica.id
             );
 
-            let _ = LeaderReplicaState::promoted_from(
+            let _ = self.ctx.leaders_state().promote(
+                self.ctx.clone(),
                 follower_replica,
                 new_replica.clone(),
-                self.ctx.config().into(),
                 self.ctx.status_update_owned(),
             );
+        } else {
+            error!("follower replica {} didn't exists!", old_replica.id);
         }
     }
 

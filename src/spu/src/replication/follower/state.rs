@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::collections::{HashMap};
 use std::ops::{Deref, DerefMut};
 
-use tracing::{debug, warn, error};
+use tracing::{debug, warn, error, instrument};
 use async_rwlock::{RwLock};
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
@@ -11,11 +11,11 @@ use dataplane::record::RecordSet;
 use dataplane::Offset;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
-use fluvio_types::event::offsets::OffsetPublisher;
 use crate::replication::leader::ReplicaOffsetRequest;
-use crate::replication::follower::ReplicaFollowerController;
 use crate::core::DefaultSharedGlobalContext;
 use crate::storage::SharableReplicaStorage;
+
+use super::group::FollowerGroups;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 
@@ -24,7 +24,7 @@ pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 #[derive(Debug)]
 pub struct FollowersState<S> {
     states: RwLock<HashMap<ReplicaKey, FollowerReplicaState<S>>>,
-    leaders: RwLock<HashMap<SpuId, Arc<FollowersBySpu>>>,
+    groups: FollowerGroups,
 }
 
 impl<S> Deref for FollowersState<S> {
@@ -42,7 +42,7 @@ where
     pub fn new_shared() -> Arc<Self> {
         Arc::new(Self {
             states: RwLock::new(HashMap::new()),
-            leaders: RwLock::new(HashMap::new()),
+            groups: FollowerGroups::new(),
         })
     }
 
@@ -84,8 +84,8 @@ impl FollowersState<FileReplica> {
             Ok(None)
         } else {
             debug!(
-                "no existing follower controller exists for {},need to spin up",
-                replica
+                replica = %replica.id,
+                "creating new follower state"
             );
 
             let replica_state =
@@ -93,23 +93,7 @@ impl FollowersState<FileReplica> {
                     .await?;
             writer.insert(replica.id, replica_state.clone());
 
-            let mut leaders = self.leaders.write().await;
-            // check if we have controllers
-            if let Some(leaders) = leaders.get(&leader) {
-                leaders.sync();
-            } else {
-                // don't have leader, so we need to create
-                let followers_spu = FollowersBySpu::shared(leader);
-                leaders.insert(leader, followers_spu.clone());
-
-                ReplicaFollowerController::run(
-                    leader,
-                    ctx.spu_localstore_owned(),
-                    self.clone(),
-                    followers_spu.clone(),
-                    ctx.config_owned(),
-                );
-            }
+            self.groups.check_new(&ctx, leader).await;
 
             Ok(Some(replica_state))
         }
@@ -118,6 +102,7 @@ impl FollowersState<FileReplica> {
     /// remove replica
     /// if there are no more replicas per leader
     /// then we shutdown controller
+    #[instrument(skip(self))]
     pub async fn remove_replica(
         &self,
         leader: SpuId,
@@ -125,8 +110,9 @@ impl FollowersState<FileReplica> {
     ) -> Option<FollowerReplicaState<FileReplica>> {
         let mut writer = self.write().await;
         if let Some(replica) = writer.remove(key) {
-            let mut leaders = self.leaders.write().await;
+            debug!("removed follower");
 
+            // find out how many replicas by leader
             let replica_count = writer
                 .values()
                 .filter(|rep_ref| rep_ref.leader() == leader)
@@ -135,19 +121,9 @@ impl FollowersState<FileReplica> {
             debug!(replica_count, leader, "new replica count");
 
             if replica_count == 0 {
-                if let Some(old_leader) = leaders.remove(&leader) {
-                    debug!(leader, "more more replicas, shutting down");
-                    old_leader.shutdown();
-                } else {
-                    error!(leader, "was not founded");
-                }
+                self.groups.remove(leader).await;
             } else {
-                if let Some(old_leader) = leaders.get(&leader) {
-                    debug!(leader, "resync");
-                    old_leader.sync();
-                } else {
-                    error!(leader, "was not founded");
-                }
+                self.groups.update(leader).await;
             }
             Some(replica)
         } else {
@@ -156,32 +132,6 @@ impl FollowersState<FileReplica> {
     }
 
     pub async fn update_replica(&self, _replica: Replica) {}
-}
-
-/// list of followers by SPU
-#[derive(Debug)]
-pub struct FollowersBySpu {
-    spu: SpuId,
-    pub events: Arc<OffsetPublisher>,
-}
-
-impl FollowersBySpu {
-    pub fn shared(spu: SpuId) -> Arc<Self> {
-        Arc::new(Self {
-            spu,
-            events: Arc::new(OffsetPublisher::new(0)),
-        })
-    }
-
-    /// update count by 1 to force controller to re-compute replicas in it's holding
-    pub fn sync(&self) {
-        let last_value = self.events.current_value();
-        self.events.update(last_value + 1);
-    }
-
-    pub fn shutdown(&self) {
-        self.events.update(-1);
-    }
 }
 
 /// State for Follower Replica Controller
