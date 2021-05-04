@@ -107,7 +107,7 @@ impl ReplicaLeadersState<FileReplica> {
         skip(self,follower,replica,status_update),
         fields(replica = %replica.id)
     )]
-    pub async fn promote(
+    pub async fn promote_follower(
         &self,
         config: ReplicationConfig,
         follower: FollowerReplicaState<FileReplica>,

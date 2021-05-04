@@ -128,10 +128,11 @@ mod controller {
 
         #[instrument(
         skip(self),
+        name = "FollowerGroupController",
         fields(
             leader = self.leader
         )
-    )]
+        )]
         async fn dispatch_loop(mut self) {
             loop {
                 if self.group.is_end() {

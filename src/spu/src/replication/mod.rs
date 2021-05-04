@@ -538,6 +538,13 @@ mod replica_test {
         sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
         sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
 
+        // check follower replica exists before
+        assert!(follower_ctx
+            .followers_state()
+            .get(&new_replica.id)
+            .await
+            .is_some());
+
         // promote ctx
         follower_ctx.promote(&new_replica, &old_replica).await;
 
@@ -547,6 +554,9 @@ mod replica_test {
             .get(&new_replica.id)
             .await
             .is_none());
+
+        // ensure leader ctx is there
+        assert!(follower_ctx.leaders_state().get(&new_replica.id).is_some());
 
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 

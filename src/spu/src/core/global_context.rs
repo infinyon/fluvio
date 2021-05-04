@@ -145,16 +145,18 @@ impl GlobalContext<FileReplica> {
             .await
         {
             debug!(
-                "old follower replica exists, converting to leader: {}",
-                old_replica.id
+                replica = %old_replica.id,
+                "old follower replica exists, promoting to leader"
             );
 
-            let _ = self.leaders_state().promote(
-                self.config().into(),
-                follower_replica,
-                new_replica.clone(),
-                self.status_update_owned(),
-            );
+            self.leaders_state()
+                .promote_follower(
+                    self.config().into(),
+                    follower_replica,
+                    new_replica.clone(),
+                    self.status_update_owned(),
+                )
+                .await;
         } else {
             error!("follower replica {} didn't exists!", old_replica.id);
         }
