@@ -32,13 +32,15 @@ jobs:
         id: version_step
         run: |
           if [[ -z "${USE_COMMIT}" ]]; then
-            echo "VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)" >> $GITHUB_ENV
-            echo "::set-output name=VERSION::$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+            GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
+            echo "VERSION=${GITHUB_VERSION}" >> $GITHUB_ENV
+            echo "::set-output name=VERSION::${GITHUB_VERSION}
             echo "GIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
             echo "::set-output name=GIT_SHA::${{ github.sha }}"
           else
-            echo "VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)" >> $GITHUB_ENV
-            echo "::set-output name=VERSION::$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)"
+            GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)
+            echo "VERSION=${GITHUB_VERSION}" >> $GITHUB_ENV
+            echo "::set-output name=VERSION::${GITHUB_VERSION}"
             echo "GIT_SHA=${{ github.event.inputs.commit }}" >> $GITHUB_ENV
             echo "::set-output name=GIT_SHA::${{ github.event.inputs.commit }}"
           fi
