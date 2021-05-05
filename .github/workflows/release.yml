@@ -5,72 +5,163 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        required: false
+        description: 'If non-empty, extra force will be used push this release'
+        default: ''
+      commit:
+        required: false 
+        description: 'Fluvio git commit override (latest `master` by default)'
+        default: ''
+env:
+  USE_COMMIT: ${{ github.event.inputs.commit }}
+  FORCE_RELEASE: ${{ github.event.inputs.force }}
 
 jobs:
+  setup_job:
+    name: Setup workflow
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version_step.outputs.VERSION }}
+      target_sha: ${{ steps.version_step.outputs.GIT_SHA }}
+      latest_tag: ${{ steps.docker_step.outputs.LATEST_TAG }}
+      release_tag: ${{ steps.docker_step.outputs.RELEASE_TAG }}
+    steps:
+      - name: Set target sha and Fluvio version
+        id: version_step
+        run: |
+          if [[ -z "${USE_COMMIT}" ]]; then
+            echo "VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)" >> $GITHUB_ENV
+            echo "::set-output name=VERSION::$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
+            echo "GIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+            echo "::set-output name=GIT_SHA::${{ github.sha }}"
+          else
+            echo "VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)" >> $GITHUB_ENV
+            echo "::set-output name=VERSION::$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)"
+            echo "GIT_SHA=${{ github.event.inputs.commit }}" >> $GITHUB_ENV
+            echo "::set-output name=GIT_SHA::${{ github.event.inputs.commit }}"
+          fi
+      - name: Set Docker tag related env vars
+        id: docker_step
+        run: |
+            echo "::set-output name=LATEST_TAG::infinyon/fluvio:${{ env.VERSION }}-${{ env.GIT_SHA }}"
+            echo "::set-output name=RELEASE_TAG::infinyon/fluvio:${{ env.VERSION }}"
+
+  # Check for Github Release
   release_github:
-    name: Create GitHub Release
+    name: Release Fluvio to GitHub Release
+    needs: [setup_job]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
-      - uses: actions/checkout@v2
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Attempt to download release by version number 
+        id: release_check
+        continue-on-error: true
+        run: |
+          gh release download -R infinyon/fluvio "v${{ needs.setup_job.outputs.version }}"
+      # if the check fails, then continue with release
       - name: Download artifacts from dev
+        if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
       - name: Create GH Release
+        if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
-          export VERSION="$(cat VERSION)"
-          gh release create -R infinyon/fluvio --title="v${VERSION}" -F ./CHANGELOG.md "v${VERSION}" \
+          gh release create -R infinyon/fluvio --title="v${{ needs.setup_job.outputs.version }}" -F ./CHANGELOG.md "v${{ needs.setup_job.outputs.version }}" \
             fluvio-x86_64-unknown-linux-musl \
             fluvio-x86_64-apple-darwin \
             fluvio-run-x86_64-unknown-linux-musl \
             fluvio-run-x86_64-apple-darwin
 
+  ## Check for docker image
   release_docker:
     name: Release Docker Image
+    needs: [setup_job]
     runs-on: ubuntu-latest
     steps:
-      - name: Login to Docker
+      - name: Attempt to pull image tag in docker registry
+        id: docker_check
+        continue-on-error: true
+        run: |
+          if docker pull ${{ needs.setup_job.outputs.release_tag }}; then
+            if [[ -z ${FORCE_RELEASE} ]]; then
+              echo "Image tag already exists"
+            else
+              exit 1
+            fi
+          else
+            exit 1
+          fi
+      # if the check fails, then continue
+      - name: Login to Docker Hub
+        if: ${{ steps.docker_check.outcome == 'failure' }}
         run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
       - name: Tag and push release image
+        if: ${{ steps.docker_check.outcome == 'failure' }}
         run: |
-          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-          export LATEST_TAG="infinyon/fluvio:${VERSION}-${{ github.sha }}"
-          export RELEASE_TAG="infinyon/fluvio:${VERSION}"
-          docker pull "${LATEST_TAG}"
-          docker tag "${LATEST_TAG}" "${RELEASE_TAG}"
-          docker push "${RELEASE_TAG}"
+          if [[ -z "${FORCE_RELEASE}" ]]; || docker pull "${{ needs.setup_job.outputs.release_tag }}"; then
+            echo "Image already exists"
+          else
+            docker pull "${{ needs.setup_job.outputs.latest_tag }}"
+            docker tag "${{ needs.setup_job.outputs.latest_tag }}" "${{ needs.setup_job.outputs.release_tag }}"
+            docker push "${{ needs.setup_job.outputs.release_tag }}"
+          fi
 
   # Publish the release Helm chart, tagged with the release VERSION.
   # Example tag: 0.7.4
   # This job requires the docker image step to have completed successfully.
   release_helm:
     name: Release Helm Chart
-    needs: release_docker
+    needs: [setup_job, release_docker]
     runs-on: ubuntu-latest
     steps:
+      - name: Check repo for Release charts
+        continue-on-error: true
+        id: helm_check
+        run: |
+          NUM_CHARTS=$(curl https://charts.fluvio.io/api/charts | jq '.[]' | jq '.[] | select(.version | test("^${{ needs.setup_job.outputs.version }}$")) | @json' | wc -l)
+          if [[ $NUM_CHARTS -eq 2 ]]; then
+            echo "Release chart is published";
+          else
+            echo "Release chart NOT published";
+            exit 1
+          fi
       - uses: actions/checkout@v2
+        if: ${{ steps.helm_check.outcome == 'failure' }}
       - name: Install Helm
+        if: ${{ steps.helm_check.outcome == 'failure' }}
         env:
           HELM_VERSION: v3.3.4
           OS: ubuntu-latest
         run: actions/ci-replace-helm.sh
       - name: Publish helm charts
+        if: ${{ steps.helm_check.outcome == 'failure' }}
         run: |
-          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           helm plugin install https://github.com/chartmuseum/helm-push.git
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          helm push k8-util/helm/fluvio-sys --force --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
-          helm push k8-util/helm/fluvio-app --force --version="${VERSION}-$(git rev-parse HEAD)" chartmuseum
+          helm push k8-util/helm/fluvio-sys --force --version="${{ needs.setup_job.outputs.version }}" chartmuseum
+          helm push k8-util/helm/fluvio-app --force --version="${{ needs.setup_job.outputs.version }}" chartmuseum
 
+  # Check for Fluvio cli
   release_fluvio:
-    name: Release Fluvio CLI
+    name: Release Fluvio CLI package
+    needs: [setup_job]
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
+      - name: Attempt to install Fluvio cli
+        id: check_fluvio
+        continue-on-error: true
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ needs.setup_job.outputs.version }} bash
+
+      # If the check fails, then continue
       - name: Login GH CLI
+        if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Install fluvio-package
         run: |
@@ -78,9 +169,11 @@ jobs:
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Download dev release
+        if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: gh release download dev -R infinyon/fluvio
 
       - name: Prepare artifacts for release
+        if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: |
           mkdir -p target/x86_64-unknown-linux-musl/release/
           mv fluvio-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio
@@ -91,23 +184,24 @@ jobs:
           mv fluvio-run-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio-run
 
       - name: Release to Fluvio Packages
+        if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: |
-          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           ${HOME}/.fluvio/bin/fluvio package publish \
             --force \
-            --version="${VERSION}" \
+            --version="${{ needs.setup_job.outputs.version }}" \
             target/x86_64-unknown-linux-musl/release/fluvio \
             target/x86_64-apple-darwin/release/fluvio
 
           ${HOME}/.fluvio/bin/fluvio package publish \
             --force \
-            --version="${VERSION}" \
+            --version="${{ needs.setup_job.outputs.version }}" \
             target/x86_64-unknown-linux-musl/release/fluvio-run \
             target/x86_64-apple-darwin/release/fluvio-run
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
-    needs: [release_github, release_docker, release_helm, release_fluvio]
+    needs: [setup_job, release_github, release_docker, release_helm, release_fluvio]
+    #permissions: write-all
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -119,13 +213,28 @@ jobs:
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Bump Fluvio CLI
+        # This should work until we support graceful failure
+        continue-on-error: true
         run: |
-          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-          ${HOME}/.fluvio/bin/fluvio package bump dynamic "${VERSION}"
+          ${HOME}/.fluvio/bin/fluvio package bump dynamic "${{ needs.setup_job.outputs.version }}"
+
+      - uses: actions/checkout@v2
 
       # Enable this when we are confident in the workflow
-#      - name: Bump stable branch
-#        run: |
-#          git checkout stable
-#          git rebase origin/master
-#          git push origin stable
+      - name: Bump stable branch
+        run: |
+          git fetch
+          CURRENT_STABLE=$(git show-ref | grep refs/remotes/origin/stable | awk '{print $1}')
+
+          echo "sha from repo: $CURRENT_STABLE"
+          echo "expected sha: ${{ needs.setup_job.outputs.target_sha }}"
+
+          if [[ "$CURRENT_STABLE" = "${{ needs.setup_job.outputs.target_sha }}" ]]; then
+            echo "Stable branch is up to date"
+          else
+            # FIXME: Needs more testing in Github Actions context
+            echo "TODO: Stable branch will be updated"
+            #git checkout stable
+            #git rebase origin/master
+            #git push origin stable
+          fi
