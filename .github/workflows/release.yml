@@ -32,13 +32,13 @@ jobs:
         id: version_step
         run: |
           if [[ -z "${USE_COMMIT}" ]]; then
-            GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
+            export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
             echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
             echo "::set-output name=VERSION::${GITHUB_VERSION}"
             echo "GIT_SHA=${{ github.sha }}" | tee -a $GITHUB_ENV
             echo "::set-output name=GIT_SHA::${{ github.sha }}"
           else
-            GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)
+            export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)
             echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
             echo "::set-output name=VERSION::${GITHUB_VERSION}"
             echo "GIT_SHA=${{ github.event.inputs.commit }}" | tee -a $GITHUB_ENV
