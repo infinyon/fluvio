@@ -505,4 +505,64 @@ mod replica_test {
 
         Ok(())
     }
+
+    /// Test 2 replica
+    /// Replicating new records
+    ///    
+    //#[test_async]
+    #[allow(unused)]
+    async fn test_replication2_promote() -> Result<(), ()> {
+        let builder = TestConfig::builder()
+            .followers(1 as u16)
+            .base_port(13050 as u16)
+            .generate("replication2_new");
+
+        let (leader_gctx, leader_replica) = builder.leader_replica().await;
+        assert_eq!(leader_replica.leo(), 0);
+
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&5002).unwrap().leo, -1);
+
+        let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+
+        // give leader controller time to startup
+        sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
+
+        let (follower_ctx, _follower_replica) = builder.follower_replica(0).await;
+        let old_replica = builder.replica();
+
+        // switch leader and follower
+        let mut new_replica = old_replica.clone();
+        new_replica.leader = FOLLOWER1;
+        new_replica.replicas = vec![LEADER];
+
+        sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
+        sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
+
+        // check follower replica exists before
+        assert!(follower_ctx
+            .followers_state()
+            .get(&new_replica.id)
+            .await
+            .is_some());
+
+        // promote ctx
+        follower_ctx.promote(&new_replica, &old_replica).await;
+
+        // ensure follower ctx is removed
+        assert!(follower_ctx
+            .followers_state()
+            .get(&new_replica.id)
+            .await
+            .is_none());
+
+        // ensure leader ctx is there
+        assert!(follower_ctx.leaders_state().get(&new_replica.id).is_some());
+
+        sleep(Duration::from_millis(WAIT_TERMINATE)).await;
+
+        spu_server.notify();
+
+        Ok(())
+    }
 }

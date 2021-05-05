@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::stream::Stream;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, instrument};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err};
 use futures_util::stream::{StreamExt, once, iter};
@@ -369,6 +369,7 @@ impl PartitionConsumer {
     /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely
     /// on the internal structure of the fetch response. New clients should use the
     /// `stream` and `stream_with_config` methods.
+    #[instrument(skip(self, config))]
     async fn request_stream(
         &self,
         offset: Offset,
@@ -381,17 +382,14 @@ impl PartitionConsumer {
         use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
-        debug!(
-            "starting fetch log once: {:#?} from replica: {}",
-            offset, &replica,
-        );
 
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-        trace!("created serial socket {}", serial_socket);
 
         let start_absolute_offset = offset
             .to_absolute(&mut serial_socket, &self.topic, self.partition)
             .await?;
+
+        debug!(start_absolute_offset);
 
         let mut stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),

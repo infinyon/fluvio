@@ -5,8 +5,11 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
+use tracing::{debug, error, instrument};
+
+use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
-use fluvio_storage::ReplicaStorage;
+use fluvio_storage::{FileReplica, ReplicaStorage};
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -119,5 +122,43 @@ where
         self.spu_followers
             .sync_from_spus(self.spu_localstore(), self.local_spu_id())
             .await;
+    }
+}
+
+impl GlobalContext<FileReplica> {
+    /// Promote follower replica as leader,
+    /// This is done in 3 steps
+    /// // 1: Remove follower replica from followers state
+    /// // 2: Terminate followers controller if need to be (if there are no more follower replicas for that controller)
+    /// // 3: add to leaders state
+    #[instrument(
+        skip(self,new_replica,old_replica),
+        fields(
+            replica = %new_replica.id,
+            old_leader = old_replica.leader
+        )
+    )]
+    pub async fn promote(&self, new_replica: &Replica, old_replica: &Replica) {
+        if let Some(follower_replica) = self
+            .followers_state()
+            .remove_replica(old_replica.leader, &old_replica.id)
+            .await
+        {
+            debug!(
+                replica = %old_replica.id,
+                "old follower replica exists, promoting to leader"
+            );
+
+            self.leaders_state()
+                .promote_follower(
+                    self.config().into(),
+                    follower_replica,
+                    new_replica.clone(),
+                    self.status_update_owned(),
+                )
+                .await;
+        } else {
+            error!("follower replica {} didn't exists!", old_replica.id);
+        }
     }
 }
