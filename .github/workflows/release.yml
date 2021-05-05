@@ -33,15 +33,15 @@ jobs:
         run: |
           if [[ -z "${USE_COMMIT}" ]]; then
             GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
-            echo "VERSION=${GITHUB_VERSION}" >> $GITHUB_ENV
-            echo "::set-output name=VERSION::${GITHUB_VERSION}
-            echo "GIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+            echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
+            echo "::set-output name=VERSION::${GITHUB_VERSION}"
+            echo "GIT_SHA=${{ github.sha }}" | tee -a $GITHUB_ENV
             echo "::set-output name=GIT_SHA::${{ github.sha }}"
           else
             GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)
-            echo "VERSION=${GITHUB_VERSION}" >> $GITHUB_ENV
+            echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
             echo "::set-output name=VERSION::${GITHUB_VERSION}"
-            echo "GIT_SHA=${{ github.event.inputs.commit }}" >> $GITHUB_ENV
+            echo "GIT_SHA=${{ github.event.inputs.commit }}" | tee -a $GITHUB_ENV
             echo "::set-output name=GIT_SHA::${{ github.event.inputs.commit }}"
           fi
       - name: Set Docker tag related env vars
@@ -56,6 +56,8 @@ jobs:
     needs: [setup_job]
     runs-on: ubuntu-latest
     permissions: write-all
+    env:
+      version: ${{ needs.setup_job.outputs.version }
     steps:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
@@ -63,7 +65,7 @@ jobs:
         id: release_check
         continue-on-error: true
         run: |
-          gh release download -R infinyon/fluvio "v${{ needs.setup_job.outputs.version }}"
+          gh release download -R infinyon/fluvio "v${{ env.version }}"
       # if the check fails, then continue with release
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
@@ -71,7 +73,7 @@ jobs:
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
-          gh release create -R infinyon/fluvio --title="v${{ needs.setup_job.outputs.version }}" -F ./CHANGELOG.md "v${{ needs.setup_job.outputs.version }}" \
+          gh release create -R infinyon/fluvio --title="v${{ env.version }}" -F ./CHANGELOG.md "v${{ env.version }}" \
             fluvio-x86_64-unknown-linux-musl \
             fluvio-x86_64-apple-darwin \
             fluvio-run-x86_64-unknown-linux-musl \
@@ -82,12 +84,16 @@ jobs:
     name: Release Docker Image
     needs: [setup_job]
     runs-on: ubuntu-latest
+    env:
+      version: ${{ needs.setup_job.outputs.version }}
+      release_tag: ${{ needs.setup_job.outputs.release_tag }}
+      latest_tag: ${{ needs.setup_job.outputs.latest_tag }}
     steps:
       - name: Attempt to pull image tag in docker registry
         id: docker_check
         continue-on-error: true
         run: |
-          if docker pull ${{ needs.setup_job.outputs.release_tag }}; then
+          if docker pull ${{ env.release_tag }}; then
             if [[ -z ${FORCE_RELEASE} ]]; then
               echo "Image tag already exists"
             else
@@ -103,12 +109,12 @@ jobs:
       - name: Tag and push release image
         if: ${{ steps.docker_check.outcome == 'failure' }}
         run: |
-          if [[ -z "${FORCE_RELEASE}" ]]; || docker pull "${{ needs.setup_job.outputs.release_tag }}"; then
+          if [[ -z "${FORCE_RELEASE}" ]]; || docker pull "${{ env.release_tag }}"; then
             echo "Image already exists"
           else
-            docker pull "${{ needs.setup_job.outputs.latest_tag }}"
-            docker tag "${{ needs.setup_job.outputs.latest_tag }}" "${{ needs.setup_job.outputs.release_tag }}"
-            docker push "${{ needs.setup_job.outputs.release_tag }}"
+            docker pull "${{ env.latest_tag }}"
+            docker tag "${{ env.latest_tag }}" "${{ env.release_tag }}"
+            docker push "${{ env.release_tag }}"
           fi
 
   # Publish the release Helm chart, tagged with the release VERSION.
@@ -118,12 +124,14 @@ jobs:
     name: Release Helm Chart
     needs: [setup_job, release_docker]
     runs-on: ubuntu-latest
+    env:
+      version: ${{ needs.setup_job.outputs.version }}
     steps:
       - name: Check repo for Release charts
         continue-on-error: true
         id: helm_check
         run: |
-          NUM_CHARTS=$(curl https://charts.fluvio.io/api/charts | jq '.[]' | jq '.[] | select(.version | test("^${{ needs.setup_job.outputs.version }}$")) | @json' | wc -l)
+          NUM_CHARTS=$(curl https://charts.fluvio.io/api/charts | jq '.[]' | jq '.[] | select(.version | test("^${{ env.version }}$")) | @json' | wc -l)
           if [[ $NUM_CHARTS -eq 2 ]]; then
             echo "Release chart is published";
           else
@@ -143,8 +151,8 @@ jobs:
         run: |
           helm plugin install https://github.com/chartmuseum/helm-push.git
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          helm push k8-util/helm/fluvio-sys --force --version="${{ needs.setup_job.outputs.version }}" chartmuseum
-          helm push k8-util/helm/fluvio-app --force --version="${{ needs.setup_job.outputs.version }}" chartmuseum
+          helm push k8-util/helm/fluvio-sys --force --version="${{ env.version }}" chartmuseum
+          helm push k8-util/helm/fluvio-app --force --version="${{ env.version }}" chartmuseum
 
   # Check for Fluvio cli
   release_fluvio:
@@ -154,12 +162,13 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      version: ${{ needs.setup_job.outputs.version }}
     steps:
       - name: Attempt to install Fluvio cli
         id: check_fluvio
         continue-on-error: true
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ needs.setup_job.outputs.version }} bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.version }} bash
 
       # If the check fails, then continue
       - name: Login GH CLI
@@ -190,13 +199,13 @@ jobs:
         run: |
           ${HOME}/.fluvio/bin/fluvio package publish \
             --force \
-            --version="${{ needs.setup_job.outputs.version }}" \
+            --version="${{ env.version }}" \
             target/x86_64-unknown-linux-musl/release/fluvio \
             target/x86_64-apple-darwin/release/fluvio
 
           ${HOME}/.fluvio/bin/fluvio package publish \
             --force \
-            --version="${{ needs.setup_job.outputs.version }}" \
+            --version="${{ env.version }}" \
             target/x86_64-unknown-linux-musl/release/fluvio-run \
             target/x86_64-apple-darwin/release/fluvio-run
 
@@ -208,6 +217,8 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      version: ${{ steps.version_step.outputs.VERSION }}
+      target_sha: ${{ steps.version_step.outputs.GIT_SHA }}
     steps:
       - name: Install fluvio-package
         run: |
@@ -218,7 +229,7 @@ jobs:
         # This should work until we support graceful failure
         continue-on-error: true
         run: |
-          ${HOME}/.fluvio/bin/fluvio package bump dynamic "${{ needs.setup_job.outputs.version }}"
+          ${HOME}/.fluvio/bin/fluvio package bump dynamic "${{ env.version }}"
 
       - uses: actions/checkout@v2
 
@@ -226,12 +237,12 @@ jobs:
       - name: Bump stable branch
         run: |
           git fetch
-          CURRENT_STABLE=$(git show-ref | grep refs/remotes/origin/stable | awk '{print $1}')
+          CURRENT_STABLE=$(git rev-parse origin/stable)
 
           echo "sha from repo: $CURRENT_STABLE"
-          echo "expected sha: ${{ needs.setup_job.outputs.target_sha }}"
+          echo "expected sha: ${{ env.target_sha }}"
 
-          if [[ "$CURRENT_STABLE" = "${{ needs.setup_job.outputs.target_sha }}" ]]; then
+          if [[ "$CURRENT_STABLE" = "${{ env.target_sha }}" ]]; then
             echo "Stable branch is up to date"
           else
             # FIXME: Needs more testing in Github Actions context
