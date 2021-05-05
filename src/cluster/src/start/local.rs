@@ -4,6 +4,7 @@ use std::fs::{File, create_dir_all};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{FluvioConfig};
+use semver::Version;
 
 use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
@@ -126,14 +127,15 @@ pub struct LocalConfig {
     /// ```
     /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
     /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
+    /// use semver::Version;
     /// let config = builder
-    ///     .chart_version("0.7.0-alpha.1")
+    ///     .chart_version(Version::parse("0.7.0-alpha.1").unwrap())
     ///     .build()?;
     /// # Ok(())
     /// # }
     /// ```
     #[builder(setter(into))]
-    chart_version: String,
+    chart_version: Version,
     /// The location to find the fluvio charts
     #[builder(
         private,
@@ -202,9 +204,10 @@ impl LocalConfig {
     ///
     /// ```
     /// # use fluvio_cluster::LocalConfig;
-    /// let mut builder = LocalConfig::builder("0.7.0-alpha.1");
+    /// use semver::Version;
+    /// let mut builder = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder<S: Into<String>>(chart_version: S) -> LocalConfigBuilder {
+    pub fn builder(chart_version: Version) -> LocalConfigBuilder {
         let mut builder = LocalConfigBuilder::default();
         builder.chart_version(chart_version);
         if let Some(data_dir) = &*DEFAULT_DATA_DIR {
@@ -361,7 +364,7 @@ impl LocalInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let sys_config: SysConfig = SysConfig::builder(&self.config.chart_version)
+        let sys_config: SysConfig = SysConfig::builder(self.config.chart_version.clone())
             .chart_location(self.config.chart_location.clone())
             .build()
             .expect("should build config since all required arguments are given");

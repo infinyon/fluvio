@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
-
 use structopt::StructOpt;
+use semver::Version;
 
 mod local;
 mod k8;
@@ -48,7 +48,7 @@ impl FromStr for DefaultLogDirectory {
 pub struct K8Install {
     /// k8: use specific chart version
     #[structopt(long)]
-    pub chart_version: Option<String>,
+    pub chart_version: Option<semver::Version>,
 
     /// k8: use specific image version
     #[structopt(long)]
@@ -132,7 +132,7 @@ pub struct StartOpt {
 impl StartOpt {
     pub async fn process(
         self,
-        default_chart_version: &str,
+        default_chart_version: Version,
         upgrade: bool,
         skip_sys: bool,
     ) -> Result<(), ClusterCliError> {
@@ -162,7 +162,7 @@ pub struct UpgradeOpt {
 }
 
 impl UpgradeOpt {
-    pub async fn process(self, default_chart_version: &str) -> Result<(), ClusterCliError> {
+    pub async fn process(self, default_chart_version: Version) -> Result<(), ClusterCliError> {
         self.start
             .process(default_chart_version, true, self.skip_sys)
             .await?;

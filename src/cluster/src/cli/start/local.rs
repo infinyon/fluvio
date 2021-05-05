@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use semver::Version;
 
 use fluvio::config::TlsPolicy;
 
@@ -14,7 +15,7 @@ use crate::check::render::{render_statuses_next_steps, render_results_next_steps
 /// reported, or `Err(e)` if something unexpected occurred.
 pub async fn process_local(
     opt: StartOpt,
-    default_chart_version: &str,
+    default_chart_version: Version,
 ) -> Result<(), ClusterCliError> {
     let mut builder = LocalConfig::builder(default_chart_version);
     builder

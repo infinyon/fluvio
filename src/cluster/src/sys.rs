@@ -7,6 +7,7 @@ use crate::{
 use fluvio_helm::{HelmClient, InstallArg};
 use std::path::{Path, PathBuf};
 use crate::error::SysInstallError;
+use semver::Version;
 
 const DEFAULT_SYS_NAME: &str = "fluvio-sys";
 const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
@@ -50,11 +51,12 @@ pub struct SysConfig {
     /// ```
     /// # use fluvio_cluster::SysConfigBuilder;
     /// # fn example(builder: &mut SysConfigBuilder) {
-    /// builder.chart_version("0.6.1");
+    /// use semver::Version;
+    /// builder.chart_version(Version::parse("0.6.1").unwrap());
     /// # }
     /// ```
     #[builder(setter(into))]
-    pub chart_version: String,
+    pub chart_version: Version,
 }
 
 impl SysConfig {
@@ -67,9 +69,10 @@ impl SysConfig {
     ///
     /// ```
     /// use fluvio_cluster::SysConfig;
-    /// let builder = SysConfig::builder("0.7.0-alpha.1");
+    /// use semver::Version;
+    /// let builder = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder<S: Into<String>>(chart_version: S) -> SysConfigBuilder {
+    pub fn builder(chart_version: Version) -> SysConfigBuilder {
         let mut builder = SysConfigBuilder::default();
         builder.chart_version(chart_version);
         builder
@@ -125,13 +128,14 @@ impl SysConfigBuilder {
     ///
     /// ```
     /// # use fluvio_cluster::{SysConfig, SysInstallError};
+    /// use semver::Version;
     /// enum NamespaceCandidate {
     ///     UserGiven(String),
     ///     System,
     ///     Default,
     /// }
     /// fn make_config(ns: NamespaceCandidate) -> Result<SysConfig, SysInstallError> {
-    ///     let config = SysConfig::builder("0.7.0-alpha.1")
+    ///     let config = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
     ///         .with(|builder| match &ns {
     ///             NamespaceCandidate::UserGiven(user) => builder.namespace(user),
     ///             NamespaceCandidate::System => builder.namespace("system"),
@@ -158,8 +162,9 @@ impl SysConfigBuilder {
     /// ```
     /// # use fluvio_cluster::{SysInstallError, SysConfig};
     /// # fn example() -> Result<(), SysInstallError> {
+    /// use semver::Version;
     /// let custom_namespace = false;
-    /// let config = SysConfig::builder("0.7.0-alpha.1")
+    /// let config = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
     ///     // Custom namespace is not applied
     ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
@@ -185,7 +190,8 @@ impl SysConfigBuilder {
 /// ```
 /// # use fluvio_cluster::{SysInstallError, SysConfig, SysInstaller};
 /// # fn example() -> Result<(), SysInstallError> {
-/// let config = SysConfig::builder("0.7.0-alpha.1")
+/// use semver::Version;
+/// let config = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
 ///     .namespace("fluvio")
 ///     .chart_version("0.7.0-alpha.1")
 ///     .build()?;
@@ -256,7 +262,7 @@ impl SysInstaller {
         self.helm_client.repo_update()?;
         let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
             .namespace(&self.config.namespace)
-            .version(&self.config.chart_version)
+            .version(&self.config.chart_version.to_string())
             .opts(settings)
             .develop();
         if upgrade {
@@ -280,7 +286,7 @@ impl SysInstaller {
 
         let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
             .namespace(&self.config.namespace)
-            .version(&self.config.chart_version)
+            .version(&self.config.chart_version.to_string())
             .develop()
             .opts(settings);
         if upgrade {
@@ -298,9 +304,10 @@ mod tests {
 
     #[test]
     fn test_build_config() {
-        let config: SysConfig = SysConfig::builder("0.7.0-alpha.1")
-            .build()
-            .expect("should build config with required options");
+        let config: SysConfig =
+            SysConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
+                .build()
+                .expect("should build config with required options");
         assert_eq!(config.chart_version, "0.7.0-alpha.1");
     }
 }

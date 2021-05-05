@@ -1,3 +1,4 @@
+use semver::Version;
 use crate::cli::start::StartOpt;
 use crate::cli::ClusterCliError;
 use crate::sys::{SysConfig, SysInstaller};
@@ -6,7 +7,7 @@ use crate::error::SysInstallError;
 
 pub fn process_sys(
     opt: StartOpt,
-    default_chart_version: &str,
+    default_chart_version: Version,
     upgrade: bool,
 ) -> Result<(), ClusterCliError> {
     install_sys_impl(opt, default_chart_version, upgrade).map_err(ClusterError::InstallSys)?;
@@ -15,13 +16,13 @@ pub fn process_sys(
 
 fn install_sys_impl(
     opt: StartOpt,
-    default_chart_version: &str,
+    default_chart_version: Version,
     upgrade: bool,
 ) -> Result<(), SysInstallError> {
     let chart_version = opt
         .k8_config
         .chart_version
-        .as_deref()
+        .clone()
         .unwrap_or(default_chart_version);
 
     let config = SysConfig::builder(chart_version)
