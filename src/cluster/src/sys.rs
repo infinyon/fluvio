@@ -308,6 +308,9 @@ mod tests {
             SysConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
                 .build()
                 .expect("should build config with required options");
-        assert_eq!(config.chart_version, "0.7.0-alpha.1");
+        assert_eq!(
+            config.chart_version,
+            semver::Version::parse("0.7.0-alpha.1").unwrap()
+        );
     }
 }

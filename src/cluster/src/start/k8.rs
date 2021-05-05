@@ -1231,9 +1231,13 @@ mod tests {
 
     #[test]
     fn test_build_config() {
-        let config: ClusterConfig = ClusterConfig::builder("0.7.0-alpha.1")
-            .build()
-            .expect("should succeed with required config options");
-        assert_eq!(config.chart_version, "0.7.0-alpha.1")
+        let config: ClusterConfig =
+            ClusterConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
+                .build()
+                .expect("should succeed with required config options");
+        assert_eq!(
+            config.chart_version,
+            semver::Version::parse("0.7.0-alpha.1").unwrap()
+        )
     }
 }
