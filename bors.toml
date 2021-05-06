@@ -1,6 +1,6 @@
 status = [
     "Rustfmt (ubuntu-latest)",
-    "Clippy (ubuntu-latest)",
+    "Clippy (macos-latest)",
     "Unit tests (ubuntu-latest)",
     "Doc tests (ubuntu-latest)",
     "Unit tests (macos-latest)",
