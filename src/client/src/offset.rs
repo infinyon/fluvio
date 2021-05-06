@@ -305,6 +305,8 @@ async fn fetch_offsets<F: SerialFrame>(
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
+    unimplemented!();
+    /*
     let response = client
         .send_receive(FetchOffsetsRequest::new(
             replica.topic.to_owned(),
@@ -329,4 +331,5 @@ async fn fetch_offsets<F: SerialFrame>(
         )
         .into()),
     }
+    */
 }

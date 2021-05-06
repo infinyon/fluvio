@@ -1,6 +1,9 @@
+mod error;
+pub use self::error::FlvSocketError;
+mod response;
+pub use response::AsyncResponse;
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
-        mod error;
         mod multiplexing;
         mod sink;
         mod socket;
@@ -10,7 +13,6 @@ cfg_if::cfg_if! {
         pub mod test_request;
 
         pub use fluvio_future::net::{BoxConnection,Connection};
-        pub use self::error::FlvSocketError;
         pub use self::socket::FluvioSocket;
         pub use multiplexing::*;
         pub use sink::*;
@@ -36,5 +38,16 @@ cfg_if::cfg_if! {
             Ok(msgs)
         }
 
+    } else if #[cfg(target_arch = "wasm32")] {
+        mod websocket;
+        pub use websocket::{
+            MultiplexerWebsocket as MultiplexerSocket,
+            FluvioWebSocket as FluvioSocket,
+            WebSocketConnector as DomainConnector,
+        };
     }
+
 }
+
+use std::sync::Arc;
+pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;

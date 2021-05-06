@@ -1,7 +1,11 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
+#[cfg(unix)]
 use fluvio_future::net::DomainConnector;
+#[cfg(target_arch = "wasm32")]
+use fluvio_socket::DomainConnector;
+
 use tracing::debug;
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;

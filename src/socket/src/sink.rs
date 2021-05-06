@@ -2,9 +2,17 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
+cfg_if::cfg_if! {
+    if #[cfg(not(target_arch = "wasm32"))] {
+        use std::os::unix::io::AsRawFd;
+        use std::os::unix::io::RawFd;
 
+        use fluvio_future::zero_copy::ZeroCopy;
+        use fluvio_protocol::store::FileWrite;
+        use fluvio_protocol::store::StoreValue;
+
+    }
+}
 use async_mutex::Mutex;
 use async_mutex::MutexGuard;
 use tracing::trace;
@@ -14,17 +22,14 @@ use futures_util::SinkExt;
 use tokio_util::compat::Compat;
 use bytes::BytesMut;
 
-use fluvio_future::zero_copy::ZeroCopy;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::codec::FluvioCodec;
-use fluvio_protocol::store::FileWrite;
-use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
 use fluvio_future::net::BoxWriteConnection;
 
-use tokio_util::codec::{FramedWrite};
+use tokio_util::codec::FramedWrite;
 
 use crate::FlvSocketError;
 
@@ -32,12 +37,18 @@ type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
 pub struct FluvioSink {
     inner: SinkFrame,
+    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
 impl fmt::Debug for FluvioSink {
+    #[cfg(not(target_arch = "wasm32"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "fd({})", "websocket")
     }
 }
 
@@ -46,21 +57,10 @@ impl FluvioSink {
         &mut self.inner
     }
 
-    pub fn id(&self) -> RawFd {
-        self.fd
-    }
-
     /// convert to shared sink
     #[allow(clippy::wrong_self_convention)]
     pub fn as_shared(self) -> ExclusiveFlvSink {
         ExclusiveFlvSink::new(self)
-    }
-
-    pub fn new(sink: BoxWriteConnection, fd: RawFd) -> Self {
-        Self {
-            fd,
-            inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
-        }
     }
 
     /// as client, send request to server
@@ -96,8 +96,28 @@ impl FluvioSink {
         Ok(())
     }
 }
-
+#[cfg(target_arch = "wasm32")]
 impl FluvioSink {
+    pub fn new(sink: BoxWriteConnection) -> Self {
+        Self {
+            inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl FluvioSink {
+    pub fn id(&self) -> RawFd {
+        self.fd
+    }
+
+    pub fn new(sink: BoxWriteConnection, fd: RawFd) -> Self {
+        Self {
+            fd,
+            inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
+        }
+    }
+
     /// write
     pub async fn encode_file_slices<T>(
         &mut self,
@@ -148,6 +168,7 @@ impl FluvioSink {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl AsRawFd for FluvioSink {
     fn as_raw_fd(&self) -> RawFd {
         self.fd
@@ -157,15 +178,23 @@ impl AsRawFd for FluvioSink {
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct ExclusiveFlvSink {
     inner: Arc<Mutex<FluvioSink>>,
+    #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
 
 impl ExclusiveFlvSink {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(sink: FluvioSink) -> Self {
         let fd = sink.id();
         ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
             fd,
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(sink: FluvioSink) -> Self {
+        ExclusiveFlvSink {
+            inner: Arc::new(Mutex::new(sink)),
         }
     }
 }
@@ -196,6 +225,7 @@ impl ExclusiveFlvSink {
         inner_sink.send_response(resp_msg, version).await
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn id(&self) -> RawFd {
         self.fd
     }
@@ -205,6 +235,7 @@ impl Clone for ExclusiveFlvSink {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
+            #[cfg(not(target_arch = "wasm32"))]
             fd: self.fd,
         }
     }

@@ -11,13 +11,20 @@ use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
+
+#[cfg(not(target_arch = "wasm32"))]
 use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
+
+#[cfg(target_arch = "wasm32")]
+use fluvio_socket::DomainConnector;
 
 use crate::FluvioError;
 
 /// Frame with request and response
 #[async_trait]
 pub(crate) trait SerialFrame: Display {
+    /*
+    */
     /// client config
     fn config(&self) -> &ClientConfig;
 
@@ -37,10 +44,12 @@ pub(crate) trait SerialFrame: Display {
         req_msg
     }
 
+    /*
     /// send and receive
     async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync;
+    */
 }
 
 /// This sockets knows about support versions
@@ -62,9 +71,13 @@ impl SerialFrame for VersionedSocket {
     fn config(&self) -> &ClientConfig {
         &self.config
     }
+}
+impl VersionedSocket {
+    /*
+    */
 
     /// send and wait for reply
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -152,8 +165,14 @@ impl ClientConfig {
         }
     }
 
+    #[cfg(unix)]
     pub fn with_addr(addr: String) -> Self {
         Self::new(addr, Box::new(DefaultTcpDomainConnector::default()))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn with_addr(addr: String) -> Self {
+        Self::new(addr, DomainConnector::default())
     }
 
     pub fn addr(&self) -> &str {
@@ -175,8 +194,11 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        let socket =
-            FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+        #[cfg(unix)]
+        let socket = FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+
+        #[cfg(target_arch = "wasm32")]
+        let socket = FluvioSocket::connect_with_connector(&self.addr, &self.connector).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 
@@ -259,14 +281,19 @@ impl VersionedSerialSocket {
     }
 }
 
-#[async_trait]
 impl SerialFrame for VersionedSerialSocket {
     fn config(&self) -> &ClientConfig {
         &self.config
     }
+}
+
+//#[async_trait]
+impl VersionedSerialSocket {
+    /*
+    */
 
     /// send and wait for reply serially
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {

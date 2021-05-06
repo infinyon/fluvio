@@ -36,6 +36,7 @@ members = [
 [patch.crates-io]
 fluvio-future = { git = "https://github.com/infinyon/future-aio", version = "0.3.0" }
 flv-tls-proxy= { git = 'https://github.com/infinyon/flv-tls-proxy', version = "0.5.0" }
+ws_stream_wasm = { path = "../ws_stream_wasm" }
 
 # profile to make image sizer smaller
 # comment out for now

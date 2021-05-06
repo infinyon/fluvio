@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::io::Error as IoError;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[cfg(test)]
 mod test;
@@ -21,7 +21,7 @@ use wasm_bindgen::{
 };
 
 use crate::error::FlvSocketError;
-use crate::multiplexing::AsyncResponse;
+use crate::AsyncResponse;
 use log::*;
 use fluvio_future::timer::sleep;
 use futures_util::StreamExt;
@@ -32,6 +32,15 @@ use std::io::Cursor;
 #[derive(Clone)]
 pub enum WebSocketConnector {
     Simple
+}
+impl WebSocketConnector {
+    pub fn new_domain(&self, _domain: String) -> WebSocketConnector {
+        self.clone()
+	}
+	pub fn domain(&self) -> &str {
+		"localhost"
+
+	}
 }
 
 impl Default for WebSocketConnector {
@@ -44,11 +53,12 @@ use ws_stream_wasm::{
     WsMeta,
     WsStream,
     WsMessage,
+    WsStreamIo,
 };
 use wasm_bindgen::UnwrapThrowExt;
 
 pub struct FluvioWebSocket {
-    inner: WsMeta,
+    //inner: WsMeta,
     sink: InnerWebsocketSink,
     stream: InnerWebsocketStream,
 }
@@ -59,27 +69,18 @@ unsafe impl Sync for FluvioWebSocket {}
 impl FluvioWebSocket {
     pub async fn connect_with_connector(
         addr: &str,
-        connector: &WebSocketConnector,
+        _connector: &WebSocketConnector,
     ) -> Result<Self, FlvSocketError> {
-        let (mut ws, wsio) = WsMeta::connect(addr, None).await.expect_throw("Could not create websocket");
+        let (ws, wsio) = WsMeta::connect(addr, None).await.expect_throw("Could not create websocket");
 
         Ok(Self {
-            inner: ws,
-            sink: InnerWebsocketSink,
+            sink: InnerWebsocketSink::new(ws),
             stream: InnerWebsocketStream::new(wsio),
         })
     }
+
     pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
         Self::connect_with_connector(addr, &WebSocketConnector::default()).await
-    }
-    pub async fn send_and_receive<R>(
-        &self,
-        mut req_msg: RequestMessage<R>,
-    ) -> Result<R::Response, FlvSocketError>
-    where
-        R: Request + Send + Sync,
-    {
-        unimplemented!();
     }
 
     pub async fn send<R>(
@@ -89,24 +90,29 @@ impl FluvioWebSocket {
     where
         R: Request + Send + Sync,
     {
-        let bytes = req_msg.as_bytes(0)?;
-        self.inner.wrapped().send_with_u8_array(&bytes)?;
+        self.sink.send_request(req_msg).await?;
         self.stream.next_response(req_msg).await
     }
 
     pub fn get_mut_sink(&mut self) -> &mut InnerWebsocketSink {
-        unimplemented!();
-        //&mut self.sink
+        &mut self.sink
     }
 
     pub fn get_mut_stream(&mut self) -> &mut InnerWebsocketStream {
         &mut self.stream
-        //&mut self.stream
     }
 }
 
-pub struct InnerWebsocketSink;
+pub struct InnerWebsocketSink {
+    inner: WsMeta,
+}
 impl InnerWebsocketSink {
+    pub fn new(inner: WsMeta) -> Self {
+        Self {
+            inner
+        }
+    }
+
     pub async fn send_request<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
@@ -114,7 +120,8 @@ impl InnerWebsocketSink {
     where
         RequestMessage<R>: Encoder + Default + Debug,
     {
-        unimplemented!();
+        let bytes = req_msg.as_bytes(0)?;
+        Ok(self.inner.wrapped().send_with_u8_array(&bytes)?)
     }
 }
 use tokio_util::codec::Framed;
@@ -128,11 +135,12 @@ use std::io::ErrorKind;
 
 use futures_util::io::{AsyncRead, AsyncWrite};
 
+use nash_ws::WebSocketReceiver;
+use nash_ws::Message as NashMessage;
+
 pub struct InnerWebsocketStream {
     ws: WsStream,
 }
-unsafe impl Send for InnerWebsocketStream {}
-unsafe impl Sync for InnerWebsocketStream {}
 
 impl InnerWebsocketStream {
     pub fn new(ws: WsStream) -> Self {
@@ -147,8 +155,7 @@ impl InnerWebsocketStream {
     where
         R: Request + Send + Sync,
     {
-        /*
-        */
+        let next = self.ws.next().await;
         match self.ws.next().await {
             Some(WsMessage::Binary(data)) => {
                 let response = req_msg.decode_response(
@@ -157,14 +164,13 @@ impl InnerWebsocketStream {
                 )?;
                 trace!("received {} bytes: {:#?}", data.len(), &response);
                 Ok(response)
-            }
+            },
             None => Err(
                 IoError::new(
                     ErrorKind::UnexpectedEof, "server has terminated connection"
                 ).into()),
             _ => unreachable!()
         }
-        //unimplemented!();
     }
 }
 
