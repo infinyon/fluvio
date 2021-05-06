@@ -1,8 +1,9 @@
 # Release Notes
 
-## Platform Version 0.8.2 - 
+## Platform Version 0.8.2 - 2020-05-06
 * Fix Replication fail over with duplication ([#1052](https://github.com/infinyon/fluvio/pull/1052))
-  
+* Relax platform version requirement for upgrade check ([#1055](https://github.com/infinyon/fluvio/pull/1055))
+* Update logic for finding latest package release ([#1061](https://github.com/infinyon/fluvio/pull/1061))
 ## Platform Version 0.8.1 - 2020-05-03
 * Use file name for the external commands (fixes #889) ([#1008](https://github.com/infinyon/fluvio/pull/1008))
 * Fix Fluvio log directory on K8 ([#1043](https://github.com/infinyon/fluvio/pull/1043))
