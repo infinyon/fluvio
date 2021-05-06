@@ -975,10 +975,9 @@ impl ClusterInstaller {
             };
 
             // The major.minor.patch versions should match after upgrade
-            let compatible = versions_compatible(
-                fluvio.platform_version().clone(),
-                self.config.chart_version.clone(),
-            );
+            let platform_version = fluvio.platform_version();
+            let compatible =
+                versions_compatible(platform_version.clone(), self.config.chart_version.clone());
 
             if compatible {
                 // Success
