@@ -109,10 +109,7 @@ where
         S::IndexKey: Borrow<K>,
         K: Eq + Hash,
     {
-        match self.read().await.get(key) {
-            Some(value) => Some(value.clone()),
-            None => None,
-        }
+        self.read().await.get(key).cloned()
     }
 
     /// copy spec
@@ -121,10 +118,7 @@ where
         S::IndexKey: Borrow<K>,
         K: Eq + Hash,
     {
-        match self.read().await.get(key) {
-            Some(value) => Some(value.spec.clone()),
-            None => None,
-        }
+        self.read().await.get(key).map(|value| value.spec.clone())
     }
 
     /// iterate over entry

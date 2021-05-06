@@ -9,9 +9,9 @@ use fluvio_protocol::api::{api_decode, ApiMessage, Request, RequestHeader, Reque
 use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::{Decode, Encode};
 
-#[fluvio(encode_discriminant)]
-#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
+#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 pub enum TestKafkaApiEnum {
     Echo = 1000,
     Status = 1001,

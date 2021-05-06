@@ -783,7 +783,7 @@ impl ClusterInstaller {
             .config
             .image_tag
             .clone()
-            .unwrap_or(self.config.chart_version.to_string());
+            .unwrap_or_else(|| self.config.chart_version.to_string());
 
         // Specify common installation settings to pass to helm
         let mut install_settings: Vec<(_, Cow<str>)> = vec![

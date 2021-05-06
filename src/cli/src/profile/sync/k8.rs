@@ -138,23 +138,23 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
 
     debug!("fluvio svc: {:#?}", svc);
 
-    let ingress_addr = match svc.status.load_balancer.ingress.iter().find(|_| true) {
-        Some(ingress) => ingress.host_or_ip().map(|addr| addr.to_owned()),
-        None => None,
+    let ingress_addr = svc
+        .status
+        .load_balancer
+        .ingress
+        .get(0)
+        .and_then(|ingress| ingress.host_or_ip());
+
+    let target_port = svc
+        .spec
+        .ports
+        .get(0)
+        .and_then(|port| port.target_port.as_ref());
+
+    let address = match (ingress_addr, target_port) {
+        (Some(addr), Some(port)) => Some(format!("{}:{}", addr, port)),
+        _ => None,
     };
 
-    Ok(if let Some(external_address) = ingress_addr {
-        // find target port
-        if let Some(port) = svc.spec.ports.iter().find(|_| true) {
-            if let Some(ref target_port) = port.target_port {
-                Some(format!("{}:{}", external_address, target_port))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else {
-        None
-    })
+    Ok(address)
 }

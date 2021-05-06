@@ -12,9 +12,9 @@ use crate::derive::Decode;
 // Error Definition & Implementation
 // -----------------------------------
 
-#[fluvio(encode_discriminant)]
 #[repr(i16)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 pub enum ErrorCode {
     UnknownServerError = -1,
 

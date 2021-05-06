@@ -217,10 +217,7 @@ where
 
     #[allow(unused)]
     pub fn spec(&self, key: &S::Key) -> Option<S> {
-        match self.0.read().get(key) {
-            Some(spu) => Some(spu.clone()),
-            None => None,
-        }
+        self.0.read().get(key).cloned()
     }
 
     pub fn all_keys(&self) -> Vec<S::Key> {

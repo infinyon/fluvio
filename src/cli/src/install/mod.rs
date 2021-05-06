@@ -45,12 +45,10 @@ pub(crate) fn get_extensions() -> Result<Vec<PathBuf>, CliError> {
     let mut extensions = Vec::new();
     let fluvio_dir = fluvio_extensions_dir()?;
     if let Ok(entries) = fs::read_dir(&fluvio_dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let is_plugin = entry.file_name().to_string_lossy().starts_with("fluvio-");
-                if is_plugin {
-                    extensions.push(entry.path());
-                }
+        for entry in entries.flatten() {
+            let is_plugin = entry.file_name().to_string_lossy().starts_with("fluvio-");
+            if is_plugin {
+                extensions.push(entry.path());
             }
         }
     }

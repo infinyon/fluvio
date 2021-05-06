@@ -44,11 +44,11 @@ impl SpgStatefulSetController {
         tls: Option<TlsConfig>,
     ) {
         let controller = Self {
-            spus,
-            groups,
-            statefulsets,
             client,
             namespace,
+            groups,
+            spus,
+            statefulsets,
             spg_services,
             tls,
         };

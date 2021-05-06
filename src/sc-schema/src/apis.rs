@@ -13,9 +13,9 @@ static_assertions::const_assert_eq!(
 );
 
 /// API call from client to SPU
-#[fluvio(encode_discriminant)]
-#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
 #[repr(u16)]
+#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 pub enum AdminPublicApiKey {
     ApiVersion = 18, // VERSIONS_API_KEY
     Create = 1001,

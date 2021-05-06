@@ -1,6 +1,6 @@
 status = [
     "Rustfmt (ubuntu-latest)",
-    "Clippy (ubuntu-latest)",
+    "Clippy (macos-latest)",
     "Unit tests (ubuntu-latest)",
     "Doc tests (ubuntu-latest)",
     "Unit tests (macos-latest)",
@@ -11,4 +11,4 @@ status = [
 ]
 use_squash_merge = true
 delete_merged_branches = true
-timeout_sec = 1800 # 30 mins
+timeout_sec = 3600 # 45 mins

@@ -84,7 +84,10 @@ impl TestRequirementAttribute {
 
     fn timeout(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
         if let Lit::Int(timeout) = &name_value.lit {
-            let parsed = u64::from_str_radix(timeout.base10_digits(), 10).expect("Parse failed");
+            let parsed = timeout
+                .base10_digits()
+                .parse::<u64>()
+                .expect("Parse failed");
             Ok(Self::Timeout(Duration::from_secs(parsed)))
         } else {
             Err(SynError::new(name_value.span(), "Timeout must be LitInt"))
@@ -102,7 +105,10 @@ impl TestRequirementAttribute {
     fn min_spu(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
         if let Lit::Int(min_spu) = &name_value.lit {
             Ok(Self::MinSpu(
-                u16::from_str_radix(min_spu.base10_digits(), 10).expect("Parse failed"),
+                min_spu
+                    .base10_digits()
+                    .parse::<u16>()
+                    .expect("Parse failed"),
             ))
         } else {
             Err(SynError::new(name_value.span(), "Min spu must be LitInt"))

@@ -12,9 +12,9 @@ use dataplane::derive::Decode;
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
 
-#[fluvio(encode_discriminant)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
+#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 pub enum InternalSpuApi {
     UpdateSpu = 1001,
     UpdateReplica = 1002,

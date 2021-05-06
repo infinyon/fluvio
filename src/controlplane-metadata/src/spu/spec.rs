@@ -272,13 +272,7 @@ impl IngressAddr {
     }
 
     pub fn host(&self) -> Option<String> {
-        if let Some(name) = &self.hostname {
-            Some(name.clone())
-        } else if let Some(ip) = &self.ip {
-            Some(ip.clone())
-        } else {
-            None
-        }
+        self.hostname.clone().or_else(|| self.ip.clone())
     }
 }
 
