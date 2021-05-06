@@ -20,9 +20,9 @@ use crate::api_loop;
 use crate::call_service;
 use crate::FlvService;
 
-#[fluvio(encode_discriminant)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
+#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 pub(crate) enum TestKafkaApiEnum {
     Echo = 1000,
     Save = 1001,

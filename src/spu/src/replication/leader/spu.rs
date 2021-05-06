@@ -36,14 +36,14 @@ impl FollowerNotifier {
     /// pending if exists
     pub async fn get(&self, spu: &SpuId) -> Option<Arc<FollowerSpuPendingUpdates>> {
         let read = self.read().await;
-        read.get(spu).map(|value| value.clone())
+        read.get(spu).cloned()
     }
 
     /// update our self from current spu
     pub async fn sync_from_spus(&self, spus: &SpuLocalStore, local_spu: SpuId) {
         let mut writer = self.write().await;
         // remove non existent spu
-        let keys: Vec<SpuId> = writer.keys().map(|k| *k).collect();
+        let keys: Vec<SpuId> = writer.keys().copied().collect();
         for spu in keys {
             if !spus.contains_key(&spu) {
                 debug!(spu, "spu no longer valid,removing");

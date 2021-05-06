@@ -53,8 +53,8 @@ impl SpuController {
     ) {
         let controller = Self {
             services,
-            spus,
             groups,
+            spus,
         };
 
         spawn(controller.dispatch_loop());

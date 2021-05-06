@@ -47,7 +47,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             storage: self.storage.clone(),
             config: self.config.clone(),
             followers: self.followers.clone(),
-            in_sync_replica: self.in_sync_replica.clone(),
+            in_sync_replica: self.in_sync_replica,
             status_update: self.status_update.clone(),
         }
     }
@@ -767,8 +767,10 @@ mod test_leader {
 
     #[test_async]
     async fn test_leader_in_sync_replica() -> Result<(), ()> {
-        let mut leader_config = SpuConfig::default();
-        leader_config.id = 5000;
+        let leader_config = SpuConfig {
+            id: 5000,
+            ..Default::default()
+        };
 
         let replica: ReplicaKey = ("test", 1).into();
         // inserting new replica state, this should set follower offset to -1,-1 as inital state
@@ -787,8 +789,10 @@ mod test_leader {
 
     #[test_async]
     async fn test_follower_update() -> Result<(), ()> {
-        let mut leader_config = SpuConfig::default();
-        leader_config.id = 5000;
+        let leader_config = SpuConfig {
+            id: 5000,
+            ..Default::default()
+        };
 
         let notifier = FollowerNotifier::shared();
 
@@ -870,8 +874,10 @@ mod test_leader {
         use crate::core::{GlobalContext};
         use fluvio_controlplane_metadata::spu::{SpuSpec};
 
-        let mut leader_config = SpuConfig::default();
-        leader_config.id = 5000;
+        let leader_config = SpuConfig {
+            id: 5000,
+            ..Default::default()
+        };
         let specs = vec![
             SpuSpec::new_private_addr(5000, 9000, "localhost".to_owned()),
             SpuSpec::new_private_addr(5001, 9001, "localhost".to_owned()),

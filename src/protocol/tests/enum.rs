@@ -232,8 +232,8 @@ fn test_gl_colors() {
     assert_eq!(dest[1], 2);
 }
 
-#[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug)]
+#[fluvio(encode_discriminant)]
 enum EvenOdd {
     Even = 2,
     Odd = 1,
@@ -260,8 +260,8 @@ fn test_encode_discriminant() {
     assert_eq!(dest[1], 1);
 }
 
-#[fluvio(encode_discriminant)]
 #[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 #[repr(u16)]
 pub enum TestWideEnum {
     Echo = 1000,
@@ -280,9 +280,9 @@ fn test_simple_conversion() {
     assert_eq!(key_enum, TestWideEnum::Echo);
 }
 
-#[fluvio(encode_discriminant)]
 #[repr(i16)]
 #[derive(PartialEq, Debug, Encode, Decode)]
+#[fluvio(encode_discriminant)]
 pub enum TestErrorCode {
     // The server experienced an unexpected error when processing the request
     UnknownServerError = -1,

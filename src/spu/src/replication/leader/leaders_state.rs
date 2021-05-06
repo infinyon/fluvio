@@ -45,7 +45,7 @@ impl<S> ReplicaLeadersState<S> {
     /// get clone of state
     pub fn get(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
         let read = self.read().unwrap();
-        read.get(replica).map(|value| value.clone())
+        read.get(replica).cloned()
     }
 
     pub fn remove(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {

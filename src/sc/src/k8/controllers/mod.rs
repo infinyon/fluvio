@@ -63,9 +63,9 @@ mod k8_operator {
         );
 
         SpuServiceController::start(
-            k8_client.clone(),
-            namespace.clone(),
-            spu_service_ctx.clone(),
+            k8_client,
+            namespace,
+            spu_service_ctx,
             global_ctx.spgs().clone(),
         );
     }

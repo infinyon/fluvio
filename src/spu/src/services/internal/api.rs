@@ -11,9 +11,9 @@ use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::fetch_stream_request::FetchStreamRequest;
 
-#[fluvio(encode_discriminant)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
 #[repr(u16)]
+#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[fluvio(encode_discriminant)]
 pub enum SPUPeerApiEnum {
     FetchStream = 0,
 }
