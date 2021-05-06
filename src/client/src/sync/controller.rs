@@ -84,6 +84,7 @@ where
 
     #[instrument(
         skip(self, response),
+        name = "Metadata",
         fields(spec = &*S::LABEL)
     )]
     async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {

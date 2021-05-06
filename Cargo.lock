@@ -487,9 +487,9 @@ dependencies = [
 
 [[package]]
 name = "bstr"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a40b47ad93e1a5404e6c18dec46b628214fee441c70f4ab5d6942142cc268a3d"
+checksum = "90682c8d613ad3373e66de8c6411e0ae2ab2571e879d2efbf73558cc66f21279"
 dependencies = [
  "lazy_static",
  "memchr",
@@ -1275,7 +1275,7 @@ dependencies = [
  "event-listener",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-sc-schema",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -1302,7 +1302,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-socket",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1422,7 +1422,7 @@ version = "0.7.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-types",
  "log",
  "tracing",
@@ -1435,7 +1435,7 @@ dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1454,7 +1454,7 @@ dependencies = [
  "crc32c",
  "derive_builder",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-socket",
  "flv-util",
  "futures-util",
@@ -1587,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "bytes",
  "fluvio-future 0.3.0",
@@ -1705,7 +1705,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-sc-schema",
  "fluvio-service",
  "fluvio-socket",
@@ -1737,7 +1737,7 @@ version = "0.8.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-types",
  "log",
  "serde",
@@ -1752,7 +1752,7 @@ version = "0.6.0"
 dependencies = [
  "async-trait",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-socket",
  "fluvio-types",
  "futures-util",
@@ -1784,7 +1784,7 @@ dependencies = [
  "dyn-clone",
  "event-listener",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "flv-util",
  "futures-util",
  "js-sys",
@@ -1822,7 +1822,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-service",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -1852,7 +1852,7 @@ version = "0.6.0"
 dependencies = [
  "bytes",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "log",
  "serde",
  "static_assertions",
@@ -1869,7 +1869,7 @@ dependencies = [
  "bytes",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.0",
- "fluvio-protocol 0.4.1",
+ "fluvio-protocol 0.5.0",
  "fluvio-socket",
  "fluvio-storage",
  "fluvio-types",
@@ -2007,7 +2007,7 @@ dependencies = [
 [[package]]
 name = "flv-tls-proxy"
 version = "0.5.0"
-source = "git+https://github.com/infinyon/flv-tls-proxy#672bc2b5a5813fd38fcde93c4f0e60ea10d81ffa"
+source = "git+https://github.com/infinyon/flv-tls-proxy#5e019bf05bf9753cfe1e541b8c0e83a9911666b1"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
@@ -2403,9 +2403,9 @@ dependencies = [
 
 [[package]]
 name = "http-types"
-version = "2.11.0"
+version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "686f600cccfb9d96c45550bac47b592bc88191a0dd965e9d55848880c2c5a45f"
+checksum = "ad077d89137cd3debdce53c66714dc536525ef43fe075d41ddc0a8ac11f85957"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -3552,9 +3552,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.1"
+version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a068b905b8cb93815aa3069ae48653d90f382308aebd1d33d940ac1f1d771e2d"
+checksum = "ce5f1ceb7f74abbce32601642fcf8e8508a8a8991e0621c7d750295b9095702b"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3573,9 +3573,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.24"
+version = "0.6.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00efb87459ba4f6fb2169d20f68565555688e1250ee6825cdf6254f8b48fafb2"
+checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "region"
@@ -3635,9 +3635,9 @@ dependencies = [
 
 [[package]]
 name = "rustc-demangle"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e3bad0ee36814ca07d7968269dd4b7ec89ec2da10c4bb613928d3077083c232"
+checksum = "410f7acf3cb3a44527c5d9546bad4bf4e6c460915d5f9f2fc524498bfe8f70ce"
 
 [[package]]
 name = "rustc-hash"
@@ -4375,9 +4375,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "705096c6f83bf68ea5d357a6aa01829ddbdac531b357b45abeca842938085baa"
+checksum = "aa5553bf0883ba7c9cbe493b085c29926bd41b66afc31ff72cf17ff4fb60dcd5"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",

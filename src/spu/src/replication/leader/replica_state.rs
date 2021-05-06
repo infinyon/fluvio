@@ -25,7 +25,7 @@ use crate::{
 use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
 use crate::storage::SharableReplicaStorage;
 
-use super::{super::follower::FollowerReplicaState, FollowerNotifier};
+use super::{FollowerNotifier};
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
@@ -135,16 +135,6 @@ where
         let leader_replica = Self::new(replica, config.into(), status_update, inner);
         leader_replica.update_status().await;
         Ok(leader_replica)
-    }
-
-    pub fn promoted_from(
-        follower: FollowerReplicaState<S>,
-        replica: Replica,
-        config: ReplicationConfig,
-        status_update: SharedStatusUpdate,
-    ) -> Self {
-        let replica_storage = follower.inner_owned();
-        Self::new(replica, config, status_update, replica_storage)
     }
 
     /// replica id

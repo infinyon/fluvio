@@ -82,6 +82,7 @@ pub struct ConsumeOpt {
 impl ConsumeOpt {
     #[instrument(
         skip(self, fluvio),
+        name = "Consume",
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
