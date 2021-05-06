@@ -193,7 +193,6 @@ impl SysConfigBuilder {
 /// use semver::Version;
 /// let config = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
 ///     .namespace("fluvio")
-///     .chart_version("0.7.0-alpha.1")
 ///     .build()?;
 /// let installer = SysInstaller::from_config(config)?;
 /// installer.install()?;

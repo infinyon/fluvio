@@ -156,8 +156,9 @@ pub struct ClusterConfig {
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
+    /// use semver::Version;
     /// let config = builder
-    ///     .chart_version("0.6.0")
+    ///     .chart_version(Version::parse("0.6.0").unwrap())
     ///     .build()?;
     /// # Ok(())
     /// # }

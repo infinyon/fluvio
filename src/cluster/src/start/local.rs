@@ -231,7 +231,8 @@ impl LocalConfigBuilder {
     /// ```
     /// # use fluvio_cluster::{ClusterError, LocalConfig};
     /// # fn example() -> Result<(), ClusterError> {
-    /// let config: LocalConfig = LocalConfig::builder("0.7.0-alpha.1").build()?;
+    /// use semver::Version;
+    /// let config: LocalConfig = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -255,6 +256,7 @@ impl LocalConfigBuilder {
     /// use std::path::PathBuf;
     /// use fluvio::config::TlsPaths;
     /// use fluvio_cluster::LocalInstaller;
+    /// use semver::Version;
     ///
     /// let cert_path = PathBuf::from("/tmp/certs");
     /// let client = TlsPaths {
@@ -270,7 +272,7 @@ impl LocalConfigBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let config = LocalConfig::builder("0.7.0-alpha.1")
+    /// let config = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
     ///     .tls(client, server)
     ///     .build()?;
     /// # Ok(())
@@ -351,7 +353,8 @@ impl LocalInstaller {
     /// ```
     /// # use fluvio_cluster::{ClusterError, LocalInstaller, LocalConfig};
     /// # fn example() -> Result<(), ClusterError> {
-    /// let config = LocalConfig::builder("0.7.0-alpha.1").build()?;
+    /// use semver::Version;
+    /// let config = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
     /// let installer = LocalInstaller::from_config(config);
     /// # Ok(())
     /// # }
