@@ -10,8 +10,9 @@
 //!
 //! ```
 //! use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
+//! use semver::Version;
 //! # async fn example() -> Result<(), ClusterError> {
-//! let config = ClusterConfig::builder("0.7.0-alpha.1").build()?;
+//! let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
 //! let installer = ClusterInstaller::from_config(config)?;
 //! installer.install_fluvio().await?;
 //! # Ok(())

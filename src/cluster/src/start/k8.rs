@@ -31,6 +31,7 @@ use crate::{
 };
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
+use semver::Version;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
@@ -155,8 +156,9 @@ pub struct ClusterConfig {
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
+    /// use semver::Version;
     /// let config = builder
-    ///     .chart_version("0.6.0")
+    ///     .chart_version(Version::parse("0.6.0").unwrap())
     ///     .build()?;
     /// # Ok(())
     /// # }
@@ -164,7 +166,7 @@ pub struct ClusterConfig {
     ///
     /// [Semver]: https://docs.rs/semver/0.10.0/semver/
     #[builder(setter(into))]
-    chart_version: String,
+    chart_version: Version,
     /// The location to search for the Helm charts to install
     #[builder(
         private,
@@ -363,9 +365,10 @@ impl ClusterConfig {
     ///
     /// ```
     /// # use fluvio_cluster::ClusterConfig;
-    /// let builder = ClusterConfig::builder("0.7.0-alpha.1");
+    /// use semver::Version;
+    /// let builder = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder<S: Into<String>>(chart_version: S) -> ClusterConfigBuilder {
+    pub fn builder(chart_version: Version) -> ClusterConfigBuilder {
         let mut builder = ClusterConfigBuilder::default();
         builder.chart_version(chart_version);
         builder
@@ -384,7 +387,8 @@ impl ClusterConfigBuilder {
     /// ```
     /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = ClusterConfig::builder("0.7.0-alpha.1").build()?;
+    /// use semver::Version;
+    /// let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -487,6 +491,7 @@ impl ClusterConfigBuilder {
     /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
     /// use std::path::PathBuf;
     /// use fluvio::config::TlsPaths;
+    /// use semver::Version;
     ///
     /// let cert_path = PathBuf::from("/tmp/certs");
     /// let client = TlsPaths {
@@ -502,7 +507,7 @@ impl ClusterConfigBuilder {
     ///     key: cert_path.join("server.key"),
     /// };
     ///
-    /// let config = ClusterConfig::builder("0.7.0-alpha.1")
+    /// let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
     ///     .tls(client, server)
     ///     .build()?;
     /// # Ok(())
@@ -549,8 +554,9 @@ impl ClusterConfigBuilder {
     /// ```
     /// # use fluvio_cluster::{ClusterError, ClusterConfig};
     /// # fn example() -> Result<(), ClusterError> {
+    /// use semver::Version;
     /// let custom_namespace = false;
-    /// let config = ClusterConfig::builder("0.7.0-alpha.1")
+    /// let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
     ///     // Custom namespace is not applied
     ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
@@ -585,7 +591,8 @@ impl ClusterConfigBuilder {
 /// ```
 /// # use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
 /// # async fn example() -> Result<(), ClusterError> {
-/// let config = ClusterConfig::builder("0.7.0-alpha.1").build()?;
+/// use semver::Version;
+/// let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
 /// let installer = ClusterInstaller::from_config(config)?;
 /// let _status = installer.install_fluvio().await?;
 /// # Ok(())
@@ -775,9 +782,8 @@ impl ClusterInstaller {
         let fluvio_tag = self
             .config
             .image_tag
-            .as_ref()
-            .unwrap_or(&self.config.chart_version)
-            .to_owned();
+            .clone()
+            .unwrap_or(self.config.chart_version.to_string());
 
         // Specify common installation settings to pass to helm
         let mut install_settings: Vec<(_, Cow<str>)> = vec![
@@ -816,10 +822,10 @@ impl ClusterInstaller {
                 self.helm_client
                     .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
                 self.helm_client.repo_update()?;
-                if !self
-                    .helm_client
-                    .chart_version_exists(&self.config.chart_name, &self.config.chart_version)?
-                {
+                if !self.helm_client.chart_version_exists(
+                    &self.config.chart_name,
+                    &self.config.chart_version.to_string(),
+                )? {
                     return Err(K8InstallError::HelmChartNotFound(format!(
                         "{}:{}",
                         &self.config.chart_name, &self.config.chart_version
@@ -834,7 +840,7 @@ impl ClusterInstaller {
                     .opts(install_settings)
                     .develop()
                     .values(self.config.chart_values.clone())
-                    .version(&self.config.chart_version);
+                    .version(&self.config.chart_version.to_string());
                 if self.config.upgrade {
                     self.helm_client.upgrade(&args)?;
                 } else {
@@ -854,7 +860,7 @@ impl ClusterInstaller {
                     .opts(install_settings)
                     .develop()
                     .values(self.config.chart_values.clone())
-                    .version(&self.config.chart_version);
+                    .version(&self.config.chart_version.to_string());
                 if self.config.upgrade {
                     self.helm_client.upgrade(&args)?;
                 } else {
@@ -967,13 +973,18 @@ impl ClusterInstaller {
                     continue;
                 }
             };
-            let version = fluvio.platform_version();
-            if version.to_string() == self.config.chart_version {
+
+            // The major.minor.patch versions should match after upgrade
+            let platform_version = fluvio.platform_version();
+            let compatible =
+                versions_compatible(platform_version.clone(), self.config.chart_version.clone());
+
+            if compatible {
                 // Success
                 break;
             }
             debug!(
-                platform = %version,
+                platform = %platform_version,
                 chart_version = %self.config.chart_version,
                 "Existing platform version is different than chart version",
             );
@@ -1214,15 +1225,46 @@ impl ClusterInstaller {
     }
 }
 
+fn versions_compatible(mut a: Version, mut b: Version) -> bool {
+    a.pre.clear();
+    b.pre.clear();
+    a == b
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_build_config() {
-        let config: ClusterConfig = ClusterConfig::builder("0.7.0-alpha.1")
-            .build()
-            .expect("should succeed with required config options");
-        assert_eq!(config.chart_version, "0.7.0-alpha.1")
+        let config: ClusterConfig =
+            ClusterConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
+                .build()
+                .expect("should succeed with required config options");
+        assert_eq!(
+            config.chart_version,
+            semver::Version::parse("0.7.0-alpha.1").unwrap()
+        )
+    }
+
+    #[test]
+    fn test_compatible_prerelease() {
+        let a = Version::parse("0.8.0").unwrap();
+        let b = Version::parse("0.8.0-alpha.4").unwrap();
+        assert!(versions_compatible(a, b));
+    }
+
+    #[test]
+    fn test_compatible_commits() {
+        let a = Version::parse("0.8.0-abcdef").unwrap();
+        let b = Version::parse("0.8.0-fedcba").unwrap();
+        assert!(versions_compatible(a, b));
+    }
+
+    #[test]
+    fn test_compatible_pre_and_build() {
+        let a = Version::parse("0.8.0-alpha.2").unwrap();
+        let b = Version::parse("0.8.0-abcdef+abcdef").unwrap();
+        assert!(versions_compatible(a, b));
     }
 }

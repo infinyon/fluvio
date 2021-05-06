@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use structopt::StructOpt;
+use semver::Version;
 
 mod group;
 mod spu;
@@ -68,7 +69,7 @@ impl ClusterCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
-        default_chart_version: &str,
+        default_chart_version: Version,
         target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
