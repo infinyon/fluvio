@@ -155,8 +155,7 @@ install-clippy:
 # Use check first to leverage sccache, the clippy piggybacks
 check-clippy: install-clippy
 	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE_FLAG)
-	unset RUSTC_WRAPPER
-	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
+	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms
 
 build-all-test:
 	cargo build --lib --tests --all-features $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)

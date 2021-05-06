@@ -81,7 +81,7 @@ jobs:
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
             target: x86_64-apple-darwin
         exclude:
-          - os: macos-latest
+          - os: ubuntu-latest
             rust: stable
             task:
               name: Clippy
