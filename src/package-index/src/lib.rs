@@ -121,7 +121,13 @@ impl Package {
         self.releases
             .iter()
             .rev()
-            .find(|it| it.targets.contains(&target) && (prerelease || !it.version.is_prerelease()))
+            .find(|it| {
+                // If not in prerelease mode, do not keep prerelease or build meta
+                if !prerelease && (it.version.is_prerelease() || !it.version.build.is_empty()) {
+                    return false;
+                }
+                it.targets.contains(&target)
+            })
             .ok_or(Error::MissingTarget(target))
     }
 
