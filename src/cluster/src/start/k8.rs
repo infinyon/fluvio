@@ -973,14 +973,14 @@ impl ClusterInstaller {
                     continue;
                 }
             };
-            let mut platform_version = fluvio.platform_version().clone();
-            platform_version.pre.clear();
-
-            let mut chart_version = self.config.chart_version.clone();
-            chart_version.pre.clear();
 
             // The major.minor.patch versions should match after upgrade
-            if platform_version == chart_version {
+            let compatible = versions_compatible(
+                fluvio.platform_version().clone(),
+                self.config.chart_version.clone(),
+            );
+
+            if compatible {
                 // Success
                 break;
             }
@@ -1226,6 +1226,12 @@ impl ClusterInstaller {
     }
 }
 
+fn versions_compatible(mut a: Version, mut b: Version) -> bool {
+    a.pre.clear();
+    b.pre.clear();
+    a == b
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1240,5 +1246,26 @@ mod tests {
             config.chart_version,
             semver::Version::parse("0.7.0-alpha.1").unwrap()
         )
+    }
+
+    #[test]
+    fn test_compatible_prerelease() {
+        let a = Version::parse("0.8.0").unwrap();
+        let b = Version::parse("0.8.0-alpha.4").unwrap();
+        assert!(versions_compatible(a, b));
+    }
+
+    #[test]
+    fn test_compatible_commits() {
+        let a = Version::parse("0.8.0-abcdef").unwrap();
+        let b = Version::parse("0.8.0-fedcba").unwrap();
+        assert!(versions_compatible(a, b));
+    }
+
+    #[test]
+    fn test_compatible_pre_and_build() {
+        let a = Version::parse("0.8.0-alpha.2").unwrap();
+        let b = Version::parse("0.8.0-abcdef+abcdef").unwrap();
+        assert!(versions_compatible(a, b));
     }
 }
