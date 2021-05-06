@@ -1916,6 +1916,7 @@ dependencies = [
  "prettytable-rs",
  "proc-macro2",
  "quote",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "structopt",

@@ -24,7 +24,8 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
     }
 
     async fn start_cluster(&self) -> StartStatus {
-        let mut builder = ClusterConfig::builder(&*crate::VERSION);
+        let version = semver::Version::parse(&*crate::VERSION).unwrap();
+        let mut builder = ClusterConfig::builder(version);
         if self.option.develop_mode() {
             builder.development().expect("should test in develop mode");
         }

@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
+use semver::Version;
 
 use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus, ClusterConfig};
 use crate::cli::ClusterCliError;
@@ -10,17 +11,13 @@ use crate::check::render::{
 
 pub async fn process_k8(
     opt: StartOpt,
-    default_chart_version: &str,
+    default_chart_version: Version,
     upgrade: bool,
     skip_sys: bool,
 ) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
-    let chart_version = opt
-        .k8_config
-        .chart_version
-        .as_deref()
-        .unwrap_or(default_chart_version);
+    let chart_version = opt.k8_config.chart_version.unwrap_or(default_chart_version);
 
     let mut builder = ClusterConfig::builder(chart_version);
 

@@ -143,7 +143,8 @@ impl RootCmd {
                 profile.process(out).await?;
             }
             Self::Cluster(cluster) => {
-                cluster.process(out, &*crate::VERSION, root.target).await?;
+                let version = semver::Version::parse(&crate::VERSION).unwrap();
+                cluster.process(out, version, root.target).await?;
             }
             Self::Install(install) => {
                 install.process().await?;
