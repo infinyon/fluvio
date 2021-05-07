@@ -233,10 +233,17 @@ mod replica_test {
         Ok(())
     }
 
+    #[test]
+#[ignore]
+fn expensive_test() {
+    // code that takes an hour to run
+}
+
     /// Test 2 replica
     /// Replicating with existing records
     ///    
     #[test_async]
+    #[ignore]
     async fn test_replication2_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(1 as u16)
@@ -302,8 +309,8 @@ mod replica_test {
     /// Test 2 replica
     /// Replicating new records
     ///    
-    //#[test_async]
-    #[allow(unused)]
+    #[test_async]
+    #[ignore]
     async fn test_replication2_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(1 as u16)
@@ -322,7 +329,7 @@ mod replica_test {
         // give leader controller time to startup
         sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-        let (follower_ctx, follower_replica) = builder.follower_replica(0).await;
+        let (_, follower_replica) = builder.follower_replica(0).await;
 
         // at this point, follower replica should be empty since we didn't have time to sync up with leader
         assert_eq!(follower_replica.leo(), 0);
@@ -375,8 +382,8 @@ mod replica_test {
     }
 
     /// test with 3 SPU
-    //#[test_async]
-    #[allow(unused)]
+    #[test_async]
+    #[ignore]
     async fn test_replication3_existing() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(2 as u16)
@@ -436,8 +443,8 @@ mod replica_test {
     /// Test 2 replica
     /// Replicating new records
     ///    
-    //#[test_async]
-    #[allow(unused)]
+    #[test_async]
+    #[ignore]
     async fn test_replication3_new_records() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(2 as u16)
@@ -509,8 +516,8 @@ mod replica_test {
     /// Test 2 replica
     /// Replicating new records
     ///    
-    //#[test_async]
-    #[allow(unused)]
+    #[test_async]
+    #[ignore]
     async fn test_replication2_promote() -> Result<(), ()> {
         let builder = TestConfig::builder()
             .followers(1 as u16)
