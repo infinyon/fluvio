@@ -173,6 +173,7 @@ build_filter_wasm:
 run-all-unit-test: test_tls_multiplex build_filter_wasm
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
+	make test-all -C src/protocol	
 
 run-all-doc-test:
 	cargo test --all-features --doc $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
