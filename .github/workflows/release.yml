@@ -31,7 +31,7 @@ jobs:
       - name: Set target sha and Fluvio version
         id: version_step
         run: |
-          if [[ -z "${USE_COMMIT}" ]]; then
+          if [[ -z "${{ env.USE_COMMIT }}" ]]; then
             export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
             echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
             echo "::set-output name=VERSION::${GITHUB_VERSION}"
@@ -67,11 +67,11 @@ jobs:
         run: |
           gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
       # if the check fails, then continue with release
+      - uses: actions/checkout@v2
+        if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
-      - uses: actions/checkout@v2
-        if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
@@ -96,7 +96,7 @@ jobs:
         continue-on-error: true
         run: |
           if docker pull ${{ env.RELEASE_TAG }}; then
-            if [[ -z ${FORCE_RELEASE} ]]; then
+            if [[ -z ${{ env.FORCE_RELEASE }} ]]; then
               echo "Image tag already exists"
             else
               exit 1
@@ -111,8 +111,6 @@ jobs:
       - name: Tag and push release image
         if: ${{ steps.docker_check.outcome == 'failure' }}
         run: |
-          if [[ -z "${FORCE_RELEASE}" ]]; || docker pull "${{ env.RELEASE_TAG }}"; then
-            echo "Image already exists"
           if [ ! -z "${{ env.FORCE_RELEASE }}" ] || docker pull "${{ env.RELEASE_TAG }}"; then
             [ ! -z "${{ env.FORCE_RELEASE }}" ] && echo "Release w/ force..."
             echo "Release image already exists";
@@ -205,7 +203,7 @@ jobs:
         run: |
           ${HOME}/.fluvio/bin/fluvio package publish \
             --force \
-            --version="${{ env.version }}" \
+            --version="${{ env.VERSION }}" \
             target/x86_64-unknown-linux-musl/release/fluvio \
             target/x86_64-apple-darwin/release/fluvio
 
