@@ -111,8 +111,6 @@ jobs:
       - name: Tag and push release image
         if: ${{ steps.docker_check.outcome == 'failure' }}
         run: |
-          if [[ -z "${{ env.FORCE_RELEASE }}" ]]; || docker pull "${{ env.RELEASE_TAG }}"; then
-            echo "Image already exists"
           if [ ! -z "${{ env.FORCE_RELEASE }}" ] || docker pull "${{ env.RELEASE_TAG }}"; then
             [ ! -z "${{ env.FORCE_RELEASE }}" ] && echo "Release w/ force..."
             echo "Release image already exists";
