@@ -70,6 +70,8 @@ jobs:
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
+      - uses: actions/checkout@v2
+        if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
@@ -111,6 +113,9 @@ jobs:
         run: |
           if [[ -z "${FORCE_RELEASE}" ]]; || docker pull "${{ env.RELEASE_TAG }}"; then
             echo "Image already exists"
+          if [ ! -z "${{ env.FORCE_RELEASE }}" ] || docker pull "${{ env.RELEASE_TAG }}"; then
+            [ ! -z "${{ env.FORCE_RELEASE }}" ] && echo "Release w/ force..."
+            echo "Release image already exists";
           else
             docker pull "${{ env.LATEST_TAG }}"
             docker tag "${{ env.LATEST_TAG }}" "${{ env.RELEASE_TAG }}"
@@ -176,6 +181,7 @@ jobs:
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Install fluvio-package
         run: |
+          unset VERSION
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
