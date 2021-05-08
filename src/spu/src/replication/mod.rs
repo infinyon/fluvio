@@ -14,7 +14,6 @@ mod replica_test {
     use derive_builder::Builder;
     use once_cell::sync::Lazy;
 
-    use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
     use flv_util::fixture::ensure_clean_dir;
     use fluvio_types::SpuId;
@@ -194,10 +193,10 @@ mod replica_test {
     /// Test 2 replica
     /// Replicating with existing records
     ///    
-    #[test_async]
-    async fn test_just_leader() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_just_leader() {
         let builder = TestConfig::builder()
-            .base_port(13000 as u16)
+            .base_port(13000_u16)
             .generate("just_leader");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -229,25 +228,15 @@ mod replica_test {
         assert_eq!(lrs.leader.spu, LEADER);
         assert_eq!(lrs.leader.hw, 2);
         assert_eq!(lrs.leader.leo, 2);
-
-        Ok(())
     }
-
-    #[test]
-#[ignore]
-fn expensive_test() {
-    // code that takes an hour to run
-}
 
     /// Test 2 replica
     /// Replicating with existing records
-    ///    
-    #[test_async]
-    #[ignore]
-    async fn test_replication2_existing() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_replication2_existing() {
         let builder = TestConfig::builder()
-            .followers(1 as u16)
-            .base_port(13010 as u16)
+            .followers(1_u16)
+            .base_port(13010_u16)
             .generate("replication2_existing");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -302,19 +291,16 @@ fn expensive_test() {
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
-
-        Ok(())
     }
 
     /// Test 2 replica
     /// Replicating new records
     ///    
-    #[test_async]
-    #[ignore]
-    async fn test_replication2_new_records() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_replication2_new_records() {
         let builder = TestConfig::builder()
-            .followers(1 as u16)
-            .base_port(13020 as u16)
+            .followers(1_u16)
+            .base_port(13020_u16)
             .generate("replication2_new");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -377,17 +363,14 @@ fn expensive_test() {
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
-
-        Ok(())
     }
 
     /// test with 3 SPU
-    #[test_async]
-    #[ignore]
-    async fn test_replication3_existing() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_replication3_existing() {
         let builder = TestConfig::builder()
-            .followers(2 as u16)
-            .base_port(13030 as u16)
+            .followers(2_u16)
+            .base_port(13030_u16)
             .generate("replication3_existing");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -436,19 +419,16 @@ fn expensive_test() {
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
-
-        Ok(())
     }
 
     /// Test 2 replica
     /// Replicating new records
     ///    
-    #[test_async]
-    #[ignore]
-    async fn test_replication3_new_records() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_replication3_new_records() {
         let builder = TestConfig::builder()
-            .followers(2 as u16)
-            .base_port(13040 as u16)
+            .followers(2_u16)
+            .base_port(13040_u16)
             .generate("replication3_new");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -509,19 +489,16 @@ fn expensive_test() {
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
-
-        Ok(())
     }
 
     /// Test 2 replica
     /// Replicating new records
     ///    
-    #[test_async]
-    #[ignore]
-    async fn test_replication2_promote() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_replication2_promote() {
         let builder = TestConfig::builder()
-            .followers(1 as u16)
-            .base_port(13050 as u16)
+            .followers(1_u16)
+            .base_port(13050_u16)
             .generate("replication2_new");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
@@ -569,7 +546,5 @@ fn expensive_test() {
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
         spu_server.notify();
-
-        Ok(())
     }
 }
