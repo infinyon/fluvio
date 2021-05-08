@@ -433,13 +433,11 @@ mod tests {
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
     use fluvio_future::task::spawn;
-    use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
     use fluvio_protocol::api::RequestMessage;
 
     use super::MultiplexerSocket;
     use crate::test_request::*;
-    use crate::FlvSocketError;
     use crate::ExclusiveFlvSink;
     use crate::FluvioSocket;
 
@@ -637,8 +635,8 @@ mod tests {
         assert!(slow > fast);
     }
 
-    #[test_async]
-    async fn test_multiplexing() -> Result<(), FlvSocketError> {
+    #[fluvio_future::test(ignore)]
+    async fn test_multiplexing() {
         debug!("start testing");
         let addr = "127.0.0.1:6000";
 
@@ -647,7 +645,6 @@ mod tests {
             test_server(addr, TcpStreamHandler {}),
         )
         .await;
-        Ok(())
     }
 
     #[cfg(unix)]
@@ -732,8 +729,8 @@ mod tests {
             }
         }
 
-        #[test_async]
-        async fn test_multiplexing_native_tls() -> Result<(), FlvSocketError> {
+        #[fluvio_future::test(ignore)]
+        async fn test_multiplexing_native_tls() {
             debug!("start testing");
             let addr = "127.0.0.1:6001";
 
@@ -742,7 +739,6 @@ mod tests {
                 test_server(addr, TlsAcceptorHandler::new()),
             )
             .await;
-            Ok(())
         }
     }
 }
