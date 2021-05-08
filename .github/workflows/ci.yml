@@ -191,13 +191,9 @@ jobs:
           - name: Unstable Test
             run: make run-unstable-test
             publish: true
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust ${{ matrix.rust }}
+      - name: Install ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
