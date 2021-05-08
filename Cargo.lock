@@ -1486,7 +1486,8 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.0"
-source = "git+https://github.com/infinyon/future-aio#8d07228889a6654cf4b5d509a0ff00ff5c38ad16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd29a0773ef0ab97eb91e621093b4b64218456941e33fd63d9647fbe57a439cf"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1902,7 +1903,8 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.0"
-source = "git+https://github.com/infinyon/future-aio#8d07228889a6654cf4b5d509a0ff00ff5c38ad16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc9e4cb09caa5ff039928399ef5aa99206fd1b9a59df208cf6d94e2764fe5ce0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1979,7 +1981,8 @@ dependencies = [
 [[package]]
 name = "flv-tls-proxy"
 version = "0.5.0"
-source = "git+https://github.com/infinyon/flv-tls-proxy#5e019bf05bf9753cfe1e541b8c0e83a9911666b1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10031c630b5c00f31d5ad2f975eb9c027f97d5fea43fd9791052ea6ed3284bbd"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
@@ -4321,8 +4324,8 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
 name = "trybuild"
-version = "1.0.26"
-source = "git+https://github.com/sehz/trybuild?branch=check_option#af10c619356e14a649d7ff36454365389b2ec868"
+version = "1.0.42"
+source = "git+https://github.com/sehz/trybuild?branch=check_option#271081028a8b10104c5ab6eb1861e35fd23e156e"
 dependencies = [
  "glob",
  "lazy_static",
