@@ -463,15 +463,39 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [infinyon-ubuntu-bionic]
+        os: [ubuntu-latest]
         rust: [stable]
+        include:
+          - os: ubuntu-latest
+            sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
     env:
       FLV_SOCKET_WAIT: 600
       FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
       FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
       FLV_TEST_CONSUMER_WAIT: 300000
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
+
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" | tee -a $GITHUB_PATH
+
       - run: helm version
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -479,6 +503,45 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+
+      - name: Install Musl Tools
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
+          rustup target add x86_64-unknown-linux-musl
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Save sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
+
+      - name: Install Minikube for Github runner 
+        if: matrix.os == 'ubuntu-latest' 
+        uses: manusa/actions-setup-minikube@v2.3.1
+        with:
+          minikube version: 'v1.16.0'
+          kubernetes version: 'v1.19.2'
+
+      - name: Open tunnel for Github runner
+        if: matrix.os != 'infinyon-ubuntu-bionic'
+        run: |
+          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
@@ -490,57 +553,31 @@ jobs:
         run: |
           minikube profile list
           minikube status
-      - name: Install stable Fluvio CLI and start cluster
+
+      - name: Setup for upgrade test
         run: |
+          gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-          ~/.fluvio/bin/fluvio cluster start
-          ~/.fluvio/bin/fluvio version
-      # Build, upgrade and test current version
-      - name: Build
-        run: |
-          make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
-      - name: Setup installation pre-requisites
-        run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl  k8-setup
-      - name: Make image
-        run: make RELEASE=true minikube_image
-      - name: Upgrade cluster
-        run: |
-          cargo run --release --bin fluvio -- cluster upgrade --chart-version=$(cat VERSION) --develop 
-          cargo run --release --bin fluvio -- version 
-      - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
-        run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
-          cargo run --release --bin flv-test --	smoke --develop --disable-install -- --producer-iteration=1000
+
+      - name: Start sccache server
+        run: sccache --start-server
+
+      - name: Run upgrade test
+        env:
+          TEST_DATA_BYTES: 10000
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 45
+          max_attempts: 3
+          command: |
+            export PATH=~/.fluvio/bin:$PATH
+            cd tests
+            ./upgrade-test.sh `gh release -R infinyon/fluvio list | head -3 | tail -2 | awk '{print $1}' | sed 's/v//' | tac | xargs`
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
       - name: Clean minikube
         run: |
           minikube delete
           pkill -f "minikube tunnel" || true
-      - name: Save logs
-        if: failure()
-        run: |
-          echo "minikube profile list"
-          minikube profile list
-          echo "helm list"
-          helm list
-          echo "get statefulset"
-          kubectl get statefulset
-          echo "kubectl get pvc"
-          kubectl get pvc
-          echo "kubectl get pods"
-          kubectl get pods
-          echo "kubectl get svc"
-          kubectl get svc
-          echo "kubectl get spu"
-          kubectl get spu
-          echo "kubectl get spg"
-          kubectl get spg
-          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
-      - name: Upload logs
-        timeout-minutes: 5
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-k8-logs
-          path: /tmp/flv_sc.log
