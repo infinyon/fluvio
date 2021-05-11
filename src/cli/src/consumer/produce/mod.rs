@@ -36,10 +36,6 @@ pub struct ProduceOpt {
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
-    /// Specifies the number of records to send in a batch. Only used for files.
-    #[structopt(long, default_value = "50")]
-    pub batch_size: usize,
-
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub file: Option<PathBuf>,
@@ -62,7 +58,7 @@ impl ProduceOpt {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
                 let lines: Vec<_> = reader.lines().filter_map(|it| it.ok()).collect();
-                let batches: Vec<_> = lines.chunks(self.batch_size).collect();
+                let batches: Vec<_> = lines.chunks(50).collect();
                 for batch in batches {
                     let batch: Vec<_> = batch.iter().map(|it| &**it).collect();
                     self.produce_lines(&mut producer, &batch).await?;
