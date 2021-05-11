@@ -7,18 +7,27 @@
 # We create new topic per round.
 # We'll produce and consume from all test topics per round.
 # Content is verified via checksum
+#
+# Usage:
+# ./upgrade-test.sh <older stable version> <current stable version> [dev version]
+#
+# If dev version is set, 
+# If CI env var is set, we will build fluvio code and upgrade to local develop image
+
 
 set -exu
 #set -e
 
 echo command: $0 $*
 
-STABLE_MINUS_ONE=${1:?Starting cluster version [pos 1]}
-STABLE=${2:?Second cluster version [pos 2]}
-PRERELEASE=${3:-$(cat ../VERSION)-$(git rev-parse HEAD)}
-
-CI_SLEEP=${CI_SLEEP:-10}
-CI=${CI:-}
+readonly STABLE_MINUS_ONE=${1:?Please provide a starting cluster version for arg 1}
+readonly STABLE=${2:?Please provide a second cluster version for arg 2}
+readonly PRERELEASE=${3:-$(cat ../VERSION)-$(git rev-parse HEAD)}
+readonly CI_SLEEP=${CI_SLEEP:-10}
+readonly CI=${CI:-}
+readonly STABLE_MINUS_ONE_TOPIC=${STABLE_MINUS_ONE_TOPIC:-stable-minus-one-cli-topic}
+readonly STABLE_TOPIC=${STABLE_TOPIC:-stable-cli-topic}
+readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease-cli-topic}
 
 # Change to this script's directory 
 pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
@@ -31,52 +40,54 @@ function cleanup() {
     fluvio cluster delete || true
 }
 
+# If we're in CI, we want to slow down execution
+# to give CPU some time to rest, so we don't time out
 function ci_check() {
     if [[ ! -z "$CI" ]];
     then
-        echo "CI, pausing for ${CI_SLEEP} second";
+        echo "[CI MODE] Pausing for ${CI_SLEEP} second(s)";
         w | head -1
         sleep ${CI_SLEEP};
     fi
 }
 
-function round1() {
+function validate_cluster_out_of_date_stable() {
 
     create_test_data;
 
-    echo Install ${STABLE_MINUS_ONE} CLI 
+    echo "Install (out-of-date) v${STABLE_MINUS_ONE} CLI"
     curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${STABLE_MINUS_ONE} bash
 
-    echo Start ${STABLE_MINUS_ONE} cluster
+    echo "Start v${STABLE_MINUS_ONE} cluster"
     fluvio cluster start
     ci_check;
 
     fluvio version
     ci_check;
 
-    echo Create round 1 topic
-    fluvio topic create round1-topic 
+    echo "Create test topic: ${STABLE_MINUS_ONE_TOPIC}"
+    fluvio topic create ${STABLE_MINUS_ONE_TOPIC} 
     ci_check;
 
-    cat data1.txt.tmp | fluvio produce round1-topic
+    cat data1.txt.tmp | fluvio produce ${STABLE_MINUS_ONE_TOPIC}
     ci_check;
 
-    echo Validate test data matches expected data before upgrade
-    fluvio consume -B -d round1-topic | tee output.txt.tmp
+    echo "Validate test data w/ v${STABLE_MINUS_ONE} CLI matches expected data created BEFORE upgrading cluster + CLI to ${STABLE}"
+    fluvio consume -B -d ${STABLE_MINUS_ONE_TOPIC} | tee output.txt.tmp
     ci_check;
 
-    if cat output.txt.tmp | shasum -c round1-topic1.checksum; then
-        echo Round 1 topic 1 validated
+    if cat output.txt.tmp | shasum -c stable-minus-one-cli-stable-minus-one-topic.checksum; then
+        echo "${STABLE_MINUS_ONE_TOPIC} topic validated with v${STABLE_MINUS_ONE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat round1-topic1.checksum | awk '{print $1}')"
+        echo "Expected: $(cat stable-minus-one-cli-stable-minus-one-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 }
 
-function round2() {
+function validate_upgrade_cluster_to_stable() {
 
-    echo "Install ${STABLE} CLI"
+    echo "Install (current stable) v${STABLE} CLI"
     curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${STABLE} bash
 
     fluvio cluster upgrade
@@ -85,60 +96,60 @@ function round2() {
     fluvio version
     ci_check;
 
-    echo Create round 2 topic
-    fluvio topic create round2-topic 
+    echo "Create test topic: ${STABLE_TOPIC}"
+    fluvio topic create ${STABLE_TOPIC} 
     ci_check;
 
-    cat data2.txt.tmp | fluvio produce round2-topic
+    cat data2.txt.tmp | fluvio produce ${STABLE_TOPIC}
     ci_check;
 
-    echo Validate test data matches expected data before upgrade
-    fluvio consume -B -d round2-topic | tee output.txt.tmp
+    echo "Validate test data w/ v${STABLE} CLI matches expected data created BEFORE upgrading cluster + CLI to v${PRERELEASE}"
+    fluvio consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
     ci_check;
 
-    if cat output.txt.tmp | shasum -c round2-topic2.checksum; then
-        echo Round 2 topic 2 validated
+    if cat output.txt.tmp | shasum -c stable-cli-stable-topic.checksum; then
+        echo "${STABLE_TOPIC} topic validated with v${STABLE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat round2-topic2.checksum | awk '{print $1}')"
+        echo "Expected: $(cat stable-cli-stable-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 
     # Exercise older topics
-    cat data2.txt.tmp | fluvio produce round1-topic
+    cat data2.txt.tmp | fluvio produce ${STABLE_MINUS_ONE_TOPIC}
     ci_check;
 
-    echo "Validate test data matches expected data before upgrade"
-    fluvio consume -B -d round1-topic | tee output.txt.tmp
+    echo "Validate v${STABLE_MINUS_ONE_TOPIC} test data w/ ${STABLE} CLI matches expected data AFTER upgrading cluster + CLI to v${STABLE}"
+    fluvio consume -B -d ${STABLE_MINUS_ONE_TOPIC} | tee output.txt.tmp
     ci_check;
 
-    if cat output.txt.tmp | shasum -c round2-topic1.checksum; then
-        echo "Round 2 topic 1 validated"
+    if cat output.txt.tmp | shasum -c stable-cli-stable-minus-one-topic.checksum; then
+        echo "${STABLE_MINUS_ONE_TOPIC} topic validated with v${STABLE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat round2-topic2.checksum | awk '{print $1}')"
+        echo "Expected: $(cat stable-cli-stable-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 
 }
 
-function round3() {
+function validate_upgrade_cluster_to_prerelease() {
 
     if [[ ! -z "$CI" ]];
     then
-        echo "We're in CI. Build and test the dev image"
+        echo "[CI MODE] Build and test the dev image v${PRERELEASE}"
         pushd ..
         make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
         make RELEASE=release minikube_image
         
-        FLUVIO_BIN="$(pwd)/target/x86_64-unknown-linux-musl/release/fluvio"
+        local FLUVIO_BIN="$(pwd)/target/x86_64-unknown-linux-musl/release/fluvio"
         $FLUVIO_BIN cluster upgrade --chart-version=${PRERELEASE} --develop
         popd
     else 
-        echo "Build and test the latest published dev image"
-        echo "Install prerelease CLI"
+        echo "Build and test the latest published dev image v${PRERELEASE}"
+        echo "Install prerelease v${PRERELEASE} CLI"
         curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-        FLUVIO_BIN=`which fluvio`
+        local FLUVIO_BIN=`which fluvio`
         $FLUVIO_BIN cluster upgrade --chart-version=${PRERELEASE}
     fi
 
@@ -147,53 +158,53 @@ function round3() {
     $FLUVIO_BIN version
     ci_check;
 
-    echo "Create round 3 topic"
-    $FLUVIO_BIN topic create round3-topic
+    echo "Create test topic: ${PRERELEASE_TOPIC}"
+    $FLUVIO_BIN topic create ${PRERELEASE_TOPIC}
     ci_check;
 
-    cat data3.txt.tmp | fluvio produce round3-topic
+    cat data3.txt.tmp | fluvio produce ${PRERELEASE_TOPIC}
     ci_check;
 
-    echo "Validate test data matches expected data before upgrade"
-    $FLUVIO_BIN consume -B -d round3-topic | tee output.txt.tmp
+    echo "Validate test data w/ v${PRERELEASE} CLI matches expected data AFTER upgrading cluster + CLI to v${PRERELEASE}"
+    $FLUVIO_BIN consume -B -d ${PRERELEASE_TOPIC} | tee output.txt.tmp
     ci_check;
 
-    if cat output.txt.tmp | shasum -c round3-topic3.checksum; then
-        echo "Round 3 topic 3 validated"
+    if cat output.txt.tmp | shasum -c prerelease-cli-prerelease-topic.checksum; then
+        echo "${PRERELEASE_TOPIC} topic validated with v${PRERELEASE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat round3-topic3.checksum | awk '{print $1}')"
+        echo "Expected: $(cat prerelease-cli-prerelease-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 
     # Exercise older topics
-    cat data3.txt.tmp | fluvio produce round2-topic
+    cat data3.txt.tmp | fluvio produce ${STABLE_TOPIC}
     ci_check;
 
-    echo "Validate test data matches expected data before upgrade"
-    $FLUVIO_BIN consume -B -d round2-topic | tee output.txt.tmp
+    echo "Validate v${STABLE} test data w/ ${PRERELEASE} CLI matches expected data AFTER upgrading cluster + CLI to v${PRERELEASE}"
+    $FLUVIO_BIN consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
     ci_check;
 
-    if cat output.txt.tmp | shasum -c round3-topic2.checksum; then
-        echo "Round 3 topic 2 validated"
+    if cat output.txt.tmp | shasum -c prerelease-cli-stable-topic.checksum; then
+        echo "${STABLE_TOPIC} topic validated with v${PRERELEASE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat round3-topic2.checksum | awk '{print $1}')"
+        echo "Expected: $(cat prerelease-cli-stable-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 
-    cat data3.txt.tmp | fluvio produce round1-topic
+    cat data3.txt.tmp | fluvio produce ${STABLE_MINUS_ONE_TOPIC}
     ci_check;
 
-    echo "Validate test data matches expected data before upgrade"
-    $FLUVIO_BIN consume -B -d round1-topic | tee output.txt.tmp
+    echo "Validate v${STABLE_MINUS_ONE_TOPIC} test data w/ ${PRERELEASE} CLI matches expected data AFTER upgrading cluster + CLI to v${PRERELEASE}"
+    $FLUVIO_BIN consume -B -d ${STABLE_MINUS_ONE_TOPIC} | tee output.txt.tmp
     ci_check;
 
-    if cat output.txt.tmp | shasum -c round3-topic1.checksum; then
-        echo "Round 3 topic 1 validated"
+    if cat output.txt.tmp | shasum -c prerelease-cli-stable-minus-one-topic.checksum; then
+        echo "${STABLE_MINUS_ONE_TOPIC} topic validated with v${PRERELEASE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat round3-topic1.checksum | awk '{print $1}')"
+        echo "Expected: $(cat prerelease-cli-stable-minus-one-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 
@@ -204,57 +215,59 @@ function create_test_data() {
     # Create 3 base data files, checksums.
     # Build produce/consume with generated data to validate integrity across upgrades
 
-    TEST_DATA_BYTES=${TEST_DATA_BYTES:-100}
+    local TEST_DATA_BYTES=${TEST_DATA_BYTES:-100}
 
     # The baseline files
     for BASE in {1..3}
     do
         echo "Create the baseline file \#${BASE}"
-        RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${TEST_DATA_BYTES} | head -n1)
+        local RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${TEST_DATA_BYTES} | head -n1)
         echo ${RANDOM_DATA} | tee -a data${BASE}.txt.tmp
     done
 
     # Round 1
-    # Topic 1 expected output
-    cat data1.txt.tmp | shasum | tee -a round1-topic1.checksum
+    # Stable-1 
+    echo "Create expected topic checksum for Stable-1 cli x Stable-1 topic"
+    cat data1.txt.tmp | shasum | tee -a stable-minus-one-cli-stable-minus-one-topic.checksum
 
     # Round 2
     # Topic 2 expected output
-    echo "Create expected topic contents for topic 1 in round 2"
-    cat data1.txt.tmp data2.txt.tmp | tee -a round2-topic1.txt.tmp
-    echo "Create expected topic checksum for topic 1 in round 2"
-    cat round2-topic1.txt.tmp | shasum | tee -a round2-topic1.checksum
+    echo "Create expected topic contents for Stable cli x Stable-1 topic"
+    cat data1.txt.tmp data2.txt.tmp | tee -a stable-cli-stable-minus-one-topic.txt.tmp
+    echo "Create expected topic checksum for Stable cli x Stable-1 topic"
+    cat stable-cli-stable-minus-one-topic.txt.tmp | shasum | tee -a stable-cli-stable-minus-one-topic.checksum
 
     ## Topic 2 expected output
-    cat data2.txt.tmp | shasum | tee -a round2-topic2.checksum
+    cat data2.txt.tmp | shasum | tee -a stable-cli-stable-topic.checksum
 
     # Round 3
     # Topic 1 expected output
-    echo "Create expected topic contents for topic 1 in round 3"
-    cat data1.txt.tmp data2.txt.tmp data3.txt.tmp | tee -a round3-topic1.txt.tmp
-    echo "Create expected topic checksum for topic 1 in round 3"
-    cat round3-topic1.txt.tmp | shasum | tee -a round3-topic1.checksum
+    echo "Create expected topic contents for Prerelease cli x Stable-1 topic"
+    cat data1.txt.tmp data2.txt.tmp data3.txt.tmp | tee -a prerelease-cli-stable-minus-one-topic.txt.tmp
+    echo "Create expected topic checksum for Prerelease cli x Stable-1 topic"
+    cat prerelease-cli-stable-minus-one-topic.txt.tmp | shasum | tee -a prerelease-cli-stable-minus-one-topic.checksum
 
     # Topic 2 expected output
-    echo "Create expected topic contents for topic 2 in round 3"
-    cat data2.txt.tmp data3.txt.tmp | tee -a round3-topic2.txt.tmp
-    echo "Create expected topic checksum for topic 2 in round 3"
-    cat round3-topic2.txt.tmp | shasum | tee -a round3-topic2.checksum
+    echo "Create expected topic contents for Prerelease cli x Stable topic"
+    cat data2.txt.tmp data3.txt.tmp | tee -a prerelease-cli-stable-topic.txt.tmp
+    echo "Create expected topic checksum for Prerelease cli x Stable topic"
+    cat prerelease-cli-stable-topic.txt.tmp | shasum | tee -a prerelease-cli-stable-topic.checksum
 
     # Topic 3 expected output
-    cat data3.txt.tmp | shasum | tee -a round3-topic3.checksum
+    echo "Create expected topic checksum for Prerelease cli x Prerelease topic"
+    cat data3.txt.tmp | shasum | tee -a prerelease-cli-prerelease-topic.checksum
 }
 
 cleanup;
 
-echo "First ${STABLE_MINUS_ONE}"
-round1;
+echo "Create cluster @ stable v${STABLE_MINUS_ONE}. Create and validate data."
+validate_cluster_out_of_date_stable;
 
-echo "then ${STABLE}"
-round2;
+echo "Update cluster to stable v${STABLE}. Create and validate data."
+validate_upgrade_cluster_to_stable;
 
-echo "finally $(cat ../VERSION)-$(git rev-parse HEAD)"
-round3;
+echo "Update cluster to prerelease v${PRERELEASE}"
+validate_upgrade_cluster_to_prerelease;
 
 cleanup;
 
