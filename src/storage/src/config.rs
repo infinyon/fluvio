@@ -18,6 +18,7 @@ pub const DEFAULT_MAX_BATCH_SIZE: u32 = 1048588;
 
 // common option
 #[derive(Builder, Debug, Clone, PartialEq, Deserialize)]
+#[builder(build_fn(private, name = "build_impl"))]
 pub struct ConfigOption {
     #[builder(default = "default_base_dir()")]
     #[serde(default = "default_base_dir")]
@@ -86,46 +87,9 @@ const fn default_max_batch_size() -> Size {
 }
 
 impl ConfigOption {
-    pub fn new(
-        base_dir: PathBuf,
-        index_max_bytes: Size,
-        index_max_interval_bytes: Size,
-        segment_max_bytes: Size,
-        flush_write_count: Size,
-        flush_idle_msec: Size,
-        max_batch_size: Size,
-    ) -> Self {
-        ConfigOption {
-            base_dir,
-            index_max_bytes,
-            index_max_interval_bytes,
-            segment_max_bytes,
-            flush_write_count,
-            flush_idle_msec,
-            max_batch_size,
-            update_hw: true,
-        }
-    }
-
-    pub fn base_dir(mut self, dir: PathBuf) -> Self {
-        self.base_dir = dir;
-        self
-    }
-
-    pub fn index_max_bytes(mut self, bytes: Size) -> Self {
-        self.index_max_bytes = bytes;
-        self
-    }
-
-    pub fn segment_max_bytes(mut self, bytes: Size) -> Self {
-        self.segment_max_bytes = bytes;
-        self
-    }
-
-    /// disable hw update
-    pub fn disable_update_hw(mut self) -> Self {
-        self.update_hw = false;
-        self
+    // Used to get a [`ConfigOptionBuilder`].
+    pub fn builder() -> ConfigOptionBuilder {
+        ConfigOptionBuilder::default()
     }
 }
 
@@ -141,5 +105,28 @@ impl Default for ConfigOption {
             max_batch_size: default_max_batch_size(),
             update_hw: true,
         }
+    }
+}
+
+impl ConfigOptionBuilder {
+    /// Build a [`ConfigOption`] with the current
+    /// values in [`ConfigOptionBuilder`]
+    pub fn build(&self) -> ConfigOption {
+        // This will not fail as long as all fields
+        // of ConfigOption have a #[builder(default = ..) attribute.
+        self.build_impl()
+            .expect("Error builing ConfigOption struct")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_builder() {
+        let config: ConfigOption = ConfigOption::builder().build();
+
+        assert_eq!(ConfigOption::default(), config);
     }
 }

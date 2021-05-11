@@ -146,17 +146,17 @@ impl SpuConfig {
 }
 
 impl From<&SpuConfig> for ConfigOption {
-    fn from(config: &SpuConfig) -> ConfigOption {
+    fn from(config: &SpuConfig) -> Self {
         let log = &config.log;
-        ConfigOption::new(
-            log.base_dir.join(format!("spu-logs-{}", config.id)),
-            log.index_max_bytes,
-            log.index_max_interval_bytes,
-            log.segment_max_bytes,
-            log.flush_write_count,
-            log.flush_idle_msec,
-            log.max_batch_size,
-        )
+        ConfigOption::builder()
+            .base_dir(log.base_dir.join(format!("spu-logs-{}", config.id)))
+            .index_max_bytes(log.index_max_bytes)
+            .index_max_interval_bytes(log.index_max_interval_bytes)
+            .segment_max_bytes(log.segment_max_bytes)
+            .flush_write_count(log.flush_write_count)
+            .flush_idle_msec(log.flush_idle_msec)
+            .max_batch_size(log.max_batch_size)
+            .build()
     }
 }
 
