@@ -1,4 +1,6 @@
 # Release Notes
+## Unreleased
+* Added builder for fluvio_storage::config::ConfigOption. (#1076)[https://github.com/infinyon/fluvio/pull/1076]
 
 ## Platform Version 0.8.2 - 2020-05-06
 * Fix Replication fail over with duplication ([#1052](https://github.com/infinyon/fluvio/pull/1052))
