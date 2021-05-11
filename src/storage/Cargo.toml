@@ -29,6 +29,7 @@ async-trait = "0.1.18"
 structopt = { version = "0.3.5", optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
 async-mutex = "1.4.0"
+derive_builder = "0.10.2"
 
 
 # Fluvio dependencies
