@@ -9,6 +9,8 @@ use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::consumer::error::ConsumerError;
 
+const DEFAULT_BATCH_SIZE: usize = 50;
+
 // -----------------------------------
 // CLI Options
 // -----------------------------------
@@ -58,7 +60,7 @@ impl ProduceOpt {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
                 let lines: Vec<_> = reader.lines().filter_map(|it| it.ok()).collect();
-                let batches: Vec<_> = lines.chunks(50).collect();
+                let batches: Vec<_> = lines.chunks(DEFAULT_BATCH_SIZE).collect();
                 for batch in batches {
                     let batch: Vec<_> = batch.iter().map(|it| &**it).collect();
                     self.produce_lines(&mut producer, &batch).await?;
