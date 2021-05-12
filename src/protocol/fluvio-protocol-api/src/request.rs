@@ -3,6 +3,8 @@ use std::path::Path;
 use std::fmt;
 use std::fmt::Display;
 
+use std::io::ErrorKind;
+
 use log::trace;
 
 use crate::core::bytes::Buf;
@@ -136,6 +138,22 @@ where
     where
         T: Buf,
     {
+        if src.remaining() < 4 {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought for request",
+            ));
+        }
+        let mut size: i32 = 0;
+        size.decode(src, version)?;
+        trace!("decoded request size: {} bytes", size);
+
+        if src.remaining() < size as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought for request",
+            ));
+        }
         self.header.decode(src, version)?;
         self.request.decode(src, self.header.api_version())?;
         Ok(())
@@ -343,9 +361,6 @@ mod test {
         message.encode(&mut out, 0).expect("encode work");
         let mut encode_bytes = Cursor::new(&out);
 
-        // decode back
-        let mut len: i32 = 0;
-        len.decode(&mut encode_bytes, 0).expect("cant decode len");
         let res_msg_result: Result<RequestMessage<ApiVersionRequest>, IoError> =
             Decoder::decode_from(&mut encode_bytes, 0);
 

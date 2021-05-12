@@ -44,6 +44,23 @@ where
     where
         T: Buf,
     {
+        if src.remaining() < 4 {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought for response",
+            ));
+        }
+        let mut size: i32 = 0;
+        size.decode(src, version)?;
+        trace!("decoded response size: {} bytes", size);
+
+        if src.remaining() < size as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought for response",
+            ));
+        }
+
         let mut correlation_id: i32 = 0;
         correlation_id.decode(src, version)?;
         trace!("decoded correlation id: {}", correlation_id);
@@ -67,17 +84,6 @@ where
         let data = buffer.to_vec();
 
         let mut src = Cursor::new(&data);
-
-        let mut size: i32 = 0;
-        size.decode(&mut src, version)?;
-        trace!("decoded response size: {} bytes", size);
-
-        if src.remaining() < size as usize {
-            return Err(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "not enought for response",
-            ));
-        }
 
         Self::decode_from(&mut src, version)
     }

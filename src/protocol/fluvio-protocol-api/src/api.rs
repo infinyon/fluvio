@@ -41,6 +41,23 @@ pub trait ApiMessage: Sized + Default {
     where
         T: Buf,
     {
+        if src.remaining() < 4 {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought bytes for request message",
+            ));
+        }
+
+        let mut size: i32 = 0;
+        size.decode(src, 0)?;
+        trace!("decoded request size: {} bytes", size);
+        if src.remaining() < size as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought bytes for request message",
+            ));
+        }
+
         let header = RequestHeader::decode_from(src, 0)?;
         Self::decode_with_header(src, header)
     }
@@ -54,17 +71,6 @@ pub trait ApiMessage: Sized + Default {
 
         let data = buffer.to_vec();
         let mut src = Cursor::new(&data);
-
-        let mut size: i32 = 0;
-        size.decode(&mut src, 0)?;
-        trace!("decoded request size: {} bytes", size);
-
-        if src.remaining() < size as usize {
-            return Err(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "not enought bytes for request message",
-            ));
-        }
 
         Self::decode_from(&mut src)
     }

@@ -44,8 +44,7 @@ impl Decoder for FluvioCodec {
                     packet_len + 4,
                     bytes.len() - (packet_len + 4) as usize
                 );
-                let mut buf = bytes.split_to((packet_len + 4) as usize);
-                let message = buf.split_off(4); // truncate length
+                let message = bytes.split_to((packet_len + 4) as usize);
                 Ok(Some(message))
             } else {
                 trace!(
@@ -132,13 +131,6 @@ mod test {
                     );
                     assert_eq!(buf.len(), 9); //  4(array len)+ 5 bytes
 
-                    // write buffer length since encoder doesn't write
-                    // need to send out len
-                    let mut len_buf = vec![];
-                    let len = buf.len() as i32;
-                    len.encode(&mut len_buf, 0).expect("encoding");
-                    sink.send(Bytes::from(len_buf)).await.expect("sending");
-
                     sink.send(Bytes::from(buf)).await.expect("sending");
                 }
 
@@ -151,13 +143,6 @@ mod test {
                         buf.len()
                     );
                     assert_eq!(buf.len(), 9); //  4(array len)+ 5 bytes
-
-                    // write buffer length since encoder doesn't write
-                    // need to send out len
-                    let mut len_buf = vec![];
-                    let len = buf.len() as i32;
-                    len.encode(&mut len_buf, 0).expect("encoding");
-                    sink.send(Bytes::from(len_buf)).await.expect("sending");
 
                     // split buf into two segments, decode should reassembly them
                     let buf2 = buf.split_off(5);
