@@ -573,7 +573,7 @@ jobs:
             export PATH=~/.fluvio/bin:$PATH
             cd tests
             # Use gh cli to collect the last and current release version numbers
-            ./upgrade-test.sh `gh api repos/infinyon/fluvio/releases -q '.[2,1].tag_name' | sed 's/v//'`
+            ./upgrade-test.sh $(gh api repos/infinyon/fluvio/releases -q '.[2,1].tag_name' | sed 's/v//')
 
       - name: Stop sccache server
         run: sccache --stop-server || true
