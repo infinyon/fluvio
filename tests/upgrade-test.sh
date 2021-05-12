@@ -29,8 +29,6 @@ readonly STABLE_MINUS_ONE_TOPIC=${STABLE_MINUS_ONE_TOPIC:-stable-minus-one-cli-t
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable-cli-topic}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease-cli-topic}
 
-# Change to this script's directory 
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
 function cleanup() {
     echo Clean up test data
@@ -51,9 +49,10 @@ function ci_check() {
     fi
 }
 
+# This function is intended to be run first after generating test data
+# We install the Stable-1 CLI, and start a cluster
+# A topic is created, and we do a produce + consume and validate the checksum of the output
 function validate_cluster_out_of_date_stable() {
-
-    create_test_data;
 
     echo "Install (out-of-date) v${STABLE_MINUS_ONE} CLI"
     curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${STABLE_MINUS_ONE} bash
@@ -85,6 +84,11 @@ function validate_cluster_out_of_date_stable() {
     fi
 }
 
+
+# This function is intended to be run second after the Stable-1 validation
+# We install the Stable CLI, and upgrade the existing cluster
+# A brand new topic is created, and we do a produce + consume and validate the checksum of the output on that topic
+# Then we produce + consume on the Stable-1 topic and validate the checksums on that topic
 function validate_upgrade_cluster_to_stable() {
 
     echo "Install (current stable) v${STABLE} CLI"
@@ -133,6 +137,10 @@ function validate_upgrade_cluster_to_stable() {
 
 }
 
+# This function is intended to be run last after the Stable validation
+# We install the Prerelease CLI (either the dev prerelease, or compiled if we're in CI), and upgrade the existing cluster
+# Another brand new topic is created, and we do a produce + consume and validate the checksum of the output on that topic
+# Then we produce + consume on the Stable + Stable-1 topic and validate the checksums on each of those topics
 function validate_upgrade_cluster_to_prerelease() {
 
     if [[ ! -z "$CI" ]];
@@ -210,11 +218,9 @@ function validate_upgrade_cluster_to_prerelease() {
 
 }
 
+# Create 3 base data files and calculate checksums for the expected states of each of our testing topics
+# Build produce/consume with generated data to validate integrity across upgrades
 function create_test_data() {
-
-    # Create 3 base data files, checksums.
-    # Build produce/consume with generated data to validate integrity across upgrades
-
     local TEST_DATA_BYTES=${TEST_DATA_BYTES:-100}
 
     # The baseline files
@@ -258,18 +264,26 @@ function create_test_data() {
     cat data3.txt.tmp | shasum | tee -a prerelease-cli-prerelease-topic.checksum
 }
 
-cleanup;
+function main() {
+    # Change to this script's directory 
+    pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
-echo "Create cluster @ stable v${STABLE_MINUS_ONE}. Create and validate data."
-validate_cluster_out_of_date_stable;
+    cleanup;
+    create_test_data;
 
-echo "Update cluster to stable v${STABLE}. Create and validate data."
-validate_upgrade_cluster_to_stable;
+    echo "Create cluster @ stable v${STABLE_MINUS_ONE}. Create and validate data."
+    validate_cluster_out_of_date_stable;
 
-echo "Update cluster to prerelease v${PRERELEASE}"
-validate_upgrade_cluster_to_prerelease;
+    echo "Update cluster to stable v${STABLE}. Create and validate data."
+    validate_upgrade_cluster_to_stable;
 
-cleanup;
+    echo "Update cluster to prerelease v${PRERELEASE}"
+    validate_upgrade_cluster_to_prerelease;
 
-# Change back to original directory
-popd > /dev/null
+    cleanup;
+
+    # Change back to original directory
+    popd > /dev/null
+}
+
+main;
