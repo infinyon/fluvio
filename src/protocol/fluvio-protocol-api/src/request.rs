@@ -154,14 +154,13 @@ where
     where
         T: BufMut,
     {
-        let len = self.write_size(version) as i32;
+        let len = self.write_size(version);
         trace!(
             "encoding kf request: {} version: {}, len: {}",
             std::any::type_name::<R>(),
             version,
             len
         );
-        len.encode(out, version)?;
 
         trace!("encoding request header: {:#?}", &self.header);
         self.header.encode(out, version)?;
@@ -343,9 +342,6 @@ mod test {
         message.encode(&mut out, 0).expect("encode work");
         let mut encode_bytes = Cursor::new(&out);
 
-        // decode back
-        let mut len: i32 = 0;
-        len.decode(&mut encode_bytes, 0).expect("cant decode len");
         let res_msg_result: Result<RequestMessage<ApiVersionRequest>, IoError> =
             Decoder::decode_from(&mut encode_bytes, 0);
 

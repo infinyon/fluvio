@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::Cursor;
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::io::Read;
 use std::path::Path;
 
@@ -68,17 +67,6 @@ where
 
         let mut src = Cursor::new(&data);
 
-        let mut size: i32 = 0;
-        size.decode(&mut src, version)?;
-        trace!("decoded response size: {} bytes", size);
-
-        if src.remaining() < size as usize {
-            return Err(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "not enought for response",
-            ));
-        }
-
         Self::decode_from(&mut src, version)
     }
 }
@@ -95,14 +83,13 @@ where
     where
         T: BufMut,
     {
-        let len = self.write_size(version) as i32;
+        let len = self.write_size(version);
         trace!(
             "encoding kf response: {} version: {}, len: {}",
             std::any::type_name::<P>(),
             version,
             len
         );
-        len.encode(out, version)?;
         self.correlation_id.encode(out, version)?;
         self.response.encode(out, version)?;
         Ok(())

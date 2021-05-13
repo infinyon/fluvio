@@ -1,6 +1,5 @@
 use std::default::Default;
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::fs::File;
 use std::io::Cursor;
 use std::path::Path;
@@ -9,7 +8,6 @@ use std::fmt::Debug;
 use std::fmt;
 use std::convert::TryFrom;
 
-use log::trace;
 use log::debug;
 
 use crate::core::Decoder;
@@ -54,17 +52,6 @@ pub trait ApiMessage: Sized + Default {
 
         let data = buffer.to_vec();
         let mut src = Cursor::new(&data);
-
-        let mut size: i32 = 0;
-        size.decode(&mut src, 0)?;
-        trace!("decoded request size: {} bytes", size);
-
-        if src.remaining() < size as usize {
-            return Err(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "not enought bytes for request message",
-            ));
-        }
 
         Self::decode_from(&mut src)
     }
