@@ -67,7 +67,8 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.0"
-source = "git+https://github.com/infinyon/future-aio#8d07228889a6654cf4b5d509a0ff00ff5c38ad16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd29a0773ef0ab97eb91e621093b4b64218456941e33fd63d9647fbe57a439cf"
 dependencies = [
  "log",
  "thiserror",
@@ -77,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-core",

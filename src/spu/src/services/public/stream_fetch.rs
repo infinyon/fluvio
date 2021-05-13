@@ -492,7 +492,6 @@ mod test {
     use flv_util::fixture::ensure_clean_dir;
     use futures_util::StreamExt;
 
-    use fluvio_future::{test_async};
     use fluvio_future::timer::sleep;
     use fluvio_socket::{FluvioSocket, MultiplexerSocket};
     use dataplane::{
@@ -509,9 +508,8 @@ mod test {
     use crate::services::create_public_server;
     use super::*;
 
-    // #[test_async] Disable because flaky
-    #[allow(unused)]
-    async fn test_stream_fetch() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch() {
         let test_path = temp_dir().join("stream_test");
         ensure_clean_dir(&test_path);
 
@@ -658,8 +656,6 @@ mod test {
 
         server_end_event.notify();
         debug!("terminated controller");
-
-        Ok(())
     }
 
     fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
@@ -683,8 +679,8 @@ mod test {
         read_filter_from_path(wasm_path)
     }
 
-    #[test_async]
-    async fn test_stream_filter_fetch() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_filter_fetch() {
         let test_path = temp_dir().join("filter_stream_fetch");
         ensure_clean_dir(&test_path);
 
@@ -822,8 +818,6 @@ mod test {
 
         server_end_event.notify();
         debug!("terminated controller");
-
-        Ok(())
     }
 
     fn generate_record(record_index: usize, _producer: &BatchProducer) -> DefaultRecord {
@@ -850,8 +844,8 @@ mod test {
     }
 
     /// test filter with max bytes
-    #[test_async]
-    async fn test_stream_filter_max() -> Result<(), ()> {
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_filter_max() {
         let test_path = temp_dir().join("filter_stream_max");
         ensure_clean_dir(&test_path);
 
@@ -973,8 +967,5 @@ mod test {
         drop(response);
 
         server_end_event.notify();
-        debug!("terminated controller");
-
-        Ok(())
     }
 }

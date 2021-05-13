@@ -284,7 +284,7 @@ impl FileReplica {
                         // optimization
                         if start_offset == self.get_leo() {
                             trace!("start offset is same as end offset, skipping");
-                            return OffsetInfo { leo, hw };
+                            return OffsetInfo { hw, leo };
                         } else {
                             debug!(
                                 "active segment with base offset: {} found for offset: {}",
@@ -349,7 +349,7 @@ impl FileReplica {
             }
         }
 
-        OffsetInfo { leo, hw }
+        OffsetInfo { hw, leo }
     }
 
     async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {

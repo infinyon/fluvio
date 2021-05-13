@@ -88,8 +88,8 @@ where
         let controller = Self {
             response_sink,
             store,
-            end_event,
             header,
+            end_event,
         };
 
         spawn(controller.dispatch_loop());

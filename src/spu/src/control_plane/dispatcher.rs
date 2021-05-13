@@ -391,15 +391,13 @@ impl ScDispatcher<FileReplica> {
                         }
                     } else if new_replica.is_being_deleted {
                         self.remove_follower_replica(new_replica).await;
-                    } else {
-                        if let Err(err) = self
-                            .ctx
-                            .followers_state_owned()
-                            .add_replica(self.ctx.clone(), new_replica)
-                            .await
-                        {
-                            error!("adding replica failed: {}", err);
-                        }
+                    } else if let Err(err) = self
+                        .ctx
+                        .followers_state_owned()
+                        .add_replica(self.ctx.clone(), new_replica)
+                        .await
+                    {
+                        error!("adding replica failed: {}", err);
                     }
                 }
                 SpecChange::Delete(deleted_replica) => {
@@ -458,7 +456,7 @@ impl ScDispatcher<FileReplica> {
     async fn update_leader_replica(&self, replica: Replica) {
         debug!("updating leader controller");
 
-        if let Some(_) = self.ctx.leaders_state().get(&replica.id) {
+        if self.ctx.leaders_state().get(&replica.id).is_some() {
             debug!(
                 %replica,
                 "leader replica was found"

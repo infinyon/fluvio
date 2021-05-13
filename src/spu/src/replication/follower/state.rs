@@ -48,7 +48,7 @@ where
 
     pub async fn get(&self, replica: &ReplicaKey) -> Option<FollowerReplicaState<S>> {
         let read = self.read().await;
-        read.get(replica).map(|value| value.clone())
+        read.get(replica).cloned()
     }
 
     pub async fn followers_by_spu(
@@ -219,18 +219,16 @@ where
                     follower_hw = f_offset.hw,
                     leader_hw, "leader hw is less than hw"
                 );
+            } else if leader_hw > f_offset.leo {
+                warn!(
+                    leader_hw,
+                    follower_leo = f_offset.leo,
+                    "leade hw is greater than follower leo"
+                )
             } else {
-                if leader_hw > f_offset.leo {
-                    warn!(
-                        leader_hw,
-                        follower_leo = f_offset.leo,
-                        "leade hw is greater than follower leo"
-                    )
-                } else {
-                    debug!(f_offset.hw, leader_hw, "updating hw");
-                    self.update_hw(leader_hw).await?;
-                    changes = true;
-                }
+                debug!(f_offset.hw, leader_hw, "updating hw");
+                self.update_hw(leader_hw).await?;
+                changes = true;
             }
         }
 

@@ -68,11 +68,7 @@ impl SpuOpt {
     fn get_spu_config(self) -> Result<(SpuConfig, Option<(TlsAcceptor, String)>), IoError> {
         let tls_acceptor = self.try_build_tls_acceptor()?;
         let (spu_config, tls_addr_opt) = self.as_spu_config()?;
-        let tls_config = match tls_acceptor {
-            Some(acceptor) => Some((acceptor, tls_addr_opt.unwrap())),
-            None => None,
-        };
-
+        let tls_config = tls_acceptor.map(|it| (it, tls_addr_opt.unwrap()));
         Ok((spu_config, tls_config))
     }
 

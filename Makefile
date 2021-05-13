@@ -155,7 +155,7 @@ install-clippy:
 # Use check first to leverage sccache, the clippy piggybacks
 check-clippy: install-clippy
 	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE_FLAG)
-	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests -- -D warnings -A clippy::upper_case_acronyms
+	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms
 
 build-all-test:
 	cargo build --lib --tests --all-features $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
@@ -163,16 +163,18 @@ build-all-test:
 check-all-test:
 	cargo check --lib --tests --all-features $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-test_tls_multiplex:
-	cd src/socket; cargo test test_multiplexing_native_tls
 
 build_filter_wasm:
 	rustup target add wasm32-unknown-unknown 
 	make -C smart_filter build_test
 
-run-all-unit-test: test_tls_multiplex build_filter_wasm
+run-all-unit-test:
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
+	make test-all -C src/protocol	
+
+run-unstable-test:	build_filter_wasm
+	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
 
 run-all-doc-test:
 	cargo test --all-features --doc $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)

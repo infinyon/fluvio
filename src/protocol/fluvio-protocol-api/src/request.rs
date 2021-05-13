@@ -192,9 +192,9 @@ mod test {
 
     use crate::Request;
 
-    #[fluvio(encode_discriminant)]
-    #[derive(PartialEq, Debug, Clone, Copy, Encode, Decode)]
     #[repr(u16)]
+    #[derive(PartialEq, Debug, Clone, Copy, Encode, Decode)]
+    #[fluvio(encode_discriminant)]
     pub enum TestApiKey {
         ApiVersion = 0,
     }

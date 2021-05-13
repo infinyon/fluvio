@@ -198,12 +198,16 @@ fn assemble_requests(
     for (leader, partitions) in partitions_by_spu {
         let mut request = DefaultProduceRequest::default();
 
-        let mut topic_request = DefaultTopicRequest::default();
-        topic_request.name = topic.to_string();
+        let mut topic_request = DefaultTopicRequest {
+            name: topic.to_string(),
+            ..Default::default()
+        };
 
         for (partition, records) in partitions {
-            let mut partition_request = DefaultPartitionRequest::default();
-            partition_request.partition_index = partition;
+            let mut partition_request = DefaultPartitionRequest {
+                partition_index: partition,
+                ..Default::default()
+            };
             partition_request
                 .records
                 .batches

@@ -52,7 +52,7 @@ mod inner {
     impl OffsetInfo {
         pub fn new(leo: Offset, hw: Offset) -> Self {
             assert!(leo >= hw, "end offset >= high watermark");
-            Self { leo, hw }
+            Self { hw, leo }
         }
 
         /// get isolation offset
