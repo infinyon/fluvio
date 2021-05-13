@@ -1,5 +1,3 @@
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
 
 use std::fmt;
 
@@ -10,8 +8,18 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 
 use fluvio_future::net::{
-    BoxWriteConnection, BoxReadConnection, DefaultTcpDomainConnector, TcpDomainConnector, TcpStream,
+    BoxWriteConnection, BoxReadConnection
 };
+
+cfg_if::cfg_if! {
+    if #[cfg(unix)] {
+        use std::os::unix::io::AsRawFd;
+        use std::os::unix::io::RawFd;
+        use fluvio_future::net::{
+            DefaultTcpDomainConnector, TcpDomainConnector, TcpStream,
+        };
+    }
+}
 
 use super::FlvSocketError;
 use crate::FluvioSink;
@@ -25,8 +33,13 @@ pub struct FluvioSocket {
 }
 
 impl fmt::Debug for FluvioSocket {
+    #[cfg(unix)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "fd({})", self.id())
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "websocket")
     }
 }
 
@@ -60,10 +73,6 @@ impl FluvioSocket {
         &mut self.stream
     }
 
-    pub fn id(&self) -> RawFd {
-        self.sink.id()
-    }
-
     /// as client, send request and wait for reply from server
     pub async fn send<R>(
         &mut self,
@@ -78,9 +87,34 @@ impl FluvioSocket {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+impl FluvioSocket {
+    pub async fn connect_with_connector(
+        addr: &str,
+        _connector: &crate::websocket::WebSocketConnector,
+    ) -> Result<Self, FlvSocketError> {
+        let addr = if addr == "localhost:9010" {
+            "ws://localhost:3001"
+        } else {
+            addr
+        };
+        debug!("CONNECTING TO {:?}", addr);
+        use ws_stream_wasm::WsMeta;
+        use wasm_bindgen::UnwrapThrowExt;
+        let (ws, wsio) = WsMeta::connect(addr, None).await.expect_throw("Could not create websocket");
+
+        Ok(Self::new(FluvioSink::new(ws), FluvioStream::new(wsio)))
+    }
+}
+
+#[cfg(unix)]
 impl FluvioSocket {
     pub fn from_stream(write: BoxWriteConnection, read: BoxReadConnection, raw_fd: RawFd) -> Self {
         Self::new(FluvioSink::new(write, raw_fd), FluvioStream::new(read))
+    }
+
+    pub fn id(&self) -> RawFd {
+        self.sink.id()
     }
 
     /// connect to target address with connector
@@ -92,19 +126,18 @@ impl FluvioSocket {
         let (write, read, fd) = connector.connect(addr).await?;
         Ok(Self::from_stream(write, read, fd))
     }
+
+    pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
+        let connector = DefaultTcpDomainConnector::new();
+        Self::connect_with_connector(addr, &connector).await
+    }
 }
+
 
 impl From<(FluvioSink, FluvioStream)> for FluvioSocket {
     fn from(pair: (FluvioSink, FluvioStream)) -> Self {
         let (sink, stream) = pair;
         Self::new(sink, stream)
-    }
-}
-
-impl FluvioSocket {
-    pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
-        let connector = DefaultTcpDomainConnector::new();
-        Self::connect_with_connector(addr, &connector).await
     }
 }
 

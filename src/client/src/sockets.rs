@@ -3,7 +3,10 @@ use std::fmt;
 use std::fmt::Display;
 use std::sync::Arc;
 
+#[cfg(unix)]
 use tracing::{debug, trace};
+#[cfg(target_arch = "wasm32")]
+use log::{debug, trace};
 use async_trait::async_trait;
 
 use dataplane::api::RequestMessage;
@@ -73,8 +76,6 @@ impl SerialFrame for VersionedSocket {
     }
 }
 impl VersionedSocket {
-    /*
-    */
 
     /// send and wait for reply
     pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
@@ -101,6 +102,7 @@ impl VersionedSocket {
         // now get versions
         // Query for API versions
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
+        debug!("SENDING VERSION REQUEST: {:#?}", req_msg);
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
@@ -199,13 +201,14 @@ impl ClientConfig {
 
         #[cfg(target_arch = "wasm32")]
         let socket = FluvioSocket::connect_with_connector(&self.addr, &self.connector).await?;
+
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 
     /// create new config with prefix add to domain, this is useful for SNI
     pub fn with_prefix_sni_domain(&self, prefix: &str) -> Self {
         let new_domain = format!("{}.{}", prefix, self.connector.domain());
-        debug!(sni_domain = %new_domain);
+        debug!("sni_domain = {:?}", new_domain);
         let connector = self.connector.new_domain(new_domain);
 
         Self {

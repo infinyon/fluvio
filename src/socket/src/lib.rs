@@ -2,26 +2,30 @@ mod error;
 pub use self::error::FlvSocketError;
 mod response;
 pub use response::AsyncResponse;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::api::ResponseMessage;
+mod multiplexing;
+pub use fluvio_future::net::{BoxConnection, Connection};
+pub use multiplexing::*;
+mod socket;
+pub use socket::*;
+mod sink;
+pub use sink::ExclusiveFlvSink;
+
+
+
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
-        mod multiplexing;
-        mod sink;
-        mod socket;
-        mod stream;
 
         #[cfg(test)]
         pub mod test_request;
-
-        pub use fluvio_future::net::{BoxConnection,Connection};
-        pub use self::socket::FluvioSocket;
-        pub use multiplexing::*;
         pub use sink::*;
-        pub use socket::*;
+        mod stream;
+        pub use stream::FluvioStream;
         pub use stream::*;
 
-        use fluvio_protocol::api::Request;
-        use fluvio_protocol::api::RequestMessage;
-        use fluvio_protocol::api::ResponseMessage;
+        pub use self::socket::FluvioSocket;
 
         /// send request and return response from calling server at socket addr
         pub async fn send_and_receive<R>(
@@ -41,9 +45,11 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_arch = "wasm32")] {
         mod websocket;
         pub use websocket::{
-            MultiplexerWebsocket as MultiplexerSocket,
-            FluvioWebSocket as FluvioSocket,
+            //MultiplexerWebsocket as MultiplexerSocket,
+            //FluvioWebSocket as FluvioSocket,
             WebSocketConnector as DomainConnector,
+            WebsocketSink as FluvioSink,
+            WebsocketStream as FluvioStream,
         };
     }
 

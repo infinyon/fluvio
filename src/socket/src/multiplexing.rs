@@ -4,20 +4,22 @@ use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::marker::PhantomData;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
 use async_channel::bounded;
-use async_channel::Receiver;
 use async_channel::Sender;
-use async_mutex::Mutex;
+use async_lock::Mutex;
 use bytes::BytesMut;
 use event_listener::Event;
-use futures_util::stream::{Stream, StreamExt};
-use pin_project::{pin_project, pinned_drop};
+use futures_util::stream::StreamExt;
 use tokio::select;
+
+#[cfg(unix)]
 use tracing::{debug, error, instrument, trace};
+
+#[cfg(target_arch = "wasm32")]
+use log::{debug, error, trace};
 
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
@@ -36,6 +38,7 @@ use crate::AsyncResponse;
 type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
 
 /// Handle different way to multiplex
+#[derive(Debug)]
 enum SharedSender {
     /// Serial socket
     Serial(SharedMsg),
@@ -64,6 +67,7 @@ pub struct MultiplexerSocket {
 impl Drop for MultiplexerSocket {
     fn drop(&mut self) {
         // notify dispatcher
+        #[cfg(unix)]
         self.terminate.notify(usize::MAX);
     }
 }
@@ -132,15 +136,19 @@ impl MultiplexerSocket {
 
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
-        drop(senders);
+        // TODO: Why does this "fix" the wasm client at runtime?
+        //drop(senders);
 
         let (msg, msg_event) = bytes_lock;
 
         select! {
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
+                debug!("sleeping for {:?}", *MAX_WAIT_TIME);
+                /*
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
+                */
                 debug!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, correlation_id);
 
                 Err(IoError::new(
@@ -150,10 +158,14 @@ impl MultiplexerSocket {
             },
 
             _ = msg_event.listen() => {
+                debug!("msg_event.listen");
 
+                /*
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
+                */
+                debug!("Listening for msg event");
 
                 match msg.try_lock() {
                     Some(guard) => {
@@ -165,7 +177,7 @@ impl MultiplexerSocket {
                                 &mut Cursor::new(&response_bytes),
                                 req_msg.header.api_version(),
                             )?;
-                            trace!("receive serial socket id: {}, response: {:#?}", correlation_id, response);
+                            debug!("receive serial socket id: {}, response: {:#?}", correlation_id, response);
                             Ok(response)
                         } else {
                             debug!("serial socket: {}, id: {}, value is empty, something bad happened",R::API_KEY,correlation_id);
@@ -243,30 +255,37 @@ impl MultiPlexingResponseDispatcher {
     }
 
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
+        #[cfg(unix)]
         let frame_stream = stream.get_mut_tcp_stream();
 
+        #[cfg(target_arch = "wasm32")]
+        let mut frame_stream = stream;
+
+        trace!("Starting dispatcher loop");
         loop {
             trace!("dispatcher: waiting for next response from stream ");
 
             select! {
                 frame = frame_stream.next() => {
+                    debug!("NEXT ITEM :{:?}", frame);
                     if let Some(request) = frame {
-                        if let Ok(mut msg) = request {
-                            let mut correlation_id: i32 = 0;
-                            match correlation_id.decode(&mut msg, 0) {
-                                Ok(_) => {
-                                    trace!(correlation_id,"decoded correlation");
+                            if let Ok(mut msg) = request {
+                                let mut correlation_id: i32 = 0;
+                                match correlation_id.decode(&mut msg, 0) {
+                                    Ok(_) => {
+                                        //trace!(correlation_id, "decoded correlation");
 
-                                    if let Err(err) = self.send(correlation_id, msg).await {
-                                        error!("error sending to socket, {}", err)
+                                        debug!("DECODED CORRELATION: {:?}", correlation_id);
+                                        if let Err(err) = self.send(correlation_id, msg).await {
+                                            error!("error sending to socket, {}", err)
+                                        }
                                     }
+                                    Err(err) => error!("error decoding response, {}", err),
                                 }
-                                Err(err) => error!("error decoding response, {}", err),
+                            } else {
+                                debug!("dispatcher: problem getting frame from stream. terminating");
+                                break;
                             }
-                        } else {
-                            debug!("dispatcher: problem getting frame from stream. terminating");
-                            break;
-                        }
                     } else {
                         debug!("dispatcher: inner stream has terminated ");
 
@@ -307,14 +326,16 @@ impl MultiPlexingResponseDispatcher {
     /// send message to correct receiver
     pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), FlvSocketError> {
         let mut senders = self.senders.lock().await;
+        debug!("SENDERs: {:?} - correlation_id: {:?} - Senders {:#?}", senders.keys(), correlation_id, senders);
         if let Some(sender) = senders.get_mut(&correlation_id) {
+            debug!("GOT A SENDERR FOR {:?}", correlation_id);
             match sender {
                 SharedSender::Serial(serial_sender) => {
                     // this should always succeed since nobody should lock
                     match serial_sender.0.try_lock() {
                         Some(mut guard) => {
                             *guard = Some(msg);
-                            trace!("send back msg with correlation: {}", correlation_id);
+                            debug!("send back msg with correlation: {}", correlation_id);
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
                             Ok(())

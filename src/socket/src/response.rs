@@ -1,29 +1,17 @@
 
 use core::task::{Context, Poll};
-use std::collections::HashMap;
 use std::io::Cursor;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::marker::PhantomData;
 use std::pin::Pin;
-use std::sync::Arc;
-use std::time::Duration;
 
-use async_channel::bounded;
 use async_channel::Receiver;
-use async_channel::Sender;
-use async_mutex::Mutex;
 use bytes::BytesMut;
-use event_listener::Event;
 use futures_util::stream::Stream;
 use pin_project::{pin_project, pinned_drop};
-use tokio::select;
-use tracing::{debug, error, instrument, trace};
+use tracing::{debug, instrument, trace};
 
-use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
-use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::Decoder;
 
 use crate::FlvSocketError;
@@ -33,7 +21,7 @@ use crate::FlvSocketError;
 #[pin_project(PinnedDrop)]
 pub struct AsyncResponse<R> {
     #[pin]
-    pub(crate) receiver: Receiver<Option<BytesMut>>,
+    pub(crate)receiver: Receiver<Option<BytesMut>>,
     pub(crate)header: RequestHeader,
     pub(crate)correlation_id: i32,
     pub(crate)data: PhantomData<R>,

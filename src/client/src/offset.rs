@@ -7,7 +7,7 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 
 use crate::FluvioError;
-use crate::sockets::SerialFrame;
+use crate::sockets::VersionedSerialSocket;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum OffsetInner {
@@ -272,14 +272,12 @@ impl Offset {
     ///
     /// Note that calculating relative offsets requires connecting to Fluvio, and
     /// therefore it is `async` and returns a `Result`.
-    pub(crate) async fn to_absolute<F, S: Into<String>>(
+    pub(crate) async fn to_absolute< S: Into<String>>(
         &self,
-        client: &mut F,
+        client: &mut VersionedSerialSocket,
         topic: S,
         partition: i32,
     ) -> Result<i64, FluvioError>
-    where
-        F: SerialFrame,
     {
         let offset = match self.inner {
             OffsetInner::Absolute(offset) => offset,
@@ -299,14 +297,12 @@ impl Offset {
     }
 }
 
-async fn fetch_offsets<F: SerialFrame>(
-    client: &mut F,
+async fn fetch_offsets(
+    client: &mut VersionedSerialSocket,
     replica: &ReplicaKey,
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
-    unimplemented!();
-    /*
     let response = client
         .send_receive(FetchOffsetsRequest::new(
             replica.topic.to_owned(),
@@ -331,5 +327,4 @@ async fn fetch_offsets<F: SerialFrame>(
         )
         .into()),
     }
-    */
 }

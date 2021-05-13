@@ -13,8 +13,8 @@ cfg_if::cfg_if! {
 
     }
 }
-use async_mutex::Mutex;
-use async_mutex::MutexGuard;
+use async_lock::Mutex;
+use async_lock::MutexGuard;
 use tracing::trace;
 use tokio_util::compat::FuturesAsyncWriteCompatExt;
 use futures_util::SinkExt;
@@ -59,6 +59,7 @@ impl FluvioSink {
 
     /// convert to shared sink
     #[allow(clippy::wrong_self_convention)]
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn as_shared(self) -> ExclusiveFlvSink {
         ExclusiveFlvSink::new(self)
     }
@@ -91,7 +92,7 @@ impl FluvioSink {
         ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
         let bytes = resp_msg.as_bytes(version)?;
-        trace!("sending response {:#?}, bytes: {}", &resp_msg, bytes.len());
+        trace!("sending response {:#?}, bytes: {} - {:?}", &resp_msg, bytes.len(), bytes.to_vec());
         (&mut self.inner).send(bytes).await?;
         Ok(())
     }
@@ -177,7 +178,7 @@ impl AsRawFd for FluvioSink {
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct ExclusiveFlvSink {
-    inner: Arc<Mutex<FluvioSink>>,
+    inner: Arc<Mutex<crate::FluvioSink>>,
     #[cfg(not(target_arch = "wasm32"))]
     fd: RawFd,
 }
@@ -191,8 +192,9 @@ impl ExclusiveFlvSink {
             fd,
         }
     }
+
     #[cfg(target_arch = "wasm32")]
-    pub fn new(sink: FluvioSink) -> Self {
+    pub fn new(sink: crate::FluvioSink) -> Self {
         ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
         }
@@ -200,7 +202,12 @@ impl ExclusiveFlvSink {
 }
 
 impl ExclusiveFlvSink {
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn lock(&self) -> MutexGuard<'_, FluvioSink> {
+        self.inner.lock().await
+    }
+    #[cfg(target_arch = "wasm32")]
+    pub async fn lock(&self) -> MutexGuard<'_, crate::FluvioSink> {
         self.inner.lock().await
     }
 

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-
+#[cfg(unix)]
 use tracing::{debug, trace};
-use async_mutex::Mutex;
+#[cfg(target_arch = "wasm32")]
+use log::{debug, trace};
+use async_lock::Mutex;
 
 use dataplane::ReplicaKey;
 use dataplane::api::Request;
@@ -67,7 +69,7 @@ impl SpuPool {
         sc_socket: SharedMultiplexerSocket,
     ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
-        debug!("starting spu pool");
+        log::debug!("starting spu pool for {:?}", config.addr());
         Ok(Self {
             metadata,
             config,
@@ -79,7 +81,7 @@ impl SpuPool {
     async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
-        debug!("connecting to spu: {}", spu.spec);
+        log::debug!("connecting to spu at : {}", spu.spec);
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
         let spu_addr = spu.spec.public_endpoint.addr();
         debug!("spu addr: {}", spu_addr);

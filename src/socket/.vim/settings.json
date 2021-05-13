@@ -2,10 +2,6 @@
     "rust-analyzer": {
         "cargo": {
             "target": "wasm32-unknown-unknown"
-        },
-        "inlayHints": {
-            "enable": false,
-            "chainingHints": false
         }
     }
 }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use tracing::instrument;
 use siphasher::sip::SipHasher;
-use async_mutex::Mutex;
+use async_lock::Mutex;
 
 use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
@@ -14,7 +14,6 @@ use dataplane::record::DefaultAsyncBuffer;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::sockets::SerialFrame;
 use fluvio_types::{SpuId, PartitionId};
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;

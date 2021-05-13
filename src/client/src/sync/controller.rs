@@ -105,13 +105,14 @@ where
                 }
 
                 item = response.next() => {
-                    debug!("{} received request",S::LABEL);
+                    debug!("{} received request", S::LABEL);
 
                     match item {
                         Some(Ok(watch_response)) => {
                             let update_result: Result<MetadataUpdate<S>,_> = watch_response.try_into();
                             match update_result {
                                 Ok(update) => {
+                                    debug!("NEW UPDATE : {:#?}", update);
                                     if let Err(err) = self.process_updates(update).await {
                                         error!("Processing updates: {}", err);
                                     }
