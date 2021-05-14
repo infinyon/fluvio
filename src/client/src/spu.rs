@@ -2,8 +2,6 @@ use std::sync::Arc;
 use std::collections::HashMap;
 #[cfg(unix)]
 use tracing::{debug, trace};
-#[cfg(target_arch = "wasm32")]
-use log::{debug, trace};
 use async_lock::Mutex;
 
 use dataplane::ReplicaKey;

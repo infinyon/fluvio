@@ -1329,7 +1329,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1930,7 +1930,6 @@ version = "0.5.0"
 dependencies = [
  "async-channel",
  "async-lock",
- "async-mutex",
  "async-trait",
  "bytes",
  "derive_builder 0.10.2",
