@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 
-use async_mutex::Mutex;
-use async_mutex::MutexGuard;
+use async_lock::Mutex;
+use async_lock::MutexGuard;
 use tracing::trace;
 use tokio_util::compat::FuturesAsyncWriteCompatExt;
 use futures_util::SinkExt;

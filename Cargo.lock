@@ -952,8 +952,18 @@ version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d706e75d87e35569db781a9b5e2416cff1236a47ed380831f959382ccd5f858"
 dependencies = [
- "darling_core",
- "darling_macro",
+ "darling_core 0.10.2",
+ "darling_macro 0.10.2",
+]
+
+[[package]]
+name = "darling"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f2c43f534ea4b0b049015d00269734195e6d3f0f6635cb692251aca6f9f8b3c"
+dependencies = [
+ "darling_core 0.12.4",
+ "darling_macro 0.12.4",
 ]
 
 [[package]]
@@ -971,12 +981,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e91455b86830a1c21799d94524df0845183fa55bafd9aa137b01c7d1065fa36"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim 0.10.0",
+ "syn",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9b5a2f4ac4969822c62224815d069952656cadc7084fdca9751e6d959189b72"
 dependencies = [
- "darling_core",
+ "darling_core 0.10.2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29b5acf0dea37a7f66f7b25d2c5e93fd46f8f6968b1a5d7a3e02e97768afc95a"
+dependencies = [
+ "darling_core 0.12.4",
  "quote",
  "syn",
 ]
@@ -1018,11 +1053,20 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2658621297f2cf68762a6f7dc0bb7e1ff2cfd6583daef8ee0fed6f7ec468ec0"
 dependencies = [
- "darling",
- "derive_builder_core",
+ "darling 0.10.2",
+ "derive_builder_core 0.9.0",
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "derive_builder"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d13202debe11181040ae9063d739fa32cfcaaebe2275fe387703460ae2365b30"
+dependencies = [
+ "derive_builder_macro",
 ]
 
 [[package]]
@@ -1031,9 +1075,31 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2791ea3e372c8495c0bc2033991d76b512cd799d07491fbd6890124db9458bef"
 dependencies = [
- "darling",
+ "darling 0.10.2",
  "proc-macro2",
  "quote",
+ "syn",
+]
+
+[[package]]
+name = "derive_builder_core"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66e616858f6187ed828df7c64a6d71720d83767a7f19740b2d1b6fe6327b36e5"
+dependencies = [
+ "darling 0.12.4",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "derive_builder_macro"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58a94ace95092c5acb1e97a7e846b310cfbd499652f72297da7493f618a98d73"
+dependencies = [
+ "derive_builder_core 0.10.2",
  "syn",
 ]
 
@@ -1242,10 +1308,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "async-channel",
- "async-mutex",
+ "async-lock",
  "async-rwlock",
  "async-std",
  "async-trait",
@@ -1347,7 +1413,7 @@ dependencies = [
  "async-trait",
  "color-eyre",
  "colored",
- "derive_builder",
+ "derive_builder 0.9.0",
  "directories",
  "fluvio",
  "fluvio-command 0.2.1",
@@ -1432,7 +1498,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "content_inspector",
  "crc32c",
- "derive_builder",
+ "derive_builder 0.9.0",
  "fluvio-future 0.3.1",
  "fluvio-protocol 0.5.0",
  "fluvio-socket",
@@ -1753,10 +1819,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "async-channel",
- "async-mutex",
+ "async-lock",
  "async-net",
  "async-trait",
  "bytes",
@@ -1782,13 +1848,13 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-io",
- "async-mutex",
+ "async-lock",
  "async-rwlock",
  "async-trait",
  "bytes",
  "cfg-if 1.0.0",
  "chrono",
- "derive_builder",
+ "derive_builder 0.9.0",
  "event-listener",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
@@ -1836,9 +1902,10 @@ name = "fluvio-storage"
 version = "0.5.0"
 dependencies = [
  "async-channel",
- "async-mutex",
+ "async-lock",
  "async-trait",
  "bytes",
+ "derive_builder 0.10.2",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.3.1",
  "fluvio-protocol 0.5.0",
@@ -3962,6 +4029,12 @@ name = "strsim"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
+
+[[package]]
+name = "strsim"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "structopt"

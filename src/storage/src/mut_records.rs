@@ -4,7 +4,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use async_mutex::Mutex;
+use async_lock::Mutex;
 
 use tracing::debug;
 use tracing::warn;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use tracing::instrument;
 use siphasher::sip::SipHasher;
-use async_mutex::Mutex;
+use async_lock::Mutex;
 
 use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
