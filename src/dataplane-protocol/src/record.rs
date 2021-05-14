@@ -93,7 +93,9 @@ impl RecordData {
     {
         Self(val.into())
     }
+}
 
+impl RecordData {
     pub fn len(&self) -> usize {
         self.0.len()
     }

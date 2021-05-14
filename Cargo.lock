@@ -1811,10 +1811,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-smartstream-wasm"
-version = "0.2.0"
+name = "fluvio-smartstream"
+version = "0.1.0"
 dependencies = [
  "fluvio-dataplane-protocol",
+ "fluvio-smartstream-derive",
+]
+
+[[package]]
+name = "fluvio-smartstream-derive"
+version = "0.1.0"
+dependencies = [
+ "fluvio-smartstream",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "trybuild",
 ]
 
 [[package]]
@@ -4483,11 +4495,12 @@ dependencies = [
 
 [[package]]
 name = "value-bag"
-version = "1.0.0-alpha.6"
+version = "1.0.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b676010e055c99033117c2343b33a40a30b91fecd6c49055ac9cd2d6c305ab1"
+checksum = "dd320e1520f94261153e96f7534476ad869c14022aee1e59af7c778075d840ae"
 dependencies = [
  "ctor",
+ "version_check",
 ]
 
 [[package]]

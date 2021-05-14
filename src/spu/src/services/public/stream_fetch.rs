@@ -664,18 +664,13 @@ mod test {
 
     fn load_wasm_module(module_name: &str) -> Vec<u8> {
         let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
-        let mut wasm_path = PathBuf::from(spu_dir)
+        let wasm_path = PathBuf::from(spu_dir)
             .parent()
-            .expect("p")
-            .parent()
-            .expect("p")
-            .to_owned();
-        wasm_path.push("smart_filter");
-        wasm_path.push("target");
-        wasm_path.push("wasm32-unknown-unknown");
-        wasm_path.push("release");
-        wasm_path.push(format!("{}.wasm", module_name));
-        debug!(?wasm_path);
+            .expect("parent")
+            .join(format!(
+                "smartstream/examples/target/wasm32-unknown-unknown/release/{}.wasm",
+                module_name
+            ));
         read_filter_from_path(wasm_path)
     }
 
@@ -708,7 +703,7 @@ mod test {
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());
 
-        let wasm_module = load_wasm_module("fluvio_filter_test");
+        let wasm_module = load_wasm_module("fluvio_wasm_filter");
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.to_owned(),
@@ -886,7 +881,7 @@ mod test {
             .expect("write"); // 3000 bytes total
                               // now total of 300 filter records bytes (min), but last filter record is greater than max
 
-        let wasm_module = load_wasm_module("fluvio_filter_test");
+        let wasm_module = load_wasm_module("fluvio_wasm_filter");
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.to_owned(),

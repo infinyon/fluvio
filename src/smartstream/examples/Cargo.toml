@@ -1,6 +1,7 @@
 [workspace]
-members = ["test"]
-
+members = [
+    "filter",
+]
 
 # lto is need to reduce wasm binary size
 [profile.release]

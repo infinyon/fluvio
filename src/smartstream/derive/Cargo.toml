@@ -1,0 +1,21 @@
+[package]
+name = "fluvio-smartstream-derive"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2018"
+categories = ["wasm", "database", "encoding"]
+keywords = ["streaming", "stream", "wasm", "fluvio"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio SmartStream WASM procedural macro"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+[dev-dependencies]
+trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }
+fluvio-smartstream = { path = "../" }
