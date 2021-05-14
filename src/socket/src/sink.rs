@@ -9,7 +9,7 @@ use async_lock::Mutex;
 use async_lock::MutexGuard;
 use tracing::trace;
 use tokio_util::compat::FuturesAsyncWriteCompatExt;
-use futures_util::SinkExt;
+use futures_util::{SinkExt, AsyncWriteExt};
 
 use tokio_util::compat::Compat;
 use bytes::BytesMut;
@@ -71,13 +71,8 @@ impl FluvioSink {
     where
         RequestMessage<R>: FlvEncoder + Default + Debug,
     {
-        let bytes = req_msg.as_bytes(0)?;
-        trace!(
-            "sending one way request: {:#?}, bytes: {}",
-            &req_msg,
-            bytes.len()
-        );
-        (&mut self.inner).send(bytes).await?;
+        trace!("sending one way request: {:#?}", &req_msg,);
+        (&mut self.inner).send((req_msg, 0)).await?;
         Ok(())
     }
 
@@ -90,9 +85,8 @@ impl FluvioSink {
     where
         ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
-        let bytes = resp_msg.as_bytes(version)?;
-        trace!("sending response {:#?}, bytes: {}", &resp_msg, bytes.len());
-        (&mut self.inner).send(bytes).await?;
+        trace!("sending response {:#?}", &resp_msg);
+        (&mut self.inner).send((resp_msg, version)).await?;
         Ok(())
     }
 }
@@ -125,7 +119,13 @@ impl FluvioSink {
             match value {
                 StoreValue::Bytes(bytes) => {
                     trace!("writing store bytes to socket len: {}", bytes.len());
-                    self.get_mut_tcp_sink().send(bytes).await?;
+                    // These bytes should be already encoded so don't need to pass
+                    // through the FluvioCodec
+                    self.get_mut_tcp_sink()
+                        .get_mut()
+                        .get_mut()
+                        .write(&bytes)
+                        .await?;
                 }
                 StoreValue::FileSlice(f_slice) => {
                     if f_slice.is_empty() {
@@ -218,9 +218,9 @@ mod tests {
 
     use async_net::TcpListener;
     use bytes::BufMut;
-    use bytes::Bytes;
     use futures_util::future::join;
-    use futures_util::{SinkExt, StreamExt};
+    use futures_util::StreamExt;
+    use futures_util::io::AsyncWriteExt;
     use tracing::debug;
     use tracing::info;
 
@@ -251,7 +251,7 @@ mod tests {
         len.encode(&mut out, 0).expect("encode"); // codec len
         out.put_u16(TEXT_LEN as u16); // string message len
 
-        raw_tcp_sink.send(Bytes::from(out)).await.expect("send");
+        raw_tcp_sink.get_mut().get_mut().write(&out).await?;
 
         // send out file
         debug!("sending out file contents");

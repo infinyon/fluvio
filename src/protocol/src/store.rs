@@ -55,7 +55,8 @@ where
     }
 }
 
-/// This is same as encoding in the ResponseMessage but can encode async file slice
+/// This is same as encoding in the ResponseMessage but first
+/// includes the lenght and can encode async file slice
 impl<P> FileWrite for ResponseMessage<P>
 where
     P: FileWrite + Default,
@@ -84,6 +85,8 @@ where
     }
 }
 
+/// This is same as encoding in the RequestMessage but first
+/// includes the lenght and can encode async file slice
 impl<R> FileWrite for RequestMessage<R>
 where
     R: FileWrite + Default + Request,
@@ -94,15 +97,15 @@ where
         data: &mut Vec<StoreValue>,
         version: Version,
     ) -> Result<(), IoError> {
-        trace!("file encoding response message");
+        trace!("file encoding request message");
         let len = self.write_size(version) as i32;
-        trace!("file encoding response len: {}", len);
+        trace!("file encoding request len: {}", len);
         len.encode(dest, version)?;
 
         trace!("file encoding header");
         self.header.encode(dest, version)?;
 
-        trace!("encoding response");
+        trace!("encoding request");
         self.request.file_encode(dest, data, version)?;
         Ok(())
     }

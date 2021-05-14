@@ -25,8 +25,8 @@ x509-parser = "0.9.1"
 fluvio-controlplane-metadata = { version = "0.9.0", path = "../controlplane-metadata" }
 dataplane = { version = "0.5.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.3.0", features = ["net", "openssl_tls"] }
-fluvio-protocol = { path = "../protocol",  version = "0.5.0" }
-fluvio-socket = { path = "../socket", version = "0.8.0" }
+fluvio-protocol = { path = "../protocol",  version = "0.5.1" }
+fluvio-socket = { path = "../socket", version = "0.8.2" }
 fluvio-types = { version = "0.2.0", path = "../types" }
 flv-tls-proxy = { version = "0.5.0" }
 futures-util = { version = "0.3.5" }

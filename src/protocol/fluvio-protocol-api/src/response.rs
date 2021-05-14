@@ -68,6 +68,8 @@ where
 
         let mut src = Cursor::new(&data);
 
+        // ResponseMessage implementation of fluvio_protocol::storage::FileWrite trait first encodes the length
+        // of the ResponseMessage
         let mut size: i32 = 0;
         size.decode(&mut src, version)?;
         trace!("decoded response size: {} bytes", size);
@@ -78,7 +80,6 @@ where
                 "not enought for response",
             ));
         }
-
         Self::decode_from(&mut src, version)
     }
 }
@@ -95,14 +96,13 @@ where
     where
         T: BufMut,
     {
-        let len = self.write_size(version) as i32;
+        let len = self.write_size(version);
         trace!(
             "encoding kf response: {} version: {}, len: {}",
             std::any::type_name::<P>(),
             version,
             len
         );
-        len.encode(out, version)?;
         self.correlation_id.encode(out, version)?;
         self.response.encode(out, version)?;
         Ok(())
