@@ -11,7 +11,7 @@ use std::time::Duration;
 use async_channel::bounded;
 use async_channel::Receiver;
 use async_channel::Sender;
-use async_mutex::Mutex;
+use async_lock::Mutex;
 use bytes::BytesMut;
 use event_listener::Event;
 use futures_util::stream::{Stream, StreamExt};

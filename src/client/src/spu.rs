@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 use tracing::{debug, trace};
-use async_mutex::Mutex;
+use async_lock::Mutex;
 
 use dataplane::ReplicaKey;
 use dataplane::api::Request;

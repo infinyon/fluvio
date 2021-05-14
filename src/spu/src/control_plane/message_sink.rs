@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use async_mutex::Mutex;
+use async_lock::Mutex;
 
 use fluvio_controlplane::{LrsRequest};
 

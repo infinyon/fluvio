@@ -422,7 +422,7 @@ pub mod publishers {
     use std::sync::atomic::Ordering::SeqCst;
     use std::fmt::Debug;
 
-    use async_mutex::Mutex;
+    use async_lock::Mutex;
     use tracing::debug;
 
     use super::OffsetPublisher;
