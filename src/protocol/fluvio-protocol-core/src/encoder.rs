@@ -364,6 +364,22 @@ impl Encoder for String {
     }
 }
 
+impl<M> Encoder for &M
+where
+    M: Encoder,
+{
+    fn write_size(&self, version: Version) -> usize {
+        (*self).write_size(version)
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        (*self).encode(dest, version)
+    }
+}
+
 #[cfg(test)]
 mod test {
 
