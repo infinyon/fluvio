@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-#[cfg(unix)]
 use tracing::{debug, trace};
 use async_lock::Mutex;
 
