@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Cursor;
 use std::io::Error as IoError;
+use std::io::ErrorKind;
 use std::io::Read;
 use std::path::Path;
 
@@ -67,6 +68,18 @@ where
 
         let mut src = Cursor::new(&data);
 
+        // ResponseMessage implementation of fluvio_protocol::storage::FileWrite trait first encodes the length
+        // of the ResponseMessage
+        let mut size: i32 = 0;
+        size.decode(&mut src, version)?;
+        trace!("decoded response size: {} bytes", size);
+
+        if src.remaining() < size as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "not enought for response",
+            ));
+        }
         Self::decode_from(&mut src, version)
     }
 }
