@@ -71,7 +71,7 @@ jobs:
             run: make run-all-doc-test
             publish: false
           - name: Unit tests
-            run: make build-all-test run-all-unit-test
+            run: make run-all-unit-test
             publish: true
         include:
           - os: ubuntu-latest
