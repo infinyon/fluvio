@@ -6,13 +6,13 @@ use std::path::Path;
 use tracing::info;
 use derive_builder::Builder;
 
-use crate::record::{DefaultRecord, RecordSet};
-use crate::batch::DefaultBatch;
+use crate::record::{Record, RecordSet};
+use crate::batch::Batch;
 
 const DEFAULT_TEST_BYTE: u8 = 5;
 
-fn default_record_producer(_record_index: usize, producer: &BatchProducer) -> DefaultRecord {
-    let mut record = DefaultRecord::default();
+fn default_record_producer(_record_index: usize, producer: &BatchProducer) -> Record {
+    let mut record = Record::default();
     let bytes: Vec<u8> = vec![DEFAULT_TEST_BYTE; producer.per_record_bytes];
     record.value = bytes.into();
     record
@@ -29,7 +29,7 @@ pub struct BatchProducer {
     pub per_record_bytes: usize,
     /// generate record
     #[builder(setter, default = "Arc::new(default_record_producer)")]
-    pub record_generator: Arc<dyn Fn(usize, &BatchProducer) -> DefaultRecord>,
+    pub record_generator: Arc<dyn Fn(usize, &BatchProducer) -> Record>,
 }
 
 impl BatchProducer {
@@ -37,8 +37,8 @@ impl BatchProducer {
         BatchProducerBuilder::default()
     }
 
-    fn generate_batch(&self) -> DefaultBatch {
-        let mut batches = DefaultBatch::default();
+    fn generate_batch(&self) -> Batch {
+        let mut batches = Batch::default();
         let header = batches.get_mut_header();
         header.magic = 2;
         header.producer_id = self.producer_id;
@@ -56,7 +56,7 @@ impl BatchProducer {
     }
 }
 
-pub fn create_batch() -> DefaultBatch {
+pub fn create_batch() -> Batch {
     create_batch_with_producer(12, 2)
 }
 
@@ -68,15 +68,15 @@ pub fn create_recordset(num_records: u16) -> RecordSet {
 pub const TEST_RECORD: &[u8] = &[10, 20];
 
 /// create batches with produce and records count
-pub fn create_batch_with_producer(producer: i64, records: u16) -> DefaultBatch {
-    let mut batches = DefaultBatch::default();
+pub fn create_batch_with_producer(producer: i64, records: u16) -> Batch {
+    let mut batches = Batch::default();
     let header = batches.get_mut_header();
     header.magic = 2;
     header.producer_id = producer;
     header.producer_epoch = -1;
 
     for _ in 0..records {
-        let mut record = DefaultRecord::default();
+        let mut record = Record::default();
         let bytes: Vec<u8> = TEST_RECORD.to_owned();
         record.value = bytes.into();
         batches.add_record(record);

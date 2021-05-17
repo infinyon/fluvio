@@ -15,9 +15,14 @@ use crate::derive::Encode;
 
 use crate::Offset;
 use crate::Size;
-use crate::record::DefaultRecord;
+use crate::record::Record;
 
-pub type DefaultBatchRecords = Vec<DefaultRecord>;
+#[allow(deprecated)]
+#[deprecated(since = "0.6.0", note = "Use 'VecBatch' instead")]
+pub type DefaultBatchRecords = Vec<crate::record::DefaultRecord>;
+
+#[allow(deprecated)]
+#[deprecated(since = "0.6.0", note = "Use 'Batch' instead")]
 pub type DefaultBatch = Batch<DefaultBatchRecords>;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder {
@@ -27,7 +32,9 @@ pub trait BatchRecords: Default + Debug + Encoder + Decoder {
     }
 }
 
-impl BatchRecords for DefaultBatchRecords {}
+pub type MemoryBatch = Vec<Record>;
+
+impl BatchRecords for MemoryBatch {}
 
 /// size of the offset and length
 pub const BATCH_PREAMBLE_SIZE: usize = size_of::<Offset>()     // Offset
@@ -36,10 +43,7 @@ pub const BATCH_PREAMBLE_SIZE: usize = size_of::<Offset>()     // Offset
 pub const BATCH_FILE_HEADER_SIZE: usize = BATCH_PREAMBLE_SIZE + BATCH_HEADER_SIZE;
 
 #[derive(Default, Debug)]
-pub struct Batch<R>
-where
-    R: BatchRecords,
-{
+pub struct Batch<R = MemoryBatch> {
     pub base_offset: Offset,
     pub batch_len: i32, // only for decoding
     pub header: BatchHeader,
@@ -117,10 +121,34 @@ where
     }
 }
 
-impl DefaultBatch {
-    /// Create a new batch from a Vec of DefaultRecords
-    pub fn new(records: Vec<DefaultRecord>) -> Self {
-        let mut batch = DefaultBatch::default();
+impl Batch {
+    /// Create a new empty batch
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// add new record, this will update the offset to correct
+    pub fn add_record(&mut self, mut record: Record) {
+        let last_offset_delta = if self.records.is_empty() {
+            0
+        } else {
+            self.records.len() as Offset
+        };
+        record.preamble.set_offset_delta(last_offset_delta);
+        self.header.last_offset_delta = last_offset_delta as i32;
+        self.records.push(record)
+    }
+
+    /// computed last offset which is base offset + number of records
+    pub fn computed_last_offset(&self) -> Offset {
+        self.get_base_offset() + self.records.len() as Offset
+    }
+}
+
+impl<T: Into<MemoryBatch>> From<T> for Batch {
+    fn from(records: T) -> Self {
+        let records = records.into();
+        let mut batch = Self::default();
 
         let records: Vec<_> = records
             .into_iter()
@@ -135,23 +163,6 @@ impl DefaultBatch {
         let len = batch.records.len() as i32;
         batch.header.last_offset_delta = if len > 0 { len - 1 } else { len };
         batch
-    }
-
-    /// add new record, this will update the offset to correct
-    pub fn add_record(&mut self, mut record: DefaultRecord) {
-        let last_offset_delta = if self.records.is_empty() {
-            0
-        } else {
-            self.records.len() as Offset
-        };
-        record.preamble.set_offset_delta(last_offset_delta);
-        self.header.last_offset_delta = last_offset_delta as i32;
-        self.records.push(record)
-    }
-
-    /// computed last offset which is base offset + number of records
-    pub fn computed_last_offset(&self) -> Offset {
-        self.get_base_offset() + self.records.len() as Offset
     }
 }
 
@@ -254,14 +265,14 @@ pub const BATCH_HEADER_SIZE: usize = size_of::<i32>()     // partition leader ep
 
 #[cfg(test)]
 mod test {
-
+    use super::*;
     use std::io::Cursor;
     use std::io::Error as IoError;
 
     use crate::core::Decoder;
     use crate::core::Encoder;
-    use crate::record::{DefaultRecord, DefaultAsyncBuffer};
-    use crate::batch::DefaultBatch;
+    use crate::record::{Record, RecordData};
+    use crate::batch::Batch;
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
 
@@ -274,11 +285,11 @@ mod test {
     #[test]
     fn test_encode_and_decode_batch() -> Result<(), IoError> {
         let value = vec![0x74, 0x65, 0x73, 0x74];
-        let record = DefaultRecord {
-            value: DefaultAsyncBuffer::new(value),
+        let record = Record {
+            value: RecordData::from(value),
             ..Default::default()
         };
-        let mut batch = DefaultBatch::default();
+        let mut batch = Batch::<MemoryBatch>::default();
         batch.records.push(record);
         batch.header.first_timestamp = 1555478494747;
         batch.header.max_time_stamp = 1555478494747;
@@ -286,7 +297,7 @@ mod test {
         let bytes = batch.as_bytes(0)?;
         println!("batch raw bytes: {:#X?}", bytes.as_ref());
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
         println!("batch: {:#?}", batch);
 
         let decoded_record = batch.records.get(0).unwrap();
@@ -317,16 +328,16 @@ mod test {
 
     #[test]
     fn test_records_offset() {
-        let mut batch = DefaultBatch::default();
+        let mut batch = Batch::<MemoryBatch>::default();
         assert_eq!(batch.get_last_offset_delta(), 0);
 
-        batch.add_record(DefaultRecord::default());
+        batch.add_record(Record::default());
         assert_eq!(batch.get_last_offset_delta(), 0);
 
-        batch.add_record(DefaultRecord::default());
+        batch.add_record(Record::default());
         assert_eq!(batch.get_last_offset_delta(), 1);
 
-        batch.add_record(DefaultRecord::default());
+        batch.add_record(Record::default());
         assert_eq!(batch.get_last_offset_delta(), 2);
 
         assert_eq!(
@@ -358,15 +369,15 @@ mod test {
 
     #[test]
     fn test_batch_records_offset() {
-        let mut comparison = DefaultBatch::default();
-        comparison.add_record(DefaultRecord::default());
-        comparison.add_record(DefaultRecord::default());
-        comparison.add_record(DefaultRecord::default());
+        let mut comparison = Batch::<MemoryBatch>::default();
+        comparison.add_record(Record::default());
+        comparison.add_record(Record::default());
+        comparison.add_record(Record::default());
 
-        let batch_created = DefaultBatch::new(vec![
-            DefaultRecord::default(),
-            DefaultRecord::default(),
-            DefaultRecord::default(),
+        let batch_created = Batch::from(vec![
+            Record::default(),
+            Record::default(),
+            Record::default(),
         ]);
 
         for i in 0..3 {
@@ -381,7 +392,7 @@ mod test {
                     .get(i)
                     .expect("get record")
                     .get_offset_delta(),
-                "Creating a DefaultBatch from a Vec gave wrong delta",
+                "Creating a Batch from a Vec gave wrong delta",
             )
         }
 

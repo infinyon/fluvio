@@ -5,7 +5,7 @@ use std::ops::Deref;
 use tracing::debug;
 use tracing::trace;
 
-use dataplane::batch::DefaultBatch;
+use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::util as file_util;
@@ -19,7 +19,7 @@ use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::ConfigOption;
 use crate::StorageError;
-use crate::batch::DefaultFileBatchStream;
+use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
 use crate::validator::LogValidationError;
 use crate::util::OffsetError;
@@ -116,11 +116,11 @@ where
     }
 
     #[allow(dead_code)]
-    pub async fn open_default_batch_stream(&self) -> Result<DefaultFileBatchStream, StorageError> {
+    pub async fn open_default_batch_stream(&self) -> Result<FileBatchStream, StorageError> {
         let file_path = self.msg_log.get_path();
         debug!("opening batch stream: {:#?}", file_path);
         let file = file_util::open(file_path).await?;
-        Ok(DefaultFileBatchStream::new(file))
+        Ok(FileBatchStream::new(file))
     }
 
     /// get file slice from offset to end of segment
@@ -315,7 +315,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
-    pub async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<bool, StorageError> {
+    pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
         let pos = self.get_log_pos();
@@ -362,7 +362,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
 }
 
 /// compute total number of values in the default batch
-fn compute_batch_record_size(batch: &DefaultBatch) -> usize {
+fn compute_batch_record_size(batch: &Batch) -> usize {
     batch
         .records()
         .iter()
@@ -380,7 +380,7 @@ mod tests {
 
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
-    use dataplane::batch::DefaultBatch;
+    use dataplane::batch::{Batch, MemoryBatch};
     use dataplane::Size;
     use dataplane::core::Decoder;
     use dataplane::fixture::create_batch_with_producer;
@@ -434,7 +434,7 @@ mod tests {
         debug!("read {} bytes", bytes.len());
 
         // read batches from raw bytes to see if it can be parsed
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
+        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 1);
@@ -478,7 +478,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME))?;
         debug!("read {} bytes", bytes.len());
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 4);
@@ -524,11 +524,11 @@ mod tests {
         debug!("read {} bytes", bytes.len());
 
         let cursor = &mut Cursor::new(bytes);
-        let batch = DefaultBatch::decode_from(cursor, 0)?;
+        let batch = Batch::<MemoryBatch>::decode_from(cursor, 0)?;
         assert_eq!(batch.get_base_offset(), 40);
         assert_eq!(batch.get_header().last_offset_delta, 1);
 
-        let batch2 = DefaultBatch::decode_from(cursor, 0)?;
+        let batch2 = Batch::<MemoryBatch>::decode_from(cursor, 0)?;
         assert_eq!(batch2.get_base_offset(), 42);
         assert_eq!(batch2.get_header().last_offset_delta, 1);
 

@@ -15,8 +15,8 @@ use dataplane::fetch::FetchPartition;
 use dataplane::fetch::FetchableTopic;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
-use dataplane::record::DefaultRecord;
-use dataplane::batch::DefaultBatch;
+use dataplane::record::Record as DefaultRecord;
+use dataplane::batch::Batch;
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
@@ -296,7 +296,7 @@ impl PartitionConsumer {
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
         let stream = self.stream_batches_with_config(offset, config).await?;
         let flattened =
-            stream.flat_map(|result: Result<DefaultBatch, _>| match result {
+            stream.flat_map(|result: Result<Batch, _>| match result {
                 Err(e) => Either::Right(once(err(e))),
                 Ok(batch) => {
                     let base_offset = batch.base_offset;
@@ -343,7 +343,7 @@ impl PartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<DefaultBatch, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Batch, FluvioError>>, FluvioError> {
         let stream = self.request_stream(offset, config).await?;
         let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
             let response: DefaultStreamFetchResponse = match batch_result {

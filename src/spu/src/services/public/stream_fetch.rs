@@ -497,7 +497,7 @@ mod test {
     use dataplane::{
         Isolation,
         fixture::BatchProducer,
-        record::{DefaultAsyncBuffer, DefaultRecord},
+        record::{RecordData, Record},
     };
     use dataplane::fixture::{create_batch, TEST_RECORD};
     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
@@ -820,17 +820,14 @@ mod test {
         debug!("terminated controller");
     }
 
-    fn generate_record(record_index: usize, _producer: &BatchProducer) -> DefaultRecord {
+    fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
         let msg = match record_index {
             0 => "b".repeat(100),
             1 => "a".repeat(100),
             _ => "z".repeat(100),
         };
 
-        DefaultRecord {
-            value: DefaultAsyncBuffer::new(msg.into_bytes()),
-            ..Default::default()
-        }
+        Record::new(RecordData::from(msg))
     }
 
     /// create records that can be filtered

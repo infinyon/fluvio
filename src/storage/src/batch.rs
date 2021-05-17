@@ -12,15 +12,13 @@ use futures_lite::io::AsyncSeekExt;
 
 use fluvio_future::fs::File;
 use dataplane::batch::{
-    Batch, BatchRecords, DefaultBatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE,
-    BATCH_FILE_HEADER_SIZE,
+    Batch, BatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE, BATCH_FILE_HEADER_SIZE,
+    MemoryBatch,
 };
 use dataplane::Size;
 use dataplane::Offset;
 
 use crate::StorageError;
-
-pub type DefaultFileBatchStream = FileBatchStream<DefaultBatchRecords>;
 
 /// hold information about position of batch in the file
 pub struct FileBatchPos<R>
@@ -170,10 +168,7 @@ where
 }
 
 // stream to iterate batch
-pub struct FileBatchStream<R>
-where
-    R: Default + Debug,
-{
+pub struct FileBatchStream<R = MemoryBatch> {
     pos: Size,
     invalid: Option<IoError>,
     file: File,

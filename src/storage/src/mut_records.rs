@@ -19,7 +19,7 @@ use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::BoundedFileSink;
 use fluvio_future::fs::BoundedFileOption;
 use fluvio_future::fs::BoundedFileSinkError;
-use dataplane::batch::DefaultBatch;
+use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
 use dataplane::core::Encoder;
 
@@ -150,7 +150,7 @@ impl MutFileRecords {
 
     /// try to write batch
     /// if there is enough room, return true, false otherwise
-    pub async fn write_batch(&mut self, item: &DefaultBatch) -> Result<bool, StorageError> {
+    pub async fn write_batch(&mut self, item: &Batch) -> Result<bool, StorageError> {
         trace!("start sending using batch {:#?}", item.get_header());
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
@@ -371,7 +371,7 @@ mod tests {
 
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
-    use dataplane::batch::DefaultBatch;
+    use dataplane::batch::{Batch, MemoryBatch};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fixture::create_batch;
     use dataplane::fixture::read_bytes_from_file;
@@ -412,7 +412,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
         debug!("read ok");
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         let mut records = batch.own_records();
@@ -467,7 +467,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         let mut records = batch.own_records();
@@ -559,7 +559,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         let mut records = batch.own_records();

@@ -124,8 +124,8 @@ mod tests {
     use fluvio_future::fs::BoundedFileOption;
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
-    use dataplane::record::DefaultRecord;
-    use dataplane::batch::DefaultBatch;
+    use dataplane::record::Record;
+    use dataplane::batch::Batch;
     use dataplane::Offset;
 
     use crate::mut_records::MutFileRecords;
@@ -136,20 +136,18 @@ mod tests {
 
     const PRODUCER: i64 = 33;
 
-    pub fn create_batch(base_offset: Offset, records: u16) -> DefaultBatch {
-        let mut batches = DefaultBatch::default();
-        batches.set_base_offset(base_offset);
-        let header = batches.get_mut_header();
+    pub fn create_batch(base_offset: Offset, records: u16) -> Batch {
+        let mut batch = Batch::default();
+        batch.set_base_offset(base_offset);
+        let header = batch.get_mut_header();
         header.magic = 2;
         header.producer_id = PRODUCER;
         header.producer_epoch = -1;
         for _ in 0..records {
-            let mut record = DefaultRecord::default();
-            let bytes: Vec<u8> = vec![10, 20];
-            record.value = bytes.into();
-            batches.add_record(record);
+            let record = Record::new(vec![10, 20]);
+            batch.add_record(record);
         }
-        batches
+        batch
     }
 
     const TEST_FILE_NAME: &str = "00000000000000000301.log"; // for offset 301
