@@ -31,6 +31,7 @@ members = [
     "src/smartstream-wasm",
     "tests/runner",
 ]
+resolver = "2"
 
 
 [patch.crates-io]

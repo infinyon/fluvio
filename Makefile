@@ -157,12 +157,6 @@ check-clippy: install-clippy
 	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE_FLAG)
 	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms
 
-build-all-test:
-	cargo build --lib --tests --all-features $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-
-check-all-test:
-	cargo check --lib --tests --all-features $(TARGET_FLAG) $(VERBOSE_FLAG)
-
 
 build_filter_wasm:
 	rustup target add wasm32-unknown-unknown 
