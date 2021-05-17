@@ -81,7 +81,9 @@ impl FluvioSocket {
     where
         R: Request,
     {
+        debug!("Sending request : {:#?}", req_msg);
         self.sink.send_request(&req_msg).await?;
+        debug!("Successfully sent : {:#?}", req_msg);
 
         self.stream.next_response(&req_msg).await
     }
@@ -102,6 +104,7 @@ impl FluvioSocket {
         use ws_stream_wasm::WsMeta;
         use wasm_bindgen::UnwrapThrowExt;
         let (ws, wsio) = WsMeta::connect(addr, None).await.expect_throw("Could not create websocket");
+        debug!("CONNECTED TO {:?}", addr);
 
         Ok(Self::new(FluvioSink::new(ws), FluvioStream::new(wsio)))
     }

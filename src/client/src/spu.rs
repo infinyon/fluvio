@@ -66,7 +66,7 @@ impl SpuPool {
         sc_socket: SharedMultiplexerSocket,
     ) -> Result<Self, FlvSocketError> {
         let metadata = MetadataStores::start(sc_socket).await?;
-        log::debug!("starting spu pool for {:?}", config.addr());
+        debug!("starting spu pool for {:?}", config.addr());
         Ok(Self {
             metadata,
             config,
@@ -78,7 +78,7 @@ impl SpuPool {
     async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
-        log::debug!("connecting to spu at : {}", spu.spec);
+        debug!("connecting to spu at : {}", spu.spec);
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
         let spu_addr = spu.spec.public_endpoint.addr();
         debug!("spu addr: {}", spu_addr);

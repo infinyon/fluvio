@@ -136,7 +136,6 @@ impl WebsocketStream {
                 Ok(response?)
             },
             _ => {
-                debug!("WE DIDN'T GET ANYTHING IN RESPONSE");
                 Err(
                 IoError::new(
                     ErrorKind::UnexpectedEof, "server has terminated connection"
@@ -152,11 +151,14 @@ impl WebsocketStream {
         match self.ws.next().await {
             Some(WsMessage::Binary(mut data)) => {
                 // TODO: Fix when https://github.com/infinyon/fluvio/issues/1075 is fixed
-                let data = data.split_off(4);
+                //let data = data.split_off(4);
                 debug!("Got a new message: {:?}", data);
                 Some(Ok(BytesMut::from(data.as_slice())))
             }
-            _ => None
+            data => {
+                debug!("Uncaught response - {:#?}", data);
+                None
+            }
         }
 
     }

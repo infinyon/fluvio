@@ -3,10 +3,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::sync::Arc;
 
-#[cfg(unix)]
 use tracing::{debug, trace};
-#[cfg(target_arch = "wasm32")]
-use log::{debug, trace};
 use async_trait::async_trait;
 
 use dataplane::api::RequestMessage;
@@ -77,6 +74,7 @@ impl SerialFrame for VersionedSocket {
 }
 impl VersionedSocket {
 
+    /*
     /// send and wait for reply
     pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
@@ -91,6 +89,7 @@ impl VersionedSocket {
             .await
             .map(|res_msg| res_msg.response)
     }
+    */
 }
 
 impl VersionedSocket {
@@ -106,9 +105,10 @@ impl VersionedSocket {
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
+        debug!("VERSION RESPONSE: {:#?}", response);
         let versions = Versions::new(response);
 
-        trace!("versions: {:#?}", versions);
+        debug!("versions: {:#?}", versions);
 
         Ok(Self {
             socket,
@@ -292,8 +292,6 @@ impl SerialFrame for VersionedSerialSocket {
 
 //#[async_trait]
 impl VersionedSerialSocket {
-    /*
-    */
 
     /// send and wait for reply serially
     pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>

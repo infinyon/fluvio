@@ -184,29 +184,18 @@ pub struct ExclusiveFlvSink {
 }
 
 impl ExclusiveFlvSink {
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn new(sink: FluvioSink) -> Self {
+    pub fn new(sink: crate::FluvioSink) -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
         let fd = sink.id();
         ExclusiveFlvSink {
             inner: Arc::new(Mutex::new(sink)),
+            #[cfg(not(target_arch = "wasm32"))]
             fd,
-        }
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    pub fn new(sink: crate::FluvioSink) -> Self {
-        ExclusiveFlvSink {
-            inner: Arc::new(Mutex::new(sink)),
         }
     }
 }
 
 impl ExclusiveFlvSink {
-    #[cfg(not(target_arch = "wasm32"))]
-    pub async fn lock(&self) -> MutexGuard<'_, FluvioSink> {
-        self.inner.lock().await
-    }
-    #[cfg(target_arch = "wasm32")]
     pub async fn lock(&self) -> MutexGuard<'_, crate::FluvioSink> {
         self.inner.lock().await
     }

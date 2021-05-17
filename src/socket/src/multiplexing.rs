@@ -1,4 +1,3 @@
-use core::task::{Context, Poll};
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::io::Error as IoError;
@@ -15,11 +14,7 @@ use event_listener::Event;
 use futures_util::stream::StreamExt;
 use tokio::select;
 
-#[cfg(unix)]
 use tracing::{debug, error, instrument, trace};
-
-#[cfg(target_arch = "wasm32")]
-use log::{debug, error, trace};
 
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
@@ -137,18 +132,20 @@ impl MultiplexerSocket {
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
         // TODO: Why does this "fix" the wasm client at runtime?
-        //drop(senders);
+        #[cfg(unix)]
+        drop(senders);
 
         let (msg, msg_event) = bytes_lock;
 
         select! {
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
                 debug!("sleeping for {:?}", *MAX_WAIT_TIME);
-                /*
-                let mut senders = self.senders.lock().await;
-                senders.remove(&correlation_id);
-                drop(senders);
-                */
+                #[cfg(unix)]
+                {
+                    let mut senders = self.senders.lock().await;
+                    senders.remove(&correlation_id);
+                    drop(senders);
+                }
                 debug!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, correlation_id);
 
                 Err(IoError::new(
@@ -160,11 +157,12 @@ impl MultiplexerSocket {
             _ = msg_event.listen() => {
                 debug!("msg_event.listen");
 
-                /*
-                let mut senders = self.senders.lock().await;
-                senders.remove(&correlation_id);
-                drop(senders);
-                */
+                #[cfg(unix)]
+                {
+                    let mut senders = self.senders.lock().await;
+                    senders.remove(&correlation_id);
+                    drop(senders);
+                }
                 debug!("Listening for msg event");
 
                 match msg.try_lock() {

@@ -94,7 +94,7 @@ impl Fluvio {
         if let Some(pool) = self.spu_pool.get() {
             Ok(pool.clone())
         } else {
-            log::debug!("GETTING NEW SPU POOL WITH CONFIG : {:?}", self.config.addr());
+            debug!("GETTING NEW SPU POOL WITH CONFIG : {:?}", self.config.addr());
             let pool = Arc::new(SpuPool::start(self.config.clone(), self.socket.clone()).await?);
             let _ = self.spu_pool.set(pool);
             Ok(self.spu_pool.get().unwrap().clone())
