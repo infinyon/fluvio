@@ -168,7 +168,7 @@ run-all-unit-test: test_smartstreams
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C src/protocol	
 
-run-unstable-test:	build_filter_wasm
+run-unstable-test:	test_smartstreams
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
 
 run-all-doc-test:
