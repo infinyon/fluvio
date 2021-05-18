@@ -6,6 +6,8 @@ use thiserror::Error;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsValue;
+#[cfg(target_arch = "wasm32")]
+use ws_stream_wasm::WsErr;
 
 
 #[derive(Error, Debug)]
@@ -23,6 +25,9 @@ pub enum FlvSocketError {
     #[error("JS Error: `{0:?}`")]
     #[cfg(target_arch = "wasm32")]
     JsError(String),
+    #[error("JS Error: `{0:?}`")]
+    #[cfg(target_arch = "wasm32")]
+    WebSocketError(WsErr),
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -37,6 +42,12 @@ impl From<JsValue> for FlvSocketError {
 impl From<async_channel::RecvError>for FlvSocketError {
     fn from(_: async_channel::RecvError) -> Self {
         unimplemented!()
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl From<WsErr>for FlvSocketError {
+    fn from(e: WsErr) -> Self {
+        Self::WebSocketError(e)
     }
 
 }

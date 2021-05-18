@@ -72,7 +72,6 @@ impl Fluvio {
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector);
-        debug!("CONNECTING TO cluster at: {}", config.addr());
         let inner_client = config.connect().await?;
 
         let (socket, config, versions) = inner_client.split();

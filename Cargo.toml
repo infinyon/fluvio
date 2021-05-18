@@ -35,10 +35,8 @@ resolver = "2"
 
 
 [patch.crates-io]
-#fluvio-future = { git = "https://github.com/infinyon/future-aio", version = "0.3.0" }
+#fluvio-future = { git = "https://github.com/simlay/future-aio", version = "0.3.0", branch = "more-wasm-updates" }
 fluvio-future = { path = "../future-aio/" }
-flv-tls-proxy= { git = "https://github.com/infinyon/flv-tls-proxy", version = "0.5.0" }
-#ws_stream_wasm = { path = "../ws_stream_wasm" }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

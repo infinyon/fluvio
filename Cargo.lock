@@ -1341,14 +1341,13 @@ dependencies = [
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-sc-schema",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
- "log",
  "once_cell",
  "pin-project-lite",
  "semver 0.11.0",
@@ -1369,7 +1368,7 @@ dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "fluvio-types",
@@ -1400,7 +1399,7 @@ dependencies = [
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-package-index",
  "fluvio-sc-schema",
  "fluvio-types",
@@ -1441,7 +1440,7 @@ dependencies = [
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-helm",
  "flv-util",
  "futures-lite",
@@ -1502,7 +1501,7 @@ version = "0.9.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1521,7 +1520,7 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "derive_builder 0.9.0",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "flv-util",
@@ -1573,7 +1572,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1582,6 +1581,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "fluvio-test-derive",
+ "fluvio-wasm-timer",
  "futures-lite",
  "futures-util",
  "log",
@@ -1595,7 +1595,6 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
- "wasm-timer",
 ]
 
 [[package]]
@@ -1616,7 +1615,7 @@ name = "fluvio-integration-derive"
 version = "0.1.0"
 dependencies = [
  "fluvio",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-test-util",
  "inflections",
  "proc-macro2 1.0.26",
@@ -1657,7 +1656,7 @@ name = "fluvio-protocol"
 version = "0.5.1"
 dependencies = [
  "bytes",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol-api 0.4.0",
  "fluvio-protocol-codec",
  "fluvio-protocol-core 0.3.0",
@@ -1693,7 +1692,7 @@ name = "fluvio-protocol-codec"
 version = "0.3.1"
 dependencies = [
  "bytes",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol-core 0.3.0",
  "flv-util",
  "futures 0.3.15",
@@ -1747,7 +1746,7 @@ name = "fluvio-run"
 version = "0.2.0"
 dependencies = [
  "fluvio-extension-common",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-sc",
  "fluvio-spu",
  "semver 0.11.0",
@@ -1771,7 +1770,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-sc-schema",
  "fluvio-service",
@@ -1818,7 +1817,7 @@ name = "fluvio-service"
 version = "0.6.0"
 dependencies = [
  "async-trait",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "fluvio-types",
@@ -1849,7 +1848,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "dyn-clone",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "flv-util",
  "futures-util",
@@ -1886,7 +1885,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-service",
  "fluvio-socket",
@@ -1934,7 +1933,7 @@ dependencies = [
  "bytes",
  "derive_builder 0.10.2",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "fluvio-storage",
@@ -1956,7 +1955,7 @@ dependencies = [
  "async-rwlock",
  "async-trait",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1977,7 +1976,7 @@ version = "0.5.1"
 dependencies = [
  "async-rwlock",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "k8-types",
  "once_cell",
  "serde",
@@ -2014,7 +2013,7 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "futures-lite",
  "inventory",
  "log",
@@ -2035,9 +2034,23 @@ name = "fluvio-types"
 version = "0.2.4"
 dependencies = [
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "fluvio-wasm-timer"
+version = "0.2.5"
+source = "git+https://github.com/infinyon/wasm-timer.git?branch=fluvio-wasm-timer#e257bfd77efbe961d4f41797fc578a1f4c4ac187"
+dependencies = [
+ "futures 0.3.15",
+ "js-sys",
+ "parking_lot 0.11.1",
+ "pin-utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures 0.4.24",
+ "web-sys",
 ]
 
 [[package]]
@@ -2052,7 +2065,7 @@ dependencies = [
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-integration-derive",
  "fluvio-system-util",
  "fluvio-test-util",
@@ -2073,12 +2086,13 @@ dependencies = [
 [[package]]
 name = "flv-tls-proxy"
 version = "0.5.0"
-source = "git+https://github.com/infinyon/flv-tls-proxy#5e019bf05bf9753cfe1e541b8c0e83a9911666b1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10031c630b5c00f31d5ad2f975eb9c027f97d5fea43fd9791052ea6ed3284bbd"
 dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "futures-lite",
  "futures-util",
  "log",
@@ -2594,6 +2608,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
 dependencies = [
  "cfg-if 1.0.0",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -4723,21 +4740,6 @@ checksum = "0789dac148a8840bbcf9efe13905463b733fa96543bfbf263790535c11af7ba5"
 dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
-]
-
-[[package]]
-name = "wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
-dependencies = [
- "futures 0.3.15",
- "js-sys",
- "parking_lot 0.11.1",
- "pin-utils",
- "wasm-bindgen",
- "wasm-bindgen-futures 0.4.24",
- "web-sys",
 ]
 
 [[package]]
