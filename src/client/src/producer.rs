@@ -8,7 +8,7 @@ use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
 use dataplane::produce::DefaultPartitionRequest;
 use dataplane::produce::DefaultTopicRequest;
-use dataplane::batch::{Batch, MemoryBatch};
+use dataplane::batch::{Batch, MemoryRecords};
 use dataplane::record::Record;
 pub use dataplane::record::{RecordKey, RecordData};
 
@@ -162,8 +162,8 @@ async fn group_by_spu(
     topic: &str,
     partitions: &StoreContext<PartitionSpec>,
     records_by_partition: Vec<(PartitionId, Record)>,
-) -> Result<HashMap<SpuId, HashMap<PartitionId, MemoryBatch>>, FluvioError> {
-    let mut map: HashMap<SpuId, HashMap<i32, MemoryBatch>> = HashMap::new();
+) -> Result<HashMap<SpuId, HashMap<PartitionId, MemoryRecords>>, FluvioError> {
+    let mut map: HashMap<SpuId, HashMap<i32, MemoryRecords>> = HashMap::new();
     for (partition, record) in records_by_partition {
         let replica_key = ReplicaKey::new(topic, partition);
         let partition_spec = partitions
@@ -184,7 +184,7 @@ async fn group_by_spu(
 
 fn assemble_requests(
     topic: &str,
-    partitions_by_spu: HashMap<SpuId, HashMap<PartitionId, MemoryBatch>>,
+    partitions_by_spu: HashMap<SpuId, HashMap<PartitionId, MemoryRecords>>,
 ) -> Vec<(SpuId, DefaultProduceRequest)> {
     let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
         Vec::with_capacity(partitions_by_spu.len());

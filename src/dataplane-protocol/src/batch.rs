@@ -18,11 +18,11 @@ use crate::Size;
 use crate::record::Record;
 
 #[allow(deprecated)]
-#[deprecated(since = "0.6.0", note = "Use 'VecBatch' instead")]
+#[deprecated(since = "0.5.1", note = "Use 'MemoryRecords' instead")]
 pub type DefaultBatchRecords = Vec<crate::record::DefaultRecord>;
 
 #[allow(deprecated)]
-#[deprecated(since = "0.6.0", note = "Use 'Batch' instead")]
+#[deprecated(since = "0.5.1", note = "Use 'Batch' instead")]
 pub type DefaultBatch = Batch<DefaultBatchRecords>;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder {
@@ -32,9 +32,10 @@ pub trait BatchRecords: Default + Debug + Encoder + Decoder {
     }
 }
 
-pub type MemoryBatch = Vec<Record>;
+/// A type describing in-memory records
+pub type MemoryRecords = Vec<Record>;
 
-impl BatchRecords for MemoryBatch {}
+impl BatchRecords for MemoryRecords {}
 
 /// size of the offset and length
 pub const BATCH_PREAMBLE_SIZE: usize = size_of::<Offset>()     // Offset
@@ -43,7 +44,7 @@ pub const BATCH_PREAMBLE_SIZE: usize = size_of::<Offset>()     // Offset
 pub const BATCH_FILE_HEADER_SIZE: usize = BATCH_PREAMBLE_SIZE + BATCH_HEADER_SIZE;
 
 #[derive(Default, Debug)]
-pub struct Batch<R = MemoryBatch> {
+pub struct Batch<R = MemoryRecords> {
     pub base_offset: Offset,
     pub batch_len: i32, // only for decoding
     pub header: BatchHeader,
@@ -145,7 +146,7 @@ impl Batch {
     }
 }
 
-impl<T: Into<MemoryBatch>> From<T> for Batch {
+impl<T: Into<MemoryRecords>> From<T> for Batch {
     fn from(records: T) -> Self {
         let records = records.into();
         let mut batch = Self::default();
@@ -289,7 +290,7 @@ mod test {
             value: RecordData::from(value),
             ..Default::default()
         };
-        let mut batch = Batch::<MemoryBatch>::default();
+        let mut batch = Batch::<MemoryRecords>::default();
         batch.records.push(record);
         batch.header.first_timestamp = 1555478494747;
         batch.header.max_time_stamp = 1555478494747;
@@ -297,7 +298,7 @@ mod test {
         let bytes = batch.as_bytes(0)?;
         println!("batch raw bytes: {:#X?}", bytes.as_ref());
 
-        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
         println!("batch: {:#?}", batch);
 
         let decoded_record = batch.records.get(0).unwrap();
@@ -328,7 +329,7 @@ mod test {
 
     #[test]
     fn test_records_offset() {
-        let mut batch = Batch::<MemoryBatch>::default();
+        let mut batch = Batch::<MemoryRecords>::default();
         assert_eq!(batch.get_last_offset_delta(), 0);
 
         batch.add_record(Record::default());
@@ -369,7 +370,7 @@ mod test {
 
     #[test]
     fn test_batch_records_offset() {
-        let mut comparison = Batch::<MemoryBatch>::default();
+        let mut comparison = Batch::<MemoryRecords>::default();
         comparison.add_record(Record::default());
         comparison.add_record(Record::default());
         comparison.add_record(Record::default());

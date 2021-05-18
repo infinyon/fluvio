@@ -13,7 +13,7 @@ use futures_lite::io::AsyncSeekExt;
 use fluvio_future::fs::File;
 use dataplane::batch::{
     Batch, BatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE, BATCH_FILE_HEADER_SIZE,
-    MemoryBatch,
+    MemoryRecords,
 };
 use dataplane::Size;
 use dataplane::Offset;
@@ -168,7 +168,7 @@ where
 }
 
 // stream to iterate batch
-pub struct FileBatchStream<R = MemoryBatch> {
+pub struct FileBatchStream<R = MemoryRecords> {
     pos: Size,
     invalid: Option<IoError>,
     file: File,

@@ -15,7 +15,7 @@ use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::core::{Decoder, Encoder};
 use dataplane::Offset;
 use dataplane::batch::{BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE, Batch};
-use dataplane::batch::MemoryBatch;
+use dataplane::batch::MemoryRecords;
 // use fluvio_future::task::spawn_blocking;
 
 // use fluvio_storage::config::DEFAULT_MAX_BATCH_SIZE;
@@ -209,7 +209,7 @@ impl SmartFilter {
         let mut batch_iterator =
             FileBatchIterator::new(fd, slice.position() as i64, slice.len() as i64);
 
-        let mut filter_batch = Batch::<MemoryBatch>::default();
+        let mut filter_batch = Batch::<MemoryRecords>::default();
         filter_batch.base_offset = -1; // indicate this is unitialized
         filter_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
 
@@ -253,7 +253,7 @@ impl SmartFilter {
                     .unwrap_or_default();
                 debug!(out_filter_bytes = bytes.len());
                 // this is inefficient for now
-                let mut records: MemoryBatch = vec![];
+                let mut records: MemoryRecords = vec![];
                 records.decode(&mut Cursor::new(bytes), 0)?;
 
                 // there are filtered records!!

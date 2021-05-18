@@ -22,7 +22,7 @@ use crate::derive::Encode;
 use crate::batch::Batch;
 use crate::Offset;
 
-#[deprecated(since = "0.6.0", note = "Use 'Record' instead")]
+#[deprecated(since = "0.5.1", note = "Use 'Record' instead")]
 pub type DefaultRecord = Record<RecordData>;
 
 /// maximum text to display
@@ -70,14 +70,23 @@ impl<K: Into<Vec<u8>>> From<K> for RecordKey {
     }
 }
 
-#[deprecated(since = "0.6.0", note = "Use 'RecordData' instead")]
+#[deprecated(since = "0.5.1", note = "Use 'RecordData' instead")]
 pub type DefaultAsyncBuffer = RecordData;
 
+/// A type containing the data contents of a Record.
+///
+/// The `RecordData` type provides useful conversions for
+/// constructing it from any type that may convert into a `Vec<u8>`.
+/// This is the basis for flexible APIs that allow users to supply
+/// various different argument types as record contents. See
+/// [the Producer API] as an example.
+///
+/// [the Producer API]: https://docs.rs/fluvio/producer/TopicProducer::send
 #[derive(Default)]
 pub struct RecordData(Bytes);
 
 impl RecordData {
-    #[deprecated(since = "0.6.0", note = "Use 'From::from' instead")]
+    #[deprecated(since = "0.5.1", note = "Use 'From::from' instead")]
     pub fn new<T>(val: T) -> Self
     where
         T: Into<Bytes>,

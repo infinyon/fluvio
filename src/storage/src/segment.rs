@@ -380,7 +380,7 @@ mod tests {
 
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
-    use dataplane::batch::{Batch, MemoryBatch};
+    use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::Size;
     use dataplane::core::Decoder;
     use dataplane::fixture::create_batch_with_producer;
@@ -434,7 +434,8 @@ mod tests {
         debug!("read {} bytes", bytes.len());
 
         // read batches from raw bytes to see if it can be parsed
-        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 1);
@@ -478,7 +479,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME))?;
         debug!("read {} bytes", bytes.len());
 
-        let batch = Batch::<MemoryBatch>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 4);
@@ -524,11 +525,11 @@ mod tests {
         debug!("read {} bytes", bytes.len());
 
         let cursor = &mut Cursor::new(bytes);
-        let batch = Batch::<MemoryBatch>::decode_from(cursor, 0)?;
+        let batch = Batch::<MemoryRecords>::decode_from(cursor, 0)?;
         assert_eq!(batch.get_base_offset(), 40);
         assert_eq!(batch.get_header().last_offset_delta, 1);
 
-        let batch2 = Batch::<MemoryBatch>::decode_from(cursor, 0)?;
+        let batch2 = Batch::<MemoryRecords>::decode_from(cursor, 0)?;
         assert_eq!(batch2.get_base_offset(), 42);
         assert_eq!(batch2.get_header().last_offset_delta, 1);
 
