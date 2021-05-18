@@ -8,9 +8,8 @@ use content_inspector::{inspect, ContentType};
 use log::{trace, warn};
 use once_cell::sync::Lazy;
 
-use crate::core::bytes::Bytes;
-use crate::core::bytes::Buf;
-use crate::core::bytes::BufMut;
+use bytes::Buf;
+use bytes::BufMut;
 
 use crate::core::Decoder;
 use crate::core::DecoderVarInt;
@@ -20,10 +19,11 @@ use crate::core::Version;
 use crate::derive::Decode;
 use crate::derive::Encode;
 
-use crate::batch::DefaultBatch;
+use crate::batch::Batch;
 use crate::Offset;
 
-pub type DefaultRecord = Record<DefaultAsyncBuffer>;
+#[deprecated(since = "0.5.1", note = "Use 'Record' instead")]
+pub type DefaultRecord = Record<RecordData>;
 
 /// maximum text to display
 static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
@@ -31,22 +31,67 @@ static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
     var_value.parse().unwrap_or(16384)
 });
 
-/// slice that can works in Async Context
-pub trait AsyncBuffer {
-    fn len(&self) -> usize;
+/// A key for determining which partition a record should be sent to.
+///
+/// This type is used to support conversions from any other type that
+/// may be converted to a `Vec<u8>`, while still allowing the ability
+/// to explicitly state that a record may have no key (`RecordKey::NULL`).
+///
+/// # Examples
+///
+/// ```
+/// # use fluvio_dataplane_protocol::record::RecordKey;
+/// let key = RecordKey::NULL;
+/// let key: RecordKey = "Hello, world!".into();
+/// let key: RecordKey = String::from("Hello, world!").into();
+/// let key: RecordKey = vec![1, 2, 3, 4].into();
+/// ```
+pub struct RecordKey(RecordKeyInner);
+
+impl RecordKey {
+    pub const NULL: Self = Self(RecordKeyInner::Null);
+
+    fn into_option(self) -> Option<RecordData> {
+        match self.0 {
+            RecordKeyInner::Key(key) => Some(key),
+            RecordKeyInner::Null => None,
+        }
+    }
 }
 
-pub trait Records {}
+enum RecordKeyInner {
+    Null,
+    Key(RecordData),
+}
 
+impl<K: Into<Vec<u8>>> From<K> for RecordKey {
+    fn from(k: K) -> Self {
+        Self(RecordKeyInner::Key(RecordData::from(k)))
+    }
+}
+
+#[deprecated(since = "0.5.1", note = "Use 'RecordData' instead")]
+pub type DefaultAsyncBuffer = RecordData;
+
+/// A type containing the data contents of a Record.
+///
+/// The `RecordData` type provides useful conversions for
+/// constructing it from any type that may convert into a `Vec<u8>`.
+/// This is the basis for flexible APIs that allow users to supply
+/// various different argument types as record contents. See
+/// [the Producer API] as an example.
+///
+/// [the Producer API]: https://docs.rs/fluvio/producer/TopicProducer::send
 #[derive(Default)]
-pub struct DefaultAsyncBuffer(Bytes);
+pub struct RecordData(Bytes);
 
-impl DefaultAsyncBuffer {
+impl RecordData {
+    #[deprecated(since = "0.5.1", note = "Use 'From::from' instead")]
     pub fn new<T>(val: T) -> Self
     where
         T: Into<Bytes>,
     {
-        DefaultAsyncBuffer(val.into())
+        Self(val.into())
     }
 
     pub fn len(&self) -> usize {
@@ -68,19 +113,19 @@ impl DefaultAsyncBuffer {
     }
 }
 
-impl AsRef<[u8]> for DefaultAsyncBuffer {
+impl<V: Into<Vec<u8>>> From<V> for RecordData {
+    fn from(value: V) -> Self {
+        Self(Bytes::from(value.into()))
+    }
+}
+
+impl AsRef<[u8]> for RecordData {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsyncBuffer for DefaultAsyncBuffer {
-    fn len(&self) -> usize {
-        self.len()
-    }
-}
-
-impl Debug for DefaultAsyncBuffer {
+impl Debug for RecordData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let value = &self.0;
         if matches!(inspect(value), ContentType::BINARY) {
@@ -97,7 +142,7 @@ impl Debug for DefaultAsyncBuffer {
     }
 }
 
-impl Display for DefaultAsyncBuffer {
+impl Display for RecordData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let value = &self.0;
         if matches!(inspect(value), ContentType::BINARY) {
@@ -114,26 +159,7 @@ impl Display for DefaultAsyncBuffer {
     }
 }
 
-impl From<String> for DefaultAsyncBuffer {
-    fn from(value: String) -> Self {
-        Self::new(value.into_bytes())
-    }
-}
-
-impl From<Vec<u8>> for DefaultAsyncBuffer {
-    fn from(value: Vec<u8>) -> Self {
-        Self::new(value)
-    }
-}
-
-impl<'a> From<&'a [u8]> for DefaultAsyncBuffer {
-    fn from(bytes: &'a [u8]) -> Self {
-        let value = bytes.to_owned();
-        Self::new(value)
-    }
-}
-
-impl Encoder for DefaultAsyncBuffer {
+impl Encoder for RecordData {
     fn write_size(&self, version: Version) -> usize {
         let len = self.0.len() as i64;
         self.0.iter().fold(len.var_write_size(), |sum, val| {
@@ -154,7 +180,7 @@ impl Encoder for DefaultAsyncBuffer {
     }
 }
 
-impl Decoder for DefaultAsyncBuffer {
+impl Decoder for RecordData {
     fn decode<T>(&mut self, src: &mut T, _: Version) -> Result<(), Error>
     where
         T: Buf,
@@ -167,11 +193,11 @@ impl Decoder for DefaultAsyncBuffer {
 
         // Take `len` bytes from `src` and put them into a new BytesMut buffer
         let slice = src.take(len);
-        let mut bytes_mut = bytes::BytesMut::with_capacity(len);
-        bytes_mut.put(slice);
+        let mut bytes = BytesMut::with_capacity(len);
+        bytes.put(slice);
 
-        // Replace the inner Bytes buffer of this DefaultAsyncBuffer
-        self.0 = bytes_mut.freeze();
+        // Replace the inner Bytes buffer of this RecordData
+        self.0 = bytes.freeze();
         Ok(())
     }
 }
@@ -180,7 +206,7 @@ impl Decoder for DefaultAsyncBuffer {
 //  It is written consequently with len as prefix
 #[derive(Default, Debug)]
 pub struct RecordSet {
-    pub batches: Vec<DefaultBatch>,
+    pub batches: Vec<Batch>,
 }
 
 impl fmt::Display for RecordSet {
@@ -190,7 +216,7 @@ impl fmt::Display for RecordSet {
 }
 
 impl RecordSet {
-    pub fn add(mut self, batch: DefaultBatch) -> Self {
+    pub fn add(mut self, batch: Batch) -> Self {
         self.batches.push(batch);
         self
     }
@@ -249,7 +275,7 @@ impl Decoder for RecordSet {
                 count,
                 buf.remaining()
             );
-            let mut batch = DefaultBatch::default();
+            let mut batch = Batch::default();
             match batch.decode(&mut buf, version) {
                 Ok(_) => self.batches.push(batch),
                 Err(err) => match err.kind() {
@@ -319,20 +345,14 @@ impl RecordHeader {
 }
 
 #[derive(Default)]
-pub struct Record<B>
-where
-    B: Default,
-{
+pub struct Record<B = RecordData> {
     pub preamble: RecordHeader,
     pub key: Option<B>,
     pub value: B,
     pub headers: i64,
 }
 
-impl<B> Record<B>
-where
-    B: Default,
-{
+impl<B: Default> Record<B> {
     pub fn get_offset_delta(&self) -> Offset {
         self.preamble.offset_delta
     }
@@ -363,80 +383,42 @@ where
     }
 }
 
-impl DefaultRecord {
+impl Record {
     pub fn new<V>(value: V) -> Self
     where
-        V: Into<Vec<u8>>,
+        V: Into<RecordData>,
     {
-        DefaultRecord {
-            value: DefaultAsyncBuffer::new(value.into()),
+        Record {
+            value: value.into(),
             ..Default::default()
         }
     }
 
     pub fn new_key_value<K, V>(key: K, value: V) -> Self
     where
-        K: Into<Vec<u8>>,
-        V: Into<Vec<u8>>,
+        K: Into<RecordKey>,
+        V: Into<RecordData>,
     {
-        DefaultRecord {
-            key: Some(DefaultAsyncBuffer::new(key.into())),
-            value: DefaultAsyncBuffer::new(value.into()),
-            ..Default::default()
-        }
-    }
-}
-
-impl<B: Default> From<(Option<B>, B)> for Record<B> {
-    fn from((key, value): (Option<B>, B)) -> Self {
+        let key = key.into().into_option();
         Record {
             key,
-            value,
-            ..Default::default()
-        }
-    }
-}
-
-impl<B> From<String> for Record<B>
-where
-    B: From<String> + Default,
-{
-    fn from(value: String) -> Self {
-        Record {
             value: value.into(),
             ..Default::default()
         }
     }
 }
 
-impl<B> From<Vec<u8>> for Record<B>
+impl<K, V> From<(K, V)> for Record
 where
-    B: From<Vec<u8>> + Default,
+    K: Into<RecordKey>,
+    V: Into<RecordData>,
 {
-    fn from(value: Vec<u8>) -> Self {
-        Record {
-            value: value.into(),
-            ..Default::default()
-        }
+    fn from((key, value): (K, V)) -> Self {
+        Self::new_key_value(key, value)
     }
 }
 
-impl<'a, B> From<&'a [u8]> for Record<B>
-where
-    B: From<&'a [u8]> + Default,
-{
-    fn from(slice: &'a [u8]) -> Self {
-        Record {
-            value: B::from(slice),
-            ..Default::default()
-        }
-    }
-}
-
-impl<B> Debug for Record<B>
-where
-    B: AsyncBuffer + Debug + Default,
-{
+impl<B: Debug> Debug for Record<B> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{:?}", &self.preamble)?;
         writeln!(f, "{:?}", &self.key)?;
@@ -507,18 +489,18 @@ where
 
 #[cfg(test)]
 mod test {
-
+    use super::*;
     use std::io::Cursor;
     use std::io::Error as IoError;
 
     use crate::core::Decoder;
     use crate::core::Encoder;
-    use crate::record::DefaultRecord;
+    use crate::record::Record;
 
     #[test]
     fn test_decode_encode_record() -> Result<(), IoError> {
         /* Below is how you generate the vec<u8> for the `data` varible below.
-        let mut record = DefaultRecord::from(String::from("dog"));
+        let mut record = Record::from(String::from("dog"));
         record.preamble.set_offset_delta(1);
         let mut out = vec![];
         record.encode(&mut out, 0)?;
@@ -526,7 +508,7 @@ mod test {
         */
         let data = [0x12, 0x0, 0x0, 0x2, 0x0, 0x6, 0x64, 0x6f, 0x67, 0x0];
 
-        let record = DefaultRecord::decode_from(&mut Cursor::new(&data), 0)?;
+        let record = Record::<RecordData>::decode_from(&mut Cursor::new(&data), 0)?;
         assert_eq!(record.as_bytes(0)?.len(), data.len());
 
         assert_eq!(record.write_size(0), data.len());
@@ -544,13 +526,13 @@ mod test {
     #[test]
     fn test_decode_batch_truncation() {
         use super::RecordSet;
-        use crate::batch::DefaultBatch;
-        use crate::record::DefaultRecord;
+        use crate::batch::Batch;
+        use crate::record::Record;
 
-        fn create_batch() -> DefaultBatch {
+        fn create_batch() -> Batch {
             let value = vec![0x74, 0x65, 0x73, 0x74];
-            let record = DefaultRecord::new(value);
-            let mut batch = DefaultBatch::default();
+            let record = Record::new(value);
+            let mut batch = Batch::default();
             batch.add_record(record);
             batch
         }
@@ -585,16 +567,16 @@ mod test {
     fn test_key_value_encoding() {
         let key = "KKKKKKKKKK".to_string();
         let value = "VVVVVVVVVV".to_string();
-        let record = DefaultRecord::new_key_value(key, value);
+        let record = Record::new_key_value(key, value);
 
         let mut encoded = Vec::new();
         record.encode(&mut encoded, 0).unwrap();
-        let decoded = DefaultRecord::decode_from(&mut Cursor::new(encoded), 0).unwrap();
+        let decoded = Record::<RecordData>::decode_from(&mut Cursor::new(encoded), 0).unwrap();
 
         let record_key = record.key.unwrap();
         let decoded_key = decoded.key.unwrap();
-        assert_eq!(record_key.0.as_ref(), decoded_key.0.as_ref());
-        assert_eq!(record.value.0.as_ref(), decoded.value.0.as_ref());
+        assert_eq!(record_key.as_ref(), decoded_key.as_ref());
+        assert_eq!(record.value.as_ref(), decoded.value.as_ref());
     }
 
     // Test Specification:
@@ -602,10 +584,10 @@ mod test {
     // A record was encoded and written to a file, using the following code:
     //
     // ```rust
-    // use fluvio_dataplane_protocol::record::{DefaultRecord, DefaultAsyncBuffer};
+    // use fluvio_dataplane_protocol::record::{Record, DefaultAsyncBuffer};
     // use fluvio_protocol::Encoder;
     // let value = "VVVVVVVVVV".to_string();
-    // let record = DefaultRecord {
+    // let record = Record {
     //     key: DefaultAsyncBuffer::default(),
     //     value: DefaultAsyncBuffer::new(value.into_bytes()),
     //     ..Default::default()
@@ -629,7 +611,7 @@ mod test {
     #[test]
     fn test_decode_old_record_empty_key() {
         let old_encoded = std::fs::read("./tests/test_old_record_empty_key.bin").unwrap();
-        let decoded = DefaultRecord::decode_from(&mut Cursor::new(old_encoded), 0).unwrap();
+        let decoded = Record::<RecordData>::decode_from(&mut Cursor::new(old_encoded), 0).unwrap();
         assert_eq!(
             std::str::from_utf8(decoded.value.0.as_ref()).unwrap(),
             "VVVVVVVVVV"
@@ -640,6 +622,7 @@ mod test {
 
 #[cfg(feature = "file")]
 pub use file::*;
+use crate::bytes::{Bytes, BytesMut};
 
 #[cfg(feature = "file")]
 mod file {

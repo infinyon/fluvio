@@ -8,9 +8,9 @@ use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
 use dataplane::produce::DefaultPartitionRequest;
 use dataplane::produce::DefaultTopicRequest;
-use dataplane::batch::DefaultBatch;
-use dataplane::record::DefaultRecord;
-use dataplane::record::DefaultAsyncBuffer;
+use dataplane::batch::{Batch, MemoryRecords};
+use dataplane::record::Record;
+pub use dataplane::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
@@ -92,14 +92,7 @@ impl TopicProducer {
         let entries = records
             .into_iter()
             .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
-            .map(|(key, value)| {
-                let key = match key.0 {
-                    RecordKeyInner::Null => None,
-                    RecordKeyInner::Key(key) => Some(DefaultAsyncBuffer::new(key.0)),
-                };
-                let value = DefaultAsyncBuffer::new(value.0);
-                DefaultRecord::from((key, value))
-            });
+            .map(Record::from);
 
         // Calculate the partition for each entry
         // Use a block scope to ensure we drop the partitioner lock
@@ -168,9 +161,9 @@ impl TopicProducer {
 async fn group_by_spu(
     topic: &str,
     partitions: &StoreContext<PartitionSpec>,
-    records_by_partition: Vec<(PartitionId, DefaultRecord)>,
-) -> Result<HashMap<SpuId, HashMap<PartitionId, Vec<DefaultRecord>>>, FluvioError> {
-    let mut map: HashMap<SpuId, HashMap<i32, Vec<DefaultRecord>>> = HashMap::new();
+    records_by_partition: Vec<(PartitionId, Record)>,
+) -> Result<HashMap<SpuId, HashMap<PartitionId, MemoryRecords>>, FluvioError> {
+    let mut map: HashMap<SpuId, HashMap<i32, MemoryRecords>> = HashMap::new();
     for (partition, record) in records_by_partition {
         let replica_key = ReplicaKey::new(topic, partition);
         let partition_spec = partitions
@@ -191,7 +184,7 @@ async fn group_by_spu(
 
 fn assemble_requests(
     topic: &str,
-    partitions_by_spu: HashMap<SpuId, HashMap<PartitionId, Vec<DefaultRecord>>>,
+    partitions_by_spu: HashMap<SpuId, HashMap<PartitionId, MemoryRecords>>,
 ) -> Vec<(SpuId, DefaultProduceRequest)> {
     let mut requests: Vec<(SpuId, DefaultProduceRequest)> =
         Vec::with_capacity(partitions_by_spu.len());
@@ -209,10 +202,7 @@ fn assemble_requests(
                 partition_index: partition,
                 ..Default::default()
             };
-            partition_request
-                .records
-                .batches
-                .push(DefaultBatch::new(records));
+            partition_request.records.batches.push(Batch::from(records));
             topic_request.partitions.push(partition_request);
         }
 
@@ -223,49 +213,6 @@ fn assemble_requests(
     }
 
     requests
-}
-
-/// A key for determining which partition a record should be sent to.
-///
-/// This type is used to support conversions from any other type that
-/// may be converted to a `Vec<u8>`, while still allowing the ability
-/// to explicitly state that a record may have no key (`RecordKey::NULL`).
-///
-/// # Examples
-///
-/// ```
-/// # use fluvio::{TopicProducer, FluvioError, RecordKey};
-/// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
-/// producer.send("Hello", String::from("World!")).await?;
-/// producer.send(RecordKey::NULL, "World!").await?;
-/// # Ok(())
-/// # }
-/// ```
-pub struct RecordKey(RecordKeyInner);
-
-impl RecordKey {
-    pub const NULL: Self = Self(RecordKeyInner::Null);
-}
-
-enum RecordKeyInner {
-    Null,
-    Key(RecordData),
-}
-
-impl<K: Into<Vec<u8>>> From<K> for RecordKey {
-    fn from(k: K) -> Self {
-        Self(RecordKeyInner::Key(RecordData::from(k)))
-    }
-}
-
-/// A type to hold the contents of a record's value.
-pub struct RecordData(bytes::Bytes);
-
-impl<V: Into<Vec<u8>>> From<V> for RecordData {
-    fn from(v: V) -> Self {
-        let value: Vec<u8> = v.into();
-        Self(value.into())
-    }
 }
 
 /// A trait for defining a partitioning strategy for key/value records.
@@ -370,12 +317,12 @@ mod tests {
         .collect();
         partitions.store().sync_all(partition_specs).await;
         let records_by_partition = vec![
-            (0, DefaultRecord::new("A")),
-            (1, DefaultRecord::new("B")),
-            (2, DefaultRecord::new("C")),
-            (0, DefaultRecord::new("D")),
-            (1, DefaultRecord::new("E")),
-            (2, DefaultRecord::new("F")),
+            (0, Record::new("A")),
+            (1, Record::new("B")),
+            (2, Record::new("C")),
+            (0, Record::new("D")),
+            (1, Record::new("E")),
+            (2, Record::new("F")),
         ];
 
         let grouped = group_by_spu("TOPIC", &partitions, records_by_partition)
@@ -455,8 +402,8 @@ mod tests {
 
             let spu_0 = {
                 let mut s0_partitions = HashMap::new();
-                let partition_0_records = vec![DefaultRecord::new("A"), DefaultRecord::new("B")];
-                let partition_1_records = vec![DefaultRecord::new("C"), DefaultRecord::new("D")];
+                let partition_0_records = vec![Record::new("A"), Record::new("B")];
+                let partition_1_records = vec![Record::new("C"), Record::new("D")];
                 s0_partitions.insert(0, partition_0_records);
                 s0_partitions.insert(1, partition_1_records);
                 s0_partitions
@@ -464,8 +411,8 @@ mod tests {
 
             let spu_1 = {
                 let mut s1_partitions = HashMap::new();
-                let partition_2_records = vec![DefaultRecord::new("E"), DefaultRecord::new("F")];
-                let partition_3_records = vec![DefaultRecord::new("G"), DefaultRecord::new("H")];
+                let partition_2_records = vec![Record::new("E"), Record::new("F")];
+                let partition_3_records = vec![Record::new("G"), Record::new("H")];
                 s1_partitions.insert(2, partition_2_records);
                 s1_partitions.insert(3, partition_3_records);
                 s1_partitions

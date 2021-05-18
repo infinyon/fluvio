@@ -19,8 +19,7 @@ use dataplane::{
     record::RecordSet,
 };
 use dataplane::api::RequestMessage;
-use dataplane::record::DefaultRecord;
-use dataplane::record::DefaultAsyncBuffer;
+use dataplane::record::Record;
 use dataplane::Offset;
 use dataplane::fixture::BatchProducer;
 
@@ -43,12 +42,9 @@ fn default_option() -> ConfigOption {
     }
 }
 
-fn generate_record(record_index: usize, _producer: &BatchProducer) -> DefaultRecord {
+fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
     let msg = format!("record {}", record_index);
-    DefaultRecord {
-        value: DefaultAsyncBuffer::new(msg.into_bytes()),
-        ..Default::default()
-    }
+    Record::new(msg)
 }
 
 /// create sample batches with variable number of records

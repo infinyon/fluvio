@@ -14,8 +14,8 @@ use fluvio_future::fs::AsyncFileExtension;
 use fluvio_future::net::TcpListener;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::{Request, ResponseMessage, RequestMessage};
-use fluvio_dataplane_protocol::batch::DefaultBatch;
-use fluvio_dataplane_protocol::record::{DefaultRecord, DefaultAsyncBuffer};
+use fluvio_dataplane_protocol::batch::Batch;
+use fluvio_dataplane_protocol::record::Record;
 use fluvio_dataplane_protocol::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,
@@ -26,8 +26,8 @@ use flv_util::fixture::ensure_clean_file;
 use fluvio_socket::FluvioSocket;
 
 /// create sample batches with message
-fn create_batches(records: u16) -> DefaultBatch {
-    let mut batches = DefaultBatch::default();
+fn create_batches(records: u16) -> Batch {
+    let mut batches = Batch::default();
     let header = batches.get_mut_header();
     header.magic = 2;
     header.producer_id = 20;
@@ -36,11 +36,7 @@ fn create_batches(records: u16) -> DefaultBatch {
     for i in 0..records {
         let key = format!("key {}", i);
         let value = format!("value {}", i);
-        let record = DefaultRecord {
-            key: Some(DefaultAsyncBuffer::new(key.into_bytes())),
-            value: DefaultAsyncBuffer::new(value.into_bytes()),
-            ..Default::default()
-        };
+        let record = Record::from((key, value));
         batches.add_record(record);
     }
     batches

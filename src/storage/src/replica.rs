@@ -6,7 +6,7 @@ use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
 use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size};
-use dataplane::batch::DefaultBatch;
+use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
@@ -352,7 +352,7 @@ impl FileReplica {
         OffsetInfo { hw, leo }
     }
 
-    async fn write_batch(&mut self, item: &mut DefaultBatch) -> Result<(), StorageError> {
+    async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
         trace!("start_send");
         if !(self.active_segment.write_batch(item).await?) {
             debug!("segment has no room, rolling over previous segment");
@@ -383,11 +383,12 @@ mod tests {
     use std::io::Cursor;
 
     use fluvio_future::test_async;
-    use dataplane::{Isolation, batch::DefaultBatch};
+    use dataplane::{Isolation, batch::Batch};
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
+    use dataplane::batch::MemoryRecords;
     use dataplane::fixture::{BatchProducer, create_batch};
     use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
@@ -457,7 +458,7 @@ mod tests {
         debug!("using test file: {:#?}", test_file);
         let bytes = read_bytes_from_file(&test_file)?;
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.get_base_offset(), START_OFFSET);
         assert_eq!(batch.get_header().last_offset_delta, 1);
@@ -595,7 +596,7 @@ mod tests {
         let seg2_file = replica_dir.join(TEST_SE2_NAME);
         let bytes = read_bytes_from_file(&seg2_file)?;
 
-        let batch = DefaultBatch::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         assert_eq!(batch.get_base_offset(), 22);
