@@ -179,8 +179,8 @@ jobs:
           path: target/${{ matrix.target }}/release/fluvio-run
 
   # Since this runs on custom runner, no need to control sc-cache
-  unstable_test_linux:
-    name: Unstable Integration test Linux
+  integration_test_linux:
+    name: Integration test Linux
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
