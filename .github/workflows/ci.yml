@@ -199,7 +199,7 @@ jobs:
           override: true
       - name: Run integration tests
         run:  make run-unstable-test
-        timeout-minutes: 10
+        timeout-minutes: 20
 
 
   unstable_test_mac:
