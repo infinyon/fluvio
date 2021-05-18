@@ -4,7 +4,7 @@ This crate provides types and macros for creating custom SmartStreams,
 which are WebAssembly modules that may be used to modify the behavior
 of Fluvio streams to consumers. The currently supported SmartStream
 types are `filter`s, which may describe records to keep in or discard
-from a stream, and `map`s, which may transform the contents of records.
+from a stream.
 
 ## Writing SmartStreams
 
@@ -43,25 +43,6 @@ pub fn my_filter(record: &SimpleRecord) -> bool {
 ```
 
 This filter will keep only records whose contents contain the letter `z`.
-
-### Mapping
-
-Follow the same project setup as the filtering example, except use
-`#[smartstream(map)]` instead.
-
-```rust
-use fluvio_smartstream::{smartstream, SimpleRecord};
-
-#[smartstream(map)]
-pub fn my_map(mut record: SimpleRecord) -> SimpleRecord {
-    record.value.make_ascii_uppercase();
-    record
-}
-```
-
-You may now make arbitrary modifications to each record in your stream.
-The only requirement is to return the edited SimpleRecord, which will
-then be served to the consumer.
 
 ## License
 
