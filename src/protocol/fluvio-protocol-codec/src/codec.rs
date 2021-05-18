@@ -10,7 +10,7 @@ use crate::core::Encoder as FluvioEncoder;
 use crate::core::bytes::{Bytes, BytesMut, BufMut};
 use crate::core::Version;
 
-/// Implement Kafka codec as in https://kafka.apache.org/protocol#The_Messages_ListOffsets
+/// Implement Fluvio Encoding
 /// First 4 bytes are size of the message.  Then total buffer = 4 + message content
 ///
 #[derive(Debug, Default)]
@@ -71,7 +71,7 @@ impl Decoder for FluvioCodec {
     }
 }
 
-/// Implement encoder for Kafka Codec
+/// Implement encoder for Fluvio Codec
 /// This is straight pass thru, actual encoding is done file slice
 impl Encoder<Bytes> for FluvioCodec {
     type Error = IoError;
@@ -83,7 +83,7 @@ impl Encoder<Bytes> for FluvioCodec {
     }
 }
 
-/// Implement encoder for Kafka Codec
+/// Implement encoder for Fluvio Codec
 impl<T: FluvioEncoder> Encoder<FluvioCodecData<T>> for FluvioCodec {
     type Error = IoError;
 
