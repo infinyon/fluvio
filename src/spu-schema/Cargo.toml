@@ -11,6 +11,10 @@ license = "Apache-2.0"
 name = "fluvio_spu_schema"
 path = "src/lib.rs"
 
+[features]
+file = ["dataplane/file"]
+
+
 [dependencies]
 log = "0.4.8"
 tracing = "0.1.19"
