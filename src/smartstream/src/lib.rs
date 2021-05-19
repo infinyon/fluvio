@@ -1,6 +1,9 @@
 pub use fluvio_dataplane_protocol as dataplane;
 pub use dataplane::record::{Record, RecordData};
 
+#[cfg(feature = "derive")]
+pub use fluvio_smartstream_derive::smartstream;
+
 pub mod memory {
     /// Allocate memory into the module's linear memory
     /// and return the offset to the start of the block.

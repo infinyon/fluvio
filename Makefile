@@ -157,17 +157,15 @@ check-clippy: install-clippy
 	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE_FLAG)
 	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms
 
+build_smartstreams:
+	make -C src/smartstream/examples build
 
-build_filter_wasm:
-	rustup target add wasm32-unknown-unknown 
-	make -C smart_filter build_test
-
-run-all-unit-test:
+run-all-unit-test: build_smartstreams
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C src/protocol	
 
-run-unstable-test:	build_filter_wasm
+run-unstable-test:	build_smartstreams
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
 
 run-all-doc-test:

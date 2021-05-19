@@ -1,1 +1,0 @@
-Simple example of Smart Stream Filter

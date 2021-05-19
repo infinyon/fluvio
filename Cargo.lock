@@ -1811,10 +1811,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-smartstream-wasm"
-version = "0.2.0"
+name = "fluvio-smartstream"
+version = "0.1.0"
 dependencies = [
  "fluvio-dataplane-protocol",
+ "fluvio-smartstream-derive",
+]
+
+[[package]]
+name = "fluvio-smartstream-derive"
+version = "0.1.0"
+dependencies = [
+ "fluvio-smartstream",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "trybuild",
 ]
 
 [[package]]

@@ -60,7 +60,7 @@ pub struct ConsumeOpt {
     pub max_bytes: Option<i32>,
 
     /// Suppress items items that have an unknown output type
-    #[structopt(short = "s", long = "suppress-unknown")]
+    #[structopt(long = "suppress-unknown")]
     pub suppress_unknown: bool,
 
     /// Output
@@ -76,7 +76,7 @@ pub struct ConsumeOpt {
 
     /// Path to a WASM binary file
     #[structopt(short, long)]
-    pub filter: Option<PathBuf>,
+    pub smart_stream: Option<PathBuf>,
 }
 
 impl ConsumeOpt {
@@ -115,7 +115,7 @@ impl ConsumeOpt {
             config
         };
 
-        if let Some(filter_path) = &self.filter {
+        if let Some(filter_path) = &self.smart_stream {
             let buffer = std::fs::read(filter_path)?;
             debug!(len = buffer.len(), "read filter bytes");
             consume_config = consume_config.with_wasm_filter(buffer);

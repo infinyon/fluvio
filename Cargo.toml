@@ -28,7 +28,8 @@ members = [
     "src/utils",
     "src/extension-common",
     "src/runner",
-    "src/smartstream-wasm",
+    "src/smartstream",
+    "src/smartstream/derive",
     "tests/runner",
 ]
 resolver = "2"
