@@ -608,6 +608,6 @@ jobs:
           override: true
 
       - name: Check wasm for ${{ matrix.wasm-crate }}
-        run:
+        run: |
           rustup target add wasm32-unknown-unknown
           cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
