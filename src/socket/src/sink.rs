@@ -9,7 +9,6 @@ use async_lock::MutexGuard;
 use tokio_util::compat::{Compat, FuturesAsyncWriteCompatExt};
 use tokio_util::codec::{FramedWrite};
 
-
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Encoder as FlvEncoder;
