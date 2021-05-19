@@ -14,14 +14,16 @@ pub fn generate_smartstream(config: &SmartStreamConfig, func: &SmartStreamFn) ->
     quote! {
         #user_code
 
-        #[no_mangle]
-        #[allow(clippy::missing_safety_doc)]
-        pub unsafe fn filter(ptr: *mut u8, len: usize) -> i32 {
-            #decoding_section
+        mod __system {
+            #[no_mangle]
+            #[allow(clippy::missing_safety_doc)]
+            pub unsafe fn filter(ptr: *mut u8, len: usize) -> i32 {
+                #decoding_section
 
-            #stream_section
+                #stream_section
 
-            #encoding_section
+                #encoding_section
+            }
         }
     }
 }
@@ -44,7 +46,7 @@ fn generate_filter(func: &SmartStreamFn) -> TokenStream {
     let user_fn = &func.name;
     quote! {
         let mut processed: Vec<_> = records.into_iter()
-            .filter(|record| #user_fn(record))
+            .filter(|record| super:: #user_fn(record))
             .collect();
     }
 }
