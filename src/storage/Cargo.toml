@@ -33,13 +33,13 @@ derive_builder = "0.10.2"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.0", path = "../types" }
-fluvio-future = { version = "0.3.0", features = ["fs", "mmap"] }
+fluvio-future = { version = "0.3.2", features = ["fs", "mmap","zero_copy"] }
 fluvio-protocol = { path = "../protocol", version = "0.5.1" }
 dataplane = { version = "0.5.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["file"] }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.0", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
-fluvio-socket = { path = "../socket", version = "0.8.1" }
+fluvio-socket = { path = "../socket", version = "0.8.1",features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"]}
 dataplane = { version = "0.5.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["fixture"] }
