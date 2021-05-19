@@ -66,16 +66,6 @@ spec:
                               enum:
                                 - PLAINTEXT
                                 - SSL
-                        controllerSvc:
-                          type: object
-                          properties:
-                            host:
-                              type: integer
-                            encryption:
-                              type: string
-                              enum:
-                                - PLAINTEXT
-                                - SSL
                         replication:
                           type: object
                           properties:

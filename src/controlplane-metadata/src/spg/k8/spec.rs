@@ -56,8 +56,6 @@ pub struct SpuTemplate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub private_endpoint: Option<SpuEndpointTemplate>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub controller_svc: Option<ControllerEndPoint>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub replication: Option<K8ReplicationConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<K8StorageConfig>,
