@@ -593,10 +593,6 @@ jobs:
         wasm-crate: [spu-schema, sc-schema, dataplane-protocol, types, protocol]
     env:
       RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
-      SCCACHE_CACHE_SIZE: 300M
-      SCCACHE_DIR: /home/runner/.cache/sccache
-      SCCACHE_IDLE_TIMEOUT: 0
       RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v2
@@ -606,8 +602,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+          target: wasm32-unknown-unknown
 
       - name: Check wasm for ${{ matrix.wasm-crate }}
-        run: |
-          rustup target add wasm32-unknown-unknown
+        run:
           cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
