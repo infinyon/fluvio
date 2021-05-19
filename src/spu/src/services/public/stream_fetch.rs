@@ -659,7 +659,8 @@ mod test {
     }
 
     fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
-        std::fs::read(filter_path).expect("Unable to read file")
+        let path = filter_path.as_ref();
+        std::fs::read(path).expect(&format!("Unable to read file {}", path.display()))
     }
 
     fn load_wasm_module(module_name: &str) -> Vec<u8> {
