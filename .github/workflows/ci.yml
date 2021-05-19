@@ -606,8 +606,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-          target: wasm32-unknown-unknown
 
       - name: Check wasm for ${{ matrix.wasm-crate }}
         run:
+          rustup target add wasm32-unknown-unknown
           cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
