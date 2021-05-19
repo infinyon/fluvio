@@ -26,7 +26,7 @@ fluvio-controlplane-metadata = { version = "0.9.0", path = "../controlplane-meta
 dataplane = { version = "0.5.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.3.0", features = ["net", "openssl_tls"] }
 fluvio-protocol = { path = "../protocol",  version = "0.5.1" }
-fluvio-socket = { path = "../socket", version = "0.8.2" }
+fluvio-socket = { path = "../socket", version = "0.8.1" }
 fluvio-types = { version = "0.2.0", path = "../types" }
 flv-tls-proxy = { version = "0.5.0" }
 futures-util = { version = "0.3.5" }

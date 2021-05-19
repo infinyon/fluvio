@@ -14,6 +14,7 @@ pub enum SpuServerApiKey {
     ApiVersion = 18, // API_VERSIONS_KEY
 
     Produce = 0,
+    #[cfg(feature = "file")]
     Fetch = 1,
 
     FetchOffsets = 1002,

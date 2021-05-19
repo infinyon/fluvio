@@ -1320,7 +1320,7 @@ dependencies = [
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-sc-schema",
  "fluvio-socket",
@@ -1347,7 +1347,7 @@ dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "fluvio-types",
@@ -1378,7 +1378,7 @@ dependencies = [
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-package-index",
  "fluvio-sc-schema",
  "fluvio-types",
@@ -1419,7 +1419,7 @@ dependencies = [
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-helm",
  "flv-util",
  "futures-lite",
@@ -1480,7 +1480,7 @@ version = "0.9.0"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1499,7 +1499,7 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "derive_builder 0.9.0",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "flv-util",
@@ -1551,9 +1551,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61587e440c936984e7dab40903de1c9adc39ab13e8446b52c50852da5cd6fbcb"
+version = "0.3.2"
+source = "git+https://github.com/infinyon/future-aio.git#1b39405e3bd4ad469c05778498371a32a6686472"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1561,7 +1560,9 @@ dependencies = [
  "async-net",
  "async-std",
  "async-trait",
+ "cfg-if 1.0.0",
  "fluvio-test-derive",
+ "fluvio-wasm-timer",
  "futures-lite",
  "futures-util",
  "log",
@@ -1575,7 +1576,6 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
- "wasm-timer",
 ]
 
 [[package]]
@@ -1596,7 +1596,7 @@ name = "fluvio-integration-derive"
 version = "0.1.0"
 dependencies = [
  "fluvio",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-test-util",
  "inflections",
  "proc-macro2",
@@ -1637,7 +1637,7 @@ name = "fluvio-protocol"
 version = "0.5.1"
 dependencies = [
  "bytes",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol-api 0.4.0",
  "fluvio-protocol-codec",
  "fluvio-protocol-core 0.3.0",
@@ -1673,7 +1673,7 @@ name = "fluvio-protocol-codec"
 version = "0.3.1"
 dependencies = [
  "bytes",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol-core 0.3.0",
  "flv-util",
  "futures",
@@ -1727,7 +1727,7 @@ name = "fluvio-run"
 version = "0.2.0"
 dependencies = [
  "fluvio-extension-common",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-sc",
  "fluvio-spu",
  "semver 0.11.0",
@@ -1751,7 +1751,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-sc-schema",
  "fluvio-service",
@@ -1798,7 +1798,7 @@ name = "fluvio-service"
 version = "0.6.0"
 dependencies = [
  "async-trait",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "fluvio-types",
@@ -1819,7 +1819,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.8.2"
+version = "0.8.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1828,7 +1828,7 @@ dependencies = [
  "bytes",
  "cfg-if 1.0.0",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "flv-util",
  "futures-util",
@@ -1859,7 +1859,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-service",
  "fluvio-socket",
@@ -1907,7 +1907,7 @@ dependencies = [
  "bytes",
  "derive_builder 0.10.2",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-protocol 0.5.1",
  "fluvio-socket",
  "fluvio-storage",
@@ -1929,7 +1929,7 @@ dependencies = [
  "async-rwlock",
  "async-trait",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1950,7 +1950,7 @@ version = "0.5.1"
 dependencies = [
  "async-rwlock",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "k8-types",
  "once_cell",
  "serde",
@@ -1970,8 +1970,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
+source = "git+https://github.com/infinyon/future-aio.git#1b39405e3bd4ad469c05778498371a32a6686472"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1989,7 +1988,7 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "futures-lite",
  "inventory",
  "log",
@@ -2010,9 +2009,23 @@ name = "fluvio-types"
 version = "0.2.4"
 dependencies = [
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "fluvio-wasm-timer"
+version = "0.2.5"
+source = "git+https://github.com/infinyon/wasm-timer.git?branch=fluvio-wasm-timer#4a3361ca02b186b57ebd4141001c07d1913db643"
+dependencies = [
+ "futures",
+ "js-sys",
+ "parking_lot 0.11.1",
+ "pin-utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -2027,7 +2040,7 @@ dependencies = [
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "fluvio-integration-derive",
  "fluvio-system-util",
  "fluvio-test-util",
@@ -2054,7 +2067,7 @@ dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
  "event-listener",
- "fluvio-future 0.3.1",
+ "fluvio-future 0.3.2",
  "futures-lite",
  "futures-util",
  "log",
@@ -2564,6 +2577,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
 dependencies = [
  "cfg-if 1.0.0",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -3481,9 +3497,9 @@ dependencies = [
 
 [[package]]
 name = "rayon"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b0d8e0819fadc20c74ea8373106ead0600e3a67ef1fe8da56e39b9ae7275674"
+checksum = "c06aca804d41dbc8ba42dfd964f0d01334eceb64314b9ecf7c5fad5188a06d90"
 dependencies = [
  "autocfg",
  "crossbeam-deque",
@@ -3493,9 +3509,9 @@ dependencies = [
 
 [[package]]
 name = "rayon-core"
-version = "1.9.0"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ab346ac5921dc62ffa9f89b7a773907511cdfa5490c572ae9be1be33e8afa4a"
+checksum = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-deque",
@@ -4483,11 +4499,12 @@ dependencies = [
 
 [[package]]
 name = "value-bag"
-version = "1.0.0-alpha.6"
+version = "1.0.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b676010e055c99033117c2343b33a40a30b91fecd6c49055ac9cd2d6c305ab1"
+checksum = "dd320e1520f94261153e96f7534476ad869c14022aee1e59af7c778075d840ae"
 dependencies = [
  "ctor",
+ "version_check",
 ]
 
 [[package]]
@@ -4601,21 +4618,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7cff876b8f18eed75a66cf49b65e7f967cb354a7aa16003fb55dbfd25b44b4f"
-
-[[package]]
-name = "wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot 0.11.1",
- "pin-utils",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
 
 [[package]]
 name = "wasmparser"

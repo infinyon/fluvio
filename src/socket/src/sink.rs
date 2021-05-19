@@ -2,29 +2,18 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
-
+use tracing::trace;
+use futures_util::{SinkExt};
 use async_lock::Mutex;
 use async_lock::MutexGuard;
-use tracing::trace;
-use tokio_util::compat::FuturesAsyncWriteCompatExt;
-use futures_util::{SinkExt, AsyncWriteExt};
+use tokio_util::compat::{Compat, FuturesAsyncWriteCompatExt};
+use tokio_util::codec::{FramedWrite};
 
-use tokio_util::compat::Compat;
-use bytes::BytesMut;
-
-use fluvio_future::zero_copy::ZeroCopy;
-use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::api::ResponseMessage;
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
-use fluvio_protocol::store::FileWrite;
-use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
-use fluvio_future::net::BoxWriteConnection;
-
-use tokio_util::codec::{FramedWrite};
+use fluvio_future::net::{BoxWriteConnection, ConnectionFd};
 
 use crate::FlvSocketError;
 
@@ -32,7 +21,7 @@ type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
 pub struct FluvioSink {
     inner: SinkFrame,
-    fd: RawFd,
+    fd: ConnectionFd,
 }
 
 impl fmt::Debug for FluvioSink {
@@ -46,7 +35,7 @@ impl FluvioSink {
         &mut self.inner
     }
 
-    pub fn id(&self) -> RawFd {
+    pub fn id(&self) -> ConnectionFd {
         self.fd
     }
 
@@ -56,7 +45,7 @@ impl FluvioSink {
         ExclusiveFlvSink::new(self)
     }
 
-    pub fn new(sink: BoxWriteConnection, fd: RawFd) -> Self {
+    pub fn new(sink: BoxWriteConnection, fd: ConnectionFd) -> Self {
         Self {
             fd,
             inner: SinkFrame::new(sink.compat_write(), FluvioCodec::new()),
@@ -91,73 +80,97 @@ impl FluvioSink {
     }
 }
 
-impl FluvioSink {
-    /// write
-    pub async fn encode_file_slices<T>(
-        &mut self,
-        msg: &T,
-        version: Version,
-    ) -> Result<(), FlvSocketError>
-    where
-        T: FileWrite,
-    {
-        trace!("encoding file slices version: {}", version);
-        let mut buf = BytesMut::with_capacity(1000);
-        let mut data: Vec<StoreValue> = vec![];
-        msg.file_encode(&mut buf, &mut data, version)?;
-        trace!("encoded buffer len: {}", buf.len());
-        // add remainder
-        data.push(StoreValue::Bytes(buf.freeze()));
-        self.write_store_values(data).await
-    }
+#[cfg(unix)]
+mod fd {
 
-    /// write store values to socket
-    async fn write_store_values(&mut self, values: Vec<StoreValue>) -> Result<(), FlvSocketError> {
-        trace!("writing store values to socket values: {}", values.len());
+    use std::os::unix::io::AsRawFd;
+    use std::os::unix::io::RawFd;
 
-        for value in values {
-            match value {
-                StoreValue::Bytes(bytes) => {
-                    trace!("writing store bytes to socket len: {}", bytes.len());
-                    // These bytes should be already encoded so don't need to pass
-                    // through the FluvioCodec
-                    self.get_mut_tcp_sink()
-                        .get_mut()
-                        .get_mut()
-                        .write(&bytes)
-                        .await?;
-                }
-                StoreValue::FileSlice(f_slice) => {
-                    if f_slice.is_empty() {
-                        trace!("empty slice, skipping");
-                    } else {
-                        trace!(
-                            "writing file slice pos: {} len: {} to socket",
-                            f_slice.position(),
-                            f_slice.len()
-                        );
-                        let writer = ZeroCopy::raw(self.fd);
-                        writer.copy_slice(&f_slice).await?;
-                        trace!("finish writing file slice");
-                    }
-                }
-            }
+    use super::FluvioSink;
+
+    impl AsRawFd for FluvioSink {
+        fn as_raw_fd(&self) -> RawFd {
+            self.fd
         }
-
-        Ok(())
     }
 }
 
-impl AsRawFd for FluvioSink {
-    fn as_raw_fd(&self) -> RawFd {
-        self.fd
+#[cfg(feature = "file")]
+mod file {
+
+    use bytes::BytesMut;
+    use futures_util::AsyncWriteExt;
+
+    use fluvio_protocol::store::{FileWrite, StoreValue};
+    use fluvio_future::zero_copy::ZeroCopy;
+
+    use super::*;
+
+    impl FluvioSink {
+        /// write
+        pub async fn encode_file_slices<T>(
+            &mut self,
+            msg: &T,
+            version: Version,
+        ) -> Result<(), FlvSocketError>
+        where
+            T: FileWrite,
+        {
+            trace!("encoding file slices version: {}", version);
+            let mut buf = BytesMut::with_capacity(1000);
+            let mut data: Vec<StoreValue> = vec![];
+            msg.file_encode(&mut buf, &mut data, version)?;
+            trace!("encoded buffer len: {}", buf.len());
+            // add remainder
+            data.push(StoreValue::Bytes(buf.freeze()));
+            self.write_store_values(data).await
+        }
+
+        /// write store values to socket
+        async fn write_store_values(
+            &mut self,
+            values: Vec<StoreValue>,
+        ) -> Result<(), FlvSocketError> {
+            trace!("writing store values to socket values: {}", values.len());
+
+            for value in values {
+                match value {
+                    StoreValue::Bytes(bytes) => {
+                        trace!("writing store bytes to socket len: {}", bytes.len());
+                        // These bytes should be already encoded so don't need to pass
+                        // through the FluvioCodec
+                        self.get_mut_tcp_sink()
+                            .get_mut()
+                            .get_mut()
+                            .write(&bytes)
+                            .await?;
+                    }
+                    StoreValue::FileSlice(f_slice) => {
+                        if f_slice.is_empty() {
+                            trace!("empty slice, skipping");
+                        } else {
+                            trace!(
+                                "writing file slice pos: {} len: {} to socket",
+                                f_slice.position(),
+                                f_slice.len()
+                            );
+                            let writer = ZeroCopy::raw(self.fd);
+                            writer.copy_slice(&f_slice).await?;
+                            trace!("finish writing file slice");
+                        }
+                    }
+                }
+            }
+
+            Ok(())
+        }
     }
 }
 
 /// Multi-thread aware Sink.  Only allow sending request one a time.
 pub struct ExclusiveFlvSink {
     inner: Arc<Mutex<FluvioSink>>,
-    fd: RawFd,
+    fd: ConnectionFd,
 }
 
 impl ExclusiveFlvSink {
@@ -196,7 +209,7 @@ impl ExclusiveFlvSink {
         inner_sink.send_response(resp_msg, version).await
     }
 
-    pub fn id(&self) -> RawFd {
+    pub fn id(&self) -> ConnectionFd {
         self.fd
     }
 }

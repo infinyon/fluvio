@@ -1,6 +1,3 @@
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
-
 use std::fmt;
 
 use tracing::debug;
@@ -10,7 +7,8 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 
 use fluvio_future::net::{
-    BoxWriteConnection, BoxReadConnection, DefaultTcpDomainConnector, TcpDomainConnector, TcpStream,
+    BoxReadConnection, BoxWriteConnection, ConnectionFd, DefaultTcpDomainConnector,
+    TcpDomainConnector, TcpStream,
 };
 
 use super::FlvSocketError;
@@ -60,7 +58,7 @@ impl FluvioSocket {
         &mut self.stream
     }
 
-    pub fn id(&self) -> RawFd {
+    pub fn id(&self) -> ConnectionFd {
         self.sink.id()
     }
 
@@ -79,8 +77,12 @@ impl FluvioSocket {
 }
 
 impl FluvioSocket {
-    pub fn from_stream(write: BoxWriteConnection, read: BoxReadConnection, raw_fd: RawFd) -> Self {
-        Self::new(FluvioSink::new(write, raw_fd), FluvioStream::new(read))
+    pub fn from_stream(
+        write: BoxWriteConnection,
+        read: BoxReadConnection,
+        fd: ConnectionFd,
+    ) -> Self {
+        Self::new(FluvioSink::new(write, fd), FluvioStream::new(read))
     }
 
     /// connect to target address with connector
@@ -110,6 +112,8 @@ impl FluvioSocket {
 
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
+        use std::os::unix::io::AsRawFd;
+
         impl From<TcpStream> for FluvioSocket {
             fn from(tcp_stream: TcpStream) -> Self {
                 let fd = tcp_stream.as_raw_fd();
