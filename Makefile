@@ -159,7 +159,7 @@ check-clippy: install-clippy
 
 build_smartstreams:
 	rustup target add wasm32-unknown-unknown
-	pushd src/smartstream/examples; cargo build --release; popd || true
+	pushd src/smartstream/examples; cargo build --release --package fluvio-wasm-filter; popd || true
 
 test_smartstreams:
 	rustup target add wasm32-unknown-unknown
