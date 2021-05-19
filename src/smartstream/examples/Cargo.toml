@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "filter",
+    "filter_json",
 ]
 
 # lto is need to reduce wasm binary size
