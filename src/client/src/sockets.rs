@@ -4,7 +4,6 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use tracing::{debug, trace};
-use async_trait::async_trait;
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
@@ -16,31 +15,9 @@ use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
 use crate::FluvioError;
 
 /// Frame with request and response
-#[async_trait]
 pub(crate) trait SerialFrame: Display {
     /// client config
     fn config(&self) -> &ClientConfig;
-
-    /// create new request based on version
-    fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
-    where
-        R: Request + Send,
-    {
-        let mut req_msg = RequestMessage::new_request(request);
-        req_msg
-            .get_mut_header()
-            .set_client_id(&self.config().client_id);
-
-        if let Some(ver) = version {
-            req_msg.get_mut_header().set_api_version(ver);
-        }
-        req_msg
-    }
-
-    /// send and receive
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
-    where
-        R: Request + Send + Sync;
 }
 
 /// This sockets knows about support versions
@@ -57,25 +34,9 @@ impl fmt::Display for VersionedSocket {
     }
 }
 
-#[async_trait]
 impl SerialFrame for VersionedSocket {
     fn config(&self) -> &ClientConfig {
         &self.config
-    }
-
-    /// send and wait for reply
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
-    where
-        R: Request + Send + Sync,
-    {
-        let req_message = self.send_request(request).await?;
-
-        // send request & save response
-        self.socket
-            .get_mut_stream()
-            .next_response(&req_message)
-            .await
-            .map(|res_msg| res_msg.response)
     }
 }
 
@@ -104,23 +65,6 @@ impl VersionedSocket {
 
     pub fn split(self) -> (FluvioSocket, Arc<ClientConfig>, Versions) {
         (self.socket, self.config, self.versions)
-    }
-
-    /// send request only
-    pub async fn send_request<R>(&mut self, request: R) -> Result<RequestMessage<R>, FlvSocketError>
-    where
-        R: Request + Send + Sync,
-    {
-        trace!(
-            "send API '{}' req to srv '{}'",
-            R::API_KEY,
-            self.config.addr()
-        );
-
-        let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
-
-        self.socket.get_mut_sink().send_request(&req_msg).await?;
-        Ok(req_msg)
     }
 }
 
@@ -257,16 +201,9 @@ impl VersionedSerialSocket {
     pub fn versions(&self) -> &Versions {
         &self.versions
     }
-}
-
-#[async_trait]
-impl SerialFrame for VersionedSerialSocket {
-    fn config(&self) -> &ClientConfig {
-        &self.config
-    }
 
     /// send and wait for reply serially
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
@@ -274,5 +211,26 @@ impl SerialFrame for VersionedSerialSocket {
 
         // send request & save response
         self.socket.send_and_receive(req_msg).await
+    }
+    /// create new request based on version
+    fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
+    where
+        R: Request + Send,
+    {
+        let mut req_msg = RequestMessage::new_request(request);
+        req_msg
+            .get_mut_header()
+            .set_client_id(&self.config().client_id);
+
+        if let Some(ver) = version {
+            req_msg.get_mut_header().set_api_version(ver);
+        }
+        req_msg
+    }
+}
+
+impl SerialFrame for VersionedSerialSocket {
+    fn config(&self) -> &ClientConfig {
+        &self.config
     }
 }
