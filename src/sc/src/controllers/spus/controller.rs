@@ -5,9 +5,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 use std::time::Duration;
 
-use tracing::debug;
-use tracing::error;
-use tracing::warn;
+use tracing::{debug, error, warn, info};
 use tracing::instrument;
 
 use async_channel::Receiver;
@@ -187,10 +185,10 @@ impl SpuController {
         for (id, status) in self.status.iter_mut() {
             let elapsed_time = status.time.elapsed();
             if elapsed_time >= Duration::from_secs(70) {
-                debug!(
-                    "spu: {}, no health check: {} seconds",
+                info!(
                     id,
-                    elapsed_time.as_secs()
+                    elapsed_sec = elapsed_time.as_secs(),
+                    "setting spu to offline due to no health check",
                 );
                 status.online = false;
                 status.time = Instant::now();
