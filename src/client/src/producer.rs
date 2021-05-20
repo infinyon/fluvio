@@ -14,7 +14,6 @@ pub use dataplane::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::sockets::SerialFrame;
 use fluvio_types::{SpuId, PartitionId};
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;

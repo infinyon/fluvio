@@ -9,6 +9,7 @@
 * Updated RecordAPI with RecordKey and RecordData ([#1088](https://github.com/infinyon/fluvio/issues/1088))
 * Support WASM for client ([#1101](https://github.com/infinyon/fluvio/issues/1101))
 * `spu_pool` to support wasm runtime. ([#1106](https://github.com/infinyon/fluvio/pull/1106))
+* Remove async trait for more wasm support to client ([#1108](https://github.com/infinyon/fluvio/pull/1108))
 
 ## Platform Version 0.8.2 - 2020-05-06
 * Fix Replication fail over with duplication ([#1052](https://github.com/infinyon/fluvio/pull/1052))
