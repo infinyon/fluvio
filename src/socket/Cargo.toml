@@ -25,7 +25,6 @@ futures-util = { version = "0.3.5", features = ["sink", "io"] }
 async-lock = "2.4.0"
 event-listener = "2.0.0"
 async-channel = "1.4.0"
-async-net = "1.4.3"
 tokio = { version = "1.3.0", features = ["macros"] }
 tokio-util = { version = "0.6.4", features = ["codec", "compat"] }
 async-trait = "0.1.21"
@@ -34,10 +33,13 @@ thiserror = "1.0.20"
 
 
 # Fluvio dependencies
-fluvio-future = { version = "0.3.2", features = ["net"] }
+fluvio-future = { version = "0.3.2", features = ["net", "task"] }
 fluvio-protocol = { path = "../protocol", version = "0.5.1", features = ["derive", "api", "codec"] }
 
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.1", features = ["fixture", "fs", "native2_tls"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+async-net = "1.4.3"

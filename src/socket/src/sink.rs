@@ -36,7 +36,7 @@ impl FluvioSink {
     }
 
     pub fn id(&self) -> ConnectionFd {
-        self.fd
+        self.fd.clone()
     }
 
     /// convert to shared sink
@@ -210,7 +210,7 @@ impl ExclusiveFlvSink {
     }
 
     pub fn id(&self) -> ConnectionFd {
-        self.fd
+        self.fd.clone()
     }
 }
 
@@ -218,7 +218,7 @@ impl Clone for ExclusiveFlvSink {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            fd: self.fd,
+            fd: self.fd.clone(),
         }
     }
 }

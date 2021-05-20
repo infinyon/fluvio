@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
-use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
+use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 use fluvio_future::native_tls::{
     TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder, PrivateKeyBuilder,
     CertBuilder, TlsAnonymousConnector,
@@ -199,7 +199,7 @@ impl TryFrom<TlsPolicy> for DomainConnector {
 
     fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
         match config {
-            TlsPolicy::Disabled => Ok(Box::new(DefaultTcpDomainConnector::new())),
+            TlsPolicy::Disabled => Ok(Box::new(DefaultDomainConnector::new())),
             TlsPolicy::Anonymous => {
                 info!("Using anonymous TLS");
                 let connector: TlsAnonymousConnector = ConnectorBuilder::anonymous().build().into();

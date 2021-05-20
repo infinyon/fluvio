@@ -7,8 +7,8 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 
 use fluvio_future::net::{
-    BoxReadConnection, BoxWriteConnection, ConnectionFd, DefaultTcpDomainConnector,
-    TcpDomainConnector, TcpStream,
+    BoxReadConnection, BoxWriteConnection, ConnectionFd, DefaultDomainConnector,
+    TcpDomainConnector,
 };
 
 use super::FlvSocketError;
@@ -105,7 +105,7 @@ impl From<(FluvioSink, FluvioStream)> for FluvioSocket {
 
 impl FluvioSocket {
     pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
-        let connector = DefaultTcpDomainConnector::new();
+        let connector = DefaultDomainConnector::new();
         Self::connect_with_connector(addr, &connector).await
     }
 }
@@ -114,6 +114,7 @@ cfg_if::cfg_if! {
     if #[cfg(unix)] {
         use std::os::unix::io::AsRawFd;
 
+        use fluvio_future::net::TcpStream;
         impl From<TcpStream> for FluvioSocket {
             fn from(tcp_stream: TcpStream) -> Self {
                 let fd = tcp_stream.as_raw_fd();
