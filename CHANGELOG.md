@@ -8,6 +8,7 @@
 * Added implementations of FluvioEncoder for &T: FluvioEncoder. ([#1081](https://github.com/infinyon/fluvio/pull/1081))
 * Updated RecordAPI with RecordKey and RecordData ([#1088](https://github.com/infinyon/fluvio/issues/1088))
 * Support WASM for client ([#1101](https://github.com/infinyon/fluvio/issues/1101))
+* `spu_pool` to support wasm runtime. ([#1106](https://github.com/infinyon/fluvio/pull/1106))
 
 ## Platform Version 0.8.2 - 2020-05-06
 * Fix Replication fail over with duplication ([#1052](https://github.com/infinyon/fluvio/pull/1052))
@@ -30,7 +31,7 @@
 * Added batching for producing records with `send_all` API ([#896](https://github.com/infinyon/fluvio/pull/896)).
 * WASM based Smart Stream Filter MVP ([#901](https://github.com/infinyon/fluvio/pull/901)).
 * Fix topic not being deleted when SPU goes offline ([#914](https://github.com/infinyon/fluvio/pull/914))
-  
+
 ## Platform Version 0.7.2 - 2020-03-23
 * `fluvio update` updates plugins as well as CLI ([#865](https://github.com/infinyon/fluvio/issues/865)).
 * SPU controller uses SVC ingress annotation ([#888](https://github.com/infinyon/fluvio/pull/888)).

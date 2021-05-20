@@ -1327,7 +1327,6 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "futures-util",
- "once_cell",
  "pin-project-lite",
  "semver 0.11.0",
  "serde",
