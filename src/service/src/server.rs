@@ -10,9 +10,7 @@ use std::os::unix::io::AsRawFd;
 use futures_util::StreamExt;
 
 use async_trait::async_trait;
-use tracing::debug;
-use tracing::error;
-use tracing::info;
+use tracing::{debug, error};
 use tracing::instrument;
 use tracing::trace;
 
@@ -116,7 +114,7 @@ where
     async fn run_shutdown(self, shutdown_signal: Arc<SimpleEvent>) {
         match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
-                info!("starting event loop");
+                debug!("starting event loop");
                 self.event_loop(listener, shutdown_signal).await;
             }
             Err(err) => {

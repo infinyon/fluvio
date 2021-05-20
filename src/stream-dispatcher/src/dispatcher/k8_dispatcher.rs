@@ -7,7 +7,6 @@ use std::io::ErrorKind;
 use futures_lite::stream::StreamExt;
 use tracing::debug;
 use tracing::error;
-use tracing::info;
 use tracing::trace;
 use tracing::instrument;
 use serde::de::DeserializeOwned;
@@ -97,7 +96,6 @@ where
         )
     )]
     async fn outer_loop(mut self) {
-        info!("starting k8 dispatcher loop");
         loop {
             debug!("starting concilation loop");
             self.reconcillation_loop().await;
