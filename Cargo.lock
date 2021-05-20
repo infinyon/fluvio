@@ -1560,6 +1560,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.2"
+source = "git+https://github.com/simlay/future-aio.git?branch=websocket-connector#06383396c21ff163bb3c10dbb21d8281356aa203"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1944,6 +1945,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
+source = "git+https://github.com/simlay/future-aio.git?branch=websocket-connector#06383396c21ff163bb3c10dbb21d8281356aa203"
 dependencies = [
  "proc-macro2",
  "quote",
