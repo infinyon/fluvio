@@ -633,9 +633,9 @@ dependencies = [
 
 [[package]]
 name = "const_fn"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "402da840495de3f976eaefc3485b7f5eb5b0bf9761f9a47be27fe975b3b8c2ec"
+checksum = "f92cfa0fd5690b3cf8c1ef2cabbd9b7ef22fa53cf5e1f92b05103f6d5d1cf6e7"
 
 [[package]]
 name = "constant_time_eq"
@@ -1342,7 +1342,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-auth"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
@@ -1364,7 +1364,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "async-h1",
  "atty",
@@ -1407,7 +1407,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1464,7 +1464,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1552,7 +1552,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.2"
-source = "git+https://github.com/infinyon/future-aio.git#1b39405e3bd4ad469c05778498371a32a6686472"
+source = "git+https://github.com/infinyon/future-aio.git#bbe78c04b99ede1d73a17c9f4ab4d3e4c97b09c5"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1738,7 +1738,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1780,7 +1780,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1843,7 +1843,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1970,7 +1970,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/future-aio.git#1b39405e3bd4ad469c05778498371a32a6686472"
+source = "git+https://github.com/infinyon/future-aio.git#bbe78c04b99ede1d73a17c9f4ab4d3e4c97b09c5"
 dependencies = [
  "proc-macro2",
  "quote",
