@@ -15,7 +15,7 @@ mod server {
 
     use std::fmt::Debug;
 
-    use tracing::info;
+    use tracing::debug;
 
     use fluvio_service::FlvApiServer;
     use fluvio_auth::Authorization;
@@ -31,7 +31,7 @@ mod server {
         <A as Authorization>::Context: Send + Sync,
     {
         let addr = ctx.global_ctx.config().public_endpoint.clone();
-        info!("start public api service");
+        debug!("starting public api service");
         let server = FlvApiServer::new(addr, ctx, PublicService::new());
         server.run();
     }

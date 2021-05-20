@@ -115,10 +115,10 @@ impl PartitionController {
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
         debug!(
-            "received spu epoch: {}, updates: {},deletes: {}",
             epoch,
-            updates.len(),
-            deletes.len()
+            updates = updates.len(),
+            deletes = deletes.len(),
+            "spu changes",
         );
 
         let actions = self

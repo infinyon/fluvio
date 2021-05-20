@@ -5,8 +5,7 @@
 //!
 use std::sync::Arc;
 
-use tracing::debug;
-use tracing::warn;
+use tracing::{debug, warn, info};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 
@@ -115,7 +114,7 @@ impl PartitionReducer {
             spus.into_iter().partition(|v| v.status.is_online());
 
         // election due to offline spu
-        debug!("offline spus: {}", offline_spus.len());
+        debug!(offline = offline_spus.len(), "offline spus");
         for offline_spu in offline_spus.into_iter() {
             self.force_election_spu_off(offline_spu, &mut actions).await;
         }
@@ -133,9 +132,10 @@ impl PartitionReducer {
         offline_spu: SpuAdminMd,
         actions: &mut Vec<PartitionWSAction>,
     ) {
-        debug!(
-            "start election when spu went offline: {}",
-            offline_spu.key()
+        info!(
+            spu = %offline_spu.key(),
+            "starting election when spu went offline",
+
         );
         let offline_leader_spu_id = offline_spu.spec.id;
 
@@ -152,11 +152,12 @@ impl PartitionReducer {
                 if let Some(candidate_leader) =
                     partition_kv.status.candidate_leader(&spu_status, &policy)
                 {
-                    debug!(
-                        "suitable leader has found: {} leader: {}",
-                        partition_kv.key(),
-                        candidate_leader
+                    info!(
+                        partition = %partition_kv.key(),
+                        candidate_leader,
+                        "suitable online leader has found",
                     );
+
                     let mut part_kv_change = partition_kv.clone();
                     part_kv_change.spec.leader = candidate_leader;
                     actions.push(PartitionWSAction::UpdateSpec((
@@ -165,7 +166,7 @@ impl PartitionReducer {
                     )));
                 // change the
                 } else {
-                    warn!("no suitable leader has found: {}", partition_kv.key());
+                    warn!( partition = %partition_kv.key(),"no suitable leader has found");
                     let mut part_kv_change = partition_kv.clone();
                     part_kv_change.status.resolution = PartitionResolution::LeaderOffline;
                     actions.push(PartitionWSAction::UpdateStatus((
@@ -183,7 +184,7 @@ impl PartitionReducer {
         online_spu: SpuAdminMd,
         actions: &mut Vec<PartitionWSAction>,
     ) {
-        debug!("start election spu went online: {}", online_spu.key());
+        info!(spu = %online_spu.key(),"start election spu went online" );
         let online_leader_spu_id = online_spu.spec.id;
 
         let policy = SimplePolicy::new();
@@ -203,10 +204,10 @@ impl PartitionReducer {
                                 )
                                 .is_suitable()
                         {
-                            debug!(
-                                "suitable leader has found: {} leader: {}",
-                                partition_kv.key(),
-                                online_leader_spu_id
+                            info!(
+                                partition = %partition_kv.key(),
+                                online_spu = online_leader_spu_id,
+                                "suitable online leader has found",
                             );
                             let mut part_kv_change = partition_kv.clone();
                             part_kv_change.spec.leader = online_leader_spu_id;
