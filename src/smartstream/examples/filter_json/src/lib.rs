@@ -47,9 +47,18 @@
 
 use fluvio_smartstream::{smartstream, Record};
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
 #[derive(serde::Deserialize)]
 struct StructuredLog {
-    level: String,
+    level: LogLevel,
     #[serde(rename = "message")]
     _message: String,
 }
@@ -64,6 +73,5 @@ pub fn filter_log_level(record: &Record) -> bool {
         Err(_) => return false,
     };
 
-    // Keep any logs tagged as "info", "warn", or "error"
-    log.level == "info" || log.level == "warn" || log.level == "error"
+    log.level > LogLevel::Debug
 }
