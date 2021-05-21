@@ -15,7 +15,7 @@ use tracing::instrument;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use k8_types::core::service::LoadBalancerIngress;
+use k8_types::core::service::{LoadBalancerIngress, LoadBalancerType};
 
 use crate::{
     stores::{StoreContext, K8ChangeListener},
@@ -196,34 +196,71 @@ impl SpuController {
         let spu_id = spu_md.key();
         let svc_id = svc_md.key();
 
-        // check if ingress exists
-        let spu_ingress = &spu_md.spec.public_endpoint.ingress;
+        // Check what type of load balancing we're using between NodePort and LoadBalancer
+        //debug!("Applying ingress address based on services");
+        //debug!("SPU: {:?}", &spu_md);
+        //debug!("SVC: {:?}", &svc_md);
 
-        let svc_lb_ingresses = svc_md.status.ingress();
-        let mut computed_spu_ingress: Vec<IngressAddr> =
-            svc_lb_ingresses.iter().map(convert).collect();
+        // Get the current ingress on the spu
+        let spu_ingress = spu_md.spec.public_endpoint.ingress.clone();
+        let spu_port = spu_md.spec.public_endpoint.port;
 
-        if let Some(address) = SpuServiceSpec::ingress_annotation(svc_md.ctx().item()) {
-            if let Ok(ip_addr) = address.parse::<IpAddr>() {
-                computed_spu_ingress.push(IngressAddr {
-                    hostname: None,
-                    ip: Some(ip_addr.to_string()),
-                });
-            } else {
-                computed_spu_ingress.push(IngressAddr {
-                    hostname: Some(address.clone()),
-                    ip: None,
-                });
+        let spu_ingressport = IngressPort {
+            port: spu_port,
+            ingress: spu_ingress,
+            ..Default::default()
+        };
+
+        // Get the external ingress from the service
+        // Look at svc_md to identify if LoadBalancer
+        let lb_type = svc_md.spec().inner().r#type.as_ref();
+        let svc_port = svc_md.spec().inner().ports[0].port;
+        let svc_nodeport = svc_md.spec().inner().ports[0].node_port;
+
+        // Declare the external IP based on the service type
+        // Let's build an IngressPort
+        let mut computed_spu_ingressport = match lb_type {
+            Some(LoadBalancerType::NodePort) => {
+                // Assuming only one node
+
+                IngressPort {
+                    port: svc_nodeport.expect("Expected a node port"),
+                    ingress: vec![IngressAddr {
+                        hostname: None,
+                        ip: Some("192.168.49.2".to_string()),
+                    }],
+                    ..Default::default()
+                }
             }
-        }
+            _ => {
+                let svc_lb_ingresses = svc_md.status.ingress();
 
-        if &computed_spu_ingress != spu_ingress {
+                IngressPort {
+                    port: svc_port,
+                    ingress: svc_lb_ingresses.iter().map(convert).collect(),
+                    ..Default::default()
+                }
+            }
+        };
+
+        //let svc_lb_ingresses = svc_md.status.ingress();
+        //let mut computed_spu_ingress: Vec<IngressAddr> =
+        //    svc_lb_ingresses.iter().map(convert).collect();
+
+        debug!("Computed SPU ingress: {:?}", &computed_spu_ingressport);
+
+        // Add additional ingress via annotation value
+        add_ingress_from_svc_annotation(&svc_md, &mut computed_spu_ingressport.ingress);
+
+        // We're going to come in with a fully built IngressPort
+        if computed_spu_ingressport != spu_ingressport {
             let mut update_spu = spu_md.spec.clone();
             debug!(
                 "updating spu: {} public end point: {:#?} from svc: {}",
-                spu_id, computed_spu_ingress, svc_id
+                spu_id, computed_spu_ingressport, svc_id
             );
-            update_spu.public_endpoint.ingress = computed_spu_ingress;
+            update_spu.public_endpoint.ingress = computed_spu_ingressport.ingress;
+            update_spu.public_endpoint.port = computed_spu_ingressport.port;
             self.spus.create_spec(spu_id.to_owned(), update_spu).await?;
         } else {
             debug!(
@@ -313,6 +350,25 @@ impl SpuController {
         debug!(spu_count, "finished applying spu");
 
         Ok(())
+    }
+}
+
+fn add_ingress_from_svc_annotation(
+    svc_md: &MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
+    computed_spu_ingress: &mut Vec<IngressAddr>,
+) {
+    if let Some(address) = SpuServiceSpec::ingress_annotation(svc_md.ctx().item()) {
+        if let Ok(ip_addr) = address.parse::<IpAddr>() {
+            computed_spu_ingress.push(IngressAddr {
+                hostname: None,
+                ip: Some(ip_addr.to_string()),
+            });
+        } else {
+            computed_spu_ingress.push(IngressAddr {
+                hostname: Some(address.clone()),
+                ip: None,
+            });
+        }
     }
 }
 

@@ -20,7 +20,7 @@ use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
-use k8_types::core::service::{ServiceSpec, TargetPort};
+use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 
 use crate::helm::{HelmClient, Chart};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
@@ -931,24 +931,54 @@ impl ClusterInstaller {
                                         .next()
                                         .expect("target port should be there");
 
+                                    let node_port =  service.spec
+                                        .ports
+                                        .iter()
+                                        .filter_map(|port| {
+                                            match port.node_port {
+                                                Some(value) => Some(value),
+                                                None => None
+                                            }
+                                        })
+                                        .next();
+
+
                                     if self.config.use_cluster_ip  {
                                         return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
                                     };
 
-                                    let ingress_addr = service
-                                        .status
-                                        .load_balancer
-                                        .ingress
-                                        .iter()
-                                        .find(|_| true)
-                                        .and_then(|ingress| ingress.host_or_ip().to_owned());
+                                    match service.spec.r#type.expect("Load Balancer Type") {
+                                        LoadBalancerType::ClusterIP => {
+                                            return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
+                                        },
+                                        LoadBalancerType::NodePort => {
+                                            let node_port = node_port.expect("Expecting a NodePort port");
+                                            // FIXME: How do we get the IP of a master node?
 
-                                    if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+                                            //let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
+                                            let external_addr="192.168.49.2";
+                                            return Ok(Some((format!("{}:{}",external_addr,node_port),node_port)))
+                                        },
+                                        LoadBalancerType::LoadBalancer => {
+                                            let ingress_addr = service
+                                                .status
+                                                .load_balancer
+                                                .ingress
+                                                .iter()
+                                                .find(|_| true)
+                                                .and_then(|ingress| ingress.host_or_ip().to_owned());
 
+                                            if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+                                                    debug!(%sock_addr,"found lb address");
+                                                    return Ok(Some((sock_addr,target_port)))
+                                            }
+                                        },
+                                        LoadBalancerType::ExternalName => {
+                                            unimplemented!("ExternalName Load Balancer support not implemented");
+                                        },
 
-                                            debug!(%sock_addr,"found lb address");
-                                            return Ok(Some((sock_addr,target_port)))
                                     }
+
 
                                 }
                             }
@@ -1058,6 +1088,7 @@ impl ClusterInstaller {
         Err(K8InstallError::SCDNSTimeout)
     }
 
+    // FIXME: Add support for NodePort SPUs
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
@@ -1067,14 +1098,42 @@ impl ClusterInstaller {
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
+            // We want to know what kind of load balancing we're using, for liveness checks
+            let service = self
+                .kube_client
+                .retrieve_items::<ServiceSpec, _>(ns)
+                .await?;
+
+            let sc_public_svc = service
+                .items
+                .into_iter()
+                .find(|sc_lb| sc_lb.metadata.name == "fluvio-sc-public");
+
+            let lb_type = if let Some(k8svc) = sc_public_svc {
+                k8svc.spec.r#type
+            } else {
+                Some(LoadBalancerType::LoadBalancer)
+            };
+
+            //for lb_type in service.items.into_iter().filter(|sc_lb| sc_lb.metadata.name == "fluvio-sc-public") {
+            //    debug!("Svc name: {:?} -- type: {:?}", lb_type.metadata.name, lb_type.spec.r#type);
+            //}
+
+            // FIXME: How do we update the ingress list when we're using NodePort?
             // Check that all items have ingress
             let ready_spu = items
                 .items
                 .iter()
                 .filter(|spu_obj| {
-                    // if cluster ip is used then we skip checkking ingress
-                    (self.config.use_cluster_ip || !spu_obj.spec.public_endpoint.ingress.is_empty())
-                        && spu_obj.status.is_online()
+                    match lb_type {
+                        Some(LoadBalancerType::NodePort) => spu_obj.status.is_online(),
+                        _ => {
+                            // if cluster ip is used then we skip checking ingress
+                            (self.config.use_cluster_ip
+                                || !spu_obj.spec.public_endpoint.ingress.is_empty())
+                                && spu_obj.status.is_online()
+                        }
+                    }
                 })
                 .count();
 
