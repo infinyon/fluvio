@@ -12,15 +12,15 @@ categories = ["encoding", "api-bindings"]
 derive = ["fluvio-protocol-derive"]
 api = ["fluvio-protocol-api"]
 codec = ["fluvio-protocol-codec"]
-store = ["fluvio-future", "fluvio-protocol-api", "log", "bytes"]
+store = ["fluvio-future", "fluvio-protocol-api", "bytes"]
 
 [dependencies]
+tracing = "0.1"
 fluvio-protocol-core = { version = "0.3.0", path = "fluvio-protocol-core" }
 fluvio-protocol-derive = { version = "0.2.0", path = "fluvio-protocol-derive", optional = true }
 fluvio-protocol-api = { version = "0.4.0", path = "fluvio-protocol-api", optional = true }
 fluvio-protocol-codec = { version = "0.3.1", path = "fluvio-protocol-codec", optional = true }
 fluvio-future = { version = "0.3.0", optional = true }
-log = { version = "0.4.8", optional = true }
 bytes = { version = "1.0.0", optional = true }
 
 [dev-dependencies]
@@ -28,5 +28,4 @@ flv-util = { version = "0.5.2" }
 fluvio-protocol-derive = { version = "0.2.1", path = "fluvio-protocol-derive" }
 fluvio-protocol-core = { version = "0.3.0", path = "fluvio-protocol-core" }
 fluvio-protocol-api = { version = "0.4.0", path = "fluvio-protocol-api" }
-log = { version = "0.4.8" }
 fluvio-future = { version = "0.3.0", features = ["subscriber"]}

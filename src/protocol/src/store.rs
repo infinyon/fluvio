@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 
-use log::trace;
+use tracing::trace;
 
 use bytes::Bytes;
 use bytes::BytesMut;
@@ -68,7 +68,7 @@ where
         version: Version,
     ) -> Result<(), IoError> {
         let len = self.write_size(version) as i32;
-        log::debug!(
+        tracing::debug!(
             "encoding file write response: {} version: {}, len: {}",
             std::any::type_name::<P>(),
             version,

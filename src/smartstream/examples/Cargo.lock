@@ -75,6 +75,7 @@ dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
+ "tracing",
 ]
 
 [[package]]
