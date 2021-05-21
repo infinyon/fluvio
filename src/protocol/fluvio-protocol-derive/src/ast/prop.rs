@@ -52,7 +52,7 @@ impl Prop {
                                     prop.default_value = Some(lit_str.value());
                                 }
                             } else {
-                                log::warn!(
+                                tracing::warn!(
                                     "#[fluvio({})] does nothing on {}.",
                                     name_value.to_token_stream().to_string(),
                                     prop.field_name
@@ -102,7 +102,7 @@ impl Prop {
                 if version >= #min && version <= #max {
                     #field_stream
                 } else {
-                    log::trace!("Field: <{}> is skipped because version: {} is outside min: {}, max: {}",stringify!(#field_name),version,#min,#max);
+                    tracing::trace!("Field: <{}> is skipped because version: {} is outside min: {}, max: {}",stringify!(#field_name),version,#min,#max);
                 }
             }
         } else {
@@ -110,7 +110,7 @@ impl Prop {
                 if version >= #min {
                     #field_stream
                 } else {
-                    log::trace!("Field: <{}> is skipped because version: {} is less than min: {}",stringify!(#field_name),version,#min);
+                    tracing::trace!("Field: <{}> is skipped because version: {} is less than min: {}",stringify!(#field_name),version,#min);
                 }
             }
         }

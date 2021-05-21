@@ -60,7 +60,7 @@ pub fn main_k8_loop(opt: ScOpt) {
 
 mod proxy {
     use std::process;
-    use log::info;
+    use tracing::info;
 
     use fluvio_types::print_cli_err;
     pub use fluvio_future::openssl::TlsAcceptor;

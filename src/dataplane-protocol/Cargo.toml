@@ -13,7 +13,6 @@ file = ["fluvio-protocol/store"]
 fixture = ["derive_builder"]
 
 [dependencies]
-log = "0.4.0"
 tracing = "0.1.19"
 cfg-if = "1.0.0"
 bytes = "1.0.0"

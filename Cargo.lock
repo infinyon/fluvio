@@ -1352,7 +1352,6 @@ dependencies = [
  "fluvio-types",
  "flv-tls-proxy",
  "futures-util",
- "log",
  "serde",
  "serde_json",
  "thiserror",
@@ -1503,7 +1502,6 @@ dependencies = [
  "fluvio-socket",
  "flv-util",
  "futures-util",
- "log",
  "once_cell",
  "semver 0.11.0",
  "tracing",
@@ -1628,7 +1626,7 @@ checksum = "d461d8c93b1fd2756a0602f493db0bb58f3a0702306c2598f138f41a2d0af244"
 dependencies = [
  "fluvio-protocol-api 0.3.0",
  "fluvio-protocol-core 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-protocol-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-protocol-derive 0.2.0",
 ]
 
 [[package]]
@@ -1640,7 +1638,7 @@ dependencies = [
  "fluvio-protocol-api 0.4.0",
  "fluvio-protocol-codec",
  "fluvio-protocol-core 0.3.0",
- "fluvio-protocol-derive 0.2.0",
+ "fluvio-protocol-derive 0.2.1",
  "flv-util",
  "log",
 ]
@@ -1652,7 +1650,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae66072f907fffff49299438a9afe0379aa4718587f408eb5d98545445ff0c6c"
 dependencies = [
  "fluvio-protocol-core 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "fluvio-protocol-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-protocol-derive 0.2.0",
  "flv-util",
  "log",
 ]
@@ -1662,9 +1660,9 @@ name = "fluvio-protocol-api"
 version = "0.4.0"
 dependencies = [
  "fluvio-protocol-core 0.3.0",
- "fluvio-protocol-derive 0.2.0",
+ "fluvio-protocol-derive 0.2.1",
  "flv-util",
- "log",
+ "tracing",
 ]
 
 [[package]]
@@ -1701,8 +1699,9 @@ dependencies = [
 [[package]]
 name = "fluvio-protocol-derive"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1a2bb5eeabcfffd406155caa7dfc1e75367c6dd825c769572815f6300f9c50f"
 dependencies = [
- "fluvio-protocol 0.5.0",
  "log",
  "proc-macro2",
  "quote",
@@ -1711,14 +1710,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1a2bb5eeabcfffd406155caa7dfc1e75367c6dd825c769572815f6300f9c50f"
+version = "0.2.1"
 dependencies = [
- "log",
+ "fluvio-protocol 0.5.0",
  "proc-macro2",
  "quote",
  "syn",
+ "tracing",
 ]
 
 [[package]]
@@ -1764,7 +1762,6 @@ dependencies = [
  "k8-client",
  "k8-metadata-client",
  "k8-types",
- "log",
  "once_cell",
  "rand 0.8.3",
  "regex",
@@ -2002,7 +1999,6 @@ dependencies = [
  "fluvio-future 0.3.2",
  "futures-lite",
  "inventory",
- "log",
  "once_cell",
  "prettytable-rs",
  "proc-macro2",
@@ -2058,7 +2054,6 @@ dependencies = [
  "fluvio-types",
  "futures-lite",
  "inventory",
- "log",
  "md-5",
  "prettytable-rs",
  "rand 0.8.3",
@@ -2067,6 +2062,7 @@ dependencies = [
  "structopt",
  "syn",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

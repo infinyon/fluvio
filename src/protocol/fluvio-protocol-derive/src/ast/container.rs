@@ -42,7 +42,7 @@ impl ContainerAttributes {
                                     cont_attr.response = Some(lit_str.value());
                                 }
                             } else {
-                                log::warn!(
+                                tracing::warn!(
                                     "#[fluvio({})] does nothing on the container.",
                                     name_value.to_token_stream().to_string()
                                 )
@@ -53,7 +53,7 @@ impl ContainerAttributes {
                             } else if path.is_ident("encode_discriminant") {
                                 cont_attr.encode_discriminant = true;
                             } else {
-                                log::warn!(
+                                tracing::warn!(
                                     "#[fluvio({})] does nothing on the container.",
                                     path.to_token_stream().to_string()
                                 )

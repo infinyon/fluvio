@@ -17,13 +17,13 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
                     fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
-                        log::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
+                        tracing::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
                         #encoded_field_tokens
                         Ok(())
                     }
 
                     fn write_size(&self, version: fluvio_protocol::Version) -> usize {
-                        log::trace!("write size for struct: {} version {}",stringify!(#ident),version);
+                        tracing::trace!("write size for struct: {} version {}",stringify!(#ident),version);
                         let mut len: usize = 0;
                         #size_field_tokens
                         len
@@ -39,13 +39,13 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
                     fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
-                        log::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
+                        tracing::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
                         #encoded_variant_tokens
                         Ok(())
                     }
 
                     fn write_size(&self, version: fluvio_protocol::Version) -> usize {
-                        log::trace!("write size for struct: {} version {}",stringify!(#ident),version);
+                        tracing::trace!("write size for struct: {} version {}",stringify!(#ident),version);
                         #size_variant_tokens
                     }
                 }
@@ -60,19 +60,19 @@ fn parse_struct_props_encoding(props: &[Prop], struct_ident: &Ident) -> TokenStr
 
         if prop.varint {
             quote! {
-                log::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
                 let result = self.#fname.encode_varint(dest);
                 if result.is_err() {
-                    log::error!("error varint encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::error!("error varint encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
                     return result;
                 }
             }
         } else {
             let base = quote! {
-                log::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
                 let result = self.#fname.encode(dest,version);
                 if result.is_err() {
-                    log::error!("Error Encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::error!("Error Encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
                     return result;
                 }
             };
@@ -92,13 +92,13 @@ fn parse_struct_props_size(props: &[Prop], struct_ident: &Ident) -> TokenStream 
         if prop.varint {
             quote! {
                 let write_size = self.#fname.var_write_size();
-                log::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);
                 len += write_size;
             }
         } else {
             let base = quote! {
                 let write_size = self.#fname.write_size(version);
-                log::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);
                 len += write_size;
             };
             prop.version_check_token_stream(base)

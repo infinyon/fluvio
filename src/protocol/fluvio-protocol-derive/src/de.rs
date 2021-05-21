@@ -18,7 +18,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
-                        log::trace!("decoding struct: {}",stringify!(#ident));
+                        tracing::trace!("decoding struct: {}",stringify!(#ident));
                         #field_tokens
                         Ok(())
                     }
@@ -55,23 +55,23 @@ pub(crate) fn generate_struct_fields(props: &[Prop], struct_ident: &Ident) -> To
         let fname = format_ident!("{}", prop.field_name);
         if prop.varint {
             quote! {
-                log::trace!("start decoding varint field <{}>", stringify!(#fname));
+                tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
                 let result = self.#fname.decode_varint(src);
                 if result.is_ok() {
-                    log::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
+                    tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
                 } else {
-                    log::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
                     return result;
                 }
             }
         } else {
             let base = quote! {
-                log::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
+                tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
                 let result = self.#fname.decode(src,version);
                 if result.is_ok() {
-                    log::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                    tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
                 } else {
-                    log::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
                     return result;
                 }
             };
@@ -89,7 +89,7 @@ fn generate_variant_tokens(int_type: &Ident) -> TokenStream {
         use std::convert::TryInto;
         let mut typ: #int_type = 0;
         typ.decode(src, version)?;
-        log::trace!("decoded type: {}", typ);
+        tracing::trace!("decoded type: {}", typ);
 
         let convert: Self = typ.try_into()?;
         *self = convert;

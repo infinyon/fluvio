@@ -84,7 +84,7 @@ pub use file::*;
 mod file {
     use std::io::Error as IoError;
 
-    use log::trace;
+    use tracing::trace;
     use bytes::BytesMut;
 
     use crate::core::Version;

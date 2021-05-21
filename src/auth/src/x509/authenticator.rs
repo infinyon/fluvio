@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::os::unix::io::AsRawFd;
 
-use log::{debug, trace};
+use tracing::{debug, trace};
 use x509_parser::{certificate::X509Certificate, parse_x509_certificate};
 use async_trait::async_trait;
 

@@ -51,7 +51,6 @@ dependencies = [
  "fluvio-protocol",
  "flv-util",
  "futures-util",
- "log",
  "once_cell",
  "semver",
  "tracing",
@@ -59,9 +58,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd29a0773ef0ab97eb91e621093b4b64218456941e33fd63d9647fbe57a439cf"
+checksum = "61587e440c936984e7dab40903de1c9adc39ab13e8446b52c50852da5cd6fbcb"
 dependencies = [
  "log",
  "thiserror",
@@ -85,7 +84,7 @@ dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
  "flv-util",
- "log",
+ "tracing",
 ]
 
 [[package]]
@@ -98,12 +97,12 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
- "log",
  "proc-macro2",
  "quote",
  "syn",
+ "tracing",
 ]
 
 [[package]]

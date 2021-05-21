@@ -145,7 +145,7 @@ mod file {
 
     use std::io::Error as IoError;
 
-    use log::trace;
+    use tracing::trace;
     use bytes::BytesMut;
 
     use crate::record::FileRecordSet;
@@ -175,7 +175,7 @@ mod file {
             if version >= 11 {
                 self.next_filter_offset.encode(src, version)?;
             } else {
-                log::trace!("v: {} is less than last fetched version 11", version);
+                tracing::trace!("v: {} is less than last fetched version 11", version);
             }
             self.log_start_offset.encode(src, version)?;
             self.aborted.encode(src, version)?;
