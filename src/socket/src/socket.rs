@@ -7,8 +7,7 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::ResponseMessage;
 
 use fluvio_future::net::{
-    BoxReadConnection, BoxWriteConnection, ConnectionFd, DefaultDomainConnector,
-    TcpDomainConnector,
+    BoxReadConnection, BoxWriteConnection, ConnectionFd, DefaultDomainConnector, TcpDomainConnector,
 };
 
 use super::FlvSocketError;

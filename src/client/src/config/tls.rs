@@ -7,7 +7,6 @@ use tracing::info;
 use serde::{Deserialize, Serialize};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 
-
 /// Describes whether or not to use TLS and how
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tls_policy")]
@@ -197,8 +196,8 @@ impl TryFrom<TlsPolicy> for DomainConnector {
 
     fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
         use fluvio_future::native_tls::{
-            TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder, PrivateKeyBuilder,
-            CertBuilder, TlsAnonymousConnector,
+            TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
+            PrivateKeyBuilder, CertBuilder, TlsAnonymousConnector,
         };
         match config {
             TlsPolicy::Disabled => Ok(Box::new(DefaultDomainConnector::new())),

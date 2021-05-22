@@ -128,8 +128,7 @@ impl ClientConfig {
             addr
         };
         debug!("Connecting to {:?}", addr);
-        let socket =
-            FluvioSocket::connect_with_connector(&addr, self.connector.as_ref()).await?;
+        let socket = FluvioSocket::connect_with_connector(&addr, self.connector.as_ref()).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 
@@ -193,7 +192,7 @@ impl fmt::Display for VersionedSerialSocket {
         write!(f, "config {}", self.config)
     }
 }
-unsafe impl Send for VersionedSerialSocket { }
+unsafe impl Send for VersionedSerialSocket {}
 
 impl VersionedSerialSocket {
     pub fn new(
